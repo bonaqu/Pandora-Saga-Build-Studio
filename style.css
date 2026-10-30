@@ -72,3 +72,36 @@
 .stat-visual-warning{color:#f4a284;font-size:11px;min-height:1em}
 .stat-visual-hint{color:#b6a085;font-size:11px;margin-top:8px}
 @media(max-width:450px){.stat-visual-controls input[type=range]{flex-basis:calc(100% - 80px)}}
+
+
+/* Multi-socket planner, source-backed gem slots and cosmetic refinement station */
+.gear-slot-column{min-width:0}.gear-inventory-column{min-width:0}.refinement-layout{grid-template-columns:280px minmax(0,1fr) 290px}
+.slot-socket-count{position:absolute;right:0;top:0;font-size:10px;background:#19130c;color:#efc67d;border:1px solid #87663c;padding:1px 3px;z-index:1}
+.equipment-slot.socket-conflict{border-color:#b65c43;box-shadow:0 0 12px #ba53384c}
+.socket-board{margin-top:14px;padding:11px;background:#1b1510;border:1px solid #785333}
+.socket-board h3{font-size:20px;margin-bottom:8px}
+.socket-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.socket-chip{position:relative;display:flex;justify-content:center;align-items:center;width:100%;height:71px;min-width:0;border:2px double #936d41;background:radial-gradient(circle,#393020,#120f0b);color:#edc98c}
+.socket-chip.selected{border-color:#f4c983;box-shadow:0 0 14px #a9763f66}
+.socket-chip.invalid{border-color:#ba6246}
+.socket-chip img{display:block;width:45px;height:45px;object-fit:contain}
+.socket-chip small{position:absolute;bottom:0;right:5px;color:#d9b887;font-size:10px}
+.socket-empty{font:26px Georgia;color:#dcb47d}
+.souls-target{background:#251910;border:1px solid #83623c;padding:9px;color:#e8c98f;font-size:12px;margin:10px 0}
+.refine-warning{color:#f0aa90;border:1px solid #a6674e;padding:9px;background:#39221b;font-size:11px;margin:9px 0}
+.refine-station{padding:25px;border:2px double #a47a45;background:radial-gradient(circle at 50% 4%,#53402b,#231b15 52%,#100e0c);text-align:center;min-height:350px}
+.refine-emblem{font:65px Georgia;color:#eac080;text-shadow:0 0 27px #d8aa5f}
+.refine-heading{display:flex;align-items:center;justify-content:center;gap:25px;flex-wrap:wrap;margin:16px 0}
+.refine-heading h3{font-size:30px}.refine-mark{font:50px Georgia;color:#edbd74;text-shadow:0 0 24px #ba8748}
+.refine-controls{display:flex;gap:12px;justify-content:center;align-items:center;margin:20px auto}
+.refine-controls button{height:42px;width:48px;background:#382519;color:#ecc68a;border:1px solid #9f7646;font:24px Georgia}
+.refine-controls input{width:85px;text-align:center;background:#140f0b;color:#f6d69d;border:1px solid #ae8050;padding:9px;font:22px Georgia}
+.refine-note{font-size:10px;color:#b5a186}
+.refine-display{margin-top:16px;display:flex;flex-direction:column;align-items:center;border:1px solid #856036;background:#1b140f;padding:18px;gap:5px}
+.refine-display>span{font-size:32px;color:#e0bd83}.refine-display strong{font:50px Georgia;color:#edc489}.refine-display p{font-size:11px;color:#ad9c84}
+.equipment-summary,.forge-summary{border:1px solid #755537;background:#21160f;margin-top:18px;padding:10px}
+.equipment-summary h3,.forge-summary h3{font-size:19px;margin-bottom:6px}.equipment-summary strong{display:block;font-size:13px;color:#e6c88c;overflow-wrap:anywhere}
+.equipment-summary span,.forge-summary p{display:block;color:#bca487;font-size:11px}
+@media(max-width:1200px){.refinement-layout{grid-template-columns:240px 1fr}}
+@media(max-width:790px){.refinement-layout{grid-template-columns:1fr}.gear-layout{grid-template-columns:1fr}}
+@media(max-width:460px){.socket-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.refine-station{padding:18px 10px}}
