@@ -112,3 +112,7 @@ Character detail uses authentic-style tabs for **Персонаж / Умения
 ## RU/EN official game catalog (2026-10-30)
 
 Pandora Saga OS has a separate public original `strings.en.json`. It is now saved at `data/os/strings.en.json`, with exact stable IDs for item/skill/monster/soul/class names, descriptions, maps and branches. The RU/EN control switches the **game catalog** without inventing translation mappings or changing build IDs. English entries absent upstream retain their Russian source text. The non-game UI shell is still Russian-first; full UI localization remains tracked separately. English strings load from **our own D1** first or our own checked-in archive before first import — never from the game server at runtime. The manual importer also archives `tables`, `expertise`, `chests`, and approved Legacy language data in isolated namespaces.
+
+## 2026-10-30: game-faithful five skill tabs and racial passives
+
+The skill UI now presents only 5 primary sections and 20 player-visible subsections, in their original order. The server metadata includes further technical branches, but these no longer appear as fictitious player skill trees. `race` is a racial passive choice (one of the 3 actual race-specific `racialPassives.json` skill IDs) in the character overview rather than a spendable point branch. It is persisted in JSON builds, migrated safely on race changes and included in comparisons. Unknown game rules remain marked unverified.

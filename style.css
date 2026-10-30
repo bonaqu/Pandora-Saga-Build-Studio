@@ -155,3 +155,22 @@
 .ps-profile-row input,.ps-profile-row textarea{min-width:0;width:100%;background:#110d0c;color:#edcfa2;border:1px solid #816342;padding:9px}
 .ps-profile-bio{align-items:start}
 @media(max-width:700px){.ps-game-hud{margin:8px 10px;flex-wrap:wrap}.ps-hud-note{max-width:none}.ps-profile-grid{grid-template-columns:1fr}.ps-profile-art img{max-height:230px}.ps-overview-grid{grid-template-columns:1fr}.ps-profile-row{grid-template-columns:1fr}}
+
+
+/* Actual five-tier Pandora Saga skill hierarchy */
+.game-tree-group{border:1px solid #735534;background:#110e0c;margin:6px 0}
+.game-tree-head{display:flex;width:100%;justify-content:space-between;align-items:center;gap:6px;background:linear-gradient(#352519,#17120f);padding:10px 9px;border:0;border-bottom:1px solid #594027;color:#f3cb8e;font:600 15px Georgia}
+.game-tree-head.active{background:linear-gradient(#6d2c20,#2d1715);border-color:#c6985e}
+.game-tree-head small{font:10px Arial;color:#ddc4a1}
+.game-tree-group .branch-row{margin:2px 5px;width:calc(100% - 10px);font-size:12px}
+.game-skill-categories{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;margin-bottom:10px}
+.game-skill-categories button{background:#21160f;border:1px solid #8d6a42;color:#dabe91;padding:11px 4px;font:14px Georgia;cursor:pointer}
+.game-skill-categories button.chosen{background:linear-gradient(#853421,#351b15);border-color:#e4ac66;color:#fff0c7}
+.game-skill-subbranches{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:6px}
+.game-racial-nav{background:#281a13;color:#efc889;border:1px solid #89623c;min-height:55px;padding:6px;cursor:pointer}
+.race-passive-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.race-passive-choice{min-width:0;display:flex;flex-direction:column;align-items:center;gap:7px;text-align:center;padding:14px;background:linear-gradient(145deg,#39251b,#130f0e);border:2px solid #74553b;color:#ebc994;cursor:pointer}
+.race-passive-choice.selected{border-color:#dfb672;background:linear-gradient(#5a3020,#281611);box-shadow:0 0 16px #b77b4373}
+.race-passive-choice img{width:52px;height:52px;object-fit:contain;background:#0b0808;border:1px solid #795439}
+.race-passive-choice strong{font:600 17px Georgia}.race-passive-choice span{font-size:11px;line-height:1.5;color:#c0ac90}.race-passive-choice small{margin-top:auto;color:#efc478}
+@media(max-width:750px){.game-skill-categories{grid-template-columns:repeat(3,minmax(0,1fr))}.race-passive-picker{grid-template-columns:1fr}}
