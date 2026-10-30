@@ -125,19 +125,6 @@
 
 
 /* In-game character window: vintage tabs, clear limits, no fabricated HUD values. */
-.ps-game-hud{display:flex;align-items:center;gap:11px;max-width:1180px;margin:14px auto 0;padding:10px 15px;background:linear-gradient(90deg,#211916,#161113);border:2px ridge #a38254;box-shadow:0 6px 26px #0008;color:#e5c994}
-.ps-hud-portrait{display:grid;place-items:center;font:32px Georgia;width:52px;height:52px;flex-shrink:0;border-radius:50%;border:2px double #b58d58;background:#31251c}
-.ps-hud-main{flex:1;min-width:150px;max-width:430px}
-.ps-hud-identity{display:flex;align-items:center;justify-content:space-between;gap:12px;font:13px Georgia;margin-bottom:4px}
-.ps-hud-identity strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ps-hud-meter{display:flex;align-items:center;gap:6px;height:15px;margin:3px 0;font-size:11px}
-.ps-hud-meter>span{width:16px;text-align:center}
-.ps-hud-track{flex:1;height:11px;border:1px solid #8d6e42;background:#08070a;box-shadow:inset 0 1px 5px #0008}
-.ps-hud-meter small{width:50px;color:#d5c2a4;text-align:right}
-.ps-hud-hp .ps-hud-track{border-color:#8a4441}.ps-hud-mp .ps-hud-track{border-color:#44798a}
-.ps-hud-exp{display:flex;gap:6px;align-items:center;font-size:9px;color:#d4bb90}
-.ps-hud-exp .ps-hud-track{height:6px;border-color:#77653c}
-.ps-hud-note{font-size:10px;color:#ad9880;max-width:150px}
 .ps-character-tabs{display:flex;gap:4px;flex-wrap:wrap;margin:0 0 18px;border-bottom:2px ridge #97764a}
 .ps-character-tabs button{background:#241a12;color:#d8bb90;border:1px solid #80633e;border-bottom:0;padding:10px 20px;font:600 15px Georgia;cursor:pointer}
 .ps-character-tabs button.chosen,.ps-character-tabs button:hover{background:linear-gradient(#58432b,#291d15);color:#f9deaa;border-color:#c29a60}
@@ -154,7 +141,7 @@
 .ps-profile-row{display:grid;grid-template-columns:130px minmax(0,1fr);gap:10px;align-items:center;color:#e9cd9e;font-size:12px}
 .ps-profile-row input,.ps-profile-row textarea{min-width:0;width:100%;background:#110d0c;color:#edcfa2;border:1px solid #816342;padding:9px}
 .ps-profile-bio{align-items:start}
-@media(max-width:700px){.ps-game-hud{margin:8px 10px;flex-wrap:wrap}.ps-hud-note{max-width:none}.ps-profile-grid{grid-template-columns:1fr}.ps-profile-art img{max-height:230px}.ps-overview-grid{grid-template-columns:1fr}.ps-profile-row{grid-template-columns:1fr}}
+@media(max-width:700px){.ps-profile-grid{grid-template-columns:1fr}.ps-profile-art img{max-height:230px}.ps-overview-grid{grid-template-columns:1fr}.ps-profile-row{grid-template-columns:1fr}}
 
 
 /* Actual five-tier Pandora Saga skill hierarchy */
