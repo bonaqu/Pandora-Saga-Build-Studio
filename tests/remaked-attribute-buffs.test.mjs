@@ -7,7 +7,7 @@ const calc=ctx.PandoraOSCalculator,source=get('app.js'),html=get('index.html');
 const classes=JSON.parse(get('data/os/classes.json'));
 const zero={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
 const make=(attributeBuffs={},records=[])=>calc.base({
- classData:classes.CLERIC,raceData:{...zero,vit:49,spi:53},
+ classData:classes.CLERIC,raceData:{...zero,vit:49,spi:53,str:2,agi:2,dex:2,int:2},
  jobData:zero,allocation:zero,level:45,records,attributeBuffs
 });
 test('Remaked SelBuffClan_9 contributes selected level to all six attributes',()=>{
