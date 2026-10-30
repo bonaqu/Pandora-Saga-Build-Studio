@@ -134,8 +134,7 @@ function viewGrowth(target,api){
       const lockedAt=at.every(mark=>mark.locked);
       const tick=make('span',{class:'path-threshold-tick'+(lockedAt?' unreachable':''),
        'data-milestone-points':String(threshold)});
-      tick.style.left='calc('+(threshold/visualMax*100).toFixed(4)+'% - '+
-       (24*threshold/visualMax).toFixed(4)+'px)';
+      tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';
       ticks.append(tick);
      }
      track.append(ticks);
