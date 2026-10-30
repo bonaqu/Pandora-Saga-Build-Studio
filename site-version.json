@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.29",
-  "notes": "Viewport-fit three-column desktop studio and safer original-icon mirroring with WebP signature and filename validation"
+  "release": "2026.10.30.30",
+  "notes": "Character slot pages for item details, Souls, rune gems and refinement; real level-based skill budget and inline milestones; session view recovery; Astir outfit constraints"
 }
