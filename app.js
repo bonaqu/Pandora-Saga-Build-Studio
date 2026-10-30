@@ -15,7 +15,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
+let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
@@ -384,7 +384,7 @@ function renderEquipment(root){
  const nav=h('div',{class:'toggles'});
  for(const[mode,label]of[['equipment','⚔ Экипировка'],['souls','✦ Души'],['enhancement','✧ Заточка']]){
   nav.append(h('button',{class:gearMode===mode?'chosen':'',text:label,'aria-pressed':String(gearMode===mode),onclick:()=>{
-   gearMode=mode;filter='';gearShown=60;selectedSocket=0;renderDetails()
+   gearMode=mode;filter='';gearShown=60;selectedSocket=0;inspectedGearId=null;inspectorPinned=false;renderDetails()
   }}));
  }
  slotColumn.append(nav,h('h3',{text:'Слоты персонажа'}));
@@ -394,7 +394,7 @@ function renderEquipment(root){
   const report=lib.socketReport(state.souls?.[i],capacity);
   const button=h('button',{class:'equipment-slot'+(i===selectedSlot?' selected':'')+(item?' equipped':'')+(report.excess?' socket-conflict':''),
     title:slot[0]+': '+(item?.name||'пусто'), 'aria-label':slot[0]+': '+(item?.name||'пусто'),
-    onclick:()=>{selectedSlot=i;selectedSocket=0;filter='';gearShown=60;renderDetails();renderSlotRails()}});
+    onclick:()=>{selectedSlot=i;selectedSocket=0;filter='';gearShown=60;inspectedGearId=null;inspectorPinned=false;renderDetails();renderSlotRails()}});
   button.append(slotVisual(i),h('small',{text:item?.name||slot[0]}));
   if(item&&capacity!==null)button.append(h('b',{class:'slot-socket-count',text:capacity?'◈ '+report.count+'/'+capacity:'◈ 0'}));
   slotButtons.append(button);
@@ -478,12 +478,20 @@ function renderEquipment(root){
   const search=h('input',{type:'search','aria-label':'Поиск в каталоге',placeholder:isSoul?'Название души или ID':'Название предмета или ID',value:filter,
    oninput:e=>{filter=e.target.value;gearShown=60;renderDetails();const newer=document.querySelector('.filter-row input');if(newer){newer.focus();newer.setSelectionRange(filter.length,filter.length)}}});
   searchRow.append(search);
+  if(!isSoul){
+   const modeSwitch=h('div',{class:'gear-view-options',role:'group','aria-label':'Режим отображения инвентаря'});
+   for(const [view,label] of [['grid','▦ Сетка'],['list','☰ Список']]){
+    modeSwitch.append(h('button',{type:'button',text:label,'aria-pressed':String(gearDisplayMode===view),class:gearDisplayMode===view?'chosen':'',
+      onclick:()=>{gearDisplayMode=view;localStorage.setItem('ps-gear-view',view);renderDetails()}}))
+   }
+   searchRow.append(modeSwitch);
+  }
   main.append(h('h3',{text:isSoul?'Души для '+slots[selectedSlot][0]:'Экипировка: '+slots[selectedSlot][0]}),searchRow,
    h('p',{class:'muted item-count',text:'Найдено '+matches.length+' · показано '+Math.min(gearShown,matches.length)}));
   if(isSoul){
    main.append(h('p',{class:'souls-target',text:socketLimit!==null&&socketLimit>0?'Целевое гнездо: '+(selectedSocket+1)+' из '+socketLimit:socketLimit===0?'У текущего предмета нет гнёзд. Выбор души отключён.':'Установи предмет с подтверждёнными гнёздами, чтобы выбрать душу.'}));
   }
-  const list=h('div',{class:'gear-list'+(isSoul?' soul-catalog':'')});
+  const list=h('div',{class:'gear-list'+(isSoul?' soul-catalog':gearDisplayMode==='grid'?' inventory-grid':' inventory-list')});
   const selectedValue=isSoul?socketItems[selectedSocket]:chosen;
   function inspect(rec){
    side.replaceChildren();
@@ -492,6 +500,14 @@ function renderEquipment(root){
    const preview=h('div',{class:'item-preview'});
    preview.append(picture(rec,gearMode,''),editAttr(h('strong',{text:editableValue((isSoul?'soul.':'item.')+rec.id,itemName(rec))}),(isSoul?'soul.':'item.')+rec.id));
    side.append(preview);
+   const pin=h('button',{type:'button',class:'item-inspector-pin','aria-pressed':String(inspectorPinned&&String(inspectedGearId)===String(rec.id)),
+     text:inspectorPinned&&String(inspectedGearId)===String(rec.id)?'📌 Открепить описание':'📌 Закрепить описание',
+     onclick:()=>{
+       if(inspectorPinned&&String(inspectedGearId)===String(rec.id)){inspectorPinned=false;inspectedGearId=null}
+       else{inspectorPinned=true;inspectedGearId=rec.id}
+       inspect(rec);
+     }});
+   side.append(pin);
    if(catalog.live){
     const rows=isSoul?[['ID',rec.id],['Подходящие слоты',(rec.slots||[]).join(', ')]]:
      [['ID',rec.id],['Тип',rec.kind],['Уровень',rec.level],['Атака',rec.W],['Защита',rec.AC],['Гнёзда душ',rec.soulslot],['Поле plus',rec.plus]];
@@ -533,8 +549,10 @@ function renderEquipment(root){
    const v=!isSoul&&catalog.live?window.PandoraStudioRules.equipment(rec,{slot,job:jobKeys[state.job],level:state.level}):{allowed:true,missing:[]};
    const canInsert=isSoul?Boolean(chosen&&itemRec&&!isCostumeOverlay(itemRec)&&socketLimit!==null&&selectedSocket<socketLimit&&lib.validSoul(rec,slot)):(v.allowed&&!isCostumeOverlay(rec));
    const button=h('button',{class:'item-card'+(isSoul?' soul-card':'')+(selected?' active':'')+(canInsert?'':' incompatible'),
-    'aria-disabled':String(!canInsert),title:canInsert?'Выбрать '+itemName(rec):isSoul?'Нет свободного подтверждённого целевого гнезда':v.missing.join(' · '),
-    onmouseenter:()=>inspect(rec),onfocus:()=>inspect(rec),onclick:()=>{
+    'aria-disabled':String(!canInsert),title:(canInsert?'Выбрать '+itemName(rec):isSoul?'Нет свободного подтверждённого целевого гнезда':v.missing.join(' · '))+' · ПКМ: закрепить описание', 'aria-label':itemName(rec),
+    onmouseenter:()=>{if(!inspectorPinned)inspect(rec)},onfocus:()=>{if(!inspectorPinned)inspect(rec)},
+    oncontextmenu:e=>{e.preventDefault();inspectorPinned=true;inspectedGearId=rec.id;inspect(rec)},
+    onclick:()=>{
      inspect(rec);if(!canInsert)return;
      const item={id:rec.id,name:itemName(rec),level:rec.level??null,icon:rec.icon??null};
      if(isSoul){
@@ -551,7 +569,8 @@ function renderEquipment(root){
   main.append(list);
   if(matches.length>gearShown)main.append(h('button',{class:'button-action show-more',text:'Показать ещё · осталось '+(matches.length-gearShown),
    onclick:()=>{gearShown+=60;renderDetails()}}));
-  const focus=valid.find(rec=>String(rec.id)===String(selectedValue?.id));
+  const focus=(inspectorPinned?valid.find(rec=>String(rec.id)===String(inspectedGearId)):null)||
+     valid.find(rec=>String(rec.id)===String(selectedValue?.id));
   inspect(focus);
  }
  if(chosen){

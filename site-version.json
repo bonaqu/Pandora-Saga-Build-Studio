@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.18",
-  "notes": "Fix skill-panel layout and add wiki instances with source-backed navigation"
+  "release": "2026.10.30.19",
+  "notes": "Resumable icon library, visual grid/list inventory and pin-able item inspection"
 }

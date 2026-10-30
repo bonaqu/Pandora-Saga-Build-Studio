@@ -136,3 +136,7 @@ Once the manual asset mirror has been completed and a manifest with `count.missi
 ## 2026-10-30.18 UI stabilization
 
 Fixed a leftover 3-column grid in the redesigned skills view, now a flexible 2-column skills/details layout with responsive stacking. Wiki also links confirmed monster appearances to original map and dungeon (`instances`) pages, and skill requirements display official RU branch labels. Deep links support instance IDs.
+
+## 2026-10-30.19 — inventory ergonomics
+
+The gear catalog now has two remembered viewing modes: **▦ icon grid** and **☰ compact list**, with accessible item labels. Hover/focus shows the source-backed item inspector, and right-click or **📌 Закрепить описание** pins a selected item so the detail panel does not jump when the mouse passes over other icons. Pinning is UI-only; it never changes character equipment. Switching slots or inventory/souls/enhancement modes releases the pin. Soul choice remains a compact list with one-click socket placement. Partial local-icon manifest support means verified local icons can be used incrementally.
