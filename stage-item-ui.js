@@ -85,6 +85,10 @@ function render(root,api){
    onclick:()=>api.changeMode('gems')}));
   body.append(el('p',{class:'stage-rich-note',text:'Самоцвет — план выбора. Шансы и эффекты применяются только после проверки игровых правил.'}));
  }else if(mode==='souls'||mode==='gems'){
+  if(mode==='souls'&&(!Number.isInteger(Number(record.soulslot))||Number(record.soulslot)<=0||
+    !Number.isInteger(api.selectedSocket)||api.selectedSocket<0||api.selectedSocket>=Number(record.soulslot))){
+   body.append(el('p',{class:'muted',text:'Для этого предмета нет подтверждённого свободного гнезда. Открой гнездо со страницы «Свойства». '}));return;
+  }
   const soulMode=mode==='souls',query=el('input',{type:'search',placeholder:soulMode?'Поиск души':'Поиск самоцвета','aria-label':soulMode?'Поиск душ':'Поиск самоцветов'});
   const list=el('div',{class:'stage-rich-list'});
   const reset=el('button',{type:'button',text:soulMode?'✕ Извлечь душу':'✕ Без самоцвета',
