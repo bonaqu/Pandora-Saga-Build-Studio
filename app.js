@@ -1175,31 +1175,30 @@ function renderStats(root){
  const codes=['vit','str','agi','dex','spi','int'],symbols=['♥','⚔','➶','✥','✦','❂'];
  const total=STATS.reduce((sum,key)=>sum+Number(state.stats[key]||0),0);
  root.append(h('div',{class:'stat-editor-overview'},[
-  h('div',{},[h('h3',{text:'Книга характеристик'}),h('p',{class:'muted',text:'Распределяй очки визуально. Пределы характеристик берутся из опубликованных данных класса Pandora Saga OS.'})]),
-  h('div',{class:'stat-total'},[h('strong',{text:String(total)}),h('span',{text:'Запланировано очков'})])
+  h('div',{},[h('h3',{text:'Характеристики'})]),
+  h('div',{class:'stat-total'},[h('strong',{text:String(total)}),h('span',{text:'Распределено'})])
  ]));
  const hpmp=previewBaseStats();
- root.append(h('p',{class:'muted',text:hpmp?
-  'Предварительные ОЗ ≈'+hpmp.hp+' / ОМ ≈'+hpmp.mp+' по OS: включает подтверждённые плоские эффекты предметов и душ. Округление half-to-even; баффы, сеты и условные эффекты не учтены.':
-  'Базовые ОЗ/ОМ станут доступны после загрузки таблиц OS. Итоговые эффекты экипировки и баффов не рассчитаны.'}));
+ if(hpmp)root.append(h('p',{class:'stat-brief-vitals',text:
+  'ОЗ ≈'+hpmp.hp+' · ОМ ≈'+hpmp.mp}));
  const grid=h('div',{class:'stat-grid'});
  STATS.forEach((key,i)=>{
   const code=codes[i];
-  const raw=catalog.live?catalog.classes?.[jobKeys[state.job]]?.statCaps?.[code]:null;
   const cap=window.PandoraOriginModel.statLimit(catalog.classes,jobKeys[state.job],code);
   const value=Number(state.stats[key]||0);
   const ceiling=cap===null?Math.max(200,value):Math.max(cap,value);
   const box=h('section',{class:'stat-card stat-visual-editor'});
   const head=h('div',{class:'stat-visual-head'});
-  head.append(h('span',{class:'stat-emblem',text:symbols[i]}),h('h3',{text:key}),
-   h('span',{class:'stat-visual-cap',text:cap===null?'Предел не подтверждён':'Макс. '+cap}));
+  head.append(h('span',{class:'stat-emblem',text:symbols[i]}),
+   h('h3',{text:ORIGIN_STAT_LABELS[i].name}),
+   h('span',{class:'stat-visual-cap',text:cap===null?'':'Макс. '+cap}));
   const count=h('strong',{class:'stat-visual-value',text:String(value)});
   const bar=h('div',{class:'stat-visual-progress'}),fill=h('div',{class:'stat-visual-fill'});
   fill.style.width=(cap&&cap>0?Math.min(100,value/cap*100):0)+'%';
   bar.append(fill);
   const warning=h('p',{class:'stat-visual-warning',text:cap!==null&&value>cap?'Выше предела текущего класса: '+value+' / '+cap:''});
-  const range=h('input',{type:'range',min:'0',max:String(ceiling),step:'1',value:String(Math.min(ceiling,value)),'aria-label':key+' — распределение'});
-  const exact=h('input',{type:'number',min:'0',max:String(cap??999),step:'1',value:String(value),'aria-label':'Точное значение '+key});
+  const range=h('input',{type:'range',min:'0',max:String(ceiling),step:'1',value:String(Math.min(ceiling,value)),'aria-label':ORIGIN_STAT_LABELS[i].name+' — распределение'});
+  const exact=h('input',{type:'number',min:'0',max:String(cap??999),step:'1',value:String(value),'aria-label':'Точное значение '+ORIGIN_STAT_LABELS[i].name});
   const change=n=>{
    const next=Number(n);
    if(!window.PandoraOriginModel.allowedStat(next,cap))return false;
@@ -1223,8 +1222,7 @@ function renderStats(root){
   exact.addEventListener('change',()=>{if(!change(exact.value))exact.value=String(state.stats[key]||0)});
   actions.append(minus,range,plus,exact);
   box.append(head,count,bar,warning,actions);
-  if(cap===null)box.append(h('p',{class:'stat-visual-hint',text:'Предел пока неизвестен. Используется редактор плана, не игровой расчёт.'}));
-  else if(cap===0)box.append(h('p',{class:'stat-visual-hint',text:'Текущий класс не может вкладывать очки в эту характеристику по данным сервера.'}));
+  if(cap===0)box.append(h('p',{class:'stat-visual-hint',text:'Недоступно'}));
   grid.append(box);
  });
  root.append(grid);
@@ -1233,7 +1231,7 @@ function compareSnapshots(a,b){
  const rows=[];const lib=window.PandoraEquipmentPlan;
  if(a.race!==b.race||a.job!==b.job||a.level!==b.level)rows.push('Персонаж: '+(jobs[a.job]||'?')+' → '+(jobs[b.job]||'?')+' · уровень '+a.level+' → '+b.level);
  for(const branch of branches){const p=a.points?.[branch.id]||0,q=b.points?.[branch.id]||0;if(p!==q)rows.push((catalog.meta?.branchLabels?.[branch.id]||branch.name)+': '+p+' → '+q)}
- for(const stat of STATS){const p=a.stats?.[stat]||0,q=b.stats?.[stat]||0;if(p!==q)rows.push(stat+': '+p+' → '+q)}
+ for(const stat of STATS){const p=a.stats?.[stat]||0,q=b.stats?.[stat]||0;if(p!==q)rows.push((ORIGIN_STAT_LABELS[STATS.indexOf(stat)]?.name||stat)+': '+p+' → '+q)}
  for(let i=0;i<slots.length;i++){
   const x=a.equipment?.[i],y=b.equipment?.[i];if(String(x?.id??'')!==String(y?.id??''))rows.push(slots[i][0]+': '+(x?.name||'пусто')+' → '+(y?.name||'пусто'));
   const xp=lib.refinementValue(a.refinements,i,x),yp=lib.refinementValue(b.refinements,i,y);

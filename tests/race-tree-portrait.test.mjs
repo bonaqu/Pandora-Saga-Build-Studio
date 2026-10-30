@@ -7,7 +7,7 @@ test('portrait carousel presents eight independent race-appearance options',()=>
  assert.match(app,/const portraitOptions=\[/);
  const matches=app.match(/\{"race":[0-5],"gender":[01]\}/g)||[];
  assert.equal(matches.length,8);
- assert.match(app,/state\.race=i;state\.gender=gender/);
+ assert.match(app,/state=window\.PandoraOriginModel\.selectRace\(state,i,gender\)/);
  assert.match(app,/selectedPortraitIndex\(state\.race,state\.gender\)/);
  assert.match(app,/chosen=state\.race===i&&/);
 });

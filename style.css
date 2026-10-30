@@ -514,7 +514,7 @@ a.wiki-link:hover{text-decoration:none}
 .origin-stat-input::-webkit-outer-spin-button,.origin-stat-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .origin-stat-input{-moz-appearance:textfield;appearance:textfield}
 .origin-stat-cap{font-size:9px;color:#b89b78;white-space:nowrap;text-align:right}
-.origin-stats-note{color:#ad997c;font-size:10px;line-height:1.5;margin-top:10px}
+
 .class-wizard-progress{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;margin:8px 0 10px}
 .class-wizard-step{padding:6px 3px;border:1px solid #715334;color:#9e8971;font-size:9px;line-height:1.3;text-align:center}
 .class-wizard-step.current{background:#624427;color:#ffdc9e;border-color:#ebbd79}
@@ -523,3 +523,7 @@ a.wiki-link:hover{text-decoration:none}
 .class-wizard-breadcrumbs button{background:#241911;border:1px solid #7c5b38;color:#c9a97c;font-size:10px;padding:5px 7px}
 .class-wizard-breadcrumbs button[aria-current="step"]{background:#594027;color:#f5d49e}
 .class-wizard-choice.on-path:not(.active){border-color:#b49b5e}
+
+/* 2026.10.30.45: clean stat editor – essential game values only */
+.stat-brief-vitals{color:#e9c48a;font-size:13px;font-weight:600;padding:5px 0}
+.stat-visual-cap:empty{display:none}
