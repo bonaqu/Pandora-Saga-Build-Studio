@@ -27,3 +27,13 @@ test('release identifiers match every loaded client asset',()=>{
  assert.ok(refs.length>=10);
  for(const ref of refs)assert.ok(ref.endsWith('?v='+v),ref);
 });
+
+test('character workshop no longer exposes duplicate skills/stat point editors',()=>{
+ const app=source('app.js'),html=source('index.html');
+ assert.match(app,/const selection=\[\["character","Персонаж"\],\["profile","Профиль"\]\]/);
+ assert.doesNotMatch(app,/if\(characterPanelTab==="skills"\)renderSkills\(body\)/);
+ assert.doesNotMatch(app,/if\(characterPanelTab==="stats"\)renderStats\(body\)/);
+ assert.doesNotMatch(app,/\$\("branchValue"\)/);
+ assert.match(app,/Путь героя · умения/);
+ assert.match(html,/id="pathSkillsPage"/);
+});

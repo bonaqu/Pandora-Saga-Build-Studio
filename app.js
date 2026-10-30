@@ -832,17 +832,16 @@ function renderProfile(root){
  view.append(left,right);root.append(view);
 }
 function renderCharacter(root){
+ if(characterPanelTab!=='profile')characterPanelTab='character';
  const tabs=h("div",{class:"ps-character-tabs",role:"tablist","aria-label":"Окно персонажа"});
- const selection=[["character","Персонаж"],["skills","Умения"],["profile","Профиль"],["stats","Статы"]];
+ const selection=[["character","Персонаж"],["profile","Профиль"]];
  for(const[key,label]of selection){
   tabs.append(h("button",{role:"tab","aria-selected":String(characterPanelTab===key),class:characterPanelTab===key?"chosen":"",
    text:label,onclick:()=>{characterPanelTab=key;renderDetails()}}));
  }
  root.append(tabs);
  const body=h("section",{class:"ps-character-body"});
- if(characterPanelTab==="skills")renderSkills(body);
- else if(characterPanelTab==="stats")renderStats(body);
- else if(characterPanelTab==="profile")renderProfile(body);
+ if(characterPanelTab==="profile")renderProfile(body);
  else{
   const cards=h("div",{class:"ps-overview-grid"});
   cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:"Раса"}),h("strong",{text:races[state.race][0]})]),
@@ -865,141 +864,28 @@ function renderCharacter(root){
     passivePicker.append(button);
   }
   body.append(racialTitle,passivePicker);
-  body.append(h("p",{class:"muted",text:"Выбери вкладку для детальной настройки. Внутри работает тот же редактор навыков и характеристик, что и в основной мастерской — данные не дублируются."}));
+  body.append(h("p",{class:"muted",text:"Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет."}));
   const jump=h("div",{class:"ps-overview-actions"});
-  for(const[key,label]of[["skills","⚔ Открыть умения"],["stats","✥ Характеристики"],["profile","✎ Изменить профиль"]]){
-   jump.append(h("button",{class:"button-action",text:label,onclick:()=>{characterPanelTab=key;renderDetails()}}));
-  }
+  jump.append(h("button",{class:"button-action",text:"⚔ Путь героя · умения",onclick:()=>{
+   closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
+   $('pathSkillsTab')?.focus({preventScroll:true});
+  }}));
+  jump.append(h("button",{class:"button-action",text:"✥ Базовые характеристики",onclick:()=>{
+   closeWorkbench();originActive='stats';renderOriginTabs();saveView();
+  }}));
+  jump.append(h("button",{class:"button-action",text:"✎ Изменить профиль",onclick:()=>{
+   characterPanelTab='profile';renderDetails();
+  }}));
   body.append(jump);
  }
  root.append(body);
 }
+// Legacy duplicate skill editor retired; all changes happen in the live Hero Path.
 function renderSkills(root){
-const rules=window.PandoraStudioRules;
-const layout=h("div",{class:"skill-layout"}),picker=h("div",{class:"skill-picker"}),center=h("div",{class:"skill-center"}),info=h("div",{class:"skill-info"});
-const tabs=h("div",{class:"game-skill-categories",role:"tablist","aria-label":"Категории умений"});
-for(const group of window.PandoraGameNavigation.groups){
- const tab=h("button",{role:"tab","aria-selected":String(selectedSkillGroup===group.id),class:selectedSkillGroup===group.id?"chosen":"",text:lang==='en'?group.en:group.ru,
- onclick:()=>{selectedSkillGroup=group.id;if(!group.branches.includes(state.branch))state.branch=group.branches.find(id=>id!=='race');selectedSkill=null;persist();renderBranches();renderDetails()}});
- tabs.append(tab)
-}
-const selectedGroup=window.PandoraGameNavigation.groups.find(g=>g.id===selectedSkillGroup)||window.PandoraGameNavigation.groups[0];
-const activeBranches=h("div",{class:"game-skill-subbranches"});
-for(const id of selectedGroup.branches){
- if(id==='race'){
- activeBranches.append(h("button",{class:"game-racial-nav",text:"✦ "+(lang==='en'?'Racial passive choice':'Расовая пассивка (выбор при создании)'),onclick:()=>{characterPanelTab='character';changeTab('character')}}));
- continue;
- }
- const b=branches.find(x=>x.id===id);
- if(b)activeBranches.append(branchRow(b,true))
-}
-picker.append(tabs,activeBranches);
-const group=window.PandoraGameNavigation.branchGroup(state.branch);
-if(!group||group.id!==selectedSkillGroup||state.branch==='race')state.branch=window.PandoraGameNavigation.groups.find(g=>g.id===selectedSkillGroup)?.branches.find(id=>id!=='race')||'slash';
-const branch=state.branch,cap=branchCap(branch),pts=Number(state.points[branch]||0),permitted=allowedBranch(branch);
-center.append(h("h3",{text:editableValue("branch."+branch,catalog.live?(catalog.meta?.branchLabels?.[branch]||branch):branchNames[branch]||branch)}),
- h("p",{class:"muted",text:"Известные требования навыков проверяются по каталогу. Это не подтверждает фактическое изучение; общий бюджет очков пока не рассчитан."}));
-const bar=h("div",{class:"skill-bar"}),row=h("div",{class:"skill-stepper"});
-const value=h("strong",{class:"allocation-label",text:pts+" / "+cap}),range=h("input",{type:"range",min:"0",max:String(Math.max(pts,permitted)),value:String(Math.min(pts,cap)),step:"1","aria-label":"Очки ветки"}),
-numeric=h("input",{type:"number",min:"0",max:String(permitted),value:String(pts),step:"1",class:"allocation-input","aria-label":"Точное число очков"});
-const setPoints=n=>{
-const value=Number(n);if(!Number.isInteger(value)||value<0||value>allowedBranch(branch))return false;
-state.points[branch]=value;persist();renderBranches();$("branchValue").textContent=String(value);
-renderDetails();return true;
-};
-for(const [text,delta]of[["−5",-5],["−1",-1]])row.append(h("button",{class:"allocation-button",text,onclick:()=>setPoints(Math.max(0,Number(state.points[branch]||0)+delta))}));
-row.append(range,numeric);
-for(const [text,delta]of[["+1",1],["+5",5]])row.append(h("button",{class:"allocation-button",text,onclick:()=>setPoints(Math.min(allowedBranch(branch),Number(state.points[branch]||0)+delta))}));
-range.addEventListener("input",()=>{state.points[branch]=Math.min(Number(range.value),allowedBranch(branch));persist();numeric.value=String(state.points[branch]);value.textContent=range.value+" / "+cap;$("branchValue").textContent=range.value;for(const b of center.querySelectorAll("[data-record-id]")){const rec=catalog.live?catalog.skills?.[b.dataset.recordId]:null;if(rec){const g=rules.readiness(rec,{job:jobKeys[state.job],level:state.level,points:state.points});b.dataset.gate=g.status;b.querySelector(".gate-caption").textContent=g.status==="eligible"?"✓ Условия выполнены":g.status==="locked"?"🔒 "+g.missing[0]:"? Не все условия известны"}}});
-range.addEventListener("input",()=>{
- const amount=Number(range.value);
- const fill=center.querySelector('.skill-milestone-fill');
- if(fill&&cap>0)fill.style.width=Math.min(100,Math.max(0,amount/cap*100))+'%';
- for(const marker of center.querySelectorAll('.skill-milestone')){
-   marker.classList.toggle('reached',amount>=Number(marker.dataset.threshold));
- }
-});
-range.addEventListener("change",()=>renderDetails());
-numeric.addEventListener("change",()=>{if(!setPoints(numeric.value))numeric.value=String(state.points[branch]||0)});
-bar.append(h("div",{class:"allocation-head"},[h("b",{text:"Очки навыков"}),value]),row,h("button",{class:"allocation-button reset-points",text:"Сбросить ветку",onclick:()=>setPoints(0)}));center.append(bar);
-if(pts>cap)center.append(h("p",{class:"budget-excess",text:"Значение "+pts+" превышает текущий предел класса "+cap+". Оно сохранено, пока ты не исправишь распределение."}));
-const records=catalog.live?Object.values(catalog.skills||{}).filter(s=>s.branch===branch&&s.classes?.[jobKeys[state.job]]).sort((a,b)=>(a.charLevel||0)-(b.charLevel||0)):
-(catalog.skills?.records||[]).filter(s=>Number(s.legacy_category_id)===branch);
-// Milestones are actual branch-point requirements from OS skills.json.
-const milestoneData=window.PandoraSkillMilestones.forBranch(records,branch,cap);
-if(milestoneData.milestones.length&&cap>0){
- const rail=h('div',{class:'skill-milestone-rail','aria-label':'Пороги изучения навыков на ветке'});
- const track=h('div',{class:'skill-milestone-track'});
- const fill=h('div',{class:'skill-milestone-fill'});
- fill.style.width=Math.min(100,Math.max(0,pts/cap*100))+'%';
- track.append(fill);rail.append(track);
- for(const [i,gate]of milestoneData.milestones.entries()){
-  const first=gate.skills[0];
-  const at=gate.percent;
-  const marker=h('button',{type:'button',class:'skill-milestone'+(pts>=gate.threshold?' reached':''),
-   'data-threshold':String(gate.threshold),title:gate.skills.map(x=>x.name).join(', ')+' · '+gate.threshold+' очков',
-   'aria-label':gate.skills.map(x=>x.name).join(', ')+' · порог '+gate.threshold,
-   onclick:()=>{selectedSkill=first;renderDetails()}});
-  marker.style.left='calc('+at+'% + '+(12-24*at/100)+'px)';
-  marker.style.top=i%2?'56px':'3px';
-  const icon=h('img',{src:skillIcon(branch,first.id,first),alt:'',loading:'lazy'});
-  icon.onerror=()=>icon.replaceWith(h('span',{class:'skill-fallback',text:'✦'}));
-  marker.append(icon,h('small',{text:String(gate.threshold)}));
-  if(gate.skills.length>1)marker.append(h('span',{class:'skill-milestone-count',text:'+'+(gate.skills.length-1)}));
-  rail.append(marker);
- }
- bar.append(h('div',{class:'skill-milestone-title',text:'Пороги открытия навыков — нажми на значок'}),rail);
-}else if(cap===0){
- bar.append(h('p',{class:'muted',text:'Эта ветка недоступна текущему классу.'}));
-}
-if(milestoneData.above.length)bar.append(h('p',{class:'skill-milestone-overcap',text:
- 'У '+milestoneData.above.length+' навыков требования выше лимита этого класса; они остаются в списке ниже, но не отмечаются как достижимые.'}));
-
-const filterBar=h("div",{class:"skill-search"});
-const search=h("input",{type:"search",placeholder:"Поиск по названию навыка",value:skillSearch,oninput:e=>{
-skillSearch=e.target.value;renderDetails();const el=document.querySelector(".skill-search input");el?.focus();el?.setSelectionRange(skillSearch.length,skillSearch.length)
-}});
-const only=h("button",{class:"allocation-button"+(skillOnlyAvailable?" active":""),text:skillOnlyAvailable?"✓ Доступные":"Все навыки",onclick:()=>{skillOnlyAvailable=!skillOnlyAvailable;renderDetails()}});
-filterBar.append(search,only);center.append(filterBar);
-const query=skillSearch.toLocaleLowerCase("ru").trim();
-const shown=records.filter(s=>(!query||String(catalog.live?s.name:s.name?.en||"").toLocaleLowerCase("ru").includes(query))&&
-(!skillOnlyAvailable||catalog.live&&rules.readiness(s,{job:jobKeys[state.job],level:state.level,points:state.points}).status==="eligible"));
-center.append(h("p",{class:"muted",text:"Показано "+shown.length+" из "+records.length+" навыков"}));
-const nodes=h("div",{class:"nodes"});
-if(!shown.length)nodes.append(h("p",{class:"muted",text:"Не найдено навыков для текущего фильтра и класса."}));
-for(const s of shown){
-const id=String(catalog.live?s.id:s.legacy_entry_index);
-const g=catalog.live?rules.readiness(s,{job:jobKeys[state.job],level:state.level,points:state.points}):{status:"unknown",missing:[]};
-const button=h("button",{class:"skill-node"+(selectedSkill?.id===s.id?" open":""),"data-gate":g.status,"data-record-id":id,
-"aria-pressed":String(selectedSkill?.id===s.id),onclick:()=>{selectedSkill=s;renderDetails()}});
-const img=editAttr(h("img",{src:skillIcon(branch,id,s),alt:"",loading:"lazy"}),"visual.skill."+id);img.onerror=()=>{img.onerror=null;img.replaceWith(h("span",{class:"skill-fallback",text:"✦"}))};
-const label=g.status==="eligible"?"✓ Условия выполнены":g.status==="locked"?"🔒 "+g.missing[0]:"? Не все условия известны";
-button.append(img,editAttr(h("strong",{text:editableValue("skill."+branch+"."+id,catalog.live?s.name:s.name?.en||id)}),"skill."+branch+"."+id),h("small",{class:"gate-caption",text:label}));nodes.append(button);
-}
-center.append(nodes);
-const chosen=selectedSkill&&records.some(s=>s.id===selectedSkill.id)?selectedSkill:shown[0];
-if(chosen){
-const id=String(catalog.live?chosen.id:chosen.legacy_entry_index),g=catalog.live?rules.readiness(chosen,{job:jobKeys[state.job],level:state.level,points:state.points}):null;
-info.append(editAttr(h("img",{class:"bigicon",src:skillIcon(branch,id,chosen),alt:""}),"visual.skill."+id),editAttr(h("h3",{text:editableValue("skill."+branch+"."+id,catalog.live?chosen.name:chosen.name?.en||id)}),"skill."+branch+"."+id));
-if(g){
-info.append(wikiLink('📜 Статья навыка','skill',id));
-info.append(h("p",{class:"gate-summary","data-state":g.status,text:g.status==="eligible"?"✓ Известные требования выполнены":g.status==="locked"?"🔒 Не выполнены требования":"? Есть непроверенные условия"}));
-for(const m of g.missing)info.append(h("p",{class:"gate-missing",text:"✕ "+m}));
-for(const m of g.unknown)info.append(h("p",{class:"muted",text:"? "+m}));
-for(const gate of g.gates){
-info.append(h("button",{class:"gate-link",text:"➜ "+(catalog.meta?.branchLabels?.[gate.branch]||gate.branch)+": "+gate.current+"/"+gate.required+(gate.met?" ✓":""),
-onclick:()=>{state.branch=gate.branch;selectedSkill=null;persist();render();changeTab("skills")}}));
-}
-}
-info.append(editAttr(h("p",{text:editableValue("skilldesc."+branch+"."+id,catalog.live?chosen.desc||"Описание отсутствует":chosen.description?.en||"Описание отсутствует")}),"skilldesc."+branch+"."+id),
-h("div",{class:"subhead",text:"Сведения из источника"}),
-h("p",{text:"Уровень: "+(catalog.live?chosen.charLevel??"—":chosen.prerequisites?.en||"—")+
-" · ОМ: "+((catalog.live?chosen.mana:chosen.mp_cost)??"—")+
-" · Каст: "+((catalog.live?chosen.cast:chosen.cast_seconds)??"—")+
-" · Перезарядка: "+((catalog.live?chosen.cooldown:chosen.cooldown_seconds)??"—")}),
-h("p",{class:"source",text:catalog.live?"Источник: Pandora Saga OS skills.json. Визуализация условий не заменяет расчётное ядро.":"Архивные данные Legacy 2.00; текущие условия не подтверждены."}));
-}else info.append(h("p",{class:"muted",text:"Выбери иконку навыка."}));
-root.append(picker);layout.append(center,info);root.append(layout);
+ root.append(h('p',{class:'muted',text:'Умения доступны в правой панели «Путь героя». Здесь нет отдельного редактора.'}));
+ root.append(h('button',{class:'button-action',text:'Перейти к умениям',onclick:()=>{
+  closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
+ }}));
 }
 function isCostumeOverlay(item){return Boolean(item&&(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_')))}
 function itemName(r){return r?.name?.en||r?.names?.en||r?.name||r?.id||'Без названия'}
