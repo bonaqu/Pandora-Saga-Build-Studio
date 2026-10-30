@@ -140,6 +140,7 @@ function viewGrowth(target,api){
      }else clusters.push({threshold:mark.threshold,lastThreshold:mark.threshold,
       thresholds:[mark.threshold],skills:[...mark.skills],locked:mark.locked});
     }
+    const picker=make('div',{class:'path-milestone-picker',hidden:true,'aria-label':'Выбор умения на пороге'});
     for(const cluster of clusters){
      const skill=cluster.skills[0],ready=cluster.skills.some(s=>readiness(s,api).learned);
      const button=make('button',{type:'button',
@@ -147,7 +148,19 @@ function viewGrowth(target,api){
       'data-milestone-points':cluster.thresholds.join(','),
       'aria-label':cluster.skills.map(s=>s.name).join(', ')+' · '+cluster.thresholds.join(', ')+' очков'+
        (cluster.locked?' · выше лимита класса':''),
-      onclick:()=>api.onSkill(skill)});
+      onclick:()=>{
+       if(cluster.skills.length===1){api.onSkill(skill);return}
+       picker.replaceChildren(make('strong',{text:'Умения · '+cluster.thresholds.join(', ')+' очков'}));
+       for(const entry of cluster.skills){
+        const item=make('button',{type:'button',class:'path-milestone-choice',
+         text:entry.name||'Умение',onclick:()=>api.onSkill(entry)});
+        const src=api.icon(entry.branch,entry);
+        if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.remove();item.prepend(img)}
+        picker.append(item);
+       }
+       picker.hidden=false;
+       picker.querySelector('button')?.focus({preventScroll:true});
+      }});
      button.append(make('span',{class:'path-milestone-core',text:cluster.skills.length>1?String(cluster.skills.length):'◆'}));
      // Vertical position belongs to CSS: directly on the progression bar.
      button.style.left='clamp(8px, '+Math.max(0,Math.min(100,cluster.threshold/visualMax*100))+
@@ -155,6 +168,7 @@ function viewGrowth(target,api){
      rail.append(button);api.hover(button,cluster.skills);
     }
     track.append(rail);
+    editor.append(picker);
     }
     const greenRow=make('div',{class:'path-green-controls'});
     const input=make('input',{type:'number',min:'0',max:String(points),step:'1',
