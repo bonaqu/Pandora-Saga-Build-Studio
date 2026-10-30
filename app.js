@@ -1832,6 +1832,7 @@ function restoreWikiHash(){
  renderDetails();showWorkbench();
 }
 window.addEventListener('hashchange',()=>{
+ if(location.hash.startsWith('#b/')){restoreSharedHash();return}
  if(location.hash.startsWith('#wiki/')){
   // A user clicking a wiki link explicitly is a new action, not stale navigation.
   if(activeTab!=='wiki')activeTab='wiki';
@@ -1851,6 +1852,7 @@ render();loadCatalog();loadOverrides();
 fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
 .then(t=>{if(t?.abilityPoint&&t?.weaponPlus&&t?.forge){gameTables=t;render()}}).catch(()=>{});
 restoreWikiHash();
+restoreSharedHash();
 if(bootView.open&&bootView.tab!=='wiki'&&!String(location.hash).startsWith('#wiki/')){
  showWorkbench();$('detailContent').scrollTop=Math.max(0,Number(bootView.inner)||0)
 }
