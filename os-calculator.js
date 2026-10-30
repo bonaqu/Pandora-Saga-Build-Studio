@@ -43,21 +43,21 @@ function gatherEffects(records=[]){
  }
  return {flat,health,bonuses,ignored:[...ignored],trace};
 }
-function base({classData,raceData,jobData,allocation,level,records=[]}={}){
+function base({classData,raceData,jobData,allocation,level,records=[],supplementalFlat={},supplementalSource=null}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
  const effects=gatherEffects(records),basic={},stats={};
  for(const key of keys){
   const race=Number(raceData[key]),job=Number(jobData[key]),spent=Number(allocation?.[key]||0);
   if(!Number.isFinite(race)||!Number.isFinite(job)||!Number.isInteger(spent)||spent<0)return null;
   basic[key]=race+job+spent;
-  stats[key]=effectiveAbility(basic[key],effects.flat[key],0);
+  stats[key]=effectiveAbility(basic[key],effects.flat[key]+(Number(supplementalFlat[key])||0),0);
  }
  const hp=classData.hp,mp=classData.mp;
  if(!hp||!mp||![hp.base,hp.lv,hp.vit,mp.base,mp.lv,mp.spi].every(Number.isFinite))return null;
  const hpRaw=hp.base+level*hp.lv+stats.vit*hp.vit;
  const mpRaw=mp.base+level*mp.lv+stats.spi*mp.spi;
  return {hp:halfToEven(hpRaw)+effects.health.hp,mp:halfToEven(mpRaw)+effects.health.mp,
-  hpRaw,mpRaw,stats,basic,effects,rounding:'halfToEven',
+  hpRaw,mpRaw,stats,basic,effects,supplementalFlat,supplementalSource,rounding:'halfToEven',
   source:'Pandora Saga OS coefficients and publicly audited calculator rounding',
   verified:false,excluded:['percent effects','conditional item upgrades','set bonuses','active/passive skills','group/guild buffs','honor']};
 }

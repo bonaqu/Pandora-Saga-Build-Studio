@@ -39,10 +39,11 @@ let jobs=['Warrior','Gradiator','Juggernaut','Dragoon','Knight','General','Palad
 const branchNames=['Melee','Slash','Thrust','Cleave','Bash','Defend','Technique','Shot','Alchemy','Assassination','Trapping','Dodge','Grace','Banevolence','Blessing','Exorcism','Hymn','Magic','Elemental','Invocation','Darkness','Confusion','Special','Racial','Horsemanship'];
 let branches=window.PandoraGameNavigation.groups.flatMap(group=>group.branches.map(id=>({id,name:id})));
 let selectedSkillGroup='melee';
+let heroPathPage='growth',pathSkillQuery='',pathSkillFilter='all';
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null,
@@ -75,9 +76,13 @@ function previewBaseStats(){
     records.push(['soul:'+soul.id,soul,grade]);
   }
  }
+ const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(jobKeys[state.job],state);
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
-  allocation,level:state.level,records});
+  allocation,level:state.level,records,
+  supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
+  supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null
+ });
 }
 function renderHudEstimates(){
  const estimate=previewBaseStats();
@@ -92,14 +97,12 @@ function renderHudEstimates(){
  }
 }
 function budgetSummary(){
- const t=gameTables?.abilityPoint;
- const total=t?Array.from({length:Math.max(0,state.level-1)},(_,i)=>t[String(i+2)])
-  .reduce((sum,val)=>sum===null||!Number.isInteger(val)?null:sum+val,0):null;
- const spent=Object.entries(state.points||{}).reduce((sum,[key,n])=>sum+(key==='race'?0:Number(n)||0),0);
- return {total,spent,remaining:total===null?null:total-spent};
+ return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
 }
-function allowedBranch(branch){const b=budgetSummary(),cap=branchCap(branch),current=Number(state.points?.[branch]||0);
- return b.total===null?cap:Math.max(0,Math.min(cap,b.total-b.spent+current))}
+function allowedBranch(branch){
+ const b=budgetSummary(),cap=branchCap(branch),current=window.PandoraSkillProgression.potential(state,branch);
+ return b.total===null||!catalog.live?current:Math.max(0,Math.min(cap,b.total-b.spent+current));
+}
 
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.add('admin-edit');return el}
@@ -443,7 +446,7 @@ function renderOriginStats(){
  const root=$('originStats'),summary=$('originStatSummary');
  if(!root||!summary)return;
  root.replaceChildren();
- root.append(h('p',{class:'origin-stat-guide',text:'Старт + вложено = итог'}));
+ root.append(h('p',{class:'origin-stat-guide',text:'Старт + вложено вручную + бонусы = итог. Бонусы предметов, душ и мастерства не расходуют очки уровня.'}));
  const list=h('div',{class:'origin-stat-list'}),elements=[];
  function refresh(){
   const snap=attributeSnapshot(),estimated=previewBaseStats();
@@ -452,15 +455,18 @@ function renderOriginStats(){
   for(const entry of elements){
    const current=Number(state.stats[STATS[entry.i]]||0),base=snap?.base[entry.i];
    entry.start.textContent=base===undefined?'—':String(base);
-   entry.input.value=String(current);
+   entry.input.value=String(current);entry.input.max=snap?String(Math.max(current,snap.max[entry.i]-snap.base[entry.i])):'99';
    const invested=base===undefined?null:base+current;
-   const effective=estimated?.stats?.[ORIGIN_STAT_LABELS[entry.i].code];
-   const bonus=invested!==null&&Number.isFinite(effective)?effective-invested:0;
+   const code=ORIGIN_STAT_LABELS[entry.i].code;
+   const gear=Number(estimated?.effects?.flat?.[code]||0);
+   const legacy=Number(estimated?.supplementalFlat?.[code]||0);
+   const effective=estimated?.stats?.[code];
    entry.end.textContent=invested===null?'—':String(Number.isFinite(effective)?effective:invested);
-   entry.end.title='Старт '+(base??'?')+' + вложено '+current+
-     ' + подтверждённые бонусы вещей и душ '+bonus;
-   entry.cap.textContent=bonus?'вещи '+(bonus>=0?'+':'')+bonus:
-    snap?'лимит '+snap.max[entry.i]:'';
+   entry.end.title='База '+(base??'?')+' + вложено вручную '+current+
+      ' + вещи/души '+gear+' + мастерство (исторический Remaked, не проверено с OS) '+legacy+
+      '. Бонусы НЕ тратят свободные очки.';
+   entry.cap.textContent=(gear||legacy?'Бонусы '+(gear+legacy>=0?'+':'')+(gear+legacy)+' · ':'')+
+       (snap?'лимит вложений '+snap.max[entry.i]:'');
    entry.minus.disabled=!snap||current===0;
    entry.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,entry.i,current+1);
    entry.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(snap,entry.i)??'максимум');
@@ -472,7 +478,7 @@ function renderOriginStats(){
    h('b',{text:info.short}),h('span',{text:info.name})]);
   const start=h('span',{class:'origin-stat-base',text:'—',title:'Стартовое значение'});
   const minus=h('button',{type:'button',text:'−','aria-label':'Уменьшить '+info.name});
-  const input=h('input',{type:'number',min:'0',max:'99',step:'1',class:'origin-stat-input',
+  const input=h('input',{type:'number',min:'0',step:'1',class:'origin-stat-input',
    value:String(state.stats[STATS[i]]||0),'aria-label':info.name+' — вложено'});
   const plus=h('button',{type:'button',text:'+','aria-label':'Увеличить '+info.name});
   const result=h('div',{class:'origin-stat-result'}),end=h('strong',{text:'—'}),cap=h('small',{text:''});
