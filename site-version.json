@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.47",
-  "notes": "Restore refund ability for previous saved allocations above absolute 99 and align tests with new detail stat presentation"
+  "release": "2026.10.30.48",
+  "notes": "Center and moderately widen the hero portrait, compact hero path, keep equipment slots next to portrait without changing builds or gameplay"
 }

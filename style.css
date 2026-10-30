@@ -528,12 +528,19 @@ a.wiki-link:hover{text-decoration:none}
 .stat-brief-vitals{color:#e9c48a;font-size:13px;font-weight:600;padding:5px 0}
 .stat-visual-cap:empty{display:none}
 
-/* 2026.10.30.46: central portrait restored, no oversized 'hero path' on desktop */
+/* 2026.10.30.48: balanced columns and a centered, comfortably wide hero on desktop.
+   Keep equipment rails beside the portrait instead of the stage edges. */
 @media(min-width:1420px){
- .workspace{grid-template-columns:minmax(240px,280px) minmax(560px,1fr) minmax(335px,410px);gap:13px}
- .workspace .stage-inner .portrait-frame{width:clamp(395px,68%,495px);max-width:min(495px,calc(100% - 114px));margin-inline:auto;flex-shrink:0}
+ .workspace{grid-template-columns:minmax(250px,280px) minmax(0,1fr) minmax(250px,280px);gap:13px}
+ .workspace .stage-inner{--hero-width:min(clamp(450px,36vw,565px),calc(100% - 140px))}
+ .workspace .stage-inner .portrait-frame{width:var(--hero-width);max-width:var(--hero-width);height:min(100%,760px);margin-inline:auto;flex-shrink:0}
+ .workspace .stage-inner .left-rail{left:calc((100% - var(--hero-width))/2 - 63px)}
+ .workspace .stage-inner .right-rail{right:calc((100% - var(--hero-width))/2 - 63px)}
 }
-@media(min-width:1201px) and (max-width:1419px){.workspace .stage-inner .portrait-frame{width:min(74%,470px);max-width:470px}}
+@media(min-width:1201px) and (max-width:1419px){
+ .workspace{grid-template-columns:minmax(245px,280px) minmax(0,1fr) minmax(245px,280px)}
+ .workspace .stage-inner .portrait-frame{width:min(78%,480px);max-width:calc(100% - 124px);margin-inline:auto}
+}
 .origin-stat-guide{font-size:10px;color:#c4ab83;text-align:right;margin:4px 0 8px}
 .origin-stat-row{grid-template-columns:minmax(0,1fr) 23px 24px 39px 24px 43px;gap:3px;padding:5px 4px}
 .origin-stat-base{text-align:center;color:#c6a67e;font-size:12px}

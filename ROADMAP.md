@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest shipped client:** 0.47.0 (`2026.10.30.47`)  
+**Updated:** 2026-10-30 · **Latest shipped client:** 0.48.0 (`2026.10.30.48`)  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -25,6 +25,9 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - Local original image mirror audit, strict WebP/manifest check, package scripts; physical source file transfer is still incomplete.
 
 ## Priority A — acceptance tests and crashes
+
+- [ ] Visual check for adjusted centered 3-column layout at 1920×1080, 2560×1440, 3840×2160, 1366px and 390px: portrait focus, equal side panels, compact hero path, nearby equipment slots and no horizontal overflow. Static CSS tests are not browser evidence.
+
 
 - [ ] Perform 1920×1080 full interaction pass: change Kroll → Human M/F → Elf M/F → Myrine → Dwarf → Enkidu; verify selection state, fixed-only genders and equipment suitability.
 - [ ] Reload on every origin tab and with workbench/wiki/inventory open and **closed**; make sure no unexpected tab, hash, modal, focus, or scroll jump.
