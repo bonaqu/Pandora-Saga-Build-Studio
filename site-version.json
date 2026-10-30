@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.78",
-  "notes": "Absolute race/class attribute inputs, 99-point allocation ceiling, uncapped known equipment and Soul bonuses"
+  "release": "2026.10.31.79",
+  "notes": "Clean item tooltips, readable Soul and refinement badges, player-facing ID removal, and read-only D1 diagnostics"
 }
