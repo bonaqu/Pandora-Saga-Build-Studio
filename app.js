@@ -877,7 +877,7 @@ function renderWiki(root){
   }else if(type==='soul'){
     detail.append(h('p',{class:'muted',text:'Совместимые слоты: '+(rec.slots||[]).join(', ')}));
     if(rec.price!=null)detail.append(h('p',{class:'muted',text:'Цена по каталогу: '+rec.price}));
-    detail.append(h('p',{class:'muted',text:'Данные эффектов сохранены в D1. Точный расчёт боевых бонусов пока не подтверждён.'}));
+    detail.append(h('p',{class:'muted',text:'Некоторые эффекты души пока не учитываются в расчётах характеристик.'}));
     const icon=itemIcon(rec,'souls');
     if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
   }else if(type==='monster'){
