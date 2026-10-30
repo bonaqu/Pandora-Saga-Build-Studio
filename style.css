@@ -586,3 +586,13 @@ a.wiki-link:hover{text-decoration:none}
 .inline-skill-detail strong{font-size:15px;color:#f3cf91}
 .inline-skill-detail p{white-space:pre-line;overflow-wrap:anywhere}
 @media(max-width:460px){.inline-skill-list{grid-template-columns:1fr}}
+
+/* 2026.10.30.50 — read-only equipment catalog; character gear is edited at the portrait. */
+.equipment-catalog-head{display:grid;gap:10px;padding-bottom:12px}
+.equipment-catalog-toolbar{display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.equipment-catalog-toolbar input,.equipment-catalog-toolbar select{min-width:150px;flex:1;background:#17110d;color:#e9ce9e;border:1px solid #87633c;padding:10px}
+.equipment-catalog-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(250px,340px);gap:16px;align-items:start}
+.equipment-catalog-layout .gear-list{max-height:65vh;overflow-y:auto;align-content:start}
+.equipment-catalog-layout .item-info{position:sticky;top:10px;max-height:68vh;overflow-y:auto}
+@media(max-width:880px){.equipment-catalog-layout{grid-template-columns:1fr}
+.equipment-catalog-layout .item-info{position:static;max-height:none}}
