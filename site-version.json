@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.26",
-  "notes": "Viewport-bound workbench for character, skills, equipment, stats and wiki, with keyboard dismissal and no page jumping"
+  "release": "2026.10.30.27",
+  "notes": "Persistent in-workbench tabs, keyboard focus retention, and stage picker coordination"
 }

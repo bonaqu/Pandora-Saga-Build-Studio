@@ -336,3 +336,10 @@ a.wiki-link:hover{text-decoration:none}
  .studio-dock-close{font-size:11px;padding:8px}
 }
 @media(prefers-reduced-motion:reduce){.studio-backdrop,.detail.is-open{animation:none;transition:none}}
+/* 2026.10.30.27: keyboard-accessible tabs inside the persistent workbench */
+.studio-dock-tabs{display:flex;gap:4px;overflow-x:auto;flex-shrink:0;margin:0 0 12px;padding:1px 2px 7px;scrollbar-width:thin;scrollbar-color:#856342 #22170f}
+.studio-dock-tabs button{flex:1;min-width:100px;white-space:nowrap;padding:9px 8px;color:#cfb48a;background:#241a13;border:1px solid #705437;font:600 11px Manrope,Arial,sans-serif}
+.studio-dock-tabs button:hover,.studio-dock-tabs button.active{border-color:#e6b976;color:#ffddb0;background:linear-gradient(#623e27,#342116)}
+.studio-dock-tabs button:focus-visible{outline-offset:-3px}
+.detail.is-open>.detail-title{margin-bottom:8px}
+@media(max-width:790px){.studio-dock-tabs button{min-width:95px;padding:9px 5px}.studio-dock-tabs{margin-bottom:7px}}

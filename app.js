@@ -54,10 +54,12 @@ let workbenchReturnFocus=null;
 function showWorkbench(){
  const panel=$('detailPanel'),backdrop=$('studioBackdrop');
  if(!panel||!backdrop)return;
- if(!panel.classList.contains('is-open'))workbenchReturnFocus=document.activeElement;
+ const wasOpen=panel.classList.contains('is-open');
+ if(!wasOpen)workbenchReturnFocus=document.activeElement;
+ if(stageSlotPickerOpen){stageSlotPickerOpen=false;renderStagePicker()}
  panel.classList.add('is-open');panel.setAttribute('aria-modal','true');
  backdrop.hidden=false;document.body.classList.add('studio-workbench-open');
- $('dockClose')?.focus({preventScroll:true});
+ if(!wasOpen)$('dockClose')?.focus({preventScroll:true});
 }
 function closeWorkbench(){
  const panel=$('detailPanel'),backdrop=$('studioBackdrop');
@@ -70,7 +72,11 @@ function closeWorkbench(){
 }
 function changeTab(tab){
  activeTab=tab;
- document.querySelectorAll('[data-tab]').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===tab));
+ document.querySelectorAll('[data-tab]').forEach(btn=>{
+  const active=btn.dataset.tab===tab;
+  btn.classList.toggle('active',active);
+  if(btn.getAttribute('role')==='tab')btn.setAttribute('aria-selected',String(active));
+ });
  renderDetails();showWorkbench();
 }
 function equippedRecord(slot){
@@ -1260,6 +1266,10 @@ async function loadOverrides(){try{const response=await apiRequest('/api/overrid
 $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;
+$('dockTabs').addEventListener('click',event=>{
+ const button=event.target.closest('[data-tab]');
+ if(button)changeTab(button.dataset.tab);
+});
 $('stageQuickbar').addEventListener('click',event=>{
  const target=event.target.closest('[data-stage-tab]');
  if(target)changeTab(target.dataset.stageTab);
