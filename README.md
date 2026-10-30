@@ -1,1 +1,48 @@
-# Pandora-Saga-Build-Studio
+# Pandora Saga Build Studio
+
+Independent, visual, vintage-inspired Pandora Saga build planner. Static site intended for **GitHub Pages**, secure optional CMS backend on **Cloudflare Workers + D1**.
+
+## Status
+
+**Interactive foundation, not a finished game calculator.** Six race portraits (from user-provided Races.zip), 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local builds, JSON import/export, and static client logic. Historical skill and equipment data are fetched as read-only JSON from the existing `Pandora-Saga-Simulator-remaked` repository. Correctness for current Pandora Saga OS is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
+
+## Publish on GitHub Pages (no user-defined GitHub Actions)
+
+1. Repository: `bonaqu/Pandora-Saga-Build-Studio`. The root of the `bonaqu_projects` branch contains `index.html`, `style.css`, `app.js`, `assets`, and `.nojekyll`.
+2. **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: bonaqu_projects → /(root) → Save**.
+3. Open `https://bonaqu.github.io/Pandora-Saga-Build-Studio/` after GitHub reports Pages publication.
+
+Even branch-based publication internally uses GitHub Pages' infrastructure; no custom Actions workflow is required. The Cloudflare API token in the repository secrets is neither required nor read by the static site.
+
+## Secure administrator mode
+
+The gear icon on the top bar opens the admin login. Account name is fixed to `administrator`. Initial password creation is intentionally **blocked** until the owner provisions a server-only `ADMIN_SETUP_TOKEN` secret (>=32 characters), because a publicly accessible first-visit registration could otherwise be claimed by anyone.
+
+Backend in `worker/`. Requires a Cloudflare account and Cloudflare D1 database; both have free plan allowances and limits. Deploy separately, only when ready:
+
+```sh
+npm i -g wrangler
+wrangler login
+wrangler d1 create ps-build-studio-db
+# Copy worker/wrangler.toml.example to worker/wrangler.toml and fill database_id
+cd worker
+wrangler d1 migrations apply ps-build-studio-db --remote
+wrangler secret put ADMIN_SETUP_TOKEN
+wrangler deploy
+```
+
+First successful login: gear → `administrator` → new password (minimum 12 chars) + one-time setup token. Subsequent logins use only the password. Server stores only a unique-salt PBKDF2 password hash, short-lived hashed bearer sessions and restricted editable text overrides in D1. Session token stays in browser memory (not in public source or localStorage). Editing: toggle edit mode; double-click outlined text; save the change through the authenticated Worker.
+
+**Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
+
+## Next milestones
+
+- Verify current Pandora Saga OS data endpoints, asset permissions and skill IDs. Replace legacy catalogs with reviewed, versioned snapshots (no invented gameplay rules).
+- Connect to original engine or verified server formulas before displaying authoritative HP, damage and skill budgets.
+- Add the actual game equipment sprites/icons and compatible item rules, with sources documented. All six race portraits and the original supplied logo are already bundled locally.
+- Move all editable catalog fields to backend with version, approval, rollback and audit log. Existing visual editing intentionally supports only approved interface labels, not game balancing yet.
+- Add stable cross-browser CI tests that can run locally without exhausting GitHub Actions minutes.
+
+## Data and artwork
+
+Uses original user-provided assets. Unofficial fan project. Pandora Saga name and in-game assets belong to their respective rights holders. The site makes no ownership claim.

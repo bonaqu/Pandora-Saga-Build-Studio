@@ -1,0 +1,10 @@
+name = "ps-build-studio-cloud"
+main = "index.js"
+compatibility_date = "2026-10-20"
+workers_dev = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "ps-build-studio-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+migrations_dir = "migrations"
