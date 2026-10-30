@@ -117,7 +117,9 @@ function viewGrowth(target,api){
       if(src){const pic=make('img',{src,alt:''});pic.onerror=()=>pic.replaceWith(make('span',{text:'✦'}));button.append(pic)}
       else button.append(make('span',{text:'✦'}));
       button.append(make('small',{text:String(mark.threshold)}));
-      button.style.left='clamp(0px, '+mark.percent+'%, calc(100% - 30px))';
+      // Milestone and thumb both use the SAME 0..90 visual scale, not the smaller class cap.
+      button.style.left='clamp(0px, '+Math.max(0,Math.min(100,mark.threshold/visualMax*100))+
+       '%, calc(100% - 30px))';
       rail.append(button);api.hover(button,skill);
      }
      track.append(rail);

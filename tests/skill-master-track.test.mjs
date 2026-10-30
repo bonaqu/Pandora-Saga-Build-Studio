@@ -48,3 +48,9 @@ test('one class-capped 90-point skill bar shows an unavailable red segment',()=>
  assert.match(app,/\$\('pathResetPoints'\)\.onclick/);
  assert.doesNotMatch(ui,/for\(const \[title,step\]of\[\['−5'/);
 });
+
+test('skill-unlock icons use the full 90-point track scale even for low class caps',()=>{
+ const ui=read('hero-path.js');
+ assert.match(ui,/mark\.threshold\/visualMax\*100/);
+ assert.doesNotMatch(ui,/button\.style\.left='clamp\(0px, '\+mark\.percent/);
+});
