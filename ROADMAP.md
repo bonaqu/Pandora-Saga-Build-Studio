@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.81.0 (`2026.10.31.81`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.82.0 (`2026.10.31.82`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,15 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.82.0 — vitals, class-selection continuity and Origin height
+
+- Display calculated HP and MP as plain integer totals in larger Origin cards without decorative symbols. Do not suggest these are confirmed server totals: the current `PandoraOSCalculator.base()` returns `verified:false` and excludes conditionals, percentages, sets, skills and buffs. Exact OS parity needs authoritative formula and effect tests.
+- Show current chosen specialization in class-wizard heading and on every ancestor direction. Selecting Back only changes `jobPathKey`; `state.job` stays unchanged. Prevent truncation by wrapping long specialization names in narrow left panels.
+- On desktop, observe the central portrait stage and set the left panel's minimum height to its actual rendered height; on mobile, drop the forced height. Maintain a single natural page scrollbar.
+- Race hint now says «Выбери расу».
+- Added `tests/origin-vitals-specialization.test.mjs` (5 checks); updated older compact-workbench expectations. 28 checks passed in isolated JS/DOM regression harness (5 suites). GitHub Pages browser acceptance is still required.
+- All previous long-term workstreams remain: D1/Worker live publish verification, original icon library, game formula parity, wiki, shared builds, user-facing scrolling and mobile polish.
 
 ## Source update 0.81.0 — remove redundant introduction, keep editor access
 
