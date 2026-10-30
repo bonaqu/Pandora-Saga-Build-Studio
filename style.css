@@ -659,3 +659,7 @@ a.wiki-link:hover{text-decoration:none}
 .path-skill-details p{white-space:pre-line;overflow-wrap:anywhere;margin:6px 0}
 .path-skill-yes{color:#9ddd94}
 .path-skill-no{color:#d3af77}
+
+/* 2026.10.30.56 — visible stat accounting; external bonuses never spend level points. */
+.origin-stat-breakdown{grid-column:1/-1;color:#bca68b;font-size:10px;line-height:1.35;overflow-wrap:anywhere;padding-top:2px;border-top:1px solid #57422a;margin-top:2px}
+.origin-stat-result strong{font-variant-numeric:tabular-nums}
