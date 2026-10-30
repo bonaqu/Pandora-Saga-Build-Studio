@@ -43,7 +43,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab=['character','skills','equipment','stats','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
+let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',stageSoulQuery='',stageGemQuery='',gameTables=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
@@ -219,7 +219,23 @@ function closeWorkbench(){
  saveView();
 }
 function changeTab(tab){
- if(!['character','skills','equipment','stats','builds','wiki'].includes(tab))return;
+ if(tab==='stats'){
+  originActive='stats';renderOriginTabs();closeWorkbench();
+  $('originPanelStats')?.scrollIntoView({block:'nearest',behavior:'smooth'});saveView();return;
+ }
+ if(tab==='skills'){
+  closeWorkbench();
+  const group=window.PandoraGameNavigation.groups.find(g=>g.id===selectedSkillGroup);
+  inlineBranchId=group?.branches.find(id=>id!=='race')||'slash';
+  state.branch=inlineBranchId;renderBranches();
+  $('skillBranches')?.scrollIntoView({block:'nearest',behavior:'smooth'});saveView();return;
+ }
+ if(!['character','equipment','builds','wiki'].includes(tab))return;
+ if(tab==='character'){
+  activeTab='character';closeWorkbench();
+  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='character'));
+  $('workspace')?.scrollIntoView({block:'start',behavior:'smooth'});saveView();return;
+ }
  // A previous #wiki/... bookmark must never override the user's current tab on F5.
  if(tab!=='wiki'&&location.hash.startsWith('#wiki/'))
   history.replaceState(history.state,'',location.pathname+location.search);
@@ -560,7 +576,7 @@ function renderBranches(){
        const button=h('button',{class:'inline-milestone'+(pts>=mark.threshold?' reached':''),
         type:'button',title:skill.name+' · '+mark.threshold+' очков',
         'aria-label':skill.name+' — '+mark.threshold+' очков',
-        onclick:()=>{selectedSkill=skill;changeTab('skills')}});
+        onclick:()=>{selectedSkill=skill;inlineBranchId=id;renderBranches()}});
        const image=h('img',{src:icon,alt:''});
        image.onerror=()=>image.replaceWith(h('span',{text:'✦'}));
        button.append(image,h('small',{text:String(mark.threshold)}));
@@ -569,7 +585,33 @@ function renderBranches(){
       }
       editor.append(h('p',{class:'inline-milestone-heading',text:'Навыки по порогам · наведи для описания'}),rail);
      }
-     if(pts>cap)editor.append(h('p',{class:'budget-excess',text:'Сохранено '+pts+' очков при лимите '+cap+'. Автоматического сброса нет.'}));
+     if(possible.length){
+       const list=h('div',{class:'inline-skill-list','aria-label':'Навыки выбранной ветки'});
+       for(const skill of possible.slice(0,80)){
+        const gate=window.PandoraStudioRules.readiness(skill,{job:jobKeys[state.job],level:state.level,points:state.points});
+        const button=h('button',{type:'button',class:'inline-skill-option'+
+         (String(selectedSkill?.id)===String(skill.id)?' active':''),
+         title:skill.name||'Умение',onclick:()=>{selectedSkill=skill;renderBranches()}});
+        const img=h('img',{src:skillIcon(id,skill.id,skill),alt:''});
+        img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));
+        button.append(img,h('span',{text:skill.name||String(skill.id)}),
+         h('small',{text:gate.status==='eligible'?'✓':'🔒'}));
+        list.append(button);
+       }
+       editor.append(h('p',{class:'inline-milestone-heading',text:'Умения ветки · нажми для описания'}),list);
+       const picked=possible.find(s=>String(s.id)===String(selectedSkill?.id));
+       if(picked){
+        const gate=window.PandoraStudioRules.readiness(picked,{job:jobKeys[state.job],level:state.level,points:state.points});
+        const detail=h('section',{class:'inline-skill-detail'});
+        detail.append(h('strong',{text:picked.name||String(picked.id)}),
+         h('p',{text:picked.desc||'Описание отсутствует'}),
+         h('small',{text:gate.status==='eligible'?'✓ Известные требования выполнены':
+          gate.missing?.length?'🔒 '+gate.missing.join('; '):'Не все требования известны'}));
+        detail.append(wikiLink('📜 Статья навыка','skill',String(picked.id)));
+        editor.append(detail);
+       }
+      }
+      if(pts>cap)editor.append(h('p',{class:'budget-excess',text:'Сохранено '+pts+' очков при лимите '+cap+'. Автоматического сброса нет.'}));
      editor.append(h('small',{class:'muted',text:budgetSummary().total===null?'Таблица очков загружается':'Доступно '+budgetSummary().total+' · остаток '+budgetSummary().remaining}));
      wrap.append(editor);
     }
@@ -1764,10 +1806,18 @@ $('originTabs').onclick=event=>{
  if(!button)return;
  originActive=button.dataset.originTab;renderOriginTabs();saveView();
 };
-$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');
+$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>{
+ selectedSlot=0;stageSlotQuery='';stageSlotView=state.equipment?.[0]?'details':'choose';
+ stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
+};
 $('stageAttributeToggle').onclick=()=>{
  stageAttributesPage=stageAttributesPage?null:'attack';renderStageAttributes();saveView()
-};$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+};$('allSkills').onclick=()=>{
+ const group=window.PandoraGameNavigation.groups.find(g=>g.id===selectedSkillGroup);
+ const id=group?.branches.find(k=>k!=='race')||'slash';
+ inlineBranchId=id;state.branch=id;renderBranches();
+ $('skillBranches')?.scrollIntoView({block:'nearest',behavior:'smooth'});saveView();
+};$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const editable=event.target.closest('[data-edit-key]');
@@ -1780,7 +1830,7 @@ $('dockTabs').addEventListener('click',event=>{
  const button=event.target.closest('[data-tab]');
  if(button)changeTab(button.dataset.tab);
 });
-$('stageQuickbar').addEventListener('click',event=>{
+$('stageQuickbar')?.addEventListener('click',event=>{
  const target=event.target.closest('[data-stage-tab]');
  if(target)changeTab(target.dataset.stageTab);
 });

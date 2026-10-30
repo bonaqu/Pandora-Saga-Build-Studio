@@ -574,3 +574,15 @@ a.wiki-link:hover{text-decoration:none}
 .stage-enchant-reset{padding:7px 8px;background:#2a1d14;border:1px solid #946b43;color:#e8c591}
 .stage-rich-sockets button.selected{border-color:#f1cc85;background:#684525;box-shadow:0 0 0 1px #edd09a}
 .stage-rich-desc,.item-description{white-space:pre-line;overflow-wrap:anywhere}
+
+/* 2026.10.30.50: clickable skill list and detail inside Hero Path. */
+.inline-skill-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:220px;overflow-y:auto;margin:8px 0}
+.inline-skill-option{min-width:0;display:flex;align-items:center;gap:5px;text-align:left;padding:4px;background:#291d13;border:1px solid #735338;color:#e6c99a;font-size:10px}
+.inline-skill-option:hover,.inline-skill-option.active{background:#624024;border-color:#dcb478}
+.inline-skill-option img{width:25px;height:25px;object-fit:contain;flex-shrink:0}
+.inline-skill-option span{flex:1;min-width:0;overflow-wrap:anywhere}
+.inline-skill-option small{color:#c4b09a}
+.inline-skill-detail{border:1px solid #ad8650;background:#1d170f;padding:8px;margin:8px 0;display:grid;gap:5px;font-size:11px}
+.inline-skill-detail strong{font-size:15px;color:#f3cf91}
+.inline-skill-detail p{white-space:pre-line;overflow-wrap:anywhere}
+@media(max-width:460px){.inline-skill-list{grid-template-columns:1fr}}
