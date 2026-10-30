@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.55",
-  "notes": "Remove deprecated duplicate Skills/Stats character panel, single source of truth in Hero Path and Origin, prevent dangling branchValue UI crash"
+  "release": "2026.10.30.56",
+  "notes": "Show full base + manual attribute spending + equipment/Soul + historic mastery source totals and next SPt cost directly in Origin. Retains one Hero Path skill editor."
 }
