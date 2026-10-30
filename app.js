@@ -138,6 +138,7 @@ h("p",{class:"source",text:catalog.live?"Источник: Pandora Saga OS skill
 }else info.append(h("p",{class:"muted",text:"Выбери иконку навыка."}));
 layout.append(picker,center,info);root.append(layout);
 }
+function isCostumeOverlay(item){return Boolean(item&&(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_')))}
 function itemName(r){return r?.name?.en||r?.names?.en||r?.name||r?.id||'Без названия'}
 function renderEquipment(root){
  const lib=window.PandoraEquipmentPlan;
@@ -167,7 +168,7 @@ function renderEquipment(root){
  const socketItems=lib.asSocketArray(state.souls?.[selectedSlot]);
  const report=lib.socketReport(socketItems,socketLimit);
  const refinement=lib.refinementValue(state.refinements,selectedSlot,chosen);
- const sourceTag=catalog.live?'Pandora Saga OS · снимок игрового каталога':'Историческая база · механики не подтверждены';
+ const sourceTag='Pandora Saga OS · архивная копия, без онлайн-синхронизации';
  const sourceRecord=(mode)=>catalog.live?Object.values(mode==='souls'?(catalog.souls||{}):(catalog.equipment||{})):
   ((mode==='souls'?catalog.souls:catalog.equipment)?.records||[]);
  const picture=(record,mode,size)=>{const src=itemIcon(record,mode==='souls'?'souls':'items');
@@ -233,7 +234,7 @@ function renderEquipment(root){
  }else {
   const isSoul=gearMode==='souls';
   const candidates=sourceRecord(gearMode);
-  const valid=candidates.filter(rec=>!catalog.live||(isSoul?rec.slots?.includes(slot):rec.slot===slot));
+  const valid=candidates.filter(rec=>!catalog.live||(isSoul?rec.slots?.includes(slot):(rec.slot===slot&&!isCostumeOverlay(rec))));
   const needle=filter.trim().toLocaleLowerCase('ru');
   const matches=valid.filter(rec=>(itemName(rec)+' '+rec.id).toLocaleLowerCase('ru').includes(needle));
   const searchRow=h('div',{class:'filter-row'});
@@ -245,7 +246,7 @@ function renderEquipment(root){
   if(isSoul){
    main.append(h('p',{class:'souls-target',text:socketLimit!==null&&socketLimit>0?'Целевое гнездо: '+(selectedSocket+1)+' из '+socketLimit:socketLimit===0?'У текущего предмета нет гнёзд. Выбор души отключён.':'Установи предмет с подтверждёнными гнёздами, чтобы выбрать душу.'}));
   }
-  const list=h('div',{class:'gear-list'});
+  const list=h('div',{class:'gear-list'+(isSoul?' soul-catalog':'')});
   const selectedValue=isSoul?socketItems[selectedSocket]:chosen;
   function inspect(rec){
    side.replaceChildren();
@@ -273,8 +274,8 @@ function renderEquipment(root){
   for(const rec of matches.slice(0,gearShown)){
    const selected=selectedValue&&String(selectedValue.id)===String(rec.id);
    const v=!isSoul&&catalog.live?window.PandoraStudioRules.equipment(rec,{slot,job:jobKeys[state.job],level:state.level}):{allowed:true,missing:[]};
-   const canInsert=isSoul?Boolean(chosen&&itemRec&&socketLimit!==null&&selectedSocket<socketLimit&&lib.validSoul(rec,slot)):v.allowed;
-   const button=h('button',{class:'item-card'+(selected?' active':'')+(canInsert?'':' incompatible'),
+   const canInsert=isSoul?Boolean(chosen&&itemRec&&!isCostumeOverlay(itemRec)&&socketLimit!==null&&selectedSocket<socketLimit&&lib.validSoul(rec,slot)):(v.allowed&&!isCostumeOverlay(rec));
+   const button=h('button',{class:'item-card'+(isSoul?' soul-card':'')+(selected?' active':'')+(canInsert?'':' incompatible'),
     'aria-disabled':String(!canInsert),title:canInsert?'Выбрать '+itemName(rec):isSoul?'Нет свободного подтверждённого целевого гнезда':v.missing.join(' · '),
     onmouseenter:()=>inspect(rec),onfocus:()=>inspect(rec),onclick:()=>{
      inspect(rec);if(!canInsert)return;
@@ -287,7 +288,7 @@ function renderEquipment(root){
      persist();render();
     }});
    button.append(picture(rec,gearMode,''),h('strong',{text:editableValue((isSoul?'soul.':'item.')+rec.id,itemName(rec))}),
-    h('small',{text:'ID '+rec.id+(rec.level?' · Lv '+rec.level:'')}));
+    h('small',{text:isSoul?(rec.desc||'Иконка души'):'ID '+rec.id+(rec.level?' · Lv '+rec.level:'')}));
    list.append(button);
   }
   main.append(list);
@@ -574,7 +575,40 @@ function editor(el){
   document.body.append(root);activeInlineEditor=root;
   input.focus();
 }
-async function loadCatalog(){try{const names=['meta','classes','skills','items','souls'];let entries,sourceLabel='снимок 30.10.2026';const obtain=base=>Promise.all(names.map(async n=>{const r=await fetch(`${base}/${n}.json`,{signal:AbortSignal.timeout(2000)});if(!r.ok)throw Error(n+' '+r.status);return [n,await r.json()]}));try{entries=await obtain(`${OS}/gamedata`);sourceLabel='прямой сервер OS'}catch{try{entries=await obtain(`${API}/api/gamedata`);sourceLabel='OS через Worker'}catch{entries=await obtain('./data/os')}}const live=Object.fromEntries(entries);if(!live.meta?.counts?.skills||!live.classes?.CLERIC)throw Error('Invalid current OS snapshot');catalog={meta:live.meta,classes:live.classes,skills:live.skills,equipment:live.items,souls:live.souls,live:true};jobs=jobKeys.map(id=>live.classes[id]?.name||id);branches=live.meta.branchNames.map(id=>({id,name:live.meta.branchLabels[id]||id}));const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};state.points=Object.fromEntries(Object.entries(state.points).map(([k,v])=>[oldToOS[k]||k,v]));if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';$('siteNotice').textContent='Игровые данные и иконки: Pandora Saga OS. На странице отображаются исходные значения сервера; неподтверждённые боевые расчёты не выполняются.';$('catalogStatus').textContent=`Pandora Saga OS · ${live.meta.counts.skills} навыков · ${live.meta.counts.items} предметов · ${live.meta.counts.souls} душ · ${sourceLabel}`;persist();render();return}catch(e){console.warn('OS snapshot unavailable; loading historical data',e)}const names=['skills','equipment','souls'];await Promise.all(names.map(async name=>{try{const r=await fetch(`${SRC}data/generated/${name}.v1.json`,{cache:'force-cache'});if(!r.ok)throw Error('HTTP '+r.status);catalog[name]=await r.json()}catch(e){console.warn(name,e)}}));$('siteNotice').textContent='Официальные данные Pandora Saga OS временно недоступны. Используется историческая база Legacy 2.00.';$('catalogStatus').textContent=`Legacy: ${catalog.skills?.count||0} навыков · ${catalog.equipment?.count||0} вещей · ${catalog.souls?.count||0} душ`;renderDetails()}
+async function loadCatalog(){
+ const names=['meta','classes','skills','items','souls'];
+ const obtain=async base=>Object.fromEntries(await Promise.all(names.map(async n=>{
+  const r=await fetch(base+'/'+n+'.json',{cache:'no-cache',signal:AbortSignal.timeout(8500)});
+  if(!r.ok)throw Error(n+' HTTP '+r.status);
+  return [n,await r.json()];
+ })));
+ let live,sourceLabel;
+ try{
+  live=await obtain(API+'/api/catalog');
+  sourceLabel='Cloudflare D1 · наша база';
+ }catch(error){
+  console.info('D1 catalog not published; reading repository backup',error.message);
+  try{
+   live=await obtain('./data/os');
+   sourceLabel='Встроенный архив · ожидает переноса в D1';
+  }catch(e){
+   console.error('Catalog unavailable',e);
+   $('siteNotice').textContent='Каталог временно недоступен. Сохранённые билды не удалены.';
+   $('catalogStatus').textContent='Ошибка загрузки каталога';
+   return;
+  }
+ }
+ if(!live.meta?.counts?.skills||!live.classes?.CLERIC)throw Error('Invalid catalog data');
+ catalog={meta:live.meta,classes:live.classes,skills:live.skills,equipment:live.items,souls:live.souls,live:true};
+ jobs=jobKeys.map(id=>live.classes[id]?.name||id);
+ branches=live.meta.branchNames.map(id=>({id,name:live.meta.branchLabels[id]||id}));
+ const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
+ state.points=Object.fromEntries(Object.entries(state.points).map(([k,v])=>[oldToOS[k]||k,v]));
+ if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
+ $('siteNotice').textContent='Данные Pandora Saga Build Studio: '+sourceLabel+'. Костюмная внешка исключена из боевой экипировки. Игровые формулы не выдумываются.';
+ $('catalogStatus').textContent=`${live.meta.counts.skills} навыков · ${live.meta.counts.items} предметов · ${live.meta.counts.souls} душ · ${sourceLabel}`;
+ persist();render();
+}
 async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
 $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('swapGender').onclick=()=>{state.gender=1-state.gender;persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{alert('Полная локализация игрового каталога RU/EN находится в разработке. Оригинальные EN-названия оставлены без вымышленных переводов.')};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeInlineEditor()});

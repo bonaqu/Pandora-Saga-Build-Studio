@@ -88,3 +88,7 @@ Uses original user-provided assets. Unofficial fan project. Pandora Saga name an
 ### 2026-10-30.5 — быстрый обзор на персонаже
 
 На слотах вокруг винтажного портрета добавлены мини-индикаторы заполненных гнёзд, запланированной заточки и возможных конфликтов сокетов. Нажатие на слот ведёт непосредственно к выбору вещи. Индикаторы не являются рассчитанными бонусами предметов.
+
+## 2026-10-30: no game-server runtime API
+
+Live direct `pandorasaga-os.com/gamedata` and Worker passthrough were removed. Client loads our D1 catalogue first; until its first successful manual import it temporarily uses the **repository-owned** `data/os` snapshot. This is a safe transitional fallback, not real-time synchronization. Real outfit overlays have kind `DECO_*` and are filtered out from combat equipment. Compact soul rows show icon, name and description.
