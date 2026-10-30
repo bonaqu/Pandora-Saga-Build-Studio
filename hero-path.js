@@ -52,9 +52,7 @@ function viewGrowth(target,api){
    onclick:()=>api.onGroup(group.id)});
   const groupSummary=()=>{
    const total=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
-   const detail=branchKeys.filter(key=>M.potential(state,key)>0)
-    .map(key=>M.potential(state,key)+' '+api.branchName(key)).join(' · ');
-   return total+' вложено'+(detail?' · '+detail:'');
+   return total+' вложено';
   };
   const groupCount=make('small',{text:groupSummary()});
   groupButton.append(make('strong',{text:api.lang==='en'?group.en:group.ru}),groupCount);
@@ -135,11 +133,14 @@ function viewGrowth(target,api){
      const prior=clusters[clusters.length-1];
      if(prior&&mark.threshold-prior.lastThreshold<8){
       prior.skills.push(...mark.skills);
+      prior.entries.push(...mark.skills.map(skill=>({skill,threshold:mark.threshold,locked:mark.locked})));
       prior.thresholds.push(mark.threshold);
       prior.lastThreshold=mark.threshold;
       prior.locked=prior.locked&&mark.locked;
      }else clusters.push({threshold:mark.threshold,lastThreshold:mark.threshold,
-      thresholds:[mark.threshold],skills:[...mark.skills],locked:mark.locked});
+      thresholds:[mark.threshold],skills:[...mark.skills],
+      entries:mark.skills.map(skill=>({skill,threshold:mark.threshold,locked:mark.locked})),
+      locked:mark.locked});
     }
     const pickerId='path-milestone-picker-'+key.replace(/[^a-z0-9_-]/gi,'');
     let openMarker=null;
@@ -167,12 +168,19 @@ function viewGrowth(target,api){
        if(openMarker===button){closePicker(true);return}
        closePicker();openMarker=button;button.setAttribute('aria-expanded','true');
        picker.replaceChildren(make('strong',{text:'Умения · '+cluster.thresholds.join(', ')+' очков'}));
-       for(const entry of cluster.skills){
+       for(const entry of cluster.entries){
+        const skillRow=entry.skill,ready=readiness(skillRow,api).learned;
+        const status=entry.locked?'За пределом класса':
+         ready?'Доступно по требованиям':'Условия не выполнены';
         const item=make('button',{type:'button',class:'path-milestone-choice',
-         text:entry.name||'Умение',onclick:()=>api.onSkill(entry)});
-        const src=api.icon(entry.branch,entry);
-        if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.remove();item.prepend(img)}
-        picker.append(item);
+         'aria-label':(skillRow.name||'Умение')+', '+entry.threshold+' очков. '+status,
+         onclick:()=>api.onSkill(skillRow)});
+        const src=api.icon(skillRow.branch,skillRow);
+        if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.remove();item.append(img)}
+        const body=make('span',{class:'path-milestone-choice-body'});
+        body.append(make('strong',{text:skillRow.name||'Умение'}),
+         make('small',{text:entry.threshold+' очков · '+status}));
+        item.append(body);picker.append(item);
        }
        picker.append(make('button',{type:'button',class:'path-milestone-dismiss',
         text:'Закрыть',onclick:()=>closePicker(true)}));
