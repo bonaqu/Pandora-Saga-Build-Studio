@@ -19,7 +19,7 @@ async function session(env){const token=b64(random(32)),hash=await sha(token),ex
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 if(method==='GET'&&/^\/api\/gamedata\/(meta|classes|skills|items|souls)\.json$/.test(path)){const file=path.split('/').pop();const source=await fetch('https://pandorasaga-os.com/gamedata/'+file,{headers:{Accept:'application/json'},cf:{cacheTtl:300,cacheEverything:true}});if(!source.ok)return no('Upstream game data unavailable',502);return new Response(source.body,{status:200,headers:{'content-type':'application/json; charset=utf-8','cache-control':'public, max-age=300','x-content-type-options':'nosniff'}})}
 if(!env.DB)return no('Database not configured',503);
-if(path==='/api/health'&&method==='GET')return json({status:'ok',storage:'d1'});
+if(path==='/api/health'&&method==='GET'){const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts')").all();const ready=(tables.results||[]).length===4;return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready},ready?200:503)}
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){
  if(!env.ADMIN_SETUP_TOKEN||env.ADMIN_SETUP_TOKEN.length<32)return no('Secure setup not configured',503);

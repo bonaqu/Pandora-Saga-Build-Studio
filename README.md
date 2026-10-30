@@ -14,6 +14,10 @@ Independent, visual, vintage-inspired Pandora Saga build planner. Static site in
 
 Even branch-based publication internally uses GitHub Pages' infrastructure; no custom Actions workflow is required. The Cloudflare API token in the repository secrets is neither required nor read by the static site.
 
+## Simple Cloudflare setup without local CLI
+
+**[Пошаговая инструкция Cloudflare (RU)](worker/SETUP_RU.md)** — настроить D1, связать существующий Worker с GitHub через бесплатные Workers Builds, задать `PS_D1_DATABASE_ID` и серверный Secret `ADMIN_SETUP_TOKEN`, проверить API. No GitHub Actions needed. The new script `worker/scripts/prepare-config.mjs` generates an ignored Wrangler configuration using the non-secret D1 UUID at build time.
+
 ## Secure administrator mode
 
 The gear icon on the top bar opens the admin login. Account name is fixed to `administrator`. Initial password creation is intentionally **blocked** until the owner provisions a server-only `ADMIN_SETUP_TOKEN` secret (>=32 characters), because a publicly accessible first-visit registration could otherwise be claimed by anyone.
