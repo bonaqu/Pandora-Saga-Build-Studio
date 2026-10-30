@@ -113,15 +113,57 @@ function bonusFor(kind,base,effects,enhancements){
 // SelBuffClan_9 adds its selectedIndex to all six attributes;
 // Flag.Honor === 1 adds 1 to all six (including SPR in executed formula);
 // Flag 14_9 adds floor(InBuff_1 / 10) to STR, AGI and INT.
+// Remaked Legacy js/ini.js Skill['Honor'][0..12] and js/calc.js Flag.Honor=1..13.
+// A title is mutually exclusive: one active honor at a time.
+const honorTitles=Object.freeze([
+ ['Нет титула','None',{}],
+ ['Стремление к силе','Curiosity to strength',{allAttributes:1}],
+ ['Сердце милосердия','Heart of love',{healingSkills:10}],
+ ['Путь пламени','Signs of fire',{attackPercent:2,fireMagic:5,fire:10,ice:-15,burn:5}],
+ ['Путь льда','Signs of ice',{iceMagic:5,castingResist:2,ice:10,lightning:-15,freeze:5}],
+ ['Путь молнии','Signs of lightning',{accuracy:5,lightningMagic:5,fire:-15,lightning:10,knockdown:5}],
+ ['Несокрушимая мощь','Raging strong arm',{weaponPhysical:15}],
+ ['Гармония всадника','Reconciled rider',{mountedRelease:10}],
+ ['Секрет защитника','Guardian secret',{incomingCriticalChance:-10,incomingCriticalDamage:-10}],
+ ['Путь тьмы','Signs of darkness',{light:-5,dark:10,charm:5,mentalState:6}],
+ ['Путь света','Signs of light',{light:10,dark:-5,magic:3,physicalState:6}],
+ ['Крепкое тело','Solid body',{potionRecovery:5,defense:5,incomingPhysical:-5}],
+ ['Секрет акробата','Acrobat secret',{accuracy:-10,dodge:10,rangedDodge:3}],
+ ['Секрет мастера меча','Swordsman secret',{accuracy:10,dodge:-10,frontAttack:10}]
+].map(([ru,en,effects],id)=>Object.freeze({id,ru,en,effects:Object.freeze(effects)})));
+function selectedHonor(options={}){
+ const raw=options.honorTitle;
+ const id=raw==null?(options.honorCuriosity===true?1:0):raw;
+ return Number.isInteger(id)&&id>=0&&id<honorTitles.length?honorTitles[id]:null;
+}
+function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false}={}){
+ if(!Number.isFinite(vit)||vit<0||!Number.isInteger(honorTitle)||
+  honorTitle<0||honorTitle>=honorTitles.length)return null;
+ const base=100+Math.floor(vit*vit*2/1000),honor=honorTitle===11?5:0;
+ let equipment=0;
+ for(const [,record,grade] of records){
+  for(const effect of record?.effects||[]){
+   if(effect.func!=='EP_MASTERY_POTION')continue;
+   if(Number.isFinite(effect.min)&&grade<effect.min)continue;
+   if(Number.isFinite(effect.max)&&grade>effect.max)continue;
+   if(Number.isFinite(effect.a))equipment+=effect.a;
+  }
+ }
+ const rune=runeJoEun===true?5:0;
+ return {percent:base+honor+equipment+rune,base,honor,equipment,rune,
+  excluded:['unmapped profession Alchemy modifier','unmapped skill-level recovery modifier']};
+}
 function attributeBuffBonus(options={}){
  const out=Object.fromEntries(keys.map(k=>[k,0])),trace=[];
+ const selected=selectedHonor(options);
+ if(!selected)return null;
  const guild=Number(options.guildAll??0);
  if(!Number.isInteger(guild)||guild<0||guild>6)return null;
  if(guild){
   for(const key of keys)out[key]+=guild;
   trace.push({source:'Remaked SelBuffClan_9',amount:guild,keys:keys.slice()});
  }
- if(options.honorCuriosity===true){
+ if(selected.id===1){
   for(const key of keys)out[key]++;
   trace.push({source:'Remaked Honor=1',amount:1,keys:keys.slice()});
  }
@@ -132,7 +174,7 @@ function attributeBuffBonus(options={}){
   for(const key of ['str','agi','int'])out[key]+=extra;
   if(extra)trace.push({source:'Remaked Flag 14_9 / InBuff_1',amount:extra,keys:['str','agi','int']});
  }
- return {flat:out,trace};
+ return {flat:out,trace,honor:selected};
 }
 function base({classData,raceData,jobData,allocation,level,records=[],
  supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={}}={}){
@@ -151,16 +193,17 @@ function base({classData,raceData,jobData,allocation,level,records=[],
  const hpBonus=bonusFor('hp',hpBase,effects,enhancements);
  const mpBonus=bonusFor('mp',mpBase,effects,enhancements);
  if(!hpBonus||!mpBonus)return null;
+ const potion=potionRecovery({vit:stats.vit,records,honorTitle:extra.honor.id});
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
+  stats,basic,effects,honor:extra.honor,potion,attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery
 });
 })(typeof window==='undefined'?globalThis:window);
