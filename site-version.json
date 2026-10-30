@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.27",
-  "notes": "Persistent in-workbench tabs, keyboard focus retention, and stage picker coordination"
+  "release": "2026.10.30.28",
+  "notes": "Restored-build visual consistency, stage picker focus, workbench scroll reset, safe auto-update and verified local-icon progress"
 }

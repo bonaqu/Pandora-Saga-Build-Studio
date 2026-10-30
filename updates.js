@@ -13,7 +13,7 @@
   const busy = () => {
     const el = document.activeElement;
     return document.visibilityState !== 'visible' ||
-      !!document.querySelector('#modalRoot:not([hidden])') ||
+      !!document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), .inline-owner-editor') ||
       !!(el && el.matches && el.matches('input, textarea, select, [contenteditable="true"]')) ||
       !!window.PandoraStudioAdminActive?.();
   };

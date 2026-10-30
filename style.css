@@ -343,3 +343,8 @@ a.wiki-link:hover{text-decoration:none}
 .studio-dock-tabs button:focus-visible{outline-offset:-3px}
 .detail.is-open>.detail-title{margin-bottom:8px}
 @media(max-width:790px){.studio-dock-tabs button{min-width:95px;padding:9px 5px}.studio-dock-tabs{margin-bottom:7px}}
+
+/* 2026.10.30.28 — status and focus */
+#iconStatus{color:#d3b484;min-width:170px}
+@media(max-width:900px){footer{flex-wrap:wrap;align-items:center;justify-content:flex-start}}
+.equipment-rail .equipment-slot[aria-expanded="true"]{outline:2px solid #ffdf9a;outline-offset:2px}

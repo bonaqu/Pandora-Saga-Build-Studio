@@ -38,14 +38,14 @@ function renderRaces(){
  const img=editAttr(h('img',{src:raceSource(i,gender),alt:races[i][0],loading:'eager'}),'visual.race.'+i+'.'+(gender?'m':'f'));
  img.onerror=()=>{img.onerror=null;img.alt='Портрет '+races[i][0]+' не загрузился'};
  const arrow=(text,step,alt)=>h('button',{type:'button',class:'race-slide-arrow '+(step<0?'previous':'next'),text,'aria-label':alt,
-  onclick:()=>{racePreviewIndex=(racePreviewIndex+step+races.length)%races.length;renderRaces()}});
+  onclick:()=>{racePreviewIndex=(racePreviewIndex+step+races.length)%races.length;renderRaces();grid.querySelector('.race-slide-arrow.'+(step<0?'previous':'next'))?.focus({preventScroll:true})}});
  frame.append(img,arrow('❮',-1,'Предыдущая раса'),arrow('❯',1,'Следующая раса'));
  const actions=h('div',{class:'race-slide-actions'});
  actions.append(h('span',{class:'race-slide-position',text:(i+1)+' / '+races.length}),
   h('button',{type:'button',class:'race-slide-select'+(chosen?' selected':''),disabled:chosen,'aria-pressed':String(chosen),
    text:chosen?'✓ Выбрано':'Выбрать расу',onclick:()=>{
     if(state.race!==i){state.race=i;state.racialPassiveId=null;state.gender=window.PandoraUIPlanner.normalizeGender(races,i,state.gender);
-     selectedSkill=null;stageSlotPickerOpen=false;persist();render()}
+     selectedSkill=null;stageSlotPickerOpen=false;persist();render();$('raceGrid').querySelector('.race-slide-select')?.focus({preventScroll:true})}
    }}));
  grid.append(frame,actions);
 }
@@ -56,7 +56,7 @@ function showWorkbench(){
  if(!panel||!backdrop)return;
  const wasOpen=panel.classList.contains('is-open');
  if(!wasOpen)workbenchReturnFocus=document.activeElement;
- if(stageSlotPickerOpen){stageSlotPickerOpen=false;renderStagePicker()}
+ if(stageSlotPickerOpen)closeStagePicker(false);
  panel.classList.add('is-open');panel.setAttribute('aria-modal','true');
  backdrop.hidden=false;document.body.classList.add('studio-workbench-open');
  if(!wasOpen)$('dockClose')?.focus({preventScroll:true});
@@ -71,13 +71,16 @@ function closeWorkbench(){
  if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
 }
 function changeTab(tab){
+ const previous=activeTab;
  activeTab=tab;
  document.querySelectorAll('[data-tab]').forEach(btn=>{
   const active=btn.dataset.tab===tab;
   btn.classList.toggle('active',active);
   if(btn.getAttribute('role')==='tab')btn.setAttribute('aria-selected',String(active));
  });
- renderDetails();showWorkbench();
+ renderDetails();
+ if(previous!==tab)$('detailContent').scrollTop=0;
+ showWorkbench();
 }
 function equippedRecord(slot){
 const value=state.equipment[slot];
@@ -101,7 +104,8 @@ function renderSlotRails(){
    const level=plan.refinementValue(state.refinements,i,item);
    const tooltip=slots[i][0]+' · '+(item?.name||'Пусто')+(item&&cap!==null?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':''),
-    'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSlotShown=48;stageSlotPickerOpen=true;renderSlotRails();renderStagePicker()}});
+    'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
+    'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSlotShown=48;stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
    button.append(slotVisual(i),h('small',{text:item?.name||slots[i][0]}));
    if(item&&cap!==null&&cap>0)button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
@@ -110,7 +114,15 @@ function renderSlotRails(){
   }
  }
 }
-function renderStagePicker(){
+function focusSelectedSlot(){
+ document.querySelector('.equipment-rail .equipment-slot[data-slot-index="'+selectedSlot+'"]')?.focus({preventScroll:true});
+}
+function closeStagePicker(focusSlot=true){
+ if(!stageSlotPickerOpen)return;
+ stageSlotPickerOpen=false;renderSlotRails();renderStagePicker();
+ if(focusSlot)focusSelectedSlot();
+}
+function renderStagePicker(focusSearch=false){
  const root=$('stagePicker');if(!root)return;
  const frame=root.closest('.portrait-frame');frame.classList.toggle('picking',stageSlotPickerOpen);
  root.hidden=!stageSlotPickerOpen;root.replaceChildren();
@@ -118,14 +130,14 @@ function renderStagePicker(){
  const key=slotKeys[selectedSlot],equipped=state.equipment?.[selectedSlot];
  const top=h('div',{class:'stage-picker-head'},[
   h('strong',{text:'Выбор: '+slots[selectedSlot][0]}),
-  h('button',{type:'button',text:'✕','aria-label':'Закрыть выбор',onclick:()=>{stageSlotPickerOpen=false;renderStagePicker()}})
+  h('button',{type:'button',text:'✕','aria-label':'Закрыть выбор',onclick:()=>closeStagePicker()})
  ]);
  const search=h('input',{type:'search',value:stageSlotQuery,placeholder:'Поиск названия или ID','aria-label':'Поиск предмета для '+slots[selectedSlot][0]});
  const count=h('small',{class:'stage-picker-count'});
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
  const remove=h('button',{type:'button',text:'Снять предмет',disabled:!equipped,onclick:()=>{
-  delete state.equipment[selectedSlot];stageSlotPickerOpen=false;persist();render();
+  delete state.equipment[selectedSlot];stageSlotPickerOpen=false;persist();render();focusSelectedSlot();
  }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
  const records=catalog.live?window.PandoraUIPlanner.equippable(Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,window.PandoraStudioRules.equipment):[];
@@ -141,7 +153,7 @@ function renderStagePicker(){
    const btn=h('button',{type:'button',class:'stage-picker-item'+(selected?' selected':''),
     'aria-label':'Экипировать '+itemName(rec),onclick:()=>{
      state.equipment[selectedSlot]={id:rec.id,name:itemName(rec),level:rec.level??null,icon:rec.icon??null};
-     stageSlotPickerOpen=false;persist();render();
+     stageSlotPickerOpen=false;persist();render();focusSelectedSlot();
     }});
    const src=itemIcon(rec);
    if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
@@ -156,6 +168,7 @@ function renderStagePicker(){
  search.addEventListener('input',()=>{stageSlotQuery=search.value;stageSlotShown=48;draw()});
  more.addEventListener('click',()=>{stageSlotShown+=48;draw()});
  root.append(top,search,count,list,bottom);draw();
+ if(focusSearch)search.focus({preventScroll:true});
 }
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
@@ -272,7 +285,7 @@ function openWiki(type,id,highlight=null){
  activeTab='wiki';
  for(const btn of document.querySelectorAll('[data-tab]'))btn.classList.toggle('active',btn.dataset.tab==='wiki');
  location.hash='wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(id)+(highlight!=null?'/'+encodeURIComponent(highlight):'');
- renderDetails();showWorkbench();
+ renderDetails();$('detailContent').scrollTop=0;showWorkbench();
 }
 function wikiLink(text,type,id,highlight=null){
  const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(id)+(highlight==null?'':'/'+encodeURIComponent(highlight));
@@ -888,7 +901,14 @@ function compareSnapshots(a,b){
  if(String(a.racialPassiveId||'')!==String(b.racialPassiveId||''))rows.push('Расовая пассивка: '+(a.racialPassiveId||'—')+' → '+(b.racialPassiveId||'—'));
  return rows;
 }
-function renderBuilds(root){const toolbar=h('div');toolbar.append(h('button',{class:'button-action primary',text:'✧ Сохранить текущий билд',onclick:()=>saveBuild()}),h('button',{class:'button-action',text:'⇩ Экспорт JSON',onclick:exportBuild}),h('button',{class:'button-action',text:'⇧ Импорт JSON',onclick:importBuild}));root.append(toolbar,h('p',{class:'muted',text:'Билды хранятся локально в этом браузере. Сравнение показывает изменения выбора, а не вымышленные боевые результаты.'}));const grid=h('div',{class:'build-grid'});builds.forEach(b=>{const box=h('div',{class:'build-card'}),check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});check.checked=compareIds.includes(b.id);check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};box.append(h('h3',{text:b.name}),h('p',{text:`${races[b.data.race]?.[0]||'?'} · ${jobs[b.data.job]||'?'} · Lv ${b.data.level}`}),h('label',{},[check,' Сравнить']),h('button',{class:'button-action',text:'Открыть',onclick:()=>{state=structuredClone(b.data);persist();render();changeTab('character')}}),h('button',{class:'button-action',text:'Удалить',onclick:()=>{builds=builds.filter(x=>x.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();renderDetails()}}));grid.append(box)});root.append(grid);if(compareIds.length===2){const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));if(a&&b){const results=compareSnapshots(a.data,b.data);root.append(h('h3',{text:`Сравнение: ${a.name} / ${b.name}`}),h('p',{class:'muted',text:results.join(' · ')||'Выборы совпадают'}))}}}
+function restoreLoadedBuildUI(){
+ state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);
+ racePreviewIndex=state.race;
+ selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
+ selectedSkill=null;inlineBranchId=null;selectedSlot=0;selectedSocket=0;
+ stageSlotPickerOpen=false;stageSlotQuery='';stageSlotShown=48;
+}
+function renderBuilds(root){const toolbar=h('div');toolbar.append(h('button',{class:'button-action primary',text:'✧ Сохранить текущий билд',onclick:()=>saveBuild()}),h('button',{class:'button-action',text:'⇩ Экспорт JSON',onclick:exportBuild}),h('button',{class:'button-action',text:'⇧ Импорт JSON',onclick:importBuild}));root.append(toolbar,h('p',{class:'muted',text:'Билды хранятся локально в этом браузере. Сравнение показывает изменения выбора, а не вымышленные боевые результаты.'}));const grid=h('div',{class:'build-grid'});builds.forEach(b=>{const box=h('div',{class:'build-card'}),check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});check.checked=compareIds.includes(b.id);check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};box.append(h('h3',{text:b.name}),h('p',{text:`${races[b.data.race]?.[0]||'?'} · ${jobs[b.data.job]||'?'} · Lv ${b.data.level}`}),h('label',{},[check,' Сравнить']),h('button',{class:'button-action',text:'Открыть',onclick:()=>{state=structuredClone(b.data);restoreLoadedBuildUI();persist();render();changeTab('character')}}),h('button',{class:'button-action',text:'Удалить',onclick:()=>{builds=builds.filter(x=>x.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();renderDetails()}}));grid.append(box)});root.append(grid);if(compareIds.length===2){const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));if(a&&b){const results=compareSnapshots(a.data,b.data);root.append(h('h3',{text:`Сравнение: ${a.name} / ${b.name}`}),h('p',{class:'muted',text:results.join(' · ')||'Выборы совпадают'}))}}}
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
 function saveBuild(){const name=prompt('Название билда',state.name||'Новый герой');if(!name)return;builds.unshift({id:newId(),name:name.slice(0,70),data:structuredClone(state),at:Date.now()});persistBuilds();renderDetails()}
 function exportBuild(){const data=JSON.stringify({schema:1,app:'Pandora Saga Build Studio',data:state},null,2);const blob=new Blob([data],{type:'application/json'}),url=URL.createObjectURL(blob);const a=h('a',{href:url,download:'pandora-build.json'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000)}
@@ -932,7 +952,7 @@ function importBuild(){
    }
   }
   if(window.PandoraGameNavigation.selectionValid(catalog.racialPassives,result.race,original.racialPassiveId))result.racialPassiveId=Number(original.racialPassiveId);
-  state=result;persist();render();alert('Билд импортирован. Неизвестные ограничения требуют проверки игровым движком.');
+  state=result;restoreLoadedBuildUI();persist();render();alert('Билд импортирован. Неизвестные ограничения требуют проверки игровым движком.');
  }catch(e){alert('Импорт не выполнен: '+e.message)}
  }});input.click();
 }
@@ -1278,7 +1298,7 @@ document.addEventListener('keydown',event=>{
  if(event.key==='Escape'){
   if(!$('modalRoot').hidden)return;
   if(document.querySelector('.inline-owner-editor')){closeInlineEditor();return}
-  if(stageSlotPickerOpen){stageSlotPickerOpen=false;renderStagePicker();return}
+  if(stageSlotPickerOpen){closeStagePicker();return}
   closeWorkbench();
  }else if(event.key==='Tab'&&$('detailPanel').classList.contains('is-open')&&$('modalRoot').hidden){
   const panel=$('detailPanel');
@@ -1318,5 +1338,12 @@ function restoreWikiHash(){
  renderDetails();showWorkbench();
 }
 window.addEventListener('hashchange',restoreWikiHash);
-fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{if(data?.icons&&Number(data.count?.present)>0){iconManifest=data;render()}}).catch(()=>{});
+fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{
+ const label=$('iconStatus');
+ if(data?.icons&&data.count&&Number.isInteger(data.count.present)&&Number.isInteger(data.count.expected)&&data.count.present<=data.count.expected){
+  if(data.count.present>0){iconManifest=data;render()}
+  if(label)label.textContent='Локальные иконки OS: '+data.count.present+' / '+data.count.expected;
+ }else if(label)label.textContent='Иконки OS: используются внешние источники';
+}).catch(()=>{const label=$('iconStatus');if(label)label.textContent='Иконки OS: локальный архив пока не импортирован'});
+
 render();loadCatalog();loadOverrides();restoreWikiHash();
