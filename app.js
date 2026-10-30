@@ -484,8 +484,7 @@ function renderOriginStats(){
  const root=$('originStats'),summary=$('originStatSummary');
  if(!root||!summary)return;
  root.replaceChildren();
- root.append(h('p',{class:'origin-stat-guide',text:'Старт + вложено вручную + бонусы = итог. Бонусы предметов, душ и мастерства не расходуют очки уровня.'}));
- const list=h('div',{class:'origin-stat-list'}),elements=[];
+const list=h('div',{class:'origin-stat-list'}),elements=[];
  function refresh(){
   const snap=attributeSnapshot(),estimated=previewBaseStats();
   summary.textContent=snap?'Свободно: '+snap.remaining+' / '+snap.total+' · Потрачено: '+snap.spent:'Характеристики';
@@ -500,18 +499,10 @@ function renderOriginStats(){
    const legacy=Number(estimated?.supplementalFlat?.[code]||0);
    const effective=estimated?.stats?.[code];
    entry.end.textContent=invested===null?'—':String(Number.isFinite(effective)?effective:invested);
-   entry.end.title='База '+(base??'?')+' + вложено вручную '+current+
-      ' + вещи/души '+gear+' + мастерство (исторический Remaked, не проверено с OS) '+legacy+
-      '. Бонусы НЕ тратят свободные очки.';
+   entry.end.title='Начальное значение: '+(base??'—')+' · Вложено: '+current+
+    ' · Итог: '+entry.end.textContent;
    entry.cap.textContent=snap?'лимит '+snap.max[entry.i]:'';
-   const next=window.PandoraAttributeProgression.nextCost(snap,entry.i);
-   const extras=(gear>=0?'+':'')+gear+' вещи/души · '+(legacy>=0?'+':'')+legacy+' мастерство';
-   entry.breakdown.textContent='Старт '+(base??'—')+' + вручную '+current+
-     ' + '+extras+' = '+(Number.isFinite(effective)?effective:(invested??'—'))+
-     (next!==null&&next!==undefined?' · цена +1: '+next:' · предел вложений');
-   entry.breakdown.title=legacy?
-    'Мастерство «Молитвы» рассчитано по архивному Remaked, не подтверждено OS.':
-    'Бонусы вещей/душ не расходуют свободные очки.';
+   // Detailed accounting remains in the stat model and tooltip, not a visible row.
    entry.minus.disabled=!snap||current===0;
    entry.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,entry.i,current+1);
    entry.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(snap,entry.i)??'максимум');
@@ -538,9 +529,8 @@ function renderOriginStats(){
   minus.addEventListener('click',()=>commit(Math.max(0,Number(state.stats[STATS[i]]||0)-1)));
   plus.addEventListener('click',()=>commit(Number(state.stats[STATS[i]]||0)+1));
   input.addEventListener('change',()=>commit(input.value));
-  const breakdown=h('small',{class:'origin-stat-breakdown',text:'База и бонусы загружаются…'});
-  row.append(title,start,minus,input,plus,result,breakdown);
-  list.append(row);elements.push({i,start,input,end,cap,minus,plus,breakdown});
+  row.append(title,start,minus,input,plus,result);
+  list.append(row);elements.push({i,start,input,end,cap,minus,plus});
  });
  root.append(list);refresh();
 }

@@ -18,5 +18,5 @@ test('weapon bonus preview is explicitly not marked verified',()=>{
  const s=get('enchant-model.js');
  assert.match(s,/Math.floor\(value\*step.ratio\/100\)\+step.flat/);
  assert.match(s,/verified:false/);
- assert.match(get('stage-item-ui.js'),/не итоговый урон/);
+ assert.doesNotMatch(get('stage-item-ui.js'),/Таблица OS:/);
 });

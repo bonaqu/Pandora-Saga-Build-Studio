@@ -732,3 +732,14 @@ a.wiki-link:hover{text-decoration:none}
 .path-skill-preview-item small{display:block;color:#b09a80}
 .path-skill-preview-item p{white-space:pre-line;color:#e2c9a4;font-size:11px;line-height:1.4;margin-top:3px}
 @media(max-width:700px){.path-budget-values>div{flex-direction:column;gap:0;align-items:center}}
+
+/* 2026.10.30.69 — condensed player-facing stat controls, no visible calculation paragraphs. */
+.origin-stat-row{grid-template-columns:minmax(0,1fr) 24px 28px 28px 28px 42px;gap:3px}
+.origin-stat-row button,.origin-stat-row .origin-stat-input{width:28px;min-width:28px;height:28px;min-height:28px;box-sizing:border-box;margin:0;padding:0;text-align:center}
+.origin-stat-input{font-size:12px;line-height:26px}
+.path-legend{gap:10px;margin:3px 0 6px}
+.path-green-controls{margin-top:5px}
+@media(max-width:700px){
+ .origin-stat-row{grid-template-columns:minmax(0,1fr) 22px 26px 26px 26px 38px}
+ .origin-stat-row button,.origin-stat-row .origin-stat-input{width:26px;min-width:26px;height:27px;min-height:27px}
+}

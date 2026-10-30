@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.68",
-  "notes": "Collapse child branches on group toggle, compact skill pins with icon hover cards, remove nested Hero Path scroll and clutter"
+  "release": "2026.10.30.69",
+  "notes": "Declutter Origin controls and item properties, equal size +/- input, Soul editing only in dedicated tab, remove redundant technical copy"
 }

@@ -78,9 +78,7 @@ function render(root,api){
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
     class:n===grade?'chosen':'','aria-pressed':String(n===grade),'data-grade':String(n),onclick:()=>api.updateGrade(n)}));
    body.append(el('h4',{text:'Заточка: +0…+10'}),buttons);
-   const bonus=gameTables?.weaponPlus?.[String(grade)];
-   if(slot==='weapon'&&grade>0&&bonus)body.append(el('p',{class:'stage-rich-note',
-    text:'Таблица OS: '+bonus.ratio+'% и '+bonus.flat+' ед. (не итоговый урон).'}));
+   // Item properties expose actual grade; inferred weapon math stays out of the editor.
    const model=globalThis.PandoraEnchantModel,choice=model.normalize(gems);
    const group=(label,entries,key)=>{
     const box=el('fieldset',{class:'stage-enchant-fieldset stage-enchant-inline'}),line=el('div',{class:'stage-enchant-options'});
@@ -93,14 +91,9 @@ function render(root,api){
     box.append(line);return box;
    };
    body.append(el('h4',{text:'Тип и стихия улучшения'}),
-    el('p',{class:'stage-rich-note',text:'Выбирай здесь — применяется сразу, без подтверждения.'}),
     group('Тип',model.types,'type'),group('Стихия',model.elements,'element'));
-   if(choice)body.append(el('button',{type:'button',class:'stage-enchant-reset',
-    text:'Сбросить тип и стихию',onclick:()=>api.assignGem(null)}));
   }
-  if(hasSouls)body.append(el('button',{type:'button',class:'stage-rich-switch',
-   text:'✦ Души: '+souls.slice(0,cap).filter(Boolean).length+' / '+cap,
-   onclick:()=>api.changeMode('souls')}));
+  // Souls are managed exclusively in the existing dedicated "Души" tab.
  }else if(mode==='souls'){
   const row=el('div',{class:'stage-rich-sockets'});
   for(let i=0;i<cap;i++){
@@ -131,8 +124,7 @@ function render(root,api){
    if(!results.length)list.append(el('p',{class:'muted',text:'Совместимых душ не найдено'}));
   };
   query.addEventListener('input',()=>{api.onSoulQuery?.(query.value);draw()});
-  body.append(el('p',{class:'stage-rich-note',text:'Выбери гнездо, затем душу. Сохраняется сразу.'}),
-   query,el('button',{type:'button',class:'stage-enchant-reset',
+  body.append(query,el('button',{type:'button',class:'stage-enchant-reset',
     text:'✕ Извлечь душу из выбранного гнезда',onclick:()=>api.assignSoul(null)}),list);
   draw();
  }

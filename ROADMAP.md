@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest source release:** 0.68.0 (`2026.10.30.68`), browser and Worker deployment unverified  
+**Updated:** 2026-10-30 · **Latest source release:** 0.69.0 (`2026.10.30.69`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -185,3 +185,10 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Скролл правой панели и дерева передан странице, длинный каталог порционно раскрывается.
 - [x] Класс + показатели очков в одном блоке; выбранное умение раскрывает карточку непосредственно над галереей.
 - [ ] Настоящий визуальный/browser E2E и проверка тач-раскрытия маркеров.
+
+### 2026-10-30 · 0.69 — устранение лишних UI-строк
+- [x] Нет подробных технических записей под редактором каждой базовой характеристики; реальные формулы не затронуты.
+- [x] Равные размеры `+`, `−` и ручного поля на desktop/mobile.
+- [x] Только вкладка «Души» управляет гнёздами; удалена дублирующая строка в «Свойствах» и лишние кнопки/пояснения.
+- [x] Короткая легенда развития; исходные данные и wiki не удалены.
+- [ ] Визуально проверить табуляцию, точный размер полей, scroll и состояние выбранных душ в живом браузере.

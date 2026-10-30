@@ -157,13 +157,10 @@ function viewGrowth(target,api){
      if(!api.onMastery(key,Number(input.value)))input.value=String(M.trained(state,key));
     });
     const greenLabel=make('label');greenLabel.append(make('span',{text:'Зелёное мастерство'}),input);
-    greenRow.append(greenLabel,make('small',{text:auto?'Равно вложенным очкам':'Растёт не выше вложенных'}));
+    greenRow.append(greenLabel);
     const exact=make('div',{class:'path-allocation-input'});
     exact.append(make('span',{text:'Точно вложено'}),numeric);
-    editor.append(note,track,exact,
-     make('small',{class:'path-control-hint',
-      text:'Перетащи маркер по полосе или укажи число. Клавиши ← → меняют по 1 очку.'}),
-     greenRow);
+    editor.append(note,track,exact,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
      text:!api.allocationReady?'Загружаются таблицы очков и лимитов класса.':
       cap===0?'Для этой профессии ветка заблокирована (лимит 0).':'Недостаточно доступных очков.'}));
@@ -171,8 +168,7 @@ function viewGrowth(target,api){
      text:'Сохранено '+points+' очков сверх текущего лимита '+cap+'. Ничего не удалено автоматически.'}));
     wrap.append(editor);
    }
-   if(group.branches.includes('race'))wrap.append(make('p',{class:'branch-racial-note',
-    text:'Расовая пассивка выбирается в «Происхождении», без расхода очков веток.'}));
+   // Race passives belong in Origin and need no extra reminder on this screen.
   }
   target.append(wrap);
  }
@@ -222,11 +218,11 @@ function viewSkills(target,details,api){
   };
   field('Уровень персонажа',skill.charLevel||'Нет известного порога');
   field('Мана / ОМ',skill.mana);
-  field('Подготовка (OS)',skill.cast);
-  field('Перезарядка (OS)',skill.cooldown);
-  field('Дальность (ед. OS)',skill.rangeFromWeapon?'Зависит от оружия':skill.range);
-  field('Стихия (код OS)',skill.element);
-  field('Характеристика (код OS)',skill.powerStat);
+  field('Подготовка',skill.cast);
+  field('Перезарядка',skill.cooldown);
+  field('Дальность',skill.rangeFromWeapon?'Зависит от оружия':skill.range);
+  field('Стихия',skill.element);
+  field('Характеристика',skill.powerStat);
   field('ID умения',skill.id);
   details.append(stats);
   const requirements=Array.isArray(skill.reqs)?skill.reqs:[];

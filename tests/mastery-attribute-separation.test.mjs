@@ -19,12 +19,14 @@ test('class cap and spend are tracked independently of green progress',()=>{
  assert.match(m,/function trained\(/);
 });
 
-test('Origin visibly separates manual spending, gear, mastery and next-point cost',()=>{
- const app=read('app.js');
- assert.match(app,/class:'origin-stat-breakdown'/);
- assert.match(app,/entry\.breakdown\.textContent='Старт '/);
- assert.match(app,/вручную '\+current/);
- assert.match(app,/вещи\/души/);
- assert.match(app,/мастерство/);
- assert.match(app,/const next=window\.PandoraAttributeProgression\.nextCost\(snap,entry\.i\)/);
+
+test('Origin keeps calculations correct but removes the noisy breakdown row',()=>{
+ const app=read('app.js'),css=read('style.css');
+ assert.doesNotMatch(app,/class:'origin-stat-breakdown'/);
+ assert.doesNotMatch(app,/entry\.breakdown\.textContent/);
+ assert.doesNotMatch(app,/origin-stat-guide/);
+ assert.match(app,/const effective=estimated\?\.stats\?\.\[code\]/);
+ assert.match(app,/const snap=attributeSnapshot\(\)/);
+ assert.match(app,/PandoraAttributeProgression\.nextCost\(snap,entry\.i\)/);
+ assert.match(css,/\.origin-stat-row button,\.origin-stat-row \.origin-stat-input\{/);
 });

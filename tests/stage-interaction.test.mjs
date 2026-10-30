@@ -107,3 +107,14 @@ test('grade, element and soul socket controls have stable focus restoration iden
  const souls=makeApi('weapon','souls');stage.PandoraStageItemUI.render(souls.box,souls.api);
  assert.ok(walk(souls.box).some(e=>e.attributes['data-socket-index']==='0'));
 });
+
+test('Properties has no duplicate Soul shortcut, reset-gem button, or explanatory filler',()=>{
+ const state=makeApi('weapon','details');
+ stage.PandoraStageItemUI.render(state.box,state.api);
+ assert.equal(byText(state.box,'Сбросить тип и стихию'),undefined);
+ assert.equal(walk(state.box).filter(x=>x.tag==='button'&&String(x.textContent).startsWith('✦ Души:')).length,0);
+ assert.ok(byText(state.box,'Души'),'dedicated Soul tab is still available');
+ const all=walk(state.box).map(x=>x.textContent||'').join(' ');
+ assert.ok(!all.includes('Выбирай здесь — применяется сразу'));
+ assert.ok(!all.includes('Таблица OS:'));
+});
