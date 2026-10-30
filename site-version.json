@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.69",
-  "notes": "Declutter Origin controls and item properties, equal size +/- input, Soul editing only in dedicated tab, remove redundant technical copy"
+  "release": "2026.10.30.70",
+  "notes": "Update functional regression assertions to match intentional folded groups, simplified skill labels; test real OS milestone pins and natural scrolling"
 }

@@ -86,10 +86,10 @@ test('actual app category handler collapses and reopens on repeated click',()=>{
  const x=Function('groups','document',run)(root.PandoraGameNavigation.groups,{querySelector:()=>null});
  x.onGroup('prayer');
  assert.equal(x.read().selectedSkillGroup,null);
- assert.equal(x.read().inlineBranchId,null);
+ assert.equal(x.read().inlineBranchId,'');
  x.onGroup('prayer');
  assert.equal(x.read().selectedSkillGroup,'prayer');
- assert.equal(x.read().inlineBranchId,'benevolence');
+ assert.equal(x.read().inlineBranchId,'');
 });
 test('HTML boolean attributes in app factory use actual property semantics',()=>{
  const app=sources['app.js'],begin=app.indexOf('function h('),end=app.indexOf('\nfunction imageUrl',begin);
@@ -163,4 +163,24 @@ test('closing a group clears child expansion and reopening leaves all branches f
  assert.match(app,/inlineBranchId='';\s*renderBranches\(\)/);
  assert.match(app,/bootView\.groupTouched&&bootView\.expandedBranch===''/);
  assert.match(app,/if\(selected&&\(inlineBranchId===null/);
+});
+
+test('real OS class milestones are tiny pins instead of overlapping image buttons',()=>{
+ Function('window',read('skill-milestones.js'))(root);
+ const app=sources['app.js'];
+ const m=app.match(/milestones:(\(skills,key,cap\)=>\{[\s\S]*?\n  \}),\n  onGroup:/);
+ assert.ok(m);
+ const adapter=Function('window','return ('+m[1]+')')({PandoraSkillMilestones:root.PandoraSkillMilestones});
+ const f=fixture('CLERIC','melee','brush');
+ f.api.milestones=adapter;
+ f.api.skillCatalog=Object.values(JSON.parse(read('data/os/skills.json')));
+ let hovered=0;
+ f.api.hover=(node,skills)=>{if(Array.isArray(skills)&&skills.length)hovered++};
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const pins=walk(f.target).filter(x=>String(x.className).includes('path-milestone-pin'));
+ assert.ok(pins.length>=3);
+ assert.ok(pins.some(x=>x.attributes['data-milestone-points']==='41'));
+ assert.ok(pins.every(x=>x.children.every(child=>child.tag!=='img')));
+ assert.ok(pins.every(x=>x.style.top?.endsWith('px')));
+ assert.equal(hovered,pins.length);
 });

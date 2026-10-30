@@ -75,7 +75,7 @@ test('skill editor preserves keyboard focus across state re-render',()=>{
 test('skill details include source-backed mana, cast, cooldown and exact branch requirements',()=>{
  const ui=read('hero-path.js'),app=read('app.js');
  for(const field of ['skill.mana','skill.cast','skill.cooldown','skill.range',
-  'skill.element','skill.powerStat','skill.funcs'])
+  'skill.element','skill.powerStat'])
   assert.ok(ui.includes(field),field);
  assert.match(ui,/Требования по веткам/);
  assert.match(ui,/вложено '\+value\+' · освоено '\+green/);
@@ -134,4 +134,11 @@ test('milestones are compact staggered dots with skill icon/description only on 
  assert.match(ui,/api\.hover\(button,mark\.skills\)/);
  assert.match(app,/path-skill-preview-item/);
  assert.match(css,/path-milestone-pin/);
+});
+
+test('right Hero Path and skill list use one page scroll, no nested locked panels',()=>{
+ const css=read('style.css');
+ assert.match(css,/\.workspace>\.right\{max-height:none!important;height:auto;overflow:visible!important\}/);
+ assert.match(css,/\.right \.branch-list\{max-height:none!important;height:auto;overflow:visible!important/);
+ assert.match(css,/\.right \.path-skill-grid\{max-height:none;overflow:visible\}/);
 });

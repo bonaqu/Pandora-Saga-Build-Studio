@@ -57,7 +57,7 @@ test('milestone link always reveals the selected skill despite stale gallery fil
  assert.match(app,/selectedSkill=skill;pathSkillFilter='all';pathSkillQuery=''/);
  assert.match(app,/\$\('pathSkillStatus'\)\.value='all'/);
  assert.match(app,/\$\('pathSkillSearch'\)\.value=''/);
- assert.match(html,/Доступные\*/);
+ assert.match(html,/Доступные<\/option>/);
 });
 
 test('Soul query and selected-grade focus survive in-place equipment picker rerender',()=>{

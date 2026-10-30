@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest source release:** 0.69.0 (`2026.10.30.69`), browser and Worker deployment unverified  
+**Updated:** 2026-10-30 · **Latest source release:** 0.70.0 (`2026.10.30.70`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -192,3 +192,9 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Только вкладка «Души» управляет гнёздами; удалена дублирующая строка в «Свойствах» и лишние кнопки/пояснения.
 - [x] Короткая легенда развития; исходные данные и wiki не удалены.
 - [ ] Визуально проверить табуляцию, точный размер полей, scroll и состояние выбранных душ в живом браузере.
+
+### 2026-10-30 · 0.70 — осмысленные регрессионные сценарии
+- [x] Изменены устаревшие ожидания тестов: повторное открытие группы не восстанавливает ветку, удалены техничные ярлыки.
+- [x] Тест порогов на настоящих OS-умениях Клирика: маленькие маркеры без полноразмерных иконок в дереве, hover содержит данные навыков.
+- [x] CSS-regression на отсутствие вложенного скролла в правой панели.
+- [ ] Прогнать npm test и Playwright в рабочем окружении, уточнить UX смартфона.
