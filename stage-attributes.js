@@ -7,6 +7,8 @@ function make(tag,attrs={},children=[]){
   if(key==='text')n.textContent=value;
   else if(key==='class')n.className=value;
   else if(key.startsWith('on'))n.addEventListener(key.slice(2),value);
+  else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(key))
+   n[key]=Boolean(value);
   else if(value!==null&&value!==undefined)n.setAttribute(key,String(value));
  }
  for(const child of children)n.append(typeof child==='string'?document.createTextNode(child):child);

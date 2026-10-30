@@ -5,6 +5,8 @@ const el=(tag,attrs={},children=[])=>{
  for(const [k,v] of Object.entries(attrs)){
   if(k==='class')e.className=v;else if(k==='text')e.textContent=v;
   else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);
+  else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))
+   e[k]=Boolean(v);
   else if(v!==null&&v!==undefined)e.setAttribute(k,String(v));
  }
  for(const child of children)e.append(typeof child==='string'?document.createTextNode(child):child);

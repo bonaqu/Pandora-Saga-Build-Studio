@@ -82,3 +82,20 @@ test('skill details include source-backed mana, cast, cooldown and exact branch 
  assert.match(app,/skillWiki:skill=>wikiLink/);
  assert.match(ui,/api\.skillWiki\(skill\)/);
 });
+
+test('bug regression: range must not receive disabled="false" as a HTML boolean attribute',()=>{
+ const hero=read('hero-path.js'),app=read('app.js');
+ assert.match(hero,/e\[key\]=Boolean\(val\)/);
+ assert.doesNotMatch(hero,/else if\(val!==undefined&&val!==null\)e\.setAttribute\(key,String\(val\)\)/);
+ assert.match(app,/el\[k\]=Boolean\(v\)/);
+ assert.match(hero,/budget\.total!==null&&api\.allocationReady/);
+ assert.match(app,/allocationReady:Boolean\(gameTables\?\.abilityPoint&&catalog\.classes\?\.\[klass\]\)/);
+});
+test('group headers are toggleable and can be completely collapsed',()=>{
+ const app=read('app.js');
+ assert.match(app,/const collapse=selectedSkillGroup===key/);
+ assert.match(app,/selectedSkillGroup=collapse\?null:key/);
+ assert.match(app,/const selected=groups\.find\(g=>g\.id===selectedSkillGroup\)\|\|null/);
+ assert.match(app,/if\(selected&&\(inlineBranchId===null/);
+ assert.match(app,/bootView\.groupTouched&&bootView\.skillGroup===null\?null/);
+});

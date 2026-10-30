@@ -41,7 +41,8 @@ const races=[['Человек','Human','human_f','human_m'],['Эльф','Elf','e
 let jobs=['Warrior','Gradiator','Juggernaut','Dragoon','Knight','General','Paladin','Scout','Archer','Sniper','Hunter','Provocateur','Assassin','Saboteur','Acolyte','Priest','Cleric','Enchanter','Ascetic','Monk','Exorcist','Mage','Wizard','Warlock','Conjurer','Sorcerer','Corrupter','Shadowblade'];
 const branchNames=['Melee','Slash','Thrust','Cleave','Bash','Defend','Technique','Shot','Alchemy','Assassination','Trapping','Dodge','Grace','Banevolence','Blessing','Exorcism','Hymn','Magic','Elemental','Invocation','Darkness','Confusion','Special','Racial','Horsemanship'];
 let branches=window.PandoraGameNavigation.groups.flatMap(group=>group.branches.map(id=>({id,name:id})));
-let selectedSkillGroup=window.PandoraGameNavigation.groups.some(group=>group.id===bootView.skillGroup)?bootView.skillGroup:'melee';
+let selectedSkillGroup=bootView.groupTouched&&bootView.skillGroup===null?null:
+ window.PandoraGameNavigation.groups.some(group=>group.id===bootView.skillGroup)?bootView.skillGroup:'melee';
 let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='',pathSkillFilter='all',pathGroupTouched=Boolean(bootView.groupTouched);
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
@@ -59,13 +60,16 @@ stageGemQuery='',gameTables=null,stageAttributesPage=['attack','defense','effect
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
-function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
+function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))el[k]=Boolean(v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
 function imageUrl(name){return `assets/${name}.webp`}
 const BRANCH_ICON_PATHS={"slash":"assets/skills/legacy/01-00.png","thrust":"assets/skills/legacy/02-00.png","brush":"assets/skills/legacy/03-00.png","blow":"assets/skills/legacy/04-00.png","defense":"assets/skills/legacy/05-00.png","archery":"assets/skills/legacy/07-00.png","alchemy":"assets/skills/legacy/08-00.png","assassin":"assets/skills/legacy/09-00.png","trap":"assets/skills/legacy/10-00.png","warding":"assets/skills/legacy/11-00.png","benevolence":"assets/skills/legacy/13-00.png","blessing":"assets/skills/legacy/14-00.png","exorcism":"assets/skills/legacy/15-00.png","hymn":"assets/skills/legacy/16-00.png","element":"assets/skills/legacy/18-00.png","embody":"assets/skills/legacy/19-00.png","darkness":"assets/skills/legacy/20-00.png","charm":"assets/skills/legacy/21-00.png","riding":"assets/skills/legacy/24-00.png"};
 function branchIcon(id){return BRANCH_ICON_PATHS[id]||'assets/ui/icons/skill-unknown.svg'}
 function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId){const path=iconManifest?.icons?.skills?.['skill_'+record.iconId];return path||`${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`}return branchIcon(cat)}
 function itemIcon(rec,kind='items'){const custom=override[(kind==='souls'?'visual.soul.':'visual.item.')+rec?.id];if(custom)return custom;return rec?.icon?(iconManifest?.icons?.[kind]?.[rec.icon]||`${OS}/icons/${kind}/${rec.icon}.webp?v=07682901`):null}
-function branchCap(branch){return catalog.live?(window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0):90}
+function branchCap(branch){
+ // No invented cap: when a game class is still loading, disable spending until real caps exist.
+ return window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0;
+}
 function previewBaseStats(){
  const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
  const baseClass=clazz?.baseClass||jobKeys[state.job];
@@ -109,7 +113,8 @@ function budgetSummary(){
 }
 function allowedBranch(branch){
  const b=budgetSummary(),cap=branchCap(branch),current=window.PandoraSkillProgression.potential(state,branch);
- return b.total===null||!catalog.live?current:Math.max(0,Math.min(cap,b.total-b.spent+current));
+ return b.total===null||!catalog.classes?.[jobKeys[state.job]]?current:
+  Math.max(0,Math.min(cap,b.total-b.spent+current));
 }
 
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
@@ -586,7 +591,8 @@ function heroPathApi(){
  const groups=window.PandoraGameNavigation.groups,klass=jobKeys[state.job];
  return {
   state,groups,job:klass,lang,selectedGroup:selectedSkillGroup,expandedBranch:inlineBranchId,
-  skillCatalog:Object.values(catalog.skills||{}),catalogReady:catalog.live,
+  skillCatalog:Object.values(catalog.skills||{}),catalogReady:!!catalog.skills,
+  allocationReady:Boolean(gameTables?.abilityPoint&&catalog.classes?.[klass]),
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
   cap:branchCap,
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
@@ -595,10 +601,12 @@ function heroPathApi(){
   skillWiki:skill=>wikiLink('📜 Полная статья в энциклопедии','skill',String(skill.id)),
   milestones:(skills,key,cap)=>window.PandoraSkillMilestones.forBranch(skills,key,cap).milestones,
   onGroup:key=>{
-   selectedSkillGroup=key;pathGroupTouched=true;
-   const group=groups.find(x=>x.id===key);
-   inlineBranchId=group?.branches.find(x=>x!=='race'&&branchCap(x)>0)||
-    group?.branches.find(x=>x!=='race')||'';
+   const collapse=selectedSkillGroup===key;
+   selectedSkillGroup=collapse?null:key;
+   pathGroupTouched=true;
+   const group=collapse?null:groups.find(x=>x.id===key);
+   inlineBranchId=group?(group.branches.find(x=>x!=='race'&&branchCap(x)>0)||
+    group.branches.find(x=>x!=='race')||''):null;
    renderBranches();
    document.querySelector('[data-path-group="'+key+'"]')?.focus({preventScroll:true});
    saveView();
@@ -654,8 +662,8 @@ function renderBranches(){
   const first=groups.find(g=>g.branches.some(id=>id!=='race'&&branchCap(id)>0));
   if(first)selectedSkillGroup=first.id;
  }
- const selected=groups.find(g=>g.id===selectedSkillGroup)||groups[0];
- if(inlineBranchId===null||(inlineBranchId&&!selected.branches.includes(inlineBranchId))){
+ const selected=groups.find(g=>g.id===selectedSkillGroup)||null;
+ if(selected&&(inlineBranchId===null||(inlineBranchId&&!selected.branches.includes(inlineBranchId)))){
   inlineBranchId=selected.branches.find(id=>id!=='race'&&branchCap(id)>0)||
    selected.branches.find(id=>id!=='race')||'';
  }
@@ -1608,7 +1616,8 @@ async function loadCatalog(){
    .map(([key,val])=>[oldToOS[key]||key,val]));
  if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
  if(!window.PandoraGameNavigation.all.has(state.branch)){state.branch='slash'}
- selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
+ if(!pathGroupTouched)
+  selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
  let enData=null;
  for(const path of [API+'/api/catalog/stringsEn.json','./data/os/strings.en.json']){
   try{
@@ -1737,6 +1746,14 @@ fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json()
 }).catch(()=>{const label=$('iconStatus');if(label)label.textContent='Иконки OS: локальный архив пока не импортирован'});
 
 render();loadCatalog();loadOverrides();
+// Independence: class caps must be usable even when unrelated wiki/skills/D1 data fails.
+fetch('./data/os/classes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
+ .then(classes=>{
+  if(classes?.[jobKeys[state.job]]&&!catalog.classes){
+   catalog.classes=classes;
+   renderBranches();refreshBudgetLabel();
+  }
+ }).catch(error=>console.warn('Local class limits unavailable',error));
 fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
 .then(t=>{if(t?.abilityPoint&&t?.weaponPlus&&t?.forge){gameTables=t;render()}}).catch(()=>{});
 restoreWikiHash();

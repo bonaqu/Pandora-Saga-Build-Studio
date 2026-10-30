@@ -69,3 +69,13 @@ test('Soul query and selected-grade focus survive in-place equipment picker rere
   "document.activeElement?.getAttribute?.('data-enchant-key')"])
   assert.ok(app.includes(phrase),phrase);
 });
+
+test('independent local class caps make skill spending work when wiki and remote API are down',()=>{
+ const app=read('app.js'),hero=read('hero-path.js');
+ assert.match(app,/fetch\('\.\/data\/os\/classes\.json',\{cache:'no-cache'\}\)/);
+ assert.match(app,/if\(classes\?\.\[jobKeys\[state\.job\]\]&&!catalog\.classes\)/);
+ assert.match(app,/branchCap\(catalog\.classes,jobKeys\[state\.job\],branch\)/);
+ assert.match(hero,/api\.allocationReady/);
+ for(const path of ['stage-item-ui.js','stage-attributes.js'])
+  assert.match(read(path),/\['disabled','checked','selected','hidden','required','readOnly','multiple'\]/);
+});

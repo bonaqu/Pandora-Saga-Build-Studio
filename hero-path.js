@@ -7,6 +7,8 @@ function make(tag,attr={},children=[]){
   if(key==='text')e.textContent=val;
   else if(key==='class')e.className=val;
   else if(key.startsWith('on'))e.addEventListener(key.slice(2),val);
+  else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(key))
+   e[key]=Boolean(val); // HTML boolean attributes: disabled="false" is STILL disabled.
   else if(val!==undefined&&val!==null)e.setAttribute(key,String(val));
  }
  for(const v of children)e.append(typeof v==='string'?document.createTextNode(v):v);
@@ -69,7 +71,7 @@ function viewGrowth(target,api){
     const note=make('div',{class:'inline-branch-value'});
     const label=make('strong',{text:points+' / '+cap});
     note.append(make('span',{text:'Очки уровня — вложить в ветку'}),label);
-    const available=budget.total!==null&&api.catalogReady&&(cap>0||points>0);
+    const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track','aria-label':'Единая полоса вложенных очков и освоенного мастерства '+api.branchName(key)});
     const visualMax=Math.max(90,cap,points);
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
@@ -148,7 +150,8 @@ function viewGrowth(target,api){
     exact.append(make('span',{text:'Точно вложено'}),numeric);
     editor.append(note,track,exact,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
-     text:cap===0?'Лимит класса равен нулю. Можно вернуть старые очки.':'Загрузка игровой таблицы очков.'}));
+     text:!api.allocationReady?'Загружаются таблицы очков и лимитов класса.':
+      cap===0?'Для этой профессии ветка заблокирована (лимит 0).':'Недостаточно доступных очков.'}));
     if(points>cap)editor.append(make('p',{class:'budget-excess',
      text:'Сохранено '+points+' очков сверх текущего лимита '+cap+'. Ничего не удалено автоматически.'}));
     wrap.append(editor);

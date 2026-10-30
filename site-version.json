@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.62",
-  "notes": "Preserve soul search query, socket focus, refinement focus and one-click enchant focus across portrait picker rerenders"
+  "release": "2026.10.30.63",
+  "notes": "P0 real slider fix: avoid disabled=false HTML boolean trap, decouple skill spending from wiki, collapse/expand groups and preserve closed state"
 }
