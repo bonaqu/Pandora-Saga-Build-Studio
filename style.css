@@ -390,3 +390,13 @@ a.wiki-link:hover{text-decoration:none}
 .stage-rich-result img{width:34px;height:34px;object-fit:contain}
 .stage-rich-result:hover{border-color:#f0c47e;background:#49311e}
 .stage-hover-preview{position:fixed;z-index:240;width:min(320px,90vw);max-height:75vh;overflow:auto;background:#261a12;color:#f4d5a6;border:2px double #c89b5d;box-shadow:0 15px 50px #000e;pointer-events:none;padding:8px}
+
+/* 2026.10.30.30: skill milestones in the right-hand hero path */
+.inline-milestone-heading{font:600 11px Manrope,sans-serif;color:#d9b981;margin:11px 0 5px}
+.inline-branch-milestones{height:62px;position:relative;margin:2px 6px 8px;border-bottom:3px solid #8e6942;background:linear-gradient(transparent 70%,#4e342061 70%)}
+.inline-milestone{position:absolute;top:2px;transform:translateX(-50%);width:33px;min-height:50px;z-index:2;background:#241b12;border:1px solid #9e794a;padding:1px;color:#eccc8e;font-size:9px}
+.inline-milestone:first-child{transform:translateX(0)}
+.inline-milestone.reached{border-color:#b5d58d;background:#35412b}
+.inline-milestone img{width:27px;height:27px;object-fit:contain;display:block}
+.inline-milestone small{display:block;line-height:13px}
+@media(max-width:540px){.inline-branch-milestones{margin-inline:12px}}
