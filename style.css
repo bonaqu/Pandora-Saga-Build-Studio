@@ -743,3 +743,30 @@ a.wiki-link:hover{text-decoration:none}
  .origin-stat-row{grid-template-columns:minmax(0,1fr) 22px 26px 26px 26px 38px}
  .origin-stat-row button,.origin-stat-row .origin-stat-input{width:26px;min-width:26px;height:27px;min-height:27px}
 }
+
+/* 2026.10.30.72 — compact, portrait-led workbench; threshold pins on the actual slider. */
+@media (min-width:1201px){
+ .workspace{height:auto;min-height:0;align-items:start}
+ .workspace>.left,.workspace>.right{height:auto;max-height:none;overflow:visible;min-height:0}
+ .workspace>.stage{height:auto;min-height:0;overflow:visible}
+ .workspace>.stage>.stage-inner{height:clamp(460px,calc(100dvh - 315px),640px);min-height:0;flex:none;overflow:visible}
+ .workspace .stage-inner .portrait-frame{height:100%;max-height:100%;transform:none;align-self:center;margin-inline:auto}
+ .workspace .hero-actions{display:flex;position:relative;clear:both;margin:5px auto 0;padding-top:7px}
+}
+@media(min-width:1420px) and (max-width:1679px){
+ .workspace .stage-inner .left-rail{left:calc((100% - var(--hero-width))/2 - 63px)}
+ .workspace .stage-inner .right-rail{right:calc((100% - var(--hero-width))/2 - 63px)}
+}
+@media(min-width:1680px){
+ .workspace .stage-inner .left-rail{left:calc((100% - var(--hero-width))/2 - 63px)}
+ .workspace .stage-inner .right-rail{right:calc((100% - var(--hero-width))/2 - 63px)}
+}
+.inline-mastery-track{height:94px}
+.inline-mastery-track .inline-branch-milestones{inset:0 12px 0;height:100%}
+.inline-mastery-track .inline-milestone.path-milestone-pin{
+ top:69px;width:12px;height:12px;min-width:12px;min-height:12px;
+ border-radius:3px;transform:translateX(-50%) rotate(45deg);
+}
+.inline-mastery-track .inline-milestone.path-milestone-pin .path-milestone-core{transform:rotate(-45deg);font-size:9px}
+.inline-mastery-track .path-milestone-pin:focus-visible{outline:2px solid #f6dfab;outline-offset:3px}
+@media(max-width:700px){.inline-mastery-track .inline-milestone.path-milestone-pin{width:12px;height:12px}}
