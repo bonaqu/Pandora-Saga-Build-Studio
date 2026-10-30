@@ -613,3 +613,49 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track .inline-milestone.reached{border-color:#ead08b;background:#5f4729;box-shadow:0 0 9px #d6a5614d}
 .inline-mastery-track input:focus-visible{outline:2px solid #efd49b;outline-offset:2px}
 @media(max-width:460px){.inline-mastery-track{margin-inline:0}.inline-mastery-track .inline-milestone{width:29px}}
+
+/* 2026.10.30.54: independent potential and trained mastery, in-Path skill gallery. */
+.path-budget{margin:8px 0 11px;padding:10px;border:1px solid #8b663a;background:linear-gradient(135deg,#24190f,#382618);border-radius:7px}
+.path-budget-values{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.path-budget-values>div{min-width:0;display:grid;gap:2px;text-align:center}
+.path-budget-values strong{font:700 21px Georgia;color:#ead4af;font-variant-numeric:tabular-nums}
+.path-budget-values strong.path-free{color:#aee4a9}
+.path-budget-values span{font-size:10px;color:#cebca3}
+.path-sections{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.path-sections button{padding:9px;background:#241911;border:1px solid #725638;color:#e0c295}
+.path-sections button.chosen{border-color:#daba7c;background:#5c3e22;color:#fff1c7}
+.path-mastery-toggle{display:flex;align-items:center;gap:7px;margin:8px 1px;font-size:11px;cursor:pointer;color:#cde4c5}
+.path-mastery-toggle input{accent-color:#78c36e;width:16px;height:16px}
+.path-legend{display:flex;gap:7px;flex-wrap:wrap;margin:5px 0 9px;font-size:10px;color:#c5af90}
+.path-legend span:before{content:'';display:inline-block;width:7px;height:7px;border-radius:2px;margin-right:4px}
+.path-legend .potential:before{background:#528db6}
+.path-legend .invested:before{background:#d8ad50}
+.path-legend .trained:before{background:#65c96d}
+.path-green-controls{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:5px;margin-top:9px}
+.path-green-controls label{display:flex;align-items:center;gap:7px;font-size:11px;color:#ade7a5}
+.path-green-controls input,.path-potential-number{width:62px;min-width:0;padding:5px 4px;border:1px solid #846845;background:#17130f;color:#efcf9b;font-variant-numeric:tabular-nums;text-align:center}
+.path-green-controls input{border-color:#618b57;color:#a9efa1}
+.path-green-controls small{font-size:10px;color:#998d7c}
+.path-allocation-input{display:flex;align-items:center;gap:7px;margin:7px 0;font-size:11px}
+.game-tree-head small{font-size:10px;line-height:1.4;overflow-wrap:anywhere}
+.branch-row.disabled-branch{opacity:.66}
+.inline-mastery-track .inline-mastery-bed{background:linear-gradient(90deg,#26485c,#335775)}
+.inline-mastery-track .inline-mastery-green{position:absolute;left:12px;top:88px;height:5px;max-width:calc(100% - 24px);background:linear-gradient(90deg,#2b7831,#a7e77a);border-radius:4px;pointer-events:none;transition:width .1s}
+.path-skills-filter{display:flex;gap:6px;margin:8px 0}
+.path-skills-filter input,.path-skills-filter select{min-width:0;background:#18110d;color:#ead4b1;border:1px solid #7a5c38;padding:7px}
+.path-skills-filter input{flex:1}
+.path-skills-filter select{max-width:108px}
+.path-skill-count{font-size:10px;color:#b9a48b;margin:5px 0}
+.path-skill-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;max-height:450px;overflow-y:auto;align-content:start}
+.path-skill-card{min-width:0;min-height:77px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;padding:6px 3px;background:#241b13;border:1px solid #775a34;color:#e8cc99;font-size:10px;line-height:1.1}
+.path-skill-card img{width:37px;height:37px;object-fit:contain}
+.path-skill-card.locked img{filter:grayscale(1) brightness(.57);opacity:.8}
+.path-skill-card.locked{color:#9c958d;border-color:#554c40}
+.path-skill-card.learned img{filter:none}
+.path-skill-card.active,.path-skill-card:hover{border-color:#e5c27a;background:#48301d}
+.path-skill-card span{overflow-wrap:anywhere}
+.path-skill-details{margin:10px 0;padding:9px;border:1px solid #8e6b3d;background:#211910;font-size:11px}
+.path-skill-details h3{font:700 16px Georgia;color:#e9c78e}
+.path-skill-details p{white-space:pre-line;overflow-wrap:anywhere;margin:6px 0}
+.path-skill-yes{color:#9ddd94}
+.path-skill-no{color:#d3af77}

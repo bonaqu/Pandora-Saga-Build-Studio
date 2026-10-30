@@ -538,126 +538,94 @@ function skillHover(button,skill){
  button.addEventListener('mouseleave',clear);button.addEventListener('blur',clear);
 }
 function refreshBudgetLabel(){
- const b=budgetSummary();
- $('budgetState').textContent=b.total===null?'Бюджет навыков: загружается таблица OS':
- 'Очки умений '+b.spent+' / '+b.total+' · свободно '+b.remaining+(b.remaining<0?' · превышение сохранённого билда':'');
+ const data=budgetSummary(),root=$('budgetState');if(!root)return;
+ root.replaceChildren();
+ const stats=h('div',{class:'path-budget-values'});
+ if(data.total===null)stats.append(h('p',{text:'Загружаются очки умений…'}));
+ else{
+  for(const [title,value,css]of[
+    ['Свободно',data.remaining,'path-free'],['Вложено',data.spent,''],['Всего',data.total,'']]){
+   stats.append(h('div',{},[h('strong',{class:css,text:String(value)}),h('span',{text:title})]));
+  }
+  if(data.remaining<0)root.append(h('small',{class:'budget-excess',
+   text:'Сохранённый билд превышает бюджет. Прежние вложения не удалены.'}));
+ }
+ root.prepend(stats);
+}
+function heroPathApi(){
+ const groups=window.PandoraGameNavigation.groups,klass=jobKeys[state.job];
+ return {
+  state,groups,job:klass,lang,selectedGroup:selectedSkillGroup,expandedBranch:inlineBranchId,
+  skillCatalog:Object.values(catalog.skills||{}),catalogReady:catalog.live,
+  budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
+  cap:branchCap,
+  branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
+  icon:(key,skill)=>skillIcon(key,skill?.id,skill),
+  hover:(node,skill)=>skillHover(node,skill),
+  milestones:(skills,key,cap)=>window.PandoraSkillMilestones.forBranch(skills,key,cap).milestones,
+  onGroup:key=>{
+   selectedSkillGroup=key;pathGroupTouched=true;
+   const group=groups.find(x=>x.id===key);
+   inlineBranchId=group?.branches.find(x=>x!=='race'&&branchCap(x)>0)||
+    group?.branches.find(x=>x!=='race')||'';
+   renderBranches();
+  },
+  onExpand:(key,open)=>{
+   inlineBranchId=open?'':key;state.branch=key;persist();renderBranches();
+  },
+  onAllocate:(key,requested,final)=>{
+   const model=window.PandoraSkillProgression,current=model.potential(state,key);
+   const target=Math.min(Math.max(0,requested),allowedBranch(key));
+   if(!model.canAllocate(gameTables?.abilityPoint,state.level,state.points,key,branchCap(key),target))
+    return current;
+   model.setPotential(state,key,target);
+   state.branch=key;persist();refreshBudgetLabel();
+   if(final){renderBranches();renderOriginStats();renderHudEstimates();
+    if(heroPathPage==='skills')renderPathSkills()}
+   return target;
+  },
+  onMastery:(key,requested)=>{
+   if(state.masteryAuto!==false||
+    !window.PandoraSkillProgression.setTrained(state,key,requested))return false;
+   persist();renderBranches();renderOriginStats();renderHudEstimates();
+   if(heroPathPage==='skills')renderPathSkills();return true;
+  },
+  onSkill:skill=>{selectedSkill=skill;heroPathPage='skills';renderPathPages();saveView()},
+  onInspect:skill=>{selectedSkill=skill;renderPathSkills()}
+ };
 }
 function renderBranches(){
- const c=$('skillBranches');c.replaceChildren();
- for(const group of window.PandoraGameNavigation.groups){
-  const total=group.branches.reduce((sum,id)=>sum+Number(state.points[id]||0),0);
-  const wrap=h('section',{class:'game-tree-group'});
-  const head=h('button',{class:'game-tree-head'+(selectedSkillGroup===group.id?' active':''),
-   onclick:()=>{
-    selectedSkillGroup=group.id;
-    if(!group.branches.includes(state.branch))state.branch=group.branches.find(id=>id!=='race')||'riding';
-    persist();renderBranches();
-    if(activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails();
-   }});
-  head.append(h('strong',{text:lang==='en'?group.en:group.ru}),h('small',{text:total?String(total)+' очк.':String(group.branches.length)+' веток'}));wrap.append(head);
-  if(selectedSkillGroup===group.id){
-   for(const id of group.branches){
-    if(id==='race'){wrap.append(h('div',{class:'branch-racial-note',text:'✦ Расовая пассивка выбирается в «Происхождении»'}));continue}
-    const b=branches.find(item=>item.id===id);if(!b)continue;
-    wrap.append(branchRow(b,false));
-    if(inlineBranchId===id){
-     const cap=branchCap(id),pts=Number(state.points[id]||0),permitted=allowedBranch(id);
-     const editor=h('div',{class:'inline-branch-editor'});
-     const label=h('strong',{text:pts+' / '+cap});
-     const row=h('div',{class:'inline-branch-value'},[h('span',{text:'Очки ветки'}),label]);
-     const track=h('div',{class:'inline-mastery-track','aria-label':'Мастерство и навыки ветки '+b.name});
-     const bed=h('div',{class:'inline-mastery-bed'});
-     const fill=h('div',{class:'inline-mastery-fill'});
-     const progress=()=>{fill.style.width=(cap>0?Math.min(100,Math.max(0,Number(state.points[id]||0)/cap*100)):0)+'%'};
-     track.append(bed,fill);
-     const range=h('input',{type:'range',min:'0',max:String(Math.max(cap,pts)),step:'1',value:String(pts),disabled:cap===0,'aria-label':'Очки мастерства ветки '+b.name});
-     track.append(range);progress();
-     const set=(requested,rebuild=true)=>{
-      if(!Number.isInteger(requested)||requested<0){range.value=String(state.points[id]||0);return}
-      const n=Math.min(requested,allowedBranch(id));
-      state.points[id]=n;state.branch=id;persist();refreshBudgetLabel();
-      label.textContent=n+' / '+cap;
-      range.value=String(n);progress();
-      for(const marker of track.querySelectorAll('.inline-milestone'))
-       marker.classList.toggle('reached',n>=Number(marker.dataset.threshold));
-      if(rebuild){renderBranches();if(activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails()}
-     };
-     range.addEventListener('input',()=>set(Number(range.value),false));
-     range.addEventListener('change',()=>set(Number(range.value),true));
-     const controls=h('div',{class:'inline-branch-controls'});
-     for(const [text,delta]of[['−5',-5],['−',-1],['+',1],['+5',5]])
-      controls.append(h('button',{type:'button',text,disabled:cap===0,
-       onclick:()=>set(Math.max(0,Math.min(allowedBranch(id),Number(state.points[id]||0)+delta)))}));
-     editor.append(row,track,controls);
-     const possible=catalog.live?Object.values(catalog.skills||{}).filter(skill=>
-       skill.classes?.[jobKeys[state.job]]&&Array.isArray(skill.reqs)&&skill.reqs.some(req=>req.branch===id)):[];
-     const milestones=window.PandoraSkillMilestones.forBranch(possible,id,cap).milestones;
-     if(milestones.length&&cap>0){
-      const rail=h('div',{class:'inline-branch-milestones','aria-label':'Пороги открываемых навыков'});
-      for(const mark of milestones){
-       const skill=mark.skills[0],icon=skillIcon(id,skill.id,skill);
-       const button=h('button',{class:'inline-milestone'+(pts>=mark.threshold?' reached':''),
-        type:'button','data-threshold':String(mark.threshold),title:skill.name+' · '+mark.threshold+' очков',
-        'aria-label':skill.name+' — '+mark.threshold+' очков',
-        onclick:()=>{selectedSkill=skill;inlineBranchId=id;renderBranches()}});
-       const image=h('img',{src:icon,alt:''});
-       image.onerror=()=>image.replaceWith(h('span',{text:'✦'}));
-       button.append(image,h('small',{text:String(mark.threshold)}));
-       button.style.left='clamp(0px, '+mark.percent+'%, calc(100% - 30px))';
-       rail.append(button);skillHover(button,skill);
-      }
-      track.append(rail);
-     }
-     if(possible.length){
-       const list=h('div',{class:'inline-skill-list','aria-label':'Навыки выбранной ветки'});
-       for(const skill of possible.slice(0,80)){
-        const gate=window.PandoraStudioRules.readiness(skill,{job:jobKeys[state.job],level:state.level,points:state.points});
-        const button=h('button',{type:'button',class:'inline-skill-option'+
-         (String(selectedSkill?.id)===String(skill.id)?' active':''),
-         title:skill.name||'Умение',onclick:()=>{selectedSkill=skill;renderBranches()}});
-        const img=h('img',{src:skillIcon(id,skill.id,skill),alt:''});
-        img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));
-        button.append(img,h('span',{text:skill.name||String(skill.id)}),
-         h('small',{text:gate.status==='eligible'?'✓':'🔒'}));
-        list.append(button);
-       }
-       editor.append(h('p',{class:'inline-milestone-heading',text:'Умения ветки · нажми для описания'}),list);
-       const picked=possible.find(s=>String(s.id)===String(selectedSkill?.id));
-       if(picked){
-        const gate=window.PandoraStudioRules.readiness(picked,{job:jobKeys[state.job],level:state.level,points:state.points});
-        const detail=h('section',{class:'inline-skill-detail'});
-        detail.append(h('strong',{text:picked.name||String(picked.id)}),
-         h('p',{text:picked.desc||'Описание отсутствует'}),
-         h('small',{text:gate.status==='eligible'?'✓ Известные требования выполнены':
-          gate.missing?.length?'🔒 '+gate.missing.join('; '):'Не все требования известны'}));
-        detail.append(wikiLink('📜 Статья навыка','skill',String(picked.id)));
-        editor.append(detail);
-       }
-      }
-      if(pts>cap)editor.append(h('p',{class:'budget-excess',text:'Сохранено '+pts+' очков при лимите '+cap+'. Автоматического сброса нет.'}));
-     editor.append(h('small',{class:'muted',text:budgetSummary().total===null?'Таблица очков загружается':'Доступно '+budgetSummary().total+' · остаток '+budgetSummary().remaining}));
-     wrap.append(editor);
-    }
-   }
-  }
-  c.append(wrap);
+ const groups=window.PandoraGameNavigation.groups;
+ if(!pathGroupTouched&&catalog.live&&!groups.find(g=>g.id===selectedSkillGroup)?.branches.some(id=>id!=='race'&&branchCap(id)>0)){
+  const first=groups.find(g=>g.branches.some(id=>id!=='race'&&branchCap(id)>0));
+  if(first)selectedSkillGroup=first.id;
  }
+ const selected=groups.find(g=>g.id===selectedSkillGroup)||groups[0];
+ if(inlineBranchId===null){
+  inlineBranchId=selected.branches.find(id=>id!=='race'&&branchCap(id)>0)||
+   selected.branches.find(id=>id!=='race')||'';
+ }
+ if($('pathAutoMastery'))$('pathAutoMastery').checked=state.masteryAuto!==false;
+ window.PandoraHeroPath.viewGrowth($('skillBranches'),heroPathApi());
+}
+function renderPathSkills(){
+ window.PandoraHeroPath.viewSkills($('pathSkillGallery'),$('pathSkillDetails'),heroPathApi());
+}
+function renderPathPages(){
+ const grow=heroPathPage==='growth';
+ $('pathGrowthPage').hidden=!grow;$('pathSkillsPage').hidden=grow;
+ for(const [id,on]of[['pathGrowthTab',grow],['pathSkillsTab',!grow]]){
+  $(id).classList.toggle('chosen',on);
+  $(id).setAttribute('aria-selected',String(on));
+ }
+ if(!grow)renderPathSkills();
 }
 function branchRow(b,full){
- const points=Number(state.points[b.id]||0);
- const btn=h('button',{class:'branch-row'+(state.branch===b.id?' active':''),
-  'aria-expanded':String(!full&&inlineBranchId===b.id),
-  onclick:()=>{
-   state.branch=b.id;selectedSkill=null;selectedSkillGroup=window.PandoraGameNavigation.branchGroup(b.id)?.id||selectedSkillGroup;
-   if(!full)inlineBranchId=inlineBranchId===b.id?null:b.id;
-   persist();renderBranches();
-   if(full||activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails();
-  }});
- // Branches have no intrinsic skill icons; skills and unlock milestones retain theirs.
- btn.append(h('div',{},[h('strong',{text:editableValue('branch.'+b.id,b.name)}),
-  h('span',{text:catalog.live?'Лимит класса: '+branchCap(b.id):'Историческая ветка'})]),
-  h('b',{class:'count',text:String(points)}));
- return btn;
+ const pts=window.PandoraSkillProgression.potential(state,b.id);
+ return h('button',{class:'branch-row',text:pts+' '+b.name+' · мастерство '+
+  window.PandoraSkillProgression.trained(state,b.id),
+  onclick:()=>{selectedSkillGroup=window.PandoraGameNavigation.branchGroup(b.id)?.id||selectedSkillGroup;
+   inlineBranchId=b.id;heroPathPage='growth';renderBranches();renderPathPages()}});
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
