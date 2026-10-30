@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.54",
-  "notes": "Independent skill Potential and green trained Adeptness; top free/spent budget, in-panel skill collection, explicit attribute bonuses separate from manual points. Legacy prayer bonus labeled unverified on current OS."
+  "release": "2026.10.30.55",
+  "notes": "Remove deprecated duplicate Skills/Stats character panel, single source of truth in Hero Path and Origin, prevent dangling branchValue UI crash"
 }
