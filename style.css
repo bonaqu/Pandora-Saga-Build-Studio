@@ -699,3 +699,8 @@ a.wiki-link:hover{text-decoration:none}
 
 /* 2026.10.30.64 — visible instructions for direct drag and keyboard allocation. */
 .path-control-hint{display:block;margin:2px 0 7px;font-size:10px;line-height:1.4;color:#b7a88b}
+
+/* 2026.10.30.65: skill thresholds above class maximum remain visible on red area. */
+.inline-mastery-track .inline-milestone.unreachable{opacity:.58;filter:grayscale(1);border-color:#a56358;background:#34211d}
+.inline-mastery-track .inline-milestone.unreachable:after{content:'🔒';position:absolute;right:-3px;top:-5px;font-size:12px;text-shadow:0 1px 4px #000}
+.inline-mastery-track .inline-milestone.unreachable:focus-visible{opacity:1;filter:none;outline:2px solid #f1b6a2}

@@ -50,10 +50,14 @@ function viewGrowth(target,api){
   const groupButton=make('button',{type:'button',class:'game-tree-head'+(selectedGroup===group.id?' active':''),
    'aria-expanded':String(selectedGroup===group.id),'data-path-group':group.id,
    onclick:()=>api.onGroup(group.id)});
-  const detail=branchKeys.filter(key=>M.potential(state,key)>0)
+  const groupSummary=()=>{
+   const total=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
+   const detail=branchKeys.filter(key=>M.potential(state,key)>0)
     .map(key=>M.potential(state,key)+' '+api.branchName(key)).join(' · ');
-  groupButton.append(make('strong',{text:api.lang==='en'?group.en:group.ru}),
-   make('small',{text:spent+' вложено'+(detail?' · '+detail:'')}));
+   return total+' вложено'+(detail?' · '+detail:'');
+  };
+  const groupCount=make('small',{text:groupSummary()});
+  groupButton.append(make('strong',{text:api.lang==='en'?group.en:group.ru}),groupCount);
   wrap.append(groupButton);
   if(selectedGroup===group.id){
    for(const key of branchKeys){
@@ -63,9 +67,10 @@ function viewGrowth(target,api){
      'aria-expanded':String(isOpen),'data-path-branch':key,
      onclick:()=>api.onExpand(key,isOpen)});
     const info=make('div');
-    info.append(make('strong',{text:api.branchName(key)}),
-     make('span',{text:points+' вложено · '+trained+' мастерство · лимит '+cap}));
-    branch.append(info,make('b',{class:'count',text:String(points)}));wrap.append(branch);
+    const branchSummary=make('span',{text:points+' вложено · '+trained+' мастерство · лимит '+cap});
+    const branchCount=make('b',{class:'count',text:String(points)});
+    info.append(make('strong',{text:api.branchName(key)}),branchSummary);
+    branch.append(info,branchCount);wrap.append(branch);
     if(!isOpen)continue;
     const editor=make('div',{class:'inline-branch-editor'});
     const note=make('div',{class:'inline-branch-value'});
@@ -108,6 +113,10 @@ function viewGrowth(target,api){
      const target=api.onAllocate(key,requested,final);
      if(!Number.isInteger(target))return;
      range.value=String(target);numeric.value=String(target);label.textContent=target+' / '+cap;
+     branchCount.textContent=String(target);
+     branchSummary.textContent=target+' вложено · '+M.trained(state,key)+' мастерство · лимит '+cap;
+     groupCount.textContent=groupSummary();
+     input.value=String(M.trained(state,key));input.max=String(target);
      paint();
      // Committing rebuilds the UI so all branch totals stay synchronized.
     };
@@ -117,13 +126,14 @@ function viewGrowth(target,api){
     const skills=skillCatalog.filter(s=>s.classes?.[job]&&Array.isArray(s.reqs)&&
      s.reqs.some(req=>req.branch===key));
     const marks=api.milestones(skills,key,cap);
-    if(marks.length&&cap>0){
+    if(marks.length){
      const rail=make('div',{class:'inline-branch-milestones','aria-label':'Умения на порогах ветки'});
      for(const mark of marks){
       const skill=mark.skills[0],ready=readiness(skill,api).learned;
       const button=make('button',{type:'button',
-       class:'inline-milestone'+(ready?' reached':''),
-       'aria-label':skill.name+' · '+mark.threshold+' очков',title:skill.name+' · '+mark.threshold,
+       class:'inline-milestone'+(mark.locked?' unreachable':ready?' reached':''),
+       'aria-label':skill.name+' · '+mark.threshold+' очков'+(mark.locked?' · превышает классовый лимит':''),
+       title:skill.name+' · '+mark.threshold+(mark.locked?' · недоступно профессии':''),
        onclick:()=>api.onSkill(skill)});
       const src=api.icon(key,skill);
       if(src){const pic=make('img',{src,alt:''});pic.onerror=()=>pic.replaceWith(make('span',{text:'✦'}));button.append(pic)}

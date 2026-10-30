@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.64",
-  "notes": "Permanent node:test interaction regression for 103-point slider and group toggle; keyboard guidance"
+  "release": "2026.10.30.65",
+  "notes": "Live skill counters on drag, correct class-switch navigation, over-cap game icons on red locked portion"
 }

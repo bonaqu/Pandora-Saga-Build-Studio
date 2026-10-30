@@ -150,6 +150,15 @@ function renderRaces(){
  grid.append(frame,actions);
 }
 const CLASS_PARENT_FALLBACK={"WARRIOR":null,"GLADIATOR":"WARRIOR","KNIGHT":"WARRIOR","SCOUT":null,"ARCHER":"SCOUT","AGENT":"SCOUT","ACOLYTE":null,"PRIEST":"ACOLYTE","ASCETIC":"ACOLYTE","MAGE":null,"WIZARD":"MAGE","DARKROAR":"MAGE","JUGGERNAUT":"GLADIATOR","DRAGOON":"GLADIATOR","GENERAL":"KNIGHT","PALADIN":"KNIGHT","SNIPER":"ARCHER","PREDATOR":"ARCHER","ASSASSIN":"AGENT","DISTURBANCE":"AGENT","CLERIC":"PRIEST","ENCHANTER":"PRIEST","MONK":"ASCETIC","EXORCIST":"ASCETIC","WARLOCK":"WIZARD","CONJURER":"WIZARD","JESTER":"DARKROAR","CALAMITY":"DARKROAR"};
+// Reorient the navigation when class restrictions change; never discard a saved build.
+function selectJob(index){
+ if(!Number.isInteger(index)||index<0||index>=jobKeys.length)return;
+ if(state.job!==index){
+  state.job=index;selectedSkillGroup=null;inlineBranchId=null;
+  pathGroupTouched=false;selectedSkill=null;
+ }
+ persist();render();saveView();
+}
 function renderJobs(){
  const grid=$('classGrid');grid.replaceChildren();
  const records=jobKeys.map((key,i)=>({key,i,name:editableValue('job.'+i,jobs[i]||key),
@@ -189,7 +198,7 @@ function renderJobs(){
   grid.append(h('button',{type:'button',class:'class-current-select',
     text:state.job===current.i?'✓ '+current.name+' · выбрано':'Выбрать '+current.name,
     'aria-pressed':String(state.job===current.i),onclick:()=>{
-     state.job=current.i;persist();render();saveView();
+     selectJob(current.i);
     }}));
  }
  const next=records.filter(x=>x.parent===(jobPathKey||null));
@@ -201,7 +210,7 @@ function renderJobs(){
     'aria-pressed':String(state.job===node.i),
     onclick:()=>{
      if(hasChildren){jobPathKey=node.key;renderJobs();saveView();return}
-     state.job=node.i;jobPathKey=node.key;persist();render();saveView();
+     jobPathKey=node.key;selectJob(node.i);
     }},[
       h('strong',{text:node.name}),
       h('span',{text:hasChildren?'Специализации ›':state.job===node.i?'✓ Выбрано':'Выбрать'})
@@ -599,7 +608,20 @@ function heroPathApi(){
   icon:(key,skill)=>skillIcon(key,skill?.id,skill),
   hover:(node,skill)=>skillHover(node,skill),
   skillWiki:skill=>wikiLink('📜 Полная статья в энциклопедии','skill',String(skill.id)),
-  milestones:(skills,key,cap)=>window.PandoraSkillMilestones.forBranch(skills,key,cap).milestones,
+  milestones:(skills,key,cap)=>{
+   const {milestones,above}=window.PandoraSkillMilestones.forBranch(skills,key,cap);
+   const locked=new Map();
+   for(const row of above){
+    const skill=skills.find(s=>String(s.id)===String(row.id));
+    if(!skill)continue;
+    const bucket=locked.get(row.threshold)||[];
+    if(!bucket.some(x=>String(x.id)===String(skill.id)))bucket.push(skill);
+    locked.set(row.threshold,bucket);
+   }
+   return [...milestones.map(m=>({...m,locked:false})),
+    ...[...locked].map(([threshold,items])=>({threshold,skills:items,locked:true}))]
+    .sort((a,b)=>a.threshold-b.threshold);
+  },
   onGroup:key=>{
    const collapse=selectedSkillGroup===key;
    selectedSkillGroup=collapse?null:key;
@@ -658,7 +680,8 @@ function heroPathApi(){
 }
 function renderBranches(){
  const groups=window.PandoraGameNavigation.groups;
- if(!pathGroupTouched&&catalog.live&&!groups.find(g=>g.id===selectedSkillGroup)?.branches.some(id=>id!=='race'&&branchCap(id)>0)){
+ if(!pathGroupTouched&&catalog.classes?.[jobKeys[state.job]]&&
+  !groups.find(g=>g.id===selectedSkillGroup)?.branches.some(id=>id!=='race'&&branchCap(id)>0)){
   const first=groups.find(g=>g.branches.some(id=>id!=='race'&&branchCap(id)>0));
   if(first)selectedSkillGroup=first.id;
  }

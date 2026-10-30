@@ -99,3 +99,29 @@ test('group headers are toggleable and can be completely collapsed',()=>{
  assert.match(app,/if\(selected&&\(inlineBranchId===null/);
  assert.match(app,/bootView\.groupTouched&&bootView\.skillGroup===null\?null/);
 });
+
+test('new job selects a usable group without deleting previous invested points',()=>{
+ const app=read('app.js');
+ assert.match(app,/function selectJob\(index\)/);
+ assert.match(app,/selectedSkillGroup=null;inlineBranchId=null/);
+ assert.match(app,/pathGroupTouched=false;selectedSkill=null/);
+ assert.match(app,/selectJob\(current\.i\)/);
+ assert.match(app,/selectJob\(node\.i\)/);
+ assert.match(app,/!pathGroupTouched&&catalog\.classes\?\.\[jobKeys\[state\.job\]\]/);
+});
+test('red locked region shows OS skills beyond the class skill cap',()=>{
+ const app=read('app.js'),ui=read('hero-path.js'),css=read('style.css');
+ assert.match(app,/const \{milestones,above\}=window\.PandoraSkillMilestones\.forBranch/);
+ assert.match(app,/locked:true/);
+ assert.match(ui,/mark\.locked\?' unreachable'/);
+ assert.match(ui,/if\(marks\.length\)\{/);
+ assert.match(css,/inline-milestone\.unreachable/);
+});
+test('branch summary, green mastery and group totals update on input, not only change',()=>{
+ const ui=read('hero-path.js');
+ for(const part of ['groupCount.textContent=groupSummary()',
+  'branchCount.textContent=String(target)',
+  "branchSummary.textContent=target+' вложено",
+  'input.value=String(M.trained(state,key))'])
+  assert.ok(ui.includes(part),part);
+});

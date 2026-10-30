@@ -79,3 +79,10 @@ test('independent local class caps make skill spending work when wiki and remote
  for(const path of ['stage-item-ui.js','stage-attributes.js'])
   assert.match(read(path),/\['disabled','checked','selected','hidden','required','readOnly','multiple'\]/);
 });
+
+test('class switch restores a permitted skill group and persists its user selection',()=>{
+ const app=read('app.js');
+ assert.match(app,/if\(state\.job!==index\)/);
+ assert.match(app,/pathGroupTouched=false;selectedSkill=null/);
+ assert.match(app,/!pathGroupTouched&&catalog\.classes\?\.\[jobKeys\[state\.job\]\]/);
+});
