@@ -17,6 +17,7 @@ async function recordFailed(env,ip){const key=await sha(ip),now=Date.now();await
 async function clearFailed(env,ip){await env.DB.prepare('DELETE FROM login_attempts WHERE ip_hash=?').bind(await sha(ip)).run()}
 async function session(env){const token=b64(random(32)),hash=await sha(token),expires=Date.now()+4*3600000;await env.DB.prepare('INSERT INTO sessions(token_hash,expires) VALUES(?,?)').bind(hash,expires).run();return{token,expires}}
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
+if(method==='GET'&&/^\/api\/gamedata\/(meta|classes|skills|items|souls)\.json$/.test(path)){const file=path.split('/').pop();const source=await fetch('https://pandorasaga-os.com/gamedata/'+file,{headers:{Accept:'application/json'},cf:{cacheTtl:300,cacheEverything:true}});if(!source.ok)return no('Upstream game data unavailable',502);return new Response(source.body,{status:200,headers:{'content-type':'application/json; charset=utf-8','cache-control':'public, max-age=300','x-content-type-options':'nosniff'}})}
 if(!env.DB)return no('Database not configured',503);
 if(path==='/api/health'&&method==='GET')return json({status:'ok',storage:'d1'});
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).map(r=>[r.key,r.value]))})}
@@ -41,7 +42,7 @@ if(path==='/api/admin/logout'&&method==='POST'){const token=(request.headers.get
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request);const key=data?.key,value=data?.value;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.(?:[0-9]|1[0-9]|2[0-4])|item\.[a-zA-Z0-9_.-]{1,70}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.\d{1,2}\.\d{1,3}|skilldesc\.\d{1,2}\.\d{1,3})$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('skilldesc.')?2000:240))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12})$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('skilldesc.')?2000:240))return no('Unsupported editable field');
  await env.DB.prepare(`INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`).bind(key,value.trim(),Date.now()).run();return json({ok:true,key,value:value.trim()})
 }
 return no('Not found',404)

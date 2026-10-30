@@ -4,7 +4,7 @@ Independent, visual, vintage-inspired Pandora Saga build planner. Static site in
 
 ## Status
 
-**Interactive foundation, not a finished game calculator.** Six race portraits (from user-provided Races.zip), 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local builds, JSON import/export, and static client logic. Historical skill and equipment data are fetched as read-only JSON from the existing `Pandora-Saga-Simulator-remaked` repository. Correctness for current Pandora Saga OS is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
+**Interactive foundation, not a finished game calculator.** Six race portraits (from user-provided Races.zip), 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local builds, JSON import/export, and static client logic. Current official Pandora Saga OS game tables are shipped under `data/os/` (snapshot of 2026-10-30: 28 classes, 569 skills, 1,116 items, 112 Souls). The frontend first tries the live official `/gamedata` feed, then the optional Cloudflare Worker proxy, then the bundled snapshot. Only if all these fail does it use historic Legacy JSON. Correctness for current Pandora Saga OS is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
 
 ## Publish on GitHub Pages (no user-defined GitHub Actions)
 
@@ -37,7 +37,7 @@ First successful login: gear → `administrator` → new password (minimum 12 ch
 
 ## Next milestones
 
-- Verify current Pandora Saga OS data endpoints, asset permissions and skill IDs. Replace legacy catalogs with reviewed, versioned snapshots (no invented gameplay rules).
+- Verify live Pandora Saga OS endpoints, cross-origin access, sprite references and all skill identities; maintain the versioned authoritative snapshot (no invented gameplay rules).
 - Connect to original engine or verified server formulas before displaying authoritative HP, damage and skill budgets.
 - Add the actual game equipment sprites/icons and compatible item rules, with sources documented. All six race portraits and the original supplied logo are already bundled locally.
 - Move all editable catalog fields to backend with version, approval, rollback and audit log. Existing visual editing intentionally supports only approved interface labels, not game balancing yet.
