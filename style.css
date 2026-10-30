@@ -1001,3 +1001,26 @@ a.wiki-link:hover{text-decoration:none}
  .origin-vitals{gap:4px}
  .origin-vital{padding:6px}
 }
+
+/* Override the older per-slot custom property on BOTH equipment rails, not only on their parent. */
+@media(min-width:1201px){
+ .workspace .stage-inner .left-rail .equipment-slot,
+ .workspace .stage-inner .right-rail .equipment-slot{
+  --studio-slot:clamp(48px,5.5vh,60px);
+ }
+}
+@media(min-width:461px) and (max-width:1200px){
+ .workspace .stage-inner .left-rail .equipment-slot,
+ .workspace .stage-inner .right-rail .equipment-slot{
+  --studio-slot:clamp(42px,5.5vw,52px);
+ }
+}
+@media(max-width:460px){
+ .workspace .stage-inner .left-rail .equipment-slot,
+ .workspace .stage-inner .right-rail .equipment-slot{
+  --studio-slot:clamp(37px,9vw,44px);
+ }
+}
+.workspace .stage-inner .equipment-rail .equipped-icon{
+ transform:scale(1.04);transform-origin:center;
+}
