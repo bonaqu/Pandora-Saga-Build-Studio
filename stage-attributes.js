@@ -26,9 +26,9 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   'aria-pressed':String(page===name),onclick:()=>onPage(name)}));
  target.append(nav);
  const body=make('div',{class:'stage-attribute-scroll'});
- const intro=page==='attack'?'Базовые параметры оружия из OS':
- page==='defense'?'Базовая защита отдельных предметов из OS':'Эффекты предметов и душ из OS';
- body.append(make('p',{class:'stage-attribute-note',text:intro+'. Это не рассчитанные характеристики персонажа.'}));
+ const intro=page==='attack'?'Параметры оружия':
+ page==='defense'?'Защита снаряжения':'Бонусы предметов и душ';
+ body.append(make('p',{class:'stage-attribute-note',text:intro}));
  const selected=items.filter(x=>page==='attack'?x.record?.slot==='weapon':
  page==='defense'?x.record&&(x.record.AC!=null||x.record.block!=null):x.record);
  if(!selected.length)body.append(make('p',{class:'muted',text:'Нет записей для этой вкладки'}));
@@ -67,13 +67,12 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    page==='attack'?['accuracy','dodge','criticalChance'].includes(key):true));
  if(active.length){
   const card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Подтверждённые бонусы снаряжения и душ — не итоговые статы'}));
+  card.append(make('strong',{text:'Известные бонусы снаряжения и душ'}));
   for(const [key,val] of active)card.append(make('p',{text:names[key]+': '+(val>=0?'+':'')+val}));
   body.prepend(card);
  }
- body.append(make('p',{class:'stage-attribute-warning',text:
-  'Это частичные бонусы известных EP_* кодов из OS, а не итоговые сопротивления, атака или крит. '+
-  'Базовые значения, процентные эффекты, комплекты, усиления и баффы не включены в эти числа.'}));
+ body.append(make('p',{class:'stage-attribute-warning',
+  text:'Некоторые эффекты, комплекты и усиления пока не учитываются в расчётах.'}));
  target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render});
