@@ -155,7 +155,7 @@ function renderStagePicker(focusSearch=false){
  if(stageSlotView!=='choose'){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
-   record,item:equipped,slot:key,slotIndex:selectedSlot,mode:stageSlotView,
+   record,item:equipped,slot:key,slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
@@ -166,7 +166,11 @@ function renderStagePicker(focusSearch=false){
     state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;persist();renderSlotRails();renderStagePicker();
    },
    openSocket:i=>{selectedSocket=i;stageSlotView='souls';renderStagePicker()},
-   assignSoul:entry=>{const next=plan.asSocketArray(state.souls?.[selectedSlot]);
+   assignSoul:entry=>{
+    const capacity=plan.socketCapacity(record);
+    if(capacity===null||selectedSocket<0||selectedSocket>=capacity)return;
+    if(entry&&!plan.validSoul(entry,key))return;
+    const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
     state.souls[selectedSlot]=next;stageSlotView='details';persist();renderStagePicker();},
    assignGem:entry=>{state.gems??={};
@@ -900,6 +904,9 @@ function renderEquipment(root){
       const next=lib.asSocketArray(state.souls?.[selectedSlot]);next[selectedSocket]=item;state.souls[selectedSlot]=next;
      }else{
       if(window.PandoraUIPlanner.isAstirDress(rec)){state.displacedLegwear=state.equipment[5]||null;delete state.equipment[5]}
+       if(selectedSlot===3&&!window.PandoraUIPlanner.isAstirDress(rec)&&state.displacedLegwear){
+        state.equipment[5]=state.displacedLegwear;state.displacedLegwear=null;
+       }
        state.equipment[selectedSlot]=item;selectedSocket=0;
      }
      persist();render();
@@ -1455,6 +1462,7 @@ fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
 .then(t=>{if(t?.abilityPoint&&t?.weaponPlus&&t?.forge){gameTables=t;render()}}).catch(()=>{});
 restoreWikiHash();
 if(bootView.open&&!String(location.hash).startsWith('#wiki/')){showWorkbench();$('detailContent').scrollTop=Math.max(0,Number(bootView.inner)||0)}
+if(bootView.slotOpen&&!bootView.open){stageSlotPickerOpen=true;renderSlotRails();renderStagePicker()}
 requestAnimationFrame(()=>window.scrollTo({top:Math.max(0,Number(bootView.page)||0),behavior:'instant'}));
 window.addEventListener('pagehide',saveView);
 document.addEventListener('pandora:before-update',saveView);
