@@ -168,7 +168,6 @@ function viewGrowth(target,api){
      rail.append(button);api.hover(button,cluster.skills);
     }
     track.append(rail);
-    editor.append(picker);
     }
     const greenRow=make('div',{class:'path-green-controls'});
     const input=make('input',{type:'number',min:'0',max:String(points),step:'1',
@@ -182,7 +181,9 @@ function viewGrowth(target,api){
     greenRow.append(greenLabel);
     const exact=make('div',{class:'path-allocation-input'});
     exact.append(make('span',{text:'Точно вложено'}),numeric);
-    editor.append(note,track,exact,greenRow);
+    editor.append(note,track);
+    if(marks.length)editor.append(picker);
+    editor.append(exact,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
      text:!api.allocationReady?'Загружаются таблицы очков и лимитов класса.':
       cap===0?'Для этой профессии ветка заблокирована (лимит 0).':'Недостаточно доступных очков.'}));
