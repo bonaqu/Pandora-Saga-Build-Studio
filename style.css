@@ -682,3 +682,6 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track .inline-mastery-locked:after{content:'🔒';position:absolute;right:1px;bottom:9px;font-size:13px;color:#eeb8aa;text-shadow:0 1px 3px #000}
 .path-reset-points{width:100%;padding:8px;margin-top:8px;border:1px solid #715139;border-radius:3px;background:#25180f;color:#c8a68a;font-size:11px}
 .path-reset-points:hover{border-color:#cc9371;background:#3a2418;color:#efc6ae}
+
+/* 2026.10.30.60: center threshold icons at their exact point on the one slider. */
+.inline-mastery-track .inline-milestone{transform:translateX(-50%)}

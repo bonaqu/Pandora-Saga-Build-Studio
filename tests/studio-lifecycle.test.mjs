@@ -38,3 +38,16 @@ test('Hero Path group, expanded branch and its scroll position survive update re
  assert.ok(js.includes(part),part);
  assert.match(html,/id="pathGrowthPage"/);
 });
+
+test('skill gallery preserves scroll and focus after inspecting an icon',()=>{
+ const ui=read('hero-path.js'),app=read('app.js');
+ assert.match(ui,/const previousScroll=target\.querySelector\?\.\('\.path-skill-grid'\)\?\.scrollTop\|\|0/);
+ assert.match(ui,/grid\.scrollTop=previousScroll/);
+ assert.match(ui,/'data-skill-id':String\(skill\.id\)/);
+ assert.match(app,/querySelector\('\[data-skill-id="/);
+});
+test('numeric legacy mastery keys get migrated alongside invested branch points',()=>{
+ const app=read('app.js');
+ assert.match(app,/state\.mastery=Object\.fromEntries\(Object\.entries\(state\.mastery\)/);
+ assert.match(app,/oldToOS\[key\]\|\|key,val/);
+});

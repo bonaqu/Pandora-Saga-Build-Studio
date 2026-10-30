@@ -54,3 +54,20 @@ test('skill-unlock icons use the full 90-point track scale even for low class ca
  assert.match(ui,/mark\.threshold\/visualMax\*100/);
  assert.doesNotMatch(ui,/button\.style\.left='clamp\(0px, '\+mark\.percent/);
 });
+
+test('one bar uses standard CSS calc and correctly centered milestone markers',()=>{
+ const ui=read('hero-path.js'),css=read('style.css');
+ assert.match(ui,/const lockedOffset=12-24\*lockedFraction/);
+ assert.doesNotMatch(ui,/calc\(12px \+ \(100% - 24px\) \*/);
+ assert.match(ui,/gold\.style\.width='calc\('/);
+ assert.match(ui,/green\.style\.width='calc\('/);
+ assert.match(ui,/clamp\(15px, '/);
+ assert.match(css,/\.inline-mastery-track \.inline-milestone\{transform:translateX\(-50%\)\}/);
+});
+test('skill editor preserves keyboard focus across state re-render',()=>{
+ const app=read('app.js'),ui=read('hero-path.js');
+ for(const key of ['potential-range','potential-number','mastery-number'])
+  assert.ok(ui.includes(':'+key),key);
+ assert.match(app,/document\.activeElement\?\.getAttribute\?\.\('data-branch-control'\)/);
+ assert.match(app,/focus\(\{preventScroll:true\}\)/);
+});

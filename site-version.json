@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.59",
-  "notes": "Align skill unlock markers to 0..90 visual branch track rather than each class cap, respecting locked red areas"
+  "release": "2026.10.30.60",
+  "notes": "Preserve skill gallery scroll/focus, migrate legacy green mastery, align slider fills and locked cap with fully supported CSS"
 }

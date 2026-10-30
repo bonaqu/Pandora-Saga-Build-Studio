@@ -46,7 +46,8 @@ function viewGrowth(target,api){
   const spent=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
   const wrap=make('section',{class:'game-tree-group'});
   const groupButton=make('button',{type:'button',class:'game-tree-head'+(selectedGroup===group.id?' active':''),
-   'aria-expanded':String(selectedGroup===group.id),onclick:()=>api.onGroup(group.id)});
+   'aria-expanded':String(selectedGroup===group.id),'data-path-group':group.id,
+   onclick:()=>api.onGroup(group.id)});
   const detail=branchKeys.filter(key=>M.potential(state,key)>0)
     .map(key=>M.potential(state,key)+' '+api.branchName(key)).join(' · ');
   groupButton.append(make('strong',{text:api.lang==='en'?group.en:group.ru}),
@@ -57,7 +58,8 @@ function viewGrowth(target,api){
     const points=M.potential(state,key),trained=M.trained(state,key),cap=api.cap(key),isOpen=expandedBranch===key;
     const branch=make('button',{type:'button',
      class:'branch-row'+(isOpen?' active':'')+(cap===0?' disabled-branch':''),
-     'aria-expanded':String(isOpen),onclick:()=>api.onExpand(key,isOpen)});
+     'aria-expanded':String(isOpen),'data-path-branch':key,
+     onclick:()=>api.onExpand(key,isOpen)});
     const info=make('div');
     info.append(make('strong',{text:api.branchName(key)}),
      make('span',{text:points+' вложено · '+trained+' мастерство · лимит '+cap}));
@@ -75,22 +77,30 @@ function viewGrowth(target,api){
           locked=make('div',{class:'inline-mastery-locked',
            title:'Предел класса: '+cap+' из '+visualMax+'. Красная часть не доступна для распределения.'});
     if(cap>=visualMax)locked.hidden=true;
-    locked.style.left='calc(12px + (100% - 24px) * '+Math.max(0,Math.min(1,cap/visualMax))+')';
+    const lockedFraction=Math.max(0,Math.min(1,cap/visualMax));
+    const lockedOffset=12-24*lockedFraction;
+    // Standard CSS calc, no browser-dependent multiplication.
+    locked.style.left='calc('+(lockedFraction*100).toFixed(6)+'% '+
+      (lockedOffset<0?'-':'+')+' '+Math.abs(lockedOffset).toFixed(6)+'px)';
     const paint=()=>{
      const invested=M.potential(state,key),mastery=M.trained(state,key);
-     gold.style.width=Math.max(0,Math.min(100,invested/visualMax*100))+'%';
-     green.style.width=Math.max(0,Math.min(100,mastery/visualMax*100))+'%';
+     const goldFraction=Math.max(0,Math.min(1,invested/visualMax));
+     const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
+     gold.style.width='calc('+(goldFraction*100).toFixed(6)+'% - '+(24*goldFraction).toFixed(6)+'px)';
+     green.style.width='calc('+(greenFraction*100).toFixed(6)+'% - '+(24*greenFraction).toFixed(6)+'px)';
      track.title=api.branchName(key)+': '+invested+' вложено, '+mastery+
        ' освоено, предел класса '+cap+'. Перетяни ползунок для вложения очков.';
     };
     track.append(bed,gold,green,locked);
     const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
      value:String(points),disabled:!available,
-     'aria-label':'Вложенные очки '+api.branchName(key)});
+     'aria-label':'Вложенные очки '+api.branchName(key),
+     'data-branch-control':key+':potential-range'});
     track.append(range);paint();
     const numeric=make('input',{type:'number',min:'0',max:String(Math.max(cap,points)),step:'1',
      value:String(points),class:'path-potential-number',disabled:!available,
-     'aria-label':'Точное количество вложенных очков '+api.branchName(key)});
+     'aria-label':'Точное количество вложенных очков '+api.branchName(key),
+     'data-branch-control':key+':potential-number'});
     const update=(requested,final)=>{
      if(!Number.isInteger(requested)||requested<0)return;
      const target=api.onAllocate(key,requested,final);
@@ -118,8 +128,8 @@ function viewGrowth(target,api){
       else button.append(make('span',{text:'✦'}));
       button.append(make('small',{text:String(mark.threshold)}));
       // Milestone and thumb both use the SAME 0..90 visual scale, not the smaller class cap.
-      button.style.left='clamp(0px, '+Math.max(0,Math.min(100,mark.threshold/visualMax*100))+
-       '%, calc(100% - 30px))';
+      button.style.left='clamp(15px, '+Math.max(0,Math.min(100,mark.threshold/visualMax*100))+
+       '%, calc(100% - 15px))';
       rail.append(button);api.hover(button,skill);
      }
      track.append(rail);
@@ -127,7 +137,8 @@ function viewGrowth(target,api){
     const greenRow=make('div',{class:'path-green-controls'});
     const input=make('input',{type:'number',min:'0',max:String(points),step:'1',
      value:String(trained),disabled:auto||!available,
-     'aria-label':'Зелёное мастерство '+api.branchName(key)});
+     'aria-label':'Зелёное мастерство '+api.branchName(key),
+     'data-branch-control':key+':mastery-number'});
     input.addEventListener('change',()=>{
      if(!api.onMastery(key,Number(input.value)))input.value=String(M.trained(state,key));
     });
@@ -149,6 +160,7 @@ function viewGrowth(target,api){
  }
 }
 function viewSkills(target,details,api){
+ const previousScroll=target.querySelector?.('.path-skill-grid')?.scrollTop||0;
  target.replaceChildren();details.replaceChildren();
  if(!api.catalogReady){target.append(make('p',{class:'muted',text:'Каталог умений загружается.'}));return}
  const needle=String(api.query||'').trim().toLocaleLowerCase('ru');
@@ -166,14 +178,14 @@ function viewSkills(target,details,api){
     (String(api.selectedSkill?.id)===String(skill.id)?' active':''),
    title:skill.name+'\n'+(skill.desc||'')+'\n'+(gate.problems.join(' · ')||'Известные условия выполнены'),
    'aria-label':skill.name+' · '+(gate.learned?'доступно':'недоступно'),
-   onclick:()=>api.onInspect(skill)});
+   'data-skill-id':String(skill.id),onclick:()=>api.onInspect(skill)});
   const src=api.icon(skill.branch,skill);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));item.append(img)}
   else item.append(make('span',{text:'✦'}));
   item.append(make('span',{text:skill.name||String(skill.id)}));
   grid.append(item);api.hover(item,skill);
  }
- target.append(grid);
+ target.append(grid);grid.scrollTop=previousScroll;
  if(!rows.length)target.append(make('p',{class:'muted',text:'По этим параметрам навыки не найдены.'}));
  const selected=rows.find(row=>String(row.skill.id)===String(api.selectedSkill?.id))||rows[0];
  if(selected){

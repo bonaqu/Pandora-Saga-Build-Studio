@@ -582,9 +582,13 @@ function heroPathApi(){
    inlineBranchId=group?.branches.find(x=>x!=='race'&&branchCap(x)>0)||
     group?.branches.find(x=>x!=='race')||'';
    renderBranches();
+   document.querySelector('[data-path-group="'+key+'"]')?.focus({preventScroll:true});
+   saveView();
   },
   onExpand:(key,open)=>{
    inlineBranchId=open?'':key;state.branch=key;persist();renderBranches();
+   document.querySelector('[data-path-branch="'+key+'"]')?.focus({preventScroll:true});
+   saveView();
   },
   onAllocate:(key,requested,final)=>{
    const model=window.PandoraSkillProgression,current=model.potential(state,key);
@@ -593,18 +597,35 @@ function heroPathApi(){
     return current;
    model.setPotential(state,key,target);
    state.branch=key;persist();refreshBudgetLabel();
-   if(final){renderBranches();renderOriginStats();renderHudEstimates();
-    if(heroPathPage==='skills')renderPathSkills()}
+   if(final){
+    const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
+    renderBranches();renderOriginStats();renderHudEstimates();
+    if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
+     ?.focus({preventScroll:true});
+    if(heroPathPage==='skills')renderPathSkills();
+    saveView();
+   }
    return target;
   },
   onMastery:(key,requested)=>{
    if(state.masteryAuto!==false||
     !window.PandoraSkillProgression.setTrained(state,key,requested))return false;
+   const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
    persist();renderBranches();renderOriginStats();renderHudEstimates();
-   if(heroPathPage==='skills')renderPathSkills();return true;
+   if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
+    ?.focus({preventScroll:true});
+   if(heroPathPage==='skills')renderPathSkills();
+   saveView();return true;
   },
-  onSkill:skill=>{selectedSkill=skill;heroPathPage='skills';renderPathPages();saveView()},
-  onInspect:skill=>{selectedSkill=skill;renderPathSkills()}
+  onSkill:skill=>{
+   selectedSkill=skill;heroPathPage='skills';renderPathPages();saveView();
+   $('pathSkillsTab')?.focus({preventScroll:true});
+  },
+  onInspect:skill=>{
+   selectedSkill=skill;renderPathSkills();
+   document.querySelector('[data-skill-id="'+String(skill.id)+'"]')
+    ?.focus({preventScroll:true});
+  }
  };
 }
 function renderBranches(){
@@ -1562,6 +1583,9 @@ async function loadCatalog(){
  catalogSource=live;
  const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
  state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));
+ if(state.mastery&&typeof state.mastery==='object'&&!Array.isArray(state.mastery))
+  state.mastery=Object.fromEntries(Object.entries(state.mastery)
+   .map(([key,val])=>[oldToOS[key]||key,val]));
  if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
  if(!window.PandoraGameNavigation.all.has(state.branch)){state.branch='slash'}
  selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
