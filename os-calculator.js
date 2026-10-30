@@ -164,7 +164,13 @@ function potionPreview({enabled=false,potionRate=null,maxHp=null}={}){
    current:Boolean(item),percent,base:original,value,enabled:enabled===true};
  });
 }
-function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false}={}){
+// Source: Remaked Legacy js/calc.js:90-100 Calc('POT').
+// Human's third racial passive, "Знахарство", adds 15%; it is NOT a profession.
+// Status.Skill[0][0]+[1] is aggregate *trained* green melee mastery, not blue
+// potential plus trained. 10 points bonus per 10 green for warrior lineage Lv12+.
+const warriorLineage=new Set(['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN']);
+function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
+ racialPassiveId=null,jobKey=null,level=null,meleeMastery=null}={}){
  if(!Number.isFinite(vit)||vit<0||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
  const base=100+Math.floor(vit*vit*2/1000),honor=honorTitle===11?5:0;
@@ -178,8 +184,14 @@ function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false}={}){
   }
  }
  const rune=runeJoEun===true?5:0;
- return {percent:base+honor+equipment+rune,base,honor,equipment,rune,
-  excluded:['unmapped profession Alchemy modifier','unmapped skill-level recovery modifier']};
+ const racial=racialPassiveId===900010003?15:0;
+ if(meleeMastery!==null&&(!Number.isInteger(meleeMastery)||meleeMastery<0))return null;
+ const mastery=warriorLineage.has(jobKey)&&Number.isInteger(level)&&level>=12
+  ?Math.floor((meleeMastery??0)/10)*10:0;
+ return {percent:base+honor+equipment+rune+racial+mastery,
+  base,honor,equipment,rune,racial,mastery,
+  source:'Remaked Legacy Calc(POT); verified OS racial ID 900010003',
+  excluded:['non-legacy/current-server conditional recovery modifiers']};
 }
 function attributeBuffBonus(options={}){
  const out=Object.fromEntries(keys.map(k=>[k,0])),trace=[];
@@ -205,7 +217,8 @@ function attributeBuffBonus(options={}){
  return {flat:out,trace,honor:selected};
 }
 function base({classData,raceData,jobData,allocation,level,records=[],
- supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={}}={}){
+ supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={},
+ potionContext={}}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
  const effects=gatherEffects(records),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
  if(!extra)return null;
@@ -222,7 +235,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],
  const mpBonus=bonusFor('mp',mpBase,effects,enhancements);
  if(!hpBonus||!mpBonus)return null;
  const potion=potionRecovery({vit:stats.vit,records,honorTitle:extra.honor.id,
-  runeJoEun:attributeBuffs?.runeJoEun===true});
+  runeJoEun:attributeBuffs?.runeJoEun===true,level,...potionContext});
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,

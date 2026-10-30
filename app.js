@@ -91,12 +91,16 @@ function previewBaseStats(){
   }
  }
  const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(jobKeys[state.job],state);
+ // Remaked Status.Skill[0]: five branches of trained (green) melee mastery.
+ const meleeMastery=['slash','thrust','brush','blow','defense']
+  .reduce((sum,key)=>sum+window.PandoraSkillProgression.trained(state,key),0);
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
   allocation,level:state.level,records,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
-  enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{}
+  enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
+  potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery}
  });
 }
 function renderPotionPreview(calculated){
@@ -1785,7 +1789,14 @@ function applyGameLocale(){
  const en=lang==='en'?officialEnglish:null;
  const meta={...catalogSource.meta};
  if(en?.branches)meta.branchLabels={...meta.branchLabels,...en.branches};
- catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:translate(catalogSource.skills,en?.skills),
+ // Verified ID-based overrides for 18 RU race passives; never fuzzy-translate OS rows.
+ const localizedSkills=translate(catalogSource.skills,en?.skills);
+ if(lang==='ru'){
+  for(const [id,name] of Object.entries(window.PandoraGameNavigation.approvedRacialSkillNames)){
+   if(localizedSkills[id])localizedSkills[id]={...localizedSkills[id],name};
+  }
+ }
+ catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
    equipment:translate(catalogSource.items,en?.items),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));

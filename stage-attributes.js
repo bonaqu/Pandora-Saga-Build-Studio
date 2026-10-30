@@ -94,6 +94,18 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    const potion=make('section',{class:'stage-attribute-row'});
    potion.append(make('strong',{text:'Действие зелий'}),
     make('p',{text:'Эффективность: '+modifiers.potion.percent+'%'}));
+   const parts=[
+    ['Выносливость (базовая эффективность)',modifiers.potion.base],
+    ['Знахарство (расовая способность человека)',modifiers.potion.racial],
+    ['Мастерство ближнего боя (воин с 12 уровня)',modifiers.potion.mastery],
+    ['Титул чести',modifiers.potion.honor],
+    ['Экипировка и души',modifiers.potion.equipment],
+    ['Руна Чо Ын',modifiers.potion.rune]
+   ];
+   for(const [name,value] of parts){
+    if(!Number.isFinite(value)||value===0)continue;
+    potion.append(make('p',{text:name+': '+(name.startsWith('Выносливость')?'':'+')+value+'%'}));
+   }
    body.prepend(potion);
   }
  }
