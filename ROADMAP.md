@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.80.0 (`2026.10.31.80`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.81.0 (`2026.10.31.81`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,15 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.81.0 — remove redundant introduction, keep editor access
+
+- No landing intro: the workbench follows header and status immediately, and a screen-reader-only H1 retains page semantics without consuming visible space.
+- The admin-only `authState` indicator was moved into `header-actions`; the existing owner tools, D1 publishing and edit overrides remain accessible. No database writes or credentials were involved.
+- Catalog status: routine success now stays in the footer, while actual catalog load failure is shown in the top notice. The previous site.title/subtitle override keys remain stored for backward compatibility even though that obsolete intro is no longer rendered.
+- Top margin reduced to let the portrait and two side panels be the first content users see. Unused intro desktop/mobile styles removed.
+- Targeted tests: new workbench-without-intro test (4) + earlier connected regression suites (19) pass in isolated JavaScript/DOM harness. Browser validation remains user-owned.
+- All earlier roadmap issues (Pages deployment, D1/Worker, icons, game stat parity, encyclopedia, builder sharing, scrolling and responsive QA) remain open; nothing is silently considered complete.
 
 ## Source update 0.80.0 — slider/portrait symmetry/HUD removal
 
