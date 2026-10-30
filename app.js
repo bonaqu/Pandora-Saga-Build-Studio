@@ -446,14 +446,21 @@ function renderOriginStats(){
  root.append(h('p',{class:'origin-stat-guide',text:'Старт + вложено = итог'}));
  const list=h('div',{class:'origin-stat-list'}),elements=[];
  function refresh(){
-  const snap=attributeSnapshot();
+  const snap=attributeSnapshot(),estimated=previewBaseStats();
   summary.textContent=snap?'Свободно: '+snap.remaining+' / '+snap.total+' · Потрачено: '+snap.spent:'Характеристики';
   summary.classList.toggle('over-budget',!!snap?.overBudget);
   for(const entry of elements){
    const current=Number(state.stats[STATS[entry.i]]||0),base=snap?.base[entry.i];
    entry.start.textContent=base===undefined?'—':String(base);
-   entry.input.value=String(current);entry.end.textContent=base===undefined?'—':String(base+current);
-   entry.cap.textContent=snap?'из '+snap.max[entry.i]:'';
+   entry.input.value=String(current);
+   const invested=base===undefined?null:base+current;
+   const effective=estimated?.stats?.[ORIGIN_STAT_LABELS[entry.i].code];
+   const bonus=invested!==null&&Number.isFinite(effective)?effective-invested:0;
+   entry.end.textContent=invested===null?'—':String(Number.isFinite(effective)?effective:invested);
+   entry.end.title='Старт '+(base??'?')+' + вложено '+current+
+     ' + подтверждённые бонусы вещей и душ '+bonus;
+   entry.cap.textContent=bonus?'вещи '+(bonus>=0?'+':'')+bonus:
+    snap?'лимит '+snap.max[entry.i]:'';
    entry.minus.disabled=!snap||current===0;
    entry.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,entry.i,current+1);
    entry.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(snap,entry.i)??'максимум');
