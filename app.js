@@ -50,7 +50,29 @@ function renderRaces(){
  grid.append(frame,actions);
 }
 function renderJobs(){const grid=$('classGrid');grid.replaceChildren();jobs.forEach((j,i)=>{const button=h('button',{class:'class-choice'+(state.job===i?' active':''),'aria-pressed':state.job===i,onclick:()=>{state.job=i;persist();render()}});button.append(h('i',{text:['✠','⚔','✦','♜'][Math.floor(i/7)]||'⚔'}),editAttr(h('span',{text:editableValue('job.'+i,j)}),'job.'+i));grid.append(button)})}
-function changeTab(tab){activeTab=tab;document.querySelectorAll('[data-tab]').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===tab));renderDetails();$('detailPanel').scrollIntoView({behavior:'smooth',block:'start'})}
+let workbenchReturnFocus=null;
+function showWorkbench(){
+ const panel=$('detailPanel'),backdrop=$('studioBackdrop');
+ if(!panel||!backdrop)return;
+ if(!panel.classList.contains('is-open'))workbenchReturnFocus=document.activeElement;
+ panel.classList.add('is-open');panel.setAttribute('aria-modal','true');
+ backdrop.hidden=false;document.body.classList.add('studio-workbench-open');
+ $('dockClose')?.focus({preventScroll:true});
+}
+function closeWorkbench(){
+ const panel=$('detailPanel'),backdrop=$('studioBackdrop');
+ if(!panel||!panel.classList.contains('is-open'))return;
+ panel.classList.remove('is-open');panel.removeAttribute('aria-modal');
+ if(backdrop)backdrop.hidden=true;
+ document.body.classList.remove('studio-workbench-open');
+ const old=workbenchReturnFocus;workbenchReturnFocus=null;
+ if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
+}
+function changeTab(tab){
+ activeTab=tab;
+ document.querySelectorAll('[data-tab]').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===tab));
+ renderDetails();showWorkbench();
+}
 function equippedRecord(slot){
 const value=state.equipment[slot];
 if(!value)return null;
@@ -244,7 +266,7 @@ function openWiki(type,id,highlight=null){
  activeTab='wiki';
  for(const btn of document.querySelectorAll('[data-tab]'))btn.classList.toggle('active',btn.dataset.tab==='wiki');
  location.hash='wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(id)+(highlight!=null?'/'+encodeURIComponent(highlight):'');
- renderDetails();$('detailPanel').scrollIntoView({behavior:'smooth',block:'start'});
+ renderDetails();showWorkbench();
 }
 function wikiLink(text,type,id,highlight=null){
  const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(id)+(highlight==null?'':'/'+encodeURIComponent(highlight));
@@ -1236,7 +1258,28 @@ async function loadCatalog(){
 }
 async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
 $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
-document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeInlineEditor();if(stageSlotPickerOpen){stageSlotPickerOpen=false;renderStagePicker()}}});
+$('dockClose').onclick=closeWorkbench;
+$('studioBackdrop').onclick=closeWorkbench;
+$('stageQuickbar').addEventListener('click',event=>{
+ const target=event.target.closest('[data-stage-tab]');
+ if(target)changeTab(target.dataset.stageTab);
+});
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'){
+  if(!$('modalRoot').hidden)return;
+  if(document.querySelector('.inline-owner-editor')){closeInlineEditor();return}
+  if(stageSlotPickerOpen){stageSlotPickerOpen=false;renderStagePicker();return}
+  closeWorkbench();
+ }else if(event.key==='Tab'&&$('detailPanel').classList.contains('is-open')&&$('modalRoot').hidden){
+  const panel=$('detailPanel');
+  const focusable=[...panel.querySelectorAll('button:not(:disabled),input:not(:disabled),textarea:not(:disabled),select:not(:disabled),a[href],[tabindex]:not([tabindex="-1"])')]
+   .filter(el=>el.getClientRects().length>0);
+  if(!focusable.length)return;
+  const first=focusable[0],last=focusable[focusable.length-1];
+  if(event.shiftKey&&(document.activeElement===first||!panel.contains(document.activeElement))){event.preventDefault();last.focus()}
+  else if(!event.shiftKey&&(document.activeElement===last||!panel.contains(document.activeElement))){event.preventDefault();first.focus()}
+ }
+});
 
 /* Owner login: five logo clicks within six seconds, or Ctrl+Alt+Shift+P.
    Hidden UI does not replace server-side authorization. */
@@ -1262,7 +1305,7 @@ function restoreWikiHash(){
  wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
  activeTab='wiki';
  for(const btn of document.querySelectorAll('[data-tab]'))btn.classList.toggle('active',btn.dataset.tab==='wiki');
- renderDetails();
+ renderDetails();showWorkbench();
 }
 window.addEventListener('hashchange',restoreWikiHash);
 fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{if(data?.icons&&Number(data.count?.present)>0){iconManifest=data;render()}}).catch(()=>{});

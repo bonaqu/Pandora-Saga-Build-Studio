@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.25",
-  "notes": "In-place equipment selection, race carousel, origin racial passives and direct sidebar branch allocation"
+  "release": "2026.10.30.26",
+  "notes": "Viewport-bound workbench for character, skills, equipment, stats and wiki, with keyboard dismissal and no page jumping"
 }
