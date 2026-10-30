@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.75",
-  "notes": "Hero Path compact skill markers, grouped skill selection, corrected picker placement and viewport-safe tooltips."
+  "release": "2026.10.30.76",
+  "notes": "Canonical URL after refresh, newer-version checks, compact in-track skill markers, grouped picker fix and regressions."
 }
