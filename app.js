@@ -98,7 +98,7 @@ function previewBaseStats(){
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null
  });
 }
-function renderHudEstimates(){
+function renderOriginVitals(){
  // HP/MP are estimates, not an experience/level HUD. The visible Origin panel owns both.
  const estimate=previewBaseStats(),hp=$('originHp'),mp=$('originMp');
  if(hp)hp.textContent=estimate?'≈'+estimate.hp:'—';
@@ -373,7 +373,7 @@ function renderStagePicker(focusSearch=false){
    },
    updateGrade:n=>{if(!plan.canRefine(key)||!Number.isInteger(n)||n<0||n>10)return;
     state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;
-    persist();renderSlotRails();renderStagePicker();renderOriginStats();renderHudEstimates();
+    persist();renderSlotRails();renderStagePicker();renderOriginStats();renderOriginVitals();
     root.querySelector('[data-grade="'+n+'"]')?.focus({preventScroll:true});
    },
    openSocket:i=>{selectedSocket=i;stageSlotView='souls';saveView();renderStagePicker();
@@ -385,7 +385,7 @@ function renderStagePicker(focusSearch=false){
     if(entry&&!plan.validSoul(entry,key))return;
     const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
-    state.souls[selectedSlot]=next;stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderOriginStats();renderHudEstimates();
+    state.souls[selectedSlot]=next;stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderOriginStats();renderOriginVitals();
     const restoreFocus=stageSoulQuery?'[data-soul-query]':'[data-socket-index="'+selectedSocket+'"]';
     root.querySelector(restoreFocus)?.focus({preventScroll:true});
    },
@@ -470,7 +470,7 @@ function attributeSnapshot(){
 }
 function setAttributePoints(index,added){
  if(!window.PandoraAttributeProgression.allowed(attributeSnapshot(),index,added))return false;
- state.stats[STATS[index]]=added;persist();renderHudEstimates();return true;
+ state.stats[STATS[index]]=added;persist();renderOriginVitals();return true;
 }
 const ORIGIN_STAT_LABELS=[
  {short:'ВЫН',name:'Выносливость',code:'vit'},
@@ -668,7 +668,7 @@ function heroPathApi(){
    state.branch=key;persist();refreshBudgetLabel();
    if(final){
     const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
-    renderBranches();renderOriginStats();renderHudEstimates();
+    renderBranches();renderOriginStats();renderOriginVitals();
     if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
      ?.focus({preventScroll:true});
     if(heroPathPage==='skills')renderPathSkills();
@@ -680,7 +680,7 @@ function heroPathApi(){
    if(state.masteryAuto!==false||
     !window.PandoraSkillProgression.setTrained(state,key,requested))return false;
    const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
-   persist();renderBranches();renderOriginStats();renderHudEstimates();
+   persist();renderBranches();renderOriginStats();renderOriginVitals();
    if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
     ?.focus({preventScroll:true});
    if(heroPathPage==='skills')renderPathSkills();
@@ -746,7 +746,7 @@ function branchRow(b,full){
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
- 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderHudEstimates();updateAdminHint()}
+ 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderOriginVitals();updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -1098,8 +1098,6 @@ function renderStats(root){
  const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:'Характеристики'});
  const points=h('div',{class:'stat-total'},[h('strong',{text:'—'}),h('span',{text:'Свободные очки'})]);
  overview.append(header,points);root.append(overview);
- const hpmp=previewBaseStats();
- if(hpmp)root.append(h('p',{class:'stat-brief-vitals',text:'ОЗ ≈'+hpmp.hp+' · ОМ ≈'+hpmp.mp}));
  const grid=h('div',{class:'stat-grid'}),controls=[];
  function refresh(){
   const s=attributeSnapshot();
@@ -1138,8 +1136,6 @@ function renderStats(root){
    const snap=attributeSnapshot(),absolute=window.PandoraAttributeProgression.resolveAbsolute(snap,i,value);
    if(absolute===null||!setAttributePoints(i,absolute-snap.base[i])){refresh();return}
    refresh();renderOriginStats();
-   const vitals=root.querySelector('.stat-brief-vitals'),v=previewBaseStats();
-   if(vitals&&v)vitals.textContent='ОЗ ≈'+v.hp+' · ОМ ≈'+v.mp;
   };
   const minus=h('button',{type:'button',text:'−',onclick:()=>change((attributeSnapshot()?.values[i]??0)-1)});
   const plus=h('button',{type:'button',text:'+',onclick:()=>change((attributeSnapshot()?.values[i]??0)+1)});
@@ -1725,12 +1721,12 @@ $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView
   if(!confirm('Сбросить все вложенные очки навыков и зелёное мастерство? Остальная сборка и экипировка сохранятся.'))return;
   for(const b of branches)state.points[b.id]=0;
   state.mastery={};
-  persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderHudEstimates();
+  persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderOriginVitals();
   saveView();
  };
  $('pathAutoMastery').onchange=e=>{
   window.PandoraSkillProgression.setAuto(state,e.target.checked,branches.map(b=>b.id));
-  persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderHudEstimates();
+  persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderOriginVitals();
  };
  $('pathSkillSearch').oninput=e=>{pathSkillQuery=e.target.value;pathSkillShown=24;renderPathSkills()};
  $('pathSkillStatus').onchange=e=>{pathSkillFilter=e.target.value;pathSkillShown=24;renderPathSkills()};
