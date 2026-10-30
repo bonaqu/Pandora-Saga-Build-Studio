@@ -11,7 +11,7 @@
   }
   const version = document.querySelector('meta[name="ps-studio-release"]')?.content || '';
   if (!version) return;
-  const valid = value => typeof value === 'string' && /^\\d{4}\\.\\d{1,2}\\.\\d{1,2}\\.\\d+$/.test(value);
+  const valid = value => typeof value === 'string' && /^\d{4}\.\d{1,2}\.\d{1,2}\.\d+$/.test(value);
   const newer = (remote, local) => {
     if (!valid(remote) || !valid(local)) return false;
     const a = remote.split('.').map(Number), b = local.split('.').map(Number);
