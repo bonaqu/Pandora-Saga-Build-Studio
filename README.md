@@ -41,6 +41,12 @@ First successful login: owner-only entry → `administrator` → new password (m
 
 **Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
 
+## 2026-10-30 — выпуск 2026.10.30.77
+
+- Компактные заголовки категорий «Пути героя»; список объединённых порогов показывает каждый навык с нужным числом очков и честной отметкой ограничения класса.
+- Для предотвращения рассинхронизации релизов: `npm run release:check`; следующий локальный выпуск можно подготовить через `npm run release:bump -- YYYY.MM.DD.N "Описание"`. Actions не нужны.
+- Это исходники. Проверку live Pages и визуальную приёмку выполняем отдельно.
+
 ## 2026-10-30 — выпуск 2026.10.30.76
 
 - Уведомление об обновлении теперь удаляет `ps-revision` из видимого адреса **после** получения свежего HTML, сохраняя кеш-обход и остальные параметры ссылки. Старый манифест не предлагает downgrade.
