@@ -2,9 +2,24 @@
    Static GitHub Pages: no worker and no GitHub Actions required. */
 (function () {
   'use strict';
+  // First load the cache-busted HTML, then show its clean canonical URL.
+  // history.replaceState does NOT request the potentially stale unversioned HTML.
+  const current = new URL(location.href);
+  if (current.searchParams.has('ps-revision')) {
+    current.searchParams.delete('ps-revision');
+    history.replaceState(history.state, '', current.pathname + current.search + current.hash);
+  }
   const version = document.querySelector('meta[name="ps-studio-release"]')?.content || '';
   if (!version) return;
-  const valid = value => typeof value === 'string' && /^[a-zA-Z0-9.-]{1,70}$/.test(value);
+  const valid = value => typeof value === 'string' && /^\\d{4}\\.\\d{1,2}\\.\\d{1,2}\\.\\d+$/.test(value);
+  const newer = (remote, local) => {
+    if (!valid(remote) || !valid(local)) return false;
+    const a = remote.split('.').map(Number), b = local.split('.').map(Number);
+    for (let i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return a[i] > b[i];
+    }
+    return false;
+  };
   let latest = '', lastActivity = Date.now(), deferred = false, applying = false;
   const onActivity = () => { lastActivity = Date.now(); };
   document.addEventListener('pointerdown', onActivity, { passive: true });
@@ -59,7 +74,7 @@
       } finally { clearTimeout(timeout); }
       if (!response.ok) return;
       const manifest = await response.json();
-      if (valid(manifest?.release) && manifest.release !== version) {
+      if (newer(manifest?.release, version)) {
         latest = manifest.release;
         showUpdate(latest);
       }
