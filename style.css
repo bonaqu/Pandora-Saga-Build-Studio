@@ -364,3 +364,29 @@ a.wiki-link:hover{text-decoration:none}
  .workspace .mini-note{flex-shrink:0}
  .workspace .hero-actions{flex-shrink:0}
 }
+
+/* 2026.10.30.30: in-portrait equipment information / Souls / gems */
+.race-sex-info{font-size:11px;color:#dfc28b;margin:7px 0}
+.stage-rich-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;flex-shrink:0}
+.stage-rich-tabs button,.stage-grade button,.stage-rich-switch{min-width:0;padding:7px 3px;border:1px solid #97704a;background:#301f15;color:#ead0a4;font-size:10px}
+.stage-rich-tabs button.chosen,.stage-grade button.chosen{background:#79502a;border-color:#f0c17a;color:#fff2d6}
+.stage-rich-body{display:flex;flex-direction:column;gap:7px;min-height:0;flex:1;overflow-y:auto;overscroll-behavior:contain}
+.stage-rich-summary{padding:7px;border:1px solid #785737;background:#201710}
+.stage-rich-head{display:flex;align-items:center;gap:8px;font:600 19px 'Cormorant Garamond',serif}
+.stage-rich-head img{width:44px;height:44px;object-fit:contain}
+.stage-rich-fields{display:grid;grid-template-columns:1fr 1fr;margin:7px 0;font-size:11px;gap:3px}
+.stage-rich-fields dt{color:#baa17c}.stage-rich-fields dd{margin:0;text-align:right;color:#f3d2a1;overflow-wrap:anywhere}
+.stage-rich-desc{white-space:pre-line;color:#e0ccae;font-size:11px;line-height:1.4}
+.stage-rich-note{color:#c1a78a;font-size:10px}
+.stage-rich-body h4{font:600 17px 'Cormorant Garamond',serif;margin:8px 0 1px;color:#edc98b}
+.stage-grade{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:3px}
+.stage-rich-sockets{display:flex;gap:5px;flex-wrap:wrap}
+.stage-rich-sockets button{display:flex;align-items:center;flex-direction:column;width:60px;min-height:55px;background:#2e2016;border:1px solid #9c774d;color:#e7c68e}
+.stage-rich-sockets img{width:31px;height:31px;object-fit:contain}
+.stage-rich-sockets small{font-size:9px;overflow:hidden;max-width:100%;text-overflow:ellipsis;white-space:nowrap}
+.stage-rich-body input[type=search]{background:#140d09;color:#f2d9ab;border:1px solid #a17a50;padding:9px;min-width:0;width:100%}
+.stage-rich-list{display:grid;gap:4px;min-height:0;overflow-y:auto}
+.stage-rich-result{display:flex;align-items:center;gap:8px;background:#26190f;color:#edc898;border:1px solid #7b5635;padding:5px;text-align:left}
+.stage-rich-result img{width:34px;height:34px;object-fit:contain}
+.stage-rich-result:hover{border-color:#f0c47e;background:#49311e}
+.stage-hover-preview{position:fixed;z-index:240;width:min(320px,90vw);max-height:75vh;overflow:auto;background:#261a12;color:#f4d5a6;border:2px double #c89b5d;box-shadow:0 15px 50px #000e;pointer-events:none;padding:8px}
