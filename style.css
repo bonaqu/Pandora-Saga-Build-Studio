@@ -880,3 +880,52 @@ a.wiki-link:hover{text-decoration:none}
   width:30px;min-width:30px;height:30px;min-height:30px;
  }
 }
+
+/* Equipment overlay layout: slot, soul count and refinement occupy separate corners. */
+.workspace .equipment-rail{gap:clamp(4px,.55vh,7px)}
+.workspace .equipment-rail .equipment-slot{
+ display:flex;align-items:center;justify-content:center;overflow:hidden;
+ padding:2px;isolation:isolate;
+}
+.workspace .equipment-rail .equipped-icon{
+ display:block;width:calc(100% - 2px);height:calc(100% - 2px);
+ object-fit:contain;background:#0c0b09;border:1px solid #745438;
+}
+.workspace .equipment-rail .equipment-slot.equipped>small{display:none}
+.workspace .equipment-rail .equipment-slot:not(.equipped)>small{bottom:0}
+.workspace .equipment-rail .stage-sockets{
+ top:auto;bottom:1px;left:1px;right:auto;min-height:12px;
+ max-width:calc(100% - 2px);padding:0 2px;
+ font:700 9px/12px Manrope,Arial,sans-serif;
+ white-space:nowrap;border-radius:0 3px 0 0;
+ background:#19130ff2;
+}
+.workspace .equipment-rail .stage-enhance{
+ top:1px;right:1px;left:auto;padding:0 2px;
+ min-height:12px;font:700 9px/12px Manrope,Arial,sans-serif;
+ border-radius:0 0 0 3px;background:#4b2c13f2;
+}
+.workspace .equipment-rail .stage-conflict{bottom:auto;top:0;left:0;right:auto}
+.stage-hover-preview.stage-item-tooltip{
+ width:min(340px,calc(100vw - 16px));max-height:calc(100dvh - 16px);
+ overflow-y:auto;overscroll-behavior:contain;
+ font-size:11px;padding:10px;pointer-events:none;
+ border-radius:4px;
+}
+.stage-item-tooltip .stage-rich-summary{min-width:0}
+.stage-item-tooltip .stage-rich-head{min-width:0}
+.stage-item-tooltip .stage-rich-fields{margin:5px 0}
+@media(min-width:1201px){
+ .workspace .equipment-rail .equipment-slot{
+  --studio-slot:clamp(46px,5.3vh,58px);
+  width:var(--studio-slot);height:var(--studio-slot);
+ }
+ .workspace .equipment-rail .equipped-icon{
+  width:calc(var(--studio-slot) - 6px);
+  height:calc(var(--studio-slot) - 6px);
+ }
+}
+@media(max-width:1200px){
+ .workspace .equipment-rail .equipment-slot{width:clamp(42px,5.5vw,52px);height:clamp(42px,5.5vw,52px)}
+ .workspace .equipment-rail .equipped-icon{width:calc(100% - 2px);height:calc(100% - 2px)}
+}
