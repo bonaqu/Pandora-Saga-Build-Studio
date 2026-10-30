@@ -11,6 +11,13 @@ const names={'1H_SWORD':'Одноручный меч','2H_SWORD':'Двуручн
 'DECO_CUISSES':'Декоративные поножи','DECO_GLOVES':'Декоративные перчатки','DECO_BOOTS':'Декоративная обувь','DECO_MANTLE':'Декоративный плащ'};
 const slots={weapon:'Оружие',shield:'Щит',head:'Шлем',body:'Нагрудник',gloves:'Перчатки',legs:'Поножи',feet:'Обувь',cloak:'Плащ',ring:'Кольцо',neck:'Амулет',belt:'Пояс',ear:'Серьга'};
 function kind(record){return record?(names[String(record.kind||'').toUpperCase()]||slots[record.slot]||'Предмет'):'Предмет'}
+function displayName(record,fallback='Без названия'){
+ const candidate=record?.name?.en||record?.names?.en||record?.name?.ru||
+  record?.names?.ru||record?.name;
+ const name=typeof candidate==='string'?candidate.trim():'';
+ // Historical imported builds may have stored the database ID as the item's name.
+ return name&&!/^\d{1,20}$/.test(name)?name:fallback;
+}
 function description(s){
  if(typeof s!=='string')return '';
  return s.replace(/\r\n?/g,'\n').replace(/<br\s*\/?>/gi,'\n')
@@ -20,5 +27,5 @@ function description(s){
  .replace(/(:)\s*(?=[А-ЯЁ])/g,'$1\n')
  .replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
-root.PandoraItemPresentation=Object.freeze({kind,description});
+root.PandoraItemPresentation=Object.freeze({kind,description,displayName});
 })(typeof window==='undefined'?globalThis:window);
