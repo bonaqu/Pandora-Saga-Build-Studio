@@ -81,7 +81,7 @@ function viewGrowth(target,api){
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
           locked=make('div',{class:'inline-mastery-locked',
-           title:'Предел класса: '+cap+' из '+visualMax+'. Красная часть не доступна для распределения.'});
+           'aria-label':'Предел класса: '+cap+' из '+visualMax+'. Красная часть недоступна.'});
     if(cap>=visualMax)locked.hidden=true;
     const lockedFraction=Math.max(0,Math.min(1,cap/visualMax));
     const lockedOffset=12-24*lockedFraction;
@@ -238,13 +238,12 @@ function viewSkills(target,details,api){
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
     (String(api.selectedSkill?.id)===String(skill.id)?' active':''),
-   title:skill.name+'\n'+(skill.desc||'')+'\n'+(gate.problems.join(' · ')||'Известные условия выполнены'),
-   'aria-label':skill.name+' · '+(gate.learned?'доступно':'недоступно'),
+      'aria-label':skill.name+' · '+(gate.learned?'доступно':'недоступно'),
    'data-skill-id':String(skill.id),onclick:()=>api.onInspect(skill)});
   const src=api.icon(skill.branch,skill);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));item.append(img)}
   else item.append(make('span',{text:'✦'}));
-  item.append(make('span',{text:skill.name||String(skill.id)}));
+  item.append(make('span',{text:skill.name||'Умение без названия'}));
   grid.append(item);api.hover(item,skill);
  }
  target.append(grid);grid.scrollTop=previousScroll;
@@ -255,7 +254,7 @@ function viewSkills(target,details,api){
  const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===String(api.selectedSkill.id)):null;
  if(selected){details.hidden=false;
   const skill=selected.skill,gate=selected.gate;
-  details.append(make('h3',{text:skill.name||String(skill.id)}),
+  details.append(make('h3',{text:skill.name||'Умение без названия'}),
    make('p',{text:skill.desc||'Описание умения отсутствует.'}),
    make('p',{class:gate.learned?'path-skill-yes':'path-skill-no',
     text:gate.learned?'✓ Условия выполнены':
