@@ -1146,3 +1146,25 @@ main{padding-top:10px}
  .workspace>.left .race-slide-frame{max-height:205px;aspect-ratio:1.7 / 1}
  .workspace>.stage .panel-heading .hint{font-size:10px}
 }
+
+/* Remaked-source secondary attributes belong to the existing collapsed buffs area. */
+.origin-attribute-buffs{
+ display:grid;gap:7px;min-width:0;
+ border-top:1px solid #6b4b31;padding:0 0 5px;
+}
+.origin-attribute-buffs>summary{
+ cursor:pointer;padding:8px 2px;color:#e5cb9e;
+ font:600 11px Manrope,Arial,sans-serif;
+}
+.origin-attribute-buffs>label{
+ display:grid;gap:5px;padding:0 4px;min-width:0;
+}
+.origin-attribute-buffs>label.origin-buffs-checkbox{
+ display:flex;align-items:flex-start;gap:8px;
+}
+.origin-attribute-buffs input[type=number]{
+ width:100%;max-width:100%;min-width:0;
+ border:1px solid #8d6a42;background:#211710;
+ color:#f3d9aa;padding:7px 9px;
+}
+.origin-attribute-buffs .origin-buffs-hint{padding:4px}
