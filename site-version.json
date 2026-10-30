@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.38",
-  "notes": "Fix global gemstone model shadowing, in-portrait refine restrictions, retained scroll and non-wiki refresh navigation; unify scrollbars"
+  "release": "2026.10.30.39",
+  "notes": "Compact origins tabs, drill-down 28-job wizard with back navigation, selectable full race portraits and wider hero-skill column"
 }

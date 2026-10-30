@@ -459,3 +459,27 @@ a.wiki-link:hover{text-decoration:none}
 *::-webkit-scrollbar-track{background:#1b140f;border:1px solid #4c3826;border-radius:8px}
 *::-webkit-scrollbar-thumb{background:linear-gradient(#bc955b,#795330);border:1px solid #d5ac70;border-radius:8px}
 *::-webkit-scrollbar-thumb:hover{background:#c7a26b}
+
+/* 2026.10.30.39: desktop-first split layout, compact origin workspace and step-based class wizard */
+@media(min-width:1420px){
+ main{max-width:1900px}
+ .workspace{grid-template-columns:minmax(235px,275px) minmax(390px,0.94fr) minmax(380px,1.16fr);gap:12px}
+ .workspace .stage-inner .portrait-frame{width:min(64%,355px);max-width:355px}
+ .workspace .right{padding-inline:12px}
+}
+.origin-tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:9px 0 12px}
+.origin-tabs button{font-size:10px;min-width:0;padding:9px 2px;background:#291e14;border:1px solid #765335;color:#d3b78d}
+.origin-tabs button.active{color:#ffe3ac;background:#684627;border-color:#f2c88b}
+[data-origin-section][hidden]{display:none!important}
+.class-wizard-header{display:flex;align-items:center;gap:9px;border-bottom:1px solid #805f3e;padding:6px 1px 9px}
+.class-back{background:#302015;border:1px solid #846340;color:#f0cc98;padding:7px}
+.class-wizard-title{font-size:15px;color:#e8c28c}
+.class-wizard-path{color:#b59d7c;font-size:11px;overflow-wrap:anywhere;padding:7px 0}
+.class-wizard-choices{display:grid;gap:8px;margin:9px 0}
+.class-wizard-choice{display:flex;align-items:center;justify-content:space-between;gap:10px;text-align:left;border:1px solid #775735;background:linear-gradient(135deg,#39291c,#1c150f);padding:13px 10px;color:#f1d2a4}
+.class-wizard-choice strong{font-size:14px}
+.class-wizard-choice span{font-size:10px;color:#c4a675;flex-shrink:0}
+.class-wizard-choice:hover,.class-wizard-choice.active{background:#624025;border-color:#e6b879}
+.class-current-select{width:100%;background:#43301f;color:#f4d396;border:1px solid #b08c59;padding:8px;margin:6px 0}
+.class-wizard-hint{color:#c2ab89;font-size:11px;padding:6px}
+.race-slide-frame>img{cursor:pointer}

@@ -7,11 +7,23 @@ function readView(){try{return JSON.parse(sessionStorage.getItem(VIEW_KEY)||'{}'
 const bootView=readView();
 let expandedClassKeys=new Set(Array.isArray(bootView.expandedClasses)?bootView.expandedClasses:[]);
 let classTreeTouched=Boolean(bootView.classTreeTouched);
+let originActive=['race','passive','class','level'].includes(bootView.origin)?bootView.origin:'race';
+let jobPathKey=typeof bootView.jobPathKey==='string'?bootView.jobPathKey:null;
+function renderOriginTabs(){
+ document.querySelectorAll('[data-origin-section]').forEach(section=>{
+  section.hidden=section.dataset.originSection!==originActive;
+ });
+ document.querySelectorAll('[data-origin-tab]').forEach(button=>{
+  const selected=button.dataset.originTab===originActive;
+  button.classList.toggle('active',selected);
+  button.setAttribute('aria-selected',String(selected));
+ });
+}
 function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  tab:activeTab,open:!!document.getElementById('detailPanel')?.classList.contains('is-open'),
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
  slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage,
- expandedClasses:[...expandedClassKeys],classTreeTouched
+ expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey
  }))}catch{}}
 
 const OS='https://pandorasaga-os.com';
@@ -92,63 +104,66 @@ function renderRaces(){
   onclick:()=>{racePreviewIndex=(racePreviewIndex+step+portraitOptions.length)%portraitOptions.length;renderRaces();
     grid.querySelector('.race-slide-arrow.'+(step<0?'previous':'next'))?.focus({preventScroll:true})}});
  frame.append(img,arrow('❮',-1,'Предыдущий портрет'),arrow('❯',1,'Следующий портрет'));
+ const chooseRace=()=>{
+  if(chosen)return;
+  state.race=i;state.gender=gender;state.racialPassiveId=null;
+  selectedSkill=null;stageSlotPickerOpen=false;stageAttributesPage=null;
+  persist();render();saveView();
+ };
+ img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label','Выбрать '+img.alt);
+ img.addEventListener('click',chooseRace);
+ img.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseRace()}});
  const actions=h('div',{class:'race-slide-actions'});
  actions.append(h('span',{class:'race-slide-position',text:(racePreviewIndex+1)+' / '+portraitOptions.length}),
-  h('button',{type:'button',class:'race-slide-select'+(chosen?' selected':''),disabled:chosen,'aria-pressed':String(chosen),
-   text:chosen?'✓ Выбрано':'Выбрать этот образ',onclick:()=>{
-    if(chosen)return;
-    state.race=i;state.gender=gender;state.racialPassiveId=null;
-    selectedSkill=null;stageSlotPickerOpen=false;persist();render();
-    $('raceGrid').querySelector('.race-slide-select')?.focus({preventScroll:true});
-   }}));
+  h('button',{type:'button',class:'race-slide-select'+(chosen?' selected':''),'aria-pressed':String(chosen),
+   text:chosen?'✓ Выбрано':'Выбрать этот образ',onclick:chooseRace}));
  grid.append(frame,actions);
 }
 const CLASS_PARENT_FALLBACK={"WARRIOR":null,"GLADIATOR":"WARRIOR","KNIGHT":"WARRIOR","SCOUT":null,"ARCHER":"SCOUT","AGENT":"SCOUT","ACOLYTE":null,"PRIEST":"ACOLYTE","ASCETIC":"ACOLYTE","MAGE":null,"WIZARD":"MAGE","DARKROAR":"MAGE","JUGGERNAUT":"GLADIATOR","DRAGOON":"GLADIATOR","GENERAL":"KNIGHT","PALADIN":"KNIGHT","SNIPER":"ARCHER","PREDATOR":"ARCHER","ASSASSIN":"AGENT","DISTURBANCE":"AGENT","CLERIC":"PRIEST","ENCHANTER":"PRIEST","MONK":"ASCETIC","EXORCIST":"ASCETIC","WARLOCK":"WIZARD","CONJURER":"WIZARD","JESTER":"DARKROAR","CALAMITY":"DARKROAR"};
 function renderJobs(){
  const grid=$('classGrid');grid.replaceChildren();
- const info=jobKeys.map((key,i)=>({key,i,name:editableValue('job.'+i,jobs[i]||key),
- parent:catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null}));
- const children=new Map();
- for(const node of info){const key=node.parent||'root';if(!children.has(key))children.set(key,[]);children.get(key).push(node)}
- const activeKey=jobKeys[state.job];
- const isLineage=(key)=>{
-  for(let current=activeKey;current;current=classDefsParent(current))if(current===key)return true;
-  return false;
- };
- const classDefsParent=key=>catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null;
- const select=(node)=>{if(state.job===node.i)return;
-  state.job=node.i;
-  if(classTreeTouched){
-   for(let key=node.key;key;key=catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null)
-    expandedClassKeys.add(key);
-  }
-  persist();render();saveView();
- };
- const makeNode=(node,depth=0)=>{
-  const descendants=children.get(node.key)||[];
-  if(!descendants.length){
-   return h('button',{type:'button',class:'class-tree-leaf'+(state.job===node.i?' active':''),
-    'aria-pressed':String(state.job===node.i),text:node.name,onclick:()=>select(node)});
-  }
-  const isExpanded=classTreeTouched?expandedClassKeys.has(node.key):isLineage(node.key);
-  const details=h('details',{class:'class-tree-node depth-'+depth,open:isExpanded?'':null});
-  const summary=h('summary',{text:node.name,onclick:()=>{
-   requestAnimationFrame(()=>{
-    classTreeTouched=true;
-    if(details.open)expandedClassKeys.add(node.key);
-    else expandedClassKeys.delete(node.key);
-    saveView();
-   });
-  }});
-  const group=h('div',{class:'class-tree-contents'});
-  group.append(h('button',{type:'button',class:'class-tree-select'+(state.job===node.i?' active':''),
-   'aria-pressed':String(state.job===node.i),text:state.job===node.i?'✓ Выбран':'Выбрать '+node.name,
-   onclick:()=>select(node)}));
-  for(const child of descendants)group.append(makeNode(child,depth+1));
-  details.append(summary,group);
-  return details;
- };
- for(const root of children.get('root')||[])grid.append(makeNode(root,0));
+ const records=jobKeys.map((key,i)=>({key,i,name:editableValue('job.'+i,jobs[i]||key),
+  parent:catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null}));
+ const byKey=new Map(records.map(x=>[x.key,x]));
+ const parentOf=key=>byKey.get(key)?.parent||null;
+ // Invalid stored navigation must recover to root, not create a blank panel.
+ if(jobPathKey&&!byKey.has(jobPathKey))jobPathKey=null;
+ const current=jobPathKey?byKey.get(jobPathKey):null;
+ const path=[];
+ for(let k=jobPathKey;k&&byKey.has(k);k=parentOf(k))path.unshift(byKey.get(k));
+ const top=h('div',{class:'class-wizard-header'});
+ if(current){
+  top.append(h('button',{type:'button',class:'class-back',text:'← Назад',onclick:()=>{
+   jobPathKey=parentOf(jobPathKey);renderJobs();saveView();
+  }}));
+ }
+ top.append(h('strong',{class:'class-wizard-title',text:current?current.name:'Направление профессии'}));
+ grid.append(top);
+ if(path.length){
+  grid.append(h('p',{class:'class-wizard-path',text:path.map(x=>x.name).join(' › ')}));
+  grid.append(h('button',{type:'button',class:'class-current-select',
+    text:state.job===current.i?'✓ '+current.name+' · выбрано':'Выбрать '+current.name,
+    'aria-pressed':String(state.job===current.i),onclick:()=>{
+     state.job=current.i;persist();render();saveView();
+    }}));
+ }
+ const next=records.filter(x=>x.parent===(jobPathKey||null));
+ const choices=h('div',{class:'class-wizard-choices'});
+ for(const node of next){
+  const hasChildren=records.some(x=>x.parent===node.key);
+  choices.append(h('button',{type:'button',class:'class-wizard-choice'+(state.job===node.i?' active':''),
+    'aria-label':node.name+(hasChildren?' — перейти к специализациям':' — выбрать профессию'),
+    'aria-pressed':String(state.job===node.i),
+    onclick:()=>{
+     if(hasChildren){jobPathKey=node.key;renderJobs();saveView();return}
+     state.job=node.i;persist();render();saveView();
+    }},[
+      h('strong',{text:node.name}),
+      h('span',{text:hasChildren?'Специализации ›':state.job===node.i?'✓ Выбрано':'Выбрать'})
+    ]));
+ }
+ grid.append(choices);
+ if(!next.length&&current)grid.append(h('p',{class:'class-wizard-hint',text:'Конечная специализация. Можно выбрать её или вернуться назад.'}));
 }
 let workbenchReturnFocus=null;
 function showWorkbench(){
@@ -472,7 +487,7 @@ function branchRow(b,full){
   h('b',{class:'count',text:String(points)}));
  return btn;
 }
-function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);
+function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderBranches();refreshBudgetLabel();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderHudEstimates();updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
@@ -1528,6 +1543,11 @@ async function loadCatalog(){
  applyGameLocale();persist();
 }
 async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
+$('originTabs').onclick=event=>{
+ const button=event.target.closest('[data-origin-tab]');
+ if(!button)return;
+ originActive=button.dataset.originTab;renderOriginTabs();saveView();
+};
 $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');
 $('stageAttributeToggle').onclick=()=>{
  stageAttributesPage=stageAttributesPage?null:'attack';renderStageAttributes();saveView()
