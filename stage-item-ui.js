@@ -49,7 +49,7 @@ function attachPreview(target,record,icon,kind='item'){
  let tip=null;
  const remove=()=>{
   if(livePreview===tip)livePreview=null;
-  if(tip?.isConnected)tip.remove();
+  tip?.remove();
   tip=null;target.removeAttribute('aria-describedby');
  };
  const show=()=>{
@@ -67,7 +67,11 @@ function attachPreview(target,record,icon,kind='item'){
   const w=tip.getBoundingClientRect().width,h=tip.getBoundingClientRect().height;
   // Prefer the side of the slot with enough space. Avoid covering the hovered icon.
   const right=box.right+10,left=box.left-w-10;
-  const x=right+w<=vw-8?right:left>=8?left:
+  const preferredLeft=Boolean(target.closest?.('.right-rail'));
+  const preferredRight=Boolean(target.closest?.('.left-rail'));
+  const rightFits=right+w<=vw-8,leftFits=left>=8;
+  const x=preferredLeft&&leftFits?left:preferredRight&&rightFits?right:
+   rightFits?right:leftFits?left:
    Math.max(8,Math.min(vw-w-8,box.left+box.width/2-w/2));
   const y=Math.max(8,Math.min(vh-h-8,box.top));
   tip.style.left=x+'px';tip.style.top=y+'px';
