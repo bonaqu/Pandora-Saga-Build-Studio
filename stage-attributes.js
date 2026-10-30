@@ -37,7 +37,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   const top=make('div',{class:'stage-attribute-identity'});
   const src=icon(rec);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));top.append(img)}
-  top.append(make('b',{text:rec.name||String(rec.id)}));
+  top.append(make('b',{text:rec.name||'Предмет без названия'}));
   card.append(top);
   if(page==='attack'){
    card.append(make('p',{text:'Базовая атака '+(rec.W??'—')+' · Дальность '+(rec.range??'—')+
@@ -48,11 +48,12 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   }else{
    const effects=Array.isArray(rec.effects)?rec.effects:[];
    if(rec.desc)card.append(make('p',{class:'stage-rich-desc',text:rec.desc}));
-   if(effects.length)card.append(make('p',{class:'stage-attribute-note',text:
+   // Raw EP_* codes are database diagnostics, not a useful player-facing description.
+   if(effects.length&&root.PandoraStudioAdminActive?.())card.append(make('p',{class:'stage-attribute-note',text:
     'Исходные коды эффектов: '+effects.map(e=>e.func+
      (e.a==null?'':' ('+e.a+(e.b==null?'':', '+e.b)+')')).join('; ')}));
    if(row.souls.length)for(const soul of row.souls){
-    card.append(make('p',{class:'stage-attribute-soul',text:'✦ '+(soul.name||soul.id)+
+    card.append(make('p',{class:'stage-attribute-soul',text:'✦ '+(soul.name||'Душа без названия')+
      ' · '+(soul.desc||'Описание души не найдено')}));
    }
   }body.append(card);
