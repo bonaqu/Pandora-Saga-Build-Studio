@@ -41,7 +41,7 @@ if(path==='/api/admin/logout'&&method==='POST'){const token=(request.headers.get
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request);const key=data?.key,value=data?.value;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.(?:[0-9]|1[0-9]|2[0-4]))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>240)return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.(?:[0-9]|1[0-9]|2[0-4])|item\.[a-zA-Z0-9_.-]{1,70}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.\d{1,2}\.\d{1,3}|skilldesc\.\d{1,2}\.\d{1,3})$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('skilldesc.')?2000:240))return no('Unsupported editable field');
  await env.DB.prepare(`INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`).bind(key,value.trim(),Date.now()).run();return json({ok:true,key,value:value.trim()})
 }
 return no('Not found',404)
