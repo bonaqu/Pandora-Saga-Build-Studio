@@ -12,8 +12,10 @@ function make(tag,attr={},children=[]){
  for(const v of children)e.append(typeof v==='string'?document.createTextNode(v):v);
  return e;
 }
-function readiness(skill,api){
+function readiness(skill,api,seen=new Set()){
  const problems=[],state=api.state,job=api.job;
+ if(seen.has(String(skill.id)))return {learned:false,problems:['Циклическая зависимость навыков']};
+ const chain=new Set(seen);chain.add(String(skill.id));
  if(skill.classes&&!Object.hasOwn(skill.classes,job))problems.push('Не подходит профессии');
  if(Number(skill.charLevel)>state.level)problems.push('Требуется уровень '+skill.charLevel);
  const required=Array.isArray(skill.reqs)?skill.reqs:[];
@@ -24,7 +26,14 @@ function readiness(skill,api){
   if(points<need)problems.push(name+': вложено '+points+'/'+need);
   if(green<need)problems.push(name+': мастерство '+green+'/'+need);
  }
- if(skill.prereq)problems.push('Предыдущее умение требует подтверждения');
+ if(skill.prereq){
+  const previous=api.skillCatalog.find(row=>String(row.id)===String(skill.prereq));
+  if(!previous)problems.push('Предыдущее умение не найдено');
+  else{
+   const prerequisite=readiness(previous,api,chain);
+   if(!prerequisite.learned)problems.push('Требуется предыдущее умение «'+previous.name+'»');
+  }
+ }
  if(skill.learnable===false)problems.push('Особый способ изучения');
  if(Number(skill.reqLevel)>0&&!required.length)problems.push('Дополнительное условие '+skill.reqLevel+' не подтверждено');
  return {learned:!problems.length,problems};

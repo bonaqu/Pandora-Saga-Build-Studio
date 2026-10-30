@@ -601,7 +601,7 @@ function renderBranches(){
   if(first)selectedSkillGroup=first.id;
  }
  const selected=groups.find(g=>g.id===selectedSkillGroup)||groups[0];
- if(inlineBranchId===null){
+ if(inlineBranchId===null||(inlineBranchId&&!selected.branches.includes(inlineBranchId))){
   inlineBranchId=selected.branches.find(id=>id!=='race'&&branchCap(id)>0)||
    selected.branches.find(id=>id!=='race')||'';
  }
@@ -1267,7 +1267,7 @@ function sanitizeSharedState(original){
   const v=original.profile?.[key];
   if(typeof v==='string')safe.profile[key]=v.slice(0,key==='about'?500:80);
  }
- if(Number.isInteger(original.racialPassiveId)&&original.racialPassiveId>=0&&original.racialPassiveId<1000000)
+ if(Number.isSafeInteger(original.racialPassiveId)&&original.racialPassiveId>=0&&original.racialPassiveId<10000000000)
   safe.racialPassiveId=original.racialPassiveId;
  return safe;
 }

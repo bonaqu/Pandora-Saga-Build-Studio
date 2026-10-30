@@ -12,7 +12,7 @@ test('character portrait, Origin stats, and Hero Path are the core single-screen
  assert.doesNotMatch(html,/data-tab="(?:skills|stats)"/);
  assert.doesNotMatch(html,/id="stageQuickbar"/);
  assert.match(app,/function renderBranches\(/);
- assert.match(app,/class:'inline-skill-list'/);
+ assert.match(source('hero-path.js'),/path-skill-card/);
  assert.match(app,/function showWorkbench\(/);
  assert.match(app,/function closeWorkbench\(/);
  assert.match(css,/\.detail\.is-open\s*\{/);

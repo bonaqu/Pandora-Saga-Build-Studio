@@ -52,3 +52,9 @@ test('health endpoint exposes D1 sharing readiness without claiming feature depl
  assert.match(worker,/Хранилище коротких ссылок не подготовлено: нужна миграция D1/);
  assert.match(worker,/return no\('Хранилище коротких ссылок не подготовлено: нужна миграция D1',503\)/);
 });
+
+test('shared racial passive IDs retain original OS values above one million',()=>{
+ const s=read('app.js');
+ assert.match(s,/Number\.isSafeInteger\(original\.racialPassiveId\)/);
+ assert.match(s,/original\.racialPassiveId<10000000000/);
+});
