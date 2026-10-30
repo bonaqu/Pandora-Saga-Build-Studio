@@ -947,6 +947,21 @@ async function showCatalogImport(){
     line.append(h('strong',{text:row.dataset}),h('span',{text:'+'+row.added.length+' новых · ~'+row.changed.length+' изменено · −'+row.removed.length+' удалено'}));
     const ids=[...row.added.slice(0,3).map(x=>'+'+x),...row.changed.slice(0,3).map(x=>'~'+x),...row.removed.slice(0,3).map(x=>'−'+x)];
     if(ids.length)line.append(h('small',{text:ids.join(' · ')+(row.total>ids.length?' · ещё '+(row.total-ids.length):'')}));
+    if(row.examples?.length){
+      const details=h('details',{class:'catalog-diff-details'});
+      details.append(h('summary',{text:'Посмотреть конкретные изменения ('+Math.min(row.examples.length,row.total)+' из '+row.total+')'}));
+      for(const entry of row.examples){
+        const record=h('div',{class:'catalog-diff-record'});
+        record.append(h('strong',{text:(entry.kind==='added'?'＋ ':entry.kind==='removed'?'− ':'~ ')+entry.key}));
+        for(const field of entry.fields.slice(0,12)){
+          const item=h('div',{class:'catalog-diff-field'});
+          item.append(h('code',{text:field.field}),h('span',{text:field.before+' → '+field.after}));
+          record.append(item);
+        }
+        details.append(record);
+      }
+      line.append(details);
+    }
     report.append(line);
    }
    proposed=ready;summary=comparisons;provenance=mode;

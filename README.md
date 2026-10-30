@@ -144,3 +144,7 @@ The gear catalog now has two remembered viewing modes: **▦ icon grid** and **�
 ## 2026-10-30.20 — wiki navigation and performance
 
 Wiki game datasets load through four concurrent fetch workers rather than sequentially; active catalog remains our D1, with repository snapshot fallback per dataset. Item/skill/soul search includes both RU source strings and confirmed English names. Item and monster views show actual icon URLs when an image exists (the self-hosted manifest takes priority). Links now retain an optional highlighted source ID in the URL fragment, so sharing, refreshing or navigating browser history keeps the context. Source item icons are also visible beside monster drops.
+
+## 2026-10-30.21 — catalog change review
+
+The authenticated manual OS refresh now previews examples of **specific before/after field changes**, not just item IDs and total counts. Changed scalar fields (e.g. `mana`, `level`, `name`, `statCaps`) are readable; complex arrays/objects are shown in bounded text previews. The first 30 changed records per dataset can be inspected; totals still include every record. Object-key reordering is normalized to avoid false positive updates. Read-only previews never publish automatically.
