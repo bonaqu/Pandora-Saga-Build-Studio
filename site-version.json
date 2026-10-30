@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.43",
-  "notes": "Fix stale deep link when wiki is explicitly closed and preserve direct link navigation; add real in-portrait handler test and GitHub implementation roadmap"
+  "release": "2026.10.30.44",
+  "notes": "Three Origin tabs: race with racial passive, class wizard, level and six abbreviations-based base attributes; safe legacy tab migration and same-race passive preservation"
 }

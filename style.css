@@ -491,3 +491,35 @@ a.wiki-link:hover{text-decoration:none}
 /* 2026.10.30.42: descriptive partial modifier summary */
 .stage-attribute-row>strong{display:block;font-size:12px;color:#efcc95;line-height:1.3}
 .stage-attribute-row>p{color:#d4ba90}
+
+/* 2026.10.30.44 — three contextual Origin tabs and inline six-stat character editor */
+.origin-tabs{grid-template-columns:0.75fr 1fr 1.3fr;gap:5px}
+.origin-tabs button{min-height:38px;font-size:11px;padding:7px 4px;white-space:normal}
+.origin-passive-heading{margin-top:15px!important;padding-top:9px;border-top:1px solid #725034}
+.origin-passive-heading span{font-size:10px}
+#originPanelRace .origin-passives{max-height:none;overflow:visible;grid-template-columns:1fr}
+#originPanelRace .origin-passive{flex-direction:row;text-align:left;padding:7px 8px}
+#originPanelRace .origin-passive b{white-space:normal}
+.origin-levelbox{margin-top:5px;padding:10px}
+.origin-stats-heading{margin-top:12px}
+.origin-stat-summary{font-size:11px;line-height:1.4;color:#ebc78f;margin:7px 0 10px}
+.origin-stat-list{display:grid;gap:6px}
+.origin-stat-row{display:grid;grid-template-columns:minmax(0,1fr) 26px 44px 26px 30px;align-items:center;gap:4px;min-height:39px;border:1px solid #6c4c2f;background:#211811;padding:4px 5px}
+.origin-stat-title{display:flex;flex-direction:column;min-width:0}
+.origin-stat-title b{font-size:12px;letter-spacing:.05em;color:#efc995}
+.origin-stat-title span{font-size:9px;color:#b9a181;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.origin-stat-row button{height:27px;min-width:0;background:#3c2a1a;border:1px solid #967146;color:#f2ca8b;font-size:17px;line-height:1}
+.origin-stat-row button:hover{background:#73502d;border-color:#f2ca8b}
+.origin-stat-input{width:100%;min-width:0;background:#130e0a;color:#f9deaa;border:1px solid #80613f;font-size:12px;text-align:center;padding:6px 2px;font-variant-numeric:tabular-nums}
+.origin-stat-input::-webkit-outer-spin-button,.origin-stat-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.origin-stat-input{-moz-appearance:textfield;appearance:textfield}
+.origin-stat-cap{font-size:9px;color:#b89b78;white-space:nowrap;text-align:right}
+.origin-stats-note{color:#ad997c;font-size:10px;line-height:1.5;margin-top:10px}
+.class-wizard-progress{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;margin:8px 0 10px}
+.class-wizard-step{padding:6px 3px;border:1px solid #715334;color:#9e8971;font-size:9px;line-height:1.3;text-align:center}
+.class-wizard-step.current{background:#624427;color:#ffdc9e;border-color:#ebbd79}
+.class-wizard-step.completed{background:#322d1f;color:#d2bb88}
+.class-wizard-breadcrumbs{display:flex;flex-wrap:wrap;gap:4px;margin:5px 0}
+.class-wizard-breadcrumbs button{background:#241911;border:1px solid #7c5b38;color:#c9a97c;font-size:10px;padding:5px 7px}
+.class-wizard-breadcrumbs button[aria-current="step"]{background:#594027;color:#f5d49e}
+.class-wizard-choice.on-path:not(.active){border-color:#b49b5e}

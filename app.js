@@ -7,7 +7,7 @@ function readView(){try{return JSON.parse(sessionStorage.getItem(VIEW_KEY)||'{}'
 const bootView=readView();
 let expandedClassKeys=new Set(Array.isArray(bootView.expandedClasses)?bootView.expandedClasses:[]);
 let classTreeTouched=Boolean(bootView.classTreeTouched);
-let originActive=['race','passive','class','level'].includes(bootView.origin)?bootView.origin:'race';
+let originActive=window.PandoraOriginModel.tab(bootView.origin);
 let jobPathKey=typeof bootView.jobPathKey==='string'?bootView.jobPathKey:null;
 function renderOriginTabs(){
  document.querySelectorAll('[data-origin-section]').forEach(section=>{
@@ -120,7 +120,7 @@ function renderRaces(){
  frame.append(img,arrow('❮',-1,'Предыдущий портрет'),arrow('❯',1,'Следующий портрет'));
  const chooseRace=()=>{
   if(chosen)return;
-  state.race=i;state.gender=gender;state.racialPassiveId=null;
+  state=window.PandoraOriginModel.selectRace(state,i,gender);
   selectedSkill=null;stageSlotPickerOpen=false;stageAttributesPage=null;
   persist();render();saveView();
  };
@@ -145,6 +145,14 @@ function renderJobs(){
  const current=jobPathKey?byKey.get(jobPathKey):null;
  const path=[];
  for(let k=jobPathKey;k&&byKey.has(k);k=parentOf(k))path.unshift(byKey.get(k));
+ const depth=Math.min(path.length,2),activeAncestors=new Set();
+ for(let k=jobKeys[state.job];k&&byKey.has(k);k=parentOf(k))activeAncestors.add(k);
+ const progress=h('div',{class:'class-wizard-progress','aria-label':'Этап выбора профессии'});
+ for(let i=0;i<3;i++){
+  progress.append(h('span',{class:'class-wizard-step'+(i===depth?' current':'')+(i<depth?' completed':''),
+   text:(i+1)+'. '+['Направление','Профессия','Специализация'][i]}));
+ }
+ grid.append(progress);
  const top=h('div',{class:'class-wizard-header'});
  if(current){
   top.append(h('button',{type:'button',class:'class-back',text:'← Назад',onclick:()=>{
@@ -153,6 +161,13 @@ function renderJobs(){
  }
  top.append(h('strong',{class:'class-wizard-title',text:current?current.name:'Направление профессии'}));
  grid.append(top);
+ if(path.length){
+  const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':'Вернуться на предыдущий уровень'});
+  crumbs.append(h('button',{type:'button',text:'Все направления',onclick:()=>{jobPathKey=null;renderJobs();saveView()}}));
+  for(const node of path)crumbs.append(h('button',{type:'button',text:node.name,'aria-current':node.key===jobPathKey?'step':null,
+    onclick:()=>{jobPathKey=node.key;renderJobs();saveView()}}));
+  grid.append(crumbs);
+ }
  if(path.length){
   grid.append(h('p',{class:'class-wizard-path',text:path.map(x=>x.name).join(' › ')}));
   grid.append(h('button',{type:'button',class:'class-current-select',
@@ -165,12 +180,12 @@ function renderJobs(){
  const choices=h('div',{class:'class-wizard-choices'});
  for(const node of next){
   const hasChildren=records.some(x=>x.parent===node.key);
-  choices.append(h('button',{type:'button',class:'class-wizard-choice'+(state.job===node.i?' active':''),
+  choices.append(h('button',{type:'button',class:'class-wizard-choice'+(state.job===node.i?' active':'')+(activeAncestors.has(node.key)?' on-path':''),
     'aria-label':node.name+(hasChildren?' — перейти к специализациям':' — выбрать профессию'),
     'aria-pressed':String(state.job===node.i),
     onclick:()=>{
      if(hasChildren){jobPathKey=node.key;renderJobs();saveView();return}
-     state.job=node.i;persist();render();saveView();
+     state.job=node.i;jobPathKey=node.key;persist();render();saveView();
     }},[
       h('strong',{text:node.name}),
       h('span',{text:hasChildren?'Специализации ›':state.job===node.i?'✓ Выбрано':'Выбрать'})
@@ -386,17 +401,75 @@ function renderStagePicker(focusSearch=false){
  root.append(top,search,count,list,bottom);draw();
  if(focusSearch)search.focus({preventScroll:true});
 }
+const ORIGIN_STAT_LABELS=[
+ {short:'ВЫН',name:'Выносливость',code:'vit'},
+ {short:'СИЛ',name:'Сила',code:'str'},
+ {short:'ПРВ',name:'Проворность',code:'agi'},
+ {short:'ЛВК',name:'Ловкость',code:'dex'},
+ {short:'СД',name:'Сила духа',code:'spi'},
+ {short:'ИНТ',name:'Интеллект',code:'int'}
+];
+// Legacy save keys remain unchanged: AGI was stored under «Ловкость», DEX under «Сноровка».
+function renderOriginStats(){
+ const container=$('originStats');
+ if(!container)return;
+ container.replaceChildren();
+ const summary=$('originStatSummary');
+ const refreshSummary=()=>{
+  const allocated=STATS.reduce((n,key)=>n+Number(state.stats[key]||0),0);
+  const estimate=previewBaseStats();
+  summary.textContent='Распределено: '+allocated+
+   (estimate?' · ОЗ ≈'+estimate.hp+' · ОМ ≈'+estimate.mp:' · ОЗ/ОМ после загрузки каталога');
+ };
+ const layout=h('div',{class:'origin-stat-list'});
+ for(let i=0;i<ORIGIN_STAT_LABELS.length;i++){
+  const info=ORIGIN_STAT_LABELS[i],key=STATS[i];
+  const cap=window.PandoraOriginModel.statLimit(catalog.classes,jobKeys[state.job],info.code);
+  const current=Number(state.stats[key]||0);
+  const row=h('div',{class:'origin-stat-row'});
+  const label=h('div',{class:'origin-stat-title',title:info.name});
+  label.append(h('b',{text:info.short}),h('span',{text:info.name}));
+  const minus=h('button',{type:'button',class:'origin-stat-minus',text:'−','aria-label':'Уменьшить '+info.name});
+  const value=h('input',{type:'number',class:'origin-stat-input',min:'0',max:String(cap??999),step:'1',
+   value:String(current),'aria-label':info.name+' — вложено очков',title:info.name});
+  const plus=h('button',{type:'button',class:'origin-stat-plus',text:'+','aria-label':'Увеличить '+info.name});
+  const status=h('small',{class:'origin-stat-cap',text:cap===null?'':'≤ '+cap});
+  function commit(next){
+   const number=Number(next);
+   if(!window.PandoraOriginModel.allowedStat(number,cap)){
+    value.value=String(state.stats[key]||0);return;
+   }
+   state.stats[key]=number;persist();
+   value.value=String(number);refreshSummary();renderHudEstimates();
+   if($('detailPanel').classList.contains('is-open')&&
+     (activeTab==='stats'||activeTab==='character'&&characterPanelTab==='stats'))renderDetails();
+  }
+  minus.addEventListener('click',()=>commit(Math.max(0,Number(state.stats[key]||0)-1)));
+  plus.addEventListener('click',()=>commit(Number(state.stats[key]||0)+1));
+  value.addEventListener('change',()=>commit(value.value));
+  row.append(label,minus,value,plus,status);layout.append(row);
+ }
+ container.append(layout);
+ refreshSummary();
+}
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
  root.replaceChildren();
  const ids=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
+ // A restored local build must not keep a racial passive from a different race.
+ const raceKey=window.PandoraGameNavigation.raceKeys[state.race];
+ if(catalog.racialPassives?.[raceKey]&&state.racialPassiveId!=null&&
+    !window.PandoraGameNavigation.selectionValid(catalog.racialPassives,state.race,state.racialPassiveId)){
+  state.racialPassiveId=null;persist();
+ }
+ const raceName=$('originRaceName');if(raceName)raceName.textContent=races[state.race][0];
  if(!ids.length){root.append(h('p',{class:'muted',text:'Расовые способности появятся после загрузки каталога.'}));return}
  for(const id of ids){
   const skill=catalog.skills?.[String(id)];if(!skill)continue;
   const selected=String(state.racialPassiveId)===String(id);
   const btn=h('button',{type:'button',class:'origin-passive'+(selected?' selected':''),'aria-pressed':String(selected),
    title:skill.desc||skill.name,'aria-label':skill.name+(selected?' — выбрано':' — выбрать'),
-   onclick:()=>{state.racialPassiveId=id;persist();renderOriginPassives();if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
+   onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
   else btn.append(h('span',{text:'✦'}));
@@ -506,7 +579,7 @@ function branchRow(b,full){
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
- 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderBranches();refreshBudgetLabel();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderHudEstimates();updateAdminHint()}
+ 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderHudEstimates();updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -1113,7 +1186,7 @@ function renderStats(root){
  STATS.forEach((key,i)=>{
   const code=codes[i];
   const raw=catalog.live?catalog.classes?.[jobKeys[state.job]]?.statCaps?.[code]:null;
-  const cap=Number.isFinite(Number(raw))&&raw!==null&&raw!==undefined?Math.max(0,Math.trunc(Number(raw))):null;
+  const cap=window.PandoraOriginModel.statLimit(catalog.classes,jobKeys[state.job],code);
   const value=Number(state.stats[key]||0);
   const ceiling=cap===null?Math.max(200,value):Math.max(cap,value);
   const box=h('section',{class:'stat-card stat-visual-editor'});
@@ -1129,7 +1202,7 @@ function renderStats(root){
   const exact=h('input',{type:'number',min:'0',max:String(cap??999),step:'1',value:String(value),'aria-label':'Точное значение '+key});
   const change=n=>{
    const next=Number(n);
-   if(!Number.isInteger(next)||next<0||next>(cap??999))return false;
+   if(!window.PandoraOriginModel.allowedStat(next,cap))return false;
    state.stats[key]=next;persist();renderHudEstimates();
    count.textContent=String(next);exact.value=String(next);range.value=String(next);
    fill.style.width=(cap&&cap>0?Math.min(100,next/cap*100):0)+'%';

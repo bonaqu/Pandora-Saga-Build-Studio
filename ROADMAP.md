@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest shipped client:** 0.43.0 (`2026.10.30.43`)  
+**Updated:** 2026-10-30 · **Latest shipped client:** 0.44.0 (`2026.10.30.44`)  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -17,7 +17,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 
 ## Already implemented; do not redo blindly
 
-- 8 selectable portrait variants for 6 races, one-page origin section tabs, 28-class drill-down wizard, right-hand skill allocation with class/level gates and skill-unlock markers.
+- 8 selectable portrait variants for 6 races; three Origin tabs (race plus passive / 28-class drill-down wizard / level plus six in-place stats); right-hand skill allocation with class/level gates and skill-unlock markers.
 - Portrait-local item, Soul, refinement (+0…+10) and element/type screens; accessory/cloak slots cannot refine. In-panel scroll stays anchored when adjusting the same item; generic site scrollbars share dark styling.
 - Wiki runs D1-first, falls back per catalog JSON to the repository, supports full result search with progressive 100-row paging, linked items/NPCs/monsters/chests/drops.
 - UI view/session restore no longer forces stale `#wiki/...` after switching tabs.
