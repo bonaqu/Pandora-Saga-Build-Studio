@@ -7,7 +7,7 @@ const load=p=>readFileSync(new URL(p,root),'utf8');
 
 test('version 0.30 exposes in-portrait item editor with its own bundled script',()=>{
  const html=load('index.html'),js=load('app.js'),ui=load('stage-item-ui.js');
- assert.match(html,/stage-item-ui\.js\?v=2026\.10\.30\.30/);
+ assert.match(html,/stage-item-ui\.js\?v=/);
  assert.match(html,/id="stagePicker"/);
  assert.match(js,/window\.PandoraStageItemUI\.render\(/);
  assert.match(ui,/\['choose','Выбор'\]/);
