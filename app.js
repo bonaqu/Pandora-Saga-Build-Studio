@@ -99,15 +99,22 @@ function previewBaseStats(){
  });
 }
 function renderOriginVitals(){
- // HP/MP are estimates, not an experience/level HUD. The visible Origin panel owns both.
- const estimate=previewBaseStats(),hp=$('originHp'),mp=$('originMp');
- if(hp)hp.textContent=estimate?'≈'+estimate.hp:'—';
- if(mp)mp.textContent=estimate?'≈'+estimate.mp:'—';
+ // The supported calculator returns rounded numeric totals. Parity with all server
+ // buffs, sets and conditional effects is still unverified; don't imply otherwise.
+ const calculated=previewBaseStats(),hp=$('originHp'),mp=$('originMp');
+ const hpReady=calculated&&Number.isFinite(calculated.hp);
+ const mpReady=calculated&&Number.isFinite(calculated.mp);
+ if(hp)hp.textContent=hpReady?String(calculated.hp):'—';
+ if(mp)mp.textContent=mpReady?String(calculated.mp):'—';
  const holder=$('originVitals');
- if(holder)holder.setAttribute('aria-label',estimate?
-  'Предварительные очки здоровья '+estimate.hp+' и маны '+estimate.mp+
-  '. Некоторые игровые эффекты пока не учитываются.':
-  'Очки здоровья и маны появятся после загрузки характеристик');
+ if(holder){
+  const notice=hpReady&&mpReady?
+   'ОЗ '+calculated.hp+', ОМ '+calculated.mp+
+   '. Расчёт по известным формулам, без некоторых эффектов, комплектов и усилений.':
+   'ОЗ и ОМ будут рассчитаны после загрузки игровых характеристик.';
+  holder.setAttribute('aria-label',notice);
+  holder.title=''; // Never show a second browser tooltip above game UI.
+ }
 }
 
 function budgetSummary(){
