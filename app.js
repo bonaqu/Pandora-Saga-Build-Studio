@@ -2,7 +2,6 @@
 // No invented combat formulas. Historical catalog is labelled explicitly.
 'use strict';
 const $=id=>document.getElementById(id);
-const SRC='https://raw.githubusercontent.com/bonaqu/Pandora-Saga-Simulator-remaked/bonaqu_projects/';
 const OS='https://pandorasaga-os.com';
 const API='https://ps-build-studio-cloud.bonaqu.workers.dev';
 const STATS=['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'];
@@ -23,7 +22,7 @@ function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(co
 function imageUrl(name){return `assets/${name}.webp`}
 const BRANCH_ICON_PATHS={"slash":"assets/skills/legacy/01-00.png","thrust":"assets/skills/legacy/02-00.png","brush":"assets/skills/legacy/03-00.png","blow":"assets/skills/legacy/04-00.png","defense":"assets/skills/legacy/05-00.png","archery":"assets/skills/legacy/07-00.png","alchemy":"assets/skills/legacy/08-00.png","assassin":"assets/skills/legacy/09-00.png","trap":"assets/skills/legacy/10-00.png","warding":"assets/skills/legacy/11-00.png","benevolence":"assets/skills/legacy/13-00.png","blessing":"assets/skills/legacy/14-00.png","exorcism":"assets/skills/legacy/15-00.png","hymn":"assets/skills/legacy/16-00.png","element":"assets/skills/legacy/18-00.png","embody":"assets/skills/legacy/19-00.png","darkness":"assets/skills/legacy/20-00.png","charm":"assets/skills/legacy/21-00.png","riding":"assets/skills/legacy/24-00.png"};
 function branchIcon(id){return BRANCH_ICON_PATHS[id]||'assets/ui/icons/skill-unknown.svg'}
-function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId){const path=iconManifest?.icons?.skills?.['skill_'+record.iconId];return path||`${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`}return `${SRC}image/icon/${String(cat).padStart(2,'0')}${String(idx).padStart(2,'0')}.png`}
+function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId){const path=iconManifest?.icons?.skills?.['skill_'+record.iconId];return path||`${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`}return branchIcon(cat)}
 function itemIcon(rec,kind='items'){const custom=override[(kind==='souls'?'visual.soul.':'visual.item.')+rec?.id];if(custom)return custom;return rec?.icon?(iconManifest?.icons?.[kind]?.[rec.icon]||`${OS}/icons/${kind}/${rec.icon}.webp?v=07682901`):null}
 function branchCap(branch){return catalog.live?(window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0):90}
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
@@ -40,7 +39,7 @@ if(!value)return null;
 return catalog.live?catalog.equipment?.[String(value.id)]||null:null;
 }
 function slotVisual(slot){
-const item=state.equipment[slot],r=item&&equippedRecord(slot),icon=r?itemIcon(r):item?.icon?`${OS}/icons/items/${item.icon}.webp`:null;
+const item=state.equipment[slot],r=item&&equippedRecord(slot),icon=r?itemIcon(r):null; // Unknown/stale equipment ID: avoid unverified remote icon
 if(!icon)return h("span",{text:slots[slot][1],class:"slot-glyph"});
 const img=h("img",{class:"equipped-icon",src:icon,alt:""});
 img.onerror=()=>{img.onerror=null;img.replaceWith(h("span",{text:slots[slot][1],class:"slot-glyph"}))};

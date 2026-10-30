@@ -156,3 +156,7 @@ The decorative horizontal connection line between skill icons was removed: it wr
 ## 2026-10-30.23 — navigation reliability
 
 All internal encyclopedia crosslinks now use real fragment URLs, so context links work with browser history, copying, keyboard navigation, and Ctrl/Cmd-click to open a new tab. The normal click stays within the all-in-one workspace. Milestone positions use broadly supported CSS `calc()` addition rather than multiplication, improving browser compatibility.
+
+## 2026-10-30.24 — remove broken Legacy icon fallback
+
+A missing current skill sprite now falls back to the **correct branch icon already mirrored into this repository**, not to an invalid dynamically constructed URL in the old simulator. Unknown or removed item IDs use the UI's slot glyph instead of silently fetching a non-authoritative external item icon. When the original OS icon WebPs are mirrored, verified entries in the local manifest replace the remaining OS image fallbacks.
