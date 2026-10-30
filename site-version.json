@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.79",
-  "notes": "Clean item tooltips, readable Soul and refinement badges, player-facing ID removal, and read-only D1 diagnostics"
+  "release": "2026.10.31.80",
+  "notes": "Hero Path unobstructed slider, balanced equipment icon rails, Origin HP/MP, removal of unused HUD and EXP"
 }
