@@ -1030,3 +1030,46 @@ main{padding-top:10px}
  main{padding-top:8px}
  .owner-session-state{padding:4px 6px;font-size:9px}
 }
+
+/* 2026.10.31.82 — substantial but uncluttered Origin vitals and selected profession. */
+.origin-vitals{
+ grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:8px;margin:10px 0 14px;
+}
+.origin-vital{
+ min-height:66px;display:grid;grid-template-columns:minmax(0,1fr);
+ align-content:center;justify-items:center;gap:2px;padding:9px 7px;
+ background:linear-gradient(165deg,#302216,#1a140f);
+ border:1px solid #937047;border-radius:4px;
+}
+.origin-vital span{
+ font:600 12px/1.25 Manrope,Arial,sans-serif;
+ letter-spacing:.02em;color:#debd8f;
+}
+.origin-vital strong{
+ font:700 clamp(21px,1.6vw,26px)/1.15 Georgia,serif;
+ color:#ffe0a9;white-space:nowrap;font-variant-numeric:tabular-nums;
+}
+.class-wizard-header{flex-wrap:wrap;gap:5px 9px}
+.class-wizard-title{min-width:0}
+.class-wizard-selected{
+ display:inline-flex;align-items:center;max-width:100%;
+ padding:3px 7px;border:1px solid #8e7549;
+ color:#e5c38d;background:#362919;border-radius:4px;
+ font:600 10px/1.3 Manrope,Arial,sans-serif;overflow-wrap:anywhere;
+}
+.class-wizard-choice-current{
+ color:#c5e5a4!important;font-weight:650;
+ white-space:normal;overflow-wrap:anywhere;
+}
+.class-wizard-choice.on-path{
+ border-color:#b49b5e;background:linear-gradient(#3f3020,#271c14);
+}
+@media(min-width:1201px){
+ .workspace>.left{min-height:var(--character-stage-height,700px);align-self:start}
+}
+@media(max-width:700px){
+ .origin-vital{min-height:60px;padding:7px 5px}
+ .origin-vital strong{font-size:21px}
+ .class-wizard-selected{font-size:10px}
+}
