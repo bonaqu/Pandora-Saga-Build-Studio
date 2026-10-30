@@ -25,3 +25,9 @@ test('cannot overspend or exceed 99; over-budget legacy builds may refund',()=>{
  const limit=m.snapshot({tables:os,race:'RAPIN',klass:'WARRIOR',level:55,added:[94,0,0,0,0,0]});
  assert.equal(limit.values[0],99);assert.equal(m.allowed(limit,0,95),false);
 });
+
+test('old build with 99 added over baseline may refund, never silently truncate',()=>{
+ const saved=m.snapshot({tables:os,race:'RAPIN',klass:'WARRIOR',level:55,added:[99,0,0,0,0,0]});
+ assert.ok(saved);assert.equal(saved.values[0],104);
+ assert.equal(m.allowed(saved,0,100),false);assert.equal(m.allowed(saved,0,98),true);
+});

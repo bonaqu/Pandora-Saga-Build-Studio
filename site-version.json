@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.46",
-  "notes": "OS race/class base attributes, Remaked level stat point budgets and progressive costs, restored central portrait width"
+  "release": "2026.10.30.47",
+  "notes": "Restore refund ability for previous saved allocations above absolute 99 and align tests with new detail stat presentation"
 }
