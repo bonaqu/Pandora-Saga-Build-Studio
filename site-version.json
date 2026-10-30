@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.80",
-  "notes": "Hero Path unobstructed slider, balanced equipment icon rails, Origin HP/MP, removal of unused HUD and EXP"
+  "release": "2026.10.31.81",
+  "notes": "Remove introductory banner and redundant status while preserving editor access and catalog error visibility"
 }
