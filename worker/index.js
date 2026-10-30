@@ -161,8 +161,8 @@ async function shareApi(request,env,path,ip){
 
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 // No runtime calls to the third-party game server. All game data is read from our own D1.
+ if(!env.DB)return no('Database not configured',503);
  if(path==='/api/shared'||/^\/api\/shared\/[A-Za-z0-9_-]{11}$/.test(path))return shareApi(request,env,path,ip);
-if(!env.DB)return no('Database not configured',503);
 if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
 // Restricted authenticated data refresh endpoint: fixed source host and 17 known names.
 // A preview does NOT change D1. The owner must explicitly confirm version publication.
@@ -191,7 +191,9 @@ if(path==='/api/health'&&method==='GET'){
  const found=new Set((tables.results||[]).map(row=>row.name));
  const ready=['admins','sessions','overrides','login_attempts'].every(name=>found.has(name));
  const sharingReady=['shared_builds','shared_build_limits'].every(name=>found.has(name));
- return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready,features:{sharing:sharingReady}},ready?200:503);
+ const catalogPublished=Boolean(await activeCatalog(env));
+ return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready,
+  features:{sharing:sharingReady,catalog:catalogPublished}},ready?200:503);
 }
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){
