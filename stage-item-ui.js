@@ -113,7 +113,7 @@ function render(root,api){
   const query=el('input',{type:'search',placeholder:'Поиск совместимой души','aria-label':'Поиск души'});
   const list=el('div',{class:'stage-rich-list'});
   const draw=()=>{
-   list.replaceChildren();const needle=query.value.trim().toLocaleLowerCase('ru');
+   list.replaceChildren();const needle=String(query.value||'').trim().toLocaleLowerCase('ru');
    const results=Object.values(api.catalog.souls||{}).filter(rec=>plan.validSoul(rec,slot)&&
     (String(rec.name||'')+' '+rec.id).toLocaleLowerCase('ru').includes(needle));
    for(const rec of results.slice(0,80)){
