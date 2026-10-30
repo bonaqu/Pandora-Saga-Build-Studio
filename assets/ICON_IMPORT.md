@@ -7,3 +7,7 @@ Run `node scripts/mirror-os-icons.mjs --dry-run` to see the expected total; run 
 The archive currently specifies **546 unique skill sprites, 880 item sprites, 11 soul sprites** (= 1437 icon paths) before verifying which source files are available. The manifest is authoritative only for files successfully downloaded, not for speculative mappings. After finishing: commit `assets/*/icons/*.webp` and `assets/os-icon-manifest.json` to `bonaqu_projects`. New icons arising from a later D1 import should be mirrored again using the updated source archive.
 
 **Verified counts:** `--dry-run` checks actual files and never falsely marks them as downloaded. The summary distinguishes total expected icons, verified local icons, remaining missing icons and the number planned for the next batch. Each `--limit=N` invocation skips valid cached WebP files before choosing the next N.
+
+## Offline integrity audit
+
+Run `npm run assets:audit` after every transfer batch, and `npm run assets:audit:strict` only when you expect all 1437 original WebP assets to exist. It checks the manifest against actual files without network requests.

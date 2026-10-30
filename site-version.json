@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.36",
-  "notes": "Fix actual native details expansion state and retain user-expanded class tree branches in view session, matching the official 28-class hierarchy"
+  "release": "2026.10.30.37",
+  "notes": "Audit original icon WebP integrity and canonical manifest without downloading or inventing assets"
 }
