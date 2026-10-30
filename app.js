@@ -131,6 +131,7 @@ function renderSlotRails(){
    button.append(slotVisual(i),h('small',{text:item?.name||slots[i][0]}));
    if(item&&cap!==null&&cap>0)button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
+   if(source)window.PandoraStageItemUI.attachPreview(button,source,(rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'));
    if(report.excess>0)button.append(h('span',{class:'stage-conflict',text:'!','aria-label':'Конфликт гнёзд'}));
    container.append(button);
   }
@@ -186,10 +187,17 @@ function renderStagePicker(focusSearch=false){
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
  const remove=h('button',{type:'button',text:'Снять предмет',disabled:!equipped,onclick:()=>{
-  delete state.equipment[selectedSlot];stageSlotView='choose';persist();render();
+  const removed=equippedRecord(selectedSlot);
+   delete state.equipment[selectedSlot];
+   if(selectedSlot===3&&window.PandoraUIPlanner.isAstirDress(removed)&&state.displacedLegwear){
+    state.equipment[5]=state.displacedLegwear;state.displacedLegwear=null;
+   }
+   stageSlotView='choose';persist();render();
  }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
- const records=catalog.live?window.PandoraUIPlanner.equippable(Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,window.PandoraStudioRules.equipment):[];
+ const records=catalog.live?window.PandoraUIPlanner.equippable(Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,window.PandoraStudioRules.equipment)
+ .filter(rec=>window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender)&&
+ !(key==='legs'&&window.PandoraUIPlanner.isAstirDress(equippedRecord(3)))):[];
  const draw=()=>{
   list.replaceChildren();
   const query=stageSlotQuery.trim().toLocaleLowerCase('ru');
@@ -202,6 +210,7 @@ function renderStagePicker(focusSearch=false){
    const btn=h('button',{type:'button',class:'stage-picker-item'+(selected?' selected':''),
     'aria-label':'Экипировать '+itemName(rec),onclick:()=>{
      state.equipment[selectedSlot]={id:rec.id,name:itemName(rec),level:rec.level??null,icon:rec.icon??null};
+     if(window.PandoraUIPlanner.isAstirDress(rec)){state.displacedLegwear=state.equipment[5]||null;delete state.equipment[5]}
      stageSlotView='details';persist();render();renderStagePicker();
     }});
    const src=itemIcon(rec);
@@ -298,7 +307,9 @@ function branchRow(b,full){
   h('b',{class:'count',text:String(points)}));
  return btn;
 }
-function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderOriginPassives();renderBranches();{const b=budgetSummary();$('budgetState').textContent=b.total===null?'Бюджет навыков: загружается таблица OS':
+function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);
+ $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
+ 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderOriginPassives();renderBranches();{const b=budgetSummary();$('budgetState').textContent=b.total===null?'Бюджет навыков: загружается таблица OS':
  'Очки умений '+b.spent+' / '+b.total+' · свободно '+b.remaining+(b.remaining<0?' · старый билд превышает бюджет':'')}renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
@@ -759,7 +770,9 @@ function renderEquipment(root){
  }else {
   const isSoul=gearMode==='souls';
   const candidates=sourceRecord(gearMode);
-  const valid=candidates.filter(rec=>!catalog.live||(isSoul?rec.slots?.includes(slot):(rec.slot===slot&&!isCostumeOverlay(rec))));
+  const valid=candidates.filter(rec=>!catalog.live||(isSoul?rec.slots?.includes(slot):
+ (rec.slot===slot&&!isCostumeOverlay(rec)&&window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender)&&
+ !(slot==='legs'&&window.PandoraUIPlanner.isAstirDress(equippedRecord(3))))));
   const needle=filter.trim().toLocaleLowerCase('ru');
   const matches=valid.filter(rec=>(itemName(rec)+' '+rec.id).toLocaleLowerCase('ru').includes(needle));
   const searchRow=h('div',{class:'filter-row'});
@@ -835,7 +848,9 @@ function renderEquipment(root){
   for(const rec of matches.slice(0,gearShown)){
    const selected=selectedValue&&String(selectedValue.id)===String(rec.id);
    const v=!isSoul&&catalog.live?window.PandoraStudioRules.equipment(rec,{slot,job:jobKeys[state.job],level:state.level}):{allowed:true,missing:[]};
-   const canInsert=isSoul?Boolean(chosen&&itemRec&&!isCostumeOverlay(itemRec)&&socketLimit!==null&&selectedSocket<socketLimit&&lib.validSoul(rec,slot)):(v.allowed&&!isCostumeOverlay(rec));
+   const canInsert=isSoul?Boolean(chosen&&itemRec&&!isCostumeOverlay(itemRec)&&socketLimit!==null&&selectedSocket<socketLimit&&lib.validSoul(rec,slot)):
+ (v.allowed&&!isCostumeOverlay(rec)&&window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender)&&
+ !(slot==='legs'&&window.PandoraUIPlanner.isAstirDress(equippedRecord(3))));
    const button=h('button',{class:'item-card'+(isSoul?' soul-card':'')+(selected?' active':'')+(canInsert?'':' incompatible'),
     'aria-disabled':String(!canInsert),title:(canInsert?'Выбрать '+itemName(rec):isSoul?'Нет свободного подтверждённого целевого гнезда':v.missing.join(' · '))+' · ПКМ: закрепить описание', 'aria-label':itemName(rec),
     onmouseenter:()=>{if(!inspectorPinned)inspect(rec)},onfocus:()=>{if(!inspectorPinned)inspect(rec)},
@@ -846,7 +861,8 @@ function renderEquipment(root){
      if(isSoul){
       const next=lib.asSocketArray(state.souls?.[selectedSlot]);next[selectedSocket]=item;state.souls[selectedSlot]=next;
      }else{
-      state.equipment[selectedSlot]=item;selectedSocket=0;
+      if(window.PandoraUIPlanner.isAstirDress(rec)){state.displacedLegwear=state.equipment[5]||null;delete state.equipment[5]}
+       state.equipment[selectedSlot]=item;selectedSocket=0;
      }
      persist();render();
     }});
