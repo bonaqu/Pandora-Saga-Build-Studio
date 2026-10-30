@@ -742,10 +742,11 @@ function renderWiki(root){
     const src=itemIcon(rec);
     if(src){const img=h('img',{src,alt:'',class:'wiki-record-icon wiki-item-portrait'});img.onerror=()=>img.remove();detail.prepend(img)}
   }
-  if(rec.desc)detail.append(h('p',{class:'wiki-description',text:lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='skill'?'skills':type==='soul'?'souls':'maps']?.[id]?.d||rec.desc):rec.desc}));
+  if(rec.desc){const text=lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='skill'?'skills':type==='soul'?'souls':'maps']?.[id]?.d||rec.desc):rec.desc;
+    detail.append(h('p',{class:'wiki-description',text:type==='item'?window.PandoraItemPresentation.description(text):text}));}
   if(type==='item'){
     const dl=h('dl',{class:'item-fields'});
-    for(const [label,value]of[['Тип',rec.kind],['Уровень',rec.level],['Атака',rec.W],['Защита',rec.AC],['Гнёзда',rec.soulslot]])if(value!=null)dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
+    for(const [label,value]of[['Тип',window.PandoraItemPresentation.kind(rec)],['Уровень',rec.level],['Атака',rec.W],['Защита',rec.AC],['Гнёзда',rec.soulslot]])if(value!=null)dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
     detail.append(dl,h('h4',{text:'Где получить'}));
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:'Подтверждённые источники в доступном каталоге не найдены.'}));
