@@ -13,11 +13,12 @@ function sanitizer(){
   race:0,gender:0,job:0,level:1,name:'Билд',branch:'slash',
   points:{slash:0},stats:{Сила:0,Дух:0},mastery:{},
   vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},
-  attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0},
+  attributeBuffs:{guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false},
   equipment:{},souls:{},refinements:{},gems:{},profile:{guild:'',nation:'',rank:'',about:''}
  });
  const window={PandoraSkillProgression:{potential:()=>0},
-  PandoraEquipmentPlan:{asSocketArray:()=>[]},PandoraEnchantModel:{normalize:()=>null}};
+  PandoraEquipmentPlan:{asSocketArray:()=>[]},PandoraEnchantModel:{normalize:()=>null},
+  PandoraOSCalculator:{honorTitles:Array.from({length:14},(_,id)=>({id}))}};
  return Function('races','jobKeys','slots','branches','STATS','fresh','window',
   slice+'\nreturn sanitizeSharedState')(races,jobKeys,slots,branches,STATS,fresh,window);
 }
@@ -44,7 +45,7 @@ test('Remaked attribute bonuses survive export and sharing without changing inve
  const safe=sanitize({race:0,job:0,level:45,stats:{Сила:8,Дух:9},
   attributeBuffs:{guildAll:4,honorCuriosity:true,proelium:true,proeliumPotency:70}});
  assert.deepEqual(safe.attributeBuffs,{
-  guildAll:4,honorCuriosity:true,proelium:true,proeliumPotency:70});
+  guildAll:4,honorCuriosity:true,honorTitle:null,proelium:true,proeliumPotency:70,runeJoEun:false});
  assert.equal(safe.stats['Сила'],8);
  assert.equal(safe.stats['Дух'],9);
 });
@@ -52,5 +53,20 @@ test('malformed shared attribute buff values cannot activate Honor, guild or pot
  const safe=sanitizer()({race:0,job:0,level:45,
   attributeBuffs:{guildAll:9,honorCuriosity:'true',proelium:1,proeliumPotency:10000}});
  assert.deepEqual(safe.attributeBuffs,{
-  guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0});
+  guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false});
+});
+
+test('exclusive Honor title and Jo-eun rune survive validated links',()=>{
+ const safe=sanitizer()({race:0,job:0,level:45,attributeBuffs:{
+  honorTitle:11,honorCuriosity:true,runeJoEun:true}});
+ assert.equal(safe.attributeBuffs.honorTitle,11);
+ assert.equal(safe.attributeBuffs.honorCuriosity,false);
+ assert.equal(safe.attributeBuffs.runeJoEun,true);
+});
+test('invalid honor title is rejected, never activated from outside',()=>{
+ const safe=sanitizer()({race:0,job:0,level:45,attributeBuffs:{
+  honorTitle:999,honorCuriosity:'true',runeJoEun:'true'}});
+ assert.equal(safe.attributeBuffs.honorTitle,null);
+ assert.equal(safe.attributeBuffs.honorCuriosity,false);
+ assert.equal(safe.attributeBuffs.runeJoEun,false);
 });
