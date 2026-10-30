@@ -372,7 +372,7 @@ function renderStagePicker(focusSearch=false){
    },
    updateGrade:n=>{if(!plan.canRefine(key)||!Number.isInteger(n)||n<0||n>10)return;
     state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;
-    persist();renderSlotRails();renderStagePicker();renderHudEstimates();
+    persist();renderSlotRails();renderStagePicker();renderOriginStats();renderHudEstimates();
     root.querySelector('[data-grade="'+n+'"]')?.focus({preventScroll:true});
    },
    openSocket:i=>{selectedSocket=i;stageSlotView='souls';saveView();renderStagePicker();
@@ -384,7 +384,7 @@ function renderStagePicker(focusSearch=false){
     if(entry&&!plan.validSoul(entry,key))return;
     const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
-    state.souls[selectedSlot]=next;stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderHudEstimates();
+    state.souls[selectedSlot]=next;stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderOriginStats();renderHudEstimates();
     const restoreFocus=stageSoulQuery?'[data-soul-query]':'[data-socket-index="'+selectedSocket+'"]';
     root.querySelector(restoreFocus)?.focus({preventScroll:true});
    },
@@ -1098,9 +1098,11 @@ function renderStats(root){
   for(const v of controls){
    const invested=Number(state.stats[STATS[v.i]]||0),base=s?.base[v.i];
    v.note.textContent=base===undefined?'':'База '+base+' + '+invested;
-   v.total.textContent=base===undefined?'—':String(base+invested);
-   v.range.value=String(invested);v.exact.value=String(invested);
-   v.range.max=String(Math.max(invested,(s?.max[v.i]??99)-(base??0)));
+   const estimate=previewBaseStats(),code=ORIGIN_STAT_LABELS[v.i].code;
+   v.total.textContent=base===undefined?'—':String(estimate?.stats?.[code]??(base+invested));
+   v.range.value=String((base??0)+invested);v.exact.value=String((base??0)+invested);
+   v.range.min=String(base??0);v.exact.min=String(base??0);
+   v.range.max=String(s?.max[v.i]??99);v.exact.max=String(s?.max[v.i]??99);
    v.fill.style.width=s&&s.max[v.i]>0?Math.min(100,(base+invested)/s.max[v.i]*100)+'%':'0%';
    v.minus.disabled=!s||invested===0;
    v.plus.disabled=!window.PandoraAttributeProgression.allowed(s,v.i,invested+1);
@@ -1117,18 +1119,19 @@ function renderStats(root){
   const note=h('span',{class:'stat-base-note',text:''}),total=h('strong',{class:'stat-visual-value',text:'—'});
   const bar=h('div',{class:'stat-visual-progress'}),fill=h('div',{class:'stat-visual-fill'});
   bar.append(fill);
-  const range=h('input',{type:'range',min:'0',max:'99',step:'1',value:String(state.stats[STATS[i]]||0),
+  const range=h('input',{type:'range',min:'0',max:'99',step:'1',value:'0',
    'aria-label':info.name+' — вложено'});
-  const exact=h('input',{type:'number',min:'0',max:'99',step:'1',value:String(state.stats[STATS[i]]||0),
+  const exact=h('input',{type:'number',min:'0',max:'99',step:'1',value:'0',
    'aria-label':'Точное значение '+info.name});
   const change=value=>{
-   if(!setAttributePoints(i,Number(value))){refresh();return}
+   const snap=attributeSnapshot(),absolute=window.PandoraAttributeProgression.resolveAbsolute(snap,i,value);
+   if(absolute===null||!setAttributePoints(i,absolute-snap.base[i])){refresh();return}
    refresh();renderOriginStats();
    const vitals=root.querySelector('.stat-brief-vitals'),v=previewBaseStats();
    if(vitals&&v)vitals.textContent='ОЗ ≈'+v.hp+' · ОМ ≈'+v.mp;
   };
-  const minus=h('button',{type:'button',text:'−',onclick:()=>change(Math.max(0,Number(state.stats[STATS[i]]||0)-1))});
-  const plus=h('button',{type:'button',text:'+',onclick:()=>change(Number(state.stats[STATS[i]]||0)+1)});
+  const minus=h('button',{type:'button',text:'−',onclick:()=>change((attributeSnapshot()?.values[i]??0)-1)});
+  const plus=h('button',{type:'button',text:'+',onclick:()=>change((attributeSnapshot()?.values[i]??0)+1)});
   range.addEventListener('input',()=>change(range.value));
   exact.addEventListener('change',()=>change(exact.value));
   card.append(head,note,total,bar,h('div',{class:'stat-visual-controls'},[minus,range,plus,exact]));
