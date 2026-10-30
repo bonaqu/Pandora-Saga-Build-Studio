@@ -52,9 +52,10 @@ function spending(table,level,points){
 }
 function canAllocate(table,level,points,key,cap,amount){
  const budget=spending(table,level,points),current=value(points?.[key]);
+ if(!Number.isInteger(amount)||amount<0)return false;
+ if(amount<=current)return true; // allow partial refunds in over-budget old builds
  return budget.total!==null&&Number.isInteger(cap)&&cap>=0&&
-  Number.isInteger(amount)&&amount>=0&&amount<=cap&&
-  budget.spent-current+amount<=budget.total;
+  amount<=cap&&budget.spent-current+amount<=budget.total;
 }
 root.PandoraSkillProgression=Object.freeze({
  potential,trained,setPotential,setTrained,setAuto,spending,canAllocate,

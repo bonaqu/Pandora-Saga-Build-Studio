@@ -67,7 +67,7 @@ function viewGrowth(target,api){
     const note=make('div',{class:'inline-branch-value'});
     const label=make('strong',{text:points+' / '+cap});
     note.append(make('span',{text:'Очки уровня — вложить в ветку'}),label);
-    const available=budget.total!==null&&api.catalogReady&&cap>0;
+    const available=budget.total!==null&&api.catalogReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track','aria-label':'Вложенные очки и мастерство '+api.branchName(key)});
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'});
@@ -131,7 +131,7 @@ function viewGrowth(target,api){
     exact.append(make('span',{text:'Точно вложено'}),numeric);
     editor.append(note,track,exact,controls,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
-     text:cap===0?'У этой профессии лимит ветки равен 0.':'Загрузка игровой таблицы очков.'}));
+     text:cap===0?'Лимит класса равен нулю. Можно вернуть старые очки.':'Загрузка игровой таблицы очков.'}));
     if(points>cap)editor.append(make('p',{class:'budget-excess',
      text:'Сохранено '+points+' очков сверх текущего лимита '+cap+'. Ничего не удалено автоматически.'}));
     wrap.append(editor);
