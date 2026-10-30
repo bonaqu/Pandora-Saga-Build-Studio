@@ -1,11 +1,14 @@
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
+// Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.
+// Both initial setup and subsequent login must use the same iteration count.
+// Source: https://developers.cloudflare.com/workers/runtime-apis/web-crypto/
 const ORIGIN='https://bonaqu.github.io';
 const enc=new TextEncoder();
 const b64=bytes=>btoa(String.fromCharCode(...new Uint8Array(bytes))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');
 function random(n=32){return crypto.getRandomValues(new Uint8Array(n))}
 async function sha(bytes){return b64(await crypto.subtle.digest('SHA-256',typeof bytes==='string'?enc.encode(bytes):bytes))}
-async function passwordHash(password,salt){const key=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits']);return b64(await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:120000,hash:'SHA-256'},key,256))}
+async function passwordHash(password,salt){const key=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits']);return b64(await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:100000,hash:'SHA-256'},key,256))}
 function same(a,b){a=String(a||'');b=String(b||'');let d=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)d|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return d===0}
 function json(body,status=200,headers={}){return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}})}
 function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Vary':'Origin'}:{}}
