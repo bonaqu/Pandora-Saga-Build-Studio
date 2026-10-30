@@ -170,7 +170,7 @@ test('closing a group clears child expansion and reopening leaves all branches f
  assert.match(app,/if\(selected&&\(inlineBranchId===null/);
 });
 
-test('real OS class milestones are tiny pins instead of overlapping image buttons',()=>{
+test('real class milestone ticks are passive, leave the slider fully interactive',()=>{
  Function('window',read('skill-milestones.js'))(root);
  const app=sources['app.js'];
  const m=app.match(/milestones:(\(skills,key,cap\)=>\{[\s\S]*?\n  \}),\n  onGroup:/);
@@ -179,18 +179,22 @@ test('real OS class milestones are tiny pins instead of overlapping image button
  const f=fixture('CLERIC','melee','brush');
  f.api.milestones=adapter;
  f.api.skillCatalog=Object.values(JSON.parse(read('data/os/skills.json')));
- let hovered=0;
- f.api.hover=(node,skills)=>{if(Array.isArray(skills)&&skills.length)hovered++};
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const pins=walk(f.target).filter(x=>String(x.className).includes('path-milestone-pin'));
- assert.ok(pins.length>=1);
- assert.ok(pins.some(x=>String(x.attributes['data-milestone-points']).split(',').includes('41')));
- assert.ok(pins.every(x=>x.children.every(child=>child.tag!=='img')));
- assert.ok(pins.every(x=>!Object.hasOwn(x.style,'top')));
- assert.equal(hovered,pins.length);
+ const ticks=walk(f.target).filter(x=>String(x.className).includes('path-threshold-tick'));
+ assert.ok(ticks.length>0);
+ assert.ok(ticks.some(x=>x.attributes['data-milestone-points']==='41'));
+ assert.ok(ticks.every(x=>x.tag==='span'));
+ assert.ok(ticks.every(x=>!x.listeners.click));
+ assert.ok(ticks.every(x=>x.children.length===0));
+ assert.ok(ticks.every(x=>!Object.hasOwn(x.style,'top')));
+ assert.ok(f.range.listeners.input,'range has its own input handler');
+ const disclosure=walk(f.target).find(x=>x.className==='path-unlock-details');
+ assert.ok(disclosure);
+ assert.equal(disclosure.tag,'details');
+ assert.ok(disclosure.children.some(x=>x.tag==='summary'));
 });
 
-test('close thresholds open a compact picker with each skill independently selectable',()=>{
+test('nearby skill thresholds do not merge into a bulky draggable overlay',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
  const skills=[8,10,42].map((threshold,index)=>({
   id:900+index,name:'Fixture '+threshold,classes:{CLERIC:true},
@@ -198,41 +202,36 @@ test('close thresholds open a compact picker with each skill independently selec
  }));
  let selected=null;
  f.api.skillCatalog=skills;
- f.api.milestones=()=>skills.map((skill,index)=>({
+ f.api.milestones=()=>skills.map(skill=>({
   threshold:skill.reqs[0].amount,skills:[skill],locked:false
  }));
  f.api.onSkill=skill=>{selected=skill};
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const pins=walk(f.target).filter(el=>String(el.className).includes('path-milestone-pin'));
- assert.equal(pins.length,2,'8/10 share a pin; 42 remains independent');
- assert.equal(pins[0].attributes['data-milestone-points'],'8,10');
- assert.ok(pins.every(pin=>!Object.hasOwn(pin.style,'top')),'pins use CSS rather than high inline offsets');
- const picker=walk(f.target).find(el=>el.className==='path-milestone-picker');
- assert.ok(picker);
- assert.equal(picker.hidden,true);
- pins[0].listeners.click();
- assert.equal(picker.hidden,false);
- assert.equal(pins[0].attributes['aria-expanded'],'true');
- const options=walk(picker).filter(el=>el.tag==='button');
- assert.equal(options.length,3,'two skills and a close control');
+ const ticks=walk(f.target).filter(x=>String(x.className).includes('path-threshold-tick'));
+ assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['8','10','42']);
+ assert.ok(ticks.every(x=>!x.listeners.click),'drag surface must not have clickable overlays');
+ const details=walk(f.target).find(x=>x.className==='path-unlock-details');
+ assert.ok(details);
+ assert.equal(details.attributes.open,undefined,'skill list is collapsed by default');
+ const options=walk(details).filter(x=>x.tag==='button');
+ assert.equal(options.length,3);
  options[1].listeners.click();
- assert.equal(selected.id,901,'second skill, not always first, is selectable');
- picker.listeners.keydown({key:'Escape',preventDefault(){}});
- assert.equal(picker.hidden,true);
- assert.equal(pins[0].attributes['aria-expanded'],'false');
- pins[1].listeners.click();
- assert.equal(selected.id,902,'single marker directly opens its skill');
+ assert.equal(selected.id,901,'second skill remains separately selectable');
+ options[2].listeners.click();
+ assert.equal(selected.id,902,'last skill remains separately selectable');
+ f.range.value='6';f.range.listeners.input();
+ assert.equal(f.state.points.benevolence,6,'slider remains functional with visible thresholds');
 });
 
 test('skill progress slider does not show a duplicate native text tooltip',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
  const tracks=walk(f.target).filter(el=>String(el.className).includes('inline-mastery-track'));
  assert.ok(tracks.length);
- assert.ok(tracks.every(el=>!el.title),'no native title that covers marker tooltip');
+ assert.ok(tracks.every(el=>!el.title),'no native title');
  assert.match(f.range.attributes['aria-valuetext'],/вложено/);
 });
 
-test('grouped markers preserve individual point thresholds and class locks',()=>{
+test('class-limited skills keep individual numbers in the separate details list',()=>{
  const f=fixture('CLERIC','melee','brush');
  const skills=[8,12].map((threshold,index)=>({
   id:980+index,name:'Grouped '+threshold,classes:{CLERIC:true},
@@ -246,17 +245,14 @@ test('grouped markers preserve individual point thresholds and class locks',()=>
  let selected=null;
  f.api.onSkill=skill=>selected=skill;
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const pin=walk(f.target).find(el=>String(el.className).includes('path-milestone-pin'));
- assert.ok(pin);
- assert.equal(pin.attributes['data-milestone-points'],'8,12');
- pin.listeners.click();
- const picker=walk(f.target).find(el=>el.className==='path-milestone-picker');
- const descriptions=walk(picker).filter(el=>el.tag==='small').map(el=>el.textContent);
- assert.ok(descriptions.some(text=>text.includes('8 очков')));
- assert.ok(descriptions.some(text=>text.includes('12 очков')&&text.includes('За пределом класса')));
- const options=walk(picker).filter(el=>el.tag==='button');
- options[1].listeners.click();
- assert.equal(selected.id,981);
- const heading=walk(f.target).find(el=>String(el.className).includes('game-tree-head active'));
- assert.ok(walk(heading).some(el=>el.tag==='small'&&el.textContent==='0 вложено'));
+ const ticks=walk(f.target).filter(x=>String(x.className).includes('path-threshold-tick'));
+ assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['8','12']);
+ const details=walk(f.target).find(x=>x.className==='path-unlock-details');
+ const captions=walk(details).filter(x=>x.tag==='small').map(x=>x.textContent);
+ assert.ok(captions.some(x=>x.includes('8 очков')));
+ assert.ok(captions.some(x=>x.includes('12 очков')&&x.includes('выше лимита')));
+ const options=walk(details).filter(x=>x.tag==='button');
+ options[1].listeners.click();assert.equal(selected.id,981);
+ const heading=walk(f.target).find(x=>String(x.className).includes('game-tree-head active'));
+ assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent==='0 вложено'));
 });
