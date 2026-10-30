@@ -120,7 +120,7 @@ async function adminCatalog(request,env,path){
 /* Public immutable share links; non-secret snapshots, guarded against large payloads and write abuse. */
 async function shareApi(request,env,path,ip){
  const shares=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shared_builds','shared_build_limits')").all();
- if((shares.results||[]).length!==2)return no('Shared builds storage not migrated in D1',503);
+ if((shares.results||[]).length!==2)return no('Хранилище коротких ссылок не подготовлено: нужна миграция D1',503);
  if(request.method==='GET'){
   const match=path.match(/^\/api\/shared\/([A-Za-z0-9_-]{11})$/);
   if(!match)return no('Not found',404);

@@ -2,7 +2,7 @@
 
 Independent, visual, vintage-inspired Pandora Saga build planner. Static site intended for **GitHub Pages**, secure optional CMS backend on **Cloudflare Workers + D1**.
 
-[**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
+[**Полный журнал релизов**](CHANGELOG.md) · [**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
 
 ## Status
 
@@ -43,7 +43,7 @@ First successful login: owner-only entry → `administrator` → new password (m
 
 ## 2026-10-30 — выпуск 2026.10.30.53: понятный статус коротких ссылок
 
-- `GET /api/health` теперь отдельно сообщает `features.sharing: true/false` по **фактическому наличию** двух таблиц `shared_builds` и `shared_build_limits`. Старый статус рабочей D1/админки остаётся обратносуместимым.
+- `GET /api/health` теперь отдельно сообщает `features.sharing: true/false` по **фактическому наличию** двух таблиц `shared_builds` и `shared_build_limits`. Старый статус рабочей D1/админки остаётся обратно совместимым.
 - `GET /api/shared/:id` и `POST /api/shared` возвращают понятный HTTP 503 до миграции, вместо скрытой ошибки SQL. Миграция по-прежнему выполняется **только вручную и отдельно**, действующие таблицы не менялись.
 - Данные из публичной D1 и результаты реального интернет-тестирования ссылок из этого изменения не следует считать подтверждёнными.
 
