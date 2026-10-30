@@ -444,3 +444,10 @@ a.wiki-link:hover{text-decoration:none}
  .portrait-frame{height:min(98%,580px)}
 }
 @media(max-width:700px){.class-tree-node.depth-2{margin-left:5px}}
+
+/* 2026.10.30.34 – gem type and element choice */
+.stage-enchant-fieldset{margin:7px 0;min-width:0;padding:8px;border:1px solid #977249;background:#21170f}
+.stage-enchant-fieldset legend{color:#f1cf95;font-size:12px;padding:0 5px}
+.stage-enchant-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
+.stage-enchant-options button{padding:8px 5px;border:1px solid #8b6940;background:#372419;color:#eed09d;font-size:11px}
+.stage-enchant-options button.chosen{border-color:#f1cb8b;background:#79502c;color:#fff3d7}

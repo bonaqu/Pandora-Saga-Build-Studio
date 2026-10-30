@@ -241,8 +241,8 @@ function renderStagePicker(focusSearch=false){
     state.souls[selectedSlot]=next;stageSlotView='details';persist();renderStagePicker();},
    assignGem:entry=>{state.gems??={};
     const id=plan.refinementKey(selectedSlot,equipped);
-    if(entry)state.gems[id]={id:entry.id,name:entry.name};
-    else delete state.gems[id];
+    const choice=window.PandoraEnchantModel.normalize(entry);
+    if(choice)state.gems[id]=choice;else delete state.gems[id];
     stageSlotView='details';persist();renderStagePicker();}
   });
   return;
@@ -1128,7 +1128,9 @@ function importBuild(){
   if(original.gems&&typeof original.gems==='object'&&!Array.isArray(original.gems)){
    for(const [key,value] of Object.entries(original.gems)){
     if(!/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(key))continue;
-    if(value&&Number.isInteger(value.id)&&typeof value.name==='string')
+    const selected=window.PandoraEnchantModel.normalize(value);
+    if(selected)result.gems[key]=selected;
+    else if(value&&Number.isInteger(value.id)&&typeof value.name==='string')
      result.gems[key]={id:value.id,name:value.name.slice(0,120)};
    }
   }

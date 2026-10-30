@@ -89,22 +89,53 @@ function render(root,api){
     sockets.append(b);attachPreview(b,soul,icons,'soul');
    }body.append(sockets);
   }else if(cap===null)body.append(el('p',{class:'muted',text:'Число гнёзд не подтверждено в каталоге'}));
-  body.append(el('button',{type:'button',class:'stage-rich-switch',text:gems?.name?'Самоцвет: '+gems.name:'Выбрать самоцвет',
+  body.append(el('button',{type:'button',class:'stage-rich-switch',
+   text:'Тип и стихия: '+root.PandoraEnchantModel.label(gems),
    onclick:()=>api.changeMode('gems')}));
-  body.append(el('p',{class:'stage-rich-note',text:'Самоцвет — план выбора. Шансы и эффекты применяются только после проверки игровых правил.'}));
- }else if(mode==='souls'||mode==='gems'){
+  if(record.slot==='weapon'&&grade>0){
+   const preview=root.PandoraEnchantModel.weaponPreview(record.W,grade,gameTables?.weaponPlus);
+   if(preview)body.append(el('p',{class:'stage-rich-note',text:
+    'Предварительный прирост по OS: '+preview.base+' + '+preview.increment+' = '+preview.total+
+    '. Формула округления требует проверки по текущему серверу.'}));
+  }
+  body.append(el('p',{class:'stage-rich-note',text:'Стихия и физический/магический тип сохраняются в билде; итоговые игровые бонусы пока не подтверждены.'}));
+ }else if(mode==='gems'){
+  let chosenType=root.PandoraEnchantModel.normalize(gems)?.type||'physical';
+  let chosenElement=root.PandoraEnchantModel.normalize(gems)?.element||'fire';
+  const group=(title,entries,current,select)=>{
+   const field=el('fieldset',{class:'stage-enchant-fieldset'});
+   field.append(el('legend',{text:title}));
+   const buttons=[],line=el('div',{class:'stage-enchant-options'});
+   for(const entry of entries){
+    const b=el('button',{type:'button',text:entry.ru,class:current()===entry.id?'chosen':'',
+      'aria-pressed':String(current()===entry.id),onclick:()=>{
+       select(entry.id);
+       for(const [button,val] of buttons){const on=current()===val.id;
+        button.classList.toggle('chosen',on);button.setAttribute('aria-pressed',String(on))}
+      }});
+    buttons.push([b,entry]);line.append(b);
+   }
+   field.append(line);return field;
+  };
+  body.append(el('h4',{text:'Самоцвет улучшения'}),
+   el('p',{class:'stage-rich-note',text:'Выбери физический/магический тип и стихию. Элемент не является отдельным предметом инвентаря.'}),
+   group('Тип',root.PandoraEnchantModel.types,()=>chosenType,v=>chosenType=v),
+   group('Стихия',root.PandoraEnchantModel.elements,()=>chosenElement,v=>chosenElement=v),
+   el('button',{type:'button',class:'stage-rich-switch',text:'✓ Применить',onclick:()=>api.assignGem({type:chosenType,element:chosenElement})}),
+   el('button',{type:'button',text:'Сбросить',onclick:()=>api.assignGem(null)}));
+ }else if(mode==='souls'){
   if(mode==='souls'&&(!Number.isInteger(Number(record.soulslot))||Number(record.soulslot)<=0||
     !Number.isInteger(api.selectedSocket)||api.selectedSocket<0||api.selectedSocket>=Number(record.soulslot))){
    body.append(el('p',{class:'muted',text:'Для этого предмета нет подтверждённого свободного гнезда. Открой гнездо со страницы «Свойства». '}));return;
   }
-  const soulMode=mode==='souls',query=el('input',{type:'search',placeholder:soulMode?'Поиск души':'Поиск самоцвета','aria-label':soulMode?'Поиск душ':'Поиск самоцветов'});
+  const soulMode=true,query=el('input',{type:'search',placeholder:'Поиск души','aria-label':'Поиск душ'});
   const list=el('div',{class:'stage-rich-list'});
   const reset=el('button',{type:'button',text:soulMode?'✕ Извлечь душу':'✕ Без самоцвета',
    onclick:()=>soulMode?api.assignSoul(null):api.assignGem(null)});
   const draw=()=>{
    list.replaceChildren();const needle=query.value.trim().toLocaleLowerCase('ru');
    const entries=Object.values(soulMode?api.catalog.souls||{}:api.catalog.equipment||{})
-    .filter(x=>(soulMode?x.slots?.includes(slot):x.kind==='RUNEGEM')&&(String(x.name||'')+' '+x.id).toLocaleLowerCase('ru').includes(needle));
+    .filter(x=>x.slots?.includes(slot)&&(String(x.name||'')+' '+x.id).toLocaleLowerCase('ru').includes(needle));
    for(const rec of entries.slice(0,80)){
     const b=el('button',{type:'button',class:'stage-rich-result',onclick:()=>soulMode?api.assignSoul(rec):api.assignGem(rec)});
     const src=icons(rec,soulMode?'soul':'item');
