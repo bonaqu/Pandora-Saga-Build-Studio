@@ -779,3 +779,69 @@ a.wiki-link:hover{text-decoration:none}
 .path-milestone-choice:hover,.path-milestone-choice:focus-visible{border-color:#e8be79;background:#56402a}
 .path-milestone-choice img{width:26px;height:26px;object-fit:contain;flex-shrink:0}
 @media(max-width:460px){.path-milestone-picker{grid-template-columns:1fr}}
+
+/* 2026.10.30.76 — integrated threshold ticks, no detached diamond icons. */
+.inline-mastery-track{height:53px;margin:5px 3px 8px}
+.inline-mastery-track .inline-mastery-bed{top:23px}
+.inline-mastery-track .inline-mastery-fill,.inline-mastery-track .inline-mastery-green{top:24px}
+.inline-mastery-track .inline-mastery-locked{top:23px}
+.inline-mastery-track input[type=range]{top:13px;height:28px}
+.inline-mastery-track .inline-branch-milestones{inset:0 12px;height:100%;pointer-events:none}
+.inline-mastery-track .inline-milestone.path-milestone-pin{
+ top:15px;width:20px;height:24px;min-width:20px;min-height:24px;max-width:none;
+ padding:0;display:grid;place-items:center;transform:translateX(-50%);
+ background:transparent;border:0;border-radius:3px;box-shadow:none;
+ filter:none;opacity:1;pointer-events:auto;z-index:6;
+}
+.inline-mastery-track .path-milestone-pin::before{
+ content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);
+ width:6px;height:13px;border:1px solid #e5bd77;border-radius:2px;
+ background:linear-gradient(#f6d8a1,#aa7030);box-shadow:0 1px 4px #000;
+}
+.inline-mastery-track .path-milestone-pin.reached::before{
+ background:linear-gradient(#bbeba2,#4a833d);border-color:#c9f0ad;
+}
+.inline-mastery-track .path-milestone-pin.unreachable::before{
+ background:linear-gradient(#cf7e70,#71312b);border-color:#eea194;
+}
+.inline-mastery-track .path-milestone-pin.unreachable::after{content:none}
+.inline-mastery-track .path-milestone-pin.multi::before{
+ width:18px;height:19px;top:3px;border-radius:4px;
+}
+.inline-mastery-track .path-milestone-pin .path-milestone-core{
+ display:none;transform:none;font:700 10px/1 Manrope,Arial,sans-serif;z-index:1;
+ color:#1b130d;pointer-events:none;
+}
+.inline-mastery-track .path-milestone-pin.multi .path-milestone-core{display:block}
+.inline-mastery-track .path-milestone-pin:hover::before{
+ border-color:#fff4d4;box-shadow:0 0 7px #ffdd93;
+}
+.inline-mastery-track .path-milestone-pin:focus-visible{
+ outline:2px solid #f6dc9c;outline-offset:1px;
+}
+.inline-mastery-track .inline-mastery-locked:after{bottom:9px}
+.stage-hover-preview.path-skill-preview{
+ width:min(300px,calc(100vw - 16px));max-height:270px;
+ padding:7px 9px;overflow:hidden;pointer-events:none;
+ border:1px solid #d0a26a;border-radius:5px;
+}
+.path-skill-preview-item{gap:7px;padding:4px 0}
+.path-skill-preview-item img{width:32px;height:32px}
+.path-skill-preview-item strong{font-size:12px}
+.path-skill-preview-item p{
+ font-size:10px;line-height:1.35;overflow:hidden;display:-webkit-box;
+ -webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;
+}
+.path-preview-more{display:block;color:#e2b982;margin-top:5px;font-size:10px}
+.path-milestone-picker{max-height:280px;overflow-y:auto;grid-template-columns:1fr 1fr}
+.path-milestone-dismiss{grid-column:1/-1;border:1px solid #6c533d;background:#281c13;color:#ddbb8a;padding:5px}
+.right .branch-row.disabled-branch{padding-block:4px;min-height:31px;opacity:.55}
+.right .branch-row.disabled-branch .count{font-size:11px}
+.right .branch-row.disabled-branch span:empty{display:none}
+.right .inline-branch-editor{padding:7px;margin-bottom:6px}
+.right .inline-branch-value{font-size:10px}
+.right .path-allocation-input{margin:5px 0}
+@media(max-width:460px){
+ .path-milestone-picker{grid-template-columns:1fr}
+ .stage-hover-preview.path-skill-preview{max-height:210px}
+}
