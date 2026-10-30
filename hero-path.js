@@ -128,23 +128,31 @@ function viewGrowth(target,api){
     const marks=api.milestones(skills,key,cap);
     if(marks.length){
      const rail=make('div',{class:'inline-branch-milestones','aria-label':'Умения на порогах ветки'});
-    const laneLast=[-Infinity,-Infinity,-Infinity,-Infinity];
-    for(const mark of marks){
-     const skill=mark.skills[0],ready=readiness(skill,api).learned;
-     let lane=laneLast.findIndex(value=>mark.threshold-value>=6);
-     if(lane<0)lane=laneLast.indexOf(Math.min(...laneLast));
-     laneLast[lane]=mark.threshold;
+    // Combine nearby thresholds into one accessible marker rather than overlapping icons.
+    const clusters=[];
+    for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
+     const prior=clusters[clusters.length-1];
+     if(prior&&mark.threshold-prior.lastThreshold<5){
+      prior.skills.push(...mark.skills);
+      prior.thresholds.push(mark.threshold);
+      prior.lastThreshold=mark.threshold;
+      prior.locked=prior.locked&&mark.locked;
+     }else clusters.push({threshold:mark.threshold,lastThreshold:mark.threshold,
+      thresholds:[mark.threshold],skills:[...mark.skills],locked:mark.locked});
+    }
+    for(const cluster of clusters){
+     const skill=cluster.skills[0],ready=cluster.skills.some(s=>readiness(s,api).learned);
      const button=make('button',{type:'button',
-      class:'inline-milestone path-milestone-pin'+(mark.locked?' unreachable':ready?' reached':''),
-      'data-milestone-points':String(mark.threshold),
-      'aria-label':mark.skills.map(s=>s.name).join(', ')+' · '+mark.threshold+' очков'+
-       (mark.locked?' · выше лимита класса':''),
+      class:'inline-milestone path-milestone-pin'+(cluster.locked?' unreachable':ready?' reached':''),
+      'data-milestone-points':cluster.thresholds.join(','),
+      'aria-label':cluster.skills.map(s=>s.name).join(', ')+' · '+cluster.thresholds.join(', ')+' очков'+
+       (cluster.locked?' · выше лимита класса':''),
       onclick:()=>api.onSkill(skill)});
-     button.append(make('span',{class:'path-milestone-core',text:'•'}));
-     button.style.top=(6+lane*15)+'px';
-     button.style.left='clamp(15px, '+Math.max(0,Math.min(100,mark.threshold/visualMax*100))+
-      '%, calc(100% - 15px))';
-     rail.append(button);api.hover(button,mark.skills);
+     button.append(make('span',{class:'path-milestone-core',text:cluster.skills.length>1?String(cluster.skills.length):'◆'}));
+     // Vertical position belongs to CSS: directly on the progression bar.
+     button.style.left='clamp(8px, '+Math.max(0,Math.min(100,cluster.threshold/visualMax*100))+
+      '%, calc(100% - 8px))';
+     rail.append(button);api.hover(button,cluster.skills);
     }
     track.append(rail);
     }
