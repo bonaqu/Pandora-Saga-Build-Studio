@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.50",
-  "notes": "Hero Path up to 430px, in-path skill editor, Origin-only stats, immediate gem selection, Soul socket rules, human-readable catalog/wiki, local saved builds and share-link frontend (Worker migration/deploy required)"
+  "release": "2026.10.30.51",
+  "notes": "Unified Hero Path mastery slider and milestone skill icons into one bar; corrections to all 0.50 improvements; Worker links still require deployment"
 }

@@ -598,3 +598,18 @@ a.wiki-link:hover{text-decoration:none}
 .equipment-catalog-layout .item-info{position:static;max-height:none}}
 
 .wiki-description{white-space:pre-line;overflow-wrap:anywhere}
+
+/* 2026.10.30.51 — mastery slider and skill-unlock markers share the same bar. */
+.inline-mastery-track{height:106px;position:relative;margin:8px 3px 9px;background:linear-gradient(180deg,#271b11,#140f0b);border:1px solid #89653e;box-shadow:inset 0 0 10px #070502}
+.inline-mastery-bed{position:absolute;left:12px;right:12px;top:75px;height:8px;background:#100c09;border:1px solid #8a683c;border-radius:6px;box-shadow:inset 0 1px 5px #000}
+.inline-mastery-fill{position:absolute;left:12px;top:76px;height:6px;background:linear-gradient(90deg,#92692d,#e9b65e);border-radius:6px;pointer-events:none;transition:width .08s ease-out;max-width:calc(100% - 24px)}
+.inline-mastery-track input[type=range]{appearance:none;-webkit-appearance:none;position:absolute;top:66px;left:12px;width:calc(100% - 24px);height:25px;margin:0;padding:0;z-index:3;background:transparent;cursor:ew-resize}
+.inline-mastery-track input[type=range]::-webkit-slider-runnable-track{height:8px;background:transparent;border:0}
+.inline-mastery-track input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-5px;border:2px solid #f6d38e;border-radius:50%;background:#5c3b1e;box-shadow:0 0 7px #000}
+.inline-mastery-track input[type=range]::-moz-range-track{height:8px;background:transparent;border:0}
+.inline-mastery-track input[type=range]::-moz-range-thumb{width:16px;height:16px;border:2px solid #f6d38e;border-radius:50%;background:#5c3b1e}
+.inline-mastery-track .inline-branch-milestones{position:absolute;inset:2px 12px 32px;height:auto;margin:0;border:0;background:none;pointer-events:none}
+.inline-mastery-track .inline-milestone{top:5px;min-height:50px;pointer-events:auto}
+.inline-mastery-track .inline-milestone.reached{border-color:#ead08b;background:#5f4729;box-shadow:0 0 9px #d6a5614d}
+.inline-mastery-track input:focus-visible{outline:2px solid #efd49b;outline-offset:2px}
+@media(max-width:460px){.inline-mastery-track{margin-inline:0}.inline-mastery-track .inline-milestone{width:29px}}

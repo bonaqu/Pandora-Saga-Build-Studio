@@ -559,11 +559,21 @@ function renderBranches(){
      const editor=h('div',{class:'inline-branch-editor'});
      const label=h('strong',{text:pts+' / '+cap});
      const row=h('div',{class:'inline-branch-value'},[h('span',{text:'Очки ветки'}),label]);
-     const range=h('input',{type:'range',min:'0',max:String(Math.max(pts,permitted)),step:'1',value:String(Math.min(pts,cap)),disabled:cap===0,'aria-label':'Очки ветки '+b.name});
-     const set=(n,rebuild=true)=>{
-      if(!Number.isInteger(n)||n<0||n>allowedBranch(id))return;
+     const track=h('div',{class:'inline-mastery-track','aria-label':'Мастерство и навыки ветки '+b.name});
+     const bed=h('div',{class:'inline-mastery-bed'});
+     const fill=h('div',{class:'inline-mastery-fill'});
+     const progress=()=>{fill.style.width=(cap>0?Math.min(100,Math.max(0,Number(state.points[id]||0)/cap*100)):0)+'%'};
+     track.append(bed,fill);
+     const range=h('input',{type:'range',min:'0',max:String(Math.max(cap,pts)),step:'1',value:String(pts),disabled:cap===0,'aria-label':'Очки мастерства ветки '+b.name});
+     track.append(range);progress();
+     const set=(requested,rebuild=true)=>{
+      if(!Number.isInteger(requested)||requested<0){range.value=String(state.points[id]||0);return}
+      const n=Math.min(requested,allowedBranch(id));
       state.points[id]=n;state.branch=id;persist();$('branchValue').textContent=String(n);refreshBudgetLabel();
       label.textContent=n+' / '+cap;
+      range.value=String(n);progress();
+      for(const marker of track.querySelectorAll('.inline-milestone'))
+       marker.classList.toggle('reached',n>=Number(marker.dataset.threshold));
       if(rebuild){renderBranches();if(activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails()}
      };
      range.addEventListener('input',()=>set(Number(range.value),false));
@@ -572,7 +582,7 @@ function renderBranches(){
      for(const [text,delta]of[['−5',-5],['−',-1],['+',1],['+5',5]])
       controls.append(h('button',{type:'button',text,disabled:cap===0,
        onclick:()=>set(Math.max(0,Math.min(allowedBranch(id),Number(state.points[id]||0)+delta)))}));
-     editor.append(row,range,controls);
+     editor.append(row,track,controls);
      const possible=catalog.live?Object.values(catalog.skills||{}).filter(skill=>
        skill.classes?.[jobKeys[state.job]]&&Array.isArray(skill.reqs)&&skill.reqs.some(req=>req.branch===id)):[];
      const milestones=window.PandoraSkillMilestones.forBranch(possible,id,cap).milestones;
@@ -581,7 +591,7 @@ function renderBranches(){
       for(const mark of milestones){
        const skill=mark.skills[0],icon=skillIcon(id,skill.id,skill);
        const button=h('button',{class:'inline-milestone'+(pts>=mark.threshold?' reached':''),
-        type:'button',title:skill.name+' · '+mark.threshold+' очков',
+        type:'button','data-threshold':String(mark.threshold),title:skill.name+' · '+mark.threshold+' очков',
         'aria-label':skill.name+' — '+mark.threshold+' очков',
         onclick:()=>{selectedSkill=skill;inlineBranchId=id;renderBranches()}});
        const image=h('img',{src:icon,alt:''});
@@ -590,7 +600,7 @@ function renderBranches(){
        button.style.left='clamp(0px, '+mark.percent+'%, calc(100% - 30px))';
        rail.append(button);skillHover(button,skill);
       }
-      editor.append(h('p',{class:'inline-milestone-heading',text:'Навыки по порогам · наведи для описания'}),rail);
+      track.append(rail);
      }
      if(possible.length){
        const list=h('div',{class:'inline-skill-list','aria-label':'Навыки выбранной ветки'});

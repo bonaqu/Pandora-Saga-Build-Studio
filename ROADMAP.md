@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest source release:** 0.50.0 (`2026.10.30.50`), browser and Worker deployment unverified  
+**Updated:** 2026-10-30 · **Latest source release:** 0.51.0 (`2026.10.30.51`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -31,7 +31,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | Priority | Feature / acceptance | Current state |
 |---|---|---|
 | P0 | Hero Path ≥410px on wide desktop, visual focus on center portrait, usable gear slots, no overlapping/overflow | Source changed in 0.50; desktop/mobile browser screenshots and user acceptance pending |
-| P0 | One-screen Hero Path: change branch points by dragging, show skill unlocks inside skill progression bar, identify prerequisites/class caps, select skill and see full detail without another page | Inline list, sliders and threshold icons in source; further milestone-bar consolidation, keyboard/touch testing, automatic opening, and detail parity pending |
+| P0 | One-screen Hero Path: change branch points by dragging, show skill unlocks inside skill progression bar, identify prerequisites/class caps, select skill and see full detail without another page | Inline list, merged mastery bar/slider and clickable thresholds in source; keyboard/touch testing, automatic opening, and detail parity pending |
 | P0 | Origin as sole attribute-spend editor: race+class initial stats, level budget, progressive cost, class caps, no legacy data loss | Initial data/editor done; validate historical points against live OS, test state persistence and UI; remove unreachable duplicate implementation code later |
 | P0 | Distinguish invested attribute cap 99 from **effective stat values above 99** from equipment/Souls and future buffs, sets, percentages, grade conditions | Flat source-backed effects shown; percent effects, conditional upgrades, sets, auras, buffs, mastery and recalculation formulas pending |
 | P0 | All 14 portrait gear slots; Choose, Properties, Souls with only supported sockets, 1-click gem type/element, enchant grade +0…+10, scroll/focus retention | Updated source; full cross-item interactive/browser testing pending; verify Soul compatibility for belts and every slot |
