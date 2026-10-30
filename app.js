@@ -129,11 +129,29 @@ function renderVitalsEnhancements(){
   const control=$(id);
   if(control)control.value=String(state.attributeBuffs?.[key]||0);
  }
- for(const [id,key] of [['originHonorCuriosity','honorCuriosity'],['originProelium','proelium']]){
+ for(const [id,key] of [['originProelium','proelium']]){
   const control=$(id);
   if(control)control.checked=state.attributeBuffs?.[key]===true;
  }
- const info=$('originVitalsCoverage'),calculated=previewBaseStats();
+ const honor=$('originHonorTitle'),honorOptions=window.PandoraOSCalculator.honorTitles;
+ if(honor){
+  if(honor.options.length!==honorOptions.length){
+   honor.replaceChildren();
+   for(const title of honorOptions){
+    const option=document.createElement('option');
+    option.value=String(title.id);
+    option.textContent=lang==='en'?title.en:title.ru;
+    honor.append(option);
+   }
+  }
+  const preferred=state.attributeBuffs?.honorTitle;
+  honor.value=String(Number.isInteger(preferred)?preferred:
+   state.attributeBuffs?.honorCuriosity===true?1:0);
+ }
+ const potion=$('originPotionRecovery');
+ if(potion)potion.textContent=previewBaseStats()?.potion?.percent==null?'—':
+  String(previewBaseStats().potion.percent)+'%';
+  const info=$('originVitalsCoverage'),calculated=previewBaseStats();
  if(info)info.textContent=calculated?
   'Учтены известные бонусы вещей, душ и выбранные усиления. Часть эффектов заточки, комплектов и умений пока не проверена.':
   'ОЗ и ОМ будут рассчитаны после загрузки игровых данных.';
@@ -150,9 +168,17 @@ function setVitalsEnhancement(key,value){
  state.vitalsBuffs=current;persist();renderOriginVitals();renderVitalsEnhancements();
 }
 function setAttributeBuff(key,value){
- const current={guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,
+ const current={guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,
   ...(state.attributeBuffs||{})};
- if(key==='honorCuriosity'||key==='proelium')current[key]=value===true;
+ if(key==='honorTitle'){
+  const id=Number(value);
+  if(!Number.isInteger(id)||id<0||id>=window.PandoraOSCalculator.honorTitles.length)return;
+  current.honorTitle=id;
+  current.honorCuriosity=id===1;
+ }else if(key==='honorCuriosity'){
+  current.honorCuriosity=value===true;
+  current.honorTitle=current.honorCuriosity?1:0;
+ }else if(key==='proelium')current[key]=value===true;
  else if(key==='guildAll'){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>6)return;
   current.guildAll=n;
@@ -1368,7 +1394,14 @@ function sanitizeSharedState(original){
   const guild=rawAttributes.guildAll,potency=rawAttributes.proeliumPotency;
   if(Number.isInteger(guild)&&guild>=0&&guild<=6)safe.attributeBuffs.guildAll=guild;
   if(Number.isInteger(potency)&&potency>=0&&potency<=100)safe.attributeBuffs.proeliumPotency=potency;
-  safe.attributeBuffs.honorCuriosity=rawAttributes.honorCuriosity===true;
+  if(Number.isInteger(rawAttributes.honorTitle)&&rawAttributes.honorTitle>=0&&
+    rawAttributes.honorTitle<window.PandoraOSCalculator.honorTitles.length){
+   safe.attributeBuffs.honorTitle=rawAttributes.honorTitle;
+   safe.attributeBuffs.honorCuriosity=rawAttributes.honorTitle===1;
+  }else{
+   // Pre-0.86 shared builds had only a boolean Honor switch.
+   safe.attributeBuffs.honorCuriosity=rawAttributes.honorCuriosity===true;
+  }
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
  }
  if(Number.isSafeInteger(original.racialPassiveId)&&original.racialPassiveId>=0&&original.racialPassiveId<10000000000)
@@ -1917,10 +1950,11 @@ for(const [id,key] of [['originGuildHp','guildHp'],['originGuildMp','guildMp']])
 }
 $('originLifeSign')?.addEventListener('change',event=>
  setVitalsEnhancement('lifeSign',event.target.checked));
+$('originHonorTitle')?.addEventListener('change',event=>setAttributeBuff('honorTitle',event.target.value));
 for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.value));
 }
-for(const [id,key] of [['originHonorCuriosity','honorCuriosity'],['originProelium','proelium']]){
+for(const [id,key] of [['originProelium','proelium']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
 }
 render();loadCatalog();loadOverrides();
