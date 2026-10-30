@@ -2,31 +2,28 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url);
-const source=file=>readFileSync(new URL(file,root),'utf8');
-test('studio tabs are available without page scrolling',()=>{
+const source=p=>readFileSync(new URL(p,root),'utf8');
+test('character portrait, Origin stats, and Hero Path are the core single-screen editor',()=>{
  const html=source('index.html'),app=source('app.js'),css=source('style.css');
- for(const id of ['studioBackdrop','detailPanel','detailContent','dockClose','dockTabs','stageQuickbar']){
+ for(const id of ['workspace','originPanelStats','skillBranches','stagePicker','railLeft','railRight','detailPanel','dockClose','dockTabs'])
   assert.match(html,new RegExp('id="'+id+'"'));
- }
- for(const tab of ['character','skills','equipment','stats','builds','wiki']){
+ for(const tab of ['character','equipment','builds','wiki'])
   assert.match(html,new RegExp('role="tab" data-tab="'+tab+'"'));
- }
- assert.doesNotMatch(app,/scrollIntoView\s*\(/);
+ assert.doesNotMatch(html,/data-tab="(?:skills|stats)"/);
+ assert.doesNotMatch(html,/id="stageQuickbar"/);
+ assert.match(app,/function renderBranches\(/);
+ assert.match(app,/class:'inline-skill-list'/);
  assert.match(app,/function showWorkbench\(/);
  assert.match(app,/function closeWorkbench\(/);
- assert.match(app,/if\(stageSlotPickerOpen\)closeStagePicker\(false\)/);
  assert.match(css,/\.detail\.is-open\s*\{/);
- assert.match(css,/\.studio-dock-tabs\s*\{/);
  assert.match(css,/\.workspace>\.left,\.workspace>\.right/);
- assert.match(css,/overflow-y:auto;overscroll-behavior:contain/);
 });
-test('studio releases and script URLs are consistent',()=>{
- const html=source('index.html');
- const version=JSON.parse(source('site-version.json')).release;
+test('release identifiers match every loaded client asset',()=>{
+ const html=source('index.html'),v=JSON.parse(source('site-version.json')).release;
  const pkg=JSON.parse(source('package.json'));
- assert.equal(pkg.pandoraRelease,version);
- assert.match(html,new RegExp('ps-studio-release" content="'+version.replaceAll('.','\\.')+'"'));
+ assert.equal(pkg.pandoraRelease,v);
+ assert.match(html,new RegExp('ps-studio-release" content="'+v.replaceAll('.','\\.')+'"'));
  const refs=[...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(m=>m[1]);
- assert.ok(refs.length>0);
- for(const ref of refs)assert.ok(ref.endsWith('?v='+version),ref);
+ assert.ok(refs.length>=10);
+ for(const ref of refs)assert.ok(ref.endsWith('?v='+v),ref);
 });

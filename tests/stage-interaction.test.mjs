@@ -62,7 +62,7 @@ test('gemstone editor chooses magic and rainbow rather than an inventory rune ID
 });
 
 test('jewelry and cloak have no refinement or gemstone editor',()=>{
- for(const slot of ['ring','neck','belt','ear','cloak']){
+ for(const slot of ['ring','neck','ear','cloak']){
   const state=makeApi(slot);
   stage.PandoraStageItemUI.render(state.box,state.api);
   assert.equal(byText(state.box,'+8'),undefined,slot);

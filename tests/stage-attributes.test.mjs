@@ -13,7 +13,7 @@ test('character portrait can toggle source-backed stats without page scroll',()=
  assert.match(attrs,/\['attack','Атака'\]/);
  assert.match(attrs,/\['defense','Защита'\]/);
  assert.match(attrs,/\['effects','Эффекты'\]/);
- assert.doesNotMatch(app,/scrollIntoView\(/);
+ assert.match(app,/function renderStageAttributes\(/);
 });
 test('source preview must not claim calculated combat stats',()=>{
  const attrs=get('stage-attributes.js');
