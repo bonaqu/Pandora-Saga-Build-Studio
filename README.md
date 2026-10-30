@@ -116,3 +116,7 @@ Pandora Saga OS has a separate public original `strings.en.json`. It is now save
 ## 2026-10-30: game-faithful five skill tabs and racial passives
 
 The skill UI now presents only 5 primary sections and 20 player-visible subsections, in their original order. The server metadata includes further technical branches, but these no longer appear as fictitious player skill trees. `race` is a racial passive choice (one of the 3 actual race-specific `racialPassives.json` skill IDs) in the character overview rather than a spendable point branch. It is persisted in JSON builds, migrated safely on race changes and included in comparisons. Unknown game rules remain marked unverified.
+
+## Interactive linked wiki (2026-10-30)
+
+A first wiki tab now navigates item sources, monster drops, maps, NPC exchange recipes, and chest rewards, using our own published Cloudflare D1. An item inspector includes clickable source links and a full wiki article. Crosslinks highlight relevant item entries; probabilities are shown only when an original field explicitly provides them. Group/zone drops are not treated as individual item odds. The encyclopedia is a foundation; images, bilingual completeness, soul provenance and broader UI polish are future work.
