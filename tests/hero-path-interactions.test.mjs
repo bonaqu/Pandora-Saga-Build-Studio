@@ -25,6 +25,11 @@ class BrowserElement {
  get checked(){return this._checked}
  set checked(value){this._checked=Boolean(value)}
  addEventListener(name,callback){this.listeners[name]=callback}
+ removeAttribute(name){delete this.attributes[name]}
+ querySelector(tag){return walk(this).find(item=>item.tag===tag)||null}
+ focus(){this.focused=true}
+ prepend(...items){this.children.unshift(...items)}
+ remove(){}
  replaceWith(){}
 }
 const doc={createElement:tag=>new BrowserElement(tag),createTextNode:text=>({tag:'#text',textContent:text})};
@@ -178,9 +183,51 @@ test('real OS class milestones are tiny pins instead of overlapping image button
  f.api.hover=(node,skills)=>{if(Array.isArray(skills)&&skills.length)hovered++};
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const pins=walk(f.target).filter(x=>String(x.className).includes('path-milestone-pin'));
- assert.ok(pins.length>=3);
- assert.ok(pins.some(x=>x.attributes['data-milestone-points']==='41'));
+ assert.ok(pins.length>=1);
+ assert.ok(pins.some(x=>String(x.attributes['data-milestone-points']).split(',').includes('41')));
  assert.ok(pins.every(x=>x.children.every(child=>child.tag!=='img')));
- assert.ok(pins.every(x=>x.style.top?.endsWith('px')));
+ assert.ok(pins.every(x=>!Object.hasOwn(x.style,'top')));
  assert.equal(hovered,pins.length);
+});
+
+test('close thresholds open a compact picker with each skill independently selectable',()=>{
+ const f=fixture('CLERIC','prayer','benevolence');
+ const skills=[8,10,42].map((threshold,index)=>({
+  id:900+index,name:'Fixture '+threshold,classes:{CLERIC:true},
+  branch:'benevolence',reqs:[{branch:'benevolence',amount:threshold}]
+ }));
+ let selected=null;
+ f.api.skillCatalog=skills;
+ f.api.milestones=()=>skills.map((skill,index)=>({
+  threshold:skill.reqs[0].amount,skills:[skill],locked:false
+ }));
+ f.api.onSkill=skill=>{selected=skill};
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const pins=walk(f.target).filter(el=>String(el.className).includes('path-milestone-pin'));
+ assert.equal(pins.length,2,'8/10 share a pin; 42 remains independent');
+ assert.equal(pins[0].attributes['data-milestone-points'],'8,10');
+ assert.ok(pins.every(pin=>!Object.hasOwn(pin.style,'top')),'pins use CSS rather than high inline offsets');
+ const picker=walk(f.target).find(el=>el.className==='path-milestone-picker');
+ assert.ok(picker);
+ assert.equal(picker.hidden,true);
+ pins[0].listeners.click();
+ assert.equal(picker.hidden,false);
+ assert.equal(pins[0].attributes['aria-expanded'],'true');
+ const options=walk(picker).filter(el=>el.tag==='button');
+ assert.equal(options.length,3,'two skills and a close control');
+ options[1].listeners.click();
+ assert.equal(selected.id,901,'second skill, not always first, is selectable');
+ picker.listeners.keydown({key:'Escape',preventDefault(){}});
+ assert.equal(picker.hidden,true);
+ assert.equal(pins[0].attributes['aria-expanded'],'false');
+ pins[1].listeners.click();
+ assert.equal(selected.id,902,'single marker directly opens its skill');
+});
+
+test('skill progress slider does not show a duplicate native text tooltip',()=>{
+ const f=fixture('CLERIC','prayer','benevolence');
+ const tracks=walk(f.target).filter(el=>String(el.className).includes('inline-mastery-track'));
+ assert.ok(tracks.length);
+ assert.ok(tracks.every(el=>!el.title),'no native title that covers marker tooltip');
+ assert.match(f.range.attributes['aria-valuetext'],/вложено/);
 });
