@@ -29,12 +29,12 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
  const render=Function('$','previewBaseStats',fn+'\nreturn renderOriginVitals;')(
   name=>fake[name]||null,()=>estimate);
  render();
- assert.equal(fake.originHp.textContent,'≈1630');
- assert.equal(fake.originMp.textContent,'≈420');
+ assert.equal(fake.originHp.textContent,'1630');
+ assert.equal(fake.originMp.textContent,'420');
  assert.match(fake.originVitals.attrs['aria-label'],/1630/);
  estimate={hp:1810,mp:490};render();
- assert.equal(fake.originHp.textContent,'≈1810');
- assert.equal(fake.originMp.textContent,'≈490');
+ assert.equal(fake.originHp.textContent,'1810');
+ assert.equal(fake.originMp.textContent,'490');
  estimate=null;render();
  assert.equal(fake.originHp.textContent,'—');
  assert.equal(fake.originMp.textContent,'—');
