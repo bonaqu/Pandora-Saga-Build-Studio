@@ -171,7 +171,7 @@ function viewSkills(target,details,api){
  rows.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
   String(a.skill.name||'').localeCompare(String(b.skill.name||''),'ru'));
  target.append(make('p',{class:'path-skill-count',
-  text:rows.length+' умений · цветные — доступны по известным условиям, серые — недоступны или не подтверждены'}));
+  text:rows.length+' умений · цветные — доступно по известным условиям, серые — недоступно или не проверено. *Не подтверждает изучение в игре.'}));
  const grid=make('div',{class:'path-skill-grid'});
  for(const {skill,gate}of rows){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
@@ -193,9 +193,48 @@ function viewSkills(target,details,api){
   details.append(make('h3',{text:skill.name||String(skill.id)}),
    make('p',{text:skill.desc||'Описание умения отсутствует.'}),
    make('p',{class:gate.learned?'path-skill-yes':'path-skill-no',
-    text:gate.learned?'✓ Изучено по известным требованиям':'🔒 '+gate.problems.join(' · ')}),
-   make('small',{text:'Уровень '+(skill.charLevel||'—')+' · Мана '+(skill.mana??'—')+
-    ' · Перезарядка '+(skill.cooldown??'—')+' · ID '+skill.id}));
+    text:gate.learned?'✓ Известные условия доступны — фактическое изучение в игре не проверено':
+     '🔒 '+gate.problems.join(' · ')}));
+  const stats=make('dl',{class:'path-skill-metadata'});
+  const field=(label,value)=>{
+   if(value===null||value===undefined||value==='')return;
+   stats.append(make('dt',{text:label}),make('dd',{text:String(value)}));
+  };
+  field('Уровень персонажа',skill.charLevel||'Нет известного порога');
+  field('Мана / ОМ',skill.mana);
+  field('Подготовка (OS)',skill.cast);
+  field('Перезарядка (OS)',skill.cooldown);
+  field('Дальность (ед. OS)',skill.rangeFromWeapon?'Зависит от оружия':skill.range);
+  field('Стихия (код OS)',skill.element);
+  field('Характеристика (код OS)',skill.powerStat);
+  field('ID умения',skill.id);
+  details.append(stats);
+  const requirements=Array.isArray(skill.reqs)?skill.reqs:[];
+  if(requirements.length){
+   const reqList=make('div',{class:'path-skill-prereqs'});
+   reqList.append(make('strong',{text:'Требования по веткам'}));
+   for(const req of requirements){
+    if(!req||!req.branch)continue;
+    const value=M.potential(api.state,req.branch),green=M.trained(api.state,req.branch);
+    reqList.append(make('p',{text:api.branchName(req.branch)+' · порог '+req.amount+
+     ' · вложено '+value+' · освоено '+green}));
+   }
+   details.append(reqList);
+  }
+  if(skill.prereq){
+   const before=api.skillCatalog.find(s=>String(s.id)===String(skill.prereq));
+   details.append(make('p',{class:'path-skill-prereqs',text:'Предыдущее умение: '+
+     (before?.name||String(skill.prereq))}));
+  }
+  if(Array.isArray(skill.funcs)&&skill.funcs.length){
+   const effects=make('details',{class:'path-skill-source-effects'});
+   effects.append(make('summary',{text:'Эффекты из OS ('+skill.funcs.length+') · исходные коды'}));
+   for(const func of skill.funcs.slice(0,30))
+    effects.append(make('p',{text:String(func.ep||'Неизвестный эффект')+
+      (func.dir?' · '+func.dir:'')}));
+   details.append(effects);
+  }
+  if(typeof api.skillWiki==='function')details.append(api.skillWiki(skill));
  }
 }
 root.PandoraHeroPath=Object.freeze({viewGrowth,viewSkills,readiness});

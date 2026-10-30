@@ -575,6 +575,7 @@ function heroPathApi(){
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
   icon:(key,skill)=>skillIcon(key,skill?.id,skill),
   hover:(node,skill)=>skillHover(node,skill),
+  skillWiki:skill=>wikiLink('📜 Полная статья в энциклопедии','skill',String(skill.id)),
   milestones:(skills,key,cap)=>window.PandoraSkillMilestones.forBranch(skills,key,cap).milestones,
   onGroup:key=>{
    selectedSkillGroup=key;pathGroupTouched=true;
@@ -618,7 +619,9 @@ function heroPathApi(){
    saveView();return true;
   },
   onSkill:skill=>{
-   selectedSkill=skill;heroPathPage='skills';renderPathPages();saveView();
+   selectedSkill=skill;pathSkillFilter='all';pathSkillQuery='';
+   $('pathSkillStatus').value='all';$('pathSkillSearch').value='';
+   heroPathPage='skills';renderPathPages();saveView();
    $('pathSkillsTab')?.focus({preventScroll:true});
   },
   onInspect:skill=>{

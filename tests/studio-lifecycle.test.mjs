@@ -51,3 +51,11 @@ test('numeric legacy mastery keys get migrated alongside invested branch points'
  assert.match(app,/state\.mastery=Object\.fromEntries\(Object\.entries\(state\.mastery\)/);
  assert.match(app,/oldToOS\[key\]\|\|key,val/);
 });
+
+test('milestone link always reveals the selected skill despite stale gallery filters',()=>{
+ const app=read('app.js'),html=read('index.html');
+ assert.match(app,/selectedSkill=skill;pathSkillFilter='all';pathSkillQuery=''/);
+ assert.match(app,/\$\('pathSkillStatus'\)\.value='all'/);
+ assert.match(app,/\$\('pathSkillSearch'\)\.value=''/);
+ assert.match(html,/Доступные\*/);
+});

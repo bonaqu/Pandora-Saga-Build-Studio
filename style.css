@@ -685,3 +685,14 @@ a.wiki-link:hover{text-decoration:none}
 
 /* 2026.10.30.60: center threshold icons at their exact point on the one slider. */
 .inline-mastery-track .inline-milestone{transform:translateX(-50%)}
+
+/* 2026.10.30.61 — complete source-backed skill details in the right Hero Path. */
+.path-skill-metadata{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:8px 0;border-block:1px solid #70543b;font-size:11px}
+.path-skill-metadata dt{min-width:0;color:#b6a18a}
+.path-skill-metadata dd{margin:0;color:#eccb93;text-align:right;font-variant-numeric:tabular-nums}
+.path-skill-prereqs{display:grid;gap:4px;padding:8px 0;color:#c8b79b}
+.path-skill-prereqs strong{color:#f0c98c}
+.path-skill-source-effects{border-top:1px solid #70543b;padding-top:8px;color:#b1a38e;font-size:10px}
+.path-skill-source-effects summary{cursor:pointer;color:#cfac77}
+.path-skill-source-effects p{margin:3px 0;overflow-wrap:anywhere}
+.path-skill-details .wiki-link{display:inline-block;margin-top:9px}

@@ -71,3 +71,14 @@ test('skill editor preserves keyboard focus across state re-render',()=>{
  assert.match(app,/document\.activeElement\?\.getAttribute\?\.\('data-branch-control'\)/);
  assert.match(app,/focus\(\{preventScroll:true\}\)/);
 });
+
+test('skill details include source-backed mana, cast, cooldown and exact branch requirements',()=>{
+ const ui=read('hero-path.js'),app=read('app.js');
+ for(const field of ['skill.mana','skill.cast','skill.cooldown','skill.range',
+  'skill.element','skill.powerStat','skill.funcs'])
+  assert.ok(ui.includes(field),field);
+ assert.match(ui,/Требования по веткам/);
+ assert.match(ui,/вложено '\+value\+' · освоено '\+green/);
+ assert.match(app,/skillWiki:skill=>wikiLink/);
+ assert.match(ui,/api\.skillWiki\(skill\)/);
+});

@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.60",
-  "notes": "Preserve skill gallery scroll/focus, migrate legacy green mastery, align slider fills and locked cap with fully supported CSS"
+  "release": "2026.10.30.61",
+  "notes": "Hero Path skill details expose verified source fields/branch gates and a wiki link; label eligibility conservatively; fix milestone navigation behind saved search filters"
 }
