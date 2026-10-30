@@ -14,7 +14,7 @@ test('studio tabs are available without page scrolling',()=>{
  assert.doesNotMatch(app,/scrollIntoView\s*\(/);
  assert.match(app,/function showWorkbench\(/);
  assert.match(app,/function closeWorkbench\(/);
- assert.match(app,/if\(stageSlotPickerOpen\)\{stageSlotPickerOpen=false;renderStagePicker\(\)\}/);
+ assert.match(app,/if\(stageSlotPickerOpen\)closeStagePicker\(false\)/);
  assert.match(css,/\.detail\.is-open\s*\{/);
  assert.match(css,/\.studio-dock-tabs\s*\{/);
 });
