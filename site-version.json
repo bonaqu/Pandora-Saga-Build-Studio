@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.28",
-  "notes": "Restored-build visual consistency, stage picker focus, workbench scroll reset, safe auto-update and verified local-icon progress"
+  "release": "2026.10.30.29",
+  "notes": "Viewport-fit three-column desktop studio and safer original-icon mirroring with WebP signature and filename validation"
 }

@@ -4,6 +4,7 @@
 import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {safeIconStem,isWebP} from './icon-utils.mjs';
 const root=join(dirname(fileURLToPath(import.meta.url)),'..');
 const dry=process.argv.includes('--dry-run'),retries=2,concurrency=8;
 const limitArg=process.argv.find(x=>x.startsWith('--limit='));
@@ -13,14 +14,13 @@ if(limitArg&&(!Number.isInteger(limit)||limit<1))throw Error('--limit must be a 
 const json=async file=>JSON.parse(await readFile(join(root,'data/os',file+'.json'),'utf8'));
 const [skills,items,souls]=await Promise.all(['skills','items','souls'].map(json));
 const list=[];
-for(const r of Object.values(skills))if(r.iconId)list.push({kind:'skills',stem:'skill_'+r.iconId});
-for(const r of Object.values(items))if(r.icon)list.push({kind:'items',stem:r.icon});
-for(const r of Object.values(souls))if(r.icon)list.push({kind:'souls',stem:r.icon});
+for(const r of Object.values(skills))if(r.iconId)list.push({kind:'skills',stem:'skill_'+safeIconStem(r.iconId)});
+for(const r of Object.values(items))if(r.icon)list.push({kind:'items',stem:safeIconStem(r.icon)});
+for(const r of Object.values(souls))if(r.icon)list.push({kind:'souls',stem:safeIconStem(r.icon)});
 const unique=[...new Map(list.map(v=>[v.kind+'/'+v.stem,v])).values()];
 const manifest={source:'Pandora Saga OS, one-time archive',createdAt:new Date().toISOString(),icons:{skills:{},items:{},souls:{}},missing:[]};
 let done=0,fail=0,index=0;
-const valid=(buffer)=>buffer.length>16&&String.fromCharCode(...buffer.subarray(0,4))==='RIFF'&&
- String.fromCharCode(...buffer.subarray(8,12))==='WEBP';
+const valid=isWebP;
 const missing=async row=>{
  const file=join(root,'assets',row.kind,'icons',row.stem+'.webp');
  try{return !valid(await readFile(file))}catch{return true}

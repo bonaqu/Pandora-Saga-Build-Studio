@@ -348,3 +348,19 @@ a.wiki-link:hover{text-decoration:none}
 #iconStatus{color:#d3b484;min-width:170px}
 @media(max-width:900px){footer{flex-wrap:wrap;align-items:center;justify-content:flex-start}}
 .equipment-rail .equipment-slot[aria-expanded="true"]{outline:2px solid #ffdf9a;outline-offset:2px}
+
+/* 2026.10.30.29: height-bound three-column desktop studio. Scroll panes, not the page. */
+@media (min-width:1201px) and (min-height:800px) {
+ .workspace{height:clamp(490px,calc(100dvh - 365px),900px);min-height:0;align-items:stretch}
+ .workspace>.left,.workspace>.right{min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#866840 #1b1511}
+ .workspace>.left>.panel-heading,.workspace>.right>.panel-heading{position:sticky;top:-17px;z-index:5;background:#271d15;padding-top:8px}
+ .workspace>.stage{min-height:0;height:100%;display:flex;flex-direction:column}
+ .workspace>.stage>.stage-inner{height:auto;min-height:0;flex:1;overflow:hidden}
+ .workspace .stage-inner .portrait-frame{height:96%;max-height:100%}
+ .workspace .equipment-rail{top:8px;gap:clamp(3px,.5vh,6px)}
+ .workspace .equipment-rail .equipment-slot{--studio-slot:clamp(37px,4.7vh,52px);width:var(--studio-slot);height:var(--studio-slot)}
+ .workspace .equipment-rail .equipped-icon{width:calc(var(--studio-slot) - 12px);height:calc(var(--studio-slot) - 12px)}
+ .workspace .equipment-slot .slot-glyph{font-size:clamp(17px,2.5vh,25px)}
+ .workspace .mini-note{flex-shrink:0}
+ .workspace .hero-actions{flex-shrink:0}
+}

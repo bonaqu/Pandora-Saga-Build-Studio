@@ -17,6 +17,8 @@ test('studio tabs are available without page scrolling',()=>{
  assert.match(app,/if\(stageSlotPickerOpen\)closeStagePicker\(false\)/);
  assert.match(css,/\.detail\.is-open\s*\{/);
  assert.match(css,/\.studio-dock-tabs\s*\{/);
+ assert.match(css,/\.workspace>\.left,\.workspace>\.right/);
+ assert.match(css,/overflow-y:auto;overscroll-behavior:contain/);
 });
 test('studio releases and script URLs are consistent',()=>{
  const html=source('index.html');
