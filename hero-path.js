@@ -124,76 +124,47 @@ function viewGrowth(target,api){
     const skills=skillCatalog.filter(s=>s.classes?.[job]&&Array.isArray(s.reqs)&&
      s.reqs.some(req=>req.branch===key));
     const marks=api.milestones(skills,key,cap);
-    let picker=null;
+    let unlockDetails=null;
     if(marks.length){
-     const rail=make('div',{class:'inline-branch-milestones','aria-label':'Умения на порогах ветки'});
-    // Combine nearby thresholds into one accessible marker rather than overlapping icons.
-    const clusters=[];
-    for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
-     const prior=clusters[clusters.length-1];
-     if(prior&&mark.threshold-prior.lastThreshold<8){
-      prior.skills.push(...mark.skills);
-      prior.entries.push(...mark.skills.map(skill=>({skill,threshold:mark.threshold,locked:mark.locked})));
-      prior.thresholds.push(mark.threshold);
-      prior.lastThreshold=mark.threshold;
-      prior.locked=prior.locked&&mark.locked;
-     }else clusters.push({threshold:mark.threshold,lastThreshold:mark.threshold,
-      thresholds:[mark.threshold],skills:[...mark.skills],
-      entries:mark.skills.map(skill=>({skill,threshold:mark.threshold,locked:mark.locked})),
-      locked:mark.locked});
-    }
-    const pickerId='path-milestone-picker-'+key.replace(/[^a-z0-9_-]/gi,'');
-    let openMarker=null;
-    const closePicker=(restoreFocus=false)=>{
-     picker.hidden=true;picker.replaceChildren();
-     if(openMarker){
-      openMarker.setAttribute('aria-expanded','false');
-      if(restoreFocus)openMarker.focus({preventScroll:true});
+     // Non-interactive ticks cannot obstruct the native range thumb or track.
+     const ticks=make('div',{class:'inline-branch-milestones','aria-hidden':'true'});
+     const thresholds=[...new Set(marks.map(mark=>mark.threshold))].sort((a,b)=>a-b);
+     for(const threshold of thresholds){
+      const at=marks.filter(mark=>mark.threshold===threshold);
+      const lockedAt=at.every(mark=>mark.locked);
+      const tick=make('span',{class:'path-threshold-tick'+(lockedAt?' unreachable':''),
+       'data-milestone-points':String(threshold)});
+      tick.style.left='calc('+(threshold/visualMax*100).toFixed(4)+'% - '+
+       (24*threshold/visualMax).toFixed(4)+'px)';
+      ticks.append(tick);
      }
-     openMarker=null;
-    };
-    picker=make('div',{id:pickerId,class:'path-milestone-picker',hidden:true,
-     role:'group','aria-label':'Выбор умения на пороге',
-     onkeydown:event=>{if(event.key==='Escape'){event.preventDefault();closePicker(true)}}});
-    for(const cluster of clusters){
-     const skill=cluster.skills[0],ready=cluster.skills.some(s=>readiness(s,api).learned);
-     const button=make('button',{type:'button',
-      class:'inline-milestone path-milestone-pin'+(cluster.skills.length>1?' multi':'')+(cluster.locked?' unreachable':ready?' reached':''),
-      'data-milestone-points':cluster.thresholds.join(','),
-       'aria-controls':pickerId,'aria-expanded':'false',
-      'aria-label':cluster.skills.map(s=>s.name).join(', ')+' · '+cluster.thresholds.join(', ')+' очков'+
-       (cluster.locked?' · выше лимита класса':''),
-      onclick:()=>{
-       if(cluster.skills.length===1){closePicker();api.onSkill(skill);return}
-       if(openMarker===button){closePicker(true);return}
-       closePicker();openMarker=button;button.setAttribute('aria-expanded','true');
-       picker.replaceChildren(make('strong',{text:'Умения · '+cluster.thresholds.join(', ')+' очков'}));
-       for(const entry of cluster.entries){
-        const skillRow=entry.skill,ready=readiness(skillRow,api).learned;
-        const status=entry.locked?'За пределом класса':
-         ready?'Доступно по требованиям':'Условия не выполнены';
-        const item=make('button',{type:'button',class:'path-milestone-choice',
-         'aria-label':(skillRow.name||'Умение')+', '+entry.threshold+' очков. '+status,
-         onclick:()=>api.onSkill(skillRow)});
-        const src=api.icon(skillRow.branch,skillRow);
-        if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.remove();item.append(img)}
-        const body=make('span',{class:'path-milestone-choice-body'});
-        body.append(make('strong',{text:skillRow.name||'Умение'}),
-         make('small',{text:entry.threshold+' очков · '+status}));
-        item.append(body);picker.append(item);
+     track.append(ticks);
+     // A separate collapsed list provides access to every skill without covering the drag surface.
+     unlockDetails=make('details',{class:'path-unlock-details'});
+     unlockDetails.append(make('summary',{
+      text:'Умения на шкале · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
+     const list=make('div',{class:'path-unlock-list'});
+     for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
+      for(const skill of mark.skills){
+       const gate=readiness(skill,api);
+       const button=make('button',{type:'button',class:'path-unlock-skill'+
+        (mark.locked?' unreachable':gate.learned?' reached':''),
+        'aria-label':(skill.name||'Умение')+', '+mark.threshold+' очков',
+        onclick:()=>api.onSkill(skill)});
+       const icon=api.icon(skill.branch,skill);
+       if(icon){
+        const img=make('img',{src:icon,alt:''});
+        img.onerror=()=>img.remove();
+        button.append(img);
        }
-       picker.append(make('button',{type:'button',class:'path-milestone-dismiss',
-        text:'Закрыть',onclick:()=>closePicker(true)}));
-       picker.hidden=false;
-       picker.querySelector('button')?.focus({preventScroll:true});
-      }});
-     button.append(make('span',{class:'path-milestone-core',text:cluster.skills.length>1?String(cluster.skills.length):''}));
-     // Vertical position belongs to CSS: directly on the progression bar.
-     button.style.left='clamp(8px, '+Math.max(0,Math.min(100,cluster.threshold/visualMax*100))+
-      '%, calc(100% - 8px))';
-     rail.append(button);api.hover(button,cluster.skills);
-    }
-    track.append(rail);
+       const copy=make('span',{class:'path-unlock-copy'});
+       copy.append(make('strong',{text:skill.name||'Умение'}),
+        make('small',{text:mark.threshold+' очков'+
+         (mark.locked?' · выше лимита':gate.learned?' · доступно':'')}));
+       button.append(copy);list.append(button);
+      }
+     }
+     unlockDetails.append(list);
     }
     const greenRow=make('div',{class:'path-green-controls'});
     const input=make('input',{type:'number',min:'0',max:String(points),step:'1',
@@ -208,7 +179,7 @@ function viewGrowth(target,api){
     const exact=make('div',{class:'path-allocation-input'});
     exact.append(make('span',{text:'Точно вложено'}),numeric);
     editor.append(note,track);
-    if(picker)editor.append(picker);
+    if(unlockDetails)editor.append(unlockDetails);
     editor.append(exact,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
      text:!api.allocationReady?'Загружаются таблицы очков и лимитов класса.':
