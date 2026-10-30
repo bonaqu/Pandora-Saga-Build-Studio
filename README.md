@@ -100,3 +100,7 @@ Sign in as `administrator`, enable editing, and use **Каталог D1** in the
 ## Full source snapshot: OS + verified Legacy translations (2026-10-30)
 
 The owner-only **Каталог D1** operation now validates all 12 public OS datasets and imports them with original IDs into a versioned D1 snapshot, plus grouped trade metadata and language-namespaced approved Legacy translations in `data/localization/legacy-approved.v1.json`. Server-side publication requires exact row totals for every dataset; only then the active snapshot changes. No background game-server API calls. English source terms are preserved in their own Legacy namespace rather than silently assigned to unrelated current-server IDs. See `data/os/EXTENDED-CATALOG.md` and `data/localization/README.md`.
+
+### 2026-10-30.10 — verified complete import
+
+The checked-in snapshot includes **12 distinct OS datasets** and separately stores approved Legacy RU/EN/JP/TW source terminology. Import normalization was checked against actual source files: **6,418 rows** across 15 D1 namespaces, including **3,275 language records**. Added `tests/catalog-import.test.mjs` for missing data, array-formatted instances and trade metadata, and `catalog-import.js` for source-preserving normalization. Keep Legacy localization keys separate from OS IDs until individually verified. The next site release increments the manifest and cache-busting query strings to deliver this fix.

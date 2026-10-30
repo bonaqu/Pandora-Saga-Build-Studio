@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.9",
-  "notes": "Complete versioned D1 import of 12 OS datasets and verified Legacy RU/EN/JP/TW strings"
+  "release": "2026.10.30.10",
+  "notes": "Full D1 source import validated for 6418 records and locale namespaces"
 }

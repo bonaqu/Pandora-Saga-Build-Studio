@@ -41,7 +41,7 @@ async function activeCatalog(env){
 async function serveCatalog(env,dataset){
  const active=await activeCatalog(env);
  if(!active)return no('Catalog not published in D1 yet',503);
- const q=await env.DB.prepare('SELECT record_key,payload FROM catalog_entries WHERE snapshot=? AND dataset=?').bind(active.snapshot,dataset).all();
+ const q=await env.DB.prepare('SELECT record_key,payload FROM catalog_entries WHERE snapshot=? AND dataset=? ORDER BY record_key').bind(active.snapshot,dataset).all();
  const rows=q.results||[];
  if(!rows.length)return no('Dataset missing from published catalog',503);
  let obj=dataset==='meta'?JSON.parse(rows[0].payload):
