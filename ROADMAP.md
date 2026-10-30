@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.79.0 (`2026.10.31.79`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.80.0 (`2026.10.31.80`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,15 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.80.0 — slider/portrait symmetry/HUD removal
+
+- Remove all visual top HUD markup and unused game HUD CSS. No experience indicator and no placeholder hero name above the workbench.
+- Show preliminary HP/MP only in **Origin → Characteristics**, alongside the existing character level control. Keep persisted character name and profile data unchanged.
+- Replace skill threshold input-overlapping buttons with thin passive ticks. Every source threshold remains represented independently, all pointer and keyboard allocation remains owned by the range. A collapsed-by-default native details list beneath the track offers individual skill icons, thresholds and independent selection.
+- Force identical slot-local `--studio-slot` values on left/right equipment rails at desktop, tablet and mobile breakpoints; increase image visual size slightly.
+- 19 isolated JS/mock DOM checks passed: 13 Hero Path, 4 compact workbench, 2 equipment slot tests. Browser visual QA remains the user's acceptance gate (1920×1080 and 2560×1440, 390px mobile).
+- Not complete: actual Cloudflare Worker deployment/D1 connectivity, in-browser scrolling behavior, full game formula parity, original icon set, encyclopedia and shared-build acceptance. Preserve all earlier backlog/issues.
 
 ## Source update 0.79.0 — player tooltips, gear badges and connections
 
