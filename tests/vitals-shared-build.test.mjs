@@ -45,7 +45,7 @@ test('Remaked attribute bonuses survive export and sharing without changing inve
  const safe=sanitize({race:0,job:0,level:45,stats:{Сила:8,Дух:9},
   attributeBuffs:{guildAll:4,honorCuriosity:true,proelium:true,proeliumPotency:70}});
  assert.deepEqual(safe.attributeBuffs,{
-  guildAll:4,honorCuriosity:true,honorTitle:null,proelium:true,proeliumPotency:70,runeJoEun:false});
+  guildAll:4,honorCuriosity:true,honorTitle:null,proelium:true,proeliumPotency:70,runeJoEun:false,potionEffectsEnabled:false});
  assert.equal(safe.stats['Сила'],8);
  assert.equal(safe.stats['Дух'],9);
 });
