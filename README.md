@@ -41,6 +41,10 @@ First successful login: owner-only entry → `administrator` → new password (m
 
 **Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
 
+## 2026-10-30 — выпуск 2026.10.30.71
+
+- Исправлен тест обработки boolean атрибутов без изменения пользовательского интерфейса: 0.68–0.69 остаются видимым обновлением.
+
 ## 2026-10-30 — выпуск 2026.10.30.70
 
 - Регрессионные тесты обновлены под сворачивание всех веток, компактные маркеры и удалённые технические надписи.

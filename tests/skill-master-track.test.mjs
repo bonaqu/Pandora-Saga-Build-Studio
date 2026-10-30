@@ -86,7 +86,8 @@ test('skill details include source-backed mana, cast, cooldown and exact branch 
 test('bug regression: range must not receive disabled="false" as a HTML boolean attribute',()=>{
  const hero=read('hero-path.js'),app=read('app.js');
  assert.match(hero,/e\[key\]=Boolean\(val\)/);
- assert.doesNotMatch(hero,/else if\(val!==undefined&&val!==null\)e\.setAttribute\(key,String\(val\)\)/);
+ // Non-boolean attributes must still be set normally.
+ assert.match(hero,/else if\(val!==undefined&&val!==null\)e\.setAttribute\(key,String\(val\)\)/);
  assert.match(app,/el\[k\]=Boolean\(v\)/);
  assert.match(hero,/budget\.total!==null&&api\.allocationReady/);
  assert.match(app,/allocationReady:Boolean\(gameTables\?\.abilityPoint&&catalog\.classes\?\.\[klass\]\)/);

@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.70",
-  "notes": "Update functional regression assertions to match intentional folded groups, simplified skill labels; test real OS milestone pins and natural scrolling"
+  "release": "2026.10.30.71",
+  "notes": "Fix false-positive regression test: boolean attributes use DOM properties while regular HTML/ARIA attributes retain setAttribute"
 }
