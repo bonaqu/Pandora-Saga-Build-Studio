@@ -13,7 +13,7 @@ function sanitizer(){
   race:0,gender:0,job:0,level:1,name:'Билд',branch:'slash',
   points:{slash:0},stats:{Сила:0,Дух:0},mastery:{},
   vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},
-  attributeBuffs:{guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false},
+  attributeBuffs:{guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false},
   equipment:{},souls:{},refinements:{},gems:{},profile:{guild:'',nation:'',rank:'',about:''}
  });
  const window={PandoraSkillProgression:{potential:()=>0},
@@ -53,20 +53,22 @@ test('malformed shared attribute buff values cannot activate Honor, guild or pot
  const safe=sanitizer()({race:0,job:0,level:45,
   attributeBuffs:{guildAll:9,honorCuriosity:'true',proelium:1,proeliumPotency:10000}});
  assert.deepEqual(safe.attributeBuffs,{
-  guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false});
+  guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false});
 });
 
 test('exclusive Honor title and Jo-eun rune survive validated links',()=>{
  const safe=sanitizer()({race:0,job:0,level:45,attributeBuffs:{
-  honorTitle:11,honorCuriosity:true,runeJoEun:true}});
+  honorTitle:11,honorCuriosity:true,runeJoEun:true,potionEffectsEnabled:true}});
  assert.equal(safe.attributeBuffs.honorTitle,11);
  assert.equal(safe.attributeBuffs.honorCuriosity,false);
  assert.equal(safe.attributeBuffs.runeJoEun,true);
+ assert.equal(safe.attributeBuffs.potionEffectsEnabled,true);
 });
 test('invalid honor title is rejected, never activated from outside',()=>{
  const safe=sanitizer()({race:0,job:0,level:45,attributeBuffs:{
-  honorTitle:999,honorCuriosity:'true',runeJoEun:'true'}});
+  honorTitle:999,honorCuriosity:'true',runeJoEun:'true',potionEffectsEnabled:'true'}});
  assert.equal(safe.attributeBuffs.honorTitle,null);
  assert.equal(safe.attributeBuffs.honorCuriosity,false);
  assert.equal(safe.attributeBuffs.runeJoEun,false);
+ assert.equal(safe.attributeBuffs.potionEffectsEnabled,false);
 });
