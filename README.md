@@ -124,3 +124,7 @@ A first wiki tab now navigates item sources, monster drops, maps, NPC exchange r
 ## Protected manual source updates (2026-10-30)
 
 **Каталог D1** now offers two read-only comparisons: current Pandora Saga OS via the allowlisted, authenticated Worker proxy, or the checked-in GitHub archive. It compares all 17 source files by stable IDs, previews added/changed/removed keys, validates the full snapshot, then requires an explicit confirmation before a chunked D1 import and atomic pointer switch. A failed compare/import never replaces the previously published catalog. Old snapshot rows are retained, subject to D1 storage limits. The source refresh intentionally does not push upstream changes into GitHub backup files; periodically update the backup separately as part of source provenance maintenance.
+
+## Self-hosting original game icons
+
+The checked-in collection now includes 19 local Legacy skill-branch PNGs used for branch navigation. For current OS skill/item/soul icons, run `node scripts/mirror-os-icons.mjs --dry-run` followed by `node scripts/mirror-os-icons.mjs` in a network-enabled checkout, review `assets/os-icon-manifest.json` and commit the generated assets. This step is **not yet executed**; do not remove fallback icons until the manifest is complete. No Actions, tokens, paid services or runtime third-party API access are needed for the mirror.

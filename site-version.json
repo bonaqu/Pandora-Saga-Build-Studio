@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.15",
-  "notes": "Owner-reviewed upstream catalog changes and confirmed D1 snapshot update"
+  "release": "2026.10.30.16",
+  "notes": "Self-hosted skill branch icons and strict D1 comparison checks"
 }

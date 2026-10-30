@@ -21,6 +21,8 @@ function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
 function imageUrl(name){return `assets/${name}.webp`}
+const BRANCH_ICON_PATHS={"slash":"assets/skills/legacy/01-00.png","thrust":"assets/skills/legacy/02-00.png","brush":"assets/skills/legacy/03-00.png","blow":"assets/skills/legacy/04-00.png","defense":"assets/skills/legacy/05-00.png","archery":"assets/skills/legacy/07-00.png","alchemy":"assets/skills/legacy/08-00.png","assassin":"assets/skills/legacy/09-00.png","trap":"assets/skills/legacy/10-00.png","warding":"assets/skills/legacy/11-00.png","benevolence":"assets/skills/legacy/13-00.png","blessing":"assets/skills/legacy/14-00.png","exorcism":"assets/skills/legacy/15-00.png","hymn":"assets/skills/legacy/16-00.png","element":"assets/skills/legacy/18-00.png","embody":"assets/skills/legacy/19-00.png","darkness":"assets/skills/legacy/20-00.png","charm":"assets/skills/legacy/21-00.png","riding":"assets/skills/legacy/24-00.png"};
+function branchIcon(id){return BRANCH_ICON_PATHS[id]||'assets/ui/icons/skill-unknown.svg'}
 function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId)return `${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`;return `${SRC}image/icon/${String(cat).padStart(2,'0')}${String(idx).padStart(2,'0')}.png`}
 function itemIcon(rec,kind='items'){const custom=override[(kind==='souls'?'visual.soul.':'visual.item.')+rec?.id];if(custom)return custom;return rec?.icon?`${OS}/icons/${kind}/${rec.icon}.webp?v=07682901`:null}
 function branchCap(branch){return catalog.live?(window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0):90}
@@ -80,7 +82,7 @@ function renderBranches(){
   c.append(wrap);
  }
 }
-function branchRow(b,full){const points=state.points[b.id]||0;const btn=h('button',{class:'branch-row'+(state.branch===b.id?' active':''),onclick:()=>{state.branch=b.id;selectedSkill=null;persist();renderBranches();$('branchValue').textContent=points;changeTab('skills')}});const first=catalog.live?Object.values(catalog.skills||{}).find(x=>x.branch===b.id&&x.classes?.[jobKeys[state.job]]):null;const icon=h('img',{class:'tinyicon',src:skillIcon(b.id,0,first),alt:'',loading:'lazy'});icon.onerror=()=>{icon.onerror=null;icon.style.display='none'};btn.append(icon,h('div',{},[h('strong',{text:editableValue('branch.'+b.id,b.name)}),h('span',{text:catalog.live?('Лимит класса: '+branchCap(b.id)):'Историческая ветка'})]),h('b',{class:'count',text:String(points)}));return btn}
+function branchRow(b,full){const points=state.points[b.id]||0;const btn=h('button',{class:'branch-row'+(state.branch===b.id?' active':''),onclick:()=>{state.branch=b.id;selectedSkill=null;persist();renderBranches();$('branchValue').textContent=points;changeTab('skills')}});const first=catalog.live?Object.values(catalog.skills||{}).find(x=>x.branch===b.id&&x.classes?.[jobKeys[state.job]]):null;const icon=h('img',{class:'tinyicon',src:branchIcon(b.id),alt:'',loading:'lazy'});icon.onerror=()=>{icon.onerror=null;icon.style.display='none'};btn.append(icon,h('div',{},[h('strong',{text:editableValue('branch.'+b.id,b.name)}),h('span',{text:catalog.live?('Лимит класса: '+branchCap(b.id)):'Историческая ветка'})]),h('b',{class:'count',text:String(points)}));return btn}
 function render(){const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderBranches();$('budgetState').textContent='Лимиты и стоимость очков проверяются только настоящим движком. Пока — планировщик распределения.';renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
@@ -868,9 +870,9 @@ async function showCatalogImport(){
     try{
      const currentName=name==='strings.en'?'stringsEn':name;
      const response=await fetch(API+'/api/catalog/'+currentName+'.json',{cache:'no-cache',signal:AbortSignal.timeout(12000)});
-     if(response.ok)active=await response.json();
-    }catch{}
-    if(active===undefined)active=Array.isArray(upstream[name])?[]:{};
+     if(!response.ok)throw Error('D1 '+name+': HTTP '+response.status);
+     active=await response.json();
+    }catch(error){throw Error('Невозможно сверить '+name+' с опубликованной D1: '+error.message)}
     comparisons.push(diff.diff(name,active,upstream[name]));
     progress.value=String(50+Math.round((i+1)/api.files.length*50));
    }
@@ -1007,4 +1009,14 @@ document.addEventListener('keydown',event=>{
 // Save the exact current user state before any update, and never auto-reload during admin sessions.
 window.PandoraStudioAdminActive=()=>Boolean(adminToken);
 document.addEventListener('pandora:before-update',()=>{persist();persistBuilds()});
-render();loadCatalog();loadOverrides();
+// Restore deep links on refresh without requiring credentials or losing the current build.
+function restoreWikiHash(){
+ const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest)\/([0-9]{1,15})$/);
+ if(!match)return;
+ wikiSelection={type:match[1],id:match[2],highlight:null};
+ activeTab='wiki';
+ for(const btn of document.querySelectorAll('[data-tab]'))btn.classList.toggle('active',btn.dataset.tab==='wiki');
+ renderDetails();
+}
+window.addEventListener('hashchange',restoreWikiHash);
+render();loadCatalog();loadOverrides();restoreWikiHash();
