@@ -213,6 +213,9 @@ function renderStagePicker(focusSearch=false){
    const selected=String(equipped?.id)===String(rec.id);
    const btn=h('button',{type:'button',class:'stage-picker-item'+(selected?' selected':''),
     'aria-label':'Экипировать '+itemName(rec),onclick:()=>{
+     if(selectedSlot===3&&!window.PandoraUIPlanner.isAstirDress(rec)&&state.displacedLegwear){
+      state.equipment[5]=state.displacedLegwear;state.displacedLegwear=null;
+     }
      state.equipment[selectedSlot]={id:rec.id,name:itemName(rec),level:rec.level??null,icon:rec.icon??null};
      if(window.PandoraUIPlanner.isAstirDress(rec)){state.displacedLegwear=state.equipment[5]||null;delete state.equipment[5]}
      stageSlotView='details';persist();render();renderStagePicker();
@@ -794,17 +797,17 @@ function renderEquipment(root){
  const controls=h('div',{class:'refine-controls'});
  const updateRefine=(n)=>{
   const v=Number(n);
-  if(!chosen||!Number.isInteger(v)||v<0||v>99)return false;
+  if(!chosen||!Number.isInteger(v)||v<0||v>10)return false;
   const key=lib.refinementKey(selectedSlot,chosen);
   state.refinements??={};
   state.refinements[key]=v;persist();renderDetails();
   return true;
  };
  const minus=h('button',{text:'−',type:'button','aria-label':'Убрать запланированное усиление',disabled:!chosen||refinement===0,onclick:()=>updateRefine(Math.max(0,refinement-1))});
- const number=h('input',{type:'number',min:'0',max:'99',value:String(refinement),'aria-label':'Планируемый уровень заточки',disabled:!chosen});
+ const number=h('input',{type:'number',min:'0',max:'10',value:String(refinement),'aria-label':'Планируемый уровень заточки',disabled:!chosen});
  number.addEventListener('change',()=>{if(!updateRefine(number.value))number.value=String(refinement)});
- const plus=h('button',{text:'+',type:'button','aria-label':'Добавить запланированное усиление',disabled:!chosen||refinement>=99,onclick:()=>updateRefine(Math.min(99,refinement+1))});
- controls.append(minus,number,plus);upgrade.append(controls,h('p',{class:'refine-note',text:'Диапазон редактора 0–99 — техническое ограничение поля ввода, а не игровая механика.'}));
+ const plus=h('button',{text:'+',type:'button','aria-label':'Добавить запланированное усиление',disabled:!chosen||refinement>=10,onclick:()=>updateRefine(Math.min(10,refinement+1))});
+ controls.append(minus,number,plus);upgrade.append(controls,h('p',{class:'refine-note',text:'Планирование улучшения +0…+10. Это не прогноз вероятности успеха.'}));
  if(gearMode==='enhancement'){
   main.append(upgrade,h('div',{class:'refine-display'},[
    h('span',{text:'✦'}),h('strong',{text:'+'+refinement}),h('p',{text:'Визуальный план без расчёта шанса, атаки или защиты'})
