@@ -92,7 +92,7 @@ async function loadWiki(){
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
   const data={};
-  for(const key of ['items','monsters','maps','instances','drops','trades','tables','chests','skills','souls']){
+  for(const key of ['meta','items','monsters','maps','instances','drops','trades','tables','chests','skills','souls']){
    let r;
    try{r=await fetch(API+'/api/catalog/'+key+'.json',{cache:'no-cache',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('D1 '+r.status)}
    catch{r=await fetch('./data/os/'+key+'.json',{cache:'no-cache'})}
@@ -117,7 +117,7 @@ function wikiLink(text,type,id,highlight=null){
 function renderWiki(root){
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
- for(const [key,label]of[['item','Предметы'],['monster','Монстры'],['map','Локации'],['npc','NPC-обмен'],['chest','Сундуки'],['skill','Навыки'],['soul','Души']]){
+ for(const [key,label]of[['item','Предметы'],['monster','Монстры'],['map','Локации'],['npc','NPC-обмен'],['chest','Сундуки'],['instance','Подземелья'],['skill','Навыки'],['soul','Души']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:label,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';renderDetails()}}));
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:'Поиск по названию или ID','aria-label':'Поиск по вики'});
@@ -125,15 +125,15 @@ function renderWiki(root){
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
  const dataName=(type,id)=>{
-  const obj=type==='item'?wikiData.items?.[id]:type==='monster'?wikiData.monsters?.[id]:type==='map'?wikiData.maps?.[id]:type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:null;
-  const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
+  const obj=type==='item'?wikiData.items?.[id]:type==='monster'?wikiData.monsters?.[id]:type==='map'?wikiData.maps?.[id]:type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:type==='instance'?wikiData.instances?.find(x=>String(x.id)===String(id)):null;
+  const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':type==='instance'?'instances':type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
   return lang==='en'&&en?en:obj?.name||String(id);
  };
  const draw=()=>{
   browse.replaceChildren();detail.replaceChildren();
   const type=wikiSelection.type;
   const catalog=type==='item'?wikiData.items:type==='monster'?wikiData.monsters:type==='map'?wikiData.maps:
-    type==='npc'?wikiData.trades?.npcs:type==='skill'?wikiData.skills:type==='soul'?wikiData.souls:Object.fromEntries((wikiData.chests?.boxes||[]).map(item=>[item.i,item]));
+    type==='npc'?wikiData.trades?.npcs:type==='skill'?wikiData.skills:type==='soul'?wikiData.souls:type==='instance'?Object.fromEntries((wikiData.instances||[]).map(i=>[i.id,i])):Object.fromEntries((wikiData.chests?.boxes||[]).map(item=>[item.i,item]));
   const q=wikiSearch.toLocaleLowerCase().trim();
   const visible=Object.entries(catalog||{}).filter(([id,rec])=>!q||id.includes(q)||String(rec.name||dataName(type,id)).toLocaleLowerCase().includes(q)).slice(0,100);
   browse.append(h('p',{class:'muted',text:'Показано '+visible.length+' записей (первые 100)'}));
@@ -166,7 +166,7 @@ function renderWiki(root){
     detail.append(h('p',{class:'muted',text:'Уровень персонажа '+(rec.charLevel??'—')+' · ОМ '+(rec.mana??'—')+' · перезарядка '+(rec.cooldown??'—')+' с'}));
     detail.append(h('h4',{text:'Требования'}));
     if(!rec.reqs?.length)detail.append(h('p',{class:'muted',text:'Ветка требований не указана'}));
-    for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:(catalog.meta?.branchLabels?.[req.branch]||req.branch)+' ≥ '+req.amount}));
+    for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:(wikiData.meta?.branchLabels?.[req.branch]||req.branch)+' ≥ '+req.amount}));
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
   }else if(type==='soul'){
@@ -178,7 +178,7 @@ function renderWiki(root){
   }else if(type==='monster'){
     detail.append(h('p',{class:'muted',text:'Уровень '+(rec.level??'—')+' · HP '+(rec.life??'—')}));
     detail.append(h('h4',{text:'Места появления'}));
-    for(const loc of wikiIndex.locations(id))if(loc.type==='map')detail.append(wikiLink(loc.name,'map',loc.id,id));
+    for(const loc of wikiIndex.locations(id))detail.append(wikiLink(loc.name,loc.type,loc.id,id));
     detail.append(h('h4',{text:'Выпадающие предметы'}));
     for(const row of wikiIndex.drops(id)){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===row.itemId?' highlighted':'')});
@@ -193,7 +193,7 @@ function renderWiki(root){
      if(trade.mats?.length)entry.append(h('small',{text:'Материалы: '+trade.mats.map(m=>dataName('item',m.i)+' ×'+m.n).join(' · ')}));
      detail.append(entry);
     }
-  }else if(type==='map'){
+  }else if(type==='map'||type==='instance'){
     detail.append(h('h4',{text:'Монстры в локации'}));
     for(const mob of rec.mobs||[]){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(mob)?' highlighted':'')});
@@ -1026,7 +1026,7 @@ window.PandoraStudioAdminActive=()=>Boolean(adminToken);
 document.addEventListener('pandora:before-update',()=>{persist();persistBuilds()});
 // Restore deep links on refresh without requiring credentials or losing the current build.
 function restoreWikiHash(){
- const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul)\/([0-9]{1,15})$/);
+ const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})$/);
  if(!match)return;
  wikiSelection={type:match[1],id:match[2],highlight:null};
  activeTab='wiki';

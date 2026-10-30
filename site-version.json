@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.17",
-  "notes": "Expanded wiki for skills and souls; prefer local verified asset manifest"
+  "release": "2026.10.30.18",
+  "notes": "Fix skill-panel layout and add wiki instances with source-backed navigation"
 }

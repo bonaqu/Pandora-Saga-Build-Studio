@@ -132,3 +132,7 @@ The checked-in collection now includes 19 local Legacy skill-branch PNGs used fo
 ### Self-hosted icon manifest and wiki links (2026-10-30)
 
 Once the manual asset mirror has been completed and a manifest with `count.missing===0` has been committed, the site automatically uses the local `assets/*/icons` paths for live OS skill, item and soul icons. Before that, existing live icon URLs are retained so the game-themed UI is not replaced with placeholders. The wiki now includes skills and soul pages and links from their inspectors.
+
+## 2026-10-30.18 UI stabilization
+
+Fixed a leftover 3-column grid in the redesigned skills view, now a flexible 2-column skills/details layout with responsive stacking. Wiki also links confirmed monster appearances to original map and dungeon (`instances`) pages, and skill requirements display official RU branch labels. Deep links support instance IDs.

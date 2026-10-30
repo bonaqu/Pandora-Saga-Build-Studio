@@ -203,3 +203,10 @@
 
 
 .wiki-record-icon{width:65px;height:65px;object-fit:contain;float:right;border:1px solid #98764b;padding:5px;background:#100c0b}
+
+/* Two-column skill panel following the new five-category selector */
+.skill-picker{max-height:none;overflow:visible}
+.skill-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(250px,.7fr);gap:16px;min-width:0}
+.skill-center,.skill-info{min-width:0}
+.game-skill-subbranches{margin-bottom:14px}
+@media(max-width:990px){.skill-layout{grid-template-columns:minmax(0,1fr)}}
