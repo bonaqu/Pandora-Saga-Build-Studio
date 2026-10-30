@@ -109,15 +109,41 @@ function bonusFor(kind,base,effects,enhancements){
  return {flat,percentParts,guildRate,guild,lifeSign,total:
   flat+percentParts.reduce((sum,x)=>sum+x.amount,0)+guild+lifeSign};
 }
+// Preserved Remaked js/calc.js attribute rules (Calc STA/STR/AGI/DEX/SPR/INT):
+// SelBuffClan_9 adds its selectedIndex to all six attributes;
+// Flag.Honor === 1 adds 1 to all six (including SPR in executed formula);
+// Flag 14_9 adds floor(InBuff_1 / 10) to STR, AGI and INT.
+function attributeBuffBonus(options={}){
+ const out=Object.fromEntries(keys.map(k=>[k,0])),trace=[];
+ const guild=Number(options.guildAll??0);
+ if(!Number.isInteger(guild)||guild<0||guild>6)return null;
+ if(guild){
+  for(const key of keys)out[key]+=guild;
+  trace.push({source:'Remaked SelBuffClan_9',amount:guild,keys:keys.slice()});
+ }
+ if(options.honorCuriosity===true){
+  for(const key of keys)out[key]++;
+  trace.push({source:'Remaked Honor=1',amount:1,keys:keys.slice()});
+ }
+ if(options.proelium===true){
+  const potion=Number(options.proeliumPotency??0);
+  if(!Number.isFinite(potion)||potion<0||potion>100)return null;
+  const extra=Math.floor(potion/10);
+  for(const key of ['str','agi','int'])out[key]+=extra;
+  if(extra)trace.push({source:'Remaked Flag 14_9 / InBuff_1',amount:extra,keys:['str','agi','int']});
+ }
+ return {flat:out,trace};
+}
 function base({classData,raceData,jobData,allocation,level,records=[],
- supplementalFlat={},supplementalSource=null,enhancements={}}={}){
+ supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={}}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
- const effects=gatherEffects(records),basic={},stats={};
+ const effects=gatherEffects(records),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
+ if(!extra)return null;
  for(const key of keys){
   const race=Number(raceData[key]),job=Number(jobData[key]),spent=Number(allocation?.[key]||0);
   if(!Number.isFinite(race)||!Number.isFinite(job)||!Number.isInteger(spent)||spent<0)return null;
   basic[key]=race+job+spent;
-  stats[key]=effectiveAbility(basic[key],effects.flat[key]+(Number(supplementalFlat[key])||0),0);
+  stats[key]=effectiveAbility(basic[key],effects.flat[key]+extra.flat[key]+(Number(supplementalFlat[key])||0),0);
  }
  const rawHp=classData.hp,rawMp=classData.mp;
  const hpBase=classBase(rawHp,level,stats.vit,'vit'),mpBase=classBase(rawMp,level,stats.spi,'spi');
@@ -129,12 +155,12 @@ function base({classData,raceData,jobData,allocation,level,records=[],
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,supplementalFlat,supplementalSource,
+  stats,basic,effects,attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,guildRates
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates
 });
 })(typeof window==='undefined'?globalThis:window);
