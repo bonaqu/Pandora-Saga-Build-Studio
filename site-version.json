@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.10",
-  "notes": "Full D1 source import validated for 6418 records and locale namespaces"
+  "release": "2026.10.30.11",
+  "notes": "Game-styled character tabs, persisted profile and non-fabricated HUD"
 }

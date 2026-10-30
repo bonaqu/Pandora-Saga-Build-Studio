@@ -13,9 +13,9 @@ let branches=branchNames.map((name,id)=>({id,name})).filter(x=>![0,6,12,17,22].i
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},name:'Новый герой'}};
-let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang='ru',compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0;
-try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
+function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''}}};
+let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang='ru',compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,characterPanelTab='character';
+try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
@@ -64,10 +64,63 @@ function renderSlotRails(){
 }
 function renderBranches(){const c=$('skillBranches');c.replaceChildren();branches.forEach(b=>c.append(branchRow(b,false)))}
 function branchRow(b,full){const points=state.points[b.id]||0;const btn=h('button',{class:'branch-row'+(state.branch===b.id?' active':''),onclick:()=>{state.branch=b.id;selectedSkill=null;persist();renderBranches();$('branchValue').textContent=points;changeTab('skills')}});const first=catalog.live?Object.values(catalog.skills||{}).find(x=>x.branch===b.id&&x.classes?.[jobKeys[state.job]]):null;const icon=h('img',{class:'tinyicon',src:skillIcon(b.id,0,first),alt:'',loading:'lazy'});icon.onerror=()=>{icon.onerror=null;icon.style.display='none'};btn.append(icon,h('div',{},[h('strong',{text:editableValue('branch.'+b.id,b.name)}),h('span',{text:catalog.live?('Лимит класса: '+branchCap(b.id)):'Историческая ветка'})]),h('b',{class:'count',text:String(points)}));return btn}
-function render(){const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderBranches();$('budgetState').textContent='Лимиты и стоимость очков проверяются только настоящим движком. Пока — планировщик распределения.';renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
+function render(){const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderBranches();$('budgetState').textContent='Лимиты и стоимость очков проверяются только настоящим движком. Пока — планировщик распределения.';renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds};contents[activeTab]($('detailContent'))}
-function renderCharacter(root){const intro=h('div',{class:'stat-grid'});intro.append(h('div',{class:'stat-card'},[h('h3',{text:'Раса'}),h('b',{text:races[state.race][0]}),h('span',{text:'Выбор меняет визуальный портрет'})]),h('div',{class:'stat-card'},[h('h3',{text:'Профессия'}),h('b',{text:jobs[state.job]}),h('span',{text:'Историческое название Legacy 2.00'})]),h('div',{class:'stat-card'},[h('h3',{text:'Уровень'}),h('b',{text:String(state.level)}),h('span',{text:'Планируемый уровень персонажа'})]));root.append(intro,h('p',{class:'muted',text:'Выбирай расу по реальным винтажным портретам слева, меняй класс, нажимай слоты вокруг героя и открывай навыки. Никакие боевые значения не выдумываются.'}))}
+function renderProfile(root){
+ const profile=state.profile&&typeof state.profile==="object"?state.profile:{};
+ const view=h("div",{class:"ps-profile-grid"});
+ const left=h("section",{class:"ps-profile-art"});
+ left.append(h("img",{src:raceSource(state.race,state.gender),alt:"Облик расы "+races[state.race][0]}),
+ h("strong",{text:state.name||"Без имени"}),h("small",{text:races[state.race][0]+" · "+jobs[state.job]+" · "+state.level+" ур."}));
+ const right=h("section",{class:"ps-profile-info"});
+ const fields=[["name","Имя героя",state.name||"",64],["guild","Гильдия",profile.guild||"",80],
+ ["nation","Нация",profile.nation||"",80],["rank","Ранг",profile.rank||"",80]];
+ for(const [key,label,value,max]of fields){
+   const row=h("label",{class:"ps-profile-row"});
+   const input=h("input",{type:"text",maxLength:String(max),value,"aria-label":label,placeholder:label});
+   input.addEventListener("input",()=>{
+    if(key==="name"){state.name=input.value;const hud=document.getElementById("psHudName");if(hud)hud.textContent=state.name||"Без имени"}
+    else{state.profile??={};state.profile[key]=input.value}
+    persist();
+   });
+   row.append(h("span",{text:label}),input);right.append(row);
+ }
+ const bio=h("label",{class:"ps-profile-row ps-profile-bio"});
+ const description=h("textarea",{rows:"5",maxLength:"500",placeholder:"Описание героя — сохраняется в билде","aria-label":"О себе"});
+ description.value=typeof profile.about==="string"?profile.about:"";
+ description.addEventListener("input",()=>{state.profile??={};state.profile.about=description.value;persist()});
+ bio.append(h("span",{text:"О себе"}),description);right.append(bio);
+ right.append(h("p",{class:"muted",text:"Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах."}));
+ view.append(left,right);root.append(view);
+}
+function renderCharacter(root){
+ const tabs=h("div",{class:"ps-character-tabs",role:"tablist","aria-label":"Окно персонажа"});
+ const selection=[["character","Персонаж"],["skills","Умения"],["profile","Профиль"],["stats","Статы"]];
+ for(const[key,label]of selection){
+  tabs.append(h("button",{role:"tab","aria-selected":String(characterPanelTab===key),class:characterPanelTab===key?"chosen":"",
+   text:label,onclick:()=>{characterPanelTab=key;renderDetails()}}));
+ }
+ root.append(tabs);
+ const body=h("section",{class:"ps-character-body"});
+ if(characterPanelTab==="skills")renderSkills(body);
+ else if(characterPanelTab==="stats")renderStats(body);
+ else if(characterPanelTab==="profile")renderProfile(body);
+ else{
+  const cards=h("div",{class:"ps-overview-grid"});
+  cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:"Раса"}),h("strong",{text:races[state.race][0]})]),
+   h("div",{class:"ps-overview-card"},[h("span",{text:"Профессия"}),h("strong",{text:jobs[state.job]})]),
+   h("div",{class:"ps-overview-card"},[h("span",{text:"Уровень"}),h("strong",{text:String(state.level)})]));
+  body.append(cards);
+  body.append(h("p",{class:"muted",text:"Выбери вкладку для детальной настройки. Внутри работает тот же редактор навыков и характеристик, что и в основной мастерской — данные не дублируются."}));
+  const jump=h("div",{class:"ps-overview-actions"});
+  for(const[key,label]of[["skills","⚔ Открыть умения"],["stats","✥ Характеристики"],["profile","✎ Изменить профиль"]]){
+   jump.append(h("button",{class:"button-action",text:label,onclick:()=>{characterPanelTab=key;renderDetails()}}));
+  }
+  body.append(jump);
+ }
+ root.append(body);
+}
 function renderSkills(root){
 const rules=window.PandoraStudioRules;
 const layout=h("div",{class:"skill-layout"}),picker=h("div",{class:"skill-picker"}),center=h("div",{class:"skill-center"}),info=h("div",{class:"skill-info"});
@@ -380,6 +433,10 @@ function compareSnapshots(a,b){
   for(let s=0;s<Math.max(xa.length,ya.length);s++)
    if(String(xa[s]?.id??'')!==String(ya[s]?.id??''))rows.push('Душа '+slots[i][0]+' / '+(s+1)+': '+(xa[s]?.name||'пусто')+' → '+(ya[s]?.name||'пусто'));
  }
+ for(const field of ['guild','nation','rank','about']){
+  const before=String(a.profile?.[field]||''),after=String(b.profile?.[field]||'');
+  if(before!==after)rows.push('Профиль · '+field+': '+before.slice(0,50)+' → '+after.slice(0,50));
+ }
  return rows;
 }
 function renderBuilds(root){const toolbar=h('div');toolbar.append(h('button',{class:'button-action primary',text:'✧ Сохранить текущий билд',onclick:()=>saveBuild()}),h('button',{class:'button-action',text:'⇩ Экспорт JSON',onclick:exportBuild}),h('button',{class:'button-action',text:'⇧ Импорт JSON',onclick:importBuild}));root.append(toolbar,h('p',{class:'muted',text:'Билды хранятся локально в этом браузере. Сравнение показывает изменения выбора, а не вымышленные боевые результаты.'}));const grid=h('div',{class:'build-grid'});builds.forEach(b=>{const box=h('div',{class:'build-card'}),check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});check.checked=compareIds.includes(b.id);check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};box.append(h('h3',{text:b.name}),h('p',{text:`${races[b.data.race]?.[0]||'?'} · ${jobs[b.data.job]||'?'} · Lv ${b.data.level}`}),h('label',{},[check,' Сравнить']),h('button',{class:'button-action',text:'Открыть',onclick:()=>{state=structuredClone(b.data);persist();render();changeTab('character')}}),h('button',{class:'button-action',text:'Удалить',onclick:()=>{builds=builds.filter(x=>x.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();renderDetails()}}));grid.append(box)});root.append(grid);if(compareIds.length===2){const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));if(a&&b){const results=compareSnapshots(a.data,b.data);root.append(h('h3',{text:`Сравнение: ${a.name} / ${b.name}`}),h('p',{class:'muted',text:results.join(' · ')||'Выборы совпадают'}))}}}
@@ -418,6 +475,12 @@ function importBuild(){
   if(original.refinements&&typeof original.refinements==='object'&&!Array.isArray(original.refinements)){
    for(const[k,v]of Object.entries(original.refinements))
     if(/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(k)&&Number.isInteger(v)&&v>=0&&v<=99)result.refinements[k]=v;
+  }
+  if(original.profile&&typeof original.profile==='object'&&!Array.isArray(original.profile)){
+   for(const field of ['guild','nation','rank','about']){
+    const raw=original.profile[field];
+    if(typeof raw==='string')result.profile[field]=raw.slice(0,field==='about'?500:80);
+   }
   }
   state=result;persist();render();alert('Билд импортирован. Неизвестные ограничения требуют проверки игровым движком.');
  }catch(e){alert('Импорт не выполнен: '+e.message)}

@@ -104,3 +104,7 @@ The owner-only **Каталог D1** operation now validates all 12 public OS da
 ### 2026-10-30.10 — verified complete import
 
 The checked-in snapshot includes **12 distinct OS datasets** and separately stores approved Legacy RU/EN/JP/TW source terminology. Import normalization was checked against actual source files: **6,418 rows** across 15 D1 namespaces, including **3,275 language records**. Added `tests/catalog-import.test.mjs` for missing data, array-formatted instances and trade metadata, and `catalog-import.js` for source-preserving normalization. Keep Legacy localization keys separate from OS IDs until individually verified. The next site release increments the manifest and cache-busting query strings to deliver this fix.
+
+## Vintage character window and profile (2026-10-30)
+
+Character detail uses authentic-style tabs for **Персонаж / Умения / Профиль / Статы** without duplicating skill or stats engines. Added editable guild, nation, rank and biography, preserved in local builds, JSON export/import and compare. The HUD shows the real selected character name and planned level; HP/OM/EXP explicitly show **unavailable** rather than fabricated calculated values. 3D dressing remains deferred.
