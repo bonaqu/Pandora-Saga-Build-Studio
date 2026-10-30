@@ -140,18 +140,21 @@ function renderVitalsEnhancements(){
    for(const title of honorOptions){
     const option=document.createElement('option');
     option.value=String(title.id);
-    option.textContent=lang==='en'?title.en:title.ru;
     honor.append(option);
    }
+  }
+  for(const title of honorOptions){
+   const option=honor.options[title.id];
+   if(option)option.textContent=lang==='en'?title.en:title.ru;
   }
   const preferred=state.attributeBuffs?.honorTitle;
   honor.value=String(Number.isInteger(preferred)?preferred:
    state.attributeBuffs?.honorCuriosity===true?1:0);
  }
- const potion=$('originPotionRecovery');
- if(potion)potion.textContent=previewBaseStats()?.potion?.percent==null?'—':
-  String(previewBaseStats().potion.percent)+'%';
-  const info=$('originVitalsCoverage'),calculated=previewBaseStats();
+ const calculated=previewBaseStats(),potion=$('originPotionRecovery');
+ if(potion)potion.textContent=calculated?.potion?.percent==null?'—':
+  String(calculated.potion.percent)+'%';
+ const info=$('originVitalsCoverage');
  if(info)info.textContent=calculated?
   'Учтены известные бонусы вещей, душ и выбранные усиления. Часть эффектов заточки, комплектов и умений пока не проверена.':
   'ОЗ и ОМ будут рассчитаны после загрузки игровых данных.';
