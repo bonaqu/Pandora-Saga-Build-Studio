@@ -66,3 +66,9 @@ Visual item cards now support hover and keyboard focus preview of directly sourc
 ## Data and artwork
 
 Uses original user-provided assets. Unofficial fan project. Pandora Saga name and in-game assets belong to their respective rights holders. The site makes no ownership claim.
+
+## Обновления без Ctrl+F5 (2026-10-30)
+
+Сайт проверяет `site-version.json` примерно раз в минуту и при возвращении на вкладку. При новой версии показывает уведомление. Обновление применяется автоматически **только через 2 минуты бездействия**, если нет открытых форм, ввода и админ-сессии; кнопка «Обновить» позволяет применить его вручную. Перед переходом повторно сохраняются текущий персонаж и библиотека в `localStorage`. Страница получает новую версию HTML, а CSS/JS имеют идентификатор релиза в URL, чтобы старый кеш не мешал. Незавершённые правки в модальном окне не сбрасываются автоматически. После первого развёртывания механизма понадобится один обычный вход или обновление страницы, поскольку старые экземпляры сайта ещё не знают о `updates.js`.
+
+**Обязательное правило для дальнейших фронтенд-релизов:** обновить `site-version.json` и идентификаторы `?v=` для `app.js`, `rules.js`, `style.css`, `updates.js`, а также `<meta name="ps-studio-release">` в `index.html`. Сам по себе новый коммит GitHub не обновляет этот JSON. Серверные исправления `worker/` публикуются отдельно через Cloudflare Builds.

@@ -18,3 +18,10 @@
 .item-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;margin:13px 0;font-size:12px}.item-fields dt,.item-fields dd{padding:7px 5px;margin:0;border-bottom:1px solid #73533870}.item-fields dt{color:#aa987d}.item-fields dd{color:#f2d7ac;text-align:right;overflow-wrap:anywhere}
 .item-description{font-size:12px;white-space:pre-line;color:#d5c4a6;padding:10px;background:#1f170f;border:1px solid #644a31}.item-incompatible{color:#efa893;padding:9px;background:#442519;border:1px solid #a76b4c;font-size:12px}
 .item-card.incompatible{filter:grayscale(.58);opacity:.56}.item-card.incompatible:hover,.item-card.incompatible:focus-visible{filter:none;opacity:1}.show-more{width:calc(100% - 12px);margin:8px 6px}
+
+/* Announce version changes without interrupting active character editing. */
+.studio-update-banner{position:fixed;z-index:200;right:18px;bottom:18px;max-width:min(460px,calc(100vw - 32px));padding:15px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#f4d6a7;background:#221a12;border:2px double #c69a5b;box-shadow:0 14px 45px #000c;font-size:12px}
+.studio-update-banner span{flex-basis:100%;line-height:1.5}
+.studio-update-banner button{background:#3c2a1b;border:1px solid #9d7545;color:#f4d6a7;padding:8px 15px}
+.studio-update-banner button:hover{background:#644222;border-color:#e2b675}
+@media(max-width:460px){.studio-update-banner{left:12px;right:12px;bottom:12px}}

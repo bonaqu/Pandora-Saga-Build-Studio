@@ -310,4 +310,7 @@ document.addEventListener('keydown',event=>{
  }
 });
 
+// Save the exact current user state before any update, and never auto-reload during admin sessions.
+window.PandoraStudioAdminActive=()=>Boolean(adminToken);
+document.addEventListener('pandora:before-update',()=>{persist();persistBuilds()});
 render();loadCatalog();loadOverrides();
