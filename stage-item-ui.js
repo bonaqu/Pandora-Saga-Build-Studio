@@ -16,13 +16,21 @@ function summary(record,icon,kind='item'){
  const head=el('div',{class:'stage-rich-head'});
  const src=icon(record,kind);
  if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));head.append(img)}
- head.append(el('strong',{text:record.name||String(record.id)}));wrap.append(head);
+ head.append(el('strong',{text:record.name||String(record.id),
+  ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));wrap.append(head);
  const dl=el('dl',{class:'stage-rich-fields'});
  const rows=kind==='soul'?[['ID',record.id],['Слоты',record.slots?.join(', ')]]:
  [['ID',record.id],['Тип',record.kind],['Уровень',record.level],['Атака',record.W],['Защита',record.AC],['Гнёзда',record.soulslot],['Скорость',record.atkspeed],['Дальность',record.range]];
- for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!=='')dl.append(el('dt',{text:key}),el('dd',{text:String(value)}));
+ for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){
+  const dd=el('dd',{text:String(value)});
+  if(kind==='item'&&key==='Гнёзда')dd.dataset.editKey='itemslots.'+record.id;
+  dl.append(el('dt',{text:key}),dd);
+ }
  wrap.append(dl);
- if(record.desc)wrap.append(el('p',{class:'stage-rich-desc',text:record.desc}));
+ if(record.desc){const desc=el('p',{class:'stage-rich-desc',text:record.desc});
+  if(kind==='item')desc.dataset.editKey='itemdesc.'+record.id;
+  wrap.append(desc);
+ }
  return wrap;
 }
 function attachPreview(target,record,icon,kind='item'){

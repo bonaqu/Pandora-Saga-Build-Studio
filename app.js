@@ -104,10 +104,17 @@ function changeTab(tab){
  if(previous!==tab)$('detailContent').scrollTop=0;
  showWorkbench();saveView();
 }
+function itemWithOverrides(rec){
+ if(!rec)return null;
+ const val=override['itemslots.'+rec.id];
+ const slots=val!==undefined&&/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(String(val))?Number(val):rec.soulslot;
+ return {...rec,name:editableValue('item.'+rec.id,rec.name),
+  desc:editableValue('itemdesc.'+rec.id,rec.desc),soulslot:slots};
+}
 function equippedRecord(slot){
 const value=state.equipment[slot];
 if(!value)return null;
-return catalog.live?catalog.equipment?.[String(value.id)]||null:null;
+const rec=catalog.live?catalog.equipment?.[String(value.id)]||null:null;return itemWithOverrides(rec);
 }
 function slotVisual(slot){
 const item=state.equipment[slot],r=item&&equippedRecord(slot),icon=r?itemIcon(r):null; // Unknown/stale equipment ID: avoid unverified remote icon
@@ -169,7 +176,7 @@ function renderStagePicker(focusSearch=false){
  root.hidden=!stageSlotPickerOpen;root.replaceChildren();renderStageAttributes();
  if(!stageSlotPickerOpen)return;
  const key=slotKeys[selectedSlot],equipped=state.equipment?.[selectedSlot];
- const record=equipped&&catalog.equipment?.[String(equipped.id)];
+ const record=equipped&&equippedRecord(selectedSlot);
  if(stageSlotView!=='choose'){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
@@ -768,7 +775,7 @@ function renderEquipment(root){
  const report=lib.socketReport(socketItems,socketLimit);
  const refinement=lib.refinementValue(state.refinements,selectedSlot,chosen);
  const sourceTag='Pandora Saga OS · архивная копия, без онлайн-синхронизации';
- const sourceRecord=(mode)=>catalog.live?Object.values(mode==='souls'?(catalog.souls||{}):(catalog.equipment||{})):
+ const sourceRecord=(mode)=>catalog.live?Object.values(mode==='souls'?(catalog.souls||{}):(catalog.equipment||{})).map(rec=>mode==='souls'?rec:itemWithOverrides(rec)):
   ((mode==='souls'?catalog.souls:catalog.equipment)?.records||[]);
  const picture=(record,mode,size)=>{const src=itemIcon(record,mode==='souls'?'souls':'items');
   if(!src)return h('span',{class:'item-glyph',text:mode==='souls'?'✦':'⚔'});
@@ -1184,14 +1191,14 @@ function editor(el){
   const key=el?.dataset?.editKey;
   if(!adminEditing||!adminToken||!key)return;
   closeInlineEditor();
-  const visual=key.startsWith('visual.');
+  const visual=key.startsWith('visual.'),slotEdit=key.startsWith('itemslots.');
   const original=visual?(el.getAttribute('src')||''):(el.textContent||'');
   const previous=activeOverride(key);
   const root=h('div',{class:'inline-owner-editor',role:'dialog','aria-label':'Изменение '+key});
   const bar=h('div',{class:'inline-owner-head'});
   bar.append(h('strong',{text:visual?'Сменить изображение':'Изменить текст'}),
     h('button',{type:'button',text:'✕','aria-label':'Закрыть редактор',onclick:closeInlineEditor}));
-  const input=visual?h('input',{type:'text','aria-label':'Путь к изображению',value:original,placeholder:'assets/image.webp'}):
+  const input=visual?h('input',{type:'text','aria-label':'Путь к изображению',value:original,placeholder:'assets/image.webp'}):slotEdit?h('input',{type:'number',min:'0',max:'32',step:'1',value:original,'aria-label':'Число гнёзд'}):
     h('textarea',{rows:key.startsWith('skilldesc.')?5:3,'aria-label':'Редактируемый текст'});
   if(!visual)input.value=original;
   const hint=h('p',{class:'inline-owner-key',text:key});
@@ -1216,7 +1223,7 @@ function editor(el){
   save.onclick=async()=>{
     if(editIsSaving)return;
     const value=input.value.trim();
-    if(visual?!allowedArtwork(value):(!value||value.length>(key.startsWith('skilldesc.')?2000:240))){
+    if(slotEdit?!/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(value):visual?!allowedArtwork(value):(!value||value.length>((key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))){
       feedback.textContent=visual?'Недопустимый путь: разрешены assets/ и иконки Pandora Saga OS.':'Некорректная длина текста.';return;
     }
     if(value===previous){closeInlineEditor();return;}
@@ -1425,7 +1432,13 @@ async function loadOverrides(){try{const response=await apiRequest('/api/overrid
 $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');
 $('stageAttributeToggle').onclick=()=>{
  stageAttributesPage=stageAttributesPage?null:'attack';renderStageAttributes();saveView()
-};$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+};$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+document.addEventListener('dblclick',event=>{
+ if(!adminEditing||!event.target.closest)return;
+ const editable=event.target.closest('[data-edit-key]');
+ if(!editable||!/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;
+ event.preventDefault();event.stopImmediatePropagation();editor(editable);
+},true);
 $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;
 $('dockTabs').addEventListener('click',event=>{

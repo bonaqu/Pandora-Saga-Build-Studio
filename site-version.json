@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.31",
-  "notes": "Read-only attack, defense and effect panels in the character portrait, retaining 0.30 skill and equipment editing"
+  "release": "2026.10.30.32",
+  "notes": "Authenticated double-click in-place edits for item name, description and socket capacity (0–32) via isolated overrides; preserves original OS catalog"
 }
