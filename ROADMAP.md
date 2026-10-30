@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.83.0 (`2026.10.31.83`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.84.0 (`2026.10.31.84`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,13 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.84.0 — finish HP/MP sharing and cache-safe publication
+
+- Complete 0.83 feature batch and publish new asset cache keys to include the subsequent shared-build sanitizer fix. Selected guild levels and Life Sign survive clean export/import; invalid values default to off.
+- New `tests/vitals-shared-build.test.mjs` verifies enabled settings, legacy defaults and malicious/invalid incoming values.
+- Source and behavior validation performed in isolated JS harness. Actual `npm test` and browser acceptance, Pages deployment and live D1 require verification and are **not** asserted.
+- The full missing effect list remains in `docs/HP_MP_COVERAGE.md`; need game-client reference vectors for complete parity, then address remaining icon and D1/wiki/scrolling backlog.
 
 ## Source update 0.83.0 — HP/MP effect parity + responsive portrait separation
 
