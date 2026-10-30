@@ -1176,3 +1176,17 @@ main{padding-top:10px}
  color:#dbc29c;
 }
 .origin-potion-effect strong{color:#f2d39a;font-size:15px;font-variant-numeric:tabular-nums}
+
+/* Remaked Modern verified potion preview, opt-in without affecting equipment. */
+.origin-potions{padding-top:6px;border-top:1px solid #65482d;min-width:0}
+.origin-potions>summary{padding:6px 4px;cursor:pointer;font:600 11px Manrope,Arial,sans-serif;color:#e4c18a}
+.origin-potions>.origin-buffs-checkbox{display:flex;align-items:center;gap:8px;margin:8px 4px}
+.origin-potion-results{display:grid;gap:3px;margin-top:8px;max-height:280px;overflow-y:auto;overscroll-behavior:contain}
+.origin-potion-row{
+ display:flex;align-items:center;justify-content:space-between;gap:8px;
+ min-width:0;padding:6px 9px;border:1px solid #513b2a;background:#211812;
+ color:#dfc5a1;font:500 10px/1.3 Manrope,Arial,sans-serif;
+}
+.origin-potion-row span{min-width:0;overflow-wrap:anywhere}
+.origin-potion-row strong{flex:none;color:#f5d59f;font-size:12px;font-variant-numeric:tabular-nums}
+@media(max-width:460px){.origin-potion-row{padding:6px 7px}.origin-potion-row strong{font-size:11px}}
