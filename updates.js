@@ -34,7 +34,7 @@
     banner.setAttribute('role', 'status');
     banner.setAttribute('aria-live', 'polite');
     const message = document.createElement('span');
-    message.textContent = 'Вышло обновление Pandora Saga Build Studio. Текущий билд сохранится.';
+    message.textContent = 'Новая версия опубликована. Текущий билд и положение на странице будут сохранены перед обновлением.';
     const apply = document.createElement('button');
     apply.textContent = 'Обновить';
     apply.type = 'button';

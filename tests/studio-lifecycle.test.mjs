@@ -28,3 +28,13 @@ test('icon availability is derived from a real manifest',()=>{
  assert.match(app,/локальный архив пока не импортирован/);
  assert.equal(JSON.parse(read('site-version.json')).release,JSON.parse(read('package.json')).pandoraRelease);
 });
+
+test('Hero Path group, expanded branch and its scroll position survive update reload',()=>{
+ const js=read('app.js'),html=read('index.html');
+ for(const part of ['skillGroup:selectedSkillGroup','expandedBranch:inlineBranchId',
+  "pathScroll:document.getElementById('skillBranches')?.scrollTop||0",
+  'pathScrollRestored=false','target.scrollTop=restored',
+  "$('skillBranches').addEventListener('scroll',saveView"])
+ assert.ok(js.includes(part),part);
+ assert.match(html,/id="pathGrowthPage"/);
+});

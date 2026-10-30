@@ -23,7 +23,9 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  tab:activeTab,open:!!document.getElementById('detailPanel')?.classList.contains('is-open'),
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
  slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage,
- expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey,pathPage:heroPathPage
+ expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey,pathPage:heroPathPage,
+ skillGroup:selectedSkillGroup,expandedBranch:inlineBranchId,groupTouched:pathGroupTouched,
+ pathScroll:document.getElementById('skillBranches')?.scrollTop||0
  }))}catch{}}
 
 const OS='https://pandorasaga-os.com';
@@ -38,15 +40,18 @@ const races=[['Человек','Human','human_f','human_m'],['Эльф','Elf','e
 let jobs=['Warrior','Gradiator','Juggernaut','Dragoon','Knight','General','Paladin','Scout','Archer','Sniper','Hunter','Provocateur','Assassin','Saboteur','Acolyte','Priest','Cleric','Enchanter','Ascetic','Monk','Exorcist','Mage','Wizard','Warlock','Conjurer','Sorcerer','Corrupter','Shadowblade'];
 const branchNames=['Melee','Slash','Thrust','Cleave','Bash','Defend','Technique','Shot','Alchemy','Assassination','Trapping','Dodge','Grace','Banevolence','Blessing','Exorcism','Hymn','Magic','Elemental','Invocation','Darkness','Confusion','Special','Racial','Horsemanship'];
 let branches=window.PandoraGameNavigation.groups.flatMap(group=>group.branches.map(id=>({id,name:id})));
-let selectedSkillGroup='melee';
-let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='',pathSkillFilter='all',pathGroupTouched=false;
+let selectedSkillGroup=window.PandoraGameNavigation.groups.some(group=>group.id===bootView.skillGroup)?bootView.skillGroup:'melee';
+let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='',pathSkillFilter='all',pathGroupTouched=Boolean(bootView.groupTouched);
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
-let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null,
+let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
+inlineBranchId=typeof bootView.expandedBranch==='string'&&
+ window.PandoraGameNavigation.all.has(bootView.expandedBranch)?bootView.expandedBranch:null,
+pathScrollRestored=false,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',stageSoulQuery='',stageGemQuery='',gameTables=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
@@ -614,7 +619,11 @@ function renderBranches(){
    selected.branches.find(id=>id!=='race')||'';
  }
  if($('pathAutoMastery'))$('pathAutoMastery').checked=state.masteryAuto!==false;
- window.PandoraHeroPath.viewGrowth($('skillBranches'),heroPathApi());
+ const target=$('skillBranches'),previous=target.scrollTop;
+ window.PandoraHeroPath.viewGrowth(target,heroPathApi());
+ const restored=pathScrollRestored?previous:Math.max(0,Number(bootView.pathScroll)||0);
+ target.scrollTop=restored;
+ if(catalog.live)pathScrollRestored=true;
 }
 function renderPathSkills(){
  window.PandoraHeroPath.viewSkills($('pathSkillGallery'),$('pathSkillDetails'),heroPathApi());
@@ -1687,4 +1696,5 @@ requestAnimationFrame(()=>window.scrollTo({top:Math.max(0,Number(bootView.page)|
 window.addEventListener('pagehide',saveView);
 document.addEventListener('pandora:before-update',saveView);
 document.addEventListener('scroll',saveView,{passive:true});
+$('skillBranches').addEventListener('scroll',saveView,{passive:true});
 $('detailContent').addEventListener('scroll',saveView,{passive:true});

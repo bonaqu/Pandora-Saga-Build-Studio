@@ -28,3 +28,12 @@ test('path has gallery with available/grey skill cards and both pages',()=>{
  assert.match(ui,/path-skill-card/);
  assert.match(ui,/readiness\(previous,api,chain\)/);
 });
+
+test('blue, amber, green are the SAME track rather than a second green bar',()=>{
+ const css=read('style.css'),ui=read('hero-path.js');
+ assert.match(css,/\.inline-mastery-track \.inline-mastery-green\{[^}]*top:76px;height:6px/);
+ assert.match(css,/\.inline-mastery-fill\{[^}]*top:76px;height:6px/);
+ assert.doesNotMatch(css,/\.inline-mastery-track \.inline-mastery-green\{[^}]*top:88px/);
+ assert.match(ui,/track\.append\(bed,gold,green\)/);
+ assert.match(ui,/const invested=M\.potential\(state,key\),mastery=M\.trained\(state,key\)/);
+});

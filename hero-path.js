@@ -68,12 +68,15 @@ function viewGrowth(target,api){
     const label=make('strong',{text:points+' / '+cap});
     note.append(make('span',{text:'Очки уровня — вложить в ветку'}),label);
     const available=budget.total!==null&&api.catalogReady&&(cap>0||points>0);
-    const track=make('div',{class:'inline-mastery-track','aria-label':'Вложенные очки и мастерство '+api.branchName(key)});
+    const track=make('div',{class:'inline-mastery-track','aria-label':'Единая полоса вложенных очков и освоенного мастерства '+api.branchName(key)});
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'});
     const paint=()=>{
-     gold.style.width=(cap?Math.max(0,Math.min(100,M.potential(state,key)/cap*100)):0)+'%';
-     green.style.width=(cap?Math.max(0,Math.min(100,M.trained(state,key)/cap*100)):0)+'%';
+     const invested=M.potential(state,key),mastery=M.trained(state,key);
+     gold.style.width=(cap?Math.max(0,Math.min(100,invested/cap*100)):0)+'%';
+     green.style.width=(cap?Math.max(0,Math.min(100,mastery/cap*100)):0)+'%';
+     track.title=api.branchName(key)+': '+invested+' вложено, '+mastery+
+       ' освоено, предел класса '+cap+'. Перетяни ползунок для вложения очков.';
     };
     track.append(bed,gold,green);
     const range=make('input',{type:'range',min:'0',max:String(Math.max(cap,points)),step:'1',

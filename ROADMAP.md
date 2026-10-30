@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest source release:** 0.56.0 (`2026.10.30.56`), browser and Worker deployment unverified  
+**Updated:** 2026-10-30 · **Latest source release:** 0.57.0 (`2026.10.30.57`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -113,3 +113,10 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 ### 2026-10-30 · 0.56 — визуальный разбор очков каждой характеристики
 - [x] Под полями всех шести параметров выводятся независимо сумма базы, ручных вложений, эффекты вещей/душ, предварительное отдельное мастерство и итог; видно цену следующего очка по Remaked SPt.
 - [ ] Подтвердить актуальность стоимостей SPt и BPt у текущего OS по контрольным игровым данным. До этого ни старые вложения, ни формулы их исторического учёта автоматически не переписывать.
+
+### 2026-10-30 · 0.57 — доступность обновлений и одна шкала
+- [x] Убрана отдельная зелёная шкала: синий/золото/зелёный теперь части **одного** трека, в нём двигается ползунок вложений.
+- [x] В `sessionStorage` сохраняются выбранная категория, раскрытая ветка, прокрутка правой панели и активная страница.
+- [x] Исправлено 4-колоночное сжатие дерева на экранах до 1200px.
+- [ ] **P0 Доставка:** подтвердить завершение последнего запуска GitHub Pages со статусом success, затем сравнить публичную `site-version.json` с HEAD. На 18:04 UTC последним успехом был `4d1bbe79`, запуск 0.56 ожидал выполнения, несколько предыдущих отменялись.
+- [ ] Проверить пользовательский апдейт без потери положения, 45/42 по единой полосе, скролл/клавиатуру/сенсор на текущей опубликованной странице.
