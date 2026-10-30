@@ -43,6 +43,10 @@ First successful login: gear → `administrator` → new password (minimum 12 ch
 - Проверка совместимости предметов с классом, уровнем и слотом перенесена в независимый `rules.js` (без расчёта игрового урона).
 - Изменения внесены только в статические файлы; секреты и серверные учетные записи не затронуты.
 
+## Inline artwork editor (server deployment required)
+
+An authenticated administrator can double-click the logo, race portraits, skill icons and item cards to select a different image. The picker shows existing bundled assets and accepts allowlisted source URLs. Changes are written as text overrides to D1, not to Git; uploading a new file to the repo remains a separate operation. The Worker source is updated here but **not automatically deployed**. Without a deployed Worker, the feature is intentionally unavailable.
+
 ## Next milestones
 
 - Verify live Pandora Saga OS endpoints, cross-origin access, sprite references and all skill identities; maintain the versioned authoritative snapshot (no invented gameplay rules).
