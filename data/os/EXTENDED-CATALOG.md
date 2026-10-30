@@ -1,5 +1,7 @@
-# Catalog extension — 2026-10-30
+# Complete self-hosted game catalog (2026-10-30)
 
-New datasets in `data/os/`: `monsters`, `drops`, `maps`, `instances`, `racialPassives`, `itemForth`, `unison`, `trades`. Legacy RU/EN/JP/TW approved translations in `data/localization/legacy-approved.v1.json` retain their original separate namespace. The D1 schema is unchanged: all groups are rows in the versioned `catalog_entries` table. Trades are preserved as 236 recipe entries plus one `tradeMeta` row with NPC names, map names and limit/reset metadata.
+The source consists of 16 original game-data categories (including meta) plus the official EN language overlay. D1 stores these in 19 versioned namespaces because trade metadata, approved Legacy translations, and serialized category payloads are retained separately. `tables`, `expertise`, `chests` and `stringsEn` are serialized in bounded, ordered fragments and reconstructed losslessly. `trades` uses 236 individual recipes plus one auxiliary `tradeMeta` record (NPC names, maps and reset limits).
 
-Publication requires exact counts of every required dataset including the localization set; partial imports never alter `catalog_current`. Trade data retains its original public API structure. This is a **manual one-time import**, not live game-server synchronization.
+The protected administrator importer reads all source files from **this repo**, validates the 12 original `meta.counts` categories, validates `meta.localeCounts.en` for official English, and checks all required D1 row counts. The Worker additionally parses the reconstructed serialized datasets before activation. Publication atomically updates only the active catalog pointer; incomplete imports cannot replace the existing version.
+
+RU game data and EN overlay are used for user-facing catalog text. Legacy translations remain namespaced separately to avoid mismatching independent game IDs. No game formulas are synthesized from catalog fields.
