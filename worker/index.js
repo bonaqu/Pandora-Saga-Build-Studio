@@ -120,6 +120,26 @@ async function handle(request,env){const url=new URL(request.url),path=url.pathn
 // No runtime calls to the third-party game server. All game data is read from our own D1.
 if(!env.DB)return no('Database not configured',503);
 if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
+// Restricted authenticated data refresh endpoint: fixed source host and 17 known names.
+// A preview does NOT change D1. The owner must explicitly confirm version publication.
+if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
+ if(!await auth(request,env))return no('Unauthorized',401);
+ const file=path.slice('/api/admin/catalog/source/'.length);
+ const names=new Set(['meta','classes','skills','items','souls','monsters','drops','maps','instances',
+ 'racialPassives','itemForth','unison','trades','tables','expertise','chests','strings.en']);
+ if(!/^[A-Za-z.]+\.json$/.test(file)||!names.has(file.slice(0,-5)))return no('Unknown source dataset',404);
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
+ try{
+  const response=await fetch('https://pandorasaga-os.com/gamedata/'+file,{signal:controller.signal,headers:{accept:'application/json'},redirect:'error'});
+  if(!response.ok)return no('Source unavailable: '+response.status,502);
+  const raw=await response.text();
+  if(raw.length>1250000)return no('Source exceeds safety size limit',502);
+  const value=JSON.parse(raw);
+  if(!value||typeof value!=='object')return no('Invalid source data',502);
+  return json(value,200,{'cache-control':'no-store'});
+ }catch(error){return no('Game data source temporarily unavailable',502)}
+ finally{clearTimeout(timeout)}
+}
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/health'&&method==='GET'){const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts')").all();const ready=(tables.results||[]).length===4;return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready},ready?200:503)}
