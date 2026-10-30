@@ -40,7 +40,12 @@ function summary(record,icon,kind='item'){
  }
  return wrap;
 }
-let livePreview=null;
+let livePreview=null,liveTarget=null;
+function dismissPreview(){
+ livePreview?.remove();
+ liveTarget?.removeAttribute('aria-describedby');
+ livePreview=null;liveTarget=null;
+}
 function attachPreview(target,record,icon,kind='item'){
  if(!record)return;
  // A custom preview must never coexist with the browser's native title popup.
@@ -48,16 +53,16 @@ function attachPreview(target,record,icon,kind='item'){
  target.querySelectorAll?.('[title]').forEach(node=>node.removeAttribute('title'));
  let tip=null;
  const remove=()=>{
-  if(livePreview===tip)livePreview=null;
-  tip?.remove();
+  if(livePreview===tip)dismissPreview();
+  else tip?.remove();
   tip=null;target.removeAttribute('aria-describedby');
  };
  const show=()=>{
   if(tip?.isConnected)return;
-  livePreview?.remove();livePreview=null;remove();
+  dismissPreview();remove();
   tip=el('aside',{id:'stage-gear-tooltip',class:'stage-hover-preview stage-item-tooltip',
    role:'tooltip'},[summary(record,icon,kind)]);
-  livePreview=tip;
+  livePreview=tip;liveTarget=target;
   document.body.append(tip);
   target.setAttribute('aria-describedby',tip.id);
   const box=target.getBoundingClientRect(),vw=document.documentElement.clientWidth,
@@ -159,5 +164,5 @@ function render(root,api){
   draw();
  }
 }
-root.PandoraStageItemUI=Object.freeze({render,summary,attachPreview});
+root.PandoraStageItemUI=Object.freeze({render,summary,attachPreview,dismissPreview});
 })(typeof window==='undefined'?globalThis:window);
