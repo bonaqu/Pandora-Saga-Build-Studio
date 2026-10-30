@@ -24,6 +24,7 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
  slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage,
  expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey,pathPage:heroPathPage,
+ soulQuery:stageSoulQuery,
  skillGroup:selectedSkillGroup,expandedBranch:inlineBranchId,groupTouched:pathGroupTouched,
  pathScroll:document.getElementById('skillBranches')?.scrollTop||0
  }))}catch{}}
@@ -52,7 +53,9 @@ let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPic
 inlineBranchId=typeof bootView.expandedBranch==='string'&&
  window.PandoraGameNavigation.all.has(bootView.expandedBranch)?bootView.expandedBranch:null,
 pathScrollRestored=false,
-stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',stageSoulQuery='',stageGemQuery='',gameTables=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
+stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',
+stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,120):'',
+stageGemQuery='',gameTables=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
@@ -288,7 +291,7 @@ function renderSlotRails(){
    const tooltip=slots[i][0]+' · '+(item?.name||'Пусто')+(item&&cap!==null?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
-    'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSlotShown=48;stageSlotView=state.equipment?.[i]?'details':'choose';stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
+    'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSoulQuery='';stageSlotShown=48;stageSlotView=state.equipment?.[i]?'details':'choose';stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
    button.append(slotVisual(i),h('small',{text:item?.name||slots[i][0]}));
    if(item&&plan.canSocket(slotKeys[i],source))button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
@@ -343,6 +346,7 @@ function renderStagePicker(focusSearch=false){
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
+   soulQuery:stageSoulQuery,onSoulQuery:value=>{stageSoulQuery=value;saveView()},
    gems:state.gems?.[plan.refinementKey(selectedSlot,equipped)],
    catalog,gameTables,close:()=>closeStagePicker(),
    changeMode:mode=>{
@@ -351,21 +355,34 @@ function renderStagePicker(focusSearch=false){
     stageSlotView=mode;saveView();renderStagePicker(mode==='choose')
    },
    updateGrade:n=>{if(!plan.canRefine(key)||!Number.isInteger(n)||n<0||n>10)return;
-    state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;persist();renderSlotRails();renderStagePicker();renderHudEstimates();
+    state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;
+    persist();renderSlotRails();renderStagePicker();renderHudEstimates();
+    root.querySelector('[data-grade="'+n+'"]')?.focus({preventScroll:true});
    },
-   openSocket:i=>{selectedSocket=i;stageSlotView='souls';saveView();renderStagePicker()},
+   openSocket:i=>{selectedSocket=i;stageSlotView='souls';saveView();renderStagePicker();
+    root.querySelector('[data-socket-index="'+i+'"]')?.focus({preventScroll:true});
+   },
    assignSoul:entry=>{
     const capacity=plan.socketCapacity(record);
     if(!plan.canSocket(key,record)||capacity===null||selectedSocket<0||selectedSocket>=capacity)return;
     if(entry&&!plan.validSoul(entry,key))return;
     const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
-    state.souls[selectedSlot]=next;stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderHudEstimates();},
-   assignGem:entry=>{if(!plan.canRefine(key))return;state.gems??={};
+    state.souls[selectedSlot]=next;stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderHudEstimates();
+    const restoreFocus=stageSoulQuery?'[data-soul-query]':'[data-socket-index="'+selectedSocket+'"]';
+    root.querySelector(restoreFocus)?.focus({preventScroll:true});
+   },
+   assignGem:entry=>{if(!plan.canRefine(key))return;
+    const focusKey=document.activeElement?.getAttribute?.('data-enchant-key');
+    const focusValue=document.activeElement?.getAttribute?.('data-enchant-value');
+    state.gems??={};
     const id=plan.refinementKey(selectedSlot,equipped);
     const choice=window.PandoraEnchantModel.normalize(entry);
     if(choice)state.gems[id]=choice;else delete state.gems[id];
-    stageSlotView='details';persist();renderStagePicker();}
+    stageSlotView='details';persist();renderStagePicker();
+    if(focusKey&&focusValue)root.querySelector('[data-enchant-key="'+focusKey+
+      '"][data-enchant-value="'+focusValue+'"]')?.focus({preventScroll:true});
+   }
   });
   if(preserveScroll){
    const body=root.querySelector('.stage-rich-body');

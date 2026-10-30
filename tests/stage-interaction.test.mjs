@@ -88,3 +88,22 @@ test('Soul socket controls are in Souls only, not under properties',()=>{
  const souls=makeApi('weapon','souls');stage.PandoraStageItemUI.render(souls.box,souls.api);
  assert.ok(walk(souls.box).find(x=>x.attributes['aria-label']?.startsWith('Гнездо 1')));
 });
+
+test('Soul search state survives socket choice and selection, with no duplicate modal',()=>{
+ const state=makeApi('belt','souls');state.api.soulQuery='свет';let next='';
+ state.api.onSoulQuery=value=>next=value;
+ stage.PandoraStageItemUI.render(state.box,state.api);
+ const search=walk(state.box).find(e=>e.tag==='input'&&e.attributes['data-soul-query']==='1');
+ assert.ok(search);
+ assert.equal(search.attributes.value,'свет');
+ search.value='огонь';search.events.input();
+ assert.equal(next,'огонь');
+ assert.equal(byText(state.box,'Души')?.className,'chosen');
+});
+test('grade, element and soul socket controls have stable focus restoration identifiers',()=>{
+ const state=makeApi('weapon');stage.PandoraStageItemUI.render(state.box,state.api);
+ assert.ok(walk(state.box).some(e=>e.attributes['data-grade']==='7'));
+ assert.ok(walk(state.box).some(e=>e.attributes['data-enchant-key']==='element'));
+ const souls=makeApi('weapon','souls');stage.PandoraStageItemUI.render(souls.box,souls.api);
+ assert.ok(walk(souls.box).some(e=>e.attributes['data-socket-index']==='0'));
+});

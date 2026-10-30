@@ -74,7 +74,7 @@ function render(root,api){
   if(refinable){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
-    class:n===grade?'chosen':'','aria-pressed':String(n===grade),onclick:()=>api.updateGrade(n)}));
+    class:n===grade?'chosen':'','aria-pressed':String(n===grade),'data-grade':String(n),onclick:()=>api.updateGrade(n)}));
    body.append(el('h4',{text:'Заточка: +0…+10'}),buttons);
    const bonus=gameTables?.weaponPlus?.[String(grade)];
    if(slot==='weapon'&&grade>0&&bonus)body.append(el('p',{class:'stage-rich-note',
@@ -85,6 +85,7 @@ function render(root,api){
     box.append(el('legend',{text:label}));
     for(const option of entries)line.append(el('button',{type:'button',text:option.ru,
      class:choice?.[key]===option.id?'chosen':'','aria-pressed':String(choice?.[key]===option.id),
+     'data-enchant-key':key,'data-enchant-value':option.id,
      onclick:()=>api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
       element:key==='element'?option.id:(choice?.element||'fire')})}));
     box.append(line);return box;
@@ -103,14 +104,16 @@ function render(root,api){
   for(let i=0;i<cap;i++){
    const value=souls[i],soul=value&&api.catalog.souls?.[String(value.id)],selected=i===api.selectedSocket;
    const button=el('button',{type:'button',class:selected?'selected':'','aria-pressed':String(selected),
-    'aria-label':'Гнездо '+(i+1)+': '+(soul?.name||'пусто'),onclick:()=>api.openSocket(i)});
+    'aria-label':'Гнездо '+(i+1)+': '+(soul?.name||'пусто'),
+    'data-socket-index':String(i),onclick:()=>api.openSocket(i)});
    const src=soul&&icons(soul,'soul');
    if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
    else button.append(el('span',{text:soul?'✦':'+'}));
    button.append(el('small',{text:String(i+1)}));row.append(button);attachPreview(button,soul,icons,'soul');
   }
   body.append(el('h4',{text:'Гнёзда душ'}),row);
-  const query=el('input',{type:'search',placeholder:'Поиск совместимой души','aria-label':'Поиск души'});
+  const query=el('input',{type:'search',placeholder:'Поиск совместимой души','aria-label':'Поиск души',
+   'data-soul-query':'1',value:api.soulQuery||''});
   const list=el('div',{class:'stage-rich-list'});
   const draw=()=>{
    list.replaceChildren();const needle=String(query.value||'').trim().toLocaleLowerCase('ru');
@@ -125,7 +128,7 @@ function render(root,api){
    if(results.length>80)list.append(el('p',{class:'muted',text:'Показано 80 душ. Уточни поиск.'}));
    if(!results.length)list.append(el('p',{class:'muted',text:'Совместимых душ не найдено'}));
   };
-  query.addEventListener('input',draw);
+  query.addEventListener('input',()=>{api.onSoulQuery?.(query.value);draw()});
   body.append(el('p',{class:'stage-rich-note',text:'Выбери гнездо, затем душу. Сохраняется сразу.'}),
    query,el('button',{type:'button',class:'stage-enchant-reset',
     text:'✕ Извлечь душу из выбранного гнезда',onclick:()=>api.assignSoul(null)}),list);

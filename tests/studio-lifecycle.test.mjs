@@ -59,3 +59,13 @@ test('milestone link always reveals the selected skill despite stale gallery fil
  assert.match(app,/\$\('pathSkillSearch'\)\.value=''/);
  assert.match(html,/Доступные\*/);
 });
+
+test('Soul query and selected-grade focus survive in-place equipment picker rerender',()=>{
+ const app=read('app.js');
+ for(const phrase of ["soulQuery:stageSoulQuery",
+  "onSoulQuery:value=>{stageSoulQuery=value;saveView()}",
+  "root.querySelector('[data-grade=\"'+n+'\"]')?.focus",
+  "root.querySelector(restoreFocus)?.focus",
+  "document.activeElement?.getAttribute?.('data-enchant-key')"])
+  assert.ok(app.includes(phrase),phrase);
+});

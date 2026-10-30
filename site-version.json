@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.61",
-  "notes": "Hero Path skill details expose verified source fields/branch gates and a wiki link; label eligibility conservatively; fix milestone navigation behind saved search filters"
+  "release": "2026.10.30.62",
+  "notes": "Preserve soul search query, socket focus, refinement focus and one-click enchant focus across portrait picker rerenders"
 }
