@@ -55,7 +55,7 @@
 
 - [Открыть Worker /api/health](https://ps-build-studio-cloud.bonaqu.workers.dev/api/health). **После миграции и привязки** должен вернуть JSON `{"status":"ok","storage":"d1"}` (могут быть дополнительные поля).
 - [Открыть /api/overrides](https://ps-build-studio-cloud.bonaqu.workers.dev/api/overrides). До редактирования допустимо `{"values":{}}`.
-- [Открыть GitHub Pages](https://bonaqu.github.io/Pandora-Saga-Build-Studio/). Нажми ⚙, заполни логин `administrator`, новый пароль и секрет первичной установки.
+- [Открыть GitHub Pages](https://bonaqu.github.io/Pandora-Saga-Build-Studio/). Нажми пять раз подряд на логотип Pandora Saga (за 6 секунд) или Ctrl+Alt+Shift+P, заполни логин `administrator`, новый пароль и секрет первичной установки.
 - В админ-режиме дважды нажми на обычный заголовок, измени его и проверь после перезагрузки.
 - Открой сайт в другом браузере без входа: у посетителя нет административных прав, но опубликованное оформление должно отображаться.
 
