@@ -85,4 +85,5 @@ test('class switch restores a permitted skill group and persists its user select
  assert.match(app,/if\(state\.job!==index\)/);
  assert.match(app,/pathGroupTouched=false;selectedSkill=null/);
  assert.match(app,/!pathGroupTouched&&catalog\.classes\?\.\[jobKeys\[state\.job\]\]/);
+ assert.match(app,/ranked\[0\]\?\.total>0/);
 });

@@ -101,3 +101,18 @@ test('HTML boolean attributes in app factory use actual property semantics',()=>
  assert.equal(Object.hasOwn(enabled.attributes,'disabled'),false);
  assert.equal(disabled.disabled,true);
 });
+
+test('automatic category selection prioritizes real class branch caps over arbitrary first group',()=>{
+ const nav=root.PandoraGameNavigation.groups;
+ const classGroup=job=>nav.map(group=>({
+  id:group.id,
+  total:group.branches.filter(key=>key!=='race')
+   .reduce((sum,key)=>sum+(classes[job]?.branchCaps[key]??0),0)
+ })).sort((a,b)=>b.total-a.total)[0]?.id;
+ assert.equal(classGroup('CLERIC'),'prayer');
+ assert.equal(classGroup('MAGE'),'magic');
+ assert.equal(classGroup('WARRIOR'),'melee');
+ assert.equal(classGroup('PREDATOR'),'tactics');
+ assert.match(sources.app,/const ranked=groups\.map\(group=>/);
+ assert.match(sources.app,/selectedSkillGroup=ranked\[0\]\.id/);
+});

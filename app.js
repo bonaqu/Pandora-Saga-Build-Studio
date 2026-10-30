@@ -680,10 +680,15 @@ function heroPathApi(){
 }
 function renderBranches(){
  const groups=window.PandoraGameNavigation.groups;
- if(!pathGroupTouched&&catalog.classes?.[jobKeys[state.job]]&&
-  !groups.find(g=>g.id===selectedSkillGroup)?.branches.some(id=>id!=='race'&&branchCap(id)>0)){
-  const first=groups.find(g=>g.branches.some(id=>id!=='race'&&branchCap(id)>0));
-  if(first)selectedSkillGroup=first.id;
+ if(!pathGroupTouched&&catalog.classes?.[jobKeys[state.job]]){
+  // Choose the profession's strongest skill group, not the FIRST nonzero one.
+  // CLERIC should start at Prayer (230 cap sum), MAGE at Magic, WARRIOR at Melee.
+  const ranked=groups.map(group=>({
+   id:group.id,
+   total:group.branches.filter(key=>key!=='race')
+    .reduce((sum,key)=>sum+branchCap(key),0)
+  })).sort((a,b)=>b.total-a.total);
+  if(ranked[0]?.total>0)selectedSkillGroup=ranked[0].id;
  }
  const selected=groups.find(g=>g.id===selectedSkillGroup)||null;
  if(selected&&(inlineBranchId===null||(inlineBranchId&&!selected.branches.includes(inlineBranchId)))){

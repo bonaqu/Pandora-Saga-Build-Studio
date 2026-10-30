@@ -108,6 +108,7 @@ test('new job selects a usable group without deleting previous invested points',
  assert.match(app,/selectJob\(current\.i\)/);
  assert.match(app,/selectJob\(node\.i\)/);
  assert.match(app,/!pathGroupTouched&&catalog\.classes\?\.\[jobKeys\[state\.job\]\]/);
+ assert.match(app,/\.sort\(\(a,b\)=>b\.total-a\.total\)/);
 });
 test('red locked region shows OS skills beyond the class skill cap',()=>{
  const app=read('app.js'),ui=read('hero-path.js'),css=read('style.css');
