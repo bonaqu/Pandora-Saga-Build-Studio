@@ -307,7 +307,7 @@ function renderSlotRails(){
    const tooltip=slots[i][0]+' · '+(item?.name||'Пусто')+(item&&cap!==null?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
-    'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSoulQuery='';stageSlotShown=48;stageSlotView=state.equipment?.[i]?'details':'choose';stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
+    'aria-label':tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSoulQuery='';stageSlotShown=48;stageSlotView=state.equipment?.[i]?'details':'choose';stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
    button.append(slotVisual(i),h('small',{text:item?.name||slots[i][0]}));
    if(item&&plan.canSocket(slotKeys[i],source))button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
@@ -411,7 +411,7 @@ function renderStagePicker(focusSearch=false){
   h('button',{type:'button',text:'Свойства →',disabled:!record,onclick:()=>{stageSlotView='details';renderStagePicker()}}),
   h('button',{type:'button',text:'✕','aria-label':'Закрыть выбор',onclick:()=>closeStagePicker()})
  ]);
- const search=h('input',{type:'search',value:stageSlotQuery,placeholder:'Поиск названия или ID','aria-label':'Поиск предмета для '+slots[selectedSlot][0]});
+ const search=h('input',{type:'search',value:stageSlotQuery,placeholder:'Поиск по названию','aria-label':'Поиск предмета для '+slots[selectedSlot][0]});
  const count=h('small',{class:'stage-picker-count'});
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
@@ -448,7 +448,7 @@ function renderStagePicker(focusSearch=false){
    const src=itemIcon(rec);
    if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
    else btn.append(h('span',{class:'item-glyph',text:'⚔'}));
-   btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),h('small',{text:'ID '+rec.id+(rec.level?' · ур. '+rec.level:'')})]));
+   btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),h('small',{text:rec.level?'Уровень '+rec.level:''})]));
    if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
    list.append(btn);
   }
@@ -506,12 +506,12 @@ function renderOriginStats(){
     ' + известные бонусы '+delta+' = '+row.result.textContent;
    row.minus.disabled=!snap||spent<=0;
    row.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,row.i,spent+1);
-   row.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(snap,row.i)??'максимум');
+   row.plus.setAttribute('aria-label','Увеличить '+ORIGIN_STAT_LABELS[row.i].name+'. Стоимость: '+(window.PandoraAttributeProgression.nextCost(snap,row.i)??'максимум'));
   }
  }
  ORIGIN_STAT_LABELS.forEach((info,i)=>{
   const wrap=h('div',{class:'origin-stat-row'});
-  const title=h('div',{class:'origin-stat-title',title:info.name},[
+  const title=h('div',{class:'origin-stat-title'},[
    h('b',{text:info.short}),h('span',{text:info.name})]);
   const minus=h('button',{type:'button',text:'−','aria-label':'Уменьшить '+info.name});
   const input=h('input',{type:'number',min:'0',max:'99',step:'1',class:'origin-stat-input',
@@ -553,12 +553,12 @@ function renderOriginPassives(){
   const skill=catalog.skills?.[String(id)];if(!skill)continue;
   const selected=String(state.racialPassiveId)===String(id);
   const btn=h('button',{type:'button',class:'origin-passive'+(selected?' selected':''),'aria-pressed':String(selected),
-   title:skill.desc||skill.name,'aria-label':skill.name+(selected?' — выбрано':' — выбрать'),
+   'aria-label':skill.name+(selected?' — выбрано':' — выбрать'),
    onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
   else btn.append(h('span',{text:'✦'}));
-  btn.append(h('span',{},[h('b',{text:skill.name}),h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);
+  btn.append(h('span',{},[h('b',{text:skill.name}),h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);skillHover(btn,skill);
  }
 }
 let activeSkillPreview=null;
@@ -795,14 +795,17 @@ function renderWiki(root){
  for(const [key,label]of[['item','Предметы'],['monster','Монстры'],['map','Локации'],['npc','NPC-обмен'],['chest','Сундуки'],['instance','Подземелья'],['skill','Навыки'],['soul','Души']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:label,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
- const search=h('input',{type:'search',value:wikiSearch,placeholder:'Поиск по названию или ID','aria-label':'Поиск по вики'});
+ const search=h('input',{type:'search',value:wikiSearch,placeholder:'Поиск по названию','aria-label':'Поиск по вики'});
  controls.append(categories,search);
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
  const dataName=(type,id)=>{
   const obj=type==='item'?wikiData.items?.[id]:type==='monster'?wikiData.monsters?.[id]:type==='map'?wikiData.maps?.[id]:type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:type==='instance'?wikiData.instances?.find(x=>String(x.id)===String(id)):null;
   const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':type==='instance'?'instances':type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
-  return lang==='en'&&en?en:obj?.name||String(id);
+  const fallback={item:'Предмет без названия',monster:'Монстр без названия',
+    map:'Локация',npc:'Персонаж',chest:'Сундук',skill:'Умение без названия',
+    soul:'Душа без названия',instance:'Подземелье'};
+   return lang==='en'&&en?en:obj?.name||fallback[type]||'Без названия';
  };
  const draw=()=>{
   const previousScroll=browse.scrollTop;
@@ -836,7 +839,10 @@ function renderWiki(root){
   browse.scrollTop=previousScroll;
   const id=wikiSelection.id,rec=id==null?null:catalog?.[id];
   if(!rec){detail.append(h('p',{class:'muted',text:'Выбери запись для просмотра характеристик и связанных источников.'}));return}
-  detail.append(h('small',{class:'eyebrow',text:type+' · '+id}),h('h3',{text:dataName(type,id)}));
+  const typeLabel={item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
+    skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
+   detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
+    h('h3',{text:dataName(type,id)}));
   if(type==='item'){
     const src=itemIcon(rec);
     if(src){const img=h('img',{src,alt:'',class:'wiki-record-icon wiki-item-portrait'});img.onerror=()=>img.remove();detail.prepend(img)}
@@ -854,8 +860,8 @@ function renderWiki(root){
      if(row.type==='monster'){
       line.append(wikiLink('Монстр: '+dataName('monster',row.id)+(row.percent!=null?' · '+row.percent+'% по таблице':'')+(row.kind==='conditional'?' · условный дроп':''),'monster',row.id,id));
       for(const loc of wikiIndex.locations(row.id).slice(0,3))if(loc.type==='map')line.append(wikiLink('◈ '+loc.name,'map',loc.id,row.id));
-     }else if(row.type==='npc')line.append(wikiLink('Обмен у '+(wikiData.trades.npcs?.[row.id]?.name||'NPC '+row.id),'npc',row.id,id));
-     else if(row.type==='chest')line.append(wikiLink('Сундук '+row.id+' · группа '+row.roll+(row.percent==null?'':' · '+row.percent+'% в группе'),'chest',row.id,id));
+     }else if(row.type==='npc')line.append(wikiLink('Обмен у '+(wikiData.trades.npcs?.[row.id]?.name||'NPC'),'npc',row.id,id));
+     else if(row.type==='chest')line.append(wikiLink('Сундук · группа '+row.roll+(row.percent==null?'':' · '+row.percent+'% в группе'),'chest',row.id,id));
      else line.append(wikiLink('Групповой дроп, локация '+dataName('map',row.id)+' (точный шанс предмета неизвестен)','map',row.id,id));
      detail.append(line);
     }
@@ -1003,7 +1009,7 @@ function renderSkills(root){
  }}));
 }
 function isCostumeOverlay(item){return Boolean(item&&(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_')))}
-function itemName(r){return r?.name?.en||r?.names?.en||r?.name||r?.id||'Без названия'}
+function itemName(r){return r?.name?.en||r?.names?.en||r?.name||'Предмет без названия'}
 let catalogBrowseSlot='all';
 function renderEquipment(root){
  const types=[['all','Все типы'],['weapon','Оружие'],['shield','Щиты'],['head','Шлемы'],
@@ -1015,7 +1021,7 @@ function renderEquipment(root){
  head.append(h('h3',{text:'Коллекция предметов Pandora Saga'}),
   h('p',{class:'muted',text:'Полный справочник экипировки по загруженному каталогу. Надетые вещи изменяются только в портрете персонажа.'}));
  const row=h('div',{class:'equipment-catalog-toolbar'});
- const search=h('input',{type:'search',value:filter,placeholder:'Поиск названия или ID',
+ const search=h('input',{type:'search',value:filter,placeholder:'Поиск по названию',
   'aria-label':'Поиск предметов',
   oninput:e=>{filter=e.target.value;gearShown=60;renderDetails();
    const input=document.querySelector('.equipment-catalog-toolbar input');
@@ -1061,12 +1067,15 @@ function renderEquipment(root){
     const label=entry.type==='monster'?'Монстр':entry.type==='npc'?'NPC':
      entry.type==='chest'?'Сундук':'Локация';
     const key=entry.type==='drop'?'map':entry.type;
-    sources.append(wikiLink(label+' · '+entry.id,key,String(entry.id),String(rec.id)));
+    const sourceName=key==='monster'?wikiData?.monsters?.[entry.id]?.name:
+      key==='npc'?wikiData?.trades?.npcs?.[entry.id]?.name:
+      key==='map'?wikiData?.maps?.[entry.id]?.name:null;
+     sources.append(wikiLink(label+(sourceName?' · '+sourceName:''),key,String(entry.id),String(rec.id)));
    }
   }).catch(()=>{if(sources.isConnected)sources.textContent='Источники пока недоступны'});
  }
  for(const rec of matches.slice(0,gearShown)){
-  const card=h('button',{class:'item-card',type:'button',title:itemName(rec),
+  const card=h('button',{class:'item-card',type:'button',
    'aria-label':'Сведения о '+itemName(rec),
    onmouseenter:()=>inspect(rec),onfocus:()=>inspect(rec),onclick:()=>inspect(rec)});
   const src=itemIcon(rec);
@@ -1074,7 +1083,7 @@ function renderEquipment(root){
    image.onerror=()=>image.replaceWith(h('span',{class:'item-glyph',text:'✦'}));card.append(image)}
   else card.append(h('span',{class:'item-glyph',text:'✦'}));
   card.append(h('strong',{text:itemName(rec)}),
-   h('small',{text:window.PandoraItemPresentation.kind(rec)+' · ID '+rec.id}));
+   h('small',{text:window.PandoraItemPresentation.kind(rec)}));
   collection.append(card);
  }
  if(!matches.length)collection.append(h('p',{class:'muted',text:'Ничего не найдено. Попробуй другой фильтр.'}));
@@ -1107,7 +1116,7 @@ function renderStats(root){
    v.minus.disabled=!s||invested===0;
    v.plus.disabled=!window.PandoraAttributeProgression.allowed(s,v.i,invested+1);
    v.range.disabled=!s;v.exact.disabled=!s;
-   v.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(s,v.i)??'максимум');
+   v.plus.setAttribute('aria-label','Увеличить '+ORIGIN_STAT_LABELS[v.i].name+'. Стоимость: '+(window.PandoraAttributeProgression.nextCost(s,v.i)??'максимум'));
   }
  }
  ORIGIN_STAT_LABELS.forEach((info,i)=>{
@@ -1638,7 +1647,7 @@ function applyGameLocale(){
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  const label=document.getElementById('locale');
- if(label){label.textContent=lang==='en'?'EN ✓ · RU':'RU ✓ · EN';label.title='Переключить язык игрового каталога';label.setAttribute('aria-label','Язык игрового каталога: '+lang.toUpperCase())}
+ if(label){label.textContent=lang==='en'?'EN ✓ · RU':'RU ✓ · EN';label.removeAttribute('title');label.setAttribute('aria-label','Язык игрового каталога: '+lang.toUpperCase())}
  render();
 }
 async function loadCatalog(){
