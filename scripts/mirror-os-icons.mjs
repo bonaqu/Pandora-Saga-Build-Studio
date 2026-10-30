@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // One-time asset mirror. Run on a computer with Node 20+ and internet access.
 // Never runs on the website and does not need GitHub Actions or Cloudflare secrets.
-import {readFile,writeFile,mkdir,rename,stat} from 'node:fs/promises';
+import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const root=join(dirname(fileURLToPath(import.meta.url)),'..');
@@ -17,17 +17,28 @@ for(const r of Object.values(skills))if(r.iconId)list.push({kind:'skills',stem:'
 for(const r of Object.values(items))if(r.icon)list.push({kind:'items',stem:r.icon});
 for(const r of Object.values(souls))if(r.icon)list.push({kind:'souls',stem:r.icon});
 const unique=[...new Map(list.map(v=>[v.kind+'/'+v.stem,v])).values()];
-const pending=Number.isFinite(limit)?unique.slice(0,limit):unique;
 const manifest={source:'Pandora Saga OS, one-time archive',createdAt:new Date().toISOString(),icons:{skills:{},items:{},souls:{}},missing:[]};
 let done=0,fail=0,index=0;
 const valid=(buffer)=>buffer.length>16&&String.fromCharCode(...buffer.subarray(0,4))==='RIFF'&&
  String.fromCharCode(...buffer.subarray(8,12))==='WEBP';
+const missing=async row=>{
+ const file=join(root,'assets',row.kind,'icons',row.stem+'.webp');
+ try{return !valid(await readFile(file))}catch{return true}
+};
+// A --limit run starts at the next *missing* icon, not the first N icons repeatedly.
+const pending=[];
+for(const row of unique){
+ if(Number.isFinite(limit)){
+  if(await missing(row))pending.push(row);
+  if(pending.length>=limit)break;
+ }else pending.push(row);
+}
 async function one(row){
  const file='assets/'+row.kind+'/icons/'+row.stem+'.webp';
  const path=join(root,file);
  try{
   try{const old=await readFile(path);if(valid(old)){manifest.icons[row.kind][row.stem]=file;done++;return}}catch{}
-  if(dry){manifest.icons[row.kind][row.stem]=file;done++;return}
+  if(dry)return; // Planning never marks missing files as downloaded.
   const url='https://pandorasaga-os.com/icons/'+row.kind+'/'+row.stem+'.webp';
   let last;
   for(let n=0;n<=retries;n++){
@@ -61,7 +72,7 @@ manifest.count={
  expected:unique.length,
  present:Object.values(manifest.icons).reduce((n,v)=>n+Object.keys(v).length,0),
  missing:unique.length-Object.values(manifest.icons).reduce((n,v)=>n+Object.keys(v).length,0),
- processed:pending.length
+ processed:dry?0:pending.length, planned:pending.length
 };
 if(!dry){await mkdir(join(root,'assets'),{recursive:true});await writeFile(join(root,'assets','os-icon-manifest.json'),JSON.stringify(manifest,null,2)+'\n')}
 console.log(JSON.stringify({dryRun:dry,...manifest.count}));
