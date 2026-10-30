@@ -8,7 +8,7 @@ const bootView=readView();
 function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  tab:activeTab,open:!!document.getElementById('detailPanel')?.classList.contains('is-open'),
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
- slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen
+ slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage
  }))}catch{}}
 
 const OS='https://pandorasaga-os.com';
@@ -26,7 +26,7 @@ function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.f
 let state=fresh(),activeTab=['character','skills','equipment','stats','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length?state.race:0,stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null,
-stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',stageSoulQuery='',stageGemQuery='',gameTables=null;
+stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',stageSoulQuery='',stageGemQuery='',gameTables=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
@@ -137,6 +137,24 @@ function renderSlotRails(){
   }
  }
 }
+function renderStageAttributes(){
+ const root=$('stageAttributes');if(!root)return;
+ const show=Boolean(stageAttributesPage)&&!stageSlotPickerOpen;
+ root.hidden=!show;root.closest('.portrait-frame').classList.toggle('attributes',show);
+ $('stageAttributeToggle').setAttribute('aria-pressed',String(Boolean(stageAttributesPage)));
+ if(!show)return;
+ const plan=window.PandoraEquipmentPlan;
+ const items=Object.entries(state.equipment||{}).filter(([,entry])=>entry).map(([slot,entry])=>{
+  const rec=catalog.equipment?.[String(entry.id)];
+  return {record:rec,refinement:plan.refinementValue(state.refinements,Number(slot),entry),
+    souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
+ });
+ window.PandoraStageAttributes.render(root,{
+  page:stageAttributesPage,items,icon:rec=>itemIcon(rec),onClose:()=>{
+    stageAttributesPage=null;renderStageAttributes();saveView();
+  },onPage:name=>{stageAttributesPage=name;renderStageAttributes();saveView()}
+ });
+}
 function focusSelectedSlot(){
  document.querySelector('.equipment-rail .equipment-slot[data-slot-index="'+selectedSlot+'"]')?.focus({preventScroll:true});
 }
@@ -148,7 +166,7 @@ function closeStagePicker(focusSlot=true){
 function renderStagePicker(focusSearch=false){
  const root=$('stagePicker');if(!root)return;
  const frame=root.closest('.portrait-frame');frame.classList.toggle('picking',stageSlotPickerOpen);
- root.hidden=!stageSlotPickerOpen;root.replaceChildren();
+ root.hidden=!stageSlotPickerOpen;root.replaceChildren();renderStageAttributes();
  if(!stageSlotPickerOpen)return;
  const key=slotKeys[selectedSlot],equipped=state.equipment?.[selectedSlot];
  const record=equipped&&catalog.equipment?.[String(equipped.id)];
@@ -355,7 +373,7 @@ function branchRow(b,full){
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
- 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderOriginPassives();renderBranches();refreshBudgetLabel();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
+ 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderBranches();refreshBudgetLabel();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -1404,7 +1422,10 @@ async function loadCatalog(){
  applyGameLocale();persist();
 }
 async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
-$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');
+$('stageAttributeToggle').onclick=()=>{
+ stageAttributesPage=stageAttributesPage?null:'attack';renderStageAttributes();saveView()
+};$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;
 $('dockTabs').addEventListener('click',event=>{
