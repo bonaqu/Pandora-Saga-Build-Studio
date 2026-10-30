@@ -1,7 +1,9 @@
 (function prepareCatalogImport(root){
 "use strict";
 const base=["meta","classes","skills","items","souls","monsters","drops","maps","instances","racialPassives","itemForth","unison","trades"];
-const datasets=[...base,"tradeMeta","legacyLocale"];
+const serialSources=[["tables","tables"],["expertise","expertise"],["chests","chests"],["stringsEn","strings.en"]];
+const files=[...base,...serialSources.map(([,source])=>source)];
+const datasets=[...base,"tradeMeta","legacyLocale",...serialSources.map(([dataset])=>dataset)];
 function normalize(snapshot,legacy){
  const get=(o,k)=>{if(!o||typeof o!=="object"||Array.isArray(o))throw Error("Invalid dataset "+k);return o};
  get(snapshot,"snapshot");
@@ -29,9 +31,28 @@ function normalize(snapshot,legacy){
   }
  }
  if(records.length<1000||records.length>10000)throw Error("Unreasonable localization count");
+
+ const extraCounts={legacyLocale:records.length};
+ for(const [dataset,source] of serialSources){
+  const value=get(snapshot[source],source);
+  if(dataset==="stringsEn"){
+   if(value.locale!=="en")throw Error("Not an English translation source");
+   for(const group of ["items","skills","monsters","souls","classes"]){
+    const exp=Number(meta?.localeCounts?.en?.[group]);
+    if(Number.isInteger(exp)&&Object.keys(value[group]||{}).length!==exp)throw Error("Incomplete English translations: "+group);
+   }
+  }
+  const serialized=JSON.stringify(value),segments=[];
+  for(let i=0;i<serialized.length;i+=6000){
+   segments.push({key:String(segments.length).padStart(6,"0"),value:{chunk:segments.length,data:serialized.slice(i,i+6000)}});
+  }
+  if(!segments.length)throw Error("No data in "+source);
+  result[dataset]=segments;extraCounts[dataset]=segments.length;
+ }
+
  result.legacyLocale=records;
- return {datasets,entries:result,extraCounts:{legacyLocale:records.length},
+ return {datasets,entries:result,extraCounts,
   counts:Object.fromEntries(datasets.map(k=>[k,result[k].length]))};
 }
-root.PandoraCatalogImport=Object.freeze({base,datasets,normalize});
+root.PandoraCatalogImport=Object.freeze({base,files,datasets,normalize});
 })(typeof window==='undefined'?globalThis:window);
