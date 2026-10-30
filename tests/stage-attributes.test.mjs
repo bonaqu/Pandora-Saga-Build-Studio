@@ -20,7 +20,7 @@ test('source preview must not claim calculated combat stats',()=>{
  assert.match(attrs,/Это не рассчитанные характеристики персонажа/);
  assert.match(attrs,/Итоговые HP\/MP/);
  assert.match(attrs,/Итоговые HP\/MP, сопротивления, криты/);
- assert.match(attrs,/record\.effects/);
+ assert.match(attrs,/rec\.effects/);
 });
 test('reloading preserves portrait attribute page independently of build',()=>{
  const app=get('app.js');
