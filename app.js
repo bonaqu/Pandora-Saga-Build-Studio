@@ -23,7 +23,7 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  tab:activeTab,open:!!document.getElementById('detailPanel')?.classList.contains('is-open'),
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
  slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage,
- expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey
+ expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey,pathPage:heroPathPage
  }))}catch{}}
 
 const OS='https://pandorasaga-os.com';
@@ -39,7 +39,7 @@ let jobs=['Warrior','Gradiator','Juggernaut','Dragoon','Knight','General','Palad
 const branchNames=['Melee','Slash','Thrust','Cleave','Bash','Defend','Technique','Shot','Alchemy','Assassination','Trapping','Dodge','Grace','Banevolence','Blessing','Exorcism','Hymn','Magic','Elemental','Invocation','Darkness','Confusion','Special','Racial','Horsemanship'];
 let branches=window.PandoraGameNavigation.groups.flatMap(group=>group.branches.map(id=>({id,name:id})));
 let selectedSkillGroup='melee';
-let heroPathPage='growth',pathSkillQuery='',pathSkillFilter='all';
+let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='',pathSkillFilter='all',pathGroupTouched=false;
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
@@ -575,7 +575,7 @@ function renderBranches(){
      const set=(requested,rebuild=true)=>{
       if(!Number.isInteger(requested)||requested<0){range.value=String(state.points[id]||0);return}
       const n=Math.min(requested,allowedBranch(id));
-      state.points[id]=n;state.branch=id;persist();$('branchValue').textContent=String(n);refreshBudgetLabel();
+      state.points[id]=n;state.branch=id;persist();refreshBudgetLabel();
       label.textContent=n+' / '+cap;
       range.value=String(n);progress();
       for(const marker of track.querySelectorAll('.inline-milestone'))
@@ -650,7 +650,7 @@ function branchRow(b,full){
   onclick:()=>{
    state.branch=b.id;selectedSkill=null;selectedSkillGroup=window.PandoraGameNavigation.branchGroup(b.id)?.id||selectedSkillGroup;
    if(!full)inlineBranchId=inlineBranchId===b.id?null:b.id;
-   persist();renderBranches();$('branchValue').textContent=String(points);
+   persist();renderBranches();
    if(full||activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails();
   }});
  // Branches have no intrinsic skill icons; skills and unlock milestones retain theirs.
@@ -661,7 +661,7 @@ function branchRow(b,full){
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
- 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderHudEstimates();updateAdminHint()}
+ 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderHudEstimates();updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -1709,11 +1709,6 @@ $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dat
 };
 $('stageAttributeToggle').onclick=()=>{
  stageAttributesPage=stageAttributesPage?null:'attack';renderStageAttributes();saveView()
-};$('allSkills').onclick=()=>{
- const group=window.PandoraGameNavigation.groups.find(g=>g.id===selectedSkillGroup);
- const id=group?.branches.find(k=>k!=='race')||'slash';
- inlineBranchId=id;state.branch=id;renderBranches();
- $('skillBranches')?.scrollIntoView({block:'nearest',behavior:'smooth'});saveView();
 };$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
@@ -1721,7 +1716,15 @@ document.addEventListener('dblclick',event=>{
  if(!editable||!/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;
  event.preventDefault();event.stopImmediatePropagation();editor(editable);
 },true);
-$('dockClose').onclick=closeWorkbench;
+$('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView()};
+ $('pathSkillsTab').onclick=()=>{heroPathPage='skills';renderPathPages();saveView()};
+ $('pathAutoMastery').onchange=e=>{
+  window.PandoraSkillProgression.setAuto(state,e.target.checked,branches.map(b=>b.id));
+  persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderHudEstimates();
+ };
+ $('pathSkillSearch').oninput=e=>{pathSkillQuery=e.target.value;renderPathSkills()};
+ $('pathSkillStatus').onchange=e=>{pathSkillFilter=e.target.value;renderPathSkills()};
+ $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;
 $('dockTabs').addEventListener('click',event=>{
  const button=event.target.closest('[data-tab]');
