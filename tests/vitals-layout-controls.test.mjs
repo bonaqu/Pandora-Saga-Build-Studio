@@ -27,10 +27,10 @@ test('old saved build starts with disabled buffs; controls update without resett
   originPotionRecovery:{textContent:''}};
  const fakeWindow={PandoraOSCalculator:{honorTitles:[]}};
  const f=Function('state','$','persist','previewBaseStats','renderOriginVitals',
-  'window','renderStageAttributes','stageAttributesPage',body+
+  'window','renderStageAttributes','stageAttributesPage','renderPotionPreview',body+
   '\nreturn {renderVitalsEnhancements,setVitalsEnhancement};')(
   state,id=>dom[id]||null,()=>persisted++,()=>({hp:500,mp:200,potion:{percent:105}}),
-  ()=>rerenders++,fakeWindow,()=>{},null);
+  ()=>rerenders++,fakeWindow,()=>{},null,()=>{});
  f.renderVitalsEnhancements();
  assert.equal(dom.originLifeSign.checked,false);
  assert.equal(dom.originGuildHp.value,'0');
