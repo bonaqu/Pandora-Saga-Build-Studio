@@ -770,3 +770,12 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track .inline-milestone.path-milestone-pin .path-milestone-core{transform:rotate(-45deg);font-size:9px}
 .inline-mastery-track .path-milestone-pin:focus-visible{outline:2px solid #f6dfab;outline-offset:3px}
 @media(max-width:700px){.inline-mastery-track .inline-milestone.path-milestone-pin{width:12px;height:12px}}
+
+/* 2026.10.30.74 — explicit grouped skill picker, always below the track. */
+.path-milestone-picker[hidden]{display:none!important}
+.path-milestone-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:7px 0;padding:8px;background:#23190f;border:1px solid #85633e;border-radius:5px}
+.path-milestone-picker>strong{grid-column:1/-1;color:#edcb96;font-size:12px}
+.path-milestone-choice{display:flex;align-items:center;gap:7px;min-width:0;text-align:left;padding:7px;color:#ebcda1;background:#34251a;border:1px solid #785737;font-size:11px;border-radius:3px}
+.path-milestone-choice:hover,.path-milestone-choice:focus-visible{border-color:#e8be79;background:#56402a}
+.path-milestone-choice img{width:26px;height:26px;object-fit:contain;flex-shrink:0}
+@media(max-width:460px){.path-milestone-picker{grid-template-columns:1fr}}
