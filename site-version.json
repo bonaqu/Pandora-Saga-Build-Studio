@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.71",
-  "notes": "Fix false-positive regression test: boolean attributes use DOM properties while regular HTML/ARIA attributes retain setAttribute"
+  "release": "2026.10.30.75",
+  "notes": "Hero Path compact skill markers, grouped skill selection, corrected picker placement and viewport-safe tooltips."
 }
