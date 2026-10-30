@@ -12,7 +12,9 @@
     "assets:check": "node scripts/mirror-os-icons.mjs --dry-run",
     "assets:mirror": "node scripts/mirror-os-icons.mjs",
     "assets:audit": "node scripts/audit-os-icons.mjs",
-    "assets:audit:strict": "node scripts/audit-os-icons.mjs --strict"
+    "assets:audit:strict": "node scripts/audit-os-icons.mjs --strict",
+    "release:check": "node scripts/release-version.mjs --check",
+    "release:bump": "node scripts/release-version.mjs"
   },
   "pandoraRelease": "2026.10.30.76"
 }
