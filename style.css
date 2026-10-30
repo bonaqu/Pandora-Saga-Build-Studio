@@ -12,3 +12,9 @@
 
 /* Inline image editing for authenticated site owner */
 .admin-edit[data-edit-key^='visual.']{outline:2px dashed #e0b46e!important;cursor:crosshair!important;outline-offset:2px}.image-edit-preview{height:175px;max-width:100%;object-fit:contain;background:#120d09;border:1px solid #81603a}.image-edit-gallery{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;max-height:122px;overflow-y:auto}.image-edit-choice{min-width:0;background:#1a110b;border:1px solid #83603b;padding:1px}.image-edit-choice img{width:100%;aspect-ratio:1;object-fit:cover;display:block}.modal{max-height:94vh;overflow-y:auto}
+
+/* Detailed visual item inspection and incremental catalog */
+.item-count{font-size:11px;margin:8px 0}.item-preview{display:flex;gap:12px;align-items:center;margin:14px 0}.item-preview img{width:62px;height:62px;object-fit:contain;border:2px solid #95714a;background:#0a0908}.item-preview strong{font:600 22px 'Cormorant Garamond',Georgia,serif;line-height:1.1}
+.item-fields{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0;margin:13px 0;font-size:12px}.item-fields dt,.item-fields dd{padding:7px 5px;margin:0;border-bottom:1px solid #73533870}.item-fields dt{color:#aa987d}.item-fields dd{color:#f2d7ac;text-align:right;overflow-wrap:anywhere}
+.item-description{font-size:12px;white-space:pre-line;color:#d5c4a6;padding:10px;background:#1f170f;border:1px solid #644a31}.item-incompatible{color:#efa893;padding:9px;background:#442519;border:1px solid #a76b4c;font-size:12px}
+.item-card.incompatible{filter:grayscale(.58);opacity:.56}.item-card.incompatible:hover,.item-card.incompatible:focus-visible{filter:none;opacity:1}.show-more{width:calc(100% - 12px);margin:8px 6px}

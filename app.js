@@ -14,7 +14,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},name:'Новый герой'}};
-let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang='ru',compareIds=[],skillSearch='',skillOnlyAvailable=false;
+let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang='ru',compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60;
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
@@ -131,11 +131,105 @@ h("p",{class:"source",text:catalog.live?"Источник: Pandora Saga OS skill
 layout.append(picker,center,info);root.append(layout);
 }
 function itemName(r){return r?.name?.en||r?.names?.en||r?.name||r?.id||'Без названия'}
-function renderEquipment(root){const layout=h('div',{class:'gear-layout'}),slotbox=h('div'),items=h('div'),details=h('div',{class:'item-info'});const modes=h('div',{class:'toggles'});for(const [mode,label] of [['equipment','Снаряжение'],['souls','Души']])modes.append(h('button',{class:gearMode===mode?'chosen':'',text:label,onclick:()=>{gearMode=mode;filter='';renderDetails()}}));slotbox.append(modes);slotbox.append(h('h3',{text:'Слоты героя'}));const gr=h('div',{class:'gear-slots'});slots.forEach((s,i)=>{const item=state.equipment[i];const button=h('button',{class:'equipment-slot'+(selectedSlot===i?' selected':'')+(item?' equipped':''),title:s[0],onclick:()=>{selectedSlot=i;filter='';renderDetails();renderSlotRails()}});button.append(slotVisual(i),h('small',{text:item?.name||s[0]}));gr.append(button)});slotbox.append(gr,h('p',{class:'muted',text:'Слоты служат для визуального планирования. Совместимость с классом и расой не моделируется без движка.'}));
- const filterbox=h('div',{class:'filter-row'}),input=h('input',{type:'search',placeholder:'Поиск по названию предмета',value:filter,oninput:e=>{filter=e.target.value;renderDetails();const el=document.querySelector('.filter-row input');el?.focus();el?.setSelectionRange(filter.length,filter.length)}});filterbox.append(input);items.append(h('h3',{text:`Каталог: ${slots[selectedSlot][0]}`}),filterbox);
- const records=catalog.live?Object.values((gearMode==='souls'?catalog.souls:catalog.equipment)||{}):((gearMode==='souls'?catalog.souls:catalog.equipment)?.records||[]);const slot=slotKeys[selectedSlot];const limited=records.filter(rec=>!catalog.live||(gearMode==='souls'?rec.slots?.includes(slot):rec.slot===slot)).filter(rec=>(itemName(rec)+' '+rec.id).toLowerCase().includes(filter.toLowerCase())).slice(0,120);const list=h('div',{class:'gear-list'});if(!records.length)list.append(h('p',{class:'muted',text:'Справочник снаряжения загружается; проверь доступ к файлам исходного проекта.'}));
- limited.forEach(rec=>{const id=rec.id,compatible=!catalog.live||(gearMode==='souls'||(!rec.classes||!!rec.classes[jobKeys[state.job]])&&(!rec.level||state.level>=rec.level)),selected=(gearMode==='souls'?state.souls?.[selectedSlot]:state.equipment[selectedSlot]);const suitability=catalog.live&&gearMode==='equipment'?window.PandoraStudioRules.equipment(rec,{job:jobKeys[state.job],level:state.level,slot}):{allowed:true,missing:[]};const button=h('button',{class:'item-card'+(selected?.id===id?' active':'')+(!suitability.allowed?' incompatible':''),disabled:suitability.allowed?null:'true',title:suitability.allowed?'':suitability.missing.join(' · '),onclick:()=>{if(gearMode==='souls')state.souls[selectedSlot]={id,name:itemName(rec)};else state.equipment[selectedSlot]={id,name:itemName(rec),level:rec.level||null,icon:rec.icon||null};persist();render()}});const icon=itemIcon(rec,gearMode==='souls'?'souls':'items');if(icon){const pic=editAttr(h('img',{src:icon,alt:'',loading:'lazy',width:'37',height:'37'}),(gearMode==='souls'?'visual.soul.':'visual.item.')+id);pic.onerror=()=>{pic.style.display='none'};button.append(pic)}else button.append(h('span',{class:'item-glyph',text:gearMode==='souls'?'✦':'⚔'}));button.append(editAttr(h('strong',{text:editableValue((gearMode==='souls'?'soul.':'item.')+id,itemName(rec))}),(gearMode==='souls'?'soul.':'item.')+id),h('small',{text:'ID '+id+(rec.level?' · Lv '+rec.level:'')}));list.append(button)});items.append(list);
- details.append(h('h3',{text:'Выбранный предмет'}));const equipped=(gearMode==='souls'?state.souls?.[selectedSlot]:state.equipment[selectedSlot]);if(equipped){details.append(h('p',{text:equipped.name}),h('p',{class:'muted',text:`Слот: ${slots[selectedSlot][0]}. ID: ${equipped.id}`}),h('button',{class:'button-action',text:'Снять предмет',onclick:()=>{if(gearMode==='souls')delete state.souls[selectedSlot];else delete state.equipment[selectedSlot];persist();render()}}))}else details.append(h('p',{class:'muted',text:'Нажми на изображение слота и выбери предмет в каталоге.'}));details.append(h('p',{class:'source',text:catalog.live?'Предметы и души с опубликованного Pandora Saga OS. Класс/уровень проверяются по данным; общий расчёт эффектов, сокетов и бонусов пока не подключён.':'Исторический каталог Legacy: сокеты, эффекты и совместимость не подтверждены.'}));layout.append(slotbox,items,details);root.append(layout)}
+function renderEquipment(root){
+ const layout=h("div",{class:"gear-layout"}),slotsPanel=h("div"),inventory=h("div"),inspector=h("div",{class:"item-info"});
+ const switcher=h("div",{class:"toggles"});
+ for(const [mode,label] of [["equipment","Снаряжение"],["souls","Души"]]){
+  switcher.append(h("button",{class:gearMode===mode?"chosen":"",text:label,
+    "aria-pressed":String(gearMode===mode),onclick:()=>{gearMode=mode;filter="";gearShown=60;renderDetails()}}))
+ }
+ slotsPanel.append(switcher,h("h3",{text:"Слоты персонажа"}));
+ const grid=h("div",{class:"gear-slots"});
+ slots.forEach((s,i)=>{
+   const item=state.equipment[i];
+   const button=h("button",{class:"equipment-slot"+(selectedSlot===i?" selected":"")+(item?" equipped":""),
+    "aria-label":s[0]+": "+(item?.name||"пусто"),
+    onclick:()=>{selectedSlot=i;gearShown=60;filter="";renderDetails();renderSlotRails()}});
+   button.append(slotVisual(i),h("small",{text:item?.name||s[0]}));grid.append(button);
+ });
+ slotsPanel.append(grid,h("p",{class:"muted",text:"Нажимай на слот или на иконку предмета. Все видимые значения — из игрового каталога, а не расчётные догадки."}));
+ const records=catalog.live?Object.values((gearMode==="souls"?catalog.souls:catalog.equipment)||{}):
+  ((gearMode==="souls"?catalog.souls:catalog.equipment)?.records||[]);
+ const slot=slotKeys[selectedSlot],job=jobKeys[state.job];
+ const visible=records.filter(rec=>!catalog.live||(gearMode==="souls"?rec.slots?.includes(slot):rec.slot===slot));
+ const needle=filter.trim().toLocaleLowerCase("ru");
+ const matching=visible.filter(rec=>(itemName(rec)+" "+rec.id).toLocaleLowerCase("ru").includes(needle));
+ const filterRow=h("div",{class:"filter-row"});
+ const search=h("input",{type:"search","aria-label":"Поиск предметов",placeholder:"Название предмета или ID",value:filter,
+  oninput:e=>{filter=e.target.value;gearShown=60;renderDetails();const next=document.querySelector(".filter-row input");if(next){next.focus();next.setSelectionRange(filter.length,filter.length)}}});
+ filterRow.append(search);
+ inventory.append(h("h3",{text:"Каталог · "+slots[selectedSlot][0]}),filterRow,
+    h("p",{class:"muted item-count",text:"Найдено "+matching.length+" · показано "+Math.min(gearShown,matching.length)}));
+ const list=h("div",{class:"gear-list"});
+ const selected=(gearMode==="souls"?state.souls?.[selectedSlot]:state.equipment[selectedSlot]);
+ const selectedRec=visible.find(rec=>String(rec.id)===String(selected?.id));
+ function inspect(rec){
+   inspector.replaceChildren();
+   inspector.append(h("h3",{text:"Информация об игровом предмете"}));
+   if(!rec){
+     inspector.append(h("p",{class:"muted",text:"Выбери или наведи курсор на предмет. Его описание и значения появятся здесь."}));
+     return;
+   }
+   const card=h("div",{class:"item-preview"});
+   const src=itemIcon(rec,gearMode==="souls"?"souls":"items");
+   if(src){
+    const image=editAttr(h("img",{src,alt:"Иконка "+itemName(rec)}),(gearMode==="souls"?"visual.soul.":"visual.item.")+rec.id);
+    image.onerror=()=>{image.onerror=null;image.replaceWith(h("span",{text:"✦"}))};card.append(image);
+   }
+   card.append(editAttr(h("strong",{text:editableValue((gearMode==="souls"?"soul.":"item.")+rec.id,itemName(rec))}),(gearMode==="souls"?"soul.":"item.")+rec.id));
+   inspector.append(card);
+   if(catalog.live){
+     const info=[["ID",rec.id],["Тип",rec.kind],["Уровень",rec.level],["Оружейная атака",rec.W],["Защита",rec.AC],
+       ["Слоты душ",rec.soulslot],["Усиление +",rec.plus],["Дальность",rec.range]];
+     const dl=h("dl",{class:"item-fields"});
+     for(const [label,val] of info)if(val!==undefined&&val!==null&&val!==""){
+       dl.append(h("dt",{text:label}),h("dd",{text:String(val)}))
+     }
+     inspector.append(dl);
+     if(gearMode==="equipment"){
+       const validity=window.PandoraStudioRules.equipment(rec,{slot,job,level:state.level});
+       if(!validity.allowed)inspector.append(h("p",{class:"item-incompatible",text:"Не подходит: "+validity.missing.join(" · ")}));
+     }
+   }
+   if(rec.desc)inspector.append(h("p",{class:"item-description",text:rec.desc}));
+   if(rec.effects?.length)inspector.append(h("p",{class:"muted",text:"Дополнительные эффекты присутствуют в исходных данных. Их боевой расчёт в Build Studio пока не моделируется."}));
+   inspector.append(h("p",{class:"source",text:catalog.live?"Источник: Pandora Saga OS /gamedata/. Значения являются полями источника, не результатом вычисления билда.":"Исторический каталог Legacy 2.00."}));
+ }
+ if(!records.length)list.append(h("p",{class:"muted",text:"Загрузка каталога или источник недоступен."}));
+ if(!matching.length&&records.length)list.append(h("p",{class:"muted",text:"Совпадений нет. Измени запрос или другой слот."}));
+ for(const rec of matching.slice(0,gearShown)){
+   const id=String(rec.id),current=selected&&String(selected.id)===id;
+   const eligible=catalog.live&&gearMode==="equipment"?
+    window.PandoraStudioRules.equipment(rec,{slot,job,level:state.level}):{allowed:true,missing:[]};
+   const button=h("button",{class:"item-card"+(current?" active":"")+(eligible.allowed?"":" incompatible"),
+     "aria-disabled":String(!eligible.allowed),
+     title:eligible.allowed?"Надеть "+itemName(rec):eligible.missing.join(" · "),
+     onmouseenter:()=>inspect(rec),onfocus:()=>inspect(rec),
+     onclick:()=>{
+       inspect(rec);
+       if(!eligible.allowed)return;
+       const item={id:rec.id,name:itemName(rec),level:rec.level||null,icon:rec.icon||null};
+       if(gearMode==="souls")state.souls[selectedSlot]=item;else state.equipment[selectedSlot]=item;
+       persist();render();
+     }});
+   const icon=itemIcon(rec,gearMode==="souls"?"souls":"items");
+   if(icon){const image=editAttr(h("img",{src:icon,alt:"",loading:"lazy"}),(gearMode==="souls"?"visual.soul.":"visual.item.")+id);
+     image.onerror=()=>{image.onerror=null;image.replaceWith(h("span",{class:"item-glyph",text:"✦"}))};button.append(image)}
+   else button.append(h("span",{class:"item-glyph",text:"✦"}));
+   button.append(h("strong",{text:editableValue((gearMode==="souls"?"soul.":"item.")+id,itemName(rec))}),
+      h("small",{text:"ID "+id+(rec.level?" · Lv "+rec.level:"")}));
+   list.append(button)
+ }
+ inventory.append(list);
+ if(matching.length>gearShown)inventory.append(h("button",{class:"button-action show-more",text:"Показать ещё · осталось "+(matching.length-gearShown),
+  onclick:()=>{gearShown+=60;renderDetails()}}));
+ inspect(selectedRec);
+ if(selected)inspector.append(h("button",{class:"button-action",text:"✕ Снять выбранный предмет",onclick:()=>{
+   if(gearMode==="souls")delete state.souls[selectedSlot];else delete state.equipment[selectedSlot];
+   persist();render();
+ }}));
+ layout.append(slotsPanel,inventory,inspector);root.append(layout);
+}
 function renderStats(root){root.append(h('p',{class:'muted',text:'Здесь записывается только план распределения. Игровые HP, MP, атака, защита и прочие показатели не вычисляются без подтверждённого движка.'}));const grid=h('div',{class:'stat-grid'});STATS.forEach(key=>{const box=h('div',{class:'stat-card'});box.append(h('h3',{text:key}),h('b',{text:String(state.stats[key]||0)}));const slider=h('input',{type:'range',min:'0',max:'100',step:'1',value:state.stats[key]||0,'aria-label':'Распределение '+key,oninput:e=>{state.stats[key]=Number(e.target.value);persist();box.querySelector('b').textContent=e.target.value}});box.append(slider,h('span',{text:'Планируемое распределение — не игровые итоговые характеристики'}));grid.append(box)});root.append(grid)}
 function compareSnapshots(a,b){const rows=[];for(const branch of branches){const x=a.points?.[branch.id]||0,y=b.points?.[branch.id]||0;if(x!==y)rows.push(`${branch.name}: ${x} → ${y} (${y>x?'+':''}${y-x})`)}for(const stat of STATS){const x=a.stats?.[stat]||0,y=b.stats?.[stat]||0;if(x!==y)rows.push(`${stat}: ${x} → ${y}`)}return rows}
 function renderBuilds(root){const toolbar=h('div');toolbar.append(h('button',{class:'button-action primary',text:'✧ Сохранить текущий билд',onclick:()=>saveBuild()}),h('button',{class:'button-action',text:'⇩ Экспорт JSON',onclick:exportBuild}),h('button',{class:'button-action',text:'⇧ Импорт JSON',onclick:importBuild}));root.append(toolbar,h('p',{class:'muted',text:'Билды хранятся локально в этом браузере. Сравнение показывает изменения выбора, а не вымышленные боевые результаты.'}));const grid=h('div',{class:'build-grid'});builds.forEach(b=>{const box=h('div',{class:'build-card'}),check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});check.checked=compareIds.includes(b.id);check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};box.append(h('h3',{text:b.name}),h('p',{text:`${races[b.data.race]?.[0]||'?'} · ${jobs[b.data.job]||'?'} · Lv ${b.data.level}`}),h('label',{},[check,' Сравнить']),h('button',{class:'button-action',text:'Открыть',onclick:()=>{state=structuredClone(b.data);persist();render();changeTab('character')}}),h('button',{class:'button-action',text:'Удалить',onclick:()=>{builds=builds.filter(x=>x.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();renderDetails()}}));grid.append(box)});root.append(grid);if(compareIds.length===2){const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));if(a&&b){const results=compareSnapshots(a.data,b.data);root.append(h('h3',{text:`Сравнение: ${a.name} / ${b.name}`}),h('p',{class:'muted',text:results.join(' · ')||'Выборы совпадают'}))}}}

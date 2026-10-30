@@ -47,6 +47,10 @@ First successful login: gear → `administrator` → new password (minimum 12 ch
 
 An authenticated administrator can double-click the logo, race portraits, skill icons and item cards to select a different image. The picker shows existing bundled assets and accepts allowlisted source URLs. Changes are written as text overrides to D1, not to Git; uploading a new file to the repo remains a separate operation. The Worker source is updated here but **not automatically deployed**. Without a deployed Worker, the feature is intentionally unavailable.
 
+## Item inspector and catalog navigation
+
+Visual item cards now support hover and keyboard focus preview of directly sourced game fields. Class/level/slot mismatches are inspectable but cannot be equipped. The catalog is paginated in groups of 60 rather than silently truncating results; search by original name or ID is retained. The item inspector deliberately avoids calculating unknown combat bonuses.
+
 ## Next milestones
 
 - Verify live Pandora Saga OS endpoints, cross-origin access, sprite references and all skill identities; maintain the versioned authoritative snapshot (no invented gameplay rules).
