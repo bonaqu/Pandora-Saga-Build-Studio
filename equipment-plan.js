@@ -21,7 +21,9 @@ function socketReport(souls,capacity){
 function refinementKey(slot,item){return item&&typeof item.id!=="undefined"?String(slot)+":"+String(item.id):null}
 function refinementValue(refinements,slot,item){
  const key=refinementKey(slot,item),v=key==null?0:refinements?.[key];
- return Number.isInteger(v)&&v>=0&&v<=99?v:0;
+ return Number.isInteger(v)&&v>=0&&v<=10?v:0;
 }
-root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,refinementKey,refinementValue});
+const FORGE_SLOTS=Object.freeze(new Set(['weapon','shield','head','body','gloves','legs','feet']));
+function canRefine(slot){return FORGE_SLOTS.has(slot)}
+root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,refinementKey,refinementValue,canRefine});
 })(typeof window==='undefined'?globalThis:window);

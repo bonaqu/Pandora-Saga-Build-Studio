@@ -451,3 +451,11 @@ a.wiki-link:hover{text-decoration:none}
 .stage-enchant-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px}
 .stage-enchant-options button{padding:8px 5px;border:1px solid #8b6940;background:#372419;color:#eed09d;font-size:11px}
 .stage-enchant-options button.chosen{border-color:#f1cb8b;background:#79502c;color:#fff3d7}
+
+/* 2026.10.30.38: no browser-native inconsistent scrollbars and fixed content-area restoration */
+:root{scrollbar-color:#967348 #1c140e;scrollbar-width:thin}
+*{scrollbar-width:thin;scrollbar-color:#967348 #1c140e}
+*::-webkit-scrollbar{width:9px;height:9px}
+*::-webkit-scrollbar-track{background:#1b140f;border:1px solid #4c3826;border-radius:8px}
+*::-webkit-scrollbar-thumb{background:linear-gradient(#bc955b,#795330);border:1px solid #d5ac70;border-radius:8px}
+*::-webkit-scrollbar-thumb:hover{background:#c7a26b}

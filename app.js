@@ -172,6 +172,10 @@ function closeWorkbench(){
  saveView();
 }
 function changeTab(tab){
+ if(!['character','skills','equipment','stats','builds','wiki'].includes(tab))return;
+ // A previous #wiki/... bookmark must never override the user's current tab on F5.
+ if(tab!=='wiki'&&location.hash.startsWith('#wiki/'))
+  history.replaceState(history.state,'',location.pathname+location.search);
  const previous=activeTab;
  activeTab=tab;
  document.querySelectorAll('[data-tab]').forEach(btn=>{
@@ -209,7 +213,7 @@ function renderSlotRails(){
   for(const i of indexes){
    const item=state.equipment?.[i],source=item&&equippedRecord(i),cap=plan.socketCapacity(source);
    const report=plan.socketReport(state.souls?.[i],cap);
-   const level=plan.refinementValue(state.refinements,i,item);
+   const level=plan.canRefine(slotKeys[i])?plan.refinementValue(state.refinements,i,item):0;
    const tooltip=slots[i][0]+' · '+(item?.name||'Пусто')+(item&&cap!==null?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
@@ -251,6 +255,10 @@ function closeStagePicker(focusSlot=true){
 }
 function renderStagePicker(focusSearch=false){
  const root=$('stagePicker');if(!root)return;
+ const previousMode=root.dataset.view||'';
+ const oldBodyScroll=root.querySelector('.stage-rich-body')?.scrollTop||0;
+ const preserveScroll=stageSlotPickerOpen&&previousMode===stageSlotView;
+ root.dataset.view=stageSlotView;
  const frame=root.closest('.portrait-frame');frame.classList.toggle('picking',stageSlotPickerOpen);
  root.hidden=!stageSlotPickerOpen;root.replaceChildren();renderStageAttributes();
  if(!stageSlotPickerOpen)return;
@@ -265,8 +273,11 @@ function renderStagePicker(focusSearch=false){
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
    gems:state.gems?.[plan.refinementKey(selectedSlot,equipped)],
    catalog,gameTables,close:()=>closeStagePicker(),
-   changeMode:mode=>{stageSlotView=mode;saveView();renderStagePicker(mode==='choose')},
-   updateGrade:n=>{if(!Number.isInteger(n)||n<0||n>10)return;
+   changeMode:mode=>{
+    if(mode==='gems'&&!plan.canRefine(key))return;
+    stageSlotView=mode;saveView();renderStagePicker(mode==='choose')
+   },
+   updateGrade:n=>{if(!plan.canRefine(key)||!Number.isInteger(n)||n<0||n>10)return;
     state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;persist();renderSlotRails();renderStagePicker();
    },
    openSocket:i=>{selectedSocket=i;stageSlotView='souls';renderStagePicker()},
@@ -277,12 +288,16 @@ function renderStagePicker(focusSearch=false){
     const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
     state.souls[selectedSlot]=next;stageSlotView='details';persist();renderStagePicker();},
-   assignGem:entry=>{state.gems??={};
+   assignGem:entry=>{if(!plan.canRefine(key))return;state.gems??={};
     const id=plan.refinementKey(selectedSlot,equipped);
     const choice=window.PandoraEnchantModel.normalize(entry);
     if(choice)state.gems[id]=choice;else delete state.gems[id];
     stageSlotView='details';persist();renderStagePicker();}
   });
+  if(preserveScroll){
+   const body=root.querySelector('.stage-rich-body');
+   if(body)body.scrollTop=oldBodyScroll;
+  }
   return;
  }
  const top=h('div',{class:'stage-picker-head'},[
@@ -1569,6 +1584,8 @@ window.PandoraStudioAdminActive=()=>Boolean(adminToken);
 document.addEventListener('pandora:before-update',()=>{persist();persistBuilds()});
 // Restore deep links on refresh without requiring credentials or losing the current build.
 function restoreWikiHash(){
+ // Restore an actual deep link, never a stale encyclopedia URL from a different open tab.
+ if(bootView.tab&&bootView.tab!=='wiki')return;
  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})(?:\/([0-9]{1,15}))?$/);
  if(!match)return;
  wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
@@ -1576,7 +1593,14 @@ function restoreWikiHash(){
  for(const btn of document.querySelectorAll('[data-tab]'))btn.classList.toggle('active',btn.dataset.tab==='wiki');
  renderDetails();showWorkbench();
 }
-window.addEventListener('hashchange',restoreWikiHash);
+window.addEventListener('hashchange',()=>{
+ if(location.hash.startsWith('#wiki/')){
+  // A user clicking a wiki link explicitly is a new action, not stale navigation.
+  if(activeTab!=='wiki')activeTab='wiki';
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})(?:\/([0-9]{1,15}))?$/);
+  if(match){wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};renderDetails();showWorkbench();saveView()}
+ }
+});
 fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{
  const label=$('iconStatus');
  if(data?.icons&&data.count&&Number.isInteger(data.count.present)&&Number.isInteger(data.count.expected)&&data.count.present<=data.count.expected){
@@ -1589,7 +1613,9 @@ render();loadCatalog();loadOverrides();
 fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
 .then(t=>{if(t?.abilityPoint&&t?.weaponPlus&&t?.forge){gameTables=t;render()}}).catch(()=>{});
 restoreWikiHash();
-if(bootView.open&&!String(location.hash).startsWith('#wiki/')){showWorkbench();$('detailContent').scrollTop=Math.max(0,Number(bootView.inner)||0)}
+if(bootView.open&&bootView.tab!=='wiki'&&!String(location.hash).startsWith('#wiki/')){
+ showWorkbench();$('detailContent').scrollTop=Math.max(0,Number(bootView.inner)||0)
+}
 if(bootView.slotOpen&&!bootView.open){stageSlotPickerOpen=true;renderSlotRails();renderStagePicker()}
 requestAnimationFrame(()=>window.scrollTo({top:Math.max(0,Number(bootView.page)||0),behavior:'instant'}));
 window.addEventListener('pagehide',saveView);

@@ -50,12 +50,15 @@ function attachPreview(target,record,icon,kind='item'){
 }
 function render(root,api){
  const {record,item,slot,slotIndex,mode,icons,refinement,souls,gems,gameTables}=api;
+ const canRefine=globalThis.PandoraEquipmentPlan.canRefine(slot);
+ if(!canRefine&&mode==='gems'){api.changeMode('details');return}
  const head=el('div',{class:'stage-picker-head'},[
   el('strong',{text:record?.name||'Слот: '+slot}),el('button',{type:'button',text:'✕',onclick:api.close})
  ]);
  root.append(head);
  const tabs=el('nav',{class:'stage-rich-tabs',role:'group','aria-label':'Настройка предмета'});
  for(const [key,text] of [['choose','Выбор'],['details','Свойства'],['souls','Души'],['gems','Самоцветы']]){
+  if(key==='gems'&&!canRefine)continue;
   const b=el('button',{type:'button',text,class:mode===key?'chosen':'',
    'aria-pressed':String(mode===key),disabled:!record&&key!=='choose',
    onclick:()=>api.changeMode(key)});
@@ -66,14 +69,16 @@ function render(root,api){
  const body=el('div',{class:'stage-rich-body'});root.append(body);
  if(mode==='details'){
   body.append(summary(record,icons));
-  const grade=Number(refinement)||0,level=el('div',{class:'stage-grade'});
-  for(let i=0;i<=10;i++)level.append(el('button',{type:'button',text:'+'+i,class:i===grade?'chosen':'',
-   'aria-pressed':String(i===grade),onclick:()=>api.updateGrade(i)}));
-  body.append(el('h4',{text:'Заточка: +0…+10'}),level);
-  const bonus=gameTables?.weaponPlus?.[String(grade)];
-  body.append(el('p',{class:'stage-rich-note',text:grade===0?'Без улучшения.':
-   slot==='weapon'&&bonus?'Таблица OS: '+bonus.ratio+'% и '+bonus.flat+' ед. (не итоговый урон).':
-   'Уровень заточки сохранён; расчёт итоговых характеристик пока не подтверждён.'}));
+  if(canRefine){
+   const grade=Number(refinement)||0,level=el('div',{class:'stage-grade'});
+   for(let i=0;i<=10;i++)level.append(el('button',{type:'button',text:'+'+i,class:i===grade?'chosen':'',
+    'aria-pressed':String(i===grade),onclick:()=>api.updateGrade(i)}));
+   body.append(el('h4',{text:'Заточка: +0…+10'}),level);
+   const bonus=gameTables?.weaponPlus?.[String(grade)];
+   body.append(el('p',{class:'stage-rich-note',text:grade===0?'Без улучшения.':
+    slot==='weapon'&&bonus?'Таблица OS: '+bonus.ratio+'% и '+bonus.flat+' ед. (не итоговый урон).':
+    'Уровень заточки сохранён; итоговые характеристики требуют подтверждения.'}));
+  }
   const cap=record.soulslot==null?null:Number(record.soulslot);
   body.append(el('h4',{text:'Гнёзда душ: '+(cap===null?'неизвестно':cap)}));
   if(Number.isInteger(cap)&&cap>0&&cap<=32){
@@ -89,19 +94,22 @@ function render(root,api){
     sockets.append(b);attachPreview(b,soul,icons,'soul');
    }body.append(sockets);
   }else if(cap===null)body.append(el('p',{class:'muted',text:'Число гнёзд не подтверждено в каталоге'}));
-  body.append(el('button',{type:'button',class:'stage-rich-switch',
-   text:'Тип и стихия: '+root.PandoraEnchantModel.label(gems),
-   onclick:()=>api.changeMode('gems')}));
-  if(record.slot==='weapon'&&grade>0){
-   const preview=root.PandoraEnchantModel.weaponPreview(record.W,grade,gameTables?.weaponPlus);
-   if(preview)body.append(el('p',{class:'stage-rich-note',text:
-    'Предварительный прирост по OS: '+preview.base+' + '+preview.increment+' = '+preview.total+
-    '. Формула округления требует проверки по текущему серверу.'}));
+  if(canRefine){
+   body.append(el('button',{type:'button',class:'stage-rich-switch',
+    text:'Тип и стихия: '+globalThis.PandoraEnchantModel.label(gems),
+    onclick:()=>api.changeMode('gems')}));
+   const grade=Number(refinement)||0;
+   if(record.slot==='weapon'&&grade>0){
+    const preview=globalThis.PandoraEnchantModel.weaponPreview(record.W,grade,gameTables?.weaponPlus);
+    if(preview)body.append(el('p',{class:'stage-rich-note',text:
+     'Предварительный прирост по OS: '+preview.base+' + '+preview.increment+' = '+preview.total+
+     '. Формула округления требует проверки по текущему серверу.'}));
+   }
+   body.append(el('p',{class:'stage-rich-note',text:'Стихия и тип сохраняются в билде. Итоговые бонусы пока не подтверждены.'}));
   }
-  body.append(el('p',{class:'stage-rich-note',text:'Стихия и физический/магический тип сохраняются в билде; итоговые игровые бонусы пока не подтверждены.'}));
  }else if(mode==='gems'){
-  let chosenType=root.PandoraEnchantModel.normalize(gems)?.type||'physical';
-  let chosenElement=root.PandoraEnchantModel.normalize(gems)?.element||'fire';
+  let chosenType=globalThis.PandoraEnchantModel.normalize(gems)?.type||'physical';
+  let chosenElement=globalThis.PandoraEnchantModel.normalize(gems)?.element||'fire';
   const group=(title,entries,current,select)=>{
    const field=el('fieldset',{class:'stage-enchant-fieldset'});
    field.append(el('legend',{text:title}));
@@ -119,8 +127,8 @@ function render(root,api){
   };
   body.append(el('h4',{text:'Самоцвет улучшения'}),
    el('p',{class:'stage-rich-note',text:'Выбери физический/магический тип и стихию. Элемент не является отдельным предметом инвентаря.'}),
-   group('Тип',root.PandoraEnchantModel.types,()=>chosenType,v=>chosenType=v),
-   group('Стихия',root.PandoraEnchantModel.elements,()=>chosenElement,v=>chosenElement=v),
+   group('Тип',globalThis.PandoraEnchantModel.types,()=>chosenType,v=>chosenType=v),
+   group('Стихия',globalThis.PandoraEnchantModel.elements,()=>chosenElement,v=>chosenElement=v),
    el('button',{type:'button',class:'stage-rich-switch',text:'✓ Применить',onclick:()=>api.assignGem({type:chosenType,element:chosenElement})}),
    el('button',{type:'button',text:'Сбросить',onclick:()=>api.assignGem(null)}));
  }else if(mode==='souls'){

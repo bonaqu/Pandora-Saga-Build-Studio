@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.37",
-  "notes": "Audit original icon WebP integrity and canonical manifest without downloading or inventing assets"
+  "release": "2026.10.30.38",
+  "notes": "Fix global gemstone model shadowing, in-portrait refine restrictions, retained scroll and non-wiki refresh navigation; unify scrollbars"
 }
