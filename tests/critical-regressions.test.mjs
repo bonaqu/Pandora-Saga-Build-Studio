@@ -16,7 +16,9 @@ test('no refinement for jewelry and cloak in model and action handlers',()=>{
 test('reload only restores wiki when active tab is wiki and hash is explicit',()=>{
  const app=get('app.js');
  assert.match(app,/history\.replaceState\(history.state/);
- assert.match(app,/if\(bootView.tab&&bootView.tab!=='wiki'\)return/);
+ assert.match(app,/navigationType==='reload'/);
+ assert.match(app,/bootView.tab==='wiki'&&bootView.open===false/);
+ assert.match(app,/if\(activeTab==='wiki'&&location.hash.startsWith\('#wiki\/'\)\)/);
 });
 test('repainting refinement preserves in-panel scroll position',()=>{
  const app=get('app.js');

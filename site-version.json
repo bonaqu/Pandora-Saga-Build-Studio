@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.42",
-  "notes": "Source-linked partial elemental resist, accuracy, dodge and crit bonuses for equipped gear and Souls, explicitly separated from full combat totals"
+  "release": "2026.10.30.43",
+  "notes": "Fix stale deep link when wiki is explicitly closed and preserve direct link navigation; add real in-portrait handler test and GitHub implementation roadmap"
 }

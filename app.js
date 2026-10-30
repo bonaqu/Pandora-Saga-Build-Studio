@@ -198,6 +198,9 @@ function closeWorkbench(){
  document.body.classList.remove('studio-workbench-open');
  const old=workbenchReturnFocus;workbenchReturnFocus=null;
  if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
+ // Closing the encyclopedia must clear its deep link as well, not resurrect the dock on reload.
+ if(activeTab==='wiki'&&location.hash.startsWith('#wiki/'))
+  history.replaceState(history.state,'',location.pathname+location.search);
  saveView();
 }
 function changeTab(tab){
@@ -1625,8 +1628,10 @@ window.PandoraStudioAdminActive=()=>Boolean(adminToken);
 document.addEventListener('pandora:before-update',()=>{persist();persistBuilds()});
 // Restore deep links on refresh without requiring credentials or losing the current build.
 function restoreWikiHash(){
- // Restore an actual deep link, never a stale encyclopedia URL from a different open tab.
- if(bootView.tab&&bootView.tab!=='wiki')return;
+ // On F5 respect the last *visible* view; on explicit navigation honor an incoming wiki deep link.
+ const navigationType=performance.getEntriesByType?.('navigation')?.[0]?.type;
+ if(navigationType==='reload'&&
+    (bootView.tab&&bootView.tab!=='wiki'||bootView.tab==='wiki'&&bootView.open===false))return;
  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})(?:\/([0-9]{1,15}))?$/);
  if(!match)return;
  wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};

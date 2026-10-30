@@ -6,7 +6,7 @@ Independent, visual, vintage-inspired Pandora Saga build planner. Static site in
 
 ## Status
 
-**Interactive foundation, not a finished game calculator.** Six race portraits (from user-provided Races.zip), 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local builds, JSON import/export, and static client logic. Current official Pandora Saga OS game tables are shipped under `data/os/` (snapshot of 2026-10-30: 28 classes, 569 skills, 1,116 items, 112 Souls). The frontend first tries the live official `/gamedata` feed, then the optional Cloudflare Worker proxy, then the bundled snapshot. Only if all these fail does it use historic Legacy JSON. Correctness for current Pandora Saga OS is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
+**Interactive foundation, not a finished game calculator.** Eight portraits for six races (from user-provided Races.zip), 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local builds, JSON import/export, and static client logic. Current official Pandora Saga OS game tables are shipped under `data/os/` (snapshot of 2026-10-30: 28 classes, 569 skills, 1,116 items, 112 Souls). The frontend first tries the live official `/gamedata` feed, then the optional Cloudflare Worker proxy, then the bundled snapshot. Only if all these fail does it use historic Legacy JSON. Correctness for current Pandora Saga OS is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
 
 ## Publish on GitHub Pages (no user-defined GitHub Actions)
 
@@ -40,6 +40,13 @@ wrangler deploy
 First successful login: owner-only entry → `administrator` → new password (minimum 12 chars) + one-time setup token. Subsequent logins use only the password. Server stores only a unique-salt PBKDF2 password hash, short-lived hashed bearer sessions and restricted editable text overrides in D1. Session token stays in browser memory (not in public source or localStorage). Editing: toggle edit mode; double-click outlined text; save the change through the authenticated Worker.
 
 **Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
+
+## 2026-10-30 — выпуск 2026.10.30.43: восстановление вкладки и закрытого окна после F5
+
+- Исправлен дополнительный сценарий: даже когда пользователь **закрыл** открытую энциклопедию, старая `#wiki/...` ссылка не должна вновь открыть её при F5. При закрытии модального окна фрагмент удаляется; при перезагрузке учитывается состояние `open=false`.
+- При этом настоящее прямое открытие ссылки на конкретную запись вики в новой навигации по-прежнему допускается.
+- Добавлен интеграционный тест реальных обработчиков модульной карточки: выбор +8, души, переключение физического/магического и радуги, а также отсутствие заточки у колец, пояса, амулета, серёг и плаща.
+- Новая карта задач и матрица проверок опубликованы в [ROADMAP.md](ROADMAP.md); задачи [#1–#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues) обновлены.
 
 ## 2026-10-30 — выпуск 2026.10.30.42: частичные бонусы сопротивлений и боя
 
