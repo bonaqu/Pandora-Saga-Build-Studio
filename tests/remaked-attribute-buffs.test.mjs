@@ -46,10 +46,11 @@ test('guild and potion parameters reject out-of-range values',()=>{
  assert.equal(make({proelium:true,proeliumPotency:-5}),null);
 });
 test('Origin contains optional nested controls without adding visible top-level clutter',()=>{
- for(const id of ['originGuildAll','originHonorCuriosity','originProelium','originProeliumPotency'])
+ for(const id of ['originGuildAll','originHonorTitle','originProelium','originProeliumPotency'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(html,/<details class="origin-attribute-buffs">/);
  assert.match(source,/attributeBuffs:state\.attributeBuffs\|\|\{\}/);
  assert.match(source,/safe\.attributeBuffs\.honorCuriosity=rawAttributes\.honorCuriosity===true/);
  assert.match(source,/safe\.attributeBuffs\.proelium=rawAttributes\.proelium===true/);
 });
+
