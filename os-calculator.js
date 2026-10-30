@@ -15,9 +15,17 @@ function effectiveAbility(basic,flat=0,percent=0){
  if(![basic,flat,percent].every(Number.isFinite))return null;
  return Math.max(1,basic+flat+Math.floor(basic*percent/100));
 }
+const bonusByEffect=Object.freeze({
+ EP_FIRE_RESISTANCE_CONST:'fire',EP_COLD_RESISTANCE_CONST:'ice',
+ EP_LIGHTNING_RESISTANCE_CONST:'lightning',EP_POISON_RESISTANCE_CONST:'poison',
+ EP_CHARM_RESISTANCE_CONST:'charm',EP_HOLY_RESISTANCE_CONST:'light',
+ EP_DARK_RESISTANCE_CONST:'dark',EP_MAGIC_RESISTANCE_CONST:'magic',
+ EP_TOHIT_CONST:'accuracy',EP_AVOIDANCE_CONST:'dodge',
+ EP_CRITICALRATE_CONST:'criticalChance'
+});
 function gatherEffects(records=[]){
  const flat=Object.fromEntries(keys.map(k=>[k,0]));
- const health={hp:0,mp:0},ignored=new Set(),trace=[];
+ const health={hp:0,mp:0},bonuses={},ignored=new Set(),trace=[];
  for(const [source,record,grade] of records){
   for(const eff of record?.effects||[]){
    if(Number.isFinite(eff.min)&&grade<eff.min)continue;
@@ -27,11 +35,13 @@ function gatherEffects(records=[]){
    if(key)flat[key]+=value;
    else if(eff.func==='EP_MAXLIFE_CONST')health.hp+=value;
    else if(eff.func==='EP_MAXMANA_CONST')health.mp+=value;
-   else {ignored.add(eff.func);continue}
+   else if(bonusByEffect[eff.func]){
+    const name=bonusByEffect[eff.func];bonuses[name]=(bonuses[name]||0)+value;
+   }else {ignored.add(eff.func);continue}
    trace.push({source,func:eff.func,value});
   }
  }
- return {flat,health,ignored:[...ignored],trace};
+ return {flat,health,bonuses,ignored:[...ignored],trace};
 }
 function base({classData,raceData,jobData,allocation,level,records=[]}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;

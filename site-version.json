@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.41",
-  "notes": "Match OS public HP/MP half-to-even rounding and apply supported flat item/Soul attribute and vitality modifiers; explicitly exclude remaining effects"
+  "release": "2026.10.30.42",
+  "notes": "Source-linked partial elemental resist, accuracy, dodge and crit bonuses for equipped gear and Souls, explicitly separated from full combat totals"
 }

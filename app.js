@@ -269,7 +269,7 @@ function renderStageAttributes(){
     souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
  });
  window.PandoraStageAttributes.render(root,{
-  page:stageAttributesPage,items,icon:rec=>itemIcon(rec),onClose:()=>{
+  page:stageAttributesPage,items,modifiers:previewBaseStats(),icon:rec=>itemIcon(rec),onClose:()=>{
     stageAttributesPage=null;renderStageAttributes();saveView();
   },onPage:name=>{stageAttributesPage=name;renderStageAttributes();saveView()}
  });

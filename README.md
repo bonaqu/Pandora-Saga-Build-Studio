@@ -39,6 +39,13 @@ First successful login: owner-only entry → `administrator` → new password (m
 
 **Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
 
+## 2026-10-30 — выпуск 2026.10.30.42: частичные бонусы сопротивлений и боя
+
+- Панель «Атрибуты» теперь подсчитывает **только подтверждённые плоские прибавки от надетых вещей и подходящих душ**: огонь, лёд, молния, яд, очарование, свет, тьма, магия; отдельно точность, уклонение, крит.
+- Механики основаны на названиях `EP_*_RESISTANCE_CONST`, `EP_TOHIT_CONST`, `EP_AVOIDANCE_CONST`, `EP_CRITICALRATE_CONST`, сопоставленных в `Pandora-Saga-Simulator-remaked/modern/enhancement-effects.js`. В модели итогов хранится проверяемый след применённых источников.
+- Эти значения **не итоговые**: исходные сопротивления расы/класса, специальные проценты, иммунитеты и баффы не прибавляются без отдельно установленного правила. Не смешиваем их с боевыми параметрами персонажа.
+- Обновлена регрессия выбора профессии: проверяется пошаговая навигация, а не удалённое разветвлённое дерево `<details>`.
+
 ## 2026-10-30 — выпуск 2026.10.30.41: сверка вычислений ОЗ/ОМ с OS
 
 - Исправлено ошибочное округление `Math.round` на `halfToEven` (банковское). Его порядок подтверждён анализом публичного `BuildCalculator-BiybySwQ.js` от 2026-10-11 в `Pandora-Saga-Simulator-remaked/docs/CALCULATION_PARITY_AUDIT_2026-10-11.md`.

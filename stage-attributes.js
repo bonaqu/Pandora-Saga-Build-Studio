@@ -12,7 +12,7 @@ function make(tag,attrs={},children=[]){
  for(const child of children)n.append(typeof child==='string'?document.createTextNode(child):child);
  return n;
 }
-function render(target,{page,items,icon,onPage,onClose}){
+function render(target,{page,items,icon,onPage,onClose,modifiers}){
  target.replaceChildren();
  target.append(make('div',{class:'stage-attribute-head'},[
   make('strong',{text:'Атрибуты персонажа'}),
@@ -55,9 +55,22 @@ function render(target,{page,items,icon,onPage,onClose}){
    }
   }body.append(card);
  }
+ const totals=modifiers?.effects?.bonuses||{};
+ const names={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
+ charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия',
+ accuracy:'Точность',dodge:'Уклонение',criticalChance:'Критический шанс'};
+ const active=Object.entries(totals).filter(([key])=>names[key]&&
+  (page==='defense'? !['accuracy','dodge','criticalChance'].includes(key):
+   page==='attack'?['accuracy','dodge','criticalChance'].includes(key):true));
+ if(active.length){
+  const card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Подтверждённые бонусы снаряжения и душ — не итоговые статы'}));
+  for(const [key,val] of active)card.append(make('p',{text:names[key]+': '+(val>=0?'+':'')+val}));
+  body.prepend(card);
+ }
  body.append(make('p',{class:'stage-attribute-warning',text:
-  'Итоговые HP/MP, сопротивления, криты, баффы и скорость применения умений не вычислены. '+
-  'Достоверность полного расчёта по текущему серверу ещё не подтверждена.'}));
+  'Это частичные бонусы известных EP_* кодов из OS, а не итоговые сопротивления, атака или крит. '+
+  'Базовые значения, процентные эффекты, комплекты, усиления и баффы не включены в эти числа.'}));
  target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render});

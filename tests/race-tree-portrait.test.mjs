@@ -14,9 +14,9 @@ test('portrait carousel presents eight independent race-appearance options',()=>
 test('class tree reads real OS parent relations',()=>{
  const app=get('app.js'),classes=JSON.parse(get('data/os/classes.json'));
  assert.match(app,/catalog\.classes\?\.\[key\]\?\.parent/);
- assert.match(app,/class-tree-node/);
- assert.match(app,/open:isExpanded\?'':null/);
- assert.match(app,/expandedClasses:\[\.\.\.expandedClassKeys\]/);
+ assert.match(app,/function renderJobs\(/);assert.match(app,/class-wizard-choice/);
+ assert.match(app,/jobPathKey=parentOf\(jobPathKey\)/);
+ assert.match(app,/jobPathKey/);
  assert.deepEqual(Object.values(classes).filter(c=>c.parent==null).map(c=>c.id).sort(),['ACOLYTE','MAGE','SCOUT','WARRIOR']);
  assert.equal(Object.keys(classes).length,28);
 });
