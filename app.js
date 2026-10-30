@@ -1269,62 +1269,168 @@ function restoreLoadedBuildUI(){
  selectedSkill=null;inlineBranchId=null;selectedSlot=0;selectedSocket=0;
  stageSlotPickerOpen=false;stageSlotQuery='';stageSlotShown=48;
 }
-function renderBuilds(root){const toolbar=h('div');toolbar.append(h('button',{class:'button-action primary',text:'✧ Сохранить текущий билд',onclick:()=>saveBuild()}),h('button',{class:'button-action',text:'⇩ Экспорт JSON',onclick:exportBuild}),h('button',{class:'button-action',text:'⇧ Импорт JSON',onclick:importBuild}));root.append(toolbar,h('p',{class:'muted',text:'Билды хранятся локально в этом браузере. Сравнение показывает изменения выбора, а не вымышленные боевые результаты.'}));const grid=h('div',{class:'build-grid'});builds.forEach(b=>{const box=h('div',{class:'build-card'}),check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});check.checked=compareIds.includes(b.id);check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};box.append(h('h3',{text:b.name}),h('p',{text:`${races[b.data.race]?.[0]||'?'} · ${jobs[b.data.job]||'?'} · Lv ${b.data.level}`}),h('label',{},[check,' Сравнить']),h('button',{class:'button-action',text:'Открыть',onclick:()=>{state=structuredClone(b.data);restoreLoadedBuildUI();persist();render();changeTab('character')}}),h('button',{class:'button-action',text:'Удалить',onclick:()=>{builds=builds.filter(x=>x.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();renderDetails()}}));grid.append(box)});root.append(grid);if(compareIds.length===2){const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));if(a&&b){const results=compareSnapshots(a.data,b.data);root.append(h('h3',{text:`Сравнение: ${a.name} / ${b.name}`}),h('p',{class:'muted',text:results.join(' · ')||'Выборы совпадают'}))}}}
+function renderBuilds(root){
+ const toolbar=h('div',{class:'build-toolbar'});
+ toolbar.append(h('button',{class:'button-action primary',text:'✧ Сохранить текущий билд',
+  onclick:()=>saveBuild()}),
+  h('button',{class:'button-action',text:'🔗 Поделиться текущим',
+   onclick:()=>createShared('build',state)}),
+  h('button',{class:'button-action',text:'🔗 Поделиться всей библиотекой',
+   disabled:!builds.length,onclick:()=>createShared('library',
+    builds.map(b=>({name:b.name,data:b.data})))}));
+ root.append(toolbar,h('p',{class:'muted',
+  text:'Черновик и сохранённые билды хранятся локально в этом браузере. Ссылка на общий билд публикует снимок, но не меняет ваши локальные сохранения.'}));
+ const grid=h('div',{class:'build-grid'});
+ for(const b of builds){
+  const box=h('div',{class:'build-card'});
+  const check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});
+  check.checked=compareIds.includes(b.id);
+  check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};
+  box.append(h('h3',{text:b.name}),h('p',{
+   text:(races[b.data?.race]?.[0]||'?')+' · '+(jobs[b.data?.job]||'?')+' · ур. '+(b.data?.level||'?')}),
+   h('label',{},[check,' Сравнить']),
+   h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
+    state=sanitizeSharedState(b.data);restoreLoadedBuildUI();persist();render();changeTab('character');
+   }}),
+   h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared('build',b.data)}),
+   h('button',{class:'button-action',text:'Удалить',onclick:()=>{
+    if(!confirm('Удалить сохранённый билд «'+b.name+'»?'))return;
+    builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();renderDetails();
+   }}));
+  grid.append(box);
+ }
+ root.append(grid);
+ if(!builds.length)root.append(h('p',{class:'muted',text:'Сохранённых билдов пока нет.'}));
+ if(compareIds.length===2){
+  const [a,b]=compareIds.map(id=>builds.find(v=>v.id===id));
+  if(a&&b)root.append(h('h3',{text:'Сравнение: '+a.name+' / '+b.name}),
+   h('p',{class:'muted',text:compareSnapshots(a.data,b.data).join(' · ')||'Выборы совпадают'}));
+ }
+}
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
-function saveBuild(){const name=prompt('Название билда',state.name||'Новый герой');if(!name)return;builds.unshift({id:newId(),name:name.slice(0,70),data:structuredClone(state),at:Date.now()});persistBuilds();renderDetails()}
-function exportBuild(){const data=JSON.stringify({schema:1,app:'Pandora Saga Build Studio',data:state},null,2);const blob=new Blob([data],{type:'application/json'}),url=URL.createObjectURL(blob);const a=h('a',{href:url,download:'pandora-build.json'});document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),2000)}
-function importBuild(){
- const input=h('input',{type:'file',accept:'.json,application/json',onchange:async()=>{
+function saveBuild(){
+ const name=prompt('Название сохраняемого билда',state.name||'Новый герой');
+ if(name===null||!name.trim())return false;
+ const entry={id:newId(),name:name.trim().slice(0,70),data:structuredClone(state),at:Date.now()};
+ builds.unshift(entry);
+ try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}
+ catch(error){builds.shift();alert('Не удалось сохранить билд: память браузера заполнена или запрещена. '+error.message);return false}
+ if(activeTab==='builds')renderDetails();
+ return true;
+}
+function sanitizeSharedState(original){
+ if(!original||typeof original!=='object'||Array.isArray(original)||
+   !Number.isInteger(original.race)||original.race<0||original.race>=races.length||
+   !Number.isInteger(original.job)||original.job<0||original.job>=jobKeys.length||
+   !Number.isInteger(original.level)||original.level<1||original.level>55)
+  throw Error('Ссылка содержит некорректные параметры персонажа');
+ const safe=fresh();
+ safe.race=original.race;safe.gender=original.gender===1?1:0;
+ safe.job=original.job;safe.level=original.level;
+ if(typeof original.name==='string')safe.name=original.name.slice(0,70);
+ if(typeof original.branch==='string'&&branches.some(b=>b.id===original.branch))safe.branch=original.branch;
+ for(const field of ['points','stats']){
+  if(original[field]&&typeof original[field]==='object'&&!Array.isArray(original[field])){
+   const allow=new Set(field==='points'?branches.map(b=>b.id):STATS);
+   for(const [key,value] of Object.entries(original[field]))
+    if(allow.has(key)&&Number.isInteger(value)&&value>=0&&value<=1000)safe[field][key]=value;
+  }
+ }
+ const item=v=>{
+  if(!v||typeof v!=='object'||!['string','number'].includes(typeof v.id)||String(v.id).length>24)return null;
+  return {id:v.id,name:typeof v.name==='string'?v.name.slice(0,120):String(v.id),
+   icon:typeof v.icon==='string'&&/^[A-Za-z0-9_-]{1,80}$/.test(v.icon)?v.icon:null};
+ };
+ for(let slot=0;slot<slots.length;slot++){
+  const eq=item(original.equipment?.[slot]);if(eq)safe.equipment[slot]=eq;
+  if(original.souls?.[slot]){
+   const souls=window.PandoraEquipmentPlan.asSocketArray(original.souls[slot]);
+   const copy=souls.slice(0,32).map(item);
+   if(copy.some(Boolean))safe.souls[slot]=copy;
+  }
+ }
+ for(const [key,value] of Object.entries(original.refinements||{}))
+  if(/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(key)&&Number.isInteger(value)&&value>=0&&value<=10)
+   safe.refinements[key]=value;
+ for(const [key,value] of Object.entries(original.gems||{}))
+  if(/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(key)){
+   const gem=window.PandoraEnchantModel.normalize(value);if(gem)safe.gems[key]=gem;
+  }
+ for(const key of ['guild','nation','rank','about']){
+  const v=original.profile?.[key];
+  if(typeof v==='string')safe.profile[key]=v.slice(0,key==='about'?500:80);
+ }
+ if(Number.isInteger(original.racialPassiveId)&&original.racialPassiveId>=0&&original.racialPassiveId<1000000)
+  safe.racialPassiveId=original.racialPassiveId;
+ return safe;
+}
+async function createShared(type,data){
+ const content=type==='build'?sanitizeSharedState(data):
+  data.map(row=>({name:String(row.name||'Билд').slice(0,70),data:sanitizeSharedState(row.data)}));
+ if(type==='library'&&(content.length===0||content.length>30)){
+  alert('Для одной ссылки доступно от 1 до 30 билдов. Библиотека не изменена.');return;
+ }
  try{
-  const file=input.files?.[0];if(!file||file.size>1024*1024)throw Error('Файл не выбран или превышает 1 МБ');
-  const raw=JSON.parse(await file.text()),original=raw?.data;
-  if(raw?.schema!==1||!original||!Number.isInteger(original.race)||original.race<0||original.race>=races.length||
-     !Number.isInteger(original.job)||original.job<0||original.job>=jobKeys.length||
-     !Number.isInteger(original.level)||original.level<1||original.level>55)throw Error('Неверные основные параметры билда');
-  const result=fresh();result.race=original.race;result.job=original.job;result.level=original.level;result.gender=original.gender===1?1:0;
-  if(typeof original.name==='string')result.name=original.name.slice(0,70);
-  const validBranches=new Set(branches.map(x=>String(x.id)));
-  if(original.branch!=null&&validBranches.has(String(original.branch)))result.branch=original.branch;
-  if(original.points&&typeof original.points==='object'&&!Array.isArray(original.points))
-   for(const[k,v]of Object.entries(original.points))if(validBranches.has(k)&&Number.isInteger(v)&&v>=0&&v<=1000)result.points[k]=v;
-  if(original.stats&&typeof original.stats==='object'&&!Array.isArray(original.stats))
-   for(const s of STATS)if(Number.isInteger(original.stats[s])&&original.stats[s]>=0&&original.stats[s]<=1000)result.stats[s]=original.stats[s];
-  const safeItem=v=>v&&(['string','number'].includes(typeof v.id))&&String(v.id).length<=24?
-   {id:v.id,name:typeof v.name==='string'?v.name.slice(0,120):String(v.id),icon:typeof v.icon==='string'&&/^[A-Za-z0-9_-]{1,80}$/.test(v.icon)?v.icon:null}:null;
-  for(const type of ['equipment','souls']){
-   if(!original[type]||typeof original[type]!=='object'||Array.isArray(original[type]))continue;
-   for(let i=0;i<slots.length;i++){
-    const value=original[type][i];
-    if(type==='equipment'){const rec=safeItem(value);if(rec)result.equipment[i]=rec}
-    else{
-     const entries=window.PandoraEquipmentPlan.asSocketArray(value).slice(0,32).map(safeItem);
-     if(entries.some(Boolean))result.souls[i]=entries;
-    }
-   }
-  }
-  if(original.refinements&&typeof original.refinements==='object'&&!Array.isArray(original.refinements)){
-   for(const[k,v]of Object.entries(original.refinements))
-    if(/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(k)&&Number.isInteger(v)&&v>=0&&v<=99)result.refinements[k]=v;
-  }
-  if(original.gems&&typeof original.gems==='object'&&!Array.isArray(original.gems)){
-   for(const [key,value] of Object.entries(original.gems)){
-    if(!/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(key))continue;
-    const selected=window.PandoraEnchantModel.normalize(value);
-    if(selected)result.gems[key]=selected;
-    else if(value&&Number.isInteger(value.id)&&typeof value.name==='string')
-     result.gems[key]={id:value.id,name:value.name.slice(0,120)};
-   }
-  }
-  if(original.profile&&typeof original.profile==='object'&&!Array.isArray(original.profile)){
-   for(const field of ['guild','nation','rank','about']){
-    const raw=original.profile[field];
-    if(typeof raw==='string')result.profile[field]=raw.slice(0,field==='about'?500:80);
-   }
-  }
-  if(window.PandoraGameNavigation.selectionValid(catalog.racialPassives,result.race,original.racialPassiveId))result.racialPassiveId=Number(original.racialPassiveId);
-  state=result;restoreLoadedBuildUI();persist();render();alert('Билд импортирован. Неизвестные ограничения требуют проверки игровым движком.');
- }catch(e){alert('Импорт не выполнен: '+e.message)}
- }});input.click();
+  const response=await apiRequest('/api/shared',{schema:1,type,data:content},'');
+  if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Неожиданный ответ сервера');
+  const url=location.origin+location.pathname+'#b/'+response.id;
+  const message=h('div',{class:'share-result'});
+  const field=h('input',{readOnly:true,value:url,'aria-label':'Ссылка на билд'});
+  const copy=h('button',{type:'button',class:'button-action primary',text:'Скопировать ссылку',
+   onclick:async()=>{
+    try{await navigator.clipboard.writeText(url);copy.textContent='✓ Скопировано'}
+    catch{field.focus();field.select();copy.textContent='Выдели ссылку и скопируй Ctrl+C'}
+   }});
+  message.append(h('p',{text:type==='library'?'Ссылка на библиотеку создана.':'Ссылка на билд создана.'}),
+   field,copy,h('p',{class:'muted',text:'Это публичный неизменяемый снимок. У другого пользователя появится подтверждение перед заменой активного билда.'}));
+  modal('Поделиться',message);
+ }catch(error){
+  alert('Не удалось создать ссылку. Нужны опубликованный Worker, миграция D1 и доступный сервер. '+error.message);
+ }
+}
+function openSharedSnapshot(share){
+ if(!share||share.schema!==1||!['build','library'].includes(share.type))throw Error('Неподдерживаемая ссылка');
+ const clear=()=>{if(location.hash.startsWith('#b/'))history.replaceState(history.state,'',location.pathname+location.search)};
+ if(share.type==='library'){
+  if(!Array.isArray(share.data)||!share.data.length||share.data.length>30)throw Error('Неверная библиотека');
+  const added=share.data.map(v=>({id:newId(),name:String(v.name||'Билд').slice(0,70),
+   data:sanitizeSharedState(v.data),at:Date.now()}));
+  const view=h('div');
+  view.append(h('p',{text:'По ссылке найдено '+added.length+' сохранённых билдов. Текущие билды и активный черновик останутся без изменений.'}),
+   h('button',{class:'button-action primary',text:'Добавить в мою библиотеку',onclick:()=>{
+    const next=[...added,...builds];
+    try{localStorage.setItem('ps-build-library.v1',JSON.stringify(next))}
+    catch(e){alert('Не удалось сохранить библиотеку: '+e.message);return}
+    builds=next;$('modalRoot').hidden=true;clear();changeTab('builds');
+   }}));
+  modal('Импорт общей библиотеки',view);return;
+ }
+ const incoming=sanitizeSharedState(share.data);
+ const view=h('div');
+ view.append(h('p',{text:'Открыть чужой билд «'+incoming.name+'»? Несохранённые изменения текущего персонажа будут заменены.'}),
+  h('p',{class:'muted',text:'Сохранённые в «Мои билды» записи при этом не удаляются.'}));
+ const apply=()=>{
+  state=incoming;restoreLoadedBuildUI();persist();
+  $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
+  clear();render();changeTab('character');
+ };
+ view.append(h('button',{class:'button-action primary',text:'Сохранить текущий и открыть',
+   onclick:()=>{if(saveBuild())apply()}}),
+  h('button',{class:'button-action',text:'Открыть без сохранения',onclick:apply}),
+  h('button',{class:'button-action',text:'Отмена',onclick:()=>{
+   $('modalRoot').hidden=true;clear();
+  }}));
+ modal('Открыть билд по ссылке?',view);
+}
+async function restoreSharedHash(){
+ const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
+ if(!match)return;
+ try{
+  const incoming=await apiRequest('/api/shared/'+match[1],null,'');
+  openSharedSnapshot(incoming.share);
+ }catch(error){
+  alert('Не удалось открыть общий билд: '+error.message);
+ }
 }
 function modal(title,content){const root=$('modalRoot');root.replaceChildren();root.hidden=false;const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});box.append(h('button',{class:'button-action close',text:'× Закрыть',onclick:()=>{root.hidden=true;root.replaceChildren()}}),h('h2',{text:title}),content);root.append(box);root.onclick=e=>{if(e.target===root){root.hidden=true;root.replaceChildren()}};return box}
 async function apiRequest(path,body,token=adminToken) {
