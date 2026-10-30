@@ -8,6 +8,8 @@ const host={};
 Function('window',load('equipment-plan.js'))(host);
 Function('window',load('enchant-model.js'))(host);
 globalThis.PandoraEquipmentPlan=host.PandoraEquipmentPlan;
+Function('window',load('item-presentation.js'))(host);
+globalThis.PandoraItemPresentation=host.PandoraItemPresentation;
 globalThis.PandoraEnchantModel=host.PandoraEnchantModel;
 
 class FakeElement{
@@ -44,23 +46,19 @@ test('equipped weapon shows working refinement, gem type and Soul socket handler
  assert.ok(byText(state.box,'+8'));
  byText(state.box,'+8').events.click();
  assert.deepEqual(state.calls.grade,[8]);
- assert.ok(byText(state.box,'Самоцветы'));
- byText(state.box,'Самоцветы').events.click();
- assert.deepEqual(state.calls.mode,['gems']);
+ assert.ok(byText(state.box,'Физический'));
+ byText(state.box,'Магический').events.click();
+ assert.deepEqual(state.calls.gem,[{type:'magical',element:'fire'}]);
  assert.ok(walk(state.box).some(x=>x.textContent==='Заточка: +0…+10'));
- const socket=walk(state.box).find(x=>x.attributes['aria-label']?.startsWith('Гнездо 1'));
- assert.ok(socket);
- socket.events.click();
- assert.deepEqual(state.calls.socket,[0]);
+ byText(state.box,'Души').events.click();
+ assert.deepEqual(state.calls.mode,['souls']);
 });
 
 test('gemstone editor chooses magic and rainbow rather than an inventory rune ID',()=>{
- const state=makeApi('weapon','gems');
+ const state=makeApi('weapon','details');
  stage.PandoraStageItemUI.render(state.box,state.api);
- byText(state.box,'Магический').events.click();
  byText(state.box,'Радуга').events.click();
- byText(state.box,'✓ Применить').events.click();
- assert.deepEqual(state.calls.gem,[{type:'magical',element:'rainbow'}]);
+ assert.deepEqual(state.calls.gem,[{type:'physical',element:'rainbow'}]);
 });
 
 test('jewelry and cloak have no refinement or gemstone editor',()=>{
@@ -69,9 +67,24 @@ test('jewelry and cloak have no refinement or gemstone editor',()=>{
   stage.PandoraStageItemUI.render(state.box,state.api);
   assert.equal(byText(state.box,'+8'),undefined,slot);
   assert.equal(byText(state.box,'Самоцветы'),undefined,slot);
-  assert.ok(byText(state.box,'Души'),slot);
+  assert.equal(byText(state.box,'Души'),undefined,slot);
   const gems=makeApi(slot,'gems');
   stage.PandoraStageItemUI.render(gems.box,gems.api);
   assert.deepEqual(gems.calls.mode,['details'],slot);
  }
+});
+
+test('belt sockets are available; empty belt never invents a Soul tab',()=>{
+ const sample=makeApi('belt');
+ sample.api.record.slot='belt';stage.PandoraStageItemUI.render(sample.box,sample.api);
+ assert.ok(byText(sample.box,'Души'));
+ const empty=makeApi('belt');empty.api.record.soulslot=0;
+ stage.PandoraStageItemUI.render(empty.box,empty.api);
+ assert.equal(byText(empty.box,'Души'),undefined);
+});
+test('Soul socket controls are in Souls only, not under properties',()=>{
+ const props=makeApi('weapon','details');stage.PandoraStageItemUI.render(props.box,props.api);
+ assert.equal(walk(props.box).find(x=>x.attributes['aria-label']?.startsWith('Гнездо 1')),undefined);
+ const souls=makeApi('weapon','souls');stage.PandoraStageItemUI.render(souls.box,souls.api);
+ assert.ok(walk(souls.box).find(x=>x.attributes['aria-label']?.startsWith('Гнездо 1')));
 });

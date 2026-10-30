@@ -1,41 +1,43 @@
 (function(root){
 'use strict';
 const el=(tag,attrs={},children=[])=>{
- const n=document.createElement(tag);
+ const e=document.createElement(tag);
  for(const [k,v] of Object.entries(attrs)){
-  if(k==='class')n.className=v;else if(k==='text')n.textContent=v;
-  else if(k.startsWith('on'))n.addEventListener(k.slice(2),v);
-  else if(v!==null&&v!==undefined)n.setAttribute(k,String(v));
+  if(k==='class')e.className=v;else if(k==='text')e.textContent=v;
+  else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);
+  else if(v!==null&&v!==undefined)e.setAttribute(k,String(v));
  }
- for(const x of children)n.append(typeof x==='string'?document.createTextNode(x):x);
- return n;
+ for(const child of children)e.append(typeof child==='string'?document.createTextNode(child):child);
+ return e;
 };
 function summary(record,icon,kind='item'){
- const wrap=el('div',{class:'stage-rich-summary'});
  if(!record)return el('p',{class:'muted',text:'Данные о предмете пока не загружены'});
- const head=el('div',{class:'stage-rich-head'});
+ const presenter=globalThis.PandoraItemPresentation;
+ const wrap=el('div',{class:'stage-rich-summary'}),head=el('div',{class:'stage-rich-head'});
  const src=icon(record,kind);
  if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));head.append(img)}
  head.append(el('strong',{text:record.name||String(record.id),
   ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));wrap.append(head);
+ const rows=kind==='soul'?[['ID',record.id],['Подходящие слоты',(record.slots||[]).join(', ')]]:
+ [['ID',record.id],['Тип',presenter?.kind(record)||'Предмет'],['Уровень',record.level],
+ ['Атака',record.W],['Защита',record.AC],['Гнёзда',record.soulslot],
+ ['Скорость',record.atkspeed],['Дальность',record.range]];
  const dl=el('dl',{class:'stage-rich-fields'});
- const rows=kind==='soul'?[['ID',record.id],['Слоты',record.slots?.join(', ')]]:
- [['ID',record.id],['Тип',record.kind],['Уровень',record.level],['Атака',record.W],['Защита',record.AC],['Гнёзда',record.soulslot],['Скорость',record.atkspeed],['Дальность',record.range]];
  for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){
   const dd=el('dd',{text:String(value)});
   if(kind==='item'&&key==='Гнёзда')dd.dataset.editKey='itemslots.'+record.id;
   dl.append(el('dt',{text:key}),dd);
  }
  wrap.append(dl);
- if(record.desc){const desc=el('p',{class:'stage-rich-desc',text:record.desc});
+ if(record.desc){const desc=el('p',{class:'stage-rich-desc',
+  text:presenter?.description(record.desc)||record.desc});
   if(kind==='item')desc.dataset.editKey='itemdesc.'+record.id;
   wrap.append(desc);
  }
  return wrap;
 }
 function attachPreview(target,record,icon,kind='item'){
- if(!record)return;
- let tip=null;
+ if(!record)return;let tip=null;
  const remove=()=>{tip?.remove();tip=null};
  target.addEventListener('mouseenter',()=>{
   remove();tip=el('aside',{class:'stage-hover-preview'},[summary(record,icon,kind)]);
@@ -49,114 +51,85 @@ function attachPreview(target,record,icon,kind='item'){
  target.addEventListener('click',remove);
 }
 function render(root,api){
- const {record,item,slot,slotIndex,mode,icons,refinement,souls,gems,gameTables}=api;
- const canRefine=globalThis.PandoraEquipmentPlan.canRefine(slot);
- if(!canRefine&&mode==='gems'){api.changeMode('details');return}
+ const {record,slot,mode,icons,refinement,souls,gems,gameTables}=api;
+ const plan=globalThis.PandoraEquipmentPlan;
+ const refinable=plan.canRefine(slot),hasSouls=plan.canSocket(slot,record);
+ const cap=hasSouls?plan.socketCapacity(record):0;
+ if(mode==='gems'||mode==='souls'&&!hasSouls){api.changeMode('details');return}
  const head=el('div',{class:'stage-picker-head'},[
-  el('strong',{text:record?.name||'Слот: '+slot}),el('button',{type:'button',text:'✕',onclick:api.close})
- ]);
- root.append(head);
+  el('strong',{text:record?.name||'Слот: '+slot}),
+  el('button',{type:'button',text:'✕',onclick:api.close,'aria-label':'Закрыть настройку'})
+ ]);root.append(head);
  const tabs=el('nav',{class:'stage-rich-tabs',role:'group','aria-label':'Настройка предмета'});
- for(const [key,text] of [['choose','Выбор'],['details','Свойства'],['souls','Души'],['gems','Самоцветы']]){
-  if(key==='gems'&&!canRefine)continue;
-  const b=el('button',{type:'button',text,class:mode===key?'chosen':'',
-   'aria-pressed':String(mode===key),disabled:!record&&key!=='choose',
-   onclick:()=>api.changeMode(key)});
-  tabs.append(b);
- }
+ const sections=[['choose','Выбор'],['details','Свойства']];
+ if(hasSouls)sections.push(['souls','Души']);
+ for(const [key,title]of sections)tabs.append(el('button',{type:'button',text:title,
+  class:mode===key?'chosen':'','aria-pressed':String(mode===key),
+  disabled:!record&&key!=='choose',onclick:()=>api.changeMode(key)}));
  root.append(tabs);
  if(!record){root.append(el('p',{class:'muted',text:'Сначала выбери предмет.'}));return}
  const body=el('div',{class:'stage-rich-body'});root.append(body);
  if(mode==='details'){
   body.append(summary(record,icons));
-  if(canRefine){
-   const grade=Number(refinement)||0,level=el('div',{class:'stage-grade'});
-   for(let i=0;i<=10;i++)level.append(el('button',{type:'button',text:'+'+i,class:i===grade?'chosen':'',
-    'aria-pressed':String(i===grade),onclick:()=>api.updateGrade(i)}));
-   body.append(el('h4',{text:'Заточка: +0…+10'}),level);
+  if(refinable){
+   const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
+   for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
+    class:n===grade?'chosen':'','aria-pressed':String(n===grade),onclick:()=>api.updateGrade(n)}));
+   body.append(el('h4',{text:'Заточка: +0…+10'}),buttons);
    const bonus=gameTables?.weaponPlus?.[String(grade)];
-   body.append(el('p',{class:'stage-rich-note',text:grade===0?'Без улучшения.':
-    slot==='weapon'&&bonus?'Таблица OS: '+bonus.ratio+'% и '+bonus.flat+' ед. (не итоговый урон).':
-    'Уровень заточки сохранён; итоговые характеристики требуют подтверждения.'}));
+   if(slot==='weapon'&&grade>0&&bonus)body.append(el('p',{class:'stage-rich-note',
+    text:'Таблица OS: '+bonus.ratio+'% и '+bonus.flat+' ед. (не итоговый урон).'}));
+   const model=globalThis.PandoraEnchantModel,choice=model.normalize(gems);
+   const group=(label,entries,key)=>{
+    const box=el('fieldset',{class:'stage-enchant-fieldset stage-enchant-inline'}),line=el('div',{class:'stage-enchant-options'});
+    box.append(el('legend',{text:label}));
+    for(const option of entries)line.append(el('button',{type:'button',text:option.ru,
+     class:choice?.[key]===option.id?'chosen':'','aria-pressed':String(choice?.[key]===option.id),
+     onclick:()=>api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
+      element:key==='element'?option.id:(choice?.element||'fire')})}));
+    box.append(line);return box;
+   };
+   body.append(el('h4',{text:'Тип и стихия улучшения'}),
+    el('p',{class:'stage-rich-note',text:'Выбирай здесь — применяется сразу, без подтверждения.'}),
+    group('Тип',model.types,'type'),group('Стихия',model.elements,'element'));
+   if(choice)body.append(el('button',{type:'button',class:'stage-enchant-reset',
+    text:'Сбросить тип и стихию',onclick:()=>api.assignGem(null)}));
   }
-  const cap=record.soulslot==null?null:Number(record.soulslot);
-  body.append(el('h4',{text:'Гнёзда душ: '+(cap===null?'неизвестно':cap)}));
-  if(Number.isInteger(cap)&&cap>0&&cap<=32){
-   const sockets=el('div',{class:'stage-rich-sockets'});
-   for(let i=0;i<cap;i++){
-    const val=souls[i],soul=val&&api.catalog.souls?.[String(val.id)];
-    const b=el('button',{type:'button','aria-label':'Гнездо '+(i+1)+': '+(soul?.name||'пусто'),
-      onclick:()=>api.openSocket(i)});
-    const src=soul&&icons(soul,'soul');
-    if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));b.append(img)}
-    else b.append(el('span',{text:soul?'✦':'+'}));
-    b.append(el('small',{text:soul?.name||String(i+1)}));
-    sockets.append(b);attachPreview(b,soul,icons,'soul');
-   }body.append(sockets);
-  }else if(cap===null)body.append(el('p',{class:'muted',text:'Число гнёзд не подтверждено в каталоге'}));
-  if(canRefine){
-   body.append(el('button',{type:'button',class:'stage-rich-switch',
-    text:'Тип и стихия: '+globalThis.PandoraEnchantModel.label(gems),
-    onclick:()=>api.changeMode('gems')}));
-   const grade=Number(refinement)||0;
-   if(record.slot==='weapon'&&grade>0){
-    const preview=globalThis.PandoraEnchantModel.weaponPreview(record.W,grade,gameTables?.weaponPlus);
-    if(preview)body.append(el('p',{class:'stage-rich-note',text:
-     'Предварительный прирост по OS: '+preview.base+' + '+preview.increment+' = '+preview.total+
-     '. Формула округления требует проверки по текущему серверу.'}));
-   }
-   body.append(el('p',{class:'stage-rich-note',text:'Стихия и тип сохраняются в билде. Итоговые бонусы пока не подтверждены.'}));
-  }
- }else if(mode==='gems'){
-  let chosenType=globalThis.PandoraEnchantModel.normalize(gems)?.type||'physical';
-  let chosenElement=globalThis.PandoraEnchantModel.normalize(gems)?.element||'fire';
-  const group=(title,entries,current,select)=>{
-   const field=el('fieldset',{class:'stage-enchant-fieldset'});
-   field.append(el('legend',{text:title}));
-   const buttons=[],line=el('div',{class:'stage-enchant-options'});
-   for(const entry of entries){
-    const b=el('button',{type:'button',text:entry.ru,class:current()===entry.id?'chosen':'',
-      'aria-pressed':String(current()===entry.id),onclick:()=>{
-       select(entry.id);
-       for(const [button,val] of buttons){const on=current()===val.id;
-        button.classList.toggle('chosen',on);button.setAttribute('aria-pressed',String(on))}
-      }});
-    buttons.push([b,entry]);line.append(b);
-   }
-   field.append(line);return field;
-  };
-  body.append(el('h4',{text:'Самоцвет улучшения'}),
-   el('p',{class:'stage-rich-note',text:'Выбери физический/магический тип и стихию. Элемент не является отдельным предметом инвентаря.'}),
-   group('Тип',globalThis.PandoraEnchantModel.types,()=>chosenType,v=>chosenType=v),
-   group('Стихия',globalThis.PandoraEnchantModel.elements,()=>chosenElement,v=>chosenElement=v),
-   el('button',{type:'button',class:'stage-rich-switch',text:'✓ Применить',onclick:()=>api.assignGem({type:chosenType,element:chosenElement})}),
-   el('button',{type:'button',text:'Сбросить',onclick:()=>api.assignGem(null)}));
+  if(hasSouls)body.append(el('button',{type:'button',class:'stage-rich-switch',
+   text:'✦ Души: '+souls.slice(0,cap).filter(Boolean).length+' / '+cap,
+   onclick:()=>api.changeMode('souls')}));
  }else if(mode==='souls'){
-  if(mode==='souls'&&(!Number.isInteger(Number(record.soulslot))||Number(record.soulslot)<=0||
-    !Number.isInteger(api.selectedSocket)||api.selectedSocket<0||api.selectedSocket>=Number(record.soulslot))){
-   body.append(el('p',{class:'muted',text:'Для этого предмета нет подтверждённого свободного гнезда. Открой гнездо со страницы «Свойства». '}));return;
+  const row=el('div',{class:'stage-rich-sockets'});
+  for(let i=0;i<cap;i++){
+   const value=souls[i],soul=value&&api.catalog.souls?.[String(value.id)],selected=i===api.selectedSocket;
+   const button=el('button',{type:'button',class:selected?'selected':'','aria-pressed':String(selected),
+    'aria-label':'Гнездо '+(i+1)+': '+(soul?.name||'пусто'),onclick:()=>api.openSocket(i)});
+   const src=soul&&icons(soul,'soul');
+   if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
+   else button.append(el('span',{text:soul?'✦':'+'}));
+   button.append(el('small',{text:String(i+1)}));row.append(button);attachPreview(button,soul,icons,'soul');
   }
-  const soulMode=true,query=el('input',{type:'search',placeholder:'Поиск души','aria-label':'Поиск душ'});
+  body.append(el('h4',{text:'Гнёзда душ'}),row);
+  const query=el('input',{type:'search',placeholder:'Поиск совместимой души','aria-label':'Поиск души'});
   const list=el('div',{class:'stage-rich-list'});
-  const reset=el('button',{type:'button',text:soulMode?'✕ Извлечь душу':'✕ Без самоцвета',
-   onclick:()=>soulMode?api.assignSoul(null):api.assignGem(null)});
   const draw=()=>{
    list.replaceChildren();const needle=query.value.trim().toLocaleLowerCase('ru');
-   const entries=Object.values(soulMode?api.catalog.souls||{}:api.catalog.equipment||{})
-    .filter(x=>x.slots?.includes(slot)&&(String(x.name||'')+' '+x.id).toLocaleLowerCase('ru').includes(needle));
-   for(const rec of entries.slice(0,80)){
-    const b=el('button',{type:'button',class:'stage-rich-result',onclick:()=>soulMode?api.assignSoul(rec):api.assignGem(rec)});
-    const src=icons(rec,soulMode?'soul':'item');
-    if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));b.append(img)}
-    b.append(el('span',{text:rec.name||String(rec.id)}));list.append(b);attachPreview(b,rec,icons,soulMode?'soul':'item');
+   const results=Object.values(api.catalog.souls||{}).filter(rec=>plan.validSoul(rec,slot)&&
+    (String(rec.name||'')+' '+rec.id).toLocaleLowerCase('ru').includes(needle));
+   for(const rec of results.slice(0,80)){
+    const button=el('button',{type:'button',class:'stage-rich-result',onclick:()=>api.assignSoul(rec)});
+    const src=icons(rec,'soul');
+    if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
+    button.append(el('span',{text:rec.name||String(rec.id)}));list.append(button);attachPreview(button,rec,icons,'soul');
    }
-   if(entries.length>80)list.append(el('p',{class:'muted',text:'Показано 80 результатов. Уточни поиск.'}));
-   if(!entries.length)list.append(el('p',{class:'muted',text:'Совместимых записей не найдено'}));
+   if(results.length>80)list.append(el('p',{class:'muted',text:'Показано 80 душ. Уточни поиск.'}));
+   if(!results.length)list.append(el('p',{class:'muted',text:'Совместимых душ не найдено'}));
   };
   query.addEventListener('input',draw);
-  body.append(el('p',{class:'stage-rich-note',text:soulMode?
-   'Подходящие души выбираются по типу гнезда из OS.':'Самоцветы RUNEGEM из OS. Совместимость и бонусы пока не подтверждены — только план.'}),
-   query,reset,list);draw();
+  body.append(el('p',{class:'stage-rich-note',text:'Выбери гнездо, затем душу. Сохраняется сразу.'}),
+   query,el('button',{type:'button',class:'stage-enchant-reset',
+    text:'✕ Извлечь душу из выбранного гнезда',onclick:()=>api.assignSoul(null)}),list);
+  draw();
  }
 }
 root.PandoraStageItemUI=Object.freeze({render,summary,attachPreview});
