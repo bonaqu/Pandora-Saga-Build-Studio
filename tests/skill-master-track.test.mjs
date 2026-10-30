@@ -7,7 +7,7 @@ test('mastery, potential and skill icon milestones share a single visual track',
  assert.match(ui,/class:'inline-mastery-track'/);
  assert.match(ui,/class:'inline-mastery-fill'/);
  assert.match(ui,/class:'inline-mastery-green'/);
- assert.match(ui,/track\.append\(bed,gold,green\)/);
+ assert.match(ui,/track\.append\(bed,gold,green,locked\)/);
  assert.match(ui,/track\.append\(rail\)/);
  assert.match(css,/\.inline-mastery-track \.inline-mastery-green/);
 });
@@ -34,6 +34,17 @@ test('blue, amber, green are the SAME track rather than a second green bar',()=>
  assert.match(css,/\.inline-mastery-track \.inline-mastery-green\{[^}]*top:76px;height:6px/);
  assert.match(css,/\.inline-mastery-fill\{[^}]*top:76px;height:6px/);
  assert.doesNotMatch(css,/\.inline-mastery-track \.inline-mastery-green\{[^}]*top:88px/);
- assert.match(ui,/track\.append\(bed,gold,green\)/);
+ assert.match(ui,/track\.append\(bed,gold,green,locked\)/);
  assert.match(ui,/const invested=M\.potential\(state,key\),mastery=M\.trained\(state,key\)/);
+});
+
+test('one class-capped 90-point skill bar shows an unavailable red segment',()=>{
+ const ui=read('hero-path.js'),css=read('style.css'),html=read('index.html'),app=read('app.js');
+ assert.match(ui,/const visualMax=Math\.max\(90,cap,points\)/);
+ assert.match(ui,/class:'inline-mastery-locked'/);
+ assert.match(ui,/track\.append\(bed,gold,green,locked\)/);
+ assert.match(css,/\.inline-mastery-track \.inline-mastery-locked/);
+ assert.match(html,/id="pathResetPoints"/);
+ assert.match(app,/\$\('pathResetPoints'\)\.onclick/);
+ assert.doesNotMatch(ui,/for\(const \[title,step\]of\[\['−5'/);
 });

@@ -675,3 +675,10 @@ a.wiki-link:hover{text-decoration:none}
 .right .game-tree-head small{display:block;max-width:100%;white-space:normal}
 @media(max-width:1200px){.right .branch-list{display:block;grid-template-columns:none}}
 @media(max-width:460px){.right .branch-list{max-height:65vh}.inline-mastery-track{margin-inline:0}}
+
+/* 2026.10.30.58 — locked cap above actual class potential in the SAME 90-point track. */
+.inline-mastery-track .inline-mastery-locked{position:absolute;top:75px;right:12px;height:8px;z-index:3;border-radius:0 5px 5px 0;background:repeating-linear-gradient(120deg,#682a28,#682a28 6px,#aa4b42 6px,#aa4b42 11px);border:1px solid #d48c76;pointer-events:none}
+.inline-mastery-track .inline-mastery-locked[hidden]{display:none}
+.inline-mastery-track .inline-mastery-locked:after{content:'🔒';position:absolute;right:1px;bottom:9px;font-size:13px;color:#eeb8aa;text-shadow:0 1px 3px #000}
+.path-reset-points{width:100%;padding:8px;margin-top:8px;border:1px solid #715139;border-radius:3px;background:#25180f;color:#c8a68a;font-size:11px}
+.path-reset-points:hover{border-color:#cc9371;background:#3a2418;color:#efc6ae}

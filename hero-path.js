@@ -69,17 +69,22 @@ function viewGrowth(target,api){
     note.append(make('span',{text:'Очки уровня — вложить в ветку'}),label);
     const available=budget.total!==null&&api.catalogReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track','aria-label':'Единая полоса вложенных очков и освоенного мастерства '+api.branchName(key)});
+    const visualMax=Math.max(90,cap,points);
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
-          green=make('div',{class:'inline-mastery-green'});
+          green=make('div',{class:'inline-mastery-green'}),
+          locked=make('div',{class:'inline-mastery-locked',
+           title:'Предел класса: '+cap+' из '+visualMax+'. Красная часть не доступна для распределения.'});
+    if(cap>=visualMax)locked.hidden=true;
+    locked.style.left='calc(12px + (100% - 24px) * '+Math.max(0,Math.min(1,cap/visualMax))+')';
     const paint=()=>{
      const invested=M.potential(state,key),mastery=M.trained(state,key);
-     gold.style.width=(cap?Math.max(0,Math.min(100,invested/cap*100)):0)+'%';
-     green.style.width=(cap?Math.max(0,Math.min(100,mastery/cap*100)):0)+'%';
+     gold.style.width=Math.max(0,Math.min(100,invested/visualMax*100))+'%';
+     green.style.width=Math.max(0,Math.min(100,mastery/visualMax*100))+'%';
      track.title=api.branchName(key)+': '+invested+' вложено, '+mastery+
        ' освоено, предел класса '+cap+'. Перетяни ползунок для вложения очков.';
     };
-    track.append(bed,gold,green);
-    const range=make('input',{type:'range',min:'0',max:String(Math.max(cap,points)),step:'1',
+    track.append(bed,gold,green,locked);
+    const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
      value:String(points),disabled:!available,
      'aria-label':'Вложенные очки '+api.branchName(key)});
     track.append(range);paint();
@@ -97,10 +102,6 @@ function viewGrowth(target,api){
     range.addEventListener('input',()=>update(Number(range.value),false));
     range.addEventListener('change',()=>update(Number(range.value),true));
     numeric.addEventListener('change',()=>update(Number(numeric.value),true));
-    const controls=make('div',{class:'inline-branch-controls'});
-    for(const [title,step]of[['−5',-5],['−',-1],['+',1],['+5',5]])
-     controls.append(make('button',{type:'button',text:title,disabled:!available,
-      onclick:()=>update(Math.max(0,M.potential(state,key)+step),true)}));
     const skills=skillCatalog.filter(s=>s.classes?.[job]&&Array.isArray(s.reqs)&&
      s.reqs.some(req=>req.branch===key));
     const marks=api.milestones(skills,key,cap);
@@ -132,7 +133,7 @@ function viewGrowth(target,api){
     greenRow.append(greenLabel,make('small',{text:auto?'Равно вложенным очкам':'Растёт не выше вложенных'}));
     const exact=make('div',{class:'path-allocation-input'});
     exact.append(make('span',{text:'Точно вложено'}),numeric);
-    editor.append(note,track,exact,controls,greenRow);
+    editor.append(note,track,exact,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
      text:cap===0?'Лимит класса равен нулю. Можно вернуть старые очки.':'Загрузка игровой таблицы очков.'}));
     if(points>cap)editor.append(make('p',{class:'budget-excess',

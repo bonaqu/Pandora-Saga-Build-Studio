@@ -1603,6 +1603,15 @@ document.addEventListener('dblclick',event=>{
 },true);
 $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView()};
  $('pathSkillsTab').onclick=()=>{heroPathPage='skills';renderPathPages();saveView()};
+ $('pathResetPoints').onclick=()=>{
+  const spent=budgetSummary().spent;
+  if(!spent)return;
+  if(!confirm('Сбросить все вложенные очки навыков и зелёное мастерство? Остальная сборка и экипировка сохранятся.'))return;
+  for(const b of branches)state.points[b.id]=0;
+  state.mastery={};
+  persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderHudEstimates();
+  saveView();
+ };
  $('pathAutoMastery').onchange=e=>{
   window.PandoraSkillProgression.setAuto(state,e.target.checked,branches.map(b=>b.id));
   persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderHudEstimates();

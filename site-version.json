@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.57",
-  "notes": "Single blue/gold/green skill mastery track, preserved right panel group/branch/scroll during update, responsive path layout; GitHub Pages delivery must be verified separately"
+  "release": "2026.10.30.58",
+  "notes": "Unify 90-unit potential/class-cap with blue/green/gold progress and locked red class cap; remove +/-; explicit reset with confirmation and no loss to gear"
 }
