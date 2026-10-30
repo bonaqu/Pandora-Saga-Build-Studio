@@ -99,17 +99,17 @@ function previewBaseStats(){
  });
 }
 function renderHudEstimates(){
- const estimate=previewBaseStats();
- const hp=$('psHud')?.querySelector('.ps-hud-hp small'),mp=$('psHud')?.querySelector('.ps-hud-mp small');
- if(hp)hp.textContent=estimate?'ОЗ ≈'+estimate.hp:'ОЗ —';
- if(mp)mp.textContent=estimate?'ОМ ≈'+estimate.mp:'ОМ —';
- for(const [selector,name] of [['.ps-hud-hp','ОЗ'],['.ps-hud-mp','ОМ']]){
-  const row=$('psHud')?.querySelector(selector);
-  if(row)row.setAttribute('aria-label',estimate?
-   'Предварительные '+name+' по OS с известными плоскими эффектами вещей и душ, без баффов и сложных механик':
-   'Базовые '+name+' ещё не рассчитаны');
- }
+ // HP/MP are estimates, not an experience/level HUD. The visible Origin panel owns both.
+ const estimate=previewBaseStats(),hp=$('originHp'),mp=$('originMp');
+ if(hp)hp.textContent=estimate?'≈'+estimate.hp:'—';
+ if(mp)mp.textContent=estimate?'≈'+estimate.mp:'—';
+ const holder=$('originVitals');
+ if(holder)holder.setAttribute('aria-label',estimate?
+  'Предварительные очки здоровья '+estimate.hp+' и маны '+estimate.mp+
+  '. Некоторые игровые эффекты пока не учитываются.':
+  'Очки здоровья и маны появятся после загрузки характеристик');
 }
+
 function budgetSummary(){
  return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
 }
@@ -744,7 +744,7 @@ function branchRow(b,full){
   onclick:()=>{selectedSkillGroup=window.PandoraGameNavigation.branchGroup(b.id)?.id||selectedSkillGroup;
    inlineBranchId=b.id;heroPathPage='growth';renderBranches();renderPathPages()}});
 }
-function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
+function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderHudEstimates();updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
@@ -940,7 +940,7 @@ function renderProfile(root){
    const row=h("label",{class:"ps-profile-row"});
    const input=h("input",{type:"text",maxLength:String(max),value,"aria-label":label,placeholder:label});
    input.addEventListener("input",()=>{
-    if(key==="name"){state.name=input.value;const hud=document.getElementById("psHudName");if(hud)hud.textContent=state.name||"Без имени"}
+    if(key==="name"){state.name=input.value}
     else{state.profile??={};state.profile[key]=input.value}
     persist();
    });
