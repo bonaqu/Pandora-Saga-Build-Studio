@@ -297,6 +297,7 @@ img.onerror=()=>{img.onerror=null;img.replaceWith(h("span",{text:slots[slot][1],
 return img;
 }
 function renderSlotRails(){
+ window.PandoraStageItemUI.dismissPreview();
  const plan=window.PandoraEquipmentPlan;
  for(const[id,indexes]of[['railLeft',[0,2,3,4,5,6]],['railRight',[1,7,8,9,10,11,12,13]]]){
   const container=$(id);container.replaceChildren();
@@ -563,6 +564,7 @@ function renderOriginPassives(){
 }
 let activeSkillPreview=null;
 function skillHover(button,skill){
+ button.removeAttribute('title');
  const skills=Array.isArray(skill)?skill:[skill];let tip;
  const clear=()=>{
   if(activeSkillPreview===tip)activeSkillPreview=null;
