@@ -8,10 +8,10 @@ function asSocketArray(value){
 function socketCapacity(record){
  if(!record||record.soulslot===null||record.soulslot===undefined)return null;
  const n=Number(record.soulslot);
- return Number.isInteger(n)&&n>=0&&n<=32?n:null;
+ return Number.isInteger(n)&&n>=0&&n<=32?(record.slot&&!supportsSoulSlot(record.slot)?0:n):null;
 }
 function validSoul(soul,slot){
- return Boolean(soul&&Array.isArray(soul.slots)&&soul.slots.includes(slot));
+ return supportsSoulSlot(slot)&&Boolean(soul&&Array.isArray(soul.slots)&&soul.slots.includes(slot));
 }
 function socketReport(souls,capacity){
  const all=asSocketArray(souls),count=all.filter(Boolean).length;
@@ -24,6 +24,9 @@ function refinementValue(refinements,slot,item){
  return Number.isInteger(v)&&v>=0&&v<=10?v:0;
 }
 const FORGE_SLOTS=Object.freeze(new Set(['weapon','shield','head','body','gloves','legs','feet']));
+const SOUL_SLOTS=Object.freeze(new Set(['weapon','shield','head','body','gloves','legs','feet','belt']));
+function supportsSoulSlot(slot){return SOUL_SLOTS.has(slot)}
+function canSocket(slot,record){return supportsSoulSlot(slot)&&socketCapacity(record)>0}
 function canRefine(slot){return FORGE_SLOTS.has(slot)}
-root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,refinementKey,refinementValue,canRefine});
+root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket});
 })(typeof window==='undefined'?globalThis:window);

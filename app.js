@@ -69,7 +69,7 @@ function previewBaseStats(){
   records.push(['item:'+item.id,item,grade]);
   const souls=window.PandoraEquipmentPlan.asSocketArray(state.souls?.[slot]);
   const capacity=window.PandoraEquipmentPlan.socketCapacity(item);
-  for(let i=0;i<(capacity??0);i++){
+  for(let i=0;i<(window.PandoraEquipmentPlan.supportsSoulSlot(slotKeys[Number(slot)])?(capacity??0):0);i++){
    const soul=souls[i]&&catalog.souls?.[String(souls[i].id)];
    if(soul&&window.PandoraEquipmentPlan.validSoul(soul,slotKeys[Number(slot)]))
     records.push(['soul:'+soul.id,soul,grade]);
@@ -266,7 +266,7 @@ function renderSlotRails(){
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
     'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSlotShown=48;stageSlotView=state.equipment?.[i]?'details':'choose';stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
    button.append(slotVisual(i),h('small',{text:item?.name||slots[i][0]}));
-   if(item&&cap!==null&&cap>0)button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
+   if(item&&plan.canSocket(slotKeys[i],source))button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source)window.PandoraStageItemUI.attachPreview(button,source,(rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'));
    if(report.excess>0)button.append(h('span',{class:'stage-conflict',text:'!','aria-label':'Конфликт гнёзд'}));
@@ -311,6 +311,7 @@ function renderStagePicker(focusSearch=false){
  if(!stageSlotPickerOpen)return;
  const key=slotKeys[selectedSlot],equipped=state.equipment?.[selectedSlot];
  const record=equipped&&equippedRecord(selectedSlot);
+ if(stageSlotView==='gems'||(stageSlotView==='souls'&&!window.PandoraEquipmentPlan.canSocket(key,record)))stageSlotView='details';
  if(stageSlotView!=='choose'){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
@@ -321,20 +322,21 @@ function renderStagePicker(focusSearch=false){
    gems:state.gems?.[plan.refinementKey(selectedSlot,equipped)],
    catalog,gameTables,close:()=>closeStagePicker(),
    changeMode:mode=>{
-    if(mode==='gems'&&!plan.canRefine(key))return;
+    if(mode==='gems')mode='details';
+    if(mode==='souls'&&!plan.canSocket(key,record))mode='details';
     stageSlotView=mode;saveView();renderStagePicker(mode==='choose')
    },
    updateGrade:n=>{if(!plan.canRefine(key)||!Number.isInteger(n)||n<0||n>10)return;
     state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;persist();renderSlotRails();renderStagePicker();renderHudEstimates();
    },
-   openSocket:i=>{selectedSocket=i;stageSlotView='souls';renderStagePicker()},
+   openSocket:i=>{selectedSocket=i;stageSlotView='souls';saveView();renderStagePicker()},
    assignSoul:entry=>{
     const capacity=plan.socketCapacity(record);
-    if(capacity===null||selectedSocket<0||selectedSocket>=capacity)return;
+    if(!plan.canSocket(key,record)||capacity===null||selectedSocket<0||selectedSocket>=capacity)return;
     if(entry&&!plan.validSoul(entry,key))return;
     const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
-    state.souls[selectedSlot]=next;stageSlotView='details';persist();renderStagePicker();renderHudEstimates();},
+    state.souls[selectedSlot]=next;stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderHudEstimates();},
    assignGem:entry=>{if(!plan.canRefine(key))return;state.gems??={};
     const id=plan.refinementKey(selectedSlot,equipped);
     const choice=window.PandoraEnchantModel.normalize(entry);
@@ -1015,7 +1017,7 @@ function renderEquipment(root){
  if(!chosen)socketPanel.append(h('p',{class:'muted',text:'Сначала выбери предмет для этого слота.'}));
  else if(socketLimit===null)socketPanel.append(h('p',{class:'muted',text:'В текущем каталоге нет подтверждённого числа гнёзд для этой вещи.'}));
  else if(!socketLimit)socketPanel.append(h('p',{class:'muted',text:'У предмета 0 гнёзд согласно опубликованному каталогу.'}));
- if(socketLimit!==null&&socketLimit>0){
+ if(lib.canSocket(slot,itemRec)){
   const sockets=h('div',{class:'socket-grid'});
   for(let i=0;i<socketLimit;i++){
    const current=socketItems[i],record=current&&catalog.live?catalog.souls?.[String(current.id)]:null;
@@ -1026,7 +1028,7 @@ function renderEquipment(root){
  if(report.excess){
   socketPanel.append(h('p',{class:'refine-warning',text:'⚠ Из предыдущей экипировки сохранено '+report.excess+' душ вне доступных гнёзд. Они не считаются установленными. Их можно удалить при выборе новой экипировки с достаточным числом гнёзд.'}));
  }
- if(socketLimit!==null&&socketLimit>0&&socketItems[selectedSocket]){
+ if(lib.canSocket(slot,itemRec)&&socketItems[selectedSocket]){
   socketPanel.append(h('button',{class:'button-action',text:'✕ Освободить гнездо '+(selectedSocket+1),onclick:()=>{
    const next=lib.asSocketArray(state.souls?.[selectedSlot]);next[selectedSocket]=null;
    state.souls[selectedSlot]=next;persist();render();
@@ -1102,7 +1104,7 @@ function renderEquipment(root){
    side.append(pin);
    if(catalog.live){
     const rows=isSoul?[['ID',rec.id],['Подходящие слоты',(rec.slots||[]).join(', ')]]:
-     [['ID',rec.id],['Тип',rec.kind],['Уровень',rec.level],['Атака',rec.W],['Защита',rec.AC],['Гнёзда душ',rec.soulslot],['Поле plus',rec.plus]];
+     [['ID',rec.id],['Тип',window.PandoraItemPresentation.kind(rec)],['Уровень',rec.level],['Атака',rec.W],['Защита',rec.AC],['Гнёзда душ',rec.soulslot],['Поле plus',rec.plus]];
     const dl=h('dl',{class:'item-fields'});
     for(const[label,val]of rows)if(val!==undefined&&val!==null&&val!=='')dl.append(h('dt',{text:label}),h('dd',{text:String(val)}));
     side.append(dl);
@@ -1111,7 +1113,7 @@ function renderEquipment(root){
      if(!v.allowed)side.append(h('p',{class:'item-incompatible',text:'Не подходит: '+v.missing.join(' · ')}));
     }
    }
-   if(rec.desc)side.append(h('p',{class:'item-description',text:rec.desc}));
+   if(rec.desc)side.append(h('p',{class:'item-description',text:window.PandoraItemPresentation.description(rec.desc)}));
    side.append(wikiLink(isSoul?'📜 Статья души':'📜 Статья предмета',isSoul?'soul':'item',rec.id));
    if(!isSoul){
     const area=h('div',{class:'item-origin'});
@@ -1139,7 +1141,7 @@ function renderEquipment(root){
   for(const rec of matches.slice(0,gearShown)){
    const selected=selectedValue&&String(selectedValue.id)===String(rec.id);
    const v=!isSoul&&catalog.live?window.PandoraStudioRules.equipment(rec,{slot,job:jobKeys[state.job],level:state.level}):{allowed:true,missing:[]};
-   const canInsert=isSoul?Boolean(chosen&&itemRec&&!isCostumeOverlay(itemRec)&&socketLimit!==null&&selectedSocket<socketLimit&&lib.validSoul(rec,slot)):
+   const canInsert=isSoul?Boolean(chosen&&itemRec&&!isCostumeOverlay(itemRec)&&lib.canSocket(slot,itemRec)&&selectedSocket<socketLimit&&lib.validSoul(rec,slot)):
  (v.allowed&&!isCostumeOverlay(rec)&&window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender)&&
  !(slot==='legs'&&window.PandoraUIPlanner.isAstirDress(equippedRecord(3))));
    const button=h('button',{class:'item-card'+(isSoul?' soul-card':'')+(selected?' active':'')+(canInsert?'':' incompatible'),
