@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.84.0 (`2026.10.31.84`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.85.0 (`2026.10.31.85`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,15 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.85.0 — confirmed Remaked attribute modifiers
+
+- Owner confirms Remaked calculations for abilities, potions, boosts, guild, honor and gear as the working functional reference. Keep their historical behavior while using current OS catalog keys and modern UX.
+- Source-port Remaked `SelBuffClan_9` (guild +N to all six), `Flag.Honor==1` (+1 to all six), and `Flag 14_9/InBuff_1` (Proelium +floor(power/10) to STR/AGI/INT). Apply before HP/MP and do not charge allocation points.
+- Include compact nested Origin settings, local persistence, and strictly validated sharing of `attributeBuffs`; leave older builds off by default.
+- New direct calculation tests (6) and shared-state regression tests (2 new) pass alongside existing HP/MP, stage and buff tests (25 related checks in isolated harness).
+- See `docs/REMAKED_CALCULATOR_PORT.md` for exact source mappings and **open** transfer tasks: additional active/passive skills, potion effectiveness, full Honor list, guild branches, all special boosts, combat/resistances and current-server golden vectors.
+- Do not claim total game parity or Pages deployment until end-to-end checks. Continue previous D1/wiki/icon/UX backlog without removing it.
 
 ## Source update 0.84.0 — finish HP/MP sharing and cache-safe publication
 
