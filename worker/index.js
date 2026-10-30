@@ -20,8 +20,9 @@ async function recordFailed(env,ip){const key=await sha(ip),now=Date.now();await
 async function clearFailed(env,ip){await env.DB.prepare('DELETE FROM login_attempts WHERE ip_hash=?').bind(await sha(ip)).run()}
 async function session(env){const token=b64(random(32)),hash=await sha(token),expires=Date.now()+4*3600000;await env.DB.prepare('INSERT INTO sessions(token_hash,expires) VALUES(?,?)').bind(hash,expires).run();return{token,expires}}
 
-const DATASETS=["meta","classes","skills","items","souls","monsters","drops","maps","instances","racialPassives","itemForth","unison","trades","tradeMeta","legacyLocale"];
-const EXTRA_COUNTS=['tradeMeta','legacyLocale'];
+const DATASETS=["meta","classes","skills","items","souls","monsters","drops","maps","instances","racialPassives","itemForth","unison","trades","tradeMeta","legacyLocale","tables","expertise","chests","stringsEn"];
+const EXTRA_COUNTS=['tradeMeta','legacyLocale','tables','expertise','chests','stringsEn'];
+const SERIALIZED_DATASETS=['tables','expertise','chests','stringsEn'];
 const SEED_SCHEMA=[
  'CREATE TABLE IF NOT EXISTS catalog_entries(snapshot TEXT NOT NULL,dataset TEXT NOT NULL,record_key TEXT NOT NULL,name TEXT,kind TEXT,slot TEXT,is_costume_overlay INTEGER NOT NULL DEFAULT 0,payload TEXT NOT NULL,PRIMARY KEY(snapshot,dataset,record_key))',
  'CREATE INDEX IF NOT EXISTS idx_catalog_slot ON catalog_entries(snapshot,dataset,slot,is_costume_overlay)',
@@ -45,6 +46,7 @@ async function serveCatalog(env,dataset){
  const rows=q.results||[];
  if(!rows.length)return no('Dataset missing from published catalog',503);
  let obj=dataset==='meta'?JSON.parse(rows[0].payload):
+  SERIALIZED_DATASETS.includes(dataset)?JSON.parse(rows.map(r=>JSON.parse(r.payload).data).join('')):
   Object.fromEntries(rows.map(r=>[r.record_key,JSON.parse(r.payload)]));
  if(dataset==='trades'){
   const extras=await env.DB.prepare("SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset='tradeMeta' AND record_key='all'").bind(active.snapshot).first();
@@ -90,9 +92,22 @@ async function adminCatalog(request,env,path){
   for(const dataset of DATASETS){
     const row=await env.DB.prepare('SELECT COUNT(*) AS c FROM catalog_entries WHERE snapshot=? AND dataset=?').bind(data.snapshot,dataset).first();
     const observed=Number(row?.c||0),expected=dataset==='meta'||dataset==='tradeMeta'?1:
-     dataset==='legacyLocale'?Number(data?.extraCounts?.legacyLocale):Number(meta?.counts?.[dataset]);
+     EXTRA_COUNTS.includes(dataset)?Number(data?.extraCounts?.[dataset]):Number(meta?.counts?.[dataset]);
     if(!Number.isInteger(expected)||expected<=0||observed!==expected)return no('Incomplete '+dataset+': '+observed+' of '+expected,409);
     counts[dataset]=observed;
+  }
+  for(const name of SERIALIZED_DATASETS){
+    const fragments=await env.DB.prepare('SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset=? ORDER BY record_key').bind(data.snapshot,name).all();
+    try{
+      const object=JSON.parse((fragments.results||[]).map(x=>JSON.parse(x.payload).data).join(''));
+      if(!object||typeof object!=='object')return no('Invalid assembled '+name,409);
+      if(name==='stringsEn'){
+        if(object.locale!=='en')return no('Invalid English locale source',409);
+        for(const group of ['items','skills','monsters','souls','classes']){
+          if(Object.keys(object[group]||{}).length!==Number(meta?.localeCounts?.en?.[group]))return no('Incomplete English strings: '+group,409);
+        }
+      }
+    }catch(error){return no('Broken serialized dataset '+name,409)}
   }
   const costumes=await env.DB.prepare("SELECT COUNT(*) AS c FROM catalog_entries WHERE snapshot=? AND dataset='items' AND is_costume_overlay=1").bind(data.snapshot).first();
   await env.DB.prepare('INSERT INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET snapshot=excluded.snapshot,published_at=excluded.published_at,expected_counts=excluded.expected_counts').bind(data.snapshot,Date.now(),JSON.stringify(counts)).run();
@@ -104,7 +119,7 @@ async function adminCatalog(request,env,path){
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 // No runtime calls to the third-party game server. All game data is read from our own D1.
 if(!env.DB)return no('Database not configured',503);
-if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
+if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/health'&&method==='GET'){const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts')").all();const ready=(tables.results||[]).length===4;return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready},ready?200:503)}
