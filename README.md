@@ -35,6 +35,14 @@ First successful login: gear → `administrator` → new password (minimum 12 ch
 
 **Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
 
+## 2026-10-30 — интерактивность и достоверность
+
+- Иконки выбранных предметов теперь отображаются прямо в слотах героя.
+- Требования изучения из OS `skills.json` показываются как выполненные, невыполненные или непроверенные; интерфейс не утверждает, что навык уже изучен.
+- Из карточки навыка можно перейти к недостающей ветке. Добавлены быстрые кнопки изменения очков, точный ввод, поиск и фильтр доступных навыков.
+- Проверка совместимости предметов с классом, уровнем и слотом перенесена в независимый `rules.js` (без расчёта игрового урона).
+- Изменения внесены только в статические файлы; секреты и серверные учетные записи не затронуты.
+
 ## Next milestones
 
 - Verify live Pandora Saga OS endpoints, cross-origin access, sprite references and all skill identities; maintain the versioned authoritative snapshot (no invented gameplay rules).
