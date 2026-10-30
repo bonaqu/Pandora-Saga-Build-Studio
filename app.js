@@ -1831,7 +1831,25 @@ fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json()
  }else if(label)label.textContent='Иконки OS: используются внешние источники';
 }).catch(()=>{const label=$('iconStatus');if(label)label.textContent='Иконки OS: локальный архив пока не импортирован'});
 
+// Keep Origin at least as tall as the portrait panel, without stretching it to the taller Hero Path.
+function syncOriginPanelHeight(){
+ const origin=document.querySelector('.workspace>.left');
+ const stage=document.querySelector('.workspace>.stage');
+ if(!origin||!stage)return;
+ if(window.innerWidth<1201){
+  origin.style.removeProperty('--character-stage-height');
+  return;
+ }
+ const height=Math.ceil(stage.getBoundingClientRect().height);
+ if(height>0)origin.style.setProperty('--character-stage-height',height+'px');
+}
+window.addEventListener('resize',syncOriginPanelHeight,{passive:true});
+if(typeof ResizeObserver!=='undefined'){
+ const portraitStage=document.querySelector('.workspace>.stage');
+ if(portraitStage)new ResizeObserver(syncOriginPanelHeight).observe(portraitStage);
+}
 render();loadCatalog();loadOverrides();
+requestAnimationFrame(syncOriginPanelHeight);
 // Independence: class caps must be usable even when unrelated wiki/skills/D1 data fails.
 fetch('./data/os/classes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
  .then(classes=>{
