@@ -5,7 +5,7 @@ const root=new URL('../',import.meta.url),read=p=>readFileSync(new URL(p,root),'
 test('restoring builds synchronizes the race preview and branch group',()=>{
  const source=read('app.js');
  assert.match(source,/function restoreLoadedBuildUI\(\)/);
- assert.match(source,/racePreviewIndex=state\.race/);
+ assert.match(source,/racePreviewIndex=selectedPortraitIndex\(state\.race,state\.gender\)/);
  assert.match(source,/state=structuredClone\(b\.data\);restoreLoadedBuildUI\(\)/);
  assert.match(source,/state=result;restoreLoadedBuildUI\(\)/);
 });

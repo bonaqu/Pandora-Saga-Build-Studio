@@ -42,6 +42,26 @@ function branchIcon(id){return BRANCH_ICON_PATHS[id]||'assets/ui/icons/skill-unk
 function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId){const path=iconManifest?.icons?.skills?.['skill_'+record.iconId];return path||`${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`}return branchIcon(cat)}
 function itemIcon(rec,kind='items'){const custom=override[(kind==='souls'?'visual.soul.':'visual.item.')+rec?.id];if(custom)return custom;return rec?.icon?(iconManifest?.icons?.[kind]?.[rec.icon]||`${OS}/icons/${kind}/${rec.icon}.webp?v=07682901`):null}
 function branchCap(branch){return catalog.live?(window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0):90}
+function previewBaseStats(){
+ const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
+ const baseClass=clazz?.baseClass||jobKeys[state.job];
+ const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(state.stats[STATS[i]]||0)]));
+ return window.PandoraOSCalculator.base({
+  classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
+  allocation,level:state.level});
+}
+function renderHudEstimates(){
+ const estimate=previewBaseStats();
+ const hp=$('psHud')?.querySelector('.ps-hud-hp small'),mp=$('psHud')?.querySelector('.ps-hud-mp small');
+ if(hp)hp.textContent=estimate?'ОЗ ≈'+estimate.hp:'ОЗ —';
+ if(mp)mp.textContent=estimate?'ОМ ≈'+estimate.mp:'ОМ —';
+ for(const [selector,name] of [['.ps-hud-hp','ОЗ'],['.ps-hud-mp','ОМ']]){
+  const row=$('psHud')?.querySelector(selector);
+  if(row)row.setAttribute('aria-label',estimate?
+   'Базовые '+name+' по коэффициентам OS, без экипировки и эффектов (округление требует сверки)':
+   'Базовые '+name+' ещё не рассчитаны');
+ }
+}
 function budgetSummary(){
  const t=gameTables?.abilityPoint;
  const total=t?Array.from({length:Math.max(0,state.level-1)},(_,i)=>t[String(i+2)])
@@ -421,7 +441,7 @@ function branchRow(b,full){
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
- 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderBranches();refreshBudgetLabel();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
+ 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderBranches();refreshBudgetLabel();renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');renderHudEstimates();updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -1013,7 +1033,10 @@ function renderStats(root){
   h('div',{},[h('h3',{text:'Книга характеристик'}),h('p',{class:'muted',text:'Распределяй очки визуально. Пределы характеристик берутся из опубликованных данных класса Pandora Saga OS.'})]),
   h('div',{class:'stat-total'},[h('strong',{text:String(total)}),h('span',{text:'Запланировано очков'})])
  ]));
- root.append(h('p',{class:'muted',text:'Итоговые значения HP, урона и стоимость повышения характеристик не рассчитываются без проверенного игрового движка. Ни одно изменение не стирается при смене класса.'}));
+ const hpmp=previewBaseStats();
+ root.append(h('p',{class:'muted',text:hpmp?
+  'Базовые ОЗ ≈'+hpmp.hp+' / ОМ ≈'+hpmp.mp+' по коэффициентам классов OS; без экипировки, душ, баффов и эффектов. Округление требует проверки.':
+  'Базовые ОЗ/ОМ станут доступны после загрузки таблиц OS. Итоговые эффекты экипировки и баффов не рассчитаны.'}));
  const grid=h('div',{class:'stat-grid'});
  STATS.forEach((key,i)=>{
   const code=codes[i];
@@ -1035,7 +1058,7 @@ function renderStats(root){
   const change=n=>{
    const next=Number(n);
    if(!Number.isInteger(next)||next<0||next>(cap??999))return false;
-   state.stats[key]=next;persist();
+   state.stats[key]=next;persist();renderHudEstimates();
    count.textContent=String(next);exact.value=String(next);range.value=String(next);
    fill.style.width=(cap&&cap>0?Math.min(100,next/cap*100):0)+'%';
    warning.textContent=cap!==null&&next>cap?'Выше предела текущего класса: '+next+' / '+cap:'';

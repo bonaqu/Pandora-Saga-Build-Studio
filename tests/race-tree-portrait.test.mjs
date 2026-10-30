@@ -5,7 +5,7 @@ const root=new URL('../',import.meta.url),get=p=>readFileSync(new URL(p,root),'u
 test('portrait carousel presents eight independent race-appearance options',()=>{
  const app=get('app.js');
  assert.match(app,/const portraitOptions=\[/);
- const matches=app.match(/\{race:[0-5],gender:[01]\}/g)||[];
+ const matches=app.match(/\{"race":[0-5],"gender":[01]\}/g)||[];
  assert.equal(matches.length,8);
  assert.match(app,/state\.race=i;state\.gender=gender/);
  assert.match(app,/selectedPortraitIndex\(state\.race,state\.gender\)/);

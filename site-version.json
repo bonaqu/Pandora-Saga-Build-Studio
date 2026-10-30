@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.34",
-  "notes": "Replace RuneGem shopping with physical/magical gemstone type and seven classical elements; provide explicitly unverified OS weapon enhancement preview"
+  "release": "2026.10.30.35",
+  "notes": "Compute clearly labelled preliminary base HP/MP from OS class coefficient tables plus race/job initial stats and allocations; retain precise uncertainty over combat parity"
 }
