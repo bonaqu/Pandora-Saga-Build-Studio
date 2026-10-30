@@ -1059,6 +1059,13 @@ function importBuild(){
    for(const[k,v]of Object.entries(original.refinements))
     if(/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(k)&&Number.isInteger(v)&&v>=0&&v<=99)result.refinements[k]=v;
   }
+  if(original.gems&&typeof original.gems==='object'&&!Array.isArray(original.gems)){
+   for(const [key,value] of Object.entries(original.gems)){
+    if(!/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(key))continue;
+    if(value&&Number.isInteger(value.id)&&typeof value.name==='string')
+     result.gems[key]={id:value.id,name:value.name.slice(0,120)};
+   }
+  }
   if(original.profile&&typeof original.profile==='object'&&!Array.isArray(original.profile)){
    for(const field of ['guild','nation','rank','about']){
     const raw=original.profile[field];
