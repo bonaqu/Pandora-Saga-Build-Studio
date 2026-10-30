@@ -16,6 +16,7 @@ const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Наг
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
+let racePreviewIndex=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length?state.race:0,stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
@@ -30,7 +31,24 @@ function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.ad
 function raceSource(i,gender){
 return override["visual.race."+i+"."+(gender?"m":"f")]||imageUrl(races[i][gender?3:2]);
 }
-function renderRaces(){const grid=$('raceGrid');grid.replaceChildren();races.forEach((r,i)=>{const button=h('button',{class:'race-choice'+(state.race===i?' active':''),'aria-pressed':state.race===i,onclick:()=>{state.race=i;state.racialPassiveId=null;selectedSkill=null;persist();render()}});button.append(editAttr(h('img',{src:raceSource(i,state.gender),alt:r[0],loading:'lazy'}),'visual.race.'+i+'.'+(state.gender?'m':'f')),editAttr(h('b',{text:editableValue('race.'+i,r[0])}),'race.'+i));grid.append(button)})}
+function renderRaces(){
+ const grid=$('raceGrid');grid.replaceChildren();
+ const i=racePreviewIndex,chosen=state.race===i,gender=window.PandoraUIPlanner.normalizeGender(races,i,state.gender);
+ const frame=h('div',{class:'race-slide-frame'+(chosen?' selected':''),'aria-live':'polite'});
+ const img=editAttr(h('img',{src:raceSource(i,gender),alt:races[i][0],loading:'eager'}),'visual.race.'+i+'.'+(gender?'m':'f'));
+ img.onerror=()=>{img.onerror=null;img.alt='Портрет '+races[i][0]+' не загрузился'};
+ const arrow=(text,step,alt)=>h('button',{type:'button',class:'race-slide-arrow '+(step<0?'previous':'next'),text,'aria-label':alt,
+  onclick:()=>{racePreviewIndex=(racePreviewIndex+step+races.length)%races.length;renderRaces()}});
+ frame.append(img,arrow('❮',-1,'Предыдущая раса'),arrow('❯',1,'Следующая раса'));
+ const actions=h('div',{class:'race-slide-actions'});
+ actions.append(h('span',{class:'race-slide-position',text:(i+1)+' / '+races.length}),
+  h('button',{type:'button',class:'race-slide-select'+(chosen?' selected':''),disabled:chosen,'aria-pressed':String(chosen),
+   text:chosen?'✓ Выбрано':'Выбрать расу',onclick:()=>{
+    if(state.race!==i){state.race=i;state.racialPassiveId=null;state.gender=window.PandoraUIPlanner.normalizeGender(races,i,state.gender);
+     selectedSkill=null;stageSlotPickerOpen=false;persist();render()}
+   }}));
+ grid.append(frame,actions);
+}
 function renderJobs(){const grid=$('classGrid');grid.replaceChildren();jobs.forEach((j,i)=>{const button=h('button',{class:'class-choice'+(state.job===i?' active':''),'aria-pressed':state.job===i,onclick:()=>{state.job=i;persist();render()}});button.append(h('i',{text:['✠','⚔','✦','♜'][Math.floor(i/7)]||'⚔'}),editAttr(h('span',{text:editableValue('job.'+i,j)}),'job.'+i));grid.append(button)})}
 function changeTab(tab){activeTab=tab;document.querySelectorAll('[data-tab]').forEach(btn=>btn.classList.toggle('active',btn.dataset.tab===tab));renderDetails();$('detailPanel').scrollIntoView({behavior:'smooth',block:'start'})}
 function equippedRecord(slot){
@@ -55,7 +73,7 @@ function renderSlotRails(){
    const level=plan.refinementValue(state.refinements,i,item);
    const tooltip=slots[i][0]+' · '+(item?.name||'Пусто')+(item&&cap!==null?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':''),
-    'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';changeTab('equipment');renderSlotRails()}});
+    'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSlotShown=48;stageSlotPickerOpen=true;renderSlotRails();renderStagePicker()}});
    button.append(slotVisual(i),h('small',{text:item?.name||slots[i][0]}));
    if(item&&cap!==null&&cap>0)button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
@@ -64,25 +82,133 @@ function renderSlotRails(){
   }
  }
 }
+function renderStagePicker(){
+ const root=$('stagePicker');if(!root)return;
+ const frame=root.closest('.portrait-frame');frame.classList.toggle('picking',stageSlotPickerOpen);
+ root.hidden=!stageSlotPickerOpen;root.replaceChildren();
+ if(!stageSlotPickerOpen)return;
+ const key=slotKeys[selectedSlot],equipped=state.equipment?.[selectedSlot];
+ const top=h('div',{class:'stage-picker-head'},[
+  h('strong',{text:'Выбор: '+slots[selectedSlot][0]}),
+  h('button',{type:'button',text:'✕','aria-label':'Закрыть выбор',onclick:()=>{stageSlotPickerOpen=false;renderStagePicker()}})
+ ]);
+ const search=h('input',{type:'search',value:stageSlotQuery,placeholder:'Поиск названия или ID','aria-label':'Поиск предмета для '+slots[selectedSlot][0]});
+ const count=h('small',{class:'stage-picker-count'});
+ const list=h('div',{class:'stage-picker-list',role:'list'});
+ const more=h('button',{type:'button',class:'stage-picker-more'});
+ const remove=h('button',{type:'button',text:'Снять предмет',disabled:!equipped,onclick:()=>{
+  delete state.equipment[selectedSlot];stageSlotPickerOpen=false;persist();render();
+ }});
+ const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
+ const records=catalog.live?window.PandoraUIPlanner.equippable(Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,window.PandoraStudioRules.equipment):[];
+ const draw=()=>{
+  list.replaceChildren();
+  const query=stageSlotQuery.trim().toLocaleLowerCase('ru');
+  const matches=records.filter(rec=>(itemName(rec)+' '+rec.id).toLocaleLowerCase('ru').includes(query));
+  count.textContent=matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
+  if(!catalog.live)list.append(h('p',{class:'muted',text:'Каталог ещё не загружен.'}));
+  else if(!matches.length)list.append(h('p',{class:'muted',text:'Нет совместимых предметов. Измени поиск или слот.'}));
+  for(const rec of matches.slice(0,stageSlotShown)){
+   const selected=String(equipped?.id)===String(rec.id);
+   const btn=h('button',{type:'button',class:'stage-picker-item'+(selected?' selected':''),
+    'aria-label':'Экипировать '+itemName(rec),onclick:()=>{
+     state.equipment[selectedSlot]={id:rec.id,name:itemName(rec),level:rec.level??null,icon:rec.icon??null};
+     stageSlotPickerOpen=false;persist();render();
+    }});
+   const src=itemIcon(rec);
+   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
+   else btn.append(h('span',{class:'item-glyph',text:'⚔'}));
+   btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),h('small',{text:'ID '+rec.id+(rec.level?' · ур. '+rec.level:'')})]));
+   if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
+   list.append(btn);
+  }
+  more.hidden=matches.length<=stageSlotShown;
+  more.textContent='Показать ещё ('+Math.max(0,matches.length-stageSlotShown)+')';
+ };
+ search.addEventListener('input',()=>{stageSlotQuery=search.value;stageSlotShown=48;draw()});
+ more.addEventListener('click',()=>{stageSlotShown+=48;draw()});
+ root.append(top,search,count,list,bottom);draw();
+}
+function renderOriginPassives(){
+ const root=$('originPassives');if(!root)return;
+ root.replaceChildren();
+ const ids=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
+ if(!ids.length){root.append(h('p',{class:'muted',text:'Расовые способности появятся после загрузки каталога.'}));return}
+ for(const id of ids){
+  const skill=catalog.skills?.[String(id)];if(!skill)continue;
+  const selected=String(state.racialPassiveId)===String(id);
+  const btn=h('button',{type:'button',class:'origin-passive'+(selected?' selected':''),'aria-pressed':String(selected),
+   title:skill.desc||skill.name,'aria-label':skill.name+(selected?' — выбрано':' — выбрать'),
+   onclick:()=>{state.racialPassiveId=id;persist();renderOriginPassives();if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
+  const src=skillIcon('race',id,skill);
+  if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
+  else btn.append(h('span',{text:'✦'}));
+  btn.append(h('span',{},[h('b',{text:skill.name}),h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);
+ }
+}
 function renderBranches(){
  const c=$('skillBranches');c.replaceChildren();
  for(const group of window.PandoraGameNavigation.groups){
   const total=group.branches.reduce((sum,id)=>sum+Number(state.points[id]||0),0);
   const wrap=h('section',{class:'game-tree-group'});
   const head=h('button',{class:'game-tree-head'+(selectedSkillGroup===group.id?' active':''),
-    onclick:()=>{selectedSkillGroup=group.id;if(!group.branches.includes(state.branch))state.branch=group.branches.find(id=>id!=='race')||'riding';persist();renderBranches();changeTab('skills')}});
+   onclick:()=>{
+    selectedSkillGroup=group.id;
+    if(!group.branches.includes(state.branch))state.branch=group.branches.find(id=>id!=='race')||'riding';
+    persist();renderBranches();
+    if(activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails();
+   }});
   head.append(h('strong',{text:lang==='en'?group.en:group.ru}),h('small',{text:total?String(total)+' очк.':String(group.branches.length)+' веток'}));wrap.append(head);
   if(selectedSkillGroup===group.id){
    for(const id of group.branches){
+    if(id==='race'){wrap.append(h('div',{class:'branch-racial-note',text:'✦ Расовая пассивка выбирается в «Происхождении»'}));continue}
     const b=branches.find(item=>item.id===id);if(!b)continue;
-    wrap.append(id==='race'?h('button',{class:'branch-row game-passive-link',text:'✦ Расовые пассивные умения',onclick:()=>{changeTab('character');characterPanelTab='character';renderDetails()}}):branchRow(b,false));
+    wrap.append(branchRow(b,false));
+    if(inlineBranchId===id){
+     const cap=branchCap(id),pts=Number(state.points[id]||0);
+     const editor=h('div',{class:'inline-branch-editor'});
+     const label=h('strong',{text:pts+' / '+cap});
+     const row=h('div',{class:'inline-branch-value'},[h('span',{text:'Очки ветки'}),label]);
+     const range=h('input',{type:'range',min:'0',max:String(cap),step:'1',value:String(Math.min(pts,cap)),disabled:cap===0,'aria-label':'Очки ветки '+b.name});
+     const set=(n,rebuild=true)=>{
+      if(!Number.isInteger(n)||n<0||n>cap)return;
+      state.points[id]=n;state.branch=id;persist();$('branchValue').textContent=String(n);
+      label.textContent=n+' / '+cap;
+      if(rebuild){renderBranches();if(activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails()}
+     };
+     range.addEventListener('input',()=>set(Number(range.value),false));
+     range.addEventListener('change',()=>set(Number(range.value),true));
+     const controls=h('div',{class:'inline-branch-controls'});
+     for(const [text,delta]of[['−5',-5],['−',-1],['+',1],['+5',5]])
+      controls.append(h('button',{type:'button',text,disabled:cap===0,
+       onclick:()=>set(Math.max(0,Math.min(cap,Number(state.points[id]||0)+delta)))}));
+     editor.append(row,range,controls);
+     if(pts>cap)editor.append(h('p',{class:'budget-excess',text:'Сохранено '+pts+' очков при лимите '+cap+'. Автоматического сброса нет.'}));
+     editor.append(h('small',{class:'muted',text:'Общий бюджет очков не подтверждён. Изменяется только эта ветка.'}));
+     wrap.append(editor);
+    }
    }
   }
   c.append(wrap);
  }
 }
-function branchRow(b,full){const points=state.points[b.id]||0;const btn=h('button',{class:'branch-row'+(state.branch===b.id?' active':''),onclick:()=>{state.branch=b.id;selectedSkill=null;persist();renderBranches();$('branchValue').textContent=points;changeTab('skills')}});const first=catalog.live?Object.values(catalog.skills||{}).find(x=>x.branch===b.id&&x.classes?.[jobKeys[state.job]]):null;const icon=h('img',{class:'tinyicon',src:branchIcon(b.id),alt:'',loading:'lazy'});icon.onerror=()=>{icon.onerror=null;icon.style.display='none'};btn.append(icon,h('div',{},[h('strong',{text:editableValue('branch.'+b.id,b.name)}),h('span',{text:catalog.live?('Лимит класса: '+branchCap(b.id)):'Историческая ветка'})]),h('b',{class:'count',text:String(points)}));return btn}
-function render(){const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderBranches();$('budgetState').textContent='Лимиты и стоимость очков проверяются только настоящим движком. Пока — планировщик распределения.';renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
+function branchRow(b,full){
+ const points=Number(state.points[b.id]||0);
+ const btn=h('button',{class:'branch-row'+(state.branch===b.id?' active':''),
+  'aria-expanded':String(!full&&inlineBranchId===b.id),
+  onclick:()=>{
+   state.branch=b.id;selectedSkill=null;selectedSkillGroup=window.PandoraGameNavigation.branchGroup(b.id)?.id||selectedSkillGroup;
+   if(!full)inlineBranchId=inlineBranchId===b.id?null:b.id;
+   persist();renderBranches();$('branchValue').textContent=String(points);
+   if(full||activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails();
+  }});
+ // Branches have no intrinsic skill icons; skills and unlock milestones retain theirs.
+ btn.append(h('div',{},[h('strong',{text:editableValue('branch.'+b.id,b.name)}),
+  h('span',{text:catalog.live?'Лимит класса: '+branchCap(b.id):'Историческая ветка'})]),
+  h('b',{class:'count',text:String(points)}));
+ return btn;
+}
+function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderOriginPassives();renderBranches();$('budgetState').textContent='Лимиты и стоимость очков проверяются только настоящим движком. Пока — планировщик распределения.';renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -1109,8 +1235,8 @@ async function loadCatalog(){
  applyGameLocale();persist();
 }
 async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
-$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('swapGender').onclick=()=>{state.gender=1-state.gender;persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
-document.addEventListener('keydown',event=>{if(event.key==='Escape')closeInlineEditor()});
+$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+document.addEventListener('keydown',event=>{if(event.key==='Escape'){closeInlineEditor();if(stageSlotPickerOpen){stageSlotPickerOpen=false;renderStagePicker()}}});
 
 /* Owner login: five logo clicks within six seconds, or Ctrl+Alt+Shift+P.
    Hidden UI does not replace server-side authorization. */
