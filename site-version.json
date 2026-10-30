@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.30",
-  "notes": "Character slot pages for item details, Souls, rune gems and refinement; real level-based skill budget and inline milestones; session view recovery; Astir outfit constraints"
+  "release": "2026.10.30.31",
+  "notes": "Read-only attack, defense and effect panels in the character portrait, retaining 0.30 skill and equipment editing"
 }
