@@ -230,7 +230,61 @@ function renderEquipment(root){
  }}));
  layout.append(slotsPanel,inventory,inspector);root.append(layout);
 }
-function renderStats(root){root.append(h('p',{class:'muted',text:'Здесь записывается только план распределения. Игровые HP, MP, атака, защита и прочие показатели не вычисляются без подтверждённого движка.'}));const grid=h('div',{class:'stat-grid'});STATS.forEach(key=>{const box=h('div',{class:'stat-card'});box.append(h('h3',{text:key}),h('b',{text:String(state.stats[key]||0)}));const slider=h('input',{type:'range',min:'0',max:'100',step:'1',value:state.stats[key]||0,'aria-label':'Распределение '+key,oninput:e=>{state.stats[key]=Number(e.target.value);persist();box.querySelector('b').textContent=e.target.value}});box.append(slider,h('span',{text:'Планируемое распределение — не игровые итоговые характеристики'}));grid.append(box)});root.append(grid)}
+function renderStats(root){
+ const codes=['vit','str','agi','dex','spi','int'],symbols=['♥','⚔','➶','✥','✦','❂'];
+ const total=STATS.reduce((sum,key)=>sum+Number(state.stats[key]||0),0);
+ root.append(h('div',{class:'stat-editor-overview'},[
+  h('div',{},[h('h3',{text:'Книга характеристик'}),h('p',{class:'muted',text:'Распределяй очки визуально. Пределы характеристик берутся из опубликованных данных класса Pandora Saga OS.'})]),
+  h('div',{class:'stat-total'},[h('strong',{text:String(total)}),h('span',{text:'Запланировано очков'})])
+ ]));
+ root.append(h('p',{class:'muted',text:'Итоговые значения HP, урона и стоимость повышения характеристик не рассчитываются без проверенного игрового движка. Ни одно изменение не стирается при смене класса.'}));
+ const grid=h('div',{class:'stat-grid'});
+ STATS.forEach((key,i)=>{
+  const code=codes[i];
+  const raw=catalog.live?catalog.classes?.[jobKeys[state.job]]?.statCaps?.[code]:null;
+  const cap=Number.isFinite(Number(raw))&&raw!==null&&raw!==undefined?Math.max(0,Math.trunc(Number(raw))):null;
+  const value=Number(state.stats[key]||0);
+  const ceiling=cap===null?Math.max(200,value):Math.max(cap,value);
+  const box=h('section',{class:'stat-card stat-visual-editor'});
+  const head=h('div',{class:'stat-visual-head'});
+  head.append(h('span',{class:'stat-emblem',text:symbols[i]}),h('h3',{text:key}),
+   h('span',{class:'stat-visual-cap',text:cap===null?'Предел не подтверждён':'Макс. '+cap}));
+  const count=h('strong',{class:'stat-visual-value',text:String(value)});
+  const bar=h('div',{class:'stat-visual-progress'}),fill=h('div',{class:'stat-visual-fill'});
+  fill.style.width=(cap&&cap>0?Math.min(100,value/cap*100):0)+'%';
+  bar.append(fill);
+  const warning=h('p',{class:'stat-visual-warning',text:cap!==null&&value>cap?'Выше предела текущего класса: '+value+' / '+cap:''});
+  const range=h('input',{type:'range',min:'0',max:String(ceiling),step:'1',value:String(Math.min(ceiling,value)),'aria-label':key+' — распределение'});
+  const exact=h('input',{type:'number',min:'0',max:String(cap??999),step:'1',value:String(value),'aria-label':'Точное значение '+key});
+  const change=n=>{
+   const next=Number(n);
+   if(!Number.isInteger(next)||next<0||next>(cap??999))return false;
+   state.stats[key]=next;persist();
+   count.textContent=String(next);exact.value=String(next);range.value=String(next);
+   fill.style.width=(cap&&cap>0?Math.min(100,next/cap*100):0)+'%';
+   warning.textContent=cap!==null&&next>cap?'Выше предела текущего класса: '+next+' / '+cap:'';
+   const all=STATS.reduce((sum,s)=>sum+Number(state.stats[s]||0),0);
+   root.querySelector('.stat-total strong').textContent=String(all);
+   return true;
+  };
+  const adjust=delta=>{
+   const current=Number(state.stats[key]||0);
+   if(delta>0&&cap!==null&&current>=cap)return;
+   change(Math.max(0,Math.min(cap??999,current+delta)));
+  };
+  const actions=h('div',{class:'stat-visual-controls'});
+  const minus=h('button',{type:'button',text:'−',title:'Убрать одно очко',onclick:()=>adjust(-1)});
+  const plus=h('button',{type:'button',text:'+',title:'Добавить одно очко',onclick:()=>adjust(1)});
+  range.addEventListener('input',()=>{if(!change(range.value))range.value=String(state.stats[key]||0)});
+  exact.addEventListener('change',()=>{if(!change(exact.value))exact.value=String(state.stats[key]||0)});
+  actions.append(minus,range,plus,exact);
+  box.append(head,count,bar,warning,actions);
+  if(cap===null)box.append(h('p',{class:'stat-visual-hint',text:'Предел пока неизвестен. Используется редактор плана, не игровой расчёт.'}));
+  else if(cap===0)box.append(h('p',{class:'stat-visual-hint',text:'Текущий класс не может вкладывать очки в эту характеристику по данным сервера.'}));
+  grid.append(box);
+ });
+ root.append(grid);
+}
 function compareSnapshots(a,b){const rows=[];for(const branch of branches){const x=a.points?.[branch.id]||0,y=b.points?.[branch.id]||0;if(x!==y)rows.push(`${branch.name}: ${x} → ${y} (${y>x?'+':''}${y-x})`)}for(const stat of STATS){const x=a.stats?.[stat]||0,y=b.stats?.[stat]||0;if(x!==y)rows.push(`${stat}: ${x} → ${y}`)}return rows}
 function renderBuilds(root){const toolbar=h('div');toolbar.append(h('button',{class:'button-action primary',text:'✧ Сохранить текущий билд',onclick:()=>saveBuild()}),h('button',{class:'button-action',text:'⇩ Экспорт JSON',onclick:exportBuild}),h('button',{class:'button-action',text:'⇧ Импорт JSON',onclick:importBuild}));root.append(toolbar,h('p',{class:'muted',text:'Билды хранятся локально в этом браузере. Сравнение показывает изменения выбора, а не вымышленные боевые результаты.'}));const grid=h('div',{class:'build-grid'});builds.forEach(b=>{const box=h('div',{class:'build-card'}),check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});check.checked=compareIds.includes(b.id);check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};box.append(h('h3',{text:b.name}),h('p',{text:`${races[b.data.race]?.[0]||'?'} · ${jobs[b.data.job]||'?'} · Lv ${b.data.level}`}),h('label',{},[check,' Сравнить']),h('button',{class:'button-action',text:'Открыть',onclick:()=>{state=structuredClone(b.data);persist();render();changeTab('character')}}),h('button',{class:'button-action',text:'Удалить',onclick:()=>{builds=builds.filter(x=>x.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();renderDetails()}}));grid.append(box)});root.append(grid);if(compareIds.length===2){const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));if(a&&b){const results=compareSnapshots(a.data,b.data);root.append(h('h3',{text:`Сравнение: ${a.name} / ${b.name}`}),h('p',{class:'muted',text:results.join(' · ')||'Выборы совпадают'}))}}}
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}

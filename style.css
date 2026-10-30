@@ -52,3 +52,23 @@
 .owner-manager-row p{font-size:11px;overflow-wrap:anywhere}
 .owner-manager-row button{flex-shrink:0;background:#392419;border:1px solid #876443;color:#efc693;padding:7px;cursor:pointer}
 @media(max-width:570px){.owner-dock{left:8px;right:8px;bottom:8px;justify-content:center}.owner-dock-title{width:100%;text-align:center}.owner-manager-row{align-items:flex-start;flex-direction:column}}
+
+
+/* Stat allocation sourced from Pandora Saga OS class.statCaps (no fabricated combat math). */
+.stat-editor-overview{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;background:linear-gradient(110deg,#1c1915,#332319);border:1px solid #80613d;margin-bottom:12px;padding:16px}
+.stat-editor-overview h3{font-size:25px}.stat-total{text-align:center;min-width:130px;padding:8px 16px;border:1px solid #9d784a;background:#110f0e}
+.stat-total strong{display:block;font:700 30px Georgia;color:#edc88c}.stat-total span{color:#ac987e;font-size:10px}
+.stat-visual-editor{min-width:0;background:linear-gradient(148deg,#37251a,#130f0d);border:1px solid #8f6d45}
+.stat-visual-head{display:flex;align-items:center;gap:7px}.stat-visual-head h3{flex:1}
+.stat-emblem{font-size:23px;color:#ecbc72}.stat-visual-cap{font-size:10px;color:#c3a984;text-align:right}
+.stat-visual-value{font:700 36px Georgia;color:#f5ca84;display:block;margin:10px 0}
+.stat-visual-progress{height:9px;border:1px solid #7e5c37;background:#0b0b09}
+.stat-visual-fill{height:100%;background:linear-gradient(90deg,#93663d,#e6b46f);transition:width .1s}
+.stat-visual-controls{display:flex;gap:6px;align-items:center;margin-top:13px;flex-wrap:wrap}
+.stat-visual-controls button{flex:0 0 32px;height:32px;background:#35261a;border:1px solid #8f6a42;color:#eeca91}
+.stat-visual-controls button:hover{border-color:#e2b879}
+.stat-visual-controls input[type=range]{min-width:65px;flex:1}
+.stat-visual-controls input[type=number]{width:66px;min-width:0;background:#130f0b;color:#f2d29b;border:1px solid #80633e;padding:7px}
+.stat-visual-warning{color:#f4a284;font-size:11px;min-height:1em}
+.stat-visual-hint{color:#b6a085;font-size:11px;margin-top:8px}
+@media(max-width:450px){.stat-visual-controls input[type=range]{flex-basis:calc(100% - 80px)}}
