@@ -18,7 +18,7 @@ function summary(record,icon,kind='item'){
  const wrap=el('div',{class:'stage-rich-summary'}),head=el('div',{class:'stage-rich-head'});
  const src=icon(record,kind);
  if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));head.append(img)}
- head.append(el('strong',{text:record.name||'Без названия',
+ head.append(el('strong',{text:presenter?.displayName(record)||'Без названия',
   ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));wrap.append(head);
  // IDs are internal database keys, never player-facing data.
  const rows=kind==='soul'?[['Подходящие слоты',(record.slots||[]).join(', ')]]:
@@ -89,7 +89,7 @@ function render(root,api){
  const cap=hasSouls?plan.socketCapacity(record):0;
  if(mode==='gems'||mode==='souls'&&!hasSouls){api.changeMode('details');return}
  const head=el('div',{class:'stage-picker-head'},[
-  el('strong',{text:record?.name||'Слот: '+slot}),
+  el('strong',{text:root.PandoraItemPresentation?.displayName(record)||'Слот: '+slot}),
   el('button',{type:'button',text:'✕',onclick:api.close,'aria-label':'Закрыть настройку'})
  ]);root.append(head);
  const tabs=el('nav',{class:'stage-rich-tabs',role:'group','aria-label':'Настройка предмета'});
@@ -148,7 +148,7 @@ function render(root,api){
     const button=el('button',{type:'button',class:'stage-rich-result',onclick:()=>api.assignSoul(rec)});
     const src=icons(rec,'soul');
     if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
-    button.append(el('span',{text:rec.name||'Душа без названия'}));list.append(button);attachPreview(button,rec,icons,'soul');
+    button.append(el('span',{text:root.PandoraItemPresentation?.displayName(rec,'Душа без названия')||'Душа без названия'}));list.append(button);attachPreview(button,rec,icons,'soul');
    }
    if(results.length>80)list.append(el('p',{class:'muted',text:'Показано 80 душ. Уточни поиск.'}));
    if(!results.length)list.append(el('p',{class:'muted',text:'Совместимых душ не найдено'}));
