@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.77",
-  "notes": "Компактный «Путь героя»: пороги и классовые ограничения в группах навыков; локальная проверка версий без GitHub Actions"
+  "release": "2026.10.31.78",
+  "notes": "Absolute race/class attribute inputs, 99-point allocation ceiling, uncapped known equipment and Soul bonuses"
 }
