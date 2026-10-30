@@ -527,3 +527,19 @@ a.wiki-link:hover{text-decoration:none}
 /* 2026.10.30.45: clean stat editor – essential game values only */
 .stat-brief-vitals{color:#e9c48a;font-size:13px;font-weight:600;padding:5px 0}
 .stat-visual-cap:empty{display:none}
+
+/* 2026.10.30.46: central portrait restored, no oversized 'hero path' on desktop */
+@media(min-width:1420px){
+ .workspace{grid-template-columns:minmax(240px,280px) minmax(560px,1fr) minmax(335px,410px);gap:13px}
+ .workspace .stage-inner .portrait-frame{width:clamp(395px,68%,495px);max-width:min(495px,calc(100% - 114px));margin-inline:auto;flex-shrink:0}
+}
+@media(min-width:1201px) and (max-width:1419px){.workspace .stage-inner .portrait-frame{width:min(74%,470px);max-width:470px}}
+.origin-stat-guide{font-size:10px;color:#c4ab83;text-align:right;margin:4px 0 8px}
+.origin-stat-row{grid-template-columns:minmax(0,1fr) 23px 24px 39px 24px 43px;gap:3px;padding:5px 4px}
+.origin-stat-base{text-align:center;color:#c6a67e;font-size:12px}
+.origin-stat-result{display:flex;flex-direction:column;align-items:center}
+.origin-stat-result strong{font-size:15px;color:#f7d9a7}
+.origin-stat-result small{font-size:9px;color:#ab9376}
+.origin-stat-summary.over-budget,.stat-editor-overview.over-budget .stat-total{color:#e89a87}
+.origin-stat-row button:disabled,.stat-visual-controls button:disabled{opacity:.4;cursor:not-allowed}
+.stat-base-note{display:block;color:#c9aa7e;font-size:11px}

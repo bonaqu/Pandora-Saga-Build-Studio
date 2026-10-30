@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest shipped client:** 0.45.0 (`2026.10.30.45`)  
+**Updated:** 2026-10-30 · **Latest shipped client:** 0.46.0 (`2026.10.30.46`)  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -35,6 +35,11 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [ ] Verify actual Worker deployed version and D1 status without mutating credentials or existing data.
 
 ## Priority B — combat calculations without guesses
+
+- [x] Compare initial stats for all 6 races × 4 base professions against Remaked and OS.
+- [x] Integrate archived BPt level budget and SPt next-point cost into both UI editors, without overwriting saved builds.
+- [ ] Validate archived attribute budgets and next-point costs against current live OS game rules.
+
 
 1. Freeze OS version/digest of `classes/items/souls/skills/tables` and current public calculator JS; keep Remaked Legacy engine immutable.
 2. Run 28 classes × levels (1,10,20,30,40,45,50,55 where supported) × base/modified attribute vectors; compare public calculator against exact results, rounding and flat/percent stacking.

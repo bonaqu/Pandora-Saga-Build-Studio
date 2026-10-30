@@ -401,6 +401,17 @@ function renderStagePicker(focusSearch=false){
  root.append(top,search,count,list,bottom);draw();
  if(focusSearch)search.focus({preventScroll:true});
 }
+function attributeSnapshot(){
+ const klass=catalog.classes?.[jobKeys[state.job]],root=klass?.baseClass||jobKeys[state.job];
+ return window.PandoraAttributeProgression.snapshot({
+  tables:gameTables,race:window.PandoraGameNavigation.raceKeys[state.race],klass:root,level:state.level,
+  added:STATS.map(key=>Number(state.stats[key]||0)),caps:klass?.statCaps
+ });
+}
+function setAttributePoints(index,added){
+ if(!window.PandoraAttributeProgression.allowed(attributeSnapshot(),index,added))return false;
+ state.stats[STATS[index]]=added;persist();renderHudEstimates();return true;
+}
 const ORIGIN_STAT_LABELS=[
  {short:'ВЫН',name:'Выносливость',code:'vit'},
  {short:'СИЛ',name:'Сила',code:'str'},
@@ -411,46 +422,50 @@ const ORIGIN_STAT_LABELS=[
 ];
 // Legacy save keys remain unchanged: AGI was stored under «Ловкость», DEX under «Сноровка».
 function renderOriginStats(){
- const container=$('originStats');
- if(!container)return;
- container.replaceChildren();
- const summary=$('originStatSummary');
- const refreshSummary=()=>{
-  const allocated=STATS.reduce((n,key)=>n+Number(state.stats[key]||0),0);
-  const estimate=previewBaseStats();
-  summary.textContent='Распределено: '+allocated+
-   (estimate?' · ОЗ ≈'+estimate.hp+' · ОМ ≈'+estimate.mp:' · ОЗ/ОМ после загрузки каталога');
- };
- const layout=h('div',{class:'origin-stat-list'});
- for(let i=0;i<ORIGIN_STAT_LABELS.length;i++){
-  const info=ORIGIN_STAT_LABELS[i],key=STATS[i];
-  const cap=window.PandoraOriginModel.statLimit(catalog.classes,jobKeys[state.job],info.code);
-  const current=Number(state.stats[key]||0);
-  const row=h('div',{class:'origin-stat-row'});
-  const label=h('div',{class:'origin-stat-title',title:info.name});
-  label.append(h('b',{text:info.short}),h('span',{text:info.name}));
-  const minus=h('button',{type:'button',class:'origin-stat-minus',text:'−','aria-label':'Уменьшить '+info.name});
-  const value=h('input',{type:'number',class:'origin-stat-input',min:'0',max:String(cap??999),step:'1',
-   value:String(current),'aria-label':info.name+' — вложено очков',title:info.name});
-  const plus=h('button',{type:'button',class:'origin-stat-plus',text:'+','aria-label':'Увеличить '+info.name});
-  const status=h('small',{class:'origin-stat-cap',text:cap===null?'':'≤ '+cap});
-  function commit(next){
-   const number=Number(next);
-   if(!window.PandoraOriginModel.allowedStat(number,cap)){
-    value.value=String(state.stats[key]||0);return;
-   }
-   state.stats[key]=number;persist();
-   value.value=String(number);refreshSummary();renderHudEstimates();
-   if($('detailPanel').classList.contains('is-open')&&
-     (activeTab==='stats'||activeTab==='character'&&characterPanelTab==='stats'))renderDetails();
+ const root=$('originStats'),summary=$('originStatSummary');
+ if(!root||!summary)return;
+ root.replaceChildren();
+ root.append(h('p',{class:'origin-stat-guide',text:'Старт + вложено = итог'}));
+ const list=h('div',{class:'origin-stat-list'}),elements=[];
+ function refresh(){
+  const snap=attributeSnapshot();
+  summary.textContent=snap?'Свободно: '+snap.remaining+' / '+snap.total+' · Потрачено: '+snap.spent:'Характеристики';
+  summary.classList.toggle('over-budget',!!snap?.overBudget);
+  for(const entry of elements){
+   const current=Number(state.stats[STATS[entry.i]]||0),base=snap?.base[entry.i];
+   entry.start.textContent=base===undefined?'—':String(base);
+   entry.input.value=String(current);entry.end.textContent=base===undefined?'—':String(base+current);
+   entry.cap.textContent=snap?'из '+snap.max[entry.i]:'';
+   entry.minus.disabled=!snap||current===0;
+   entry.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,entry.i,current+1);
+   entry.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(snap,entry.i)??'максимум');
   }
-  minus.addEventListener('click',()=>commit(Math.max(0,Number(state.stats[key]||0)-1)));
-  plus.addEventListener('click',()=>commit(Number(state.stats[key]||0)+1));
-  value.addEventListener('change',()=>commit(value.value));
-  row.append(label,minus,value,plus,status);layout.append(row);
  }
- container.append(layout);
- refreshSummary();
+ ORIGIN_STAT_LABELS.forEach((info,i)=>{
+  const row=h('div',{class:'origin-stat-row'});
+  const title=h('div',{class:'origin-stat-title',title:info.name},[
+   h('b',{text:info.short}),h('span',{text:info.name})]);
+  const start=h('span',{class:'origin-stat-base',text:'—',title:'Стартовое значение'});
+  const minus=h('button',{type:'button',text:'−','aria-label':'Уменьшить '+info.name});
+  const input=h('input',{type:'number',min:'0',max:'99',step:'1',class:'origin-stat-input',
+   value:String(state.stats[STATS[i]]||0),'aria-label':info.name+' — вложено'});
+  const plus=h('button',{type:'button',text:'+','aria-label':'Увеличить '+info.name});
+  const result=h('div',{class:'origin-stat-result'}),end=h('strong',{text:'—'}),cap=h('small',{text:''});
+  result.append(end,cap);
+  const commit=next=>{
+   if(!setAttributePoints(i,Number(next))){input.value=String(state.stats[STATS[i]]||0);return}
+   refresh();
+   if($('detailPanel').classList.contains('is-open')&&activeTab==='stats'){
+    const scroll=$('detailContent').scrollTop;renderDetails();$('detailContent').scrollTop=scroll;
+   }
+  };
+  minus.addEventListener('click',()=>commit(Math.max(0,Number(state.stats[STATS[i]]||0)-1)));
+  plus.addEventListener('click',()=>commit(Number(state.stats[STATS[i]]||0)+1));
+  input.addEventListener('change',()=>commit(input.value));
+  row.append(title,start,minus,input,plus,result);
+  list.append(row);elements.push({i,start,input,end,cap,minus,plus});
+ });
+ root.append(list);refresh();
 }
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
@@ -1172,60 +1187,58 @@ function renderEquipment(root){
  layout.append(slotColumn,main,side);root.append(layout);
 }
 function renderStats(root){
- const codes=['vit','str','agi','dex','spi','int'],symbols=['♥','⚔','➶','✥','✦','❂'];
- const total=STATS.reduce((sum,key)=>sum+Number(state.stats[key]||0),0);
- root.append(h('div',{class:'stat-editor-overview'},[
-  h('div',{},[h('h3',{text:'Характеристики'})]),
-  h('div',{class:'stat-total'},[h('strong',{text:String(total)}),h('span',{text:'Распределено'})])
- ]));
+ const icons=['♥','⚔','➶','✥','✦','❂'];
+ const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:'Характеристики'});
+ const points=h('div',{class:'stat-total'},[h('strong',{text:'—'}),h('span',{text:'Свободные очки'})]);
+ overview.append(header,points);root.append(overview);
  const hpmp=previewBaseStats();
- if(hpmp)root.append(h('p',{class:'stat-brief-vitals',text:
-  'ОЗ ≈'+hpmp.hp+' · ОМ ≈'+hpmp.mp}));
- const grid=h('div',{class:'stat-grid'});
- STATS.forEach((key,i)=>{
-  const code=codes[i];
-  const cap=window.PandoraOriginModel.statLimit(catalog.classes,jobKeys[state.job],code);
-  const value=Number(state.stats[key]||0);
-  const ceiling=cap===null?Math.max(200,value):Math.max(cap,value);
-  const box=h('section',{class:'stat-card stat-visual-editor'});
-  const head=h('div',{class:'stat-visual-head'});
-  head.append(h('span',{class:'stat-emblem',text:symbols[i]}),
-   h('h3',{text:ORIGIN_STAT_LABELS[i].name}),
-   h('span',{class:'stat-visual-cap',text:cap===null?'':'Макс. '+cap}));
-  const count=h('strong',{class:'stat-visual-value',text:String(value)});
+ if(hpmp)root.append(h('p',{class:'stat-brief-vitals',text:'ОЗ ≈'+hpmp.hp+' · ОМ ≈'+hpmp.mp}));
+ const grid=h('div',{class:'stat-grid'}),controls=[];
+ function refresh(){
+  const s=attributeSnapshot();
+  points.querySelector('strong').textContent=s?String(s.remaining):'—';
+  points.querySelector('span').textContent=s?'Свободно из '+s.total:'Свободные очки';
+  overview.classList.toggle('over-budget',!!s?.overBudget);
+  for(const v of controls){
+   const invested=Number(state.stats[STATS[v.i]]||0),base=s?.base[v.i];
+   v.note.textContent=base===undefined?'':'База '+base+' + '+invested;
+   v.total.textContent=base===undefined?'—':String(base+invested);
+   v.range.value=String(invested);v.exact.value=String(invested);
+   v.range.max=String(Math.max(invested,(s?.max[v.i]??99)-(base??0)));
+   v.fill.style.width=s&&s.max[v.i]>0?Math.min(100,(base+invested)/s.max[v.i]*100)+'%':'0%';
+   v.minus.disabled=!s||invested===0;
+   v.plus.disabled=!window.PandoraAttributeProgression.allowed(s,v.i,invested+1);
+   v.range.disabled=!s;v.exact.disabled=!s;
+   v.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(s,v.i)??'максимум');
+  }
+ }
+ ORIGIN_STAT_LABELS.forEach((info,i)=>{
+  const s=attributeSnapshot(),card=h('section',{class:'stat-card stat-visual-editor'});
+  const head=h('div',{class:'stat-visual-head'},[
+   h('span',{class:'stat-emblem',text:icons[i]}),
+   h('h3',{text:info.name}),h('span',{class:'stat-visual-cap',text:s?'Макс. '+s.max[i]:''})
+  ]);
+  const note=h('span',{class:'stat-base-note',text:''}),total=h('strong',{class:'stat-visual-value',text:'—'});
   const bar=h('div',{class:'stat-visual-progress'}),fill=h('div',{class:'stat-visual-fill'});
-  fill.style.width=(cap&&cap>0?Math.min(100,value/cap*100):0)+'%';
   bar.append(fill);
-  const warning=h('p',{class:'stat-visual-warning',text:cap!==null&&value>cap?'Выше предела текущего класса: '+value+' / '+cap:''});
-  const range=h('input',{type:'range',min:'0',max:String(ceiling),step:'1',value:String(Math.min(ceiling,value)),'aria-label':ORIGIN_STAT_LABELS[i].name+' — распределение'});
-  const exact=h('input',{type:'number',min:'0',max:String(cap??999),step:'1',value:String(value),'aria-label':'Точное значение '+ORIGIN_STAT_LABELS[i].name});
-  const change=n=>{
-   const next=Number(n);
-   if(!window.PandoraOriginModel.allowedStat(next,cap))return false;
-   state.stats[key]=next;persist();renderHudEstimates();
-   count.textContent=String(next);exact.value=String(next);range.value=String(next);
-   fill.style.width=(cap&&cap>0?Math.min(100,next/cap*100):0)+'%';
-   warning.textContent=cap!==null&&next>cap?'Выше предела текущего класса: '+next+' / '+cap:'';
-   const all=STATS.reduce((sum,s)=>sum+Number(state.stats[s]||0),0);
-   root.querySelector('.stat-total strong').textContent=String(all);
-   return true;
+  const range=h('input',{type:'range',min:'0',max:'99',step:'1',value:String(state.stats[STATS[i]]||0),
+   'aria-label':info.name+' — вложено'});
+  const exact=h('input',{type:'number',min:'0',max:'99',step:'1',value:String(state.stats[STATS[i]]||0),
+   'aria-label':'Точное значение '+info.name});
+  const change=value=>{
+   if(!setAttributePoints(i,Number(value))){refresh();return}
+   refresh();renderOriginStats();
+   const vitals=root.querySelector('.stat-brief-vitals'),v=previewBaseStats();
+   if(vitals&&v)vitals.textContent='ОЗ ≈'+v.hp+' · ОМ ≈'+v.mp;
   };
-  const adjust=delta=>{
-   const current=Number(state.stats[key]||0);
-   if(delta>0&&cap!==null&&current>=cap)return;
-   change(Math.max(0,Math.min(cap??999,current+delta)));
-  };
-  const actions=h('div',{class:'stat-visual-controls'});
-  const minus=h('button',{type:'button',text:'−',title:'Убрать одно очко',onclick:()=>adjust(-1)});
-  const plus=h('button',{type:'button',text:'+',title:'Добавить одно очко',onclick:()=>adjust(1)});
-  range.addEventListener('input',()=>{if(!change(range.value))range.value=String(state.stats[key]||0)});
-  exact.addEventListener('change',()=>{if(!change(exact.value))exact.value=String(state.stats[key]||0)});
-  actions.append(minus,range,plus,exact);
-  box.append(head,count,bar,warning,actions);
-  if(cap===0)box.append(h('p',{class:'stat-visual-hint',text:'Недоступно'}));
-  grid.append(box);
+  const minus=h('button',{type:'button',text:'−',onclick:()=>change(Math.max(0,Number(state.stats[STATS[i]]||0)-1))});
+  const plus=h('button',{type:'button',text:'+',onclick:()=>change(Number(state.stats[STATS[i]]||0)+1)});
+  range.addEventListener('input',()=>change(range.value));
+  exact.addEventListener('change',()=>change(exact.value));
+  card.append(head,note,total,bar,h('div',{class:'stat-visual-controls'},[minus,range,plus,exact]));
+  controls.push({i,note,total,range,exact,fill,minus,plus});grid.append(card);
  });
- root.append(grid);
+ root.append(grid);refresh();
 }
 function compareSnapshots(a,b){
  const rows=[];const lib=window.PandoraEquipmentPlan;

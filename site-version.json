@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.45",
-  "notes": "Remove technical caveat under character stats and other cluttering developer notes, unify player-facing stat names, keep provenance in README and automated tests"
+  "release": "2026.10.30.46",
+  "notes": "OS race/class base attributes, Remaked level stat point budgets and progressive costs, restored central portrait width"
 }
