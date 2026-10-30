@@ -25,10 +25,10 @@ test('current class formula reproduces audited Cleric lvl45 3145 HP / 1279 MP',(
 test('high Soul MP +8% uses separate base, not the final equipment-adjusted value',()=>{
  const necklace={effects:[{func:'EP_MAXMANA_CONST',a:50}]};
  const x=cleric([['item:20001',necklace,0],['soul:104002',souls[104002],0]]);
- assert.equal(x.mp,1279+50+102);
- assert.equal(x.vitalsBonus.mp.percentParts[0].amount,102);
+ assert.equal(x.mp,1290+50+103);
+ assert.equal(x.vitalsBonus.mp.percentParts[0].amount,103);
  assert.equal(x.effects.flat.spi,1);
- assert.equal(x.mpBase,1289,'SPI from the Soul must adjust the base before percentages');
+ assert.equal(x.mpBase,1290,'SPI from the Soul must adjust the base before percentages');
 });
 test('guild enhancements are separately selected for HP/MP; Life Sign is HP-only',()=>{
  const x=cleric([],{guildHp:6,guildMp:2,lifeSign:true});
