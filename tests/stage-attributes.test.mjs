@@ -18,8 +18,8 @@ test('character portrait can toggle source-backed stats without page scroll',()=
 test('source preview must not claim calculated combat stats',()=>{
  const attrs=get('stage-attributes.js');
  assert.match(attrs,/Это не рассчитанные характеристики персонажа/);
- assert.match(attrs,/Итоговые HP\/MP/);
- assert.match(attrs,/Итоговые HP\/MP, сопротивления, криты/);
+ assert.match(attrs,/Подтверждённые бонусы снаряжения и душ/);
+ assert.match(attrs,/не итоговые сопротивления/);
  assert.match(attrs,/rec\.effects/);
 });
 test('reloading preserves portrait attribute page independently of build',()=>{
