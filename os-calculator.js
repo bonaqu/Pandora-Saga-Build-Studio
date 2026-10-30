@@ -136,6 +136,34 @@ function selectedHonor(options={}){
  const id=raw==null?(options.honorCuriosity===true?1:0):raw;
  return Number.isInteger(id)&&id>=0&&id<honorTitles.length?honorTitles[id]:null;
 }
+// Modern Remaked modern/calculator-controls.js 4.23: original 14 preview slots.
+// Identity is confirmed for ten; four remain historical and are hidden from player lists.
+const potionSources=Object.freeze([
+ [50060,'Мясо','Chunk of Meat'],[50001,'Легкое исцеляющее зелье','Painkiller'],
+ [50002,'Слабое исцеляющее зелье','Salve'],[50003,'Простое исцеляющее зелье','Remedy'],
+ null,[50061,'Таинственное зелье','Mysterious Potion'],
+ [50023,'Подснежник','Hepatica'],null,
+ [50062,'Тыквенное печенье','Pumpkin Cookie'],[50065,'Астирская конфета','Astian Candy'],
+ [50063,'Вкусное шампанское','Elegant Champagne'],
+ [50004,'Сильное исцеляющее зелье','Restoration Potion'],null,null
+]);
+const potionFixed=Object.freeze([20,60,120,180,450,145,20,25,200,150]);
+const potionPercent=Object.freeze([5,15,30,18]);
+function potionPreview({enabled=false,potionRate=null,maxHp=null}={}){
+ const valid=Number.isFinite(potionRate)&&potionRate>=0&&
+  Number.isFinite(maxHp)&&maxHp>=0;
+ return potionSources.map((item,i)=>{
+  const percent=i>=potionFixed.length;
+  const original=percent?potionPercent[i-potionFixed.length]:potionFixed[i];
+  let value;
+  if(!enabled)value=percent?original+'%':String(original);
+  else if(!valid)value=null;
+  else if(percent)value=String(Math.floor(maxHp*Math.ceil(original*potionRate)/10000));
+  else value=String(Math.floor(original*potionRate/100));
+  return {id:item?.[0]??null,ru:item?.[1]||null,en:item?.[2]||null,
+   current:Boolean(item),percent,base:original,value,enabled:enabled===true};
+ });
+}
 function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false}={}){
  if(!Number.isFinite(vit)||vit<0||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -205,6 +233,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview
 });
 })(typeof window==='undefined'?globalThis:window);
