@@ -573,9 +573,15 @@ function skillHover(button,skill){
   }
   document.body.append(tip);
   const box=button.getBoundingClientRect(),width=tip.offsetWidth,height=tip.offsetHeight;
-  tip.style.left=Math.max(8,Math.min(innerWidth-width-8,box.left+box.width/2-width/2))+'px';
-  tip.style.top=(box.top-height-8>=8?box.top-height-8:
-   Math.max(8,Math.min(innerHeight-height-8,box.bottom+9)))+'px';
+  const viewportWidth=document.documentElement.clientWidth,viewportHeight=innerHeight;
+  tip.style.maxHeight=Math.max(120,viewportHeight-16)+'px';
+  tip.style.overflowY='auto';
+  const effectiveWidth=tip.getBoundingClientRect().width;
+  const effectiveHeight=tip.getBoundingClientRect().height;
+  tip.style.left=Math.max(8,Math.min(viewportWidth-effectiveWidth-8,
+   box.left+box.width/2-effectiveWidth/2))+'px';
+  tip.style.top=Math.max(8,Math.min(viewportHeight-effectiveHeight-8,
+   box.top-effectiveHeight-8>=8?box.top-effectiveHeight-8:box.bottom+9))+'px';
  };
  button.addEventListener('mouseenter',show);button.addEventListener('focus',show);
  button.addEventListener('mouseleave',clear);button.addEventListener('blur',clear);button.addEventListener('click',clear);
