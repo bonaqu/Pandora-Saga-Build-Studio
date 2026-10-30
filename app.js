@@ -484,53 +484,56 @@ function renderOriginStats(){
  const root=$('originStats'),summary=$('originStatSummary');
  if(!root||!summary)return;
  root.replaceChildren();
-const list=h('div',{class:'origin-stat-list'}),elements=[];
+ const list=h('div',{class:'origin-stat-list'}),entries=[];
+ // Saved stats remain invested-only. The input is the absolute race/class baseline + investment.
  function refresh(){
-  const snap=attributeSnapshot(),estimated=previewBaseStats();
+  const snap=attributeSnapshot(),estimate=previewBaseStats();
   summary.textContent=snap?'Свободно: '+snap.remaining+' / '+snap.total+' · Потрачено: '+snap.spent:'Характеристики';
   summary.classList.toggle('over-budget',!!snap?.overBudget);
-  for(const entry of elements){
-   const current=Number(state.stats[STATS[entry.i]]||0),base=snap?.base[entry.i];
-   entry.start.textContent=base===undefined?'—':String(base);
-   entry.input.value=String(current);entry.input.max=snap?String(Math.max(current,snap.max[entry.i]-snap.base[entry.i])):'99';
-   const invested=base===undefined?null:base+current;
-   const code=ORIGIN_STAT_LABELS[entry.i].code;
-   const gear=Number(estimated?.effects?.flat?.[code]||0);
-   const legacy=Number(estimated?.supplementalFlat?.[code]||0);
-   const effective=estimated?.stats?.[code];
-   entry.end.textContent=invested===null?'—':String(Number.isFinite(effective)?effective:invested);
-   entry.end.title='Начальное значение: '+(base??'—')+' · Вложено: '+current+
-    ' · Итог: '+entry.end.textContent;
-   entry.cap.textContent=snap?'лимит '+snap.max[entry.i]:'';
-   // Detailed accounting remains in the stat model and tooltip, not a visible row.
-   entry.minus.disabled=!snap||current===0;
-   entry.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,entry.i,current+1);
-   entry.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(snap,entry.i)??'максимум');
+  for(const row of entries){
+   const base=snap?.base[row.i],spent=Number(state.stats[STATS[row.i]]||0);
+   const allocated=base===undefined?null:base+spent;
+   row.input.value=allocated===null?'':String(allocated);
+   row.input.min=String(base??0);
+   row.input.max=String(snap?.max[row.i]??99);
+   row.input.disabled=!snap;
+   const key=ORIGIN_STAT_LABELS[row.i].code,effective=estimate?.stats?.[key];
+   const shown=Number.isFinite(effective)?effective:allocated;
+   row.result.textContent=shown===null?'—':String(shown);
+   const delta=shown===null||allocated===null?0:shown-allocated;
+   row.caption.textContent=delta?(delta>0?'+':'')+delta+' бонус':'Итог';
+   row.result.title='База '+(base??'—')+' + очки '+spent+
+    ' + известные бонусы '+delta+' = '+row.result.textContent;
+   row.minus.disabled=!snap||spent<=0;
+   row.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,row.i,spent+1);
+   row.plus.title='Стоимость +1: '+(window.PandoraAttributeProgression.nextCost(snap,row.i)??'максимум');
   }
  }
  ORIGIN_STAT_LABELS.forEach((info,i)=>{
-  const row=h('div',{class:'origin-stat-row'});
+  const wrap=h('div',{class:'origin-stat-row'});
   const title=h('div',{class:'origin-stat-title',title:info.name},[
    h('b',{text:info.short}),h('span',{text:info.name})]);
-  const start=h('span',{class:'origin-stat-base',text:'—',title:'Стартовое значение'});
   const minus=h('button',{type:'button',text:'−','aria-label':'Уменьшить '+info.name});
-  const input=h('input',{type:'number',min:'0',step:'1',class:'origin-stat-input',
-   value:String(state.stats[STATS[i]]||0),'aria-label':info.name+' — вложено'});
+  const input=h('input',{type:'number',min:'0',max:'99',step:'1',class:'origin-stat-input',
+   'aria-label':info.name+' — без бонусов снаряжения и умений'});
   const plus=h('button',{type:'button',text:'+','aria-label':'Увеличить '+info.name});
-  const result=h('div',{class:'origin-stat-result'}),end=h('strong',{text:'—'}),cap=h('small',{text:''});
-  result.append(end,cap);
-  const commit=next=>{
-   if(!setAttributePoints(i,Number(next))){input.value=String(state.stats[STATS[i]]||0);return}
+  const box=h('div',{class:'origin-stat-result'}),result=h('strong',{text:'—'}),
+   caption=h('small',{text:'Итог'});
+  box.append(result,caption);
+  const commit=absolute=>{
+   const snap=attributeSnapshot();
+   const normalized=window.PandoraAttributeProgression.resolveAbsolute(snap,i,absolute);
+   if(normalized===null||!setAttributePoints(i,normalized-snap.base[i])){refresh();return}
    refresh();
    if($('detailPanel').classList.contains('is-open')&&activeTab==='stats'){
     const scroll=$('detailContent').scrollTop;renderDetails();$('detailContent').scrollTop=scroll;
    }
   };
-  minus.addEventListener('click',()=>commit(Math.max(0,Number(state.stats[STATS[i]]||0)-1)));
-  plus.addEventListener('click',()=>commit(Number(state.stats[STATS[i]]||0)+1));
+  minus.addEventListener('click',()=>commit((attributeSnapshot()?.values[i]??0)-1));
+  plus.addEventListener('click',()=>commit((attributeSnapshot()?.values[i]??0)+1));
   input.addEventListener('change',()=>commit(input.value));
-  row.append(title,start,minus,input,plus,result);
-  list.append(row);elements.push({i,start,input,end,cap,minus,plus});
+  wrap.append(title,minus,input,plus,box);
+  list.append(wrap);entries.push({i,input,result,caption,minus,plus});
  });
  root.append(list);refresh();
 }
