@@ -56,7 +56,7 @@ button.append(slotVisual(i),h("small",{text:item?.name||slots[i][0]}));container
 }
 function renderBranches(){const c=$('skillBranches');c.replaceChildren();branches.forEach(b=>c.append(branchRow(b,false)))}
 function branchRow(b,full){const points=state.points[b.id]||0;const btn=h('button',{class:'branch-row'+(state.branch===b.id?' active':''),onclick:()=>{state.branch=b.id;selectedSkill=null;persist();renderBranches();$('branchValue').textContent=points;changeTab('skills')}});const first=catalog.live?Object.values(catalog.skills||{}).find(x=>x.branch===b.id&&x.classes?.[jobKeys[state.job]]):null;const icon=h('img',{class:'tinyicon',src:skillIcon(b.id,0,first),alt:'',loading:'lazy'});icon.onerror=()=>{icon.onerror=null;icon.style.display='none'};btn.append(icon,h('div',{},[h('strong',{text:editableValue('branch.'+b.id,b.name)}),h('span',{text:catalog.live?('Лимит класса: '+branchCap(b.id)):'Историческая ветка'})]),h('b',{class:'count',text:String(points)}));return btn}
-function render(){const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderBranches();$('budgetState').textContent='Лимиты и стоимость очков проверяются только настоящим движком. Пока — планировщик распределения.';renderDetails()}
+function render(){const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderBranches();$('budgetState').textContent='Лимиты и стоимость очков проверяются только настоящим движком. Пока — планировщик распределения.';renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds};contents[activeTab]($('detailContent'))}
 function renderCharacter(root){const intro=h('div',{class:'stat-grid'});intro.append(h('div',{class:'stat-card'},[h('h3',{text:'Раса'}),h('b',{text:races[state.race][0]}),h('span',{text:'Выбор меняет визуальный портрет'})]),h('div',{class:'stat-card'},[h('h3',{text:'Профессия'}),h('b',{text:jobs[state.job]}),h('span',{text:'Историческое название Legacy 2.00'})]),h('div',{class:'stat-card'},[h('h3',{text:'Уровень'}),h('b',{text:String(state.level)}),h('span',{text:'Планируемый уровень персонажа'})]));root.append(intro,h('p',{class:'muted',text:'Выбирай расу по реальным винтажным портретам слева, меняй класс, нажимай слоты вокруг героя и открывай навыки. Никакие боевые значения не выдумываются.'}))}
@@ -253,48 +253,146 @@ async function apiRequest(path,body,token=adminToken) {
  if(!response.ok)throw new Error(data.error||("Ошибка сервера HTTP "+response.status));
  return data;
 }
-function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
+function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
  const user=h('input',{value:'administrator',readOnly:true}),password=h('input',{type:'password',placeholder:'Пароль администратора',autocomplete:'current-password'}),setup=h('input',{type:'password',placeholder:'Одноразовый секрет первичной настройки (если ещё нет пароля)'}),feedback=h('div',{class:'error'}),go=h('button',{class:'button-action primary',text:'Войти'});go.onclick=async()=>{feedback.textContent='';try{if(!password.value||password.value.length<12)throw Error('Нужен пароль от 12 символов');const data=await apiRequest(setup.value?'/api/admin/setup':'/api/admin/login',setup.value?{username:'administrator',password:password.value,setupToken:setup.value}:{username:'administrator',password:password.value},'');adminToken=data.token;adminEditing=true;$('modalRoot').hidden=true;render();updateAdminHint()}catch(e){feedback.textContent=e.message}};body.append(h('label',{text:'Логин'}),user,h('label',{text:'Пароль'}),password,h('label',{text:'Первичная настройка (заполняется только один раз)'}),setup,go,feedback,h('p',{class:'muted',text:'Первичная настройка требует секрет ADMIN_SETUP_TOKEN, созданный владельцем в настройках Worker. Это защищает имя administrator от захвата посторонними.'}));const checkApi=h('button',{type:'button',class:'button-action',text:'Проверить Cloudflare API',onclick:async()=>{feedback.textContent='Проверяю сервер…';try{const result=await apiRequest('/api/health',null,'');feedback.textContent=result.status==='ok'?'Worker отвечает, D1 подключена.':'Ответ сервера: '+JSON.stringify(result)}catch(e){feedback.textContent=e.message}}});body.append(checkApi);modal('Служебный вход',body)}
-function updateAdminHint(){$('authState').textContent=adminEditing?'✎ Режим редактора · двойной клик по подсвеченному тексту':'';document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing))}
+function updateAdminHint(){$('authState').textContent=adminEditing?'✎ Режим редактора · выбери подсвеченный элемент':'';document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));refreshOwnerUI()}
+
+/* Authenticated on-page editing; all write actions are checked again by the Worker. */
+const ownerEdits=[];
+let activeInlineEditor=null;
+let editIsSaving=false;
+function closeInlineEditor(){
+  if(activeInlineEditor){activeInlineEditor.remove();activeInlineEditor=null;}
+}
+function activeOverride(key){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:null}
+function refreshOwnerUI(){
+  const dock=document.getElementById('ownerDock');
+  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return;}
+  if(dock){
+    dock.querySelector('[data-owner-count]').textContent='Правок: '+Object.keys(override).length;
+    dock.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving;
+    return;
+  }
+  const root=h('aside',{id:'ownerDock',class:'owner-dock',role:'toolbar','aria-label':'Управление сайтом'});
+  root.append(h('span',{class:'owner-dock-title',text:'✦ Редактор сайта'}),
+    h('span',{'data-owner-count':'',class:'owner-dock-count',text:'Правок: '+Object.keys(override).length}),
+    h('button',{type:'button',text:'↶ Отменить','data-owner-undo':'',disabled:!ownerEdits.length,onclick:undoOwnerEdit}),
+    h('button',{type:'button',text:'Все правки',onclick:showOverrideManager}),
+    h('button',{type:'button',text:'Завершить',onclick:()=>{adminEditing=false;closeInlineEditor();render();updateAdminHint()}}));
+  document.body.append(root);
+}
+async function undoOwnerEdit(){
+  if(!adminToken||!ownerEdits.length||editIsSaving)return;
+  const last=ownerEdits[ownerEdits.length-1];
+  editIsSaving=true;refreshOwnerUI();
+  try{
+    if(last.before===null){await apiRequest('/api/admin/reset',{key:last.key});delete override[last.key];}
+    else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
+    ownerEdits.pop();closeInlineEditor();render();updateAdminHint();
+  }catch(e){alert('Не удалось отменить изменение: '+e.message)}
+  finally{editIsSaving=false;refreshOwnerUI()}
+}
+function showOverrideManager(){
+  if(!adminToken)return;
+  const body=h('div',{class:'owner-manager'});
+  body.append(h('p',{class:'muted',text:'Это сохранённые настройки оформления Cloudflare D1. Сброс отдельной записи возвращает исходный текст или изображение из кода сайта. История отмены действует в этой вкладке.'}));
+  const search=h('input',{type:'search',placeholder:'Найти изменённый элемент…',class:'owner-manager-search'});
+  const list=h('div',{class:'owner-manager-list'});
+  const draw=()=>{
+    list.replaceChildren();
+    const q=search.value.toLowerCase();
+    const entries=Object.entries(override).filter(([key,value])=>key.toLowerCase().includes(q)||String(value).toLowerCase().includes(q)).sort((a,b)=>a[0].localeCompare(b[0]));
+    if(!entries.length)list.append(h('p',{class:'muted',text:'Нет сохранённых записей по этому запросу.'}));
+    for(const[key,value]of entries){
+      const row=h('div',{class:'owner-manager-row'});
+      row.append(h('div',{},[h('strong',{text:key}),h('p',{text:String(value).slice(0,150)})]),
+        h('button',{type:'button',text:'Вернуть оригинал',onclick:async()=>{
+          if(!confirm('Вернуть оригинальное значение для '+key+'?'))return;
+          const previous=activeOverride(key);
+          try{await apiRequest('/api/admin/reset',{key});ownerEdits.push({key,before:previous,after:null});delete override[key];draw();render();updateAdminHint();}
+          catch(e){alert('Сброс не выполнен: '+e.message)}
+        }}));
+      list.append(row);
+    }
+  };
+  search.addEventListener('input',draw);body.append(search,list);draw();modal('Правки оформления',body);
+}
+
 function allowedArtwork(value){
 return /^(?:assets\/[A-Za-z0-9_.-]+\.(?:png|webp|jpe?g)|https:\/\/pandorasaga-os\.com\/icons\/(?:items|souls|skills)\/[A-Za-z0-9_-]+\.webp(?:\?v=[0-9]{1,12})?)$/.test(value);
 }
 function editor(el){
-const key=el.dataset.editKey;
-if(!adminEditing||!key)return;
-const visual=key.startsWith("visual.");
-const container=h("div");
-const input=visual?h("input",{type:"text","aria-label":"Путь к изображению",placeholder:"assets/image.webp"}):h("textarea",{rows:"4"});
-input.value=visual?el.getAttribute("src")||"":el.textContent||"";
-const error=h("p",{class:"error"});
-if(visual){
- const preview=h("img",{class:"image-edit-preview",src:input.value,alt:"Предпросмотр"});
- container.append(h("p",{class:"muted",text:"Можно выбрать уже загруженный рисунок или указать путь к иконке Pandora Saga OS."}),preview);
- input.addEventListener("input",()=>{const url=input.value.trim();if(allowedArtwork(url))preview.src=url});
- const gallery=h("div",{class:"image-edit-gallery"});
- for(const src of [...new Set(["assets/pandora-logo.png",...races.flatMap(r=>[imageUrl(r[2]),imageUrl(r[3])])])]){
-   const option=h("button",{type:"button",class:"image-edit-choice",title:src,onclick:()=>{input.value=src;preview.src=src}});
-   option.append(h("img",{src,alt:""}));gallery.append(option)
- }
- container.append(h("p",{class:"muted",text:"Встроенные изображения"}),gallery)
-}
-const submit=h("button",{class:"button-action primary",text:visual?"Применить изображение":"Сохранить"});
-submit.onclick=async()=>{
- const value=input.value.trim();
- if(visual?!allowedArtwork(value):(!value||value.length>(key.startsWith("skilldesc.")?2000:240))){
-  error.textContent=visual?"Разрешены только assets/… и оригинальные /icons/ Pandora Saga OS.":"Проверь длину текста.";return;
- }
- submit.disabled=true;error.textContent="";
- try{await apiRequest("/api/admin/override",{key,value});override[key]=value;$("modalRoot").hidden=true;render();updateAdminHint()}
- catch(e){error.textContent=e.message}
- finally{submit.disabled=false}
-};
-container.append(h("label",{text:visual?"Адрес файла":"Редактирование "+key}),input,submit,error);
-modal(visual?"Изменить изображение":"Редактировать текст",container);
+  const key=el?.dataset?.editKey;
+  if(!adminEditing||!adminToken||!key)return;
+  closeInlineEditor();
+  const visual=key.startsWith('visual.');
+  const original=visual?(el.getAttribute('src')||''):(el.textContent||'');
+  const previous=activeOverride(key);
+  const root=h('div',{class:'inline-owner-editor',role:'dialog','aria-label':'Изменение '+key});
+  const bar=h('div',{class:'inline-owner-head'});
+  bar.append(h('strong',{text:visual?'Сменить изображение':'Изменить текст'}),
+    h('button',{type:'button',text:'✕','aria-label':'Закрыть редактор',onclick:closeInlineEditor}));
+  const input=visual?h('input',{type:'text','aria-label':'Путь к изображению',value:original,placeholder:'assets/image.webp'}):
+    h('textarea',{rows:key.startsWith('skilldesc.')?5:3,'aria-label':'Редактируемый текст'});
+  if(!visual)input.value=original;
+  const hint=h('p',{class:'inline-owner-key',text:key});
+  const feedback=h('p',{class:'inline-owner-error',role:'status'});
+  root.append(bar,hint);
+  if(visual){
+    const preview=h('img',{class:'inline-owner-preview',src:original,alt:'Предпросмотр'});
+    input.addEventListener('input',()=>{if(allowedArtwork(input.value.trim()))preview.src=input.value.trim()});
+    root.append(preview);
+    const gallery=h('div',{class:'inline-owner-gallery'});
+    for(const src of [...new Set(['assets/pandora-logo.png',...races.flatMap(r=>[imageUrl(r[2]),imageUrl(r[3])])])]){
+      const button=h('button',{type:'button',title:src,'aria-label':'Выбрать '+src,onclick:()=>{input.value=src;preview.src=src}});
+      button.append(h('img',{src,alt:''}));gallery.append(button);
+    }
+    root.append(gallery);
+  }
+  root.append(input);
+  const actions=h('div',{class:'inline-owner-actions'});
+  const save=h('button',{type:'button',class:'primary',text:'Сохранить'});
+  const reset=h('button',{type:'button',text:'Вернуть оригинал',disabled:previous===null});
+  const cancel=h('button',{type:'button',text:'Отмена',onclick:closeInlineEditor});
+  save.onclick=async()=>{
+    if(editIsSaving)return;
+    const value=input.value.trim();
+    if(visual?!allowedArtwork(value):(!value||value.length>(key.startsWith('skilldesc.')?2000:240))){
+      feedback.textContent=visual?'Недопустимый путь: разрешены assets/ и иконки Pandora Saga OS.':'Некорректная длина текста.';return;
+    }
+    if(value===previous){closeInlineEditor();return;}
+    editIsSaving=true;save.disabled=true;reset.disabled=true;
+    try{
+      await apiRequest('/api/admin/override',{key,value});
+      ownerEdits.push({key,before:previous,after:value});override[key]=value;
+      closeInlineEditor();render();updateAdminHint();
+    }catch(e){feedback.textContent=e.message}
+    finally{editIsSaving=false;save.disabled=false;reset.disabled=false;refreshOwnerUI()}
+  };
+  reset.onclick=async()=>{
+    if(editIsSaving||previous===null)return;
+    editIsSaving=true;reset.disabled=true;save.disabled=true;
+    try{
+      await apiRequest('/api/admin/reset',{key});
+      ownerEdits.push({key,before:previous,after:null});delete override[key];
+      closeInlineEditor();render();updateAdminHint();
+    }catch(e){feedback.textContent=e.message}
+    finally{editIsSaving=false;reset.disabled=false;save.disabled=false;refreshOwnerUI()}
+  };
+  actions.append(save,reset,cancel);
+  root.append(actions,feedback);
+  const width=Math.min(390,window.innerWidth-24);
+  const rect=el.getBoundingClientRect();
+  root.style.width=width+'px';
+  root.style.left=Math.min(Math.max(12,rect.left),Math.max(12,window.innerWidth-width-12))+'px';
+  root.style.top=Math.min(Math.max(12,rect.bottom+8),Math.max(12,window.innerHeight-350))+'px';
+  document.body.append(root);activeInlineEditor=root;
+  input.focus();
 }
 async function loadCatalog(){try{const names=['meta','classes','skills','items','souls'];let entries,sourceLabel='снимок 30.10.2026';const obtain=base=>Promise.all(names.map(async n=>{const r=await fetch(`${base}/${n}.json`,{signal:AbortSignal.timeout(2000)});if(!r.ok)throw Error(n+' '+r.status);return [n,await r.json()]}));try{entries=await obtain(`${OS}/gamedata`);sourceLabel='прямой сервер OS'}catch{try{entries=await obtain(`${API}/api/gamedata`);sourceLabel='OS через Worker'}catch{entries=await obtain('./data/os')}}const live=Object.fromEntries(entries);if(!live.meta?.counts?.skills||!live.classes?.CLERIC)throw Error('Invalid current OS snapshot');catalog={meta:live.meta,classes:live.classes,skills:live.skills,equipment:live.items,souls:live.souls,live:true};jobs=jobKeys.map(id=>live.classes[id]?.name||id);branches=live.meta.branchNames.map(id=>({id,name:live.meta.branchLabels[id]||id}));const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};state.points=Object.fromEntries(Object.entries(state.points).map(([k,v])=>[oldToOS[k]||k,v]));if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';$('siteNotice').textContent='Игровые данные и иконки: Pandora Saga OS. На странице отображаются исходные значения сервера; неподтверждённые боевые расчёты не выполняются.';$('catalogStatus').textContent=`Pandora Saga OS · ${live.meta.counts.skills} навыков · ${live.meta.counts.items} предметов · ${live.meta.counts.souls} душ · ${sourceLabel}`;persist();render();return}catch(e){console.warn('OS snapshot unavailable; loading historical data',e)}const names=['skills','equipment','souls'];await Promise.all(names.map(async name=>{try{const r=await fetch(`${SRC}data/generated/${name}.v1.json`,{cache:'force-cache'});if(!r.ok)throw Error('HTTP '+r.status);catalog[name]=await r.json()}catch(e){console.warn(name,e)}}));$('siteNotice').textContent='Официальные данные Pandora Saga OS временно недоступны. Используется историческая база Legacy 2.00.';$('catalogStatus').textContent=`Legacy: ${catalog.skills?.count||0} навыков · ${catalog.equipment?.count||0} вещей · ${catalog.souls?.count||0} душ`;renderDetails()}
-async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
-$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('swapGender').onclick=()=>{state.gender=1-state.gender;persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{alert('Полная локализация игрового каталога RU/EN находится в разработке. Оригинальные EN-названия оставлены без вымышленных переводов.')};document.addEventListener('dblclick',e=>{const target=e.target.closest('[data-edit-key]');if(target)editor(target)});
+async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
+$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('swapGender').onclick=()=>{state.gender=1-state.gender;persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{alert('Полная локализация игрового каталога RU/EN находится в разработке. Оригинальные EN-названия оставлены без вымышленных переводов.')};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+document.addEventListener('keydown',event=>{if(event.key==='Escape')closeInlineEditor()});
 
 /* Owner login: five logo clicks within six seconds, or Ctrl+Alt+Shift+P.
    Hidden UI does not replace server-side authorization. */

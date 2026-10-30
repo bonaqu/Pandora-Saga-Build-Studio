@@ -25,3 +25,30 @@
 .studio-update-banner button{background:#3c2a1b;border:1px solid #9d7545;color:#f4d6a7;padding:8px 15px}
 .studio-update-banner button:hover{background:#644222;border-color:#e2b675}
 @media(max-width:460px){.studio-update-banner{left:12px;right:12px;bottom:12px}}
+
+
+/* In-place CMS: an inline anchored editor and small authenticated owner dock. */
+.owner-dock{position:fixed;left:18px;bottom:18px;z-index:120;max-width:calc(100vw - 36px);display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 11px;background:linear-gradient(130deg,#322317,#17120d);border:2px ridge #b48b50;box-shadow:0 9px 40px #000c;color:#e8cf9e}
+.owner-dock-title{font:700 17px 'Cormorant Garamond',serif}.owner-dock-count{color:#bca17a;font-size:11px}
+.owner-dock button,.inline-owner-editor button{border:1px solid #7a5732;background:#382719;color:#ead0a7;border-radius:3px;padding:7px 9px;cursor:pointer}
+.owner-dock button:hover,.inline-owner-editor button:hover{border-color:#ecbd73}
+.owner-dock button:disabled,.inline-owner-editor button:disabled{opacity:.4;cursor:not-allowed}
+.inline-owner-editor{position:fixed;z-index:160;max-height:calc(100vh - 24px);overflow:auto;background:linear-gradient(150deg,#33231a,#17120e);border:2px double #d3a25c;padding:14px;box-shadow:0 16px 55px #000e;color:#f0d8ae}
+.inline-owner-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font:700 22px 'Cormorant Garamond',serif}
+.inline-owner-key{color:#bca37e;font-size:10px;overflow-wrap:anywhere;padding:5px 0 10px}
+.inline-owner-editor input,.inline-owner-editor textarea{width:100%;background:#130e0a;border:1px solid #86643b;padding:9px;color:#f6dbb1;resize:vertical}
+.inline-owner-editor .inline-owner-preview{display:block;max-width:100%;height:115px;object-fit:contain;margin:4px auto 12px;border:1px solid #795939;background:#0d0a08}
+.inline-owner-gallery{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));max-height:108px;overflow:auto;gap:4px;margin-bottom:10px}
+.inline-owner-gallery button{padding:1px;min-width:0}
+.inline-owner-gallery img{display:block;width:100%;aspect-ratio:1;object-fit:cover}
+.inline-owner-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px}
+.inline-owner-editor .inline-owner-actions .primary{border-color:#d5a75f;background:#593a20}
+.inline-owner-error{color:#eda28f;font-size:11px;min-height:1em}
+.owner-manager{max-height:min(70vh,560px);overflow:auto}
+.owner-manager-search{width:100%;padding:10px;background:#130e0a;border:1px solid #8f6940;color:#eed6b6;margin:10px 0}
+.owner-manager-list{display:grid;gap:7px}
+.owner-manager-row{display:flex;gap:10px;align-items:center;justify-content:space-between;border:1px solid #755336;padding:8px}
+.owner-manager-row strong{font-size:11px;color:#f0c88d;overflow-wrap:anywhere}
+.owner-manager-row p{font-size:11px;overflow-wrap:anywhere}
+.owner-manager-row button{flex-shrink:0;background:#392419;border:1px solid #876443;color:#efc693;padding:7px;cursor:pointer}
+@media(max-width:570px){.owner-dock{left:8px;right:8px;bottom:8px;justify-content:center}.owner-dock-title{width:100%;text-align:center}.owner-manager-row{align-items:flex-start;flex-direction:column}}

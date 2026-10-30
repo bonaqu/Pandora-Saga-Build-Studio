@@ -49,6 +49,13 @@ if(path==='/api/admin/override'&&method==='POST'){
  if(key.startsWith('visual.')&&!/^(?:assets\/[A-Za-z0-9_.-]+\.(?:png|webp|jpe?g)|https:\/\/pandorasaga-os\.com\/icons\/(?:items|souls|skills)\/[A-Za-z0-9_-]+\.webp(?:\?v=[0-9]{1,12})?)$/.test(value.trim()))return no('Unapproved image source',400);
  await env.DB.prepare(`INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`).bind(key,value.trim(),Date.now()).run();return json({ok:true,key,value:value.trim()})
 }
+if(path==='/api/admin/reset'&&method==='POST'){
+ if(!await auth(request,env))return no('Unauthorized',401);
+ const data=await body(request),key=data?.key;
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
+ const result=await env.DB.prepare('DELETE FROM overrides WHERE key=?').bind(key).run();
+ return json({ok:true,key,deleted:(result.meta?.changes||0)>0});
+}
 return no('Not found',404)
 }
 export default{async fetch(request,env){const cors=originHeaders(request);if(request.method==='OPTIONS')return new Response(null,{status:204,headers:cors});try{const result=await handle(request,env);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}catch(e){console.error('Request failed',e);const result=no('Server error',500);for(const[k,v]of Object.entries(cors))result.headers.set(k,v);return result}}};
