@@ -193,3 +193,10 @@
 .wiki-entry small{display:block;font-size:10px;color:#bb9c79}
 .item-origin{background:#20170f;border:1px solid #80613e;margin:15px 0;padding:9px}
 @media(max-width:780px){.wiki-layout{grid-template-columns:1fr}.wiki-list{max-height:240px}}
+
+/* Authenticated catalog diff preview: explicit compare → approve → publish */
+.catalog-update-actions{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0}
+.catalog-update-report{max-height:min(52vh,430px);overflow:auto;display:grid;gap:5px;margin-top:12px}
+.catalog-update-report h3{color:#edc48b;font:600 21px Georgia}
+.catalog-diff-row{display:grid;grid-template-columns:minmax(110px,1fr) minmax(180px,2fr);gap:5px;border:1px solid #674e34;background:#1d1612;padding:8px;font-size:11px}
+.catalog-diff-row strong{color:#ecc68d}.catalog-diff-row small{grid-column:1/-1;color:#bd9a77;overflow-wrap:anywhere}

@@ -120,3 +120,7 @@ The skill UI now presents only 5 primary sections and 20 player-visible subsecti
 ## Interactive linked wiki (2026-10-30)
 
 A first wiki tab now navigates item sources, monster drops, maps, NPC exchange recipes, and chest rewards, using our own published Cloudflare D1. An item inspector includes clickable source links and a full wiki article. Crosslinks highlight relevant item entries; probabilities are shown only when an original field explicitly provides them. Group/zone drops are not treated as individual item odds. The encyclopedia is a foundation; images, bilingual completeness, soul provenance and broader UI polish are future work.
+
+## Protected manual source updates (2026-10-30)
+
+**Каталог D1** now offers two read-only comparisons: current Pandora Saga OS via the allowlisted, authenticated Worker proxy, or the checked-in GitHub archive. It compares all 17 source files by stable IDs, previews added/changed/removed keys, validates the full snapshot, then requires an explicit confirmation before a chunked D1 import and atomic pointer switch. A failed compare/import never replaces the previously published catalog. Old snapshot rows are retained, subject to D1 storage limits. The source refresh intentionally does not push upstream changes into GitHub backup files; periodically update the backup separately as part of source provenance maintenance.
