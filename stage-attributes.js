@@ -58,6 +58,45 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    }
   }body.append(card);
  }
+ if(page==='effects'){
+  const honor=modifiers?.honor;
+  if(honor?.id){
+   const labels={
+    allAttributes:'Все характеристики',healingSkills:'Лечащие навыки',
+    attackPercent:'Сила атаки',fireMagic:'Магия огня',iceMagic:'Магия льда',
+    lightningMagic:'Магия молнии',fire:'Огонь',ice:'Лёд',lightning:'Молния',
+    burn:'Ожог',freeze:'Обморожение',knockdown:'Сбивание с ног',
+    castingResist:'Устойчивость к сбою',accuracy:'Точность',
+    weaponPhysical:'Физический урон оружия',mountedRelease:'Эффект верхом',
+    incomingCriticalChance:'Получаемый критический шанс',
+    incomingCriticalDamage:'Получаемый критический урон',
+    light:'Свет',dark:'Тьма',charm:'Очарование',
+    mentalState:'Психические состояния',magic:'Магия',
+    physicalState:'Физические состояния',potionRecovery:'Лечение зельями',
+    defense:'Защита',incomingPhysical:'Получаемый физический урон',
+    dodge:'Уклонение',rangedDodge:'Уклонение от дальнего боя',
+    frontAttack:'Фронтальная атака'
+   };
+   const percent=new Set(['healingSkills','attackPercent','fireMagic','iceMagic',
+    'lightningMagic','burn','freeze','knockdown','castingResist','mountedRelease',
+    'incomingCriticalChance','incomingCriticalDamage','potionRecovery',
+    'incomingPhysical','rangedDodge','frontAttack']);
+   const card=make('section',{class:'stage-attribute-row'});
+   card.append(make('strong',{text:'Титул чести: '+honor.ru}));
+   for(const [key,value] of Object.entries(honor.effects)){
+    if(key==='allAttributes')continue; // already included in visible six stats
+    card.append(make('p',{text:(labels[key]||key)+': '+(value>0?'+':'')+value+
+     (percent.has(key)?'%':'')}));
+   }
+   body.prepend(card);
+  }
+  if(modifiers?.potion){
+   const potion=make('section',{class:'stage-attribute-row'});
+   potion.append(make('strong',{text:'Действие зелий'}),
+    make('p',{text:'Эффективность: '+modifiers.potion.percent+'%'}));
+   body.prepend(potion);
+  }
+ }
  const totals=modifiers?.effects?.bonuses||{};
  const names={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
  charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия',
