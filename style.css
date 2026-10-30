@@ -120,3 +120,5 @@
 .gear-list.soul-catalog .soul-card strong{grid-column:2;grid-row:1;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#eacf9e}
 .gear-list.soul-catalog .soul-card small{grid-column:2;grid-row:2;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#aa957a}
 .gear-list.soul-catalog .soul-card.active{outline:2px solid #b58b52}
+
+.catalog-import-progress{width:100%;height:15px;margin:15px 0;accent-color:#cd9952}

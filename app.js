@@ -439,7 +439,7 @@ async function apiRequest(path,body,token=adminToken) {
  if(!response.ok)throw new Error(data.error||("Ошибка сервера HTTP "+response.status));
  return data;
 }
-function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
+function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Импорт каталога D1',onclick:showCatalogImport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
  const user=h('input',{value:'administrator',readOnly:true}),password=h('input',{type:'password',placeholder:'Пароль администратора',autocomplete:'current-password'}),setup=h('input',{type:'password',placeholder:'Одноразовый секрет первичной настройки (если ещё нет пароля)'}),feedback=h('div',{class:'error'}),go=h('button',{class:'button-action primary',text:'Войти'});go.onclick=async()=>{feedback.textContent='';try{if(!password.value||password.value.length<12)throw Error('Нужен пароль от 12 символов');const data=await apiRequest(setup.value?'/api/admin/setup':'/api/admin/login',setup.value?{username:'administrator',password:password.value,setupToken:setup.value}:{username:'administrator',password:password.value},'');adminToken=data.token;adminEditing=true;$('modalRoot').hidden=true;render();updateAdminHint()}catch(e){feedback.textContent=e.message}};body.append(h('label',{text:'Логин'}),user,h('label',{text:'Пароль'}),password,h('label',{text:'Первичная настройка (заполняется только один раз)'}),setup,go,feedback,h('p',{class:'muted',text:'Первичная настройка требует секрет ADMIN_SETUP_TOKEN, созданный владельцем в настройках Worker. Это защищает имя administrator от захвата посторонними.'}));const checkApi=h('button',{type:'button',class:'button-action',text:'Проверить Cloudflare API',onclick:async()=>{feedback.textContent='Проверяю сервер…';try{const result=await apiRequest('/api/health',null,'');feedback.textContent=result.status==='ok'?'Worker отвечает, D1 подключена.':'Ответ сервера: '+JSON.stringify(result)}catch(e){feedback.textContent=e.message}}});body.append(checkApi);modal('Служебный вход',body)}
 function updateAdminHint(){$('authState').textContent=adminEditing?'✎ Режим редактора · выбери подсвеченный элемент':'';document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));refreshOwnerUI()}
 
@@ -464,6 +464,7 @@ function refreshOwnerUI(){
     h('span',{'data-owner-count':'',class:'owner-dock-count',text:'Правок: '+Object.keys(override).length}),
     h('button',{type:'button',text:'↶ Отменить','data-owner-undo':'',disabled:!ownerEdits.length,onclick:undoOwnerEdit}),
     h('button',{type:'button',text:'Все правки',onclick:showOverrideManager}),
+    h('button',{type:'button',text:'Каталог D1',onclick:showCatalogImport}),
     h('button',{type:'button',text:'Завершить',onclick:()=>{adminEditing=false;closeInlineEditor();render();updateAdminHint()}}));
   document.body.append(root);
 }
@@ -574,6 +575,60 @@ function editor(el){
   root.style.top=Math.min(Math.max(12,rect.bottom+8),Math.max(12,window.innerHeight-350))+'px';
   document.body.append(root);activeInlineEditor=root;
   input.focus();
+}
+async function showCatalogImport(){
+ if(!adminToken)return;
+ const container=h('div');
+ const message=h('p',{class:'muted',role:'status',text:'Будет использован только локальный архив из нашего репозитория. Существующий каталог D1 не изменится до полной проверки.'});
+ const progress=h('progress',{max:'100',value:'0',class:'catalog-import-progress'});
+ const button=h('button',{class:'button-action primary',text:'Перенести каталог в Cloudflare D1'});
+ container.append(h('p',{class:'muted',text:'Снимок данных: 28 классов, 569 навыков, 1116 предметов и 112 душ. Архив включает отдельные костюмные предметы, которые не попадают в боевые слоты.'}),button,progress,message);
+ button.onclick=async()=>{
+  button.disabled=true;message.textContent='Подключаюсь к D1…';
+  try{
+   await apiRequest('/api/admin/catalog/initialize',{});
+   const names=['meta','classes','skills','items','souls'];
+   const records={};
+   for(const name of names){
+    message.textContent='Проверяю собственный архив: '+name;
+    const response=await fetch('./data/os/'+name+'.json',{cache:'no-cache'});
+    if(!response.ok)throw Error(name+'.json HTTP '+response.status);
+    records[name]=await response.json();
+   }
+   const counts=records.meta?.counts;
+   if(!counts||!records.classes?.CLERIC)throw Error('Неверный формат снимка');
+   const total=1+names.slice(1).reduce((sum,name)=>sum+Object.keys(records[name]).length,0);
+   for(const name of names.slice(1)){
+    if(Object.keys(records[name]).length!==Number(counts[name]))throw Error('Неполный архив '+name);
+   }
+   const snapshot='ps-'+crypto.randomUUID().replaceAll('-','');
+   let done=0;
+   for(const name of names){
+    const entries=name==='meta'?[['all',records.meta]]:Object.entries(records[name]);
+    for(let offset=0;offset<entries.length;){
+     const batch=[];let chars=0;
+     while(offset<entries.length&&batch.length<35){
+      const [key,value]=entries[offset],entry={key,value},size=JSON.stringify(entry).length;
+      if(size>12000)throw Error('Слишком большая запись '+name+'/'+key);
+      if(batch.length&&chars+size>44000)break;
+      chars+=size;batch.push(entry);offset++;
+     }
+     await apiRequest('/api/admin/catalog/batch',{snapshot,dataset:name,records:batch});
+     done+=batch.length;
+     progress.value=String(Math.round(done/total*100));
+     message.textContent='Сохранено '+done+' из '+total+' записей · '+progress.value+'%';
+    }
+   }
+   const published=await apiRequest('/api/admin/catalog/publish',{snapshot});
+   progress.value='100';
+   message.textContent='D1 активирована: '+published.counts.items+' предметов, '+published.counts.skills+' навыков, '+published.counts.souls+' душ. Внешки отдельно: '+published.costumeItems+'.';
+   await loadCatalog();
+  }catch(error){
+   message.textContent='Импорт не завершён. Предыдущая версия каталога сохранена. '+error.message;
+   console.error('Owner catalog import',error);
+  }finally{button.disabled=false}
+ };
+ modal('Каталог Pandora Saga → Cloudflare D1',container);
 }
 async function loadCatalog(){
  const names=['meta','classes','skills','items','souls'];
