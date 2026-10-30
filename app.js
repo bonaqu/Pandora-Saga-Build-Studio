@@ -353,12 +353,50 @@ for(const [text,delta]of[["−5",-5],["−1",-1]])row.append(h("button",{class:"
 row.append(range,numeric);
 for(const [text,delta]of[["+1",1],["+5",5]])row.append(h("button",{class:"allocation-button",text,onclick:()=>setPoints(Math.min(cap,Number(state.points[branch]||0)+delta))}));
 range.addEventListener("input",()=>{state.points[branch]=Number(range.value);persist();numeric.value=range.value;value.textContent=range.value+" / "+cap;$("branchValue").textContent=range.value;for(const b of center.querySelectorAll("[data-record-id]")){const rec=catalog.live?catalog.skills?.[b.dataset.recordId]:null;if(rec){const g=rules.readiness(rec,{job:jobKeys[state.job],level:state.level,points:state.points});b.dataset.gate=g.status;b.querySelector(".gate-caption").textContent=g.status==="eligible"?"✓ Условия выполнены":g.status==="locked"?"🔒 "+g.missing[0]:"? Не все условия известны"}}});
+range.addEventListener("input",()=>{
+ const amount=Number(range.value);
+ const fill=center.querySelector('.skill-milestone-fill');
+ if(fill&&cap>0)fill.style.width=Math.min(100,Math.max(0,amount/cap*100))+'%';
+ for(const marker of center.querySelectorAll('.skill-milestone')){
+   marker.classList.toggle('reached',amount>=Number(marker.dataset.threshold));
+ }
+});
 range.addEventListener("change",()=>renderDetails());
 numeric.addEventListener("change",()=>{if(!setPoints(numeric.value))numeric.value=String(state.points[branch]||0)});
 bar.append(h("div",{class:"allocation-head"},[h("b",{text:"Очки навыков"}),value]),row,h("button",{class:"allocation-button reset-points",text:"Сбросить ветку",onclick:()=>setPoints(0)}));center.append(bar);
 if(pts>cap)center.append(h("p",{class:"budget-excess",text:"Значение "+pts+" превышает текущий предел класса "+cap+". Оно сохранено, пока ты не исправишь распределение."}));
 const records=catalog.live?Object.values(catalog.skills||{}).filter(s=>s.branch===branch&&s.classes?.[jobKeys[state.job]]).sort((a,b)=>(a.charLevel||0)-(b.charLevel||0)):
 (catalog.skills?.records||[]).filter(s=>Number(s.legacy_category_id)===branch);
+// Milestones are actual branch-point requirements from OS skills.json.
+const milestoneData=window.PandoraSkillMilestones.forBranch(records,branch,cap);
+if(milestoneData.milestones.length&&cap>0){
+ const rail=h('div',{class:'skill-milestone-rail','aria-label':'Пороги изучения навыков на ветке'});
+ const track=h('div',{class:'skill-milestone-track'});
+ const fill=h('div',{class:'skill-milestone-fill'});
+ fill.style.width=Math.min(100,Math.max(0,pts/cap*100))+'%';
+ track.append(fill);rail.append(track);
+ for(const [i,gate]of milestoneData.milestones.entries()){
+  const first=gate.skills[0];
+  const at=gate.percent;
+  const marker=h('button',{type:'button',class:'skill-milestone'+(pts>=gate.threshold?' reached':''),
+   'data-threshold':String(gate.threshold),title:gate.skills.map(x=>x.name).join(', ')+' · '+gate.threshold+' очков',
+   'aria-label':gate.skills.map(x=>x.name).join(', ')+' · порог '+gate.threshold,
+   onclick:()=>{selectedSkill=first;renderDetails()}});
+  marker.style.left='calc(12px + (100% - 24px) * '+(at/100)+')';
+  marker.style.top=i%2?'56px':'3px';
+  const icon=h('img',{src:skillIcon(branch,first.id,first),alt:'',loading:'lazy'});
+  icon.onerror=()=>icon.replaceWith(h('span',{class:'skill-fallback',text:'✦'}));
+  marker.append(icon,h('small',{text:String(gate.threshold)}));
+  if(gate.skills.length>1)marker.append(h('span',{class:'skill-milestone-count',text:'+'+(gate.skills.length-1)}));
+  rail.append(marker);
+ }
+ bar.append(h('div',{class:'skill-milestone-title',text:'Пороги открытия навыков — нажми на значок'}),rail);
+}else if(cap===0){
+ bar.append(h('p',{class:'muted',text:'Эта ветка недоступна текущему классу.'}));
+}
+if(milestoneData.above.length)bar.append(h('p',{class:'skill-milestone-overcap',text:
+ 'У '+milestoneData.above.length+' навыков требования выше лимита этого класса; они остаются в списке ниже, но не отмечаются как достижимые.'}));
+
 const filterBar=h("div",{class:"skill-search"});
 const search=h("input",{type:"search",placeholder:"Поиск по названию навыка",value:skillSearch,oninput:e=>{
 skillSearch=e.target.value;renderDetails();const el=document.querySelector(".skill-search input");el?.focus();el?.setSelectionRange(skillSearch.length,skillSearch.length)

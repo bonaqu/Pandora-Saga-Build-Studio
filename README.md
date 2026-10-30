@@ -148,3 +148,7 @@ Wiki game datasets load through four concurrent fetch workers rather than sequen
 ## 2026-10-30.21 — catalog change review
 
 The authenticated manual OS refresh now previews examples of **specific before/after field changes**, not just item IDs and total counts. Changed scalar fields (e.g. `mana`, `level`, `name`, `statCaps`) are readable; complex arrays/objects are shown in bounded text previews. The first 30 changed records per dataset can be inspected; totals still include every record. Object-key reordering is normalized to avoid false positive updates. Read-only previews never publish automatically.
+
+## 2026-10-30.22 — skill tree accuracy
+
+The decorative horizontal connection line between skill icons was removed: it wrongly implied prerequisites that are not in the game data. A **clickable milestone rail** now places source-backed skill icons at `reqs[branch].amount / classBranchCap` positions, grouped by equal thresholds. Its golden fill follows the user's allocated branch points. Over-cap requirements remain listed but aren't shown as reachable on the track. This visual shows verified thresholds, **not** a claim that all game skill prerequisites or passive hooks are fully modeled.

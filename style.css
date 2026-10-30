@@ -248,3 +248,17 @@
 .catalog-diff-field code{color:#cba677;font:11px Consolas,monospace}
 .catalog-diff-field span{color:#e4cfb0;font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
 @media(max-width:570px){.catalog-diff-field{grid-template-columns:1fr;gap:2px}}
+
+/* Genuine branch-threshold milestones. No fictitious dependencies between skills. */
+.nodes:before{display:none!important}
+.skill-milestone-title{color:#d5b98b;font:600 12px Georgia;margin:15px 0 5px}
+.skill-milestone-rail{position:relative;height:109px;margin:0 0 13px;border:1px solid #654b30;background:linear-gradient(#1a160e,#12100c)}
+.skill-milestone-track{position:absolute;left:12px;right:12px;top:48px;height:9px;background:#0b0b0b;border:1px solid #9a7140;box-shadow:inset 0 0 6px #000}
+.skill-milestone-fill{height:100%;background:linear-gradient(90deg,#a37c45,#f0c789);transition:width .12s;pointer-events:none}
+.skill-milestone{position:absolute;z-index:2;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:2px;min-width:36px;max-width:65px;min-height:43px;padding:2px 4px;color:#e0bd85;background:#251b15;border:1px solid #795638;cursor:pointer;filter:saturate(.5)}
+.skill-milestone.reached{filter:none;background:#45301c;border-color:#e4b775;box-shadow:0 0 13px #c28c496e}
+.skill-milestone img{width:29px;height:29px;object-fit:contain}
+.skill-milestone small{font:700 11px Georgia;line-height:1}
+.skill-milestone-count{position:absolute;top:-5px;right:-7px;color:#fff0c7;background:#704122;padding:0 3px;border:1px solid #d4a462;font-size:9px}
+.skill-milestone-overcap{color:#c7a484;font-size:11px;margin:8px 0}
+@media(max-width:570px){.skill-milestone{min-width:29px;max-width:40px;padding:2px}.skill-milestone img{width:24px;height:24px}.skill-milestone-rail{overflow:visible}}
