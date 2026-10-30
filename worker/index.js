@@ -119,6 +119,8 @@ async function adminCatalog(request,env,path){
 
 /* Public immutable share links; non-secret snapshots, guarded against large payloads and write abuse. */
 async function shareApi(request,env,path,ip){
+ const shares=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shared_builds','shared_build_limits')").all();
+ if((shares.results||[]).length!==2)return no('Shared builds storage not migrated in D1',503);
  if(request.method==='GET'){
   const match=path.match(/^\/api\/shared\/([A-Za-z0-9_-]{11})$/);
   if(!match)return no('Not found',404);
@@ -184,7 +186,13 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 }
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
-if(path==='/api/health'&&method==='GET'){const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts')").all();const ready=(tables.results||[]).length===4;return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready},ready?200:503)}
+if(path==='/api/health'&&method==='GET'){
+ const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits')").all();
+ const found=new Set((tables.results||[]).map(row=>row.name));
+ const ready=['admins','sessions','overrides','login_attempts'].every(name=>found.has(name));
+ const sharingReady=['shared_builds','shared_build_limits'].every(name=>found.has(name));
+ return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready,features:{sharing:sharingReady}},ready?200:503);
+}
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){
  if(!env.ADMIN_SETUP_TOKEN||env.ADMIN_SETUP_TOKEN.length<32)return no('Secure setup not configured',503);

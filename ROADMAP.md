@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest source release:** 0.52.0 (`2026.10.30.52`), browser and Worker deployment unverified  
+**Updated:** 2026-10-30 · **Latest source release:** 0.53.0 (`2026.10.30.53`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.

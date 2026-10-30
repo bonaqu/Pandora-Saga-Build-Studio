@@ -45,3 +45,10 @@ test('opening a local named build keeps all old and future fields; shared Astir 
  assert.match(app,/const previousLegwear=item\(original\.displacedLegwear\)/);
  assert.match(app,/safe\.displacedLegwear=previousLegwear/);
 });
+
+test('health endpoint exposes D1 sharing readiness without claiming feature deployed',()=>{
+ const worker=read('worker/index.js');
+ assert.match(worker,/features:\{sharing:sharingReady\}/);
+ assert.match(worker,/Shared builds storage not migrated in D1/);
+ assert.match(worker,/return no\('Shared builds storage not migrated in D1',503\)/);
+});

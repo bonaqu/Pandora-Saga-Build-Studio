@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.52",
-  "notes": "Preserve all existing local build fields on reopen; preserve Astir displaced legwear and equipped item levels when creating shared build links"
+  "release": "2026.10.30.53",
+  "notes": "Worker health exposes whether D1 short-link tables exist; share endpoints return clear 503 until migration, without touching existing catalog"
 }
