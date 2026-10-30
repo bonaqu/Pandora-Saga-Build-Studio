@@ -558,12 +558,19 @@ function renderOriginPassives(){
   btn.append(h('span',{},[h('b',{text:skill.name}),h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);
  }
 }
+let activeSkillPreview=null;
 function skillHover(button,skill){
  const skills=Array.isArray(skill)?skill:[skill];let tip;
- const clear=()=>{tip?.remove();tip=null};
+ const clear=()=>{
+  if(activeSkillPreview===tip)activeSkillPreview=null;
+  tip?.remove();tip=null;button.removeAttribute('aria-describedby');
+ };
  const show=()=>{
-  clear();tip=h('aside',{class:'stage-hover-preview path-skill-preview',role:'tooltip'});
-  for(const entry of skills){
+  if(tip?.isConnected)return;
+  activeSkillPreview?.remove();
+  tip=h('aside',{id:'path-skill-hover-tooltip',class:'stage-hover-preview path-skill-preview',role:'tooltip'});
+  activeSkillPreview=tip;
+  for(const entry of skills.slice(0,3)){
    const row=h('div',{class:'path-skill-preview-item'}),src=skillIcon(entry.branch,entry.id,entry);
    if(src){const img=h('img',{src,alt:''});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));row.append(img)}
    const copy=h('div');copy.append(h('strong',{text:entry.name||'Умение'}));
@@ -571,17 +578,20 @@ function skillHover(button,skill){
    if(entry.desc)copy.append(h('p',{text:entry.desc}));
    row.append(copy);tip.append(row);
   }
+  if(skills.length>3)tip.append(h('small',{class:'path-preview-more',text:'Ещё '+(skills.length-3)+' навыков — нажмите на отметку'}));
   document.body.append(tip);
-  const box=button.getBoundingClientRect(),width=tip.offsetWidth,height=tip.offsetHeight;
-  const viewportWidth=document.documentElement.clientWidth,viewportHeight=innerHeight;
-  tip.style.maxHeight=Math.max(120,viewportHeight-16)+'px';
-  tip.style.overflowY='auto';
-  const effectiveWidth=tip.getBoundingClientRect().width;
-  const effectiveHeight=tip.getBoundingClientRect().height;
-  tip.style.left=Math.max(8,Math.min(viewportWidth-effectiveWidth-8,
-   box.left+box.width/2-effectiveWidth/2))+'px';
-  tip.style.top=Math.max(8,Math.min(viewportHeight-effectiveHeight-8,
-   box.top-effectiveHeight-8>=8?box.top-effectiveHeight-8:box.bottom+9))+'px';
+  button.setAttribute('aria-describedby',tip.id);
+  const box=button.getBoundingClientRect(),panel=button.closest('.right')?.getBoundingClientRect();
+  const vw=document.documentElement.clientWidth,vh=innerHeight;
+  const desired=Math.min(300,vw-16,panel?.width?panel.width-18:300);
+  tip.style.width=Math.max(160,desired)+'px';
+  tip.style.maxHeight=Math.max(100,Math.min(270,vh-16))+'px';
+  const width=tip.getBoundingClientRect().width,height=tip.getBoundingClientRect().height;
+  const minLeft=Math.max(8,(panel?.left??0)+8);
+  const maxLeft=Math.min(vw-width-8,(panel?.right??vw)-width-8);
+  tip.style.left=(maxLeft>=minLeft?Math.max(minLeft,Math.min(maxLeft,box.left+box.width/2-width/2)):Math.max(8,vw-width-8))+'px';
+  tip.style.top=Math.max(8,Math.min(vh-height-8,
+   box.top-height-8>=8?box.top-height-8:box.bottom+8))+'px';
  };
  button.addEventListener('mouseenter',show);button.addEventListener('focus',show);
  button.addEventListener('mouseleave',clear);button.addEventListener('blur',clear);button.addEventListener('click',clear);
@@ -686,6 +696,7 @@ function heroPathApi(){
  };
 }
 function renderBranches(){
+ activeSkillPreview?.remove();activeSkillPreview=null;
  const groups=window.PandoraGameNavigation.groups;
  if(!pathGroupTouched&&catalog.classes?.[jobKeys[state.job]]){
   // Choose the profession's strongest skill group, not the FIRST nonzero one.
