@@ -231,3 +231,32 @@ test('skill progress slider does not show a duplicate native text tooltip',()=>{
  assert.ok(tracks.every(el=>!el.title),'no native title that covers marker tooltip');
  assert.match(f.range.attributes['aria-valuetext'],/вложено/);
 });
+
+test('grouped markers preserve individual point thresholds and class locks',()=>{
+ const f=fixture('CLERIC','melee','brush');
+ const skills=[8,12].map((threshold,index)=>({
+  id:980+index,name:'Grouped '+threshold,classes:{CLERIC:true},
+  branch:'brush',reqs:[{branch:'brush',amount:threshold}]
+ }));
+ f.api.skillCatalog=skills;
+ f.api.milestones=()=>[
+  {threshold:8,skills:[skills[0]],locked:false},
+  {threshold:12,skills:[skills[1]],locked:true}
+ ];
+ let selected=null;
+ f.api.onSkill=skill=>selected=skill;
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const pin=walk(f.target).find(el=>String(el.className).includes('path-milestone-pin'));
+ assert.ok(pin);
+ assert.equal(pin.attributes['data-milestone-points'],'8,12');
+ pin.listeners.click();
+ const picker=walk(f.target).find(el=>el.className==='path-milestone-picker');
+ const descriptions=walk(picker).filter(el=>el.tag==='small').map(el=>el.textContent);
+ assert.ok(descriptions.some(text=>text.includes('8 очков')));
+ assert.ok(descriptions.some(text=>text.includes('12 очков')&&text.includes('За пределом класса')));
+ const options=walk(picker).filter(el=>el.tag==='button');
+ options[1].listeners.click();
+ assert.equal(selected.id,981);
+ const heading=walk(f.target).find(el=>String(el.className).includes('game-tree-head active'));
+ assert.ok(walk(heading).some(el=>el.tag==='small'&&el.textContent==='0 вложено'));
+});
