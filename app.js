@@ -5,10 +5,13 @@ const $=id=>document.getElementById(id);
 const VIEW_KEY='ps-studio-navigation.v2';
 function readView(){try{return JSON.parse(sessionStorage.getItem(VIEW_KEY)||'{}')||{}}catch{return{}}}
 const bootView=readView();
+let expandedClassKeys=new Set(Array.isArray(bootView.expandedClasses)?bootView.expandedClasses:[]);
+let classTreeTouched=Boolean(bootView.classTreeTouched);
 function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  tab:activeTab,open:!!document.getElementById('detailPanel')?.classList.contains('is-open'),
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
- slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage
+ slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage,
+ expandedClasses:[...expandedClassKeys],classTreeTouched
  }))}catch{}}
 
 const OS='https://pandorasaga-os.com';
@@ -113,15 +116,30 @@ function renderJobs(){
   return false;
  };
  const classDefsParent=key=>catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null;
- const select=(node)=>{if(state.job===node.i)return;state.job=node.i;persist();render()};
+ const select=(node)=>{if(state.job===node.i)return;
+  state.job=node.i;
+  if(classTreeTouched){
+   for(let key=node.key;key;key=catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null)
+    expandedClassKeys.add(key);
+  }
+  persist();render();saveView();
+ };
  const makeNode=(node,depth=0)=>{
   const descendants=children.get(node.key)||[];
   if(!descendants.length){
    return h('button',{type:'button',class:'class-tree-leaf'+(state.job===node.i?' active':''),
     'aria-pressed':String(state.job===node.i),text:node.name,onclick:()=>select(node)});
   }
-  const details=h('details',{class:'class-tree-node depth-'+depth,open:isLineage(node.key)?'':''});
-  const summary=h('summary',{text:node.name});
+  const isExpanded=classTreeTouched?expandedClassKeys.has(node.key):isLineage(node.key);
+  const details=h('details',{class:'class-tree-node depth-'+depth,open:isExpanded?'':null});
+  const summary=h('summary',{text:node.name,onclick:()=>{
+   requestAnimationFrame(()=>{
+    classTreeTouched=true;
+    if(details.open)expandedClassKeys.add(node.key);
+    else expandedClassKeys.delete(node.key);
+    saveView();
+   });
+  }});
   const group=h('div',{class:'class-tree-contents'});
   group.append(h('button',{type:'button',class:'class-tree-select'+(state.job===node.i?' active':''),
    'aria-pressed':String(state.job===node.i),text:state.job===node.i?'✓ Выбран':'Выбрать '+node.name,
