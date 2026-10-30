@@ -26,6 +26,30 @@ function snapshot({tables,race,klass,level,added,caps}={}){
  return {base:b,added,values:b.map((n,i)=>n+added[i]),max,itemCosts,total,spent,remaining:total-spent,overBudget:spent>total};
 }
 function nextCost(s,i){return s&&s.values[i]<s.max[i]?prices[s.values[i]+1]??null:null}
+// UI values are absolute base + invested points. Saved state remains added-only for backwards compatibility.
+function absolute(s,i){
+ if(!s||!Number.isInteger(i)||i<0||i>=codes.length)return null;
+ return s.values[i];
+}
+function resolveAbsolute(s,i,input){
+ if(!s||!Number.isInteger(i)||i<0||i>=codes.length)return null;
+ const raw=typeof input==='string'&&input.trim()===''?NaN:Number(input);
+ if(!Number.isFinite(raw))return s.values[i];
+ // Race/class base and invested attribute cap apply BEFORE equipment/Souls/skills.
+ const floor=s.base[i],ceiling=Math.max(floor,Math.min(99,s.max[i]));
+ const desired=Math.max(floor,Math.min(ceiling,Math.trunc(raw)));
+ const requested=desired-floor;
+ if(allowed(s,i,requested))return desired;
+ // A valid 99 request can still be unaffordable at a low level.
+ // Find the largest allocation permitted by the level budget without touching other stats.
+ let low=0,high=requested;
+ while(low<high){
+  const mid=Math.ceil((low+high)/2);
+  if(allowed(s,i,mid))low=mid;
+  else high=mid-1;
+ }
+ return floor+low;
+}
 function allowed(s,i,added){
  if(!s||!Number.isInteger(i)||i<0||i>=6||!Number.isInteger(added)||added<0)return false;
  if(added<=s.added[i])return true;
@@ -33,5 +57,5 @@ function allowed(s,i,added){
  const next=cost(s.base[i],added);
  return next!==null&&s.spent-s.itemCosts[i]+next<=s.total;
 }
-root.PandoraAttributeProgression=Object.freeze({codes,perLevel,prices,budget,base,cost,snapshot,nextCost,allowed});
+root.PandoraAttributeProgression=Object.freeze({codes,perLevel,prices,budget,base,cost,snapshot,nextCost,allowed,absolute,resolveAbsolute});
 })(typeof window==='undefined'?globalThis:window);
