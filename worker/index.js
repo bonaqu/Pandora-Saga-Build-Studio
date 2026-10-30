@@ -19,9 +19,86 @@ async function throttle(env,ip){const key=await sha(ip);const now=Date.now();con
 async function recordFailed(env,ip){const key=await sha(ip),now=Date.now();await env.DB.prepare(`INSERT INTO login_attempts (ip_hash,attempts,reset_at) VALUES (?,1,?) ON CONFLICT(ip_hash) DO UPDATE SET attempts=CASE WHEN reset_at<? THEN 1 ELSE attempts+1 END,reset_at=CASE WHEN reset_at<? THEN excluded.reset_at ELSE reset_at END`).bind(key,now+900000,now,now).run()}
 async function clearFailed(env,ip){await env.DB.prepare('DELETE FROM login_attempts WHERE ip_hash=?').bind(await sha(ip)).run()}
 async function session(env){const token=b64(random(32)),hash=await sha(token),expires=Date.now()+4*3600000;await env.DB.prepare('INSERT INTO sessions(token_hash,expires) VALUES(?,?)').bind(hash,expires).run();return{token,expires}}
+
+const DATASETS=['meta','classes','skills','items','souls'];
+const SEED_SCHEMA=[
+ 'CREATE TABLE IF NOT EXISTS catalog_entries(snapshot TEXT NOT NULL,dataset TEXT NOT NULL,record_key TEXT NOT NULL,name TEXT,kind TEXT,slot TEXT,is_costume_overlay INTEGER NOT NULL DEFAULT 0,payload TEXT NOT NULL,PRIMARY KEY(snapshot,dataset,record_key))',
+ 'CREATE INDEX IF NOT EXISTS idx_catalog_slot ON catalog_entries(snapshot,dataset,slot,is_costume_overlay)',
+ 'CREATE INDEX IF NOT EXISTS idx_catalog_kind ON catalog_entries(snapshot,dataset,kind)',
+ 'CREATE TABLE IF NOT EXISTS catalog_current(id INTEGER PRIMARY KEY CHECK(id=1),snapshot TEXT NOT NULL,published_at INTEGER NOT NULL,expected_counts TEXT NOT NULL)'
+];
+async function catalogBody(request){
+ const length=Number(request.headers.get('content-length')||0);
+ if(length>65000)return null;
+ try{const raw=await request.text();if(raw.length>65000)return null;return JSON.parse(raw)}catch{return null}
+}
+function isCostumeKind(kind){return typeof kind==='string'&&kind.startsWith('DECO_')}
+async function activeCatalog(env){
+ try{return await env.DB.prepare('SELECT snapshot,published_at,expected_counts FROM catalog_current WHERE id=1').first()}
+ catch{return null}
+}
+async function serveCatalog(env,dataset){
+ const active=await activeCatalog(env);
+ if(!active)return no('Catalog not published in D1 yet',503);
+ const q=await env.DB.prepare('SELECT record_key,payload FROM catalog_entries WHERE snapshot=? AND dataset=?').bind(active.snapshot,dataset).all();
+ const rows=q.results||[];
+ if(!rows.length)return no('Dataset missing from published catalog',503);
+ const obj=dataset==='meta'?JSON.parse(rows[0].payload):
+  Object.fromEntries(rows.map(r=>[r.record_key,JSON.parse(r.payload)]));
+ return json(obj,200,{'cache-control':'public, max-age=60','x-ps-catalog':'d1'});
+}
+async function adminCatalog(request,env,path){
+ if(!await auth(request,env))return no('Unauthorized',401);
+ if(path==='/api/admin/catalog/initialize'){
+  for(const sql of SEED_SCHEMA)await env.DB.prepare(sql).run();
+  return json({ok:true,created:true});
+ }
+ if(path==='/api/admin/catalog/status'){
+  const current=await activeCatalog(env);
+  return json({active:current?.snapshot||null,counts:current?JSON.parse(current.expected_counts):null});
+ }
+ const data=await catalogBody(request);
+ if(!data||typeof data!=='object')return no('Invalid catalog import batch',400);
+ if(!/^[a-z0-9-]{8,64}$/.test(data.snapshot||''))return no('Invalid snapshot identifier',400);
+ if(path==='/api/admin/catalog/batch'){
+  if(!DATASETS.includes(data.dataset)||!Array.isArray(data.records)||data.records.length>35||!data.records.length)return no('Invalid dataset/batch',400);
+  const commands=[];
+  for(const entry of data.records){
+   const key=String(entry?.key??''),value=entry?.value;
+   if(!/^[A-Za-z0-9_-]{1,48}$/.test(key)||!value||typeof value!=='object'||Array.isArray(value))return no('Invalid record',400);
+   const payload=JSON.stringify(value);
+   if(payload.length>12000)return no('Record too large',400);
+   const kind=data.dataset==='items'?String(value.kind||''):'';
+   const costume=data.dataset==='items'&&isCostumeKind(kind)?1:0;
+   commands.push(env.DB.prepare('INSERT INTO catalog_entries(snapshot,dataset,record_key,name,kind,slot,is_costume_overlay,payload) VALUES(?,?,?,?,?,?,?,?) ON CONFLICT(snapshot,dataset,record_key) DO UPDATE SET name=excluded.name,kind=excluded.kind,slot=excluded.slot,is_costume_overlay=excluded.is_costume_overlay,payload=excluded.payload').bind(
+    data.snapshot,data.dataset,key,String(value.name||'').slice(0,240),kind.slice(0,60),String(value.slot||'').slice(0,40),costume,payload));
+  }
+  await env.DB.batch(commands);
+  return json({ok:true,received:data.records.length,dataset:data.dataset});
+ }
+ if(path==='/api/admin/catalog/publish'){
+  const result=await env.DB.prepare("SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset='meta' AND record_key='all'").bind(data.snapshot).first();
+  if(!result)return no('Meta snapshot missing',409);
+  const meta=JSON.parse(result.payload),counts={};
+  for(const dataset of DATASETS){
+    const row=await env.DB.prepare('SELECT COUNT(*) AS c FROM catalog_entries WHERE snapshot=? AND dataset=?').bind(data.snapshot,dataset).first();
+    const observed=Number(row?.c||0),expected=dataset==='meta'?1:Number(meta?.counts?.[dataset]);
+    if(!Number.isInteger(expected)||expected<=0||observed!==expected)return no('Incomplete '+dataset+': '+observed+' of '+expected,409);
+    counts[dataset]=observed;
+  }
+  const costumes=await env.DB.prepare("SELECT COUNT(*) AS c FROM catalog_entries WHERE snapshot=? AND dataset='items' AND is_costume_overlay=1").bind(data.snapshot).first();
+  await env.DB.prepare('INSERT INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET snapshot=excluded.snapshot,published_at=excluded.published_at,expected_counts=excluded.expected_counts').bind(data.snapshot,Date.now(),JSON.stringify(counts)).run();
+  return json({ok:true,active:data.snapshot,counts,costumeItems:costumes.c});
+ }
+ return no('Unknown catalog operation',404);
+}
+
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
-if(method==='GET'&&/^\/api\/gamedata\/(meta|classes|skills|items|souls)\.json$/.test(path)){const file=path.split('/').pop();const source=await fetch('https://pandorasaga-os.com/gamedata/'+file,{headers:{Accept:'application/json'},cf:{cacheTtl:300,cacheEverything:true}});if(!source.ok)return no('Upstream game data unavailable',502);return new Response(source.body,{status:200,headers:{'content-type':'application/json; charset=utf-8','cache-control':'public, max-age=300','x-content-type-options':'nosniff'}})}
+// No runtime calls to the third-party game server. All game data is read from our own D1.
 if(!env.DB)return no('Database not configured',503);
+if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
+if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
+
 if(path==='/api/health'&&method==='GET'){const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts')").all();const ready=(tables.results||[]).length===4;return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready},ready?200:503)}
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){
