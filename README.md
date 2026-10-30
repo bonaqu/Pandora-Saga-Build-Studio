@@ -108,3 +108,7 @@ The checked-in snapshot includes **12 distinct OS datasets** and separately stor
 ## Vintage character window and profile (2026-10-30)
 
 Character detail uses authentic-style tabs for **Персонаж / Умения / Профиль / Статы** without duplicating skill or stats engines. Added editable guild, nation, rank and biography, preserved in local builds, JSON export/import and compare. The HUD shows the real selected character name and planned level; HP/OM/EXP explicitly show **unavailable** rather than fabricated calculated values. 3D dressing remains deferred.
+
+## RU/EN official game catalog (2026-10-30)
+
+Pandora Saga OS has a separate public original `strings.en.json`. It is now saved at `data/os/strings.en.json`, with exact stable IDs for item/skill/monster/soul/class names, descriptions, maps and branches. The RU/EN control switches the **game catalog** without inventing translation mappings or changing build IDs. English entries absent upstream retain their Russian source text. The non-game UI shell is still Russian-first; full UI localization remains tracked separately. English strings load from **our own D1** first or our own checked-in archive before first import — never from the game server at runtime. The manual importer also archives `tables`, `expertise`, `chests`, and approved Legacy language data in isolated namespaces.

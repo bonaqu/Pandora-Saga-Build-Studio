@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.11",
-  "notes": "Game-styled character tabs, persisted profile and non-fabricated HUD"
+  "release": "2026.10.30.12",
+  "notes": "Complete D1 game-data archive with official English names, descriptions and manual locale switch"
 }

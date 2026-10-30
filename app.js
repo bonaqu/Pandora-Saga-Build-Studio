@@ -14,7 +14,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''}}};
-let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang='ru',compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,characterPanelTab='character';
+let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,characterPanelTab='character';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
@@ -652,7 +652,7 @@ async function showCatalogImport(){
    const sources={};
    const api=window.PandoraCatalogImport;
    if(!api)throw Error("Не загружен модуль проверки данных");
-   const required=[...api.base];
+   const required=[...api.files];
    for(const name of required){
     message.textContent="Проверяю архив "+name+".json";
     const r=await fetch("./data/os/"+name+".json",{cache:"no-cache"});
@@ -695,42 +695,67 @@ async function showCatalogImport(){
  };
  modal("Полный каталог Pandora Saga · Cloudflare D1",area);
 }
+function applyGameLocale(){
+ if(!catalogSource)return;
+ const translate=(original,map)=>{
+  if(lang!=='en'||!map)return original;
+  return Object.fromEntries(Object.entries(original).map(([id,item])=>{
+    const t=map[id];return [id,t?{...item,name:t.n||item.name,desc:t.d??item.desc}:item]
+  }));
+ };
+ const en=lang==='en'?officialEnglish:null;
+ const meta={...catalogSource.meta};
+ if(en?.branches)meta.branchLabels={...meta.branchLabels,...en.branches};
+ catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:translate(catalogSource.skills,en?.skills),
+   equipment:translate(catalogSource.items,en?.items),souls:translate(catalogSource.souls,en?.souls),live:true};
+ jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
+ branches=meta.branchNames.map(id=>({id,name:meta.branchLabels[id]||id}));
+ const label=document.getElementById('locale');
+ if(label){label.textContent=lang==='en'?'EN ✓ · RU':'RU ✓ · EN';label.title='Переключить язык игрового каталога';label.setAttribute('aria-label','Язык игрового каталога: '+lang.toUpperCase())}
+ render();
+}
 async function loadCatalog(){
  const names=['meta','classes','skills','items','souls'];
- const obtain=async base=>Object.fromEntries(await Promise.all(names.map(async n=>{
-  const r=await fetch(base+'/'+n+'.json',{cache:'no-cache',signal:AbortSignal.timeout(8500)});
-  if(!r.ok)throw Error(n+' HTTP '+r.status);
-  return [n,await r.json()];
+ const obtain=async base=>Object.fromEntries(await Promise.all(names.map(async name=>{
+  const r=await fetch(base+'/'+name+'.json',{cache:'no-cache',signal:AbortSignal.timeout(10000)});
+  if(!r.ok)throw Error(name+' HTTP '+r.status);
+  return [name,await r.json()];
  })));
  let live,sourceLabel;
- try{
-  live=await obtain(API+'/api/catalog');
-  sourceLabel='Cloudflare D1 · наша база';
- }catch(error){
-  console.info('D1 catalog not published; reading repository backup',error.message);
-  try{
-   live=await obtain('./data/os');
-   sourceLabel='Встроенный архив · ожидает переноса в D1';
-  }catch(e){
-   console.error('Catalog unavailable',e);
-   $('siteNotice').textContent='Каталог временно недоступен. Сохранённые билды не удалены.';
-   $('catalogStatus').textContent='Ошибка загрузки каталога';
-   return;
+ try{live=await obtain(API+'/api/catalog');sourceLabel='Cloudflare D1 · наша база'}
+ catch(err){
+  console.info('D1 is not published; using repository copy',err.message);
+  try{live=await obtain('./data/os');sourceLabel='Встроенный архив (до переноса в D1)'}
+  catch(error){
+   console.error('Catalog unavailable',error);
+   $('siteNotice').textContent='Каталог временно недоступен; сохранённые билды не удалены.';
+   $('catalogStatus').textContent='Каталог не загружен';return;
   }
  }
- if(!live.meta?.counts?.skills||!live.classes?.CLERIC)throw Error('Invalid catalog data');
- catalog={meta:live.meta,classes:live.classes,skills:live.skills,equipment:live.items,souls:live.souls,live:true};
- jobs=jobKeys.map(id=>live.classes[id]?.name||id);
- branches=live.meta.branchNames.map(id=>({id,name:live.meta.branchLabels[id]||id}));
+ if(!live.meta?.counts?.skills||!live.classes?.CLERIC)throw Error('Invalid game catalog');
+ catalogSource=live;
  const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
- state.points=Object.fromEntries(Object.entries(state.points).map(([k,v])=>[oldToOS[k]||k,v]));
+ state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));
  if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
- $('siteNotice').textContent='Данные Pandora Saga Build Studio: '+sourceLabel+'. Костюмная внешка исключена из боевой экипировки. Игровые формулы не выдумываются.';
+ let enData=null;
+ for(const path of [API+'/api/catalog/stringsEn.json','./data/os/strings.en.json']){
+  try{
+   const response=await fetch(path,{cache:'no-cache',signal:AbortSignal.timeout(10000)});
+   if(!response.ok)continue;
+   const proposed=await response.json();
+   const expected=live.meta?.localeCounts?.en||{};
+   if(proposed.locale!=='en')continue;
+   if(['items','skills','monsters','souls','classes'].some(group=>Object.keys(proposed[group]||{}).length!==Number(expected[group])))continue;
+   enData=proposed;break;
+  }catch(error){console.info('English archive unavailable from '+path,error.message)}
+ }
+ officialEnglish=enData;
+ $('siteNotice').textContent='Pandora Saga Build Studio · '+sourceLabel+'. '+(officialEnglish?'RU/EN по официальным ID.':'Английский перевод временно недоступен.')+' Костюмные вещи исключены из боевого каталога.';
  $('catalogStatus').textContent=`${live.meta.counts.skills} навыков · ${live.meta.counts.items} предметов · ${live.meta.counts.souls} душ · ${sourceLabel}`;
- persist();render();
+ applyGameLocale();persist();
 }
 async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
-$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('swapGender').onclick=()=>{state.gender=1-state.gender;persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{alert('Полная локализация игрового каталога RU/EN находится в разработке. Оригинальные EN-названия оставлены без вымышленных переводов.')};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Number(e.target.value);persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('swapGender').onclick=()=>{state.gender=1-state.gender;persist();render()};$('genderF').onclick=()=>{state.gender=0;persist();render()};$('genderM').onclick=()=>{state.gender=1;persist();render()};$('jumpEquipment').onclick=()=>changeTab('equipment');$('allSkills').onclick=()=>changeTab('skills');$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('keydown',event=>{if(event.key==='Escape')closeInlineEditor()});
 
 /* Owner login: five logo clicks within six seconds, or Ctrl+Alt+Shift+P.
