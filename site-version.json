@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.40",
-  "notes": "Remove misleading first-100 encyclopedia cap, show full result counts with progressive browsing and preserve list scroll"
+  "release": "2026.10.30.41",
+  "notes": "Match OS public HP/MP half-to-even rounding and apply supported flat item/Soul attribute and vitality modifiers; explicitly exclude remaining effects"
 }

@@ -61,9 +61,23 @@ function previewBaseStats(){
  const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
  const baseClass=clazz?.baseClass||jobKeys[state.job];
  const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(state.stats[STATS[i]]||0)]));
+ const records=[];
+ for(const [slot,selection] of Object.entries(state.equipment||{})){
+  const item=selection&&catalog.equipment?.[String(selection.id)];
+  if(!item)continue;
+  const grade=window.PandoraEquipmentPlan.refinementValue(state.refinements,Number(slot),selection);
+  records.push(['item:'+item.id,item,grade]);
+  const souls=window.PandoraEquipmentPlan.asSocketArray(state.souls?.[slot]);
+  const capacity=window.PandoraEquipmentPlan.socketCapacity(item);
+  for(let i=0;i<(capacity??0);i++){
+   const soul=souls[i]&&catalog.souls?.[String(souls[i].id)];
+   if(soul&&window.PandoraEquipmentPlan.validSoul(soul,slotKeys[Number(slot)]))
+    records.push(['soul:'+soul.id,soul,grade]);
+  }
+ }
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
-  allocation,level:state.level});
+  allocation,level:state.level,records});
 }
 function renderHudEstimates(){
  const estimate=previewBaseStats();
@@ -73,7 +87,7 @@ function renderHudEstimates(){
  for(const [selector,name] of [['.ps-hud-hp','ОЗ'],['.ps-hud-mp','ОМ']]){
   const row=$('psHud')?.querySelector(selector);
   if(row)row.setAttribute('aria-label',estimate?
-   'Базовые '+name+' по коэффициентам OS, без экипировки и эффектов (округление требует сверки)':
+   'Предварительные '+name+' по OS с известными плоскими эффектами вещей и душ, без баффов и сложных механик':
    'Базовые '+name+' ещё не рассчитаны');
  }
 }
@@ -293,7 +307,7 @@ function renderStagePicker(focusSearch=false){
     stageSlotView=mode;saveView();renderStagePicker(mode==='choose')
    },
    updateGrade:n=>{if(!plan.canRefine(key)||!Number.isInteger(n)||n<0||n>10)return;
-    state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;persist();renderSlotRails();renderStagePicker();
+    state.refinements??={};state.refinements[plan.refinementKey(selectedSlot,equipped)]=n;persist();renderSlotRails();renderStagePicker();renderHudEstimates();
    },
    openSocket:i=>{selectedSocket=i;stageSlotView='souls';renderStagePicker()},
    assignSoul:entry=>{
@@ -302,7 +316,7 @@ function renderStagePicker(focusSearch=false){
     if(entry&&!plan.validSoul(entry,key))return;
     const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
-    state.souls[selectedSlot]=next;stageSlotView='details';persist();renderStagePicker();},
+    state.souls[selectedSlot]=next;stageSlotView='details';persist();renderStagePicker();renderHudEstimates();},
    assignGem:entry=>{if(!plan.canRefine(key))return;state.gems??={};
     const id=plan.refinementKey(selectedSlot,equipped);
     const choice=window.PandoraEnchantModel.normalize(entry);
@@ -1090,7 +1104,7 @@ function renderStats(root){
  ]));
  const hpmp=previewBaseStats();
  root.append(h('p',{class:'muted',text:hpmp?
-  'Базовые ОЗ ≈'+hpmp.hp+' / ОМ ≈'+hpmp.mp+' по коэффициентам классов OS; без экипировки, душ, баффов и эффектов. Округление требует проверки.':
+  'Предварительные ОЗ ≈'+hpmp.hp+' / ОМ ≈'+hpmp.mp+' по OS: включает подтверждённые плоские эффекты предметов и душ. Округление half-to-even; баффы, сеты и условные эффекты не учтены.':
   'Базовые ОЗ/ОМ станут доступны после загрузки таблиц OS. Итоговые эффекты экипировки и баффов не рассчитаны.'}));
  const grid=h('div',{class:'stat-grid'});
  STATS.forEach((key,i)=>{
