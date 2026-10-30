@@ -43,7 +43,8 @@ const branchNames=['Melee','Slash','Thrust','Cleave','Bash','Defend','Technique'
 let branches=window.PandoraGameNavigation.groups.flatMap(group=>group.branches.map(id=>({id,name:id})));
 let selectedSkillGroup=bootView.groupTouched&&bootView.skillGroup===null?null:
  window.PandoraGameNavigation.groups.some(group=>group.id===bootView.skillGroup)?bootView.skillGroup:'melee';
-let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='',pathSkillFilter='all',pathGroupTouched=Boolean(bootView.groupTouched);
+let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='',pathSkillFilter='all',
+ pathSkillShown=24,pathGroupTouched=Boolean(bootView.groupTouched);
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
@@ -51,8 +52,9 @@ function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.f
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
-inlineBranchId=typeof bootView.expandedBranch==='string'&&
- window.PandoraGameNavigation.all.has(bootView.expandedBranch)?bootView.expandedBranch:null,
+inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
+ typeof bootView.expandedBranch==='string'&&window.PandoraGameNavigation.all.has(bootView.expandedBranch)?
+ bootView.expandedBranch:null),
 pathScrollRestored=false,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',
 stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,120):'',
@@ -567,23 +569,31 @@ function renderOriginPassives(){
  }
 }
 function skillHover(button,skill){
- let tip;const clear=()=>{tip?.remove();tip=null};
- button.addEventListener('mouseenter',()=>{
-  clear();tip=h('aside',{class:'stage-hover-preview'},[
-   h('h3',{text:skill.name||'Навык'}),
-   h('p',{class:'stage-rich-note',text:'Уровень '+(skill.charLevel??'—')+' · ОМ '+(skill.mana??'—')}),
-   h('p',{class:'stage-rich-desc',text:skill.desc||'Описание отсутствует'})
-  ]);
+ const skills=Array.isArray(skill)?skill:[skill];let tip;
+ const clear=()=>{tip?.remove();tip=null};
+ const show=()=>{
+  clear();tip=h('aside',{class:'stage-hover-preview path-skill-preview',role:'tooltip'});
+  for(const entry of skills){
+   const row=h('div',{class:'path-skill-preview-item'}),src=skillIcon(entry.branch,entry.id,entry);
+   if(src){const img=h('img',{src,alt:''});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));row.append(img)}
+   const copy=h('div');copy.append(h('strong',{text:entry.name||'Умение'}));
+   if(entry.charLevel)copy.append(h('small',{text:'Уровень '+entry.charLevel}));
+   if(entry.desc)copy.append(h('p',{text:entry.desc}));
+   row.append(copy);tip.append(row);
+  }
   document.body.append(tip);
   const box=button.getBoundingClientRect(),width=tip.offsetWidth,height=tip.offsetHeight;
-  tip.style.left=Math.max(8,Math.min(innerWidth-width-8,box.right+8))+'px';
-  tip.style.top=Math.max(8,Math.min(innerHeight-height-8,box.top))+'px';
- });
- button.addEventListener('mouseleave',clear);button.addEventListener('blur',clear);
+  tip.style.left=Math.max(8,Math.min(innerWidth-width-8,box.left+box.width/2-width/2))+'px';
+  tip.style.top=(box.top-height-8>=8?box.top-height-8:
+   Math.max(8,Math.min(innerHeight-height-8,box.bottom+9)))+'px';
+ };
+ button.addEventListener('mouseenter',show);button.addEventListener('focus',show);
+ button.addEventListener('mouseleave',clear);button.addEventListener('blur',clear);button.addEventListener('click',clear);
 }
 function refreshBudgetLabel(){
  const data=budgetSummary(),root=$('budgetState');if(!root)return;
- root.replaceChildren();
+ const heading=root.querySelector('.path-overview-head');
+ root.replaceChildren();if(heading)root.append(heading);
  const stats=h('div',{class:'path-budget-values'});
  if(data.total===null)stats.append(h('p',{text:'Загружаются очки умений…'}));
  else{
@@ -594,7 +604,7 @@ function refreshBudgetLabel(){
   if(data.remaining<0)root.append(h('small',{class:'budget-excess',
    text:'Сохранённый билд превышает бюджет. Прежние вложения не удалены.'}));
  }
- root.prepend(stats);
+ root.append(stats);
 }
 function heroPathApi(){
  const groups=window.PandoraGameNavigation.groups,klass=jobKeys[state.job];
@@ -603,6 +613,7 @@ function heroPathApi(){
   skillCatalog:Object.values(catalog.skills||{}),catalogReady:!!catalog.skills,
   allocationReady:Boolean(gameTables?.abilityPoint&&catalog.classes?.[klass]),
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
+  shown:pathSkillShown,onMoreSkills:()=>{pathSkillShown+=24;renderPathSkills()},
   cap:branchCap,
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
   icon:(key,skill)=>skillIcon(key,skill?.id,skill),
@@ -626,9 +637,8 @@ function heroPathApi(){
    const collapse=selectedSkillGroup===key;
    selectedSkillGroup=collapse?null:key;
    pathGroupTouched=true;
-   const group=collapse?null:groups.find(x=>x.id===key);
-   inlineBranchId=group?(group.branches.find(x=>x!=='race'&&branchCap(x)>0)||
-    group.branches.find(x=>x!=='race')||''):null;
+   // Reopening a category never reopens the previous child branch.
+   inlineBranchId='';
    renderBranches();
    document.querySelector('[data-path-group="'+key+'"]')?.focus({preventScroll:true});
    saveView();
@@ -666,7 +676,7 @@ function heroPathApi(){
    saveView();return true;
   },
   onSkill:skill=>{
-   selectedSkill=skill;pathSkillFilter='all';pathSkillQuery='';
+   selectedSkill=skill;pathSkillFilter='all';pathSkillQuery='';pathSkillShown=24;
    $('pathSkillStatus').value='all';$('pathSkillSearch').value='';
    heroPathPage='skills';renderPathPages();saveView();
    $('pathSkillsTab')?.focus({preventScroll:true});
@@ -675,6 +685,7 @@ function heroPathApi(){
    selectedSkill=skill;renderPathSkills();
    document.querySelector('[data-skill-id="'+String(skill.id)+'"]')
     ?.focus({preventScroll:true});
+   $('pathSkillDetails')?.scrollIntoView({block:'nearest',behavior:'smooth'});
   }
  };
 }
@@ -1697,8 +1708,8 @@ $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView
   window.PandoraSkillProgression.setAuto(state,e.target.checked,branches.map(b=>b.id));
   persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderHudEstimates();
  };
- $('pathSkillSearch').oninput=e=>{pathSkillQuery=e.target.value;renderPathSkills()};
- $('pathSkillStatus').onchange=e=>{pathSkillFilter=e.target.value;renderPathSkills()};
+ $('pathSkillSearch').oninput=e=>{pathSkillQuery=e.target.value;pathSkillShown=24;renderPathSkills()};
+ $('pathSkillStatus').onchange=e=>{pathSkillFilter=e.target.value;pathSkillShown=24;renderPathSkills()};
  $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;
 $('dockTabs').addEventListener('click',event=>{

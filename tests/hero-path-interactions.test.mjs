@@ -157,3 +157,10 @@ test('OS skills above class cap stay visible as locked milestone data',()=>{
  assert.ok(beyond.skills.some(s=>s.name==='Раскол'));
  assert.ok(marks.every(mark=>mark.locked?mark.threshold>cap:mark.threshold<=cap));
 });
+
+test('closing a group clears child expansion and reopening leaves all branches folded',()=>{
+ const app=sources['app.js'];
+ assert.match(app,/inlineBranchId='';\s*renderBranches\(\)/);
+ assert.match(app,/bootView\.groupTouched&&bootView\.expandedBranch===''/);
+ assert.match(app,/if\(selected&&\(inlineBranchId===null/);
+});

@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.67",
-  "notes": "Fix broken dynamic regression source binding, add real class-change handler test and OS over-cap skill marker test"
+  "release": "2026.10.30.68",
+  "notes": "Collapse child branches on group toggle, compact skill pins with icon hover cards, remove nested Hero Path scroll and clutter"
 }

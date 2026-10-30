@@ -128,23 +128,25 @@ function viewGrowth(target,api){
     const marks=api.milestones(skills,key,cap);
     if(marks.length){
      const rail=make('div',{class:'inline-branch-milestones','aria-label':'Умения на порогах ветки'});
-     for(const mark of marks){
-      const skill=mark.skills[0],ready=readiness(skill,api).learned;
-      const button=make('button',{type:'button',
-       class:'inline-milestone'+(mark.locked?' unreachable':ready?' reached':''),
-       'aria-label':skill.name+' · '+mark.threshold+' очков'+(mark.locked?' · превышает классовый лимит':''),
-       title:skill.name+' · '+mark.threshold+(mark.locked?' · недоступно профессии':''),
-       onclick:()=>api.onSkill(skill)});
-      const src=api.icon(key,skill);
-      if(src){const pic=make('img',{src,alt:''});pic.onerror=()=>pic.replaceWith(make('span',{text:'✦'}));button.append(pic)}
-      else button.append(make('span',{text:'✦'}));
-      button.append(make('small',{text:String(mark.threshold)}));
-      // Milestone and thumb both use the SAME 0..90 visual scale, not the smaller class cap.
-      button.style.left='clamp(15px, '+Math.max(0,Math.min(100,mark.threshold/visualMax*100))+
-       '%, calc(100% - 15px))';
-      rail.append(button);api.hover(button,skill);
-     }
-     track.append(rail);
+    const laneLast=[-Infinity,-Infinity,-Infinity,-Infinity];
+    for(const mark of marks){
+     const skill=mark.skills[0],ready=readiness(skill,api).learned;
+     let lane=laneLast.findIndex(value=>mark.threshold-value>=6);
+     if(lane<0)lane=laneLast.indexOf(Math.min(...laneLast));
+     laneLast[lane]=mark.threshold;
+     const button=make('button',{type:'button',
+      class:'inline-milestone path-milestone-pin'+(mark.locked?' unreachable':ready?' reached':''),
+      'data-milestone-points':String(mark.threshold),
+      'aria-label':mark.skills.map(s=>s.name).join(', ')+' · '+mark.threshold+' очков'+
+       (mark.locked?' · выше лимита класса':''),
+      onclick:()=>api.onSkill(skill)});
+     button.append(make('span',{class:'path-milestone-core',text:'•'}));
+     button.style.top=(6+lane*15)+'px';
+     button.style.left='clamp(15px, '+Math.max(0,Math.min(100,mark.threshold/visualMax*100))+
+      '%, calc(100% - 15px))';
+     rail.append(button);api.hover(button,mark.skills);
+    }
+    track.append(rail);
     }
     const greenRow=make('div',{class:'path-green-controls'});
     const input=make('input',{type:'number',min:'0',max:String(points),step:'1',
@@ -177,7 +179,7 @@ function viewGrowth(target,api){
 }
 function viewSkills(target,details,api){
  const previousScroll=target.querySelector?.('.path-skill-grid')?.scrollTop||0;
- target.replaceChildren();details.replaceChildren();
+ target.replaceChildren();details.replaceChildren();details.hidden=true;
  if(!api.catalogReady){target.append(make('p',{class:'muted',text:'Каталог умений загружается.'}));return}
  const needle=String(api.query||'').trim().toLocaleLowerCase('ru');
  const rows=api.skillCatalog.filter(skill=>skill.classes?.[api.job]&&
@@ -186,10 +188,9 @@ function viewSkills(target,details,api){
    api.filter==='all'||(api.filter==='known'?gate.learned:!gate.learned));
  rows.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
   String(a.skill.name||'').localeCompare(String(b.skill.name||''),'ru'));
- target.append(make('p',{class:'path-skill-count',
-  text:rows.length+' умений · цветные — доступно по известным условиям, серые — недоступно или не проверено. *Не подтверждает изучение в игре.'}));
+ target.append(make('p',{class:'path-skill-count',text:rows.length+' умений'}));
  const grid=make('div',{class:'path-skill-grid'});
- for(const {skill,gate}of rows){
+ for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
     (String(api.selectedSkill?.id)===String(skill.id)?' active':''),
    title:skill.name+'\n'+(skill.desc||'')+'\n'+(gate.problems.join(' · ')||'Известные условия выполнены'),
@@ -202,14 +203,17 @@ function viewSkills(target,details,api){
   grid.append(item);api.hover(item,skill);
  }
  target.append(grid);grid.scrollTop=previousScroll;
+ if(rows.length>(api.shown||24))
+  target.append(make('button',{type:'button',class:'path-show-more',
+   text:'Показать ещё ('+(rows.length-(api.shown||24))+')',onclick:api.onMoreSkills}));
  if(!rows.length)target.append(make('p',{class:'muted',text:'По этим параметрам навыки не найдены.'}));
- const selected=rows.find(row=>String(row.skill.id)===String(api.selectedSkill?.id))||rows[0];
- if(selected){
+ const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===String(api.selectedSkill.id)):null;
+ if(selected){details.hidden=false;
   const skill=selected.skill,gate=selected.gate;
   details.append(make('h3',{text:skill.name||String(skill.id)}),
    make('p',{text:skill.desc||'Описание умения отсутствует.'}),
    make('p',{class:gate.learned?'path-skill-yes':'path-skill-no',
-    text:gate.learned?'✓ Известные условия доступны — фактическое изучение в игре не проверено':
+    text:gate.learned?'✓ Условия выполнены':
      '🔒 '+gate.problems.join(' · ')}));
   const stats=make('dl',{class:'path-skill-metadata'});
   const field=(label,value)=>{
@@ -242,14 +246,7 @@ function viewSkills(target,details,api){
    details.append(make('p',{class:'path-skill-prereqs',text:'Предыдущее умение: '+
      (before?.name||String(skill.prereq))}));
   }
-  if(Array.isArray(skill.funcs)&&skill.funcs.length){
-   const effects=make('details',{class:'path-skill-source-effects'});
-   effects.append(make('summary',{text:'Эффекты из OS ('+skill.funcs.length+') · исходные коды'}));
-   for(const func of skill.funcs.slice(0,30))
-    effects.append(make('p',{text:String(func.ep||'Неизвестный эффект')+
-      (func.dir?' · '+func.dir:'')}));
-   details.append(effects);
-  }
+  // Raw effect codes remain in the encyclopedia, not the quick skill card.
   if(typeof api.skillWiki==='function')details.append(api.skillWiki(skill));
  }
 }

@@ -126,3 +126,12 @@ test('branch summary, green mastery and group totals update on input, not only c
   'input.value=String(M.trained(state,key))'])
   assert.ok(ui.includes(part),part);
 });
+
+test('milestones are compact staggered dots with skill icon/description only on hover',()=>{
+ const ui=read('hero-path.js'),app=read('app.js'),css=read('style.css');
+ assert.match(ui,/path-milestone-pin/);
+ assert.match(ui,/laneLast=\[-Infinity,-Infinity,-Infinity,-Infinity\]/);
+ assert.match(ui,/api\.hover\(button,mark\.skills\)/);
+ assert.match(app,/path-skill-preview-item/);
+ assert.match(css,/path-milestone-pin/);
+});

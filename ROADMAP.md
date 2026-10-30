@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest source release:** 0.67.0 (`2026.10.30.67`), browser and Worker deployment unverified  
+**Updated:** 2026-10-30 · **Latest source release:** 0.68.0 (`2026.10.30.68`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -178,3 +178,10 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Функциональный тест действительно вызывает `selectJob` и проверяет неприкосновенность очков/mastery с новой профессией.
 - [x] Реальная OS-запись «Раскол» (Рубящий удар, порог 41) проверяется против cap15 Клирика в `milestones`, значение отмечается `locked`.
 - [ ] Full `npm test` на Node + визуальный браузерный E2E + публикация 0.67 GitHub Pages.
+
+### 2026-10-30 · 0.68 — очистка интерфейса развития
+- [x] Родительская группа при сворачивании закрывает ребёнка и при повторном раскрытии не восстанавливает его, включая F5.
+- [x] Компактные маркеры порогов (несколько дорожек), настоящее изображение и описание в hover/focus tooltip.
+- [x] Скролл правой панели и дерева передан странице, длинный каталог порционно раскрывается.
+- [x] Класс + показатели очков в одном блоке; выбранное умение раскрывает карточку непосредственно над галереей.
+- [ ] Настоящий визуальный/browser E2E и проверка тач-раскрытия маркеров.

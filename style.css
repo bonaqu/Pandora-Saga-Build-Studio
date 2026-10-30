@@ -704,3 +704,31 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track .inline-milestone.unreachable{opacity:.58;filter:grayscale(1);border-color:#a56358;background:#34211d}
 .inline-mastery-track .inline-milestone.unreachable:after{content:'🔒';position:absolute;right:-3px;top:-5px;font-size:12px;text-shadow:0 1px 4px #000}
 .inline-mastery-track .inline-milestone.unreachable:focus-visible{opacity:1;filter:none;outline:2px solid #f1b6a2}
+
+/* 2026.10.30.68: compact markers and one natural page scrollbar. */
+.workspace>.right{max-height:none!important;height:auto;overflow:visible!important}
+.right .branch-list{max-height:none!important;height:auto;overflow:visible!important;scrollbar-gutter:auto}
+.right .path-skill-grid{max-height:none;overflow:visible}
+.path-budget{display:grid;gap:5px;margin:4px 0 7px;padding:8px 10px}
+.path-overview-head strong{display:block;color:#efcb90;font:700 21px 'Cormorant Garamond',Georgia,serif}
+.path-budget-values>div{display:flex;gap:4px;align-items:baseline;justify-content:center}
+.path-budget-values strong{font:700 17px Georgia,serif}
+.path-sections{margin:6px 0}
+.path-skill-details[hidden]{display:none!important}
+.path-show-more{width:100%;padding:10px;margin:9px 0;border:1px solid #8b6844;background:#3b2818;color:#e9c894}
+.inline-mastery-track .inline-milestone.path-milestone-pin{
+ display:grid;place-items:center;width:12px;height:12px;min-height:12px;padding:0;
+ border-radius:50%;border:1px solid #c99c58;background:#614124;transform:translateX(-50%);z-index:2
+}
+.path-milestone-core{font-size:12px;line-height:8px;color:#f0d18d}
+.inline-mastery-track .path-milestone-pin.reached{background:#426b38;border-color:#a2e994}
+.inline-mastery-track .path-milestone-pin.unreachable{background:#572a2a;border-color:#cf7968;opacity:.9;filter:none}
+.inline-mastery-track .path-milestone-pin.unreachable:after{content:'';position:absolute;right:-3px;top:-3px;width:5px;height:5px;border-radius:50%;background:#ea786d}
+.path-skill-preview{width:min(370px,92vw);font-size:11px}
+.path-skill-preview-item{display:flex;gap:9px;align-items:flex-start;padding:5px 2px}
+.path-skill-preview-item+.path-skill-preview-item{border-top:1px solid #725235;padding-top:8px;margin-top:4px}
+.path-skill-preview-item img{width:44px;height:44px;object-fit:contain;flex-shrink:0;border:1px solid #8f6c40}
+.path-skill-preview-item strong{display:block;color:#f5d8a1;font-size:13px}
+.path-skill-preview-item small{display:block;color:#b09a80}
+.path-skill-preview-item p{white-space:pre-line;color:#e2c9a4;font-size:11px;line-height:1.4;margin-top:3px}
+@media(max-width:700px){.path-budget-values>div{flex-direction:column;gap:0;align-items:center}}
