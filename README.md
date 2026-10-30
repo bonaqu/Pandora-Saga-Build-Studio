@@ -20,7 +20,7 @@ Even branch-based publication internally uses GitHub Pages' infrastructure; no c
 
 ## Secure administrator mode
 
-The admin login is hidden from the public interface. Five clicks on the Pandora Saga logo within six seconds, or Ctrl+Alt+Shift+P, opens the owner login. This is visual concealment only: all privileged operations remain secured server-side. Account name is fixed to `administrator`. Initial password creation is intentionally **blocked** until the owner provisions a server-only `ADMIN_SETUP_TOKEN` secret (>=32 characters), because a publicly accessible first-visit registration could otherwise be claimed by anyone.
+The administrator login is hidden from the public interface; this is a visual preference only. All privileged operations remain secured server-side. Account name is fixed to `administrator`. Initial password creation is intentionally **blocked** until the owner provisions a server-only `ADMIN_SETUP_TOKEN` secret (>=32 characters), because a publicly accessible first-visit registration could otherwise be claimed by anyone.
 
 Backend in `worker/`. Requires a Cloudflare account and Cloudflare D1 database; both have free plan allowances and limits. Deploy separately, only when ready:
 
@@ -35,7 +35,7 @@ wrangler secret put ADMIN_SETUP_TOKEN
 wrangler deploy
 ```
 
-First successful login: five logo clicks → `administrator` → new password (minimum 12 chars) + one-time setup token. Subsequent logins use only the password. Server stores only a unique-salt PBKDF2 password hash, short-lived hashed bearer sessions and restricted editable text overrides in D1. Session token stays in browser memory (not in public source or localStorage). Editing: toggle edit mode; double-click outlined text; save the change through the authenticated Worker.
+First successful login: owner-only entry → `administrator` → new password (minimum 12 chars) + one-time setup token. Subsequent logins use only the password. Server stores only a unique-salt PBKDF2 password hash, short-lived hashed bearer sessions and restricted editable text overrides in D1. Session token stays in browser memory (not in public source or localStorage). Editing: toggle edit mode; double-click outlined text; save the change through the authenticated Worker.
 
 **Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
 
