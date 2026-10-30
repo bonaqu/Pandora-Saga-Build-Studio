@@ -55,6 +55,30 @@
    </select>
     </label>
     <label class="origin-buffs-checkbox"><input id="originLifeSign" type="checkbox"> Знак жизни</label>
+    <details class="origin-attribute-buffs">
+     <summary>Бонусы характеристик</summary>
+     <label>Гильдейское усиление характеристик
+      <select id="originGuildAll" aria-label="Гильдейское усиление характеристик">
+      <option value="0">Нет усиления</option>
+      <option value="1">+1 ко всем характеристикам</option>
+      <option value="2">+2 ко всем характеристикам</option>
+      <option value="3">+3 ко всем характеристикам</option>
+      <option value="4">+4 ко всем характеристикам</option>
+      <option value="5">+5 ко всем характеристикам</option>
+      <option value="6">+6 ко всем характеристикам</option>
+      </select>
+     </label>
+     <label class="origin-buffs-checkbox">
+      <input id="originHonorCuriosity" type="checkbox"> Честь: стремление к силе (+1 ко всем характеристикам)
+     </label>
+     <label class="origin-buffs-checkbox">
+      <input id="originProelium" type="checkbox"> Зелье «Проэлиум»
+     </label>
+     <label>Мощность Проэлиума (0–100)
+      <input id="originProeliumPotency" type="number" inputmode="numeric" min="0" max="100" step="1" value="0" aria-label="Мощность Проэлиума">
+     </label>
+     <p class="origin-buffs-hint">Проэлиум: +1 СИЛ, ПРВ и ИНТ за каждые 10 единиц мощности.</p>
+    </details>
    </div>
    <p id="originVitalsCoverage" class="origin-buffs-hint"></p>
   </details>
