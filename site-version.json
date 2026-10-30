@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.66",
-  "notes": "Profession-focused initial skill category uses largest verified branch cap sum; prevents Cleric landing on weak melee instead of prayer"
+  "release": "2026.10.30.67",
+  "notes": "Fix broken dynamic regression source binding, add real class-change handler test and OS over-cap skill marker test"
 }

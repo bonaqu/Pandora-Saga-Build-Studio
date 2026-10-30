@@ -113,6 +113,47 @@ test('automatic category selection prioritizes real class branch caps over arbit
  assert.equal(classGroup('MAGE'),'magic');
  assert.equal(classGroup('WARRIOR'),'melee');
  assert.equal(classGroup('PREDATOR'),'tactics');
- assert.match(sources.app,/const ranked=groups\.map\(group=>/);
- assert.match(sources.app,/selectedSkillGroup=ranked\[0\]\.id/);
+ assert.match(sources['app.js'],/const ranked=groups\.map\(group=>/);
+ assert.match(sources['app.js'],/selectedSkillGroup=ranked\[0\]\.id/);
+});
+
+test('real class change handler preserves all invested points and resets only navigation',()=>{
+ const source=sources['app.js'];
+ const match=source.match(/function selectJob\(index\)\{[\s\S]*?\n\}\nfunction renderJobs/);
+ assert.ok(match,'selectJob implementation is missing');
+ const body=match[0].replace(/\nfunction renderJobs$/,'');
+ const state={job:16,points:{benevolence:31,blessing:9},mastery:{benevolence:27}};
+ let renderCount=0,persistCount=0,saveCount=0;
+ const runtime=Function('state','jobKeys','render','persist','saveView',
+  "let selectedSkillGroup='prayer',inlineBranchId='benevolence',pathGroupTouched=true,selectedSkill={id:2};\n"+
+  body+
+  "\nreturn {selectJob,view:()=>({selectedSkillGroup,inlineBranchId,pathGroupTouched,selectedSkill})};"
+ )(state,Array.from({length:28},(_,i)=>String(i)),()=>renderCount++,()=>persistCount++,()=>saveCount++);
+ runtime.selectJob(21);
+ assert.equal(state.job,21);
+ assert.deepEqual(state.points,{benevolence:31,blessing:9});
+ assert.equal(state.mastery.benevolence,27);
+ assert.equal(runtime.view().selectedSkillGroup,null);
+ assert.equal(runtime.view().inlineBranchId,null);
+ assert.equal(runtime.view().pathGroupTouched,false);
+ assert.equal(runtime.view().selectedSkill,null);
+ assert.equal(renderCount,1);assert.equal(persistCount,1);assert.equal(saveCount,1);
+});
+test('OS skills above class cap stay visible as locked milestone data',()=>{
+ const catalog=Object.values(JSON.parse(read('data/os/skills.json')));
+ const library={};
+ Function('window',read('skill-milestones.js'))(library);
+ const source=sources['app.js'];
+ const m=source.match(/milestones:(\(skills,key,cap\)=>\{[\s\S]*?\n  \}),\n  onGroup:/);
+ assert.ok(m,'Hero Path milestone adapter missing');
+ const adapter=Function('window','return ('+m[1]+')')({PandoraSkillMilestones:library.PandoraSkillMilestones});
+ const skills=catalog.filter(s=>s.classes?.CLERIC&&s.reqs?.some(r=>r.branch==='brush'));
+ const cap=classes.CLERIC.branchCaps.brush;
+ assert.equal(cap,15);
+ const marks=adapter(skills,'brush',cap);
+ const beyond=marks.find(m=>m.threshold===41);
+ assert.ok(beyond,'known source threshold 41 is missing');
+ assert.equal(beyond.locked,true);
+ assert.ok(beyond.skills.some(s=>s.name==='Раскол'));
+ assert.ok(marks.every(mark=>mark.locked?mark.threshold>cap:mark.threshold<=cap));
 });
