@@ -193,7 +193,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],
  const hpBonus=bonusFor('hp',hpBase,effects,enhancements);
  const mpBonus=bonusFor('mp',mpBase,effects,enhancements);
  if(!hpBonus||!mpBonus)return null;
- const potion=potionRecovery({vit:stats.vit,records,honorTitle:extra.honor.id});
+ const potion=potionRecovery({vit:stats.vit,records,honorTitle:extra.honor.id,
+  runeJoEun:attributeBuffs?.runeJoEun===true});
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
