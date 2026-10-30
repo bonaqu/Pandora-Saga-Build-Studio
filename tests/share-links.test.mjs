@@ -58,3 +58,10 @@ test('shared racial passive IDs retain original OS values above one million',()=
  assert.match(s,/Number\.isSafeInteger\(original\.racialPassiveId\)/);
  assert.match(s,/original\.racialPassiveId<10000000000/);
 });
+
+test('public share preserves separate blue Potential and green Adeptness',()=>{
+ const s=read('app.js');
+ assert.match(s,/safe\.masteryAuto=original\.masteryAuto!==false/);
+ assert.match(s,/safe\.mastery\[key\]=Math\.min\(level,window\.PandoraSkillProgression\.potential\(safe,key\)\)/);
+ assert.match(s,/Мастерство '\+branch\.name/);
+});

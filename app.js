@@ -1140,6 +1140,11 @@ function compareSnapshots(a,b){
  if(a.race!==b.race||a.job!==b.job||a.level!==b.level)rows.push('Персонаж: '+(jobs[a.job]||'?')+' → '+(jobs[b.job]||'?')+' · уровень '+a.level+' → '+b.level);
  for(const branch of branches){const p=a.points?.[branch.id]||0,q=b.points?.[branch.id]||0;if(p!==q)rows.push((catalog.meta?.branchLabels?.[branch.id]||branch.name)+': '+p+' → '+q)}
  for(const stat of STATS){const p=a.stats?.[stat]||0,q=b.stats?.[stat]||0;if(p!==q)rows.push((ORIGIN_STAT_LABELS[STATS.indexOf(stat)]?.name||stat)+': '+p+' → '+q)}
+ if((a.masteryAuto!==false)!==(b.masteryAuto!==false))rows.push('Автозаполнение мастерства: '+(a.masteryAuto!==false?'вкл':'выкл')+' → '+(b.masteryAuto!==false?'вкл':'выкл'));
+ for(const branch of branches){
+  const p=window.PandoraSkillProgression.trained(a,branch.id),q=window.PandoraSkillProgression.trained(b,branch.id);
+  if(p!==q)rows.push('Мастерство '+branch.name+': '+p+' → '+q);
+ }
  for(let i=0;i<slots.length;i++){
   const x=a.equipment?.[i],y=b.equipment?.[i];if(String(x?.id??'')!==String(y?.id??''))rows.push(slots[i][0]+': '+(x?.name||'пусто')+' → '+(y?.name||'пусто'));
   const xp=lib.refinementValue(a.refinements,i,x),yp=lib.refinementValue(b.refinements,i,y);
@@ -1237,6 +1242,15 @@ function sanitizeSharedState(original){
    const allow=new Set(field==='points'?branches.map(b=>b.id):STATS);
    for(const [key,value] of Object.entries(original[field]))
     if(allow.has(key)&&Number.isInteger(value)&&value>=0&&value<=1000)safe[field][key]=value;
+  }
+ }
+ // Green skill mastery is independent of invested level-up points.
+ safe.masteryAuto=original.masteryAuto!==false;
+ if(original.mastery&&typeof original.mastery==='object'&&!Array.isArray(original.mastery)){
+  const valid=new Set(branches.map(b=>String(b.id)));
+  for(const [key,level] of Object.entries(original.mastery)){
+   if(valid.has(key)&&Number.isInteger(level)&&level>=0&&level<=1000)
+    safe.mastery[key]=Math.min(level,window.PandoraSkillProgression.potential(safe,key));
   }
  }
  const item=v=>{
