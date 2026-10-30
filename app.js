@@ -14,6 +14,11 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
 const OS='https://pandorasaga-os.com';
 const API='https://ps-build-studio-cloud.bonaqu.workers.dev';
 const STATS=['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'];
+const portraitOptions=[{"race":0,"gender":1},{"race":0,"gender":0},{"race":1,"gender":1},{"race":1,"gender":0},{"race":2,"gender":0},{"race":3,"gender":0},{"race":4,"gender":0},{"race":5,"gender":0}];
+function selectedPortraitIndex(race,gender){
+ const index=portraitOptions.findIndex(v=>v.race===race&&v.gender===((race===0||race===1)?gender:0));
+ return Math.max(0,index);
+}
 const races=[['Человек','Human','human_f','human_m'],['Эльф','Elf','elf_f','elf_m'],['Цверг','Dwarf','dwarf','dwarf'],['Мирина','Myrine','myrine','myrine'],['Энкиду','Enkidu','enkidu','enkidu'],['Кролль','Lapin','lapin','lapin']];
 let jobs=['Warrior','Gradiator','Juggernaut','Dragoon','Knight','General','Paladin','Scout','Archer','Sniper','Hunter','Provocateur','Assassin','Saboteur','Acolyte','Priest','Cleric','Enchanter','Ascetic','Monk','Exorcist','Mage','Wizard','Warlock','Conjurer','Sorcerer','Corrupter','Shadowblade'];
 const branchNames=['Melee','Slash','Thrust','Cleave','Bash','Defend','Technique','Shot','Alchemy','Assassination','Trapping','Dodge','Grace','Banevolence','Blessing','Exorcism','Hymn','Magic','Elemental','Invocation','Darkness','Confusion','Special','Racial','Horsemanship'];
@@ -25,7 +30,7 @@ const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Наг
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','skills','equipment','stats','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
-let racePreviewIndex=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length?state.race:0,stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null,
+let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',stageSoulQuery='',stageGemQuery='',gameTables=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
@@ -54,23 +59,59 @@ return override["visual.race."+i+"."+(gender?"m":"f")]||imageUrl(races[i][gender
 }
 function renderRaces(){
  const grid=$('raceGrid');grid.replaceChildren();
- const i=racePreviewIndex,chosen=state.race===i,gender=window.PandoraUIPlanner.normalizeGender(races,i,state.gender);
+ const option=portraitOptions[racePreviewIndex]||portraitOptions[0],i=option.race,gender=option.gender;
+ const chosen=state.race===i&&window.PandoraUIPlanner.normalizeGender(races,i,state.gender)===gender;
  const frame=h('div',{class:'race-slide-frame'+(chosen?' selected':''),'aria-live':'polite'});
- const img=editAttr(h('img',{src:raceSource(i,gender),alt:races[i][0],loading:'eager'}),'visual.race.'+i+'.'+(gender?'m':'f'));
- img.onerror=()=>{img.onerror=null;img.alt='Портрет '+races[i][0]+' не загрузился'};
+ const img=editAttr(h('img',{src:raceSource(i,gender),alt:races[i][0]+((i===0||i===1)?(gender?' · мужчина':' · женщина'):''),loading:'eager'}),
+  'visual.race.'+i+'.'+(gender?'m':'f'));
+ img.onerror=()=>{img.onerror=null;img.alt='Изображение '+races[i][0]+' временно недоступно'};
  const arrow=(text,step,alt)=>h('button',{type:'button',class:'race-slide-arrow '+(step<0?'previous':'next'),text,'aria-label':alt,
-  onclick:()=>{racePreviewIndex=(racePreviewIndex+step+races.length)%races.length;renderRaces();grid.querySelector('.race-slide-arrow.'+(step<0?'previous':'next'))?.focus({preventScroll:true})}});
- frame.append(img,arrow('❮',-1,'Предыдущая раса'),arrow('❯',1,'Следующая раса'));
+  onclick:()=>{racePreviewIndex=(racePreviewIndex+step+portraitOptions.length)%portraitOptions.length;renderRaces();
+    grid.querySelector('.race-slide-arrow.'+(step<0?'previous':'next'))?.focus({preventScroll:true})}});
+ frame.append(img,arrow('❮',-1,'Предыдущий портрет'),arrow('❯',1,'Следующий портрет'));
  const actions=h('div',{class:'race-slide-actions'});
- actions.append(h('span',{class:'race-slide-position',text:(i+1)+' / '+races.length}),
+ actions.append(h('span',{class:'race-slide-position',text:(racePreviewIndex+1)+' / '+portraitOptions.length}),
   h('button',{type:'button',class:'race-slide-select'+(chosen?' selected':''),disabled:chosen,'aria-pressed':String(chosen),
-   text:chosen?'✓ Выбрано':'Выбрать расу',onclick:()=>{
-    if(state.race!==i){state.race=i;state.racialPassiveId=null;state.gender=window.PandoraUIPlanner.normalizeGender(races,i,state.gender);
-     selectedSkill=null;stageSlotPickerOpen=false;persist();render();$('raceGrid').querySelector('.race-slide-select')?.focus({preventScroll:true})}
+   text:chosen?'✓ Выбрано':'Выбрать этот образ',onclick:()=>{
+    if(chosen)return;
+    state.race=i;state.gender=gender;state.racialPassiveId=null;
+    selectedSkill=null;stageSlotPickerOpen=false;persist();render();
+    $('raceGrid').querySelector('.race-slide-select')?.focus({preventScroll:true});
    }}));
  grid.append(frame,actions);
 }
-function renderJobs(){const grid=$('classGrid');grid.replaceChildren();jobs.forEach((j,i)=>{const button=h('button',{class:'class-choice'+(state.job===i?' active':''),'aria-pressed':state.job===i,onclick:()=>{state.job=i;persist();render()}});button.append(h('i',{text:['✠','⚔','✦','♜'][Math.floor(i/7)]||'⚔'}),editAttr(h('span',{text:editableValue('job.'+i,j)}),'job.'+i));grid.append(button)})}
+const CLASS_PARENT_FALLBACK={"WARRIOR":null,"GLADIATOR":"WARRIOR","KNIGHT":"WARRIOR","SCOUT":null,"ARCHER":"SCOUT","AGENT":"SCOUT","ACOLYTE":null,"PRIEST":"ACOLYTE","ASCETIC":"ACOLYTE","MAGE":null,"WIZARD":"MAGE","DARKROAR":"MAGE","JUGGERNAUT":"GLADIATOR","DRAGOON":"GLADIATOR","GENERAL":"KNIGHT","PALADIN":"KNIGHT","SNIPER":"ARCHER","PREDATOR":"ARCHER","ASSASSIN":"AGENT","DISTURBANCE":"AGENT","CLERIC":"PRIEST","ENCHANTER":"PRIEST","MONK":"ASCETIC","EXORCIST":"ASCETIC","WARLOCK":"WIZARD","CONJURER":"WIZARD","JESTER":"DARKROAR","CALAMITY":"DARKROAR"};
+function renderJobs(){
+ const grid=$('classGrid');grid.replaceChildren();
+ const info=jobKeys.map((key,i)=>({key,i,name:editableValue('job.'+i,jobs[i]||key),
+ parent:catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null}));
+ const children=new Map();
+ for(const node of info){const key=node.parent||'root';if(!children.has(key))children.set(key,[]);children.get(key).push(node)}
+ const activeKey=jobKeys[state.job];
+ const isLineage=(key)=>{
+  for(let current=activeKey;current;current=classDefsParent(current))if(current===key)return true;
+  return false;
+ };
+ const classDefsParent=key=>catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null;
+ const select=(node)=>{if(state.job===node.i)return;state.job=node.i;persist();render()};
+ const makeNode=(node,depth=0)=>{
+  const descendants=children.get(node.key)||[];
+  if(!descendants.length){
+   return h('button',{type:'button',class:'class-tree-leaf'+(state.job===node.i?' active':''),
+    'aria-pressed':String(state.job===node.i),text:node.name,onclick:()=>select(node)});
+  }
+  const details=h('details',{class:'class-tree-node depth-'+depth,open:isLineage(node.key)?'':''});
+  const summary=h('summary',{text:node.name});
+  const group=h('div',{class:'class-tree-contents'});
+  group.append(h('button',{type:'button',class:'class-tree-select'+(state.job===node.i?' active':''),
+   'aria-pressed':String(state.job===node.i),text:state.job===node.i?'✓ Выбран':'Выбрать '+node.name,
+   onclick:()=>select(node)}));
+  for(const child of descendants)group.append(makeNode(child,depth+1));
+  details.append(summary,group);
+  return details;
+ };
+ for(const root of children.get('root')||[])grid.append(makeNode(root,0));
+}
 let workbenchReturnFocus=null;
 function showWorkbench(){
  const panel=$('detailPanel'),backdrop=$('studioBackdrop');
@@ -1042,7 +1083,7 @@ function compareSnapshots(a,b){
 }
 function restoreLoadedBuildUI(){
  state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);
- racePreviewIndex=state.race;
+ racePreviewIndex=selectedPortraitIndex(state.race,state.gender);
  selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
  selectedSkill=null;inlineBranchId=null;selectedSlot=0;selectedSocket=0;
  stageSlotPickerOpen=false;stageSlotQuery='';stageSlotShown=48;

@@ -418,3 +418,29 @@ a.wiki-link:hover{text-decoration:none}
 .stage-attribute-identity img{width:36px;height:36px;object-fit:contain}
 .stage-attribute-warning{font-size:10px;color:#e9b792;border-top:1px solid #9e6946;padding:9px 3px}
 .stage-attribute-soul{padding:6px;border-left:2px solid #b18b55;background:#302010}
+
+/* 2026.10.30.33: eight portrait variants, actual class genealogy and uncropped hero art */
+#siteNotice,.gender-controls,#swapGender,.portrait-bottom,.mini-note,.footer-tech{display:none!important}
+.classgrid{display:block;max-height:none;overflow:visible;padding:0}
+.class-tree-node{margin:5px 0;border:1px solid #765839;background:#221911}
+.class-tree-node summary{cursor:pointer;padding:8px 9px;font-weight:650;color:#f0cd98;list-style-position:inside}
+.class-tree-node summary:hover{background:#513621}
+.class-tree-contents{display:grid;gap:5px;padding:3px 6px 8px 12px;border-left:2px solid #8a683d}
+.class-tree-leaf,.class-tree-select{display:block;min-height:32px;width:100%;text-align:left;background:#302116;color:#f2d5a1;border:1px solid #755638;padding:6px 9px;font-size:12px}
+.class-tree-leaf:hover,.class-tree-select:hover{background:#583a22}
+.class-tree-leaf.active,.class-tree-select.active{border-color:#ddbc7c;color:#fff0c8;background:#664629}
+.class-tree-node.depth-1{margin-left:6px}.class-tree-node.depth-2{margin-left:9px}
+.portrait-frame>img#hero{display:block!important;width:100%;height:100%;object-fit:contain!important;object-position:center center;background:#1e170f}
+.portrait-frame:after{pointer-events:none}
+@media(min-width:1201px) and (min-height:800px){
+ .workspace{height:auto;min-height:clamp(660px,calc(100dvh - 270px),1030px);align-items:stretch}
+ .workspace>.left,.workspace>.right{max-height:clamp(660px,calc(100dvh - 270px),1030px);overflow:auto}
+ .workspace>.stage{min-height:clamp(660px,calc(100dvh - 270px),1030px);height:auto;overflow:visible}
+ .workspace>.stage>.stage-inner{height:clamp(600px,calc(100dvh - 385px),925px);min-height:600px;flex:1;overflow:visible}
+ .workspace .stage-inner .portrait-frame{height:100%;max-height:none;max-width:620px}
+ .workspace .equipment-rail{max-height:calc(100% - 12px)}
+}
+@media(max-width:1200px){
+ .portrait-frame{height:min(98%,580px)}
+}
+@media(max-width:700px){.class-tree-node.depth-2{margin-left:5px}}

@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.32",
-  "notes": "Authenticated double-click in-place edits for item name, description and socket capacity (0–32) via isolated overrides; preserves original OS catalog"
+  "release": "2026.10.30.33",
+  "notes": "Fix race gender carousel into eight standalone portraits, create actual class tree, remove non-player debug labels and uncrop character portrait"
 }
