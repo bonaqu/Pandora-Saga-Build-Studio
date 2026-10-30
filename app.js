@@ -1034,5 +1034,5 @@ function restoreWikiHash(){
  renderDetails();
 }
 window.addEventListener('hashchange',restoreWikiHash);
-fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{if(data?.icons&&data.count?.missing===0){iconManifest=data;render()}}).catch(()=>{});
+fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{if(data?.icons&&Number(data.count?.present)>0){iconManifest=data;render()}}).catch(()=>{});
 render();loadCatalog();loadOverrides();restoreWikiHash();
