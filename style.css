@@ -764,7 +764,7 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track{height:94px}
 .inline-mastery-track .inline-branch-milestones{inset:0 12px 0;height:100%}
 .inline-mastery-track .inline-milestone.path-milestone-pin{
- top:69px;width:12px;height:12px;min-width:12px;min-height:12px;
+ top:69px;width:12px;height:12px;min-width:12px;min-height:12px;z-index:6;
  border-radius:3px;transform:translateX(-50%) rotate(45deg);
 }
 .inline-mastery-track .inline-milestone.path-milestone-pin .path-milestone-core{transform:rotate(-45deg);font-size:9px}
