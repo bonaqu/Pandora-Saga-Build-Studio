@@ -44,15 +44,23 @@ img.onerror=()=>{img.onerror=null;img.replaceWith(h("span",{text:slots[slot][1],
 return img;
 }
 function renderSlotRails(){
-for(const[id,indexes]of[["railLeft",[0,2,3,4,5,6]],["railRight",[1,7,8,9,10,11,12,13]]]){
-const container=$(id);container.replaceChildren();
-for(const i of indexes){
-const item=state.equipment[i];
-const button=h("button",{class:"equipment-slot"+(item?" equipped":"")+(selectedSlot===i?" selected":""),
-"aria-label":slots[i][0]+": "+(item?.name||"пусто"),title:slots[i][0]+" · "+(item?.name||"пусто"),
-onclick:()=>{selectedSlot=i;gearMode="equipment";changeTab("equipment");renderSlotRails()}});
-button.append(slotVisual(i),h("small",{text:item?.name||slots[i][0]}));container.append(button);
-}}
+ const plan=window.PandoraEquipmentPlan;
+ for(const[id,indexes]of[['railLeft',[0,2,3,4,5,6]],['railRight',[1,7,8,9,10,11,12,13]]]){
+  const container=$(id);container.replaceChildren();
+  for(const i of indexes){
+   const item=state.equipment?.[i],source=item&&equippedRecord(i),cap=plan.socketCapacity(source);
+   const report=plan.socketReport(state.souls?.[i],cap);
+   const level=plan.refinementValue(state.refinements,i,item);
+   const tooltip=slots[i][0]+' · '+(item?.name||'Пусто')+(item&&cap!==null?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
+   const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':''),
+    'aria-label':tooltip,title:tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';changeTab('equipment');renderSlotRails()}});
+   button.append(slotVisual(i),h('small',{text:item?.name||slots[i][0]}));
+   if(item&&cap!==null&&cap>0)button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
+   if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
+   if(report.excess>0)button.append(h('span',{class:'stage-conflict',text:'!','aria-label':'Конфликт гнёзд'}));
+   container.append(button);
+  }
+ }
 }
 function renderBranches(){const c=$('skillBranches');c.replaceChildren();branches.forEach(b=>c.append(branchRow(b,false)))}
 function branchRow(b,full){const points=state.points[b.id]||0;const btn=h('button',{class:'branch-row'+(state.branch===b.id?' active':''),onclick:()=>{state.branch=b.id;selectedSkill=null;persist();renderBranches();$('branchValue').textContent=points;changeTab('skills')}});const first=catalog.live?Object.values(catalog.skills||{}).find(x=>x.branch===b.id&&x.classes?.[jobKeys[state.job]]):null;const icon=h('img',{class:'tinyicon',src:skillIcon(b.id,0,first),alt:'',loading:'lazy'});icon.onerror=()=>{icon.onerror=null;icon.style.display='none'};btn.append(icon,h('div',{},[h('strong',{text:editableValue('branch.'+b.id,b.name)}),h('span',{text:catalog.live?('Лимит класса: '+branchCap(b.id)):'Историческая ветка'})]),h('b',{class:'count',text:String(points)}));return btn}
