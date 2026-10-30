@@ -929,3 +929,75 @@ a.wiki-link:hover{text-decoration:none}
  .workspace .equipment-rail .equipment-slot{width:clamp(42px,5.5vw,52px);height:clamp(42px,5.5vw,52px)}
  .workspace .equipment-rail .equipped-icon{width:calc(100% - 2px);height:calc(100% - 2px)}
 }
+
+/* 2026.10.31.80 — Hero Path scale: passive, unobtrusive thresholds; the range owns every pointer event. */
+.inline-mastery-track{height:42px;margin:5px 3px 6px}
+.inline-mastery-track .inline-mastery-bed{top:19px}
+.inline-mastery-track .inline-mastery-fill,.inline-mastery-track .inline-mastery-green{top:20px}
+.inline-mastery-track .inline-mastery-locked{top:19px}
+.inline-mastery-track input[type=range]{
+ top:8px;height:32px;z-index:7;cursor:ew-resize;touch-action:pan-y;
+}
+.inline-mastery-track .inline-branch-milestones{
+ position:absolute;inset:0 12px;height:100%;width:auto;
+ pointer-events:none!important;z-index:5;
+}
+.inline-mastery-track .path-threshold-tick{
+ position:absolute;top:19px;height:9px;width:2px;
+ border:0;border-radius:1px;background:#ecd09d;
+ transform:translateX(-50%);box-shadow:0 0 2px #000;
+ pointer-events:none!important;
+}
+.inline-mastery-track .path-threshold-tick.unreachable{background:#c98572}
+.path-unlock-details{margin:2px 0 6px;border:1px solid #58402b;background:#1b140e}
+.path-unlock-details>summary{
+ cursor:pointer;padding:5px 8px;color:#d9b98a;
+ font:600 10px/1.35 Manrope,Arial,sans-serif;
+ list-style-position:inside;
+}
+.path-unlock-details>summary:hover,.path-unlock-details[open]>summary{
+ color:#f4d6a5;background:#352517;
+}
+.path-unlock-list{display:grid;grid-template-columns:minmax(0,1fr);gap:4px;padding:5px}
+.path-unlock-skill{
+ display:flex;align-items:center;gap:7px;width:100%;min-width:0;
+ text-align:left;padding:5px 7px;background:#281b13;border:1px solid #5f462d;
+}
+.path-unlock-skill:hover,.path-unlock-skill:focus-visible{
+ border-color:#daaa68;background:#483020;
+}
+.path-unlock-skill.unreachable{opacity:.73}
+.path-unlock-skill img{width:28px;height:28px;object-fit:contain;flex:none}
+.path-unlock-copy{display:grid;gap:1px;min-width:0}
+.path-unlock-copy strong{font:600 11px Manrope,Arial,sans-serif;color:#f3d4a0}
+.path-unlock-copy small{font:10px Manrope,Arial,sans-serif;color:#bda584}
+.origin-vitals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:9px 0 10px}
+.origin-vital{
+ display:flex;align-items:center;justify-content:space-between;gap:4px;
+ background:#211810;border:1px solid #72512e;padding:7px 9px;
+}
+.origin-vital span{color:#c9a87d;font-size:11px}
+.origin-vital strong{color:#f0d39d;font:600 16px Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums}
+.workspace .stage-inner .equipment-rail.left-rail .equipment-slot,
+.workspace .stage-inner .equipment-rail.right-rail .equipment-slot{
+ box-sizing:border-box;flex:0 0 auto;
+ width:var(--studio-slot,50px);height:var(--studio-slot,50px);
+}
+.workspace .stage-inner .equipment-rail.left-rail,
+.workspace .stage-inner .equipment-rail.right-rail{
+ display:grid;grid-auto-rows:max-content;justify-items:center;align-content:start;
+}
+.workspace .stage-inner .equipment-rail .equipped-icon{
+ width:calc(100% - 2px);height:calc(100% - 2px);min-width:0;min-height:0;
+}
+@media(min-width:1201px){
+ .workspace .stage-inner .equipment-rail{--studio-slot:clamp(46px,5.3vh,58px)}
+}
+@media(max-width:1200px){
+ .workspace .stage-inner .equipment-rail{--studio-slot:clamp(42px,5.5vw,52px)}
+}
+@media(max-width:460px){
+ .workspace .stage-inner .equipment-rail{--studio-slot:clamp(37px,9vw,44px)}
+ .origin-vitals{gap:4px}
+ .origin-vital{padding:6px}
+}
