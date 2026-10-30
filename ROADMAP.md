@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.85.0 (`2026.10.31.85`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.86.0 (`2026.10.31.86`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,15 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.86.0 — exclusive Honor and verified potion previews
+
+- Port exclusive 13 Remaked Honor titles from archived `js/ini.js`, executing direct bonuses from `js/calc.js` without inventing derived combat totals. Honor choice RU/EN replaces independent bool UI; old Honor curiosity saves migrate by fallback.
+- Potion restoration: base `100 + floor(VIT²*2/1000)`; equipped `EP_MASTERY_POTION` Souls, `Flag Honor=11` and `Flag 30_0` Jo-eun rune all add correctly. Skill/profession recovery bonus remains pending exact class/skill mapping.
+- Port Remaked Modern 4.23's 14 potion preview positions, including 10 confirmed current item identities and 4 historical positions hidden from current item lists. Apply fixed/percentage floor/ceil order only after the player opts in; no implicit toggles.
+- Keep nested tabs compact, apply RU/EN names, refresh Origin and active attribute card after buff changes, persist and validate selected Honor and potion settings in shared builds.
+- 41 isolated regressions from 7 suites pass, covering 13-title identity, VIT→POT, Souls/Jo-eun/«Крепкое тело», current-only previews, opt-in, legacy migrations and shared links. Node-wide `npm test` and actual browser acceptance remain unverified.
+- Further unfinished scope is in `docs/REMAKED_CALCULATOR_PORT.md`: potion profession and mastery bonus, exact remaining combat stats and skill effects, guild branches, icon completeness, D1 live verification, wiki, responsiveness and full browser QA.
 
 ## Source update 0.85.0 — confirmed Remaked attribute modifiers
 
