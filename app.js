@@ -2,6 +2,15 @@
 // No invented combat formulas. Historical catalog is labelled explicitly.
 'use strict';
 const $=id=>document.getElementById(id);
+const VIEW_KEY='ps-studio-navigation.v2';
+function readView(){try{return JSON.parse(sessionStorage.getItem(VIEW_KEY)||'{}')||{}}catch{return{}}}
+const bootView=readView();
+function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
+ tab:activeTab,open:!!document.getElementById('detailPanel')?.classList.contains('is-open'),
+ page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
+ slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen
+ }))}catch{}}
+
 const OS='https://pandorasaga-os.com';
 const API='https://ps-build-studio-cloud.bonaqu.workers.dev';
 const STATS=['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'];
@@ -14,9 +23,11 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
+let state=fresh(),activeTab=['character','skills','equipment','stats','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
-let racePreviewIndex=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length?state.race:0,stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null;
+let racePreviewIndex=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length?state.race:0,stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,inlineBranchId=null,
+stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',stageSoulQuery='',stageGemQuery='',gameTables=null;
+if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
@@ -26,6 +37,16 @@ function branchIcon(id){return BRANCH_ICON_PATHS[id]||'assets/ui/icons/skill-unk
 function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId){const path=iconManifest?.icons?.skills?.['skill_'+record.iconId];return path||`${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`}return branchIcon(cat)}
 function itemIcon(rec,kind='items'){const custom=override[(kind==='souls'?'visual.soul.':'visual.item.')+rec?.id];if(custom)return custom;return rec?.icon?(iconManifest?.icons?.[kind]?.[rec.icon]||`${OS}/icons/${kind}/${rec.icon}.webp?v=07682901`):null}
 function branchCap(branch){return catalog.live?(window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0):90}
+function budgetSummary(){
+ const t=gameTables?.abilityPoint;
+ const total=t?Array.from({length:Math.max(0,state.level-1)},(_,i)=>t[String(i+2)])
+  .reduce((sum,val)=>sum===null||!Number.isInteger(val)?null:sum+val,0):null;
+ const spent=Object.entries(state.points||{}).reduce((sum,[key,n])=>sum+(key==='race'?0:Number(n)||0),0);
+ return {total,spent,remaining:total===null?null:total-spent};
+}
+function allowedBranch(branch){const b=budgetSummary(),cap=branchCap(branch),current=Number(state.points?.[branch]||0);
+ return b.total===null?cap:Math.max(0,Math.min(cap,b.total-b.spent+current))}
+
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
@@ -69,6 +90,7 @@ function closeWorkbench(){
  document.body.classList.remove('studio-workbench-open');
  const old=workbenchReturnFocus;workbenchReturnFocus=null;
  if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
+ saveView();
 }
 function changeTab(tab){
  const previous=activeTab;
@@ -80,7 +102,7 @@ function changeTab(tab){
  });
  renderDetails();
  if(previous!==tab)$('detailContent').scrollTop=0;
- showWorkbench();
+ showWorkbench();saveView();
 }
 function equippedRecord(slot){
 const value=state.equipment[slot];
@@ -206,13 +228,13 @@ function renderBranches(){
     const b=branches.find(item=>item.id===id);if(!b)continue;
     wrap.append(branchRow(b,false));
     if(inlineBranchId===id){
-     const cap=branchCap(id),pts=Number(state.points[id]||0);
+     const cap=branchCap(id),pts=Number(state.points[id]||0),permitted=allowedBranch(id);
      const editor=h('div',{class:'inline-branch-editor'});
      const label=h('strong',{text:pts+' / '+cap});
      const row=h('div',{class:'inline-branch-value'},[h('span',{text:'Очки ветки'}),label]);
-     const range=h('input',{type:'range',min:'0',max:String(cap),step:'1',value:String(Math.min(pts,cap)),disabled:cap===0,'aria-label':'Очки ветки '+b.name});
+     const range=h('input',{type:'range',min:'0',max:String(Math.max(pts,permitted)),step:'1',value:String(Math.min(pts,cap)),disabled:cap===0,'aria-label':'Очки ветки '+b.name});
      const set=(n,rebuild=true)=>{
-      if(!Number.isInteger(n)||n<0||n>cap)return;
+      if(!Number.isInteger(n)||n<0||n>allowedBranch(id))return;
       state.points[id]=n;state.branch=id;persist();$('branchValue').textContent=String(n);
       label.textContent=n+' / '+cap;
       if(rebuild){renderBranches();if(activeTab==='skills'||activeTab==='character'&&characterPanelTab==='skills')renderDetails()}
@@ -222,10 +244,10 @@ function renderBranches(){
      const controls=h('div',{class:'inline-branch-controls'});
      for(const [text,delta]of[['−5',-5],['−',-1],['+',1],['+5',5]])
       controls.append(h('button',{type:'button',text,disabled:cap===0,
-       onclick:()=>set(Math.max(0,Math.min(cap,Number(state.points[id]||0)+delta)))}));
+       onclick:()=>set(Math.max(0,Math.min(allowedBranch(id),Number(state.points[id]||0)+delta)))}));
      editor.append(row,range,controls);
      if(pts>cap)editor.append(h('p',{class:'budget-excess',text:'Сохранено '+pts+' очков при лимите '+cap+'. Автоматического сброса нет.'}));
-     editor.append(h('small',{class:'muted',text:'Общий бюджет очков не подтверждён. Изменяется только эта ветка.'}));
+     editor.append(h('small',{class:'muted',text:budgetSummary().total===null?'Таблица очков загружается':'Доступно '+budgetSummary().total+' · остаток '+budgetSummary().remaining}));
      wrap.append(editor);
     }
    }
@@ -249,7 +271,8 @@ function branchRow(b,full){
   h('b',{class:'count',text:String(points)}));
  return btn;
 }
-function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderOriginPassives();renderBranches();$('budgetState').textContent='Лимиты и стоимость очков проверяются только настоящим движком. Пока — планировщик распределения.';renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
+function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hudName=document.getElementById('psHudName');if(hudName)hudName.textContent=state.name||'Без имени';const hudLevel=document.getElementById('psHudLevel');if(hudLevel)hudLevel.textContent=String(state.level);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();$('genderF').classList.toggle('chosen',state.gender===0);$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('activeRace').textContent=$('raceTitle').textContent+' · '+state.level+' ур.';$('level').value=state.level;$('levelOut').textContent=state.level;$('branchValue').textContent=state.points[state.branch]||0;$('itemValue').textContent=Object.values(state.equipment).filter(Boolean).length;renderSlotRails();renderStagePicker();renderOriginPassives();renderBranches();{const b=budgetSummary();$('budgetState').textContent=b.total===null?'Бюджет навыков: загружается таблица OS':
+ 'Очки умений '+b.spent+' / '+b.total+' · свободно '+b.remaining+(b.remaining<0?' · старый билд превышает бюджет':'')}renderDetails();const title=document.querySelector('[data-edit-key="site.title"]'),subtitle=document.querySelector('[data-edit-key="site.subtitle"]');if(title)title.textContent=editableValue('site.title','Создай свою легенду');if(subtitle)subtitle.textContent=editableValue('site.subtitle','Выбери расу, профессию, снаряжение и путь развития персонажа.');updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -508,21 +531,21 @@ for(const id of selectedGroup.branches){
 picker.append(tabs,activeBranches);
 const group=window.PandoraGameNavigation.branchGroup(state.branch);
 if(!group||group.id!==selectedSkillGroup||state.branch==='race')state.branch=window.PandoraGameNavigation.groups.find(g=>g.id===selectedSkillGroup)?.branches.find(id=>id!=='race')||'slash';
-const branch=state.branch,cap=branchCap(branch),pts=Number(state.points[branch]||0);
+const branch=state.branch,cap=branchCap(branch),pts=Number(state.points[branch]||0),permitted=allowedBranch(branch);
 center.append(h("h3",{text:editableValue("branch."+branch,catalog.live?(catalog.meta?.branchLabels?.[branch]||branch):branchNames[branch]||branch)}),
  h("p",{class:"muted",text:"Известные требования навыков проверяются по каталогу. Это не подтверждает фактическое изучение; общий бюджет очков пока не рассчитан."}));
 const bar=h("div",{class:"skill-bar"}),row=h("div",{class:"skill-stepper"});
-const value=h("strong",{class:"allocation-label",text:pts+" / "+cap}),range=h("input",{type:"range",min:"0",max:String(cap),value:String(Math.min(pts,cap)),step:"1","aria-label":"Очки ветки"}),
-numeric=h("input",{type:"number",min:"0",max:String(cap),value:String(pts),step:"1",class:"allocation-input","aria-label":"Точное число очков"});
+const value=h("strong",{class:"allocation-label",text:pts+" / "+cap}),range=h("input",{type:"range",min:"0",max:String(Math.max(pts,permitted)),value:String(Math.min(pts,cap)),step:"1","aria-label":"Очки ветки"}),
+numeric=h("input",{type:"number",min:"0",max:String(permitted),value:String(pts),step:"1",class:"allocation-input","aria-label":"Точное число очков"});
 const setPoints=n=>{
-const value=Number(n);if(!Number.isInteger(value)||value<0||value>cap)return false;
+const value=Number(n);if(!Number.isInteger(value)||value<0||value>allowedBranch(branch))return false;
 state.points[branch]=value;persist();renderBranches();$("branchValue").textContent=String(value);
 renderDetails();return true;
 };
 for(const [text,delta]of[["−5",-5],["−1",-1]])row.append(h("button",{class:"allocation-button",text,onclick:()=>setPoints(Math.max(0,Number(state.points[branch]||0)+delta))}));
 row.append(range,numeric);
-for(const [text,delta]of[["+1",1],["+5",5]])row.append(h("button",{class:"allocation-button",text,onclick:()=>setPoints(Math.min(cap,Number(state.points[branch]||0)+delta))}));
-range.addEventListener("input",()=>{state.points[branch]=Number(range.value);persist();numeric.value=range.value;value.textContent=range.value+" / "+cap;$("branchValue").textContent=range.value;for(const b of center.querySelectorAll("[data-record-id]")){const rec=catalog.live?catalog.skills?.[b.dataset.recordId]:null;if(rec){const g=rules.readiness(rec,{job:jobKeys[state.job],level:state.level,points:state.points});b.dataset.gate=g.status;b.querySelector(".gate-caption").textContent=g.status==="eligible"?"✓ Условия выполнены":g.status==="locked"?"🔒 "+g.missing[0]:"? Не все условия известны"}}});
+for(const [text,delta]of[["+1",1],["+5",5]])row.append(h("button",{class:"allocation-button",text,onclick:()=>setPoints(Math.min(allowedBranch(branch),Number(state.points[branch]||0)+delta))}));
+range.addEventListener("input",()=>{state.points[branch]=Math.min(Number(range.value),allowedBranch(branch));persist();numeric.value=String(state.points[branch]);value.textContent=range.value+" / "+cap;$("branchValue").textContent=range.value;for(const b of center.querySelectorAll("[data-record-id]")){const rec=catalog.live?catalog.skills?.[b.dataset.recordId]:null;if(rec){const g=rules.readiness(rec,{job:jobKeys[state.job],level:state.level,points:state.points});b.dataset.gate=g.status;b.querySelector(".gate-caption").textContent=g.status==="eligible"?"✓ Условия выполнены":g.status==="locked"?"🔒 "+g.missing[0]:"? Не все условия известны"}}});
 range.addEventListener("input",()=>{
  const amount=Number(range.value);
  const fill=center.querySelector('.skill-milestone-fill');
@@ -1346,4 +1369,13 @@ fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json()
  }else if(label)label.textContent='Иконки OS: используются внешние источники';
 }).catch(()=>{const label=$('iconStatus');if(label)label.textContent='Иконки OS: локальный архив пока не импортирован'});
 
-render();loadCatalog();loadOverrides();restoreWikiHash();
+render();loadCatalog();loadOverrides();
+fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
+.then(t=>{if(t?.abilityPoint&&t?.weaponPlus&&t?.forge){gameTables=t;render()}}).catch(()=>{});
+restoreWikiHash();
+if(bootView.open&&!String(location.hash).startsWith('#wiki/')){showWorkbench();$('detailContent').scrollTop=Math.max(0,Number(bootView.inner)||0)}
+requestAnimationFrame(()=>window.scrollTo({top:Math.max(0,Number(bootView.page)||0),behavior:'instant'}));
+window.addEventListener('pagehide',saveView);
+document.addEventListener('pandora:before-update',saveView);
+document.addEventListener('scroll',saveView,{passive:true});
+$('detailContent').addEventListener('scroll',saveView,{passive:true});
