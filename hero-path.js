@@ -67,8 +67,9 @@ function viewGrowth(target,api){
      'aria-expanded':String(isOpen),'data-path-branch':key,
      onclick:()=>api.onExpand(key,isOpen)});
     const info=make('div');
-    const branchSummary=make('span',{text:points+' вложено · '+trained+' мастерство · лимит '+cap});
-    const branchCount=make('b',{class:'count',text:String(points)});
+    const summaryText=(value,mastery)=>cap===0&&value===0?'':mastery>0?mastery+' мастерство':'';
+     const branchSummary=make('span',{text:summaryText(points,trained)});
+    const branchCount=make('b',{class:'count',text:cap?points+' / '+cap:'—'});
     info.append(make('strong',{text:api.branchName(key)}),branchSummary);
     branch.append(info,branchCount);wrap.append(branch);
     if(!isOpen)continue;
@@ -95,8 +96,7 @@ function viewGrowth(target,api){
      const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
      gold.style.width='calc('+(goldFraction*100).toFixed(6)+'% - '+(24*goldFraction).toFixed(6)+'px)';
      green.style.width='calc('+(greenFraction*100).toFixed(6)+'% - '+(24*greenFraction).toFixed(6)+'px)';
-     track.title=api.branchName(key)+': '+invested+' вложено, '+mastery+
-       ' освоено, предел класса '+cap+'. Перетяни ползунок для вложения очков.';
+     range.setAttribute('aria-valuetext', invested+' вложено, '+mastery+' освоено, предел '+cap);
     };
     track.append(bed,gold,green,locked);
     const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
@@ -113,8 +113,8 @@ function viewGrowth(target,api){
      const target=api.onAllocate(key,requested,final);
      if(!Number.isInteger(target))return;
      range.value=String(target);numeric.value=String(target);label.textContent=target+' / '+cap;
-     branchCount.textContent=String(target);
-     branchSummary.textContent=target+' вложено · '+M.trained(state,key)+' мастерство · лимит '+cap;
+     branchCount.textContent=cap?target+' / '+cap:'—';
+     branchSummary.textContent=summaryText(target,M.trained(state,key));
      groupCount.textContent=groupSummary();
      input.value=String(M.trained(state,key));input.max=String(target);
      paint();
@@ -132,7 +132,7 @@ function viewGrowth(target,api){
     const clusters=[];
     for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
      const prior=clusters[clusters.length-1];
-     if(prior&&mark.threshold-prior.lastThreshold<5){
+     if(prior&&mark.threshold-prior.lastThreshold<8){
       prior.skills.push(...mark.skills);
       prior.thresholds.push(mark.threshold);
       prior.lastThreshold=mark.threshold;
@@ -140,16 +140,31 @@ function viewGrowth(target,api){
      }else clusters.push({threshold:mark.threshold,lastThreshold:mark.threshold,
       thresholds:[mark.threshold],skills:[...mark.skills],locked:mark.locked});
     }
-    const picker=make('div',{class:'path-milestone-picker',hidden:true,'aria-label':'Выбор умения на пороге'});
+    const pickerId='path-milestone-picker-'+key.replace(/[^a-z0-9_-]/gi,'');
+    let openMarker=null;
+    const closePicker=(restoreFocus=false)=>{
+     picker.hidden=true;picker.replaceChildren();
+     if(openMarker){
+      openMarker.setAttribute('aria-expanded','false');
+      if(restoreFocus)openMarker.focus({preventScroll:true});
+     }
+     openMarker=null;
+    };
+    const picker=make('div',{id:pickerId,class:'path-milestone-picker',hidden:true,
+     role:'group','aria-label':'Выбор умения на пороге',
+     onkeydown:event=>{if(event.key==='Escape'){event.preventDefault();closePicker(true)}}});
     for(const cluster of clusters){
      const skill=cluster.skills[0],ready=cluster.skills.some(s=>readiness(s,api).learned);
      const button=make('button',{type:'button',
-      class:'inline-milestone path-milestone-pin'+(cluster.locked?' unreachable':ready?' reached':''),
+      class:'inline-milestone path-milestone-pin'+(cluster.skills.length>1?' multi':'')+(cluster.locked?' unreachable':ready?' reached':''),
       'data-milestone-points':cluster.thresholds.join(','),
+       'aria-controls':pickerId,'aria-expanded':'false',
       'aria-label':cluster.skills.map(s=>s.name).join(', ')+' · '+cluster.thresholds.join(', ')+' очков'+
        (cluster.locked?' · выше лимита класса':''),
       onclick:()=>{
-       if(cluster.skills.length===1){api.onSkill(skill);return}
+       if(cluster.skills.length===1){closePicker();api.onSkill(skill);return}
+       if(openMarker===button){closePicker(true);return}
+       closePicker();openMarker=button;button.setAttribute('aria-expanded','true');
        picker.replaceChildren(make('strong',{text:'Умения · '+cluster.thresholds.join(', ')+' очков'}));
        for(const entry of cluster.skills){
         const item=make('button',{type:'button',class:'path-milestone-choice',
@@ -158,10 +173,12 @@ function viewGrowth(target,api){
         if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.remove();item.prepend(img)}
         picker.append(item);
        }
+       picker.append(make('button',{type:'button',class:'path-milestone-dismiss',
+        text:'Закрыть',onclick:()=>closePicker(true)}));
        picker.hidden=false;
        picker.querySelector('button')?.focus({preventScroll:true});
       }});
-     button.append(make('span',{class:'path-milestone-core',text:cluster.skills.length>1?String(cluster.skills.length):'◆'}));
+     button.append(make('span',{class:'path-milestone-core',text:cluster.skills.length>1?String(cluster.skills.length):''}));
      // Vertical position belongs to CSS: directly on the progression bar.
      button.style.left='clamp(8px, '+Math.max(0,Math.min(100,cluster.threshold/visualMax*100))+
       '%, calc(100% - 8px))';
