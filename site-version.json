@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.24",
-  "notes": "Fix non-existent Legacy skill icon fallback and missing-item imagery"
+  "release": "2026.10.30.25",
+  "notes": "In-place equipment selection, race carousel, origin racial passives and direct sidebar branch allocation"
 }
