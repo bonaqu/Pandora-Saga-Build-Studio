@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.51",
-  "notes": "Unified Hero Path mastery slider and milestone skill icons into one bar; corrections to all 0.50 improvements; Worker links still require deployment"
+  "release": "2026.10.30.52",
+  "notes": "Preserve all existing local build fields on reopen; preserve Astir displaced legwear and equipped item levels when creating shared build links"
 }

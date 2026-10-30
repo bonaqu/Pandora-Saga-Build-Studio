@@ -37,3 +37,11 @@ test('skill and stat editing remain in one screen',()=>{
  assert.match(app,/class:'inline-skill-list'/);
  assert.match(html,/data-origin-tab="stats"/);
 });
+
+test('opening a local named build keeps all old and future fields; shared Astir builds keep displaced legwear',()=>{
+ const app=read('app.js');
+ assert.match(app,/const draft=structuredClone\(b\.data\),base=fresh\(\)/);
+ assert.match(app,/state=\{\.\.\.base,\.\.\.draft,/);
+ assert.match(app,/const previousLegwear=item\(original\.displacedLegwear\)/);
+ assert.match(app,/safe\.displacedLegwear=previousLegwear/);
+});

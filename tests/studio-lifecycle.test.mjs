@@ -6,7 +6,7 @@ test('restoring builds synchronizes the race preview and branch group',()=>{
  const source=read('app.js');
  assert.match(source,/function restoreLoadedBuildUI\(\)/);
  assert.match(source,/racePreviewIndex=selectedPortraitIndex\(state\.race,state\.gender\)/);
- assert.match(source,/state=sanitizeSharedState\(b\.data\);restoreLoadedBuildUI\(\)/);
+ assert.match(source,/const draft=structuredClone\(b\.data\),base=fresh\(\)/);
  assert.match(source,/state=incoming;restoreLoadedBuildUI\(\)/);
 });
 test('inventory picker focuses search and restores slot focus',()=>{

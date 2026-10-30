@@ -1209,7 +1209,17 @@ function renderBuilds(root){
    text:(races[b.data?.race]?.[0]||'?')+' · '+(jobs[b.data?.job]||'?')+' · ур. '+(b.data?.level||'?')}),
    h('label',{},[check,' Сравнить']),
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
-    state=sanitizeSharedState(b.data);restoreLoadedBuildUI();persist();render();changeTab('character');
+    // Locally saved builds are trusted snapshots: do not discard newer or legacy
+    // fields through the stricter validation used for incoming public links.
+    const draft=structuredClone(b.data),base=fresh();
+    state={...base,...draft,
+     points:{...base.points,...draft.points},stats:{...base.stats,...draft.stats},
+     equipment:{...base.equipment,...draft.equipment},
+     souls:{...base.souls,...draft.souls},
+     refinements:{...base.refinements,...draft.refinements},
+     gems:{...base.gems,...draft.gems},
+     profile:{...base.profile,...draft.profile}};
+    restoreLoadedBuildUI();persist();render();changeTab('character');
    }}),
    h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared('build',b.data)}),
    h('button',{class:'button-action',text:'Удалить',onclick:()=>{
@@ -1257,9 +1267,13 @@ function sanitizeSharedState(original){
  }
  const item=v=>{
   if(!v||typeof v!=='object'||!['string','number'].includes(typeof v.id)||String(v.id).length>24)return null;
-  return {id:v.id,name:typeof v.name==='string'?v.name.slice(0,120):String(v.id),
+  const safeItem={id:v.id,name:typeof v.name==='string'?v.name.slice(0,120):String(v.id),
    icon:typeof v.icon==='string'&&/^[A-Za-z0-9_-]{1,80}$/.test(v.icon)?v.icon:null};
+  if(Number.isInteger(v.level)&&v.level>=0&&v.level<=1000)safeItem.level=v.level;
+  return safeItem;
  };
+ const previousLegwear=item(original.displacedLegwear);
+ if(previousLegwear)safe.displacedLegwear=previousLegwear;
  for(let slot=0;slot<slots.length;slot++){
   const eq=item(original.equipment?.[slot]);if(eq)safe.equipment[slot]=eq;
   if(original.souls?.[slot]){
