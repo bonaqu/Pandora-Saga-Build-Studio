@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.82.0 (`2026.10.31.82`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.83.0 (`2026.10.31.83`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,17 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.83.0 — HP/MP effect parity + responsive portrait separation
+
+- Base HP/MP: use Pandora Saga OS class coefficients and integer-cents truncation per Remaked Modern `current-vitals.js`. Preserve existing class/race/allocated values, inventory and Soul state.
+- Item/Soul effect records now apply flat HP/MP and separately floored base-derived percentage HP/MP. Structured Soul grade filters remain in place.
+- Apply explicit OS item refinement descriptions for HP/MP/VIT/SPI per-N level and +N thresholds when unambiguous. No guessed unsupported enhancement or set mechanics.
+- Add optional, independently chosen guild HP and guild MP buffs 0–6 and Life Sign; never infer these buffs from the name of the guild. No data migration or D1 mutation needed; existing saved build stats remain intact.
+- Fully visible hero image `#hero` is shorter at desktop and mobile widths. Distinguish the compact race-selection portrait in Origin from the equipped hero presentation via labels, background and spacing at 390/790/1200px.
+- Numeric reference tests cover Cleric 45 baseline 3145/1279, High Soul +SPI then +8% MP, Soul and equipment modifiers, +6/+7 refinement, separate guild buffs and Life Sign. UI/configuration and CSS regressions added.
+- **Still not complete:** user expects all HP/MP impacts. Requires source-backed full sets, every conditional passive/active ability, server event/group buffs, nonstandard enhancements, game-client golden vectors across races and classes. See `docs/HP_MP_COVERAGE.md`. Do not claim accurate final server totals until parity coverage is proven.
+- Full `npm test` and browser visual checks are not yet confirmed; GitHub Actions not run. Keep all historical roadmap workstreams (D1, encyclopedia, icons, sharing, scroll and layout UX).
 
 ## Source update 0.82.0 — vitals, class-selection continuity and Origin height
 
