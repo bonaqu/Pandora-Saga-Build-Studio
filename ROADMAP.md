@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest source release:** 0.74.0 (`2026.10.30.74`), browser and Worker deployment unverified  
+**Updated:** 2026-10-30 · **Latest source release:** 0.75.0 (`2026.10.30.75`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -15,7 +15,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
 
-## Source update 0.74.0 (including 0.72.0) — pending visual QA
+## Source update 0.75.0 (including 0.72.0) — pending visual QA
 
 Desktop center stage height is capped, portrait translateX offsets are removed and threshold pins are placed on the slider as diamond glyphs. Pending: confirm with real 1920×1080/2K/4K/mobile screenshots, hit targets, tooltip clipping and published Pages version. Do not mark this visually accepted yet.
 
