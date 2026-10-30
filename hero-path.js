@@ -148,7 +148,10 @@ function viewGrowth(target,api){
     greenRow.append(greenLabel,make('small',{text:auto?'Равно вложенным очкам':'Растёт не выше вложенных'}));
     const exact=make('div',{class:'path-allocation-input'});
     exact.append(make('span',{text:'Точно вложено'}),numeric);
-    editor.append(note,track,exact,greenRow);
+    editor.append(note,track,exact,
+     make('small',{class:'path-control-hint',
+      text:'Перетащи маркер по полосе или укажи число. Клавиши ← → меняют по 1 очку.'}),
+     greenRow);
     if(!available)editor.append(make('p',{class:'muted',
      text:!api.allocationReady?'Загружаются таблицы очков и лимитов класса.':
       cap===0?'Для этой профессии ветка заблокирована (лимит 0).':'Недостаточно доступных очков.'}));

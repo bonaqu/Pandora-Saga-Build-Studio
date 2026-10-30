@@ -41,6 +41,11 @@ First successful login: owner-only entry → `administrator` → new password (m
 
 **Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
 
+## 2026-10-30 — выпуск 2026.10.30.64: интерактивные проверки
+
+- Добавлены регрессионные тесты `node:test` для браузерной семантики `disabled`, обработки `input` с бюджетом 103, возврата очков и сворачивания/раскрытия категорий.
+- Под полоской есть небольшая подсказка о перетаскивании и клавишах ← →.
+
 ## 2026-10-30 — выпуск 2026.10.30.63: устранена причина неработающих ползунков
 
 - Вместо ошибочного `disabled="false"` элементы интерфейса получают `element.disabled=false` — браузер действительно разблокирует полосы прокачки, поля, кнопки и другие доступные элементы.

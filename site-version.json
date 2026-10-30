@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.63",
-  "notes": "P0 real slider fix: avoid disabled=false HTML boolean trap, decouple skill spending from wiki, collapse/expand groups and preserve closed state"
+  "release": "2026.10.30.64",
+  "notes": "Permanent node:test interaction regression for 103-point slider and group toggle; keyboard guidance"
 }

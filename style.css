@@ -696,3 +696,6 @@ a.wiki-link:hover{text-decoration:none}
 .path-skill-source-effects summary{cursor:pointer;color:#cfac77}
 .path-skill-source-effects p{margin:3px 0;overflow-wrap:anywhere}
 .path-skill-details .wiki-link{display:inline-block;margin-top:9px}
+
+/* 2026.10.30.64 — visible instructions for direct drag and keyboard allocation. */
+.path-control-hint{display:block;margin:2px 0 7px;font-size:10px;line-height:1.4;color:#b7a88b}
