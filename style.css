@@ -859,3 +859,24 @@ a.wiki-link:hover{text-decoration:none}
  .right .game-tree-head{flex-wrap:wrap}
  .right .game-tree-head small{margin-left:auto}
 }
+
+/* 2026.10.31.78 — absolute invested stats, distinct uncapped effective total. */
+.origin-stat-row{
+ grid-template-columns:minmax(0,1fr) 32px 32px 32px minmax(56px,auto);
+ gap:4px;min-height:40px;padding:5px 6px;
+}
+.origin-stat-row button,.origin-stat-row .origin-stat-input{
+ width:32px;min-width:32px;height:32px;min-height:32px;
+ box-sizing:border-box;margin:0;padding:0;text-align:center;
+}
+.origin-stat-row .origin-stat-input{font-size:13px;line-height:30px}
+.origin-stat-result{min-width:56px;align-items:center;justify-content:center}
+.origin-stat-result strong{font-size:16px;font-variant-numeric:tabular-nums}
+.origin-stat-result small{font-size:9px;line-height:1.15;white-space:normal;text-align:center}
+.origin-stat-row button:disabled{opacity:.38}
+@media(max-width:700px){
+ .origin-stat-row{grid-template-columns:minmax(0,1fr) 30px 30px 30px minmax(52px,auto);gap:3px}
+ .origin-stat-row button,.origin-stat-row .origin-stat-input{
+  width:30px;min-width:30px;height:30px;min-height:30px;
+ }
+}
