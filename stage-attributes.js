@@ -37,7 +37,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   const top=make('div',{class:'stage-attribute-identity'});
   const src=icon(rec);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));top.append(img)}
-  top.append(make('b',{text:rec.name||'Предмет без названия'}));
+  top.append(make('b',{text:root.PandoraItemPresentation?.displayName(rec,'Предмет без названия')||'Предмет без названия'}));
   card.append(top);
   if(page==='attack'){
    card.append(make('p',{text:'Базовая атака '+(rec.W??'—')+' · Дальность '+(rec.range??'—')+
@@ -53,7 +53,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
     'Исходные коды эффектов: '+effects.map(e=>e.func+
      (e.a==null?'':' ('+e.a+(e.b==null?'':', '+e.b)+')')).join('; ')}));
    if(row.souls.length)for(const soul of row.souls){
-    card.append(make('p',{class:'stage-attribute-soul',text:'✦ '+(soul.name||'Душа без названия')+
+    card.append(make('p',{class:'stage-attribute-soul',text:'✦ '+(root.PandoraItemPresentation?.displayName(soul,'Душа без названия')||'Душа без названия')+
      ' · '+(soul.desc||'Описание души не найдено')}));
    }
   }body.append(card);
