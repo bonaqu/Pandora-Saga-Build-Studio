@@ -1060,8 +1060,10 @@ main{padding-top:10px}
 }
 .class-wizard-choice-current{
  color:#c5e5a4!important;font-weight:650;
+ flex:1 1 100%;min-width:0;
  white-space:normal;overflow-wrap:anywhere;
 }
+.class-wizard-choice.on-path{flex-wrap:wrap}
 .class-wizard-choice.on-path{
  border-color:#b49b5e;background:linear-gradient(#3f3020,#271c14);
 }
