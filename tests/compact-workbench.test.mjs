@@ -16,7 +16,7 @@ test('unused hero HUD, dummy name and experience disappear from the actual page'
 });
 
 test('HP and MP render in the Origin area and refresh when allocation/equipment changes',()=>{
- const first=app.indexOf('function renderHudEstimates(){');
+ const first=app.indexOf('function renderOriginVitals(){');
  const last=app.indexOf('\nfunction budgetSummary(){',first);
  assert.ok(first>0&&last>first);
  const fn=app.slice(first,last);
@@ -26,7 +26,7 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
   originVitals:{attrs:{},setAttribute(k,v){this.attrs[k]=v}}
  };
  let estimate={hp:1630,mp:420};
- const render=Function('$','previewBaseStats',fn+'\nreturn renderHudEstimates;')(
+ const render=Function('$','previewBaseStats',fn+'\nreturn renderOriginVitals;')(
   name=>fake[name]||null,()=>estimate);
  render();
  assert.equal(fake.originHp.textContent,'≈1630');
@@ -38,8 +38,8 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
  estimate=null;render();
  assert.equal(fake.originHp.textContent,'—');
  assert.equal(fake.originMp.textContent,'—');
- assert.match(app,/function setAttributePoints\([\s\S]*?persist\(\);renderHudEstimates\(\)/);
- assert.match(app,/function render\(\)[\s\S]*?renderHudEstimates\(\);updateAdminHint\(\)/);
+ assert.match(app,/function setAttributePoints\([\s\S]*?persist\(\);renderOriginVitals\(\)/);
+ assert.match(app,/function render\(\)[\s\S]*?renderOriginVitals\(\);updateAdminHint\(\)/);
 });
 
 test('skill tick overlay is passive, not a drag-blocking button',()=>{
