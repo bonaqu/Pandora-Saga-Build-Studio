@@ -483,3 +483,7 @@ a.wiki-link:hover{text-decoration:none}
 .class-current-select{width:100%;background:#43301f;color:#f4d396;border:1px solid #b08c59;padding:8px;margin:6px 0}
 .class-wizard-hint{color:#c2ab89;font-size:11px;padding:6px}
 .race-slide-frame>img{cursor:pointer}
+
+/* 2026.10.30.40: complete encyclopedia browse with lazy local result paging */
+.wiki-more{width:100%;background:linear-gradient(#604329,#271b11);border:1px solid #ac8051;color:#f5d59a;padding:12px;margin:6px 0;position:sticky;bottom:0;z-index:2}
+.wiki-more:hover{border-color:#ffd192;background:#654428}
