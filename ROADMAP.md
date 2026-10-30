@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-30 · **Latest source release:** 0.77.0 (`2026.10.30.77`), browser and Worker deployment unverified  
+**Updated:** 2026-10-30 · **Latest source release:** 0.78.0 (`2026.10.31.78`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,16 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.78.0 — absolute stats and effective bonuses (browser acceptance pending)
+
+- Origin fields now show **base race + root class + invested points** instead of the investment only. Rapin/SCOUT first level baseline is 3/3/7/7/8/6 in the bundled OS tables.
+- The stat input minimum is race/class base, allocated ceiling is 99, and invested level-budget limits still apply. A low-level build cannot request an unaffordable 99.
+- Right-side effective total remains separate and may exceed 99 through supported flat item/Soul and known additional modifiers. Unimplemented OS formulae (percent sets / buffs / conditional effects) remain open; do not fabricate them.
+- Legacy local builds retain their stored invested-only data. Both origin and secondary stat editor now interpret absolute input and convert to invested points before saving.
+- Selecting/removing supported Souls or changing refinement triggers an Origin effective-stat redraw as well as HUD update.
+- The DOM and calculation regression tests are present in `tests/origin-absolute-ui.test.mjs` and `tests/attribute-progression.test.mjs`. Real browser/manual validation still required: all six race origins, class switching, 99+ bonus gear/souls, reload, and budget.
+- Other backlog categories — layouts, icon mirror, Worker D1, full OS combat parity, wiki and sharing — remain open.
 
 ## 0.77.0 — compact Hero Path & release integrity (browser approval pending)
 
