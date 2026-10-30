@@ -126,6 +126,7 @@ function viewGrowth(target,api){
     const skills=skillCatalog.filter(s=>s.classes?.[job]&&Array.isArray(s.reqs)&&
      s.reqs.some(req=>req.branch===key));
     const marks=api.milestones(skills,key,cap);
+    let picker=null;
     if(marks.length){
      const rail=make('div',{class:'inline-branch-milestones','aria-label':'Умения на порогах ветки'});
     // Combine nearby thresholds into one accessible marker rather than overlapping icons.
@@ -150,7 +151,7 @@ function viewGrowth(target,api){
      }
      openMarker=null;
     };
-    const picker=make('div',{id:pickerId,class:'path-milestone-picker',hidden:true,
+    picker=make('div',{id:pickerId,class:'path-milestone-picker',hidden:true,
      role:'group','aria-label':'Выбор умения на пороге',
      onkeydown:event=>{if(event.key==='Escape'){event.preventDefault();closePicker(true)}}});
     for(const cluster of clusters){
@@ -199,7 +200,7 @@ function viewGrowth(target,api){
     const exact=make('div',{class:'path-allocation-input'});
     exact.append(make('span',{text:'Точно вложено'}),numeric);
     editor.append(note,track);
-    if(marks.length)editor.append(picker);
+    if(picker)editor.append(picker);
     editor.append(exact,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
      text:!api.allocationReady?'Загружаются таблицы очков и лимитов класса.':
