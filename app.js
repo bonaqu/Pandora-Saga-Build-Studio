@@ -15,7 +15,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,characterPanelTab='character',wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
+let state=fresh(),activeTab='character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,gearShown=60,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
@@ -23,8 +23,8 @@ function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(co
 function imageUrl(name){return `assets/${name}.webp`}
 const BRANCH_ICON_PATHS={"slash":"assets/skills/legacy/01-00.png","thrust":"assets/skills/legacy/02-00.png","brush":"assets/skills/legacy/03-00.png","blow":"assets/skills/legacy/04-00.png","defense":"assets/skills/legacy/05-00.png","archery":"assets/skills/legacy/07-00.png","alchemy":"assets/skills/legacy/08-00.png","assassin":"assets/skills/legacy/09-00.png","trap":"assets/skills/legacy/10-00.png","warding":"assets/skills/legacy/11-00.png","benevolence":"assets/skills/legacy/13-00.png","blessing":"assets/skills/legacy/14-00.png","exorcism":"assets/skills/legacy/15-00.png","hymn":"assets/skills/legacy/16-00.png","element":"assets/skills/legacy/18-00.png","embody":"assets/skills/legacy/19-00.png","darkness":"assets/skills/legacy/20-00.png","charm":"assets/skills/legacy/21-00.png","riding":"assets/skills/legacy/24-00.png"};
 function branchIcon(id){return BRANCH_ICON_PATHS[id]||'assets/ui/icons/skill-unknown.svg'}
-function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId)return `${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`;return `${SRC}image/icon/${String(cat).padStart(2,'0')}${String(idx).padStart(2,'0')}.png`}
-function itemIcon(rec,kind='items'){const custom=override[(kind==='souls'?'visual.soul.':'visual.item.')+rec?.id];if(custom)return custom;return rec?.icon?`${OS}/icons/${kind}/${rec.icon}.webp?v=07682901`:null}
+function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId){const path=iconManifest?.icons?.skills?.['skill_'+record.iconId];return path||`${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`}return `${SRC}image/icon/${String(cat).padStart(2,'0')}${String(idx).padStart(2,'0')}.png`}
+function itemIcon(rec,kind='items'){const custom=override[(kind==='souls'?'visual.soul.':'visual.item.')+rec?.id];if(custom)return custom;return rec?.icon?(iconManifest?.icons?.[kind]?.[rec.icon]||`${OS}/icons/${kind}/${rec.icon}.webp?v=07682901`):null}
 function branchCap(branch){return catalog.live?(window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0):90}
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.add('admin-edit');return el}
@@ -92,7 +92,7 @@ async function loadWiki(){
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
   const data={};
-  for(const key of ['items','monsters','maps','instances','drops','trades','tables','chests']){
+  for(const key of ['items','monsters','maps','instances','drops','trades','tables','chests','skills','souls']){
    let r;
    try{r=await fetch(API+'/api/catalog/'+key+'.json',{cache:'no-cache',signal:AbortSignal.timeout(12000)});if(!r.ok)throw Error('D1 '+r.status)}
    catch{r=await fetch('./data/os/'+key+'.json',{cache:'no-cache'})}
@@ -117,7 +117,7 @@ function wikiLink(text,type,id,highlight=null){
 function renderWiki(root){
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
- for(const [key,label]of[['item','Предметы'],['monster','Монстры'],['map','Локации'],['npc','NPC-обмен'],['chest','Сундуки']]){
+ for(const [key,label]of[['item','Предметы'],['monster','Монстры'],['map','Локации'],['npc','NPC-обмен'],['chest','Сундуки'],['skill','Навыки'],['soul','Души']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:label,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';renderDetails()}}));
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:'Поиск по названию или ID','aria-label':'Поиск по вики'});
@@ -125,15 +125,15 @@ function renderWiki(root){
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
  const dataName=(type,id)=>{
-  const obj=type==='item'?wikiData.items?.[id]:type==='monster'?wikiData.monsters?.[id]:type==='map'?wikiData.maps?.[id]:null;
-  const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':'']?.[id]?.n;
+  const obj=type==='item'?wikiData.items?.[id]:type==='monster'?wikiData.monsters?.[id]:type==='map'?wikiData.maps?.[id]:type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:null;
+  const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
   return lang==='en'&&en?en:obj?.name||String(id);
  };
  const draw=()=>{
   browse.replaceChildren();detail.replaceChildren();
   const type=wikiSelection.type;
   const catalog=type==='item'?wikiData.items:type==='monster'?wikiData.monsters:type==='map'?wikiData.maps:
-    type==='npc'?wikiData.trades?.npcs:Object.fromEntries((wikiData.chests?.boxes||[]).map(item=>[item.i,item]));
+    type==='npc'?wikiData.trades?.npcs:type==='skill'?wikiData.skills:type==='soul'?wikiData.souls:Object.fromEntries((wikiData.chests?.boxes||[]).map(item=>[item.i,item]));
   const q=wikiSearch.toLocaleLowerCase().trim();
   const visible=Object.entries(catalog||{}).filter(([id,rec])=>!q||id.includes(q)||String(rec.name||dataName(type,id)).toLocaleLowerCase().includes(q)).slice(0,100);
   browse.append(h('p',{class:'muted',text:'Показано '+visible.length+' записей (первые 100)'}));
@@ -145,7 +145,7 @@ function renderWiki(root){
   const id=wikiSelection.id,rec=id==null?null:catalog?.[id];
   if(!rec){detail.append(h('p',{class:'muted',text:'Выбери запись для просмотра характеристик и связанных источников.'}));return}
   detail.append(h('small',{class:'eyebrow',text:type+' · '+id}),h('h3',{text:dataName(type,id)}));
-  if(rec.desc)detail.append(h('p',{class:'wiki-description',text:lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':'maps']?.[id]?.d||rec.desc):rec.desc}));
+  if(rec.desc)detail.append(h('p',{class:'wiki-description',text:lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='skill'?'skills':type==='soul'?'souls':'maps']?.[id]?.d||rec.desc):rec.desc}));
   if(type==='item'){
     const dl=h('dl',{class:'item-fields'});
     for(const [label,value]of[['Тип',rec.kind],['Уровень',rec.level],['Атака',rec.W],['Защита',rec.AC],['Гнёзда',rec.soulslot]])if(value!=null)dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
@@ -162,6 +162,19 @@ function renderWiki(root){
      else line.append(wikiLink('Групповой дроп, локация '+dataName('map',row.id)+' (точный шанс предмета неизвестен)','map',row.id,id));
      detail.append(line);
     }
+  }else if(type==='skill'){
+    detail.append(h('p',{class:'muted',text:'Уровень персонажа '+(rec.charLevel??'—')+' · ОМ '+(rec.mana??'—')+' · перезарядка '+(rec.cooldown??'—')+' с'}));
+    detail.append(h('h4',{text:'Требования'}));
+    if(!rec.reqs?.length)detail.append(h('p',{class:'muted',text:'Ветка требований не указана'}));
+    for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:(catalog.meta?.branchLabels?.[req.branch]||req.branch)+' ≥ '+req.amount}));
+    const icon=skillIcon(rec.branch,id,rec);
+    if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
+  }else if(type==='soul'){
+    detail.append(h('p',{class:'muted',text:'Совместимые слоты: '+(rec.slots||[]).join(', ')}));
+    if(rec.price!=null)detail.append(h('p',{class:'muted',text:'Цена по каталогу: '+rec.price}));
+    detail.append(h('p',{class:'muted',text:'Данные эффектов сохранены в D1. Точный расчёт боевых бонусов пока не подтверждён.'}));
+    const icon=itemIcon(rec,'souls');
+    if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
   }else if(type==='monster'){
     detail.append(h('p',{class:'muted',text:'Уровень '+(rec.level??'—')+' · HP '+(rec.life??'—')}));
     detail.append(h('h4',{text:'Места появления'}));
@@ -343,6 +356,7 @@ if(chosen){
 const id=String(catalog.live?chosen.id:chosen.legacy_entry_index),g=catalog.live?rules.readiness(chosen,{job:jobKeys[state.job],level:state.level,points:state.points}):null;
 info.append(editAttr(h("img",{class:"bigicon",src:skillIcon(branch,id,chosen),alt:""}),"visual.skill."+id),editAttr(h("h3",{text:editableValue("skill."+branch+"."+id,catalog.live?chosen.name:chosen.name?.en||id)}),"skill."+branch+"."+id));
 if(g){
+info.append(wikiLink('📜 Статья навыка','skill',id));
 info.append(h("p",{class:"gate-summary","data-state":g.status,text:g.status==="eligible"?"✓ Известные требования выполнены":g.status==="locked"?"🔒 Не выполнены требования":"? Есть непроверенные условия"}));
 for(const m of g.missing)info.append(h("p",{class:"gate-missing",text:"✕ "+m}));
 for(const m of g.unknown)info.append(h("p",{class:"muted",text:"? "+m}));
@@ -490,6 +504,7 @@ function renderEquipment(root){
     }
    }
    if(rec.desc)side.append(h('p',{class:'item-description',text:rec.desc}));
+   side.append(wikiLink(isSoul?'📜 Статья души':'📜 Статья предмета',isSoul?'soul':'item',rec.id));
    if(!isSoul){
     const area=h('div',{class:'item-origin'});
     area.append(h('h4',{text:'Где получить'}),h('p',{class:'muted',text:'Проверяю источники…'}));side.append(area);
@@ -1011,7 +1026,7 @@ window.PandoraStudioAdminActive=()=>Boolean(adminToken);
 document.addEventListener('pandora:before-update',()=>{persist();persistBuilds()});
 // Restore deep links on refresh without requiring credentials or losing the current build.
 function restoreWikiHash(){
- const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest)\/([0-9]{1,15})$/);
+ const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul)\/([0-9]{1,15})$/);
  if(!match)return;
  wikiSelection={type:match[1],id:match[2],highlight:null};
  activeTab='wiki';
@@ -1019,4 +1034,5 @@ function restoreWikiHash(){
  renderDetails();
 }
 window.addEventListener('hashchange',restoreWikiHash);
+fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{if(data?.icons&&data.count?.missing===0){iconManifest=data;render()}}).catch(()=>{});
 render();loadCatalog();loadOverrides();restoreWikiHash();

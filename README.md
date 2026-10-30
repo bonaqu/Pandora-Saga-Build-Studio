@@ -128,3 +128,7 @@ A first wiki tab now navigates item sources, monster drops, maps, NPC exchange r
 ## Self-hosting original game icons
 
 The checked-in collection now includes 19 local Legacy skill-branch PNGs used for branch navigation. For current OS skill/item/soul icons, run `node scripts/mirror-os-icons.mjs --dry-run` followed by `node scripts/mirror-os-icons.mjs` in a network-enabled checkout, review `assets/os-icon-manifest.json` and commit the generated assets. This step is **not yet executed**; do not remove fallback icons until the manifest is complete. No Actions, tokens, paid services or runtime third-party API access are needed for the mirror.
+
+### Self-hosted icon manifest and wiki links (2026-10-30)
+
+Once the manual asset mirror has been completed and a manifest with `count.missing===0` has been committed, the site automatically uses the local `assets/*/icons` paths for live OS skill, item and soul icons. Before that, existing live icon URLs are retained so the game-themed UI is not replaced with placeholders. The wiki now includes skills and soul pages and links from their inspectors.

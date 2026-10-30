@@ -200,3 +200,6 @@
 .catalog-update-report h3{color:#edc48b;font:600 21px Georgia}
 .catalog-diff-row{display:grid;grid-template-columns:minmax(110px,1fr) minmax(180px,2fr);gap:5px;border:1px solid #674e34;background:#1d1612;padding:8px;font-size:11px}
 .catalog-diff-row strong{color:#ecc68d}.catalog-diff-row small{grid-column:1/-1;color:#bd9a77;overflow-wrap:anywhere}
+
+
+.wiki-record-icon{width:65px;height:65px;object-fit:contain;float:right;border:1px solid #98764b;padding:5px;background:#100c0b}
