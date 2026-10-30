@@ -304,11 +304,11 @@ function renderSlotRails(){
    const item=state.equipment?.[i],source=item&&equippedRecord(i),cap=plan.socketCapacity(source);
    const report=plan.socketReport(state.souls?.[i],cap);
    const level=plan.canRefine(slotKeys[i])?plan.refinementValue(state.refinements,i,item):0;
-   const tooltip=slots[i][0]+' · '+(item?.name||'Пусто')+(item&&cap!==null?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
+   const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+(item&&cap!==null?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
     'aria-label':tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSoulQuery='';stageSlotShown=48;stageSlotView=state.equipment?.[i]?'details':'choose';stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
-   button.append(slotVisual(i),h('small',{text:item?.name||slots[i][0]}));
+   button.append(slotVisual(i),h('small',{text:item?itemName(item):slots[i][0]}));
    if(item&&plan.canSocket(slotKeys[i],source))button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source)window.PandoraStageItemUI.attachPreview(button,source,(rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'));
@@ -502,8 +502,8 @@ function renderOriginStats(){
    row.result.textContent=shown===null?'—':String(shown);
    const delta=shown===null||allocated===null?0:shown-allocated;
    row.caption.textContent=delta?(delta>0?'+':'')+delta+' бонус':'Итог';
-   row.result.title='База '+(base??'—')+' + очки '+spent+
-    ' + известные бонусы '+delta+' = '+row.result.textContent;
+   row.result.setAttribute('aria-label','База '+(base??'—')+' + очки '+spent+
+    ' + известные бонусы '+delta+' = '+row.result.textContent);
    row.minus.disabled=!snap||spent<=0;
    row.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,row.i,spent+1);
    row.plus.setAttribute('aria-label','Увеличить '+ORIGIN_STAT_LABELS[row.i].name+'. Стоимость: '+(window.PandoraAttributeProgression.nextCost(snap,row.i)??'максимум'));
@@ -1009,7 +1009,7 @@ function renderSkills(root){
  }}));
 }
 function isCostumeOverlay(item){return Boolean(item&&(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_')))}
-function itemName(r){return r?.name?.en||r?.names?.en||r?.name||'Предмет без названия'}
+function itemName(r){return window.PandoraItemPresentation.displayName(r,'Предмет без названия')}
 let catalogBrowseSlot='all';
 function renderEquipment(root){
  const types=[['all','Все типы'],['weapon','Оружие'],['shield','Щиты'],['head','Шлемы'],
