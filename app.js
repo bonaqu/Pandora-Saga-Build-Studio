@@ -122,7 +122,11 @@ function openWiki(type,id,highlight=null){
  renderDetails();$('detailPanel').scrollIntoView({behavior:'smooth',block:'start'});
 }
 function wikiLink(text,type,id,highlight=null){
- return h('button',{class:'wiki-link',type:'button',text,onclick:()=>openWiki(type,id,highlight)});
+ const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(id)+(highlight==null?'':'/'+encodeURIComponent(highlight));
+ return h('a',{class:'wiki-link',href,text,onclick:event=>{
+  if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+  event.preventDefault();openWiki(type,id,highlight);
+ }});
 }
 function renderWiki(root){
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
@@ -382,7 +386,7 @@ if(milestoneData.milestones.length&&cap>0){
    'data-threshold':String(gate.threshold),title:gate.skills.map(x=>x.name).join(', ')+' · '+gate.threshold+' очков',
    'aria-label':gate.skills.map(x=>x.name).join(', ')+' · порог '+gate.threshold,
    onclick:()=>{selectedSkill=first;renderDetails()}});
-  marker.style.left='calc(12px + (100% - 24px) * '+(at/100)+')';
+  marker.style.left='calc('+at+'% + '+(12-24*at/100)+'px)';
   marker.style.top=i%2?'56px':'3px';
   const icon=h('img',{src:skillIcon(branch,first.id,first),alt:'',loading:'lazy'});
   icon.onerror=()=>icon.replaceWith(h('span',{class:'skill-fallback',text:'✦'}));

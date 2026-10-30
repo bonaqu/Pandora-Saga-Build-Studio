@@ -152,3 +152,7 @@ The authenticated manual OS refresh now previews examples of **specific before/a
 ## 2026-10-30.22 — skill tree accuracy
 
 The decorative horizontal connection line between skill icons was removed: it wrongly implied prerequisites that are not in the game data. A **clickable milestone rail** now places source-backed skill icons at `reqs[branch].amount / classBranchCap` positions, grouped by equal thresholds. Its golden fill follows the user's allocated branch points. Over-cap requirements remain listed but aren't shown as reachable on the track. This visual shows verified thresholds, **not** a claim that all game skill prerequisites or passive hooks are fully modeled.
+
+## 2026-10-30.23 — navigation reliability
+
+All internal encyclopedia crosslinks now use real fragment URLs, so context links work with browser history, copying, keyboard navigation, and Ctrl/Cmd-click to open a new tab. The normal click stays within the all-in-one workspace. Milestone positions use broadly supported CSS `calc()` addition rather than multiplication, improving browser compatibility.

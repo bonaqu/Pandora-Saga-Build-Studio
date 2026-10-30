@@ -262,3 +262,8 @@
 .skill-milestone-count{position:absolute;top:-5px;right:-7px;color:#fff0c7;background:#704122;padding:0 3px;border:1px solid #d4a462;font-size:9px}
 .skill-milestone-overcap{color:#c7a484;font-size:11px;margin:8px 0}
 @media(max-width:570px){.skill-milestone{min-width:29px;max-width:40px;padding:2px}.skill-milestone img{width:24px;height:24px}.skill-milestone-rail{overflow:visible}}
+
+/* Links are real anchors: copy, new tab, browser history and keyboard semantics */
+a.wiki-link{text-decoration:none;color:#eccb97}
+a.wiki-link:focus-visible{outline:2px solid #f5c883;outline-offset:1px}
+a.wiki-link:hover{text-decoration:none}
