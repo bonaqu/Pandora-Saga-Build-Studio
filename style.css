@@ -845,3 +845,17 @@ a.wiki-link:hover{text-decoration:none}
  .path-milestone-picker{grid-template-columns:1fr}
  .stage-hover-preview.path-skill-preview{max-height:210px}
 }
+
+/* Compact branch headers and readable unlock details (2026.10.30.77). */
+.right .game-tree-head{min-height:40px;padding:7px 9px;gap:8px}
+.right .game-tree-head strong{min-width:0}
+.right .game-tree-head small{flex:0 0 auto;white-space:nowrap;font-size:10px;line-height:1.2}
+.path-milestone-choice-body{display:flex;min-width:0;flex:1;flex-direction:column;gap:2px}
+.path-milestone-choice-body strong{font:600 12px Manrope,Arial,sans-serif;color:#f6d7a1}
+.path-milestone-choice-body small{font:10px/1.25 Manrope,Arial,sans-serif;color:#c4aa85}
+.path-milestone-choice img{align-self:center;width:30px;height:30px;flex-shrink:0}
+@media(max-width:700px){
+ .path-milestone-picker{grid-template-columns:1fr}
+ .right .game-tree-head{flex-wrap:wrap}
+ .right .game-tree-head small{margin-left:auto}
+}
