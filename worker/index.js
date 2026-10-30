@@ -116,8 +116,50 @@ async function adminCatalog(request,env,path){
  return no('Unknown catalog operation',404);
 }
 
+
+/* Public immutable share links; non-secret snapshots, guarded against large payloads and write abuse. */
+async function shareApi(request,env,path,ip){
+ if(request.method==='GET'){
+  const match=path.match(/^\/api\/shared\/([A-Za-z0-9_-]{11})$/);
+  if(!match)return no('Not found',404);
+  const row=await env.DB.prepare('SELECT payload FROM shared_builds WHERE id=?').bind(match[1]).first();
+  if(!row)return no('Shared build not found',404);
+  return json({schema:1,share:JSON.parse(row.payload)});
+ }
+ if(request.method!=='POST'||path!=='/api/shared')return no('Not found',404);
+ if(Number(request.headers.get('content-length')||0)>48000)return no('Payload too large',413);
+ const input=await request.text();
+ if(input.length>48000)return no('Payload too large',413);
+ let payload;
+ try{payload=JSON.parse(input)}catch{return no('Invalid share payload',400)}
+ if(!payload||payload.schema!==1||!['build','library'].includes(payload.type))return no('Invalid share format',400);
+ const validate=entry=>entry&&typeof entry==='object'&&!Array.isArray(entry)&&
+  Number.isInteger(entry.race)&&entry.race>=0&&entry.race<=5&&
+  Number.isInteger(entry.job)&&entry.job>=0&&entry.job<28&&
+  Number.isInteger(entry.level)&&entry.level>=1&&entry.level<=55;
+ if(payload.type==='build'&&!validate(payload.data))return no('Invalid character record',400);
+ if(payload.type==='library'&&(!Array.isArray(payload.data)||payload.data.length<1||payload.data.length>30||
+  !payload.data.every(entry=>validate(entry?.data)&&typeof entry?.name==='string'&&entry.name.length<=70)))
+  return no('Invalid saved-build library',400);
+ const canonical=JSON.stringify({schema:1,type:payload.type,data:payload.data});
+ if(canonical.length>47000)return no('Share exceeds storage limit',413);
+ const ipHash=await sha(ip),day=Math.floor(Date.now()/86400000);
+ const limit=await env.DB.prepare('INSERT INTO shared_build_limits(ip_hash,day,created) VALUES(?,?,1) ON CONFLICT(ip_hash,day) DO UPDATE SET created=created+1 WHERE created<30').bind(ipHash,day).run();
+ if(!limit.meta?.changes)return no('Share limit reached for today',429);
+ for(let attempt=0;attempt<3;attempt++){
+  const id=b64(random(8));
+  try{await env.DB.prepare('INSERT INTO shared_builds(id,payload,created_at) VALUES(?,?,?)').bind(id,canonical,Date.now()).run();
+   return json({ok:true,id},201);
+  }catch(error){
+   if(!String(error).includes('UNIQUE'))throw error;
+  }
+ }
+ return no('Unable to allocate share ID',503);
+}
+
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 // No runtime calls to the third-party game server. All game data is read from our own D1.
+ if(path==='/api/shared'||/^\/api\/shared\/[A-Za-z0-9_-]{11}$/.test(path))return shareApi(request,env,path,ip);
 if(!env.DB)return no('Database not configured',503);
 if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
 // Restricted authenticated data refresh endpoint: fixed source host and 17 known names.
