@@ -400,3 +400,21 @@ a.wiki-link:hover{text-decoration:none}
 .inline-milestone img{width:27px;height:27px;object-fit:contain;display:block}
 .inline-milestone small{display:block;line-height:13px}
 @media(max-width:540px){.inline-branch-milestones{margin-inline:12px}}
+
+/* 2026.10.30.31: in-portrait, source-backed attribute inspection */
+.portrait-frame.attributes>img#hero,.portrait-frame.attributes>.ornament,.portrait-frame.attributes>.portrait-bottom{visibility:hidden}
+.stage-attributes{position:absolute;z-index:5;inset:0;display:flex;flex-direction:column;gap:7px;padding:11px;background:linear-gradient(155deg,#3b2919,#16100d 75%);color:#f2d8ac}
+.stage-attributes[hidden]{display:none}
+.stage-attribute-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stage-attribute-head strong{font:600 24px 'Cormorant Garamond',serif}
+.stage-attribute-head button,.stage-attribute-tabs button{border:1px solid #987247;background:#392619;color:#f1d6a8;padding:7px}
+.stage-attribute-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.stage-attribute-tabs button.chosen{background:#79502a;border-color:#ffd391}
+.stage-attribute-scroll{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;display:grid;gap:9px;align-content:start}
+.stage-attribute-note{font-size:10px;color:#c5a981}
+.stage-attribute-row{border:1px solid #85603c;background:#25190f;padding:8px;display:grid;gap:5px}
+.stage-attribute-row p{font-size:11px}
+.stage-attribute-identity{display:flex;gap:8px;align-items:center;color:#f0d09e}
+.stage-attribute-identity img{width:36px;height:36px;object-fit:contain}
+.stage-attribute-warning{font-size:10px;color:#e9b792;border-top:1px solid #9e6946;padding:9px 3px}
+.stage-attribute-soul{padding:6px;border-left:2px solid #b18b55;background:#302010}
