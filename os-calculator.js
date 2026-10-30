@@ -36,11 +36,49 @@ function classBase(classPart,level,attribute,key){
   attribute*Math.round(classPart[key]*100);
  return Math.floor(cents/100);
 }
+// Parse only the explicit improvement clauses in the preserved OS item text.
+// These bonuses are absent from the base effects array; unknown prose is ignored.
+function refinementEffects(record,grade){
+ if(!record||!Number.isInteger(grade)||grade<1||typeof record.desc!=='string')return [];
+ const result=[],candidates=[
+  [/ОЗ\s*([+-])\s*(\d+)\s*(%)?/g,'hp'],
+  [/ОМ\s*([+-])\s*(\d+)\s*(%)?/g,'mp'],
+  [/ВЫН\s*([+-])\s*(\d+)/g,'vit'],
+  [/СД\s*([+-])\s*(\d+)/g,'spi']
+ ];
+ const kinds={hp:['EP_MAXLIFE_CONST','EP_MAXLIFE_SCALE'],
+  mp:['EP_MAXMANA_CONST','EP_MAXMANA_SCALE'],
+  vit:['EP_VITARITY_CONST'],spi:['EP_SPIRITUAL_CONST']};
+ const sections=[
+  {match:record.desc.match(/За каждые\s+(\d+)\s+единиц[ыу]\s+улучшения\s*:\s*([\s\S]*?)(?=При улучшении на|За каждые|$)/i),
+   count:g=>Math.floor(g/Number(record.desc.match(/За каждые\s+(\d+)/i)?.[1]||Infinity)),index:2},
+  {match:record.desc.match(/При улучшении на\s*\+(\d+)\s+и выше\s*:\s*([\s\S]*)/i),
+   count:g=>g>=Number(record.desc.match(/При улучшении на\s*\+(\d+)/i)?.[1])?1:0,index:2}
+ ];
+ for(const part of sections){
+  if(!part.match)continue;
+  const times=part.count(grade);
+  if(!Number.isInteger(times)||times<=0)continue;
+  for(const [regexp,kind] of candidates){
+   regexp.lastIndex=0;
+   for(const match of part.match[part.index].matchAll(regexp)){
+    const rate=Boolean(match[3]),func=kinds[kind][rate?1:0];
+    if(!func)continue;
+    // A structured grade-gated effect takes precedence over textual fallback.
+    if((record.effects||[]).some(e=>e.func===func&&Number.isFinite(e.min)&&e.min>0))continue;
+    const sign=match[1]==='-'?-1:1;
+    result.push({func,a:sign*Number(match[2])*times,fromRefinement:true});
+   }
+  }
+ }
+ return result;
+}
 function gatherEffects(records=[]){
  const flat=Object.fromEntries(keys.map(k=>[k,0]));
  const health={hp:0,mp:0},percent={hp:[],mp:[]},bonuses={},ignored=new Set(),trace=[];
  for(const [source,record,grade] of records){
-  for(const eff of record?.effects||[]){
+  const extra=String(source).startsWith('item:')?refinementEffects(record,Number(grade)):[];
+  for(const eff of [...(record?.effects||[]),...extra]){
    if(Number.isFinite(eff.min)&&grade<eff.min)continue;
    if(Number.isFinite(eff.max)&&grade>eff.max)continue;
    const value=Number(eff.a),key=keyByEffect[eff.func];
@@ -97,6 +135,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,guildRates
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,guildRates
 });
 })(typeof window==='undefined'?globalThis:window);
