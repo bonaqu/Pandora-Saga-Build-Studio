@@ -12,7 +12,7 @@ test('Origin has no technical disclaimers under base stat controls',()=>{
 test('detailed stat labels match compact editor while keeping save keys',()=>{
  const src=get('app.js');
  assert.match(src,/text:ORIGIN_STAT_LABELS\[i\]\.name/);
- assert.match(src,/text:'ОЗ ≈'/);
+ assert.match(src,/['\"]ОЗ ≈['\"]?\+hpmp\.hp/);
  assert.doesNotMatch(src,/Предел пока неизвестен\. Используется редактор плана/);
  assert.doesNotMatch(src,/Предварительные ОЗ ≈/);
  assert.match(src,/const STATS=\['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'\]/);
