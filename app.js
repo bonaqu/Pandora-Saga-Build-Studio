@@ -1332,6 +1332,15 @@ function sanitizeSharedState(original){
   const v=original.profile?.[key];
   if(typeof v==='string')safe.profile[key]=v.slice(0,key==='about'?500:80);
  }
+ // Preserve optional, explicit HP/MP buffs on shared links without trusting arbitrary values.
+ const sharedBuffs=original.vitalsBuffs;
+ if(sharedBuffs&&typeof sharedBuffs==='object'&&!Array.isArray(sharedBuffs)){
+  for(const key of ['guildHp','guildMp']){
+   const level=sharedBuffs[key];
+   if(Number.isInteger(level)&&level>=0&&level<=6)safe.vitalsBuffs[key]=level;
+  }
+  safe.vitalsBuffs.lifeSign=sharedBuffs.lifeSign===true;
+ }
  if(Number.isSafeInteger(original.racialPassiveId)&&original.racialPassiveId>=0&&original.racialPassiveId<10000000000)
   safe.racialPassiveId=original.racialPassiveId;
  return safe;
