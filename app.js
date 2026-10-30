@@ -48,7 +48,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
@@ -96,7 +96,7 @@ function previewBaseStats(){
   allocation,level:state.level,records,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
-  enhancements:state.vitalsBuffs||{}
+  enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{}
  });
 }
 function renderOriginVitals(){
@@ -125,6 +125,14 @@ function renderVitalsEnhancements(){
  }
  const sign=$('originLifeSign');
  if(sign)sign.checked=state.vitalsBuffs?.lifeSign===true;
+ for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency']]){
+  const control=$(id);
+  if(control)control.value=String(state.attributeBuffs?.[key]||0);
+ }
+ for(const [id,key] of [['originHonorCuriosity','honorCuriosity'],['originProelium','proelium']]){
+  const control=$(id);
+  if(control)control.checked=state.attributeBuffs?.[key]===true;
+ }
  const info=$('originVitalsCoverage'),calculated=previewBaseStats();
  if(info)info.textContent=calculated?
   'Учтены известные бонусы вещей, душ и выбранные усиления. Часть эффектов заточки, комплектов и умений пока не проверена.':
@@ -140,6 +148,20 @@ function setVitalsEnhancement(key,value){
   current[key]=n;
  }
  state.vitalsBuffs=current;persist();renderOriginVitals();renderVitalsEnhancements();
+}
+function setAttributeBuff(key,value){
+ const current={guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,
+  ...(state.attributeBuffs||{})};
+ if(key==='honorCuriosity'||key==='proelium')current[key]=value===true;
+ else if(key==='guildAll'){
+  const n=Number(value);if(!Number.isInteger(n)||n<0||n>6)return;
+  current.guildAll=n;
+ }else if(key==='proeliumPotency'){
+  const n=Number(value);if(!Number.isInteger(n)||n<0||n>100)return;
+  current.proeliumPotency=n;
+ }else return;
+ state.attributeBuffs=current;
+ persist();renderOriginStats();renderOriginVitals();renderVitalsEnhancements();
 }
 function budgetSummary(){
  return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
@@ -1341,6 +1363,14 @@ function sanitizeSharedState(original){
   }
   safe.vitalsBuffs.lifeSign=sharedBuffs.lifeSign===true;
  }
+ const rawAttributes=original.attributeBuffs;
+ if(rawAttributes&&typeof rawAttributes==='object'&&!Array.isArray(rawAttributes)){
+  const guild=rawAttributes.guildAll,potency=rawAttributes.proeliumPotency;
+  if(Number.isInteger(guild)&&guild>=0&&guild<=6)safe.attributeBuffs.guildAll=guild;
+  if(Number.isInteger(potency)&&potency>=0&&potency<=100)safe.attributeBuffs.proeliumPotency=potency;
+  safe.attributeBuffs.honorCuriosity=rawAttributes.honorCuriosity===true;
+  safe.attributeBuffs.proelium=rawAttributes.proelium===true;
+ }
  if(Number.isSafeInteger(original.racialPassiveId)&&original.racialPassiveId>=0&&original.racialPassiveId<10000000000)
   safe.racialPassiveId=original.racialPassiveId;
  return safe;
@@ -1887,6 +1917,12 @@ for(const [id,key] of [['originGuildHp','guildHp'],['originGuildMp','guildMp']])
 }
 $('originLifeSign')?.addEventListener('change',event=>
  setVitalsEnhancement('lifeSign',event.target.checked));
+for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency']]){
+ $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.value));
+}
+for(const [id,key] of [['originHonorCuriosity','honorCuriosity'],['originProelium','proelium']]){
+ $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
+}
 render();loadCatalog();loadOverrides();
 requestAnimationFrame(syncOriginPanelHeight);
 // Independence: class caps must be usable even when unrelated wiki/skills/D1 data fails.
