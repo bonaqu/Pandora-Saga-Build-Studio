@@ -578,57 +578,59 @@ function editor(el){
 }
 async function showCatalogImport(){
  if(!adminToken)return;
- const container=h('div');
- const message=h('p',{class:'muted',role:'status',text:'Будет использован только локальный архив из нашего репозитория. Существующий каталог D1 не изменится до полной проверки.'});
- const progress=h('progress',{max:'100',value:'0',class:'catalog-import-progress'});
- const button=h('button',{class:'button-action primary',text:'Перенести каталог в Cloudflare D1'});
- container.append(h('p',{class:'muted',text:'Снимок данных: 28 классов, 569 навыков, 1116 предметов и 112 душ. Архив включает отдельные костюмные предметы, которые не попадают в боевые слоты.'}),button,progress,message);
+ const area=h("div");
+ const message=h("p",{class:"muted",role:"status",text:"Перенос всей игровой информации из локального архива в D1. Опубликованная версия не изменится до проверки всех разделов."});
+ const progress=h("progress",{max:"100",value:"0",class:"catalog-import-progress"});
+ const button=h("button",{type:"button",class:"button-action primary",text:"Импортировать все игровые данные и переводы"});
+ area.append(h("p",{class:"muted",text:"Каталог включает предметы, души, навыки, классы, монстров, дроп, карты, подземелья, пассивки рас, усиление, комплекты и обмены NPC. Переводы Legacy RU/EN/JP/TW сохраняются отдельно; к объектам OS без подтверждённых ID не привязываются."}),button,progress,message);
  button.onclick=async()=>{
-  button.disabled=true;message.textContent='Подключаюсь к D1…';
+  button.disabled=true;
   try{
-   await apiRequest('/api/admin/catalog/initialize',{});
-   const names=['meta','classes','skills','items','souls'];
-   const records={};
-   for(const name of names){
-    message.textContent='Проверяю собственный архив: '+name;
-    const response=await fetch('./data/os/'+name+'.json',{cache:'no-cache'});
-    if(!response.ok)throw Error(name+'.json HTTP '+response.status);
-    records[name]=await response.json();
+   const sources={};
+   const api=window.PandoraCatalogImport;
+   if(!api)throw Error("Не загружен модуль проверки данных");
+   const required=[...api.base];
+   for(const name of required){
+    message.textContent="Проверяю архив "+name+".json";
+    const r=await fetch("./data/os/"+name+".json",{cache:"no-cache"});
+    if(!r.ok)throw Error("Отсутствует "+name+".json: HTTP "+r.status);
+    sources[name]=await r.json();
    }
-   const counts=records.meta?.counts;
-   if(!counts||!records.classes?.CLERIC)throw Error('Неверный формат снимка');
-   const total=1+names.slice(1).reduce((sum,name)=>sum+Object.keys(records[name]).length,0);
-   for(const name of names.slice(1)){
-    if(Object.keys(records[name]).length!==Number(counts[name]))throw Error('Неполный архив '+name);
-   }
-   const snapshot='ps-'+crypto.randomUUID().replaceAll('-','');
-   let done=0;
-   for(const name of names){
-    const entries=name==='meta'?[['all',records.meta]]:Object.entries(records[name]);
-    for(let offset=0;offset<entries.length;){
-     const batch=[];let chars=0;
-     while(offset<entries.length&&batch.length<35){
-      const [key,value]=entries[offset],entry={key,value},size=JSON.stringify(entry).length;
-      if(size>12000)throw Error('Слишком большая запись '+name+'/'+key);
-      if(batch.length&&chars+size>44000)break;
-      chars+=size;batch.push(entry);offset++;
+   message.textContent="Читаю утверждённые переводы";
+   const localeResponse=await fetch("./data/localization/legacy-approved.v1.json",{cache:"no-cache"});
+   if(!localeResponse.ok)throw Error("Отсутствует архив переводов");
+   const localized=await localeResponse.json();
+   const {datasets,entries,extraCounts,counts}=api.normalize(sources,localized);
+   await apiRequest("/api/admin/catalog/initialize",{});
+   const snapshot="ps-"+crypto.randomUUID().replaceAll("-","");
+   let completed=0;
+   const total=Object.values(counts).reduce((sum,n)=>sum+n,0);
+   for(const name of datasets){
+    const rows=entries[name];
+    for(let offset=0;offset<rows.length;){
+     const chunk=[];let bytes=0;
+     while(offset<rows.length&&chunk.length<30){
+      const current=rows[offset],size=JSON.stringify(current).length;
+      if(size>12000)throw Error("Слишком большая запись "+name+"/"+current.key);
+      if(chunk.length&&bytes+size>42000)break;
+      bytes+=size;chunk.push(current);offset++;
      }
-     await apiRequest('/api/admin/catalog/batch',{snapshot,dataset:name,records:batch});
-     done+=batch.length;
-     progress.value=String(Math.round(done/total*100));
-     message.textContent='Сохранено '+done+' из '+total+' записей · '+progress.value+'%';
+     await apiRequest("/api/admin/catalog/batch",{snapshot,dataset:name,records:chunk});
+     completed+=chunk.length;
+     progress.value=String(Math.round(completed*100/total));
+     message.textContent=`Импорт ${name}: ${completed}/${total} записей (${progress.value}%)`;
     }
    }
-   const published=await apiRequest('/api/admin/catalog/publish',{snapshot});
-   progress.value='100';
-   message.textContent='D1 активирована: '+published.counts.items+' предметов, '+published.counts.skills+' навыков, '+published.counts.souls+' душ. Внешки отдельно: '+published.costumeItems+'.';
+   const outcome=await apiRequest("/api/admin/catalog/publish",{snapshot,extraCounts});
+   progress.value="100";
+   message.textContent="Готово: "+Object.values(outcome.counts||{}).reduce((sum,n)=>sum+Number(n),0)+" записей в D1, включая "+extraCounts.legacyLocale+" языковых строк. Версия опубликована.";
    await loadCatalog();
-  }catch(error){
-   message.textContent='Импорт не завершён. Предыдущая версия каталога сохранена. '+error.message;
-   console.error('Owner catalog import',error);
+  }catch(e){
+   message.textContent="Импорт не завершён. Активный каталог сохранён: "+e.message;
+   console.error("D1 catalog import",e);
   }finally{button.disabled=false}
  };
- modal('Каталог Pandora Saga → Cloudflare D1',container);
+ modal("Полный каталог Pandora Saga · Cloudflare D1",area);
 }
 async function loadCatalog(){
  const names=['meta','classes','skills','items','souls'];

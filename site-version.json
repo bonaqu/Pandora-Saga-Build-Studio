@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.30.7",
-  "notes": "Admin-driven one-time D1 game data import, validated before atomic publication"
+  "release": "2026.10.30.9",
+  "notes": "Complete versioned D1 import of 12 OS datasets and verified Legacy RU/EN/JP/TW strings"
 }

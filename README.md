@@ -96,3 +96,7 @@ Live direct `pandorasaga-os.com/gamedata` and Worker passthrough were removed. C
 ### First-time D1 import
 
 Sign in as `administrator`, enable editing, and use **Каталог D1** in the owner dock. The browser reads checked-in `data/os/{meta,classes,skills,items,souls}.json` and uploads bounded batches to an authenticated Worker, which validates per-dataset totals before atomically marking the new snapshot as active. A failed attempt cannot replace the current active D1 catalog. No Cloudflare credentials or admin secrets are written to the repository. **Cloudflare Builds must publish the worker changes before import will work.**
+
+## Full source snapshot: OS + verified Legacy translations (2026-10-30)
+
+The owner-only **Каталог D1** operation now validates all 12 public OS datasets and imports them with original IDs into a versioned D1 snapshot, plus grouped trade metadata and language-namespaced approved Legacy translations in `data/localization/legacy-approved.v1.json`. Server-side publication requires exact row totals for every dataset; only then the active snapshot changes. No background game-server API calls. English source terms are preserved in their own Legacy namespace rather than silently assigned to unrelated current-server IDs. See `data/os/EXTENDED-CATALOG.md` and `data/localization/README.md`.
