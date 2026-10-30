@@ -180,6 +180,7 @@ function renderJobs(){
  const path=[];
  for(let k=jobPathKey;k&&byKey.has(k);k=parentOf(k))path.unshift(byKey.get(k));
  const depth=Math.min(path.length,2),activeAncestors=new Set();
+ const selectedProfession=byKey.get(jobKeys[state.job])||null;
  for(let k=jobKeys[state.job];k&&byKey.has(k);k=parentOf(k))activeAncestors.add(k);
  const progress=h('div',{class:'class-wizard-progress','aria-label':'Этап выбора профессии'});
  for(let i=0;i<3;i++){
@@ -194,6 +195,8 @@ function renderJobs(){
   }}));
  }
  top.append(h('strong',{class:'class-wizard-title',text:current?current.name:'Направление профессии'}));
+ if(selectedProfession)top.append(h('span',{class:'class-wizard-selected',role:'status',
+  text:'✓ Выбрано: '+selectedProfession.name}));
  grid.append(top);
  if(path.length){
   const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':'Вернуться на предыдущий уровень'});
@@ -214,15 +217,21 @@ function renderJobs(){
  const choices=h('div',{class:'class-wizard-choices'});
  for(const node of next){
   const hasChildren=records.some(x=>x.parent===node.key);
-  choices.append(h('button',{type:'button',class:'class-wizard-choice'+(state.job===node.i?' active':'')+(activeAncestors.has(node.key)?' on-path':''),
-    'aria-label':node.name+(hasChildren?' — перейти к специализациям':' — выбрать профессию'),
+  const selectedOnPath=Boolean(hasChildren&&activeAncestors.has(node.key)&&selectedProfession);
+  const status=state.job===node.i?'✓ Выбрано':
+   selectedOnPath?'✓ '+selectedProfession.name:
+   hasChildren?'Специализации ›':'Выбрать';
+  choices.append(h('button',{type:'button',class:'class-wizard-choice'+(state.job===node.i?' active':'')+
+    (activeAncestors.has(node.key)?' on-path':''),
+    'aria-label':node.name+(selectedOnPath?' — выбранная специализация '+selectedProfession.name:
+     state.job===node.i?' — выбрано':hasChildren?' — перейти к специализациям':' — выбрать профессию'),
     'aria-pressed':String(state.job===node.i),
     onclick:()=>{
      if(hasChildren){jobPathKey=node.key;renderJobs();saveView();return}
      jobPathKey=node.key;selectJob(node.i);
     }},[
       h('strong',{text:node.name}),
-      h('span',{text:hasChildren?'Специализации ›':state.job===node.i?'✓ Выбрано':'Выбрать'})
+      h('span',{class:selectedOnPath?'class-wizard-choice-current':'class-wizard-choice-caption',text:status})
     ]));
  }
  grid.append(choices);
