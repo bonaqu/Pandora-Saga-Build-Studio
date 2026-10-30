@@ -14,23 +14,25 @@ const el=(tag,attrs={},children=[])=>{
 };
 function summary(record,icon,kind='item'){
  if(!record)return el('p',{class:'muted',text:'Данные о предмете пока не загружены'});
- const presenter=globalThis.PandoraItemPresentation;
+ const presenter=root.PandoraItemPresentation;
  const wrap=el('div',{class:'stage-rich-summary'}),head=el('div',{class:'stage-rich-head'});
  const src=icon(record,kind);
  if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));head.append(img)}
- head.append(el('strong',{text:record.name||String(record.id),
+ head.append(el('strong',{text:record.name||'Без названия',
   ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));wrap.append(head);
- const rows=kind==='soul'?[['ID',record.id],['Подходящие слоты',(record.slots||[]).join(', ')]]:
- [['ID',record.id],['Тип',presenter?.kind(record)||'Предмет'],['Уровень',record.level],
+ // IDs are internal database keys, never player-facing data.
+ const rows=kind==='soul'?[['Подходящие слоты',(record.slots||[]).join(', ')]]:
+ [['Тип',presenter?.kind(record)||'Предмет'],['Уровень',record.level],
  ['Атака',record.W],['Защита',record.AC],['Гнёзда',record.soulslot],
  ['Скорость',record.atkspeed],['Дальность',record.range]];
+ if(root.PandoraStudioAdminActive?.())rows.push(['ID',record.id]);
  const dl=el('dl',{class:'stage-rich-fields'});
  for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){
   const dd=el('dd',{text:String(value)});
   if(kind==='item'&&key==='Гнёзда')dd.dataset.editKey='itemslots.'+record.id;
   dl.append(el('dt',{text:key}),dd);
  }
- wrap.append(dl);
+ if(dl.children.length)wrap.append(dl);
  if(record.desc){const desc=el('p',{class:'stage-rich-desc',
   text:presenter?.description(record.desc)||record.desc});
   if(kind==='item')desc.dataset.editKey='itemdesc.'+record.id;
@@ -38,16 +40,40 @@ function summary(record,icon,kind='item'){
  }
  return wrap;
 }
+let livePreview=null;
 function attachPreview(target,record,icon,kind='item'){
- if(!record)return;let tip=null;
- const remove=()=>{tip?.remove();tip=null};
- target.addEventListener('mouseenter',()=>{
-  remove();tip=el('aside',{class:'stage-hover-preview'},[summary(record,icon,kind)]);
+ if(!record)return;
+ // A custom preview must never coexist with the browser's native title popup.
+ target.removeAttribute('title');
+ target.querySelectorAll?.('[title]').forEach(node=>node.removeAttribute('title'));
+ let tip=null;
+ const remove=()=>{
+  if(livePreview===tip)livePreview=null;
+  if(tip?.isConnected)tip.remove();
+  tip=null;target.removeAttribute('aria-describedby');
+ };
+ const show=()=>{
+  if(tip?.isConnected)return;
+  livePreview?.remove();livePreview=null;remove();
+  tip=el('aside',{id:'stage-gear-tooltip',class:'stage-hover-preview stage-item-tooltip',
+   role:'tooltip'},[summary(record,icon,kind)]);
+  livePreview=tip;
   document.body.append(tip);
-  const rect=target.getBoundingClientRect(),w=tip.offsetWidth,h=tip.offsetHeight;
-  tip.style.left=Math.max(8,Math.min(innerWidth-w-8,rect.right+10))+'px';
-  tip.style.top=Math.max(8,Math.min(innerHeight-h-8,rect.top))+'px';
- });
+  target.setAttribute('aria-describedby',tip.id);
+  const box=target.getBoundingClientRect(),vw=document.documentElement.clientWidth,
+   vh=window.innerHeight||innerHeight;
+  tip.style.maxWidth=Math.max(180,Math.min(340,vw-16))+'px';
+  tip.style.maxHeight=Math.max(110,vh-16)+'px';
+  const w=tip.getBoundingClientRect().width,h=tip.getBoundingClientRect().height;
+  // Prefer the side of the slot with enough space. Avoid covering the hovered icon.
+  const right=box.right+10,left=box.left-w-10;
+  const x=right+w<=vw-8?right:left>=8?left:
+   Math.max(8,Math.min(vw-w-8,box.left+box.width/2-w/2));
+  const y=Math.max(8,Math.min(vh-h-8,box.top));
+  tip.style.left=x+'px';tip.style.top=y+'px';
+ };
+ target.addEventListener('mouseenter',show);
+ target.addEventListener('focus',show);
  target.addEventListener('mouseleave',remove);
  target.addEventListener('blur',remove);
  target.addEventListener('click',remove);
@@ -118,7 +144,7 @@ function render(root,api){
     const button=el('button',{type:'button',class:'stage-rich-result',onclick:()=>api.assignSoul(rec)});
     const src=icons(rec,'soul');
     if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
-    button.append(el('span',{text:rec.name||String(rec.id)}));list.append(button);attachPreview(button,rec,icons,'soul');
+    button.append(el('span',{text:rec.name||'Душа без названия'}));list.append(button);attachPreview(button,rec,icons,'soul');
    }
    if(results.length>80)list.append(el('p',{class:'muted',text:'Показано 80 душ. Уточни поиск.'}));
    if(!results.length)list.append(el('p',{class:'muted',text:'Совместимых душ не найдено'}));
