@@ -31,6 +31,7 @@ try{
   'Worker and D1 health',response.status+' / '+(payload?.status??'unknown'));
  check(response.headers.get('access-control-allow-origin')===origin,'Worker GET CORS');
  check(payload?.features?.sharing===true,'D1 sharing tables','migration 0003 required if false');
+ check(payload?.features?.catalog===true,'D1 active catalog publication','publish own catalog if false');
 }catch(e){check(false,'Worker and D1 health',e.message)}
 try{
  const {response}=await read(worker+'/api/health',{method:'OPTIONS',cors:true});
