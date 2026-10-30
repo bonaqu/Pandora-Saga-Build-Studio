@@ -230,3 +230,11 @@
 .item-inspector-pin{width:100%;margin:6px 0 12px;padding:7px;background:#2b2119;color:#e3be87;border:1px solid #765537;cursor:pointer}
 .item-inspector-pin[aria-pressed=true]{background:#633e20;color:#fff3d9;border-color:#f0c57e}
 @media(max-width:560px){.gear-view-options{width:100%}.gear-view-options button{flex:1}.gear-list.inventory-grid{grid-template-columns:repeat(auto-fill,minmax(58px,1fr))}.inventory-grid .item-card{height:65px}}
+
+
+/* Visually scannable encyclopedia: stable image rows with deep-linked highlights. */
+.wiki-list .wiki-link,.wiki-page .wiki-link{display:flex;align-items:center;gap:8px}
+.wiki-list .wiki-link{min-height:38px}
+.wiki-list-icon{width:29px;height:29px;object-fit:contain;flex:0 0 29px;background:#0d0b0a;border:1px solid #6d5238}
+.wiki-item-portrait{float:right;width:76px;height:76px;object-fit:contain;margin:0 0 12px 14px;border:2px double #9d794f;background:#130e0c}
+.wiki-entry.highlighted{outline:2px solid #e9bf82;box-shadow:inset 0 0 0 1px #b17c45;background:#64401f}

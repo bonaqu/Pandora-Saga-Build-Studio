@@ -140,3 +140,7 @@ Fixed a leftover 3-column grid in the redesigned skills view, now a flexible 2-c
 ## 2026-10-30.19 — inventory ergonomics
 
 The gear catalog now has two remembered viewing modes: **▦ icon grid** and **☰ compact list**, with accessible item labels. Hover/focus shows the source-backed item inspector, and right-click or **📌 Закрепить описание** pins a selected item so the detail panel does not jump when the mouse passes over other icons. Pinning is UI-only; it never changes character equipment. Switching slots or inventory/souls/enhancement modes releases the pin. Soul choice remains a compact list with one-click socket placement. Partial local-icon manifest support means verified local icons can be used incrementally.
+
+## 2026-10-30.20 — wiki navigation and performance
+
+Wiki game datasets load through four concurrent fetch workers rather than sequentially; active catalog remains our D1, with repository snapshot fallback per dataset. Item/skill/soul search includes both RU source strings and confirmed English names. Item and monster views show actual icon URLs when an image exists (the self-hosted manifest takes priority). Links now retain an optional highlighted source ID in the URL fragment, so sharing, refreshing or navigating browser history keeps the context. Source item icons are also visible beside monster drops.
