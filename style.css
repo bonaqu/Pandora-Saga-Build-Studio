@@ -1168,3 +1168,11 @@ main{padding-top:10px}
  color:#f3d9aa;padding:7px 9px;
 }
 .origin-attribute-buffs .origin-buffs-hint{padding:4px}
+/* Low-noise readout for potion effectiveness (not maximum HP/MP). */
+.origin-potion-effect{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:8px;padding:7px 9px;background:#281b13;
+ border:1px solid #705239;font:600 11px Manrope,Arial,sans-serif;
+ color:#dbc29c;
+}
+.origin-potion-effect strong{color:#f2d39a;font-size:15px;font-variant-numeric:tabular-nums}
