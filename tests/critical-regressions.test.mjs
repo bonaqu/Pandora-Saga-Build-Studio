@@ -6,7 +6,8 @@ test('item module never mistakes its DOM root for the global enchant model',()=>
  const ui=get('stage-item-ui.js');
  assert.doesNotMatch(ui,/root\.PandoraEnchantModel/);
  assert.match(ui,/globalThis\.PandoraEnchantModel/);
- assert.match(ui,/globalThis\.PandoraEquipmentPlan\.canRefine/);
+ assert.match(ui,/const plan=globalThis\.PandoraEquipmentPlan/);
+ assert.match(ui,/plan\.canRefine\(slot\)/);
 });
 test('no refinement for jewelry and cloak in model and action handlers',()=>{
  const plan=get('equipment-plan.js'),app=get('app.js');

@@ -6,7 +6,7 @@ Independent, visual, vintage-inspired Pandora Saga build planner. Static site in
 
 ## Status
 
-**Interactive foundation, not a finished game calculator.** Eight portraits for six races (from user-provided Races.zip), 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local builds, JSON import/export, and static client logic. Current official Pandora Saga OS game tables are shipped under `data/os/` (snapshot of 2026-10-30: 28 classes, 569 skills, 1,116 items, 112 Souls). The frontend first tries the live official `/gamedata` feed, then the optional Cloudflare Worker proxy, then the bundled snapshot. Only if all these fail does it use historic Legacy JSON. Correctness for current Pandora Saga OS is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
+**Interactive foundation, not a finished game calculator.** Eight portraits for six races (from user-provided Races.zip), 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local build library and short-link sharing interface (requires Worker/D1 deployment), and static client logic. Current official Pandora Saga OS game tables are shipped under `data/os/` (snapshot of 2026-10-30: 28 classes, 569 skills, 1,116 items, 112 Souls). The frontend first tries the live official `/gamedata` feed, then the optional Cloudflare Worker proxy, then the bundled snapshot. Only if all these fail does it use historic Legacy JSON. Correctness for current Pandora Saga OS is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
 
 ## Publish on GitHub Pages (no user-defined GitHub Actions)
 
@@ -40,6 +40,16 @@ wrangler deploy
 First successful login: owner-only entry → `administrator` → new password (minimum 12 chars) + one-time setup token. Subsequent logins use only the password. Server stores only a unique-salt PBKDF2 password hash, short-lived hashed bearer sessions and restricted editable text overrides in D1. Session token stays in browser memory (not in public source or localStorage). Editing: toggle edit mode; double-click outlined text; save the change through the authenticated Worker.
 
 **Do not** put your Worker admin password, token, or Cloudflare API token into any public repository file. `worker/wrangler.toml` is ignored.
+
+## 2026-10-30 — выпуск 2026.10.30.50: единый экран героя, карточки предметов и ссылки на билды
+
+- По замечанию владельца откат чрезмерно узкой правой панели отменён. На больших десктопах «Путь героя» снова до **430px**, портрет остаётся основным визуальным фокусом. Визуальный браузерный осмотр обязателен.
+- Список и подробности навыков встроены в «Путь героя» рядом с распределением очков и иконками порогов. Отдельные навигационные вкладки «Умения» и «Характеристики» скрыты; очки характеристик распределяются в «Происхождении → Характеристики».
+- В «Свойствах» экипированного предмета тип и стихия выбираются непосредственно и применяются одним нажатием без второго модального окна и кнопки подтверждения. Отдельная вкладка «Души» включает выбор гнезда и подходящей души. Для плащей, колец, серёг и амулетов вкладка не показывается; для поясов она есть при подтверждённых гнёздах. Устранили бессмысленное дублирование гнёзд на вкладке «Свойства».
+- Локализованные виды вещей и нормализация описаний работают в портрете, каталоге и вики. Пример — «Золотистая астирская куртка»: перенесены строки после вводного описания, перед блоком улучшения и после его заголовка; *исходный игровой текст* сохранён в OS JSON.
+- «Каталог предметов» теперь отдельная обзорная коллекция; экипировка героя меняется в слоте на портрете. Формулы характеристик отделяют вложенные очки и известные плоские эффекты предметов и душ. Итог с бонусами может превысить **99**; лимит распределяемых очков не повышается.
+- «Мои билды» хранятся локально; кнопки JSON-экспорта/импорта из пользовательского интерфейса убраны. Добавлен интерфейс короткой ссылки на билд или на библиотеку, безопасный вопрос до замены текущего билда и предложение сохранить его. Серверная часть добавлена в `worker/index.js` и `worker/migrations/0003_shares.sql`; **не заработает до деплоя Worker и применения миграции D1**. Никакие пользовательские сборки не очищались при публикации исходников.
+- Обновлены исходные регрессионные тесты и документация. Статические проверки JavaScript выполнялись частично; **полный `npm test`, реальный браузерный E2E, серверное создание коротких ссылок и Cloudflare D1 на живом сайте не подтверждены**.
 
 ## 2026-10-30 — выпуск 2026.10.30.48: центральный портрет и компактный «Путь героя»
 
