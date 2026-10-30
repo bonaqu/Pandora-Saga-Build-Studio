@@ -7,7 +7,7 @@ test('character portrait can toggle source-backed stats without page scroll',()=
  const app=get('app.js'),html=get('index.html'),attrs=get('stage-attributes.js');
  assert.match(html,/id="stageAttributes"/);
  assert.match(html,/id="stageAttributeToggle"/);
- assert.match(html,/stage-attributes\.js\?v=2026\.10\.30\.31/);
+ assert.match(html,/stage-attributes\.js\?v=/);
  assert.match(app,/function renderStageAttributes\(/);
  assert.match(app,/window\.PandoraStageAttributes\.render/);
  assert.match(attrs,/\['attack','Атака'\]/);
@@ -32,7 +32,7 @@ test('reloading preserves portrait attribute page independently of build',()=>{
 test('version metadata and cached script references agree',()=>{
  const html=get('index.html'),v=JSON.parse(get('site-version.json')).release;
  const pkg=JSON.parse(get('package.json'));
- assert.equal(v,'2026.10.30.31');
+ assert.match(v,/^2026\.10\.30\.\d+$/);
  assert.equal(v,pkg.pandoraRelease);
  const resources=[...html.matchAll(/(?:src|href)="[^"]+\.(?:css|js)\?v=([^"]+)"/g)];
  assert.ok(resources.length>=10);

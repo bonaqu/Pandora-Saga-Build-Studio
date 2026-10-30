@@ -152,7 +152,7 @@ function renderStageAttributes(){
  if(!show)return;
  const plan=window.PandoraEquipmentPlan;
  const items=Object.entries(state.equipment||{}).filter(([,entry])=>entry).map(([slot,entry])=>{
-  const rec=catalog.equipment?.[String(entry.id)];
+  const rec=itemWithOverrides(catalog.equipment?.[String(entry.id)]);
   return {record:rec,refinement:plan.refinementValue(state.refinements,Number(slot),entry),
     souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
  });
