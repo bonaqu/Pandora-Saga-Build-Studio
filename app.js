@@ -241,7 +241,7 @@ function setAttributeBuff(key,value){
   current.honorCuriosity=value===true;
   current.honorTitle=current.honorCuriosity?1:0;
  }else if(['proelium','potionEffectsEnabled','combatLunge','combatWarCry',
-  'combatRage','combatDefender'].includes(key)){
+  'combatRage','combatDefender','combatWindAssist','combatWindBlessing'].includes(key)){
   current[key]=value===true;
   if(current.combatRage&&key==='combatRage')current.combatDefender=false;
   if(current.combatDefender&&key==='combatDefender')current.combatRage=false;
@@ -545,6 +545,29 @@ function renderStageAttributes(){
     'Откроется на '+ability.charLevel+' уровне':
    name==='defender'&&equippedShield?.slot!=='shield'?'Необходимо экипировать щит':
    null;
+  combatSkillCards[setting]=ability?{
+   name:ability.name,desc:ability.desc,level:ability.charLevel,summary,reason,
+   icon:skillIcon(ability.branch,0,ability)
+  }:null;
+ }
+ const supportKeys={combatWindAssist:'windAssist',combatWindBlessing:'windBlessing'};
+ const supportAvailable=combatSkillCatalog.supportSkillAvailability({
+  selected:Object.fromEntries(Object.keys(supportKeys).map(k=>[k,true])),
+  skillCatalog:skillMap,jobKey:cls,level:state.level
+ });
+ for(const [setting,kind] of Object.entries(supportKeys)){
+  const ability=skillMap[String(combatSkillCatalog.supportSkillIds[kind])];
+  const source=combatSkillCatalog.supportSkillSource(skillMap,kind);
+  const effects=source?.values||{};
+  availability[setting]=supportAvailable[kind]===true;
+  const summary=kind==='windAssist'?
+   '+'+(effects.EP_AVOIDANCE_CONST??0)+' уклонения и '+
+    '+'+(effects.EP_AVOIDANCE_SCALE??0)+'% от базы':
+   '+'+(effects.EP_MOVESPEED_SCALE??0)+' к скорости передвижения';
+  const reason=!ability?'Умение отсутствует в каталоге':
+   !ability.classes?.[cls]?'Недоступно для этой профессии':
+   state.level<Number(ability.charLevel||0)?
+    'Откроется на '+ability.charLevel+' уровне':null;
   combatSkillCards[setting]=ability?{
    name:ability.name,desc:ability.desc,level:ability.charLevel,summary,reason,
    icon:skillIcon(ability.branch,0,ability)
@@ -1715,7 +1738,8 @@ function sanitizeSharedState(original){
   }
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
   safe.attributeBuffs.potionEffectsEnabled=rawAttributes.potionEffectsEnabled===true;
-  for(const key of ['combatWarCry','combatRage','combatDefender','combatLunge'])
+  for(const key of ['combatWarCry','combatRage','combatDefender','combatLunge',
+   'combatWindAssist','combatWindBlessing'])
    if(rawAttributes[key]===true)safe.attributeBuffs[key]=true;
   if(safe.attributeBuffs.combatRage===true)safe.attributeBuffs.combatDefender=false;
  }
