@@ -123,6 +123,7 @@ function previewBaseStats(){
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
   allocation,level:state.level,records,itemForth:gameItemForth,gemSelections,
+  unisonCatalog:catalogSource?.unison||null,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
@@ -2131,7 +2132,7 @@ function applyGameLocale(){
  render();
 }
 async function loadCatalog(){
- const names=['meta','classes','skills','items','souls','racialPassives'];
+ const names=['meta','classes','skills','items','souls','racialPassives','unison'];
  const obtain=async base=>{
   const fromD1=base===API+'/api/catalog',snapshots=new Set(),unknown=[];
   const entries=await Promise.all(names.map(async name=>{
