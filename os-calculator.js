@@ -411,6 +411,7 @@ const secondaryEffectTargets=Object.freeze({
  EP_AURADAMAGE_CONST:'auraFlat',
  EP_AURADAMAGE_SCALE:'auraPercent',
  EP_SKILL_BENCH:'cooldown',
+ EP_RESTMAP_MOVESPEED_SCALE:'townMovement',
  EP_BADEFFECT_TIME_CAST_SCALE:'outgoingDebuffDuration',
  EP_BADEFFECT_TIME_SCALE:'incomingDebuffDurationReduction',
  EP_ONDAMAGE_REFLECTION:'physicalReflection',
@@ -669,7 +670,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const windMove=supportSkills.windBlessing?
   supportSkillValues.windBlessing.EP_MOVESPEED_SCALE:0;
  const movementSpeed={base:100,equipment:equipped.movement,
-  active:windMove,known:100+equipped.movement+windMove,verified:false};
+  active:windMove,known:100+equipped.movement+windMove,
+  townEquipment:secondary.townMovement,
+  town:100+equipped.movement+windMove+secondary.townMovement,verified:false};
  const skillDelayEquipment=equipped.skillDelay;
  const skillDelayFinalEquipment=equipped.skillDelayFinal;
  const mpRecoveryEquipmentRate=equipped.mpRecoveryRate;
