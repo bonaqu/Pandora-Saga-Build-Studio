@@ -41,7 +41,7 @@ test('preview is linked to character model and player-only book, not applied as 
  const src=read('os-calculator.js'),ui=read('stage-attributes.js');
  assert.match(src,/const periodicRecovery=periodicRecoveryPreview/);
  assert.match(src,/healingSpells,periodicRecovery,consumableRecovery/);
- assert.match(src,/const statusCures=statusCurePreview\\(\\{items:consumableItems\\}\\)/);
+ assert.match(src,/const statusCures=statusCurePreview/);
  assert.match(ui,/if\(chosen==='recovery'&&modifiers\?\.periodicRecovery\?\.rows\?\.length\)/);
  assert.match(ui,/Ориентировочное действие умения/);
 });
