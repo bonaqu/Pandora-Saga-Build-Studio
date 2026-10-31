@@ -25,7 +25,7 @@ test('chests resolve names and icons from OS item catalog, NPC from real NPC nam
 test('drops and NPC exchange rewards include actual item icon and linked ingredient rows',()=>{
  const app=read('app.js');
  assert.match(app,/const itemLink=\(id,label,highlight=null\)=>/);
- assert.match(app,/entry\.append\(itemLink\(trade\.i/);
- assert.match(app,/mats\.append\(itemLink\(m\.i/);
+ assert.match(app,/itemLink\(trade\.i/);
+ assert.match(app,/mats\.append\(itemLink\(material\.i/);
  assert.match(app,/entry\.append\(itemLink\(row\.i/);
 });
