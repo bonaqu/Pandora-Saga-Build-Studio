@@ -197,7 +197,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   if(cm.castingSpeed)card.append(make('p',{text:'Скорость заклинаний (базовый индекс): '+
    cm.castingSpeed.base}));
   card.append(make('p',{class:'stage-attribute-note',
-   text:'Источник: Remaked Legacy + таблицы OS. Учитываются выбранные подтверждённые активные умения; прочие условные навыки, комплекты и эффекты сервера всё ещё не рассчитаны.'}));
+   text:'Источник: Remaked Legacy + таблицы OS. Учитываются выбранные подтверждённые активные умения; другие условные навыки, комплекты и часть серверных условий всё ещё не рассчитаны.'}));
   body.prepend(card);
  }
  if(page==='defense'&&modifiers?.combat?.defense){
