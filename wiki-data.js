@@ -24,11 +24,22 @@ function build(data){
  for(const zone of data.tables?.zoneDrops||[])for(const group of zone.rows||[])for(const row of group.items||[]){
   if(row.i!=null)add(row.i,{type:'zone',id:String(zone.map),mobId:group.mob?String(group.mob):null,groupChance:group.base??null,perMember:group.perMember??null,groupSize:group.items.length});
  }
+ const mobLocations=new Map();
+ const addLocation=(mob,entry)=>{
+  const id=String(mob),rows=mobLocations.get(id)||[];
+  if(!rows.some(row=>row.id===entry.id&&row.type===entry.type))rows.push(entry);
+  mobLocations.set(id,rows);
+ };
+ for(const [id,map] of Object.entries(data.maps||{})){
+  const location={type:'map',id,name:map.name};
+  for(const mob of map.mobs||[])addLocation(mob,location);
+ }
+ for(const row of data.instances||[]){
+  const location={type:'instance',id:String(row.id),name:row.name};
+  for(const mob of row.mobs||[])addLocation(mob,location);
+ }
  function locations(mobId){
-  const found=[];
-  for(const [id,map] of Object.entries(data.maps||{}))if(map.mobs?.some(i=>String(i)===String(mobId)))found.push({type:'map',id,name:map.name});
-  for(const row of data.instances||[])if(row.mobs?.some(i=>String(i)===String(mobId)))found.push({type:'instance',id:String(row.id),name:row.name});
-  return found;
+  return (mobLocations.get(String(mobId))||[]).slice();
  }
  return Object.freeze({sources:id=>sources.get(String(id))||[],drops:id=>drops.get(String(id))||[],
   trades:id=>npcTrades.get(String(id))||[],locations,sourceCount:sources.size});
