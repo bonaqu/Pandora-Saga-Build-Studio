@@ -359,6 +359,19 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    body.prepend(potion);
   }
  }
+ if(page==='attack'&&modifiers?.elementalMagic){
+  const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',
+   poison:'Яд',light:'Свет',dark:'Тьма'};
+  const values=Object.entries(modifiers.elementalMagic)
+   .filter(([,amount])=>Number.isFinite(amount)&&amount!==0);
+  if(values.length){
+   const magic=make('section',{class:'stage-attribute-row'});
+   magic.append(make('strong',{text:'Усиление стихийной магии'}));
+   for(const [element,amount] of values)
+    magic.append(make('p',{text:labels[element]+': '+(amount>0?'+':'')+amount}));
+   body.prepend(magic);
+  }
+ }
  if(page==='attack'&&modifiers?.combat){
   const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Боевые параметры'}));
