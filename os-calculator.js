@@ -347,6 +347,8 @@ const magicSteps=[[115,50],[110,49],[105,41],[100,40],[95,35.25],
 const magicLineage=new Set(['WIZARD','WARLOCK','CONJURER']);
 const meleeLineage=new Set(['GLADIATOR','JUGGERNAUT','DRAGOON']);
 const archerLineage=new Set(['ARCHER','SNIPER','PREDATOR']);
+const knightLineage=new Set(['KNIGHT','GENERAL','PALADIN']);
+const warriorBuffClasses=new Set(['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN']);
 const evasionLineage=new Set(['AGENT','ASSASSIN','DISTURBANCE']);
 function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildArouse=0}={}){
  if(!Number.isFinite(int)||int<0||
@@ -360,10 +362,20 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
  return {known:exact>=100?Math.floor(exact*10)/10:exact,
   base:100,intelligence:step,passive,staff,guild,verified:false};
 }
+// Strictly opt-in skill effects. Gate every buff by current OS class and
+// character level, not by the presence of an unchecked saved toggle.
+function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false}={}){
+ const selectedBool=key=>selected?.[key]===true;
+ const warCry=selectedBool('combatWarCry')&&meleeLineage.has(jobKey)&&level>=28;
+ const raging=selectedBool('combatRage')&&meleeLineage.has(jobKey)&&level>=35;
+ const defender=selectedBool('combatDefender')&&knightLineage.has(jobKey)&&level>=35&&hasShield&&!raging;
+ const lunge=selectedBool('combatLunge')&&warriorBuffClasses.has(jobKey)&&level>=18;
+ return {warCry,raging,defender,lunge};
+}
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
  weapon=null,weaponGrade=0,weaponPlus=null,records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
- techniqueTrained=0,guildArouse=0}={}){
+ techniqueTrained=0,guildArouse=0,combatBuffs={}}={}){
  if(!Number.isInteger(level)||level<1||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -399,12 +411,30 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const defense=defensePreview({records,honorTitle,itemForth});
  const equipped=equippedCombatModifiers(records,itemForth);
  if(!defense||!equipped)return null;
+ const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,
+  hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
+   record?.slot==='shield')});
+ const baseAtk=attack?.raw??attack?.known??null;
+ const guildRate=[0,.02,.04,.06][guildArouse];
+ if(guildRate===undefined)return null;
+ const guildAtk=baseAtk===null?null:Math.ceil(baseAtk*guildRate);
+ const activeAtk=baseAtk===null?null:
+  (actives.warCry?10+Math.ceil(baseAtk*.2):0)+
+  (actives.raging?Math.ceil(baseAtk*.3):0)+
+  (actives.defender?Math.floor(baseAtk*-.2):0);
+ const directDef=defense.armor+defense.refinement+defense.equipment;
+ const activeDef=(actives.raging?Math.ceil(directDef*-.6):0)+
+  // Current OS Shieldbearer is +40%, unlike Legacy Defender +60%.
+  (actives.defender?Math.floor(directDef*.4):0);
+ const effectiveDefense={...defense,activeBonus:activeDef,
+  known:defense.known+activeDef};
  const atkPct=attack?equipped.attackPercent.map(e=>({
   ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
  const atkExtras=equipped.attackFlat+atkPct.reduce((sum,e)=>sum+e.bonus,0);
  const effectiveAttack=attack?{...attack,flatEquipment:equipped.attackFlat,
-  percentEquipment:atkPct,
-  known:Math.ceil((attack.raw??attack.known)+attack.honor+atkExtras)}:null;
+  percentEquipment:atkPct,activeBonus:activeAtk,guildBonus:guildAtk,
+  known:Math.ceil((attack.raw??attack.known)+attack.honor+atkExtras+
+   activeAtk+guildAtk)}:null;
  const accuracyPercent=equipped.accuracyPercent.map(e=>({
   ...e,bonus:Math.ceil(accuracyBase*e.rate/100)}));
  const accuracyBonus=accuracyPercent.reduce((sum,e)=>sum+e.bonus,0);
@@ -412,7 +442,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // 3*floor(AGI/20) + floor(AGI/10); typed as a speed index, not hits/sec.
  const speedBase=100+3*Math.floor(stats.agi/10)+3*Math.floor(stats.agi/20);
  const attackSpeed={base:speedBase,equipment:equipped.attackSpeedFlat,
-  known:speedBase+equipped.attackSpeedFlat,verified:false};
+  lunge:actives.lunge?15:0,
+  known:speedBase+equipped.attackSpeedFlat+(actives.lunge?15:0),verified:false};
  // Legacy Calc('CastSPD'): 100 + 5*floor(DEX/10), without temporary casts.
  const castingSpeed={base:100+5*Math.floor(stats.dex/10),
   verified:false,excluded:['active spell buffs','unknown Soul conditions']};
@@ -435,7 +466,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const cooldown=Number.isFinite(stats.int)?100-2*Math.floor(stats.int/10):null;
  const criticalDamage=100,criticalIncoming=title.incomingCriticalChance||0;
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0);
- return {attack:effectiveAttack,magicAttack,defense,attackSpeed,castingSpeed,manaCost,
+ return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
+  guildArouse,guildAtk,attackSpeed,castingSpeed,manaCost,
   weaponPhysical,backAttack,frontAttack,cooldown,
   criticalDamage,criticalIncoming,criticalIncomingDamage,
   accuracy:{base:accuracyBase,equipment:accEquip,passive:hunterEye,
@@ -496,6 +528,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records,itemForth,
+  guildArouse:attributeBuffs?.guildArouse??0,
+  combatBuffs:attributeBuffs,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,...combatContext});
  // An unavailable weapon/armor preview must NEVER erase otherwise valid HP/MP.
  if(!resistances||!regeneration)return null;
@@ -510,6 +544,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills
 });
 })(typeof window==='undefined'?globalThis:window);
