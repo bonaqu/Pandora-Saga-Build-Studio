@@ -11,7 +11,7 @@ function database(){
   if(sql.startsWith('SELECT build_id,payload,deleted_at FROM'))return{bind(owner){
    return{all:async()=>({results:[...rows.entries()].filter(([k])=>k.startsWith(owner+':')).map(([,v])=>v)})};
   }};
-  if(sql.startsWith('SELECT build_id FROM'))return{bind(owner,id){
+  if(sql.startsWith('SELECT build_id,deleted_at FROM'))return{bind(owner,id){
    return{first:async()=>rows.get(owner+':'+id)||null};
   }};
   if(sql.startsWith('SELECT COUNT(*) AS total'))return{bind(owner){

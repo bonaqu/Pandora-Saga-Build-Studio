@@ -10,6 +10,8 @@ test('share links use random short immutable IDs and public endpoints',()=>{
  assert.match(worker,/const id=b64\(random\(8\)\)/);
  assert.match(worker,/shared_build_limits/);
  assert.match(worker,/JSON\.stringify\(\{schema:1,type:payload\.type,data:payload\.data\}\)/);
+ assert.match(migration,/CREATE TABLE IF NOT EXISTS shared_build_sources/);
+ assert.match(worker,/FOREIGN KEY\(share_id\)/);
  assert.match(migration,/CREATE TABLE IF NOT EXISTS shared_builds/);
  assert.match(migration,/CREATE TABLE IF NOT EXISTS shared_build_limits/);
 });
@@ -26,8 +28,8 @@ test('sharing never replaces an existing build without explicit choice',()=>{
 test('share links display alongside saved builds with an inline copy fallback',()=>{
  const src=read('app.js'),css=read('style.css');
  assert.match(src,/class:'build-share-slot'/);
- assert.match(src,/createShared\('build',b\.data,shareSlot\)/);
- assert.match(src,/if\(host\)host\.replaceChildren\(message\)/);
+ assert.match(src,/createShared\(b,shareSlot\)/);
+ assert.match(src,/if\(host\.isConnected\)host\.replaceChildren\(message\)/);
  assert.match(src,/field\.focus\(\);field\.select\(\)/);
  assert.match(css,/\.build-share-slot/);
 });

@@ -10,7 +10,7 @@ function database(catalog=true){
  return{prepare(sql){
   if(sql.includes('FROM sqlite_master')){
    return {all:async()=>({results:['admins','sessions','overrides','login_attempts',
-    'shared_builds','shared_build_limits','private_builds'].map(name=>({name}))})};
+    'shared_builds','shared_build_limits','shared_build_sources','private_builds'].map(name=>({name}))})};
   }
   if(sql.includes('FROM catalog_current')){
    return {first:async()=>catalog?{snapshot:'sample',published_at:1,expected_counts:'{}'}:null};

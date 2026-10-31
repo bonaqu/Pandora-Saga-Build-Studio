@@ -93,13 +93,26 @@ function reportCloudStatus(message){
  const node=document.querySelector('.cloud-library-status');if(node)node.textContent=message;
 }
 async function putCloudBuild(entry){
- try{await cloudLibraryRequest({action:'put',entry});reportCloudStatus('Сохранено в облаке')}
- catch(error){console.warn('Build cloud save failed',error);reportCloudStatus('Сохранено в браузере · нет связи с облаком')}
+ try{
+  await cloudLibraryRequest({action:'put',entry});
+  reportCloudStatus('Сохранено в облаке');return true;
+ }catch(error){
+  console.warn('Build cloud save failed',error);
+  reportCloudStatus('Сохранено в браузере · нет связи с облаком');
+  return false;
+ }
 }
 async function deleteCloudBuild(id){
  queueDelete(id);libraryChangeId++;
- try{await cloudLibraryRequest({action:'delete',id});acknowledgeDelete(id);reportCloudStatus('Изменения сохранены в облаке')}
- catch(error){console.warn('Build cloud delete pending',error);reportCloudStatus('Удалено в браузере · синхронизируем позже')}
+ try{
+  await cloudLibraryRequest({action:'delete',id});acknowledgeDelete(id);
+  reportCloudStatus('Билд удалён · все его ссылки отозваны');
+  showStudioToast('Билд удалён. Все его ссылки больше не работают.','success');
+ }catch(error){
+  console.warn('Build cloud delete pending',error);
+  reportCloudStatus('Удалено в браузере · синхронизируем позже');
+  showStudioToast('Билд удалён локально. Ссылки перестанут работать после синхронизации с облаком.','warning');
+ }
 }
 async function loadCloudBuilds(){
  const generation=libraryChangeId;
@@ -1703,6 +1716,13 @@ function renderBuilds(root){
   const box=h('div',{class:'build-card'});
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
   const check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});
+  const deleteChoice=h('div',{class:'build-delete-choice',hidden:true});
+  deleteChoice.append(h('p',{text:'Удалить билд и отозвать все созданные ссылки?'}),
+   h('button',{class:'button-action danger',type:'button',text:'Удалить билд',onclick:()=>{
+    builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);
+    persistBuilds();void deleteCloudBuild(b.id);renderDetails();
+   }}),
+   h('button',{class:'button-action',type:'button',text:'Отмена',onclick:()=>{deleteChoice.hidden=true}}));
   check.checked=compareIds.includes(b.id);
   check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};
   box.append(h('h3',{text:b.name}),h('p',{
@@ -1721,11 +1741,9 @@ function renderBuilds(root){
      profile:{...base.profile,...draft.profile}};
     restoreLoadedBuildUI();persist();render();changeTab('character');
    }}),
-   h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared('build',b.data,shareSlot)}),
-   h('button',{class:'button-action',text:'Удалить',onclick:()=>{
-    if(!confirm('Удалить сохранённый билд «'+b.name+'»?'))return;
-    builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();void deleteCloudBuild(b.id);renderDetails();
-   }}));
+   h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared(b,shareSlot)}),
+   h('button',{class:'button-action',text:'Удалить',onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}}));
+  box.append(deleteChoice);
   box.append(shareSlot);
   grid.append(box);
  }
@@ -1840,30 +1858,33 @@ function sanitizeSharedState(original){
   safe.racialPassiveId=original.racialPassiveId;
  return safe;
 }
-async function createShared(type,data,host=null){
- const content=type==='build'?sanitizeSharedState(data):
-  data.map(row=>({name:String(row.name||'Билд').slice(0,70),data:sanitizeSharedState(row.data)}));
- if(type==='library'&&(content.length===0||content.length>30)){
-  alert('Для одной ссылки доступно от 1 до 30 билдов. Библиотека не изменена.');return;
- }
+async function createShared(build,host){
+ if(!build||!host)return;
+ const content=sanitizeSharedState(build.data);
+ const pending=h('p',{class:'muted',text:'Проверяем сохранение билда…'});
+ host.replaceChildren(pending);
  try{
-  const response=await apiRequest('/api/shared',{schema:1,type,data:content},'');
-  if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Неожиданный ответ сервера');
+  if(!await putCloudBuild(build))throw Error('Не удалось сохранить билд в облаке. Попробуйте ещё раз.');
+  pending.textContent='Создаём ссылку…';
+  const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id,data:content},cloudToken());
+  if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
+  // Confirm that the new public link is immediately readable before showing it.
+  const check=await apiRequest('/api/shared/'+response.id,null,'');
+  if(check?.share?.type!=='build')throw Error('Ссылка ещё не доступна');
   const url=location.origin+location.pathname+'#b/'+response.id;
   const message=h('div',{class:'share-result'});
-  const field=h('input',{readOnly:true,value:url,'aria-label':'Ссылка на билд'});
+  const field=h('input',{type:'text',readOnly:true,value:url,'aria-label':'Ссылка на билд'});
   const copy=h('button',{type:'button',class:'button-action primary',text:'Скопировать ссылку',
    onclick:async()=>{
     try{await navigator.clipboard.writeText(url);copy.textContent='✓ Скопировано'}
     catch{field.focus();field.select();copy.textContent='Выдели ссылку и скопируй Ctrl+C'}
    }});
-  message.append(h('p',{text:type==='library'?'Ссылка на библиотеку создана.':'Ссылка на билд создана.'}),
-   field,copy,h('p',{class:'muted',text:'Это публичный неизменяемый снимок. У другого пользователя появится подтверждение перед заменой активного билда.'}));
-  if(host)host.replaceChildren(message);else modal('Поделиться',message);
+  message.append(h('p',{text:'Ссылка на билд создана.'}),
+   field,copy,h('p',{class:'muted',text:'Ссылка перестанет работать, если удалить этот сохранённый билд.'}));
+  if(host.isConnected)host.replaceChildren(message);
  }catch(error){
-  const note='Не удалось создать ссылку: '+error.message;
-  if(host)host.replaceChildren(h('p',{class:'build-share-error',text:note}));
-  else alert(note);
+  if(host.isConnected)host.replaceChildren(h('p',{class:'build-share-error',
+   text:'Не удалось создать ссылку: '+error.message}));
  }
 }
 function openSharedSnapshot(share){
@@ -1900,14 +1921,39 @@ function openSharedSnapshot(share){
   }}));
  modal('Открыть билд по ссылке?',view);
 }
+let studioToastTimer=null;
+function showStudioToast(message,tone='warning'){
+ let root=document.getElementById('studioToast');
+ if(!root){root=h('div',{id:'studioToast',class:'studio-toast','aria-live':'polite',role:'status'});document.body.append(root)}
+ clearTimeout(studioToastTimer);
+ root.className='studio-toast '+tone;
+ root.replaceChildren(h('div',{class:'studio-toast-content'},[
+  h('strong',{text:tone==='success'?'Готово':tone==='error'?'Ссылка недоступна':'Уведомление'}),
+  h('p',{text:message})
+ ]));
+ const close=()=>{root.hidden=true;root.replaceChildren()};
+ root.append(h('button',{type:'button',class:'studio-toast-ok',text:'ОК',onclick:close}));
+ root.hidden=false;
+ studioToastTimer=setTimeout(close,8500);
+}
 async function restoreSharedHash(){
  const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
  if(!match)return;
  try{
   const incoming=await apiRequest('/api/shared/'+match[1],null,'');
-  openSharedSnapshot(incoming.share);
+  if(location.hash==='#b/'+match[1])openSharedSnapshot(incoming.share);
  }catch(error){
-  alert('Не удалось открыть общий билд: '+error.message);
+  const removed=error.httpStatus===404||error.httpStatus===410;
+  const message=error.httpStatus===410&&error.reason==='deleted'?
+   'Владелец удалил этот билд. Ссылка больше не существует.':
+   error.httpStatus===410&&error.reason==='legacy'?
+   'Ссылка устарела. Попросите владельца поделиться билдом заново.':
+   error.httpStatus===404?
+   'Билд по ссылке не найден. Возможно, адрес неверный.':
+   'Не получилось загрузить билд. Проверь соединение и попробуй снова.';
+  showStudioToast(message,removed?'warning':'error');
+  if(removed&&location.hash==='#b/'+match[1])
+   history.replaceState(history.state,'',location.pathname+location.search);
  }
 }
 function modal(title,content){const root=$('modalRoot');root.replaceChildren();root.hidden=false;const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});box.append(h('button',{class:'button-action close',text:'× Закрыть',onclick:()=>{root.hidden=true;root.replaceChildren()}}),h('h2',{text:title}),content);root.append(box);root.onclick=e=>{if(e.target===root){root.hidden=true;root.replaceChildren()}};return box}
@@ -1923,7 +1969,10 @@ async function apiRequest(path,body,token=adminToken) {
   throw new Error("Нет соединения с Cloudflare Worker. Проверь Builds и /api/health. Пароль ещё не проверялся сервером.");
  }
  const data=await response.json().catch(()=>({error:"Сервер вернул ответ без JSON"}));
- if(!response.ok)throw new Error(data.error||("Ошибка сервера HTTP "+response.status));
+ if(!response.ok){
+  const error=new Error(data.error||("Ошибка сервера HTTP "+response.status));
+  error.httpStatus=response.status;error.reason=data.reason||null;throw error;
+ }
  return data;
 }
 function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Импорт каталога D1',onclick:showCatalogImport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}

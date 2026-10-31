@@ -118,46 +118,61 @@ async function adminCatalog(request,env,path){
 }
 
 
-/* Public immutable share links; non-secret snapshots, guarded against large payloads and write abuse. */
+/* Public short links are bound to an existing private build and revoked on deletion. */
 async function shareApi(request,env,path,ip){
- const shares=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shared_builds','shared_build_limits')").all();
- if((shares.results||[]).length!==2){
+ const names=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shared_builds','shared_build_limits','shared_build_sources')").all();
+ const present=new Set((names.results||[]).map(row=>row.name));
+ if(!['shared_builds','shared_build_limits','shared_build_sources'].every(name=>present.has(name))){
   try{
    await env.DB.prepare('CREATE TABLE IF NOT EXISTS shared_builds (id TEXT PRIMARY KEY, payload TEXT NOT NULL, created_at INTEGER NOT NULL)').run();
    await env.DB.prepare('CREATE TABLE IF NOT EXISTS shared_build_limits (ip_hash TEXT NOT NULL, day INTEGER NOT NULL, created INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(ip_hash,day))').run();
    await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_shared_builds_created ON shared_builds(created_at)').run();
+   await env.DB.prepare('CREATE TABLE IF NOT EXISTS shared_build_sources (share_id TEXT PRIMARY KEY, owner_hash TEXT NOT NULL, build_id TEXT NOT NULL, created_at INTEGER NOT NULL, FOREIGN KEY(share_id) REFERENCES shared_builds(id))').run();
+   await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_shared_build_sources_owner ON shared_build_sources(owner_hash,build_id)').run();
   }catch{return no('Хранилище коротких ссылок не подготовлено: нужна миграция D1',503)}
  }
  if(request.method==='GET'){
   const match=path.match(/^\/api\/shared\/([A-Za-z0-9_-]{11})$/);
   if(!match)return no('Not found',404);
   const row=await env.DB.prepare('SELECT payload FROM shared_builds WHERE id=?').bind(match[1]).first();
-  if(!row)return no('Shared build not found',404);
+  if(!row)return json({error:'Билд по этой ссылке не найден.',reason:'not_found'},404);
+  const source=await env.DB.prepare('SELECT owner_hash,build_id FROM shared_build_sources WHERE share_id=?').bind(match[1]).first();
+  if(!source)return json({error:'Эта старая ссылка больше не поддерживается. Попросите владельца создать новую.',reason:'legacy'},410);
+  const original=await env.DB.prepare('SELECT deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(source.owner_hash,source.build_id).first();
+  if(!original||original.deleted_at!==null)return json({error:'Владелец удалил исходный билд. Ссылка больше недействительна.',reason:'deleted'},410);
   return json({schema:1,share:JSON.parse(row.payload)});
  }
  if(request.method!=='POST'||path!=='/api/shared')return no('Not found',404);
+ const bearer=request.headers.get('authorization')||'';
+ if(!/^Bearer [a-f0-9]{64}$/.test(bearer))return no('Доступ к созданию ссылки требует владельца билда',401);
  if(Number(request.headers.get('content-length')||0)>48000)return no('Payload too large',413);
  const input=await request.text();
  if(input.length>48000)return no('Payload too large',413);
  let payload;
  try{payload=JSON.parse(input)}catch{return no('Invalid share payload',400)}
- if(!payload||payload.schema!==1||!['build','library'].includes(payload.type))return no('Invalid share format',400);
+ if(!payload||payload.schema!==1||payload.type!=='build'||!/^[a-f0-9]{32}$/.test(payload.buildId||''))
+  return no('Можно поделиться только сохранённым билдом',400);
  const validate=entry=>entry&&typeof entry==='object'&&!Array.isArray(entry)&&
   Number.isInteger(entry.race)&&entry.race>=0&&entry.race<=5&&
   Number.isInteger(entry.job)&&entry.job>=0&&entry.job<28&&
   Number.isInteger(entry.level)&&entry.level>=1&&entry.level<=55;
- if(payload.type==='build'&&!validate(payload.data))return no('Invalid character record',400);
- if(payload.type==='library'&&(!Array.isArray(payload.data)||payload.data.length<1||payload.data.length>30||
-  !payload.data.every(entry=>validate(entry?.data)&&typeof entry?.name==='string'&&entry.name.length<=70)))
-  return no('Invalid saved-build library',400);
+ if(!validate(payload.data))return no('Invalid character record',400);
+ const owner=await sha(bearer.slice(7));
+ const saved=await env.DB.prepare('SELECT deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,payload.buildId).first();
+ if(!saved||saved.deleted_at!==null)return no('Сохранённый билд не найден или уже удалён',409);
  const canonical=JSON.stringify({schema:1,type:payload.type,data:payload.data});
  if(canonical.length>47000)return no('Share exceeds storage limit',413);
  const ipHash=await sha(ip),day=Math.floor(Date.now()/86400000);
  const limit=await env.DB.prepare('INSERT INTO shared_build_limits(ip_hash,day,created) VALUES(?,?,1) ON CONFLICT(ip_hash,day) DO UPDATE SET created=created+1 WHERE created<30').bind(ipHash,day).run();
  if(!limit.meta?.changes)return no('Share limit reached for today',429);
  for(let attempt=0;attempt<3;attempt++){
-  const id=b64(random(8));
-  try{await env.DB.prepare('INSERT INTO shared_builds(id,payload,created_at) VALUES(?,?,?)').bind(id,canonical,Date.now()).run();
+  const id=b64(random(8)),now=Date.now();
+  try{
+   // D1 batch runs atomically: never publish a public snapshot without its ownership record.
+   await env.DB.batch([
+    env.DB.prepare('INSERT INTO shared_builds(id,payload,created_at) VALUES(?,?,?)').bind(id,canonical,now),
+    env.DB.prepare('INSERT INTO shared_build_sources(share_id,owner_hash,build_id,created_at) VALUES(?,?,?,?)').bind(id,owner,payload.buildId,now)
+   ]);
    return json({ok:true,id},201);
   }catch(error){
    if(!String(error).includes('UNIQUE'))throw error;
@@ -205,7 +220,8 @@ async function libraryApi(request,env){
   return no('Invalid character',400);
  const payload=JSON.stringify({id,name:item.name,at:item.at,data:item.data});
  if(payload.length>42000)return no('Build too large',413);
- const old=await env.DB.prepare('SELECT build_id FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
+ const old=await env.DB.prepare('SELECT build_id,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
+ if(old?.deleted_at!=null)return no('Удалённый билд нельзя восстановить под прежним идентификатором',409);
  if(!old){
   const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM private_builds WHERE owner_hash=?').bind(owner).first();
   if((count?.total||0)>=200)return no('Library limit reached',413);
@@ -242,10 +258,10 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/health'&&method==='GET'){
- const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','private_builds')").all();
+ const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
  const ready=['admins','sessions','overrides','login_attempts'].every(name=>found.has(name));
- const sharingReady=['shared_builds','shared_build_limits'].every(name=>found.has(name));
+ const sharingReady=['shared_builds','shared_build_limits','shared_build_sources'].every(name=>found.has(name));
  const catalogPublished=Boolean(await activeCatalog(env));
  return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready,
   features:{sharing:sharingReady,catalog:catalogPublished,library:found.has('private_builds')}},ready?200:503);

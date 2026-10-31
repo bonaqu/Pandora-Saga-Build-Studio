@@ -7,3 +7,12 @@ CREATE TABLE IF NOT EXISTS shared_build_limits (
  PRIMARY KEY(ip_hash,day)
 );
 CREATE INDEX IF NOT EXISTS idx_shared_builds_created ON shared_builds(created_at);
+-- Every new short link is associated with the creator's saved build, without storing the browser token.
+CREATE TABLE IF NOT EXISTS shared_build_sources (
+ share_id TEXT PRIMARY KEY,
+ owner_hash TEXT NOT NULL,
+ build_id TEXT NOT NULL,
+ created_at INTEGER NOT NULL,
+ FOREIGN KEY(share_id) REFERENCES shared_builds(id)
+);
+CREATE INDEX IF NOT EXISTS idx_shared_build_sources_owner ON shared_build_sources(owner_hash,build_id);

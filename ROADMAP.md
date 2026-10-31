@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.128.0 (`2026.10.31.128`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.129.0 (`2026.10.31.129`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -540,3 +540,12 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] A saved build's Share action creates an **inline** short-link and selectable URL with Copy button inside that same build card; Worker/D1 errors render alongside the card instead of opening a blocking browser alert.
 - [x] New Node regression suite uses an in-memory D1 adapter to test private save, listing, deleted tombstones, 55-level compatibility, isolation across browser secrets, and malformed input rejection. The existing 0003 public shares remain enabled only when the updated Worker and D1 schema are live.
 - [ ] Execute real `npm test` and browser E2E, confirm live Pages 0.128.0 and Worker, verify public share POST/GET and clipboard from a published site, and complete remaining Remaked calculations.
+
+
+## Source update 0.129.0 — revocable short links and inline deletion
+
+- [x] Every **new** short link is tied in D1 to the owner's saved build, using only a hashed browser key and saved build ID; public GET checks its source's tombstone before returning the snapshot. Deleting the original revokes every associated URL, across recipients, with HTTP 410 and a stable `reason: deleted`.
+- [x] Existing anonymous legacy short links without ownership data return 410 `reason: legacy`, rather than pretending they support deletion-based revocation. The schema upgrades in place (no destructive table replacements).
+- [x] The server refuses shares without a saved owned build, refuses anonymous share creation, and prevents deleted IDs from being restored by a stale pending PUT. Ownership mapping and snapshot insertion use an atomic D1 batch.
+- [x] Opening a dead/old/invalid link shows a compact bottom-right toast (8.5 seconds or OK). Deletion confirmation is inline; an offline deletion honestly warns that links remain active until cloud synchronization.
+- [ ] Full `npm test`, live server deployment and real browser end-to-end checking required. Keep all Remaked incomplete formulas, future level 55, visual improvements, icon and catalog backlog open.
