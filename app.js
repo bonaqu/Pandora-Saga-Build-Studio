@@ -2023,6 +2023,9 @@ function sanitizeSharedState(original){
   }
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
   safe.attributeBuffs.potionEffectsEnabled=rawAttributes.potionEffectsEnabled===true;
+  // Preserve the historical Jo-Eun rune boolean for old snapshot compatibility.
+  // The current OS calculator does not activate this unverified legacy effect.
+  safe.attributeBuffs.runeJoEun=rawAttributes.runeJoEun===true;
   for(const key of ['combatWarCry','combatRage','combatDefender','combatLunge',
    'combatWindAssist','combatWindBlessing','combatConcentration'])
    if(rawAttributes[key]===true)safe.attributeBuffs[key]=true;

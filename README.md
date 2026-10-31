@@ -672,3 +672,8 @@ The transfer panel requires one click to reveal/select your code and another to 
 ## Clean public player UX · 0.148.0
 
 Origin buff controls now show functional gameplay conditions without implementation notes. HP/MP numeric accessibility descriptions avoid irrelevant warnings. Corrupt saved builds fail gracefully when a user shares them. A recovery code associated only with deletion tombstones is not treated as a successfully restored library.
+
+
+## Historical saved build compatibility · 0.149.0
+
+Shared builds preserve a strict Boolean value for the old Jo-Eun rune so existing builds are not stripped of data. It stays inactive in current OS calculation pending confirmation of a real current-game source. Updated regression cases assert modern numeric and player-only presentation rather than reinstating removed debug text.

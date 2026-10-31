@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.148.0 (`2026.10.31.148`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.149.0 (`2026.10.31.149`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -705,3 +705,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] A malformed saved character now shows an inline share-card error, not an uncaught exception.
 - [x] Recovery code import checks that a D1 library contains an actual active saved build, not just deletion tombstones, before replacing the browser owner key.
 - [ ] Need real browser/D1 E2E and the full npm test runner once the complete source workspace can be executed.
+
+
+## 0.149.0 — historical snapshot round-trip and stale regression repairs
+
+- [x] Preserve the historical runeJoEun Boolean field when opening or sharing a stored character. The source OS catalog does not identify a matching current item, so the old rune is NOT automatically added to game calculations.
+- [x] Update outdated tests for clean Origin HP/MP labels, modern separate proc/target combat previews, and the distinct equipment part of natural MP regeneration.
+- [x] Verify technical formula methodology is retained only for authenticated site-admin mode.
+- [ ] Full npm test, browser E2E, and current server parity are still required.

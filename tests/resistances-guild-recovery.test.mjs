@@ -54,7 +54,7 @@ test('structured equipped resistance effects add only once on top of Honor',()=>
 test('Remaked HP/MP natural recovery guild selectors and Healing stack exactly',()=>{
  const r=make({guildLifeRecovery:2,guildManaRecovery:1,guildHealing:3}).regeneration;
  assert.deepEqual(r.hp,{base:5,guild:8,healing:30,total:43});
- assert.deepEqual(r.mp,{base:8,guild:5,healing:30,total:43});
+ assert.deepEqual(r.mp,{base:8,guild:5,healing:30,total:43,equipment:0});
  assert.equal(make().regeneration.hp.total,5);
  assert.equal(make().regeneration.mp.total,8);
  assert.equal(make({guildHealing:2}).regeneration.hp.total,25);
@@ -73,10 +73,11 @@ test('invalid guild indices cannot create fake recovery or contaminate shared bu
  }
  assert.match(app,/Number.isInteger\(level\)&&level>=0&&level<=limit/);
 });
-test('combat preview UI exposes limitations instead of pretending game-client parity',()=>{
+test('technical methodology remains admin-only, without cluttering the player book',()=>{
  const stage=read('stage-attributes.js');
- assert.match(stage,/частичный расчёт/);
  assert.match(stage,/не количество ОЗ\/ОМ за тик/);
+ assert.match(stage,/const isAdmin=root\.PandoraStudioAdminActive\?\.\(\)===true/);
+ assert.match(stage,/if\(isAdmin&&details\.children\.length>1\)body\.append\(details\)/);
  assert.match(stage,/modifiers\?\.regeneration/);
  assert.match(stage,/modifiers\?\.resistances/);
 });
