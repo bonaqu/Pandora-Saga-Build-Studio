@@ -155,13 +155,16 @@ function renderVitalsEnhancements(){
  }
  const sign=$('originLifeSign');
  if(sign)sign.checked=state.vitalsBuffs?.lifeSign===true;
- for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency'],
+ for(const [id,key] of [['originGuildAll','guildAll'],['originGuildArouse','guildArouse'],
+  ['originProeliumPotency','proeliumPotency'],
   ['originGuildLifeRecovery','guildLifeRecovery'],['originGuildManaRecovery','guildManaRecovery'],
   ['originGuildHealing','guildHealing']]){
   const control=$(id);
   if(control)control.value=String(state.attributeBuffs?.[key]||0);
  }
- for(const [id,key] of [['originProelium','proelium'],['originRuneJoEun','runeJoEun'],['originUsePotionEffects','potionEffectsEnabled']]){
+ for(const [id,key] of [['originProelium','proelium'],['originRuneJoEun','runeJoEun'],['originUsePotionEffects','potionEffectsEnabled'],
+  ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
+  ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
   const control=$(id);
   if(control)control.checked=state.attributeBuffs?.[key]===true;
  }
@@ -219,8 +222,15 @@ function setAttributeBuff(key,value){
  }else if(key==='honorCuriosity'){
   current.honorCuriosity=value===true;
   current.honorTitle=current.honorCuriosity?1:0;
- }else if(['proelium','runeJoEun','potionEffectsEnabled'].includes(key))current[key]=value===true;
- else if(key==='guildAll'){
+ }else if(['proelium','runeJoEun','potionEffectsEnabled','combatLunge','combatWarCry',
+  'combatRage','combatDefender'].includes(key)){
+  current[key]=value===true;
+  if(current.combatRage&&key==='combatRage')current.combatDefender=false;
+  if(current.combatDefender&&key==='combatDefender')current.combatRage=false;
+ }else if(key==='guildArouse'){
+  const n=Number(value);if(!Number.isInteger(n)||n<0||n>3)return;
+  current.guildArouse=n;
+ }else if(key==='guildAll'){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>6)return;
   current.guildAll=n;
  }else if(key==='proeliumPotency'){
@@ -1443,7 +1453,7 @@ function sanitizeSharedState(original){
   const guild=rawAttributes.guildAll,potency=rawAttributes.proeliumPotency;
   if(Number.isInteger(guild)&&guild>=0&&guild<=6)safe.attributeBuffs.guildAll=guild;
   if(Number.isInteger(potency)&&potency>=0&&potency<=100)safe.attributeBuffs.proeliumPotency=potency;
-  for(const [key,limit] of [['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3]]){
+  for(const [key,limit] of [['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3],['guildArouse',3]]){
    const level=rawAttributes[key];
    if(Number.isInteger(level)&&level>=0&&level<=limit)safe.attributeBuffs[key]=level;
   }
@@ -1458,6 +1468,9 @@ function sanitizeSharedState(original){
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
   safe.attributeBuffs.runeJoEun=rawAttributes.runeJoEun===true;
   safe.attributeBuffs.potionEffectsEnabled=rawAttributes.potionEffectsEnabled===true;
+  for(const key of ['combatWarCry','combatRage','combatDefender','combatLunge'])
+   if(rawAttributes[key]===true)safe.attributeBuffs[key]=true;
+  if(safe.attributeBuffs.combatRage===true)safe.attributeBuffs.combatDefender=false;
  }
  if(Number.isSafeInteger(original.racialPassiveId)&&original.racialPassiveId>=0&&original.racialPassiveId<10000000000)
   safe.racialPassiveId=original.racialPassiveId;
@@ -2016,12 +2029,15 @@ for(const [id,key] of [['originGuildHp','guildHp'],['originGuildMp','guildMp']])
 $('originLifeSign')?.addEventListener('change',event=>
  setVitalsEnhancement('lifeSign',event.target.checked));
 $('originHonorTitle')?.addEventListener('change',event=>setAttributeBuff('honorTitle',event.target.value));
-for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency'],
+for(const [id,key] of [['originGuildAll','guildAll'],['originGuildArouse','guildArouse'],
+ ['originProeliumPotency','proeliumPotency'],
  ['originGuildLifeRecovery','guildLifeRecovery'],['originGuildManaRecovery','guildManaRecovery'],
  ['originGuildHealing','guildHealing']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.value));
 }
-for(const [id,key] of [['originProelium','proelium'],['originRuneJoEun','runeJoEun'],['originUsePotionEffects','potionEffectsEnabled']]){
+for(const [id,key] of [['originProelium','proelium'],['originRuneJoEun','runeJoEun'],['originUsePotionEffects','potionEffectsEnabled'],
+ ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
+ ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
 }
 render();loadCatalog();loadOverrides();

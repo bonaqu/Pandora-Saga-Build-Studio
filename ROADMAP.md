@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.96.0 (`2026.10.31.96`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.97.0 (`2026.10.31.97`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,12 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.97.0 — current OS active-skill combat effects and protected opt-in controls
+
+- Implement `320001001 War Cry` (Gladiator family Lv28+, +10/+20% attack), `100052001 Raging Soul` (Gladiator family Lv35+, +30% ATK/−60% DEF), `100053001 Shieldbearer` (Knight family Lv35+ with equipped shield, **OS** −20% ATK/+40% DEF), `100051001 Lunge` (Warrior line Lv18+ +15 speed index), all opt-in and gated.
+- Per Remaked historical source, Shieldbearer used −30%/+60%; this is **not** what current OS EP records specify, so current OS rate takes priority. Guild Arouse tiers also wired for ATK and MATK.
+- New collapsed Origin controls, shared-build validation and contribution lines in Attack/Defense. Extend test coverage for jobs, level gates, shield dependence and buff conditions; still no complete active-skill runtime for every skill or live-game golden vectors.
 
 ## Source update 0.96.0 — full ID-safe audit of 205 approved Remaked RU skill labels
 

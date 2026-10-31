@@ -136,6 +136,12 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    card.append(make('p',{text:'Прямые бонусы атаки от вещей и душ: '+
     (flat>=0?'+':'')+flat+'; процентные: '+(percent>=0?'+':'')+percent}));
   }
+  if(cm.attack?.activeBonus||cm.attack?.guildBonus){
+   const buff=cm.attack.activeBonus||0,guild=cm.attack.guildBonus||0;
+   card.append(make('p',{text:'Выбранные навыки: '+(buff>=0?'+':'')+buff+
+    ' · гильдия: '+(guild>=0?'+':'')+guild+' к атаке'}));
+  }
+  if(cm.activeSkills?.lunge)card.append(make('p',{text:'Рывок: +15 к индексу скорости атаки'}));
   if(cm.accuracy.percentage?.length){
    const total=cm.accuracy.percentage.reduce((sum,e)=>sum+e.bonus,0);
    card.append(make('p',{text:'Процентная точность вещей: '+
@@ -161,11 +167,11 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   if(cm.attackSpeed)card.append(make('p',{text:'Скорость атаки (индекс): '+
    cm.attackSpeed.known+' (база '+cm.attackSpeed.base+
    ', экипировка '+(cm.attackSpeed.equipment>=0?'+':'')+
-   cm.attackSpeed.equipment+')'}));
+   cm.attackSpeed.equipment+', навыки +'+cm.attackSpeed.lunge+')'}));
   if(cm.castingSpeed)card.append(make('p',{text:'Скорость заклинаний (базовый индекс): '+
    cm.castingSpeed.base}));
   card.append(make('p',{class:'stage-attribute-note',
-   text:'Источник: Remaked Legacy + таблица усиления оружия OS. Индексы скорости не обозначают удары в секунду или реальное время каста. Без активных навыков, ряда пассивок, комплектов, некоторых душ и серверных условий.'}));
+   text:'Источник: Remaked Legacy + таблицы OS. Учитываются выбранные подтверждённые активные умения; прочие условные навыки, комплекты и эффекты сервера всё ещё не рассчитаны.'}));
   body.prepend(card);
  }
  if(page==='defense'&&modifiers?.combat?.defense){
@@ -176,6 +182,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    make('p',{text:'Бонус заточки брони и щита: +'+df.refinement}),
    make('p',{text:'Прямые бонусы вещей и душ: '+(df.equipment>=0?'+':'')+df.equipment}),
    make('p',{text:'Титул чести: '+(df.honor>=0?'+':'')+df.honor}),
+   make('p',{text:'Эффект выбранной стойки: '+(df.activeBonus>=0?'+':'')+df.activeBonus}),
    make('p',{class:'stage-attribute-note',
     text:'Заточка щита и брони учтена по исходной формуле Remaked: ⌊+N×1,5⌋ за каждый предмет. Остальные условные эффекты и временные навыки ещё не полностью учитываются.'}));
   body.prepend(card);
