@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.183.0 (`2026.11.01.183`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.184.0 (`2026.11.01.184`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.184.0 — fail closed on stale/corrupt equipment slot identities
+
+- Require an integer equipment index within 14 official planner slots and exact alignment between item `slot` and slot type before an equipped record can affect HP, MP, effective attributes, damage, defense, Souls, gemstones or sets.
+- No mutation or deletion of the original browser-saved equipment data: unknown slots can be restored by a later source migration but do not count as valid equipment now.
+- A source-extracted functional test executes the real app `equipmentIssue` on current OS records and rejects invented slot 14, mismatched shield and potion. The character book also filters invalid slot records, without suppressing genuine under-level future items.
+- Fix the new browser equipment regression to navigate from Properties → Choose before clicking Remove, matching the actual user flow. Retain cloud conflict and future 1–55 tests.
 
 ## Source update 0.183.0 — future gear directly in equipment picker
 

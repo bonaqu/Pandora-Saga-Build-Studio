@@ -195,6 +195,8 @@ function branchCap(branch){
 }
 function equipmentIssue(item,slot){
  if(!item)return ['Предмет отсутствует в каталоге'];
+ if(!window.PandoraEquipmentPlan.matchesEquipmentSlot(slot,item,slotKeys))
+  return ['Предмет не подходит этому слоту'];
  const rules=window.PandoraStudioRules.equipment(item,{
   slot:slotKeys[slot],job:jobKeys[state.job],level:state.level
  });
@@ -652,7 +654,9 @@ function renderStageAttributes(){
  if(opener){opener.hidden=show||stageSlotPickerOpen;opener.setAttribute('aria-expanded',String(show))}
  if(!show)return;
  const plan=window.PandoraEquipmentPlan;
- const items=Object.entries(state.equipment||{}).filter(([,entry])=>entry).map(([slot,entry])=>{
+ const items=Object.entries(state.equipment||{}).filter(([slot,entry])=>
+  entry&&window.PandoraEquipmentPlan.matchesEquipmentSlot(Number(slot),
+   catalog.equipment?.[String(entry.id)],slotKeys)).map(([slot,entry])=>{
   const rec=itemWithOverrides(catalog.equipment?.[String(entry.id)]);
   return {record:rec,issue:equipmentIssue(rec,Number(slot)),
    refinement:plan.refinementValue(state.refinements,Number(slot),entry),

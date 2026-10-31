@@ -29,6 +29,8 @@ export async function runEquipmentEligibilitySmoke(browser,base){
   assert.equal(await page.locator('.equipment-slot[data-slot-index="2"].unavailable').count(),0);
   const withHat=Number(await page.locator('#originHp').textContent());
   await page.locator('.equipment-slot[data-slot-index="2"]').click();
+  // An equipped slot opens its Properties page. Removal is in the "Выбор" mode.
+  await page.locator('#stagePicker .stage-rich-tabs').getByRole('button',{name:'Выбор'}).click();
   await page.getByRole('button',{name:'Снять предмет'}).click();
   const withoutHat=Number(await page.locator('#originHp').textContent());
   assert.equal(withHat-withoutHat,50,'Level-38 Cardinal Cap must give precisely its OS HP bonus');
