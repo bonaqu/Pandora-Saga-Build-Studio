@@ -16,7 +16,8 @@ test('opening imported public build does not overwrite an unrelated saved origin
  const source=read('app.js');
  assert.match(source,/selectActiveBuild\(null\);state=incoming/);
  assert.match(source,/if\(activeBuildId===b\.id\)selectActiveBuild\(null\)/);
- assert.match(source,/if\(activeBuildId&&!builds\.some\(b=>b\.id===activeBuildId\)\)selectActiveBuild\(null\)/);
+ assert.match(source,/if\(reconciled\.activeId!==activeBuildId\)selectActiveBuild\(reconciled\.activeId\)/);
+ assert.match(read('build-library-merge.js'),/if\(selected&&!merged\.some\(x=>x\.id===selected\)\)selected=null/);
 });
 
 test('saved build identity survives closing and reopening the browser',()=>{

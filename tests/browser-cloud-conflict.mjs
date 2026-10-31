@@ -9,6 +9,8 @@ export async function runCloudConflictSmoke(browser,base){
  const cloud=new Map([[id,remote]]);
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  await context.addInitScript(({secret,local})=>{
+  if(sessionStorage.getItem('ps-cloud-conflict-test-seeded')==='1')return;
+  sessionStorage.setItem('ps-cloud-conflict-test-seeded','1');
   localStorage.setItem('ps-build-library-secret.v1',secret);
   localStorage.setItem('ps-build-library.v1',JSON.stringify([local]));
   localStorage.setItem('ps-build-studio.v1',JSON.stringify(local.data));
