@@ -9,8 +9,8 @@
 ## Результат аудита
 
 - **BASE/PREVIEW:** 15 уникальных ключей
-- **PARTIAL:** 39 уникальных ключей
-- **NOT YET PORTED:** 79 уникальных ключей
+- **PARTIAL:** 43 уникальных ключей
+- **NOT YET PORTED:** 75 уникальных ключей
 - **BUFF PREVIEW:** 10 уникальных ключей
 
 ### Приоритет завершения
@@ -39,12 +39,12 @@
 | `ATK` | [ 18] 攻/最大 | 113 | PARTIAL |
 | `ATKFront` | [ 19] 正面からの攻撃力＋ | 186 | PARTIAL |
 | `ATKBack` | [ 20] 背後からの攻撃力＋ | 194 | PARTIAL |
-| `RangeMelee` | [ 40] 近接武器の射程 | 202 | NOT YET PORTED |
-| `RangeRange` | [ 41] 遠距離武器の射程 | 216 | NOT YET PORTED |
+| `RangeMelee` | [ 40] 近接武器の射程 | 202 | PARTIAL |
+| `RangeRange` | [ 41] 遠距離武器の射程 | 216 | PARTIAL |
 | `MATK` | [ 42] 魔法攻撃力 | 224 | PARTIAL |
 | `DEF` | [ 49] 防御力 | 270 | PARTIAL |
-| `RESFront` | [ 50] 正面からの物理ダメージ | 289 | NOT YET PORTED |
-| `RESBack` | [ 51] 背後からの物理ダメージ | 296 | NOT YET PORTED |
+| `RESFront` | [ 50] 正面からの物理ダメージ | 289 | PARTIAL |
+| `RESBack` | [ 51] 背後からの物理ダメージ | 296 | PARTIAL |
 | `RESPhyDAM` | [ 52] 被物理ダメージ | 303 | PARTIAL |
 | `RESMagDAM` | [ 60] 被魔法ダメージ | 321 | PARTIAL |
 | `ACC` | [ 62] 命中                           [ 63] 正面から攻撃した時の命中 [ 64] 背後から攻撃した時の命中 | 336 | PARTIAL |
