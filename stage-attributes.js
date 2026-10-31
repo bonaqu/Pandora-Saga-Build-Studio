@@ -14,24 +14,124 @@ function make(tag,attrs={},children=[]){
  for(const child of children)n.append(typeof child==='string'?document.createTextNode(child):child);
  return n;
 }
-function render(target,{page,items,icon,onPage,onClose,modifiers}){
- target.replaceChildren();
- target.append(make('div',{class:'stage-attribute-head'},[
-  make('strong',{text:'Атрибуты персонажа'}),
-  make('button',{type:'button',text:'✕',onclick:onClose,'aria-label':'Вернуть портрет'})
+
+const bookPages=Object.freeze([
+ ['summary','Итоги'],['attack','Атака'],['defense','Защита'],
+ ['recovery','Восстановление'],['effects','Эффекты'],['buffs','Усиления']
+]);
+function summaryPage(body,calc){
+ if(!calc){body.append(make('p',{class:'stage-attribute-note',text:'Параметры появятся после загрузки игровых данных.'}));return}
+ body.append(make('div',{class:'stage-result-intro'},[
+  make('strong',{text:'Результаты расчёта'}),
+  make('p',{text:'Частичные расчёты по Remaked и таблицам OS. Выберите следующую страницу для подробностей.'})
  ]));
- const nav=make('nav',{class:'stage-attribute-tabs','aria-label':'Разделы характеристик'});
- for(const [name,label] of [['attack','Атака'],['defense','Защита'],['effects','Эффекты']])
-  nav.append(make('button',{type:'button',text:label,class:page===name?'chosen':'',
-  'aria-pressed':String(page===name),onclick:()=>onPage(name)}));
+ const c=calc.combat||{};
+ const rows=[
+  ['ОЗ',calc.hp,'Здоровье'],['ОМ',calc.mp,'Мана'],
+  ['Атака',c.attack?.known,'Физическая'],['Защита',c.defense?.known,'С заточкой'],
+  ['Маг. атака',c.magicAttack?.known==null?null:c.magicAttack.known+'%','Коэффициент'],
+  ['Точность',c.accuracy?.known,'Частично'],['Уклонение',c.dodge?.known,'Частично'],
+  ['Крит. шанс',c.critical?.known,'Частично'],
+  ['Зелья',calc.potion?.percent==null?null:calc.potion.percent+'%','Эффект'],
+  ['Лечение',calc.healingSkill?.percent==null?null:calc.healingSkill.percent+'%','Эффект навыков']
+ ];
+ const grid=make('div',{class:'stage-result-grid'});
+ for(const [label,value,note] of rows)grid.append(make('div',{class:'stage-result-tile'},[
+  make('span',{text:label}),make('strong',{text:value??'—'}),make('small',{text:note})]));
+ body.append(grid);
+ body.append(make('p',{class:'stage-attribute-note',text:
+  'Учтено структурированных эффектов предметов и душ: '+(calc.effects?.trace?.length||0)+
+  '. Окончательный урон на игровом сервере ещё не моделируется.'}));
+}
+function buffsPage(body,options){
+ const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
+  availability={},modifiers}=options;
+ body.append(make('p',{class:'stage-attribute-note',text:
+  'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
+ const section=(name)=>{
+  const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
+  body.append(node);return node;
+ };
+ const select=(parent,name,key,levels,vital=false)=>{
+  const field=make('label',{class:'stage-book-field'},[make('span',{text:name})]);
+  const entry=make('select',{'aria-label':name,'data-book-setting':key,
+   onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
+  const selected=(vital?vitalsBuffs:buffs)[key]??0;
+  for(const [value,label] of levels)entry.append(make('option',{value,selected:String(selected)===String(value),text:label}));
+  entry.value=String(selected);field.append(entry);parent.append(field);
+ };
+ const toggle=(parent,name,key,vital=false,allowed=true)=>{
+  const node=make('label',{class:'stage-book-check'},[
+   make('input',{type:'checkbox','data-book-setting':key,
+    checked:(vital?vitalsBuffs:buffs)[key]===true,disabled:!allowed,
+    onchange:event=>(vital?onVital:onBuff)(key,event.target.checked)}),
+   make('span',{text:name+(allowed?'':' · недоступно для героя')})
+  ]);parent.append(node);
+ };
+ const opts=(units)=>units.map((n,i)=>[i,i===0?'Выключено':'Уровень '+i+' · +'+n]);
+ const vitals=section('ОЗ и ОМ');
+ select(vitals,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+ select(vitals,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+ toggle(vitals,'Знак жизни','lifeSign',true);
+ const guild=section('Гильдия и честь');
+ select(guild,'Все характеристики','guildAll',opts([0,1,2,3,4,5,6]));
+ select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
+ select(guild,'Титул чести','honorTitle',honorTitles.map(x=>[x.id,x.ru]));
+ const skills=section('Боевые умения');
+ for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
+  ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)']])
+  toggle(skills,label,key,false,availability[key]===true);
+ const regen=section('Восстановление');
+ select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
+ select(regen,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
+ select(regen,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
+ toggle(regen,'Руна «Чо Ын»','runeJoEun');
+ toggle(regen,'Показывать действие зелий','potionEffectsEnabled');
+ const other=section('Дополнительно');
+ toggle(other,'Проэлиум','proelium');
+ select(other,'Мощность Проэлиума','proeliumPotency',
+  Array.from({length:101},(_,i)=>[i,String(i)]));
+ if(modifiers)body.append(make('p',{class:'stage-attribute-note',text:
+  'Сейчас: '+modifiers.hp+' ОЗ, '+modifiers.mp+' ОМ. Усиления сохраняются в билде.'}));
+}
+function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
+ buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={}}={}){
+ target.replaceChildren();
+ const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
+ const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
+  next=bookPages[(index+1)%bookPages.length][0];
+ target.setAttribute('aria-label','Книга героя. '+bookPages[index][1]+'. Страница '+(index+1)+' из 6');
+ target.append(make('div',{class:'stage-attribute-head'},[
+  make('button',{type:'button',class:'stage-book-arrow',text:'‹',
+   onclick:()=>onPage(prior),'aria-label':'Предыдущая страница'}),
+  make('div',{class:'stage-book-heading'},[
+   make('span',{text:'КНИГА ГЕРОЯ · '+(index+1)+' / 6'}),
+   make('strong',{text:bookPages[index][1]})]),
+  make('button',{type:'button',class:'stage-book-arrow',text:'›',
+   onclick:()=>onPage(next),'aria-label':'Следующая страница'}),
+  make('button',{type:'button',text:'✕',class:'stage-book-close',onclick:onClose,
+   'aria-label':'Вернуть портрет'})
+ ]));
+ const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':'Разделы книги героя'});
+ for(const [name,label] of bookPages)nav.append(make('button',{
+  type:'button',role:'tab',text:label,'aria-selected':String(chosen===name),
+  'aria-pressed':String(chosen===name),'data-book-page':name,
+  class:chosen===name?'chosen':'',onclick:()=>onPage(name)
+ }));
  target.append(nav);
- const body=make('div',{class:'stage-attribute-scroll'});
- const intro=page==='attack'?'Параметры оружия':
- page==='defense'?'Защита снаряжения':'Бонусы предметов и душ';
- body.append(make('p',{class:'stage-attribute-note',text:intro}));
- const selected=items.filter(x=>page==='attack'?x.record?.slot==='weapon':
- page==='defense'?x.record&&(x.record.AC!=null||x.record.block!=null):x.record);
- if(!selected.length)body.append(make('p',{class:'muted',text:'Нет записей для этой вкладки'}));
+ const body=make('div',{class:'stage-attribute-scroll stage-book-page','data-book-visible':chosen});
+ if(chosen==='summary')summaryPage(body,modifiers);
+ if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,modifiers});
+ if(['attack','defense','effects'].includes(chosen)){
+  const intro=chosen==='attack'?'Параметры оружия':
+   chosen==='defense'?'Защита снаряжения':'Бонусы предметов и душ';
+  body.append(make('p',{class:'stage-attribute-note',text:intro}));
+ }
+ const selected=['attack','defense','effects'].includes(chosen)?
+  items.filter(x=>chosen==='attack'?x.record?.slot==='weapon':
+   chosen==='defense'?x.record&&(x.record.AC!=null||x.record.block!=null):x.record):[];
+ if(!selected.length&&['attack','defense','effects'].includes(chosen))
+  body.append(make('p',{class:'muted',text:'Нет записей для этой вкладки'}));
  for(const row of selected){
   const rec=row.record,card=make('section',{class:'stage-attribute-row'});
   const top=make('div',{class:'stage-attribute-identity'});
@@ -246,7 +346,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    text:'Включены подтверждённые базовые формулы, расовые способности, честь и структурированные эффекты вещей/душ; остальные боевые усиления пока не учтены.'}));
   body.prepend(card);
  }
- if(page==='defense'&&modifiers?.regeneration){
+ if(page==='recovery'&&modifiers?.regeneration){
   const regen=modifiers.regeneration,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Скорость естественного восстановления'}),
    make('p',{text:'ОЗ: '+regen.hp.total+' (база '+regen.hp.base+
@@ -257,7 +357,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
     text:'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Эффекты экипировки и активных навыков пока не включены.'}));
   body.prepend(card);
  }
- if(page==='defense'&&modifiers?.recoveryAmount){
+ if(page==='recovery'&&modifiers?.recoveryAmount){
   const natural=modifiers.recoveryAmount,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Естественное восстановление (расчётная величина)'}),
    make('p',{text:'ОЗ: '+natural.hp.known+' (максимум ОЗ '+natural.hp.maxContribution+
@@ -284,9 +384,14 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   for(const [key,val] of active)card.append(make('p',{text:names[key]+': '+(val>=0?'+':'')+val}));
   body.prepend(card);
  }
- body.append(make('p',{class:'stage-attribute-warning',
+ if(chosen==='recovery'&&modifiers?.healingSkill)body.prepend(make('section',{
+  class:'stage-attribute-row'},[
+  make('strong',{text:'Лечащие навыки'}),
+  make('p',{text:'Эффективность: '+modifiers.healingSkill.percent+'% (частичный расчёт)'})
+ ]));
+ if(chosen!=='buffs')body.append(make('p',{class:'stage-attribute-warning',
   text:'Некоторые эффекты, комплекты и усиления пока не учитываются в расчётах.'}));
  target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render});
+root.PandoraStageAttributes=Object.freeze({render,bookPages});
 })(typeof window==='undefined'?globalThis:window);
