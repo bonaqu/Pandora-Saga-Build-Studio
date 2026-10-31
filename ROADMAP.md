@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.137.0 (`2026.10.31.137`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.138.0 (`2026.10.31.138`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -613,3 +613,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Do not convert procs into deterministic attack statistics. Suppress a conflicting numeric chance when a source description disagrees (Soul 101009: 4% text vs b=5).
 - [x] Regression tests cover real proc skills, item-on-damage effects, grade bounds, contradictory chance and missing skills. Remaked coverage remains 53 missing/65 partial/15 base/10 buff previews: no completed damage formula is claimed.
 - [ ] Browser E2E, full npm test, exact trigger probabilities and remaining Remaked skills/target damage need verification.
+
+
+## Source update 0.138.0 — short-link idempotence and revisions
+
+- [x] Sharing an unchanged owned D1 build returns the existing 11-character short ID; repeated clicks no longer burn the daily share quota or create unnecessary duplicate links.
+- [x] Once a player updates a saved build, the older short URL remains an immutable snapshot and a new short URL is issued for the new character state. Deleting the original revokes **both** versions and scrubs both snapshots.
+- [x] Expanded mocked D1 server regression to cover idempotent sharing, different revisions, malicious client payloads, and multi-version revocation.
+- [ ] Run live browser link-copy flow, live D1 write/delete acceptance and complete Node test suite independently.

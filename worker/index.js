@@ -164,6 +164,10 @@ async function shareApi(request,env,path,ip){
  if(stored?.id!==payload.buildId||!validate(stored?.data))return no('Некорректная сохранённая запись',409);
  const canonical=JSON.stringify({schema:1,type:'build',data:stored.data});
  if(canonical.length>47000)return no('Share exceeds storage limit',413);
+ // Sharing an unchanged saved snapshot should return its existing short URL.
+ const existing=await env.DB.prepare('SELECT s.id FROM shared_build_sources AS m JOIN shared_builds AS s ON s.id=m.share_id WHERE m.owner_hash=? AND m.build_id=? AND s.payload=? ORDER BY s.created_at DESC LIMIT 1')
+  .bind(owner,payload.buildId,canonical).first();
+ if(existing?.id)return json({ok:true,id:existing.id,reused:true});
  const ipHash=await sha(ip),day=Math.floor(Date.now()/86400000);
  const limit=await env.DB.prepare('INSERT INTO shared_build_limits(ip_hash,day,created) VALUES(?,?,1) ON CONFLICT(ip_hash,day) DO UPDATE SET created=created+1 WHERE created<30').bind(ipHash,day).run();
  if(!limit.meta?.changes)return no('Share limit reached for today',429);

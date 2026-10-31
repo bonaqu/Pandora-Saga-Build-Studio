@@ -1942,7 +1942,7 @@ async function createShared(build,host){
     try{await navigator.clipboard.writeText(url);copy.textContent='✓ Скопировано'}
     catch{field.focus();field.select();copy.textContent='Выдели ссылку и скопируй Ctrl+C'}
    }});
-  message.append(h('p',{text:'Ссылка на билд создана.'}),
+  message.append(h('p',{text:response.reused?'Ссылка на билд уже создана.':'Ссылка на билд создана.'}),
    field,copy,h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));
   if(host.isConnected)host.replaceChildren(message);
  }catch(error){

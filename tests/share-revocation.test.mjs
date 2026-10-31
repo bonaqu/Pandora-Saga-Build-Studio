@@ -16,6 +16,12 @@ function db(){
     if(sql.startsWith('SELECT payload,deleted_at FROM private_builds')){const x=builds.get(v[0]+':'+v[1]);return x?{payload:x.payload,deleted_at:x.deleted_at}:null}
     if(sql.startsWith('SELECT payload FROM shared_builds'))return links.has(v[0])?{payload:links.get(v[0])}:null;
     if(sql.startsWith('SELECT owner_hash,build_id FROM shared_build_sources'))return sources.get(v[0])||null;
+    if(sql.startsWith('SELECT s.id FROM shared_build_sources AS m')){
+     for(const [id,source] of sources)
+      if(source.owner_hash===v[0]&&source.build_id===v[1]&&links.get(id)===v[2])
+       return {id};
+     return null;
+    }
     throw Error('Unexpected first query '+sql);
    };
    const run=async()=>{
@@ -53,11 +59,22 @@ test('two links become globally unavailable when the original is deleted, foreig
  assert.equal((await call(DB,'/api/library','POST',{action:'put',entry:{id:otherId,name:'Other',at:124,data:character}},OTHER)).status,200);
  const payload={schema:1,type:'build',buildId:id,data:character};
  const first=await call(DB,'/api/shared','POST',payload,OWNER);
+ const identical=await call(DB,'/api/shared','POST',payload,OWNER);
+ assert.equal(identical.status,200,'Same build version must reuse its URL');
+ assert.equal(identical.data.id,first.data.id);
+ assert.equal(identical.data.reused,true);
+ // Editing the source produces a new immutable public snapshot, not a mutation of the old one.
+ const changed={...character,level:54};
+ assert.equal((await call(DB,'/api/library','POST',
+  {action:'put',entry:{id,name:'Build updated',at:124,data:changed}},OWNER)).status,200);
  const second=await call(DB,'/api/shared','POST',payload,OWNER);
- // A malicious caller cannot replace the owned snapshot with arbitrary data.
+ assert.equal((await call(DB,'/api/shared/'+first.data.id)).data.share.data.level,55);
+ assert.equal((await call(DB,'/api/shared/'+second.data.id)).data.share.data.level,54);
+ // A malicious caller cannot replace an owned snapshot with arbitrary client data.
  const forged=await call(DB,'/api/shared','POST',{...payload,data:{race:0,job:0,level:1}},OWNER);
- assert.equal(forged.status,201);
- assert.equal((await call(DB,'/api/shared/'+forged.data.id)).data.share.data.level,55);
+ assert.equal(forged.status,200);
+ assert.equal(forged.data.id,second.data.id);
+ assert.equal((await call(DB,'/api/shared/'+forged.data.id)).data.share.data.level,54);
  assert.equal(first.status,201);assert.equal(second.status,201);
  assert.notEqual(first.data.id,second.data.id);
  const other=await call(DB,'/api/shared','POST',{...payload,buildId:otherId},OTHER);

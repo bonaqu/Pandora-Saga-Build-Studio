@@ -617,3 +617,8 @@ The Book now displays six actual OS soul effects against specific creature types
 ## Conditional item and Soul effects · 0.137.0
 
 Conditional on-hit/on-damage equipment and Soul skills appear separately in the Hero Book with names from the current OS skill catalog and source-reported chance values where consistent. One documented inconsistency, Soul 101009, suppresses its number rather than misrepresenting the probability. These are informational trigger descriptions, not guaranteed per-hit damage or permanent buffs.
+
+
+## Repeat sharing · 0.138.0
+
+The short link is stable for a given saved D1 character snapshot. Re-sharing an unchanged build returns the same URL without consuming another daily creation slot. Saving a revised build retains the old URL as a snapshot, while generating a distinct URL for the revision; deleting the original revokes **every** revision link. Links from old characters are still read-only.

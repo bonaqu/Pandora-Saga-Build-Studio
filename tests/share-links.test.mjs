@@ -8,6 +8,7 @@ test('share links use random short immutable IDs and public endpoints',()=>{
  const worker=read('worker/index.js'),migration=read('worker/migrations/0003_shares.sql');
  assert.match(worker,/\/api\/shared/);
  assert.match(worker,/const id=b64\(random\(8\)\)/);
+ assert.match(worker,/if\(existing\?\.id\)return json\(\{ok:true,id:existing\.id,reused:true\}\)/);
  assert.match(worker,/shared_build_limits/);
  assert.match(worker,/JSON\.stringify\(\{schema:1,type:'build',data:stored\.data\}\)/);
  assert.match(migration,/CREATE TABLE IF NOT EXISTS shared_build_sources/);
