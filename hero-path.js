@@ -126,16 +126,33 @@ function viewGrowth(target,api){
     const marks=api.milestones(skills,key,cap);
     let unlockDetails=null;
     if(marks.length){
-     // Non-interactive ticks cannot obstruct the native range thumb or track.
-     const ticks=make('div',{class:'inline-branch-milestones','aria-hidden':'true'});
+     const ticks=make('div',{class:'inline-branch-milestones'});
      const thresholds=[...new Set(marks.map(mark=>mark.threshold))].sort((a,b)=>a-b);
      for(const threshold of thresholds){
       const at=marks.filter(mark=>mark.threshold===threshold);
       const lockedAt=at.every(mark=>mark.locked);
+      const skillsAt=at.flatMap(mark=>mark.skills);
       const tick=make('span',{class:'path-threshold-tick'+(lockedAt?' unreachable':''),
-       'data-milestone-points':String(threshold)});
+       'data-milestone-points':String(threshold),tabindex:'0',
+       'aria-label':threshold+' очков: '+skillsAt.map(skill=>skill.name).join(', ')});
       tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';
-      ticks.append(tick);
+      const preview=make('div',{class:'path-milestone-tooltip',role:'tooltip'});
+      preview.append(make('strong',{text:threshold+' очков'}));
+      for(const skill of skillsAt){
+       const row=make('div',{class:'path-milestone-preview'});
+       const source=api.icon(skill.branch,skill);
+       if(source){
+        const img=make('img',{src:source,alt:''});
+        img.onerror=()=>img.remove();
+        row.append(img);
+       }
+       row.append(make('div',{},[
+        make('b',{text:skill.name||'Умение'}),
+        make('small',{text:skill.desc||'Описание отсутствует.'})
+       ]));
+       preview.append(row);
+      }
+      tick.append(preview);ticks.append(tick);
      }
      track.append(ticks);
      // A separate collapsed list provides access to every skill without covering the drag surface.
