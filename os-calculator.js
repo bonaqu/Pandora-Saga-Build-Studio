@@ -898,6 +898,27 @@ function experienceBonusPreview({records=[],itemForth=null}={}){
  return {entries,verified:false};
 }
 
+// These two OS effects are explicit additions to attack/bow range, not
+// complete weapon range formulas. Their paired *_CARRY effects are separate
+// server fields and must not silently double the displayed distance bonus.
+const rangeEffectKeys=Object.freeze({EP_RACE_RANGE:'general',EP_BOW_RANGE:'bow'});
+function attackRangePreview({records=[],itemForth=null}={}){
+ if(!Array.isArray(records))return null;
+ const totals={general:0,bow:0},entries=[];
+ for(const [source,record,grade] of records){
+  if(!record||!Number.isInteger(grade)||grade<0||grade>10)continue;
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
+   const key=rangeEffectKeys[effect?.func];
+   if(!key||!Number.isFinite(effect.a)||
+    (Number.isFinite(effect.min)&&grade<effect.min)||
+    (Number.isFinite(effect.max)&&grade>effect.max))continue;
+   totals[key]+=effect.a;
+   entries.push({source:String(record.name||source),kind:key,amount:effect.a});
+  }
+ }
+ return {...totals,entries,verified:false};
+}
+
 // Classify item effects by what THIS calculator can genuinely support.
 // A code being present in OS does not mean it has been included in a stat.
 // Keep conditional procs and unmapped effects visible, not silently counted.
@@ -913,7 +934,8 @@ const calculatedCodes=new Set([
 const previewCodes=new Set([
  'EP_MOVESPEED_SCALE','EP_SKILL_DELAY','EP_SKILL_DELAY_FIN',
  'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE','EP_ONDAMAGE_FDS_RACE','EP_VOLUME_EXP',
- 'EP_CASTINGCANCEL_RESISTANCE_CONST','EP_HEAL_TIME_SCALE'
+ 'EP_CASTINGCANCEL_RESISTANCE_CONST','EP_HEAL_TIME_SCALE',
+ 'EP_RACE_RANGE','EP_BOW_RANGE'
 ]);
 function effectCoverage({records=[],itemForth=null}={}){
  const counts={calculated:0,preview:0,conditional:0,missing:0,inactive:0};
@@ -1243,6 +1265,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   resistances.gemstones={...gemstones.resistance};
  }
  const auraDamage=auraDamagePreview({gemstones,records:combinedRecords,itemForth});
+ const attackRange=attackRangePreview({records:combinedRecords,itemForth});
  const elementalMagic=elementalMagicPreview({honorTitle:extra.honor.id});
  const mountedRelease=mountedReleasePreview({jobKey:combatContext.jobKey,
   ridingMastery:combatContext.ridingMastery??0,honorTitle:extra.honor.id});
@@ -1279,7 +1302,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,regeneration,legacyBuffs,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -1287,6 +1310,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

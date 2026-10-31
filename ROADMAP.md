@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.175.0 (`2026.11.01.175`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.176.0 (`2026.11.01.176`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.176.0 — source-backed attack range equipment bonuses
+
+- Read EP_RACE_RANGE and EP_BOW_RANGE directly from currently equipped OS items and compatible grade-gated effects. Show them separately in the hero's attack book.
+- Keep paired EP_RACE_CARRY/EP_BOW_CARRY untouched: they are distinct fields and must not be counted twice as range. A bonus is not presented as the character's final attack reach without weapon/client evidence.
+- Test real current OS Sight (11083), Dwarf Dawn Helmet (11542), Hunter's Beret (11202) and Hunter's Ring (19006), including grade thresholds and no phantom bonus after unequip.
 
 ## Source update 0.175.0 — propagate mastered branches and fail closed on unlearnable skills
 

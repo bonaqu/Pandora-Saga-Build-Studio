@@ -408,6 +408,15 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     '% · титул +'+riding.honor+'%'}));
   body.prepend(card);
  }
+ if(page==='attack'&&modifiers?.attackRange?.entries?.length){
+  const range=modifiers.attackRange,card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Бонусы дальности от снаряжения'}));
+  if(range.general)card.append(make('p',{text:'Дальность атаки: '+
+   (range.general>0?'+':'')+range.general}));
+  if(range.bow)card.append(make('p',{text:'Дальность стрельбы: '+
+   (range.bow>0?'+':'')+range.bow}));
+  body.prepend(card);
+ }
  if(page==='attack'&&modifiers?.elementalMagic){
   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',
    poison:'Яд',light:'Свет',dark:'Тьма'};
