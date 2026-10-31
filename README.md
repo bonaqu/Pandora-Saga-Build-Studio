@@ -599,3 +599,6 @@ Opening a different saved character with unsaved current changes never silently 
 ## Deletion reliability · 0.133.0
 
 A failed localStorage write must not silently disable cloud deletion. The site attempts an immediate Worker deletion even if the offline queue is unavailable, then clearly warns if both the queue and cloud request failed. Re-opening the build just saved uses the newest in-memory snapshot, not the previous UI card object.
+
+
+Regression notes (0.134.0): automated source assertions for opening a previously saved build now inspect the newest library row, not an outdated UI-card object. See `tests/build-save-workflow.test.mjs` and `tests/share-links.test.mjs`.

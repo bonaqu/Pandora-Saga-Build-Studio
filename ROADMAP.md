@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.133.0 (`2026.10.31.133`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.134.0 (`2026.10.31.134`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -583,3 +583,10 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] If the browser cannot store a queued offline deletion, still attempt immediate server deletion and explicitly warn when a later retry cannot be guaranteed. Never claim revocation before D1 confirms it.
 - [x] Keep all current 1–55 planning, per-build revocable links, D1 migration and Remaked audit in place.
 - [ ] Confirm full Node suite, cross-browser/cloud Worker lifecycle, and unimplemented combat/skill effects.
+
+
+## Source update 0.134.0 — correct saved-build regression expectations
+
+- [x] The share-link and save-workflow tests now require the **current** source of truth (`latest.data` and `latest.id`) instead of the stale card snapshot after Save-and-open.
+- [x] Keep existing new-character, D1 revocation, inline UI, legacy field compatibility and release guards unchanged.
+- [ ] Run actual full Node suite and browser/Worker E2E; these test-source corrections do not prove the suite passes.
