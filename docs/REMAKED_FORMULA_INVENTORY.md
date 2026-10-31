@@ -9,8 +9,8 @@
 ## Результат аудита
 
 - **BASE/PREVIEW:** 15 уникальных ключей
-- **PARTIAL:** 65 уникальных ключей
-- **NOT YET PORTED:** 53 уникальных ключа
+- **PARTIAL:** 76 уникальных ключей
+- **NOT YET PORTED:** 42 уникальных ключа
 - **BUFF PREVIEW:** 10 уникальных ключей
 
 ### Приоритет завершения
@@ -134,20 +134,20 @@
 | `Reflection` | [135] 近接物理ダメージ反射率 | 1114 | PARTIAL |
 | `DReflect` | [136] Debuff反射確率 | 1121 | NOT YET PORTED |
 | `RESDAura` | [137] 闇オーラの反動ダメージ | 1128 | NOT YET PORTED |
-| `RESBurn` | [148] 火傷耐性                       [163] 火傷の耐性段階 | 1136 | NOT YET PORTED |
-| `RESStun` | [149] 気絶耐性                       [164] 気絶の耐性段階 | 1144 | NOT YET PORTED |
-| `RESFrozen` | [150] 凍傷耐性                       [165] 凍傷の耐性段階 | 1152 | NOT YET PORTED |
-| `RESKD` | [151] 転倒耐性                       [166] 転倒の耐性段階 | 1161 | NOT YET PORTED |
+| `RESBurn` | [148] 火傷耐性                       [163] 火傷の耐性段階 | 1136 | PARTIAL |
+| `RESStun` | [149] 気絶耐性                       [164] 気絶の耐性段階 | 1144 | PARTIAL |
+| `RESFrozen` | [150] 凍傷耐性                       [165] 凍傷の耐性段階 | 1152 | PARTIAL |
+| `RESKD` | [151] 転倒耐性                       [166] 転倒の耐性段階 | 1161 | PARTIAL |
 | `RESPurler` | [152] 落馬耐性                       [167] 落馬の耐性段階 | 1170 | NOT YET PORTED |
-| `RESKB` | [153] ノックバック耐性               [168] ノックバックの耐性段階 | 1177 | NOT YET PORTED |
+| `RESKB` | [153] ノックバック耐性               [168] ノックバックの耐性段階 | 1177 | PARTIAL |
 | `RESBleeding` | [154] 出血耐性                       [170] 出血の耐性段階 | 1184 | NOT YET PORTED |
-| `RESSleep` | [156] 睡眠耐性                       [172] 睡眠の耐性段階 | 1191 | NOT YET PORTED |
-| `RESMadness` | [157] 乱心耐性                       [173] 乱心の耐性段階 | 1198 | NOT YET PORTED |
-| `RESSilence` | [158] 沈黙耐性                       [174] 沈黙の耐性段階 | 1205 | NOT YET PORTED |
-| `RESCurse` | [159] 呪い耐性                       [175] 呪いの耐性段階 | 1212 | NOT YET PORTED |
+| `RESSleep` | [156] 睡眠耐性                       [172] 睡眠の耐性段階 | 1191 | PARTIAL |
+| `RESMadness` | [157] 乱心耐性                       [173] 乱心の耐性段階 | 1198 | PARTIAL |
+| `RESSilence` | [158] 沈黙耐性                       [174] 沈黙の耐性段階 | 1205 | PARTIAL |
+| `RESCurse` | [159] 呪い耐性                       [175] 呪いの耐性段階 | 1212 | PARTIAL |
 | `RESWeakening` | [160] 衰弱耐性                       [176] 衰弱の耐性段階 | 1219 | NOT YET PORTED |
-| `RESDisease` | [161] 病気耐性                       [177] 病気の耐性段階 | 1226 | NOT YET PORTED |
-| `RESDebuff` | [162] 被Debuff持続時間 | 1233 | NOT YET PORTED |
+| `RESDisease` | [161] 病気耐性                       [177] 病気の耐性段階 | 1226 | PARTIAL |
+| `RESDebuff` | [162] 被Debuff持続時間 | 1233 | PARTIAL |
 | `FirstAid` | ファーストエイド | 1253 | BASE/PREVIEW |
 | `Heal` | ヒール | 1259 | BASE/PREVIEW |
 | `Regenerate` | リクライム | 1265 | NOT YET PORTED |
@@ -181,3 +181,8 @@
 ## Update 0.136.0 — creature resistance Soul preview
 
 Five original RES branches now show explicit OS `EP_ONDAMAGE_FDS_RACE` values by category (animal 502, devil 504, undead 505, reptilian 508, ghost 511). OS golems 512 are displayed separately and **not** presumed equal to Remaked `RESInanimate`; `RESInsect` and `RESInanimate` remain NOT YET PORTED. These are conditional signed source percentages; stacking and final incoming damage are not verified.
+
+
+## 0.144.0 — сопротивления состояниям
+
+11 ветвей получили статус PARTIAL по структурированным OS эффектам экипировки и душ: огонь/обморожение/падение с бонусами чести, устойчивость к оглушению, отбрасыванию, сну, безумию, молчанию, проклятию, болезни, снижение длительности дебаффов. Умение OS 260007001 «Устойчивость» даёт по +15 к оглушению, обморожению и падению только при валидном доступе и зеленом мастерстве warding не ниже 26. Расовая пассивка 900030001 добавляет +10 к оглушению и падению. Не установлена игровая формула фактической вероятности наложения, а отсутствующие bleed/unseat/weakening не придуманы.

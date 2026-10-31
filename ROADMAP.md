@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.143.0 (`2026.10.31.143`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.144.0 (`2026.10.31.144`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -663,3 +663,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Differentiate "cloud has a newer version" and "source already deleted" errors.
 - [x] Add regression tests for stale writes, source deletion races and offline cloud reconciliation.
 - [ ] Complete Node tests, real Cloudflare D1 conflict scenarios and browser offline/online acceptance are still required. Multi-device wall-clock skew remains a limitation of client timestamps.
+
+
+## 0.144.0 — complete the available OS inputs to old Remaked status resistances
+
+- [x] Eleven historical status/debuff-resistance branches advance to PARTIAL, with game-source-backed equipment values and verified Honor, Dwarf and Warding skill effects where applicable. Counts: 42 NOT YET PORTED, 76 PARTIAL, 15 BASE/PREVIEW and 10 BUFF PREVIEW.
+- [x] Current OS passive 260007001 requires Warding Adeptness 26, allowed class and exactly one TARGET row for each of three +15 effects; duplicated CASTER frostbite row is ignored. The Dwarf racial passive 900030001 adds +10 to stun and tumble, while fire/ice/lightning Honor titles each grant +5 to a distinct status.
+- [x] No unsupported numerical combat hit chance, immune status threshold or non-OS bleeding and unseat effect is fabricated.
+- [ ] Full Node/browser E2E and verification against actual game server remain outstanding.

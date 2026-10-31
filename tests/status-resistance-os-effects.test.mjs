@@ -36,7 +36,7 @@ test('incoming critical resistance uses negative modifier, not increased critica
 });
 test('book labels player-friendly status effects rather than exposing raw EP_* codes',()=>{
  const book=read('stage-attributes.js');
- assert.match(book,/Сопротивления состояниям от снаряжения/);
+ assert.match(book,/Сопротивления состояниям/);
  assert.match(book,/rs\.status/);
  assert.match(book,/Заморозка/);
  assert.match(book,/Пробитие блока/);

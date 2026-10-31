@@ -567,6 +567,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    card.append(make('p',{class:'stage-resistance-gem-summary',text:
     'От самоцветов: '+added}));
   }
+  if(rs.wardingPassive)
+   card.append(make('p',{text:'Устойчивость: +15 к оглушению, заморозке и падению'}));
   card.append(make('p',{text:'Физические состояния: '+rs.states.physical}),
    make('p',{text:'Психические состояния: '+rs.states.mental}));
   const statusNames={burn:'Ожоги',stun:'Оглушение',numb:'Заморозка',
@@ -575,7 +577,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    disease:'Болезнь',madness:'Помешательство',blockBreak:'Пробитие блока'};
   const resist=Object.entries(rs.status||{}).filter(([,v])=>v!==0);
   if(resist.length){
-   card.append(make('strong',{text:'Сопротивления состояниям от снаряжения'}));
+   card.append(make('strong',{text:'Сопротивления состояниям'}));
    for(const [key,value] of resist)
     card.append(make('p',{text:(statusNames[key]||key)+': '+
      (value>0?'+':'')+value}));

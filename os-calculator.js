@@ -261,10 +261,28 @@ function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
   source:'Remaked Legacy Calc(POT); verified OS racial ID 900010003',
   excluded:['non-legacy/current-server conditional recovery modifiers']};
 }
+// Current OS skill 260007001 requires Warding 26 and supplies exactly
+// three TARGET resistance effects. The duplicate CASTER Numb is not additive.
+function wardingStatusPassive({jobKey=null,wardingMastery=0,skillCatalog=null}={}){
+ if(!Number.isInteger(wardingMastery)||wardingMastery<26||
+  !jobKey||!skillCatalog)return null;
+ const skill=skillCatalog['260007001'];
+ if(skill?.skillType!=='PASSIVE'||skill.branch!=='warding'||
+  !skill.classes?.[jobKey]||
+  !skill.reqs?.some(req=>req.branch==='warding'&&req.amount===26))return null;
+ const values={},keys={EP_IMMUNE_STUN:'stun',EP_IMMUNE_NUMB:'numb',EP_IMMUNE_TUMBLE:'tumble'};
+ for(const [ep,key] of Object.entries(keys)){
+  const matches=skill.funcs?.filter(row=>row.ep===ep&&row.dir==='TARGET')||[];
+  if(matches.length!==1||!Number.isFinite(matches[0].fv1?.[3]))return null;
+  values[key]=matches[0].fv1[3];
+ }
+ return values;
+}
 // Remaked Legacy js/calc.js RES* formulas: only confirmed base terms,
 // chosen Honor, selected racial passive and structured OS equipment effects.
 // Active casts, guild resistances, gem conditions and other buffs are excluded.
-function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=null}={}){
+function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=null,
+ jobKey=null,wardingMastery=0,skillCatalog=null}={}){
  if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
  const title=honorTitles[honorTitle].effects,elementKeys=[
@@ -279,18 +297,21 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
  const elements={};
  const statusKeys=['burn','stun','numb','tumble','knockback','sleep',
   'silence','evil','curse','disease','madness','blockBreak'];
- const status={};
+ const status={},passive=wardingStatusPassive({jobKey,wardingMastery,skillCatalog});
+ const honorStatus={burn:honorTitle===3?5:0,numb:honorTitle===4?5:0,
+  tumble:honorTitle===5?5:0};
+ const dwarfStatus=racialPassiveId===900030001?{stun:10,tumble:10}:{};
  for(const key of statusKeys){
   const amount=Number(bonuses[key]??0);
   if(!Number.isFinite(amount))return null;
-  status[key]=amount;
+  status[key]=amount+(honorStatus[key]||0)+(dwarfStatus[key]||0)+(passive?.[key]||0);
  }
  for(const key of elementKeys){
   const equip=Number(bonuses[key]??0);
   if(!Number.isFinite(equip))return null;
   elements[key]=equip+(Number(title[key])||0)+(Number(racial[key])||0);
  }
- return {elements,status,
+ return {elements,status,wardingPassive:passive,
   states:{
    physical:Math.floor(stats.vit/28)*7+(Number(title.physicalState)||0)+
     racial.physicalState+(Number(bonuses.physicalStatus)||0),
@@ -1087,7 +1108,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const potion=potionRecovery({vit:stats.vit,records:combinedRecords,honorTitle:extra.honor.id,
   level,itemForth,...potionContext,runeJoEun:false});
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
-  honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
+  honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,
+  jobKey:combatContext.jobKey,wardingMastery:combatContext.wardingMastery,
+  skillCatalog:combatContext.skillCatalog});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
  const gemstones=gemstonePreview(gemSelections);
  const otherEquipment=secondaryEffectsPreview({records:combinedRecords,itemForth});
@@ -1150,6 +1173,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

@@ -647,3 +647,8 @@ Libraries of six or more builds now include one compact search field for names, 
 ## Offline edit protection · 0.143.0
 
 When an already saved build is updated offline, reloading the cloud library retains the newer local revision and retries the D1 upload. Cloudflare D1 rejects out-of-order older writes with an atomic conflict guard and does not allow late saves to restore deleted source builds. The workbench distinguishes stale-version conflicts from removed-original conflicts. Full browser and live D1 acceptance is a separate verification step.
+
+
+## Status resistance parity · 0.144.0
+
+The defensive Hero Book now includes real OS source-based bonuses from Warding's «Устойчивость», the Dwarf's «Упрямое сердце», the fire/ice/lightning Honor titles, and structured equipment and Soul resistances. Eleven historical Remaked keys advance to partial support; not all conditional or immunity rules are modeled. These resistances are not assumed to equal final combat status-proc probabilities.
