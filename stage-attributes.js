@@ -72,9 +72,12 @@ function buffsPage(body,options){
    node.append(img);
   }
   const info=make('span',{class:'stage-combat-buff-copy',text:name});
-  if(skill&&!allowed&&Number.isInteger(skill.level)&&skill.level>0)
-   info.append(make('small',{text:'Требуется уровень '+skill.level}));
-  else if(!allowed)info.append(make('small',{text:'Недоступно для героя'}));
+  if(skill&&!allowed){
+   const detail=Number.isInteger(skill.level)&&skill.level>0?
+    'Уровень '+skill.level+' · проверьте профессию и экипировку':
+    'Недоступно для героя';
+   info.append(make('small',{text:detail}));
+  }else if(skill?.summary)info.append(make('small',{text:skill.summary}));
   node.append(info);parent.append(node);
  };
  const opts=(units)=>units.map((n,i)=>[i,i===0?'Выключено':'Уровень '+i+' · +'+n]);
