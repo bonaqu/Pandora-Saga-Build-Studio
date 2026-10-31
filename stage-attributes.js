@@ -690,6 +690,28 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   if(!shown.length)potions.append(make('p',{class:'muted',
    text:'Для текущих зелий ещё нет доступных значений.'}));
   body.append(potions);
+  const manaItems=modifiers?.consumableRecovery?.rows||[];
+  if(manaItems.length){
+   const mana=make('section',{class:'stage-attribute-row stage-mana-consumables'});
+   mana.append(make('strong',{text:'Предметы восстановления ОМ'}));
+   for(const entry of manaItems){
+    const item=itemById(entry.id);
+    const row=make(item?'button':'div',{class:'stage-potion-item',
+     ...(item?{type:'button','aria-label':'Открыть в энциклопедии: '+entry.name,
+      onclick:()=>onItem(entry.id)}:{})});
+    if(item){
+     const src=icon(item);
+     if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
+      picture.onerror=()=>picture.remove();row.append(picture);}
+    }
+    row.append(make('span',{class:'stage-potion-name',text:entry.name}),
+     make('strong',{text:(entry.hp>0?entry.hp+' ОЗ + ':'')+entry.mp+' ОМ'}));
+    mana.append(row);
+   }
+   mana.append(make('p',{class:'stage-periodic-hint',
+    text:'Эффект при использовании. Бонус эффективности зелий к ОМ не применён.'}));
+   body.append(mana);
+  }
   renderSkillInspector(body,skillModel);
  }
  if(chosen==='recovery'&&modifiers?.healingSkill){

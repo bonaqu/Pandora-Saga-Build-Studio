@@ -977,6 +977,46 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
 // The source values are never added to natural regeneration or current HP/MP.
 // Availability is gated by current OS skill IDs and actual trained mastery.
 
+
+// Explicit current OS item EP_HEAL_MANA(_RATE) and EP_HEAL_LIFE(_RATE).
+// These are used-on-demand values, never a bonus to maximum HP/MP or passive regen.
+// Remaked POT scaling is established for HP; mana POT scaling remains unverified.
+const displayedRecoveryIds=Object.freeze([50006,50007,50008,50009,50061,50063,50025,70027]);
+function consumableRecoveryPreview({items=null,maxHp=null,maxMp=null,potionRate=null,
+ applyHpPotionBonus=false}={}){
+ if(!items||typeof items!=='object'||!Number.isFinite(maxHp)||maxHp<0||
+  !Number.isFinite(maxMp)||maxMp<0||
+  (applyHpPotionBonus&&(!Number.isFinite(potionRate)||potionRate<0)))return null;
+ const rows=[];
+ for(const id of displayedRecoveryIds){
+  const item=items[String(id)];
+  if(!item||!Array.isArray(item.effects))continue;
+  const effects=[];
+  let hp=0,mp=0;
+  for(const effect of item.effects){
+   const {func,a}=effect;
+   if(!['EP_HEAL_LIFE','EP_HEAL_LIFE_RATE',
+     'EP_HEAL_MANA','EP_HEAL_MANA_RATE'].includes(func)||
+     !Number.isFinite(a)||a<0)continue;
+   const isHp=func.startsWith('EP_HEAL_LIFE'),rate=func.endsWith('_RATE');
+   const maximum=isHp?maxHp:maxMp;
+   // Percent sources use the current maximum mana / health, not current mana.
+   const basic=rate?Math.floor(maximum*a/100):a;
+   const hpBoost=isHp&&applyHpPotionBonus;
+   const adjusted=hpBoost?(rate?
+    Math.floor(maximum*Math.ceil(a*potionRate)/10000):
+    Math.floor(a*potionRate/100)):basic;
+   effects.push({func,amount:a,rate,basic,adjusted,kind:isHp?'hp':'mp'});
+   if(isHp)hp+=adjusted;
+   else mp+=adjusted;
+  }
+  if(effects.some(x=>x.kind==='mp'))
+   rows.push({id,name:item.name||'Предмет',hp,mp,
+    effects,source:'Pandora Saga OS item effects',verified:false});
+ }
+ return {rows,verified:false};
+}
+
 function periodicRecoveryPreview({level,benevolence=0,jobKey=null,skillCatalog=null}={}){
  if(!Number.isInteger(level)||level<1||level>55||
   !Number.isInteger(benevolence)||benevolence<0||typeof jobKey!=='string')
@@ -1135,6 +1175,7 @@ function mountedReleasePreview({jobKey,ridingMastery=0,honorTitle=0}={}){
   verified:false,source:"Remaked js/calc.js:555–566"};
 }
 function base({classData,raceData,jobData,allocation,level,records=[],itemForth=null,
+ consumableItems=null,
  unisonCatalog=null,supplementalFlat={},supplementalSource=null,
  enhancements={},attributeBuffs={},potionContext={},combatContext={},gemSelections=[]}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
@@ -1204,6 +1245,11 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   benevolence:combatContext.benevolenceMastery??0,
   jobKey:combatContext.jobKey,healingPercent:healingSkill.percent
  }):null;
+ const consumableRecovery=consumableRecoveryPreview({
+  items:consumableItems,maxHp:hpBase+hpBonus.total,
+  maxMp:mpBase+mpBonus.total,potionRate:potion?.percent??null,
+  applyHpPotionBonus:attributeBuffs?.potionEffectsEnabled===true
+ });
  const periodicRecovery=periodicRecoveryPreview({
   level,benevolence:combatContext.benevolenceMastery??0,
   jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog
@@ -1219,7 +1265,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,regeneration,legacyBuffs,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -1227,6 +1273,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

@@ -244,6 +244,7 @@ function previewBaseStats(){
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
   allocation,level:state.level,records,itemForth:gameItemForth,gemSelections,
   unisonCatalog:catalogSource?.unison||null,
+  consumableItems:catalogSource?.items||null,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},

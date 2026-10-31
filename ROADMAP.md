@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.169.0 (`2026.11.01.169`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.170.0 (`2026.11.01.170`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.170.0 — real OS mana consumables in the hero book
+
+- Calculate MP restoration from exact current OS `EP_HEAL_MANA` and `EP_HEAL_MANA_RATE` effects for known consumables, including combined HP/MP items and max-MP scaling.
+- Keep Remaked potion mastery scaling only on HP until its effect on mana is evidenced. Never mutate current MP or the maximum MP from a one-use item.
+- Show a compact, navigable group of mana-recovery items in the book and cover all values in the Node and Chromium suites.
 
 ## Source update 0.169.0 — recipient share lifecycle in Chromium
 
