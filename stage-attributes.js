@@ -131,7 +131,7 @@ function renderSkillInspector(body,model){
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
- skillModel=null}={}){
+ skillModel=null,itemById=()=>null,onItem=()=>{}}={}){
  target.replaceChildren();
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
@@ -414,10 +414,15 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   card.append(make('strong',{text:'Сопротивления'}));
   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
    charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия'};
-  for(const [key,value] of Object.entries(rs.elements)){
-   if(value===0)continue;
-   card.append(make('p',{text:labels[key]+': '+(value>0?'+':'')+value}));
+  const elements=make('div',{class:'stage-resistance-grid'});
+  for(const [key,value] of Object.entries(rs.elements||{})){
+   if(!Number.isFinite(value))continue;
+   elements.append(make('div',{class:'stage-resistance-tile'+(value<0?' negative':'')},[
+    make('span',{text:labels[key]||key}),
+    make('strong',{text:(value>0?'+':'')+value})
+   ]));
   }
+  card.append(elements);
   card.append(make('p',{text:'Физические состояния: '+rs.states.physical}),
    make('p',{text:'Психические состояния: '+rs.states.mental}));
   const statusNames={burn:'Ожоги',stun:'Оглушение',numb:'Заморозка',
@@ -500,10 +505,22 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   })||[];
   const shown=known.filter(x=>x.current);
   for(const entry of shown){
-   potions.append(make('div',{class:'stage-potion-item'},[
-    make('span',{text:entry.ru||entry.en||'Зелье'}),
-    make('strong',{text:entry.value==null?'—':String(entry.value)+(entry.enabled?' ОЗ':'')})
-   ]));
+   const item=entry.id==null?null:itemById(entry.id);
+   const row=make(item?'button':'div',{class:'stage-potion-item',
+    ...(item?{type:'button','aria-label':'Открыть в энциклопедии: '+(item.name||entry.ru),
+     onclick:()=>onItem(entry.id)}:{})});
+   const label=make('span',{class:'stage-potion-name',text:entry.ru||entry.en||'Зелье'});
+   if(item){
+    const source=icon(item);
+    if(source){
+     const picture=make('img',{src:source,alt:'',loading:'lazy'});
+     picture.onerror=()=>picture.remove();
+     row.append(picture);
+    }
+   }
+   row.append(label,make('strong',{text:entry.value==null?'—':
+    String(entry.value)+(entry.enabled?' ОЗ':'')}));
+   potions.append(row);
   }
   if(!shown.length)potions.append(make('p',{class:'muted',
    text:'Для текущих зелий ещё нет доступных значений.'}));
