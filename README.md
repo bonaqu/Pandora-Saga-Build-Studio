@@ -627,3 +627,8 @@ The short link is stable for a given saved D1 character snapshot. Re-sharing an 
 ## Complete cloud library list · 0.139.0
 
 The D1 library GET response preserves old active builds even after many deletions: live records sort first, tombstones second, and the former 250-row cap is removed. Tombstones prevent a stale local cache from reintroducing a deleted build. Extremely large deletion histories should eventually move to cursor-based synchronization to bound request size.
+
+
+## D1 regression testing · 0.140.0
+
+The mock D1 adapter used in share revocation and library lifecycle tests now handles the same SQL branches as the Worker: private-source state checks, missing optional share tables, and tombstone revocation. A standalone SQLite query check verified that an active build remains visible after 300 deletion records. Live deployment, actual D1 writes and the full Node suite are distinct validations.

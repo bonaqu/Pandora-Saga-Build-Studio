@@ -14,6 +14,7 @@ function db(){
     if(sql.startsWith('SELECT build_id,deleted_at FROM private_builds')){const x=builds.get(v[0]+':'+v[1]);return x?{build_id:v[1],deleted_at:x.deleted_at}:null}
     if(sql.startsWith('SELECT COUNT(*) AS total FROM private_builds'))return{total:[...builds.keys()].filter(k=>k.startsWith(v[0]+':')).length};
     if(sql.startsWith('SELECT payload,deleted_at FROM private_builds')){const x=builds.get(v[0]+':'+v[1]);return x?{payload:x.payload,deleted_at:x.deleted_at}:null}
+    if(sql.startsWith('SELECT deleted_at FROM private_builds')){const x=builds.get(v[0]+':'+v[1]);return x?{deleted_at:x.deleted_at}:null}
     if(sql.startsWith('SELECT payload FROM shared_builds'))return links.has(v[0])?{payload:links.get(v[0])}:null;
     if(sql.startsWith('SELECT owner_hash,build_id FROM shared_build_sources'))return sources.get(v[0])||null;
     if(sql.startsWith('SELECT s.id FROM shared_build_sources AS m')){

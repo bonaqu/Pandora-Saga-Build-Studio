@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.139.0 (`2026.10.31.139`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.140.0 (`2026.10.31.140`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -629,3 +629,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Active rows are ordered before tombstones; all deletion IDs remain represented to prevent an old offline cache from treating deleted builds as new unsynced characters.
 - [x] Regression guard covers one original level-55 build and 275 newer tombstones without dropping that active record.
 - [ ] Consider paged sync and compact tombstone records for extremely large historical libraries; verify full Node suite, real D1 E2E and browser acceptance.
+
+
+## Source update 0.140.0 — faithful D1 test doubles
+
+- [x] The mocked D1 query layer now supports both read shapes used by the public share lifecycle: the source snapshot and the source deletion status. Revoked links can be checked for their actual HTTP 410 response rather than a spurious mock-only 500.
+- [x] Library lifecycle mocks now distinguish the existing private_builds table from an absent shared_build_sources table. The offline/legacy delete path no longer attempts an unsupported fake D1 batch.
+- [x] Independently confirmed the SQLite ordering with one active level-55 build and 300 tombstones: all 301 rows remain available with the active build first.
+- [ ] Full Node npm test and deployed browser E2E are still required; updating test doubles does not constitute full-suite success.

@@ -8,7 +8,9 @@ const ORIGIN='https://bonaqu.github.io';
 function database(){
  const rows=new Map();
  return {prepare(sql){
-  if(sql.includes('FROM sqlite_master'))return {all:async()=>({results:[{name:'private_builds'}]})};
+  if(sql.includes('FROM sqlite_master'))return {all:async()=>({
+   results:sql.includes("name='shared_build_sources'")?[]:[{name:'private_builds'}]
+  })};
   if(sql.startsWith('SELECT build_id,payload,deleted_at FROM'))return{bind(owner){
    return{all:async()=>({results:[...rows.entries()].filter(([k])=>k.startsWith(owner+':')).map(([,v])=>v)})};
   }};
