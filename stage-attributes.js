@@ -358,13 +358,13 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Боевые параметры'}));
   card.append(make('p',{text:'Физическая атака оружия: '+
-   (cm.attack?.known??'—')+' (без дополнительных боевых усилений)'}),
+   (cm.attack?.known??'—')+' · с выбранными усилениями'}),
    make('p',{text:'Точность: '+cm.accuracy.known+' (база '+
     cm.accuracy.base+', бонусы '+(cm.accuracy.known-cm.accuracy.base)+')'}),
    make('p',{text:'Уклонение: '+cm.dodge.known+' (база '+
     cm.dodge.base+', бонусы '+(cm.dodge.known-cm.dodge.base)+')'}),
-   make('p',{text:'Критический шанс: '+cm.critical.known+
-    ' (без временных усилений)'}));
+   make('p',{text:'Критический шанс: '+cm.critical.known}),
+   make('p',{text:'Исходящий критический урон: '+cm.criticalDamage+'%'}));
   if(cm.attack?.flatEquipment||cm.attack?.percentEquipment?.length){
    const flat=cm.attack.flatEquipment,percent=cm.attack.percentEquipment.reduce((sum,e)=>sum+e.bonus,0);
    card.append(make('p',{text:'Прямые бонусы атаки от вещей и душ: '+
@@ -468,7 +468,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    make('p',{text:'Изменение шанса входящего крита: '+cm.criticalIncoming}),
    make('p',{text:'Множитель входящего критического урона: '+
     cm.criticalIncomingDamage+'%'}),
-   make('p',{text:'Базовый исходящий критический урон: '+cm.criticalDamage+'%'}),
+
    make('p',{class:'stage-attribute-note',
     text:'Частичные индексы по Remaked: навыки, душевные эффекты и условия серверного боя пока не все учтены.'}));
   body.prepend(card);
@@ -635,7 +635,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     ['Магическая атака',battle.magicAttack?.known==null?null:battle.magicAttack.known+'%'],
     ['Точность',battle.accuracy?.known],['Критический шанс',battle.critical?.known]]:
    [['Защита',battle.defense?.known],['Уклонение',battle.dodge?.known],
-    ['Критический урон',battle.criticalDamage==null?null:battle.criticalDamage+'%'],
+    ['Входящий крит. урон',battle.criticalIncomingDamage==null?null:battle.criticalIncomingDamage+'%'],
     ['Устойчивость к сбою',battle.castInterruption]];
   const grid=make('div',{class:'stage-result-grid stage-combat-quick'});
   for(const [label,value]of numbers)grid.append(make('div',{class:'stage-result-tile'},[
