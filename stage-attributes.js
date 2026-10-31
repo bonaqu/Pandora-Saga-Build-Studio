@@ -244,6 +244,30 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(page==='effects'){
   renderSkillInspector(body,skillModel);
+  if(modifiers?.unison?.active?.length){
+   const labels={
+    EP_MAXMANA_CONST:'Максимум ОМ',EP_MAXLIFE_CONST:'Максимум ОЗ',
+    EP_ARMORCLASS_CONST:'Защита',
+    EP_CASTINGCANCEL_RESISTANCE_CONST:'Сопротивление прерыванию',
+    EP_SKILL_BENCH:'Перезарядка умений',
+    EP_VITARITY_CONST:'Выносливость',
+    EP_ATTACK_BACKATK_RATE:'Атака со спины'
+   };
+   const percentages=new Set(['EP_CASTINGCANCEL_RESISTANCE_CONST',
+    'EP_SKILL_BENCH','EP_ATTACK_BACKATK_RATE']);
+   const section=make('section',{class:'stage-attribute-row'});
+   section.append(make('strong',{text:'Активные комплекты'}));
+   for(const set of modifiers.unison.active){
+    section.append(make('p',{text:set.name+' · '+set.companionCount+
+     '/'+set.required+' частей · заточка +'+set.grade}));
+    for(const effect of set.effects)
+     section.append(make('p',{text:(labels[effect.func]||'Эффект комплекта')+
+      ': '+(effect.a>=0?'+':'')+effect.a+
+      (percentages.has(effect.func)?'%':'')}));
+    for(const condition of set.conditions)section.append(make('p',{text:condition.label}));
+   }
+   body.prepend(section);
+  }
   if(modifiers?.coverage?.total&&root.PandoraStudioAdminActive?.()){
    const coverage=modifiers.coverage,card=make('section',{class:'stage-attribute-row stage-coverage'});
    const k=coverage.counts;
