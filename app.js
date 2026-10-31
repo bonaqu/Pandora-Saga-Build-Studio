@@ -95,9 +95,9 @@ function cloudToken(){
  }
  return token;
 }
-async function cloudLibraryRequest(payload){
+async function cloudLibraryRequest(payload,secret=cloudToken()){
  const response=await fetch(API+'/api/library',{method:payload?'POST':'GET',
-  headers:{'Content-Type':'application/json',Authorization:'Bearer '+cloudToken()},
+  headers:{'Content-Type':'application/json',Authorization:'Bearer '+secret},
   ...(payload?{body:JSON.stringify(payload)}:{})});
  let data;try{data=await response.json()}catch{throw Error('Нет ответа облачного сервера')}
  if(!response.ok){
@@ -1754,6 +1754,70 @@ function newBlankBuild(){
  changeTab('character');saveView();
 }
 let buildSearchQuery='';
+// The browser secret is effectively a password for this account-free D1 library.
+// Reveal or switch it only after a deliberate user interaction.
+async function connectCloudLibrary(secret,feedback){
+ const trimmed=String(secret||'').trim().toLowerCase();
+ if(!/^[a-f0-9]{64}$/.test(trimmed)){
+  feedback.textContent='Код должен содержать 64 символа. Скопируйте его с другого устройства.';
+  return false;
+ }
+ if(queuedDeletes().length){
+  feedback.textContent='Сначала синхронизируйте удаления с прежней библиотекой, чтобы старые ссылки перестали работать.';
+  return false;
+ }
+ try{
+  const response=await cloudLibraryRequest(null,trimmed);
+  if(!Array.isArray(response.records))throw Error('Не удалось прочитать библиотеку');
+  if(!response.records.length&&builds.length){
+   feedback.textContent='По этому коду не найдено билдов. Текущую библиотеку оставили без изменений.';
+   return false;
+  }
+  if(trimmed===cloudToken()){
+   feedback.textContent='Эта библиотека уже подключена.';
+   return true;
+  }
+  localStorage.setItem(CLOUD_TOKEN_KEY,trimmed);
+  selectActiveBuild(null);libraryChangeId++;
+  feedback.textContent='Подключено. Объединяем сохранения…';
+  void loadCloudBuilds();
+  return true;
+ }catch(error){
+  feedback.textContent='Не удалось подключить библиотеку: '+error.message;
+  return false;
+ }
+}
+function buildLibraryTransfer(){
+ const panel=h('details',{class:'build-transfer'});
+ const content=h('div',{class:'build-transfer-content'});
+ const field=h('input',{type:'text',readOnly:true,value:'',class:'build-transfer-key',
+  'aria-label':'Личный код библиотеки',placeholder:'Код скрыт'});
+ const copy=h('button',{type:'button',class:'button-action',text:'Показать мой код',onclick:()=>{
+  field.value=cloudToken();
+  field.focus();field.select();
+  copy.textContent='Скопировать мой код';
+  copy.onclick=async()=>{
+   try{await navigator.clipboard.writeText(cloudToken());copy.textContent='✓ Код скопирован'}
+   catch{field.focus();field.select();copy.textContent='Скопируйте выделенный код'}
+  };
+ }});
+ const input=h('input',{type:'password',class:'build-transfer-key',maxLength:'64',
+  autocomplete:'off',placeholder:'Вставить код с другого устройства',
+  'aria-label':'Подключить библиотеку по коду'});
+ const feedback=h('p',{class:'build-transfer-feedback',role:'status'});
+ const join=h('button',{type:'button',class:'button-action primary',
+  text:'Подключить и объединить',onclick:async()=>{
+   join.disabled=true;
+   try{await connectCloudLibrary(input.value,feedback)}
+   finally{join.disabled=false}
+  }});
+ content.append(h('p',{text:'Код открывает доступ к вашим сохранённым билдам. Храните его как пароль и не отправляйте посторонним.'}),
+  h('div',{class:'build-transfer-row'},[field,copy]),
+  h('p',{text:'На другом устройстве вставьте код. Существующие сохранения будут объединены, а не удалены.'}),
+  h('div',{class:'build-transfer-row'},[input,join]),feedback);
+ panel.append(h('summary',{text:'Перенести библиотеку на другое устройство'}),content);
+ return panel;
+}
 function renderBuilds(root){
  const toolbar=h('div',{class:'build-toolbar'});
  const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
@@ -1783,7 +1847,7 @@ function renderBuilds(root){
   }}),
   h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
- root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}));
+ root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}),buildLibraryTransfer());
  const grid=h('div',{class:'build-grid'}),searchable=[];
  const search=builds.length>5?h('input',{type:'search',class:'build-library-search',
   'aria-label':'Найти сохранённый билд',placeholder:'Поиск по названию, классу, уровню…',

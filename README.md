@@ -657,3 +657,8 @@ The defensive Hero Book now includes real OS source-based bonuses from Warding's
 ## Class-aware passives and a cleaner Book · 0.145.0
 
 The Warding skill requires both its learned Green mastery and an actual class branch cap permitting 26 points. The public Hero Book hides methodology warnings and developer-only diagnostics; these remain accessible to authenticated administrators. Player-facing characteristics and their meaningful descriptions remain visible.
+
+
+## Transfer your library without JSON · 0.146.0
+
+Under «Мои билды», open the collapsed «Перенести библиотеку на другое устройство» section. Reveal and securely copy your personal recovery code, then use it on the other device to connect to the same D1 library. The code acts like a password: anyone holding it can read and delete your builds, so never publish it or put it into a shared-build URL. Existing local builds are merged, pending offline deletions must be synchronized first, and no Google/GitHub account is required. This is an optional device-key recovery workflow, not a fully fledged user-account system.

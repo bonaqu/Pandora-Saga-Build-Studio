@@ -1516,3 +1516,19 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  font:12px Manrope,Arial,sans-serif}
 .build-library-search:focus-visible{outline:2px solid #dcb57f;outline-offset:2px}
 .build-card[hidden]{display:none!important}
+
+/* Optional private D1 library recovery, collapsed by default. */
+.build-transfer{margin:9px 0 15px;border:1px solid #6c5033;border-radius:5px;
+ background:linear-gradient(120deg,#261b15,#20170f)}
+.build-transfer>summary{cursor:pointer;padding:10px 12px;color:#ecc897;
+ font:600 12px Manrope,Arial,sans-serif}
+.build-transfer>summary:focus-visible{outline:2px solid #f1c78b;outline-offset:2px}
+.build-transfer-content{display:grid;gap:9px;padding:5px 12px 14px}
+.build-transfer-content p{font:12px/1.5 Manrope,Arial,sans-serif;color:#d5bea2;margin:0}
+.build-transfer-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.build-transfer-key{flex:1 1 230px;min-width:140px;min-height:40px;background:#130e0c;
+ border:1px solid #906e46;border-radius:4px;color:var(--cream);padding:8px 10px;
+ box-sizing:border-box;font:12px/1.4 ui-monospace,Consolas,monospace}
+.build-transfer-row .button-action{flex:0 0 auto;margin:0}
+.build-transfer-feedback{color:#f1cb98!important;min-height:16px}
+@media(max-width:600px){.build-transfer-row .button-action{width:100%;justify-content:center}}

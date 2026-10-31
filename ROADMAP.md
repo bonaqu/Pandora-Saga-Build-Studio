@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.145.0 (`2026.10.31.145`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.146.0 (`2026.10.31.146`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -679,3 +679,12 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Remove methodology/debugger comments from the **ordinary player's** Hero Book. Developer formula disclosures remain in admin mode only. Public main summary uses intuitive gameplay labels rather than technical 'Частично' disclaimers; Origin HP/MP accessibility labels report clean numeric values.
 - [x] Add regression checks for cap gating and public UI text while retaining admin-only formula trace and structured effect-coverage diagnostics.
 - [ ] Perform full browser/keyboard/mobile QA and full Node suite; calculator server parity remains incomplete.
+
+
+## 0.146.0 — restore account-free D1 library on a second device
+
+- [x] Add an optional, collapsed transfer panel: reveal or copy the private browser key only after an explicit action. Importing the key first checks the live D1 library using that key, then merges local and remote saves instead of erasing either.
+- [x] Refuse switching owners while offline deletions are still queued, to avoid applying old-library tombstones to the new owner's key and accidentally leaving links from the old owner active.
+- [x] Clearing the active saved-build association before connecting a different key prevents an old local draft from overwriting an unrelated restored record.
+- [x] Add validation, input and regression guards; do not put personal recovery secrets in public files, logs or URLs.
+- [ ] Browser live transfer E2E, token rotation/revocation and true account authentication remain future tasks.
