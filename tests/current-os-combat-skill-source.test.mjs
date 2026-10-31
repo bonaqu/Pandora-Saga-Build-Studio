@@ -107,7 +107,7 @@ test('book uses real skill art, tooltip, bonus summary and disallows stale saved
  assert.equal(findInput('combatWarCry').checked,true);
  assert.equal(findInput('combatDefender').checked,false);
  assert.equal(findInput('combatDefender').disabled,true);
- const cards=walk(target).filter(x=>x.className.includes('stage-combat-buff'));
+ const cards=walk(target).filter(x=>x.className.split(' ').includes('stage-combat-buff'));
  assert.equal(cards.length,2);
  assert.ok(cards.every(x=>x.children.some(n=>n.tag==='img')));
  assert.ok(walk(target).some(x=>x.textContent==='+10 атаки · +20% атаки'));
