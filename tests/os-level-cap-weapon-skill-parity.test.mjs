@@ -11,18 +11,17 @@ const combat=(weapon,combatLunge=true)=>C.combatPreview({
  stats,level:45,jobKey:'GLADIATOR',weapon,skillCatalog:skills,
  combatBuffs:{combatLunge}
 });
-test('OS 2026-10-03 level 45 cap drives default sliders and current app',()=>{
- assert.equal(tables.levelCap,45);
+test('level 55 remains available for future planning regardless of live OS level 45',()=>{
+ assert.equal(tables.levelCap,45,'server metadata stays authentic');
  const html=read('index.html'),app=read('app.js');
- assert.match(html,/id="level"[^>]*max="45"[^>]*value="45"/);
- assert.match(html,/id="levelCapLabel">45/);
- assert.match(html,/id="levelCapNotice"/);
- assert.match(app,/function fresh\(\)\{return\{race:1,gender:0,job:16,level:45,/);
- assert.match(app,/function currentLevelCap\(\)/);
- assert.match(app,/gameTables\?\.levelCap/);
- assert.match(app,/state\.level=Math\.max\(1,Math\.min\(currentLevelCap\(\),/);
- assert.match(app,/syncLevelLimit\(\);renderAllocationWarning\(\);state\.gender/);
- assert.match(app,/Сохранённый билд в библиотеке не изменён/);
+ assert.match(html,/id="level"[^>]*max="55"[^>]*value="50"/);
+ assert.match(html,/Уровень героя <strong id="levelOut">50/);
+ assert.match(app,/function fresh\(\)\{return\{race:1,gender:0,job:16,level:50,/);
+ assert.match(app,/state\.level=Math\.max\(1,Math\.min\(55,/);
+ assert.match(app,/original\.level>55/);
+ assert.doesNotMatch(app,/function currentLevelCap\(/);
+ assert.doesNotMatch(app,/syncLevelLimit\(/);
+ assert.doesNotMatch(app,/allocationIssue\(/);
 });
 test('OS Lunge weapon restrictions forbid bows and crossbows without losing valid bare-hand use',()=>{
  const skill=skills[100051001];

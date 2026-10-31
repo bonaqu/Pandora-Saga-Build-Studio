@@ -48,7 +48,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:45,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
@@ -82,7 +82,6 @@ function branchCap(branch){
  return window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0;
 }
 function previewBaseStats(){
- if(allocationIssue()?.invalid)return null;
  const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
  const baseClass=clazz?.baseClass||jobKeys[state.job];
  const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(state.stats[STATS[i]]||0)]));
@@ -269,32 +268,6 @@ function setAttributeBuff(key,value){
 }
 function budgetSummary(){
  return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
-}
-function allocationIssue(){
- if(!gameTables?.abilityPoint||!gameTables?.raceInit||!catalog.classes)return null;
- const clazz=catalog.classes?.[jobKeys[state.job]];
- if(!clazz)return null;
- const snap=window.PandoraAttributeProgression.snapshot({
-  tables:gameTables,race:window.PandoraGameNavigation.raceKeys[state.race],
-  klass:clazz.baseClass||jobKeys[state.job],level:state.level,
-  added:STATS.map(key=>Number(state.stats?.[key]||0)),caps:clazz.statCaps
- });
- const branches=budgetSummary();
- const statsInvalid=!snap||snap.overBudget||
-  snap.values.some((val,i)=>val>snap.max[i]);
- const skillsInvalid=Number.isFinite(branches?.remaining)&&branches.remaining<0;
- return {invalid:statsInvalid||skillsInvalid,statsInvalid,skillsInvalid};
-}
-function renderAllocationWarning(){
- const notice=$('allocationWarning');if(!notice)return;
- const issue=allocationIssue();
- if(!issue?.invalid){notice.hidden=true;return}
- const parts=[];
- if(issue.statsInvalid)parts.push('характеристик');
- if(issue.skillsInvalid)parts.push('веток навыков');
- notice.textContent='Для '+state.level+' уровня превышен бюджет очков '+
-  parts.join(' и ')+'. Перераспределите очки: итоговые характеристики обновятся автоматически.';
- notice.hidden=false;
 }
 function allowedBranch(branch){
  const b=budgetSummary(),cap=branchCap(branch),current=window.PandoraSkillProgression.potential(state,branch);
@@ -1050,26 +1023,7 @@ function branchRow(b,full){
   onclick:()=>{selectedSkillGroup=window.PandoraGameNavigation.branchGroup(b.id)?.id||selectedSkillGroup;
    inlineBranchId=b.id;heroPathPage='growth';renderBranches();renderPathPages()}});
 }
-function currentLevelCap(){
- const cap=gameTables?.levelCap;
- return Number.isInteger(cap)&&cap>=1&&cap<=200?cap:45;
-}
-function syncLevelLimit(){
- const cap=currentLevelCap(),level=$('level');
- if(level)level.max=String(cap);
- if($('levelCapLabel'))$('levelCapLabel').textContent=String(cap);
- const previous=state.level;
- if(!Number.isInteger(previous)||previous<1||previous>cap){
-  state.level=Number.isInteger(previous)?Math.max(1,Math.min(cap,previous)):cap;
-  if(Number.isInteger(previous)&&previous>cap&&$('levelCapNotice')){
-   $('levelCapNotice').textContent='Уровень героя изменён с '+previous+' на максимальный уровень OS: '+
-    cap+'. Сохранённый билд в библиотеке не изменён.';
-   $('levelCapNotice').hidden=false;
-  }
-  persist();
- }
-}
-function render(){syncLevelLimit();renderAllocationWarning();state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
+function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
@@ -1649,7 +1603,6 @@ function compareSnapshots(a,b){
  return rows;
 }
 function restoreLoadedBuildUI(){
- if($('levelCapNotice'))$('levelCapNotice').hidden=true;
  state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);
  racePreviewIndex=selectedPortraitIndex(state.race,state.gender);
  selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
@@ -2250,11 +2203,7 @@ $('originTabs').onclick=event=>{
  if(!button)return;
  originActive=button.dataset.originTab;renderOriginTabs();saveView();
 };
-$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{
- state.level=Math.max(1,Math.min(currentLevelCap(),Number(e.target.value)||1));
- if($('levelCapNotice'))$('levelCapNotice').hidden=true;
- persist();render();
-};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>{
+$('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dataset.tab)};$('level').oninput=e=>{state.level=Math.max(1,Math.min(55,Number(e.target.value)||1));persist();render()};$('genderF').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=0;persist();render()};$('genderM').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1;persist();render()};$('swapGender').onclick=()=>{if(!window.PandoraUIPlanner.raceHasGender(races,state.race))return;state.gender=1-state.gender;persist();render()};$('jumpEquipment').onclick=()=>{
  selectedSlot=0;stageSlotQuery='';stageSlotView=state.equipment?.[0]?'details':'choose';
  stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
 };

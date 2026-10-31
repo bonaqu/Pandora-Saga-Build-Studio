@@ -1456,7 +1456,3 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-legacy-buff-intro{font-size:10px;color:#bca788;line-height:1.45;margin:8px 0 1px}
 .stage-resistance-gem-summary{font-size:11px;color:#e6c692;margin:7px 0}
 
-.level-cap-notice{margin:7px 0 0;padding:7px 9px;
- background:rgba(211,164,94,.10);border-left:2px solid #c9a36b;
- border-radius:2px;color:#e6cd9b;font-size:11px;line-height:1.45}
-.level-cap-notice[hidden]{display:none!important}
