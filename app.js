@@ -517,12 +517,14 @@ function renderStageAttributes(){
  });
  const equippedShield=state.equipment?.[1]&&
   catalog.equipment?.[String(state.equipment[1].id)];
+ const equippedWeapon=state.equipment?.[0]&&
+  catalog.equipment?.[String(state.equipment[0].id)]||null;
  const keys={combatLunge:'lunge',combatWarCry:'warCry',
   combatRage:'raging',combatDefender:'defender'};
  const combatSkillCatalog=window.PandoraOSCalculator;
  const selectedCombat=Object.fromEntries(Object.keys(keys).map(k=>[k,true]));
  const availableSkills=combatSkillCatalog.activeCombatSkills({
-  selected:selectedCombat,jobKey:cls,level:state.level,
+  selected:selectedCombat,jobKey:cls,level:state.level,weapon:equippedWeapon,
   hasShield:equippedShield?.slot==='shield',skillCatalog:skillMap
  });
  const availability={},combatSkillCards={};
@@ -544,7 +546,9 @@ function renderStageAttributes(){
    state.level<Number(ability.charLevel||0)?
     'Откроется на '+ability.charLevel+' уровне':
    name==='defender'&&equippedShield?.slot!=='shield'?'Необходимо экипировать щит':
-   null;
+   name==='lunge'&&Array.isArray(ability.weaponUse)&&ability.weaponUse.length&&
+    !ability.weaponUse.includes(equippedWeapon?.kind??'BARE_HAND')?
+    'Недоступно с выбранным оружием':null;
   combatSkillCards[setting]=ability?{
    name:ability.name,desc:ability.desc,level:ability.charLevel,summary,reason,
    icon:skillIcon(ability.branch,0,ability)
