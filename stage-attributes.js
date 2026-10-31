@@ -454,6 +454,11 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    (cm.movementSpeed.equipment>=0?'+':'')+cm.movementSpeed.equipment+
    ', умения '+(cm.movementSpeed.active>=0?'+':'')+
    cm.movementSpeed.active+')'}));
+  if(cm.movementSpeed.townEquipment)
+   card.append(make('p',{text:'Скорость в городе: '+
+    cm.movementSpeed.town+' (от снаряжения '+
+    (cm.movementSpeed.townEquipment>0?'+':'')+
+    cm.movementSpeed.townEquipment+')'}));
   if(cm.attackSpeed)card.append(make('p',{text:'Скорость атаки (индекс): '+
    cm.attackSpeed.known+' (база '+cm.attackSpeed.base+
    ', экипировка '+(cm.attackSpeed.equipment>=0?'+':'')+
