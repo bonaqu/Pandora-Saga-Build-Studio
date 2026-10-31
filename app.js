@@ -1019,25 +1019,34 @@ function renderWiki(root){
    return lang==='en'&&en?en:obj?.name||fallback[type]||'Без названия';
  };
  const wikiIcon=(type,id,record=null)=>{
-  const row=record||(type==='chest'||type==='item'?wikiData.items?.[id]:
+  const row=type==='chest'?wikiData.items?.[id]:record||
+   (type==='item'?wikiData.items?.[id]:
    type==='soul'?wikiData.souls?.[id]:type==='skill'?wikiData.skills?.[id]:null);
   if(!row)return null;
   if(type==='item'||type==='chest')return itemIcon(row);
-  if(type==='soul')return itemIcon(row,'souls');
+  if(type==='soul')return itemIcon(wikiData.items?.[id]||row,'items');
   if(type==='skill')return skillIcon(row.branch,id,row);
   // No imaginary sprites for monsters/locations/NPCs whose OS catalog has none.
   return null;
  };
+ const wikiImage=(src,cls)=>{
+  if(!src)return null;
+  const img=h('img',{src,alt:'',loading:'lazy',class:cls});
+  const fallback=src.includes('/icons/items/')?src.replace('/icons/items/','/icons/souls/'):
+   src.includes('/icons/souls/')?src.replace('/icons/souls/','/icons/items/'):null;
+  img.onerror=()=>{if(fallback&&!img.dataset.fallbackTried){
+   img.dataset.fallbackTried='1';img.src=fallback;
+  }else img.remove()};
+  return img;
+ };
  const withIcon=(link,src)=>{
-  if(src){
-   const image=h('img',{src,alt:'',loading:'lazy',class:'wiki-list-icon'});
-   image.onerror=()=>image.remove();link.prepend(image);
-  }
+  const img=wikiImage(src,'wiki-list-icon');
+  if(img)link.prepend(img);
   return link;
  };
  const itemLink=(id,label,highlight=null)=>{
-  const hasItem=Boolean(wikiData.items?.[id]),kind=hasItem?'item':'soul';
-  const record=hasItem?wikiData.items?.[id]:wikiData.souls?.[id];
+  const hasSoul=Boolean(wikiData.souls?.[id]),kind=hasSoul?'soul':'item';
+  const record=hasSoul?wikiData.souls?.[id]:wikiData.items?.[id];
   const dest=record?kind:'item';
   return withIcon(wikiLink(label,dest,id,highlight),record?wikiIcon(kind,id,record):null);
  };
@@ -1077,9 +1086,9 @@ function renderWiki(root){
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
     h('h3',{text:dataName(type,id)}));
-  if(type==='item'||type==='chest'){
-    const src=wikiIcon(type,id,rec);
-    if(src){const img=h('img',{src,alt:'',class:'wiki-record-icon wiki-item-portrait'});img.onerror=()=>img.remove();detail.prepend(img)}
+  if(type==='item'||type==='chest'||type==='soul'){
+    const img=wikiImage(wikiIcon(type,id,rec),'wiki-record-icon wiki-item-portrait');
+    if(img)detail.prepend(img);
   }
   if(rec.desc){const text=lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='skill'?'skills':type==='soul'?'souls':'maps']?.[id]?.d||rec.desc):rec.desc;
     detail.append(h('p',{class:'wiki-description',text:type==='item'?window.PandoraItemPresentation.description(text):text}));}
@@ -1108,8 +1117,13 @@ function renderWiki(root){
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
   }else if(type==='soul'){
-    detail.append(h('p',{class:'muted',text:'Совместимые слоты: '+(rec.slots||[]).join(', ')}));
-    if(rec.price!=null)detail.append(h('p',{class:'muted',text:'Цена по каталогу: '+rec.price}));
+    const slots={weapon:'Оружие',head:'Голова',body:'Броня',arm:'Руки',legs:'Ноги',
+     boots:'Обувь',gloves:'Перчатки',belt:'Пояс',cloak:'Плащ',ring:'Кольцо',
+     necklace:'Ожерелье',shield:'Щит',accessory:'Аксессуар'};
+    const traits=h('div',{class:'wiki-soul-traits'});
+    for(const slot of rec.slots||[])traits.append(h('span',{text:slots[slot]||slot}));
+    if(rec.price!=null)traits.append(h('span',{text:'Стоимость: '+Number(rec.price).toLocaleString('ru-RU')}));
+    if(traits.childElementCount)detail.append(traits);
     detail.append(h('h4',{text:'Где получить душу'}));
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:
@@ -1131,15 +1145,16 @@ function renderWiki(root){
       ' · точный шанс души не указан','map',row.id,id));
      detail.append(line);
     }
-    const icon=itemIcon(rec,'souls');
-    if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
   }else if(type==='monster'){
-    detail.append(h('div',{class:'wiki-monster-stats'},[
-      h('span',{text:'Уровень '+(rec.level??'—')}),
-      h('span',{text:'ОЗ '+(rec.life??'—')}),
-      h('span',{text:'Защита '+(rec.ac??'—')}),
-      h('span',{text:'Маг. защита '+(rec.magicProtection??'—')})
-    ]));
+    const monsterStats=[['Уровень',rec.level],['ОЗ',rec.life],
+     ['Защита',rec.ac],['Маг. защита',rec.magicProtection],
+     ['Уклонение',rec.warding],['Сила',rec.str],['Выносливость',rec.vit],
+     ['Ловкость',rec.agi],['Проворство',rec.dex],
+     ['Дух',rec.spi],['Интеллект',rec.int]];
+    detail.append(h('div',{class:'wiki-monster-stats'},
+     monsterStats.filter(([,value])=>Number.isFinite(value)).map(([label,value])=>
+      h('div',{class:'wiki-monster-stat'},[
+       h('small',{text:label}),h('strong',{text:Number(value).toLocaleString('ru-RU')})]))));
     if(rec.resists&&Object.keys(rec.resists).length){
      const names={physical:'Физическая',fire:'Огонь',cold:'Лёд',
       lightning:'Молния',poison:'Яд',charm:'Чары',
@@ -1158,8 +1173,9 @@ function renderWiki(root){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===row.itemId?' highlighted':'')});
      const item=wikiData.items?.[row.itemId];
      const linked=itemLink(row.itemId,dataName('item',row.itemId)+
-      (row.percent==null?'':' · '+row.percent+'% по таблице')+
-      (row.kind==='conditional'?' · особое условие':''),id);
+      (row.quantity>1?' ×'+row.quantity:'')+
+      (row.percent==null?'':' · '+row.percent+'%')+
+      (row.kind==='conditional'?' · особый дроп':''),id);
      entry.append(linked);
      detail.append(entry);
     }
