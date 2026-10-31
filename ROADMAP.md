@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.149.0 (`2026.10.31.149`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.150.0 (`2026.10.31.150`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -713,3 +713,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Update outdated tests for clean Origin HP/MP labels, modern separate proc/target combat previews, and the distinct equipment part of natural MP regeneration.
 - [x] Verify technical formula methodology is retained only for authenticated site-admin mode.
 - [ ] Full npm test, browser E2E, and current server parity are still required.
+
+
+## 0.150.0 — source-backed earned XP bonus
+
+- [x] Current OS beginner cape ID 18073 grants a real +5% earned EXP via EP_VOLUME_EXP. Only equipped records can contribute; refinement bounds and per-item sources remain visible without pretending to know the full server reward formula.
+- [x] The EXP branch moves to PARTIAL; inventory: **41 missing, 77 partial**, 15 base previews and 10 buff previews. SkillEXP remains missing: no confirmed matching current-game effect has been discovered.
+- [x] Added regression tests for the actual published OS item ID, conditional grade gates and separate effects UI.
+- [ ] Verify XP grant behavior in the live game and complete remaining Remaked branches; full Node and browser E2E still required.

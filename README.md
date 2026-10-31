@@ -677,3 +677,8 @@ Origin buff controls now show functional gameplay conditions without implementat
 ## Historical saved build compatibility · 0.149.0
 
 Shared builds preserve a strict Boolean value for the old Jo-Eun rune so existing builds are not stripped of data. It stays inactive in current OS calculation pending confirmation of a real current-game source. Updated regression cases assert modern numeric and player-only presentation rather than reinstating removed debug text.
+
+
+## Earned EXP bonuses · 0.150.0
+
+The Effects chapter in the Hero Book now shows the earned-XP bonus from equipped source-backed items. The verified current OS example is beginner cape ID 18073, +5% XP. The old Remaked EXP key becomes partial; no unverified XP-on-kill math or skill expertise bonus is inferred.

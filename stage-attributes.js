@@ -243,6 +243,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }body.append(card);
  }
  if(page==='effects'){
+  if(modifiers?.experienceBonus?.entries?.length){
+   const section=make('section',{class:'stage-attribute-row'});
+   section.append(make('strong',{text:'Бонус к получаемому опыту'}));
+   for(const effect of modifiers.experienceBonus.entries)
+    section.append(make('p',{text:effect.source+' · '+
+     (effect.percent>=0?'+':'')+effect.percent+'% опыта'}));
+   body.prepend(section);
+  }
   if(modifiers?.procPreview?.entries?.length){
    const section=make('section',{class:'stage-attribute-row'});
    section.append(make('strong',{text:'Срабатывания предметов и душ'}));

@@ -868,6 +868,22 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
  return {entries,verified:false};
 }
 
+// Current OS equipment-sourced earned-experience preview, not a combat stat.
+function experienceBonusPreview({records=[],itemForth=null}={}){
+ if(!Array.isArray(records))return null;
+ const entries=[];
+ for(const [source,record,grade] of records){
+  if(!record||!Number.isInteger(grade))continue;
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
+   if(effect?.func!=='EP_VOLUME_EXP'||!Number.isFinite(effect.a))continue;
+   if((Number.isFinite(effect.min)&&grade<effect.min)||
+      (Number.isFinite(effect.max)&&grade>effect.max))continue;
+   entries.push({source:String(record.name||source),percent:effect.a});
+  }
+ }
+ return {entries,verified:false};
+}
+
 // Classify item effects by what THIS calculator can genuinely support.
 // A code being present in OS does not mean it has been included in a stat.
 // Keep conditional procs and unmapped effects visible, not silently counted.
@@ -882,7 +898,7 @@ const calculatedCodes=new Set([
 ]);
 const previewCodes=new Set([
  'EP_MOVESPEED_SCALE','EP_SKILL_DELAY','EP_SKILL_DELAY_FIN',
- 'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE','EP_ONDAMAGE_FDS_RACE',
+ 'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE','EP_ONDAMAGE_FDS_RACE','EP_VOLUME_EXP',
  'EP_CASTINGCANCEL_RESISTANCE_CONST','EP_HEAL_TIME_SCALE'
 ]);
 function effectCoverage({records=[],itemForth=null}={}){
@@ -1117,6 +1133,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const otherEquipment=secondaryEffectsPreview({records:combinedRecords,itemForth});
  const targetResistance=targetResistancePreview({records:combinedRecords,itemForth});
  const procPreview=conditionalProcPreview({records:combinedRecords,itemForth,skills:combatContext.skillCatalog});
+ const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
  if(otherEquipment&&resistances){
   resistances.mitigation.physical+=otherEquipment.incomingPhysicalPercent;
   resistances.mitigation.magic+=otherEquipment.incomingMagicPercent;
@@ -1165,7 +1182,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,regeneration,legacyBuffs,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,regeneration,legacyBuffs,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
@@ -1174,6 +1191,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
