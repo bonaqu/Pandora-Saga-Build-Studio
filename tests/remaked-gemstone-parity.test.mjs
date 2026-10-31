@@ -40,5 +40,5 @@ test('integration reads existing saved gem choices and shows separate breakdown'
  assert.match(source,/gemSelections\.push\(/);
  assert.match(source,/itemForth:gameItemForth,gemSelections/);
  assert.match(book,/modifiers\.gemstones\.items\.length/);
- assert.match(book,/Сопротивления самоцветов учтены в разделе «Защита»/);
+ assert.match(book,/Сопротивления от самоцветов включены в защиту/);
 });
