@@ -473,11 +473,17 @@ function renderStageAttributes(){
  const show=Boolean(stageAttributesPage)&&!stageSlotPickerOpen;
  const priorPage=root.querySelector('.stage-book-page')?.dataset.bookVisible||null;
  const priorScroll=root.querySelector('.stage-book-page')?.scrollTop||0;
+ const activeControl=root.contains(document.activeElement)?
+  document.activeElement?.getAttribute?.('data-book-setting'):null;
  root.hidden=!show;root.closest('.portrait-frame').classList.toggle('attributes',show);
  $('stageAttributeToggle').setAttribute('aria-pressed',String(Boolean(stageAttributesPage)));
+ $('stageAttributeToggle').setAttribute('aria-expanded',String(show));
  $('stageAttributeToggle').textContent=stageAttributesPage?'↩ Образ героя':'📖 Результаты';
  $('stageBuffToggle')?.setAttribute('aria-pressed',String(stageAttributesPage==='buffs'));
- const opener=$('portraitBookOpen');if(opener)opener.hidden=show||stageSlotPickerOpen;
+ $('stageBuffToggle')?.setAttribute('aria-expanded',String(stageAttributesPage==='buffs'&&show));
+ $('hero')?.setAttribute('aria-expanded',String(show));
+ const opener=$('portraitBookOpen');
+ if(opener){opener.hidden=show||stageSlotPickerOpen;opener.setAttribute('aria-expanded',String(show))}
  if(!show)return;
  const plan=window.PandoraEquipmentPlan;
  const items=Object.entries(state.equipment||{}).filter(([,entry])=>entry).map(([slot,entry])=>{
@@ -521,6 +527,10 @@ function renderStageAttributes(){
  if(priorPage===stageAttributesPage){
   const scroll=root.querySelector('.stage-book-page');
   if(scroll)scroll.scrollTop=priorScroll;
+  if(activeControl)root.querySelector('[data-book-setting="'+activeControl+'"]')
+   ?.focus({preventScroll:true});
+ }else{
+  root.querySelector('[role="tab"][aria-selected="true"]')?.focus({preventScroll:true});
  }
 }
 function focusSelectedSlot(){
@@ -1961,6 +1971,17 @@ const openHeroBook=()=>{
  stageAttributesPage='summary';renderStageAttributes();saveView();
 };
 $('portraitBookOpen').onclick=openHeroBook;
+$('stageAttributes')?.addEventListener('keydown',event=>{
+ if(!stageAttributesPage||stageSlotPickerOpen||
+  event.target.closest?.('input,select,textarea'))return;
+ if(event.key!=='ArrowLeft'&&event.key!=='ArrowRight')return;
+ const pages=window.PandoraStageAttributes.bookPages.map(([id])=>id);
+ const position=pages.indexOf(stageAttributesPage);
+ if(position<0)return;
+ event.preventDefault();
+ stageAttributesPage=pages[(position+(event.key==='ArrowRight'?1:-1)+pages.length)%pages.length];
+ renderStageAttributes();saveView();
+});
 $('hero').addEventListener('click',openHeroBook);
 $('hero').addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){

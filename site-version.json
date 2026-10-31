@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.105",
-  "notes": "Searchable current OS skill inspector inside Effects book, grounded requirements, costs, timings"
+  "release": "2026.10.31.106",
+  "notes": "Accessible keyboard page flipping, focus retention across live buff changes and ARIA book tabs"
 }

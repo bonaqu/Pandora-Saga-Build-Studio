@@ -140,6 +140,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
   next=bookPages[(index+1)%bookPages.length][0];
+ target.setAttribute('role','region');
  target.setAttribute('aria-label','Книга героя. '+bookPages[index][1]+'. Страница '+(index+1)+' из 6');
  target.append(make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
@@ -154,12 +155,15 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  ]));
  const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':'Разделы книги героя'});
  for(const [name,label] of bookPages)nav.append(make('button',{
-  type:'button',role:'tab',text:label,'aria-selected':String(chosen===name),
+  type:'button',role:'tab',text:label,id:'stageBookTab_'+name,
+  'aria-controls':'stageBookPanel','aria-selected':String(chosen===name),
   'aria-pressed':String(chosen===name),'data-book-page':name,
   class:chosen===name?'chosen':'',onclick:()=>onPage(name)
  }));
  target.append(nav);
- const body=make('div',{class:'stage-attribute-scroll stage-book-page','data-book-visible':chosen});
+ const body=make('div',{class:'stage-attribute-scroll stage-book-page',
+  id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
+  'data-book-visible':chosen});
  if(chosen==='summary')summaryPage(body,modifiers);
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,modifiers});
  if(['attack','defense','effects'].includes(chosen)){
