@@ -225,7 +225,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   if(modifiers?.gemstones&&(modifiers.gemstones.items.length||modifiers.gemstones.uncertain.length)){
    const gem=modifiers.gemstones,card=make('section',{class:'stage-attribute-row'});
-   card.append(make('strong',{text:'Самоцветы · исторические расчёты Remaked'}));
+   card.append(make('strong',{text:'Самоцветы'}));
    const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
     light:'Свет',dark:'Тьма',charm:'Чары'};
    const show=(title,values,suffix='')=>{
@@ -253,7 +253,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   if(modifiers?.combat?.manaCost){
    const mp=modifiers.combat.manaCost,card=make('section',{class:'stage-attribute-row'});
-   card.append(make('strong',{text:'Расход ОМ (частичный расчёт)'}),
+   card.append(make('strong',{text:'Расход ОМ'}),
     make('p',{text:'Индекс остаточного расхода: '+mp.remaining+'%'}),
     make('p',{text:'База от ИНТ: '+mp.base+'%'}),
     make('p',{text:'Расовая способность: −'+mp.racial+'%'}),
@@ -313,7 +313,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(page==='attack'&&modifiers?.combat){
   const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Базовые боевые показатели (частичный расчёт)'}));
+  card.append(make('strong',{text:'Боевые параметры'}));
   card.append(make('p',{text:'Физическая атака оружия: '+
    (cm.attack?.known??'—')+' (без дополнительных боевых усилений)'}),
    make('p',{text:'Точность: '+cm.accuracy.known+' (база '+
@@ -384,7 +384,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(page==='defense'&&modifiers?.combat?.defense){
   const df=modifiers.combat.defense,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Защита надетых вещей (частичный расчёт)'}),
+  card.append(make('strong',{text:'Защита снаряжения'}),
    make('p',{text:'Подтверждённая основа: '+df.known}),
    make('p',{text:'Базовая защита снаряжения: '+df.armor}),
    make('p',{text:'Бонус заточки брони и щита: +'+df.refinement}),
@@ -411,7 +411,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(page==='defense'&&modifiers?.resistances){
   const rs=modifiers.resistances,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Известные сопротивления (частичный расчёт)'}));
+  card.append(make('strong',{text:'Сопротивления'}));
   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
    charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия'};
   for(const [key,value] of Object.entries(rs.elements)){
@@ -513,7 +513,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  if(chosen==='recovery'&&modifiers?.healingSkill){
   const spells=modifiers.healingSpells,heal=modifiers.healingSkill;
   const card=make('section',{class:'stage-attribute-row stage-healing-spells'});
-  card.append(make('strong',{text:'Расчёт лечащих навыков Remaked'}),
+  card.append(make('strong',{text:'Лечащие умения'}),
    make('p',{text:'Эффективность лечения: '+heal.percent+'%'}));
   if(spells){
    for(const row of spells.rows){
