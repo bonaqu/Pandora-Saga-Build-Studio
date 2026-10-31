@@ -632,3 +632,8 @@ The D1 library GET response preserves old active builds even after many deletion
 ## D1 regression testing · 0.140.0
 
 The mock D1 adapter used in share revocation and library lifecycle tests now handles the same SQL branches as the Worker: private-source state checks, missing optional share tables, and tombstone revocation. A standalone SQLite query check verified that an active build remains visible after 300 deletion records. Live deployment, actual D1 writes and the full Node suite are distinct validations.
+
+
+## Resume editing after browser restart · 0.141.0
+
+The last opened saved build ID is persisted alongside the draft, so reopening the browser and pressing «Сохранить изменения» updates the same named build instead of creating an unwanted duplicate. A new character or a separately received public build clears the association. Storage blocking is handled without crashing the editor.

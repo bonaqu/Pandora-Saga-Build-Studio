@@ -53,15 +53,18 @@ let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(b
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
 function restoreActiveBuildId(){
- try{
-  const id=sessionStorage.getItem(ACTIVE_BUILD_KEY);
-  return /^[a-f0-9]{32}$/.test(id||'')?id:null;
- }catch{return null}
+ let id=null;
+ try{id=sessionStorage.getItem(ACTIVE_BUILD_KEY)}catch{}
+ if(!/^[a-f0-9]{32}$/.test(id||'')){
+  try{id=localStorage.getItem(ACTIVE_BUILD_KEY)}catch{}
+ }
+ return /^[a-f0-9]{32}$/.test(id||'')&&builds.some(b=>b.id===id)?id:null;
 }
 let activeBuildId=restoreActiveBuildId();
 function selectActiveBuild(id){
  activeBuildId=id;
  try{if(id)sessionStorage.setItem(ACTIVE_BUILD_KEY,id);else sessionStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
+ try{if(id)localStorage.setItem(ACTIVE_BUILD_KEY,id);else localStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
 }
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
 inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(

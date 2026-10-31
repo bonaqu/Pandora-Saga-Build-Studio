@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.140.0 (`2026.10.31.140`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.141.0 (`2026.10.31.141`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -637,3 +637,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Library lifecycle mocks now distinguish the existing private_builds table from an absent shared_build_sources table. The offline/legacy delete path no longer attempts an unsupported fake D1 batch.
 - [x] Independently confirmed the SQLite ordering with one active level-55 build and 300 tombstones: all 301 rows remain available with the active build first.
 - [ ] Full Node npm test and deployed browser E2E are still required; updating test doubles does not constitute full-suite success.
+
+
+## Source update 0.141.0 — saved-build identity across browser restarts
+
+- [x] The active named build association is stored alongside the existing draft in localStorage, with sessionStorage kept as the per-tab first choice.
+- [x] Restoring the active ID checks that a matching build still exists in the local library; New Build and opening an unrelated shared snapshot clear both stored identifiers.
+- [x] Storage exceptions do not prevent editing, and a resumed saved build is updated instead of silently becoming a duplicate.
+- [ ] Full browser session-restart acceptance, npm test and multi-device library-key transfer remain to be validated.
