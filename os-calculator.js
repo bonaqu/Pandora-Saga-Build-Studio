@@ -749,7 +749,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const mpBonus=bonusFor('mp',mpBase,effects,enhancements);
  if(!hpBonus||!mpBonus)return null;
  const potion=potionRecovery({vit:stats.vit,records,honorTitle:extra.honor.id,
-  runeJoEun:attributeBuffs?.runeJoEun===true,level,itemForth,...potionContext});
+  runeJoEun:false,level,itemForth,...potionContext});
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
