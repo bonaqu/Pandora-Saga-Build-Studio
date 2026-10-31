@@ -967,26 +967,11 @@ async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
-  const keys=['meta','items','monsters','maps','instances','drops','trades','tables','chests','skills','souls'];
-  const data={};
-  let cursor=0;
-  async function one(){
-   while(cursor<keys.length){
-    const key=keys[cursor++];
-    let response;
-    try{
-     response=await fetch(API+'/api/catalog/'+key+'.json',{cache:'no-cache',signal:AbortSignal.timeout(12000)});
-     if(!response.ok)throw Error('Cloudflare D1 HTTP '+response.status);
-    }catch{
-     response=await fetch('./data/os/'+key+'.json',{cache:'no-cache'});
-    }
-    if(!response.ok)throw Error('Недоступны данные энциклопедии: '+key);
-    data[key]=await response.json();
-   }
-  }
-  await Promise.all([one(),one(),one(),one()]);
-  wikiData=data;wikiIndex=window.PandoraWikiData.build(data);
-  return wikiIndex;
+  const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
+  const index=window.PandoraWikiData.build(loaded.data);
+  wikiData=loaded.data;
+  wikiIndex=index;
+  return index;
  })().finally(()=>wikiPending=null);
  return wikiPending;
 }
