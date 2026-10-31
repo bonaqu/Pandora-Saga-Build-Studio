@@ -483,6 +483,35 @@ function combatSkillSource(skillCatalog,kind){
 }
 
 const evasionLineage=new Set(['AGENT','ASSASSIN','DISTURBANCE']);
+
+// Two further OS skill records match explicit live effects and retained Remaked
+// ACC/Dodge/MoveSPD formulas. Only opt-in selections can affect the build.
+const supportSkillIds=Object.freeze({windAssist:260006001,windBlessing:320004001});
+const supportRequirements=Object.freeze({
+ windAssist:['EP_AVOIDANCE_CONST','EP_AVOIDANCE_SCALE'],
+ windBlessing:['EP_MOVESPEED_SCALE']
+});
+function supportSkillSource(skillCatalog,kind){
+ const record=skillCatalog?.[String(supportSkillIds[kind])];
+ if(!record||!Array.isArray(record.funcs)||!supportRequirements[kind])return null;
+ const values={};
+ for(const ep of supportRequirements[kind]){
+  const found=record.funcs.filter(x=>x.ep===ep&&x.dir==='TARGET');
+  if(found.length!==1||!Number.isFinite(found[0].fv1?.[3]))return null;
+  values[ep]=found[0].fv1[3];
+ }
+ return {record,values};
+}
+function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,level=1}={}){
+ const result={windAssist:false,windBlessing:false};
+ for(const [kind,setting] of [['windAssist','combatWindAssist'],
+  ['windBlessing','combatWindBlessing']]){
+  const source=supportSkillSource(skillCatalog,kind);
+  result[kind]=Boolean(selected?.[setting]===true&&source?.record?.classes?.[jobKey]&&
+   Number.isInteger(source.record.charLevel)&&level>=source.record.charLevel);
+ }
+ return result;
+}
 function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildArouse=0}={}){
  if(!Number.isFinite(int)||int<0||
   !Number.isInteger(magicMastery)||magicMastery<0||
@@ -561,6 +590,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,
   hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
    record?.slot==='shield')});
+ const supportSkills=supportSkillAvailability({selected:combatBuffs,skillCatalog,jobKey,level});
+ const supportSkillValues=Object.fromEntries(Object.keys(supportSkillIds).map(kind=>
+  [kind,supportSkillSource(skillCatalog,kind)?.values||{}]));
  const activeValues=Object.fromEntries(Object.keys(combatSkillIds).map(kind=>[
   kind,combatSkillSource(skillCatalog,kind)?.effects||{}]));
  const effect=(kind,ep)=>activeValues[kind][ep]??0;
@@ -618,8 +650,10 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // already counted as +10/+15 above. Expose it, never double-add it to MATK.
  const spellDamageEquipmentRate=equipped.elementDamageRate;
  const castInterruption=equipped.castInterruptResist+(title.castingResist||0);
+ const windMove=supportSkills.windBlessing?
+  supportSkillValues.windBlessing.EP_MOVESPEED_SCALE:0;
  const movementSpeed={base:100,equipment:equipped.movement,
-  known:100+equipped.movement,verified:false};
+  active:windMove,known:100+equipped.movement+windMove,verified:false};
  const skillDelayEquipment=equipped.skillDelay;
  const skillDelayFinalEquipment=equipped.skillDelayFinal;
  const mpRecoveryEquipmentRate=equipped.mpRecoveryRate;
@@ -632,7 +666,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   (Number(bonuses.incomingCriticalReduction)||0);
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0);
  return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
-  activeSkillValues:activeValues,secondary,
+  activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,manaCost,
   weaponPhysical,backAttack,frontAttack,cooldown,
   spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
@@ -642,7 +676,13 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    percentage:accuracyPercent,honor:title.accuracy||0,
    known:accuracy+accuracyBonus+hunterEye},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
-   passive:quickStep,honor:title.dodge||0,known:dodge+quickStep},
+   passive:quickStep,honor:title.dodge||0,
+   windAssist:supportSkills.windAssist?Math.floor(
+    supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
+    dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0,
+   known:dodge+quickStep+(supportSkills.windAssist?Math.floor(
+    supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
+    dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0)},
   critical:{base:critBase,equipment:critEquip,
    racial:racialPassiveId===900040001?5:0,known:critical},
   racialRate,verified:false,
@@ -931,7 +971,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,effectCoverage
 });
 })(typeof window==='undefined'?globalThis:window);
