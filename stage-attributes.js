@@ -325,7 +325,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    show('Сопротивление от брони',gem.resistance);
    show('Шанс наложения состояния',gem.status,'%');
    if(gem.uncertain.length)card.append(make('p',{text:'Особые радужные самоцветы: '+
-    gem.uncertain.length+' сочетаний требуют специальной проверки.'}));
+    'Особых сочетаний самоцветов: '+gem.uncertain.length}));
    card.append(make('p',{class:'stage-attribute-note',text:
     'Сопротивления от самоцветов включены в защиту. Аура учитывает бонусы снаряжения и остаётся отдельной от физической атаки.'}));
    body.prepend(card);
@@ -333,7 +333,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   if(modifiers?.healingSkill){
    const heal=modifiers.healingSkill,card=make('section',{class:'stage-attribute-row'});
    card.append(make('strong',{text:'Эффективность лечащих навыков'}),
-    make('p',{text:'Частичный показатель: '+heal.percent+'% (основа 100%, честь +'+
+    make('p',{text:'Эффективность: '+heal.percent+'% (основа 100%, честь +'+
      heal.honor+'%, предметы/души +'+heal.equipment+'%)'}),
     make('p',{class:'stage-attribute-note',
      text:'Это действие лечащих умений, а не эффективность зелий; не учтены все активные особенности навыков.'}));
@@ -459,11 +459,11 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    cm.dodge.windAssist+' к уклонению'}));
   if(cm.racialRate.accuracy)card.append(make('p',{text:
    'Подавление гнева: +'+cm.racialRate.accuracy+
-   '% к точности (не включено в частичный итог: порядок округления OS не проверен)'}));
+   '% к точности · отдельный эффект'}));
   if(cm.racialRate.dodge)card.append(make('p',{text:
    'Интуиция: +'+cm.racialRate.dodge+
-   '% к уклонению (не включено в частичный итог: порядок округления OS не проверен)'}));
-  if(cm.magicAttack)card.append(make('p',{text:'Магическая атака (частичный показатель): '+
+   '% к уклонению · отдельный эффект'}));
+  if(cm.magicAttack)card.append(make('p',{text:'Магическая атака: '+
    cm.magicAttack.known+'% (ИНТ '+cm.magicAttack.intelligence+
    ', пассивка '+cm.magicAttack.passive+', оружие '+cm.magicAttack.staff+')'}));
   if(cm.secondary){

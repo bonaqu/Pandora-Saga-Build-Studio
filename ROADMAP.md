@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.150.0 (`2026.10.31.150`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.151.0 (`2026.10.31.151`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -721,3 +721,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] The EXP branch moves to PARTIAL; inventory: **41 missing, 77 partial**, 15 base previews and 10 buff previews. SkillEXP remains missing: no confirmed matching current-game effect has been discovered.
 - [x] Added regression tests for the actual published OS item ID, conditional grade gates and separate effects UI.
 - [ ] Verify XP grant behavior in the live game and complete remaining Remaked branches; full Node and browser E2E still required.
+
+
+## 0.151.0 — player-focused UI labels and icon messages
+
+- [x] Remove implementation phrases embedded in plain Hero Book values (partial magic attack and healing labels, unverified rounding notes, rainbow gem debug message). Players still see the distinct conditional effects and their actual source values.
+- [x] Replace local OS icon counts/import diagnostics in the public interface with useful generic loading/availability messages.
+- [x] Keep technical auditing in source documentation and authenticated admin views, not in regular gameplay-facing descriptions.
+- [ ] Verify responsive rendering and actual browser focus/hover flows. Complete remaining formula branches.

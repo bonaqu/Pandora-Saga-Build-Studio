@@ -682,3 +682,8 @@ Shared builds preserve a strict Boolean value for the old Jo-Eun rune so existin
 ## Earned EXP bonuses · 0.150.0
 
 The Effects chapter in the Hero Book now shows the earned-XP bonus from equipped source-backed items. The verified current OS example is beginner cape ID 18073, +5% XP. The old Remaked EXP key becomes partial; no unverified XP-on-kill math or skill expertise bonus is inferred.
+
+
+## Clear player UI · 0.151.0
+
+Hero Book value lines keep gameplay-specific labels and source bonuses but avoid internal calculator-status wording. The footer communicates whether images are available without leaking internal asset-import counters. Detailed formula coverage continues to be documented for project maintainers.

@@ -2648,9 +2648,9 @@ fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json()
  const label=$('iconStatus');
  if(data?.icons&&data.count&&Number.isInteger(data.count.present)&&Number.isInteger(data.count.expected)&&data.count.present<=data.count.expected){
   if(data.count.present>0){iconManifest=data;render()}
-  if(label)label.textContent='Локальные иконки OS: '+data.count.present+' / '+data.count.expected;
- }else if(label)label.textContent='Иконки OS: используются внешние источники';
-}).catch(()=>{const label=$('iconStatus');if(label)label.textContent='Иконки OS: локальный архив пока не импортирован'});
+  if(label)label.textContent=data.count.present>0?'Изображения загружены':'Изображения загружаются';
+ }else if(label)label.textContent='Изображения доступны';
+}).catch(()=>{const label=$('iconStatus');if(label)label.textContent='Некоторые изображения недоступны'});
 
 // Keep Origin at least as tall as the portrait panel, without stretching it to the taller Hero Path.
 function syncOriginPanelHeight(){
