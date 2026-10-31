@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.160.0 (`2026.11.01.160`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.161.0 (`2026.11.01.161`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.161.0 — fix static test server path validation
+
+- Chromium diagnostics revealed an empty DOM and no page errors: all local URLs were mistakenly rejected with HTTP 403 because a trailing slash on the project root doubled the path separator during containment checks.
+- Normalize the filesystem root with path.resolve before checking descendants. Add a Node HTTP integration test proving real index and JavaScript files return 200 and missing paths return 404.
+- Re-run independent Chromium E2E; production Pages/Worker unaffected by this test-only server fix.
 
 ## Source update 0.160.0 — Chromium boot diagnostics
 
