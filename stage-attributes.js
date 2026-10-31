@@ -120,6 +120,16 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
     cm.dodge.base+', бонусы '+(cm.dodge.known-cm.dodge.base)+')'}),
    make('p',{text:'Критический шанс: '+cm.critical.known+
     ' (без временных усилений)'}));
+  if(cm.attack?.flatEquipment||cm.attack?.percentEquipment?.length){
+   const flat=cm.attack.flatEquipment,percent=cm.attack.percentEquipment.reduce((sum,e)=>sum+e.bonus,0);
+   card.append(make('p',{text:'Прямые бонусы атаки от вещей и душ: '+
+    (flat>=0?'+':'')+flat+'; процентные: '+(percent>=0?'+':'')+percent}));
+  }
+  if(cm.accuracy.percentage?.length){
+   const total=cm.accuracy.percentage.reduce((sum,e)=>sum+e.bonus,0);
+   card.append(make('p',{text:'Процентная точность вещей: '+
+    (total>=0?'+':'')+total+' (поштучное округление вверх)'}));
+  }
   if(cm.racialRate.accuracy)card.append(make('p',{text:
    'Подавление гнева: +'+cm.racialRate.accuracy+
    '% к точности (не включено в частичный итог: порядок округления OS не проверен)'}));

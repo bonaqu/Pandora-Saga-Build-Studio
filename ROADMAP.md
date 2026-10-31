@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.91.0 (`2026.10.31.91`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.92.0 (`2026.10.31.92`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,12 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.92.0 — original transparent PS favicon and direct equipment attack effects
+
+- Commit the generated 96×96 indexed-transparent gold/blue PS art as a small self-hosted PNG, connect favicon/apple-touch with current cache key. Preserve independently editable header logo. Add offline PNG signature/size/tRNS and HTML cache-key tests.
+- Increase partial combat coverage for current OS equipment structured flat `EP_DAMAGERATE_CONST` / `EP_SKILL_EQUIP_DAMAGERATE`, percent `EP_DAMAGERATE_SCALE`, percent accuracy `EP_TOHIT_SCALE`. Match Legacy percent rounding per effect. Grade-gated Souls remain gated, unnamed unstructured skills/set effects excluded.
+- Still pending: complete skills/passives, armor enhancement table confirmed against server, all item conditions, full RU terms reconciliation, original OS icons, D1 deployment and actual browser QA.
 
 ## Source update 0.91.0 — partial equipped armor DEF and resilience of HP/MP
 

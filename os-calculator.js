@@ -295,6 +295,31 @@ function defensePreview({records=[],honorTitle=0}={}){
   verified:false,excluded:['armor refinement scaling','Defender and Raging Soul active skills',
    'conditional item/set multipliers','OS server damage mitigation']};
 }
+// Source-backed equipment modifiers from current OS item/Soul structured EP codes.
+ // Apply Remaked's ceil(base * rate / 100) separately to every source effect.
+ // Deliberately ignore unstructured gear description text and conditional skills.
+function equippedCombatModifiers(records=[]){
+ const out={attackFlat:0,attackPercent:[],accuracyPercent:[],traces:[]};
+ if(!Array.isArray(records))return null;
+ const lookup={EP_DAMAGERATE_CONST:'attackFlat',
+  EP_SKILL_EQUIP_DAMAGERATE:'attackFlat',
+  EP_DAMAGERATE_SCALE:'attackPercent',EP_TOHIT_SCALE:'accuracyPercent'};
+ for(const [source,record,grade] of records){
+  if(!record||typeof record!=='object'||!Array.isArray(record.effects))continue;
+  for(const effect of record.effects){
+   const target=lookup[effect.func];
+   if(!target)continue;
+   if(Number.isFinite(effect.min)&&grade<effect.min)continue;
+   if(Number.isFinite(effect.max)&&grade>effect.max)continue;
+   const amount=effect.a;
+   if(!Number.isFinite(amount))continue;
+   if(target==='attackFlat')out.attackFlat+=amount;
+   else out[target].push({source,rate:amount});
+   out.traces.push({source,ep:effect.func,value:amount});
+  }
+ }
+ return out;
+}
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
  weapon=null,weaponGrade=0,weaponPlus=null,records=[]}={}){
  if(!Number.isInteger(level)||level<1||
@@ -322,9 +347,21 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const attack=weaponAttackPreview({str:stats.str,weapon,grade:weaponGrade,
   weaponPlus,honorTitle});
  const defense=defensePreview({records,honorTitle});
- if(!defense)return null;
- return {attack,defense,accuracy:{base:accuracyBase,equipment:accEquip,
-   honor:title.accuracy||0,known:accuracy},
+ const equipped=equippedCombatModifiers(records);
+ if(!defense||!equipped)return null;
+ const atkPct=attack?equipped.attackPercent.map(e=>({
+  ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
+ const atkExtras=equipped.attackFlat+atkPct.reduce((sum,e)=>sum+e.bonus,0);
+ const effectiveAttack=attack?{...attack,flatEquipment:equipped.attackFlat,
+  percentEquipment:atkPct,
+  known:Math.ceil((attack.raw??attack.known)+attack.honor+atkExtras)}:null;
+ const accuracyPercent=equipped.accuracyPercent.map(e=>({
+  ...e,bonus:Math.ceil(accuracyBase*e.rate/100)}));
+ const accuracyBonus=accuracyPercent.reduce((sum,e)=>sum+e.bonus,0);
+ return {attack:effectiveAttack,defense,
+  accuracy:{base:accuracyBase,equipment:accEquip,
+   percentage:accuracyPercent,honor:title.accuracy||0,
+   known:accuracy+accuracyBonus},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
    honor:title.dodge||0,known:dodge},
   critical:{base:critBase,equipment:critEquip,
@@ -394,6 +431,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers
 });
 })(typeof window==='undefined'?globalThis:window);

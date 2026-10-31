@@ -95,3 +95,30 @@ test('missing weapon improvement tables cannot make valid HP/MP disappear',()=>{
  assert.equal(result.combat?.attack,null);
  assert.equal(result.combat.defense.known,0);
 });
+
+test('OS structured attack modifiers apply flat and percent in Legacy rounding order',()=>{
+ const weapon={W:48};
+ const rows=[
+  ['item:tunic',{effects:[{func:'EP_DAMAGERATE_CONST',a:4},
+    {func:'EP_DAMAGERATE_SCALE',a:5},
+    {func:'EP_TOHIT_SCALE',a:10}]},0],
+  ['soul:strong',{effects:[{func:'EP_SKILL_EQUIP_DAMAGERATE',a:6,min:5,max:10}]},5],
+  ['soul:late',{effects:[{func:'EP_SKILL_EQUIP_DAMAGERATE',a:7,min:6,max:10}]},5]
+ ];
+ const out=calc.combatPreview({stats:stat,level:45,weapon,records:rows});
+ assert.equal(out.attack.raw,78.76);
+ assert.equal(out.attack.flatEquipment,10);
+ assert.equal(out.attack.percentEquipment[0].bonus,4);
+ assert.equal(out.attack.known,93); // ceil(78.76+4+6+ceil(78.76*5%))
+ assert.equal(out.accuracy.base,80);
+ assert.equal(out.accuracy.percentage[0].bonus,8);
+ assert.equal(out.accuracy.known,88);
+ assert.equal(out.verified,false);
+});
+test('conditional soul not included below its min refinement',()=>{
+ const rows=[['soul:strong',{effects:[{func:'EP_SKILL_EQUIP_DAMAGERATE',a:6,min:5,max:10}]},4]];
+ const out=calc.combatPreview({stats:stat,level:45,weapon:{W:48},records:rows});
+ assert.equal(out.attack.flatEquipment,0);
+ assert.equal(out.attack.known,79);
+ assert.equal(out.accuracy.known,80);
+});
