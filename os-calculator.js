@@ -530,14 +530,19 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
 // Strictly opt-in skill effects. Gate every buff by current OS class and
 // character level, not by the presence of an unchecked saved toggle.
 function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
- skillCatalog=null}={}){
+ weapon=null,skillCatalog=null}={}){
  const permitted=(key,selectedKey,legacyClasses,minLevel)=>{
   if(selected?.[selectedKey]!==true)return false;
   if(skillCatalog){
    const source=combatSkillSource(skillCatalog,key);
    const record=source?.record;
-   return Boolean(source&&record?.classes?.[jobKey]&&
-    Number.isInteger(record.charLevel)&&level>=record.charLevel);
+   if(!source||!record?.classes?.[jobKey]||
+    !Number.isInteger(record.charLevel)||level<record.charLevel)return false;
+   // OS skill 100051001 (Lunge) explicitly lists compatible weapon kinds.
+   // With no equipped weapon the source lists BARE_HAND as a valid kind.
+   if(key==='lunge'&&Array.isArray(record.weaponUse)&&record.weaponUse.length&&
+    !record.weaponUse.includes(weapon?.kind??'BARE_HAND'))return false;
+   return true;
   }
   return legacyClasses.has(jobKey)&&level>=minLevel;
  };
@@ -587,7 +592,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const equipped=equippedCombatModifiers(records,itemForth);
  const secondary=secondaryEffectsPreview({records,itemForth});
  if(!defense||!equipped||!secondary)return null;
- const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,
+ const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,weapon,
   hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
    record?.slot==='shield')});
  const supportSkills=supportSkillAvailability({selected:combatBuffs,skillCatalog,jobKey,level});
