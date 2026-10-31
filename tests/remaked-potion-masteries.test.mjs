@@ -41,7 +41,7 @@ test('training uses green mastery alone, never blue plus green',()=>{
  assert.equal(green,55);
  assert.equal(pot({meleeMastery:green}).mastery,50);
 });
-test('race, mastery, equipment, honor and rune contribute once without increasing max HP',()=>{
+test('historical rune remains isolated from current OS character totals',()=>{
  const effects=[['soul:x',{effects:[{func:'EP_MASTERY_POTION',a:8}]},0]];
  const rate=pot({meleeMastery:30,racialPassiveId:900010003,
   honorTitle:11,runeJoEun:true,records:effects});
@@ -52,7 +52,14 @@ test('race, mastery, equipment, honor and rune contribute once without increasin
   raceData:{...zero,vit:50},jobData:zero,allocation:zero,level:25,
   records:effects,attributeBuffs:{honorTitle:11,runeJoEun:true},
   potionContext:{jobKey:'KNIGHT',meleeMastery:30,racialPassiveId:900010003}});
- assert.equal(base.potion.percent,168);
+ assert.equal(base.potion.percent,163);
+ assert.equal(base.potion.rune,0);
+ const injected=calc.base({classData:JSON.parse(read('data/os/classes.json')).KNIGHT,
+  raceData:{...zero,vit:50},jobData:zero,allocation:zero,level:25,
+  records:effects,attributeBuffs:{honorTitle:11},
+  potionContext:{jobKey:'KNIGHT',meleeMastery:30,racialPassiveId:900010003,runeJoEun:true}});
+ assert.equal(injected.potion.rune,0);
+ assert.equal(injected.potion.percent,base.potion.percent);
  assert.equal(base.hp,base.hpBase+base.vitalsBonus.hp.total);
 });
 test('exact Remaked approved RU labels are mapped to 18 current OS racial skill IDs',()=>{
