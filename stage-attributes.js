@@ -276,14 +276,18 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     for(const [key,value] of Object.entries(values||{}))
      card.append(make('p',{text:title+' · '+(labels[key]||key)+': +'+value+suffix}));
    };
-   show('Аурный урон оружия',gem.auras);
+   show('Основа ауры оружия',gem.auras);
+   const totalAura=modifiers?.auraDamage?.elements||{};
+   for(const [element,amount] of Object.entries(totalAura))
+    card.append(make('p',{text:'Итог ауры · '+(labels[element]||element)+': '+
+     (amount.known>0?'+':'')+amount.known}));
    show('Магическое усиление оружия',gem.magic);
    show('Сопротивление от брони',gem.resistance);
    show('Шанс наложения состояния',gem.status,'%');
    if(gem.uncertain.length)card.append(make('p',{text:'Особые радужные самоцветы: '+
     gem.uncertain.length+' сочетаний требуют специальной проверки.'}));
    card.append(make('p',{class:'stage-attribute-note',text:
-    'Сопротивления самоцветов учтены в разделе «Защита». Аурный урон и магическое усиление показаны отдельно от базовой атаки.'}));
+    'Сопротивления от самоцветов включены в защиту. Аура учитывает бонусы снаряжения и остаётся отдельной от физической атаки.'}));
    body.prepend(card);
   }
   if(modifiers?.healingSkill){
