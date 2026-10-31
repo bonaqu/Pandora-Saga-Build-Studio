@@ -20,7 +20,7 @@ const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Наг
  ['Серьга I','✧'],['Серьга II','✧']];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak',
  'ring','ring','neck','belt','ear','ear'];
-function fixture(){
+function fixture(issue=()=>[]){
  const window={};
  Function('window',read('equipment-plan.js'))(window);
  Function('window',read('item-presentation.js'))(window);
@@ -49,11 +49,11 @@ function fixture(){
   e.append(...children);return e;
  };
  const render=Function('window','state','$','slots','slotKeys','h','slotVisual',
-  'equippedRecord','itemIcon','itemName','selectedSlot','stageSlotPickerOpen',
+  'equippedRecord','equipmentIssue','itemIcon','itemName','selectedSlot','stageSlotPickerOpen',
   'selectedSocket','gearMode','stageSlotQuery','stageSoulQuery','stageSlotShown',
   'stageSlotView','renderStagePicker',source+'\nreturn renderSlotRails;')(
   window,state,$,slots,slotKeys,h,i=>h('span',{class:'slot-glyph',text:slots[i][1]}),
-  i=>records[i]||null,()=>null,
+  i=>records[i]||null,issue,()=>null,
   r=>window.PandoraItemPresentation.displayName(r),0,false,0,'equipment','','',48,
   'choose',()=>{}
  );
@@ -78,4 +78,12 @@ test('weapon grade and Soul count remain distinct markers; ring does not report 
  assert.ok(!ring.attributes['aria-label'].includes('души 0/0'));
  assert.ok(!ring.children.some(x=>x.className==='stage-sockets'));
  assert.equal(ring.children.find(x=>x.tag==='small')?.textContent,'Кольцо метели');
+});
+
+test('persisted incompatible item keeps slot and receives a game-like inactive marker',()=>{
+ const f=fixture((record,slot)=>slot===0?['Требуется уровень 40']:[]);
+ const weapon=[...f.left.children,...f.right.children].find(x=>x.attributes['data-slot-index']==='0');
+ assert.match(weapon.className,/unavailable/);
+ assert.match(weapon.attributes['aria-label'],/Не действует: Требуется уровень 40/);
+ assert.ok(weapon.children.some(x=>x.className==='stage-conflict'));
 });

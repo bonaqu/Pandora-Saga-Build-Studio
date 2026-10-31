@@ -40,7 +40,8 @@ test('catalog EP changes follow source while missing mastery and missing record 
 });
 test('book gates Concentration by the same trained slash skill and saves it in links',()=>{
  const app=read('app.js'),book=read('stage-attributes.js');
- assert.match(app,/branchMasteries=\{slash:window\.PandoraSkillProgression\.groupAdeptness/);
+ assert.match(app,/function trainedBranchMasteries\(innate=\{\}\)/);
+ assert.match(app,/const branchMasteries=trainedBranchMasteries\(innate\)/);
  assert.match(app,/combatConcentration:'concentration'/);
  assert.match(app,/rawAttributes\[key\]===true/);
  assert.match(app,/combatConcentration'\]/);
