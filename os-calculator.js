@@ -562,9 +562,68 @@ function attributeBuffBonus(options={}){
  }
  return {flat:out,trace,honor:selected};
 }
+
+// Historical Remaked Legacy js/equip.js weapon-gem switch for enhancement +1..+10.
+// Some values were marked provisional (未) in the archival source; expose them as
+// *historical previews*, never silently merge into current OS server ATK/MATK.
+const legacyPhysicalAuras=Object.freeze([
+ null,
+ [3,1,5,1,4,4],[4,2,6,2,5,5],[5,3,8,3,7,7],
+ [7,5,11,5,9,9],[9,6,14,6,12,12],[9,6,14,6,12,12],
+ [9,11,23,6,20,20],[9,6,14,7,20,20],
+ [9,6,14,7,20,20],[9,6,14,7,20,20]
+]);
+const legacyMagicAuras=Object.freeze([0,1,2,4,7,10,14,19,25,32,40]);
+const legacyGemElements=Object.freeze(['fire','ice','lightning','poison','light','dark','rainbow']);
+function gemstonePreview(loadouts=[]){
+ if(!Array.isArray(loadouts))return null;
+ const results=[],uncertain=[];
+ const physicalSlots=new Set(['weapon','shield','head','body','gloves','legs','feet']);
+ const names={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
+  light:'Свет',dark:'Тьма',rainbow:'Радуга'};
+ for(const entry of loadouts){
+  if(!entry||!physicalSlots.has(entry.slot)||!entry.gem)continue;
+  const {slot,grade,gem}=entry;
+  if(!Number.isInteger(grade)||grade<0||grade>10||
+   !['physical','magical'].includes(gem.type)||
+   !legacyGemElements.includes(gem.element))continue;
+  if(!grade)continue;
+  const item={slot,grade,itemId:entry.itemId,type:gem.type,element:gem.element,
+   name:names[gem.element],aura:0,magic:0,resistance:{},statusChance:0};
+  if(gem.element==='rainbow'){
+   uncertain.push({itemId:entry.itemId,slot,reason:'Особый радужный самоцвет зависит от списка уникального оружия'});
+   continue;
+  }
+  if(slot==='weapon'){
+   const index=legacyGemElements.indexOf(gem.element);
+   if(gem.type==='physical'){
+    item.aura=legacyPhysicalAuras[grade][index]||0;
+    // Legacy equip.js: status infliction grade on physical fire / ice / poison.
+    if(['fire','ice','poison'].includes(gem.element))item.statusChance=grade;
+   }else item.magic=legacyMagicAuras[grade];
+  }else if(gem.element==='light'){
+   const amount=Math.floor(grade/2);
+   item.resistance={fire:amount,ice:amount,lightning:amount};
+  }else if(gem.element==='dark')item.resistance={charm:grade};
+  else item.resistance={[gem.element]:grade};
+  results.push(item);
+ }
+ const resistance={},auras={},magic={},status={};
+ for(const row of results){
+  for(const [key,value] of Object.entries(row.resistance))
+   resistance[key]=(resistance[key]||0)+value;
+  if(row.aura)auras[row.element]=(auras[row.element]||0)+row.aura;
+  if(row.magic)magic[row.element]=(magic[row.element]||0)+row.magic;
+  if(row.statusChance)status[row.element]=(status[row.element]||0)+row.statusChance;
+ }
+ return {items:results,uncertain,auras,magic,resistance,status,verified:false,
+  source:'Pandora-Saga-Simulator-remaked/js/equip.js, legacy weapon/armor gem switches',
+  excluded:['current OS server gem rules','special rainbow weapon exceptions',
+   'gem-dependent Soul passives','conditional procs and damage conversion']};
+}
 function base({classData,raceData,jobData,allocation,level,records=[],itemForth=null,
  supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={},
- potionContext={},combatContext={}}={}){
+ potionContext={},combatContext={},gemSelections=[]}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
  const effects=gatherEffects(records,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
  if(!extra)return null;
@@ -585,6 +644,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
+ const gemstones=gemstonePreview(gemSelections);
  const recoveryAmount=recoveryAmountPreview({maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,stats});
  const healingSkill=healingSkillPreview({honorTitle:extra.honor.id,records,itemForth});
@@ -599,7 +659,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,
-  recoveryAmount,healingSkill,combat,
+  recoveryAmount,healingSkill,combat,gemstones,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -607,6 +667,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,
- recoveryAmountPreview,healingSkillPreview
+ recoveryAmountPreview,healingSkillPreview,gemstonePreview
 });
 })(typeof window==='undefined'?globalThis:window);

@@ -159,6 +159,25 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }body.append(card);
  }
  if(page==='effects'){
+  if(modifiers?.gemstones&&(modifiers.gemstones.items.length||modifiers.gemstones.uncertain.length)){
+   const gem=modifiers.gemstones,card=make('section',{class:'stage-attribute-row'});
+   card.append(make('strong',{text:'Самоцветы · исторические расчёты Remaked'}));
+   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
+    light:'Свет',dark:'Тьма',charm:'Чары'};
+   const show=(title,values,suffix='')=>{
+    for(const [key,value] of Object.entries(values||{}))
+     card.append(make('p',{text:title+' · '+(labels[key]||key)+': +'+value+suffix}));
+   };
+   show('Аурный урон оружия',gem.auras);
+   show('Магическое усиление оружия',gem.magic);
+   show('Сопротивление от брони',gem.resistance);
+   show('Шанс наложения состояния',gem.status,'%');
+   if(gem.uncertain.length)card.append(make('p',{text:'Особые радужные самоцветы: '+
+    gem.uncertain.length+' сочетаний требуют специальной проверки.'}));
+   card.append(make('p',{class:'stage-attribute-note',text:
+    'По архиву Remaked; текущая таблица OS и исключения уникальных предметов не сверены. Не складывается с текущими цифрами атаки и защиты.'}));
+   body.prepend(card);
+  }
   if(modifiers?.healingSkill){
    const heal=modifiers.healingSkill,card=make('section',{class:'stage-attribute-row'});
    card.append(make('strong',{text:'Эффективность лечащих навыков'}),

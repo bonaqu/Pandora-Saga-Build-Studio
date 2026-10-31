@@ -77,12 +77,15 @@ function previewBaseStats(){
  const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
  const baseClass=clazz?.baseClass||jobKeys[state.job];
  const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(state.stats[STATS[i]]||0)]));
- const records=[];
+ const records=[],gemSelections=[];
  for(const [slot,selection] of Object.entries(state.equipment||{})){
   const item=selection&&catalog.equipment?.[String(selection.id)];
   if(!item)continue;
   const grade=window.PandoraEquipmentPlan.refinementValue(state.refinements,Number(slot),selection);
   records.push(['item:'+item.id,item,grade]);
+  const gem=window.PandoraEnchantModel.normalize(
+   state.gems?.[window.PandoraEquipmentPlan.refinementKey(Number(slot),selection)]);
+  if(gem)gemSelections.push({slot:item.slot,itemId:item.id,grade,gem});
   const souls=window.PandoraEquipmentPlan.asSocketArray(state.souls?.[slot]);
   const capacity=window.PandoraEquipmentPlan.socketCapacity(item);
   for(let i=0;i<(window.PandoraEquipmentPlan.supportsSoulSlot(slotKeys[Number(slot)])?(capacity??0):0);i++){
@@ -104,7 +107,7 @@ function previewBaseStats(){
  const meleeMastery=masteries.melee;
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
-  allocation,level:state.level,records,itemForth:gameItemForth,
+  allocation,level:state.level,records,itemForth:gameItemForth,gemSelections,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
@@ -572,6 +575,7 @@ function renderStagePicker(focusSearch=false){
     const choice=window.PandoraEnchantModel.normalize(entry);
     if(choice)state.gems[id]=choice;else delete state.gems[id];
     stageSlotView='details';persist();renderStagePicker();
+    renderOriginVitals();if(stageAttributesPage)renderStageAttributes();
     if(focusKey&&focusValue)root.querySelector('[data-enchant-key="'+focusKey+
       '"][data-enchant-value="'+focusValue+'"]')?.focus({preventScroll:true});
    }

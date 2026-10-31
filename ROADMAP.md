@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.100.0 (`2026.10.31.100`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.101.0 (`2026.10.31.101`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,12 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.101.0 — historical Remaked gemstone evidence and source-labeled output
+
+- Port original gem-vs-refinement matrix for physical elemental weapon auras, magic weapon aura and armor elements including multi-resistance Light and Charm from Dark; keep separate from modern OS attack and resistances until verified on server.
+- Wire existing saved `state.gems` via equipment refinement keys to `gemstonePreview` and the Effects chapter. Exclude unique rainbow weapon exceptions, no false certainty.
+- Next: current OS gemstone server rules, proc caps and exact unique item ID conditions; full skill-level effect formulas and D1/Pages test.
 
 ## Source update 0.100.0 — consolidated portrait results book
 
