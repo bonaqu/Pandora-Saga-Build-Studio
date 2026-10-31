@@ -410,6 +410,38 @@ const meleeLineage=new Set(['GLADIATOR','JUGGERNAUT','DRAGOON']);
 const archerLineage=new Set(['ARCHER','SNIPER','PREDATOR']);
 const knightLineage=new Set(['KNIGHT','GENERAL','PALADIN']);
 const warriorBuffClasses=new Set(['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN']);
+// The four current OS toggles have fixed, ID-backed skill records. When an
+// OS catalog is supplied, validate both access and EP effect values against it.
+const combatSkillIds=Object.freeze({
+ lunge:100051001,warCry:320001001,raging:100052001,defender:100053001
+});
+const combatSkillRequirements=Object.freeze({
+ lunge:['EP_ATTACKINTERVAL_SCALE'],
+ warCry:['EP_DAMAGERATE_CONST','EP_DAMAGERATE_SCALE'],
+ raging:['EP_DAMAGERATE_SCALE','EP_ARMORCLASS_SCALE'],
+ defender:['EP_DAMAGERATE_SCALE','EP_ARMORCLASS_SCALE']
+});
+const combatSkillDefaults=Object.freeze({
+ lunge:{EP_ATTACKINTERVAL_SCALE:15},
+ warCry:{EP_DAMAGERATE_CONST:10,EP_DAMAGERATE_SCALE:20},
+ raging:{EP_DAMAGERATE_SCALE:30,EP_ARMORCLASS_SCALE:-60},
+ defender:{EP_DAMAGERATE_SCALE:-20,EP_ARMORCLASS_SCALE:40}
+});
+function combatSkillSource(skillCatalog,kind){
+ if(!skillCatalog)return {effects:combatSkillDefaults[kind],fromCatalog:false};
+ const skill=skillCatalog[String(combatSkillIds[kind])];
+ if(!skill||!Array.isArray(skill.funcs))return null;
+ const effects={};
+ for(const name of combatSkillRequirements[kind]){
+  const rows=skill.funcs.filter(x=>x.ep===name&&x.dir==='TARGET');
+  if(rows.length!==1||!Array.isArray(rows[0].fv1))return null;
+  const value=rows[0].fv1[3];
+  if(!Number.isFinite(value)||Math.abs(value)>100)return null;
+  effects[name]=value;
+ }
+ return {effects,fromCatalog:true,record:skill};
+}
+
 const evasionLineage=new Set(['AGENT','ASSASSIN','DISTURBANCE']);
 function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildArouse=0}={}){
  if(!Number.isFinite(int)||int<0||
@@ -428,18 +460,28 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
 }
 // Strictly opt-in skill effects. Gate every buff by current OS class and
 // character level, not by the presence of an unchecked saved toggle.
-function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false}={}){
- const selectedBool=key=>selected?.[key]===true;
- const warCry=selectedBool('combatWarCry')&&meleeLineage.has(jobKey)&&level>=28;
- const raging=selectedBool('combatRage')&&meleeLineage.has(jobKey)&&level>=35;
- const defender=selectedBool('combatDefender')&&knightLineage.has(jobKey)&&level>=35&&hasShield&&!raging;
- const lunge=selectedBool('combatLunge')&&warriorBuffClasses.has(jobKey)&&level>=18;
+function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
+ skillCatalog=null}={}){
+ const permitted=(key,selectedKey,legacyClasses,minLevel)=>{
+  if(selected?.[selectedKey]!==true)return false;
+  if(skillCatalog){
+   const source=combatSkillSource(skillCatalog,key);
+   const record=source?.record;
+   return Boolean(source&&record?.classes?.[jobKey]&&
+    Number.isInteger(record.charLevel)&&level>=record.charLevel);
+  }
+  return legacyClasses.has(jobKey)&&level>=minLevel;
+ };
+ const warCry=permitted('warCry','combatWarCry',meleeLineage,28);
+ const raging=permitted('raging','combatRage',meleeLineage,35);
+ const defender=permitted('defender','combatDefender',knightLineage,35)&&hasShield&&!raging;
+ const lunge=permitted('lunge','combatLunge',warriorBuffClasses,18);
  return {warCry,raging,defender,lunge};
 }
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
  weapon=null,weaponGrade=0,weaponPlus=null,records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
- techniqueTrained=0,guildArouse=0,combatBuffs={}}={}){
+ techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null}={}){
  if(!Number.isInteger(level)||level<1||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -475,21 +517,24 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const defense=defensePreview({records,honorTitle,itemForth});
  const equipped=equippedCombatModifiers(records,itemForth);
  if(!defense||!equipped)return null;
- const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,
+ const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,
   hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
    record?.slot==='shield')});
+ const activeValues=Object.fromEntries(Object.keys(combatSkillIds).map(kind=>[
+  kind,combatSkillSource(skillCatalog,kind)?.effects||{}]));
+ const effect=(kind,ep)=>activeValues[kind][ep]??0;
  const baseAtk=attack?.raw??attack?.known??null;
  const guildRate=[0,.02,.04,.06][guildArouse];
  if(guildRate===undefined)return null;
  const guildAtk=baseAtk===null?null:Math.ceil(baseAtk*guildRate);
  const activeAtk=baseAtk===null?null:
-  (actives.warCry?10+Math.ceil(baseAtk*.2):0)+
-  (actives.raging?Math.ceil(baseAtk*.3):0)+
-  (actives.defender?Math.floor(baseAtk*-.2):0);
+  (actives.warCry?effect('warCry','EP_DAMAGERATE_CONST')+
+   Math.ceil(baseAtk*effect('warCry','EP_DAMAGERATE_SCALE')/100):0)+
+  (actives.raging?Math.ceil(baseAtk*effect('raging','EP_DAMAGERATE_SCALE')/100):0)+
+  (actives.defender?Math.floor(baseAtk*effect('defender','EP_DAMAGERATE_SCALE')/100):0);
  const directDef=defense.armor+defense.refinement+defense.equipment;
- const activeDef=(actives.raging?Math.ceil(directDef*-.6):0)+
-  // Current OS Shieldbearer is +40%, unlike Legacy Defender +60%.
-  (actives.defender?Math.floor(directDef*.4):0);
+ const activeDef=(actives.raging?Math.ceil(directDef*effect('raging','EP_ARMORCLASS_SCALE')/100):0)+
+  (actives.defender?Math.floor(directDef*effect('defender','EP_ARMORCLASS_SCALE')/100):0);
  const effectiveDefense={...defense,activeBonus:activeDef,
   known:defense.known+activeDef};
  const atkPct=attack?equipped.attackPercent.map(e=>({
@@ -506,8 +551,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // 3*floor(AGI/20) + floor(AGI/10); typed as a speed index, not hits/sec.
  const speedBase=100+3*Math.floor(stats.agi/10)+3*Math.floor(stats.agi/20);
  const attackSpeed={base:speedBase,equipment:equipped.attackSpeedFlat,
-  lunge:actives.lunge?15:0,
-  known:speedBase+equipped.attackSpeedFlat+(actives.lunge?15:0),verified:false};
+  lunge:actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0,
+  known:speedBase+equipped.attackSpeedFlat+
+   (actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0),verified:false};
  // Legacy Calc('CastSPD'): 100 + 5*floor(DEX/10), without temporary casts.
  const castingSpeed={base:100+5*Math.floor(stats.dex/10),
   verified:false,excluded:['active spell buffs','unknown Soul conditions']};
@@ -542,6 +588,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   (Number(bonuses.incomingCriticalReduction)||0);
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0);
  return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
+  activeSkillValues:activeValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,manaCost,
   weaponPhysical,backAttack,frontAttack,cooldown,
   spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
@@ -781,7 +828,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,effectCoverage
 });
 })(typeof window==='undefined'?globalThis:window);
