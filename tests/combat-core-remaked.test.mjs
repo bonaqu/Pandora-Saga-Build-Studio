@@ -66,7 +66,7 @@ test('base character calculator gets combat context without applying its bonuses
 });
 test('old combat-stage expectations are updated without loosening release version guard',()=>{
  const app=read('app.js'),stage=read('stage-attributes.js'),check=read('tests/stage-attributes.test.mjs');
- assert.match(app,/combatContext:\{weapon,weaponGrade,weaponPlus:gameTables\?\.weaponPlus\}/);
+ assert.match(app,/combatContext:\{weapon,weaponGrade,weaponPlus:gameTables\?\.weaponPlus,/);
  assert.match(stage,/modifiers\?\.combat/);
  assert.match(stage,/Подробнее о точности расчёта/);
  assert.match(check,/assert\.equal\(v,pkg\.pandoraRelease\)/);
