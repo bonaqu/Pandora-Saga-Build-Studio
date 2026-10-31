@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.123.0 (`2026.10.31.123`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.124.0 (`2026.10.31.124`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -66,6 +66,16 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] Recognize `Blocking`, `Reflection`, `Gdebuff` as *partial* in the formula inventory based on existing source-backed secondary effect mappings. They are **not** complete simulations of the relevant combat or debuff success paths.
 - [x] Isolated test vectors for separated 55-level town speed and refinement threshold; developer-side checks are not a full Node/browser/game-client acceptance test.
 - [ ] Continue the remaining 59 not-yet-ported Legacy identities, 59 partial formulas, ten support-skill read-only previews, and 15 base previews; high-level 50/55 calculations remain an explicit studio feature.
+
+## Source update 0.124.0 — current OS unison bonuses integrated into final stats
+
+- [x] Load `unison` as part of the **same atomic Cloudflare D1/local catalog snapshot** as items, skills and souls. Validate against `meta.counts.unison=3`; never merge incompatible published snapshots.
+- [x] Evaluate actual OS `data/os/unison.json` set requirements from root item plus **distinct companion items**, root refinement grade and source formulas `a.p * grade + a.c` (all supported rows have `a.f=0` and zero `b`). Fail closed for future unknown polynomial types rather than assuming their math.
+- [x] Inject resulting source-backed `set:` effects into the **existing** ability/HP/MP, attack, armor, cooldown, cast-interruption, potion and effect coverage pipelines exactly once. Missing set members never activate bonuses.
+- [x] Divine Cuirass (ID 12081) with four companions: at root +0, set bonus MP +200 / interruption resist +12 / cooldown -8; at +5, additional MP +40 / armor +4 / resist +4; at +7, additional MP +120 / armor +12 / resist +12. All values follow OS rows rather than made-up set multipliers.
+- [x] Divine Bracers (ID 14094) with Sentinel Shield (ID 17034): +2 VIT, +15% back-attack bonus. Golden Cuirass (ID 12103) with all four companions and root +7: identify active anti-tumble set effect without inventing a numeric resistance from zero-value `EP_PROTECTION_TUMBLE`.
+- [x] Hero book `Effects` page displays only truly active sets and their numeric bonuses; no implementation diagnostics appear on player-facing pages. Regression fixtures include missing companion, boundaries +0/+5/+7, and overlapping set membership.
+- [ ] Continue remaining conditional skills, set/status immunity confirmations, full equipment refinements, combat procs and final server battle equivalence. **Planning 1–55 is mandatory regardless of live server cap 45.**
 
 ## Workstreams
 
