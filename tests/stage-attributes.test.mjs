@@ -25,7 +25,7 @@ test('partial combat preview does not imply fully verified combat stats',()=>{
 test('reloading preserves portrait attribute page independently of build',()=>{
  const app=get('app.js');
  assert.match(app,/attributes:stageAttributesPage/);
- assert.match(app,/stageAttributesPage=\['attack','defense','effects'\]/);
+ assert.match(app,/stageAttributesPage=\['summary','attack','defense','recovery','effects','buffs'\]/);
  assert.match(app,/window\.addEventListener\('pagehide',saveView\)/);
  assert.match(app,/sessionStorage\.setItem\(VIEW_KEY/);
 });
