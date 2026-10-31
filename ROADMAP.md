@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.163.0 (`2026.11.01.163`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.164.0 (`2026.11.01.164`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.164.0 — 2-second spell recovery preview
+
+- Port independent Remaked Legacy LPsec/MPsec preview magnitudes for Regeneration, Restoration and Natural Recovery; validate current OS skill IDs, class, level and trained/innate benevolence.
+- Keep these read-only spell previews separate from HP/MP and permanent regeneration. Add an optional, compact Hero Book recovery section; no public developer debug banners.
+- Reduce untouched audit identities from 41 to 39; both transferred keys remain BASE/PREVIEW rather than claiming current server parity.
 
 ## Source update 0.163.0 — finish high-level regression gate
 

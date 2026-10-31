@@ -712,6 +712,22 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   body.prepend(card);
  }
+ if(chosen==='recovery'&&modifiers?.periodicRecovery?.rows?.length){
+  const details=make('details',{class:'stage-attribute-row stage-periodic-recovery'});
+  details.append(make('summary',{text:'Восстановление каждые 2 секунды'}));
+  for(const entry of modifiers.periodicRecovery.rows){
+   details.append(make('div',{class:'stage-periodic-row'},[
+    make('span',{text:entry.name}),
+    make('strong',{text:'≈ '+entry.amount+' '+(entry.kind==='hp'?'ОЗ':'ОМ')}),
+    make('small',{text:entry.available?'Доступно при использовании умения':
+     entry.required>0?'Для изучения нужно мастерство '+entry.required:
+     'Пока недоступно'})
+   ]));
+  }
+  details.append(make('p',{class:'stage-periodic-hint',
+   text:'Ориентировочное действие умения. Не входит в постоянное восстановление персонажа.'}));
+  body.append(details);
+ }
  if(['attack','defense'].includes(chosen)&&modifiers?.combat){
   const battle=modifiers.combat;
   const numbers=chosen==='attack'?

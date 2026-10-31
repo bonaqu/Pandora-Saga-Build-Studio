@@ -1532,3 +1532,11 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .build-transfer-row .button-action{flex:0 0 auto;margin:0}
 .build-transfer-feedback{color:#f1cb98!important;min-height:16px}
 @media(max-width:600px){.build-transfer-row .button-action{width:100%;justify-content:center}}
+
+.stage-periodic-recovery{padding:9px 12px}
+.stage-periodic-recovery>summary{cursor:pointer;color:#f2d2a0;font-weight:650}
+.stage-periodic-row{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:12px;row-gap:3px;padding:9px 0;border-bottom:1px solid #74553155}
+.stage-periodic-row>span{min-width:0;overflow-wrap:anywhere;color:#f0d8ae}
+.stage-periodic-row>strong{white-space:nowrap;color:#bde6b0;font-variant-numeric:tabular-nums}
+.stage-periodic-row>small{grid-column:1/-1;color:#baa88e}
+.stage-periodic-hint{margin:9px 0 0;font-size:11px;color:#b8a88c}

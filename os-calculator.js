@@ -973,6 +973,38 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
     scaledBySkill:false}
   ],notes:'Восстановление — периодическая величина; множитель лечения навыками не применяется.'};
 }
+// Two-second healing spell previews from Remaked Legacy LPsec/MPsec.
+// The source values are never added to natural regeneration or current HP/MP.
+// Availability is gated by current OS skill IDs and actual trained mastery.
+
+function periodicRecoveryPreview({level,benevolence=0,jobKey=null,skillCatalog=null}={}){
+ if(!Number.isInteger(level)||level<1||level>55||
+  !Number.isInteger(benevolence)||benevolence<0||typeof jobKey!=='string')
+  return null;
+ const candidates=[
+  {id:310002001,key:'regenerate',amount:15+Math.floor(level/10)+Math.floor(benevolence/10),
+   kind:'hp',name:'Регенерация'},
+  {id:310022001,key:'restoration',amount:7+Math.floor(level/5)+Math.floor(benevolence/10),
+   kind:'hp',name:'Восстановление'},
+  {id:330005001,key:'natural',amount:5,kind:'mp',name:'Природное восстановление'}
+ ];
+ const rows=[];
+ for(const candidate of candidates){
+  const skill=skillCatalog?.[String(candidate.id)];
+  if(!skill?.classes?.[jobKey]||!Array.isArray(skill.reqs))continue;
+  const requirementsValid=skill.reqs.every(req=>
+   req?.branch==='benevolence'&&Number.isInteger(req.amount)&&req.amount>=0);
+  const eligible=requirementsValid&&Number.isInteger(skill.charLevel)&&
+   level>=skill.charLevel&&skill.prereq==null&&skill.learnable!==false;
+  const required=skill.reqs.reduce((max,req)=>
+   req?.branch==='benevolence'&&Number.isInteger(req.amount)?
+    Math.max(max,req.amount):max,0);
+  rows.push({...candidate,available:eligible&&benevolence>=required,
+   required,skillLevel:skill.charLevel,verified:false});
+ }
+ return {rows,verified:false,source:'Remaked Legacy js/calc.js:1009-1026'};
+}
+
 // Historical Remaked Legacy js/equip.js weapon-gem switch for enhancement +1..+10.
 // Some values were marked provisional (未) in the archival source; expose them as
 // *historical previews*, never silently merge into current OS server ATK/MATK.
@@ -1172,6 +1204,10 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   benevolence:combatContext.benevolenceMastery??0,
   jobKey:combatContext.jobKey,healingPercent:healingSkill.percent
  }):null;
+ const periodicRecovery=periodicRecoveryPreview({
+  level,benevolence:combatContext.benevolenceMastery??0,
+  jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog
+ });
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records:combinedRecords,itemForth,
   guildArouse:attributeBuffs?.guildArouse??0,
   combatBuffs:attributeBuffs,
@@ -1183,7 +1219,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,regeneration,legacyBuffs,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -1191,6 +1227,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
