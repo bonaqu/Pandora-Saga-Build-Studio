@@ -912,6 +912,26 @@ function gemstonePreview(loadouts=[]){
   excluded:['current OS server gem rules','special rainbow weapon exceptions',
    'gem-dependent Soul passives','conditional procs and damage conversion']};
 }
+
+// The executed Remaked Legacy Calc('DAMAura' through 'DAMDark') combines
+// elemental weapon aura, shared flat aura and percent enhancement separately.
+// It only adds shared flat aura when that element already has a base aura.
+// Do not convert this to direct attack or a simulated OS damage packet.
+function auraDamagePreview({gemstones=null,records=[],itemForth=null}={}){
+ const extras=secondaryEffectsPreview({records,itemForth});
+ if(!extras||!gemstones||typeof gemstones.auras!=='object')return null;
+ const names=['fire','ice','lightning','poison','light','dark'],elements={};
+ for(const element of names){
+  const base=Number(gemstones.auras[element]||0);
+  if(!Number.isFinite(base)||base===0)continue;
+  const flat=extras.auraFlat;
+  const percent=Math.ceil(base*extras.auraPercent/100);
+  elements[element]={base,flat,percent,known:base+flat+percent};
+ }
+ return {elements,sharedFlat:extras.auraFlat,rate:extras.auraPercent,
+  source:'Remaked Legacy: Calc(DAMAura,DAMFire,DAMIce,DAMLightning,DAMPoison,DAMLight,DAMDark)',
+  verified:false};
+}
 function base({classData,raceData,jobData,allocation,level,records=[],itemForth=null,
  supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={},
  potionContext={},combatContext={},gemSelections=[]}={}){
@@ -958,6 +978,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
    resistances.elements[key]=(resistances.elements[key]||0)+amount;
   resistances.gemstones={...gemstones.resistance};
  }
+ const auraDamage=auraDamagePreview({gemstones,records,itemForth});
  const legacyBuffs=legacyBuffPreview({spi:stats.spi,
   blessing:combatContext.legacyBuffMasteries?.blessing??0,
   hymn:combatContext.legacyBuffMasteries?.hymn??0,
@@ -982,7 +1003,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,legacyBuffs,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,combat,gemstones,coverage,
+  recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -990,6 +1011,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,effectCoverage
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,effectCoverage
 });
 })(typeof window==='undefined'?globalThis:window);
