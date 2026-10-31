@@ -1,9 +1,14 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.162.0 (`2026.11.01.162`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.163.0 (`2026.11.01.163`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.163.0 — finish high-level regression gate
+
+- The first full 0.162.0 Chromium desktop/touch test passed. Fix the doubled escape in the new level-1 source assertion so the 35 future equipment checks and the existing Node suite can both pass together.
+- Retain checked planning levels 46–55 and mobile book UX; do not imply Worker/D1 or Remaked full parity from local checks.
 
 ## Source update 0.162.0 — future items and mobile browser acceptance
 

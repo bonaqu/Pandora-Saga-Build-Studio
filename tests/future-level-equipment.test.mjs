@@ -34,7 +34,7 @@ test('future items remain locked at 45 but fully selectable at their true level'
 
 test('a new blank build starts at level 1 while maximum planning remains 55',()=>{
  const app=read('app.js'),html=read('index.html');
- assert.match(app,/function fresh\(\)\{return\{[^\\n]*level:1/);
+ assert.match(app,/function fresh\(\)\{return\{[^\n]*level:1/);
  assert.match(html,/id="level" type="range" min="1" max="55" value="1"/);
  assert.doesNotMatch(html,/id="level"[^>]+max="45"/);
 });
