@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.108",
-  "notes": "Stable wiki navigation, chest/NPC names, item loot and trade icons, browser history state"
+  "release": "2026.10.31.109",
+  "notes": "Robust wiki history: guard detached encyclopedia DOM when returning from other tabs"
 }

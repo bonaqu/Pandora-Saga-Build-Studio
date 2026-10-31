@@ -950,7 +950,7 @@ function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,sta
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles={character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
-let wikiRenderSelected=null;
+let wikiRenderSelected=null,wikiRenderedRoot=null;
 async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
@@ -980,7 +980,7 @@ async function loadWiki(){
 }
 function openWiki(type,id,highlight=null){
  const sameCategory=activeTab==='wiki'&&wikiSelection.type===type&&
-  typeof wikiRenderSelected==='function'&&wikiIndex;
+  typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
  wikiSelection={type,id:String(id),highlight:highlight==null?null:String(highlight)};
  activeTab='wiki';
  for(const btn of document.querySelectorAll('[data-tab]'))btn.classList.toggle('active',btn.dataset.tab==='wiki');
@@ -1000,6 +1000,7 @@ function wikiLink(text,type,id,highlight=null){
  }});
 }
 function renderWiki(root){
+ wikiRenderedRoot=root;
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  for(const [key,label]of[['item','Предметы'],['monster','Монстры'],['map','Локации'],['npc','NPC-обмен'],['chest','Сундуки'],['instance','Подземелья'],['skill','Навыки'],['soul','Души']]){
@@ -2118,13 +2119,12 @@ function restoreWikiHash(){
 window.addEventListener('hashchange',()=>{
  if(location.hash.startsWith('#b/')){restoreSharedHash();return}
  if(location.hash.startsWith('#wiki/')){
-  // A user clicking a wiki link explicitly is a new action, not stale navigation.
-  if(activeTab!=='wiki')activeTab='wiki';
   const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})(?:\/([0-9]{1,15}))?$/);
   if(match){
    const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
-    typeof wikiRenderSelected==='function'&&wikiIndex;
+    typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
    wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
+   activeTab='wiki';
    if(same)wikiRenderSelected();else renderDetails();
    if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
    saveView();
@@ -2214,7 +2214,7 @@ window.addEventListener('popstate',()=>{
   const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})(?:\/([0-9]{1,15}))?$/);
   if(!match)return;
   const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
-   typeof wikiRenderSelected==='function'&&wikiIndex;
+   typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
   wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
   activeTab='wiki';
   if(same)wikiRenderSelected();else renderDetails();
