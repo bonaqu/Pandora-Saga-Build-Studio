@@ -116,9 +116,9 @@ async function putCloudBuild(entry){
   reportCloudStatus('Сохранено в облаке');return true;
  }catch(error){
   console.warn('Build cloud save failed',error);
-  reportCloudStatus(error.reason==='stale'?
-   'В облаке более новая версия билда · обновите библиотеку или сохраните копию':
-   error.httpStatus===409?
+  reportCloudStatus(error.reason==='stale'||error.reason==='conflict'?
+   'В облаке другая редакция · обновите библиотеку для сохранения обеих версий':
+   error.reason==='deleted'?
    'Сохранено в браузере · исходный билд в облаке уже удалён':
    'Сохранено в браузере · облако недоступно');
   return false;
@@ -153,23 +153,13 @@ async function loadCloudBuilds(){
   if(!Array.isArray(response.records))throw Error('Некорректная библиотека');
   // A click while GET was in flight must not bring back a deleted or old character.
   if(libraryChangeId!==generation)return;
-  const pending=new Set(queuedDeletes()),ids=new Set(response.records.map(x=>x.id));
-  const localById=new Map(builds.map(entry=>[entry.id,entry]));
-  const outgoing=[],merged=[];
-  for(const record of response.records){
-   if(record.deleted||!record.entry||pending.has(record.id))continue;
-   const local=localById.get(record.id);
-   if(local&&Number(local.at)>Number(record.entry.at)){
-    merged.push(local);outgoing.push(local);
-   }else merged.push(record.entry);
-  }
-  for(const entry of builds){
-   if(!ids.has(entry.id)&&!pending.has(entry.id)){
-    merged.push(entry);outgoing.push(entry);
-   }
-  }
-  builds=merged.sort((a,b)=>(b.at||0)-(a.at||0));persistBuilds();
-  if(activeBuildId&&!builds.some(b=>b.id===activeBuildId))selectActiveBuild(null);
+  const reconciled=window.PandoraBuildLibraryMerge.reconcile({
+   local:builds,remote:response.records,pendingDeletes:queuedDeletes(),
+   activeId:activeBuildId,newId
+  });
+  const {outgoing,copies}=reconciled;
+  builds=reconciled.merged;persistBuilds();
+  if(reconciled.activeId!==activeBuildId)selectActiveBuild(reconciled.activeId);
   if(activeTab==='builds')renderDetails();
   reportCloudStatus(outgoing.length?'Синхронизируем локальные изменения…':'Облачная библиотека подключена');
   for(const entry of outgoing){
@@ -177,6 +167,10 @@ async function loadCloudBuilds(){
    const current=builds.find(x=>x.id===entry.id);
    if(!current||current.at!==entry.at||queuedDeletes().includes(entry.id))continue;
    await putCloudBuild(entry);
+  }
+  if(copies){
+   reportCloudStatus('Разные редакции сохранены отдельно · проверьте копии в библиотеке');
+   showStudioToast('Обнаружены разные версии билда. Обе сохранены отдельно в библиотеке.','warning');
   }
  }catch(error){console.warn('Cloud library unavailable',error);reportCloudStatus('Локальные билды доступны · облако пока недоступно')}
 }

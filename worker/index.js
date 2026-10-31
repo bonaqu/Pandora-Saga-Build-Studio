@@ -241,12 +241,16 @@ async function libraryApi(request,env){
  }
  // Atomic revision/tombstone condition: a delayed request cannot replace a newer
  // character or restore an original deleted after the preliminary SELECT.
- const result=await env.DB.prepare("INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,?,?,NULL) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at WHERE private_builds.deleted_at IS NULL AND CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)<=excluded.updated_at")
+ const result=await env.DB.prepare("INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,?,?,NULL) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at WHERE private_builds.deleted_at IS NULL AND (CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)<excluded.updated_at OR (CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)=excluded.updated_at AND private_builds.payload=excluded.payload))")
   .bind(owner,id,payload,item.at).run();
  if(!result.meta?.changes){
-  const row=await env.DB.prepare('SELECT deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
+  const row=await env.DB.prepare('SELECT payload,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
+  let sameRevision=false;
+  try{sameRevision=JSON.parse(row?.payload||'{}').at===item.at}catch{}
   return json(row?.deleted_at!=null?
    {error:'Билд уже удалён',reason:'deleted'}:
+   sameRevision?
+   {error:'В облаке другая редакция с таким же временем сохранения',reason:'conflict'}:
    {error:'В облаке сохранена более новая версия',reason:'stale'},409);
  }
  return json({ok:true,revision:item.at});

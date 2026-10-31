@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.179.0 (`2026.11.01.179`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.180.0 (`2026.11.01.180`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.180.0 — preserve both sides of browser/cloud conflicts
+
+- Introduce a deterministic, source-independent build library merge module. If local and cloud snapshots for the same ID differ (including a timestamp collision, newer local, or newer cloud), retain both: the chosen winner under its existing ID and a clearly named copy with a distinct ID for the losing edition.
+- Preserve active local draft selection by remapping its active saved build ID to the local copy when the cloud wins. Respect confirmed remote tombstones, pending deletes and invalid/malformed remote payloads; never reactivate deleted IDs.
+- Worker D1 compares the stored payload on equal timestamps: retry of identical content is allowed, but a different snapshot with equal revision returns HTTP 409 conflict. Older saves and deleted records remain guarded by atomic SQL.
+- Node regression tests cover conflicting 55/54-level histories, stale cloud/local, tombstones and idempotent writes. Chromium exercises real frontend storage and mocked cloud GET/PUT through reload. No production D1 writes.
+- The Worker source code was changed; public readiness tests do **not** establish that Cloudflare deployed the matching Worker revision. Verify actual live write semantics only by explicitly approved isolated D1 acceptance.
 
 ## Source update 0.179.0 — dynamic current/future HP, MP and status-cleansing catalog
 

@@ -31,7 +31,9 @@ function db(){
      else {
       const old=builds.get(v[0]+':'+v[1]);
       if(old&&(old.deleted_at!==null||
-       Number(JSON.parse(old.payload).at)>v[3]))return{meta:{changes:0}};
+       Number(JSON.parse(old.payload).at)>v[3]||
+       (Number(JSON.parse(old.payload).at)===v[3]&&old.payload!==v[2])))
+        return{meta:{changes:0}};
       builds.set(v[0]+':'+v[1],{deleted_at:null,payload:v[2]});
      }
      return{meta:{changes:1}};

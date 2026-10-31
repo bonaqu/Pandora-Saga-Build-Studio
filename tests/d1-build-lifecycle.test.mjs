@@ -20,8 +20,8 @@ function database(){
   if(sql.startsWith('SELECT COUNT(*) AS total'))return{bind(owner){
    return{first:async()=>({total:[...rows.keys()].filter(k=>k.startsWith(owner+':')).length})};
   }};
-  if(sql.startsWith('SELECT deleted_at FROM private_builds'))return{bind(owner,id){
-   return{first:async()=>{const row=rows.get(owner+':'+id);return row?{deleted_at:row.deleted_at}:null}};
+  if(sql.startsWith('SELECT payload,deleted_at FROM private_builds'))return{bind(owner,id){
+   return{first:async()=>{const row=rows.get(owner+':'+id);return row?{payload:row.payload,deleted_at:row.deleted_at}:null}};
   }};
   if(sql.startsWith('INSERT INTO private_builds')){
    const deleting=sql.includes("VALUES(?,?,'{}'");
@@ -34,7 +34,9 @@ function database(){
       const [owner,id,payload,time]=values;
       const previous=rows.get(owner+':'+id);
       if(previous&&(previous.deleted_at!==null||
-        Number(JSON.parse(previous.payload).at)>time))return{meta:{changes:0}};
+        Number(JSON.parse(previous.payload).at)>time||
+        (Number(JSON.parse(previous.payload).at)===time&&previous.payload!==payload)))
+        return{meta:{changes:0}};
       rows.set(owner+':'+id,{build_id:id,payload,updated_at:time,deleted_at:null});
      }
      return{meta:{changes:1}};
@@ -106,4 +108,19 @@ test('older and delayed saves cannot overwrite newer versions or resurrect delet
  assert.equal(late.status,409);assert.equal((await late.json()).reason,'deleted');
  listing=await worker.fetch(request('GET'),{DB});
  assert.equal((await listing.json()).records.find(x=>x.id===id).deleted,true);
+});
+
+test('equal timestamp concurrent writes are idempotent only for identical snapshots',async()=>{
+ const DB=database(),id='e'.repeat(32),entry={id,name:'Version A',at:500,
+  data:{race:1,job:0,level:55}};
+ const send=payload=>worker.fetch(request('POST',{action:'put',entry:payload}),{DB});
+ assert.equal((await send(entry)).status,200);
+ assert.equal((await send(entry)).status,200,'Exact retry should remain safe');
+ const conflict=await send({...entry,name:'Version B',data:{...entry.data,level:54}});
+ assert.equal(conflict.status,409);
+ assert.equal((await conflict.json()).reason,'conflict');
+ const current=await worker.fetch(request('GET'),{DB});
+ assert.deepEqual((await current.json()).records.find(x=>x.id===id).entry,entry);
+ const newer=await send({...entry,name:'Version B',at:501});
+ assert.equal(newer.status,200);
 });
