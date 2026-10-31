@@ -11,7 +11,7 @@ const preview=(jobKey,level,combatBuffs={},records=equipped,guildArouse=0)=>calc
 test('War Cry, Lunge and Raging Soul require Gladiator job and levels 28,18,35',()=>{
  const s={combatWarCry:true,combatRage:true,combatLunge:true};
  const low=preview('GLADIATOR',17,s);
- assert.deepEqual(low.activeSkills,{warCry:false,raging:false,defender:false,lunge:false});
+ assert.deepEqual(low.activeSkills,{warCry:false,raging:false,defender:false,lunge:false,concentration:false});
  const middle=preview('GLADIATOR',28,s);
  assert.deepEqual([middle.activeSkills.warCry,middle.activeSkills.raging,
   middle.activeSkills.lunge],[true,false,true]);
