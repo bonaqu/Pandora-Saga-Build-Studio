@@ -400,6 +400,46 @@ function equippedCombatModifiers(records=[],itemForth=null){
  }
  return out;
 }
+
+// Remaked Modern 4.x enhancement-effects.js EFFECT_MAP. These source-backed
+// gear effects target their original Legacy result slots; never infer a
+// damage packet, triggered skill, or percentage effect from an arbitrary EP.
+const secondaryEffectTargets=Object.freeze({
+ EP_ONDAMAGE_FIN_DAMAGE_CONST:'incomingPhysicalFlat',
+ EP_ONDAMAGE_FIN_DAMAGE_SCALE:'incomingPhysicalPercent',
+ EP_ONDAMAGE_ELEM_SCALE:'incomingMagicPercent',
+ EP_AURADAMAGE_CONST:'auraFlat',
+ EP_AURADAMAGE_SCALE:'auraPercent',
+ EP_SKILL_BENCH:'cooldown',
+ EP_BADEFFECT_TIME_CAST_SCALE:'outgoingDebuffDuration',
+ EP_BADEFFECT_TIME_SCALE:'incomingDebuffDurationReduction',
+ EP_ONDAMAGE_REFLECTION:'physicalReflection',
+ EP_BUFF_TOHIT_SCALE:'debuffSuccess',
+ EP_SPECIAL_WARDING_TYPE2:'damageNegation',
+ EP_HEAL_TIME_SCALE:'manaRecoverySpeed',
+ EP_SKILL_DELAY:'castSpeedReduction',
+ EP_SKILL_DELAY_FIN:'castSpeedFinal'
+});
+function secondaryEffectsPreview({records=[],itemForth=null}={}){
+ if(!Array.isArray(records))return null;
+ const stats=Object.fromEntries(Object.values(secondaryEffectTargets).map(x=>[x,0]));
+ const traces=[];
+ for(const [source,record,grade] of records){
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
+   const field=secondaryEffectTargets[effect.func];
+   if(!field)continue;
+   if((Number.isFinite(effect.min)&&grade<effect.min)||
+      (Number.isFinite(effect.max)&&grade>effect.max))continue;
+   if(!Number.isFinite(effect.a))continue;
+   // These two effects are explicitly 'negate' in Remaked's EFFECT_MAP.
+   const amount=['EP_BADEFFECT_TIME_SCALE','EP_SKILL_DELAY'].includes(effect.func)?
+    -effect.a:effect.a;
+   stats[field]+=amount;
+   traces.push({source,ep:effect.func,field,value:amount});
+  }
+ }
+ return {...stats,traces};
+}
 // Legacy MATK step table: INT does not scale linearly.
 const magicSteps=[[115,50],[110,49],[105,41],[100,40],[95,35.25],
  [90,34.25],[85,29.75],[80,28.75],[75,24.75],[70,23.75],
@@ -516,7 +556,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   weaponPlus,honorTitle});
  const defense=defensePreview({records,honorTitle,itemForth});
  const equipped=equippedCombatModifiers(records,itemForth);
- if(!defense||!equipped)return null;
+ const secondary=secondaryEffectsPreview({records,itemForth});
+ if(!defense||!equipped||!secondary)return null;
  const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,
   hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
    record?.slot==='shield')});
@@ -555,7 +596,10 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   known:speedBase+equipped.attackSpeedFlat+
    (actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0),verified:false};
  // Legacy Calc('CastSPD'): 100 + 5*floor(DEX/10), without temporary casts.
- const castingSpeed={base:100+5*Math.floor(stats.dex/10),
+ const castingBase=100+5*Math.floor(stats.dex/10);
+ const castingEquipment=secondary.castSpeedReduction+secondary.castSpeedFinal;
+ const castingSpeed={base:castingBase,equipment:castingEquipment,
+  known:castingBase+castingEquipment,
   verified:false,excluded:['active spell buffs','unknown Soul conditions']};
  // Legacy Calc('ReduceMP'): 100-floor(INT^2/1000). OS Elf
  // EP_RACE_MANA_COSTCUT 900020001 = 15; equipped same-EP reductions stack.
@@ -583,12 +627,12 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const weaponPhysical=(meleeLineage.has(jobKey)?1+Math.floor(meleeMastery/10):0)
   +(title.weaponPhysical||0);
  const backAttack=15,frontAttack=title.frontAttack||0;
- const cooldown=Number.isFinite(stats.int)?100-2*Math.floor(stats.int/10):null;
+ const cooldown=Number.isFinite(stats.int)?100-2*Math.floor(stats.int/10)+secondary.cooldown:null;
  const criticalDamage=100,criticalIncoming=(title.incomingCriticalChance||0)-
   (Number(bonuses.incomingCriticalReduction)||0);
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0);
  return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
-  activeSkillValues:activeValues,
+  activeSkillValues:activeValues,secondary,
   guildArouse,guildAtk,attackSpeed,castingSpeed,manaCost,
   weaponPhysical,backAttack,frontAttack,cooldown,
   spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
@@ -638,6 +682,7 @@ const calculatedCodes=new Set([
  ...Object.keys(keyByEffect),...Object.keys(percentByEffect),...Object.keys(bonusByEffect),
  'EP_MAXLIFE_CONST','EP_MAXMANA_CONST',
  'EP_ARMORCLASS_CONST','EP_ARMORCLASS_SCALE',
+ ...Object.keys(secondaryEffectTargets),
  'EP_MASTERY_POTION','EP_CAST_HEAL_LIFE_SCALE',
  'EP_DAMAGERATE_CONST','EP_SKILL_EQUIP_DAMAGERATE','EP_DAMAGERATE_SCALE',
  'EP_TOHIT_SCALE','EP_ATTACKINTERVAL_SCALE','EP_RACE_MANA_COSTCUT'
@@ -833,6 +878,20 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
  const gemstones=gemstonePreview(gemSelections);
+ const otherEquipment=secondaryEffectsPreview({records,itemForth});
+ if(otherEquipment&&resistances){
+  resistances.mitigation.physical+=otherEquipment.incomingPhysicalPercent;
+  resistances.mitigation.magic+=otherEquipment.incomingMagicPercent;
+  resistances.mitigation.physicalFlat=otherEquipment.incomingPhysicalFlat;
+  resistances.incomingDebuffDurationReduction=
+   otherEquipment.incomingDebuffDurationReduction;
+  resistances.physicalReflection=otherEquipment.physicalReflection;
+  resistances.damageNegation=otherEquipment.damageNegation;
+ }
+ if(otherEquipment&&regeneration){
+  regeneration.mp.equipment=otherEquipment.manaRecoverySpeed;
+  regeneration.mp.total+=otherEquipment.manaRecoverySpeed;
+ }
  // Armor gemstone resistances have an exact Remaked rule. Apply these to the
  // displayed elemental defense totals once; aura and spell damage stay
  // independent from physical attack and require no invented damage formula.
@@ -864,7 +923,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,legacyBuffs,
+  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,legacyBuffs,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,combat,gemstones,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
@@ -873,6 +932,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,effectCoverage
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,effectCoverage
 });
 })(typeof window==='undefined'?globalThis:window);
