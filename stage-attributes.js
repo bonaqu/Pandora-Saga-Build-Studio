@@ -145,7 +145,7 @@ function renderSkillInspector(body,model){
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
- skillModel=null,itemById=()=>null,onItem=()=>{}}={}){
+ combatSkillCards={},skillModel=null,itemById=()=>null,onItem=()=>{}}={}){
  target.replaceChildren();
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
@@ -175,7 +175,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
  if(chosen==='summary')summaryPage(body,modifiers);
- if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,modifiers});
+ if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,modifiers});
  if(['attack','defense','effects'].includes(chosen)){
   const intro=chosen==='attack'?'Параметры оружия':
    chosen==='defense'?'Защита снаряжения':'Бонусы предметов и душ';
