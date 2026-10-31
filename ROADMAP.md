@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.118.0 (`2026.10.31.118`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.119.0 (`2026.10.31.119`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -21,6 +21,14 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] Add regression fixtures for source skill formulas, gemstone +7/+5, minimum refinement gates, fourteen equipment effects and source-audit completeness.
 - [ ] Complete remaining 75 not-yet-ported unique Legacy keys and full conditional behaviors. Of other keys, 43 are still only partial, 10 read-only skill previews and 15 base/previews. No current OS live gameplay equivalence is claimed.
 - [ ] Check feature-complete browser QA, all Node tests, and exact active game-server outcomes; resolve OS divergences only on confirmed evidence, preserving equivalent Remaked formulas.
+
+## Source update 0.119.0 — wind skills with verified OS identities
+
+- [x] Wind Assist «Помощь ветра»: current OS skill 260006001, Ascetic/Monk/Exorcist, level 28, +15 flat Dodge plus +15% base, combined via exact Remaked `floor(15 + baseDodge×0.15)`.
+- [x] Wind Blessing «Благословение ветра»: current OS skill 320004001, Archer/Sniper/Predator, level 28, +40 movement speed from source EP_MOVESPEED_SCALE.
+- [x] Both skills are opt-in, class/level gated, disabled on missing or incomplete catalog data, saved with character builds, and displayed in the hero book with official skill icons and source bonuses.
+- [x] Regression vectors cover the source IDs, level 27/28 threshold, incorrect classes, altered/missing effects, and current book inputs.
+- [ ] Extend the same verified skill-identity approach to remaining passive and active effects, with full tests of related states and real OS gameplay.
 
 ## Workstreams
 
