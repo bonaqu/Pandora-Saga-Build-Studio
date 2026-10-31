@@ -43,7 +43,7 @@ function summaryPage(body,calc){
 }
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
-  availability={},modifiers}=options;
+  availability={},combatSkillCards={},modifiers}=options;
  body.append(make('p',{class:'stage-attribute-note',text:
   'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
  const section=(name)=>{
@@ -58,13 +58,24 @@ function buffsPage(body,options){
   for(const [value,label] of levels)entry.append(make('option',{value,selected:String(selected)===String(value),text:label}));
   entry.value=String(selected);field.append(entry);parent.append(field);
  };
- const toggle=(parent,name,key,vital=false,allowed=true)=>{
-  const node=make('label',{class:'stage-book-check'},[
-   make('input',{type:'checkbox','data-book-setting':key,
-    checked:(vital?vitalsBuffs:buffs)[key]===true,disabled:!allowed,
-    onchange:event=>(vital?onVital:onBuff)(key,event.target.checked)}),
-   make('span',{text:name+(allowed?'':' · недоступно для героя')})
-  ]);parent.append(node);
+ const toggle=(parent,name,key,vital=false,allowed=true,skill=null)=>{
+  const selected=(vital?vitalsBuffs:buffs)[key]===true;
+  const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':''),
+   ...(skill?.desc?{title:skill.desc}:{})});
+  const checkbox=make('input',{type:'checkbox','data-book-setting':key,
+   checked:selected&&allowed,disabled:!allowed,
+   onchange:event=>(vital?onVital:onBuff)(key,event.target.checked)});
+  node.append(checkbox);
+  if(skill?.icon){
+   const img=make('img',{src:skill.icon,alt:'',loading:'lazy'});
+   img.onerror=()=>img.remove();
+   node.append(img);
+  }
+  const info=make('span',{class:'stage-combat-buff-copy',text:name});
+  if(skill&&!allowed&&Number.isInteger(skill.level)&&skill.level>0)
+   info.append(make('small',{text:'Требуется уровень '+skill.level}));
+  else if(!allowed)info.append(make('small',{text:'Недоступно для героя'}));
+  node.append(info);parent.append(node);
  };
  const opts=(units)=>units.map((n,i)=>[i,i===0?'Выключено':'Уровень '+i+' · +'+n]);
  const vitals=section('ОЗ и ОМ');
@@ -78,7 +89,7 @@ function buffsPage(body,options){
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)']])
-  toggle(skills,label,key,false,availability[key]===true);
+  toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
  const regen=section('Восстановление');
  select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
  select(regen,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
