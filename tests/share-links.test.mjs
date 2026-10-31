@@ -23,6 +23,14 @@ test('sharing never replaces an existing build without explicit choice',()=>{
  assert.match(src,/function restoreSharedHash\(/);
  assert.match(src,/window\.addEventListener\('hashchange'/);
 });
+test('share links display alongside saved builds with an inline copy fallback',()=>{
+ const src=read('app.js'),css=read('style.css');
+ assert.match(src,/class:'build-share-slot'/);
+ assert.match(src,/createShared\('build',b\.data,shareSlot\)/);
+ assert.match(src,/if\(host\)host\.replaceChildren\(message\)/);
+ assert.match(src,/field\.focus\(\);field\.select\(\)/);
+ assert.match(css,/\.build-share-slot/);
+});
 test('library maintains an offline cache and D1 sync without JSON import/export',()=>{
  const src=read('app.js'),html=read('index.html');
  assert.match(src,/ps-build-library\.v1/);

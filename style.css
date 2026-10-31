@@ -1466,3 +1466,12 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .new-build-choice-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .cloud-library-status{color:var(--muted);font-size:12px;margin:8px 0 15px}
 @media(max-width:600px){.build-name-input,.new-build-choice input{max-width:none;width:100%}}
+
+/* Short-link creation and clipboard recovery appear inside the saved build card. */
+.build-share-slot:empty{display:none}
+.build-share-slot{margin-top:8px;border-top:1px solid #755836;padding-top:8px}
+.build-share-slot .share-result{display:grid;gap:7px}
+.build-share-slot .share-result>p{font-size:12px;color:var(--cream)}
+.build-share-slot input{display:block;width:100%;min-width:0;border:1px solid #95734c;background:#130f0a;color:var(--cream);padding:10px;border-radius:3px;font-size:12px}
+.build-share-slot .button-action{justify-self:start;margin:0}
+.build-share-error{color:#eda98f!important;font-size:12px!important;overflow-wrap:anywhere}

@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.127.0 (`2026.10.31.127`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.128.0 (`2026.10.31.128`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -533,3 +533,10 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Remaked `RelHorse` class baseline, riding green mastery and selected Honor shown in hero book without imaginary equipment bonus. Status PARTIAL; server parity unverified.
 - [x] Audit: 58 NOT YET PORTED, 60 PARTIAL, 15 BASE/PREVIEW, 10 BUFF PREVIEW; tests for formula, validation and integration added.
 - [ ] Continue conditionals, refinement, gear/soul procs, target-dependent damage, complete Node/browser verification and live Cloudflare deployment checks.
+
+
+## 0.128.0 — individual share actions and D1 lifecycle tests
+
+- [x] A saved build's Share action creates an **inline** short-link and selectable URL with Copy button inside that same build card; Worker/D1 errors render alongside the card instead of opening a blocking browser alert.
+- [x] New Node regression suite uses an in-memory D1 adapter to test private save, listing, deleted tombstones, 55-level compatibility, isolation across browser secrets, and malformed input rejection. The existing 0003 public shares remain enabled only when the updated Worker and D1 schema are live.
+- [ ] Execute real `npm test` and browser E2E, confirm live Pages 0.128.0 and Worker, verify public share POST/GET and clipboard from a published site, and complete remaining Remaked calculations.

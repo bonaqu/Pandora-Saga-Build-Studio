@@ -1701,6 +1701,7 @@ function renderBuilds(root){
  const grid=h('div',{class:'build-grid'});
  for(const b of builds){
   const box=h('div',{class:'build-card'});
+  const shareSlot=h('div',{class:'build-share-slot',role:'status'});
   const check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});
   check.checked=compareIds.includes(b.id);
   check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};
@@ -1720,11 +1721,12 @@ function renderBuilds(root){
      profile:{...base.profile,...draft.profile}};
     restoreLoadedBuildUI();persist();render();changeTab('character');
    }}),
-   h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared('build',b.data)}),
+   h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared('build',b.data,shareSlot)}),
    h('button',{class:'button-action',text:'Удалить',onclick:()=>{
     if(!confirm('Удалить сохранённый билд «'+b.name+'»?'))return;
     builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();void deleteCloudBuild(b.id);renderDetails();
    }}));
+  box.append(shareSlot);
   grid.append(box);
  }
  root.append(grid);
@@ -1838,7 +1840,7 @@ function sanitizeSharedState(original){
   safe.racialPassiveId=original.racialPassiveId;
  return safe;
 }
-async function createShared(type,data){
+async function createShared(type,data,host=null){
  const content=type==='build'?sanitizeSharedState(data):
   data.map(row=>({name:String(row.name||'Билд').slice(0,70),data:sanitizeSharedState(row.data)}));
  if(type==='library'&&(content.length===0||content.length>30)){
@@ -1857,9 +1859,11 @@ async function createShared(type,data){
    }});
   message.append(h('p',{text:type==='library'?'Ссылка на библиотеку создана.':'Ссылка на билд создана.'}),
    field,copy,h('p',{class:'muted',text:'Это публичный неизменяемый снимок. У другого пользователя появится подтверждение перед заменой активного билда.'}));
-  modal('Поделиться',message);
+  if(host)host.replaceChildren(message);else modal('Поделиться',message);
  }catch(error){
-  alert('Не удалось создать ссылку. Нужны опубликованный Worker, миграция D1 и доступный сервер. '+error.message);
+  const note='Не удалось создать ссылку: '+error.message;
+  if(host)host.replaceChildren(h('p',{class:'build-share-error',text:note}));
+  else alert(note);
  }
 }
 function openSharedSnapshot(share){

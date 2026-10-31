@@ -569,3 +569,8 @@ The character stage also exposes «Новый билд», which reveals the same
 ### 0.127.0 · Верховая езда
 
 Книга героя показывает частичную формулу `RelHorse` из Remaked `js/calc.js:555–566`. Используется профессия, зелёное мастерство верховой езды и один титул. Неопределённые бонусы экипировки OS и их влияние на бой не моделируются. Поддержка уровней 1–55 и будущего снаряжения сохраняется.
+
+
+### 0.128.0 · Individual sharing and acceptance tests
+
+A saved build now displays its short-link field and Copy action **inside the build card**; failed cloud link creation shows an inline error, never a fake success. A Node test suite covers the D1 private library save/list/delete path with a deterministic mock database. Real Pages, Worker, and clipboard end-to-end verification remain outstanding.
