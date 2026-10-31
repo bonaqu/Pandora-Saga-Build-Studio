@@ -77,5 +77,5 @@ test('read-only buff figures are available in the book but cannot switch effects
  assert.match(stage,/stage-legacy-buff-previews/);
  assert.match(stage,/Мощность поддерживающих навыков/);
  assert.match(stage,/Просмотр не включает усиление/);
- assert.match(stage,/Сопротивления самоцветов учтены/);
+ assert.match(stage,/Сопротивления от самоцветов включены в защиту/);
 });
