@@ -280,8 +280,8 @@ function allocationIssue(){
   added:STATS.map(key=>Number(state.stats?.[key]||0)),caps:clazz.statCaps
  });
  const branches=budgetSummary();
- const statsInvalid=Boolean(snap&&(snap.overBudget||
-  snap.values.some((val,i)=>val>snap.max[i])));
+ const statsInvalid=!snap||snap.overBudget||
+  snap.values.some((val,i)=>val>snap.max[i]);
  const skillsInvalid=Number.isFinite(branches?.remaining)&&branches.remaining<0;
  return {invalid:statsInvalid||skillsInvalid,statsInvalid,skillsInvalid};
 }
