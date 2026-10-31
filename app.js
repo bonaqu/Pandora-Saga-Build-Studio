@@ -90,10 +90,13 @@ function previewBaseStats(){
     records.push(['soul:'+soul.id,soul,grade]);
   }
  }
- const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(jobKeys[state.job],state);
- // Remaked Status.Skill[0]: five branches of trained (green) melee mastery.
- const meleeMastery=['slash','thrust','brush','blow','defense']
-  .reduce((sum,key)=>sum+window.PandoraSkillProgression.trained(state,key),0);
+ const initialBranches=gameTables?.jobInit?.[baseClass]?.branches||{};
+ const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(
+  jobKeys[state.job],state,initialBranches);
+ // Remaked Status.Skill[0][0] + [1]: innate branch green mastery
+ // PLUS additionally trained green; exclude blue Potential from this sum.
+ const meleeMastery=window.PandoraSkillProgression.groupAdeptness(
+  state,['slash','thrust','brush','blow','defense'],initialBranches);
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
   allocation,level:state.level,records,

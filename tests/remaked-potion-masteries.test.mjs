@@ -72,3 +72,19 @@ test('racial passive is applied to both Origin and character profile selections 
  assert.match(app,/state\.racialPassiveId=selected\?null:id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
  assert.match(app,/state\.racialPassiveId=id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
 });
+test('legacy class innate trained Adeptness is added exactly once before threshold rounding',()=>{
+ const tables=JSON.parse(read('data/os/tables.json'));
+ const innate=tables.jobInit.WARRIOR.branches;
+ const keys=['slash','thrust','brush','blow','defense'];
+ const state={masteryAuto:false,points:{slash:35,thrust:15,brush:0,blow:0,defense:0},
+  mastery:{slash:8,thrust:7}};
+ assert.equal(progress.groupAdeptness({points:{},masteryAuto:true},keys,innate),18);
+ assert.equal(progress.groupAdeptness(state,keys,innate),33);
+ assert.equal(pot({meleeMastery:33}).mastery,30);
+ assert.equal(pot({meleeMastery:18}).mastery,10);
+ const priest=progress.legacyPrayerSpirit('PRIEST',state,tables.jobInit.ACOLYTE.branches);
+ assert.equal(priest,2,'innate prayer 15 yields +2 SPI at no invested prayer points');
+ const app=read('app.js');
+ assert.match(app,/const initialBranches=gameTables\?\.jobInit\?\.\[baseClass\]\?\.branches\|\|\{\}/);
+ assert.match(app,/groupAdeptness\(/);
+});

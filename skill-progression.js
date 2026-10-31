@@ -31,12 +31,18 @@ function setAuto(state,on,keys){
  }
  state.masteryAuto=Boolean(on);
 }
-function prayerAdeptness(state){return PRAYER.reduce((n,key)=>n+trained(state,key),0)}
-// Legacy-only preview: Remaked js/calc.js Calc('SPR') grants
-// 1 + floor(prayer group Adeptness / 10) to Priest/Cleric/Enchanter.
-// Not independently validated for the current Pandora Saga OS server.
-function legacyPrayerSpirit(job,state){
- return INSPIRED.has(job)?1+Math.floor(prayerAdeptness(state)/10):0;
+// Legacy js/create.js: Status.Skill[i][0] is innate base Adeptness from
+// Skill.D/baseClass; Status.Skill[i][1] is additionally trained green mastery.
+// BOTH contribute to derivative skill passives. Neither is the blue Potential.
+// OS tables.json jobInit.<baseClass>.branches matches legacy innate branch values.
+function groupAdeptness(state,branchKeys,innate={}){
+ return branchKeys.reduce((sum,key)=>sum+value(innate?.[key])+trained(state,key),0);
+}
+function prayerAdeptness(state,innate={}){return groupAdeptness(state,PRAYER,innate)}
+// Remaked Calc('SPR'): 1 + floor((innate prayer + trained prayer) / 10),
+// active only for Priest/Cleric/Enchanter. Current OS parity remains unverified.
+function legacyPrayerSpirit(job,state,innate={}){
+ return INSPIRED.has(job)?1+Math.floor(prayerAdeptness(state,innate)/10):0;
 }
 function spending(table,level,points){
  const max=Number(level);
@@ -59,6 +65,6 @@ function canAllocate(table,level,points,key,cap,amount){
 }
 root.PandoraSkillProgression=Object.freeze({
  potential,trained,setPotential,setTrained,setAuto,spending,canAllocate,
- prayerAdeptness,legacyPrayerSpirit,PRAYER
+ groupAdeptness,prayerAdeptness,legacyPrayerSpirit,PRAYER
 });
 })(typeof window==='undefined'?globalThis:window);

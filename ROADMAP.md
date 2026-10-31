@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.88.0 (`2026.10.31.88`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.89.0 (`2026.10.31.89`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,11 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.89.0 — innate + trained green mastery parity
+
+- Confirmed Legacy `Status.Skill[i][0]` innate Adeptness is nonzero and must be included alongside `[1]` trained Adeptness. Current OS jobInit base-class branch starts match source: Warrior Melee 18, Acolyte Prayer 15. Skill Potential/blue points are not counted twice.
+- Correct potion healing passive and Priest/Cleric/Enchanter innate Inspiration SPI bonus; new tests preserve formulas. Remaining full combat stats, complete active/passive effects, icon library, broader RU terminology reconciliation, D1 verification and browser `npm test` still open.
 
 ## Source update 0.88.0 — resistance and guild recovery source preview
 

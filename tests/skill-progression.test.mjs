@@ -59,6 +59,11 @@ test('historical Remaked Inspiration receives trained prayer group, not spent po
  assert.equal(S.prayerAdeptness(state),42);
  assert.equal(S.legacyPrayerSpirit('CLERIC',state),5);
  assert.equal(S.legacyPrayerSpirit('SCOUT',state),0);
+ // Acolyte innate priest lineage: 5 healing, 5 blessing, 5 exorcism, 0 hymn.
+ const inborn=tables.jobInit.ACOLYTE.branches;
+ assert.equal(S.prayerAdeptness(state,inborn),57);
+ assert.equal(S.legacyPrayerSpirit('CLERIC',state,inborn),6);
+ assert.equal(S.legacyPrayerSpirit('SCOUT',state,inborn),0);
  const before=S.spending(tables.abilityPoint,45,state.points);
  S.setTrained(state,'benevolence',40);
  assert.deepEqual(S.spending(tables.abilityPoint,45,state.points),before);
