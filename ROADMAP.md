@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.131.0 (`2026.10.31.131`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.132.0 (`2026.10.31.132`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -567,3 +567,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Restoring the active saved-build ID tolerates blocked sessionStorage (private-browser/storage restrictions) without crashing the entire app.
 - [x] Expanded regression coverage to assert that revoked public snapshot bytes are cleared and that another player's link remains available.
 - [ ] Confirm live Worker release, actual D1 POST/GET/delete and full browser E2E. Unported Remaked mechanics and OS-specific target-dependent bonuses still need source-backed implementation.
+
+
+## Source update 0.132.0 — safe switching between saved builds
+
+- [x] When opening a saved library character with unsaved changes in the current workbench, show an inline decision inside that build card: «Сохранить текущий и открыть», «Открыть без сохранения», or «Отмена». No global browser confirm dialog.
+- [x] The default open action is immediate when the current draft is already saved or blank. Loading still preserves old/future fields via the existing in-memory clone and merge.
+- [x] Add static guard for the choice, save-before-open requirement, and existing-legacy field-preserving restoration.
+- [ ] Actual browser acceptance remains necessary, along with Remaked combat parity, Worker lifecycle testing and full npm test.

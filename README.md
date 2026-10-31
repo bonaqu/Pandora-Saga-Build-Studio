@@ -589,3 +589,8 @@ When a player opens a saved build from the library, the editor remembers its ID 
 ## D1 data removal for revoked links · 0.131.0
 
 A permanent delete now atomically tombstones the private source record **and overwrites the payloads of every attached public share with an empty object**. The share ID to source-ID association remains so the Worker can answer HTTP 410 with a meaningful `deleted` reason. No public endpoint can read the original shared build after revocation. A player who saved an independent copy retains that new copy. If the browser is offline, revocation and payload scrubbing happen only when its queued delete reaches D1.
+
+
+## Safe library switching · 0.132.0
+
+Opening a different saved character with unsaved current changes never silently destroys the workbench. The selected card expands a compact inline Save-and-open / Open-without-saving / Cancel choice. Opening is immediate if the active character is blank or its state already matches a saved build. No modal dialog interrupts editing.

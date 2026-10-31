@@ -1700,6 +1700,22 @@ function restoreLoadedBuildUI(){
  selectedSkill=null;inlineBranchId=null;selectedSlot=0;selectedSocket=0;
  stageSlotPickerOpen=false;stageSlotQuery='';stageSlotShown=48;
 }
+function openSavedBuild(b){
+ selectActiveBuild(b.id);
+ // Keep legacy saved fields intact: public-link sanitization applies only to untrusted imports.
+    // Locally saved builds are trusted snapshots: do not discard newer or legacy
+    // fields through the stricter validation used for incoming public links.
+    const draft=structuredClone(b.data),base=fresh();
+    state={...base,...draft,
+     points:{...base.points,...draft.points},stats:{...base.stats,...draft.stats},
+     equipment:{...base.equipment,...draft.equipment},
+     souls:{...base.souls,...draft.souls},
+     refinements:{...base.refinements,...draft.refinements},
+     gems:{...base.gems,...draft.gems},
+     profile:{...base.profile,...draft.profile}};
+    restoreLoadedBuildUI();persist();render();changeTab('character');
+
+}
 function unsavedBuild(){
  const s=JSON.stringify(state);
  return s!==JSON.stringify(fresh())&&!builds.some(b=>JSON.stringify(b.data)===s);
@@ -1743,7 +1759,15 @@ function renderBuilds(root){
  for(const b of builds){
   const box=h('div',{class:'build-card'});
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
+  const openChoice=h('div',{class:'build-open-choice',hidden:true});
   const check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});
+  openChoice.append(h('p',{text:'Есть несохранённые изменения. Открыть другой билд?'}),
+   h('button',{type:'button',class:'button-action primary',text:'Сохранить текущий и открыть',
+    onclick:()=>{if(saveBuild())openSavedBuild(b)}}),
+   h('button',{type:'button',class:'button-action',text:'Открыть без сохранения',
+    onclick:()=>openSavedBuild(b)}),
+   h('button',{type:'button',class:'button-action',text:'Отмена',
+    onclick:()=>{openChoice.hidden=true}}));
   const deleteChoice=h('div',{class:'build-delete-choice',hidden:true});
   deleteChoice.append(h('p',{text:'Удалить билд и отозвать все созданные ссылки?'}),
    h('button',{class:'button-action danger',type:'button',text:'Удалить билд',onclick:()=>{
@@ -1758,21 +1782,12 @@ function renderBuilds(root){
    text:(races[b.data?.race]?.[0]||'?')+' · '+(jobs[b.data?.job]||'?')+' · ур. '+(b.data?.level||'?')}),
    h('label',{},[check,' Сравнить']),
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
-    selectActiveBuild(b.id);
-    // Locally saved builds are trusted snapshots: do not discard newer or legacy
-    // fields through the stricter validation used for incoming public links.
-    const draft=structuredClone(b.data),base=fresh();
-    state={...base,...draft,
-     points:{...base.points,...draft.points},stats:{...base.stats,...draft.stats},
-     equipment:{...base.equipment,...draft.equipment},
-     souls:{...base.souls,...draft.souls},
-     refinements:{...base.refinements,...draft.refinements},
-     gems:{...base.gems,...draft.gems},
-     profile:{...base.profile,...draft.profile}};
-    restoreLoadedBuildUI();persist();render();changeTab('character');
+    if(!unsavedBuild()){openSavedBuild(b);return}
+    openChoice.hidden=!openChoice.hidden;
    }}),
    h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared(b,shareSlot)}),
    h('button',{class:'button-action',text:'Удалить',onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}}));
+  box.append(openChoice);
   box.append(deleteChoice);
   box.append(shareSlot);
   grid.append(box);
