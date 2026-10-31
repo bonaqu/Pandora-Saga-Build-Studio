@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.173.0 (`2026.11.01.173`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.174.0 (`2026.11.01.174`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.174.0 — enforce the planned 1–55 range and verify cloud library readiness
+
+- The complete character calculator accepts all levels 1–55 but fails closed on 56+, negative and fractional levels; the game's temporary 45-level server limit does not constrain Build Studio.
+- Require the published Worker health's D1 library-ready flag in addition to sharing/catalog flags, CORS and all 19 public datasets. No data mutation or player credentials.
+- Keep the actual end-to-end recipient share and unsaved draft/browser regressions intact.
 
 ## Source update 0.173.0 — validate all opt-in Wind skill conditions
 

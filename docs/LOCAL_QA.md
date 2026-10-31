@@ -21,3 +21,5 @@ The same Chromium run captures five actual editor layouts (1366×768, 1920×1080
 The isolated share-link E2E now opens a shared link in a second browser context with its own level-22 draft. It checks cancellation leaves that draft untouched, explicit import loads the 55-level build, and a simulated HTTP 410 revoked link shows a clear owner-deleted notice without replacing the active character.
 
 The live readiness workflow runs the comprehensive `connection:check:full` variant, covering all 19 public D1 datasets (including monsters, drops, maps, NPC trades, localization and English strings) instead of only the five fast smoke datasets. Every response must be nonempty, marked as coming from D1, and allowed for the deployed Pages origin. The public endpoint tests do not modify D1. An actual green workflow is required to count complete public catalog accessibility.
+
+Full D1 readiness checks now require the `features.library` health flag too. The top-level calculator rejects levels outside 1–55 while leaving level 55 fully available, independent of temporary live server progression caps.

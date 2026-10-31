@@ -1189,7 +1189,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  consumableItems=null,
  unisonCatalog=null,supplementalFlat={},supplementalSource=null,
  enhancements={},attributeBuffs={},potionContext={},combatContext={},gemSelections=[]}={}){
- if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
+ if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1||level>55)return null;
  const unison=unisonPreview({records,catalog:unisonCatalog});
  const combinedRecords=[...records,...unison.supplemental];
  const effects=gatherEffects(combinedRecords,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
