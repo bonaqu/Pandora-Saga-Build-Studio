@@ -343,7 +343,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    card.append(make('p',{text:'Выбранные навыки: '+(buff>=0?'+':'')+buff+
     ' · гильдия: '+(guild>=0?'+':'')+guild+' к атаке'}));
   }
-  if(cm.activeSkills?.lunge)card.append(make('p',{text:'Рывок: +15 к индексу скорости атаки'}));
+  if(cm.activeSkills?.lunge)card.append(make('p',{text:'Рывок: '+
+   (cm.attackSpeed.lunge>0?'+':'')+cm.attackSpeed.lunge+' к скорости атаки'}));
   if(cm.accuracy.percentage?.length){
    const total=cm.accuracy.percentage.reduce((sum,e)=>sum+e.bonus,0);
    card.append(make('p',{text:'Процентная точность вещей: '+
