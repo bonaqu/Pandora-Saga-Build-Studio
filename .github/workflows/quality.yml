@@ -1,0 +1,32 @@
+name: Studio quality checks
+
+on:
+  push:
+    branches: [bonaqu_projects]
+  pull_request:
+    branches: [bonaqu_projects]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Unit regressions and release consistency
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout exact revision
+        uses: actions/checkout@v4
+      - name: Use Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Run full Node test suite
+        run: npm test
+      - name: Check release metadata and HTML asset versions
+        run: npm run release:check

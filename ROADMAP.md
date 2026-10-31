@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.153.0 (`2026.10.31.153`), browser and Worker deployment partially verified  
+**Updated:** 2026-11-01 · **Latest source release:** 0.154.0 (`2026.11.01.154`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.154.0 — automated test gate and share/level invariants
+
+- Add GitHub Actions CI on pushes and pull requests against the source branch. Run the built-in Node 22 suite and the version-consistency release guard without secrets, package installation, or D1 mutations.
+- Add regression guards for verified shared-link delivery, accessible copy fallback, level-1 new characters, and planning through level 55 despite current OS server cap 45.
+- Live browser/Cloudflare acceptance remains separate from Node tests. An automation run is required before the release can be claimed test-green.
 
 ## Source update 0.117.0 — current OS-backed combat buffs in the hero book
 
