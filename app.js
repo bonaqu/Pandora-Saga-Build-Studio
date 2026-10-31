@@ -526,8 +526,17 @@ function renderStageAttributes(){
   const id=combatSkillCatalog.combatSkillIds[name];
   const ability=skillMap[String(id)];
   availability[setting]=availableSkills[name]===true;
+  const eff=combatSkillCatalog.combatSkillSource(skillMap,name)?.effects||{};
+  const number=n=>n>0?'+'+n:String(n);
+  const summary=name==='lunge'?number(eff.EP_ATTACKINTERVAL_SCALE??0)+' к скорости атаки':
+   name==='warCry'?number(eff.EP_DAMAGERATE_CONST??0)+' атаки · '+
+    number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки':
+   name==='raging'?number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки · '+
+    number(eff.EP_ARMORCLASS_SCALE??0)+'% защиты':
+    number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки · '+
+    number(eff.EP_ARMORCLASS_SCALE??0)+'% защиты';
   combatSkillCards[setting]=ability?{
-   name:ability.name,desc:ability.desc,level:ability.charLevel,
+   name:ability.name,desc:ability.desc,level:ability.charLevel,summary,
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
