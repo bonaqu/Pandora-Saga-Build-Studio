@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.120",
-  "notes": "Official OS level cap 45; Lunge weapon compatibility; source-verified Concentration +100 accuracy at slash mastery 26; corrected critical labels"
+  "release": "2026.10.31.121",
+  "notes": "Level-45 saved-build allocation validity; overbudget stats and trained skills cannot produce a false current-OS combat result"
 }

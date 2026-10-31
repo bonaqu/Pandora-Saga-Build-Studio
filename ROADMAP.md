@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.120.0 (`2026.10.31.120`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.121.0 (`2026.10.31.121`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -39,6 +39,13 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] Added test cases for level cap, Lunge weapon kinds, Concentration threshold 25/26, data drift, saved-state selection and precise critical labels. Manually evaluated **42 isolated test callbacks** across eight relevant files in a mock runner; these are not a full Node/browser suite.
 - [ ] [OS server check protocol](docs/OS_LIVE_PARITY_CHECKS.md) for unresolved percentage rounding, item procs, gemstones, stance and buff lifecycle. Confirm only from current game/client evidence.
 - [ ] Continue the [143-key Remaked formula inventory](docs/REMAKED_FORMULA_INVENTORY.md), with complete item sets, active/passive effects and final combat result chains; **full parity not yet achieved**.
+
+## Source update 0.121.0 — old-build allocation safety at the actual OS level cap
+
+- [x] A saved character originating from the old level-50/55 UI may contain more blue/green skill points or attribute points than current level-45 OS permits. After cap adjustment, detect both budgets using the existing Remaked point-cost engine and current OS ability point table.
+- [x] Invalid distribution does not silently shed points from the user's draft or library. The hero can be reallocated, while the Book/Origin calculation refuses to label illegal results as valid; a short player-facing notice explains which pool needs attention.
+- [x] Added direct regression cases for legal level-45, excess stats, excess trained skills, malformed allocations and UI warning presence. Recorded source validation without any login or database mutation.
+- [ ] Continue full Remaked formula port and current OS gameplay checks using the [source inventory](docs/REMAKED_FORMULA_INVENTORY.md) and [live test protocol](docs/OS_LIVE_PARITY_CHECKS.md).
 
 ## Workstreams
 
