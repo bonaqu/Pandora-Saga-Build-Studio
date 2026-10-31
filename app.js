@@ -48,7 +48,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
@@ -168,7 +168,7 @@ function renderVitalsEnhancements(){
   const control=$(id);
   if(control)control.value=String(state.attributeBuffs?.[key]||0);
  }
- for(const [id,key] of [['originProelium','proelium'],['originRuneJoEun','runeJoEun'],['originUsePotionEffects','potionEffectsEnabled'],
+ for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','potionEffectsEnabled'],
   ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
   ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
   const control=$(id);
@@ -218,7 +218,7 @@ function setVitalsEnhancement(key,value){
  if(stageAttributesPage)renderStageAttributes();
 }
 function setAttributeBuff(key,value){
- const current={guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,
+ const current={guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,
   ...(state.attributeBuffs||{})};
  if(key==='honorTitle'){
   const id=Number(value);
@@ -228,7 +228,7 @@ function setAttributeBuff(key,value){
  }else if(key==='honorCuriosity'){
   current.honorCuriosity=value===true;
   current.honorTitle=current.honorCuriosity?1:0;
- }else if(['proelium','runeJoEun','potionEffectsEnabled','combatLunge','combatWarCry',
+ }else if(['proelium','potionEffectsEnabled','combatLunge','combatWarCry',
   'combatRage','combatDefender'].includes(key)){
   current[key]=value===true;
   if(current.combatRage&&key==='combatRage')current.combatDefender=false;
@@ -355,6 +355,9 @@ function renderJobs(){
   const status=state.job===node.i?'✓ Выбрано':
    selectedOnPath?'✓ '+selectedProfession.name:
    hasChildren?'Специализации ›':'Выбрать';
+  const specialties=Object.entries(catalog.classes?.[node.key]?.branchCaps||{})
+   .filter(([,cap])=>Number(cap)>0).sort((a,b)=>Number(b[1])-Number(a[1]))
+   .slice(0,2).map(([key])=>catalog.meta?.branchLabels?.[key]||key);
   choices.append(h('button',{type:'button',class:'class-wizard-choice'+(state.job===node.i?' active':'')+
     (activeAncestors.has(node.key)?' on-path':''),
     'aria-label':node.name+(selectedOnPath?' — выбранная специализация '+selectedProfession.name:
@@ -365,7 +368,8 @@ function renderJobs(){
      jobPathKey=node.key;selectJob(node.i);
     }},[
       h('strong',{text:node.name}),
-      h('span',{class:selectedOnPath?'class-wizard-choice-current':'class-wizard-choice-caption',text:status})
+      h('span',{class:selectedOnPath?'class-wizard-choice-current':'class-wizard-choice-caption',text:status}),
+      ...(specialties.length?[h('small',{class:'class-wizard-specialties',text:specialties.join(' · ')})]:[])
     ]));
  }
  grid.append(choices);
@@ -1184,31 +1188,70 @@ function renderWiki(root){
     for(const mapId of locations){
      if(knownMaps[mapId])detail.append(wikiLink('◈ '+dataName('map',mapId),'map',mapId,id));
     }
-    detail.append(h('h4',{text:'Обменные предметы'}));
-    for(const trade of wikiIndex.trades(id)){
-     const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(trade.i)?' highlighted':'')});
-     entry.append(itemLink(trade.i,dataName('item',trade.i),id));
+    const recipes=wikiIndex.trades(id);
+    detail.append(h('h4',{text:'Обмен · '+recipes.length}));
+    const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
+     placeholder:'Найти предмет или материал…','aria-label':'Поиск среди обменов NPC'});
+    const counter=h('small',{class:'wiki-result-counter'});
+    const recipesBox=h('div',{class:'wiki-trade-list'}),cards=[];
+    for(const trade of recipes){
+     const entry=h('section',{class:'wiki-trade-card'+
+      (wikiSelection.highlight===String(trade.i)?' highlighted':'')});
+     const output=h('div',{class:'wiki-trade-output'});
+     output.append(h('small',{text:'Получить'}),
+      itemLink(trade.i,dataName('item',trade.i),id));
+     entry.append(output);
      if(trade.mats?.length){
       const mats=h('div',{class:'wiki-recipe-mats'});
-      mats.append(h('small',{text:'Для обмена:'}));
-      for(const m of trade.mats)mats.append(itemLink(m.i,dataName('item',m.i)+' ×'+(m.n??1),trade.i));
+      mats.append(h('small',{text:'Необходимые материалы'}));
+      for(const material of trade.mats)
+       mats.append(itemLink(material.i,dataName('item',material.i)+' ×'+(material.n??1),trade.i));
       entry.append(mats);
      }
      const currencies=[['Золото',trade.gold],['Честь',trade.honor],['Опыт',trade.exp]]
       .filter(([,value])=>Number(value)>0);
-     if(currencies.length)entry.append(h('small',{text:currencies.map(([name,value])=>name+' '+value).join(' · ')}));
-     detail.append(entry);
+     if(currencies.length)entry.append(h('div',{class:'wiki-trade-cost',text:
+      currencies.map(([name,value])=>name+': '+Number(value).toLocaleString('ru-RU')).join(' · ')}));
+     const searchText=[dataName('item',trade.i),String(trade.i),
+      ...(trade.mats||[]).map(m=>dataName('item',m.i))].join(' ').toLocaleLowerCase('ru');
+     recipesBox.append(entry);cards.push({entry,searchText});
     }
+    const filterRecipes=()=>{
+     const query=recipeSearch.value.trim().toLocaleLowerCase('ru');
+     let visible=0;
+     for(const card of cards){
+      card.entry.hidden=!!query&&!card.searchText.includes(query);
+      if(!card.entry.hidden)visible++;
+     }
+     counter.textContent=visible+' из '+cards.length;
+    };
+    recipeSearch.addEventListener('input',filterRecipes);
+    detail.append(recipeSearch,counter,recipesBox);filterRecipes();
   }else if(type==='map'||type==='instance'){
     if(rec.blurb)detail.append(h('p',{class:'wiki-description',text:rec.blurb}));
     const mobs=rec.mobs||[];
-    if(mobs.length)detail.append(h('h4',{text:'Монстры в локации'}));
-    for(const mob of mobs){
-     const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(mob)?' highlighted':'')});
-     const mon=wikiData.monsters?.[mob];
-     entry.append(wikiLink(dataName('monster',mob)+
-      (mon?.level!=null?' · ур. '+mon.level:''),'monster',mob));
-     detail.append(entry);
+    if(mobs.length){
+     const roster=mobs.map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}));
+     const levels=roster.map(row=>row.mon?.level).filter(Number.isFinite);
+     const levelRange=levels.length?' · ур. '+Math.min(...levels)+
+      (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
+     detail.append(h('h4',{text:'Монстры · '+mobs.length+levelRange}));
+     const search=h('input',{type:'search',class:'wiki-inline-search',
+      placeholder:'Поиск монстра…','aria-label':'Поиск монстра в локации'});
+     const list=h('div',{class:'wiki-map-monsters'}),rows=[];
+     for(const {id:mob,mon} of roster.sort((a,b)=>(a.mon?.level??999)-
+      (b.mon?.level??999)||dataName('monster',a.id).localeCompare(dataName('monster',b.id),'ru'))){
+      const entry=h('div',{class:'wiki-entry wiki-mob-row'+
+       (wikiSelection.highlight===String(mob)?' highlighted':'')});
+      entry.append(wikiLink(dataName('monster',mob)+
+       (mon?.level!=null?' · ур. '+mon.level:''),'monster',mob));
+      list.append(entry);rows.push({entry,name:dataName('monster',mob).toLocaleLowerCase('ru')});
+     }
+     search.addEventListener('input',()=>{
+      const q=search.value.trim().toLocaleLowerCase('ru');
+      for(const row of rows)row.entry.hidden=!!q&&!row.name.includes(q);
+     });
+     detail.append(search,list);
     }
     if(type==='map'){
      const residents=Object.entries(wikiData.trades?.npcs||{}).filter(([,npc])=>
@@ -1647,7 +1690,6 @@ function sanitizeSharedState(original){
    safe.attributeBuffs.honorCuriosity=rawAttributes.honorCuriosity===true;
   }
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
-  safe.attributeBuffs.runeJoEun=rawAttributes.runeJoEun===true;
   safe.attributeBuffs.potionEffectsEnabled=rawAttributes.potionEffectsEnabled===true;
   for(const key of ['combatWarCry','combatRage','combatDefender','combatLunge'])
    if(rawAttributes[key]===true)safe.attributeBuffs[key]=true;
@@ -2252,7 +2294,7 @@ for(const [id,key] of [['originGuildAll','guildAll'],['originGuildArouse','guild
  ['originGuildHealing','guildHealing']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.value));
 }
-for(const [id,key] of [['originProelium','proelium'],['originRuneJoEun','runeJoEun'],['originUsePotionEffects','potionEffectsEnabled'],
+for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','potionEffectsEnabled'],
  ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
  ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
