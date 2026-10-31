@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.178.0 (`2026.11.01.178`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.179.0 (`2026.11.01.179`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.179.0 — dynamic current/future HP, MP and status-cleansing catalog
+
+- Classify all current OS POTION-kind TARGET EP_HEAL_LIFE/MANA(_RATE) item effects instead of hard-coded Mana-only IDs. The 2026-10-30 snapshot contains 20 genuine recovery items: eight with mana or mixed healing and twelve HP-only.
+- Display HP-only items in a compact, collapsed Hero Book section linking to the original encyclopedia; keep mixed HP/MP items together in the existing mana section without doubling.
+- Populate status-cure items dynamically from current TARGET EP_RECOVERY_* records, retaining the known nine in today's snapshot and automatically supporting new catalog entries.
+- Use only catalog source effects; never infer a damage-over-time weapon is a potion, invent statuses, or alter saved builds.
 
 ## Source update 0.178.0 — opt-in isolated live D1 lifecycle and Chromium status cures
 

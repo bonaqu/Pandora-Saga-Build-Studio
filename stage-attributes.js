@@ -721,6 +721,26 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     text:'Эффект при использовании. Бонус эффективности зелий к ОМ не применён.'}));
    body.append(mana);
   }
+  const lifeItems=modifiers?.consumableRecovery?.healthRows||[];
+  if(lifeItems.length){
+   const health=make('details',{class:'stage-attribute-row stage-health-consumables'});
+   health.append(make('summary',{text:'Предметы восстановления ОЗ · '+lifeItems.length}));
+   for(const entry of lifeItems){
+    const item=itemById(entry.id);
+    const row=make(item?'button':'div',{class:'stage-potion-item',
+     ...(item?{type:'button','aria-label':'Открыть в энциклопедии: '+entry.name,
+      onclick:()=>onItem(entry.id)}:{})});
+    if(item){
+     const src=icon(item);
+     if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
+      picture.onerror=()=>picture.remove();row.append(picture)}
+    }
+    row.append(make('span',{class:'stage-potion-name',text:entry.name}),
+     make('strong',{text:entry.hp+' ОЗ'}));
+    health.append(row);
+   }
+   body.append(health);
+  }
   const cures=modifiers?.statusCures?.rows||[];
   if(cures.length){
    const panel=make('details',{class:'stage-attribute-row stage-status-cures'});

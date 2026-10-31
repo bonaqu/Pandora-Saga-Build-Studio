@@ -55,6 +55,11 @@ async function main(){
  await page.locator('#stageAttributes .stage-mana-consumables').waitFor({state:'visible',timeout:20000});
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/Легкое восстанавливающее зелье/);
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/ОМ/);
+ const hpOnly=page.locator('#stageAttributes .stage-health-consumables');
+ await hpOnly.waitFor({state:'visible',timeout:20000});
+ await hpOnly.locator('summary').click();
+ assert.equal(await hpOnly.locator('.stage-potion-item').count(),12);
+ assert.match(await hpOnly.innerText(),/Легкое исцеляющее зелье/);
  const statusCures=page.locator('#stageAttributes .stage-status-cures');
  await statusCures.waitFor({state:'visible',timeout:20000});
  await statusCures.locator('summary').click();

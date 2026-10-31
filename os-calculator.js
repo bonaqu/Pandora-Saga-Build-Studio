@@ -1020,20 +1020,19 @@ const statusCureCodes=Object.freeze({
  EP_RECOVERY_POISON:'Яд',
  EP_RECOVERY_SILENCE:'Немота'
 });
-const displayedCureIds=Object.freeze([
- 50013,50015,50023,50057,50058,50059,50065,80133,90038
-]);
+
 function statusCurePreview({items=null}={}){
  if(!items||typeof items!=='object'||Array.isArray(items))return null;
  const rows=[];
- for(const id of displayedCureIds){
-  const item=items[String(id)];
-  if(!item||!Array.isArray(item.effects))continue;
+ for(const [key,item] of Object.entries(items)){
+  const id=Number(key);
+  if(!Number.isSafeInteger(id)||id<0||!item||!Array.isArray(item.effects))continue;
   const conditions=[...new Set(item.effects.filter(e=>
    e&&e.dir==='TARGET'&&Object.hasOwn(statusCureCodes,e.func))
    .map(e=>statusCureCodes[e.func]))];
   if(conditions.length)rows.push({id,name:String(item.name||id),conditions});
  }
+ rows.sort((a,b)=>a.id-b.id);
  return {rows,verified:false};
 }
 
@@ -1045,23 +1044,24 @@ function statusCurePreview({items=null}={}){
 // Explicit current OS item EP_HEAL_MANA(_RATE) and EP_HEAL_LIFE(_RATE).
 // These are used-on-demand values, never a bonus to maximum HP/MP or passive regen.
 // Remaked POT scaling is established for HP; mana POT scaling remains unverified.
-const displayedRecoveryIds=Object.freeze([50006,50007,50008,50009,50061,50063,50025,70027]);
+
 function consumableRecoveryPreview({items=null,maxHp=null,maxMp=null,potionRate=null,
  applyHpPotionBonus=false}={}){
  if(!items||typeof items!=='object'||!Number.isFinite(maxHp)||maxHp<0||
   !Number.isFinite(maxMp)||maxMp<0||
   (applyHpPotionBonus&&(!Number.isFinite(potionRate)||potionRate<0)))return null;
- const rows=[];
- for(const id of displayedRecoveryIds){
-  const item=items[String(id)];
-  if(!item||!Array.isArray(item.effects))continue;
+ const rows=[],healthRows=[],allRows=[];
+ for(const [key,item] of Object.entries(items)){
+  const id=Number(key);
+  if(!Number.isSafeInteger(id)||id<0||item?.kind!=='POTION'||
+   !Array.isArray(item.effects))continue;
   const effects=[];
   let hp=0,mp=0;
   for(const effect of item.effects){
-   const {func,a}=effect;
+   const {func,a}=effect||{};
    if(!['EP_HEAL_LIFE','EP_HEAL_LIFE_RATE',
      'EP_HEAL_MANA','EP_HEAL_MANA_RATE'].includes(func)||
-     !Number.isFinite(a)||a<0)continue;
+     effect.dir!=='TARGET'||!Number.isFinite(a)||a<0)continue;
    const isHp=func.startsWith('EP_HEAL_LIFE'),rate=func.endsWith('_RATE');
    const maximum=isHp?maxHp:maxMp;
    // Percent sources use the current maximum mana / health, not current mana.
@@ -1074,11 +1074,16 @@ function consumableRecoveryPreview({items=null,maxHp=null,maxMp=null,potionRate=
    if(isHp)hp+=adjusted;
    else mp+=adjusted;
   }
-  if(effects.some(x=>x.kind==='mp'))
-   rows.push({id,name:item.name||'Предмет',hp,mp,
-    effects,source:'Pandora Saga OS item effects',verified:false});
+  if(!effects.length)continue;
+  const entry={id,name:item.name||'Предмет',hp,mp,
+   effects,source:'Pandora Saga OS item effects',verified:false};
+  allRows.push(entry);
+  if(effects.some(x=>x.kind==='mp'))rows.push(entry);
+  else healthRows.push(entry);
  }
- return {rows,verified:false};
+ const sort=(a,b)=>a.id-b.id;
+ rows.sort(sort);healthRows.sort(sort);allRows.sort(sort);
+ return {rows,healthRows,allRows,verified:false};
 }
 
 function periodicRecoveryPreview({level,benevolence=0,jobKey=null,skillCatalog=null}={}){
