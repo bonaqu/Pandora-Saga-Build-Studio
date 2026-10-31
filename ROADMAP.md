@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.164.0 (`2026.11.01.164`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.165.0 (`2026.11.01.165`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.165.0 — end-to-end share-link UI with isolated Worker
+
+- Add actual Chromium clicks through the build editor, saving a level-55 build, publishing a Worker-style short link, verifying exact GET snapshot and clipboard copy.
+- Simulate a mismatched public snapshot and assert the success message and URL disappear in favor of a clear error. Keep all production Worker/D1 requests blocked in this test.
+- This confirms the real UI contract only; it does not prove deployment or availability of live Cloudflare services.
 
 ## Source update 0.164.0 — 2-second spell recovery preview
 

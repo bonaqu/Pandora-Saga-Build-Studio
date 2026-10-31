@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {runShareLinkSmoke} from './browser-share-link.mjs';
 
 const base='http://127.0.0.1:4173';
 const errors=[];
@@ -93,5 +94,6 @@ async function main(){
  assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
  console.log('Chromium mobile smoke passed: touch book, responsive width');
  await mobile.close();
+ await runShareLinkSmoke(browser,base);
 }
 main().catch(error=>{console.error(error);process.exitCode=1}).finally(async()=>{await browser?.close()});
