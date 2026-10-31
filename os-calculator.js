@@ -90,6 +90,58 @@ function sourceEffects(source,record,grade,itemForth=null){
  if(Array.isArray(snapshot))return [...primary,...snapshot];
  return [...primary,...refinementEffects(record,Number(grade))];
 }
+
+// Current OS unison.json defines companion item IDs and root-item improvement
+// thresholds. Count companions excluding root, as the actual item descriptions
+// specify; grade applies to the set's root item. Only known linear coefficients
+// (f=0, b=0) are numeric. Status-type zero codes remain named effects, not
+// invented resistance percentages.
+function unisonPreview({records=[],catalog=null}={}){
+ const active=[],supplemental=[],pending=[];
+ if(!catalog||typeof catalog!=='object'||!Array.isArray(records))
+  return {active,supplemental,pending};
+ const equipped=new Map();
+ for(const [source,item,grade] of records){
+  if(!String(source).startsWith('item:')||!item||!Number.isInteger(item.id))continue;
+  equipped.set(String(item.id),{item,grade});
+ }
+ for(const [id,set] of Object.entries(catalog)){
+  if(!Array.isArray(set?.members)||!Array.isArray(set?.rows))continue;
+  const root=equipped.get(id);
+  if(!root||!Number.isInteger(root.grade))continue;
+  const companionIds=[...new Set(set.members.map(String))];
+  const count=companionIds.filter(key=>equipped.has(key)).length;
+  const matched=companionIds.filter(key=>equipped.has(key));
+  const effects=[],conditions=[];
+  for(const row of set.rows){
+   if(!Number.isInteger(row.minC)||!Number.isInteger(row.maxC)||
+    !Number.isInteger(row.minL)||!Number.isInteger(row.maxL)||
+    count<row.minC||count>row.maxC||
+    root.grade<row.minL||root.grade>row.maxL)continue;
+   const a=row.a,b=row.b;
+   if(!a||!b||a.f!==0||
+    !Number.isFinite(a.p)||!Number.isFinite(a.c)||
+    b.f!==0||b.p!==0||b.c!==0){
+    pending.push({id,func:row.func});continue;
+   }
+   const value=a.p*root.grade+a.c;
+   if(!Number.isFinite(value)||typeof row.func!=='string')continue;
+   if(row.func==='EP_PROTECTION_TUMBLE'){
+    conditions.push({func:row.func,label:'Защита от падения'});
+    continue;
+   }
+   effects.push({func:row.func,a:value,b:0,fromUnison:true});
+  }
+  if(effects.length||conditions.length){
+   active.push({id:Number(id),name:root.item.name||'Комплект',
+    companionCount:count,required:companionIds.length,matched,
+    grade:root.grade,effects,conditions});
+   if(effects.length)supplemental.push(['set:'+id,
+    {name:root.item.name||'Комплект',effects},root.grade]);
+  }
+ }
+ return {active,supplemental,pending};
+}
 function gatherEffects(records=[],itemForth=null){
  const flat=Object.fromEntries(keys.map(k=>[k,0]));
  const health={hp:0,mp:0},percent={hp:[],mp:[]},bonuses={},ignored=new Set(),trace=[];
@@ -945,10 +997,12 @@ function auraDamagePreview({gemstones=null,records=[],itemForth=null}={}){
   verified:false};
 }
 function base({classData,raceData,jobData,allocation,level,records=[],itemForth=null,
- supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={},
- potionContext={},combatContext={},gemSelections=[]}={}){
+ unisonCatalog=null,supplementalFlat={},supplementalSource=null,
+ enhancements={},attributeBuffs={},potionContext={},combatContext={},gemSelections=[]}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
- const effects=gatherEffects(records,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
+ const unison=unisonPreview({records,catalog:unisonCatalog});
+ const combinedRecords=[...records,...unison.supplemental];
+ const effects=gatherEffects(combinedRecords,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
  if(!extra)return null;
  for(const key of keys){
   const race=Number(raceData[key]),job=Number(jobData[key]),spent=Number(allocation?.[key]||0);
@@ -962,13 +1016,13 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const hpBonus=bonusFor('hp',hpBase,effects,enhancements);
  const mpBonus=bonusFor('mp',mpBase,effects,enhancements);
  if(!hpBonus||!mpBonus)return null;
- const potion=potionRecovery({vit:stats.vit,records,honorTitle:extra.honor.id,
+ const potion=potionRecovery({vit:stats.vit,records:combinedRecords,honorTitle:extra.honor.id,
   level,itemForth,...potionContext,runeJoEun:false});
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
  const gemstones=gemstonePreview(gemSelections);
- const otherEquipment=secondaryEffectsPreview({records,itemForth});
+ const otherEquipment=secondaryEffectsPreview({records:combinedRecords,itemForth});
  if(otherEquipment&&resistances){
   resistances.mitigation.physical+=otherEquipment.incomingPhysicalPercent;
   resistances.mitigation.magic+=otherEquipment.incomingMagicPercent;
@@ -990,22 +1044,22 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
    resistances.elements[key]=(resistances.elements[key]||0)+amount;
   resistances.gemstones={...gemstones.resistance};
  }
- const auraDamage=auraDamagePreview({gemstones,records,itemForth});
+ const auraDamage=auraDamagePreview({gemstones,records:combinedRecords,itemForth});
  const elementalMagic=elementalMagicPreview({honorTitle:extra.honor.id});
  const legacyBuffs=legacyBuffPreview({spi:stats.spi,
   blessing:combatContext.legacyBuffMasteries?.blessing??0,
   hymn:combatContext.legacyBuffMasteries?.hymn??0,
   alchemy:combatContext.legacyBuffMasteries?.alchemy??0});
- const coverage=effectCoverage({records,itemForth});
+ const coverage=effectCoverage({records:combinedRecords,itemForth});
  const recoveryAmount=recoveryAmountPreview({maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,stats});
- const healingSkill=healingSkillPreview({honorTitle:extra.honor.id,records,itemForth});
+ const healingSkill=healingSkillPreview({honorTitle:extra.honor.id,records:combinedRecords,itemForth});
  const healingSpells=healingSkill?healingSpellsPreview({
   level,int:stats.int,spi:stats.spi,
   benevolence:combatContext.benevolenceMastery??0,
   jobKey:combatContext.jobKey,healingPercent:healingSkill.percent
  }):null;
- const combat=combatPreview({stats,level,bonuses:effects.bonuses,records,itemForth,
+ const combat=combatPreview({stats,level,bonuses:effects.bonuses,records:combinedRecords,itemForth,
   guildArouse:attributeBuffs?.guildArouse??0,
   combatBuffs:attributeBuffs,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,...combatContext});
@@ -1016,7 +1070,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,legacyBuffs,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,elementalMagic,coverage,
+  recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,elementalMagic,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -1024,6 +1078,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,effectCoverage
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,unisonPreview,effectCoverage
 });
 })(typeof window==='undefined'?globalThis:window);
