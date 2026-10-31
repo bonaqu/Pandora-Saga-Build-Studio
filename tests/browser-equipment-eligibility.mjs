@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+
+// Isolated browser exercise of OS source level gates with persisted old equipment.
+export async function runEquipmentEligibilitySmoke(browser,base){
+ const context=await browser.newContext({viewport:{width:1366,height:850}});
+ await context.addInitScript(()=>{
+  if(sessionStorage.getItem('ps-gear-test-initialized'))return;
+  sessionStorage.setItem('ps-gear-test-initialized','1');
+  localStorage.setItem('ps-build-studio.v1',JSON.stringify({
+   race:1,gender:0,job:0,level:1,equipment:{2:{id:11094,name:'Кардинальская шапка'}}
+  }));
+ });
+ await context.route('**/*',route=>
+  route.request().url().startsWith(base+'/')?route.continue():route.abort());
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ try{
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>{
+   const hp=document.querySelector('#originHp')?.textContent;
+   return hp&&hp!=='—'&&document.querySelector('.equipment-slot[data-slot-index="2"].unavailable');
+  },null,{timeout:20000});
+  const underLevel=Number(await page.locator('#originHp').textContent());
+  assert.ok(Number.isFinite(underLevel));
+  await page.locator('#level').evaluate(el=>{
+   el.value='38';el.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  assert.equal(await page.locator('#levelOut').textContent(),'38');
+  assert.equal(await page.locator('.equipment-slot[data-slot-index="2"].unavailable').count(),0);
+  const withHat=Number(await page.locator('#originHp').textContent());
+  await page.locator('.equipment-slot[data-slot-index="2"]').click();
+  await page.getByRole('button',{name:'Снять предмет'}).click();
+  const withoutHat=Number(await page.locator('#originHp').textContent());
+  assert.equal(withHat-withoutHat,50,'Level-38 Cardinal Cap must give precisely its OS HP bonus');
+  assert.deepEqual(errors,[]);
+  console.log('Chromium gear eligibility smoke passed: saved underlevel gear grants no HP; +50 activates at required level');
+ }finally{await context.close();}
+}

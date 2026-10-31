@@ -1540,3 +1540,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-periodic-row>strong{white-space:nowrap;color:#bde6b0;font-variant-numeric:tabular-nums}
 .stage-periodic-row>small{grid-column:1/-1;color:#baa88e}
 .stage-periodic-hint{margin:9px 0 0;font-size:11px;color:#b8a88c}
+
+/* A preserved, currently unwieldable item stays selectable but grants no stats. */
+.equipment-slot.unavailable .equipped-icon{opacity:.5;filter:grayscale(1)}
+.stage-item-unavailable{color:#df947d;font-weight:600}

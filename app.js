@@ -193,6 +193,23 @@ function branchCap(branch){
  // No invented cap: when a game class is still loading, disable spending until real caps exist.
  return window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0;
 }
+function equipmentIssue(item,slot){
+ if(!item)return ['Предмет отсутствует в каталоге'];
+ const rules=window.PandoraStudioRules.equipment(item,{
+  slot:slotKeys[slot],job:jobKeys[state.job],level:state.level
+ });
+ const missing=[...rules.missing];
+ if(!window.PandoraUIPlanner.raceCompatible(item,state.race,state.gender))
+  missing.push('Не подходит происхождению героя');
+ if(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_'))
+  missing.push('Это декоративный предмет');
+ return missing;
+}
+function trainedBranchMasteries(innate={}){
+ return Object.fromEntries(branches.map(({id})=>[
+  id,window.PandoraSkillProgression.groupAdeptness(state,[id],innate)
+ ]));
+}
 function previewBaseStats(){
  const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
  const baseClass=clazz?.baseClass||jobKeys[state.job];
@@ -200,7 +217,7 @@ function previewBaseStats(){
  const records=[],gemSelections=[];
  for(const [slot,selection] of Object.entries(state.equipment||{})){
   const item=selection&&catalog.equipment?.[String(selection.id)];
-  if(!item)continue;
+  if(!item||equipmentIssue(item,Number(slot)).length)continue;
   const grade=window.PandoraEquipmentPlan.refinementValue(state.refinements,Number(slot),selection);
   records.push(['item:'+item.id,item,grade]);
   const gem=window.PandoraEnchantModel.normalize(
@@ -216,8 +233,9 @@ function previewBaseStats(){
  }
  const initialBranches=gameTables?.jobInit?.[baseClass]?.branches||{};
  const weaponSelection=state.equipment?.[0];
- const weapon=weaponSelection&&catalog.equipment?.[String(weaponSelection.id)]||null;
- const weaponGrade=weaponSelection?
+ const selectedWeapon=weaponSelection&&catalog.equipment?.[String(weaponSelection.id)]||null;
+ const weapon=selectedWeapon&&!equipmentIssue(selectedWeapon,0).length?selectedWeapon:null;
+ const weaponGrade=weaponSelection&&weapon?
   window.PandoraEquipmentPlan.refinementValue(state.refinements,0,weaponSelection):0;
  const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(
   jobKeys[state.job],state,initialBranches);
@@ -226,9 +244,7 @@ function previewBaseStats(){
  const masteries=window.PandoraSkillProgression.combatMasteries(state,initialBranches);
  // Pass every trained branch to the OS skill gates; future catalog skills
  // may require more than the original Slash mastery.
- const branchMasteries=Object.fromEntries(branches.map(({id})=>[
-  id,window.PandoraSkillProgression.groupAdeptness(state,[id],initialBranches)
- ]));
+ const branchMasteries=trainedBranchMasteries(initialBranches);
  const ridingMastery=window.PandoraSkillProgression.groupAdeptness(state,['riding'],initialBranches);
  const wardingMastery=window.PandoraSkillProgression.groupAdeptness(state,['warding'],initialBranches);
  const meleeMastery=masteries.melee;
@@ -593,15 +609,17 @@ function renderSlotRails(){
    const item=state.equipment?.[i],source=item&&equippedRecord(i),cap=plan.socketCapacity(source);
    const report=plan.socketReport(state.souls?.[i],cap);
    const level=plan.canRefine(slotKeys[i])?plan.refinementValue(state.refinements,i,item):0;
-   const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+(item&&plan.canSocket(slotKeys[i],source)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'');
-   const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':''),
+   const issue=source?equipmentIssue(source,i):[];
+   const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+(item&&plan.canSocket(slotKeys[i],source)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'')+(issue.length?' · Не действует: '+issue.join(', '):'');
+   const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':'')+(issue.length?' unavailable':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
     'aria-label':tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSoulQuery='';stageSlotShown=48;stageSlotView=state.equipment?.[i]?'details':'choose';stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
    button.append(slotVisual(i),h('small',{text:item?itemName(item):slots[i][0]}));
    if(item&&plan.canSocket(slotKeys[i],source))button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source)window.PandoraStageItemUI.attachPreview(button,source,(rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'));
-   if(report.excess>0)button.append(h('span',{class:'stage-conflict',text:'!','aria-label':'Конфликт гнёзд'}));
+   if(report.excess>0||issue.length)button.append(h('span',{class:'stage-conflict',text:'!',
+    'aria-label':issue.length?'Предмет временно недоступен':'Конфликт гнёзд'}));
    container.append(button);
   }
  }
@@ -626,7 +644,8 @@ function renderStageAttributes(){
  const plan=window.PandoraEquipmentPlan;
  const items=Object.entries(state.equipment||{}).filter(([,entry])=>entry).map(([slot,entry])=>{
   const rec=itemWithOverrides(catalog.equipment?.[String(entry.id)]);
-  return {record:rec,refinement:plan.refinementValue(state.refinements,Number(slot),entry),
+  return {record:rec,issue:equipmentIssue(rec,Number(slot)),
+   refinement:plan.refinementValue(state.refinements,Number(slot),entry),
     souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
  });
  const cls=jobKeys[state.job],skillMap=catalog.skills||{};
@@ -637,17 +656,20 @@ function renderStageAttributes(){
   trained:Object.fromEntries(branches.map(b=>[
    b.id,window.PandoraSkillProgression.trained(state,b.id)]))
  });
- const equippedShield=state.equipment?.[1]&&
+ const shieldCandidate=state.equipment?.[1]&&
   catalog.equipment?.[String(state.equipment[1].id)];
- const equippedWeapon=state.equipment?.[0]&&
-  catalog.equipment?.[String(state.equipment[0].id)]||null;
+ const equippedShield=shieldCandidate&&!equipmentIssue(shieldCandidate,1).length?
+  shieldCandidate:null;
+ const weaponCandidate=state.equipment?.[0]&&
+  catalog.equipment?.[String(state.equipment[0].id)];
+ const equippedWeapon=weaponCandidate&&!equipmentIssue(weaponCandidate,0).length?
+  weaponCandidate:null;
  const keys={combatLunge:'lunge',combatWarCry:'warCry',
   combatRage:'raging',combatDefender:'defender',
   combatConcentration:'concentration'};
  const combatSkillCatalog=window.PandoraOSCalculator;
  const selectedCombat=Object.fromEntries(Object.keys(keys).map(k=>[k,true]));
- const branchMasteries={slash:window.PandoraSkillProgression.groupAdeptness(
-  state,['slash'],innate)};
+ const branchMasteries=trainedBranchMasteries(innate);
  const availableSkills=combatSkillCatalog.activeCombatSkills({
   selected:selectedCombat,jobKey:cls,level:state.level,weapon:equippedWeapon,branchMasteries,
   hasShield:equippedShield?.slot==='shield',skillCatalog:skillMap
@@ -685,7 +707,7 @@ function renderStageAttributes(){
  const supportKeys={combatWindAssist:'windAssist',combatWindBlessing:'windBlessing'};
  const supportAvailable=combatSkillCatalog.supportSkillAvailability({
   selected:Object.fromEntries(Object.keys(supportKeys).map(k=>[k,true])),
-  skillCatalog:skillMap,jobKey:cls,level:state.level
+  skillCatalog:skillMap,jobKey:cls,level:state.level,branchMasteries
  });
  for(const [setting,kind] of Object.entries(supportKeys)){
   const ability=skillMap[String(combatSkillCatalog.supportSkillIds[kind])];

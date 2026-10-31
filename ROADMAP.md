@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.180.0 (`2026.11.01.180`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.181.0 (`2026.11.01.181`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.181.0 — non-destructive gear eligibility in all derived stats
+
+- Saved equipment remains visibly slotted across class/race/level changes but only contributes to character attributes, HP/MP, combat modifiers, gemstones, Souls and set bonuses when the current level/job/slot and existing explicitly mapped Astir race/gender restriction permit it.
+- Mark currently unusable equipment in the character gear rails and in the detailed Hero Book, showing a short practical requirement instead of removing the user's future-planning choices. Returning to an eligible class/level restores its effects.
+- Hero Book active skill enablement now uses the same full actual trained branch mastery map as the underlying calculator, including Wind requirements. Only eligible shield/weapon checks permit corresponding active skills in both views.
+- Add real OS level-38 Cardinal Cap and level-40 sword regressions, an isolated Chromium level-change +50 HP test and basic Astir gender checks. Keep permanent planning levels 1–55, even while the live server cap is temporarily 45.
 
 ## Source update 0.180.0 — preserve both sides of browser/cloud conflicts
 

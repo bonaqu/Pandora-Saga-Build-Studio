@@ -223,6 +223,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));top.append(img)}
   top.append(make('b',{text:root.PandoraItemPresentation?.displayName(rec,'Предмет без названия')||'Предмет без названия'}));
   card.append(top);
+  if(row.issue?.length)card.append(make('p',{class:'stage-item-unavailable',
+   text:'Не действует: '+row.issue.join(' · ')}));
   if(page==='attack'){
    card.append(make('p',{text:'Базовая атака '+(rec.W??'—')+' · Дальность '+(rec.range??'—')+
     ' · Скорость '+(rec.atkspeed??'—')+' · +'+row.refinement}));
