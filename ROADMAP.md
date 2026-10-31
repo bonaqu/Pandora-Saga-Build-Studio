@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.136.0 (`2026.10.31.136`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.137.0 (`2026.10.31.137`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -605,3 +605,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Six real current OS soul records contribute signed, target-family-specific reductions to the Hero Book defense page; grade gates respected and duplicates not silently combined.
 - [x] Five corresponding Remaked keys now PARTIAL; inventory has **53 missing, 65 partial**, 15 base, 10 buff previews. Golem effects remain separate from unverified Remaked Inanimate equivalence.
 - [ ] Finish conditional passives/procs, server damage packet, full npm test, browser E2E and responsive UX audits.
+
+
+## Source update 0.137.0 — on-hit and on-damage equipment/Soul proc previews
+
+- [x] Render source-listed triggered skills for five known ONHIT/ONDAMAGE EP codes in the Hero Book, using exact skill IDs, eligible enhancement ranges and the published OS skill catalog.
+- [x] Do not convert procs into deterministic attack statistics. Suppress a conflicting numeric chance when a source description disagrees (Soul 101009: 4% text vs b=5).
+- [x] Regression tests cover real proc skills, item-on-damage effects, grade bounds, contradictory chance and missing skills. Remaked coverage remains 53 missing/65 partial/15 base/10 buff previews: no completed damage formula is claimed.
+- [ ] Browser E2E, full npm test, exact trigger probabilities and remaining Remaked skills/target damage need verification.

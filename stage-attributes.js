@@ -243,6 +243,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }body.append(card);
  }
  if(page==='effects'){
+  if(modifiers?.procPreview?.entries?.length){
+   const section=make('section',{class:'stage-attribute-row'});
+   section.append(make('strong',{text:'Срабатывания предметов и душ'}));
+   for(const proc of modifiers.procPreview.entries)
+    section.append(make('p',{text:proc.trigger+': '+proc.skillName+
+     (proc.chance===null?'':' · '+proc.chance+'%')+' · '+proc.source}));
+   body.prepend(section);
+  }
   renderSkillInspector(body,skillModel);
   if(modifiers?.unison?.active?.length){
    const labels={

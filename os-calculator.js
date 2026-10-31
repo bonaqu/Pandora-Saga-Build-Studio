@@ -813,6 +813,39 @@ function targetResistancePreview({records=[],itemForth=null}={}){
  return {entries,verified:false,source:'Pandora Saga OS EP_ONDAMAGE_FDS_RACE'};
 }
 
+// Conditional skill procs: report actual OS triggers without assuming a successful hit.
+const procTriggers=Object.freeze({
+ EP_ONHIT_SKILL_EXEC:'При ударе',
+ EP_ONHIT_SKILL_EXEC_ATTACKER:'При ударе',
+ EP_ONDAMAGE_SKILL_EXEC:'При получении урона',
+ EP_ONDAMAGE_SKILL_EXEC_ATTACKER:'При получении урона',
+ EP_ONDAMAGE_ELEM_SKILL_EXEC:'При получении стихийного урона'
+});
+function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
+ if(!Array.isArray(records))return null;
+ const entries=[];
+ for(const [source,record,grade] of records){
+  if(!record||!Number.isInteger(grade))continue;
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
+   const trigger=procTriggers[effect?.func];
+   if(!trigger||!Number.isInteger(effect.a)||!Number.isFinite(effect.b))continue;
+   if((Number.isFinite(effect.min)&&grade<effect.min)||
+      (Number.isFinite(effect.max)&&grade>effect.max))continue;
+   const skill=skills?.[String(effect.a)];
+   const recordDescription=String(record.desc||'');
+   // If item text says 4% but source b says 5, do not present a fabricated certainty.
+   const labelChance=recordDescription.match(/(\d+(?:[.,]\d+)?)\s*%\s*(?:шанс|вероятност)/i);
+   const namedChance=labelChance?Number(labelChance[1].replace(',','.')):null;
+   const sourceChance=effect.b>=0&&effect.b<=100?effect.b:null;
+   const mismatch=namedChance!==null&&sourceChance!==null&&namedChance!==sourceChance;
+   entries.push({trigger,skillId:effect.a,skillName:String(skill?.name||'Особый эффект'),
+    chance:mismatch?null:sourceChance,source:String(record.name||source),
+    disputedChance:mismatch,code:effect.func});
+  }
+ }
+ return {entries,verified:false};
+}
+
 // Classify item effects by what THIS calculator can genuinely support.
 // A code being present in OS does not mean it has been included in a stat.
 // Keep conditional procs and unmapped effects visible, not silently counted.
@@ -1059,6 +1092,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const gemstones=gemstonePreview(gemSelections);
  const otherEquipment=secondaryEffectsPreview({records:combinedRecords,itemForth});
  const targetResistance=targetResistancePreview({records:combinedRecords,itemForth});
+ const procPreview=conditionalProcPreview({records:combinedRecords,itemForth,skills:combatContext.skillCatalog});
  if(otherEquipment&&resistances){
   resistances.mitigation.physical+=otherEquipment.incomingPhysicalPercent;
   resistances.mitigation.magic+=otherEquipment.incomingMagicPercent;
@@ -1107,7 +1141,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,regeneration,legacyBuffs,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,regeneration,legacyBuffs,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
@@ -1116,6 +1150,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview
 });
 })(typeof window==='undefined'?globalThis:window);

@@ -612,3 +612,8 @@ Creating a public share requires proof of ownership of a saved D1 build. The Wor
 ## Target-family defense from souls · 0.136.0
 
 The Book now displays six actual OS soul effects against specific creature types. Each entry respects refinement gates and remains separate from universal physical armor and unverified combat damage. Five historical Remaked resistance keys have corresponding partial data; the golem category is not equated with the old inanimate type without evidence. The build planner continues to support 1–55.
+
+
+## Conditional item and Soul effects · 0.137.0
+
+Conditional on-hit/on-damage equipment and Soul skills appear separately in the Hero Book with names from the current OS skill catalog and source-reported chance values where consistent. One documented inconsistency, Soul 101009, suppresses its number rather than misrepresenting the probability. These are informational trigger descriptions, not guaranteed per-hit damage or permanent buffs.
