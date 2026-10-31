@@ -16,6 +16,6 @@ test('resistance and accuracy stats map to source effect codes',()=>{
 });
 test('stage renderer labels source bonuses rather than pretending to know final stats',()=>{
  const view=s('stage-attributes.js');
- assert.match(view,/Подтверждённые бонусы снаряжения и душ/);
- assert.match(view,/не итоговые сопротивления/);
+ assert.match(view,/Известные бонусы снаряжения и душ/);
+ assert.match(view,/частичный расчёт/);
 });

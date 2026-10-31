@@ -91,6 +91,10 @@ function previewBaseStats(){
   }
  }
  const initialBranches=gameTables?.jobInit?.[baseClass]?.branches||{};
+ const weaponSelection=state.equipment?.[0];
+ const weapon=weaponSelection&&catalog.equipment?.[String(weaponSelection.id)]||null;
+ const weaponGrade=weaponSelection?
+  window.PandoraEquipmentPlan.refinementValue(state.refinements,0,weaponSelection):0;
  const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(
   jobKeys[state.job],state,initialBranches);
  // Remaked Status.Skill[0][0] + [1]: innate branch green mastery
@@ -103,7 +107,8 @@ function previewBaseStats(){
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
-  potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery}
+  potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
+  combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus}
  });
 }
 function renderPotionPreview(calculated){

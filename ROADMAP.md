@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.89.0 (`2026.10.31.89`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.90.0 (`2026.10.31.90`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,13 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.90.0 — source-backed partial offense and stale test fixes
+
+- Connect source-mapped weapon baseline ATK from Remaked Legacy: floor(STR/2), weapon W, OS weaponPlus ratio/flat per refinement and Legacy STR breakpoints; known Honor (fire title) floor bonus. Show as a partial figure, not full current-server attack. Unknown active buffs, weapon-class Souls, sets and conditional skills remain excluded.
+- Add basic accuracy (level+DEX), AGI stepped dodge, critical chance (1+floor(DEX/10)), confirmed equipped flat EP codes and direct Honor modifiers. The Myrine current OS critical racial passive +5 differs from historic Remaked +2; **OS skill metadata wins**. Her +10% accuracy and +5% dodge are shown separately until rounding/stacking parity is verified.
+- In central stage Attack tab show actual partial totals with per-source disclosure. Extend source-backed tests and repair outdated stage assertions that still expected 2026-10-30 or removed interface placeholder text. Full npm test/Pages browser checks still need a Node/browser runtime.
+- Next: remaining warrior/archer passives, active buffs, complete DEF, cast/attack speed, conditional equipment effects, icon mirroring, D1 connectivity, manual RU terminology audit and visual QA.
 
 ## Source update 0.89.0 — innate + trained green mastery parity
 

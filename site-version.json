@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.89",
-  "notes": "Correct Remaked innate plus trained green mastery for Warrior potion recovery and Cleric Inspiration SPI"
+  "release": "2026.10.31.90",
+  "notes": "Partial Remaked OS weapon attack, hit/dodge/critical; corrected obsolete attribute and release tests"
 }

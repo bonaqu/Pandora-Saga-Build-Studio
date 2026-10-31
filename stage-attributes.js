@@ -1,6 +1,6 @@
 (function(root){
 'use strict';
-// Read-only provenance view: the source records are not a combat calculation.
+// Partial source-backed combat preview. Do not claim current OS parity for missing buffs or procs.
 function make(tag,attrs={},children=[]){
  const n=document.createElement(tag);
  for(const [key,value] of Object.entries(attrs)){
@@ -108,6 +108,27 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    }
    body.prepend(potion);
   }
+ }
+ if(page==='attack'&&modifiers?.combat){
+  const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Базовые боевые показатели (частичный расчёт)'}));
+  card.append(make('p',{text:'Физическая атака оружия: '+
+   cm.attack.known+' (без дополнительных боевых усилений)'}),
+   make('p',{text:'Точность: '+cm.accuracy.known+' (база '+
+    cm.accuracy.base+', бонусы '+(cm.accuracy.known-cm.accuracy.base)+')'}),
+   make('p',{text:'Уклонение: '+cm.dodge.known+' (база '+
+    cm.dodge.base+', бонусы '+(cm.dodge.known-cm.dodge.base)+')'}),
+   make('p',{text:'Критический шанс: '+cm.critical.known+
+    ' (без временных усилений)'}));
+  if(cm.racialRate.accuracy)card.append(make('p',{text:
+   'Подавление гнева: +'+cm.racialRate.accuracy+
+   '% к точности (не включено в частичный итог: порядок округления OS не проверен)'}));
+  if(cm.racialRate.dodge)card.append(make('p',{text:
+   'Интуиция: +'+cm.racialRate.dodge+
+   '% к уклонению (не включено в частичный итог: порядок округления OS не проверен)'}));
+  card.append(make('p',{class:'stage-attribute-note',
+   text:'Источник: Remaked Legacy + таблица усиления оружия OS. Без активных навыков, ряда пассивок, комплектов, некоторых душ и серверных условий.'}));
+  body.prepend(card);
  }
  if(page==='defense'&&modifiers?.resistances){
   const rs=modifiers.resistances,card=make('section',{class:'stage-attribute-row'});

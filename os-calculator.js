@@ -243,6 +243,68 @@ function regenerationPreview({stats={},guild={}}={}){
    total:mpBase+recovery[levels[1]]+common},
   verified:false,excluded:['equipment effects','active skill modifiers']};
 }
+// Legacy Remaked Calc('ATK','ACC','Dodge','Cri') direct base terms; current
+// OS equipment W/weaponPlus uses its own (different at +7..10) refinement table.
+// Excludes unported active buffs/weapon-specific Soul effects; not a final OS stat.
+function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle=0}={}){
+ if(!Number.isFinite(str)||str<0||!Number.isInteger(grade)||grade<0||grade>10||
+  !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
+ const physical=Math.floor(str/2);
+ if(!weapon)return {known:physical+1,unarmed:true,physical,
+  weaponDamage:0,refinement:0,strengthRate:0,honor:0,verified:false};
+ const damage=weapon.W;
+ if(!Number.isFinite(damage)||damage<0)return null;
+ let refinement=0;
+ if(grade){
+  const tier=weaponPlus?.[grade]||weaponPlus?.[String(grade)];
+  if(!tier||!Number.isFinite(tier.ratio)||!Number.isFinite(tier.flat))return null;
+  refinement=Math.floor(damage*tier.ratio/100)+tier.flat;
+ }
+ const table=[[130,.9],[120,.75],[110,.6],[100,.5],[90,.4],[80,.32],
+  [70,.24],[60,.18],[50,.12],[40,.08],[30,.04],[20,.02]];
+ const strengthRate=table.find(([threshold])=>str>=threshold)?.[1]??0;
+ const raw=physical+damage+refinement+(damage+refinement)*strengthRate;
+ const honor=honorTitle===3?Math.floor(raw*.02):0;
+ return {known:Math.ceil(raw+honor),raw,unarmed:false,physical,
+  weaponDamage:damage,refinement,strengthRate,honor,verified:false};
+}
+function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
+ weapon=null,weaponGrade=0,weaponPlus=null}={}){
+ if(!Number.isInteger(level)||level<1||
+  !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
+  !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
+ const title=honorTitles[honorTitle].effects,read=key=>{
+  const n=bonuses[key]??0;return Number.isFinite(n)?n:null;
+ };
+ const accEquip=read('accuracy'),evEquip=read('dodge'),critEquip=read('criticalChance');
+ if(accEquip===null||evEquip===null||critEquip===null)return null;
+ // Direct Remaked Legacy stepped AGI-to-Dodge table, not a linear coefficient.
+ const dodgeSteps=[[140,98],[130,85],[120,72],[110,61],[100,50],[90,41],
+  [80,32],[70,25],[60,18],[50,13],[40,8],[30,5],[20,2],[10,1]];
+ const dodgeStep=dodgeSteps.find(([threshold])=>stats.agi>=threshold)?.[1]??0;
+ const accuracyBase=level+stats.dex,dodgeBase=level+stats.agi+dodgeStep;
+ const critBase=1+Math.floor(stats.dex/10);
+ const accuracy=accuracyBase+accEquip+(title.accuracy||0);
+ const dodge=dodgeBase+evEquip+(title.dodge||0);
+ // Current OS EP_CRITICALRATE_CONST (Myrine +5) differs from old Remaked +2.
+ const critical=critBase+critEquip+(racialPassiveId===900040001?5:0);
+ // Current OS race skills are percentage effects; rounding/effect stage is
+ // unknown, so do not fold them into the Legacy flat accuracy/dodge subtotal.
+ const racialRate={accuracy:racialPassiveId===900040002?10:0,
+  dodge:racialPassiveId===900040003?5:0};
+ const attack=weaponAttackPreview({str:stats.str,weapon,grade:weaponGrade,
+  weaponPlus,honorTitle});
+ if(!attack)return null;
+ return {attack,accuracy:{base:accuracyBase,equipment:accEquip,
+   honor:title.accuracy||0,known:accuracy},
+  dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
+   honor:title.dodge||0,known:dodge},
+  critical:{base:critBase,equipment:critEquip,
+   racial:racialPassiveId===900040001?5:0,known:critical},
+  racialRate,verified:false,
+  excluded:['active combat skills','class offensive passives','other conditional Souls and sets',
+   'mounted penalties','current OS percent-bonus rounding']};
+}
 function attributeBuffBonus(options={}){
  const out=Object.fromEntries(keys.map(k=>[k,0])),trace=[];
  const selected=selectedHonor(options);
@@ -268,7 +330,7 @@ function attributeBuffBonus(options={}){
 }
 function base({classData,raceData,jobData,allocation,level,records=[],
  supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={},
- potionContext={}}={}){
+ potionContext={},combatContext={}}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
  const effects=gatherEffects(records),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
  if(!extra)return null;
@@ -289,18 +351,20 @@ function base({classData,raceData,jobData,allocation,level,records=[],
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
- if(!resistances||!regeneration)return null;
+ const combat=combatPreview({stats,level,bonuses:effects.bonuses,
+  honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,...combatContext});
+ if(!resistances||!regeneration||!combat)return null;
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,
+  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,combat,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview
 });
 })(typeof window==='undefined'?globalThis:window);
