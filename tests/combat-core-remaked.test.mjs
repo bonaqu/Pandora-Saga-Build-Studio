@@ -68,7 +68,7 @@ test('old combat-stage expectations are updated without loosening release versio
  const app=read('app.js'),stage=read('stage-attributes.js'),check=read('tests/stage-attributes.test.mjs');
  assert.match(app,/combatContext:\{weapon,weaponGrade,weaponPlus:gameTables\?\.weaponPlus\}/);
  assert.match(stage,/modifiers\?\.combat/);
- assert.match(stage,/частичный расчёт/);
+ assert.match(stage,/Подробнее о точности расчёта/);
  assert.match(check,/assert\.equal\(v,pkg\.pandoraRelease\)/);
 });
 test('armor preview sums only equipped item AC and gated EP_ARMORCLASS_CONST once',()=>{
