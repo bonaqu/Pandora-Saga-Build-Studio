@@ -2064,15 +2064,33 @@ function applyGameLocale(){
 }
 async function loadCatalog(){
  const names=['meta','classes','skills','items','souls','racialPassives'];
- const obtain=async base=>Object.fromEntries(await Promise.all(names.map(async name=>{
-  const r=await fetch(base+'/'+name+'.json',{cache:'no-cache',signal:AbortSignal.timeout(10000)});
-  if(!r.ok)throw Error(name+' HTTP '+r.status);
-  return [name,await r.json()];
- })));
+ const obtain=async base=>{
+  const fromD1=base===API+'/api/catalog',snapshots=new Set(),unknown=[];
+  const entries=await Promise.all(names.map(async name=>{
+   const response=await fetch(base+'/'+name+'.json',
+    {cache:'no-cache',signal:AbortSignal.timeout(10000)});
+   if(!response.ok)throw Error(name+' HTTP '+response.status);
+   if(fromD1){
+    const snapshot=response.headers.get('x-ps-catalog-snapshot');
+    if(snapshot)snapshots.add(snapshot);else unknown.push(name);
+   }
+   return [name,await response.json()];
+  }));
+  if(fromD1&&snapshots.size&&(snapshots.size!==1||unknown.length))
+   throw Error('Несогласованные версии каталога D1');
+  const data=Object.fromEntries(entries);
+  for(const name of names.filter(x=>x!=='meta')){
+   const expected=Number(data.meta?.counts?.[name]);
+   const actual=Object.keys(data[name]||{}).length;
+   if(!Number.isSafeInteger(expected)||expected<1||actual<expected)
+    throw Error('Неполный каталог '+name+': '+actual+' / '+expected);
+  }
+  return data;
+ };
  let live,sourceLabel;
  try{live=await obtain(API+'/api/catalog');sourceLabel='Cloudflare D1 · наша база'}
  catch(err){
-  console.info('D1 is not published; using repository copy',err.message);
+  console.info('D1 catalog unavailable or incomplete; using repository copy',err.message);
   try{live=await obtain('./data/os');sourceLabel='Встроенный архив (до переноса в D1)'}
   catch(error){
    console.error('Catalog unavailable',error);
