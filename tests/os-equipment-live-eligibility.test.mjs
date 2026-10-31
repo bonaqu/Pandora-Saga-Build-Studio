@@ -5,6 +5,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const host={};
 Function('window',read('rules.js'))(host);
 Function('window',read('ui-planner.js'))(host);
+Function('window',read('equipment-plan.js'))(host);
 const items=JSON.parse(read('data/os/items.json'));
 const eligible=(item,slot,job,level,race=1,gender=0)=>
  host.PandoraStudioRules.equipment(item,{slot,job,level}).allowed&&
@@ -40,4 +41,26 @@ test('hero book and calculator share every trained mastery and only eligible wea
  assert.match(app,/skillCatalog:skillMap,jobKey:cls,level:state\.level,branchMasteries/);
  assert.match(app,/const equippedShield=shieldCandidate&&!equipmentIssue\(shieldCandidate,1\)\.length/);
  assert.match(app,/const equippedWeapon=weaponCandidate&&!equipmentIssue\(weaponCandidate,0\)\.length/);
+});
+
+test('authentic OS two-handed swords suppress shield while retaining future build selection',()=>{
+ const sword=items[401],shield=items[17001],oneHand=items[1],future=items[422];
+ assert.equal(sword.twoHanded,true);
+ assert.equal(shield.slot,'shield');
+ assert.equal(eligible(sword,'weapon','WARRIOR',4),true);
+ assert.equal(eligible(shield,'shield','WARRIOR',4),true);
+ assert.equal(host.PandoraEquipmentPlan.occupiesOffhand(sword,true),true);
+ assert.equal(host.PandoraEquipmentPlan.occupiesOffhand(sword,false),false,
+  'An unusable future weapon must not deactivate a usable shield');
+ assert.equal(host.PandoraEquipmentPlan.occupiesOffhand(oneHand,true),false);
+ assert.equal(host.PandoraEquipmentPlan.occupiesOffhand(shield,true),false);
+ assert.equal(future.level,53);
+ assert.equal(eligible(future,'weapon','WARRIOR',45),false);
+ assert.equal(eligible(future,'weapon','WARRIOR',55),true,
+  'Planning still reaches items above the current live server cap 45');
+ const app=read('app.js');
+ assert.match(app,/if\(slot===1&&item\.slot==='shield'\)/);
+ assert.match(app,/PandoraEquipmentPlan\.occupiesOffhand\(weapon,Boolean\(usable\)\)/);
+ assert.match(app,/Двуручное оружие занимает обе руки/);
+ assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\)\)\.length\)continue/);
 });

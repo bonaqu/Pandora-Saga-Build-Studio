@@ -4,6 +4,7 @@ import {runShareLinkSmoke} from './browser-share-link.mjs';
 import {runLayoutAudit} from './browser-layout.mjs';
 import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
 import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs';
+import {runTwoHandedSmoke} from './browser-two-handed.mjs';
 
 const base='http://127.0.0.1:4173';
 const errors=[];
@@ -122,6 +123,7 @@ async function main(){
  await runShareLinkSmoke(browser,base);
  await runCloudConflictSmoke(browser,base);
  await runEquipmentEligibilitySmoke(browser,base);
+ await runTwoHandedSmoke(browser,base);
  await runLayoutAudit(browser,base);
 }
 main().catch(error=>{console.error(error);process.exitCode=1}).finally(async()=>{await browser?.close()});

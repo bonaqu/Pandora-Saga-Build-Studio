@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.181.0 (`2026.11.01.181`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.182.0 (`2026.11.01.182`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.182.0 — explicit two-handed weapon and shield conflict
+
+- Use only the official OS item field `twoHanded===true` to establish that a usable two-handed weapon occupies the shield/offhand slot. A saved shield stays visible and remains in the planner, but is **inactive** for stats, defense, souls, gemstones, set bonuses, and shield-gated combat skills until the character uses one hand or the two-handed weapon is itself ineligible.
+- The same source-backed equipment exclusion is applied in the derived stat engine, equipment rail and Hero Book; display a plain, useful player warning instead of an unexplained change in numbers.
+- Regressions cover OS weapon 401 + shield 17001 at level 40, unuseable underlevel 2H, one-handed weapon 1, and level-53 2H sword 422 for future level-55 planning. Separate Chromium scenario verifies the shield remains saved through level 40 → 3 → 55 and becomes active/inactive appropriately.
+- Improve repeatability of the existing Playwright CI browser installation by caching its pinned Chromium 1.55.1 binary; this does not change production client dependencies.
 
 ## Source update 0.181.0 — non-destructive gear eligibility in all derived stats
 

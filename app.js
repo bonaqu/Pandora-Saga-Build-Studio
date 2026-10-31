@@ -203,6 +203,16 @@ function equipmentIssue(item,slot){
   missing.push('Не подходит происхождению героя');
  if(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_'))
   missing.push('Это декоративный предмет');
+ if(slot===1&&item.slot==='shield'){
+  const source=state.equipment?.[0];
+  const weapon=source&&catalog.equipment?.[String(source.id)];
+  const usable=weapon&&window.PandoraStudioRules.equipment(weapon,{
+   slot:'weapon',job:jobKeys[state.job],level:state.level
+  }).allowed&&window.PandoraUIPlanner.raceCompatible(weapon,state.race,state.gender)&&
+   weapon.isCostumeOverlay!==true&&!String(weapon.kind||'').startsWith('DECO_');
+  if(window.PandoraEquipmentPlan.occupiesOffhand(weapon,Boolean(usable)))
+   missing.push('Двуручное оружие занимает обе руки');
+ }
  return missing;
 }
 function trainedBranchMasteries(innate={}){

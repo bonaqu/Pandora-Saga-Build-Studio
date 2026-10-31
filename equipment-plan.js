@@ -28,5 +28,10 @@ const SOUL_SLOTS=Object.freeze(new Set(['weapon','shield','head','body','gloves'
 function supportsSoulSlot(slot){return SOUL_SLOTS.has(slot)}
 function canSocket(slot,record){return supportsSoulSlot(slot)&&socketCapacity(record)>0}
 function canRefine(slot){return FORGE_SLOTS.has(slot)}
-root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket});
+// A two-handed weapon occupies the shield/offhand. Never erase a saved shield:
+// simply defer its effects while a usable two-handed weapon is equipped.
+function occupiesOffhand(weapon,weaponEligible=true){
+ return weaponEligible===true&&weapon?.slot==='weapon'&&weapon.twoHanded===true;
+}
+root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket,occupiesOffhand});
 })(typeof window==='undefined'?globalThis:window);
