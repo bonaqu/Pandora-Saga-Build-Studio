@@ -82,6 +82,7 @@ function branchCap(branch){
  return window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0;
 }
 function previewBaseStats(){
+ if(allocationIssue()?.invalid)return null;
  const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
  const baseClass=clazz?.baseClass||jobKeys[state.job];
  const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(state.stats[STATS[i]]||0)]));
@@ -268,6 +269,32 @@ function setAttributeBuff(key,value){
 }
 function budgetSummary(){
  return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
+}
+function allocationIssue(){
+ if(!gameTables?.abilityPoint||!gameTables?.raceInit||!catalog.classes)return null;
+ const clazz=catalog.classes?.[jobKeys[state.job]];
+ if(!clazz)return null;
+ const snap=window.PandoraAttributeProgression.snapshot({
+  tables:gameTables,race:window.PandoraGameNavigation.raceKeys[state.race],
+  klass:clazz.baseClass||jobKeys[state.job],level:state.level,
+  added:STATS.map(key=>Number(state.stats?.[key]||0)),caps:clazz.statCaps
+ });
+ const branches=budgetSummary();
+ const statsInvalid=Boolean(snap&&(snap.overBudget||
+  snap.values.some((val,i)=>val>snap.max[i])));
+ const skillsInvalid=Number.isFinite(branches?.remaining)&&branches.remaining<0;
+ return {invalid:statsInvalid||skillsInvalid,statsInvalid,skillsInvalid};
+}
+function renderAllocationWarning(){
+ const notice=$('allocationWarning');if(!notice)return;
+ const issue=allocationIssue();
+ if(!issue?.invalid){notice.hidden=true;return}
+ const parts=[];
+ if(issue.statsInvalid)parts.push('характеристик');
+ if(issue.skillsInvalid)parts.push('веток навыков');
+ notice.textContent='Для '+state.level+' уровня превышен бюджет очков '+
+  parts.join(' и ')+'. Перераспределите очки: итоговые характеристики обновятся автоматически.';
+ notice.hidden=false;
 }
 function allowedBranch(branch){
  const b=budgetSummary(),cap=branchCap(branch),current=window.PandoraSkillProgression.potential(state,branch);
@@ -1035,14 +1062,14 @@ function syncLevelLimit(){
  if(!Number.isInteger(previous)||previous<1||previous>cap){
   state.level=Number.isInteger(previous)?Math.max(1,Math.min(cap,previous)):cap;
   if(Number.isInteger(previous)&&previous>cap&&$('levelCapNotice')){
-   $('levelCapNotice').textContent='Билд '+previous+' уровня пересчитан для максимального уровня OS: '+
+   $('levelCapNotice').textContent='Уровень героя изменён с '+previous+' на максимальный уровень OS: '+
     cap+'. Сохранённый билд в библиотеке не изменён.';
    $('levelCapNotice').hidden=false;
   }
   persist();
  }
 }
-function render(){syncLevelLimit();state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
+function render(){syncLevelLimit();renderAllocationWarning();state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
 function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
@@ -1622,6 +1649,7 @@ function compareSnapshots(a,b){
  return rows;
 }
 function restoreLoadedBuildUI(){
+ if($('levelCapNotice'))$('levelCapNotice').hidden=true;
  state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);
  racePreviewIndex=selectedPortraitIndex(state.race,state.gender);
  selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
