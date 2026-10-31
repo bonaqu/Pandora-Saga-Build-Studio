@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.121.0 (`2026.10.31.121`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.122.0 (`2026.10.31.122`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -46,6 +46,17 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] Invalid distribution does not silently shed points from the user's draft or library. The hero can be reallocated, while the Book/Origin calculation refuses to label illegal results as valid; a short player-facing notice explains which pool needs attention.
 - [x] Added direct regression cases for legal level-45, excess stats, excess trained skills, malformed allocations and UI warning presence. Recorded source validation without any login or database mutation.
 - [ ] Continue full Remaked formula port and current OS gameplay checks using the [source inventory](docs/REMAKED_FORMULA_INVENTORY.md) and [live test protocol](docs/OS_LIVE_PARITY_CHECKS.md).
+
+## Permanent planning rule — v0.122.0
+
+**Build Studio supports planning for game levels 1–55**, including levels 50 and 55, even while the **current OS server temporarily caps play at 45**. The current server cap in `data/os/tables.json` is truthful metadata, **not** the studio's limit. NEVER clamp, discard, refuse calculations for, or hide builds, gear, points, skill previews, or saved/shareable characters for levels 46–55 merely because the current server cap is lower. This is a standing product requirement for future patches.
+
+- [x] Restore level-55 range, original level-50 default, no auto-migration/clamping or invalidation of future builds. Remove extra level-cap notices. Keep future armor: Крепкий шлем 51 / 11023, Доспех тьмы 48 / 12073, Штаны тени 48 / 13052 and 36 other source-listed items above 45.
+- [x] Restore Remaked attribute budgets at levels 50 (504) and 55 (544), preserve all saved green/blue mastery and item selections.
+- [x] Implement seven elemental aura source branches from executed Remaked `Calc('DAMAura'..'DAMDark')`: weapon gem aura, compatible flat aura effects from equipment, percent modifier and separate per-element ceiling. Link results to the hero book without inventing server damage packets.
+- [x] Implement six Remaked `MATKFire`..`MATKDark` elemental magic bonus fields with exactly one honor title's source-backed +5; show them in the attack book. Keep global staff magic separate from elemental bonuses.
+- [x] Add tests for future levels/items, actual OS Priest Earring +2 aura and level-55 combat, percentage rounding, honor exclusivity and player-view output.
+- [ ] Continue remaining Remaked effects and conditional combat math, preserving current OS overrides only for verified differences, not temporary server progression limits.
 
 ## Workstreams
 

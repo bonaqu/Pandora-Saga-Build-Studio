@@ -9,8 +9,8 @@
 ## Результат аудита
 
 - **BASE/PREVIEW:** 15 уникальных ключей
-- **PARTIAL:** 43 уникальных ключей
-- **NOT YET PORTED:** 75 уникальных ключей
+- **PARTIAL:** 56 уникальных ключей
+- **NOT YET PORTED:** 62 уникальных ключей
 - **BUFF PREVIEW:** 10 уникальных ключей
 
 ### Приоритет завершения
@@ -84,19 +84,19 @@
 | `DAMKD` | [ 30] 転倒中の相手に対するダメージ | 735 | NOT YET PORTED |
 | `DAMOBJ` | [ 31] オブジェクトへのダメージ | 742 | NOT YET PORTED |
 | `DAMMP` | [ 32] MPダメージ量 | 749 | NOT YET PORTED |
-| `DAMAura` | [ 33] オーラダメージ | 756 | NOT YET PORTED |
-| `DAMFire` | [ 34] 火炎オーラダメージ | 757 | NOT YET PORTED |
-| `DAMIce` | [ 35] 冷気オーラダメージ | 758 | NOT YET PORTED |
-| `DAMLightning` | [ 36] 電撃オーラダメージ | 759 | NOT YET PORTED |
-| `DAMPoison` | [ 37] 毒オーラダメージ | 760 | NOT YET PORTED |
-| `DAMLight` | [ 38] 光オーラダメージ | 761 | NOT YET PORTED |
-| `DAMDark` | [ 39] 闇オーラダメージ | 762 | NOT YET PORTED |
-| `MATKFire` | [ 43] 火炎属性魔法攻撃力＋ | 832, 915 | NOT YET PORTED |
-| `MATKIce` | [ 44] 冷気属性魔法攻撃力＋ | 836, 916 | NOT YET PORTED |
-| `MATKLightning` | [ 45] 電撃属性魔法攻撃力＋ | 840, 917 | NOT YET PORTED |
-| `MATKPoison` | [ 46] 毒属性魔法攻撃力＋ | 844, 918 | NOT YET PORTED |
-| `MATKLight` | [ 47] 光属性魔法攻撃力＋ | 847, 919 | NOT YET PORTED |
-| `MATKDark` | [ 48] 闇属性魔法攻撃力＋ | 850, 920 | NOT YET PORTED |
+| `DAMAura` | [ 33] オーラダメージ | 756 | PARTIAL |
+| `DAMFire` | [ 34] 火炎オーラダメージ | 757 | PARTIAL |
+| `DAMIce` | [ 35] 冷気オーラダメージ | 758 | PARTIAL |
+| `DAMLightning` | [ 36] 電撃オーラダメージ | 759 | PARTIAL |
+| `DAMPoison` | [ 37] 毒オーラダメージ | 760 | PARTIAL |
+| `DAMLight` | [ 38] 光オーラダメージ | 761 | PARTIAL |
+| `DAMDark` | [ 39] 闇オーラダメージ | 762 | PARTIAL |
+| `MATKFire` | [ 43] 火炎属性魔法攻撃力＋ | 832, 915 | PARTIAL |
+| `MATKIce` | [ 44] 冷気属性魔法攻撃力＋ | 836, 916 | PARTIAL |
+| `MATKLightning` | [ 45] 電撃属性魔法攻撃力＋ | 840, 917 | PARTIAL |
+| `MATKPoison` | [ 46] 毒属性魔法攻撃力＋ | 844, 918 | PARTIAL |
+| `MATKLight` | [ 47] 光属性魔法攻撃力＋ | 847, 919 | PARTIAL |
+| `MATKDark` | [ 48] 闇属性魔法攻撃力＋ | 850, 920 | PARTIAL |
 | `Gdebuff` | [ 80] 与debuff持続時間 | 853 | NOT YET PORTED |
 | `RatePurler` | [ 85] 落馬発生確率 | 860 | NOT YET PORTED |
 | `RateKB` | [ 86] ノックバック発生確率 | 867 | NOT YET PORTED |
