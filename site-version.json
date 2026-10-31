@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.113",
-  "notes": "OS-backed chest/soul sprites, NPC and map search, combat book, skill milestone previews, unsupported rune removed"
+  "release": "2026.10.31.114",
+  "notes": "Fix soul sprites globally in equipment sockets and item previews, with regression checks"
 }
