@@ -357,12 +357,23 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   card.append(make('p',{text:'Физические состояния: '+rs.states.physical}),
    make('p',{text:'Психические состояния: '+rs.states.mental}));
+  const statusNames={burn:'Ожоги',stun:'Оглушение',numb:'Заморозка',
+   tumble:'Падение',knockback:'Отбрасывание',sleep:'Сон',
+   silence:'Немота',evil:'Зло',curse:'Слабость/проклятие',
+   disease:'Болезнь',madness:'Помешательство',blockBreak:'Пробитие блока'};
+  const resist=Object.entries(rs.status||{}).filter(([,v])=>v!==0);
+  if(resist.length){
+   card.append(make('strong',{text:'Сопротивления состояниям от снаряжения'}));
+   for(const [key,value] of resist)
+    card.append(make('p',{text:(statusNames[key]||key)+': '+
+     (value>0?'+':'')+value}));
+  }
   if(rs.mitigation.physical)card.append(make('p',{text:'Получаемый физический урон: '+
    rs.mitigation.physical+'%'}));
   if(rs.mitigation.magic)card.append(make('p',{text:'Получаемый магический урон: '+
    rs.mitigation.magic+'%'}));
   card.append(make('p',{class:'stage-attribute-note',
-   text:'Включены подтверждённые базовые формулы, расовые способности, честь и структурированные эффекты вещей/душ; остальные боевые усиления пока не учтены.'}));
+   text:'Включены базовые формулы, расовые способности, честь и структурированные сопротивления от вещей/душ, включая требования заточки; другие навыки и серверные иммунитеты ещё не полностью учтены.'}));
   body.prepend(card);
  }
  if(page==='recovery'&&modifiers?.regeneration){

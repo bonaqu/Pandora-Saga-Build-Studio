@@ -14,7 +14,15 @@ const bonusByEffect=Object.freeze({
  EP_CHARM_RESISTANCE_CONST:'charm',EP_HOLY_RESISTANCE_CONST:'light',
  EP_DARK_RESISTANCE_CONST:'dark',EP_MAGIC_RESISTANCE_CONST:'magic',
  EP_TOHIT_CONST:'accuracy',EP_AVOIDANCE_CONST:'dodge',
- EP_CRITICALRATE_CONST:'criticalChance'
+ EP_CRITICALRATE_CONST:'criticalChance',
+ EP_IMMUNE_VIT_TYPE:'physicalStatus',EP_IMMUNE_SPI_TYPE:'mentalStatus',
+ EP_IMMUNE_BURN:'burn',EP_IMMUNE_STUN:'stun',
+ EP_IMMUNE_NUMB:'numb',EP_IMMUNE_TUMBLE:'tumble',
+ EP_IMMUNE_KNOCKBACK:'knockback',EP_IMMUNE_SLEEP:'sleep',
+ EP_IMMUNE_SILENCE:'silence',EP_IMMUNE_EVIL:'evil',
+ EP_IMMUNE_CURSE:'curse',EP_IMMUNE_DISEASE:'disease',
+ EP_IMMUNE_RAVING:'madness',EP_BLOCK_BREAK_RESIST:'blockBreak',
+ EP_CRITICAL_REGIST:'incomingCriticalReduction'
 });
 function halfToEven(value){
  if(!Number.isFinite(value))return null;
@@ -217,15 +225,25 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
   incomingMagic:racialPassiveId===900060001?-10:0 // Lapin: Антимагия
  };
  const elements={};
+ const statusKeys=['burn','stun','numb','tumble','knockback','sleep',
+  'silence','evil','curse','disease','madness','blockBreak'];
+ const status={};
+ for(const key of statusKeys){
+  const amount=Number(bonuses[key]??0);
+  if(!Number.isFinite(amount))return null;
+  status[key]=amount;
+ }
  for(const key of elementKeys){
   const equip=Number(bonuses[key]??0);
   if(!Number.isFinite(equip))return null;
   elements[key]=equip+(Number(title[key])||0)+(Number(racial[key])||0);
  }
- return {elements,
+ return {elements,status,
   states:{
-   physical:Math.floor(stats.vit/28)*7+(Number(title.physicalState)||0)+racial.physicalState,
-   mental:Math.floor(stats.spi/28)*7+(Number(title.mentalState)||0)
+   physical:Math.floor(stats.vit/28)*7+(Number(title.physicalState)||0)+
+    racial.physicalState+(Number(bonuses.physicalStatus)||0),
+   mental:Math.floor(stats.spi/28)*7+(Number(title.mentalState)||0)+
+    (Number(bonuses.mentalStatus)||0)
   },
   mitigation:{
    physical:(Number(title.incomingPhysical)||0)+racial.incomingPhysical,
@@ -520,7 +538,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   +(title.weaponPhysical||0);
  const backAttack=15,frontAttack=title.frontAttack||0;
  const cooldown=Number.isFinite(stats.int)?100-2*Math.floor(stats.int/10):null;
- const criticalDamage=100,criticalIncoming=title.incomingCriticalChance||0;
+ const criticalDamage=100,criticalIncoming=(title.incomingCriticalChance||0)-
+  (Number(bonuses.incomingCriticalReduction)||0);
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0);
  return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
   guildArouse,guildAtk,attackSpeed,castingSpeed,manaCost,
