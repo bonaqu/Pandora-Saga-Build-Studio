@@ -123,7 +123,7 @@ function previewBaseStats(){
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
   potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
-   jobKey:jobKeys[state.job],benevolenceMastery,...masteries}
+   jobKey:jobKeys[state.job],benevolenceMastery,skillCatalog:catalog.skills,...masteries}
  });
 }
 function renderPotionPreview(calculated){
@@ -513,18 +513,28 @@ function renderStageAttributes(){
  });
  const equippedShield=state.equipment?.[1]&&
   catalog.equipment?.[String(state.equipment[1].id)];
- const availability={};
- for(const [name,id] of Object.entries({combatLunge:100051001,combatWarCry:320001001,
-  combatRage:100052001,combatDefender:100053001})){
+ const keys={combatLunge:'lunge',combatWarCry:'warCry',
+  combatRage:'raging',combatDefender:'defender'};
+ const combatSkillCatalog=window.PandoraOSCalculator;
+ const selectedCombat=Object.fromEntries(Object.keys(keys).map(k=>[k,true]));
+ const availableSkills=combatSkillCatalog.activeCombatSkills({
+  selected:selectedCombat,jobKey:cls,level:state.level,
+  hasShield:equippedShield?.slot==='shield',skillCatalog:skillMap
+ });
+ const availability={},combatSkillCards={};
+ for(const [setting,name] of Object.entries(keys)){
+  const id=combatSkillCatalog.combatSkillIds[name];
   const ability=skillMap[String(id)];
-  availability[name]=Boolean(ability?.classes?.[cls]&&
-   state.level>=Number(ability.charLevel||0)&&
-   (name!=='combatDefender'||equippedShield?.slot==='shield'));
+  availability[setting]=availableSkills[name]===true;
+  combatSkillCards[setting]=ability?{
+   name:ability.name,desc:ability.desc,level:ability.charLevel,
+   icon:skillIcon(ability.branch,0,ability)
+  }:null;
  }
  window.PandoraStageAttributes.render(root,{
   page:stageAttributesPage,items,modifiers:previewBaseStats(),icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
-  availability,skillModel,honorTitles:window.PandoraOSCalculator.honorTitles,
+  availability,combatSkillCards,skillModel,honorTitles:window.PandoraOSCalculator.honorTitles,
   itemById:id=>catalogSource?.items?.[String(id)]||null,
   onItem:id=>openWiki('item',String(id)),
   onBuff:(key,value)=>setAttributeBuff(key,value),
