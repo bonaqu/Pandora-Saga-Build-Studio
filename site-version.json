@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.103",
-  "notes": "OS equipment status resistances, Soul gating and incoming critical resistance, in portrait defense"
+  "release": "2026.10.31.104",
+  "notes": "Per-build item Soul Forth effect coverage with explicit conditional proc warnings"
 }

@@ -583,6 +583,56 @@ function attributeBuffBonus(options={}){
 }
 
 
+
+// Classify item effects by what THIS calculator can genuinely support.
+// A code being present in OS does not mean it has been included in a stat.
+// Keep conditional procs and unmapped effects visible, not silently counted.
+const calculatedCodes=new Set([
+ ...Object.keys(keyByEffect),...Object.keys(percentByEffect),...Object.keys(bonusByEffect),
+ 'EP_MAXLIFE_CONST','EP_MAXMANA_CONST',
+ 'EP_ARMORCLASS_CONST','EP_ARMORCLASS_SCALE',
+ 'EP_MASTERY_POTION','EP_CAST_HEAL_LIFE_SCALE',
+ 'EP_DAMAGERATE_CONST','EP_SKILL_EQUIP_DAMAGERATE','EP_DAMAGERATE_SCALE',
+ 'EP_TOHIT_SCALE','EP_ATTACKINTERVAL_SCALE','EP_RACE_MANA_COSTCUT'
+]);
+const previewCodes=new Set([
+ 'EP_MOVESPEED_SCALE','EP_SKILL_DELAY','EP_SKILL_DELAY_FIN',
+ 'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE',
+ 'EP_CASTINGCANCEL_RESISTANCE_CONST','EP_HEAL_TIME_SCALE'
+]);
+function effectCoverage({records=[],itemForth=null}={}){
+ const counts={calculated:0,preview:0,conditional:0,missing:0,inactive:0};
+ const pending=[],sources=new Set();
+ for(const [source,record,grade] of records){
+  if(!record)continue;
+  const label=String(record.name||source||'Предмет');
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
+   if(!effect||typeof effect.func!=='string')continue;
+   sources.add(String(source));
+   if((Number.isFinite(effect.min)&&grade<effect.min)||
+    (Number.isFinite(effect.max)&&grade>effect.max)){
+    counts.inactive++;continue;
+   }
+   const ep=effect.func;
+   let type=calculatedCodes.has(ep)?'calculated':
+    previewCodes.has(ep)?'preview':
+    /^EP_(ONHIT|ONDAMAGE|SKILL_EXEC|RANDOM_BOX|PLAYER_ATTACK|DESTINED|DESTINE)/.test(ep)?
+    'conditional':'missing';
+   if(!Number.isFinite(effect.a)&&type==='calculated')type='missing';
+   counts[type]++;
+   if(type==='conditional'||type==='missing'){
+    const cause=type==='conditional'?'Условное боевое срабатывание':
+     'Пока нет подтверждённой формулы';
+    if(!pending.some(x=>x.item===label&&x.type===type))
+     pending.push({item:label,type,reason:cause});
+   }
+  }
+ }
+ return {counts,total:counts.calculated+counts.preview+counts.conditional+
+  counts.missing+counts.inactive,sources:sources.size,
+  pending:pending.slice(0,25),additionalPending:Math.max(0,pending.length-25),
+  verified:false,source:'Current Pandora Saga OS structured equipment/Soul/Forth effects'};
+}
 // Executed Remaked Legacy Calc('FirstAid'/'Heal'/'HealingAura'/
 // 'Sanctuary'/'Restoration') from js/calc.js Flag[5].
 // Spell unlocks are informative gates. Exact current OS server damage/heal
@@ -704,6 +754,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
  const gemstones=gemstonePreview(gemSelections);
+ const coverage=effectCoverage({records,itemForth});
  const recoveryAmount=recoveryAmountPreview({maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,stats});
  const healingSkill=healingSkillPreview({honorTitle:extra.honor.id,records,itemForth});
@@ -723,7 +774,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,
-  recoveryAmount,healingSkill,healingSpells,combat,gemstones,
+  recoveryAmount,healingSkill,healingSpells,combat,gemstones,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -731,6 +782,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,effectCoverage
 });
 })(typeof window==='undefined'?globalThis:window);

@@ -159,6 +159,29 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }body.append(card);
  }
  if(page==='effects'){
+  if(modifiers?.coverage?.total){
+   const coverage=modifiers.coverage,card=make('section',{class:'stage-attribute-row stage-coverage'});
+   const k=coverage.counts;
+   card.append(make('strong',{text:'Проверка учёта бонусов предметов'}),
+    make('p',{text:'Рассчитано: '+k.calculated+' · Отдельно показано: '+
+     k.preview+' · Условные проки: '+k.conditional+
+     ' · Ещё не поддержано: '+k.missing}),
+    make('p',{text:'Неактивны из-за заточки: '+k.inactive}));
+   const open=k.conditional+k.missing;
+   if(open){
+    const details=make('details',{class:'stage-coverage-list'},[
+     make('summary',{text:'Что осталось вне итоговых чисел ('+open+')'})
+    ]);
+    for(const item of coverage.pending.slice(0,12))
+     details.append(make('p',{text:'✦ '+item.item+' — '+item.reason}));
+    if(coverage.pending.length>12)
+     details.append(make('p',{text:'Другие записи: '+(coverage.pending.length-12)}));
+    card.append(details);
+   }
+   card.append(make('p',{class:'stage-attribute-note',text:
+    'Условные проки не имеют фиксированной прибавки к атаке или защите. Таблица показывает реальное покрытие структурированных эффектов текущего билда.'}));
+   body.prepend(card);
+  }
   if(modifiers?.gemstones&&(modifiers.gemstones.items.length||modifiers.gemstones.uncertain.length)){
    const gem=modifiers.gemstones,card=make('section',{class:'stage-attribute-row'});
    card.append(make('strong',{text:'Самоцветы · исторические расчёты Remaked'}));
@@ -406,6 +429,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия',
  accuracy:'Точность',dodge:'Уклонение',criticalChance:'Критический шанс'};
  const active=Object.entries(totals).filter(([key])=>names[key]&&
+  ['attack','defense','effects'].includes(chosen)&&
   (page==='defense'? !['accuracy','dodge','criticalChance'].includes(key):
    page==='attack'?['accuracy','dodge','criticalChance'].includes(key):true));
  if(active.length){

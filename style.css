@@ -1262,3 +1262,9 @@ main{padding-top:10px}
 .stage-heal-row span{font-weight:650;font-size:11px;color:#e7cda4}
 .stage-heal-row strong{font-size:13px;font-variant-numeric:tabular-nums;color:#ffdfa9}
 .stage-heal-row small{grid-column:1/-1;font-size:10px;color:#baa281;line-height:1.35}
+
+/* Explicit conditional item-coverage status, kept collapsed by default. */
+.stage-coverage-list{border-top:1px solid #7b593b;padding-top:7px}
+.stage-coverage-list summary{cursor:pointer;color:#efc68b;font-size:11px;line-height:1.45}
+.stage-coverage-list p{padding:5px 3px;border-bottom:1px solid #5c422a;
+ font-size:10px;line-height:1.35;color:#d2b99b}
