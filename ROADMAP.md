@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.142.0 (`2026.10.31.142`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.143.0 (`2026.10.31.143`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -653,3 +653,13 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Search text survives in-section re-renders (save, comparison, cloud update), and a clear empty-results message appears only for a nonempty unmatched query. Small libraries have no extra search field.
 - [x] Existing actions remain per-build; no global sharing controls were added.
 - [ ] Test actual keyboard focus and mobile layout in browsers and complete the remaining Remaked/OS combat parity backlog.
+
+
+## 0.143.0 — no silent loss of offline edits
+
+- [x] Reconcile the local browser cache and remote D1 by each saved build's revision. Newer offline changes remain visible and are uploaded again rather than overwritten with older cloud data.
+- [x] Do not upload queued stale local copies if a save/delete occurs during cloud retrieval.
+- [x] Local saves advance timestamps monotonically for each ID. D1 uses an atomic SQLite UPSERT condition to reject older versions and deleted sources even when requests complete out of order.
+- [x] Differentiate "cloud has a newer version" and "source already deleted" errors.
+- [x] Add regression tests for stale writes, source deletion races and offline cloud reconciliation.
+- [ ] Complete Node tests, real Cloudflare D1 conflict scenarios and browser offline/online acceptance are still required. Multi-device wall-clock skew remains a limitation of client timestamps.

@@ -234,13 +234,22 @@ async function libraryApi(request,env){
  const payload=JSON.stringify({id,name:item.name,at:item.at,data:item.data});
  if(payload.length>42000)return no('Build too large',413);
  const old=await env.DB.prepare('SELECT build_id,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
- if(old?.deleted_at!=null)return no('Удалённый билд нельзя восстановить под прежним идентификатором',409);
+ if(old?.deleted_at!=null)return json({error:'Удалённый билд нельзя восстановить под прежним идентификатором',reason:'deleted'},409);
  if(!old){
   const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM private_builds WHERE owner_hash=? AND deleted_at IS NULL').bind(owner).first();
   if((count?.total||0)>=200)return no('Library limit reached',413);
  }
- await env.DB.prepare('INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,?,?,NULL) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at,deleted_at=NULL').bind(owner,id,payload,now).run();
- return json({ok:true});
+ // Atomic revision/tombstone condition: a delayed request cannot replace a newer
+ // character or restore an original deleted after the preliminary SELECT.
+ const result=await env.DB.prepare("INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,?,?,NULL) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at WHERE private_builds.deleted_at IS NULL AND CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)<=excluded.updated_at")
+  .bind(owner,id,payload,item.at).run();
+ if(!result.meta?.changes){
+  const row=await env.DB.prepare('SELECT deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
+  return json(row?.deleted_at!=null?
+   {error:'Билд уже удалён',reason:'deleted'}:
+   {error:'В облаке сохранена более новая версия',reason:'stale'},409);
+ }
+ return json({ok:true,revision:item.at});
 }
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 // No runtime calls to the third-party game server. All game data is read from our own D1.

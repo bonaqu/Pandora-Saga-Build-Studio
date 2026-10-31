@@ -28,7 +28,12 @@ function db(){
    const run=async()=>{
     if(sql.startsWith('INSERT INTO private_builds')){
      if(sql.includes("VALUES(?,?,'{}'"))builds.set(v[0]+':'+v[1],{deleted_at:v[3]});
-     else builds.set(v[0]+':'+v[1],{deleted_at:null,payload:v[2]});
+     else {
+      const old=builds.get(v[0]+':'+v[1]);
+      if(old&&(old.deleted_at!==null||
+       Number(JSON.parse(old.payload).at)>v[3]))return{meta:{changes:0}};
+      builds.set(v[0]+':'+v[1],{deleted_at:null,payload:v[2]});
+     }
      return{meta:{changes:1}};
     }
     if(sql.startsWith('INSERT INTO shared_build_limits'))return{meta:{changes:1}};

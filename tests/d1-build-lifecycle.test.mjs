@@ -20,6 +20,9 @@ function database(){
   if(sql.startsWith('SELECT COUNT(*) AS total'))return{bind(owner){
    return{first:async()=>({total:[...rows.keys()].filter(k=>k.startsWith(owner+':')).length})};
   }};
+  if(sql.startsWith('SELECT deleted_at FROM private_builds'))return{bind(owner,id){
+   return{first:async()=>{const row=rows.get(owner+':'+id);return row?{deleted_at:row.deleted_at}:null}};
+  }};
   if(sql.startsWith('INSERT INTO private_builds')){
    const deleting=sql.includes("VALUES(?,?,'{}'");
    return{bind(...values){
@@ -29,6 +32,9 @@ function database(){
       rows.set(owner+':'+id,{build_id:id,payload:'{}',updated_at:time,deleted_at:deletedAt});
      }else{
       const [owner,id,payload,time]=values;
+      const previous=rows.get(owner+':'+id);
+      if(previous&&(previous.deleted_at!==null||
+        Number(JSON.parse(previous.payload).at)>time))return{meta:{changes:0}};
       rows.set(owner+':'+id,{build_id:id,payload,updated_at:time,deleted_at:null});
      }
      return{meta:{changes:1}};
@@ -84,4 +90,20 @@ test('deleted tombstones cannot push older active builds outside a 250-record wi
  const records=(await result.json()).records;
  assert.equal(records.length,276);
  assert.deepEqual(records.find(x=>x.id===liveId)?.entry,entry);
+});
+
+test('older and delayed saves cannot overwrite newer versions or resurrect deleted D1 rows',async()=>{
+ const DB=database(),id='d'.repeat(32),data={race:1,job:0,level:55};
+ const version=at=>({action:'put',entry:{id,name:'Timeline',at,data}});
+ assert.equal((await worker.fetch(request('POST',version(100)),{DB})).status,200);
+ assert.equal((await worker.fetch(request('POST',version(200)),{DB})).status,200);
+ const stale=await worker.fetch(request('POST',version(150)),{DB});
+ assert.equal(stale.status,409);assert.equal((await stale.json()).reason,'stale');
+ let listing=await worker.fetch(request('GET'),{DB});
+ assert.equal((await listing.json()).records.find(x=>x.id===id).entry.at,200);
+ assert.equal((await worker.fetch(request('POST',{action:'delete',id}),{DB})).status,200);
+ const late=await worker.fetch(request('POST',version(300)),{DB});
+ assert.equal(late.status,409);assert.equal((await late.json()).reason,'deleted');
+ listing=await worker.fetch(request('GET'),{DB});
+ assert.equal((await listing.json()).records.find(x=>x.id===id).deleted,true);
 });

@@ -642,3 +642,8 @@ The last opened saved build ID is persisted alongside the draft, so reopening th
 ## Library search · 0.142.0
 
 Libraries of six or more builds now include one compact search field for names, races, professions and levels. It filters visible cards immediately and does not alter saved data or create another sharing action. Smaller libraries stay uncluttered.
+
+
+## Offline edit protection · 0.143.0
+
+When an already saved build is updated offline, reloading the cloud library retains the newer local revision and retries the D1 upload. Cloudflare D1 rejects out-of-order older writes with an atomic conflict guard and does not allow late saves to restore deleted source builds. The workbench distinguishes stale-version conflicts from removed-original conflicts. Full browser and live D1 acceptance is a separate verification step.

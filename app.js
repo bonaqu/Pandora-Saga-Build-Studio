@@ -102,7 +102,7 @@ async function cloudLibraryRequest(payload){
  let data;try{data=await response.json()}catch{throw Error('Нет ответа облачного сервера')}
  if(!response.ok){
   const error=new Error(data?.error||'Облачный сервер недоступен');
-  error.httpStatus=response.status;throw error;
+  error.httpStatus=response.status;error.reason=data?.reason||null;throw error;
  }
  return data;
 }
@@ -116,8 +116,10 @@ async function putCloudBuild(entry){
   reportCloudStatus('Сохранено в облаке');return true;
  }catch(error){
   console.warn('Build cloud save failed',error);
-  reportCloudStatus(error.httpStatus===409?
-   'Сохранено в браузере · оригинал в облаке уже удалён. Создайте новую копию':
+  reportCloudStatus(error.reason==='stale'?
+   'В облаке более новая версия билда · обновите библиотеку или сохраните копию':
+   error.httpStatus===409?
+   'Сохранено в браузере · исходный билд в облаке уже удалён':
    'Сохранено в браузере · облако недоступно');
   return false;
  }
@@ -152,13 +154,30 @@ async function loadCloudBuilds(){
   // A click while GET was in flight must not bring back a deleted or old character.
   if(libraryChangeId!==generation)return;
   const pending=new Set(queuedDeletes()),ids=new Set(response.records.map(x=>x.id));
-  const localOnly=builds.filter(x=>!ids.has(x.id)&&!pending.has(x.id));
-  const remote=response.records.filter(x=>!x.deleted&&x.entry&&!pending.has(x.id)).map(x=>x.entry);
-  builds=[...remote,...localOnly].sort((a,b)=>(b.at||0)-(a.at||0));persistBuilds();
+  const localById=new Map(builds.map(entry=>[entry.id,entry]));
+  const outgoing=[],merged=[];
+  for(const record of response.records){
+   if(record.deleted||!record.entry||pending.has(record.id))continue;
+   const local=localById.get(record.id);
+   if(local&&Number(local.at)>Number(record.entry.at)){
+    merged.push(local);outgoing.push(local);
+   }else merged.push(record.entry);
+  }
+  for(const entry of builds){
+   if(!ids.has(entry.id)&&!pending.has(entry.id)){
+    merged.push(entry);outgoing.push(entry);
+   }
+  }
+  builds=merged.sort((a,b)=>(b.at||0)-(a.at||0));persistBuilds();
   if(activeBuildId&&!builds.some(b=>b.id===activeBuildId))selectActiveBuild(null);
   if(activeTab==='builds')renderDetails();
-  reportCloudStatus('Облачная библиотека подключена');
-  for(const entry of localOnly)await putCloudBuild(entry);
+  reportCloudStatus(outgoing.length?'Синхронизируем локальные изменения…':'Облачная библиотека подключена');
+  for(const entry of outgoing){
+   if(libraryChangeId!==generation)break;
+   const current=builds.find(x=>x.id===entry.id);
+   if(!current||current.at!==entry.at||queuedDeletes().includes(entry.id))continue;
+   await putCloudBuild(entry);
+  }
  }catch(error){console.warn('Cloud library unavailable',error);reportCloudStatus('Локальные билды доступны · облако пока недоступно')}
 }
 
@@ -1839,7 +1858,8 @@ function saveBuild(name=state.name||'Новый герой'){
  const existingIndex=builds.findIndex(b=>b.id===activeBuildId);
  const id=existingIndex>=0?builds[existingIndex].id:newId();
  state.name=cleanName;
- const entry={id,name:cleanName,data:structuredClone(state),at:Date.now()};
+ const entry={id,name:cleanName,data:structuredClone(state),
+  at:Math.max(Date.now(),(existingIndex>=0?Number(builds[existingIndex].at)||0:0)+1)};
  if(existingIndex>=0)builds.splice(existingIndex,1);
  builds.unshift(entry);
  try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}
