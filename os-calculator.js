@@ -73,12 +73,20 @@ function refinementEffects(record,grade){
  }
  return result;
 }
-function gatherEffects(records=[]){
+// Official current OS itemForth level snapshots override narrative parsing.
+function sourceEffects(source,record,grade,itemForth=null){
+ if(!record||typeof record!=='object')return [];
+ const primary=Array.isArray(record.effects)?record.effects:[];
+ if(!String(source).startsWith('item:'))return primary;
+ const snapshot=itemForth?.[String(record.id)]?.[String(grade)];
+ if(Array.isArray(snapshot))return [...primary,...snapshot];
+ return [...primary,...refinementEffects(record,Number(grade))];
+}
+function gatherEffects(records=[],itemForth=null){
  const flat=Object.fromEntries(keys.map(k=>[k,0]));
  const health={hp:0,mp:0},percent={hp:[],mp:[]},bonuses={},ignored=new Set(),trace=[];
  for(const [source,record,grade] of records){
-  const extra=String(source).startsWith('item:')?refinementEffects(record,Number(grade)):[];
-  for(const eff of [...(record?.effects||[]),...extra]){
+  for(const eff of sourceEffects(source,record,grade,itemForth)){
    if(Number.isFinite(eff.min)&&grade<eff.min)continue;
    if(Number.isFinite(eff.max)&&grade>eff.max)continue;
    const value=Number(eff.a),key=keyByEffect[eff.func];
@@ -170,13 +178,13 @@ function potionPreview({enabled=false,potionRate=null,maxHp=null}={}){
 // potential plus trained. 10 points bonus per 10 green for warrior lineage Lv12+.
 const warriorLineage=new Set(['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN']);
 function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
- racialPassiveId=null,jobKey=null,level=null,meleeMastery=null}={}){
+ racialPassiveId=null,jobKey=null,level=null,meleeMastery=null,itemForth=null}={}){
  if(!Number.isFinite(vit)||vit<0||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
  const base=100+Math.floor(vit*vit*2/1000),honor=honorTitle===11?5:0;
  let equipment=0;
- for(const [,record,grade] of records){
-  for(const effect of record?.effects||[]){
+ for(const [source,record,grade] of records){
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
    if(effect.func!=='EP_MASTERY_POTION')continue;
    if(Number.isFinite(effect.min)&&grade<effect.min)continue;
    if(Number.isFinite(effect.max)&&grade>effect.max)continue;
@@ -270,10 +278,11 @@ function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle
 }
 // Remaked Legacy Calc('DEF'): raw equipped armor class contributes first;
 // all armor enhancement and active-skill multipliers remain outside this preview.
-function defensePreview({records=[],honorTitle=0}={}){
+function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
  if(!Array.isArray(records)||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
- let armor=0,equipment=0;
+ let armor=0,equipment=0,refinement=0,armorPieces=0;
+ const enhanceable=new Set(['shield','head','body','gloves','legs','feet']);
  for(const [source,record,grade] of records){
   if(!record||typeof record!=='object')continue;
   // Only equipped items carry the armor-class field. Souls provide effects
@@ -281,8 +290,13 @@ function defensePreview({records=[],honorTitle=0}={}){
   if(String(source).startsWith('item:')&&record.AC!=null){
    if(!Number.isFinite(record.AC))return null;
    armor+=record.AC;
+   // Exact Legacy equip.js Sh/He/To/Gl/Ku/Bo equipment rules.
+   if(enhanceable.has(record.slot)&&record.name&&!record.name.includes('-')){
+    if(!Number.isInteger(grade)||grade<0||grade>10)return null;
+    refinement+=Math.floor(grade*1.5);armorPieces++;
+   }
   }
-  for(const e of record.effects||[]){
+  for(const e of sourceEffects(source,record,grade,itemForth)){
    if(e.func!=='EP_ARMORCLASS_CONST')continue;
    if(Number.isFinite(e.min)&&grade<e.min)continue;
    if(Number.isFinite(e.max)&&grade>e.max)continue;
@@ -291,14 +305,15 @@ function defensePreview({records=[],honorTitle=0}={}){
   }
  }
  const honor=honorTitle===11?5:0;
- return {armor,equipment,honor,known:armor+equipment+honor,
-  verified:false,excluded:['armor refinement scaling','Defender and Raging Soul active skills',
-   'conditional item/set multipliers','OS server damage mitigation']};
+ return {armor,equipment,refinement,armorPieces,honor,
+  known:armor+equipment+refinement+honor,
+  verified:false,excluded:['other armor conditional multipliers',
+   'Defender and Raging Soul active skills','OS server damage mitigation']};
 }
 // Source-backed equipment modifiers from current OS item/Soul structured EP codes.
  // Apply Remaked's ceil(base * rate / 100) separately to every source effect.
  // Deliberately ignore unstructured gear description text and conditional skills.
-function equippedCombatModifiers(records=[]){
+function equippedCombatModifiers(records=[],itemForth=null){
  const out={attackFlat:0,attackPercent:[],accuracyPercent:[],
   attackSpeedFlat:0,manaDiscount:0,traces:[]};
  if(!Array.isArray(records))return null;
@@ -308,8 +323,8 @@ function equippedCombatModifiers(records=[]){
   EP_ATTACKINTERVAL_SCALE:'attackSpeedFlat',
   EP_RACE_MANA_COSTCUT:'manaDiscount'};
  for(const [source,record,grade] of records){
-  if(!record||typeof record!=='object'||!Array.isArray(record.effects))continue;
-  for(const effect of record.effects){
+  if(!record||typeof record!=='object')continue;
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
    const target=lookup[effect.func];
    if(!target)continue;
    if(Number.isFinite(effect.min)&&grade<effect.min)continue;
@@ -324,8 +339,31 @@ function equippedCombatModifiers(records=[]){
  }
  return out;
 }
+// Legacy MATK step table: INT does not scale linearly.
+const magicSteps=[[115,50],[110,49],[105,41],[100,40],[95,35.25],
+ [90,34.25],[85,29.75],[80,28.75],[75,24.75],[70,23.75],
+ [65,20.25],[60,19.25],[55,16],[50,15],[45,12.25],[40,11.25],
+ [35,8.75],[30,7.75],[25,5.75],[20,4.75],[15,3],[10,2],[5,1]];
+const magicLineage=new Set(['WIZARD','WARLOCK','CONJURER']);
+const meleeLineage=new Set(['GLADIATOR','JUGGERNAUT','DRAGOON']);
+const archerLineage=new Set(['ARCHER','SNIPER','PREDATOR']);
+const evasionLineage=new Set(['AGENT','ASSASSIN','DISTURBANCE']);
+function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildArouse=0}={}){
+ if(!Number.isFinite(int)||int<0||
+  !Number.isInteger(magicMastery)||magicMastery<0||
+  !Number.isInteger(guildArouse)||guildArouse<0||guildArouse>3)return null;
+ const step=magicSteps.find(([n])=>int>=n)?.[1]??0;
+ const passive=magicLineage.has(jobKey)?10+Math.floor(magicMastery/10):0;
+ const staff=weapon?.kind==='WAND'?10:weapon?.kind==='STAFF'?
+  (weapon.name==='Железный посох'?0:15):0;
+ const guild=[0,2,4,6][guildArouse],exact=100+step+passive+staff+guild;
+ return {known:exact>=100?Math.floor(exact*10)/10:exact,
+  base:100,intelligence:step,passive,staff,guild,verified:false};
+}
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
- weapon=null,weaponGrade=0,weaponPlus=null,records=[]}={}){
+ weapon=null,weaponGrade=0,weaponPlus=null,records=[],itemForth=null,
+ jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
+ techniqueTrained=0,guildArouse=0}={}){
  if(!Number.isInteger(level)||level<1||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -340,6 +378,14 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const dodgeStep=dodgeSteps.find(([threshold])=>stats.agi>=threshold)?.[1]??0;
  const accuracyBase=level+stats.dex,dodgeBase=level+stats.agi+dodgeStep;
  const critBase=1+Math.floor(stats.dex/10);
+ if(![techniqueInnate,techniqueTrained,meleeMastery,magicMastery]
+  .every(v=>Number.isInteger(v)&&v>=0))return null;
+ // Executed Legacy ACC/Dodge: floor(innate + trained/10), not
+ // floor((innate + trained)/10). Do not silently fix original precedence.
+ const hunterEye=archerLineage.has(jobKey)?
+  10+Math.floor(techniqueInnate+techniqueTrained/10):0;
+ const quickStep=evasionLineage.has(jobKey)?
+  10+Math.floor(techniqueInnate+techniqueTrained/10):0;
  const accuracy=accuracyBase+accEquip+(title.accuracy||0);
  const dodge=dodgeBase+evEquip+(title.dodge||0);
  // Current OS EP_CRITICALRATE_CONST (Myrine +5) differs from old Remaked +2.
@@ -350,8 +396,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   dodge:racialPassiveId===900040003?5:0};
  const attack=weaponAttackPreview({str:stats.str,weapon,grade:weaponGrade,
   weaponPlus,honorTitle});
- const defense=defensePreview({records,honorTitle});
- const equipped=equippedCombatModifiers(records);
+ const defense=defensePreview({records,honorTitle,itemForth});
+ const equipped=equippedCombatModifiers(records,itemForth);
  if(!defense||!equipped)return null;
  const atkPct=attack?equipped.attackPercent.map(e=>({
   ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
@@ -381,12 +427,22 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   remaining:100-intReduction-elfReduction-equipped.manaDiscount,
   verified:false,excluded:['gear enhancement-dependent zero-valued effects',
    'conditional active skill discounts']};
- return {attack:effectiveAttack,defense,attackSpeed,castingSpeed,manaCost,
-  accuracy:{base:accuracyBase,equipment:accEquip,
+ const magicAttack=magicAttackPreview({int:stats.int,jobKey,magicMastery,
+  weapon,guildArouse});
+ const weaponPhysical=(meleeLineage.has(jobKey)?1+Math.floor(meleeMastery/10):0)
+  +(title.weaponPhysical||0);
+ const backAttack=15,frontAttack=title.frontAttack||0;
+ const cooldown=Number.isFinite(stats.int)?100-2*Math.floor(stats.int/10):null;
+ const criticalDamage=100,criticalIncoming=title.incomingCriticalChance||0;
+ const criticalIncomingDamage=100+(title.incomingCriticalDamage||0);
+ return {attack:effectiveAttack,magicAttack,defense,attackSpeed,castingSpeed,manaCost,
+  weaponPhysical,backAttack,frontAttack,cooldown,
+  criticalDamage,criticalIncoming,criticalIncomingDamage,
+  accuracy:{base:accuracyBase,equipment:accEquip,passive:hunterEye,
    percentage:accuracyPercent,honor:title.accuracy||0,
-   known:accuracy+accuracyBonus},
+   known:accuracy+accuracyBonus+hunterEye},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
-   honor:title.dodge||0,known:dodge},
+   passive:quickStep,honor:title.dodge||0,known:dodge+quickStep},
   critical:{base:critBase,equipment:critEquip,
    racial:racialPassiveId===900040001?5:0,known:critical},
   racialRate,verified:false,
@@ -416,11 +472,11 @@ function attributeBuffBonus(options={}){
  }
  return {flat:out,trace,honor:selected};
 }
-function base({classData,raceData,jobData,allocation,level,records=[],
+function base({classData,raceData,jobData,allocation,level,records=[],itemForth=null,
  supplementalFlat={},supplementalSource=null,enhancements={},attributeBuffs={},
  potionContext={},combatContext={}}={}){
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1)return null;
- const effects=gatherEffects(records),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
+ const effects=gatherEffects(records,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
  if(!extra)return null;
  for(const key of keys){
   const race=Number(raceData[key]),job=Number(jobData[key]),spent=Number(allocation?.[key]||0);
@@ -435,11 +491,11 @@ function base({classData,raceData,jobData,allocation,level,records=[],
  const mpBonus=bonusFor('mp',mpBase,effects,enhancements);
  if(!hpBonus||!mpBonus)return null;
  const potion=potionRecovery({vit:stats.vit,records,honorTitle:extra.honor.id,
-  runeJoEun:attributeBuffs?.runeJoEun===true,level,...potionContext});
+  runeJoEun:attributeBuffs?.runeJoEun===true,level,itemForth,...potionContext});
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
- const combat=combatPreview({stats,level,bonuses:effects.bonuses,records,
+ const combat=combatPreview({stats,level,bonuses:effects.bonuses,records,itemForth,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,...combatContext});
  // An unavailable weapon/armor preview must NEVER erase otherwise valid HP/MP.
  if(!resistances||!regeneration)return null;
@@ -454,6 +510,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects
 });
 })(typeof window==='undefined'?globalThis:window);

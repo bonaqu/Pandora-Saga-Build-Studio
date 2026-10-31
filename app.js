@@ -58,7 +58,7 @@ inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
 pathScrollRestored=false,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',
 stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,120):'',
-stageGemQuery='',gameTables=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
+stageGemQuery='',gameTables=null,gameItemForth=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
@@ -99,16 +99,17 @@ function previewBaseStats(){
   jobKeys[state.job],state,initialBranches);
  // Remaked Status.Skill[0][0] + [1]: innate branch green mastery
  // PLUS additionally trained green; exclude blue Potential from this sum.
- const meleeMastery=window.PandoraSkillProgression.groupAdeptness(
-  state,['slash','thrust','brush','blow','defense'],initialBranches);
+ const masteries=window.PandoraSkillProgression.combatMasteries(state,initialBranches);
+ const meleeMastery=masteries.melee;
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
-  allocation,level:state.level,records,
+  allocation,level:state.level,records,itemForth:gameItemForth,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
   potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
-  combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus}
+  combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
+   jobKey:jobKeys[state.job],...masteries}
  });
 }
 function renderPotionPreview(calculated){
@@ -2032,6 +2033,9 @@ fetch('./data/os/classes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
  }).catch(error=>console.warn('Local class limits unavailable',error));
 fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
 .then(t=>{if(t?.abilityPoint&&t?.weaponPlus&&t?.forge){gameTables=t;render()}}).catch(()=>{});
+fetch('./data/os/itemForth.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
+.then(t=>{if(t&&typeof t==='object'){gameItemForth=t;renderOriginVitals();
+ if(stageAttributesPage)renderStageAttributes();}}).catch(()=>{});
 restoreWikiHash();
 restoreSharedHash();
 if(bootView.open&&bootView.tab!=='wiki'&&!String(location.hash).startsWith('#wiki/')){

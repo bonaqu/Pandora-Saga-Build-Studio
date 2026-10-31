@@ -4,6 +4,9 @@
 // Adeptness = mastery trained by using skills, limited by Potential.
 // Sources: Remaked js/ini.js and modern/skill-controls.js, historical Pandora Saga wiki.
 const PRAYER=['benevolence','blessing','exorcism','hymn'];
+const MAGIC=['element','embody','darkness','charm'];
+const TECHNIQUE=['archery','alchemy','assassin','trap','warding'];
+const MELEE=['slash','thrust','brush','blow','defense'];
 const INSPIRED=new Set(['PRIEST','CLERIC','ENCHANTER']);
 function value(raw){const n=Number(raw);return Number.isInteger(n)&&n>0?n:0}
 function potential(state,key){return value(state?.points?.[key])}
@@ -39,6 +42,12 @@ function groupAdeptness(state,branchKeys,innate={}){
  return branchKeys.reduce((sum,key)=>sum+value(innate?.[key])+trained(state,key),0);
 }
 function prayerAdeptness(state,innate={}){return groupAdeptness(state,PRAYER,innate)}
+function combatMasteries(state,innate={}){
+ return {melee:groupAdeptness(state,MELEE,innate),
+  magic:groupAdeptness(state,MAGIC,innate),
+  techniqueInnate:TECHNIQUE.reduce((n,key)=>n+value(innate?.[key]),0),
+  techniqueTrained:TECHNIQUE.reduce((n,key)=>n+trained(state,key),0)};
+}
 // Remaked Calc('SPR'): 1 + floor((innate prayer + trained prayer) / 10),
 // active only for Priest/Cleric/Enchanter. Current OS parity remains unverified.
 function legacyPrayerSpirit(job,state,innate={}){
@@ -65,6 +74,6 @@ function canAllocate(table,level,points,key,cap,amount){
 }
 root.PandoraSkillProgression=Object.freeze({
  potential,trained,setPotential,setTrained,setAuto,spending,canAllocate,
- groupAdeptness,prayerAdeptness,legacyPrayerSpirit,PRAYER
+ groupAdeptness,prayerAdeptness,legacyPrayerSpirit,combatMasteries,PRAYER,MAGIC,TECHNIQUE,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);
