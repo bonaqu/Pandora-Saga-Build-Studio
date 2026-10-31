@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.176.0 (`2026.11.01.176`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.177.0 (`2026.11.01.177`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.177.0 — current OS status-cleansing consumables
+
+- Add a compact, collapsed-on-load group of nine actual OS consumables in Hero Book → Recovery; each opens its own encyclopedia record.
+- Resolve seven distinct EP_RECOVERY_* status-clearing effects directly from item records, without interpreting them as healing amounts, passive resistance, or permanent buffs. The item descriptions and IDs remain authoritative.
+- Test Panacea, Calming Potion, Antidote, Astir Candy and Universal Potion, duplicates, incomplete catalogs and missing effects. No modification to existing build saves or gear-derived stats.
 
 ## Source update 0.176.0 — source-backed attack range equipment bonuses
 

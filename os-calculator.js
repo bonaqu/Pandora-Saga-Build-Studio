@@ -1009,6 +1009,34 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
     scaledBySkill:false}
   ],notes:'Восстановление — периодическая величина; множитель лечения навыками не применяется.'};
 }
+// Real OS used-on-demand cleansing items. Their effects remove named
+// conditions; no numeric healing, duration or server-side cooldown is inferred.
+const statusCureCodes=Object.freeze({
+ EP_RECOVERY_BURN:'Ожоги',
+ EP_RECOVERY_CURSE:'Слабость и проклятие',
+ EP_RECOVERY_RAVING:'Безумие',
+ EP_RECOVERY_DISEASE:'Болезнь',
+ EP_RECOVERY_NUMB:'Заморозка',
+ EP_RECOVERY_POISON:'Яд',
+ EP_RECOVERY_SILENCE:'Немота'
+});
+const displayedCureIds=Object.freeze([
+ 50013,50015,50023,50057,50058,50059,50065,80133,90038
+]);
+function statusCurePreview({items=null}={}){
+ if(!items||typeof items!=='object'||Array.isArray(items))return null;
+ const rows=[];
+ for(const id of displayedCureIds){
+  const item=items[String(id)];
+  if(!item||!Array.isArray(item.effects))continue;
+  const conditions=[...new Set(item.effects.filter(e=>
+   e&&e.dir==='TARGET'&&Object.hasOwn(statusCureCodes,e.func))
+   .map(e=>statusCureCodes[e.func]))];
+  if(conditions.length)rows.push({id,name:String(item.name||id),conditions});
+ }
+ return {rows,verified:false};
+}
+
 // Two-second healing spell previews from Remaked Legacy LPsec/MPsec.
 // The source values are never added to natural regeneration or current HP/MP.
 // Availability is gated by current OS skill IDs and actual trained mastery.
@@ -1282,6 +1310,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   benevolence:combatContext.benevolenceMastery??0,
   jobKey:combatContext.jobKey,healingPercent:healingSkill.percent
  }):null;
+ const statusCures=statusCurePreview({items:consumableItems});
  const consumableRecovery=consumableRecoveryPreview({
   items:consumableItems,maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,potionRate:potion?.percent??null,
@@ -1302,7 +1331,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,regeneration,legacyBuffs,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -1310,6 +1339,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

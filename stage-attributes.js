@@ -721,6 +721,26 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     text:'Эффект при использовании. Бонус эффективности зелий к ОМ не применён.'}));
    body.append(mana);
   }
+  const cures=modifiers?.statusCures?.rows||[];
+  if(cures.length){
+   const panel=make('details',{class:'stage-attribute-row stage-status-cures'});
+   panel.append(make('summary',{text:'Снятие состояний · '+cures.length+' предметов'}));
+   for(const entry of cures){
+    const item=itemById(entry.id);
+    const row=make(item?'button':'div',{class:'stage-potion-item',
+     ...(item?{type:'button','aria-label':'Открыть в энциклопедии: '+entry.name,
+      onclick:()=>onItem(entry.id)}:{})});
+    if(item){
+     const source=icon(item);
+     if(source){const picture=make('img',{src:source,alt:'',loading:'lazy'});
+      picture.onerror=()=>picture.remove();row.append(picture);}
+    }
+    row.append(make('span',{class:'stage-potion-name',text:entry.name}),
+     make('strong',{text:entry.conditions.join(', ')}));
+    panel.append(row);
+   }
+   body.append(panel);
+  }
   renderSkillInspector(body,skillModel);
  }
  if(chosen==='recovery'&&modifiers?.healingSkill){
