@@ -51,6 +51,13 @@ const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Наг
 function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
+const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
+let activeBuildId=/^[a-f0-9]{32}$/.test(sessionStorage.getItem(ACTIVE_BUILD_KEY)||'')?
+ sessionStorage.getItem(ACTIVE_BUILD_KEY):null;
+function selectActiveBuild(id){
+ activeBuildId=id;
+ try{if(id)sessionStorage.setItem(ACTIVE_BUILD_KEY,id);else sessionStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
+}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
 inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
  typeof bootView.expandedBranch==='string'&&window.PandoraGameNavigation.all.has(bootView.expandedBranch)?
@@ -85,7 +92,10 @@ async function cloudLibraryRequest(payload){
   headers:{'Content-Type':'application/json',Authorization:'Bearer '+cloudToken()},
   ...(payload?{body:JSON.stringify(payload)}:{})});
  let data;try{data=await response.json()}catch{throw Error('Нет ответа облачного сервера')}
- if(!response.ok)throw Error(data?.error||'Облачный сервер недоступен');
+ if(!response.ok){
+  const error=new Error(data?.error||'Облачный сервер недоступен');
+  error.httpStatus=response.status;throw error;
+ }
  return data;
 }
 function reportCloudStatus(message){
@@ -98,7 +108,9 @@ async function putCloudBuild(entry){
   reportCloudStatus('Сохранено в облаке');return true;
  }catch(error){
   console.warn('Build cloud save failed',error);
-  reportCloudStatus('Сохранено в браузере · нет связи с облаком');
+  reportCloudStatus(error.httpStatus===409?
+   'Сохранено в браузере · оригинал в облаке уже удалён. Создайте новую копию':
+   'Сохранено в браузере · облако недоступно');
   return false;
  }
 }
@@ -128,6 +140,7 @@ async function loadCloudBuilds(){
   const localOnly=builds.filter(x=>!ids.has(x.id)&&!pending.has(x.id));
   const remote=response.records.filter(x=>!x.deleted&&x.entry&&!pending.has(x.id)).map(x=>x.entry);
   builds=[...remote,...localOnly].sort((a,b)=>(b.at||0)-(a.at||0));persistBuilds();
+  if(activeBuildId&&!builds.some(b=>b.id===activeBuildId))selectActiveBuild(null);
   if(activeTab==='builds')renderDetails();
   reportCloudStatus('Облачная библиотека подключена');
   for(const entry of localOnly)await putCloudBuild(entry);
@@ -1687,7 +1700,7 @@ function unsavedBuild(){
  return s!==JSON.stringify(fresh())&&!builds.some(b=>JSON.stringify(b.data)===s);
 }
 function newBlankBuild(){
- state=fresh();originActive='race';jobPathKey=null;classTreeTouched=false;
+ selectActiveBuild(null);state=fresh();originActive='race';jobPathKey=null;classTreeTouched=false;
  expandedClassKeys=new Set();restoreLoadedBuildUI();persist();render();renderOriginTabs();
  changeTab('character');saveView();
 }
@@ -1704,12 +1717,22 @@ function renderBuilds(root){
    h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{choice.hidden=true}})
   ]));
  toolbar.append(name,
-  h('button',{type:'button',class:'button-action primary',text:'✧ Сохранить билд',onclick:()=>saveBuild(name.value)}),
+  h('button',{type:'button',class:'button-action primary',
+   text:activeBuildId&&builds.some(b=>b.id===activeBuildId)?'✓ Сохранить изменения':'✧ Сохранить билд',
+   onclick:()=>saveBuild(name.value)}),
+  ...(activeBuildId&&builds.some(b=>b.id===activeBuildId)?[
+   h('button',{type:'button',class:'button-action',text:'Сохранить копию',onclick:()=>{
+    const previous=activeBuildId;selectActiveBuild(null);
+    if(!saveBuild(name.value))selectActiveBuild(previous);
+   }})
+  ]:[]),
   h('button',{type:'button',id:'newBuildButton',class:'button-action',text:'＋ Новый билд',onclick:()=>{
    if(!unsavedBuild()){newBlankBuild();return}
    choice.hidden=!choice.hidden;
    if(!choice.hidden){draft.value=name.value||state.name||'Новый герой';draft.focus()}
-  }}));
+  }}),
+  h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
+   onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}));
  const grid=h('div',{class:'build-grid'});
  for(const b of builds){
@@ -1720,6 +1743,7 @@ function renderBuilds(root){
   deleteChoice.append(h('p',{text:'Удалить билд и отозвать все созданные ссылки?'}),
    h('button',{class:'button-action danger',type:'button',text:'Удалить билд',onclick:()=>{
     builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);
+    if(activeBuildId===b.id)selectActiveBuild(null);
     persistBuilds();void deleteCloudBuild(b.id);renderDetails();
    }}),
    h('button',{class:'button-action',type:'button',text:'Отмена',onclick:()=>{deleteChoice.hidden=true}}));
@@ -1729,6 +1753,7 @@ function renderBuilds(root){
    text:(races[b.data?.race]?.[0]||'?')+' · '+(jobs[b.data?.job]||'?')+' · ур. '+(b.data?.level||'?')}),
    h('label',{},[check,' Сравнить']),
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
+    selectActiveBuild(b.id);
     // Locally saved builds are trusted snapshots: do not discard newer or legacy
     // fields through the stricter validation used for incoming public links.
     const draft=structuredClone(b.data),base=fresh();
@@ -1758,10 +1783,21 @@ function renderBuilds(root){
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
 function saveBuild(name=state.name||'Новый герой'){
  if(typeof name!=='string'||!name.trim())return false;
- const entry={id:newId(),name:name.trim().slice(0,70),data:structuredClone(state),at:Date.now()};
- builds.unshift(entry);libraryChangeId++;
+ const cleanName=name.trim().slice(0,70),previousName=state.name;
+ const previousBuilds=builds.slice(),previousActive=activeBuildId;
+ const existingIndex=builds.findIndex(b=>b.id===activeBuildId);
+ const id=existingIndex>=0?builds[existingIndex].id:newId();
+ state.name=cleanName;
+ const entry={id,name:cleanName,data:structuredClone(state),at:Date.now()};
+ if(existingIndex>=0)builds.splice(existingIndex,1);
+ builds.unshift(entry);
  try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}
- catch(error){builds.shift();alert('Не удалось сохранить билд: '+error.message);return false}
+ catch(error){
+  builds=previousBuilds;state.name=previousName;selectActiveBuild(previousActive);
+  showStudioToast('Не удалось сохранить билд. Проверь свободное место в браузере.','error');
+  return false;
+ }
+ libraryChangeId++;selectActiveBuild(id);persist();
  void putCloudBuild(entry);
  if(activeTab==='builds')renderDetails();
  return true;
@@ -1880,7 +1916,7 @@ async function createShared(build,host){
     catch{field.focus();field.select();copy.textContent='Выдели ссылку и скопируй Ctrl+C'}
    }});
   message.append(h('p',{text:'Ссылка на билд создана.'}),
-   field,copy,h('p',{class:'muted',text:'Ссылка перестанет работать, если удалить этот сохранённый билд.'}));
+   field,copy,h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));
   if(host.isConnected)host.replaceChildren(message);
  }catch(error){
   if(host.isConnected)host.replaceChildren(h('p',{class:'build-share-error',
@@ -1909,7 +1945,7 @@ function openSharedSnapshot(share){
  view.append(h('p',{text:'Открыть чужой билд «'+incoming.name+'»? Несохранённые изменения текущего персонажа будут заменены.'}),
   h('p',{class:'muted',text:'Сохранённые в «Мои билды» записи при этом не удаляются.'}));
  const apply=()=>{
-  state=incoming;restoreLoadedBuildUI();persist();
+  selectActiveBuild(null);state=incoming;restoreLoadedBuildUI();persist();
   $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
   clear();render();changeTab('character');
  };

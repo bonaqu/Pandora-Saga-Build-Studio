@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.129.0 (`2026.10.31.129`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.130.0 (`2026.10.31.130`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -549,3 +549,12 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] The server refuses shares without a saved owned build, refuses anonymous share creation, and prevents deleted IDs from being restored by a stale pending PUT. Ownership mapping and snapshot insertion use an atomic D1 batch.
 - [x] Opening a dead/old/invalid link shows a compact bottom-right toast (8.5 seconds or OK). Deletion confirmation is inline; an offline deletion honestly warns that links remain active until cloud synchronization.
 - [ ] Full `npm test`, live server deployment and real browser end-to-end checking required. Keep all Remaked incomplete formulas, future level 55, visual improvements, icon and catalog backlog open.
+
+
+## Source update 0.130.0 — saving the active build vs creating a copy
+
+- [x] Opening a library build marks its source ID in the current tab, surviving refresh. Saving changes updates the same library record and D1 row instead of producing accidental duplicate builds.
+- [x] «Сохранить копию» explicitly creates a separate build with a new ID. A new clean character or imported public snapshot drops the active-original association.
+- [x] Changed names propagate into the saved character snapshot and ongoing draft. Browser quota failures roll back the save and display a user-facing toast.
+- [x] Add a visible cloud retry action; a 409 tombstone conflict is not misreported as a generic network outage.
+- [ ] Browser/real D1 full acceptance, complete Remaked parity and verified live battle effects are outstanding. Short links retain immutable snapshots when the source build is edited; deletion of the source revokes all its links.

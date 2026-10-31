@@ -85,5 +85,5 @@ test('revocation toast and link creation remain inline; server has no destructiv
  assert.match(app,/function unsavedBuild\(/);
  assert.match(sql,/CREATE TABLE IF NOT EXISTS shared_build_sources/);
  assert.doesNotMatch(sql,/DROP TABLE/i);
- assert.match(app,/Ссылка перестанет работать, если удалить этот сохранённый билд/);
+ assert.match(app,/После удаления оригинального билда она перестанет работать/);
 });

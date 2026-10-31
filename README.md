@@ -579,3 +579,8 @@ A saved build now displays its short-link field and Copy action **inside the bui
 ## Revocable shared builds (0.129.0)
 
 New links are created only for a build saved by the owner in D1. `shared_build_sources` stores the ownership relation (owner hash, source build ID), without storing the private browser secret. When the owner deletes that build, its D1 tombstone causes **every** associated short link to return HTTP 410 `reason=deleted`; anyone opening such a link receives a bottom-right message that dismisses itself or closes on OK. Offline deletion revokes links only after the pending delete reaches D1. Older anonymous links cannot be attached retroactively and therefore return HTTP 410 `reason=legacy`; the owner must share again. A recipient's separately saved copy is not deleted. D1 migration `0003_shares.sql` now creates the mapping table for new deployments; Worker also attempts a non-destructive in-place schema upgrade. Deployment and browser E2E are separate from a GitHub commit.
+
+
+## Updating a saved build · 0.130.0
+
+When a player opens a saved build from the library, the editor remembers its ID for that tab. «Сохранить изменения» updates that same saved build (including D1), not a duplicate; «Сохранить копию» creates a distinct new ID. Starting a new blank build or accepting a shared public snapshot clears the active-saved link so it cannot overwrite an unrelated library record. Shared links remain immutable **snapshots** of the published version until the owner deletes the source build, which revokes all those links.
