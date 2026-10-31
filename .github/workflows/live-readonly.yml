@@ -1,6 +1,9 @@
 name: Live Pages and Worker readiness
 
 on:
+  push:
+    branches: [bonaqu_projects]
+    paths: ['site-version.json']
   workflow_run:
     workflows: ["pages build and deployment"]
     types: [completed]
@@ -30,5 +33,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Wait for expected public Pages version (read-only)
+        run: node scripts/wait-live-release.mjs
       - name: Check Pages version, Worker health, D1 catalog and CORS (read-only)
         run: npm run connection:check

@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.167.0 (`2026.11.01.167`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.168.0 (`2026.11.01.168`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.168.0 — dependable live release monitoring
+
+- Add a direct trigger when site-version.json changes; internal GitHub Pages deployment events may not dispatch workflow_run on all repository setups.
+- Wait for the exact published Pages version via 24 bounded GET attempts (five-second pauses) before read-only Worker/D1 health, CORS and catalog checks. No secrets or data mutation.
+- Keep workflow_run, daily scheduled checks and manual dispatch as additional paths. Consider the check green only after its actual GitHub Actions run completes.
 
 ## Source update 0.167.0 — viewport geometry and screenshot evidence
 
