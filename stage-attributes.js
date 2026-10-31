@@ -89,7 +89,8 @@ function buffsPage(body,options){
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
-  ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
+  ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра'],
+  ['combatConcentration','Сосредоточенность']])
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
  const regen=section('Восстановление');
  select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
@@ -384,6 +385,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   if(cm.accuracy.passive)card.append(make('p',{text:'Пассивная меткость лучника: +'+
    cm.accuracy.passive}));
+  if(cm.accuracy.activeBonus)card.append(make('p',{text:
+   'Сосредоточенность: +'+cm.accuracy.activeBonus+' к точности'}));
   if(cm.dodge.passive)card.append(make('p',{text:'Пассивное уклонение: +'+
    cm.dodge.passive}));
   if(cm.dodge.windAssist)card.append(make('p',{text:'Помощь ветра: +'+
