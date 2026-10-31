@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.93.0 (`2026.10.31.93`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.94.0 (`2026.10.31.94`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,12 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.94.0 — approved Remaked RU Honor title labels
+
+- Compare all 13 Honor title IDs against `Pandora-Saga-Simulator-remaked/localization/approved-translations.v1.json`, `game.ru['calculator.honor.0'..'calculator.honor.12']`. Replace paraphrased UI labels with exact approved Russian names; keep numeric IDs/effects/shared saved-state stable.
+- Add regression ensuring all thirteen identities, exclusivity and direct Honor damage/defense/accuracy effects remain unchanged. English title names are not overwritten by unverified translations.
+- Broader full skill names, item attributes, armor refinement curves, conditionals, cloud D1, icon mirror and end-to-end browser tests still need independent implementation/verification.
 
 ## Source update 0.93.0 — attack and casting speed indices, MP consumption
 

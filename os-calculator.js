@@ -117,19 +117,19 @@ function bonusFor(kind,base,effects,enhancements){
 // A title is mutually exclusive: one active honor at a time.
 const honorTitles=Object.freeze([
  ['Нет титула','None',{}],
- ['Стремление к силе','Curiosity to strength',{allAttributes:1}],
- ['Сердце милосердия','Heart of love',{healingSkills:10}],
- ['Путь пламени','Signs of fire',{attackPercent:2,fireMagic:5,fire:10,ice:-15,burn:5}],
- ['Путь льда','Signs of ice',{iceMagic:5,castingResist:2,ice:10,lightning:-15,freeze:5}],
- ['Путь молнии','Signs of lightning',{accuracy:5,lightningMagic:5,fire:-15,lightning:10,knockdown:5}],
- ['Несокрушимая мощь','Raging strong arm',{weaponPhysical:15}],
- ['Гармония всадника','Reconciled rider',{mountedRelease:10}],
- ['Секрет защитника','Guardian secret',{incomingCriticalChance:-10,incomingCriticalDamage:-10}],
- ['Путь тьмы','Signs of darkness',{light:-5,dark:10,charm:5,mentalState:6}],
- ['Путь света','Signs of light',{light:10,dark:-5,magic:3,physicalState:6}],
- ['Крепкое тело','Solid body',{potionRecovery:5,defense:5,incomingPhysical:-5}],
- ['Секрет акробата','Acrobat secret',{accuracy:-10,dodge:10,rangedDodge:3}],
- ['Секрет мастера меча','Swordsman secret',{accuracy:10,dodge:-10,frontAttack:10}]
+ ['Сила познания','Curiosity to strength',{allAttributes:1}],
+ ['Золотое сердце','Heart of love',{healingSkills:10}],
+ ['Том огня','Signs of fire',{attackPercent:2,fireMagic:5,fire:10,ice:-15,burn:5}],
+ ['Том льда','Signs of ice',{iceMagic:5,castingResist:2,ice:10,lightning:-15,freeze:5}],
+ ['Том грозы','Signs of lightning',{accuracy:5,lightningMagic:5,fire:-15,lightning:10,knockdown:5}],
+ ['Бешенство','Raging strong arm',{weaponPhysical:15}],
+ ['Мастер наездника','Reconciled rider',{mountedRelease:10}],
+ ['Тайна стража','Guardian secret',{incomingCriticalChance:-10,incomingCriticalDamage:-10}],
+ ['Том тьмы','Signs of darkness',{light:-5,dark:10,charm:5,mentalState:6}],
+ ['Том света','Signs of light',{light:10,dark:-5,magic:3,physicalState:6}],
+ ['Сила воли','Solid body',{potionRecovery:5,defense:5,incomingPhysical:-5}],
+ ['Невероятная ловкость','Acrobat secret',{accuracy:-10,dodge:10,rangedDodge:3}],
+ ['Мастер боя','Swordsman secret',{accuracy:10,dodge:-10,frontAttack:10}]
 ].map(([ru,en,effects],id)=>Object.freeze({id,ru,en,effects:Object.freeze(effects)})));
 function selectedHonor(options={}){
  const raw=options.honorTitle;
