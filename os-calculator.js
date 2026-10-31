@@ -731,6 +731,38 @@ const legacyPhysicalAuras=Object.freeze([
 ]);
 const legacyMagicAuras=Object.freeze([0,1,2,4,7,10,14,19,25,32,40]);
 const legacyGemElements=Object.freeze(['fire','ice','lightning','poison','light','dark','rainbow']);
+
+// Preserved Remaked Legacy Calc('Velox'...'ToxicAura') branch previews.
+// These are read-only magnitudes: never apply to combat stats merely because
+// the hero's level/mastery is high. The corresponding spell must be selected
+// and its current OS identity verified before it becomes an active buff.
+function legacyBuffPreview({spi,blessing=0,hymn=0,alchemy=0}={}){
+ if(![spi,blessing,hymn,alchemy].every(n=>Number.isInteger(n)&&n>=0))return null;
+ const quotient=(value,parts)=>Math.floor(value/(100/parts));
+ const next=(step,parts)=>Math.ceil((step+1)*(100/parts));
+ const gratiaStep=quotient(spi,6),lapisSpirit=quotient(spi,3),
+  lapisBlessing=quotient(blessing,4),
+  holyStep=quotient(spi,6),gloomStep=quotient(spi,8),
+  enchantSpirit4=spi>=101?4:quotient(spi,4),
+  enchantSpirit5=quotient(spi,5),
+  minstrelSpirit=quotient(spi,13),minstrelHymn=quotient(hymn,13),
+  sageSpirit=quotient(spi,8),sageHymn=quotient(hymn,8);
+ return {
+  gratia:{value:5+Math.floor(gratiaStep*1.9),nextSpi:next(gratiaStep,6)},
+  lapisMedio:{value:5+lapisSpirit+lapisBlessing,nextSpi:next(lapisSpirit,3)},
+  groupBarrier:{value:-(10+Math.floor(blessing/5))},
+  holyWeapon:{value:holyStep,nextSpi:next(holyStep,6)},
+  gloomyEffect:{value:gloomStep,nextSpi:next(gloomStep,8)},
+  enchantEnhance:{value:10+Math.floor(blessing/5)},
+  enchantMagic:{value:enchantSpirit4+enchantSpirit5,
+   nextSpi:Math.min(next(enchantSpirit4,4),next(enchantSpirit5,5))},
+  minstrelSong:{value:5+minstrelSpirit+minstrelHymn,
+   nextSpi:next(minstrelSpirit,13)},
+  sageSong:{value:sageSpirit+sageHymn,nextSpi:next(sageSpirit,8)},
+  toxify:{value:quotient(alchemy,5)},
+  toxicAura:{value:quotient(alchemy,15)}
+ };
+}
 function gemstonePreview(loadouts=[]){
  if(!Array.isArray(loadouts))return null;
  const results=[],uncertain=[];
@@ -801,6 +833,18 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
  const gemstones=gemstonePreview(gemSelections);
+ // Armor gemstone resistances have an exact Remaked rule. Apply these to the
+ // displayed elemental defense totals once; aura and spell damage stay
+ // independent from physical attack and require no invented damage formula.
+ if(resistances&&gemstones){
+  for(const [key,amount] of Object.entries(gemstones.resistance))
+   resistances.elements[key]=(resistances.elements[key]||0)+amount;
+  resistances.gemstones={...gemstones.resistance};
+ }
+ const legacyBuffs=legacyBuffPreview({spi:stats.spi,
+  blessing:combatContext.legacyBuffMasteries?.blessing??0,
+  hymn:combatContext.legacyBuffMasteries?.hymn??0,
+  alchemy:combatContext.legacyBuffMasteries?.alchemy??0});
  const coverage=effectCoverage({records,itemForth});
  const recoveryAmount=recoveryAmountPreview({maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,stats});
@@ -820,7 +864,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,
+  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,legacyBuffs,
   recoveryAmount,healingSkill,healingSpells,combat,gemstones,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
@@ -829,6 +873,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,effectCoverage
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,effectCoverage
 });
 })(typeof window==='undefined'?globalThis:window);
