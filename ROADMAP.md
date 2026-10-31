@@ -1,9 +1,18 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.184.0 (`2026.11.01.184`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.185.0 (`2026.11.01.185`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.185.0 — account-free D1 authority, saved-only autosync, screenshot UX
+
+- The cloud row is authoritative for a saved ID even if browser timestamps suggest a newer local record. Preserve divergent local edits as a separately named saved copy; never silently overwrite the original cloud record. Offline copies upload only when the existing cloud library becomes available.
+- A draft without an explicit initial save remains local-only. Existing saved builds auto-update the same D1 ID after deliberate user edits, with a short debounce, monotonic revision, and offline retry through the browser saved-library cache. Do not claim cloud success when D1 has not acknowledged the write.
+- Fix the equipment detail header with the globally registered item presenter and a localized slot fallback. Replace the ambiguous RU ✓ · EN caption with two explicit pressed-state controls and introduce site UI translations for primary sections. Full RU/EN coverage remains an open task.
+- Stagger compact skill-milestone markers over three lanes, retain actual threshold values, icons in hover/focus tooltips and the same 90-point drag surface.
+- Browser checks cover previously saved automatic updates, new drafts not generating D1 PUTs, prior conflict recovery, hero book and level-55 planning. Private library recovery after cookie deletion requires the user to restore their 64-hex-character library key; this key is not an account or login and is not recoverable by site identity.
+- The repository contains 17 main `data/os/*.json` game source snapshots. Cloudflare may expose additional derived endpoints. Do not claim universal source/game server parity or current availability of every official item.
 
 ## Source update 0.184.0 — fail closed on stale/corrupt equipment slot identities
 

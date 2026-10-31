@@ -41,13 +41,13 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}
   if(pending.has(record.id))continue;
   const browser=originals.get(record.id);
   if(!browser){merged.push(cloud);continue}
-  const newerLocal=Number(browser.at)>cloud.at;
-  const winner=newerLocal?browser:cloud,loser=newerLocal?cloud:browser;
-  merged.push(winner);
-  if(newerLocal)outgoing.push(browser);
+  // D1 is authoritative for an existing saved ID, regardless of local timestamps.
+  // Different local edits are preserved as a new explicitly-saved build,
+  // but never silently overwrite the cloud original.
+  merged.push(cloud);
   if(!same(browser,cloud)){
-   const copyId=copy(loser,newerLocal?'cloud':'local');
-   if(!newerLocal&&selected===record.id)selected=copyId;
+   const copyId=copy(browser,'local');
+   if(selected===record.id)selected=copyId;
   }
  }
  for(const entry of local){

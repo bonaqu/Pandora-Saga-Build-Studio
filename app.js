@@ -790,7 +790,7 @@ function renderStagePicker(focusSearch=false){
  if(stageSlotView!=='choose'){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
-   record,item:equipped,slot:key,slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
+   record,item:equipped,slot:key,slotLabel:slots[selectedSlot][0],slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
@@ -2490,8 +2490,13 @@ function applyGameLocale(){
    equipment:translate(catalogSource.items,en?.items),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
+ window.PandoraUILocale.apply(lang);
  const label=document.getElementById('locale');
- if(label){label.textContent=lang==='en'?'EN ✓ · RU':'RU ✓ · EN';label.removeAttribute('title');label.setAttribute('aria-label','Язык игрового каталога: '+lang.toUpperCase())}
+ if(label)for(const button of label.querySelectorAll('[data-locale]')){
+  const active=button.dataset.locale===lang;
+  button.setAttribute('aria-pressed',String(active));
+  button.classList.toggle('chosen',active);
+ }
  render();
 }
 async function loadCatalog(){
@@ -2599,7 +2604,15 @@ $('hero').addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){
   event.preventDefault();openHeroBook();
  }
-});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=event=>{
+ const button=event.target.closest('[data-locale]');
+ if(!button||button.dataset.locale===lang)return;
+ lang=button.dataset.locale;
+ localStorage.setItem('ps-build-lang',lang);
+ if(lang==='en'&&!officialEnglish)
+  showStudioToast('Не все игровые описания доступны на английском.','warning');
+ applyGameLocale();
+};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const editable=event.target.closest('[data-edit-key]');

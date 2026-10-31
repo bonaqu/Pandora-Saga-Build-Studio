@@ -1549,3 +1549,15 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-picker-item.future{border-style:dashed;opacity:.89}
 .stage-picker-future{font-size:11px;color:var(--gold);white-space:nowrap;flex-shrink:0}
 .stage-picker-item.future:hover,.stage-picker-item.future:focus-visible{opacity:1}
+
+/* Language options are an actual single-choice control, not a mixed RU ✓ · EN caption. */
+.locale-switch{display:flex;gap:3px;align-items:center;padding:3px;border-radius:5px;border:1px solid #947143;background:#17100b}
+.locale-switch button{min-width:42px;min-height:36px;padding:6px 10px;color:#c9b090;font:700 12px Manrope,Arial,sans-serif;border:1px solid transparent;border-radius:3px;background:transparent}
+.locale-switch button[aria-pressed="true"]{color:#ffdf9d;background:#614326;border-color:#b88e59}
+.locale-switch button:hover{border-color:#947143;color:#f9dca9}
+.inline-mastery-track .path-threshold-tick{width:10px;height:10px;border-radius:50%}
+.inline-mastery-track .path-threshold-tick:nth-child(3n+1){top:-23px}
+.inline-mastery-track .path-threshold-tick:nth-child(3n+2){top:-12px}
+.inline-mastery-track .path-threshold-tick:nth-child(3n){top:-1px}
+.inline-branch-value{align-items:baseline;gap:8px}
+.stage-picker-head strong{overflow-wrap:anywhere}

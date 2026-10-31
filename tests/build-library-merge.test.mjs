@@ -17,13 +17,13 @@ test('equal cloud timestamp with differing data keeps both builds and retains lo
  assert.match(r.merged.find(x=>x.id===B).name,/локальная копия/);
  assert.equal(local.name,'Hero');
 });
-test('older cloud edition is backed up when the local edition wins',()=>{
+test('cloud always wins original ID even when local timestamp is newer',()=>{
  const local=mk(A,201,55),cloud=mk(A,200,45);
  const r=reconcile({local:[local],remote:[{id:A,entry:cloud}],activeId:A,newId:()=>B});
- assert.deepEqual(r.merged.find(x=>x.id===A),local);
- assert.equal(r.merged.find(x=>x.id===B).data.level,45);
- assert.equal(r.activeId,A);
- assert.deepEqual(r.outgoing.map(v=>v.id),[A,B]);
+ assert.deepEqual(r.merged.find(x=>x.id===A),cloud);
+ assert.equal(r.merged.find(x=>x.id===B).data.level,55);
+ assert.equal(r.activeId,B);
+ assert.deepEqual(r.outgoing.map(v=>v.id),[B]);
 });
 test('older local version remains available if newer cloud build is different',()=>{
  const r=reconcile({local:[mk(A,100,54)],
@@ -35,7 +35,9 @@ test('older local version remains available if newer cloud build is different',(
 test('identical data with different at uses newer revision without unnecessary duplication',()=>{
  const result=reconcile({local:[mk(A,300,55)],remote:[{id:A,entry:mk(A,200,55)}],
   activeId:A,newId:()=>B});
- assert.equal(result.copies,0);assert.deepEqual(result.outgoing.map(x=>x.id),[A]);
+ assert.equal(result.copies,0);
+ assert.deepEqual(result.merged.find(x=>x.id===A),mk(A,200,55));
+ assert.deepEqual(result.outgoing.map(x=>x.id),[]);
 });
 test('cloud tombstones and pending deletes never resurrect deleted builds',()=>{
  const result=reconcile({local:[mk(A,100,55),mk(B,110,54),mk(C,120,53)],

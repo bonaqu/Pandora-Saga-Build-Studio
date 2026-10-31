@@ -94,7 +94,7 @@ function render(root,api){
  const cap=hasSouls?plan.socketCapacity(record):0;
  if(mode==='gems'||mode==='souls'&&!hasSouls){api.changeMode('details');return}
  const head=el('div',{class:'stage-picker-head'},[
-  el('strong',{text:root.PandoraItemPresentation?.displayName(record)||'Слот: '+slot}),
+  el('strong',{text:globalThis.PandoraItemPresentation?.displayName(record)||api.slotLabel||'Слот: '+slot}),
   el('button',{type:'button',text:'✕',onclick:api.close,'aria-label':'Закрыть настройку'})
  ]);root.append(head);
  const tabs=el('nav',{class:'stage-rich-tabs',role:'group','aria-label':'Настройка предмета'});
@@ -153,7 +153,7 @@ function render(root,api){
     const button=el('button',{type:'button',class:'stage-rich-result',onclick:()=>api.assignSoul(rec)});
     const src=icons(rec,'soul');
     if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
-    button.append(el('span',{text:root.PandoraItemPresentation?.displayName(rec,'Душа без названия')||'Душа без названия'}));list.append(button);attachPreview(button,rec,icons,'soul');
+    button.append(el('span',{text:globalThis.PandoraItemPresentation?.displayName(rec,'Душа без названия')||'Душа без названия'}));list.append(button);attachPreview(button,rec,icons,'soul');
    }
    if(results.length>80)list.append(el('p',{class:'muted',text:'Показано 80 душ. Уточни поиск.'}));
    if(!results.length)list.append(el('p',{class:'muted',text:'Совместимых душ не найдено'}));

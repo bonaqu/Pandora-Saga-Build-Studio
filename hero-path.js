@@ -74,7 +74,7 @@ function viewGrowth(target,api){
     const editor=make('div',{class:'inline-branch-editor'});
     const note=make('div',{class:'inline-branch-value'});
     const label=make('strong',{text:points+' / '+cap});
-    note.append(make('span',{text:'Очки уровня — вложить в ветку'}),label);
+    note.append(make('span',{text:root.PandoraUILocale?.text('branchPoints',api.lang)||'Очки ветки'}),label);
     const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track','aria-label':'Единая полоса вложенных очков и освоенного мастерства '+api.branchName(key)});
     const visualMax=Math.max(90,cap,points);
@@ -158,7 +158,7 @@ function viewGrowth(target,api){
      // A separate collapsed list provides access to every skill without covering the drag surface.
      unlockDetails=make('details',{class:'path-unlock-details'});
      unlockDetails.append(make('summary',{
-      text:'Умения на шкале · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
+      text:(root.PandoraUILocale?.text('skillsOnTrack',api.lang)||'Умения на шкале')+' · '+marks.reduce((total,mark)=>total+mark.skills.length,0)}));
      const list=make('div',{class:'path-unlock-list'});
      for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
       for(const skill of mark.skills){
@@ -190,10 +190,10 @@ function viewGrowth(target,api){
     input.addEventListener('change',()=>{
      if(!api.onMastery(key,Number(input.value)))input.value=String(M.trained(state,key));
     });
-    const greenLabel=make('label');greenLabel.append(make('span',{text:'Зелёное мастерство'}),input);
+    const greenLabel=make('label');greenLabel.append(make('span',{text:root.PandoraUILocale?.text('greenMastery',api.lang)||'Зелёное мастерство'}),input);
     greenRow.append(greenLabel);
     const exact=make('div',{class:'path-allocation-input'});
-    exact.append(make('span',{text:'Точно вложено'}),numeric);
+    exact.append(make('span',{text:root.PandoraUILocale?.text('exactPoints',api.lang)||'Точно вложено'}),numeric);
     editor.append(note,track);
     if(unlockDetails)editor.append(unlockDetails);
     editor.append(exact,greenRow);

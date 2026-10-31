@@ -6,6 +6,7 @@ import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
 import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs';
 import {runTwoHandedSmoke} from './browser-two-handed.mjs';
 import {runFutureGearSmoke} from './browser-future-gear.mjs';
+import {runSavedAutosaveSmoke} from './browser-saved-autosave.mjs';
 
 const base='http://127.0.0.1:4173';
 const errors=[];
@@ -126,6 +127,7 @@ async function main(){
  await runEquipmentEligibilitySmoke(browser,base);
  await runTwoHandedSmoke(browser,base);
  await runFutureGearSmoke(browser,base);
+ await runSavedAutosaveSmoke(browser,base);
  await runLayoutAudit(browser,base);
 }
 main().catch(error=>{console.error(error);process.exitCode=1}).finally(async()=>{await browser?.close()});
