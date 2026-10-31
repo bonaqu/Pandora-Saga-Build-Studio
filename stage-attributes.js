@@ -403,11 +403,26 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   for(const [key,val] of active)card.append(make('p',{text:names[key]+': '+(val>=0?'+':'')+val}));
   body.prepend(card);
  }
- if(chosen==='recovery'&&modifiers?.healingSkill)body.prepend(make('section',{
-  class:'stage-attribute-row'},[
-  make('strong',{text:'Лечащие навыки'}),
-  make('p',{text:'Эффективность: '+modifiers.healingSkill.percent+'% (частичный расчёт)'})
- ]));
+ if(chosen==='recovery'&&modifiers?.healingSkill){
+  const spells=modifiers.healingSpells,heal=modifiers.healingSkill;
+  const card=make('section',{class:'stage-attribute-row stage-healing-spells'});
+  card.append(make('strong',{text:'Расчёт лечащих навыков Remaked'}),
+   make('p',{text:'Эффективность лечения: '+heal.percent+'%'}));
+  if(spells){
+   for(const row of spells.rows){
+    const label=make('div',{class:'stage-heal-row'},[
+     make('span',{text:row.name}),
+     make('strong',{text:String(row.amount)+(row.scaledBySkill?' ОЗ':' / период')}),
+     make('small',{text:row.available?'Доступен по проверенным базовым условиям':
+      'Теоретический · '+row.requires})
+    ]);
+    card.append(label);
+   }
+   card.append(make('p',{class:'stage-attribute-note',text:
+    'Формулы старого Remaked. Доступность требует полного учёта требований и текущей версии OS; значения не гарантируют серверное лечение.'}));
+  }
+  body.prepend(card);
+ }
  if(chosen!=='buffs')body.append(make('p',{class:'stage-attribute-warning',
   text:'Некоторые эффекты, комплекты и усиления пока не учитываются в расчётах.'}));
  target.append(body);

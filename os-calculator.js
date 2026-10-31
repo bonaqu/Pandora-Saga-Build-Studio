@@ -563,6 +563,46 @@ function attributeBuffBonus(options={}){
  return {flat:out,trace,honor:selected};
 }
 
+
+// Executed Remaked Legacy Calc('FirstAid'/'Heal'/'HealingAura'/
+// 'Sanctuary'/'Restoration') from js/calc.js Flag[5].
+// Spell unlocks are informative gates. Exact current OS server damage/heal
+// packets remain unverified; show unavailable spells as theoretical previews.
+const healingJobs=new Set(['ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST']);
+function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
+ jobKey=null}={}){
+ if(!Number.isInteger(level)||level<1||level>55||
+  ![int,spi,benevolence,healingPercent].every(n=>Number.isFinite(n)&&n>=0))
+  return null;
+ const cleric=jobKey==='CLERIC'&&level>=50;
+ const calc=(raw)=>Math.floor(raw*healingPercent/100);
+ const firstAid=cleric?25+level*2.5+benevolence*2.8+int*3:
+  25+level*2.5+benevolence*1.4+int;
+ const heal=cleric?105+level*2+benevolence*5+int*10:
+  50+level*2+benevolence*3+int*6;
+ const aura=cleric?150+level*2+benevolence*4+int*8.5:
+  150+level*2+benevolence*3+int*6;
+ const sanctuary=100+level*2+benevolence*2+int*2;
+ const restore=7+Math.floor(benevolence/10)+Math.floor(spi/5);
+ return {
+  formulaSource:'Remaked Legacy js/calc.js, Flag[5], Status.LSk',
+  clericLevel50:cleric,verified:false,rows:[
+   {id:'firstAid',name:'Первая помощь',amount:calc(firstAid),available:benevolence>=8,
+    requires:'Мастерство исцеления 8',scaledBySkill:true},
+   {id:'heal',name:'Лечение',amount:calc(heal),
+    available:healingJobs.has(jobKey)&&level>=18,
+    requires:'Ветвь аколита, уровень 18',scaledBySkill:true},
+   {id:'healingAura',name:'Массовое исцеление',amount:calc(aura),
+    available:benevolence>=54,requires:'Мастерство исцеления 54',
+    scaledBySkill:true},
+   {id:'sanctuary',name:'Храм',amount:calc(sanctuary),
+    available:jobKey==='CLERIC'&&level>=45,
+    requires:'Клирик, уровень 45',scaledBySkill:true},
+   {id:'restoration',name:'Восстановление',amount:restore,
+    available:benevolence>=41,requires:'Мастерство исцеления 41',
+    scaledBySkill:false}
+  ],notes:'Восстановление — периодическая величина; множитель лечения навыками не применяется.'};
+}
 // Historical Remaked Legacy js/equip.js weapon-gem switch for enhancement +1..+10.
 // Some values were marked provisional (未) in the archival source; expose them as
 // *historical previews*, never silently merge into current OS server ATK/MATK.
@@ -648,6 +688,11 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const recoveryAmount=recoveryAmountPreview({maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,stats});
  const healingSkill=healingSkillPreview({honorTitle:extra.honor.id,records,itemForth});
+ const healingSpells=healingSkill?healingSpellsPreview({
+  level,int:stats.int,spi:stats.spi,
+  benevolence:combatContext.benevolenceMastery??0,
+  jobKey:combatContext.jobKey,healingPercent:healingSkill.percent
+ }):null;
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records,itemForth,
   guildArouse:attributeBuffs?.guildArouse??0,
   combatBuffs:attributeBuffs,
@@ -659,7 +704,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,
-  recoveryAmount,healingSkill,combat,gemstones,
+  recoveryAmount,healingSkill,healingSpells,combat,gemstones,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -667,6 +712,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,
- recoveryAmountPreview,healingSkillPreview,gemstonePreview
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview
 });
 })(typeof window==='undefined'?globalThis:window);

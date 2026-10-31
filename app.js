@@ -105,6 +105,8 @@ function previewBaseStats(){
  // PLUS additionally trained green; exclude blue Potential from this sum.
  const masteries=window.PandoraSkillProgression.combatMasteries(state,initialBranches);
  const meleeMastery=masteries.melee;
+ const benevolenceMastery=window.PandoraSkillProgression.groupAdeptness(
+  state,['benevolence'],initialBranches);
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
   allocation,level:state.level,records,itemForth:gameItemForth,gemSelections,
@@ -113,7 +115,7 @@ function previewBaseStats(){
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
   potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
-   jobKey:jobKeys[state.job],...masteries}
+   jobKey:jobKeys[state.job],benevolenceMastery,...masteries}
  });
 }
 function renderPotionPreview(calculated){
