@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.174.0 (`2026.11.01.174`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.175.0 (`2026.11.01.175`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.175.0 — propagate mastered branches and fail closed on unlearnable skills
+
+- Build the full branch-to-green-Adeptness map from live selected class innate mastery and actual trained mastery, rather than passing Slash alone. Blue potential is not counted as mastery.
+- Require a valid planning level (1–55), learnable active skill and no unresolved prerequisite before opting in an OS combat buff, consistent with the support skill gate.
+- Add executable regressions for future Exorcism prerequisites and invalid combat selections. Neither server cap 45 nor saved character levels are changed.
 
 ## Source update 0.174.0 — enforce the planned 1–55 range and verify cloud library readiness
 

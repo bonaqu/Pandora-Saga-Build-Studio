@@ -230,8 +230,11 @@ function previewBaseStats(){
  // Remaked Status.Skill[0][0] + [1]: innate branch green mastery
  // PLUS additionally trained green; exclude blue Potential from this sum.
  const masteries=window.PandoraSkillProgression.combatMasteries(state,initialBranches);
- const branchMasteries={slash:window.PandoraSkillProgression.groupAdeptness(
-  state,['slash'],initialBranches)};
+ // Pass every trained branch to the OS skill gates; future catalog skills
+ // may require more than the original Slash mastery.
+ const branchMasteries=Object.fromEntries(branches.map(({id})=>[
+  id,window.PandoraSkillProgression.groupAdeptness(state,[id],initialBranches)
+ ]));
  const ridingMastery=window.PandoraSkillProgression.groupAdeptness(state,['riding'],initialBranches);
  const wardingMastery=window.PandoraSkillProgression.groupAdeptness(state,['warding'],initialBranches);
  const meleeMastery=masteries.melee;

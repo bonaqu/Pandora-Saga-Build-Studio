@@ -584,6 +584,7 @@ function supportSkillSource(skillCatalog,kind){
 function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,level=1,
  branchMasteries={}}={}){
  const result={windAssist:false,windBlessing:false};
+ if(!Number.isInteger(level)||level<1||level>55)return result;
  for(const [kind,setting] of [['windAssist','combatWindAssist'],
   ['windBlessing','combatWindBlessing']]){
   const source=supportSkillSource(skillCatalog,kind);
@@ -616,13 +617,15 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
 // character level, not by the presence of an unchecked saved toggle.
 function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
  weapon=null,skillCatalog=null,branchMasteries={}}={}){
+ const validLevel=Number.isInteger(level)&&level>=1&&level<=55;
  const permitted=(key,selectedKey,legacyClasses,minLevel)=>{
-  if(selected?.[selectedKey]!==true)return false;
+  if(!validLevel||selected?.[selectedKey]!==true)return false;
   if(skillCatalog){
    const source=combatSkillSource(skillCatalog,key);
    const record=source?.record;
    if(!source||!record?.classes?.[jobKey]||
-    !Number.isInteger(record.charLevel)||level<record.charLevel)return false;
+    !Number.isInteger(record.charLevel)||level<record.charLevel||
+    record.learnable===false||record.prereq!=null)return false;
    // A branch-gated skill is not learned until the green Adeptness
    // requirement is met. Potential/blue points do not substitute for it.
    if(!Array.isArray(record.reqs)||!record.reqs.every(req=>
@@ -649,7 +652,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
  branchMasteries={}}={}){
- if(!Number.isInteger(level)||level<1||
+ if(!Number.isInteger(level)||level<1||level>55||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
  const title=honorTitles[honorTitle].effects,read=key=>{
