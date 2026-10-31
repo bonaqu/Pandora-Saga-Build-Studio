@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.114",
-  "notes": "Fix soul sprites globally in equipment sockets and item previews, with regression checks"
+  "release": "2026.10.31.115",
+  "notes": "Simplified player book terminology and unambiguous monster stat labels; current OS icon support retained"
 }
