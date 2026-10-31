@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.116.0 (`2026.10.31.116`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.117.0 (`2026.10.31.117`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.117.0 — current OS-backed combat buffs in the hero book
+
+- Four combat toggles use actual OS skill IDs 100051001, 320001001, 100052001 and 100053001, respecting record charLevel, class gates and EP skill effect values. The public app always supplies a skill catalog, including an empty one during loading, so unavailable source data cannot enable an old saved toggle.
+- Attack, defense and speed are calculated from the source numeric fields. The hero book reuses exactly the same ability gate, displays the original skill artwork and values, and explains a missing class, level or shield.
+- New test vectors exercise four source skills, changing skill values, incomplete source rows, unavailable skills and DOM checkbox interaction.
+- Pending: full Node test run, actual browser and Worker/D1 deployment checks, additional verified active skill mechanics.
 
 ## Workstreams
 
