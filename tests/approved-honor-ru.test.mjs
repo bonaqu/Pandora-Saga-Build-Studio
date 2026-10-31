@@ -24,5 +24,5 @@ test('renaming Honor labels changes no saved ids or combat effects',()=>{
 test('source provenance is recorded, names are not inferred from machine translations',()=>{
  const docs=readFileSync(new URL('../docs/REMAKED_CALCULATOR_PORT.md',import.meta.url),'utf8');
  assert.match(docs,/approved-translations\.v1\.json/);
- assert.match(docs,/calculator\.honor\.0\.\.12/);
+ assert.match(docs,/game\.ru\['calculator\.honor\.0'\.\.'calculator\.honor\.12'\]/);
 });
