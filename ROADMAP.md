@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.132.0 (`2026.10.31.132`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.133.0 (`2026.10.31.133`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -575,3 +575,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] The default open action is immediate when the current draft is already saved or blank. Loading still preserves old/future fields via the existing in-memory clone and merge.
 - [x] Add static guard for the choice, save-before-open requirement, and existing-legacy field-preserving restoration.
 - [ ] Actual browser acceptance remains necessary, along with Remaked combat parity, Worker lifecycle testing and full npm test.
+
+
+## Source update 0.133.0 — stale card and offline deletion guard
+
+- [x] When «Save current and open» targets the same saved build, resolve its newest in-memory snapshot after saving; don't reopen a stale card's pre-save version.
+- [x] If the browser cannot store a queued offline deletion, still attempt immediate server deletion and explicitly warn when a later retry cannot be guaranteed. Never claim revocation before D1 confirms it.
+- [x] Keep all current 1–55 planning, per-build revocable links, D1 migration and Remaked audit in place.
+- [ ] Confirm full Node suite, cross-browser/cloud Worker lifecycle, and unimplemented combat/skill effects.

@@ -594,3 +594,8 @@ A permanent delete now atomically tombstones the private source record **and ove
 ## Safe library switching · 0.132.0
 
 Opening a different saved character with unsaved current changes never silently destroys the workbench. The selected card expands a compact inline Save-and-open / Open-without-saving / Cancel choice. Opening is immediate if the active character is blank or its state already matches a saved build. No modal dialog interrupts editing.
+
+
+## Deletion reliability · 0.133.0
+
+A failed localStorage write must not silently disable cloud deletion. The site attempts an immediate Worker deletion even if the offline queue is unavailable, then clearly warns if both the queue and cloud request failed. Re-opening the build just saved uses the newest in-memory snapshot, not the previous UI card object.

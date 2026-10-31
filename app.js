@@ -120,15 +120,22 @@ async function putCloudBuild(entry){
  }
 }
 async function deleteCloudBuild(id){
- queueDelete(id);libraryChangeId++;
+ let queued=false;
+ try{queueDelete(id);queued=true}
+ catch(error){console.warn('Cannot persist pending deletion',error)}
+ libraryChangeId++;
  try{
-  await cloudLibraryRequest({action:'delete',id});acknowledgeDelete(id);
+  await cloudLibraryRequest({action:'delete',id});
+  if(queued)acknowledgeDelete(id);
   reportCloudStatus('Билд удалён · все его ссылки отозваны');
   showStudioToast('Билд удалён. Все его ссылки больше не работают.','success');
  }catch(error){
   console.warn('Build cloud delete pending',error);
-  reportCloudStatus('Удалено в браузере · синхронизируем позже');
-  showStudioToast('Билд удалён локально. Ссылки перестанут работать после синхронизации с облаком.','warning');
+  reportCloudStatus(queued?'Удалено в браузере · синхронизируем позже':
+   'Не удалось записать удаление для повторной отправки');
+  showStudioToast(queued?
+   'Билд удалён локально. Ссылки перестанут работать после синхронизации с облаком.':
+   'Облако недоступно. Повторное удаление не удалось поставить в очередь — пока ссылка может работать.','warning');
  }
 }
 async function loadCloudBuilds(){
@@ -1701,11 +1708,10 @@ function restoreLoadedBuildUI(){
  stageSlotPickerOpen=false;stageSlotQuery='';stageSlotShown=48;
 }
 function openSavedBuild(b){
- selectActiveBuild(b.id);
- // Keep legacy saved fields intact: public-link sanitization applies only to untrusted imports.
-    // Locally saved builds are trusted snapshots: do not discard newer or legacy
-    // fields through the stricter validation used for incoming public links.
-    const draft=structuredClone(b.data),base=fresh();
+ // Resolve the newest stored snapshot after save-and-open; rendered cards may be stale.
+ const latest=builds.find(record=>record.id===b.id)||b;
+ selectActiveBuild(latest.id);
+ const draft=structuredClone(latest.data),base=fresh();
     state={...base,...draft,
      points:{...base.points,...draft.points},stats:{...base.stats,...draft.stats},
      equipment:{...base.equipment,...draft.equipment},
