@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.110",
-  "notes": "NPC settlement locations, map drop icons with honest group chances, OS monster defenses/resistances"
+  "release": "2026.10.31.111",
+  "notes": "Condense calculation caveats to optional book details without interfering with player stats"
 }

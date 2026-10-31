@@ -501,8 +501,20 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   body.prepend(card);
  }
- if(chosen!=='buffs')body.append(make('p',{class:'stage-attribute-warning',
-  text:'Некоторые эффекты, комплекты и усиления пока не учитываются в расчётах.'}));
+ // Preserve formula caveats without placing developer diagnostics between
+ // player-facing statistics. They remain inspectable by choice.
+ if(typeof body.querySelectorAll==='function'){
+  const details=make('details',{class:'stage-methodology'});
+  const summary=make('summary',{text:'Подробнее о точности расчёта'});
+  details.append(summary);
+  const candidate=body.querySelectorAll('.stage-attribute-note,.stage-attribute-warning');
+  for(const node of candidate){
+   const txt=String(node.textContent||'');
+   if(/(?:Remaked|\bOS\b|сервер|не учтен|не учтён|не включ|не провер|формул|временны|прок|пока |историч|не моделир)/i.test(txt)&&
+    !node.closest('details'))details.append(node);
+  }
+  if(details.children.length>1)body.append(details);
+ }
  target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages});
