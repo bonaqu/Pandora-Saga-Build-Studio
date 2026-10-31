@@ -1395,3 +1395,14 @@ main{padding-top:10px}
 .stage-book-check input[type=checkbox]:focus-visible,.origin-buffs-checkbox input[type=checkbox]:focus-visible,.build-card input[type=checkbox]:focus-visible{outline:2px solid #ffdc9f;outline-offset:3px}
 .stage-book-check input[type=checkbox]:disabled,.origin-buffs-checkbox input[type=checkbox]:disabled{opacity:.5;cursor:not-allowed}
 @media(max-width:620px){.wiki-page{padding:12px}.wiki-map-monsters{grid-template-columns:1fr}.path-milestone-tooltip{width:min(220px,70vw)}}
+
+/* Hero Book potion values are directly linked to current calculated character stats. */
+.stage-potion-book{display:grid;gap:7px}
+.stage-potion-book>.stage-book-check{padding:7px;border:1px solid #785835;border-radius:4px;background:#22180f}
+.stage-potion-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;
+ border:1px solid #694c30;border-radius:4px;background:linear-gradient(110deg,#251911,#302216)}
+.stage-potion-item span{font:11px/1.45 Manrope,Arial,sans-serif;color:#dec39a;overflow-wrap:anywhere}
+.stage-potion-item strong{flex:none;font:600 13px Manrope,Arial,sans-serif;color:#f9d59d;font-variant-numeric:tabular-nums}
+.stage-combat-quick{margin-bottom:12px}
+.stage-attribute-tabs button{transition:background-color .16s,border-color .16s}
+.stage-attribute-tabs button:focus-visible{outline:2px solid #ffe0a8;outline-offset:2px}
