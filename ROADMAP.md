@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.158.0 (`2026.11.01.158`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.159.0 (`2026.11.01.159`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.159.0 — real Chromium smoke coverage
+
+- Add isolated GitHub Actions Playwright Chromium smoke: live DOM interactions for portrait-only book, book tab/keyboard navigation, max-55 range persistence, new-hero level-1 reset and explicit unsaved-draft choice.
+- Keep the full Node regression suite and release guard in the independent fast CI job; browser job never touches Cloudflare production or credentials.
+- Browser smoke status remains pending until actual GitHub Actions result is observed; local verification does not prove Worker/D1 availability.
 
 ## Source update 0.158.0 — verified share content
 

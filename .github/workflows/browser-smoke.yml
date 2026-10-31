@@ -1,0 +1,35 @@
+name: Chromium browser smoke
+
+on:
+  push:
+    branches: [bonaqu_projects]
+  pull_request:
+    branches: [bonaqu_projects]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Install isolated Chromium test dependencies
+        run: |
+          npm install --no-save --no-package-lock playwright@1.55.1
+          npx playwright install --with-deps chromium
+      - name: Exercise the real editor in Chromium
+        run: |
+          node scripts/dev-server.mjs &
+          server=$!
+          trap 'kill "$server" 2>/dev/null || true' EXIT
+          node tests/browser-smoke.mjs
