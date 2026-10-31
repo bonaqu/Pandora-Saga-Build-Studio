@@ -68,7 +68,30 @@ async function main(){
  assert.equal(await page.locator('#levelOut').textContent(),'1');
  assert.equal(await page.locator('#level').inputValue(),'1');
  assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
- console.log('Chromium smoke passed: hero book, keyboard, level 1–55 and unsaved build');
+ console.log('Chromium desktop smoke passed: hero book, keyboard, level 1–55 and unsaved build');
  await context.close();
+
+ // Separate mobile/touch interaction: no mouse cursor required to open the book.
+ const mobile=await browser.newContext({viewport:{width:390,height:844},
+  isMobile:true,hasTouch:true,deviceScaleFactor:2});
+ await mobile.route('**/*',route=>
+  route.request().url().startsWith(base+'/')?route.continue():route.abort());
+ const touchPage=await mobile.newPage();
+ touchPage.on('pageerror',e=>errors.push(e.message));
+ await touchPage.goto(base+'/',{waitUntil:'domcontentloaded'});
+ await touchPage.waitForFunction(()=>
+  document.querySelector('#raceGrid')?.children.length>0,
+  null,{timeout:20000});
+ await touchPage.locator('#hero').tap();
+ await touchPage.locator('#stageAttributes').waitFor({state:'visible'});
+ await touchPage.locator('#stageAttributes .stage-book-close').tap();
+ assert.equal(await touchPage.locator('#stageAttributes').isHidden(),true);
+ const overflow=await touchPage.evaluate(()=>
+  Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
+  document.documentElement.clientWidth);
+ assert.ok(overflow<=12,'Mobile horizontal overflow: '+overflow+'px');
+ assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
+ console.log('Chromium mobile smoke passed: touch book, responsive width');
+ await mobile.close();
 }
 main().catch(error=>{console.error(error);process.exitCode=1}).finally(async()=>{await browser?.close()});

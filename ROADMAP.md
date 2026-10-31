@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.161.0 (`2026.11.01.161`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.162.0 (`2026.11.01.162`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.162.0 — future items and mobile browser acceptance
+
+- Freeze the 35 source-backed OS catalog items requiring levels 46–55, including the level-55 Dragon Shield. All ten level values are covered; maintain genuine class and level gates (unavailable at level 45, selectable when actually eligible).
+- Extend Chromium smoke to a separate 390px touch context, verifying portrait-only book open/close and narrow viewport horizontal overflow.
+- Maintain the separate Node, Chromium and Pages checks; this does not assert full Remaked calculations or live Cloudflare D1 readiness.
 
 ## Source update 0.161.0 — fix static test server path validation
 
