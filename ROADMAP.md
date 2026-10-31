@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.168.0 (`2026.11.01.168`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.169.0 (`2026.11.01.169`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.169.0 — recipient share lifecycle in Chromium
+
+- Open a public build URL in a second isolated browser with its own level-22 unsaved character; canceling preserves both draft and navigation.
+- Accept the exact level-55 snapshot without saving, then simulate owner revocation (HTTP 410) and assert the user gets a clear message while the active character is not erased.
+- Keep Worker requests mocked and production D1 untouched. Live published health/version checks are separate from this transactional browser simulation.
 
 ## Source update 0.168.0 — dependable live release monitoring
 

@@ -4,10 +4,10 @@ import assert from 'node:assert/strict';
 export async function runShareLinkSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const shareId='A1234567890',stored=new Map();
- let mismatched=false,created=0,readbacks=0;
+ let mismatched=false,revoked=false,created=0,readbacks=0;
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  await context.grantPermissions(['clipboard-read','clipboard-write']);
- await context.route('**/*',async route=>{
+ const mockWorkerRoute=async route=>{
   const request=route.request(),url=request.url();
   if(url.startsWith(base+'/'))return route.continue();
   if(!url.startsWith(api+'/'))return route.abort();
@@ -39,6 +39,7 @@ export async function runShareLinkSmoke(browser,base){
    created++;return json({ok:true,id:shareId});
   }
   if(path==='/api/shared/'+shareId&&method==='GET'){
+   if(revoked)return json({error:'Владелец удалил билд',reason:'deleted'},410);
    const entry=[...stored.values()].at(-1);
    if(!entry)return json({error:'Missing'},404);
    readbacks++;
@@ -46,7 +47,8 @@ export async function runShareLinkSmoke(browser,base){
    return json({schema:1,share:{schema:1,type:'build',data}});
   }
   return route.abort();
- });
+ };
+ await context.route('**/*',mockWorkerRoute);
  const page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
  try{
@@ -79,7 +81,43 @@ export async function runShareLinkSmoke(browser,base){
   assert.equal(await page.locator('.build-share-slot .share-result').count(),0);
   assert.equal(readbacks,2);
   assert.deepEqual(errors,[]);
-  console.log('Chromium share link smoke passed: verified URL, clipboard and mismatched snapshot rejection');
+  mismatched=false;
+  const receiver=await browser.newContext({viewport:{width:1365,height:850}});
+  await receiver.route('**/*',mockWorkerRoute);
+  const incoming=await receiver.newPage(),incomingErrors=[];
+  incoming.on('pageerror',e=>incomingErrors.push(e.message));
+  try{
+   await incoming.goto(base+'/',{waitUntil:'domcontentloaded'});
+   await incoming.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0,
+    null,{timeout:20000});
+   await incoming.locator('[data-origin-tab="stats"]').click();
+   await incoming.locator('#level').evaluate(el=>{
+    el.value='22';el.dispatchEvent(new Event('input',{bubbles:true}));
+   });
+   assert.equal(await incoming.locator('#levelOut').textContent(),'22');
+   await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
+   const dialog=incoming.getByRole('dialog',{name:'Открыть билд по ссылке?'});
+   await dialog.waitFor({state:'visible',timeout:20000});
+   await dialog.getByRole('button',{name:'Отмена'}).click();
+   assert.equal(await incoming.locator('#levelOut').textContent(),'22',
+    'rejecting an imported build preserves the recipient draft');
+   assert.equal(await incoming.evaluate(()=>location.hash),'');
+   await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
+   await dialog.waitFor({state:'visible',timeout:20000});
+   await dialog.getByRole('button',{name:'Открыть без сохранения'}).click();
+   assert.equal(await incoming.locator('#levelOut').textContent(),'55',
+    'accepting the shared build loads its full planning level');
+   assert.equal(await incoming.evaluate(()=>location.hash),'');
+   revoked=true;
+   await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
+   const toast=incoming.locator('#studioToast');
+   await toast.waitFor({state:'visible',timeout:20000});
+   assert.match(await toast.innerText(),/Владелец удалил этот билд/);
+   assert.equal(await incoming.locator('#levelOut').textContent(),'55');
+   assert.equal(await incoming.evaluate(()=>location.hash),'');
+   assert.deepEqual(incomingErrors,[]);
+  }finally{await receiver.close()}
+  console.log('Chromium share link smoke passed: verified URL, clipboard, mismatch, receiver cancellation/import and revoked link');
  }finally{
   await context.close();
  }
