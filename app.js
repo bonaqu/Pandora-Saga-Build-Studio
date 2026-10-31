@@ -123,7 +123,7 @@ function previewBaseStats(){
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
   potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
-   jobKey:jobKeys[state.job],benevolenceMastery,skillCatalog:catalog.skills,...masteries}
+   jobKey:jobKeys[state.job],benevolenceMastery,skillCatalog:catalog.skills||{},...masteries}
  });
 }
 function renderPotionPreview(calculated){
@@ -535,8 +535,14 @@ function renderStageAttributes(){
     number(eff.EP_ARMORCLASS_SCALE??0)+'% защиты':
     number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки · '+
     number(eff.EP_ARMORCLASS_SCALE??0)+'% защиты';
+  const reason=!ability?'Умение отсутствует в каталоге':
+   !ability.classes?.[cls]?'Недоступно для этой профессии':
+   state.level<Number(ability.charLevel||0)?
+    'Откроется на '+ability.charLevel+' уровне':
+   name==='defender'&&equippedShield?.slot!=='shield'?'Необходимо экипировать щит':
+   null;
   combatSkillCards[setting]=ability?{
-   name:ability.name,desc:ability.desc,level:ability.charLevel,summary,
+   name:ability.name,desc:ability.desc,level:ability.charLevel,summary,reason,
    icon:skillIcon(ability.branch,0,ability)
   }:null;
  }
