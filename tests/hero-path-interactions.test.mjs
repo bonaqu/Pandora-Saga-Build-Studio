@@ -170,7 +170,7 @@ test('closing a group clears child expansion and reopening leaves all branches f
  assert.match(app,/if\(selected&&\(inlineBranchId===null/);
 });
 
-test('real class milestone ticks are passive, leave the slider fully interactive',()=>{
+test('real class milestone markers have preview tooltips without blocking the range',()=>{
  Function('window',read('skill-milestones.js'))(root);
  const app=sources['app.js'];
  const m=app.match(/milestones:(\(skills,key,cap\)=>\{[\s\S]*?\n  \}),\n  onGroup:/);
@@ -185,7 +185,7 @@ test('real class milestone ticks are passive, leave the slider fully interactive
  assert.ok(ticks.some(x=>x.attributes['data-milestone-points']==='41'));
  assert.ok(ticks.every(x=>x.tag==='span'));
  assert.ok(ticks.every(x=>!x.listeners.click));
- assert.ok(ticks.every(x=>x.children.length===0));
+ assert.ok(ticks.every(x=>walk(x).some(y=>y.className==='path-milestone-tooltip')));
  assert.ok(ticks.every(x=>!Object.hasOwn(x.style,'top')));
  assert.ok(f.range.listeners.input,'range has its own input handler');
  const disclosure=walk(f.target).find(x=>x.className==='path-unlock-details');
@@ -194,7 +194,7 @@ test('real class milestone ticks are passive, leave the slider fully interactive
  assert.ok(disclosure.children.some(x=>x.tag==='summary'));
 });
 
-test('nearby skill thresholds do not merge into a bulky draggable overlay',()=>{
+test('nearby skill thresholds remain individually inspectable without blocking the range',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
  const skills=[8,10,42].map((threshold,index)=>({
   id:900+index,name:'Fixture '+threshold,classes:{CLERIC:true},
@@ -209,7 +209,9 @@ test('nearby skill thresholds do not merge into a bulky draggable overlay',()=>{
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const ticks=walk(f.target).filter(x=>String(x.className).includes('path-threshold-tick'));
  assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['8','10','42']);
- assert.ok(ticks.every(x=>!x.listeners.click),'drag surface must not have clickable overlays');
+ assert.ok(ticks.every(x=>!x.listeners.click),'preview markers do not intercept range clicks');
+ assert.ok(ticks.every(x=>x.attributes.tabindex==='0'),'markers are keyboard focusable');
+ assert.ok(ticks.every(x=>walk(x).some(y=>y.className==='path-milestone-preview')));
  const details=walk(f.target).find(x=>x.className==='path-unlock-details');
  assert.ok(details);
  assert.equal(details.attributes.open,undefined,'skill list is collapsed by default');
