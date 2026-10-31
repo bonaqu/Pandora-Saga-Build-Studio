@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const app=read('app.js'),tables=JSON.parse(read('data/os/tables.json'));
 const classes=JSON.parse(read('data/os/classes.json'));
-const host={};Function('window',read('attribute-progression.js'))(host);
+const host={PandoraGameNavigation:{raceKeys:['HUMAN']}};Function('window',read('attribute-progression.js'))(host);
 const start=app.indexOf('function allocationIssue(){');
 const end=app.indexOf('function renderAllocationWarning(){',start);
 assert.ok(start>=0&&end>start,'allocation validation must be present');
