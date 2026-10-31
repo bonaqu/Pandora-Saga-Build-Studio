@@ -15,10 +15,26 @@ async function main(){
  const page=await context.newPage();
  page.on('pageerror',e=>errors.push(e.message));
  await page.goto(base+'/',{waitUntil:'domcontentloaded',timeout:30000});
- await page.waitForFunction(()=>
-  document.querySelector('#raceGrid')?.children.length>0&&
-  document.querySelector('#skillBranches')?.children.length>0,
-  null,{timeout:30000});
+ const failedRequests=[];
+ page.on('requestfailed',request=>{
+  if(request.url().startsWith(base+'/'))failedRequests.push(request.url());
+ });
+ try{
+  await page.waitForFunction(()=>
+   document.querySelector('#raceGrid')?.children.length>0 &&
+   document.querySelector('#hero')?.getAttribute('src'),
+   null,{timeout:20000});
+ }catch(error){
+  const state=await page.evaluate(()=>({
+   ready:document.readyState,
+   raceCount:document.querySelector('#raceGrid')?.children.length,
+   branchCount:document.querySelector('#skillBranches')?.children.length,
+   catalog:document.querySelector('#catalogStatus')?.textContent,
+   notice:document.querySelector('#siteNotice')?.textContent,
+   headline:document.body?.innerText?.slice(0,300)
+  }));
+  throw Error('Editor bootstrap failed: '+JSON.stringify({state,errors,failedRequests})+'; '+error.message);
+ }
  assert.equal(await page.locator('#levelOut').textContent(),'1');
  assert.equal(await page.locator('#level').getAttribute('max'),'55');
  assert.equal(await page.locator('#stageAttributes').isHidden(),true);

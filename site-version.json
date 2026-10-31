@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.01.159",
-  "notes": "Отдельный GitHub Actions Chromium smoke для портрета, уровней и новых билдов"
+  "release": "2026.11.01.160",
+  "notes": "Уточнён Chromium readiness и добавлены диагностические данные загрузки"
 }
