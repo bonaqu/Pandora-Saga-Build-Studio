@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.106.0 (`2026.10.31.106`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.107.0 (`2026.10.31.107`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,13 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.107.0 — simplify portrait book entry and relocate all boost controls
+
+- One on-portrait interaction (click or keyboard); no pointer hand, no secondary buttons.
+- Uniform dimensions and visual style for previous, next and close controls.
+- Origin stats show only base allocations and derived vitals; all buffs are edited inside the book. Hidden legacy form nodes retained short-term to avoid breaking already shipped listeners, pending dedicated cleanup.
+- Player summary no longer shows developer-side effect counters or incomplete damage notes.
 
 ## Source update 0.106.0 — keyboard and accessibility hardening for results book
 

@@ -1280,3 +1280,26 @@ main{padding-top:10px}
 .stage-skill-heading strong{color:#f4d19d;font-size:12px}
 .stage-skill-heading span,.stage-skill-card small{color:#cfad82;font-size:10px}
 .stage-skill-card p{font-size:10px;color:#e0c6a1;line-height:1.4}
+
+/* The book is opened only through the hero portrait. Uniform navigation controls. */
+#legacyBuffControls,#legacyBuffControls[hidden]{display:none!important}
+.workspace>.stage .portrait-frame>img#hero,
+.workspace>.stage .portrait-frame>img#hero:not(.admin-edit){cursor:default!important}
+.stage-attribute-head{grid-template-columns:36px minmax(0,1fr) 36px 36px;gap:5px}
+.stage-attribute-head .stage-book-arrow,
+.stage-attribute-head .stage-book-close{
+ width:36px!important;height:36px!important;min-width:36px!important;
+ min-height:36px!important;padding:0!important;
+ display:grid!important;place-items:center!important;justify-content:center;
+ align-items:center;box-sizing:border-box;
+ line-height:1!important;font:400 22px/1 Georgia,serif!important;
+ border:1px solid #987247;border-radius:4px;
+ background:linear-gradient(#503723,#2a1d14);color:#f1d6a8;
+}
+.stage-attribute-head .stage-book-arrow:hover,
+.stage-attribute-head .stage-book-close:hover{border-color:#f4c47d;background:#674426}
+@media(max-width:410px){
+ .stage-attribute-head{grid-template-columns:32px minmax(0,1fr) 32px 32px;gap:3px}
+ .stage-attribute-head .stage-book-arrow,.stage-attribute-head .stage-book-close{
+ width:32px!important;height:32px!important;min-width:32px!important;min-height:32px!important}
+}

@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const html=read('index.html'),css=read('style.css'),app=read('app.js');
-test('buffs remain optional collapsed settings with distinct guild effects',()=>{
+test('buffs are book-only while legacy form inputs stay hidden for compatibility',()=>{
+ assert.match(html,/id="legacyBuffControls" hidden inert/);
+ const origin=html.slice(html.indexOf('id="originPanelStats"'),html.indexOf('id="originPanelStats"')+1700);
+ assert.doesNotMatch(origin,/Усиления ОЗ и ОМ/);
  assert.match(html,/<details class="origin-vitals-buffs" id="originBuffs">/);
  for(const id of ['originGuildHp','originGuildMp','originLifeSign','originVitalsCoverage'])
   assert.match(html,new RegExp('id="'+id+'"'),id);

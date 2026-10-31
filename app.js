@@ -476,9 +476,9 @@ function renderStageAttributes(){
  const activeControl=root.contains(document.activeElement)?
   document.activeElement?.getAttribute?.('data-book-setting'):null;
  root.hidden=!show;root.closest('.portrait-frame').classList.toggle('attributes',show);
- $('stageAttributeToggle').setAttribute('aria-pressed',String(Boolean(stageAttributesPage)));
- $('stageAttributeToggle').setAttribute('aria-expanded',String(show));
- $('stageAttributeToggle').textContent=stageAttributesPage?'↩ Образ героя':'📖 Результаты';
+ $('stageAttributeToggle')?.setAttribute('aria-pressed',String(Boolean(stageAttributesPage)));
+ $('stageAttributeToggle')?.setAttribute('aria-expanded',String(show));
+ if($('stageAttributeToggle'))$('stageAttributeToggle').textContent=stageAttributesPage?'↩ Образ героя':'📖 Результаты';
  $('stageBuffToggle')?.setAttribute('aria-pressed',String(stageAttributesPage==='buffs'));
  $('stageBuffToggle')?.setAttribute('aria-expanded',String(stageAttributesPage==='buffs'&&show));
  $('hero')?.setAttribute('aria-expanded',String(show));
@@ -1959,10 +1959,10 @@ $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dat
  selectedSlot=0;stageSlotQuery='';stageSlotView=state.equipment?.[0]?'details':'choose';
  stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
 };
-$('stageAttributeToggle').onclick=()=>{
+if($('stageAttributeToggle'))$('stageAttributeToggle').onclick=()=>{
  stageAttributesPage=stageAttributesPage?null:'summary';renderStageAttributes();saveView()
 };
-$('stageBuffToggle').onclick=()=>{
+if($('stageBuffToggle'))$('stageBuffToggle').onclick=()=>{
  stageAttributesPage=stageAttributesPage==='buffs'?null:'buffs';
  renderStageAttributes();saveView();
 };
@@ -1970,7 +1970,7 @@ const openHeroBook=()=>{
  if(stageSlotPickerOpen||adminEditing)return;
  stageAttributesPage='summary';renderStageAttributes();saveView();
 };
-$('portraitBookOpen').onclick=openHeroBook;
+if($('portraitBookOpen'))$('portraitBookOpen').onclick=openHeroBook;
 $('stageAttributes')?.addEventListener('keydown',event=>{
  if(!stageAttributesPage||stageSlotPickerOpen||
   event.target.closest?.('input,select,textarea'))return;

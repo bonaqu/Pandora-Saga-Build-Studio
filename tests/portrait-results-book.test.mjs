@@ -5,9 +5,11 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const html=read('index.html'),app=read('app.js'),stage=read('stage-attributes.js'),css=read('style.css');
 test('original portrait and rails stay intact with dedicated book controls',()=>{
  assert.match(html,/id="hero"[^>]*role="button"[^>]*tabindex="0"/);
- for(const id of ['portraitBookOpen','stageBuffToggle','stageAttributes','railLeft','railRight'])
+ for(const id of ['stageAttributes','railLeft','railRight'])
   assert.match(html,new RegExp('id="'+id+'"'));
- assert.match(css,/\.portrait-book-open/);
+ for(const id of ['portraitBookOpen','stageBuffToggle','stageAttributeToggle'])
+  assert.doesNotMatch(html,new RegExp('id="'+id+'"'));
+ assert.match(css,/img#hero:not\(\.admin-edit\)\{cursor:default!important\}/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
 test('click, Enter, Space, Escape and back action switch the existing overlay',()=>{

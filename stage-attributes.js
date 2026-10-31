@@ -23,7 +23,7 @@ function summaryPage(body,calc){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',text:'Параметры появятся после загрузки игровых данных.'}));return}
  body.append(make('div',{class:'stage-result-intro'},[
   make('strong',{text:'Результаты расчёта'}),
-  make('p',{text:'Частичные расчёты по Remaked и таблицам OS. Выберите следующую страницу для подробностей.'})
+  make('p',{text:'Выберите раздел, чтобы посмотреть подробности.'})
  ]));
  const c=calc.combat||{};
  const rows=[
@@ -39,9 +39,7 @@ function summaryPage(body,calc){
  for(const [label,value,note] of rows)grid.append(make('div',{class:'stage-result-tile'},[
   make('span',{text:label}),make('strong',{text:value??'—'}),make('small',{text:note})]));
  body.append(grid);
- body.append(make('p',{class:'stage-attribute-note',text:
-  'Учтено структурированных эффектов предметов и душ: '+(calc.effects?.trace?.length||0)+
-  '. Окончательный урон на игровом сервере ещё не моделируется.'}));
+
 }
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],

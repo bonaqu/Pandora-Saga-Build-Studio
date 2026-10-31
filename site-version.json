@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.106",
-  "notes": "Accessible keyboard page flipping, focus retention across live buff changes and ARIA book tabs"
+  "release": "2026.10.31.107",
+  "notes": "One portrait-click book entry, uniform book navigation, boost settings outside Origin, no summary diagnostics"
 }
