@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import worker from '../worker/index.js';
 
 const key='a'.repeat(64),other='b'.repeat(64);
@@ -63,4 +64,22 @@ test('D1 library rejects invalid levels, IDs and tokens',async()=>{
  assert.equal((await worker.fetch(request('POST',{action:'put',entry}),{DB})).status,400);
  assert.equal((await worker.fetch(request('GET',null,'bad'),{DB})).status,401);
  assert.equal((await worker.fetch(request('POST',{action:'delete',id:'../../'}),{DB})).status,400);
+});
+
+test('deleted tombstones cannot push older active builds outside a 250-record window',async()=>{
+ const DB=database(),liveId='f'.repeat(32);
+ const source=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
+ assert.match(source,/ORDER BY \(deleted_at IS NOT NULL\), updated_at DESC/);
+ assert.doesNotMatch(source,/FROM private_builds WHERE owner_hash=\? ORDER BY updated_at DESC LIMIT 250/);
+ const entry={id:liveId,name:'Old but active',at:1,data:{race:1,job:0,level:55}};
+ assert.equal((await worker.fetch(request('POST',{action:'put',entry}),{DB})).status,200);
+ for(let i=0;i<275;i++){
+  const id=i.toString(16).padStart(32,'0');
+  assert.equal((await worker.fetch(request('POST',{action:'delete',id}),{DB})).status,200);
+ }
+ const result=await worker.fetch(request('GET'),{DB});
+ assert.equal(result.status,200);
+ const records=(await result.json()).records;
+ assert.equal(records.length,276);
+ assert.deepEqual(records.find(x=>x.id===liveId)?.entry,entry);
 });

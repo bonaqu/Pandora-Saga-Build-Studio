@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.138.0 (`2026.10.31.138`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.139.0 (`2026.10.31.139`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -621,3 +621,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Once a player updates a saved build, the older short URL remains an immutable snapshot and a new short URL is issued for the new character state. Deleting the original revokes **both** versions and scrubs both snapshots.
 - [x] Expanded mocked D1 server regression to cover idempotent sharing, different revisions, malicious client payloads, and multi-version revocation.
 - [ ] Run live browser link-copy flow, live D1 write/delete acceptance and complete Node test suite independently.
+
+
+## Source update 0.139.0 — complete private library listing
+
+- [x] D1 library GET no longer truncates the result to the newest 250 rows, which could hide older active builds when numerous permanent deletion tombstones were newer.
+- [x] Active rows are ordered before tombstones; all deletion IDs remain represented to prevent an old offline cache from treating deleted builds as new unsynced characters.
+- [x] Regression guard covers one original level-55 build and 275 newer tombstones without dropping that active record.
+- [ ] Consider paged sync and compact tombstone records for extremely large historical libraries; verify full Node suite, real D1 E2E and browser acceptance.

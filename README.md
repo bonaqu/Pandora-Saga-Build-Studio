@@ -622,3 +622,8 @@ Conditional on-hit/on-damage equipment and Soul skills appear separately in the 
 ## Repeat sharing · 0.138.0
 
 The short link is stable for a given saved D1 character snapshot. Re-sharing an unchanged build returns the same URL without consuming another daily creation slot. Saving a revised build retains the old URL as a snapshot, while generating a distinct URL for the revision; deleting the original revokes **every** revision link. Links from old characters are still read-only.
+
+
+## Complete cloud library list · 0.139.0
+
+The D1 library GET response preserves old active builds even after many deletions: live records sort first, tombstones second, and the former 250-row cap is removed. Tombstones prevent a stale local cache from reintroducing a deleted build. Extremely large deletion histories should eventually move to cursor-based synchronization to bound request size.

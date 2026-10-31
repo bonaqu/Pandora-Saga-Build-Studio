@@ -200,7 +200,7 @@ async function libraryApi(request,env){
  if(!/^Bearer [a-f0-9]{64}$/.test(bearer))return no('Library key required',401);
  const owner=await sha(bearer.slice(7));
  if(request.method==='GET'){
-  const rows=await env.DB.prepare('SELECT build_id,payload,deleted_at FROM private_builds WHERE owner_hash=? ORDER BY updated_at DESC LIMIT 250').bind(owner).all();
+  const rows=await env.DB.prepare('SELECT build_id,payload,deleted_at FROM private_builds WHERE owner_hash=? ORDER BY (deleted_at IS NOT NULL), updated_at DESC').bind(owner).all();
   return json({records:(rows.results||[]).map(r=>({id:r.build_id,deleted:r.deleted_at!==null,
    entry:r.deleted_at===null?JSON.parse(r.payload):null}))});
  }
