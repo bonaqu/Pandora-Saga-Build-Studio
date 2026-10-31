@@ -652,3 +652,8 @@ When an already saved build is updated offline, reloading the cloud library reta
 ## Status resistance parity · 0.144.0
 
 The defensive Hero Book now includes real OS source-based bonuses from Warding's «Устойчивость», the Dwarf's «Упрямое сердце», the fire/ice/lightning Honor titles, and structured equipment and Soul resistances. Eleven historical Remaked keys advance to partial support; not all conditional or immunity rules are modeled. These resistances are not assumed to equal final combat status-proc probabilities.
+
+
+## Class-aware passives and a cleaner Book · 0.145.0
+
+The Warding skill requires both its learned Green mastery and an actual class branch cap permitting 26 points. The public Hero Book hides methodology warnings and developer-only diagnostics; these remain accessible to authenticated administrators. Player-facing characteristics and their meaningful descriptions remain visible.

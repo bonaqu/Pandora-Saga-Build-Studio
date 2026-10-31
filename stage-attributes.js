@@ -30,8 +30,8 @@ function summaryPage(body,calc){
   ['ОЗ',calc.hp,'Здоровье'],['ОМ',calc.mp,'Мана'],
   ['Атака',c.attack?.known,'Физическая'],['Защита',c.defense?.known,'С заточкой'],
   ['Маг. атака',c.magicAttack?.known==null?null:c.magicAttack.known+'%','Коэффициент'],
-  ['Точность',c.accuracy?.known,'Частично'],['Уклонение',c.dodge?.known,'Частично'],
-  ['Крит. шанс',c.critical?.known,'Частично'],
+  ['Точность',c.accuracy?.known,'Попадание'],['Уклонение',c.dodge?.known,'Защита'],
+  ['Крит. шанс',c.critical?.known,'Вероятность'],
   ['Зелья',calc.potion?.percent==null?null:calc.potion.percent+'%','Эффект'],
   ['Лечение',calc.healingSkill?.percent==null?null:calc.healingSkill.percent+'%','Эффект навыков']
  ];
@@ -725,12 +725,16 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   const summary=make('summary',{text:'Подробнее о точности расчёта'});
   details.append(summary);
   const candidate=body.querySelectorAll('.stage-attribute-note,.stage-attribute-warning');
+  const isAdmin=root.PandoraStudioAdminActive?.()===true;
   for(const node of candidate){
    const txt=String(node.textContent||'');
    if(/(?:Remaked|\bOS\b|сервер|не учтен|не учтён|не включ|не провер|формул|временны|прок|пока |историч|не моделир)/i.test(txt)&&
-    !node.closest('details'))details.append(node);
+    !node.closest('details')){
+    if(isAdmin)details.append(node);
+    else node.remove();
+   }
   }
-  if(details.children.length>1)body.append(details);
+  if(isAdmin&&details.children.length>1)body.append(details);
  }
  target.append(body);
 }

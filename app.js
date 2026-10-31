@@ -281,9 +281,8 @@ function renderOriginVitals(){
  const holder=$('originVitals');
  if(holder){
   const notice=hpReady&&mpReady?
-   'ОЗ '+calculated.hp+', ОМ '+calculated.mp+
-   '. Расчёт по известным формулам, без некоторых эффектов, комплектов и усилений.':
-   'ОЗ и ОМ будут рассчитаны после загрузки игровых характеристик.';
+   'ОЗ '+calculated.hp+', ОМ '+calculated.mp:
+   'ОЗ и ОМ появятся после загрузки игровых данных.';
   holder.setAttribute('aria-label',notice);
   holder.title=''; // Never show a second browser tooltip above game UI.
  }

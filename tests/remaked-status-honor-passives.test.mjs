@@ -19,7 +19,7 @@ test('current OS Dwarf Heart passive gives stun and tumble +10, not all ailments
  assert.equal(dwarf.status.numb,2);
 });
 test('current OS Warding 26 passive contributes +15 to three target conditions exactly once',()=>{
- const input={jobKey:'CLERIC',wardingMastery:26,skillCatalog:skills};
+ const input={jobKey:'SNIPER',wardingMastery:26,wardingCap:90,skillCatalog:skills};
  const passive=calc.wardingStatusPassive(input);
  assert.deepEqual(passive,{stun:15,numb:15,tumble:15});
  const activated=value({...input,honorTitle:4,racialPassiveId:900030001});
@@ -29,10 +29,13 @@ test('current OS Warding 26 passive contributes +15 to three target conditions e
  assert.deepEqual(activated.wardingPassive,passive);
  for(const mastery of [0,25,-1])assert.equal(calc.wardingStatusPassive({...input,wardingMastery:mastery}),null);
  assert.equal(calc.wardingStatusPassive({...input,jobKey:'UNKNOWN'}),null);
+ assert.equal(calc.wardingStatusPassive({...input,wardingCap:5}),null);
+ assert.equal(calc.wardingStatusPassive({...input,wardingCap:25}),null);
+ assert.equal(calc.wardingStatusPassive({...input,wardingMastery:91}),null);
  assert.equal(calc.wardingStatusPassive({...input,skillCatalog:{}}),null);
 });
 test('duplicated CASTER row does not double Numb and corrupt skill row fails closed',()=>{
- const input={jobKey:'CLERIC',wardingMastery:26,skillCatalog:skills};
+ const input={jobKey:'SNIPER',wardingMastery:26,wardingCap:90,skillCatalog:skills};
  const tampered=structuredClone(skills[260007001]);
  tampered.funcs=structuredClone(tampered.funcs);
  tampered.funcs.find(e=>e.ep==='EP_IMMUNE_STUN').fv1[3]=null;

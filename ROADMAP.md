@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.144.0 (`2026.10.31.144`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.145.0 (`2026.10.31.145`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -671,3 +671,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Current OS passive 260007001 requires Warding Adeptness 26, allowed class and exactly one TARGET row for each of three +15 effects; duplicated CASTER frostbite row is ignored. The Dwarf racial passive 900030001 adds +10 to stun and tumble, while fire/ice/lightning Honor titles each grant +5 to a distinct status.
 - [x] No unsupported numerical combat hit chance, immune status threshold or non-OS bleeding and unseat effect is fabricated.
 - [ ] Full Node/browser E2E and verification against actual game server remain outstanding.
+
+
+## 0.145.0 — passive class-cap gate and unobstructed player book
+
+- [x] A Warding 26 Soul/passive bonus cannot be enabled when the current profession's real branch cap is less than 26, even if an invalid saved allocation claims the required mastery. SNIPER and other eligible classes still receive their supported passive effects.
+- [x] Remove methodology/debugger comments from the **ordinary player's** Hero Book. Developer formula disclosures remain in admin mode only. Public main summary uses intuitive gameplay labels rather than technical 'Частично' disclaimers; Origin HP/MP accessibility labels report clean numeric values.
+- [x] Add regression checks for cap gating and public UI text while retaining admin-only formula trace and structured effect-coverage diagnostics.
+- [ ] Perform full browser/keyboard/mobile QA and full Node suite; calculator server parity remains incomplete.

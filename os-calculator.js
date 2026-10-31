@@ -263,9 +263,10 @@ function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
 }
 // Current OS skill 260007001 requires Warding 26 and supplies exactly
 // three TARGET resistance effects. The duplicate CASTER Numb is not additive.
-function wardingStatusPassive({jobKey=null,wardingMastery=0,skillCatalog=null}={}){
+function wardingStatusPassive({jobKey=null,wardingMastery=0,wardingCap=null,skillCatalog=null}={}){
  if(!Number.isInteger(wardingMastery)||wardingMastery<26||
-  !jobKey||!skillCatalog)return null;
+  !Number.isInteger(wardingCap)||wardingCap<26||
+  wardingMastery>wardingCap||!jobKey||!skillCatalog)return null;
  const skill=skillCatalog['260007001'];
  if(skill?.skillType!=='PASSIVE'||skill.branch!=='warding'||
   !skill.classes?.[jobKey]||
@@ -282,7 +283,7 @@ function wardingStatusPassive({jobKey=null,wardingMastery=0,skillCatalog=null}={
 // chosen Honor, selected racial passive and structured OS equipment effects.
 // Active casts, guild resistances, gem conditions and other buffs are excluded.
 function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=null,
- jobKey=null,wardingMastery=0,skillCatalog=null}={}){
+ jobKey=null,wardingMastery=0,wardingCap=null,skillCatalog=null}={}){
  if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
  const title=honorTitles[honorTitle].effects,elementKeys=[
@@ -297,7 +298,7 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
  const elements={};
  const statusKeys=['burn','stun','numb','tumble','knockback','sleep',
   'silence','evil','curse','disease','madness','blockBreak'];
- const status={},passive=wardingStatusPassive({jobKey,wardingMastery,skillCatalog});
+ const status={},passive=wardingStatusPassive({jobKey,wardingMastery,wardingCap,skillCatalog});
  const honorStatus={burn:honorTitle===3?5:0,numb:honorTitle===4?5:0,
   tumble:honorTitle===5?5:0};
  const dwarfStatus=racialPassiveId===900030001?{stun:10,tumble:10}:{};
@@ -1110,7 +1111,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,
   jobKey:combatContext.jobKey,wardingMastery:combatContext.wardingMastery,
-  skillCatalog:combatContext.skillCatalog});
+  wardingCap:classData.branchCaps?.warding,skillCatalog:combatContext.skillCatalog});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
  const gemstones=gemstonePreview(gemSelections);
  const otherEquipment=secondaryEffectsPreview({records:combinedRecords,itemForth});
