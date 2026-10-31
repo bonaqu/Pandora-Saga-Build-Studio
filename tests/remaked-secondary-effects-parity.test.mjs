@@ -27,7 +27,7 @@ test('Remaked enhancement map preserves 14 secondary EP stat destinations',()=>{
  const x=C.secondaryEffectsPreview({records:[row(known)]});
  assert.deepEqual(Object.fromEntries(Object.entries(x).filter(([k])=>k!=='traces')),{
   incomingPhysicalFlat:-3,incomingPhysicalPercent:-5,incomingMagicPercent:-7,
-  auraFlat:4,auraPercent:20,cooldown:-2,outgoingDebuffDuration:10,
+  auraFlat:4,auraPercent:20,cooldown:-2,townMovement:0,outgoingDebuffDuration:10,
   incomingDebuffDurationReduction:-15,physicalReflection:5,
   debuffSuccess:8,damageNegation:3,manaRecoverySpeed:9,
   castSpeedReduction:5,castSpeedFinal:3
