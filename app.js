@@ -1160,7 +1160,7 @@ function renderWiki(root){
   }else if(type==='monster'){
     const monsterStats=[['Уровень',rec.level],['ОЗ',rec.life],
      ['Защита',rec.ac],['Маг. защита',rec.magicProtection],
-     ['Уклонение',rec.warding],['Сила',rec.str],['Выносливость',rec.vit],
+     ['Защитный показатель',rec.warding],['Сила',rec.str],['Выносливость',rec.vit],
      ['Ловкость',rec.agi],['Проворство',rec.dex],
      ['Дух',rec.spi],['Интеллект',rec.int]];
     detail.append(h('div',{class:'wiki-monster-stats'},
