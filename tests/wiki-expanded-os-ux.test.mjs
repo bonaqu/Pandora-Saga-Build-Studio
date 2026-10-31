@@ -1,0 +1,56 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
+const items=JSON.parse(read('data/os/items.json'));
+const chests=JSON.parse(read('data/os/chests.json'));
+const souls=JSON.parse(read('data/os/souls.json'));
+
+test('every available OS chest has a canonical item image identity',()=>{
+ assert.equal(chests.boxes.length,32);
+ for(const chest of chests.boxes)
+  assert.ok(items[chest.i]?.icon,'Missing real OS item icon for chest '+chest.i);
+});
+
+test('every live OS soul shares a source-backed item sprite identity',()=>{
+ assert.equal(Object.keys(souls).length,112);
+ for(const [id,soul] of Object.entries(souls))
+  assert.ok(items[id]?.icon||soul.icon,'Missing icon identity for soul '+id);
+});
+
+test('wiki resolves chests by item ID and soul portraits through item icon catalog',()=>{
+ const app=read('app.js');
+ assert.match(app,/type==='chest'\?wikiData\.items\?\.\[id\]/);
+ assert.match(app,/itemIcon\(wikiData\.items\?\.\[id\]\|\|row,'items'\)/);
+ assert.match(app,/type==='item'\|\|type==='chest'\|\|type==='soul'/);
+ assert.match(app,/const wikiImage=/);
+});
+
+test('NPC recipes, monster details and locations are searchable game data',()=>{
+ const app=read('app.js'),styles=read('style.css');
+ assert.match(app,/const filterRecipes=/);
+ assert.match(app,/wiki-trade-cost/);
+ assert.match(app,/wiki-map-monsters/);
+ assert.match(app,/const monsterStats=/);
+ assert.match(styles,/\.wiki-trade-card/);
+});
+
+test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
+ const calc=read('os-calculator.js'),app=read('app.js');
+ const stage=read('stage-attributes.js'),html=read('index.html');
+ assert.doesNotMatch(html,/originRuneJoEun|Руна «Чо Ын»/);
+ assert.doesNotMatch(stage,/runeJoEun|Чо Ын/);
+ assert.doesNotMatch(app,/originRuneJoEun|rawAttributes\.runeJoEun/);
+ assert.match(calc,/runeJoEun:false,level,itemForth/);
+});
+
+test('skills expose hover preview, and book uses branded checkboxes and source-backed potions',()=>{
+ const path=read('hero-path.js'),book=read('stage-attributes.js'),css=read('style.css');
+ assert.match(path,/path-milestone-tooltip/);
+ assert.match(path,/path-milestone-preview/);
+ assert.match(path,/tabindex:'0'/);
+ assert.match(book,/PandoraOSCalculator\?\.potionPreview/);
+ assert.match(book,/stage-combat-quick/);
+ assert.match(css,/\.stage-book-check input\[type=checkbox\]/);
+});
