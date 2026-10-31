@@ -30,12 +30,12 @@ test('green mastered 25->26 switches +100 accuracy exactly once without changing
  assert.equal(sample(26,false).accuracy.activeBonus,0);
 });
 test('catalog EP changes follow source while missing mastery and missing record fail closed',()=>{
- const changed=structuredClone(skills);
+ const changed=JSON.parse(JSON.stringify(skills));
  changed[100054001].funcs.find(e=>e.ep==='EP_TOHIT_CONST').fv1[3]=80;
  assert.equal(sample(26,true,changed).accuracy.activeBonus,80);
  assert.equal(C.activeCombatSkills({selected:{combatConcentration:true},
   skillCatalog:skills,jobKey:'WARRIOR',level:45}).concentration,false);
- const lost=structuredClone(skills);delete lost[100054001];
+ const lost=JSON.parse(JSON.stringify(skills));delete lost[100054001];
  assert.equal(sample(26,true,lost).activeSkills.concentration,false);
 });
 test('book gates Concentration by the same trained slash skill and saves it in links',()=>{
