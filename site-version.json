@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.115",
-  "notes": "Simplified player book terminology and unambiguous monster stat labels; current OS icon support retained"
+  "release": "2026.10.31.116",
+  "notes": "Consistent D1/local game catalogs; fixed dungeon API shape; current OS rune validation; wiki/potion UX; source-backed resistance detail"
 }
