@@ -59,6 +59,15 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   }body.append(card);
  }
  if(page==='effects'){
+  if(modifiers?.healingSkill){
+   const heal=modifiers.healingSkill,card=make('section',{class:'stage-attribute-row'});
+   card.append(make('strong',{text:'Эффективность лечащих навыков'}),
+    make('p',{text:'Частичный показатель: '+heal.percent+'% (основа 100%, честь +'+
+     heal.honor+'%, предметы/души +'+heal.equipment+'%)'}),
+    make('p',{class:'stage-attribute-note',
+     text:'Это действие лечащих умений, а не эффективность зелий; не учтены все активные особенности навыков.'}));
+   body.prepend(card);
+  }
   if(modifiers?.combat?.manaCost){
    const mp=modifiers.combat.manaCost,card=make('section',{class:'stage-attribute-row'});
    card.append(make('strong',{text:'Расход ОМ (частичный расчёт)'}),
@@ -171,6 +180,10 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   if(cm.backAttackEquipmentRate)card.append(make('p',{text:
    'Урон атаки в спину от предметов: +'+cm.backAttackEquipmentRate+
    '% (отдельно от базового позиционного бонуса)'}));
+  if(cm.skillDelayFinalEquipment)card.append(make('p',{text:
+   'Финальная модификация скорости применения умений от души: '+
+   (cm.skillDelayFinalEquipment>0?'+':'')+cm.skillDelayFinalEquipment+
+   '% (не объединена с задержкой отдельных навыков)'}));
   if(cm.skillDelayEquipment)card.append(make('p',{text:
    'Изменение задержки применения навыков от вещей: '+
    cm.skillDelayEquipment+'% (отдельно от показателя каста)'}));
@@ -242,6 +255,20 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
     ', гильдия +'+regen.mp.guild+', лечение +'+regen.mp.healing+')'}),
    make('p',{class:'stage-attribute-note',
     text:'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Эффекты экипировки и активных навыков пока не включены.'}));
+  body.prepend(card);
+ }
+ if(page==='defense'&&modifiers?.recoveryAmount){
+  const natural=modifiers.recoveryAmount,card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Естественное восстановление (расчётная величина)'}),
+   make('p',{text:'ОЗ: '+natural.hp.known+' (максимум ОЗ '+natural.hp.maxContribution+
+    ' + ВЫН '+natural.hp.attributeContribution+')'}),
+   make('p',{text:'ОМ: '+natural.mp.known+' (максимум ОМ '+natural.mp.maxContribution+
+    ' + СД '+natural.mp.attributeContribution+')'}));
+  const rate=modifiers?.combat?.mpRecoveryEquipmentRate||0;
+  if(rate)card.append(make('p',{text:'Отдельный бонус скорости восстановления ОМ: '+
+   (rate>0?'+':'')+rate+'%'}));
+  card.append(make('p',{class:'stage-attribute-note',
+   text:'Исторические формулы Remaked LPRec/MPRec: без сидения и условных активных эффектов. Не следует считать полученный показатель гарантированным восстановлением в секунду.'}));
   body.prepend(card);
  }
  const totals=modifiers?.effects?.bonuses||{};

@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.98",
-  "notes": "Locale-safe staff identities, armor percentage modifiers, movement/cast/back attack/equipment magic effect breakdown"
+  "release": "2026.10.31.99",
+  "notes": "Legacy natural recovery and healing skill percent plus OS grade-aware effects"
 }

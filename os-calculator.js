@@ -236,6 +236,35 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
 // Remaked calc.js LPRecSPD / MPRecSPD: natural recovery *speed indices*.
 // Guild 3 and 4: +5/+8; guild 8 Healing: +10/+20/+30 to both.
 // These are not HP/MP per tick; no inferred time unit or conversion.
+// Legacy Calc('LPSkill','LPRec','MPRec'): the ordinary standing recovery
+// amount and healing-skill efficiency are independent from speed indices.
+function recoveryAmountPreview({maxHp,maxMp,stats={}}={}){
+ if(!Number.isFinite(maxHp)||maxHp<0||!Number.isFinite(maxMp)||maxMp<0||
+  !Number.isFinite(stats.vit)||stats.vit<0||
+  !Number.isFinite(stats.spi)||stats.spi<0)return null;
+ return {hp:{maxContribution:Math.floor(maxHp/35),
+   attributeContribution:Math.floor(stats.vit/3),
+   known:Math.floor(maxHp/35)+Math.floor(stats.vit/3)},
+  mp:{maxContribution:Math.floor(maxMp/25),
+   attributeContribution:Math.floor(stats.spi/3),
+   known:Math.floor(maxMp/25)+Math.floor(stats.spi/3)},
+  source:"Remaked Legacy LPRec/MPRec standing values",verified:false,
+  excluded:['conditional recovery effects','sitting recovery']};
+}
+function healingSkillPreview({honorTitle=0,records=[],itemForth=null}={}){
+ if(!Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
+ let equipment=0;
+ for(const [source,record,grade] of records)
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
+   if(effect.func!=='EP_CAST_HEAL_LIFE_SCALE')continue;
+   if(Number.isFinite(effect.min)&&grade<effect.min)continue;
+   if(Number.isFinite(effect.max)&&grade>effect.max)continue;
+   if(Number.isFinite(effect.a))equipment+=effect.a;
+  }
+ const honor=honorTitle===2?10:0;
+ return {base:100,honor,equipment,percent:100+honor+equipment,verified:false,
+  excluded:['active healing skills','special healing conversions']};
+}
 function regenerationPreview({stats={},guild={}}={}){
  if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi))return null;
  const recovery=[0,5,8],healing=[0,10,20,30];
@@ -323,7 +352,8 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
 function equippedCombatModifiers(records=[],itemForth=null){
  const out={attackFlat:0,attackPercent:[],accuracyPercent:[],
   attackSpeedFlat:0,manaDiscount:0,movement:0,skillDelay:0,
-  backAttackRate:0,elementDamageRate:0,castInterruptResist:0,traces:[]};
+  backAttackRate:0,elementDamageRate:0,castInterruptResist:0,
+  mpRecoveryRate:0,skillDelayFinal:0,traces:[]};
  if(!Array.isArray(records))return null;
  const lookup={EP_DAMAGERATE_CONST:'attackFlat',
   EP_SKILL_EQUIP_DAMAGERATE:'attackFlat',
@@ -332,7 +362,9 @@ function equippedCombatModifiers(records=[],itemForth=null){
   EP_RACE_MANA_COSTCUT:'manaDiscount',EP_MOVESPEED_SCALE:'movement',
   EP_SKILL_DELAY:'skillDelay',EP_ATTACK_BACKATK_RATE:'backAttackRate',
   EP_ELEMENT_DAMAGE_SCALE:'elementDamageRate',
-  EP_CASTINGCANCEL_RESISTANCE_CONST:'castInterruptResist'};
+  EP_CASTINGCANCEL_RESISTANCE_CONST:'castInterruptResist',
+  EP_HEAL_TIME_SCALE:'mpRecoveryRate',
+  EP_SKILL_DELAY_FIN:'skillDelayFinal'};
  for(const [source,record,grade] of records){
   if(!record||typeof record!=='object')continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
@@ -481,6 +513,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const movementSpeed={base:100,equipment:equipped.movement,
   known:100+equipped.movement,verified:false};
  const skillDelayEquipment=equipped.skillDelay;
+ const skillDelayFinalEquipment=equipped.skillDelayFinal;
+ const mpRecoveryEquipmentRate=equipped.mpRecoveryRate;
  const backAttackEquipmentRate=equipped.backAttackRate;
  const weaponPhysical=(meleeLineage.has(jobKey)?1+Math.floor(meleeMastery/10):0)
   +(title.weaponPhysical||0);
@@ -492,7 +526,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   guildArouse,guildAtk,attackSpeed,castingSpeed,manaCost,
   weaponPhysical,backAttack,frontAttack,cooldown,
   spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
-  backAttackEquipmentRate,
+  skillDelayFinalEquipment,mpRecoveryEquipmentRate,backAttackEquipmentRate,
   criticalDamage,criticalIncoming,criticalIncomingDamage,
   accuracy:{base:accuracyBase,equipment:accEquip,passive:hunterEye,
    percentage:accuracyPercent,honor:title.accuracy||0,
@@ -551,6 +585,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
+ const recoveryAmount=recoveryAmountPreview({maxHp:hpBase+hpBonus.total,
+  maxMp:mpBase+mpBonus.total,stats});
+ const healingSkill=healingSkillPreview({honorTitle:extra.honor.id,records,itemForth});
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records,itemForth,
   guildArouse:attributeBuffs?.guildArouse??0,
   combatBuffs:attributeBuffs,
@@ -561,13 +598,15 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,combat,
+  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,
+  recoveryAmount,healingSkill,combat,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,
+ recoveryAmountPreview,healingSkillPreview
 });
 })(typeof window==='undefined'?globalThis:window);

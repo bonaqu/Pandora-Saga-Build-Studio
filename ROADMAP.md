@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.98.0 (`2026.10.31.98`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.99.0 (`2026.10.31.99`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,12 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.99.0 — Legacy natural recovery and skill healing
+
+- Add historic `Calc('LPRec')` = floor(current max HP/35)+floor(VIT/3) and `MPRec` = floor(current max MP/25)+floor(SPI/3), separate from previously implemented regeneration *speed* indices. No invented conversion to per-second or seated recovery amounts.
+- Add `Calc('LPSkill')` 100% + Honor2 10% plus OS `EP_CAST_HEAL_LIFE_SCALE` with grade-aware Souls and Forth. This is independent from Potion effects.
+- Track `EP_HEAL_TIME_SCALE` MP regen rate and `EP_SKILL_DELAY_FIN` distinct from cast/cooldown indices. Full class effects, all per-skill damage/healing, D1 and browser E2E remain open.
 
 ## Source update 0.98.0 — locale-safe equipment and additional typed combat contributions
 
