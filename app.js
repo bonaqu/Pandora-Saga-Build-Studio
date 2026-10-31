@@ -1011,7 +1011,7 @@ function renderWiki(root){
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
  const dataName=(type,id)=>{
-  const obj=type==='item'?wikiData.items?.[id]:type==='monster'?wikiData.monsters?.[id]:type==='map'?(wikiData.maps?.[id]||wikiData.trades?.mapNames?.[id]):type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:type==='instance'?wikiData.instances?.find(x=>String(x.id)===String(id)):type==='npc'?wikiData.trades?.npcs?.[id]:type==='chest'?wikiData.items?.[id]:null;
+  const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):type==='monster'?wikiData.monsters?.[id]:type==='map'?(wikiData.maps?.[id]||wikiData.trades?.mapNames?.[id]):type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:type==='instance'?wikiData.instances?.find(x=>String(x.id)===String(id)):type==='npc'?wikiData.trades?.npcs?.[id]:type==='chest'?wikiData.items?.[id]:null;
   const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':type==='instance'?'instances':type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
   const fallback={item:'Предмет без названия',monster:'Монстр без названия',
     map:'Локация',npc:'Персонаж',chest:'Сундук',skill:'Умение без названия',
@@ -1110,7 +1110,27 @@ function renderWiki(root){
   }else if(type==='soul'){
     detail.append(h('p',{class:'muted',text:'Совместимые слоты: '+(rec.slots||[]).join(', ')}));
     if(rec.price!=null)detail.append(h('p',{class:'muted',text:'Цена по каталогу: '+rec.price}));
-    detail.append(h('p',{class:'muted',text:'Некоторые эффекты души пока не учитываются в расчётах характеристик.'}));
+    detail.append(h('h4',{text:'Где получить душу'}));
+    const found=wikiIndex.sources(id);
+    if(!found.length)detail.append(h('p',{class:'muted',text:
+     'Источник получения в доступном каталоге не указан.'}));
+    for(const row of found.slice(0,60)){
+     const line=h('div',{class:'wiki-entry wiki-soul-source'});
+     if(row.type==='monster'){
+      line.append(wikiLink('Монстр: '+dataName('monster',row.id)+
+       (row.percent==null?'':' · '+row.percent+'% по таблице')+
+       (row.kind==='conditional'?' · особое условие':''),'monster',row.id,id));
+      for(const loc of wikiIndex.locations(row.id).slice(0,3))
+       if(loc.type==='map')line.append(wikiLink('◈ '+loc.name,'map',loc.id,row.id));
+     }else if(row.type==='npc')line.append(wikiLink('Обмен у '+dataName('npc',row.id),
+      'npc',row.id,id));
+     else if(row.type==='chest')line.append(withIcon(wikiLink(dataName('chest',row.id)+
+      ' · группа '+row.roll+(row.percent==null?'':' · '+row.percent+'% в группе'),
+      'chest',row.id,id),wikiIcon('chest',row.id)));
+     else if(row.type==='zone')line.append(wikiLink('Дроп локации: '+dataName('map',row.id)+
+      ' · точный шанс души не указан','map',row.id,id));
+     detail.append(line);
+    }
     const icon=itemIcon(rec,'souls');
     if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
   }else if(type==='monster'){
@@ -1175,6 +1195,13 @@ function renderWiki(root){
      detail.append(entry);
     }
     if(type==='map'){
+     const residents=Object.entries(wikiData.trades?.npcs||{}).filter(([,npc])=>
+      (npc.maps||[]).some(mapId=>String(mapId)===String(id)));
+     if(residents.length){
+      detail.append(h('h4',{text:'NPC в локации'}));
+      for(const [npcId] of residents)
+       detail.append(wikiLink(dataName('npc',npcId),'npc',npcId));
+     }
      const dropZones=(wikiData.tables?.zoneDrops||[]).filter(x=>String(x.map)===String(id));
      if(dropZones.length){
       detail.append(h('h4',{text:'Добыча в локации'}));

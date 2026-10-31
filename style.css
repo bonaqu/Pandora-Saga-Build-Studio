@@ -1334,3 +1334,7 @@ main{padding-top:10px}
  list-style-position:inside}
 .stage-methodology>p{padding:6px 3px;line-height:1.5;font-size:10px}
 .stage-methodology:not([open])>p{display:none}
+
+/* Souls expose already-indexed sources; NPC locations list real residents. */
+.wiki-soul-source{display:grid;gap:3px}
+.wiki-soul-source .wiki-link{width:max-content;max-width:100%}
