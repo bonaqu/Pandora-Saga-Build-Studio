@@ -55,7 +55,7 @@ test('absent OS rune has no player-facing setting or live calculation contributi
  assert.doesNotMatch(html,/originRuneJoEun|Руна «Чо Ын»/);
  assert.doesNotMatch(stage,/runeJoEun|Чо Ын/);
  assert.doesNotMatch(app,/originRuneJoEun|rawAttributes\.runeJoEun/);
- assert.match(calc,/runeJoEun:false,level,itemForth/);
+ assert.match(calc,/level,itemForth,\.\.\.potionContext,runeJoEun:false/);
 });
 
 test('skills expose hover preview, and book uses branded checkboxes and source-backed potions',()=>{
