@@ -1734,6 +1734,7 @@ function newBlankBuild(){
  expandedClassKeys=new Set();restoreLoadedBuildUI();persist();render();renderOriginTabs();
  changeTab('character');saveView();
 }
+let buildSearchQuery='';
 function renderBuilds(root){
  const toolbar=h('div',{class:'build-toolbar'});
  const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
@@ -1764,7 +1765,11 @@ function renderBuilds(root){
   h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}));
- const grid=h('div',{class:'build-grid'});
+ const grid=h('div',{class:'build-grid'}),searchable=[];
+ const search=builds.length>5?h('input',{type:'search',class:'build-library-search',
+  'aria-label':'Найти сохранённый билд',placeholder:'Поиск по названию, классу, уровню…',
+  value:buildSearchQuery}):null;
+ if(search)root.append(search);
  for(const b of builds){
   const box=h('div',{class:'build-card'});
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
@@ -1800,8 +1805,25 @@ function renderBuilds(root){
   box.append(deleteChoice);
   box.append(shareSlot);
   grid.append(box);
+  searchable.push({box,searchText:[b.name,races[b.data?.race]?.[0],jobs[b.data?.job],
+   'ур. '+(b.data?.level??'')].filter(Boolean).join(' ').toLocaleLowerCase()});
  }
  root.append(grid);
+ if(search){
+  const none=h('p',{class:'muted',text:'Билды по запросу не найдены.',hidden:true});
+  root.append(none);
+  const apply=()=>{
+   let visible=0;
+   const query=buildSearchQuery.trim().toLocaleLowerCase();
+   for(const row of searchable){
+    row.box.hidden=!row.searchText.includes(query);
+    if(!row.box.hidden)visible++;
+   }
+   none.hidden=!query||visible>0;
+  };
+  search.addEventListener('input',()=>{buildSearchQuery=search.value;apply()});
+  apply();
+ }
  if(!builds.length)root.append(h('p',{class:'muted',text:'Сохранённых билдов пока нет.'}));
  if(compareIds.length===2){
   const [a,b]=compareIds.map(id=>builds.find(v=>v.id===id));

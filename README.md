@@ -637,3 +637,8 @@ The mock D1 adapter used in share revocation and library lifecycle tests now han
 ## Resume editing after browser restart · 0.141.0
 
 The last opened saved build ID is persisted alongside the draft, so reopening the browser and pressing «Сохранить изменения» updates the same named build instead of creating an unwanted duplicate. A new character or a separately received public build clears the association. Storage blocking is handled without crashing the editor.
+
+
+## Library search · 0.142.0
+
+Libraries of six or more builds now include one compact search field for names, races, professions and levels. It filters visible cards immediately and does not alter saved data or create another sharing action. Smaller libraries stay uncluttered.

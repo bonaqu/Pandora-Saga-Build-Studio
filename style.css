@@ -1508,3 +1508,11 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .build-open-choice[hidden]{display:none}
 .build-open-choice p{flex:1 0 100%;font-size:12px;color:#f0d3a1}
 .build-open-choice .button-action{margin:0}
+
+/* Compact search appears only after a library has at least six saved characters. */
+.build-library-search{display:block;width:100%;box-sizing:border-box;min-height:40px;
+ padding:10px 12px;margin:8px 0 12px;color:var(--cream);
+ background:#1c1610;border:1px solid #967148;border-radius:5px;
+ font:12px Manrope,Arial,sans-serif}
+.build-library-search:focus-visible{outline:2px solid #dcb57f;outline-offset:2px}
+.build-card[hidden]{display:none!important}

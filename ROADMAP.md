@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.141.0 (`2026.10.31.141`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.142.0 (`2026.10.31.142`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -645,3 +645,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Restoring the active ID checks that a matching build still exists in the local library; New Build and opening an unrelated shared snapshot clear both stored identifiers.
 - [x] Storage exceptions do not prevent editing, and a resumed saved build is updated instead of silently becoming a duplicate.
 - [ ] Full browser session-restart acceptance, npm test and multi-device library-key transfer remain to be validated.
+
+
+## Source update 0.142.0 — focused saved-build search
+
+- [x] When the local/cloud library contains more than five saved characters, a single inline search field filters cards by name, race, profession or level without reloading any build or opening a modal.
+- [x] Search text survives in-section re-renders (save, comparison, cloud update), and a clear empty-results message appears only for a nonempty unmatched query. Small libraries have no extra search field.
+- [x] Existing actions remain per-build; no global sharing controls were added.
+- [ ] Test actual keyboard focus and mobile layout in browsers and complete the remaining Remaked/OS combat parity backlog.
