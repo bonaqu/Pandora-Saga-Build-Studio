@@ -996,6 +996,16 @@ function auraDamagePreview({gemstones=null,records=[],itemForth=null}={}){
   source:'Remaked Legacy: Calc(DAMAura,DAMFire,DAMIce,DAMLightning,DAMPoison,DAMLight,DAMDark)',
   verified:false};
 }
+function mountedReleasePreview({jobKey,ridingMastery=0,honorTitle=0}={}){
+ // Remaked js/calc.js:555–566, Calc('RelHorse').
+ if(typeof jobKey!=='string'||!Number.isInteger(ridingMastery)||ridingMastery<0||
+  !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
+ const jobBase=jobKey==='DRAGOON'||jobKey==='PALADIN'?50:
+  jobKey==='PREDATOR'?30:jobKey==='CALAMITY'?40:10;
+ const honor=honorTitle===7?10:0;
+ return {known:jobBase+ridingMastery+honor,jobBase,mastery:ridingMastery,honor,
+  verified:false,source:"Remaked js/calc.js:555–566"};
+}
 function base({classData,raceData,jobData,allocation,level,records=[],itemForth=null,
  unisonCatalog=null,supplementalFlat={},supplementalSource=null,
  enhancements={},attributeBuffs={},potionContext={},combatContext={},gemSelections=[]}={}){
@@ -1046,6 +1056,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  }
  const auraDamage=auraDamagePreview({gemstones,records:combinedRecords,itemForth});
  const elementalMagic=elementalMagicPreview({honorTitle:extra.honor.id});
+ const mountedRelease=mountedReleasePreview({jobKey:combatContext.jobKey,
+  ridingMastery:combatContext.ridingMastery??0,honorTitle:extra.honor.id});
  const legacyBuffs=legacyBuffPreview({spi:stats.spi,
   blessing:combatContext.legacyBuffMasteries?.blessing??0,
   hymn:combatContext.legacyBuffMasteries?.hymn??0,
@@ -1070,7 +1082,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,legacyBuffs,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,elementalMagic,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -1078,6 +1090,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,unisonPreview,effectCoverage
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage
 });
 })(typeof window==='undefined'?globalThis:window);

@@ -383,6 +383,15 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    body.prepend(potion);
   }
  }
+ if(page==='attack'&&modifiers?.mountedRelease){
+  const riding=modifiers.mountedRelease;
+  const card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Верховая езда'}),
+   make('p',{text:'Раскрытие характеристик верхом: '+riding.known+'%'}),
+   make('p',{text:'Профессия '+riding.jobBase+'% · мастерство +'+riding.mastery+
+    '% · титул +'+riding.honor+'%'}));
+  body.prepend(card);
+ }
  if(page==='attack'&&modifiers?.elementalMagic){
   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',
    poison:'Яд',light:'Свет',dark:'Тьма'};

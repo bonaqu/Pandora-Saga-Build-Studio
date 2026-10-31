@@ -564,3 +564,8 @@ A blank character starts at level **1**; level **55** remains the maximum planni
 ### 0.126.0 · Faster creation and cloud recovery
 
 The character stage also exposes «Новый билд», which reveals the same inline Save / Discard options as My Builds. Deletions made offline stay queued until D1 acknowledges them, so a reconnect does not restore deleted builds. When deployed, the Worker can create only its fixed missing auxiliary D1 tables on first use, without rewriting game catalog data; SQL migrations remain checked in. This does not assert that the updated Worker has been deployed.
+
+
+### 0.127.0 · Верховая езда
+
+Книга героя показывает частичную формулу `RelHorse` из Remaked `js/calc.js:555–566`. Используется профессия, зелёное мастерство верховой езды и один титул. Неопределённые бонусы экипировки OS и их влияние на бой не моделируются. Поддержка уровней 1–55 и будущего снаряжения сохраняется.

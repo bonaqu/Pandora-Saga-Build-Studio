@@ -172,6 +172,7 @@ function previewBaseStats(){
  const masteries=window.PandoraSkillProgression.combatMasteries(state,initialBranches);
  const branchMasteries={slash:window.PandoraSkillProgression.groupAdeptness(
   state,['slash'],initialBranches)};
+ const ridingMastery=window.PandoraSkillProgression.groupAdeptness(state,['riding'],initialBranches);
  const meleeMastery=masteries.melee;
  const benevolenceMastery=window.PandoraSkillProgression.groupAdeptness(
   state,['benevolence'],initialBranches);
@@ -187,7 +188,7 @@ function previewBaseStats(){
   enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
   potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
-   jobKey:jobKeys[state.job],benevolenceMastery,legacyBuffMasteries,
+   jobKey:jobKeys[state.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,
    skillCatalog:catalog.skills||{},branchMasteries,...masteries}
  });
 }
