@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.117.0 (`2026.10.31.117`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.118.0 (`2026.10.31.118`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -11,6 +11,16 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - Attack, defense and speed are calculated from the source numeric fields. The hero book reuses exactly the same ability gate, displays the original skill artwork and values, and explains a missing class, level or shield.
 - New test vectors exercise four source skills, changing skill values, incomplete source rows, unavailable skills and DOM checkbox interaction.
 - Pending: full Node test run, actual browser and Worker/D1 deployment checks, additional verified active skill mechanics.
+
+## Source update 0.118.0 — complete Remaked formula inventory and broader calculation parity
+
+- [x] Inventory all 178 Legacy switch cases, their 143 distinct keys and exact source lines. [Full source coverage matrix](docs/REMAKED_FORMULA_INVENTORY.md) and pinned [machine-readable case index](data/remaked/legacy-calc-cases.v1.json). This does NOT mean all formulas have been ported.
+- [x] Port eleven Remaked support-skill magnitude formulas as read-only, source-backed predictions with trained blessing, hymn and alchemy masteries. Display them in the hero's Buffs chapter without activating effects.
+- [x] Integrate Remaked armor gemstone elemental resistances into actual defense figures exactly once; keep unverified elemental damage packet effects separate.
+- [x] Port fourteen additional source-backed equipment EP mappings, connecting casting speed, mana recovery speed, cooldown, incoming physical/magic damage, reflect, aura bonus and debuff modifiers to the relevant result pages.
+- [x] Add regression fixtures for source skill formulas, gemstone +7/+5, minimum refinement gates, fourteen equipment effects and source-audit completeness.
+- [ ] Complete remaining 75 not-yet-ported unique Legacy keys and full conditional behaviors. Of other keys, 43 are still only partial, 10 read-only skill previews and 15 base/previews. No current OS live gameplay equivalence is claimed.
+- [ ] Check feature-complete browser QA, all Node tests, and exact active game-server outcomes; resolve OS divergences only on confirmed evidence, preserving equivalent Remaked formulas.
 
 ## Workstreams
 
