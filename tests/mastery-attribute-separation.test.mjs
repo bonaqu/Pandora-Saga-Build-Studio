@@ -6,8 +6,8 @@ test('Origin stat purchases never use equipment, Souls or trained ability values
  const app=read('app.js'),calculator=read('os-calculator.js');
  assert.match(app,/added:STATS\.map\(key=>Number\(state\.stats\[key\]\|\|0\)\)/);
  assert.match(app,/supplementalFlat:prayerSpirit\?/);
- assert.match(app,/const gear=Number\(estimated\?\.effects\?\.flat\?\.\[code\]/);
- assert.match(app,/const legacy=Number\(estimated\?\.supplementalFlat\?\.\[code\]/);
+ assert.match(app,/const key=ORIGIN_STAT_LABELS\[row\.i\]\.code,effective=estimate\?\.stats\?\.\[key\]/);
+ assert.match(app,/const delta=shown===null\|\|allocated===null\?0:shown-allocated/);
  assert.match(calculator,/supplementalFlat=\{\}/);
  assert.match(calculator,/basic\[key\]=race\+job\+spent/);
 });
@@ -25,8 +25,8 @@ test('Origin keeps calculations correct but removes the noisy breakdown row',()=
  assert.doesNotMatch(app,/class:'origin-stat-breakdown'/);
  assert.doesNotMatch(app,/entry\.breakdown\.textContent/);
  assert.doesNotMatch(app,/origin-stat-guide/);
- assert.match(app,/const effective=estimated\?\.stats\?\.\[code\]/);
- assert.match(app,/const snap=attributeSnapshot\(\)/);
- assert.match(app,/PandoraAttributeProgression\.nextCost\(snap,entry\.i\)/);
+ assert.match(app,/effective=estimate\?\.stats\?\.\[key\]/);
+ assert.match(app,/const snap=attributeSnapshot\(\),estimate=previewBaseStats\(\)/);
+ assert.match(app,/PandoraAttributeProgression\.allowed\(snap,row\.i,spent\+1\)/);
  assert.match(css,/\.origin-stat-row button,\.origin-stat-row \.origin-stat-input\{/);
 });

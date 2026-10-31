@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.155.0 (`2026.11.01.155`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.156.0 (`2026.11.01.156`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.156.0 — repair current test harness and remove stale UI assumptions
+
+- Restore runnable compact-workbench test, extend fake DOM attribute support, and align the documented OS MP cents-floor example.
+- Update existing regression contracts to current skill milestones, Origin absolute-stat display, source-backed status immunity and keyboard behavior; no hidden player diagnostics are reintroduced.
+- Full GitHub Actions tests and live browser/Worker validation remain separate and are not marked complete unless their runs succeed.
 
 ## Source update 0.155.0 — restore broken unit harnesses
 

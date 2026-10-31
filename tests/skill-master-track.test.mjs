@@ -8,7 +8,7 @@ test('mastery, potential and skill icon milestones share a single visual track',
  assert.match(ui,/class:'inline-mastery-fill'/);
  assert.match(ui,/class:'inline-mastery-green'/);
  assert.match(ui,/track\.append\(bed,gold,green,locked\)/);
- assert.match(ui,/track\.append\(rail\)/);
+ assert.match(ui,/track\.append\(range\);paint\(\)/);
  assert.match(css,/\.inline-mastery-track \.inline-mastery-green/);
 });
 test('right side exposes free/spent/total budget and immediate branch allocation',()=>{
@@ -51,7 +51,7 @@ test('one class-capped 90-point skill bar shows an unavailable red segment',()=>
 
 test('skill-unlock icons use the full 90-point track scale even for low class caps',()=>{
  const ui=read('hero-path.js');
- assert.match(ui,/mark\.threshold\/visualMax\*100/);
+ assert.match(ui,/threshold\/visualMax\*100/);
  assert.doesNotMatch(ui,/button\.style\.left='clamp\(0px, '\+mark\.percent/);
 });
 
@@ -61,7 +61,7 @@ test('one bar uses standard CSS calc and correctly centered milestone markers',(
  assert.doesNotMatch(ui,/calc\(12px \+ \(100% - 24px\) \*/);
  assert.match(ui,/gold\.style\.width='calc\('/);
  assert.match(ui,/green\.style\.width='calc\('/);
- assert.match(ui,/clamp\(15px, '/);
+ assert.match(ui,/tick\.style\.left=\(threshold\/visualMax\*100\)\.toFixed\(4\)/);
  assert.match(css,/\.inline-mastery-track \.inline-milestone\{transform:translateX\(-50%\)\}/);
 });
 test('skill editor preserves keyboard focus across state re-render',()=>{
@@ -122,17 +122,17 @@ test('red locked region shows OS skills beyond the class skill cap',()=>{
 test('branch summary, green mastery and group totals update on input, not only change',()=>{
  const ui=read('hero-path.js');
  for(const part of ['groupCount.textContent=groupSummary()',
-  'branchCount.textContent=String(target)',
-  "branchSummary.textContent=target+' вложено",
+  "branchCount.textContent=cap?target+' / '+cap:'—'",
+  'branchSummary.textContent=summaryText(target,M.trained(state,key))',
   'input.value=String(M.trained(state,key))'])
   assert.ok(ui.includes(part),part);
 });
 
 test('milestones are compact staggered dots with skill icon/description only on hover',()=>{
  const ui=read('hero-path.js'),app=read('app.js'),css=read('style.css');
- assert.match(ui,/path-milestone-pin/);
- assert.match(ui,/laneLast=\[-Infinity,-Infinity,-Infinity,-Infinity\]/);
- assert.match(ui,/api\.hover\(button,mark\.skills\)/);
+ assert.match(ui,/path-threshold-tick/);
+ assert.match(ui,/const thresholds=\[\.\.\.new Set\(marks\.map\(mark=>mark\.threshold\)\)\]/);
+ assert.match(ui,/const preview=make\('div',\{class:'path-milestone-tooltip',role:'tooltip'\}\)/);
  assert.match(app,/path-skill-preview-item/);
  assert.match(css,/path-milestone-pin/);
 });

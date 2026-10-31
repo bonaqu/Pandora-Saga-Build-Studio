@@ -16,7 +16,7 @@ test('class wizard traverses parent genealogy with back button',()=>{
  const app=get('app.js');
  assert.match(app,/jobPathKey=parentOf\(jobPathKey\)/);
  assert.match(app,/const next=records.filter\(x=>x.parent===\(jobPathKey\|\|null\)\)/);
- assert.match(app,/state.job=node.i/);
+ assert.match(app,/jobPathKey=node.key;selectJob\(node.i\)/);
 });
 test('race can be activated from image or button, no disabled selection',()=>{
  const app=get('app.js');

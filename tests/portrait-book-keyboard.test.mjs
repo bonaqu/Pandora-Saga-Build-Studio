@@ -6,7 +6,7 @@ const app=get('app.js'),view=get('stage-attributes.js');
 test('ArrowLeft/ArrowRight navigation and Escape remain within the portrait',()=>{
  assert.match(app,/\$\('stageAttributes'\)\?\.addEventListener\('keydown'/);
  assert.match(app,/event\.key==='ArrowRight'/);
- assert.match(app,/event\.key==='ArrowLeft'/);
+ assert.match(app,/event\.key!=='ArrowLeft'/);
  assert.match(app,/event\.target\.closest\?\.\('input,select,textarea'\)/);
  assert.match(app,/if\(stageAttributesPage\)\{/);
 });

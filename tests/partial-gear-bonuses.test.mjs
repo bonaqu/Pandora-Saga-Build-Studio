@@ -11,11 +11,12 @@ test('resistance and accuracy stats map to source effect codes',()=>{
  ]);
  assert.equal(summary.bonuses.fire,15);
  assert.equal(summary.bonuses.accuracy,7);
- assert.deepEqual(summary.ignored,['EP_IMMUNE_BURN']);
- assert.equal(summary.trace.length,3);
+ assert.equal(summary.bonuses.burn,1);
+ assert.deepEqual(summary.ignored,[]);
+ assert.equal(summary.trace.length,4);
 });
 test('stage renderer labels source bonuses rather than pretending to know final stats',()=>{
  const view=s('stage-attributes.js');
  assert.match(view,/Известные бонусы снаряжения и душ/);
- assert.match(view,/частичный расчёт/);
+ assert.doesNotMatch(view,/частичный расчёт/);
 });

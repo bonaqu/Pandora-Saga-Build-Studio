@@ -14,11 +14,12 @@ assert.ok(code.startsWith('function renderOriginStats(){'),'origin renderer must
 class Element{
  constructor(tag){
   this.tag=tag;this.children=[];this.listeners={};this.value='';this.textContent='';
-  this.disabled=false;this.classList={toggle(){},contains(){return false}};
+  this.disabled=false;this.attributes={};this.classList={toggle(){},contains(){return false}};
  }
  append(...items){this.children.push(...items)}
  replaceChildren(...items){this.children=[...items]}
  addEventListener(type,fn){this.listeners[type]=fn}
+ setAttribute(key,value){this.attributes[key]=String(value)}
 }
 function fixture(level=55){
  const roots={originStats:new Element('root'),originStatSummary:new Element('summary'),
@@ -77,6 +78,6 @@ test('level 1 budget prevents spending even if a large absolute value is entered
 });
 test('Soul and enhancement changes rerender visible base/effective stats',()=>{
  const source=read('app.js');
- assert.match(source,/updateGrade:n=>[\s\S]*?renderOriginStats\(\);renderHudEstimates\(\)/);
- assert.match(source,/assignSoul:entry=>[\s\S]*?renderOriginStats\(\);renderHudEstimates\(\)/);
+ assert.match(source,/updateGrade:n=>[\s\S]*?renderOriginStats\(\);renderOriginVitals\(\)/);
+ assert.match(source,/assignSoul:entry=>[\s\S]*?renderOriginStats\(\);renderOriginVitals\(\)/);
 });
