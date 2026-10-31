@@ -17,7 +17,7 @@ function make(tag,attrs={},children=[]){
 
 const bookPages=Object.freeze([
  ['summary','Итоги'],['attack','Атака'],['defense','Защита'],
- ['recovery','Восстановление'],['effects','Эффекты'],['buffs','Усиления']
+ ['recovery','Зелья и умения'],['effects','Эффекты'],['buffs','Усиления']
 ]);
 function summaryPage(body,calc){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',text:'Параметры появятся после загрузки игровых данных.'}));return}
@@ -99,7 +99,7 @@ function renderSkillInspector(body,model){
  details.append(make('summary',{text:'Навыки героя · '+model.available+
   ' по базовым условиям из '+model.total}));
  details.append(make('p',{class:'stage-attribute-note',text:
-  'Названия, расход ОМ и время — из текущих данных Pandora Saga OS. Доступность предварительная; финальный урон/лечение зависит от дополнительных условий.'}));
+  'Наведи на навык в Пути героя, чтобы увидеть его требования.'}));
  const search=make('input',{type:'search','aria-label':'Поиск навыка по названию',
   placeholder:'Найти навык…'});
  const list=make('div',{class:'stage-skill-list'});
@@ -115,8 +115,7 @@ function renderSkillInspector(body,model){
      make('span',{text:skill.available?'По базовым условиям доступен':'Требования не выполнены'})]),
     make('p',{text:'ОМ '+(skill.mana??'—')+' · Применение '+
      (skill.cast??'—')+' с · Откат '+(skill.cooldown??'—')+' с'}),
-    make('p',{text:'Эффектов в каталоге: '+skill.effectCount+
-     (skill.damageKernel?' · Тип воздействия: '+skill.damageKernel:'')})
+    make('p',{text:skill.available?'Доступен':'Не изучен'})
    ]);
    if(skill.requirement)card.append(make('small',{text:skill.requirement}));
    if(skill.desc)card.append(make('p',{text:skill.desc}));
@@ -201,7 +200,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(page==='effects'){
   renderSkillInspector(body,skillModel);
-  if(modifiers?.coverage?.total){
+  if(modifiers?.coverage?.total&&root.PandoraStudioAdminActive?.()){
    const coverage=modifiers.coverage,card=make('section',{class:'stage-attribute-row stage-coverage'});
    const k=coverage.counts;
    card.append(make('strong',{text:'Проверка учёта бонусов предметов'}),
@@ -479,6 +478,38 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   for(const [key,val] of active)card.append(make('p',{text:names[key]+': '+(val>=0?'+':'')+val}));
   body.prepend(card);
  }
+ if(chosen==='recovery'){
+  const percent=modifiers?.potion?.percent,heal=modifiers?.healingSkill?.percent;
+  const quick=make('div',{class:'stage-result-grid'});
+  for(const [title,value,note] of [
+   ['Эффективность зелий',Number.isFinite(percent)?percent+'%':'—','Восстановление ОЗ'],
+   ['Эффективность лечения',Number.isFinite(heal)?heal+'%':'—','Лечащие навыки']
+  ])quick.append(make('div',{class:'stage-result-tile'},[
+   make('span',{text:title}),make('strong',{text:value}),make('small',{text:note})]));
+  body.prepend(quick);
+  const potions=make('section',{class:'stage-attribute-row stage-potion-book'});
+  potions.append(make('strong',{text:'Эффекты зелий'}));
+  potions.append(make('label',{class:'stage-book-check'},[
+   make('input',{type:'checkbox','data-book-setting':'potionEffectsEnabled',
+    checked:buffs.potionEffectsEnabled===true,
+    onchange:event=>onBuff('potionEffectsEnabled',event.target.checked)}),
+   make('span',{text:'Показывать восстановление от зелий'})]));
+  const known=root.PandoraOSCalculator?.potionPreview?.({
+   enabled:buffs.potionEffectsEnabled===true,
+   potionRate:percent??null,maxHp:modifiers?.hp??null
+  })||[];
+  const shown=known.filter(x=>x.current);
+  for(const entry of shown){
+   potions.append(make('div',{class:'stage-potion-item'},[
+    make('span',{text:entry.ru||entry.en||'Зелье'}),
+    make('strong',{text:entry.value==null?'—':String(entry.value)+(entry.enabled?' ОЗ':'')})
+   ]));
+  }
+  if(!shown.length)potions.append(make('p',{class:'muted',
+   text:'Для текущих зелий ещё нет доступных значений.'}));
+  body.append(potions);
+  renderSkillInspector(body,skillModel);
+ }
  if(chosen==='recovery'&&modifiers?.healingSkill){
   const spells=modifiers.healingSpells,heal=modifiers.healingSkill;
   const card=make('section',{class:'stage-attribute-row stage-healing-spells'});
@@ -498,6 +529,20 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     'Формулы старого Remaked. Доступность требует полного учёта требований и текущей версии OS; значения не гарантируют серверное лечение.'}));
   }
   body.prepend(card);
+ }
+ if(['attack','defense'].includes(chosen)&&modifiers?.combat){
+  const battle=modifiers.combat;
+  const numbers=chosen==='attack'?
+   [['Физическая атака',battle.attack?.known],
+    ['Магическая атака',battle.magicAttack?.known==null?null:battle.magicAttack.known+'%'],
+    ['Точность',battle.accuracy?.known],['Критический шанс',battle.critical?.known]]:
+   [['Защита',battle.defense?.known],['Уклонение',battle.dodge?.known],
+    ['Критический урон',battle.criticalDamage==null?null:battle.criticalDamage+'%'],
+    ['Устойчивость к сбою',battle.castInterruption]];
+  const grid=make('div',{class:'stage-result-grid stage-combat-quick'});
+  for(const [label,value]of numbers)grid.append(make('div',{class:'stage-result-tile'},[
+   make('span',{text:label}),make('strong',{text:value??'—'})]));
+  body.prepend(grid);
  }
  // Preserve formula caveats without placing developer diagnostics between
  // player-facing statistics. They remain inspectable by choice.
