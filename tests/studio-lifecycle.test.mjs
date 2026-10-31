@@ -25,7 +25,7 @@ test('icon availability is derived from a real manifest',()=>{
  const html=read('index.html'),app=read('app.js');
  assert.match(html,/id="iconStatus"/);
  assert.match(app,/data\.count\.present/);
- assert.match(app,/локальный архив пока не импортирован/);
+ assert.match(app,/Изображения загружены/);
  assert.equal(JSON.parse(read('site-version.json')).release,JSON.parse(read('package.json')).pandoraRelease);
 });
 

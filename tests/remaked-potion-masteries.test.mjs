@@ -71,7 +71,7 @@ test('exact Remaked approved RU labels are mapped to 18 current OS racial skill 
  assert.equal(nav.approvedRacialSkillNames[900040001],'Охотничье чутьё');
  const app=read('app.js');
  assert.match(app,/potionContext:\{racialPassiveId:state\.racialPassiveId,jobKey:jobKeys\[state\.job\],meleeMastery\}/);
- assert.match(app,/\['slash','thrust','brush','blow','defense'\]/);
+ assert.match(app,/groupAdeptness\(/);
  assert.match(app,/localizedSkills\[id\]=\{\.\.\.localizedSkills\[id\],name\}/);
 });
 test('racial passive is applied to both Origin and character profile selections immediately',()=>{

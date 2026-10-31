@@ -7,7 +7,7 @@ test('hero itself opens book; no competing buttons or pointer hand',()=>{
  assert.match(html,/id="hero"[^>]*role="button"/);
  for(const id of ['portraitBookOpen','stageAttributeToggle','stageBuffToggle'])
   assert.doesNotMatch(html,new RegExp('id="'+id+'"'));
- assert.match(app,/$('hero').addEventListener('click',openHeroBook)/);
+ assert.match(app,/\$\('hero'\)\.addEventListener\('click',openHeroBook\)/);
  assert.match(css,/cursor:default!important/);
 });
 test('origin stats have only values, and all legacy boost control input nodes are invisible',()=>{

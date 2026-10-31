@@ -28,7 +28,7 @@ test('skill points, origin attributes and lost-state protection remain',()=>{
  assert.match(app,/\.\/data\/os\/tables\.json/);
  assert.match(app,/function budgetSummary\(/);
  assert.match(app,/function allowedBranch\(/);
- assert.match(app,/n>allowedBranch\(id\)/);
+ assert.match(app,/Math\.min\(Math\.max\(0,requested\),allowedBranch\(key\)\)/);
  assert.match(app,/sessionStorage\.setItem\(VIEW_KEY/);
  assert.match(app,/window\.addEventListener\('pagehide',saveView\)/);
  assert.match(app,/if\(bootView\.slotOpen&&!bootView\.open\)/);

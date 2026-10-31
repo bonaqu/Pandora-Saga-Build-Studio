@@ -54,7 +54,8 @@ test('absent OS rune has no player-facing setting or live calculation contributi
  const stage=read('stage-attributes.js'),html=read('index.html');
  assert.doesNotMatch(html,/originRuneJoEun|Руна «Чо Ын»/);
  assert.doesNotMatch(stage,/runeJoEun|Чо Ын/);
- assert.doesNotMatch(app,/originRuneJoEun|rawAttributes\.runeJoEun/);
+ assert.doesNotMatch(app,/originRuneJoEun/);
+ assert.match(app,/rawAttributes\.runeJoEun===true/); // historical save compatibility
  assert.match(calc,/level,itemForth,\.\.\.potionContext,runeJoEun:false/);
 });
 

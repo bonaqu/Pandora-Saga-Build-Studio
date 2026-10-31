@@ -6,7 +6,8 @@ const root=new URL('../',import.meta.url),get=p=>readFileSync(new URL(p,root),'u
 test('character portrait can toggle source-backed stats without page scroll',()=>{
  const app=get('app.js'),html=get('index.html'),attrs=get('stage-attributes.js');
  assert.match(html,/id="stageAttributes"/);
- assert.match(html,/id="stageAttributeToggle"/);
+ assert.doesNotMatch(html,/id="stageAttributeToggle"/);
+ assert.match(html,/id="hero"[^>]*role="button"/);
  assert.match(html,/stage-attributes\.js\?v=/);
  assert.match(app,/function renderStageAttributes\(/);
  assert.match(app,/window\.PandoraStageAttributes\.render/);

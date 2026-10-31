@@ -49,7 +49,7 @@ test('old saved build starts with disabled buffs; controls update without resett
  assert.equal(persisted,3);
  f.setVitalsEnhancement('guildHp','100');
  assert.equal(state.vitalsBuffs.guildHp,4);
- assert.match(dom.originVitalsCoverage.textContent,/не проверена/);
+ assert.equal(dom.originVitalsCoverage.textContent,'');
 });
 test('race selection and equipped portrait stay distinct on narrow viewports',()=>{
  assert.match(html,/<h2 id="stageHeading">Образ героя<\/h2>/);
@@ -65,6 +65,6 @@ test('runtime hooks update linked HP/MP and rune changes without a full page res
  assert.match(app,/setVitalsEnhancement\('lifeSign',event\.target\.checked\)/);
  assert.match(app,/setVitalsEnhancement\(key,select\.value\)/);
  assert.match(app,/setAttributeBuff\('honorTitle',event\.target\.value\)/);
- assert.match(app,/originRuneJoEun/);
+ assert.doesNotMatch(html,/id="originRuneJoEun"/);
  assert.match(app,/state\.vitalsBuffs=current;persist\(\);renderOriginVitals\(\);renderVitalsEnhancements\(\)/);
 });

@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.156.0 (`2026.11.01.156`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.157.0 (`2026.11.01.157`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.157.0 — book, cloud library and RU source regressions
+
+- Replace test-only dependencies on removed duplicate Results controls, inline-skill list, obsolete user notices and old rune toggles with assertions against the single portrait book entry and current Hero Path.
+- Preserve the historical rune serialization contract in shared builds without adding any live UI switch or unsupported game effect.
+- Exercise full Node suite in GitHub Actions; success will be confirmed after the workflow ends.
 
 ## Source update 0.156.0 — repair current test harness and remove stale UI assumptions
 

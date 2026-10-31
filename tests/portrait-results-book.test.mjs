@@ -26,7 +26,7 @@ test('six accessible chapters and guarded toggle setters share one build model',
  assert.match(app,/window\.PandoraStageAttributes\.bookPages\.some/);
  assert.match(app,/onBuff:\(key,value\)=>setAttributeBuff\(key,value\)/);
  assert.match(app,/onVital:\(key,value\)=>setVitalsEnhancement\(key,value\)/);
- assert.match(app,/availability\[name\]=Boolean\(ability\?\.classes/);
+ assert.match(app,/availability\[setting\]=availableSkills\[name\]===true/);
  assert.match(app,/equippedShield\?\.slot==='shield'/);
 });
 test('changing a buff does not force the chapter back to the top',()=>{

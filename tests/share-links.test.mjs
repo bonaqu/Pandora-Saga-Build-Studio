@@ -46,7 +46,7 @@ test('library maintains an offline cache and D1 sync without JSON import/export'
 test('skill and stat editing remain in one screen',()=>{
  const app=read('app.js'),html=read('index.html');
  assert.doesNotMatch(html,/data-tab="(?:skills|stats)"/);
- assert.match(app,/class:'inline-skill-list'/);
+ assert.match(app,/PandoraHeroPath\.viewGrowth/);
  assert.match(html,/data-origin-tab="stats"/);
 });
 
