@@ -1423,3 +1423,20 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-potion-name{flex:1;min-width:0}
 .stage-potion-item strong{margin-left:auto}
 @media(max-width:420px){.stage-resistance-grid{gap:4px}.stage-resistance-tile{padding:6px}}
+
+/* Current OS class skills inside the hero's Buffs chapter. */
+.stage-book-check.stage-combat-buff{display:flex;align-items:center;gap:9px;
+ min-height:42px;padding:6px 7px;border:1px solid #785536;
+ border-radius:4px;background:linear-gradient(120deg,#33241a,#221811);
+ transition:border-color .15s ease,background .15s ease}
+.stage-book-check.stage-combat-buff:has(input:checked){
+ border-color:#d1a269;background:linear-gradient(120deg,#4b3524,#312115)}
+.stage-book-check.stage-combat-buff:has(input:focus-visible){outline:1px solid #e2b673;outline-offset:2px}
+.stage-combat-buff>img{display:block;flex:0 0 32px;width:32px;height:32px;object-fit:contain;
+ border:1px solid #8f683e;background:#1d130e;border-radius:3px}
+.stage-combat-buff-copy{display:flex;flex:1;flex-direction:column;gap:2px;min-width:0;
+ font-weight:650;font-size:12px;line-height:1.3}
+.stage-combat-buff-copy small{font-size:10px;font-weight:450;color:#bea783;
+ overflow-wrap:anywhere;line-height:1.35}
+.stage-book-check.stage-combat-buff:has(input:disabled){opacity:.7}
+.stage-book-check.stage-combat-buff input[type=checkbox]{margin-right:2px}
