@@ -1011,7 +1011,7 @@ function renderWiki(root){
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
  const dataName=(type,id)=>{
-  const obj=type==='item'?wikiData.items?.[id]:type==='monster'?wikiData.monsters?.[id]:type==='map'?wikiData.maps?.[id]:type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:type==='instance'?wikiData.instances?.find(x=>String(x.id)===String(id)):type==='npc'?wikiData.trades?.npcs?.[id]:type==='chest'?wikiData.items?.[id]:null;
+  const obj=type==='item'?wikiData.items?.[id]:type==='monster'?wikiData.monsters?.[id]:type==='map'?(wikiData.maps?.[id]||wikiData.trades?.mapNames?.[id]):type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:type==='instance'?wikiData.instances?.find(x=>String(x.id)===String(id)):type==='npc'?wikiData.trades?.npcs?.[id]:type==='chest'?wikiData.items?.[id]:null;
   const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':type==='instance'?'instances':type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
   const fallback={item:'Предмет без названия',monster:'Монстр без названия',
     map:'Локация',npc:'Персонаж',chest:'Сундук',skill:'Умение без названия',
@@ -1046,7 +1046,8 @@ function renderWiki(root){
   if(!detailOnly)browse.replaceChildren();
   detail.replaceChildren();
   const type=wikiSelection.type;
-  const catalog=type==='item'?wikiData.items:type==='monster'?wikiData.monsters:type==='map'?wikiData.maps:
+  const knownMaps={...(wikiData.trades?.mapNames||{}),...(wikiData.maps||{})};
+  const catalog=type==='item'?wikiData.items:type==='monster'?wikiData.monsters:type==='map'?knownMaps:
     type==='npc'?wikiData.trades?.npcs:type==='skill'?wikiData.skills:type==='soul'?wikiData.souls:type==='instance'?Object.fromEntries((wikiData.instances||[]).map(i=>[i.id,i])):Object.fromEntries((wikiData.chests?.boxes||[]).map(item=>[item.i,item]));
   const q=wikiSearch.toLocaleLowerCase().trim();
   const results=Object.entries(catalog||{}).filter(([id,rec])=>
@@ -1113,7 +1114,23 @@ function renderWiki(root){
     const icon=itemIcon(rec,'souls');
     if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
   }else if(type==='monster'){
-    detail.append(h('p',{class:'muted',text:'Уровень '+(rec.level??'—')+' · HP '+(rec.life??'—')}));
+    detail.append(h('div',{class:'wiki-monster-stats'},[
+      h('span',{text:'Уровень '+(rec.level??'—')}),
+      h('span',{text:'ОЗ '+(rec.life??'—')}),
+      h('span',{text:'Защита '+(rec.ac??'—')}),
+      h('span',{text:'Маг. защита '+(rec.magicProtection??'—')})
+    ]));
+    if(rec.resists&&Object.keys(rec.resists).length){
+     const names={physical:'Физическая',fire:'Огонь',cold:'Лёд',
+      lightning:'Молния',poison:'Яд',charm:'Чары',
+      magic:'Магия',holy:'Свет',dark:'Тьма'};
+     const box=h('details',{class:'wiki-monster-resists'},[
+      h('summary',{text:'Сопротивления монстра'})
+     ]);
+     for(const [key,value] of Object.entries(rec.resists))
+      box.append(h('span',{text:(names[key]||key)+': '+value}));
+     detail.append(box);
+    }
     detail.append(h('h4',{text:'Места появления'}));
     for(const loc of wikiIndex.locations(id))detail.append(wikiLink(loc.name,loc.type,loc.id,id));
     detail.append(h('h4',{text:'Выпадающие предметы'}));
@@ -1128,8 +1145,9 @@ function renderWiki(root){
     }
   }else if(type==='npc'){
     const locations=rec.maps||[];
-    for(const mapId of locations)if(wikiData.maps?.[mapId])
-     detail.append(wikiLink('◈ '+dataName('map',mapId),'map',mapId,id));
+    for(const mapId of locations){
+     if(knownMaps[mapId])detail.append(wikiLink('◈ '+dataName('map',mapId),'map',mapId,id));
+    }
     detail.append(h('h4',{text:'Обменные предметы'}));
     for(const trade of wikiIndex.trades(id)){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(trade.i)?' highlighted':'')});
@@ -1146,10 +1164,32 @@ function renderWiki(root){
      detail.append(entry);
     }
   }else if(type==='map'||type==='instance'){
-    detail.append(h('h4',{text:'Монстры в локации'}));
-    for(const mob of rec.mobs||[]){
+    if(rec.blurb)detail.append(h('p',{class:'wiki-description',text:rec.blurb}));
+    const mobs=rec.mobs||[];
+    if(mobs.length)detail.append(h('h4',{text:'Монстры в локации'}));
+    for(const mob of mobs){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(mob)?' highlighted':'')});
-     entry.append(wikiLink(dataName('monster',mob),'monster',mob));detail.append(entry);
+     const mon=wikiData.monsters?.[mob];
+     entry.append(wikiLink(dataName('monster',mob)+
+      (mon?.level!=null?' · ур. '+mon.level:''),'monster',mob));
+     detail.append(entry);
+    }
+    if(type==='map'){
+     const dropZones=(wikiData.tables?.zoneDrops||[]).filter(x=>String(x.map)===String(id));
+     if(dropZones.length){
+      detail.append(h('h4',{text:'Добыча в локации'}));
+      for(const zone of dropZones)for(const group of zone.rows||[]){
+       const block=h('section',{class:'wiki-zone-group'});
+       if(group.mob!=null&&wikiData.monsters?.[group.mob])
+        block.append(wikiLink(dataName('monster',group.mob),'monster',group.mob));
+       if(group.base!=null)block.append(h('small',{text:
+        'Шанс группы добычи: '+group.base+'%. Шанс отдельной вещи не указан.'}));
+       for(const reward of group.items||[])
+        if(reward.i!=null)block.append(itemLink(reward.i,
+         dataName('item',reward.i)+(reward.n&&reward.n!==1?' ×'+reward.n:''),id));
+       detail.append(block);
+      }
+     }
     }
   }else{
     detail.append(h('h4',{text:'Содержимое сундука по группам'}));

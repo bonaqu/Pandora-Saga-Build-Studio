@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.109",
-  "notes": "Robust wiki history: guard detached encyclopedia DOM when returning from other tabs"
+  "release": "2026.10.31.110",
+  "notes": "NPC settlement locations, map drop icons with honest group chances, OS monster defenses/resistances"
 }
