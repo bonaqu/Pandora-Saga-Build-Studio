@@ -1338,3 +1338,60 @@ main{padding-top:10px}
 /* Souls expose already-indexed sources; NPC locations list real residents. */
 .wiki-soul-source{display:grid;gap:3px}
 .wiki-soul-source .wiki-link{width:max-content;max-width:100%}
+
+/* v0.113: Game encyclopedia controls and keyboard-friendly skill milestones. */
+.wiki-trade-list{display:grid;gap:9px;margin-top:9px}
+.wiki-trade-card{padding:11px;border:1px solid #80603c;border-radius:6px;background:linear-gradient(135deg,#322215,#1b1410);min-width:0}
+.wiki-trade-output{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.wiki-trade-output>small{font-size:10px;color:#b9a283}
+.wiki-trade-output .wiki-link{font-weight:700;margin:0}
+.wiki-trade-cost{font-size:11px;color:#eccb9b;margin-top:7px}
+.wiki-inline-search{display:block;width:100%;padding:9px 12px;margin:8px 0;border:1px solid #95714d;border-radius:5px;background:#18110c;color:#f5d9a5;font:12px Manrope,Arial,sans-serif}
+.wiki-inline-search:focus-visible{outline:2px solid #e9b96b;outline-offset:1px}
+.wiki-result-counter{display:block;color:#bc9d76;margin:4px 0;font-size:10px}
+.wiki-monster-stats{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
+.wiki-monster-stat{min-width:0;display:grid;gap:4px;padding:8px 10px;border:1px solid #765839;border-radius:4px;background:#291d14}
+.wiki-monster-stat small{color:#baa080;font-size:10px}
+.wiki-monster-stat strong{color:#f5d4a0;font:650 17px Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums}
+.wiki-map-monsters{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:5px;max-height:440px;overflow:auto}
+.wiki-mob-row .wiki-link{margin:0;min-height:38px}
+.wiki-soul-traits{display:flex;flex-wrap:wrap;gap:6px;margin:9px 0}
+.wiki-soul-traits span{padding:5px 9px;border:1px solid #87653f;background:#392617;border-radius:15px;color:#efce9c;font-size:11px}
+.wiki-trade-card[hidden],.wiki-mob-row[hidden]{display:none!important}
+.class-wizard-specialties{flex-basis:100%;font:10px/1.45 Manrope,Arial,sans-serif;color:#c6aa85;margin-top:2px}
+.class-wizard-choice{flex-wrap:wrap}
+.class-wizard-choice strong{flex:1 1 100px}
+.inline-mastery-track input[type=range]{cursor:pointer}
+.branch-row{cursor:pointer}
+.inline-mastery-track .inline-branch-milestones{overflow:visible;z-index:9}
+.inline-mastery-track .path-threshold-tick{
+ top:-9px;width:13px;height:14px;border:1px solid #f5d7aa;border-radius:3px;
+ background:linear-gradient(160deg,#f3c675,#9c6e31);box-shadow:0 1px 6px #000b;
+ pointer-events:auto!important;cursor:help;z-index:11;outline-offset:2px
+}
+.inline-mastery-track .path-threshold-tick::after{content:'';position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border-width:5px 4px 0;border-style:solid;border-color:#be934f transparent transparent}
+.inline-mastery-track .path-threshold-tick.unreachable{background:linear-gradient(#ad796d,#70433a);border-color:#d19a87}
+.path-threshold-tick:focus-visible{outline:2px solid #ffe0a7}
+.path-milestone-tooltip{display:none;position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);z-index:40;width:min(275px,65vw);max-height:230px;overflow:auto;pointer-events:none;white-space:normal;text-align:left;padding:9px;background:#1d1511;border:1px solid #ddaf72;border-radius:6px;box-shadow:0 10px 26px #000e}
+.path-threshold-tick:hover .path-milestone-tooltip,.path-threshold-tick:focus .path-milestone-tooltip{display:grid;gap:7px}
+.path-milestone-tooltip>strong{font:650 11px Manrope,Arial,sans-serif;color:#f4c88c}
+.path-milestone-preview{display:flex;gap:7px;align-items:flex-start}
+.path-milestone-preview img{width:30px;height:30px;object-fit:contain;flex:none;border:1px solid #755635}
+.path-milestone-preview b{display:block;font:600 11px Manrope,Arial,sans-serif;color:#ffdfb0}
+.path-milestone-preview small{display:block;font:10px/1.4 Manrope,Arial,sans-serif;color:#c7b08f;max-height:70px;overflow:hidden}
+.stage-book-check input[type=checkbox],.origin-buffs-checkbox input[type=checkbox],.build-card input[type=checkbox]{
+ appearance:none;-webkit-appearance:none;position:relative;display:inline-grid;place-items:center;
+ flex:0 0 18px;width:18px;height:18px;margin:0;border:1px solid #ac824f;
+ border-radius:4px;background:linear-gradient(#231810,#100c09);
+ box-shadow:inset 0 1px 2px #0008;cursor:pointer;vertical-align:middle
+}
+.stage-book-check input[type=checkbox]::after,.origin-buffs-checkbox input[type=checkbox]::after,.build-card input[type=checkbox]::after{
+ content:'✓';font:800 13px/1 Manrope,Arial,sans-serif;color:#25170c;opacity:0
+}
+.stage-book-check input[type=checkbox]:checked,.origin-buffs-checkbox input[type=checkbox]:checked,.build-card input[type=checkbox]:checked{
+ background:linear-gradient(#f5d69c,#c99d5d);border-color:#ffe5b5
+}
+.stage-book-check input[type=checkbox]:checked::after,.origin-buffs-checkbox input[type=checkbox]:checked::after,.build-card input[type=checkbox]:checked::after{opacity:1}
+.stage-book-check input[type=checkbox]:focus-visible,.origin-buffs-checkbox input[type=checkbox]:focus-visible,.build-card input[type=checkbox]:focus-visible{outline:2px solid #ffdc9f;outline-offset:3px}
+.stage-book-check input[type=checkbox]:disabled,.origin-buffs-checkbox input[type=checkbox]:disabled{opacity:.5;cursor:not-allowed}
+@media(max-width:620px){.wiki-page{padding:12px}.wiki-map-monsters{grid-template-columns:1fr}.path-milestone-tooltip{width:min(220px,70vw)}}
