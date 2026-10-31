@@ -113,7 +113,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Базовые боевые показатели (частичный расчёт)'}));
   card.append(make('p',{text:'Физическая атака оружия: '+
-   cm.attack.known+' (без дополнительных боевых усилений)'}),
+   (cm.attack?.known??'—')+' (без дополнительных боевых усилений)'}),
    make('p',{text:'Точность: '+cm.accuracy.known+' (база '+
     cm.accuracy.base+', бонусы '+(cm.accuracy.known-cm.accuracy.base)+')'}),
    make('p',{text:'Уклонение: '+cm.dodge.known+' (база '+
@@ -128,6 +128,17 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    '% к уклонению (не включено в частичный итог: порядок округления OS не проверен)'}));
   card.append(make('p',{class:'stage-attribute-note',
    text:'Источник: Remaked Legacy + таблица усиления оружия OS. Без активных навыков, ряда пассивок, комплектов, некоторых душ и серверных условий.'}));
+  body.prepend(card);
+ }
+ if(page==='defense'&&modifiers?.combat?.defense){
+  const df=modifiers.combat.defense,card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Защита надетых вещей (частичный расчёт)'}),
+   make('p',{text:'Подтверждённая основа: '+df.known}),
+   make('p',{text:'Базовая защита снаряжения: '+df.armor}),
+   make('p',{text:'Прямые бонусы вещей и душ: '+(df.equipment>=0?'+':'')+df.equipment}),
+   make('p',{text:'Титул чести: '+(df.honor>=0?'+':'')+df.honor}),
+   make('p',{class:'stage-attribute-note',
+    text:'Усиления брони заточкой, условные эффекты и активные навыки пока не входят в итог. Это не полная защита игрового сервера.'}));
   body.prepend(card);
  }
  if(page==='defense'&&modifiers?.resistances){

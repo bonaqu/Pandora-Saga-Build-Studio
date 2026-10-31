@@ -71,3 +71,27 @@ test('old combat-stage expectations are updated without loosening release versio
  assert.match(stage,/частичный расчёт/);
  assert.match(check,/assert\.equal\(v,pkg\.pandoraRelease\)/);
 });
+test('armor preview sums only equipped item AC and gated EP_ARMORCLASS_CONST once',()=>{
+ const rows=[
+  ['item:helmet',{AC:10,effects:[{func:'EP_ARMORCLASS_CONST',a:2}]},0],
+  ['item:shield',{AC:14,effects:[]},0],
+  ['soul:guard',{AC:900,effects:[{func:'EP_ARMORCLASS_CONST',a:3,min:5,max:10}]},7]
+ ];
+ const yes=calc.defensePreview({records:rows,honorTitle:11});
+ assert.deepEqual([yes.armor,yes.equipment,yes.honor,yes.known],[24,5,5,34]);
+ assert.equal(calc.defensePreview({records:rows.slice(0,2)}).known,26);
+ assert.equal(calc.defensePreview({records:[...rows.slice(0,2),[rows[2][0],rows[2][1],4]]}).equipment,2);
+ assert.equal(calc.defensePreview({records:rows,honorTitle:14}),null);
+ assert.equal(yes.verified,false);
+});
+test('missing weapon improvement tables cannot make valid HP/MP disappear',()=>{
+ const classes=JSON.parse(read('data/os/classes.json'));
+ const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:15};
+ const result=calc.base({classData:classes.WARRIOR,raceData:stats,
+  jobData:{vit:0,str:0,agi:0,dex:0,spi:0,int:0},allocation:{},level:45,
+  combatContext:{weapon:{W:48},weaponGrade:5,weaponPlus:null}});
+ assert.ok(Number.isFinite(result.hp));
+ assert.ok(Number.isFinite(result.mp));
+ assert.equal(result.combat?.attack,null);
+ assert.equal(result.combat.defense.known,0);
+});

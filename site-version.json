@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.90",
-  "notes": "Partial Remaked OS weapon attack, hit/dodge/critical; corrected obsolete attribute and release tests"
+  "release": "2026.10.31.91",
+  "notes": "Partial equipped armor AC plus soul DEF bonuses; guard vitals against missing combat table"
 }

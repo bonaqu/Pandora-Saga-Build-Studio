@@ -268,8 +268,35 @@ function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle
  return {known:Math.ceil(raw+honor),raw,unarmed:false,physical,
   weaponDamage:damage,refinement,strengthRate,honor,verified:false};
 }
+// Remaked Legacy Calc('DEF'): raw equipped armor class contributes first;
+// all armor enhancement and active-skill multipliers remain outside this preview.
+function defensePreview({records=[],honorTitle=0}={}){
+ if(!Array.isArray(records)||!Number.isInteger(honorTitle)||
+  honorTitle<0||honorTitle>=honorTitles.length)return null;
+ let armor=0,equipment=0;
+ for(const [source,record,grade] of records){
+  if(!record||typeof record!=='object')continue;
+  // Only equipped items carry the armor-class field. Souls provide effects
+  // but their own item metadata must never inflate physical armor totals.
+  if(String(source).startsWith('item:')&&record.AC!=null){
+   if(!Number.isFinite(record.AC))return null;
+   armor+=record.AC;
+  }
+  for(const e of record.effects||[]){
+   if(e.func!=='EP_ARMORCLASS_CONST')continue;
+   if(Number.isFinite(e.min)&&grade<e.min)continue;
+   if(Number.isFinite(e.max)&&grade>e.max)continue;
+   if(!Number.isFinite(e.a))return null;
+   equipment+=e.a;
+  }
+ }
+ const honor=honorTitle===11?5:0;
+ return {armor,equipment,honor,known:armor+equipment+honor,
+  verified:false,excluded:['armor refinement scaling','Defender and Raging Soul active skills',
+   'conditional item/set multipliers','OS server damage mitigation']};
+}
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
- weapon=null,weaponGrade=0,weaponPlus=null}={}){
+ weapon=null,weaponGrade=0,weaponPlus=null,records=[]}={}){
  if(!Number.isInteger(level)||level<1||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -294,8 +321,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   dodge:racialPassiveId===900040003?5:0};
  const attack=weaponAttackPreview({str:stats.str,weapon,grade:weaponGrade,
   weaponPlus,honorTitle});
- if(!attack)return null;
- return {attack,accuracy:{base:accuracyBase,equipment:accEquip,
+ const defense=defensePreview({records,honorTitle});
+ if(!defense)return null;
+ return {attack,defense,accuracy:{base:accuracyBase,equipment:accEquip,
    honor:title.accuracy||0,known:accuracy},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
    honor:title.dodge||0,known:dodge},
@@ -351,9 +379,10 @@ function base({classData,raceData,jobData,allocation,level,records=[],
  const resistances=resistancePreview({stats,bonuses:effects.bonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
- const combat=combatPreview({stats,level,bonuses:effects.bonuses,
+ const combat=combatPreview({stats,level,bonuses:effects.bonuses,records,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,...combatContext});
- if(!resistances||!regeneration||!combat)return null;
+ // An unavailable weapon/armor preview must NEVER erase otherwise valid HP/MP.
+ if(!resistances||!regeneration)return null;
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
@@ -365,6 +394,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview
 });
 })(typeof window==='undefined'?globalThis:window);
