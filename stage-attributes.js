@@ -531,6 +531,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     text:'Частичные индексы по Remaked: навыки, душевные эффекты и условия серверного боя пока не все учтены.'}));
   body.prepend(card);
  }
+ if(page==='defense'&&modifiers?.targetResistance?.entries?.length){
+  const card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Защита от отдельных типов противников'}));
+  for(const effect of modifiers.targetResistance.entries)
+   card.append(make('p',{text:'Урон от '+effect.name+': '+
+    (effect.change>0?'+':'')+effect.change+'% · '+effect.source}));
+  body.prepend(card);
+ }
  if(page==='defense'&&modifiers?.resistances){
   const rs=modifiers.resistances,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Сопротивления'}));

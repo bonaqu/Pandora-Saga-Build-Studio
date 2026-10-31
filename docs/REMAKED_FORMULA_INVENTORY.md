@@ -9,8 +9,8 @@
 ## Результат аудита
 
 - **BASE/PREVIEW:** 15 уникальных ключей
-- **PARTIAL:** 60 уникальных ключей
-- **NOT YET PORTED:** 58 уникальных ключей
+- **PARTIAL:** 65 уникальных ключей
+- **NOT YET PORTED:** 53 уникальных ключа
 - **BUFF PREVIEW:** 10 уникальных ключей
 
 ### Приоритет завершения
@@ -119,12 +119,12 @@
 | `MPRec` | [ 13] MP自然回復量                   [ 15] 座っている時のMP回復量 | 998 | PARTIAL |
 | `LPsec` | [ 16] 2秒毎のLP回復量 | 1009 | NOT YET PORTED |
 | `MPsec` | [ 17] 2秒毎のMP回復量 | 1018 | NOT YET PORTED |
-| `RESAnimal` | [ 53] 動物類からの物理ダメージ軽減率 | 1026 | NOT YET PORTED |
+| `RESAnimal` | [ 53] 動物類からの物理ダメージ軽減率 | 1026 | PARTIAL |
 | `RESInsect` | [ 54] 昆虫類からの物理ダメージ軽減率 | 1033 | NOT YET PORTED |
-| `RESReptilian` | [ 55] 爬虫類からの物理ダメージ軽減率 | 1040 | NOT YET PORTED |
-| `RESDevil` | [ 56] 悪魔系からの物理ダメージ軽減率 | 1047 | NOT YET PORTED |
-| `RESImmortal` | [ 57] 不死系からの物理ダメージ軽減率 | 1054 | NOT YET PORTED |
-| `RESGhost` | [ 58] 幽霊系からの物理ダメージ軽減率 | 1061 | NOT YET PORTED |
+| `RESReptilian` | [ 55] 爬虫類からの物理ダメージ軽減率 | 1040 | PARTIAL |
+| `RESDevil` | [ 56] 悪魔系からの物理ダメージ軽減率 | 1047 | PARTIAL |
+| `RESImmortal` | [ 57] 不死系からの物理ダメージ軽減率 | 1054 | PARTIAL |
+| `RESGhost` | [ 58] 幽霊系からの物理ダメージ軽減率 | 1061 | PARTIAL |
 | `RESInanimate` | [ 59] 無生物からの物理ダメージ軽減率 | 1068 | NOT YET PORTED |
 | `DAMCut` | [ 61] ダメージカット | 1075 | NOT YET PORTED |
 | `EXP` | [ 82] 獲得EXP＋ | 1083 | NOT YET PORTED |
@@ -176,3 +176,8 @@
 ### 0.127.0 · RelHorse
 
 Из `js/calc.js:555–566` перенесены проверяемые части: профессия (Dragoon/Paladin 50, Predator 30, Calamity 40, остальные 10), зелёное врождённое/освоенное мастерство верховой езды и +10 от Honor 7. Бонусы `EquipOpt[81]` не сопоставлены с текущими OS-предметами и не прибавляются. **PARTIAL** — не утверждение о полной боевой серверной формуле.
+
+
+## Update 0.136.0 — creature resistance Soul preview
+
+Five original RES branches now show explicit OS `EP_ONDAMAGE_FDS_RACE` values by category (animal 502, devil 504, undead 505, reptilian 508, ghost 511). OS golems 512 are displayed separately and **not** presumed equal to Remaked `RESInanimate`; `RESInsect` and `RESInanimate` remain NOT YET PORTED. These are conditional signed source percentages; stacking and final incoming damage are not verified.

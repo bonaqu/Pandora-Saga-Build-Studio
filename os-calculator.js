@@ -788,6 +788,31 @@ function attributeBuffBonus(options={}){
 
 
 
+// Current OS Soul codes: source-backed creature-specific damage modifiers.
+const osTargetFamilies=Object.freeze({
+ 502:{key:'animal',name:'животных'},504:{key:'devil',name:'демонов'},
+ 505:{key:'immortal',name:'нежити'},508:{key:'reptilian',name:'ящеров'},
+ 511:{key:'ghost',name:'призраков'},512:{key:'golem',name:'големов'}
+});
+function targetResistancePreview({records=[],itemForth=null}={}){
+ if(!Array.isArray(records))return null;
+ const entries=[];
+ for(const [source,record,grade] of records){
+  if(!record||!Number.isInteger(grade))continue;
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
+   const race=osTargetFamilies[effect?.b];
+   if(effect?.func!=='EP_ONDAMAGE_FDS_RACE'||!race||
+    !Number.isFinite(effect.a)||!Number.isInteger(effect.b))continue;
+   if((Number.isFinite(effect.min)&&grade<effect.min)||
+      (Number.isFinite(effect.max)&&grade>effect.max))continue;
+   entries.push({key:race.key,name:race.name,raceId:effect.b,
+    change:effect.a,source:String(record.name||source)});
+  }
+ }
+ // No aggregation: duplicate Soul stacking and OS damage packets are unverified.
+ return {entries,verified:false,source:'Pandora Saga OS EP_ONDAMAGE_FDS_RACE'};
+}
+
 // Classify item effects by what THIS calculator can genuinely support.
 // A code being present in OS does not mean it has been included in a stat.
 // Keep conditional procs and unmapped effects visible, not silently counted.
@@ -802,7 +827,7 @@ const calculatedCodes=new Set([
 ]);
 const previewCodes=new Set([
  'EP_MOVESPEED_SCALE','EP_SKILL_DELAY','EP_SKILL_DELAY_FIN',
- 'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE',
+ 'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE','EP_ONDAMAGE_FDS_RACE',
  'EP_CASTINGCANCEL_RESISTANCE_CONST','EP_HEAL_TIME_SCALE'
 ]);
 function effectCoverage({records=[],itemForth=null}={}){
@@ -1033,6 +1058,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const regeneration=regenerationPreview({stats,guild:attributeBuffs});
  const gemstones=gemstonePreview(gemSelections);
  const otherEquipment=secondaryEffectsPreview({records:combinedRecords,itemForth});
+ const targetResistance=targetResistancePreview({records:combinedRecords,itemForth});
  if(otherEquipment&&resistances){
   resistances.mitigation.physical+=otherEquipment.incomingPhysicalPercent;
   resistances.mitigation.magic+=otherEquipment.incomingMagicPercent;
@@ -1081,7 +1107,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,legacyBuffs,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,regeneration,legacyBuffs,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,combat,gemstones,auraDamage,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
@@ -1090,6 +1116,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview
 });
 })(typeof window==='undefined'?globalThis:window);

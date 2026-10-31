@@ -607,3 +607,8 @@ Regression notes (0.134.0): automated source assertions for opening a previously
 ## Trusted share creation · 0.135.0
 
 Creating a public share requires proof of ownership of a saved D1 build. The Worker now loads the exact source snapshot from D1 itself; any extra client-supplied character object is ignored. The front-end sends the saved ID only, preventing someone from altering the shared character independently of the saved original. The 200-record quota counts active builds, not deleted tombstones. All 1–55 future-planning data remains eligible for saving and sharing.
+
+
+## Target-family defense from souls · 0.136.0
+
+The Book now displays six actual OS soul effects against specific creature types. Each entry respects refinement gates and remains separate from universal physical armor and unverified combat damage. Five historical Remaked resistance keys have corresponding partial data; the golem category is not equated with the old inanimate type without evidence. The build planner continues to support 1–55.
