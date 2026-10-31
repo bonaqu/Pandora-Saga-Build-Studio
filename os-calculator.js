@@ -299,11 +299,14 @@ function defensePreview({records=[],honorTitle=0}={}){
  // Apply Remaked's ceil(base * rate / 100) separately to every source effect.
  // Deliberately ignore unstructured gear description text and conditional skills.
 function equippedCombatModifiers(records=[]){
- const out={attackFlat:0,attackPercent:[],accuracyPercent:[],traces:[]};
+ const out={attackFlat:0,attackPercent:[],accuracyPercent:[],
+  attackSpeedFlat:0,manaDiscount:0,traces:[]};
  if(!Array.isArray(records))return null;
  const lookup={EP_DAMAGERATE_CONST:'attackFlat',
   EP_SKILL_EQUIP_DAMAGERATE:'attackFlat',
-  EP_DAMAGERATE_SCALE:'attackPercent',EP_TOHIT_SCALE:'accuracyPercent'};
+  EP_DAMAGERATE_SCALE:'attackPercent',EP_TOHIT_SCALE:'accuracyPercent',
+  EP_ATTACKINTERVAL_SCALE:'attackSpeedFlat',
+  EP_RACE_MANA_COSTCUT:'manaDiscount'};
  for(const [source,record,grade] of records){
   if(!record||typeof record!=='object'||!Array.isArray(record.effects))continue;
   for(const effect of record.effects){
@@ -313,7 +316,8 @@ function equippedCombatModifiers(records=[]){
    if(Number.isFinite(effect.max)&&grade>effect.max)continue;
    const amount=effect.a;
    if(!Number.isFinite(amount))continue;
-   if(target==='attackFlat')out.attackFlat+=amount;
+   if(target==='attackFlat'||target==='attackSpeedFlat'||target==='manaDiscount')
+    out[target]+=amount;
    else out[target].push({source,rate:amount});
    out.traces.push({source,ep:effect.func,value:amount});
   }
@@ -358,7 +362,26 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const accuracyPercent=equipped.accuracyPercent.map(e=>({
   ...e,bonus:Math.ceil(accuracyBase*e.rate/100)}));
  const accuracyBonus=accuracyPercent.reduce((sum,e)=>sum+e.bonus,0);
- return {attack:effectiveAttack,defense,
+ // Legacy Calc('ATKSPD'): 100 + 2*floor(AGI/10) +
+ // 3*floor(AGI/20) + floor(AGI/10); typed as a speed index, not hits/sec.
+ const speedBase=100+3*Math.floor(stats.agi/10)+3*Math.floor(stats.agi/20);
+ const attackSpeed={base:speedBase,equipment:equipped.attackSpeedFlat,
+  known:speedBase+equipped.attackSpeedFlat,verified:false};
+ // Legacy Calc('CastSPD'): 100 + 5*floor(DEX/10), without temporary casts.
+ const castingSpeed={base:100+5*Math.floor(stats.dex/10),
+  verified:false,excluded:['active spell buffs','unknown Soul conditions']};
+ // Legacy Calc('ReduceMP'): 100-floor(INT^2/1000). OS Elf
+ // EP_RACE_MANA_COSTCUT 900020001 = 15; equipped same-EP reductions stack.
+ const intReduction=Number.isFinite(stats.int)&&stats.int>=0?
+  Math.floor(stats.int*stats.int/1000):null;
+ const elfReduction=racialPassiveId===900020001?15:0;
+ const manaCost=intReduction===null?null:{
+  base:100-intReduction,intReduction,racial:elfReduction,
+  equipment:equipped.manaDiscount,
+  remaining:100-intReduction-elfReduction-equipped.manaDiscount,
+  verified:false,excluded:['gear enhancement-dependent zero-valued effects',
+   'conditional active skill discounts']};
+ return {attack:effectiveAttack,defense,attackSpeed,castingSpeed,manaCost,
   accuracy:{base:accuracyBase,equipment:accEquip,
    percentage:accuracyPercent,honor:title.accuracy||0,
    known:accuracy+accuracyBonus},

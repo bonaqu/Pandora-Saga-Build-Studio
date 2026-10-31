@@ -59,6 +59,17 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   }body.append(card);
  }
  if(page==='effects'){
+  if(modifiers?.combat?.manaCost){
+   const mp=modifiers.combat.manaCost,card=make('section',{class:'stage-attribute-row'});
+   card.append(make('strong',{text:'Расход ОМ (частичный расчёт)'}),
+    make('p',{text:'Индекс остаточного расхода: '+mp.remaining+'%'}),
+    make('p',{text:'База от ИНТ: '+mp.base+'%'}),
+    make('p',{text:'Расовая способность: −'+mp.racial+'%'}),
+    make('p',{text:'Снаряжение и души: −'+mp.equipment+'%'}),
+    make('p',{class:'stage-attribute-note',
+     text:'Это расчёт без активных эффектов и неструктурированных бонусов заточки; 100% означает исходный расход ОМ.'}));
+   body.prepend(card);
+  }
   const honor=modifiers?.honor;
   if(honor?.id){
    const labels={
@@ -136,8 +147,14 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   if(cm.racialRate.dodge)card.append(make('p',{text:
    'Интуиция: +'+cm.racialRate.dodge+
    '% к уклонению (не включено в частичный итог: порядок округления OS не проверен)'}));
+  if(cm.attackSpeed)card.append(make('p',{text:'Скорость атаки (индекс): '+
+   cm.attackSpeed.known+' (база '+cm.attackSpeed.base+
+   ', экипировка '+(cm.attackSpeed.equipment>=0?'+':'')+
+   cm.attackSpeed.equipment+')'}));
+  if(cm.castingSpeed)card.append(make('p',{text:'Скорость заклинаний (базовый индекс): '+
+   cm.castingSpeed.base}));
   card.append(make('p',{class:'stage-attribute-note',
-   text:'Источник: Remaked Legacy + таблица усиления оружия OS. Без активных навыков, ряда пассивок, комплектов, некоторых душ и серверных условий.'}));
+   text:'Источник: Remaked Legacy + таблица усиления оружия OS. Индексы скорости не обозначают удары в секунду или реальное время каста. Без активных навыков, ряда пассивок, комплектов, некоторых душ и серверных условий.'}));
   body.prepend(card);
  }
  if(page==='defense'&&modifiers?.combat?.defense){
