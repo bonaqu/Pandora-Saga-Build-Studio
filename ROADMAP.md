@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.87.0 (`2026.10.31.87`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.88.0 (`2026.10.31.88`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,12 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.88.0 — resistance and guild recovery source preview
+
+- Port conservative `RES*` base terms from Remaked: current derived VIT/SPI resistance to physical and mental states, selected Honor paths and explicitly chosen Human/Elf/Enkidu/Lapin race passives, plus confirmed OS item/Soul elemental effects. Keep partial-combat disclaimer; do not claim complete attack/defense or current-server parity.
+- Port three independently selectable guild regeneration `SelBuffClan_3,4,8` branches with Remaked `LPRecSPD/MPRecSPD` indices and original integer tier values. Recovery indices are NOT HP/MP per tick. Expose in collapsed Origin controls and defense attribute cards; validate and persist in shared builds.
+- Regression fixtures added; complete `npm test`, Pages visual checks, live Worker/D1, remaining skill effects/sets, icon library, and full attack/defense formulas are still open.
 
 ## Source update 0.87.0 — Legacy POT parity and approved racial terminology
 

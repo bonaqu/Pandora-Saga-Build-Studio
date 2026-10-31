@@ -109,6 +109,36 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    body.prepend(potion);
   }
  }
+ if(page==='defense'&&modifiers?.resistances){
+  const rs=modifiers.resistances,card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Известные сопротивления (частичный расчёт)'}));
+  const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
+   charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия'};
+  for(const [key,value] of Object.entries(rs.elements)){
+   if(value===0)continue;
+   card.append(make('p',{text:labels[key]+': '+(value>0?'+':'')+value}));
+  }
+  card.append(make('p',{text:'Физические состояния: '+rs.states.physical}),
+   make('p',{text:'Психические состояния: '+rs.states.mental}));
+  if(rs.mitigation.physical)card.append(make('p',{text:'Получаемый физический урон: '+
+   rs.mitigation.physical+'%'}));
+  if(rs.mitigation.magic)card.append(make('p',{text:'Получаемый магический урон: '+
+   rs.mitigation.magic+'%'}));
+  card.append(make('p',{class:'stage-attribute-note',
+   text:'Включены подтверждённые базовые формулы, расовые способности, честь и структурированные эффекты вещей/душ; остальные боевые усиления пока не учтены.'}));
+  body.prepend(card);
+ }
+ if(page==='defense'&&modifiers?.regeneration){
+  const regen=modifiers.regeneration,card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Скорость естественного восстановления'}),
+   make('p',{text:'ОЗ: '+regen.hp.total+' (база '+regen.hp.base+
+    ', гильдия +'+regen.hp.guild+', лечение +'+regen.hp.healing+')'}),
+   make('p',{text:'ОМ: '+regen.mp.total+' (база '+regen.mp.base+
+    ', гильдия +'+regen.mp.guild+', лечение +'+regen.mp.healing+')'}),
+   make('p',{class:'stage-attribute-note',
+    text:'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Эффекты экипировки и активных навыков пока не включены.'}));
+  body.prepend(card);
+ }
  const totals=modifiers?.effects?.bonuses||{};
  const names={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
  charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия',

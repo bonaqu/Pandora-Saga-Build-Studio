@@ -193,6 +193,56 @@ function potionRecovery({vit,records=[],honorTitle=0,runeJoEun=false,
   source:'Remaked Legacy Calc(POT); verified OS racial ID 900010003',
   excluded:['non-legacy/current-server conditional recovery modifiers']};
 }
+// Remaked Legacy js/calc.js RES* formulas: only confirmed base terms,
+// chosen Honor, selected racial passive and structured OS equipment effects.
+// Active casts, guild resistances, gem conditions and other buffs are excluded.
+function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=null}={}){
+ if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi)||
+  !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
+ const title=honorTitles[honorTitle].effects,elementKeys=[
+  'fire','ice','lightning','poison','charm','light','dark','magic'
+ ];
+ const racial={
+  charm:racialPassiveId===900020003?20:0, // Elf: Стойкость разума
+  physicalState:racialPassiveId===900010002?15:0, // Human: Приспособляемость
+  incomingPhysical:racialPassiveId===900050001?-10:0, // Enkidu: Каменная кожа
+  incomingMagic:racialPassiveId===900060001?-10:0 // Lapin: Антимагия
+ };
+ const elements={};
+ for(const key of elementKeys){
+  const equip=Number(bonuses[key]??0);
+  if(!Number.isFinite(equip))return null;
+  elements[key]=equip+(Number(title[key])||0)+(Number(racial[key])||0);
+ }
+ return {elements,
+  states:{
+   physical:Math.floor(stats.vit/28)*7+(Number(title.physicalState)||0)+racial.physicalState,
+   mental:Math.floor(stats.spi/28)*7+(Number(title.mentalState)||0)
+  },
+  mitigation:{
+   physical:(Number(title.incomingPhysical)||0)+racial.incomingPhysical,
+   magic:racial.incomingMagic
+  },
+  verified:false,excluded:['active skills','conditional passives','other guild bonuses','missing equipment effects']};
+}
+// Remaked calc.js LPRecSPD / MPRecSPD: natural recovery *speed indices*.
+// Guild 3 and 4: +5/+8; guild 8 Healing: +10/+20/+30 to both.
+// These are not HP/MP per tick; no inferred time unit or conversion.
+function regenerationPreview({stats={},guild={}}={}){
+ if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi))return null;
+ const recovery=[0,5,8],healing=[0,10,20,30];
+ const keys=['guildLifeRecovery','guildManaRecovery','guildHealing'];
+ const levels=keys.map((key,i)=>guild[key]??0);
+ if(levels.some((value,i)=>!Number.isInteger(value)||value<0||value>=(i===2?healing.length:recovery.length)))return null;
+ const common=healing[levels[2]];
+ const hpBase=Math.floor(stats.vit/10),mpBase=Math.floor(stats.spi/10);
+ return {
+  hp:{base:hpBase,guild:recovery[levels[0]],healing:common,
+   total:hpBase+recovery[levels[0]]+common},
+  mp:{base:mpBase,guild:recovery[levels[1]],healing:common,
+   total:mpBase+recovery[levels[1]]+common},
+  verified:false,excluded:['equipment effects','active skill modifiers']};
+}
 function attributeBuffBonus(options={}){
  const out=Object.fromEntries(keys.map(k=>[k,0])),trace=[];
  const selected=selectedHonor(options);
@@ -236,16 +286,21 @@ function base({classData,raceData,jobData,allocation,level,records=[],
  if(!hpBonus||!mpBonus)return null;
  const potion=potionRecovery({vit:stats.vit,records,honorTitle:extra.honor.id,
   runeJoEun:attributeBuffs?.runeJoEun===true,level,...potionContext});
+ const resistances=resistancePreview({stats,bonuses:effects.bonuses,
+  honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId});
+ const regeneration=regenerationPreview({stats,guild:attributeBuffs});
+ if(!resistances||!regeneration)return null;
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
+  stats,basic,effects,honor:extra.honor,potion,resistances,regeneration,
+  attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview
 });
 })(typeof window==='undefined'?globalThis:window);

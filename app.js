@@ -48,7 +48,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
@@ -146,7 +146,9 @@ function renderVitalsEnhancements(){
  }
  const sign=$('originLifeSign');
  if(sign)sign.checked=state.vitalsBuffs?.lifeSign===true;
- for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency']]){
+ for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency'],
+  ['originGuildLifeRecovery','guildLifeRecovery'],['originGuildManaRecovery','guildManaRecovery'],
+  ['originGuildHealing','guildHealing']]){
   const control=$(id);
   if(control)control.value=String(state.attributeBuffs?.[key]||0);
  }
@@ -176,6 +178,10 @@ function renderVitalsEnhancements(){
  renderPotionPreview(calculated);
  if(potion)potion.textContent=calculated?.potion?.percent==null?'—':
   String(calculated.potion.percent)+'%';
+ for(const [id,key] of [['originRegenHp','hp'],['originRegenMp','mp']]){
+  const node=$(id);if(node)node.textContent=calculated?.regeneration?.[key]?.total==null?
+   '—':String(calculated.regeneration[key].total);
+ }
  const info=$('originVitalsCoverage');
  if(info)info.textContent=calculated?
   'Учтены известные бонусы вещей, душ и выбранные усиления. Часть эффектов заточки, комплектов и умений пока не проверена.':
@@ -194,7 +200,7 @@ function setVitalsEnhancement(key,value){
  if(stageAttributesPage)renderStageAttributes();
 }
 function setAttributeBuff(key,value){
- const current={guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false,
+ const current={guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,
   ...(state.attributeBuffs||{})};
  if(key==='honorTitle'){
   const id=Number(value);
@@ -211,6 +217,10 @@ function setAttributeBuff(key,value){
  }else if(key==='proeliumPotency'){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>100)return;
   current.proeliumPotency=n;
+ }else if(['guildLifeRecovery','guildManaRecovery','guildHealing'].includes(key)){
+  const n=Number(value),limit=key==='guildHealing'?3:2;
+  if(!Number.isInteger(n)||n<0||n>limit)return;
+  current[key]=n;
  }else return;
  state.attributeBuffs=current;
  persist();renderOriginStats();renderOriginVitals();renderVitalsEnhancements();
@@ -1424,6 +1434,10 @@ function sanitizeSharedState(original){
   const guild=rawAttributes.guildAll,potency=rawAttributes.proeliumPotency;
   if(Number.isInteger(guild)&&guild>=0&&guild<=6)safe.attributeBuffs.guildAll=guild;
   if(Number.isInteger(potency)&&potency>=0&&potency<=100)safe.attributeBuffs.proeliumPotency=potency;
+  for(const [key,limit] of [['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3]]){
+   const level=rawAttributes[key];
+   if(Number.isInteger(level)&&level>=0&&level<=limit)safe.attributeBuffs[key]=level;
+  }
   if(Number.isInteger(rawAttributes.honorTitle)&&rawAttributes.honorTitle>=0&&
     rawAttributes.honorTitle<window.PandoraOSCalculator.honorTitles.length){
    safe.attributeBuffs.honorTitle=rawAttributes.honorTitle;
@@ -1990,7 +2004,9 @@ for(const [id,key] of [['originGuildHp','guildHp'],['originGuildMp','guildMp']])
 $('originLifeSign')?.addEventListener('change',event=>
  setVitalsEnhancement('lifeSign',event.target.checked));
 $('originHonorTitle')?.addEventListener('change',event=>setAttributeBuff('honorTitle',event.target.value));
-for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency']]){
+for(const [id,key] of [['originGuildAll','guildAll'],['originProeliumPotency','proeliumPotency'],
+ ['originGuildLifeRecovery','guildLifeRecovery'],['originGuildManaRecovery','guildManaRecovery'],
+ ['originGuildHealing','guildHealing']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.value));
 }
 for(const [id,key] of [['originProelium','proelium'],['originRuneJoEun','runeJoEun'],['originUsePotionEffects','potionEffectsEnabled']]){
