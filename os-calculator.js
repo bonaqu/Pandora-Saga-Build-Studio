@@ -838,6 +838,7 @@ function targetResistancePreview({records=[],itemForth=null}={}){
 // Conditional skill procs: report actual OS triggers without assuming a successful hit.
 const procTriggers=Object.freeze({
  EP_ONHIT_SKILL_EXEC:'При ударе',
+ EP_ONHIT_STUN:'При физической атаке',
  EP_ONHIT_SKILL_EXEC_ATTACKER:'При ударе',
  EP_ONDAMAGE_SKILL_EXEC:'При получении урона',
  EP_ONDAMAGE_SKILL_EXEC_ATTACKER:'При получении урона',
@@ -853,14 +854,16 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
    if(!trigger||!Number.isInteger(effect.a)||!Number.isFinite(effect.b))continue;
    if((Number.isFinite(effect.min)&&grade<effect.min)||
       (Number.isFinite(effect.max)&&grade>effect.max))continue;
-   const skill=skills?.[String(effect.a)];
+   const isStun=effect.func==='EP_ONHIT_STUN';
+   const skill=isStun?null:skills?.[String(effect.a)];
    const recordDescription=String(record.desc||'');
    // If item text says 4% but source b says 5, do not present a fabricated certainty.
    const labelChance=recordDescription.match(/(\d+(?:[.,]\d+)?)\s*%\s*(?:шанс|вероятност)/i);
    const namedChance=labelChance?Number(labelChance[1].replace(',','.')):null;
    const sourceChance=effect.b>=0&&effect.b<=100?effect.b:null;
    const mismatch=namedChance!==null&&sourceChance!==null&&namedChance!==sourceChance;
-   entries.push({trigger,skillId:effect.a,skillName:String(skill?.name||'Особый эффект'),
+   entries.push({trigger,skillId:isStun?null:effect.a,
+    skillName:isStun?'Оглушение':String(skill?.name||'Особый эффект'),
     chance:mismatch?null:sourceChance,source:String(record.name||source),
     disputedChance:mismatch,code:effect.func});
   }

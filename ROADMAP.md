@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.170.0 (`2026.11.01.170`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.171.0 (`2026.11.01.171`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.171.0 — source-backed on-hit stun and safe regression compatibility
+
+- Treat the Iron Staff OS EP_ONHIT_STUN source as a physical-hit 4% status proc, not a skill ID 3 and not passive stun resistance. Display its actual item name and chance in Hero Book effects.
+- Retain the existing discrepancy guard if a future catalog record's stated chance conflicts with its numeric fields.
+- Update the historical periodic recovery return-object regression to include the new independent consumable result instead of failing against a stale exact string. Neither new code path mutates permanent HP/MP.
 
 ## Source update 0.170.0 — real OS mana consumables in the hero book
 

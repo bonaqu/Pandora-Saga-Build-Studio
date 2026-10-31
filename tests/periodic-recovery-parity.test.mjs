@@ -40,7 +40,7 @@ test('future levels, required mastery and invalid data fail closed',()=>{
 test('preview is linked to character model and player-only book, not applied as passive regen',()=>{
  const src=read('os-calculator.js'),ui=read('stage-attributes.js');
  assert.match(src,/const periodicRecovery=periodicRecoveryPreview/);
- assert.match(src,/healingSpells,periodicRecovery,combat/);
+ assert.match(src,/healingSpells,periodicRecovery,consumableRecovery,combat/);
  assert.match(ui,/if\(chosen==='recovery'&&modifiers\?\.periodicRecovery\?\.rows\?\.length\)/);
  assert.match(ui,/Ориентировочное действие умения/);
 });
