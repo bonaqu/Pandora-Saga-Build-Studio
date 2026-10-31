@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.122.0 (`2026.10.31.122`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.123.0 (`2026.10.31.123`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -57,6 +57,15 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] Implement six Remaked `MATKFire`..`MATKDark` elemental magic bonus fields with exactly one honor title's source-backed +5; show them in the attack book. Keep global staff magic separate from elemental bonuses.
 - [x] Add tests for future levels/items, actual OS Priest Earring +2 aura and level-55 combat, percentage rounding, honor exclusivity and player-view output.
 - [ ] Continue remaining Remaked effects and conditional combat math, preserving current OS overrides only for verified differences, not temporary server progression limits.
+
+## Source update 0.123.0 — city speed and grade-aware defense effects
+
+- [x] Corrected `MoveSPD` Remaked normal versus town indexes: `EP_RESTMAP_MOVESPEED_SCALE` from OS items affects *only town movement*, not running speed in the world. Actual source: Плащ новичка / Beginner Cloak ID 18073, +15. The hero book presents the separate town speed when present; general active buffs and gear stack once.
+- [x] Test real OS `EP_BLOCK_BREAK_RESIST` from Боевые башмаки ID 15077 (block-break resistance +1).
+- [x] Test real OS `EP_ONDAMAGE_REFLECTION` from Душа зеркала ID 103001: +3 until improvement +7, +5 from +8 through +10; no unconditional double-counting and no fictitious physical-defense increase.
+- [x] Recognize `Blocking`, `Reflection`, `Gdebuff` as *partial* in the formula inventory based on existing source-backed secondary effect mappings. They are **not** complete simulations of the relevant combat or debuff success paths.
+- [x] Isolated test vectors for separated 55-level town speed and refinement threshold; developer-side checks are not a full Node/browser/game-client acceptance test.
+- [ ] Continue the remaining 59 not-yet-ported Legacy identities, 59 partial formulas, ten support-skill read-only previews, and 15 base previews; high-level 50/55 calculations remain an explicit studio feature.
 
 ## Workstreams
 

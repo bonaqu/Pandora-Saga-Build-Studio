@@ -9,8 +9,8 @@
 ## Результат аудита
 
 - **BASE/PREVIEW:** 15 уникальных ключей
-- **PARTIAL:** 56 уникальных ключей
-- **NOT YET PORTED:** 62 уникальных ключей
+- **PARTIAL:** 59 уникальных ключей
+- **NOT YET PORTED:** 59 уникальных ключей
 - **BUFF PREVIEW:** 10 уникальных ключей
 
 ### Приоритет завершения
@@ -97,7 +97,7 @@
 | `MATKPoison` | [ 46] 毒属性魔法攻撃力＋ | 844, 918 | PARTIAL |
 | `MATKLight` | [ 47] 光属性魔法攻撃力＋ | 847, 919 | PARTIAL |
 | `MATKDark` | [ 48] 闇属性魔法攻撃力＋ | 850, 920 | PARTIAL |
-| `Gdebuff` | [ 80] 与debuff持続時間 | 853 | NOT YET PORTED |
+| `Gdebuff` | [ 80] 与debuff持続時間 | 853 | PARTIAL |
 | `RatePurler` | [ 85] 落馬発生確率 | 860 | NOT YET PORTED |
 | `RateKB` | [ 86] ノックバック発生確率 | 867 | NOT YET PORTED |
 | `RateBurn` | [ 89] 火傷発生確率 (弱)              [ 90] 火傷発生確率 (強) | 874, 926 | NOT YET PORTED |
@@ -129,9 +129,9 @@
 | `DAMCut` | [ 61] ダメージカット | 1075 | NOT YET PORTED |
 | `EXP` | [ 82] 獲得EXP＋ | 1083 | NOT YET PORTED |
 | `SkillEXP` | [ 83] 熟練度増加量 | 1090 | NOT YET PORTED |
-| `Blocking` | [133] ブロッキング解除耐性 | 1097 | NOT YET PORTED |
+| `Blocking` | [133] ブロッキング解除耐性 | 1097 | PARTIAL |
 | `RESCast` | [134] 詠唱妨害耐性 | 1104 | PARTIAL |
-| `Reflection` | [135] 近接物理ダメージ反射率 | 1114 | NOT YET PORTED |
+| `Reflection` | [135] 近接物理ダメージ反射率 | 1114 | PARTIAL |
 | `DReflect` | [136] Debuff反射確率 | 1121 | NOT YET PORTED |
 | `RESDAura` | [137] 闇オーラの反動ダメージ | 1128 | NOT YET PORTED |
 | `RESBurn` | [148] 火傷耐性                       [163] 火傷の耐性段階 | 1136 | NOT YET PORTED |
