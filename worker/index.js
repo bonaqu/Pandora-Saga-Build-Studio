@@ -206,8 +206,15 @@ async function libraryApi(request,env){
  if(!/^[a-f0-9]{32}$/.test(id||''))return no('Invalid build ID',400);
  const now=Date.now();
  if(data.action==='delete'){
-  await env.DB.prepare("INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,'{}',?,?) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload='{}',updated_at=excluded.updated_at,deleted_at=excluded.deleted_at").bind(owner,id,now,now).run();
-  return json({ok:true});
+  const tombstone=env.DB.prepare("INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,'{}',?,?) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload='{}',updated_at=excluded.updated_at,deleted_at=excluded.deleted_at").bind(owner,id,now,now);
+  // Scrub all linked public snapshots while retaining source IDs for HTTP 410 explanations.
+  // Older databases may not have this new table until the Worker has initialized sharing.
+  const mapped=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='shared_build_sources'").all();
+  if((mapped.results||[]).length){
+   const scrub=env.DB.prepare("UPDATE shared_builds SET payload='{}' WHERE id IN (SELECT share_id FROM shared_build_sources WHERE owner_hash=? AND build_id=?)").bind(owner,id);
+   await env.DB.batch([tombstone,scrub]);
+  }else await tombstone.run();
+  return json({ok:true,sharesRevoked:true});
  }
  if(data.action!=='put')return no('Invalid operation',400);
  const item=data.entry;

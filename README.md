@@ -584,3 +584,8 @@ New links are created only for a build saved by the owner in D1. `shared_build_s
 ## Updating a saved build · 0.130.0
 
 When a player opens a saved build from the library, the editor remembers its ID for that tab. «Сохранить изменения» updates that same saved build (including D1), not a duplicate; «Сохранить копию» creates a distinct new ID. Starting a new blank build or accepting a shared public snapshot clears the active-saved link so it cannot overwrite an unrelated library record. Shared links remain immutable **snapshots** of the published version until the owner deletes the source build, which revokes all those links.
+
+
+## D1 data removal for revoked links · 0.131.0
+
+A permanent delete now atomically tombstones the private source record **and overwrites the payloads of every attached public share with an empty object**. The share ID to source-ID association remains so the Worker can answer HTTP 410 with a meaningful `deleted` reason. No public endpoint can read the original shared build after revocation. A player who saved an independent copy retains that new copy. If the browser is offline, revocation and payload scrubbing happen only when its queued delete reaches D1.

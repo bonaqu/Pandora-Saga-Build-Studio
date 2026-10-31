@@ -7,7 +7,7 @@ const OWNER='a'.repeat(64),OTHER='b'.repeat(64),ORIGIN='https://bonaqu.github.io
 function db(){
  const builds=new Map(),links=new Map(),sources=new Map();
  const tables=new Set(['private_builds','shared_builds','shared_build_limits','shared_build_sources']);
- return {prepare(sql){
+ return {peekLink:id=>links.get(id),prepare(sql){
   if(sql.includes('FROM sqlite_master'))return {all:async()=>({results:[...tables].map(name=>({name}))})};
   return {bind(...v){
    const one=async()=>{
@@ -27,6 +27,11 @@ function db(){
     if(sql.startsWith('INSERT INTO shared_build_limits'))return{meta:{changes:1}};
     if(sql.startsWith('INSERT INTO shared_builds')){if(links.has(v[0]))throw Error('UNIQUE constraint failed');links.set(v[0],v[1]);return{meta:{changes:1}}}
     if(sql.startsWith('INSERT INTO shared_build_sources')){sources.set(v[0],{owner_hash:v[1],build_id:v[2]});return{meta:{changes:1}}}
+    if(sql.startsWith('UPDATE shared_builds SET payload=')){
+     for(const [sid,source] of sources)
+      if(source.owner_hash===v[0]&&source.build_id===v[1])links.set(sid,'{}');
+     return{meta:{changes:1}};
+    }
     throw Error('Unexpected write query '+sql);
    };
    return {first:one,run};
@@ -56,6 +61,7 @@ test('two links become globally unavailable when the original is deleted, foreig
  for(const share of [first,second])assert.equal((await call(DB,'/api/shared/'+share.data.id)).status,200);
  assert.equal((await call(DB,'/api/library','POST',{action:'delete',id},OWNER)).status,200);
  for(const share of [first,second]){
+  assert.equal(DB.peekLink(share.data.id),'{}','Delete must scrub snapshot content');
   const response=await call(DB,'/api/shared/'+share.data.id);
   assert.equal(response.status,410);assert.equal(response.data.reason,'deleted');
  }

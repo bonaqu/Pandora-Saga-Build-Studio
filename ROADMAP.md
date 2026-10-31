@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.130.0 (`2026.10.31.130`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.131.0 (`2026.10.31.131`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -558,3 +558,12 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Changed names propagate into the saved character snapshot and ongoing draft. Browser quota failures roll back the save and display a user-facing toast.
 - [x] Add a visible cloud retry action; a 409 tombstone conflict is not misreported as a generic network outage.
 - [ ] Browser/real D1 full acceptance, complete Remaked parity and verified live battle effects are outstanding. Short links retain immutable snapshots when the source build is edited; deletion of the source revokes all its links.
+
+
+## Source update 0.131.0 — private data scrub on revocation
+
+- [x] Deleting a D1 build now atomically writes its permanent tombstone and scrubs all public shared snapshot payloads belonging to that owner/source ID. The source-link mapping is retained only so GET returns HTTP 410 with the right deletion reason.
+- [x] Legacy D1 deployments without `shared_build_sources` continue to support safe library deletion without requiring manual schema changes.
+- [x] Restoring the active saved-build ID tolerates blocked sessionStorage (private-browser/storage restrictions) without crashing the entire app.
+- [x] Expanded regression coverage to assert that revoked public snapshot bytes are cleared and that another player's link remains available.
+- [ ] Confirm live Worker release, actual D1 POST/GET/delete and full browser E2E. Unported Remaked mechanics and OS-specific target-dependent bonuses still need source-backed implementation.
