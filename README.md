@@ -692,3 +692,8 @@ Hero Book value lines keep gameplay-specific labels and source bonuses but avoid
 ## UI label fix · 0.152.0
 
 Special rainbow gem combinations have one concise in-game label. Image-loading status no longer claims successful availability when only an external image source fallback has been configured.
+
+
+## Separate deterministic mitigation and random procs · 0.153.0
+
+Tests now accurately distinguish calculated incoming physical mitigation from conditional on-hit skills. The independent experience bonus remains a separate numeric preview, not a contribution to attack, armor or random chance. The changes correct regression expectations rather than alter the proven numeric source values.

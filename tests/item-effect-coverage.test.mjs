@@ -27,8 +27,15 @@ test('grade-specific Forth snapshot is counted once, not text fallback',()=>{
  const c=calc.effectCoverage({records:[['item:4',item,7]],itemForth:data});
  assert.equal(c.counts.calculated,1);assert.equal(c.total,1);
 });
-test('conditional proc is shown as unresolved, not converted to imaginary crit rate',()=>{
- const item={name:'Лук',effects:[{func:'EP_ONDAMAGE_FIN_DAMAGE_SCALE',a:12}]};
+test('structured incoming-damage reduction counts as a calculated mitigation, not an unresolved proc',()=>{
+ const item={name:'Лук',effects:[{func:'EP_ONDAMAGE_FIN_DAMAGE_SCALE',a:-12}]};
+ const c=calc.effectCoverage({records:[['item:bow',item,1]]});
+ assert.equal(c.counts.calculated,1);
+ assert.equal(c.counts.conditional,0);
+ assert.equal(c.counts.missing,0);
+});
+test('on-hit skill execution remains conditional instead of guaranteed damage',()=>{
+ const item={name:'Лук',effects:[{func:'EP_ONHIT_SKILL_EXEC',a:500000002,b:4}]};
  const c=calc.effectCoverage({records:[['item:bow',item,1]]});
  assert.equal(c.counts.conditional,1);
  assert.equal(c.counts.calculated,0);

@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.152.0 (`2026.10.31.152`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.153.0 (`2026.10.31.153`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -737,3 +737,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Do not claim that every image is available when the local manifest is missing; describe the active source without overstating actual fetch success.
 - [x] Extend regression tests to catch reintroduced repeated gem phrases.
 - [ ] Browser render and full Node suite remain outstanding.
+
+
+## 0.153.0 — protect actual current mitigation and conditional skill behavior
+
+- [x] Update old test snapshots to recognize the newly added, independent earned-EXP preview without accidentally classifying it as a damage bonus.
+- [x] An incoming physical damage-percent modifier is already modeled by the current equipment calculator; tests now assert calculated mitigation. On-hit skill procs remain conditional and must never be included in deterministic damage.
+- [x] Preserve a targeted regression test for each distinction, preventing a stale fixture from forcing incorrect behavior back into production.
+- [ ] Run the full Node suite and deployed Worker/browser E2E before claiming complete coverage.
