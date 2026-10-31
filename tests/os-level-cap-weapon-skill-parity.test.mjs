@@ -21,7 +21,7 @@ test('OS 2026-10-03 level 45 cap drives default sliders and current app',()=>{
  assert.match(app,/function currentLevelCap\(\)/);
  assert.match(app,/gameTables\?\.levelCap/);
  assert.match(app,/state\.level=Math\.max\(1,Math\.min\(currentLevelCap\(\),/);
- assert.match(app,/syncLevelLimit\(\);state\.gender/);
+ assert.match(app,/syncLevelLimit\(\);renderAllocationWarning\(\);state\.gender/);
  assert.match(app,/Сохранённый билд в библиотеке не изменён/);
 });
 test('OS Lunge weapon restrictions forbid bows and crossbows without losing valid bare-hand use',()=>{
