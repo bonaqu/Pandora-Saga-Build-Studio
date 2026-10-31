@@ -1268,3 +1268,15 @@ main{padding-top:10px}
 .stage-coverage-list summary{cursor:pointer;color:#efc68b;font-size:11px;line-height:1.45}
 .stage-coverage-list p{padding:5px 3px;border-bottom:1px solid #5c422a;
  font-size:10px;line-height:1.35;color:#d2b99b}
+
+/* Expandable, searchable OS skill source inspector inside Effects book chapter. */
+.stage-skill-inspector{border:1px solid #89663f;background:#2d2017;padding:9px;display:grid;gap:8px}
+.stage-skill-inspector summary{cursor:pointer;color:#f2cf96;font-weight:650;font-size:12px}
+.stage-skill-inspector input[type=search]{width:100%;min-width:0;padding:9px;
+ border:1px solid #947248;color:#f5deba;background:#1b130e}
+.stage-skill-list{display:grid;gap:8px;max-height:340px;overflow-y:auto;scrollbar-width:thin}
+.stage-skill-card{display:grid;gap:5px;border:1px solid #6d5339;padding:8px;background:#20160f}
+.stage-skill-heading{display:grid;gap:4px}
+.stage-skill-heading strong{color:#f4d19d;font-size:12px}
+.stage-skill-heading span,.stage-skill-card small{color:#cfad82;font-size:10px}
+.stage-skill-card p{font-size:10px;color:#e0c6a1;line-height:1.4}

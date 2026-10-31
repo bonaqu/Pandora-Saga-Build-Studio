@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.104",
-  "notes": "Per-build item Soul Forth effect coverage with explicit conditional proc warnings"
+  "release": "2026.10.31.105",
+  "notes": "Searchable current OS skill inspector inside Effects book, grounded requirements, costs, timings"
 }

@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.104.0 (`2026.10.31.104`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.105.0 (`2026.10.31.105`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,12 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.105.0 — skill-source inspector bound to actual OS build
+
+- Add searchable, collapsed catalog of current job learnable OS skill variants in the Effects chapter. Include raw catalog cost/timing/requirements in human-readable form, using innate+trained green mastery.
+- Do not fake final damage for uncertain `fv1/fv2` kernels; client/server golden vectors still needed for per-hit damage, DOT, target resistance and triggered effects.
+- Preserve portrait-first book and compact navigational layout.
 
 ## Source update 0.104.0 — item effect coverage and conditional procs disclosure
 

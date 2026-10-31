@@ -486,6 +486,13 @@ function renderStageAttributes(){
     souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
  });
  const cls=jobKeys[state.job],skillMap=catalog.skills||{};
+ const jobBase=catalog.classes?.[cls]?.baseClass||cls;
+ const innate=gameTables?.jobInit?.[jobBase]?.branches||{};
+ const skillModel=window.PandoraSkillResults.create({
+  catalog:skillMap,jobKey:cls,level:state.level,innate,
+  trained:Object.fromEntries(branches.map(b=>[
+   b.id,window.PandoraSkillProgression.trained(state,b.id)]))
+ });
  const equippedShield=state.equipment?.[1]&&
   catalog.equipment?.[String(state.equipment[1].id)];
  const availability={};
@@ -499,7 +506,7 @@ function renderStageAttributes(){
  window.PandoraStageAttributes.render(root,{
   page:stageAttributesPage,items,modifiers:previewBaseStats(),icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
-  availability,honorTitles:window.PandoraOSCalculator.honorTitles,
+  availability,skillModel,honorTitles:window.PandoraOSCalculator.honorTitles,
   onBuff:(key,value)=>setAttributeBuff(key,value),
   onVital:(key,value)=>setVitalsEnhancement(key,value),
   onClose:()=>{

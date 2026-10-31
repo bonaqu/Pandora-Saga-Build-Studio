@@ -94,8 +94,48 @@ function buffsPage(body,options){
  if(modifiers)body.append(make('p',{class:'stage-attribute-note',text:
   'Сейчас: '+modifiers.hp+' ОЗ, '+modifiers.mp+' ОМ. Усиления сохраняются в билде.'}));
 }
+
+// Nonintrusive skill catalog: the user opens this section on demand.
+function renderSkillInspector(body,model){
+ if(!model||!model.total)return;
+ const details=make('details',{class:'stage-skill-inspector'});
+ details.append(make('summary',{text:'Навыки героя · '+model.available+
+  ' по базовым условиям из '+model.total}));
+ details.append(make('p',{class:'stage-attribute-note',text:
+  'Названия, расход ОМ и время — из текущих данных Pandora Saga OS. Доступность предварительная; финальный урон/лечение зависит от дополнительных условий.'}));
+ const search=make('input',{type:'search','aria-label':'Поиск навыка по названию',
+  placeholder:'Найти навык…'});
+ const list=make('div',{class:'stage-skill-list'});
+ const draw=()=>{
+  const query=String(search.value||'').trim().toLocaleLowerCase('ru');
+  const filtered=model.records.filter(x=>
+   (x.name+' '+x.desc).toLocaleLowerCase('ru').includes(query));
+  list.replaceChildren();
+  for(const skill of filtered.slice(0,16)){
+   const card=make('div',{class:'stage-skill-card'},[
+    make('div',{class:'stage-skill-heading'},[
+     make('strong',{text:skill.name}),
+     make('span',{text:skill.available?'По базовым условиям доступен':'Требования не выполнены'})]),
+    make('p',{text:'ОМ '+(skill.mana??'—')+' · Применение '+
+     (skill.cast??'—')+' с · Откат '+(skill.cooldown??'—')+' с'}),
+    make('p',{text:'Эффектов в каталоге: '+skill.effectCount+
+     (skill.damageKernel?' · Тип воздействия: '+skill.damageKernel:'')})
+   ]);
+   if(skill.requirement)card.append(make('small',{text:skill.requirement}));
+   if(skill.desc)card.append(make('p',{text:skill.desc}));
+   list.append(card);
+  }
+  if(filtered.length>16)list.append(make('p',{class:'stage-attribute-note',
+   text:'Найдено '+filtered.length+' записей; уточните поиск для остальных.'}));
+  if(!filtered.length)list.append(make('p',{class:'stage-attribute-note',
+   text:'Для текущего поиска навыки не найдены.'}));
+ };
+ search.addEventListener('input',draw);
+ details.append(search,list);draw();body.append(details);
+}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
- buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={}}={}){
+ buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
+ skillModel=null}={}){
  target.replaceChildren();
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
@@ -159,6 +199,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }body.append(card);
  }
  if(page==='effects'){
+  renderSkillInspector(body,skillModel);
   if(modifiers?.coverage?.total){
    const coverage=modifiers.coverage,card=make('section',{class:'stage-attribute-row stage-coverage'});
    const k=coverage.counts;
