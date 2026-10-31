@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.94.0 (`2026.10.31.94`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.95.0 (`2026.10.31.95`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,13 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.95.0 — Remaked armor grade / OS Forth and grouped skill passives
+
+- Shield/helmet/body/gloves/legs/feet: per-item floor(1.5×enhancement) from archived `js/equip.js`, not weaponPlus or forging probability. Per-item base AC, Forth armor effects, Soul effects, Honor are distinct.
+- Current OS itemForth 162 item-ID grade snapshots takes precedence over descriptive refinement parser; intrinsic effects still apply, and imported builds are unchanged.
+- Melee, technique and magic mastery passives from innate + trained green branch Adeptness; MATK INT breakpoint table; attack position/cooldown/basic critical resistance from Remaked Legacy. Real-current-server parity still needs golden character vectors and conditional effects.
+- Next: entire 205-name Remaked approved skill entries match to exact OS skill ID, more Soul and active combat abilities, comprehensive itemForth cross-check and all-user browser E2E.
 
 ## Source update 0.94.0 — approved Remaked RU Honor title labels
 

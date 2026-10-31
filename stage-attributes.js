@@ -141,12 +141,23 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    card.append(make('p',{text:'Процентная точность вещей: '+
     (total>=0?'+':'')+total+' (поштучное округление вверх)'}));
   }
+  if(cm.accuracy.passive)card.append(make('p',{text:'Пассивная меткость лучника: +'+
+   cm.accuracy.passive}));
+  if(cm.dodge.passive)card.append(make('p',{text:'Пассивное уклонение: +'+
+   cm.dodge.passive}));
   if(cm.racialRate.accuracy)card.append(make('p',{text:
    'Подавление гнева: +'+cm.racialRate.accuracy+
    '% к точности (не включено в частичный итог: порядок округления OS не проверен)'}));
   if(cm.racialRate.dodge)card.append(make('p',{text:
    'Интуиция: +'+cm.racialRate.dodge+
    '% к уклонению (не включено в частичный итог: порядок округления OS не проверен)'}));
+  if(cm.magicAttack)card.append(make('p',{text:'Магическая атака (частичный показатель): '+
+   cm.magicAttack.known+'% (ИНТ '+cm.magicAttack.intelligence+
+   ', пассивка '+cm.magicAttack.passive+', оружие '+cm.magicAttack.staff+')'}));
+  card.append(make('p',{text:'Физический урон оружия, пассивки и титулы: +'+
+   cm.weaponPhysical}),make('p',{text:'АТК сзади: +'+cm.backAttack+
+   ', спереди: +'+cm.frontAttack}),make('p',{text:'Откат умений (базовый индекс): '+
+   (cm.cooldown??'—')+'%'}));
   if(cm.attackSpeed)card.append(make('p',{text:'Скорость атаки (индекс): '+
    cm.attackSpeed.known+' (база '+cm.attackSpeed.base+
    ', экипировка '+(cm.attackSpeed.equipment>=0?'+':'')+
@@ -162,10 +173,22 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
   card.append(make('strong',{text:'Защита надетых вещей (частичный расчёт)'}),
    make('p',{text:'Подтверждённая основа: '+df.known}),
    make('p',{text:'Базовая защита снаряжения: '+df.armor}),
+   make('p',{text:'Бонус заточки брони и щита: +'+df.refinement}),
    make('p',{text:'Прямые бонусы вещей и душ: '+(df.equipment>=0?'+':'')+df.equipment}),
    make('p',{text:'Титул чести: '+(df.honor>=0?'+':'')+df.honor}),
    make('p',{class:'stage-attribute-note',
-    text:'Усиления брони заточкой, условные эффекты и активные навыки пока не входят в итог. Это не полная защита игрового сервера.'}));
+    text:'Заточка щита и брони учтена по исходной формуле Remaked: ⌊+N×1,5⌋ за каждый предмет. Остальные условные эффекты и временные навыки ещё не полностью учитываются.'}));
+  body.prepend(card);
+ }
+ if(page==='defense'&&modifiers?.combat){
+  const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:'Дополнительные защитные параметры'}),
+   make('p',{text:'Изменение шанса входящего крита: '+cm.criticalIncoming}),
+   make('p',{text:'Множитель входящего критического урона: '+
+    cm.criticalIncomingDamage+'%'}),
+   make('p',{text:'Базовый исходящий критический урон: '+cm.criticalDamage+'%'}),
+   make('p',{class:'stage-attribute-note',
+    text:'Частичные индексы по Remaked: навыки, душевные эффекты и условия серверного боя пока не все учтены.'}));
   body.prepend(card);
  }
  if(page==='defense'&&modifiers?.resistances){

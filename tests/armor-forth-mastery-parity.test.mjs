@@ -57,3 +57,12 @@ test('critical Honor, back attack and INT cooldown remain independent',()=>{
   x.cooldown,x.backAttack],[-10,90,90,15]);
  assert.equal(calc.combatPreview({stats,level:40,honorTitle:13}).frontAttack,10);
 });
+
+test('the portrait UI displays armor grade and class passive effects, not just raw W/AC',()=>{
+ const view=read('stage-attributes.js'),app=read('app.js');
+ assert.match(view,/df\.refinement/);
+ assert.match(view,/cm\.magicAttack/);
+ assert.match(view,/cm\.weaponPhysical/);
+ assert.match(view,/cm\.accuracy\.passive/);
+ assert.match(app,/itemForth:gameItemForth/);
+});
