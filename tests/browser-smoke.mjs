@@ -48,6 +48,13 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'attack');
  await page.locator('#stageAttributes [data-book-page="attack"]').press('ArrowRight');
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'defense');
+ await page.locator('#stageAttributes [data-book-page="recovery"]').click();
+ await page.locator('#stageAttributes .stage-periodic-recovery').waitFor({state:'visible',timeout:20000});
+ await page.locator('#stageAttributes .stage-periodic-recovery summary').click();
+ const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
+ assert.match(recovery,/Регенерация/);
+ assert.match(recovery,/Восстановление/);
+ assert.match(recovery,/Ориентировочное действие умения/);
  await page.locator('#stageAttributes .stage-book-close').click();
  assert.equal(await page.locator('#stageAttributes').isHidden(),true);
 
