@@ -88,7 +88,8 @@ function buffsPage(body,options){
  select(guild,'Титул чести','honorTitle',honorTitles.map(x=>[x.id,x.ru]));
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
-  ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)']])
+  ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
+  ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
  const regen=section('Восстановление');
  select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
@@ -385,6 +386,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    cm.accuracy.passive}));
   if(cm.dodge.passive)card.append(make('p',{text:'Пассивное уклонение: +'+
    cm.dodge.passive}));
+  if(cm.dodge.windAssist)card.append(make('p',{text:'Помощь ветра: +'+
+   cm.dodge.windAssist+' к уклонению'}));
   if(cm.racialRate.accuracy)card.append(make('p',{text:
    'Подавление гнева: +'+cm.racialRate.accuracy+
    '% к точности (не включено в частичный итог: порядок округления OS не проверен)'}));
@@ -426,9 +429,11 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   if(cm.skillDelayEquipment)card.append(make('p',{text:
    'Изменение задержки применения навыков от вещей: '+
    cm.skillDelayEquipment+'% (отдельно от показателя каста)'}));
-  card.append(make('p',{text:'Скорость передвижения, индекс: '+
+  card.append(make('p',{text:'Скорость передвижения: '+
    cm.movementSpeed.known+' (снаряжение '+
-   (cm.movementSpeed.equipment>=0?'+':'')+cm.movementSpeed.equipment+')'}));
+   (cm.movementSpeed.equipment>=0?'+':'')+cm.movementSpeed.equipment+
+   ', умения '+(cm.movementSpeed.active>=0?'+':'')+
+   cm.movementSpeed.active+')'}));
   if(cm.attackSpeed)card.append(make('p',{text:'Скорость атаки (индекс): '+
    cm.attackSpeed.known+' (база '+cm.attackSpeed.base+
    ', экипировка '+(cm.attackSpeed.equipment>=0?'+':'')+
