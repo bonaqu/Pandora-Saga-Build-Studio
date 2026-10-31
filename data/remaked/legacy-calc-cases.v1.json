@@ -1,0 +1,900 @@
+{
+  "sourceRepository": "bonaqu/Pandora-Saga-Simulator-remaked",
+  "sourceBranch": "bonaqu_projects",
+  "sourceTreeSha": "3b79ddba89244b7afa038a87325214feaad6f431",
+  "sourcePath": "js/calc.js",
+  "caseOccurrences": 178,
+  "uniqueKeys": 143,
+  "entries": [
+    {
+      "key": "STA",
+      "line": 7,
+      "note": "[  0] 体力"
+    },
+    {
+      "key": "STR",
+      "line": 10,
+      "note": "[  1] 筋力"
+    },
+    {
+      "key": "AGI",
+      "line": 14,
+      "note": "[  2] 敏捷"
+    },
+    {
+      "key": "DEX",
+      "line": 18,
+      "note": "[  3] 器用"
+    },
+    {
+      "key": "SPR",
+      "line": 21,
+      "note": "[  4] 霊感"
+    },
+    {
+      "key": "INT",
+      "line": 25,
+      "note": "[  5] 知性"
+    },
+    {
+      "key": "STA",
+      "line": 31,
+      "note": "[  0] 体力"
+    },
+    {
+      "key": "STR",
+      "line": 32,
+      "note": "[  1] 筋力"
+    },
+    {
+      "key": "AGI",
+      "line": 33,
+      "note": "[  2] 敏捷"
+    },
+    {
+      "key": "DEX",
+      "line": 34,
+      "note": "[  3] 器用"
+    },
+    {
+      "key": "SPR",
+      "line": 35,
+      "note": "[  4] 霊感"
+    },
+    {
+      "key": "INT",
+      "line": 36,
+      "note": "[  5] 知性"
+    },
+    {
+      "key": "LP",
+      "line": 49,
+      "note": "[  6] LP"
+    },
+    {
+      "key": "MP",
+      "line": 70,
+      "note": "[  7] MP"
+    },
+    {
+      "key": "POT",
+      "line": 90,
+      "note": "[  8] ポーション回復量"
+    },
+    {
+      "key": "LPSkill",
+      "line": 103,
+      "note": "[ 11] LP回復スキル効果量"
+    },
+    {
+      "key": "ATK",
+      "line": 113,
+      "note": "[ 18] 攻/最大"
+    },
+    {
+      "key": "ATKFront",
+      "line": 186,
+      "note": "[ 19] 正面からの攻撃力＋"
+    },
+    {
+      "key": "ATKBack",
+      "line": 194,
+      "note": "[ 20] 背後からの攻撃力＋"
+    },
+    {
+      "key": "RangeMelee",
+      "line": 202,
+      "note": "[ 40] 近接武器の射程"
+    },
+    {
+      "key": "RangeRange",
+      "line": 216,
+      "note": "[ 41] 遠距離武器の射程"
+    },
+    {
+      "key": "MATK",
+      "line": 224,
+      "note": "[ 42] 魔法攻撃力"
+    },
+    {
+      "key": "DEF",
+      "line": 270,
+      "note": "[ 49] 防御力"
+    },
+    {
+      "key": "RESFront",
+      "line": 289,
+      "note": "[ 50] 正面からの物理ダメージ"
+    },
+    {
+      "key": "RESBack",
+      "line": 296,
+      "note": "[ 51] 背後からの物理ダメージ"
+    },
+    {
+      "key": "RESPhyDAM",
+      "line": 303,
+      "note": "[ 52] 被物理ダメージ"
+    },
+    {
+      "key": "RESMagDAM",
+      "line": 321,
+      "note": "[ 60] 被魔法ダメージ"
+    },
+    {
+      "key": "ACC",
+      "line": 336,
+      "note": "[ 62] 命中                           [ 63] 正面から攻撃した時の命中 [ 64] 背後から攻撃した時の命中"
+    },
+    {
+      "key": "Dodge",
+      "line": 369,
+      "note": "[ 65] 回避"
+    },
+    {
+      "key": "EVAMelee",
+      "line": 413,
+      "note": "[ 66] 近接物理攻撃回避率"
+    },
+    {
+      "key": "EVARange",
+      "line": 421,
+      "note": "[ 67] 遠距離攻撃回避率"
+    },
+    {
+      "key": "EVAMagic",
+      "line": 430,
+      "note": "[ 68] 魔法攻撃回避率"
+    },
+    {
+      "key": "Cri",
+      "line": 439,
+      "note": "[ 69] クリティカル発生率"
+    },
+    {
+      "key": "CriRES",
+      "line": 451,
+      "note": "[ 70] 被クリティカル発生率"
+    },
+    {
+      "key": "CriDAM",
+      "line": 459,
+      "note": "[ 71] クリティカルダメージ"
+    },
+    {
+      "key": "CriDAMRES",
+      "line": 467,
+      "note": "[ 72] 被クリティカルダメージ軽減率"
+    },
+    {
+      "key": "ATKSPD",
+      "line": 476,
+      "note": "[ 73] 攻撃速度"
+    },
+    {
+      "key": "MoveSPD",
+      "line": 499,
+      "note": "[ 74] 移動速度                       [ 75] 街での移動速度"
+    },
+    {
+      "key": "ReduceMP",
+      "line": 513,
+      "note": "[ 76] 消費MP"
+    },
+    {
+      "key": "CastSPD",
+      "line": 522,
+      "note": "[ 77] 詠唱速度                       [ 78] 詠唱時間"
+    },
+    {
+      "key": "Cooldown",
+      "line": 539,
+      "note": "[ 79] 再使用時間"
+    },
+    {
+      "key": "RelHorse",
+      "line": 555,
+      "note": "[ 81] 騎乗時のステータス開放率"
+    },
+    {
+      "key": "RESFire",
+      "line": 568,
+      "note": "[138] 火炎耐性"
+    },
+    {
+      "key": "RESIce",
+      "line": 576,
+      "note": "[139] 冷気耐性"
+    },
+    {
+      "key": "RESLightning",
+      "line": 584,
+      "note": "[140] 電撃耐性"
+    },
+    {
+      "key": "RESPoison",
+      "line": 592,
+      "note": "[141] 毒耐性                         [169] 毒の耐性段階"
+    },
+    {
+      "key": "RESCharm",
+      "line": 597,
+      "note": "[142] 魅了耐性"
+    },
+    {
+      "key": "RESLight",
+      "line": 604,
+      "note": "[143] 光耐性"
+    },
+    {
+      "key": "RESDark",
+      "line": 609,
+      "note": "[144] 闇耐性"
+    },
+    {
+      "key": "RESMagic",
+      "line": 616,
+      "note": "[145] 魔術耐性"
+    },
+    {
+      "key": "RESPDebuff",
+      "line": 622,
+      "note": "[146] 身体的異常耐性"
+    },
+    {
+      "key": "RESMDebuff",
+      "line": 628,
+      "note": "[147] 精神的異常耐性"
+    },
+    {
+      "key": "RESFire",
+      "line": 635,
+      "note": "[138] 火炎耐性"
+    },
+    {
+      "key": "RESIce",
+      "line": 636,
+      "note": "[139] 冷気耐性"
+    },
+    {
+      "key": "RESLightning",
+      "line": 637,
+      "note": "[140] 電撃耐性"
+    },
+    {
+      "key": "RESPoison",
+      "line": 638,
+      "note": "[141] 毒耐性                         [169] 毒の耐性段階"
+    },
+    {
+      "key": "RESCharm",
+      "line": 639,
+      "note": "[142] 魅了耐性"
+    },
+    {
+      "key": "RESLight",
+      "line": 640,
+      "note": "[143] 光耐性"
+    },
+    {
+      "key": "RESDark",
+      "line": 641,
+      "note": "[144] 闇耐性"
+    },
+    {
+      "key": "RESMagic",
+      "line": 642,
+      "note": "[145] 魔術耐性"
+    },
+    {
+      "key": "RESPDebuff",
+      "line": 643,
+      "note": "[146] 身体的異常耐性"
+    },
+    {
+      "key": "RESMDebuff",
+      "line": 644,
+      "note": "[147] 精神的異常耐性"
+    },
+    {
+      "key": "WeaDAM",
+      "line": 668,
+      "note": "[ 21] 武器による物理ダメージ"
+    },
+    {
+      "key": "DAMAnimal",
+      "line": 679,
+      "note": "[ 22] 動物類へのダメージ"
+    },
+    {
+      "key": "DAMInsect",
+      "line": 686,
+      "note": "[ 23] 昆虫類へのダメージ"
+    },
+    {
+      "key": "DAMReptilian",
+      "line": 693,
+      "note": "[ 24] 爬虫類へのダメージ"
+    },
+    {
+      "key": "DAMDevil",
+      "line": 700,
+      "note": "[ 25] 悪魔系へのダメージ"
+    },
+    {
+      "key": "DAMImmortal",
+      "line": 707,
+      "note": "[ 26] 不死系へのダメージ"
+    },
+    {
+      "key": "DAMGhost",
+      "line": 714,
+      "note": "[ 27] 幽霊系へのダメージ"
+    },
+    {
+      "key": "DAMInanimate",
+      "line": 721,
+      "note": "[ 28] 無生物へのダメージ"
+    },
+    {
+      "key": "DAMRiding",
+      "line": 728,
+      "note": "[ 29] 騎乗キャラクターへのダメージ"
+    },
+    {
+      "key": "DAMKD",
+      "line": 735,
+      "note": "[ 30] 転倒中の相手に対するダメージ"
+    },
+    {
+      "key": "DAMOBJ",
+      "line": 742,
+      "note": "[ 31] オブジェクトへのダメージ"
+    },
+    {
+      "key": "DAMMP",
+      "line": 749,
+      "note": "[ 32] MPダメージ量"
+    },
+    {
+      "key": "DAMAura",
+      "line": 756,
+      "note": "[ 33] オーラダメージ"
+    },
+    {
+      "key": "DAMFire",
+      "line": 757,
+      "note": "[ 34] 火炎オーラダメージ"
+    },
+    {
+      "key": "DAMIce",
+      "line": 758,
+      "note": "[ 35] 冷気オーラダメージ"
+    },
+    {
+      "key": "DAMLightning",
+      "line": 759,
+      "note": "[ 36] 電撃オーラダメージ"
+    },
+    {
+      "key": "DAMPoison",
+      "line": 760,
+      "note": "[ 37] 毒オーラダメージ"
+    },
+    {
+      "key": "DAMLight",
+      "line": 761,
+      "note": "[ 38] 光オーラダメージ"
+    },
+    {
+      "key": "DAMDark",
+      "line": 762,
+      "note": "[ 39] 闇オーラダメージ"
+    },
+    {
+      "key": "MATKFire",
+      "line": 832,
+      "note": "[ 43] 火炎属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKIce",
+      "line": 836,
+      "note": "[ 44] 冷気属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKLightning",
+      "line": 840,
+      "note": "[ 45] 電撃属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKPoison",
+      "line": 844,
+      "note": "[ 46] 毒属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKLight",
+      "line": 847,
+      "note": "[ 47] 光属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKDark",
+      "line": 850,
+      "note": "[ 48] 闇属性魔法攻撃力＋"
+    },
+    {
+      "key": "Gdebuff",
+      "line": 853,
+      "note": "[ 80] 与debuff持続時間"
+    },
+    {
+      "key": "RatePurler",
+      "line": 860,
+      "note": "[ 85] 落馬発生確率"
+    },
+    {
+      "key": "RateKB",
+      "line": 867,
+      "note": "[ 86] ノックバック発生確率"
+    },
+    {
+      "key": "RateBurn",
+      "line": 874,
+      "note": "[ 89] 火傷発生確率 (弱)              [ 90] 火傷発生確率 (強)"
+    },
+    {
+      "key": "RateStun",
+      "line": 877,
+      "note": "[ 91] 気絶発生確率 (弱)              [ 92] 気絶発生確率 (強)"
+    },
+    {
+      "key": "RateFrozen",
+      "line": 880,
+      "note": "[ 93] 凍傷発生確率 (弱)              [ 94] 凍傷発生確率 (強)"
+    },
+    {
+      "key": "RateKD",
+      "line": 883,
+      "note": "[ 95] 転倒発生確率 (弱)              [ 96] 転倒発生確率 (強)"
+    },
+    {
+      "key": "RatePoison",
+      "line": 886,
+      "note": "[ 97] 毒発生確率 (弱)                [ 98] 毒発生確率 (強)"
+    },
+    {
+      "key": "RateBleeding",
+      "line": 889,
+      "note": "[ 99] 出血発生確率 (弱)              [100] 出血発生確率 (強)"
+    },
+    {
+      "key": "RateSleep",
+      "line": 892,
+      "note": "[103] 睡眠発生確率 (弱)              [104] 睡眠発生確率 (強)"
+    },
+    {
+      "key": "RateMad",
+      "line": 895,
+      "note": "[105] 乱心発生確率 (弱)              [106] 乱心発生確率 (強)"
+    },
+    {
+      "key": "RateSilence",
+      "line": 898,
+      "note": "[107] 沈黙発生確率 (弱)              [108] 沈黙発生確率 (強)"
+    },
+    {
+      "key": "RateWeak",
+      "line": 901,
+      "note": "[109] 衰弱発生確率 (弱)              [110] 衰弱発生確率 (強)"
+    },
+    {
+      "key": "RateLP",
+      "line": 904,
+      "note": "[119] 最大LP減少発生確率 (弱)        [120] 最大LP減少発生確率 (強)"
+    },
+    {
+      "key": "RateDEF",
+      "line": 907,
+      "note": "[123] 防御力低下発生確率 (弱)        [124] 防御力低下発生確率 (強)"
+    },
+    {
+      "key": "RateSlowMove",
+      "line": 910,
+      "note": "[129] 移動速度減少発生確率 (弱)      [130] 移動速度減少発生確率 (強)"
+    },
+    {
+      "key": "MATKFire",
+      "line": 915,
+      "note": "[ 43] 火炎属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKIce",
+      "line": 916,
+      "note": "[ 44] 冷気属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKLightning",
+      "line": 917,
+      "note": "[ 45] 電撃属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKPoison",
+      "line": 918,
+      "note": "[ 46] 毒属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKLight",
+      "line": 919,
+      "note": "[ 47] 光属性魔法攻撃力＋"
+    },
+    {
+      "key": "MATKDark",
+      "line": 920,
+      "note": "[ 48] 闇属性魔法攻撃力＋"
+    },
+    {
+      "key": "RateBurn",
+      "line": 926,
+      "note": "[ 89] 火傷発生確率 (弱)              [ 90] 火傷発生確率 (強)"
+    },
+    {
+      "key": "RateStun",
+      "line": 927,
+      "note": "[ 91] 気絶発生確率 (弱)              [ 92] 気絶発生確率 (強)"
+    },
+    {
+      "key": "RateFrozen",
+      "line": 928,
+      "note": "[ 93] 凍傷発生確率 (弱)              [ 94] 凍傷発生確率 (強)"
+    },
+    {
+      "key": "RateKD",
+      "line": 929,
+      "note": "[ 95] 転倒発生確率 (弱)              [ 96] 転倒発生確率 (強)"
+    },
+    {
+      "key": "RatePoison",
+      "line": 930,
+      "note": "[ 97] 毒発生確率 (弱)                [ 98] 毒発生確率 (強)"
+    },
+    {
+      "key": "RateBleeding",
+      "line": 931,
+      "note": "[ 99] 出血発生確率 (弱)              [100] 出血発生確率 (強)"
+    },
+    {
+      "key": "RateSleep",
+      "line": 932,
+      "note": "[103] 睡眠発生確率 (弱)              [104] 睡眠発生確率 (強)"
+    },
+    {
+      "key": "RateMad",
+      "line": 933,
+      "note": "[105] 乱心発生確率 (弱)              [106] 乱心発生確率 (強)"
+    },
+    {
+      "key": "RateSilence",
+      "line": 934,
+      "note": "[107] 沈黙発生確率 (弱)              [108] 沈黙発生確率 (強)"
+    },
+    {
+      "key": "RateWeak",
+      "line": 935,
+      "note": "[109] 衰弱発生確率 (弱)              [110] 衰弱発生確率 (強)"
+    },
+    {
+      "key": "RateLP",
+      "line": 936,
+      "note": "[119] 最大LP減少発生確率 (弱)        [120] 最大LP減少発生確率 (強)"
+    },
+    {
+      "key": "RateDEF",
+      "line": 937,
+      "note": "[123] 防御力低下発生確率 (弱)        [124] 防御力低下発生確率 (強)"
+    },
+    {
+      "key": "RateSlowMove",
+      "line": 938,
+      "note": "[129] 移動速度減少発生確率 (弱)      [130] 移動速度減少発生確率 (強)"
+    },
+    {
+      "key": "LPRecSPD",
+      "line": 958,
+      "note": "[  9] LP自然回復速度"
+    },
+    {
+      "key": "MPRecSPD",
+      "line": 972,
+      "note": "[ 10] MP自然回復速度"
+    },
+    {
+      "key": "LPRec",
+      "line": 987,
+      "note": "[ 12] LP自然回復量                   [ 14] 座っている時のLP回復量"
+    },
+    {
+      "key": "MPRec",
+      "line": 998,
+      "note": "[ 13] MP自然回復量                   [ 15] 座っている時のMP回復量"
+    },
+    {
+      "key": "LPsec",
+      "line": 1009,
+      "note": "[ 16] 2秒毎のLP回復量"
+    },
+    {
+      "key": "MPsec",
+      "line": 1018,
+      "note": "[ 17] 2秒毎のMP回復量"
+    },
+    {
+      "key": "RESAnimal",
+      "line": 1026,
+      "note": "[ 53] 動物類からの物理ダメージ軽減率"
+    },
+    {
+      "key": "RESInsect",
+      "line": 1033,
+      "note": "[ 54] 昆虫類からの物理ダメージ軽減率"
+    },
+    {
+      "key": "RESReptilian",
+      "line": 1040,
+      "note": "[ 55] 爬虫類からの物理ダメージ軽減率"
+    },
+    {
+      "key": "RESDevil",
+      "line": 1047,
+      "note": "[ 56] 悪魔系からの物理ダメージ軽減率"
+    },
+    {
+      "key": "RESImmortal",
+      "line": 1054,
+      "note": "[ 57] 不死系からの物理ダメージ軽減率"
+    },
+    {
+      "key": "RESGhost",
+      "line": 1061,
+      "note": "[ 58] 幽霊系からの物理ダメージ軽減率"
+    },
+    {
+      "key": "RESInanimate",
+      "line": 1068,
+      "note": "[ 59] 無生物からの物理ダメージ軽減率"
+    },
+    {
+      "key": "DAMCut",
+      "line": 1075,
+      "note": "[ 61] ダメージカット"
+    },
+    {
+      "key": "EXP",
+      "line": 1083,
+      "note": "[ 82] 獲得EXP＋"
+    },
+    {
+      "key": "SkillEXP",
+      "line": 1090,
+      "note": "[ 83] 熟練度増加量"
+    },
+    {
+      "key": "Blocking",
+      "line": 1097,
+      "note": "[133] ブロッキング解除耐性"
+    },
+    {
+      "key": "RESCast",
+      "line": 1104,
+      "note": "[134] 詠唱妨害耐性"
+    },
+    {
+      "key": "Reflection",
+      "line": 1114,
+      "note": "[135] 近接物理ダメージ反射率"
+    },
+    {
+      "key": "DReflect",
+      "line": 1121,
+      "note": "[136] Debuff反射確率"
+    },
+    {
+      "key": "RESDAura",
+      "line": 1128,
+      "note": "[137] 闇オーラの反動ダメージ"
+    },
+    {
+      "key": "RESBurn",
+      "line": 1136,
+      "note": "[148] 火傷耐性                       [163] 火傷の耐性段階"
+    },
+    {
+      "key": "RESStun",
+      "line": 1144,
+      "note": "[149] 気絶耐性                       [164] 気絶の耐性段階"
+    },
+    {
+      "key": "RESFrozen",
+      "line": 1152,
+      "note": "[150] 凍傷耐性                       [165] 凍傷の耐性段階"
+    },
+    {
+      "key": "RESKD",
+      "line": 1161,
+      "note": "[151] 転倒耐性                       [166] 転倒の耐性段階"
+    },
+    {
+      "key": "RESPurler",
+      "line": 1170,
+      "note": "[152] 落馬耐性                       [167] 落馬の耐性段階"
+    },
+    {
+      "key": "RESKB",
+      "line": 1177,
+      "note": "[153] ノックバック耐性               [168] ノックバックの耐性段階"
+    },
+    {
+      "key": "RESBleeding",
+      "line": 1184,
+      "note": "[154] 出血耐性                       [170] 出血の耐性段階"
+    },
+    {
+      "key": "RESSleep",
+      "line": 1191,
+      "note": "[156] 睡眠耐性                       [172] 睡眠の耐性段階"
+    },
+    {
+      "key": "RESMadness",
+      "line": 1198,
+      "note": "[157] 乱心耐性                       [173] 乱心の耐性段階"
+    },
+    {
+      "key": "RESSilence",
+      "line": 1205,
+      "note": "[158] 沈黙耐性                       [174] 沈黙の耐性段階"
+    },
+    {
+      "key": "RESCurse",
+      "line": 1212,
+      "note": "[159] 呪い耐性                       [175] 呪いの耐性段階"
+    },
+    {
+      "key": "RESWeakening",
+      "line": 1219,
+      "note": "[160] 衰弱耐性                       [176] 衰弱の耐性段階"
+    },
+    {
+      "key": "RESDisease",
+      "line": 1226,
+      "note": "[161] 病気耐性                       [177] 病気の耐性段階"
+    },
+    {
+      "key": "RESDebuff",
+      "line": 1233,
+      "note": "[162] 被Debuff持続時間"
+    },
+    {
+      "key": "FirstAid",
+      "line": 1253,
+      "note": "ファーストエイド"
+    },
+    {
+      "key": "Heal",
+      "line": 1259,
+      "note": "ヒール"
+    },
+    {
+      "key": "Regenerate",
+      "line": 1265,
+      "note": "リクライム"
+    },
+    {
+      "key": "HealingAura",
+      "line": 1268,
+      "note": "ヒールスウェル"
+    },
+    {
+      "key": "Sanctuary",
+      "line": 1274,
+      "note": "テンプルム"
+    },
+    {
+      "key": "Restoration",
+      "line": 1278,
+      "note": "リストレーション"
+    },
+    {
+      "key": "RecoveryBelt",
+      "line": 1281,
+      "note": "リカバリーベルト"
+    },
+    {
+      "key": "CharityAmulet",
+      "line": 1285,
+      "note": "慈愛のアミュレット"
+    },
+    {
+      "key": "Velox",
+      "line": 1289,
+      "note": "グラーティア"
+    },
+    {
+      "key": "LapisMedio",
+      "line": 1295,
+      "note": "ラピスメディオ"
+    },
+    {
+      "key": "GroupBarrier",
+      "line": 1302,
+      "note": "ウィンクルム"
+    },
+    {
+      "key": "BlessWeapon",
+      "line": 1305,
+      "note": "ホーリーウェポン"
+    },
+    {
+      "key": "Gloom",
+      "line": 1311,
+      "note": "グルーミーエフェクト"
+    },
+    {
+      "key": "Enchantment",
+      "line": 1317,
+      "note": "エンハンスエンチャント"
+    },
+    {
+      "key": "MinstrelSong",
+      "line": 1326,
+      "note": "詩人の歌"
+    },
+    {
+      "key": "PeacefulHymn",
+      "line": 1333,
+      "note": "平和の歌"
+    },
+    {
+      "key": "SageSong",
+      "line": 1337,
+      "note": "魔力の歌"
+    },
+    {
+      "key": "Toxify",
+      "line": 1346,
+      "note": "フォックスグローブ"
+    },
+    {
+      "key": "ToxicAura",
+      "line": 1349,
+      "note": "ビルトキシン"
+    },
+    {
+      "key": "POT_A",
+      "line": 1358,
+      "note": ""
+    },
+    {
+      "key": "POT_B",
+      "line": 1370,
+      "note": ""
+    }
+  ]
+}
