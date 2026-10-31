@@ -394,6 +394,20 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   if(cm.magicAttack)card.append(make('p',{text:'Магическая атака (частичный показатель): '+
    cm.magicAttack.known+'% (ИНТ '+cm.magicAttack.intelligence+
    ', пассивка '+cm.magicAttack.passive+', оружие '+cm.magicAttack.staff+')'}));
+  if(cm.secondary){
+   const names={
+    auraFlat:'Аурный урон от снаряжения',
+    auraPercent:'Усиление аурного урона',
+    outgoingDebuffDuration:'Продолжительность дебаффов',
+    debuffSuccess:'Шанс наложения дебаффов',
+    cooldown:'Изменение отката от предметов'
+   };
+   for(const [key,label] of Object.entries(names)){
+    const value=cm.secondary[key];
+    if(value)card.append(make('p',{text:label+': '+
+     (value>0?'+':'')+value+(key==='auraPercent'?'%':'')}));
+   }
+  }
   card.append(make('p',{text:'Физический урон оружия, пассивки и титулы: +'+
    cm.weaponPhysical}),make('p',{text:'АТК сзади: +'+cm.backAttack+
    ', спереди: +'+cm.frontAttack}),make('p',{text:'Откат умений (базовый индекс): '+
@@ -419,8 +433,10 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    cm.attackSpeed.known+' (база '+cm.attackSpeed.base+
    ', экипировка '+(cm.attackSpeed.equipment>=0?'+':'')+
    cm.attackSpeed.equipment+', навыки +'+cm.attackSpeed.lunge+')'}));
-  if(cm.castingSpeed)card.append(make('p',{text:'Скорость заклинаний (базовый индекс): '+
-   cm.castingSpeed.base}));
+  if(cm.castingSpeed)card.append(make('p',{text:'Скорость заклинаний: '+
+   cm.castingSpeed.known+' (база '+cm.castingSpeed.base+
+   ', снаряжение '+(cm.castingSpeed.equipment>=0?'+':'')+
+   cm.castingSpeed.equipment+')'}));
   card.append(make('p',{class:'stage-attribute-note',
    text:'Источник: Remaked Legacy + таблицы OS. Учитываются выбранные подтверждённые активные умения; другие условные навыки, комплекты и часть серверных условий всё ещё не рассчитаны.'}));
   body.prepend(card);
@@ -487,8 +503,17 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   if(rs.mitigation.physical)card.append(make('p',{text:'Получаемый физический урон: '+
    rs.mitigation.physical+'%'}));
+  if(rs.mitigation.physicalFlat)card.append(make('p',{text:'Изменение физического урона: '+
+   (rs.mitigation.physicalFlat>0?'+':'')+rs.mitigation.physicalFlat}));
   if(rs.mitigation.magic)card.append(make('p',{text:'Получаемый магический урон: '+
    rs.mitigation.magic+'%'}));
+  if(rs.physicalReflection)card.append(make('p',{text:'Отражение ближнего физического урона: '+
+   (rs.physicalReflection>0?'+':'')+rs.physicalReflection+'%'}));
+  if(rs.incomingDebuffDurationReduction)card.append(make('p',{text:'Изменение длительности дебаффов: '+
+   (rs.incomingDebuffDurationReduction>0?'+':'')+
+   rs.incomingDebuffDurationReduction+'%'}));
+  if(rs.damageNegation)card.append(make('p',{text:'Уклонение от физического урона: '+
+   (rs.damageNegation>0?'+':'')+rs.damageNegation}));
   card.append(make('p',{class:'stage-attribute-note',
    text:'Включены базовые формулы, расовые способности, честь и структурированные сопротивления от вещей/душ, включая требования заточки; другие навыки и серверные иммунитеты ещё не полностью учтены.'}));
   body.prepend(card);
@@ -499,7 +524,9 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    make('p',{text:'ОЗ: '+regen.hp.total+' (база '+regen.hp.base+
     ', гильдия +'+regen.hp.guild+', лечение +'+regen.hp.healing+')'}),
    make('p',{text:'ОМ: '+regen.mp.total+' (база '+regen.mp.base+
-    ', гильдия +'+regen.mp.guild+', лечение +'+regen.mp.healing+')'}),
+    ', гильдия +'+regen.mp.guild+', лечение +'+regen.mp.healing+
+    (regen.mp.equipment?', снаряжение '+(regen.mp.equipment>0?'+':'')+
+     regen.mp.equipment:'')+')'}),
    make('p',{class:'stage-attribute-note',
     text:'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Эффекты экипировки и активных навыков пока не включены.'}));
   body.prepend(card);
