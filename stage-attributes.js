@@ -324,8 +324,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    show('Магическое усиление оружия',gem.magic);
    show('Сопротивление от брони',gem.resistance);
    show('Шанс наложения состояния',gem.status,'%');
-   if(gem.uncertain.length)card.append(make('p',{text:'Особые радужные самоцветы: '+
-    'Особых сочетаний самоцветов: '+gem.uncertain.length}));
+   if(gem.uncertain.length)card.append(make('p',{text:'Радужные самоцветы: '+
+    gem.uncertain.length}));
    card.append(make('p',{class:'stage-attribute-note',text:
     'Сопротивления от самоцветов включены в защиту. Аура учитывает бонусы снаряжения и остаётся отдельной от физической атаки.'}));
    body.prepend(card);

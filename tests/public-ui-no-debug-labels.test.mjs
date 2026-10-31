@@ -8,6 +8,8 @@ test('hero book uses game-focused labels rather than debug disclaimers',()=>{
  assert.doesNotMatch(book,/Частичный показатель: /);
  assert.doesNotMatch(book,/не включено в частичный итог: порядок округления OS не проверен/);
  assert.doesNotMatch(book,/сочетаний требуют специальной проверки/);
+ assert.doesNotMatch(book,/Особых сочетаний самоцветов/);
+ assert.match(book,/Радужные самоцветы: /);
  assert.match(book,/Магическая атака: /);
  assert.match(book,/отдельный эффект/);
 });
@@ -17,4 +19,5 @@ test('player-facing icon state does not expose local archive counters',()=>{
  assert.doesNotMatch(app,/локальный архив пока не импортирован/);
  assert.match(app,/Изображения загружены/);
  assert.match(app,/Некоторые изображения недоступны/);
+ assert.match(app,/Используются игровые изображения/);
 });

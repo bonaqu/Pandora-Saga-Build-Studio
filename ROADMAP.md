@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.151.0 (`2026.10.31.151`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.152.0 (`2026.10.31.152`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -729,3 +729,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Replace local OS icon counts/import diagnostics in the public interface with useful generic loading/availability messages.
 - [x] Keep technical auditing in source documentation and authenticated admin views, not in regular gameplay-facing descriptions.
 - [ ] Verify responsive rendering and actual browser focus/hover flows. Complete remaining formula branches.
+
+
+## 0.152.0 — corrected concise gem and image labels
+
+- [x] Correct the special rainbow-gem label to a single readable player-facing phrase instead of the duplicate text introduced in 0.151.0.
+- [x] Do not claim that every image is available when the local manifest is missing; describe the active source without overstating actual fetch success.
+- [x] Extend regression tests to catch reintroduced repeated gem phrases.
+- [ ] Browser render and full Node suite remain outstanding.

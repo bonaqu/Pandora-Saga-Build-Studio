@@ -687,3 +687,8 @@ The Effects chapter in the Hero Book now shows the earned-XP bonus from equipped
 ## Clear player UI · 0.151.0
 
 Hero Book value lines keep gameplay-specific labels and source bonuses but avoid internal calculator-status wording. The footer communicates whether images are available without leaking internal asset-import counters. Detailed formula coverage continues to be documented for project maintainers.
+
+
+## UI label fix · 0.152.0
+
+Special rainbow gem combinations have one concise in-game label. Image-loading status no longer claims successful availability when only an external image source fallback has been configured.
