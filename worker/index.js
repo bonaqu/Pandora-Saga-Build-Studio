@@ -121,7 +121,13 @@ async function adminCatalog(request,env,path){
 /* Public immutable share links; non-secret snapshots, guarded against large payloads and write abuse. */
 async function shareApi(request,env,path,ip){
  const shares=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shared_builds','shared_build_limits')").all();
- if((shares.results||[]).length!==2)return no('Хранилище коротких ссылок не подготовлено: нужна миграция D1',503);
+ if((shares.results||[]).length!==2){
+  try{
+   await env.DB.prepare('CREATE TABLE IF NOT EXISTS shared_builds (id TEXT PRIMARY KEY, payload TEXT NOT NULL, created_at INTEGER NOT NULL)').run();
+   await env.DB.prepare('CREATE TABLE IF NOT EXISTS shared_build_limits (ip_hash TEXT NOT NULL, day INTEGER NOT NULL, created INTEGER NOT NULL DEFAULT 0, PRIMARY KEY(ip_hash,day))').run();
+   await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_shared_builds_created ON shared_builds(created_at)').run();
+  }catch{return no('Хранилище коротких ссылок не подготовлено: нужна миграция D1',503)}
+ }
  if(request.method==='GET'){
   const match=path.match(/^\/api\/shared\/([A-Za-z0-9_-]{11})$/);
   if(!match)return no('Not found',404);
@@ -163,7 +169,12 @@ async function shareApi(request,env,path,ip){
 /* Private, account-free D1 library using a browser-held random secret. */
 async function libraryApi(request,env){
  const exists=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='private_builds'").all();
- if(!(exists.results||[]).length)return no('Хранилище билдов не подготовлено',503);
+ if(!(exists.results||[]).length){
+  try{
+   await env.DB.prepare('CREATE TABLE IF NOT EXISTS private_builds (owner_hash TEXT NOT NULL, build_id TEXT NOT NULL, payload TEXT NOT NULL, updated_at INTEGER NOT NULL, deleted_at INTEGER, PRIMARY KEY(owner_hash,build_id))').run();
+   await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_private_builds_owner_time ON private_builds(owner_hash,updated_at DESC)').run();
+  }catch{return no('Хранилище билдов не подготовлено',503)}
+ }
  const bearer=request.headers.get('authorization')||'';
  if(!/^Bearer [a-f0-9]{64}$/.test(bearer))return no('Library key required',401);
  const owner=await sha(bearer.slice(7));

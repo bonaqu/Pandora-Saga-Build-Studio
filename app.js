@@ -64,6 +64,14 @@ if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
+const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
+let libraryChangeId=0;
+function queuedDeletes(){
+ try{return JSON.parse(localStorage.getItem(CLOUD_DELETES_KEY)||'[]').filter(v=>/^[a-f0-9]{32}$/.test(v))}
+ catch{return []}
+}
+function queueDelete(id){const ids=new Set(queuedDeletes());ids.add(id);localStorage.setItem(CLOUD_DELETES_KEY,JSON.stringify([...ids]))}
+function acknowledgeDelete(id){localStorage.setItem(CLOUD_DELETES_KEY,JSON.stringify(queuedDeletes().filter(v=>v!==id)))}
 let cloudLibraryStatus='Подключаем облачную библиотеку…';
 function cloudToken(){
  let token=localStorage.getItem(CLOUD_TOKEN_KEY);
@@ -85,24 +93,32 @@ function reportCloudStatus(message){
  const node=document.querySelector('.cloud-library-status');if(node)node.textContent=message;
 }
 async function putCloudBuild(entry){
- try{await cloudLibraryRequest({action:'put',entry});reportCloudStatus('Библиотека сохранена в облаке')}
- catch(error){reportCloudStatus('Билд сохранён в браузере. Облако: '+error.message)}
+ try{await cloudLibraryRequest({action:'put',entry});reportCloudStatus('Сохранено в облаке')}
+ catch(error){console.warn('Build cloud save failed',error);reportCloudStatus('Сохранено в браузере · нет связи с облаком')}
 }
 async function deleteCloudBuild(id){
- try{await cloudLibraryRequest({action:'delete',id});reportCloudStatus('Удаление сохранено в облаке')}
- catch(error){reportCloudStatus('Удалено в браузере. Облако: '+error.message)}
+ queueDelete(id);libraryChangeId++;
+ try{await cloudLibraryRequest({action:'delete',id});acknowledgeDelete(id);reportCloudStatus('Изменения сохранены в облаке')}
+ catch(error){console.warn('Build cloud delete pending',error);reportCloudStatus('Удалено в браузере · синхронизируем позже')}
 }
 async function loadCloudBuilds(){
+ const generation=libraryChangeId;
  try{
+  for(const id of queuedDeletes()){
+   await cloudLibraryRequest({action:'delete',id});acknowledgeDelete(id);
+  }
   const response=await cloudLibraryRequest();
   if(!Array.isArray(response.records))throw Error('Некорректная библиотека');
-  const ids=new Set(response.records.map(x=>x.id)),localOnly=builds.filter(x=>!ids.has(x.id));
-  const remote=response.records.filter(x=>!x.deleted&&x.entry).map(x=>x.entry);
+  // A click while GET was in flight must not bring back a deleted or old character.
+  if(libraryChangeId!==generation)return;
+  const pending=new Set(queuedDeletes()),ids=new Set(response.records.map(x=>x.id));
+  const localOnly=builds.filter(x=>!ids.has(x.id)&&!pending.has(x.id));
+  const remote=response.records.filter(x=>!x.deleted&&x.entry&&!pending.has(x.id)).map(x=>x.entry);
   builds=[...remote,...localOnly].sort((a,b)=>(b.at||0)-(a.at||0));persistBuilds();
   if(activeTab==='builds')renderDetails();
   reportCloudStatus('Облачная библиотека подключена');
   for(const entry of localOnly)await putCloudBuild(entry);
- }catch(error){reportCloudStatus('Билды доступны в браузере. Облако: '+error.message)}
+ }catch(error){console.warn('Cloud library unavailable',error);reportCloudStatus('Локальные билды доступны · облако пока недоступно')}
 }
 
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))el[k]=Boolean(v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
@@ -1675,7 +1691,7 @@ function renderBuilds(root){
   ]));
  toolbar.append(name,
   h('button',{type:'button',class:'button-action primary',text:'✧ Сохранить билд',onclick:()=>saveBuild(name.value)}),
-  h('button',{type:'button',class:'button-action',text:'＋ Новый билд',onclick:()=>{
+  h('button',{type:'button',id:'newBuildButton',class:'button-action',text:'＋ Новый билд',onclick:()=>{
    if(!unsavedBuild()){newBlankBuild();return}
    choice.hidden=!choice.hidden;
    if(!choice.hidden){draft.value=name.value||state.name||'Новый герой';draft.focus()}
@@ -1722,7 +1738,7 @@ function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=
 function saveBuild(name=state.name||'Новый герой'){
  if(typeof name!=='string'||!name.trim())return false;
  const entry={id:newId(),name:name.trim().slice(0,70),data:structuredClone(state),at:Date.now()};
- builds.unshift(entry);
+ builds.unshift(entry);libraryChangeId++;
  try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}
  catch(error){builds.shift();alert('Не удалось сохранить билд: '+error.message);return false}
  void putCloudBuild(entry);
@@ -2296,7 +2312,7 @@ $('hero').addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){
   event.preventDefault();openHeroBook();
  }
-});$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const editable=event.target.closest('[data-edit-key]');

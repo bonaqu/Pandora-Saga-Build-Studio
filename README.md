@@ -559,3 +559,8 @@ A missing current skill sprite now falls back to the **correct branch icon alrea
 ## Build library · 0.125.0
 
 A blank character starts at level **1**; level **55** remains the maximum planning level. The My Builds «Новый билд» action has an inline choice to save or discard an unsaved draft, without blocking dialogs. Sharing is available only for individual saved builds. The private library now targets D1 via `/api/library`; localStorage is kept as offline fallback. **Deployment prerequisite:** apply `worker/migrations/0004_private_builds.sql` and deploy the updated Worker. The random browser secret is not an account; clearing it without backup loses access to previous D1 library records. Live deployment is not confirmed.
+
+
+### 0.126.0 · Faster creation and cloud recovery
+
+The character stage also exposes «Новый билд», which reveals the same inline Save / Discard options as My Builds. Deletions made offline stay queued until D1 acknowledges them, so a reconnect does not restore deleted builds. When deployed, the Worker can create only its fixed missing auxiliary D1 tables on first use, without rewriting game catalog data; SQL migrations remain checked in. This does not assert that the updated Worker has been deployed.

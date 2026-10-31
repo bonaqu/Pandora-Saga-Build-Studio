@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.125.0 (`2026.10.31.125`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.126.0 (`2026.10.31.126`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -518,3 +518,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] My Builds has inline unsaved-draft Save / Discard / Cancel actions with no modal for New Build. Redundant global sharing removed.
 - [x] Added private Cloudflare D1 library migration 0004, Worker API, per-browser secret and local offline copy; old local builds are imported into D1 when online.
 - [ ] Apply D1 migration, deploy Worker, validate live sharing and short links, run full npm test and real browser E2E. Continue 59 missing and 59 partial Remaked formula keys.
+
+
+## 0.126.0 — browser library resilience and automated D1 preparation
+
+- [x] One-click «Новый билд» in the central character stage opens the existing inline unsaved-draft action in My Builds.
+- [x] Offline deletions are queued locally and replayed to D1 before cloud-library hydration; a generation guard prevents older GET responses from overwriting edits made during the request.
+- [x] Worker creates only the three missing, fixed shared-link schema objects or two private-library schema objects on first use, using idempotent SQL. This never modifies game catalog datasets; schema files remain in GitHub for controlled migration/backup.
+- [ ] Confirm actual Worker deployment, D1 auto-setup, successful short-link creation/readback and browser E2E. If D1 DDL is denied, the API continues to report 503 without silently pretending a save worked. Complete remaining Remaked formulas and full npm test.

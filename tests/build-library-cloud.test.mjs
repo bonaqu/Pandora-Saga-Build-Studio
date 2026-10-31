@@ -22,4 +22,8 @@ test('private library refuses access without migration and bearer key',async()=>
  const other={prepare:()=>({all:async()=>({results:[{name:'private_builds'}]})})};
  assert.equal((await worker.fetch(request,{DB:other})).status,401);
  assert.match(read('worker/migrations/0004_private_builds.sql'),/CREATE TABLE IF NOT EXISTS private_builds/);
+ assert.match(read('worker/index.js'),/CREATE TABLE IF NOT EXISTS shared_builds/);
+ assert.match(read('worker/index.js'),/CREATE TABLE IF NOT EXISTS private_builds/);
+ assert.match(read('app.js'),/function queuedDeletes\(/);
+ assert.match(read('index.html'),/id="newBuildQuick"/);
 });
