@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.119.0 (`2026.10.31.119`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.120.0 (`2026.10.31.120`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -29,6 +29,16 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] Both skills are opt-in, class/level gated, disabled on missing or incomplete catalog data, saved with character builds, and displayed in the hero book with official skill icons and source bonuses.
 - [x] Regression vectors cover the source IDs, level 27/28 threshold, incorrect classes, altered/missing effects, and current book inputs.
 - [ ] Extend the same verified skill-identity approach to remaining passive and active effects, with full tests of related states and real OS gameplay.
+
+## Source update 0.120.0 — verified OS cap and mastery-accurate combat gating
+
+- [x] Official OS cap is **level 45** (announcement 2026-10-03); matching `data/os/tables.json` `levelCap:45`. Corrected fresh builds, level input limits, labels, restored builds and shared-link active state with a human-readable legacy migration notice. Original library entries remain untouched.
+- [x] Enforced current OS skill 100051001 («Рывок») `weaponUse` constraints. Its +15 speed bonus no longer activates with an incompatible bow/crossbow, while bare-hand and allowed weapon types remain valid. Book and calculator use the same constraint.
+- [x] Ported Remaked `ACC` «Сосредоточенность» +100 using OS skill ID 100054001, class gate and `slash` mastered-green threshold 26. It is opt-in, persists in builds/links, fails closed if an OS effect/prerequisite is missing, and is shown in the hero book.
+- [x] Corrected player-facing outgoing versus incoming critical damage, and removed a misleading claim that the already-buffed attack total excluded active bonuses.
+- [x] Added test cases for level cap, Lunge weapon kinds, Concentration threshold 25/26, data drift, saved-state selection and precise critical labels. Manually evaluated **42 isolated test callbacks** across eight relevant files in a mock runner; these are not a full Node/browser suite.
+- [ ] [OS server check protocol](docs/OS_LIVE_PARITY_CHECKS.md) for unresolved percentage rounding, item procs, gemstones, stance and buff lifecycle. Confirm only from current game/client evidence.
+- [ ] Continue the [143-key Remaked formula inventory](docs/REMAKED_FORMULA_INVENTORY.md), with complete item sets, active/passive effects and final combat result chains; **full parity not yet achieved**.
 
 ## Workstreams
 
