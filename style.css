@@ -1456,3 +1456,13 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-legacy-buff-intro{font-size:10px;color:#bca788;line-height:1.45;margin:8px 0 1px}
 .stage-resistance-gem-summary{font-size:11px;color:#e6c692;margin:7px 0}
 
+
+/* Build-library inline actions */
+.build-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
+.build-toolbar .button-action,.new-build-choice .button-action{margin:0}
+.build-name-input,.new-build-choice input{flex:1 1 180px;min-width:140px;max-width:320px;background:#180f0b;color:var(--cream);border:1px solid #856037;padding:10px}
+.new-build-choice{display:grid;gap:12px;border:1px solid #b5905a;background:#2b2117;padding:14px;margin:8px 0;border-radius:4px}
+.new-build-choice[hidden]{display:none}
+.new-build-choice-actions{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.cloud-library-status{color:var(--muted);font-size:12px;margin:8px 0 15px}
+@media(max-width:600px){.build-name-input,.new-build-choice input{max-width:none;width:100%}}

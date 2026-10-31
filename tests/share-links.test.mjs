@@ -23,10 +23,11 @@ test('sharing never replaces an existing build without explicit choice',()=>{
  assert.match(src,/function restoreSharedHash\(/);
  assert.match(src,/window\.addEventListener\('hashchange'/);
 });
-test('library is local and import/export JSON buttons are absent',()=>{
+test('library maintains an offline cache and D1 sync without JSON import/export',()=>{
  const src=read('app.js'),html=read('index.html');
  assert.match(src,/ps-build-library\.v1/);
  assert.match(src,/persistBuilds\(\)/);
+ assert.match(src,/function loadCloudBuilds\(/);
  assert.doesNotMatch(src,/text:'⇩ Экспорт JSON'/);
  assert.doesNotMatch(src,/text:'⇧ Импорт JSON'/);
  assert.match(html,/data-tab="builds"/);
@@ -48,7 +49,7 @@ test('opening a local named build keeps all old and future fields; shared Astir 
 
 test('health endpoint exposes D1 sharing readiness without claiming feature deployed',()=>{
  const worker=read('worker/index.js');
- assert.match(worker,/features:\{sharing:sharingReady\}/);
+ assert.match(worker,/features:\{sharing:sharingReady,catalog:catalogPublished,library:found\.has\('private_builds'\)\}/);
  assert.match(worker,/Хранилище коротких ссылок не подготовлено: нужна миграция D1/);
  assert.match(worker,/return no\('Хранилище коротких ссылок не подготовлено: нужна миграция D1',503\)/);
 });

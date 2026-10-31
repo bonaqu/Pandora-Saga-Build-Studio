@@ -10,7 +10,7 @@ function database(catalog=true){
  return{prepare(sql){
   if(sql.includes('FROM sqlite_master')){
    return {all:async()=>({results:['admins','sessions','overrides','login_attempts',
-    'shared_builds','shared_build_limits'].map(name=>({name}))})};
+    'shared_builds','shared_build_limits','private_builds'].map(name=>({name}))})};
   }
   if(sql.includes('FROM catalog_current')){
    return {first:async()=>catalog?{snapshot:'sample',published_at:1,expected_counts:'{}'}:null};
@@ -25,7 +25,7 @@ test('health reports own D1, published catalog and sharing readiness with CORS',
  assert.equal(response.headers.get('access-control-allow-origin'),ORIGIN);
  assert.equal(data.storage,'d1');
  assert.equal(data.status,'ok');
- assert.deepEqual(data.features,{sharing:true,catalog:true});
+ assert.deepEqual(data.features,{sharing:true,catalog:true,library:true});
 });
 test('health differentiates configured D1 from unpublished catalog',async()=>{
  const response=await worker.fetch(request('/api/health'),{DB:database(false)});

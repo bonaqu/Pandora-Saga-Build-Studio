@@ -160,9 +160,52 @@ async function shareApi(request,env,path,ip){
  return no('Unable to allocate share ID',503);
 }
 
+/* Private, account-free D1 library using a browser-held random secret. */
+async function libraryApi(request,env){
+ const exists=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='private_builds'").all();
+ if(!(exists.results||[]).length)return no('Хранилище билдов не подготовлено',503);
+ const bearer=request.headers.get('authorization')||'';
+ if(!/^Bearer [a-f0-9]{64}$/.test(bearer))return no('Library key required',401);
+ const owner=await sha(bearer.slice(7));
+ if(request.method==='GET'){
+  const rows=await env.DB.prepare('SELECT build_id,payload,deleted_at FROM private_builds WHERE owner_hash=? ORDER BY updated_at DESC LIMIT 250').bind(owner).all();
+  return json({records:(rows.results||[]).map(r=>({id:r.build_id,deleted:r.deleted_at!==null,
+   entry:r.deleted_at===null?JSON.parse(r.payload):null}))});
+ }
+ if(request.method!=='POST')return no('Method not allowed',405);
+ if(Number(request.headers.get('content-length')||0)>45000)return no('Library entry too large',413);
+ const raw=await request.text();if(raw.length>45000)return no('Library entry too large',413);
+ let data;try{data=JSON.parse(raw)}catch{return no('Invalid JSON',400)}
+ const id=data?.action==='put'?data?.entry?.id:data?.id;
+ if(!/^[a-f0-9]{32}$/.test(id||''))return no('Invalid build ID',400);
+ const now=Date.now();
+ if(data.action==='delete'){
+  await env.DB.prepare("INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,'{}',?,?) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload='{}',updated_at=excluded.updated_at,deleted_at=excluded.deleted_at").bind(owner,id,now,now).run();
+  return json({ok:true});
+ }
+ if(data.action!=='put')return no('Invalid operation',400);
+ const item=data.entry;
+ if(!item||typeof item.name!=='string'||!item.name.trim()||item.name.length>70||
+  !Number.isSafeInteger(item.at)||item.at<0||
+  !item.data||typeof item.data!=='object'||Array.isArray(item.data)||
+  !Number.isInteger(item.data.race)||item.data.race<0||item.data.race>5||
+  !Number.isInteger(item.data.job)||item.data.job<0||item.data.job>=28||
+  !Number.isInteger(item.data.level)||item.data.level<1||item.data.level>55)
+  return no('Invalid character',400);
+ const payload=JSON.stringify({id,name:item.name,at:item.at,data:item.data});
+ if(payload.length>42000)return no('Build too large',413);
+ const old=await env.DB.prepare('SELECT build_id FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
+ if(!old){
+  const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM private_builds WHERE owner_hash=?').bind(owner).first();
+  if((count?.total||0)>=200)return no('Library limit reached',413);
+ }
+ await env.DB.prepare('INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,?,?,NULL) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at,deleted_at=NULL').bind(owner,id,payload,now).run();
+ return json({ok:true});
+}
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 // No runtime calls to the third-party game server. All game data is read from our own D1.
  if(!env.DB)return no('Database not configured',503);
+ if(path==='/api/library')return libraryApi(request,env);
  if(path==='/api/shared'||/^\/api\/shared\/[A-Za-z0-9_-]{11}$/.test(path))return shareApi(request,env,path,ip);
 if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
 // Restricted authenticated data refresh endpoint: fixed source host and 17 known names.
@@ -188,13 +231,13 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/health'&&method==='GET'){
- const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits')").all();
+ const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','private_builds')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
  const ready=['admins','sessions','overrides','login_attempts'].every(name=>found.has(name));
  const sharingReady=['shared_builds','shared_build_limits'].every(name=>found.has(name));
  const catalogPublished=Boolean(await activeCatalog(env));
  return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready,
-  features:{sharing:sharingReady,catalog:catalogPublished}},ready?200:503);
+  features:{sharing:sharingReady,catalog:catalogPublished,library:found.has('private_builds')}},ready?200:503);
 }
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){

@@ -48,7 +48,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
@@ -63,6 +63,48 @@ stageAttributesPage=['summary','attack','defense','recovery','effects','buffs'].
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
+const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
+let cloudLibraryStatus='Подключаем облачную библиотеку…';
+function cloudToken(){
+ let token=localStorage.getItem(CLOUD_TOKEN_KEY);
+ if(!/^[a-f0-9]{64}$/.test(token||'')){
+  token=newId()+newId();localStorage.setItem(CLOUD_TOKEN_KEY,token);
+ }
+ return token;
+}
+async function cloudLibraryRequest(payload){
+ const response=await fetch(API+'/api/library',{method:payload?'POST':'GET',
+  headers:{'Content-Type':'application/json',Authorization:'Bearer '+cloudToken()},
+  ...(payload?{body:JSON.stringify(payload)}:{})});
+ let data;try{data=await response.json()}catch{throw Error('Нет ответа облачного сервера')}
+ if(!response.ok)throw Error(data?.error||'Облачный сервер недоступен');
+ return data;
+}
+function reportCloudStatus(message){
+ cloudLibraryStatus=message;
+ const node=document.querySelector('.cloud-library-status');if(node)node.textContent=message;
+}
+async function putCloudBuild(entry){
+ try{await cloudLibraryRequest({action:'put',entry});reportCloudStatus('Библиотека сохранена в облаке')}
+ catch(error){reportCloudStatus('Билд сохранён в браузере. Облако: '+error.message)}
+}
+async function deleteCloudBuild(id){
+ try{await cloudLibraryRequest({action:'delete',id});reportCloudStatus('Удаление сохранено в облаке')}
+ catch(error){reportCloudStatus('Удалено в браузере. Облако: '+error.message)}
+}
+async function loadCloudBuilds(){
+ try{
+  const response=await cloudLibraryRequest();
+  if(!Array.isArray(response.records))throw Error('Некорректная библиотека');
+  const ids=new Set(response.records.map(x=>x.id)),localOnly=builds.filter(x=>!ids.has(x.id));
+  const remote=response.records.filter(x=>!x.deleted&&x.entry).map(x=>x.entry);
+  builds=[...remote,...localOnly].sort((a,b)=>(b.at||0)-(a.at||0));persistBuilds();
+  if(activeTab==='builds')renderDetails();
+  reportCloudStatus('Облачная библиотека подключена');
+  for(const entry of localOnly)await putCloudBuild(entry);
+ }catch(error){reportCloudStatus('Билды доступны в браузере. Облако: '+error.message)}
+}
+
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))el[k]=Boolean(v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
 function imageUrl(name){return `assets/${name}.webp`}
 const BRANCH_ICON_PATHS={"slash":"assets/skills/legacy/01-00.png","thrust":"assets/skills/legacy/02-00.png","brush":"assets/skills/legacy/03-00.png","blow":"assets/skills/legacy/04-00.png","defense":"assets/skills/legacy/05-00.png","archery":"assets/skills/legacy/07-00.png","alchemy":"assets/skills/legacy/08-00.png","assassin":"assets/skills/legacy/09-00.png","trap":"assets/skills/legacy/10-00.png","warding":"assets/skills/legacy/11-00.png","benevolence":"assets/skills/legacy/13-00.png","blessing":"assets/skills/legacy/14-00.png","exorcism":"assets/skills/legacy/15-00.png","hymn":"assets/skills/legacy/16-00.png","element":"assets/skills/legacy/18-00.png","embody":"assets/skills/legacy/19-00.png","darkness":"assets/skills/legacy/20-00.png","charm":"assets/skills/legacy/21-00.png","riding":"assets/skills/legacy/24-00.png"};
@@ -1610,17 +1652,35 @@ function restoreLoadedBuildUI(){
  selectedSkill=null;inlineBranchId=null;selectedSlot=0;selectedSocket=0;
  stageSlotPickerOpen=false;stageSlotQuery='';stageSlotShown=48;
 }
+function unsavedBuild(){
+ const s=JSON.stringify(state);
+ return s!==JSON.stringify(fresh())&&!builds.some(b=>JSON.stringify(b.data)===s);
+}
+function newBlankBuild(){
+ state=fresh();originActive='race';jobPathKey=null;classTreeTouched=false;
+ expandedClassKeys=new Set();restoreLoadedBuildUI();persist();render();renderOriginTabs();
+ changeTab('character');saveView();
+}
 function renderBuilds(root){
  const toolbar=h('div',{class:'build-toolbar'});
- toolbar.append(h('button',{class:'button-action primary',text:'✧ Сохранить текущий билд',
-  onclick:()=>saveBuild()}),
-  h('button',{class:'button-action',text:'🔗 Поделиться текущим',
-   onclick:()=>createShared('build',state)}),
-  h('button',{class:'button-action',text:'🔗 Поделиться всей библиотекой',
-   disabled:!builds.length,onclick:()=>createShared('library',
-    builds.map(b=>({name:b.name,data:b.data})))}));
- root.append(toolbar,h('p',{class:'muted',
-  text:'Черновик и сохранённые билды хранятся локально в этом браузере. Ссылка на общий билд публикует снимок, но не меняет ваши локальные сохранения.'}));
+ const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
+ const choice=h('div',{class:'new-build-choice',hidden:true});
+ const draft=h('input',{type:'text',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название сохраняемого черновика'});
+ choice.append(h('span',{text:'Текущий персонаж ещё не сохранён.'}),
+  h('div',{class:'new-build-choice-actions'},[
+   draft,
+   h('button',{type:'button',class:'button-action primary',text:'Сохранить и создать',onclick:()=>{if(saveBuild(draft.value))newBlankBuild()}}),
+   h('button',{type:'button',class:'button-action',text:'Создать без сохранения',onclick:newBlankBuild}),
+   h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{choice.hidden=true}})
+  ]));
+ toolbar.append(name,
+  h('button',{type:'button',class:'button-action primary',text:'✧ Сохранить билд',onclick:()=>saveBuild(name.value)}),
+  h('button',{type:'button',class:'button-action',text:'＋ Новый билд',onclick:()=>{
+   if(!unsavedBuild()){newBlankBuild();return}
+   choice.hidden=!choice.hidden;
+   if(!choice.hidden){draft.value=name.value||state.name||'Новый герой';draft.focus()}
+  }}));
+ root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}));
  const grid=h('div',{class:'build-grid'});
  for(const b of builds){
   const box=h('div',{class:'build-card'});
@@ -1646,7 +1706,7 @@ function renderBuilds(root){
    h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared('build',b.data)}),
    h('button',{class:'button-action',text:'Удалить',onclick:()=>{
     if(!confirm('Удалить сохранённый билд «'+b.name+'»?'))return;
-    builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();renderDetails();
+    builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);persistBuilds();void deleteCloudBuild(b.id);renderDetails();
    }}));
   grid.append(box);
  }
@@ -1659,13 +1719,13 @@ function renderBuilds(root){
  }
 }
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
-function saveBuild(){
- const name=prompt('Название сохраняемого билда',state.name||'Новый герой');
- if(name===null||!name.trim())return false;
+function saveBuild(name=state.name||'Новый герой'){
+ if(typeof name!=='string'||!name.trim())return false;
  const entry={id:newId(),name:name.trim().slice(0,70),data:structuredClone(state),at:Date.now()};
  builds.unshift(entry);
  try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}
- catch(error){builds.shift();alert('Не удалось сохранить билд: память браузера заполнена или запрещена. '+error.message);return false}
+ catch(error){builds.shift();alert('Не удалось сохранить билд: '+error.message);return false}
+ void putCloudBuild(entry);
  if(activeTab==='builds')renderDetails();
  return true;
 }
@@ -1798,7 +1858,7 @@ function openSharedSnapshot(share){
     const next=[...added,...builds];
     try{localStorage.setItem('ps-build-library.v1',JSON.stringify(next))}
     catch(e){alert('Не удалось сохранить библиотеку: '+e.message);return}
-    builds=next;$('modalRoot').hidden=true;clear();changeTab('builds');
+    builds=next;for(const entry of added)void putCloudBuild(entry);$('modalRoot').hidden=true;clear();changeTab('builds');
    }}));
   modal('Импорт общей библиотеки',view);return;
  }
@@ -2379,7 +2439,7 @@ for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','
  ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
 }
-render();loadCatalog();loadOverrides();
+render();loadCatalog();loadOverrides();void loadCloudBuilds();
 requestAnimationFrame(syncOriginPanelHeight);
 // Independence: class caps must be usable even when unrelated wiki/skills/D1 data fails.
 fetch('./data/os/classes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)

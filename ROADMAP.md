@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.124.0 (`2026.10.31.124`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.125.0 (`2026.10.31.125`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -510,3 +510,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 ### 2026-10-30 · 0.71 — устранение ложного падения теста
 - [x] HTML boolean атрибуты проверяются отдельно от обычного `setAttribute`; они не должны ошибочно запрещать aria-label/title.
 - [ ] Повторить тесты после изменения, выполнить full `npm test` и browser QA на мобильных и десктопе.
+
+
+## Release 0.125.0 — new hero and D1 library
+
+- [x] New characters start at level 1 while the planner retains 1–55, including future content above the temporary OS server cap.
+- [x] My Builds has inline unsaved-draft Save / Discard / Cancel actions with no modal for New Build. Redundant global sharing removed.
+- [x] Added private Cloudflare D1 library migration 0004, Worker API, per-browser secret and local offline copy; old local builds are imported into D1 when online.
+- [ ] Apply D1 migration, deploy Worker, validate live sharing and short links, run full npm test and real browser E2E. Continue 59 missing and 59 partial Remaked formula keys.

@@ -554,3 +554,8 @@ All internal encyclopedia crosslinks now use real fragment URLs, so context link
 ## 2026-10-30.24 — remove broken Legacy icon fallback
 
 A missing current skill sprite now falls back to the **correct branch icon already mirrored into this repository**, not to an invalid dynamically constructed URL in the old simulator. Unknown or removed item IDs use the UI's slot glyph instead of silently fetching a non-authoritative external item icon. When the original OS icon WebPs are mirrored, verified entries in the local manifest replace the remaining OS image fallbacks.
+
+
+## Build library · 0.125.0
+
+A blank character starts at level **1**; level **55** remains the maximum planning level. The My Builds «Новый билд» action has an inline choice to save or discard an unsaved draft, without blocking dialogs. Sharing is available only for individual saved builds. The private library now targets D1 via `/api/library`; localStorage is kept as offline fallback. **Deployment prerequisite:** apply `worker/migrations/0004_private_builds.sql` and deploy the updated Worker. The random browser secret is not an account; clearing it without backup loses access to previous D1 library records. Live deployment is not confirmed.
