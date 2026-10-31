@@ -575,18 +575,25 @@ function supportSkillSource(skillCatalog,kind){
  const values={};
  for(const ep of supportRequirements[kind]){
   const found=record.funcs.filter(x=>x.ep===ep&&x.dir==='TARGET');
-  if(found.length!==1||!Number.isFinite(found[0].fv1?.[3]))return null;
+  if(found.length!==1||!Number.isFinite(found[0].fv1?.[3])||
+   Math.abs(found[0].fv1[3])>100)return null;
   values[ep]=found[0].fv1[3];
  }
  return {record,values};
 }
-function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,level=1}={}){
+function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={}}={}){
  const result={windAssist:false,windBlessing:false};
  for(const [kind,setting] of [['windAssist','combatWindAssist'],
   ['windBlessing','combatWindBlessing']]){
   const source=supportSkillSource(skillCatalog,kind);
-  result[kind]=Boolean(selected?.[setting]===true&&source?.record?.classes?.[jobKey]&&
-   Number.isInteger(source.record.charLevel)&&level>=source.record.charLevel);
+  const skill=source?.record;
+  const requirementValid=Array.isArray(skill?.reqs)&&skill.reqs.every(req=>
+   typeof req?.branch==='string'&&Number.isInteger(req.amount)&&req.amount>=0&&
+   Number(branchMasteries?.[req.branch]??0)>=req.amount);
+  result[kind]=Boolean(selected?.[setting]===true&&skill?.classes?.[jobKey]&&
+   Number.isInteger(skill.charLevel)&&level>=skill.charLevel&&
+   skill.learnable!==false&&skill.prereq==null&&requirementValid);
  }
  return result;
 }
@@ -681,7 +688,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,weapon,branchMasteries,
   hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
    record?.slot==='shield')});
- const supportSkills=supportSkillAvailability({selected:combatBuffs,skillCatalog,jobKey,level});
+ const supportSkills=supportSkillAvailability({selected:combatBuffs,skillCatalog,jobKey,level,
+  branchMasteries});
  const supportSkillValues=Object.fromEntries(Object.keys(supportSkillIds).map(kind=>
   [kind,supportSkillSource(skillCatalog,kind)?.values||{}]));
  const activeValues=Object.fromEntries(Object.keys(combatSkillIds).map(kind=>[

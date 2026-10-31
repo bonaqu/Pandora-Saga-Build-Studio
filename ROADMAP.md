@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.172.0 (`2026.11.01.172`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.173.0 (`2026.11.01.173`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.173.0 — validate all opt-in Wind skill conditions
+
+- Gate real OS Wind Assist and Wind Blessing sources on their class, character level, learnability, unresolved prerequisites and any explicit trained branch mastery requirements, not merely a saved checkbox.
+- Prevent malformed catalog skill values above 100 in the source percentage slot from granting arbitrary movement/dodge bonuses.
+- Add regression fixtures for future changed OS requirements while preserving valid current level-28 Ascetic and Archer skills. No edits to permanent character stats or the underlying skill catalog.
 
 ## Source update 0.172.0 — comprehensive D1 catalog and EN validation
 

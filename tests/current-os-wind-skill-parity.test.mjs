@@ -59,3 +59,26 @@ test('book controls are built from both actual skill records and saved choices',
  assert.match(book,/cm\.dodge\.windAssist/);
  assert.match(book,/cm\.movementSpeed\.active/);
 });
+
+test('Wind skill source fails closed for unseen prerequisites and non-learnable skills',()=>{
+ const chosen={combatWindAssist:true},modified=JSON.parse(JSON.stringify(skills));
+ modified[260006001].reqs=[{branch:'exorcism',amount:26}];
+ assert.equal(preview('ASCETIC',chosen,modified).supportSkills.windAssist,false);
+ const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};
+ const allowed=C.combatPreview({stats,level:45,jobKey:'ASCETIC',
+  combatBuffs:chosen,skillCatalog:modified,branchMasteries:{exorcism:26}});
+ assert.equal(allowed.supportSkills.windAssist,true);
+ modified[260006001].prereq=42;
+ assert.equal(C.combatPreview({stats,level:45,jobKey:'ASCETIC',combatBuffs:chosen,
+  skillCatalog:modified,branchMasteries:{exorcism:99}}).supportSkills.windAssist,false);
+ modified[260006001].prereq=null;
+ modified[260006001].learnable=false;
+ assert.equal(C.combatPreview({stats,level:45,jobKey:'ASCETIC',combatBuffs:chosen,
+  skillCatalog:modified,branchMasteries:{exorcism:99}}).supportSkills.windAssist,false);
+});
+test('Wind effects reject non-finite or out-of-game numerical modifiers',()=>{
+ const invalid=JSON.parse(JSON.stringify(skills));
+ invalid[320004001].funcs[0].fv1[3]=50000;
+ assert.equal(C.supportSkillSource(invalid,'windBlessing'),null);
+ assert.equal(preview('ARCHER',{combatWindBlessing:true},invalid).movementSpeed.active,0);
+});
