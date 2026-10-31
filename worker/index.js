@@ -11,7 +11,7 @@ async function sha(bytes){return b64(await crypto.subtle.digest('SHA-256',typeof
 async function passwordHash(password,salt){const key=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits']);return b64(await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:100000,hash:'SHA-256'},key,256))}
 function same(a,b){a=String(a||'');b=String(b||'');let d=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)d|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return d===0}
 function json(body,status=200,headers={}){return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}})}
-function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Vary':'Origin'}:{}}
+function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Expose-Headers':'X-PS-Catalog-Snapshot','Vary':'Origin'}:{}}
 function no(message,status=400){return json({error:message},status)}
 async function body(request){try{if(Number(request.headers.get('content-length')||0)>8192)throw Error('Request too large');return await request.json()}catch{return null}}
 async function auth(request,env){const header=request.headers.get('authorization')||'';if(!header.startsWith('Bearer '))return false;const token=header.slice(7);if(!/^[A-Za-z0-9_-]{40,60}$/.test(token))return false;const hash=await sha(token),now=Date.now();const row=await env.DB.prepare('SELECT id FROM sessions WHERE token_hash=? AND expires>?').bind(hash,now).first();return !!row}
@@ -47,13 +47,14 @@ async function serveCatalog(env,dataset){
  if(!rows.length)return no('Dataset missing from published catalog',503);
  let obj=dataset==='meta'?JSON.parse(rows[0].payload):
   SERIALIZED_DATASETS.includes(dataset)?JSON.parse(rows.map(r=>JSON.parse(r.payload).data).join('')):
+  dataset==='instances'?rows.map(r=>JSON.parse(r.payload)):
   Object.fromEntries(rows.map(r=>[r.record_key,JSON.parse(r.payload)]));
  if(dataset==='trades'){
   const extras=await env.DB.prepare("SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset='tradeMeta' AND record_key='all'").bind(active.snapshot).first();
   const additional=extras?JSON.parse(extras.payload):{npcs:{},mapNames:{},limitMeta:{}};
   obj={trades:rows.map(r=>JSON.parse(r.payload)),...additional};
  }
- return json(obj,200,{'cache-control':'public, max-age=60','x-ps-catalog':'d1'});
+ return json(obj,200,{'cache-control':'public, max-age=60','x-ps-catalog':'d1','x-ps-catalog-snapshot':active.snapshot});
 }
 async function adminCatalog(request,env,path){
  if(!await auth(request,env))return no('Unauthorized',401);
