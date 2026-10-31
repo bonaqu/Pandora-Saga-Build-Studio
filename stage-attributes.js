@@ -99,6 +99,37 @@ function buffsPage(body,options){
  toggle(other,'Проэлиум','proelium');
  select(other,'Мощность Проэлиума','proeliumPotency',
   Array.from({length:101},(_,i)=>[i,String(i)]));
+ if(modifiers?.legacyBuffs){
+  const details=make('details',{class:'stage-legacy-buff-previews'});
+  details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
+  const entries=[
+   ['gratia','Грация','Скорость атаки','+'],
+   ['lapisMedio','Ляпис Медио','Защита','+'],
+   ['groupBarrier','Групповой барьер','Получаемый физический урон',''],
+   ['holyWeapon','Святое оружие','Усиление','+'],
+   ['gloomyEffect','Мрачный эффект','Усиление','+'],
+   ['enchantEnhance','Усиление чар','Усиление','+'],
+   ['enchantMagic','Магические чары','Усиление','+'],
+   ['minstrelSong','Песня менестреля','Точность и уклонение','+'],
+   ['sageSong','Песня мудрости','Усиление магии','+'],
+   ['toxify','Отравляющее покрытие','Сила эффекта','+'],
+   ['toxicAura','Ядовитая аура','Сила эффекта','+']
+  ];
+  const rows=make('div',{class:'stage-legacy-buff-grid'});
+  for(const [id,label,kind,prefix] of entries){
+   const effect=modifiers.legacyBuffs[id];
+   if(!effect||!Number.isFinite(effect.value))continue;
+   const row=make('div',{class:'stage-legacy-buff-row'});
+   row.append(make('span',{text:label}),make('strong',{text:
+    prefix+effect.value}));
+   row.setAttribute('title',kind);
+   rows.append(row);
+  }
+  details.append(rows);
+  details.append(make('p',{class:'stage-legacy-buff-intro',text:
+   'Мощность при применении навыка. Просмотр не включает усиление на персонаже.'}));
+  body.append(details);
+ }
  if(modifiers)body.append(make('p',{class:'stage-attribute-note',text:
   'Сейчас: '+modifiers.hp+' ОЗ, '+modifiers.mp+' ОМ. Усиления сохраняются в билде.'}));
 }
@@ -250,7 +281,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    if(gem.uncertain.length)card.append(make('p',{text:'Особые радужные самоцветы: '+
     gem.uncertain.length+' сочетаний требуют специальной проверки.'}));
    card.append(make('p',{class:'stage-attribute-note',text:
-    'По архиву Remaked; текущая таблица OS и исключения уникальных предметов не сверены. Не складывается с текущими цифрами атаки и защиты.'}));
+    'Сопротивления самоцветов учтены в разделе «Защита». Аурный урон и магическое усиление показаны отдельно от базовой атаки.'}));
    body.prepend(card);
   }
   if(modifiers?.healingSkill){
@@ -435,6 +466,12 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    ]));
   }
   card.append(elements);
+  if(rs.gemstones&&Object.keys(rs.gemstones).length){
+   const added=Object.entries(rs.gemstones).map(([key,value])=>
+    (labels[key]||key)+' '+(value>0?'+':'')+value).join(' · ');
+   card.append(make('p',{class:'stage-resistance-gem-summary',text:
+    'От самоцветов: '+added}));
+  }
   card.append(make('p',{text:'Физические состояния: '+rs.states.physical}),
    make('p',{text:'Психические состояния: '+rs.states.mental}));
   const statusNames={burn:'Ожоги',stun:'Оглушение',numb:'Заморозка',
