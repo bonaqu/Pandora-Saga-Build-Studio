@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.95.0 (`2026.10.31.95`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.96.0 (`2026.10.31.96`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,12 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.96.0 — full ID-safe audit of 205 approved Remaked RU skill labels
+
+- Source exact 205 approved `game.ru.skill_entry.*` names cross-referenced against current OS 569 skills by normalized Russian name plus branch, with explicit human-readable resolution for five recognized abbreviations and flagged historical branch shifts. Store full 205-row, ID-indexed crosswalk and count statuses.
+- At runtime, apply approved RU names only to verified IDs, keep EN translation and D1 canonical data unchanged. Multiple OS skill revisions sharing an official name are explicitly attached to the same approved Legacy entry.
+- Next check: 205 approved skill descriptions against full OS client text; any effect calculations per skill must account for level, mastery and actual opt-in buff before inclusion in character totals. Still missing complete skill/state effects and current-server golden vectors.
 
 ## Source update 0.95.0 — Remaked armor grade / OS Forth and grouped skill passives
 

@@ -1,0 +1,2721 @@
+{
+  "schemaVersion": 1,
+  "provenance": "Pandora-Saga-Simulator-remaked/localization/approved-translations.v1.json game.ru.skill_entry.* + Pandora Saga OS data/os/skills.json",
+  "originalEntries": 205,
+  "mappedOsSkillIds": 327,
+  "distribution": {
+    "sameBranch": 188,
+    "branchShift": 12,
+    "abbreviated": 5
+  },
+  "entries": {
+    "skill_entry.0.0": {
+      "ru": "Провокация",
+      "osIds": [
+        100000501
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.1": {
+      "ru": "Улучшение лечения",
+      "osIds": [
+        100091001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.10": {
+      "ru": "Бастион",
+      "osIds": [
+        100053001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.11": {
+      "ru": "Отчаянье",
+      "osIds": [
+        100058001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.12": {
+      "ru": "Воля к жизни",
+      "osIds": [
+        100061001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.13": {
+      "ru": "Захват",
+      "osIds": [
+        350001001,
+        350001002
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "blow"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.2": {
+      "ru": "Рывок",
+      "osIds": [
+        100051001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.3": {
+      "ru": "Невероятная сила",
+      "osIds": [
+        910110001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.4": {
+      "ru": "Удар по ногам",
+      "osIds": [
+        100103001,
+        100103050
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.5": {
+      "ru": "Самооборона",
+      "osIds": [
+        910120001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.6": {
+      "ru": "Безумная провокация",
+      "osIds": [
+        100001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.7": {
+      "ru": "Боевой клич",
+      "osIds": [
+        320001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.8": {
+      "ru": "Божественное благословление",
+      "osIds": [
+        330004001,
+        330004002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.0.9": {
+      "ru": "Яростная атака",
+      "osIds": [
+        100052001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "martial"
+      ],
+      "expectedBranch": "martial"
+    },
+    "skill_entry.1.0": {
+      "ru": "Двойной удар",
+      "osIds": [
+        110101001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "slash"
+      ],
+      "expectedBranch": "slash"
+    },
+    "skill_entry.1.1": {
+      "ru": "Порез",
+      "osIds": [
+        110101002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "slash"
+      ],
+      "expectedBranch": "slash"
+    },
+    "skill_entry.1.2": {
+      "ru": "Круговой удар",
+      "osIds": [
+        131201001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "slash"
+      ],
+      "expectedBranch": "slash"
+    },
+    "skill_entry.1.3": {
+      "ru": "Парирование",
+      "osIds": [
+        161201001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "slash"
+      ],
+      "expectedBranch": "slash"
+    },
+    "skill_entry.1.4": {
+      "ru": "Сосредоточенность",
+      "osIds": [
+        100054001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "slash"
+      ],
+      "expectedBranch": "slash"
+    },
+    "skill_entry.1.5": {
+      "ru": "Громовой удар",
+      "osIds": [
+        100102001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "slash"
+      ],
+      "expectedBranch": "slash"
+    },
+    "skill_entry.1.6": {
+      "ru": "Мастер меча",
+      "osIds": [
+        110102001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "slash"
+      ],
+      "expectedBranch": "slash"
+    },
+    "skill_entry.10.0": {
+      "ru": "Обезвреживание ловушек",
+      "osIds": [
+        240003001,
+        240003002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "trap"
+      ],
+      "expectedBranch": "trap"
+    },
+    "skill_entry.10.1": {
+      "ru": "Капкан",
+      "osIds": [
+        240001001,
+        240001050
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "trap"
+      ],
+      "expectedBranch": "trap"
+    },
+    "skill_entry.10.2": {
+      "ru": "Взрывающаяся ловушка",
+      "osIds": [
+        240002001,
+        240002002,
+        240002050,
+        240002051
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "trap"
+      ],
+      "expectedBranch": "trap"
+    },
+    "skill_entry.10.3": {
+      "ru": "Ползучая ловушка",
+      "osIds": [
+        240005001,
+        240005002,
+        240005003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "trap"
+      ],
+      "expectedBranch": "trap"
+    },
+    "skill_entry.10.4": {
+      "ru": "Глаз урагана",
+      "osIds": [
+        240006001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "trap"
+      ],
+      "expectedBranch": "trap"
+    },
+    "skill_entry.10.5": {
+      "ru": "Вольер",
+      "osIds": [
+        240010001,
+        240010002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "trap"
+      ],
+      "expectedBranch": "trap"
+    },
+    "skill_entry.10.6": {
+      "ru": "Растворение сознания",
+      "osIds": [
+        240008001,
+        240008002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "trap"
+      ],
+      "expectedBranch": "trap"
+    },
+    "skill_entry.11.0": {
+      "ru": "Легкость",
+      "osIds": [
+        260002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.11.1": {
+      "ru": "Быстрый отход",
+      "osIds": [
+        260001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.11.2": {
+      "ru": "Порыв",
+      "osIds": [
+        260003001,
+        260003002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.11.3": {
+      "ru": "Быстрое уклонение",
+      "osIds": [
+        260005001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.11.4": {
+      "ru": "Путающая рука",
+      "osIds": [
+        260004001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.11.5": {
+      "ru": "Устойчивость",
+      "osIds": [
+        260007001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.11.6": {
+      "ru": "Ускользание",
+      "osIds": [
+        260008001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.11.7": {
+      "ru": "Ограждение",
+      "osIds": [
+        260009001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.11.8": {
+      "ru": "Вольный ветер",
+      "osIds": [
+        260010001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "warding"
+    },
+    "skill_entry.12.0": {
+      "ru": "Медитация",
+      "osIds": [
+        320091001
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "prayer"
+    },
+    "skill_entry.12.1": {
+      "ru": "Вдохновение",
+      "osIds": [
+        930110001
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "prayer"
+    },
+    "skill_entry.12.2": {
+      "ru": "Святость",
+      "osIds": [
+        930120001
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "prayer"
+    },
+    "skill_entry.13.0": {
+      "ru": "Лечение",
+      "osIds": [
+        310004001,
+        310004002,
+        310004003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.1": {
+      "ru": "Воскрешение",
+      "osIds": [
+        310003001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.10": {
+      "ru": "Массовое исцеление",
+      "osIds": [
+        310021001,
+        310021002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.11": {
+      "ru": "Полное исцеление",
+      "osIds": [
+        310014001,
+        310014002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.2": {
+      "ru": "Храм",
+      "osIds": [
+        310023001,
+        310023002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.3": {
+      "ru": "Великодушие",
+      "osIds": [
+        300003001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.4": {
+      "ru": "Распространение",
+      "osIds": [
+        320013001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.5": {
+      "ru": "Первая помощь",
+      "osIds": [
+        310001001,
+        310001002,
+        310001003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.6": {
+      "ru": "Лечение отравления",
+      "osIds": [
+        310011001,
+        310011002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.7": {
+      "ru": "Регенерация",
+      "osIds": [
+        310002001,
+        310002002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.8": {
+      "ru": "Пробуждение",
+      "osIds": [
+        310012001,
+        310012002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.13.9": {
+      "ru": "Восстановление",
+      "osIds": [
+        310022001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "benevolence"
+    },
+    "skill_entry.14.0": {
+      "ru": "Благословенный покой",
+      "osIds": [
+        320002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.1": {
+      "ru": "Знак жизни",
+      "osIds": [
+        320005001,
+        320005051
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.2": {
+      "ru": "Чары усиления",
+      "osIds": [
+        320011001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.3": {
+      "ru": "Знак атаки",
+      "osIds": [
+        320007001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.4": {
+      "ru": "Знак защиты",
+      "osIds": [
+        320008001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.5": {
+      "ru": "Задержка",
+      "osIds": [
+        320009001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.6": {
+      "ru": "Божественная защита",
+      "osIds": [
+        320003001,
+        320003002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.7": {
+      "ru": "Освящение воды",
+      "osIds": [
+        320010001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.8": {
+      "ru": "Воодушевление",
+      "osIds": [
+        320006001,
+        320006002,
+        320006051
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.14.9": {
+      "ru": "Ободрение",
+      "osIds": [
+        320012001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blessing"
+      ],
+      "expectedBranch": "blessing"
+    },
+    "skill_entry.15.0": {
+      "ru": "Природное восстановление",
+      "osIds": [
+        330005001,
+        330005002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.1": {
+      "ru": "Помощь ветра",
+      "osIds": [
+        260006001,
+        260006002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.10": {
+      "ru": "Круг света",
+      "osIds": [
+        330061001,
+        330061002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.11": {
+      "ru": "Изгнание",
+      "osIds": [
+        330081001,
+        330081002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.12": {
+      "ru": "Преданность",
+      "osIds": [
+        330101001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.13": {
+      "ru": "Затишье",
+      "osIds": [
+        330091001,
+        330091002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.2": {
+      "ru": "Врачевание",
+      "osIds": [
+        320092001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.3": {
+      "ru": "Обмен маной",
+      "osIds": [
+        330071001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.4": {
+      "ru": "Обмен душами",
+      "osIds": [
+        330072001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.5": {
+      "ru": "Очищение",
+      "osIds": [
+        300004001,
+        300004002,
+        300004003,
+        300004004
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "benevolence"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.6": {
+      "ru": "Святая стрела",
+      "osIds": [
+        330001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.7": {
+      "ru": "Поглощение стихий",
+      "osIds": [
+        330002001,
+        330002002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.8": {
+      "ru": "Священное оружие",
+      "osIds": [
+        330051001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.15.9": {
+      "ru": "Освобождение",
+      "osIds": [
+        330003001,
+        330003002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "exorcism"
+      ],
+      "expectedBranch": "exorcism"
+    },
+    "skill_entry.16.0": {
+      "ru": "Песнь поэта",
+      "osIds": [
+        340001001,
+        340001002,
+        340001003,
+        340001004,
+        340001005,
+        340001006
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "hymn"
+      ],
+      "expectedBranch": "hymn"
+    },
+    "skill_entry.16.1": {
+      "ru": "Песнь света",
+      "osIds": [
+        340002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "hymn"
+      ],
+      "expectedBranch": "hymn"
+    },
+    "skill_entry.16.2": {
+      "ru": "Песнь мира",
+      "osIds": [
+        340003001,
+        340003002,
+        340003003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "hymn"
+      ],
+      "expectedBranch": "hymn"
+    },
+    "skill_entry.16.3": {
+      "ru": "Песнь чар",
+      "osIds": [
+        340004001,
+        340004002,
+        340004003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "hymn"
+      ],
+      "expectedBranch": "hymn"
+    },
+    "skill_entry.17.0": {
+      "ru": "Магические знания",
+      "osIds": [
+        940110001
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "sorcery"
+      ],
+      "expectedBranch": "magic"
+    },
+    "skill_entry.17.1": {
+      "ru": "Темная защита",
+      "osIds": [
+        940120001
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "sorcery"
+      ],
+      "expectedBranch": "magic"
+    },
+    "skill_entry.18.0": {
+      "ru": "Огненная стрела",
+      "osIds": [
+        410001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.1": {
+      "ru": "Удар молнии",
+      "osIds": [
+        410021001,
+        410021002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.10": {
+      "ru": "Сопр. молниям",
+      "osIds": [
+        410025001
+      ],
+      "status": "abbreviated",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.11": {
+      "ru": "Ледяной вихрь",
+      "osIds": [
+        410014001,
+        410014002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.12": {
+      "ru": "Ледяная буря",
+      "osIds": [
+        410014003,
+        410014004
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.13": {
+      "ru": "Неотвратимый взрыв",
+      "osIds": [
+        410004001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.14": {
+      "ru": "Гроза",
+      "osIds": [
+        410024001,
+        410026001,
+        410026002,
+        410026003,
+        410026004
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.15": {
+      "ru": "Метеорит",
+      "osIds": [
+        410005001,
+        410005002,
+        410005003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.2": {
+      "ru": "Громовой разряд",
+      "osIds": [
+        410023001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.3": {
+      "ru": "Сосредоточенность",
+      "osIds": [
+        410000101
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.4": {
+      "ru": "Ледяные осколки",
+      "osIds": [
+        410011001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.5": {
+      "ru": "Шаровая молния",
+      "osIds": [
+        410022001,
+        410022050
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.6": {
+      "ru": "Ледяное копье",
+      "osIds": [
+        410012000,
+        410012001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.7": {
+      "ru": "Огненная буря",
+      "osIds": [
+        410002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.8": {
+      "ru": "Сопр. огню",
+      "osIds": [
+        410003001
+      ],
+      "status": "abbreviated",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.18.9": {
+      "ru": "Сопр. льду",
+      "osIds": [
+        410015001
+      ],
+      "status": "abbreviated",
+      "osBranches": [
+        "element"
+      ],
+      "expectedBranch": "element"
+    },
+    "skill_entry.19.0": {
+      "ru": "Двойной портал",
+      "osIds": [
+        410000301
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.1": {
+      "ru": "Телепорт",
+      "osIds": [
+        410000201,
+        410000202,
+        410000203
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.10": {
+      "ru": "Темное растение",
+      "osIds": [
+        420009001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.2": {
+      "ru": "Множественные порталы",
+      "osIds": [
+        410000401
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.3": {
+      "ru": "Сияние разума",
+      "osIds": [
+        420008001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.4": {
+      "ru": "Озарение",
+      "osIds": [
+        420001001,
+        420001002,
+        420001003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.5": {
+      "ru": "Магический щит",
+      "osIds": [
+        420002001,
+        420002002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.6": {
+      "ru": "По следам ветра",
+      "osIds": [
+        420004001,
+        420004002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.7": {
+      "ru": "Летящее лезвие",
+      "osIds": [
+        420005001,
+        420005002,
+        420005003,
+        420005004
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.8": {
+      "ru": "Непреодолимая стена",
+      "osIds": [
+        420006001,
+        420006002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.19.9": {
+      "ru": "Песчаная буря",
+      "osIds": [
+        420007001,
+        420007002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "embody"
+      ],
+      "expectedBranch": "embody"
+    },
+    "skill_entry.2.0": {
+      "ru": "Стремительный удар",
+      "osIds": [
+        100059001,
+        100059002,
+        100059003,
+        100059004
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "thrust"
+      ],
+      "expectedBranch": "thrust"
+    },
+    "skill_entry.2.1": {
+      "ru": "Внезапный рывок",
+      "osIds": [
+        121704001,
+        121704002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "thrust"
+      ],
+      "expectedBranch": "thrust"
+    },
+    "skill_entry.2.2": {
+      "ru": "Удар копьем",
+      "osIds": [
+        121702001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "thrust"
+      ],
+      "expectedBranch": "thrust"
+    },
+    "skill_entry.2.3": {
+      "ru": "Тройной укол",
+      "osIds": [
+        121703001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "thrust"
+      ],
+      "expectedBranch": "thrust"
+    },
+    "skill_entry.2.4": {
+      "ru": "Могучий удар",
+      "osIds": [
+        121705001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "thrust"
+      ],
+      "expectedBranch": "thrust"
+    },
+    "skill_entry.2.5": {
+      "ru": "Бросок",
+      "osIds": [
+        121701001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "thrust"
+      ],
+      "expectedBranch": "thrust"
+    },
+    "skill_entry.2.6": {
+      "ru": "Четверной укол",
+      "osIds": [
+        121703501,
+        121703511,
+        121703512
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "thrust"
+      ],
+      "expectedBranch": "thrust"
+    },
+    "skill_entry.2.7": {
+      "ru": "Отпор",
+      "osIds": [
+        121707001,
+        121707002,
+        121707003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "thrust"
+      ],
+      "expectedBranch": "thrust"
+    },
+    "skill_entry.20.0": {
+      "ru": "Темный рикошет",
+      "osIds": [
+        430055001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.1": {
+      "ru": "Массовая невидимость",
+      "osIds": [
+        430059001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.10": {
+      "ru": "Срыв",
+      "osIds": [
+        430057001,
+        430057002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.11": {
+      "ru": "Темная грань",
+      "osIds": [
+        430058001,
+        430058002,
+        430058003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.2": {
+      "ru": "Ядовитый удар",
+      "osIds": [
+        430052001,
+        430052002,
+        430052003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.3": {
+      "ru": "Темная аура",
+      "osIds": [
+        430051001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.4": {
+      "ru": "Кража жизни",
+      "osIds": [
+        430001001,
+        430001002,
+        430001003,
+        430001004
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.5": {
+      "ru": "Гниение",
+      "osIds": [
+        430053001,
+        430053002,
+        430053003,
+        430053004,
+        430053005
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.6": {
+      "ru": "Рассеивание",
+      "osIds": [
+        440002001,
+        440002002,
+        440002003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.7": {
+      "ru": "Сопр. тьме",
+      "osIds": [
+        430054001
+      ],
+      "status": "abbreviated",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.8": {
+      "ru": "Эфирная вспышка",
+      "osIds": [
+        440004001,
+        440004002,
+        440004003,
+        440004004
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.20.9": {
+      "ru": "Ненависть",
+      "osIds": [
+        430056001,
+        430056002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "darkness"
+      ],
+      "expectedBranch": "darkness"
+    },
+    "skill_entry.21.0": {
+      "ru": "Остановка времени",
+      "osIds": [
+        440006001,
+        440006002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.1": {
+      "ru": "Мираж",
+      "osIds": [
+        440010001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.10": {
+      "ru": "Немая буря",
+      "osIds": [
+        440009001,
+        440009002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.11": {
+      "ru": "Чума",
+      "osIds": [
+        440011001,
+        440011002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.2": {
+      "ru": "Немощь",
+      "osIds": [
+        440001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.3": {
+      "ru": "Песчаный вихрь",
+      "osIds": [
+        420003001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.4": {
+      "ru": "Мысленный удар",
+      "osIds": [
+        440005001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.5": {
+      "ru": "Слабость",
+      "osIds": [
+        440007001,
+        440007002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.6": {
+      "ru": "Обуздание",
+      "osIds": [
+        440008001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.7": {
+      "ru": "Сопр. чарам",
+      "osIds": [
+        440005501
+      ],
+      "status": "abbreviated",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.8": {
+      "ru": "Морозный удар",
+      "osIds": [
+        410013001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.21.9": {
+      "ru": "Ядовитая топь",
+      "osIds": [
+        440003001,
+        440003002,
+        440003003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "charm"
+      ],
+      "expectedBranch": "charm"
+    },
+    "skill_entry.24.0": {
+      "ru": "Конный бой",
+      "osIds": [
+        520001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "riding"
+      ],
+      "expectedBranch": "riding"
+    },
+    "skill_entry.24.1": {
+      "ru": "Конный бой",
+      "osIds": [
+        520001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "riding"
+      ],
+      "expectedBranch": "riding"
+    },
+    "skill_entry.24.2": {
+      "ru": "Конная стрельба",
+      "osIds": [
+        520002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "riding"
+      ],
+      "expectedBranch": "riding"
+    },
+    "skill_entry.24.3": {
+      "ru": "Конная магия",
+      "osIds": [
+        520003001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "riding"
+      ],
+      "expectedBranch": "riding"
+    },
+    "skill_entry.24.4": {
+      "ru": "Вызов коня",
+      "osIds": [
+        520000001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "riding"
+      ],
+      "expectedBranch": "riding"
+    },
+    "skill_entry.24.5": {
+      "ru": "Защита коня",
+      "osIds": [
+        520004001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "riding"
+      ],
+      "expectedBranch": "riding"
+    },
+    "skill_entry.3.0": {
+      "ru": "Критический удар",
+      "osIds": [
+        142002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "brush"
+      ],
+      "expectedBranch": "brush"
+    },
+    "skill_entry.3.1": {
+      "ru": "Контратака",
+      "osIds": [
+        161202001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "brush"
+      ],
+      "expectedBranch": "brush"
+    },
+    "skill_entry.3.2": {
+      "ru": "Хладнокровие",
+      "osIds": [
+        142051001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "brush"
+      ],
+      "expectedBranch": "brush"
+    },
+    "skill_entry.3.3": {
+      "ru": "Раскол",
+      "osIds": [
+        142001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "brush"
+      ],
+      "expectedBranch": "brush"
+    },
+    "skill_entry.3.4": {
+      "ru": "Решающий удар",
+      "osIds": [
+        142005001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "brush"
+      ],
+      "expectedBranch": "brush"
+    },
+    "skill_entry.4.0": {
+      "ru": "Оглушающий удар",
+      "osIds": [
+        142501001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blow"
+      ],
+      "expectedBranch": "blow"
+    },
+    "skill_entry.4.1": {
+      "ru": "Удар в землю",
+      "osIds": [
+        142003001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blow"
+      ],
+      "expectedBranch": "blow"
+    },
+    "skill_entry.4.2": {
+      "ru": "Оглушающий грохот",
+      "osIds": [
+        142501101
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blow"
+      ],
+      "expectedBranch": "blow"
+    },
+    "skill_entry.4.3": {
+      "ru": "Удар по броне",
+      "osIds": [
+        142502001,
+        142502050
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blow"
+      ],
+      "expectedBranch": "blow"
+    },
+    "skill_entry.4.4": {
+      "ru": "Удар по щиту",
+      "osIds": [
+        142503001,
+        142503002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blow"
+      ],
+      "expectedBranch": "blow"
+    },
+    "skill_entry.4.5": {
+      "ru": "Энергетический удар",
+      "osIds": [
+        142504001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "blow"
+      ],
+      "expectedBranch": "blow"
+    },
+    "skill_entry.5.0": {
+      "ru": "Великая стена",
+      "osIds": [
+        168001002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.1": {
+      "ru": "Магический блок",
+      "osIds": [
+        100060001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.10": {
+      "ru": "Великая жертва",
+      "osIds": [
+        100002002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.11": {
+      "ru": "Сковывающая песнь",
+      "osIds": [
+        168053001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.2": {
+      "ru": "Защитные маневры",
+      "osIds": [
+        168055001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.3": {
+      "ru": "Блокирование",
+      "osIds": [
+        168001001,
+        168001003,
+        168001004
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.4": {
+      "ru": "Удар щитом",
+      "osIds": [
+        168003001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.5": {
+      "ru": "Железная чешуя",
+      "osIds": [
+        168052001,
+        168052002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.6": {
+      "ru": "Автозащита",
+      "osIds": [
+        168051001,
+        168051002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.7": {
+      "ru": "Бой щитом",
+      "osIds": [
+        168005001,
+        168005050
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.8": {
+      "ru": "Защита в движении",
+      "osIds": [
+        168002001,
+        168002002,
+        168002003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.5.9": {
+      "ru": "Жертвенность",
+      "osIds": [
+        100002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "defense"
+      ],
+      "expectedBranch": "defense"
+    },
+    "skill_entry.6.0": {
+      "ru": "Орлиный глаз",
+      "osIds": [
+        920110001
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "technique"
+    },
+    "skill_entry.6.1": {
+      "ru": "Быстрое уклонение",
+      "osIds": [
+        260005001
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "warding"
+      ],
+      "expectedBranch": "technique"
+    },
+    "skill_entry.6.2": {
+      "ru": "Благословение ветра",
+      "osIds": [
+        320004001,
+        320004002,
+        320004051
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "technique"
+    },
+    "skill_entry.6.3": {
+      "ru": "Массовая сосредоточенность",
+      "osIds": [
+        100055001,
+        100055002
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "technique"
+    },
+    "skill_entry.6.4": {
+      "ru": "Тайная ловушка",
+      "osIds": [
+        230002003
+      ],
+      "status": "branchShift",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "technique"
+    },
+    "skill_entry.7.0": {
+      "ru": "Стремительная стрела",
+      "osIds": [
+        213702001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.1": {
+      "ru": "Точная стрельба",
+      "osIds": [
+        213605001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.10": {
+      "ru": "Внезапный выстрел",
+      "osIds": [
+        213700501,
+        213700550
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.11": {
+      "ru": "Печать тишины",
+      "osIds": [
+        213603501,
+        213603511,
+        213603521
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.12": {
+      "ru": "Неясная тень",
+      "osIds": [
+        213607001,
+        213607002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.2": {
+      "ru": "Пламенная стрела",
+      "osIds": [
+        213608001,
+        213608002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.3": {
+      "ru": "Слежка",
+      "osIds": [
+        213606001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.4": {
+      "ru": "Двойной выстрел",
+      "osIds": [
+        213703001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.5": {
+      "ru": "Пылающая стрела",
+      "osIds": [
+        213601001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.6": {
+      "ru": "Ядовитая стрела",
+      "osIds": [
+        213602001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.7": {
+      "ru": "Дождь стрел",
+      "osIds": [
+        213603001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.8": {
+      "ru": "Ураган",
+      "osIds": [
+        213603002,
+        213603003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.7.9": {
+      "ru": "Пятикратный выстрел",
+      "osIds": [
+        213701001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "archery"
+      ],
+      "expectedBranch": "archery"
+    },
+    "skill_entry.8.0": {
+      "ru": "Создание яда",
+      "osIds": [
+        220002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "alchemy"
+      ],
+      "expectedBranch": "alchemy"
+    },
+    "skill_entry.8.1": {
+      "ru": "Яд",
+      "osIds": [
+        220001001,
+        220001003
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "alchemy"
+      ],
+      "expectedBranch": "alchemy"
+    },
+    "skill_entry.8.2": {
+      "ru": "Создание противоядия",
+      "osIds": [
+        220003001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "alchemy"
+      ],
+      "expectedBranch": "alchemy"
+    },
+    "skill_entry.8.3": {
+      "ru": "Составление зелий",
+      "osIds": [
+        220004001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "alchemy"
+      ],
+      "expectedBranch": "alchemy"
+    },
+    "skill_entry.8.4": {
+      "ru": "Скороговорка",
+      "osIds": [
+        220006001,
+        220006002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "alchemy"
+      ],
+      "expectedBranch": "alchemy"
+    },
+    "skill_entry.8.5": {
+      "ru": "Усиление яда",
+      "osIds": [
+        220001002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "alchemy"
+      ],
+      "expectedBranch": "alchemy"
+    },
+    "skill_entry.8.6": {
+      "ru": "Соколиный глаз",
+      "osIds": [
+        220007001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "alchemy"
+      ],
+      "expectedBranch": "alchemy"
+    },
+    "skill_entry.9.0": {
+      "ru": "Невидимость",
+      "osIds": [
+        230001001,
+        230001002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.1": {
+      "ru": "Маскировка",
+      "osIds": [
+        230002001,
+        230002004,
+        230002005
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.2": {
+      "ru": "Легкий шаг",
+      "osIds": [
+        230002002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.3": {
+      "ru": "Волна",
+      "osIds": [
+        233200101
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.4": {
+      "ru": "Удар в спину",
+      "osIds": [
+        233003001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.5": {
+      "ru": "Метание кинжала",
+      "osIds": [
+        233101001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.6": {
+      "ru": "Беспощадная атака",
+      "osIds": [
+        233151001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.7": {
+      "ru": "Внезапная атака",
+      "osIds": [
+        233001001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.8": {
+      "ru": "Точный укол",
+      "osIds": [
+        233002001
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    },
+    "skill_entry.9.9": {
+      "ru": "Стремительная смерть",
+      "osIds": [
+        233005001,
+        233005002
+      ],
+      "status": "sameBranch",
+      "osBranches": [
+        "assassin"
+      ],
+      "expectedBranch": "assassin"
+    }
+  },
+  "skillLabelsById": {
+    "100000501": "Провокация",
+    "100001001": "Безумная провокация",
+    "100002001": "Жертвенность",
+    "100002002": "Великая жертва",
+    "100051001": "Рывок",
+    "100052001": "Яростная атака",
+    "100053001": "Бастион",
+    "100054001": "Сосредоточенность",
+    "100055001": "Массовая сосредоточенность",
+    "100055002": "Массовая сосредоточенность",
+    "100058001": "Отчаянье",
+    "100059001": "Стремительный удар",
+    "100059002": "Стремительный удар",
+    "100059003": "Стремительный удар",
+    "100059004": "Стремительный удар",
+    "100060001": "Магический блок",
+    "100061001": "Воля к жизни",
+    "100091001": "Улучшение лечения",
+    "100102001": "Громовой удар",
+    "100103001": "Удар по ногам",
+    "100103050": "Удар по ногам",
+    "110101001": "Двойной удар",
+    "110101002": "Порез",
+    "110102001": "Мастер меча",
+    "121701001": "Бросок",
+    "121702001": "Удар копьем",
+    "121703001": "Тройной укол",
+    "121703501": "Четверной укол",
+    "121703511": "Четверной укол",
+    "121703512": "Четверной укол",
+    "121704001": "Внезапный рывок",
+    "121704002": "Внезапный рывок",
+    "121705001": "Могучий удар",
+    "121707001": "Отпор",
+    "121707002": "Отпор",
+    "121707003": "Отпор",
+    "131201001": "Круговой удар",
+    "142001001": "Раскол",
+    "142002001": "Критический удар",
+    "142003001": "Удар в землю",
+    "142005001": "Решающий удар",
+    "142051001": "Хладнокровие",
+    "142501001": "Оглушающий удар",
+    "142501101": "Оглушающий грохот",
+    "142502001": "Удар по броне",
+    "142502050": "Удар по броне",
+    "142503001": "Удар по щиту",
+    "142503002": "Удар по щиту",
+    "142504001": "Энергетический удар",
+    "161201001": "Парирование",
+    "161202001": "Контратака",
+    "168001001": "Блокирование",
+    "168001002": "Великая стена",
+    "168001003": "Блокирование",
+    "168001004": "Блокирование",
+    "168002001": "Защита в движении",
+    "168002002": "Защита в движении",
+    "168002003": "Защита в движении",
+    "168003001": "Удар щитом",
+    "168005001": "Бой щитом",
+    "168005050": "Бой щитом",
+    "168051001": "Автозащита",
+    "168051002": "Автозащита",
+    "168052001": "Железная чешуя",
+    "168052002": "Железная чешуя",
+    "168053001": "Сковывающая песнь",
+    "168055001": "Защитные маневры",
+    "213601001": "Пылающая стрела",
+    "213602001": "Ядовитая стрела",
+    "213603001": "Дождь стрел",
+    "213603002": "Ураган",
+    "213603003": "Ураган",
+    "213603501": "Печать тишины",
+    "213603511": "Печать тишины",
+    "213603521": "Печать тишины",
+    "213605001": "Точная стрельба",
+    "213606001": "Слежка",
+    "213607001": "Неясная тень",
+    "213607002": "Неясная тень",
+    "213608001": "Пламенная стрела",
+    "213608002": "Пламенная стрела",
+    "213700501": "Внезапный выстрел",
+    "213700550": "Внезапный выстрел",
+    "213701001": "Пятикратный выстрел",
+    "213702001": "Стремительная стрела",
+    "213703001": "Двойной выстрел",
+    "220001001": "Яд",
+    "220001002": "Усиление яда",
+    "220001003": "Яд",
+    "220002001": "Создание яда",
+    "220003001": "Создание противоядия",
+    "220004001": "Составление зелий",
+    "220006001": "Скороговорка",
+    "220006002": "Скороговорка",
+    "220007001": "Соколиный глаз",
+    "230001001": "Невидимость",
+    "230001002": "Невидимость",
+    "230002001": "Маскировка",
+    "230002002": "Легкий шаг",
+    "230002003": "Тайная ловушка",
+    "230002004": "Маскировка",
+    "230002005": "Маскировка",
+    "233001001": "Внезапная атака",
+    "233002001": "Точный укол",
+    "233003001": "Удар в спину",
+    "233005001": "Стремительная смерть",
+    "233005002": "Стремительная смерть",
+    "233101001": "Метание кинжала",
+    "233151001": "Беспощадная атака",
+    "233200101": "Волна",
+    "240001001": "Капкан",
+    "240001050": "Капкан",
+    "240002001": "Взрывающаяся ловушка",
+    "240002002": "Взрывающаяся ловушка",
+    "240002050": "Взрывающаяся ловушка",
+    "240002051": "Взрывающаяся ловушка",
+    "240003001": "Обезвреживание ловушек",
+    "240003002": "Обезвреживание ловушек",
+    "240005001": "Ползучая ловушка",
+    "240005002": "Ползучая ловушка",
+    "240005003": "Ползучая ловушка",
+    "240006001": "Глаз урагана",
+    "240008001": "Растворение сознания",
+    "240008002": "Растворение сознания",
+    "240010001": "Вольер",
+    "240010002": "Вольер",
+    "260001001": "Быстрый отход",
+    "260002001": "Легкость",
+    "260003001": "Порыв",
+    "260003002": "Порыв",
+    "260004001": "Путающая рука",
+    "260005001": "Быстрое уклонение",
+    "260006001": "Помощь ветра",
+    "260006002": "Помощь ветра",
+    "260007001": "Устойчивость",
+    "260008001": "Ускользание",
+    "260009001": "Ограждение",
+    "260010001": "Вольный ветер",
+    "300003001": "Великодушие",
+    "300004001": "Очищение",
+    "300004002": "Очищение",
+    "300004003": "Очищение",
+    "300004004": "Очищение",
+    "310001001": "Первая помощь",
+    "310001002": "Первая помощь",
+    "310001003": "Первая помощь",
+    "310002001": "Регенерация",
+    "310002002": "Регенерация",
+    "310003001": "Воскрешение",
+    "310004001": "Лечение",
+    "310004002": "Лечение",
+    "310004003": "Лечение",
+    "310011001": "Лечение отравления",
+    "310011002": "Лечение отравления",
+    "310012001": "Пробуждение",
+    "310012002": "Пробуждение",
+    "310014001": "Полное исцеление",
+    "310014002": "Полное исцеление",
+    "310021001": "Массовое исцеление",
+    "310021002": "Массовое исцеление",
+    "310022001": "Восстановление",
+    "310023001": "Храм",
+    "310023002": "Храм",
+    "320001001": "Боевой клич",
+    "320002001": "Благословенный покой",
+    "320003001": "Божественная защита",
+    "320003002": "Божественная защита",
+    "320004001": "Благословение ветра",
+    "320004002": "Благословение ветра",
+    "320004051": "Благословение ветра",
+    "320005001": "Знак жизни",
+    "320005051": "Знак жизни",
+    "320006001": "Воодушевление",
+    "320006002": "Воодушевление",
+    "320006051": "Воодушевление",
+    "320007001": "Знак атаки",
+    "320008001": "Знак защиты",
+    "320009001": "Задержка",
+    "320010001": "Освящение воды",
+    "320011001": "Чары усиления",
+    "320012001": "Ободрение",
+    "320013001": "Распространение",
+    "320091001": "Медитация",
+    "320092001": "Врачевание",
+    "330001001": "Святая стрела",
+    "330002001": "Поглощение стихий",
+    "330002002": "Поглощение стихий",
+    "330003001": "Освобождение",
+    "330003002": "Освобождение",
+    "330004001": "Божественное благословление",
+    "330004002": "Божественное благословление",
+    "330005001": "Природное восстановление",
+    "330005002": "Природное восстановление",
+    "330051001": "Священное оружие",
+    "330061001": "Круг света",
+    "330061002": "Круг света",
+    "330071001": "Обмен маной",
+    "330072001": "Обмен душами",
+    "330081001": "Изгнание",
+    "330081002": "Изгнание",
+    "330091001": "Затишье",
+    "330091002": "Затишье",
+    "330101001": "Преданность",
+    "340001001": "Песнь поэта",
+    "340001002": "Песнь поэта",
+    "340001003": "Песнь поэта",
+    "340001004": "Песнь поэта",
+    "340001005": "Песнь поэта",
+    "340001006": "Песнь поэта",
+    "340002001": "Песнь света",
+    "340003001": "Песнь мира",
+    "340003002": "Песнь мира",
+    "340003003": "Песнь мира",
+    "340004001": "Песнь чар",
+    "340004002": "Песнь чар",
+    "340004003": "Песнь чар",
+    "350001001": "Захват",
+    "350001002": "Захват",
+    "410000101": "Сосредоточенность",
+    "410000201": "Телепорт",
+    "410000202": "Телепорт",
+    "410000203": "Телепорт",
+    "410000301": "Двойной портал",
+    "410000401": "Множественные порталы",
+    "410001001": "Огненная стрела",
+    "410002001": "Огненная буря",
+    "410003001": "Сопр. огню",
+    "410004001": "Неотвратимый взрыв",
+    "410005001": "Метеорит",
+    "410005002": "Метеорит",
+    "410005003": "Метеорит",
+    "410011001": "Ледяные осколки",
+    "410012000": "Ледяное копье",
+    "410012001": "Ледяное копье",
+    "410013001": "Морозный удар",
+    "410014001": "Ледяной вихрь",
+    "410014002": "Ледяной вихрь",
+    "410014003": "Ледяная буря",
+    "410014004": "Ледяная буря",
+    "410015001": "Сопр. льду",
+    "410021001": "Удар молнии",
+    "410021002": "Удар молнии",
+    "410022001": "Шаровая молния",
+    "410022050": "Шаровая молния",
+    "410023001": "Громовой разряд",
+    "410024001": "Гроза",
+    "410025001": "Сопр. молниям",
+    "410026001": "Гроза",
+    "410026002": "Гроза",
+    "410026003": "Гроза",
+    "410026004": "Гроза",
+    "420001001": "Озарение",
+    "420001002": "Озарение",
+    "420001003": "Озарение",
+    "420002001": "Магический щит",
+    "420002002": "Магический щит",
+    "420003001": "Песчаный вихрь",
+    "420004001": "По следам ветра",
+    "420004002": "По следам ветра",
+    "420005001": "Летящее лезвие",
+    "420005002": "Летящее лезвие",
+    "420005003": "Летящее лезвие",
+    "420005004": "Летящее лезвие",
+    "420006001": "Непреодолимая стена",
+    "420006002": "Непреодолимая стена",
+    "420007001": "Песчаная буря",
+    "420007002": "Песчаная буря",
+    "420008001": "Сияние разума",
+    "420009001": "Темное растение",
+    "430001001": "Кража жизни",
+    "430001002": "Кража жизни",
+    "430001003": "Кража жизни",
+    "430001004": "Кража жизни",
+    "430051001": "Темная аура",
+    "430052001": "Ядовитый удар",
+    "430052002": "Ядовитый удар",
+    "430052003": "Ядовитый удар",
+    "430053001": "Гниение",
+    "430053002": "Гниение",
+    "430053003": "Гниение",
+    "430053004": "Гниение",
+    "430053005": "Гниение",
+    "430054001": "Сопр. тьме",
+    "430055001": "Темный рикошет",
+    "430056001": "Ненависть",
+    "430056002": "Ненависть",
+    "430057001": "Срыв",
+    "430057002": "Срыв",
+    "430058001": "Темная грань",
+    "430058002": "Темная грань",
+    "430058003": "Темная грань",
+    "430059001": "Массовая невидимость",
+    "440001001": "Немощь",
+    "440002001": "Рассеивание",
+    "440002002": "Рассеивание",
+    "440002003": "Рассеивание",
+    "440003001": "Ядовитая топь",
+    "440003002": "Ядовитая топь",
+    "440003003": "Ядовитая топь",
+    "440004001": "Эфирная вспышка",
+    "440004002": "Эфирная вспышка",
+    "440004003": "Эфирная вспышка",
+    "440004004": "Эфирная вспышка",
+    "440005001": "Мысленный удар",
+    "440005501": "Сопр. чарам",
+    "440006001": "Остановка времени",
+    "440006002": "Остановка времени",
+    "440007001": "Слабость",
+    "440007002": "Слабость",
+    "440008001": "Обуздание",
+    "440009001": "Немая буря",
+    "440009002": "Немая буря",
+    "440010001": "Мираж",
+    "440011001": "Чума",
+    "440011002": "Чума",
+    "520000001": "Вызов коня",
+    "520001001": "Конный бой",
+    "520002001": "Конная стрельба",
+    "520003001": "Конная магия",
+    "520004001": "Защита коня",
+    "910110001": "Невероятная сила",
+    "910120001": "Самооборона",
+    "920110001": "Орлиный глаз",
+    "930110001": "Вдохновение",
+    "930120001": "Святость",
+    "940110001": "Магические знания",
+    "940120001": "Темная защита"
+  }
+}

@@ -49,7 +49,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:50,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
+let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
 inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
@@ -1815,9 +1815,12 @@ function applyGameLocale(){
  const en=lang==='en'?officialEnglish:null;
  const meta={...catalogSource.meta};
  if(en?.branches)meta.branchLabels={...meta.branchLabels,...en.branches};
- // Verified ID-based overrides for 18 RU race passives; never fuzzy-translate OS rows.
+ // Verified ID-based Remaked names only; never fuzzy-translate at runtime.
  const localizedSkills=translate(catalogSource.skills,en?.skills);
  if(lang==='ru'){
+  for(const [id,name] of Object.entries(approvedSkillIdNames||{})){
+   if(localizedSkills[id])localizedSkills[id]={...localizedSkills[id],name};
+  }
   for(const [id,name] of Object.entries(window.PandoraGameNavigation.approvedRacialSkillNames)){
    if(localizedSkills[id])localizedSkills[id]={...localizedSkills[id],name};
   }
@@ -2033,6 +2036,14 @@ fetch('./data/os/classes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
  }).catch(error=>console.warn('Local class limits unavailable',error));
 fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
 .then(t=>{if(t?.abilityPoint&&t?.weaponPlus&&t?.forge){gameTables=t;render()}}).catch(()=>{});
+fetch('./data/localization/remaked-skill-identity.v1.json',{cache:'no-cache'})
+ .then(r=>r.ok?r.json():null)
+ .then(mapping=>{
+  if(mapping?.originalEntries===205&&mapping?.skillLabelsById){
+   approvedSkillIdNames=mapping.skillLabelsById;
+   if(catalogSource)applyGameLocale();
+  }
+ }).catch(()=>{});
 fetch('./data/os/itemForth.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
 .then(t=>{if(t&&typeof t==='object'){gameItemForth=t;renderOriginVitals();
  if(stageAttributesPage)renderStageAttributes();}}).catch(()=>{});
