@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
+import {runLayoutAudit} from './browser-layout.mjs';
 
 const base='http://127.0.0.1:4173';
 const errors=[];
@@ -102,5 +103,6 @@ async function main(){
  console.log('Chromium mobile smoke passed: touch book, responsive width');
  await mobile.close();
  await runShareLinkSmoke(browser,base);
+ await runLayoutAudit(browser,base);
 }
 main().catch(error=>{console.error(error);process.exitCode=1}).finally(async()=>{await browser?.close()});

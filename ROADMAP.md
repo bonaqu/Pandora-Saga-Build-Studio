@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.166.0 (`2026.11.01.166`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.167.0 (`2026.11.01.167`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.167.0 — viewport geometry and screenshot evidence
+
+- Add Playwright geometric regression coverage at 1366×768, 1920×1080, 2560×1440, 3840×2160 and 390×844. Check horizontal overflow, panel separation, portrait centering and full image containment.
+- Preserve the agreed neutral cursor even though clicking the hero opens the book. Upload actual full-page JPEGs plus DOM geometry data as inspectable GitHub Actions artifacts (retained 14 days).
+- These are functional geometry checks, not an assertion that aesthetic/UX review is complete. If a live browser size fails, fix the measured layout rather than relaxing hard correctness requirements.
 
 ## Source update 0.166.0 — live read-only deployment checks
 
