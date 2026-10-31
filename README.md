@@ -662,3 +662,8 @@ The Warding skill requires both its learned Green mastery and an actual class br
 ## Transfer your library without JSON · 0.146.0
 
 Under «Мои билды», open the collapsed «Перенести библиотеку на другое устройство» section. Reveal and securely copy your personal recovery code, then use it on the other device to connect to the same D1 library. The code acts like a password: anyone holding it can read and delete your builds, so never publish it or put it into a shared-build URL. Existing local builds are merged, pending offline deletions must be synchronized first, and no Google/GitHub account is required. This is an optional device-key recovery workflow, not a fully fledged user-account system.
+
+
+## Recovery-code safety · 0.147.0
+
+The transfer panel requires one click to reveal/select your code and another to copy it (or manual copy if the Clipboard API is unavailable). Empty remote libraries do not silently replace an existing browser key; an incorrect pasted code is reported without changing local or cloud saves. Treat the code as a private password.

@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.146.0 (`2026.10.31.146`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.147.0 (`2026.10.31.147`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -688,3 +688,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] Clearing the active saved-build association before connecting a different key prevents an old local draft from overwriting an unrelated restored record.
 - [x] Add validation, input and regression guards; do not put personal recovery secrets in public files, logs or URLs.
 - [ ] Browser live transfer E2E, token rotation/revocation and true account authentication remain future tasks.
+
+
+## 0.147.0 — secure two-stage code reveal and copy
+
+- [x] Recovery-code disclosure uses one deterministic button listener: first click reveals and selects the secret, second click copies it (with manual selection fallback). The old dynamically assigned onclick is removed, avoiding double-running reveal and copy handlers.
+- [x] A syntactically valid but empty remote D1 library is not treated as successful recovery; users must verify the full code instead of replacing a working key with an accidental empty owner.
+- [x] The code remains hidden until explicit user interaction, and the UI remains collapsed by default. No technical notes added to the ordinary build editor.
+- [ ] Browser clipboard and password-manager acceptance, real Worker transfer and future account recovery/revocation remain pending.

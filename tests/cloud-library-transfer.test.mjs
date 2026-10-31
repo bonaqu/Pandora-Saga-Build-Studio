@@ -7,7 +7,9 @@ test('transfer key is revealed on demand, not embedded directly in public librar
  assert.match(src,/function buildLibraryTransfer\(\)/);
  assert.match(src,/value:'',class:'build-transfer-key'/);
  assert.match(src,/field\.value=cloudToken\(\)/);
- assert.match(src,/navigator\.clipboard\.writeText\(cloudToken\(\)\)/);
+ assert.match(src,/navigator\.clipboard\.writeText\(field\.value\)/);
+ assert.match(src,/if\(!codeVisible\)/);
+ assert.doesNotMatch(src,/copy\.onclick=/);
  assert.match(src,/Перенести библиотеку на другое устройство/);
  assert.doesNotMatch(html,/ps-build-library-secret\.v1/);
 });
@@ -15,7 +17,7 @@ test('switch validates remote owner, refuses pending deletions and preserves loc
  const app=read('app.js');
  assert.match(app,/if\(queuedDeletes\(\)\.length\)/);
  assert.match(app,/await cloudLibraryRequest\(null,trimmed\)/);
- assert.match(app,/if\(!response\.records\.length&&builds\.length\)/);
+ assert.match(app,/if\(!response\.records\.length\)/);
  assert.match(app,/localStorage\.setItem\(CLOUD_TOKEN_KEY,trimmed\)/);
  assert.match(app,/selectActiveBuild\(null\);libraryChangeId\+\+/);
  assert.match(app,/void loadCloudBuilds\(\)/);

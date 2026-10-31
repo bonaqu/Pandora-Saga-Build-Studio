@@ -1769,8 +1769,8 @@ async function connectCloudLibrary(secret,feedback){
  try{
   const response=await cloudLibraryRequest(null,trimmed);
   if(!Array.isArray(response.records))throw Error('Не удалось прочитать библиотеку');
-  if(!response.records.length&&builds.length){
-   feedback.textContent='По этому коду не найдено билдов. Текущую библиотеку оставили без изменений.';
+  if(!response.records.length){
+   feedback.textContent='По этому коду сохранённые билды не найдены. Проверьте, что код скопирован полностью.';
    return false;
   }
   if(trimmed===cloudToken()){
@@ -1792,14 +1792,16 @@ function buildLibraryTransfer(){
  const content=h('div',{class:'build-transfer-content'});
  const field=h('input',{type:'text',readOnly:true,value:'',class:'build-transfer-key',
   'aria-label':'Личный код библиотеки',placeholder:'Код скрыт'});
- const copy=h('button',{type:'button',class:'button-action',text:'Показать мой код',onclick:()=>{
-  field.value=cloudToken();
-  field.focus();field.select();
-  copy.textContent='Скопировать мой код';
-  copy.onclick=async()=>{
-   try{await navigator.clipboard.writeText(cloudToken());copy.textContent='✓ Код скопирован'}
-   catch{field.focus();field.select();copy.textContent='Скопируйте выделенный код'}
-  };
+ let codeVisible=false;
+ const copy=h('button',{type:'button',class:'button-action',text:'Показать мой код',onclick:async()=>{
+  if(!codeVisible){
+   field.value=cloudToken();
+   codeVisible=true;field.focus();field.select();
+   copy.textContent='Скопировать мой код';
+   return;
+  }
+  try{await navigator.clipboard.writeText(field.value);copy.textContent='✓ Код скопирован'}
+  catch{field.focus();field.select();copy.textContent='Скопируйте выделенный код'}
  }});
  const input=h('input',{type:'password',class:'build-transfer-key',maxLength:'64',
   autocomplete:'off',placeholder:'Вставить код с другого устройства',
