@@ -453,19 +453,22 @@ const warriorBuffClasses=new Set(['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','
 // The four current OS toggles have fixed, ID-backed skill records. When an
 // OS catalog is supplied, validate both access and EP effect values against it.
 const combatSkillIds=Object.freeze({
- lunge:100051001,warCry:320001001,raging:100052001,defender:100053001
+ lunge:100051001,warCry:320001001,raging:100052001,defender:100053001,
+ concentration:100054001
 });
 const combatSkillRequirements=Object.freeze({
  lunge:['EP_ATTACKINTERVAL_SCALE'],
  warCry:['EP_DAMAGERATE_CONST','EP_DAMAGERATE_SCALE'],
  raging:['EP_DAMAGERATE_SCALE','EP_ARMORCLASS_SCALE'],
- defender:['EP_DAMAGERATE_SCALE','EP_ARMORCLASS_SCALE']
+ defender:['EP_DAMAGERATE_SCALE','EP_ARMORCLASS_SCALE'],
+ concentration:['EP_TOHIT_CONST']
 });
 const combatSkillDefaults=Object.freeze({
  lunge:{EP_ATTACKINTERVAL_SCALE:15},
  warCry:{EP_DAMAGERATE_CONST:10,EP_DAMAGERATE_SCALE:20},
  raging:{EP_DAMAGERATE_SCALE:30,EP_ARMORCLASS_SCALE:-60},
- defender:{EP_DAMAGERATE_SCALE:-20,EP_ARMORCLASS_SCALE:40}
+ defender:{EP_DAMAGERATE_SCALE:-20,EP_ARMORCLASS_SCALE:40},
+ concentration:{EP_TOHIT_CONST:100}
 });
 function combatSkillSource(skillCatalog,kind){
  if(!skillCatalog)return {effects:combatSkillDefaults[kind],fromCatalog:false};
@@ -530,7 +533,7 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
 // Strictly opt-in skill effects. Gate every buff by current OS class and
 // character level, not by the presence of an unchecked saved toggle.
 function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
- weapon=null,skillCatalog=null}={}){
+ weapon=null,skillCatalog=null,branchMasteries={}}={}){
  const permitted=(key,selectedKey,legacyClasses,minLevel)=>{
   if(selected?.[selectedKey]!==true)return false;
   if(skillCatalog){
@@ -538,6 +541,12 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
    const record=source?.record;
    if(!source||!record?.classes?.[jobKey]||
     !Number.isInteger(record.charLevel)||level<record.charLevel)return false;
+   // A branch-gated skill is not learned until the green Adeptness
+   // requirement is met. Potential/blue points do not substitute for it.
+   if(!Array.isArray(record.reqs)||!record.reqs.every(req=>
+    typeof req.branch==='string'&&Number.isInteger(req.amount)&&req.amount>=0&&
+    Number(branchMasteries?.[req.branch]??0)>=req.amount))return false;
+   if(record.prereq!=null)return false; // unverified prerequisites fail closed
    // OS skill 100051001 (Lunge) explicitly lists compatible weapon kinds.
    // With no equipped weapon the source lists BARE_HAND as a valid kind.
    if(key==='lunge'&&Array.isArray(record.weaponUse)&&record.weaponUse.length&&
@@ -550,12 +559,14 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
  const raging=permitted('raging','combatRage',meleeLineage,35);
  const defender=permitted('defender','combatDefender',knightLineage,35)&&hasShield&&!raging;
  const lunge=permitted('lunge','combatLunge',warriorBuffClasses,18);
- return {warCry,raging,defender,lunge};
+ const concentration=permitted('concentration','combatConcentration',new Set(),0);
+ return {warCry,raging,defender,lunge,concentration};
 }
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
  weapon=null,weaponGrade=0,weaponPlus=null,records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
- techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null}={}){
+ techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
+ branchMasteries={}}={}){
  if(!Number.isInteger(level)||level<1||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -592,7 +603,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const equipped=equippedCombatModifiers(records,itemForth);
  const secondary=secondaryEffectsPreview({records,itemForth});
  if(!defense||!equipped||!secondary)return null;
- const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,weapon,
+ const actives=activeCombatSkills({selected:combatBuffs,jobKey,level,skillCatalog,weapon,branchMasteries,
   hasShield:records.some(([source,record])=>String(source).startsWith('item:')&&
    record?.slot==='shield')});
  const supportSkills=supportSkillAvailability({selected:combatBuffs,skillCatalog,jobKey,level});
@@ -679,7 +690,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   criticalDamage,criticalIncoming,criticalIncomingDamage,
   accuracy:{base:accuracyBase,equipment:accEquip,passive:hunterEye,
    percentage:accuracyPercent,honor:title.accuracy||0,
-   known:accuracy+accuracyBonus+hunterEye},
+   activeBonus:actives.concentration?effect('concentration','EP_TOHIT_CONST'):0,
+   known:accuracy+accuracyBonus+hunterEye+
+    (actives.concentration?effect('concentration','EP_TOHIT_CONST'):0)},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
    passive:quickStep,honor:title.dodge||0,
    windAssist:supportSkills.windAssist?Math.floor(
