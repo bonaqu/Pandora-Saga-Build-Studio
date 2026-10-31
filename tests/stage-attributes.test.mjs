@@ -17,7 +17,7 @@ test('character portrait can toggle source-backed stats without page scroll',()=
 });
 test('partial combat preview does not imply fully verified combat stats',()=>{
  const attrs=get('stage-attributes.js');
- assert.match(attrs,/частичный расчёт/);
+ assert.match(attrs,/Подробнее о точности расчёта/);
  assert.match(attrs,/Известные бонусы снаряжения и душ/);
  assert.match(attrs,/серверных условий/);
  assert.match(attrs,/rec\.effects/);
