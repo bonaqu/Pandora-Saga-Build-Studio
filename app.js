@@ -58,7 +58,8 @@ inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
 pathScrollRestored=false,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',
 stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,120):'',
-stageGemQuery='',gameTables=null,gameItemForth=null,stageAttributesPage=['attack','defense','effects'].includes(bootView.attributes)?bootView.attributes:null;
+stageGemQuery='',gameTables=null,gameItemForth=null,
+stageAttributesPage=['summary','attack','defense','recovery','effects','buffs'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
@@ -465,8 +466,13 @@ function renderSlotRails(){
 function renderStageAttributes(){
  const root=$('stageAttributes');if(!root)return;
  const show=Boolean(stageAttributesPage)&&!stageSlotPickerOpen;
+ const priorPage=root.querySelector('.stage-book-page')?.dataset.bookVisible||null;
+ const priorScroll=root.querySelector('.stage-book-page')?.scrollTop||0;
  root.hidden=!show;root.closest('.portrait-frame').classList.toggle('attributes',show);
  $('stageAttributeToggle').setAttribute('aria-pressed',String(Boolean(stageAttributesPage)));
+ $('stageAttributeToggle').textContent=stageAttributesPage?'↩ Образ героя':'📖 Результаты';
+ $('stageBuffToggle')?.setAttribute('aria-pressed',String(stageAttributesPage==='buffs'));
+ const opener=$('portraitBookOpen');if(opener)opener.hidden=show||stageSlotPickerOpen;
  if(!show)return;
  const plan=window.PandoraEquipmentPlan;
  const items=Object.entries(state.equipment||{}).filter(([,entry])=>entry).map(([slot,entry])=>{
@@ -474,11 +480,36 @@ function renderStageAttributes(){
   return {record:rec,refinement:plan.refinementValue(state.refinements,Number(slot),entry),
     souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
  });
+ const cls=jobKeys[state.job],skillMap=catalog.skills||{};
+ const equippedShield=state.equipment?.[1]&&
+  catalog.equipment?.[String(state.equipment[1].id)];
+ const availability={};
+ for(const [name,id] of Object.entries({combatLunge:100051001,combatWarCry:320001001,
+  combatRage:100052001,combatDefender:100053001})){
+  const ability=skillMap[String(id)];
+  availability[name]=Boolean(ability?.classes?.[cls]&&
+   state.level>=Number(ability.charLevel||0)&&
+   (name!=='combatDefender'||equippedShield?.slot==='shield'));
+ }
  window.PandoraStageAttributes.render(root,{
-  page:stageAttributesPage,items,modifiers:previewBaseStats(),icon:rec=>itemIcon(rec),onClose:()=>{
-    stageAttributesPage=null;renderStageAttributes();saveView();
-  },onPage:name=>{stageAttributesPage=name;renderStageAttributes();saveView()}
+  page:stageAttributesPage,items,modifiers:previewBaseStats(),icon:rec=>itemIcon(rec),
+  buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
+  availability,honorTitles:window.PandoraOSCalculator.honorTitles,
+  onBuff:(key,value)=>setAttributeBuff(key,value),
+  onVital:(key,value)=>setVitalsEnhancement(key,value),
+  onClose:()=>{
+   stageAttributesPage=null;renderStageAttributes();saveView();
+   $('portraitBookOpen')?.focus({preventScroll:true});
+  },
+  onPage:name=>{
+   if(!window.PandoraStageAttributes.bookPages.some(([id])=>id===name))return;
+   stageAttributesPage=name;renderStageAttributes();saveView();
+  }
  });
+ if(priorPage===stageAttributesPage){
+  const scroll=root.querySelector('.stage-book-page');
+  if(scroll)scroll.scrollTop=priorScroll;
+ }
 }
 function focusSelectedSlot(){
  document.querySelector('.equipment-rail .equipment-slot[data-slot-index="'+selectedSlot+'"]')?.focus({preventScroll:true});
@@ -1906,8 +1937,23 @@ $('nav').onclick=e=>{const b=e.target.closest('[data-tab]');if(b)changeTab(b.dat
  stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
 };
 $('stageAttributeToggle').onclick=()=>{
- stageAttributesPage=stageAttributesPage?null:'attack';renderStageAttributes();saveView()
-};$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+ stageAttributesPage=stageAttributesPage?null:'summary';renderStageAttributes();saveView()
+};
+$('stageBuffToggle').onclick=()=>{
+ stageAttributesPage=stageAttributesPage==='buffs'?null:'buffs';
+ renderStageAttributes();saveView();
+};
+const openHeroBook=()=>{
+ if(stageSlotPickerOpen||adminEditing)return;
+ stageAttributesPage='summary';renderStageAttributes();saveView();
+};
+$('portraitBookOpen').onclick=openHeroBook;
+$('hero').addEventListener('click',openHeroBook);
+$('hero').addEventListener('keydown',event=>{
+ if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){
+  event.preventDefault();openHeroBook();
+ }
+});$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=()=>{lang=lang==='ru'?'en':'ru';localStorage.setItem('ps-build-lang',lang);if(lang==='en'&&!officialEnglish)alert('Английский источник недоступен. Неизвестные переводы останутся на русском.');applyGameLocale()};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const editable=event.target.closest('[data-edit-key]');
@@ -1946,6 +1992,10 @@ document.addEventListener('keydown',event=>{
   if(!$('modalRoot').hidden)return;
   if(document.querySelector('.inline-owner-editor')){closeInlineEditor();return}
   if(stageSlotPickerOpen){closeStagePicker();return}
+  if(stageAttributesPage){
+   stageAttributesPage=null;renderStageAttributes();saveView();
+   $('portraitBookOpen')?.focus({preventScroll:true});return;
+  }
   closeWorkbench();
  }else if(event.key==='Tab'&&$('detailPanel').classList.contains('is-open')&&$('modalRoot').hidden){
   const panel=$('detailPanel');

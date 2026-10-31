@@ -1190,3 +1190,67 @@ main{padding-top:10px}
 .origin-potion-row span{min-width:0;overflow-wrap:anywhere}
 .origin-potion-row strong{flex:none;color:#f5d59f;font-size:12px;font-variant-numeric:tabular-nums}
 @media(max-width:460px){.origin-potion-row{padding:6px 7px}.origin-potion-row strong{font-size:11px}}
+
+
+/* Results book occupies the existing portrait canvas; rails and dimensions stay untouched. */
+.workspace>.stage .portrait-frame>img#hero:not(.admin-edit){cursor:pointer}
+.workspace>.stage .portrait-frame>img#hero:focus-visible{outline:3px solid #f9ce85;outline-offset:-7px}
+.portrait-book-open{position:absolute;z-index:4;right:12px;bottom:12px;
+ border:1px solid #d0a469;border-radius:6px;background:linear-gradient(120deg,#38241be8,#1a130fef);
+ color:#ffe0a9;padding:8px 13px;font:650 11px Manrope,Arial,sans-serif;cursor:pointer;
+ box-shadow:0 6px 22px #0009;transition:background .15s,transform .15s}
+.portrait-book-open:hover{background:#624025;transform:translateY(-2px)}
+.portrait-book-open:focus-visible,.stage-attributes button:focus-visible,
+.stage-attributes select:focus-visible{outline:2px solid #ffd99c;outline-offset:2px}
+.portrait-frame.attributes>.portrait-book-open,
+.portrait-frame.picking>.portrait-book-open,
+.portrait-book-open[hidden]{display:none!important}
+.stage-attributes{gap:8px;padding:12px 13px 13px;
+ background:radial-gradient(ellipse at 30% 0%,#4e3321 0,#241913 43%,#17110d 100%);
+ box-shadow:inset 0 0 0 2px #9a7547,inset 0 0 25px #08060499}
+.stage-attributes::before{content:'';pointer-events:none;position:absolute;inset:5px;
+ border:1px solid #b38a544a}
+.stage-attribute-head{position:relative;z-index:1;display:grid;
+ grid-template-columns:30px minmax(0,1fr) 30px 30px;gap:5px}
+.stage-book-heading{text-align:center;min-width:0}
+.stage-book-heading span{display:block;font:650 9px Manrope,Arial,sans-serif;
+ letter-spacing:.15em;color:#bda17a}
+.stage-book-heading strong{font:600 25px/1.12 'Cormorant Garamond',Georgia,serif;
+ display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.stage-attribute-head .stage-book-arrow{font:28px/1 Georgia,serif;padding:0;min-width:30px;cursor:pointer}
+.stage-attribute-head .stage-book-close{font-size:12px;padding:0;min-width:30px}
+.stage-attribute-tabs{position:relative;z-index:1;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+.stage-attribute-tabs button{min-width:0;min-height:29px;padding:5px 2px;
+ font:600 10px/1.15 Manrope,Arial,sans-serif;cursor:pointer;border-radius:3px}
+.stage-attribute-tabs button.chosen{background:linear-gradient(#966734,#644222);
+ box-shadow:inset 0 1px #e4ba79}
+.stage-book-page{min-height:0;padding:0 2px 6px;scrollbar-width:thin;
+ scrollbar-color:#936d42 transparent;animation:stage-book-turn .23s ease-out both}
+@keyframes stage-book-turn{from{opacity:.48;transform:translateX(9px) rotateY(-5deg)}
+ to{opacity:1;transform:translateX(0) rotateY(0)}}
+.stage-result-intro{padding:10px;border:1px solid #b68a546e;
+ background:linear-gradient(140deg,#48301de9,#2b2019)}
+.stage-result-intro strong{font:600 20px 'Cormorant Garamond',Georgia,serif;color:#f2d3a2}
+.stage-result-intro p{margin-top:5px;font-size:11px;line-height:1.45;color:#c7b394}
+.stage-result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.stage-result-tile{border:1px solid #85623c;background:linear-gradient(#35261b,#201710);
+ min-width:0;padding:9px 10px;display:grid;gap:2px}
+.stage-result-tile span{font:650 10px Manrope,Arial,sans-serif;color:#bfaa8e}
+.stage-result-tile strong{font:600 24px/1.08 'Cormorant Garamond',Georgia,serif;
+ color:#ffe0ad;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.stage-result-tile small{font:10px Manrope,Arial,sans-serif;color:#b29c7d}
+.stage-book-buff-group{display:grid;gap:8px;padding:10px;border:1px solid #88663e;
+ background:linear-gradient(140deg,#35251a,#21170f)}
+.stage-book-buff-group>strong{font:600 19px 'Cormorant Garamond',Georgia,serif;color:#f5d49f}
+.stage-book-field{display:grid;gap:5px;font-size:11px;color:#e2c69d}
+.stage-book-field select{display:block;width:100%;min-width:0;padding:8px;
+ background:#1c140e;color:#f3d7aa;border:1px solid #86633f;border-radius:3px}
+.stage-book-check{display:flex;gap:9px;align-items:flex-start;
+ font-size:11px;color:#e0c59c;line-height:1.45;cursor:pointer}
+.stage-book-check input{margin-top:1px;accent-color:#ba8c4f;flex-shrink:0}
+.stage-book-check:has(input:disabled){opacity:.55;cursor:not-allowed}
+@media(max-width:600px){.stage-attributes{padding:10px 8px}
+ .stage-result-tile{padding:7px}.stage-result-tile strong{font-size:21px}
+ .portrait-book-open{right:10px;bottom:10px}}
+@media(prefers-reduced-motion:reduce){.stage-book-page{animation:none}
+ .portrait-book-open{transition:none}}
