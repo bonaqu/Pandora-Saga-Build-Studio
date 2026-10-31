@@ -36,4 +36,4 @@ jobs:
       - name: Wait for expected public Pages version (read-only)
         run: node scripts/wait-live-release.mjs
       - name: Check Pages version, Worker health, D1 catalog and CORS (read-only)
-        run: npm run connection:check
+        run: npm run connection:check:full

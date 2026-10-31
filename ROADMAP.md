@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.171.0 (`2026.11.01.171`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.172.0 (`2026.11.01.172`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.172.0 — comprehensive D1 catalog and EN validation
+
+- Promote the post-deployment read-only diagnostic from five datasets to all 19 current public D1 endpoints. Include classes/skills/items/Souls plus monster/drop/map/dungeon/NPC trade/chest data and both translation layers.
+- Require HTTP 200, a nonempty JSON response, D1-origin response header and correct GitHub Pages CORS on every endpoint. Report the exact failing dataset when a source is absent.
+- The published cloud index is not considered fully verified until the actual check run passes. This is public read-access coverage, not proof that every localized item matches the live game client.
 
 ## Source update 0.171.0 — source-backed on-hit stun and safe regression compatibility
 

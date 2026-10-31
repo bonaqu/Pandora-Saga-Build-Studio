@@ -6,6 +6,7 @@ const worker='https://ps-build-studio-cloud.bonaqu.workers.dev';
 const origin='https://bonaqu.github.io';
 const expected=JSON.parse(readFileSync(new URL('../site-version.json',import.meta.url),'utf8')).release;
 const full=process.argv.includes('--full');
+// Full public D1 set includes all gameplay and both RU/EN resource layers.
 const sets=full?['meta','classes','skills','items','souls','monsters','drops','maps',
  'instances','racialPassives','itemForth','unison','trades','tradeMeta','legacyLocale',
  'tables','expertise','chests','stringsEn']:['meta','classes','skills','items','souls'];
