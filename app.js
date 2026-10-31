@@ -76,7 +76,29 @@ stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,1
 stageGemQuery='',gameTables=null,gameItemForth=null,
 stageAttributesPage=['summary','attack','defense','recovery','effects','buffs'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
-function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
+let savedEditIntent=false,cloudReadSucceeded=false,savedWriteTimer=null;
+for(const eventName of ['input','change','click']){
+ document.addEventListener(eventName,event=>{
+  if(event.isTrusted)savedEditIntent=true;
+ },true);
+}
+function persist(){
+ try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}
+ if(!savedEditIntent)return;
+ const update=window.PandoraSavedBuildAutosave.updatedSaved({
+  activeId:activeBuildId,builds,state
+ });
+ if(!update)return;
+ builds=update.builds;persistBuilds();libraryChangeId++;
+ const entry=update.entry;
+ clearTimeout(savedWriteTimer);
+ savedWriteTimer=setTimeout(()=>{
+  if(!cloudReadSucceeded)return;
+  const current=builds.find(x=>x.id===entry.id);
+  if(current?.at!==entry.at||queuedDeletes().includes(entry.id))return;
+  void putCloudBuild(entry);
+ },700);
+}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
 const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
@@ -152,13 +174,14 @@ async function loadCloudBuilds(){
   const response=await cloudLibraryRequest();
   if(!Array.isArray(response.records))throw Error('Некорректная библиотека');
   // A click while GET was in flight must not bring back a deleted or old character.
-  if(libraryChangeId!==generation)return;
+  if(libraryChangeId!==generation){void loadCloudBuilds();return}
   const reconciled=window.PandoraBuildLibraryMerge.reconcile({
    local:builds,remote:response.records,pendingDeletes:queuedDeletes(),
    activeId:activeBuildId,newId
   });
   const {outgoing,copies}=reconciled;
   builds=reconciled.merged;persistBuilds();
+  cloudReadSucceeded=true;
   if(reconciled.activeId!==activeBuildId)selectActiveBuild(reconciled.activeId);
   if(activeTab==='builds')renderDetails();
   reportCloudStatus(outgoing.length?'Синхронизируем локальные изменения…':'Облачная библиотека подключена');
@@ -169,7 +192,7 @@ async function loadCloudBuilds(){
    await putCloudBuild(entry);
   }
   if(copies){
-   reportCloudStatus('Разные редакции сохранены отдельно · проверьте копии в библиотеке');
+   reportCloudStatus('Облачная версия основная · локальные отличия сохранены отдельной копией');
    showStudioToast('Обнаружены разные версии билда. Обе сохранены отдельно в библиотеке.','warning');
   }
  }catch(error){console.warn('Cloud library unavailable',error);reportCloudStatus('Локальные билды доступны · облако пока недоступно')}
@@ -1827,6 +1850,7 @@ async function connectCloudLibrary(secret,feedback){
    return true;
   }
   localStorage.setItem(CLOUD_TOKEN_KEY,trimmed);
+  cloudReadSucceeded=false;
   selectActiveBuild(null);libraryChangeId++;
   feedback.textContent='Подключено. Объединяем сохранения…';
   void loadCloudBuilds();
