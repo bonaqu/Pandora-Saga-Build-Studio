@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read = file => readFileSync(new URL('../'+file,import.meta.url),'utf8');
 
 test('new characters always begin at level 1, and planning retains level 55',()=>{
-  const app=read('app.js'),rules=read('rules.js');
+  const app=read('app.js'),rules=read('attribute-progression.js');
   assert.match(app,/function fresh\(\)\{return\{[^\n]*level:1\b/);
   assert.match(rules,/55/,'studio level cap must not collapse to the current live server cap');
 });

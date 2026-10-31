@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.154.0 (`2026.11.01.154`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.155.0 (`2026.11.01.155`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.155.0 — restore broken unit harnesses
+
+- Rebuild a duplicated/corrupted Origin test source and inject the now-required potion and attribute node mock dependencies.
+- Fix a broken 143-key inventory matching expression; align two legacy numeric assertions with the actual explicitly documented tenth-floor/mass mastery rounding.
+- Correct the new level 55 guard to inspect the real skill budget module instead of unrelated general rules. Remaining CI failures will be investigated rather than suppressed.
 
 ## Source update 0.154.0 — automated test gate and share/level invariants
 

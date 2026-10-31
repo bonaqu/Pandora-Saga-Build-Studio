@@ -17,7 +17,7 @@ test('every one of 178 Remaked switches and 143 identities has a source line and
  }
 });
 test('audit has no duplicate or silently absent Legacy calculation identities',()=>{
- const keys=[...inventory.matchAll(/^\\| \\x60([^\\x60]+)\\x60 \\|/gm)].map(x=>x[1]);
+ const keys=[...inventory.matchAll(/^\| `([^`]+)` \|/gm)].map(x=>x[1]);
  assert.equal(keys.length,snapshot.uniqueKeys);
  assert.equal(new Set(keys).size,snapshot.uniqueKeys);
  assert.deepEqual(new Set(keys),new Set(snapshot.entries.map(x=>x.key)));

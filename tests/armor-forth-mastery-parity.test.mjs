@@ -40,14 +40,14 @@ test('MATK thresholds, mage and equipment weapon types',()=>{
   magicMastery:15,weapon:{kind:'WAND'}});
  assert.deepEqual([x.intelligence,x.passive,x.staff,x.known],[15,11,10,136]);
  assert.equal(calc.magicAttackPreview({int:95,weapon:{kind:'STAFF',
-  name:'Таинственный посох'}}).known,150.25);
+  name:'Таинственный посох'}}).known,150.2);
 });
 test('Remaked innate and trained grouped passives do not double count potential',()=>{
  const st={points:{slash:20,element:20,archery:20},masteryAuto:false,
   mastery:{slash:7,element:4,archery:3}};
  const g=progress.combatMasteries(st,{slash:5,element:5,archery:5});
  assert.deepEqual(g,{melee:12,magic:9,techniqueInnate:5,techniqueTrained:3});
- assert.equal(calc.combatPreview({stats,level:40,jobKey:'GLADIATOR',...g}).weaponPhysical,2);
+ assert.equal(calc.combatPreview({stats,level:40,jobKey:'GLADIATOR',...g}).weaponPhysical,1);
  assert.equal(calc.combatPreview({stats,level:40,jobKey:'ARCHER',...g}).accuracy.passive,15);
  assert.equal(calc.combatPreview({stats,level:40,jobKey:'AGENT',...g}).dodge.passive,15);
 });
