@@ -335,9 +335,10 @@ function renderVitalsEnhancements(){
    '—':String(calculated.regeneration[key].total);
  }
  const info=$('originVitalsCoverage');
- if(info)info.textContent=calculated?
-  'Учтены известные бонусы вещей, душ и выбранные усиления. Часть эффектов заточки, комплектов и умений пока не проверена.':
-  'ОЗ и ОМ будут рассчитаны после загрузки игровых данных.';
+ if(info){
+  info.textContent=calculated?'':'ОЗ и ОМ появятся после загрузки игровых данных.';
+  info.hidden=Boolean(calculated);
+ }
 }
 function setVitalsEnhancement(key,value){
  if(!['guildHp','guildMp','lifeSign'].includes(key))return;
@@ -1769,7 +1770,7 @@ async function connectCloudLibrary(secret,feedback){
  try{
   const response=await cloudLibraryRequest(null,trimmed);
   if(!Array.isArray(response.records))throw Error('Не удалось прочитать библиотеку');
-  if(!response.records.length){
+  if(!response.records.some(record=>!record.deleted&&record.entry)){
    feedback.textContent='По этому коду сохранённые билды не найдены. Проверьте, что код скопирован полностью.';
    return false;
   }
@@ -2033,11 +2034,11 @@ function sanitizeSharedState(original){
 }
 async function createShared(build,host){
  if(!build||!host)return;
- // Validate the local editor snapshot without sending it as an untrusted server source.
- sanitizeSharedState(build.data);
  const pending=h('p',{class:'muted',text:'Проверяем сохранение билда…'});
  host.replaceChildren(pending);
  try{
+  // Invalid saved state must show a card error instead of escaping the click handler.
+  sanitizeSharedState(build.data);
   if(!await putCloudBuild(build))throw Error('Не удалось сохранить билд в облаке. Попробуйте ещё раз.');
   pending.textContent='Создаём ссылку…';
   const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},cloudToken());

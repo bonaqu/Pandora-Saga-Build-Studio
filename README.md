@@ -667,3 +667,8 @@ Under «Мои билды», open the collapsed «Перенести библи�
 ## Recovery-code safety · 0.147.0
 
 The transfer panel requires one click to reveal/select your code and another to copy it (or manual copy if the Clipboard API is unavailable). Empty remote libraries do not silently replace an existing browser key; an incorrect pasted code is reported without changing local or cloud saves. Treat the code as a private password.
+
+
+## Clean public player UX · 0.148.0
+
+Origin buff controls now show functional gameplay conditions without implementation notes. HP/MP numeric accessibility descriptions avoid irrelevant warnings. Corrupt saved builds fail gracefully when a user shares them. A recovery code associated only with deletion tombstones is not treated as a successfully restored library.

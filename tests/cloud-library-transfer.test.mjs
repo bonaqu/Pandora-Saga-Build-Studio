@@ -17,7 +17,7 @@ test('switch validates remote owner, refuses pending deletions and preserves loc
  const app=read('app.js');
  assert.match(app,/if\(queuedDeletes\(\)\.length\)/);
  assert.match(app,/await cloudLibraryRequest\(null,trimmed\)/);
- assert.match(app,/if\(!response\.records\.length\)/);
+ assert.match(app,/if\(!response\.records\.some\(record=>!record\.deleted&&record\.entry\)\)/);
  assert.match(app,/localStorage\.setItem\(CLOUD_TOKEN_KEY,trimmed\)/);
  assert.match(app,/selectActiveBuild\(null\);libraryChangeId\+\+/);
  assert.match(app,/void loadCloudBuilds\(\)/);

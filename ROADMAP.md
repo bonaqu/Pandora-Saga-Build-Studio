@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.147.0 (`2026.10.31.147`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.148.0 (`2026.10.31.148`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -696,3 +696,12 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] A syntactically valid but empty remote D1 library is not treated as successful recovery; users must verify the full code instead of replacing a working key with an accidental empty owner.
 - [x] The code remains hidden until explicit user interaction, and the UI remains collapsed by default. No technical notes added to the ordinary build editor.
 - [ ] Browser clipboard and password-manager acceptance, real Worker transfer and future account recovery/revocation remain pending.
+
+
+## 0.148.0 — user-facing text cleanup and real test fixtures
+
+- [x] Remove the remaining technical Remaked/server-verification paragraphs from public Origin buffs and the HP/MP coverage status. Keep useful explanations of gameplay requirements and values.
+- [x] Restore the isolated HP/MP test's required potion-preview dependency and assert the clean accessibility label instead of the removed technical disclaimer.
+- [x] A malformed saved character now shows an inline share-card error, not an uncaught exception.
+- [x] Recovery code import checks that a D1 library contains an actual active saved build, not just deletion tombstones, before replacing the browser owner key.
+- [ ] Need real browser/D1 E2E and the full npm test runner once the complete source workspace can be executed.
