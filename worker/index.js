@@ -156,11 +156,13 @@ async function shareApi(request,env,path,ip){
   Number.isInteger(entry.race)&&entry.race>=0&&entry.race<=5&&
   Number.isInteger(entry.job)&&entry.job>=0&&entry.job<28&&
   Number.isInteger(entry.level)&&entry.level>=1&&entry.level<=55;
- if(!validate(payload.data))return no('Invalid character record',400);
  const owner=await sha(bearer.slice(7));
- const saved=await env.DB.prepare('SELECT deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,payload.buildId).first();
+ const saved=await env.DB.prepare('SELECT payload,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,payload.buildId).first();
  if(!saved||saved.deleted_at!==null)return no('Сохранённый билд не найден или уже удалён',409);
- const canonical=JSON.stringify({schema:1,type:payload.type,data:payload.data});
+ // Only the owned D1 record is authoritative. Never trust arbitrary character data from the share POST.
+ let stored;try{stored=JSON.parse(saved.payload)}catch{return no('Повреждена сохранённая запись',409)}
+ if(stored?.id!==payload.buildId||!validate(stored?.data))return no('Некорректная сохранённая запись',409);
+ const canonical=JSON.stringify({schema:1,type:'build',data:stored.data});
  if(canonical.length>47000)return no('Share exceeds storage limit',413);
  const ipHash=await sha(ip),day=Math.floor(Date.now()/86400000);
  const limit=await env.DB.prepare('INSERT INTO shared_build_limits(ip_hash,day,created) VALUES(?,?,1) ON CONFLICT(ip_hash,day) DO UPDATE SET created=created+1 WHERE created<30').bind(ipHash,day).run();
@@ -230,7 +232,7 @@ async function libraryApi(request,env){
  const old=await env.DB.prepare('SELECT build_id,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
  if(old?.deleted_at!=null)return no('Удалённый билд нельзя восстановить под прежним идентификатором',409);
  if(!old){
-  const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM private_builds WHERE owner_hash=?').bind(owner).first();
+  const count=await env.DB.prepare('SELECT COUNT(*) AS total FROM private_builds WHERE owner_hash=? AND deleted_at IS NULL').bind(owner).first();
   if((count?.total||0)>=200)return no('Library limit reached',413);
  }
  await env.DB.prepare('INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,?,?,NULL) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at,deleted_at=NULL').bind(owner,id,payload,now).run();

@@ -602,3 +602,8 @@ A failed localStorage write must not silently disable cloud deletion. The site a
 
 
 Regression notes (0.134.0): automated source assertions for opening a previously saved build now inspect the newest library row, not an outdated UI-card object. See `tests/build-save-workflow.test.mjs` and `tests/share-links.test.mjs`.
+
+
+## Trusted share creation · 0.135.0
+
+Creating a public share requires proof of ownership of a saved D1 build. The Worker now loads the exact source snapshot from D1 itself; any extra client-supplied character object is ignored. The front-end sends the saved ID only, preventing someone from altering the shared character independently of the saved original. The 200-record quota counts active builds, not deleted tombstones. All 1–55 future-planning data remains eligible for saving and sharing.

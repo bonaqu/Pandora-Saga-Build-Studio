@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.134.0 (`2026.10.31.134`), browser and Worker deployment partially verified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.135.0 (`2026.10.31.135`), browser and Worker deployment partially verified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -590,3 +590,11 @@ Update CHANGELOG.md/README.md, this roadmap and matching GitHub Issues after mea
 - [x] The share-link and save-workflow tests now require the **current** source of truth (`latest.data` and `latest.id`) instead of the stale card snapshot after Save-and-open.
 - [x] Keep existing new-character, D1 revocation, inline UI, legacy field compatibility and release guards unchanged.
 - [ ] Run actual full Node suite and browser/Worker E2E; these test-source corrections do not prove the suite passes.
+
+
+## Source update 0.135.0 — authoritative D1 shared snapshots
+
+- [x] Public short-link POST now derives the character snapshot solely from the saved, owner-authorized D1 record. Untrusted caller-supplied snapshot data cannot be substituted for an unrelated build; the website sends only the saved build ID.
+- [x] The 200-build D1 limit counts only active records; permanent deletion tombstones no longer indefinitely exhaust the number of usable library slots.
+- [x] Regression assertions cover attempted tampering with shared snapshots. Existing snapshots stay immutable; deletion still revokes all linked IDs and scrubs payloads.
+- [ ] Real Worker POST lifecycle, full Node suite, browser E2E and Remaked battle parity remain pending.

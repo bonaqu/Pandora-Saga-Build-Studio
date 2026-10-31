@@ -13,7 +13,7 @@ function db(){
    const one=async()=>{
     if(sql.startsWith('SELECT build_id,deleted_at FROM private_builds')){const x=builds.get(v[0]+':'+v[1]);return x?{build_id:v[1],deleted_at:x.deleted_at}:null}
     if(sql.startsWith('SELECT COUNT(*) AS total FROM private_builds'))return{total:[...builds.keys()].filter(k=>k.startsWith(v[0]+':')).length};
-    if(sql.startsWith('SELECT deleted_at FROM private_builds')){const x=builds.get(v[0]+':'+v[1]);return x?{deleted_at:x.deleted_at}:null}
+    if(sql.startsWith('SELECT payload,deleted_at FROM private_builds')){const x=builds.get(v[0]+':'+v[1]);return x?{payload:x.payload,deleted_at:x.deleted_at}:null}
     if(sql.startsWith('SELECT payload FROM shared_builds'))return links.has(v[0])?{payload:links.get(v[0])}:null;
     if(sql.startsWith('SELECT owner_hash,build_id FROM shared_build_sources'))return sources.get(v[0])||null;
     throw Error('Unexpected first query '+sql);
@@ -54,6 +54,10 @@ test('two links become globally unavailable when the original is deleted, foreig
  const payload={schema:1,type:'build',buildId:id,data:character};
  const first=await call(DB,'/api/shared','POST',payload,OWNER);
  const second=await call(DB,'/api/shared','POST',payload,OWNER);
+ // A malicious caller cannot replace the owned snapshot with arbitrary data.
+ const forged=await call(DB,'/api/shared','POST',{...payload,data:{race:0,job:0,level:1}},OWNER);
+ assert.equal(forged.status,201);
+ assert.equal((await call(DB,'/api/shared/'+forged.data.id)).data.share.data.level,55);
  assert.equal(first.status,201);assert.equal(second.status,201);
  assert.notEqual(first.data.id,second.data.id);
  const other=await call(DB,'/api/shared','POST',{...payload,buildId:otherId},OTHER);

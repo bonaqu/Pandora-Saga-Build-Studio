@@ -1922,13 +1922,14 @@ function sanitizeSharedState(original){
 }
 async function createShared(build,host){
  if(!build||!host)return;
- const content=sanitizeSharedState(build.data);
+ // Validate the local editor snapshot without sending it as an untrusted server source.
+ sanitizeSharedState(build.data);
  const pending=h('p',{class:'muted',text:'Проверяем сохранение билда…'});
  host.replaceChildren(pending);
  try{
   if(!await putCloudBuild(build))throw Error('Не удалось сохранить билд в облаке. Попробуйте ещё раз.');
   pending.textContent='Создаём ссылку…';
-  const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id,data:content},cloudToken());
+  const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},cloudToken());
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
   // Confirm that the new public link is immediately readable before showing it.
   const check=await apiRequest('/api/shared/'+response.id,null,'');
