@@ -83,7 +83,6 @@ function buffsPage(body,options){
  select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
  select(regen,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
  select(regen,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
- toggle(regen,'Руна «Чо Ын»','runeJoEun');
  toggle(regen,'Показывать действие зелий','potionEffectsEnabled');
  const other=section('Дополнительно');
  toggle(other,'Проэлиум','proelium');
@@ -304,8 +303,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     ['Знахарство (расовая способность человека)',modifiers.potion.racial],
     ['Улучшение лечения (мастерство ближнего боя, воин с 12 уровня)',modifiers.potion.mastery],
     ['Титул чести',modifiers.potion.honor],
-    ['Экипировка и души',modifiers.potion.equipment],
-    ['Руна Чо Ын',modifiers.potion.rune]
+    ['Экипировка и души',modifiers.potion.equipment]
    ];
    for(const [name,value] of parts){
     if(!Number.isFinite(value)||value===0)continue;
