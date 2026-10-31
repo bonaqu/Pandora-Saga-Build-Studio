@@ -40,15 +40,15 @@ test('potion efficiency uses Remaked floor(vit squared * 2/1000)',()=>{
  assert.equal(base.potion.percent,104);
  assert.equal(fixture({guildAll:4}).potion.base,105);
 });
-test('equipped Potion Soul +8, Honor=11 +5, Jo-eun rune +5 sum separately',()=>{
+test('current OS retains item and honor potion bonuses but never adds the historical rune',()=>{
  const potionSoul=Object.values(souls).find(s=>s.name==='Душа зелий');
  assert.ok(potionSoul);
  const result=fixture({honorTitle:11,runeJoEun:true},[['soul:potion',potionSoul,0]]);
  assert.equal(result.potion.base,104);
  assert.equal(result.potion.honor,5);
  assert.equal(result.potion.equipment,8);
- assert.equal(result.potion.rune,5);
- assert.equal(result.potion.percent,122);
+ assert.equal(result.potion.rune,0);
+ assert.equal(result.potion.percent,117);
 });
 test('an unequipped or unusable potion Soul does not supply its bonus',()=>{
  const example={effects:[{func:'EP_MASTERY_POTION',a:8,min:7,max:10}]};
@@ -64,7 +64,7 @@ test('UI exposes exclusive title and potion preview, no old Honor checkbox',()=>
  const html=read('index.html'),app=read('app.js');
  assert.match(html,/id="originHonorTitle"/);
  assert.match(html,/id="originPotionRecovery"/);
- assert.match(html,/id="originRuneJoEun"/);
+ assert.doesNotMatch(html,/id="originRuneJoEun"/);
  assert.doesNotMatch(html,/id="originHonorCuriosity"/);
  assert.match(app,/setAttributeBuff\('honorTitle',event\.target\.value\)/);
  assert.match(app,/safe\.attributeBuffs\.honorTitle=rawAttributes\.honorTitle/);
