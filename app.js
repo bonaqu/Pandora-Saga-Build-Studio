@@ -525,6 +525,8 @@ function renderStageAttributes(){
   page:stageAttributesPage,items,modifiers:previewBaseStats(),icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
   availability,skillModel,honorTitles:window.PandoraOSCalculator.honorTitles,
+  itemById:id=>catalogSource?.items?.[String(id)]||null,
+  onItem:id=>openWiki('item',String(id)),
   onBuff:(key,value)=>setAttributeBuff(key,value),
   onVital:(key,value)=>setVitalsEnhancement(key,value),
   onClose:()=>{
