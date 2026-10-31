@@ -1,0 +1,26 @@
+name: Isolated live D1 lifecycle (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ephemeral_write_check:
+        description: 'Create and delete one disposable D1 test build/share (no real user keys)'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  ephemeral:
+    if: inputs.ephemeral_write_check == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Exercise isolated D1 library and revoked share
+        run: node scripts/check-live-d1-ephemeral.mjs --ephemeral

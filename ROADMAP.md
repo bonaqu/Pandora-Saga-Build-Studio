@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.177.0 (`2026.11.01.177`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.178.0 (`2026.11.01.178`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.178.0 — opt-in isolated live D1 lifecycle and Chromium status cures
+
+- Add a manually gated GitHub Actions workflow and Node 22 acceptance script using a disposable level-55 build and two independently generated random library secrets. Verify save/owner read, cross-owner isolation, public share, source deletion, HTTP 410 revocation, stored tombstone, and HTTP 409 resurrection rejection.
+- No existing user library key or real build is accessed; the script retries safe cleanup on errors. Production D1 retains a small tombstone and revoked share record. No production D1 writes are part of automatic CI.
+- Extend Chromium smoke with all nine actual OS cleansing consumables, their names and displayed conditions.
+- Script readiness is not proof of a successful live D1 write/delete lifecycle. Run the opt-in workflow manually and inspect the result before claiming it verified.
 
 ## Source update 0.177.0 — current OS status-cleansing consumables
 

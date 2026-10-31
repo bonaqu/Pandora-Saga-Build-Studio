@@ -28,5 +28,7 @@ jobs:
           node-version: '22'
       - name: Run full Node test suite
         run: npm test
+      - name: Syntax-check opt-in cloud lifecycle script without writing to D1
+        run: node --check scripts/check-live-d1-ephemeral.mjs
       - name: Check release metadata and HTML asset versions
         run: npm run release:check
