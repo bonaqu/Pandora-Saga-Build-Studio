@@ -97,7 +97,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    const parts=[
     ['Выносливость (базовая эффективность)',modifiers.potion.base],
     ['Знахарство (расовая способность человека)',modifiers.potion.racial],
-    ['Мастерство ближнего боя (воин с 12 уровня)',modifiers.potion.mastery],
+    ['Улучшение лечения (мастерство ближнего боя, воин с 12 уровня)',modifiers.potion.mastery],
     ['Титул чести',modifiers.potion.honor],
     ['Экипировка и души',modifiers.potion.equipment],
     ['Руна Чо Ын',modifiers.potion.rune]

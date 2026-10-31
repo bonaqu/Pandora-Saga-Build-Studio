@@ -670,7 +670,9 @@ function renderOriginPassives(){
   const selected=String(state.racialPassiveId)===String(id);
   const btn=h('button',{type:'button',class:'origin-passive'+(selected?' selected':''),'aria-pressed':String(selected),
    'aria-label':skill.name+(selected?' — выбрано':' — выбрать'),
-   onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
+   onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();
+    renderOriginVitals();if(stageAttributesPage)renderStageAttributes();
+    if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
   else btn.append(h('span',{text:'✦'}));
@@ -1094,7 +1096,8 @@ function renderCharacter(root){
     const skill=catalog.skills?.[id],selected=String(state.racialPassiveId)===String(id);
     if(!skill)continue;
     const button=h('button',{class:'race-passive-choice'+(selected?' selected':''),'aria-pressed':String(selected),
-      onclick:()=>{state.racialPassiveId=id;persist();renderDetails()}});
+      onclick:()=>{state.racialPassiveId=id;persist();renderOriginPassives();
+       renderOriginVitals();if(stageAttributesPage)renderStageAttributes();renderDetails()}});
     const src=skillIcon('race',id,skill);
     const image=h('img',{src,alt:'',loading:'lazy'});
     image.onerror=()=>image.replaceWith(h('span',{text:'✦',class:'skill-fallback'}));

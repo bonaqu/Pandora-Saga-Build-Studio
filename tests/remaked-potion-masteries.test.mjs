@@ -67,3 +67,8 @@ test('exact Remaked approved RU labels are mapped to 18 current OS racial skill 
  assert.match(app,/\['slash','thrust','brush','blow','defense'\]/);
  assert.match(app,/localizedSkills\[id\]=\{\.\.\.localizedSkills\[id\],name\}/);
 });
+test('racial passive is applied to both Origin and character profile selections immediately',()=>{
+ const app=read('app.js');
+ assert.match(app,/state\.racialPassiveId=selected\?null:id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
+ assert.match(app,/state\.racialPassiveId=id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
+});

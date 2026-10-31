@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.86.0 (`2026.10.31.86`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.87.0 (`2026.10.31.87`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,13 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.87.0 — Legacy POT parity and approved racial terminology
+
+- Port third human racial passive «Знахарство» (+15%) and trained green Melee group +10 per 10 at level 12+ for the warrior lineage; recalculate when race passive, level or mastery changes. These cover direct Remaked Legacy POT triggers; current OS extras need live-game comparison.
+- Source verified RU labels for 18 exactly-mapped racial passive skill IDs. Other skill names remain untouched until independently matched with client names and Remaked; no machine translation or D1 rewrite.
+- Added `remaked-potion-masteries.test.mjs` and effect breakdown UI. Full npm test, browser E2E, Pages deployment, Worker/D1 live verification, icons and remaining combat formulas are **not** considered complete.
+- Next major batch: source mapping of active/passive skills, guild recovery branches, weapon attack/defense and elemental resistances, original icon library, and UI verification without GitHub Actions.
 
 ## Source update 0.86.0 — exclusive Honor and verified potion previews
 
