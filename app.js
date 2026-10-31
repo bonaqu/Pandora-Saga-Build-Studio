@@ -853,9 +853,17 @@ function renderStagePicker(focusSearch=false){
    stageSlotView='choose';persist();render();
  }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
- const records=catalog.live?window.PandoraUIPlanner.equippable(Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,window.PandoraStudioRules.equipment)
+ const records=catalog.live?window.PandoraUIPlanner.planningEquippable(
+  Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,
+  window.PandoraStudioRules.equipment)
  .filter(rec=>window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender)&&
- !(key==='legs'&&window.PandoraUIPlanner.isAstirDress(equippedRecord(3)))):[];
+ !(key==='legs'&&window.PandoraUIPlanner.isAstirDress(equippedRecord(3))))
+ .sort((a,b)=>{
+  const futureA=Number(a.level||1)>state.level?1:0;
+  const futureB=Number(b.level||1)>state.level?1:0;
+  return futureA-futureB||Number(a.level||1)-Number(b.level||1)||
+   itemName(a).localeCompare(itemName(b),'ru');
+ }):[];
  const draw=()=>{
   list.replaceChildren();
   const query=stageSlotQuery.trim().toLocaleLowerCase('ru');
@@ -865,8 +873,11 @@ function renderStagePicker(focusSearch=false){
   else if(!matches.length)list.append(h('p',{class:'muted',text:'Нет совместимых предметов. Измени поиск или слот.'}));
   for(const rec of matches.slice(0,stageSlotShown)){
    const selected=String(equipped?.id)===String(rec.id);
-   const btn=h('button',{type:'button',class:'stage-picker-item'+(selected?' selected':''),
-    'aria-label':'Экипировать '+itemName(rec),onclick:()=>{
+   const future=Number(rec.level)>state.level;
+   const btn=h('button',{type:'button',
+    class:'stage-picker-item'+(selected?' selected':'')+(future?' future':''),
+    'aria-label':(future?'Запланировать: ':'Экипировать ')+itemName(rec)+
+     (future?' · с '+rec.level+' уровня':''),onclick:()=>{
      if(selectedSlot===3&&!window.PandoraUIPlanner.isAstirDress(rec)&&state.displacedLegwear){
       state.equipment[5]=state.displacedLegwear;state.displacedLegwear=null;
      }
@@ -877,7 +888,10 @@ function renderStagePicker(focusSearch=false){
    const src=itemIcon(rec);
    if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
    else btn.append(h('span',{class:'item-glyph',text:'⚔'}));
-   btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),h('small',{text:rec.level?'Уровень '+rec.level:''})]));
+   btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),
+    h('small',{text:future?'Будет доступен с '+rec.level+' уровня':
+     rec.level?'Уровень '+rec.level:''})]));
+   if(future)btn.append(h('span',{class:'stage-picker-future',text:'◷ '+rec.level+' ур.'}));
    if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
    list.append(btn);
   }

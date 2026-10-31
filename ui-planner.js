@@ -13,6 +13,12 @@ function equippable(records,slot,job,level,check){
   item.isCostumeOverlay!==true&&!String(item.kind||'').startsWith('DECO_')&&
   Boolean(check(item,{slot,job,level})?.allowed));
 }
+// Permit selecting future equipment as a plan, without allowing its bonuses
+// below the real source-level requirement. No items above planning level 55.
+function planningEquippable(records,slot,job,currentLevel,check){
+ if(!Number.isInteger(currentLevel)||currentLevel<1||currentLevel>55)return [];
+ return equippable(records,slot,job,55,check);
+}
 // Astir outfit IDs and descriptions are copied from the local OS item catalog.
 // Do not generalize these rules to unknown outfits or claim server verification.
 function isAstirDress(item){return item?.slot==='body'&&Number(item.id)>=12611&&Number(item.id)<=12618}
@@ -23,5 +29,5 @@ function raceCompatible(item,race,gender){
  if(isAstirMale(item))return race===4||race===5||(race===0||race===1)&&gender===1;
  return true;
 }
-root.PandoraUIPlanner=Object.freeze({raceHasGender,normalizeGender,equippable,isAstirDress,isAstirMale,raceCompatible});
+root.PandoraUIPlanner=Object.freeze({raceHasGender,normalizeGender,equippable,planningEquippable,isAstirDress,isAstirMale,raceCompatible});
 })(typeof window==='undefined'?globalThis:window);

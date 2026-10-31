@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.182.0 (`2026.11.01.182`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.183.0 (`2026.11.01.183`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.183.0 — future gear directly in equipment picker
+
+- Display profession-, slot-, race- and costume-compatible equipment with required level up to **55** even when the character is currently below its requirement. Mark with a concise “Будет доступен с N уровня” label, keep current usable items first and retain catalog searching.
+- Future items can be selected and saved immediately. The existing stat/combat gate keeps their bonuses, Souls and upgrades inactive until the character reaches the source level; no server cap 45 is imposed on Build Studio.
+- Regression fixtures use current OS real item 422 “Рычащий меч”, level 53, plus synthetic level-56 exclusions and incompatible-class items; Chromium will verify planning at 45 and eligibility after changing to level 53.
+- Do not overclaim current server item availability or exact damage values, and retain the maximum preview level 55.
 
 ## Source update 0.182.0 — explicit two-handed weapon and shield conflict
 
