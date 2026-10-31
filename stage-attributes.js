@@ -164,6 +164,19 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    cm.weaponPhysical}),make('p',{text:'АТК сзади: +'+cm.backAttack+
    ', спереди: +'+cm.frontAttack}),make('p',{text:'Откат умений (базовый индекс): '+
    (cm.cooldown??'—')+'%'}));
+  if(cm.spellDamageEquipmentRate)card.append(make('p',{text:
+   'Структурированный бонус магического урона снаряжения: '+
+   (cm.spellDamageEquipmentRate>0?'+':'')+cm.spellDamageEquipmentRate+
+   '% (не суммирован повторно с бонусом жезла/посоха)'}));
+  if(cm.backAttackEquipmentRate)card.append(make('p',{text:
+   'Урон атаки в спину от предметов: +'+cm.backAttackEquipmentRate+
+   '% (отдельно от базового позиционного бонуса)'}));
+  if(cm.skillDelayEquipment)card.append(make('p',{text:
+   'Изменение задержки применения навыков от вещей: '+
+   cm.skillDelayEquipment+'% (отдельно от показателя каста)'}));
+  card.append(make('p',{text:'Скорость передвижения, индекс: '+
+   cm.movementSpeed.known+' (снаряжение '+
+   (cm.movementSpeed.equipment>=0?'+':'')+cm.movementSpeed.equipment+')'}));
   if(cm.attackSpeed)card.append(make('p',{text:'Скорость атаки (индекс): '+
    cm.attackSpeed.known+' (база '+cm.attackSpeed.base+
    ', экипировка '+(cm.attackSpeed.equipment>=0?'+':'')+
@@ -181,6 +194,7 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
    make('p',{text:'Базовая защита снаряжения: '+df.armor}),
    make('p',{text:'Бонус заточки брони и щита: +'+df.refinement}),
    make('p',{text:'Прямые бонусы вещей и душ: '+(df.equipment>=0?'+':'')+df.equipment}),
+   make('p',{text:'Процентные бонусы защиты: '+(df.percentBonus>=0?'+':'')+df.percentBonus}),
    make('p',{text:'Титул чести: '+(df.honor>=0?'+':'')+df.honor}),
    make('p',{text:'Эффект выбранной стойки: '+(df.activeBonus>=0?'+':'')+df.activeBonus}),
    make('p',{class:'stage-attribute-note',
@@ -190,6 +204,8 @@ function render(target,{page,items,icon,onPage,onClose,modifiers}){
  if(page==='defense'&&modifiers?.combat){
   const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Дополнительные защитные параметры'}),
+   make('p',{text:'Сопротивление прерыванию каста: '+
+    (cm.castInterruption>=0?'+':'')+cm.castInterruption}),
    make('p',{text:'Изменение шанса входящего крита: '+cm.criticalIncoming}),
    make('p',{text:'Множитель входящего критического урона: '+
     cm.criticalIncomingDamage+'%'}),

@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-10-31 · **Latest source release:** 0.97.0 (`2026.10.31.97`), browser and Worker deployment unverified  
+**Updated:** 2026-10-31 · **Latest source release:** 0.98.0 (`2026.10.31.98`), browser and Worker deployment unverified  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
@@ -14,6 +14,13 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 | [#3](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/3) | Single-screen character workbench, race/class/skills/equipment | In progress | Browser E2E and visual inspection on desktop/mobile, keyboard focus, all gear conflict scenarios |
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Saved-build migration, refresh safety, admin reliability, QA | In progress | Real `npm test`, persisted-state + refresh + modal navigation E2E, deployed admin API, crash monitoring |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Current OS combat parity with Remaked reference mechanics | In progress | Source-fingerprinted fixture matrix, buffs, mastery, Forth enhancement, Souls, sets, modifiers and procs |
+
+## Source update 0.98.0 — locale-safe equipment and additional typed combat contributions
+
+- Eliminate localized-name checks in MATK, switch historical Iron Staff/Might Staff/Cursed Rod exceptions to OS IDs 2802/2812/2841. Armor enhancement checks the exact empty-name sentinel only, not localized hyphenated item names.
+- DEF now includes item/Soul Forth `EP_ARMORCLASS_SCALE` per independent ceil of base armor total, in addition to armor AC, refinement, flat DEF, Honor and selected active skills.
+- Track source-backed move speed, skill delay, cast interruption, back attack rate and elemental magic damage effects separately, with explicit warning about overlap between generic wand/staff historic bonus and OS magic equipment effects.
+- Remaining: exact server reconciliation for overlapping MATK effects, all active/passive skills, gem-specific enhancement, conditional procs and full D1/Pages E2E.
 
 ## Source update 0.97.0 — current OS active-skill combat effects and protected opt-in controls
 

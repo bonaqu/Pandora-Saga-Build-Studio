@@ -282,6 +282,7 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
  if(!Array.isArray(records)||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
  let armor=0,equipment=0,refinement=0,armorPieces=0;
+ const percentage=[];
  const enhanceable=new Set(['shield','head','body','gloves','legs','feet']);
  for(const [source,record,grade] of records){
   if(!record||typeof record!=='object')continue;
@@ -291,22 +292,28 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
    if(!Number.isFinite(record.AC))return null;
    armor+=record.AC;
    // Exact Legacy equip.js Sh/He/To/Gl/Ku/Bo equipment rules.
-   if(enhanceable.has(record.slot)&&record.name&&!record.name.includes('-')){
+   // Only a literal legacy empty-name sentinel is excluded. Localized names
+   // MUST NOT change numerical calculations (RU/EN or punctuation).
+   if(enhanceable.has(record.slot)&&record.name!=='-'){
     if(!Number.isInteger(grade)||grade<0||grade>10)return null;
     refinement+=Math.floor(grade*1.5);armorPieces++;
    }
   }
   for(const e of sourceEffects(source,record,grade,itemForth)){
-   if(e.func!=='EP_ARMORCLASS_CONST')continue;
+   if(e.func!=='EP_ARMORCLASS_CONST'&&e.func!=='EP_ARMORCLASS_SCALE')continue;
    if(Number.isFinite(e.min)&&grade<e.min)continue;
    if(Number.isFinite(e.max)&&grade>e.max)continue;
    if(!Number.isFinite(e.a))return null;
-   equipment+=e.a;
+   if(e.func==='EP_ARMORCLASS_CONST')equipment+=e.a;
+   else percentage.push({source,rate:e.a});
   }
  }
+ const direct=armor+equipment+refinement;
+ const percentParts=percentage.map(e=>({...e,bonus:Math.ceil(direct*e.rate/100)}));
+ const percentBonus=percentParts.reduce((sum,x)=>sum+x.bonus,0);
  const honor=honorTitle===11?5:0;
- return {armor,equipment,refinement,armorPieces,honor,
-  known:armor+equipment+refinement+honor,
+ return {armor,equipment,refinement,armorPieces,honor,percentParts,
+  percentBonus,known:direct+percentBonus+honor,
   verified:false,excluded:['other armor conditional multipliers',
    'Defender and Raging Soul active skills','OS server damage mitigation']};
 }
@@ -315,13 +322,17 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
  // Deliberately ignore unstructured gear description text and conditional skills.
 function equippedCombatModifiers(records=[],itemForth=null){
  const out={attackFlat:0,attackPercent:[],accuracyPercent:[],
-  attackSpeedFlat:0,manaDiscount:0,traces:[]};
+  attackSpeedFlat:0,manaDiscount:0,movement:0,skillDelay:0,
+  backAttackRate:0,elementDamageRate:0,castInterruptResist:0,traces:[]};
  if(!Array.isArray(records))return null;
  const lookup={EP_DAMAGERATE_CONST:'attackFlat',
   EP_SKILL_EQUIP_DAMAGERATE:'attackFlat',
   EP_DAMAGERATE_SCALE:'attackPercent',EP_TOHIT_SCALE:'accuracyPercent',
   EP_ATTACKINTERVAL_SCALE:'attackSpeedFlat',
-  EP_RACE_MANA_COSTCUT:'manaDiscount'};
+  EP_RACE_MANA_COSTCUT:'manaDiscount',EP_MOVESPEED_SCALE:'movement',
+  EP_SKILL_DELAY:'skillDelay',EP_ATTACK_BACKATK_RATE:'backAttackRate',
+  EP_ELEMENT_DAMAGE_SCALE:'elementDamageRate',
+  EP_CASTINGCANCEL_RESISTANCE_CONST:'castInterruptResist'};
  for(const [source,record,grade] of records){
   if(!record||typeof record!=='object')continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
@@ -331,9 +342,9 @@ function equippedCombatModifiers(records=[],itemForth=null){
    if(Number.isFinite(effect.max)&&grade>effect.max)continue;
    const amount=effect.a;
    if(!Number.isFinite(amount))continue;
-   if(target==='attackFlat'||target==='attackSpeedFlat'||target==='manaDiscount')
-    out[target]+=amount;
-   else out[target].push({source,rate:amount});
+   if(target==='attackPercent'||target==='accuracyPercent')
+    out[target].push({source,rate:amount});
+   else out[target]+=amount;
    out.traces.push({source,ep:effect.func,value:amount});
   }
  }
@@ -356,8 +367,11 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
   !Number.isInteger(guildArouse)||guildArouse<0||guildArouse>3)return null;
  const step=magicSteps.find(([n])=>int>=n)?.[1]??0;
  const passive=magicLineage.has(jobKey)?10+Math.floor(magicMastery/10):0;
+ // Remaked Legacy Cursed Rod / Iron Staff / Might Staff exceptions.
+ // Current OS uses stable IDs; names are translated by the RU/EN selector.
+ const staffId=Number(weapon?.id);
  const staff=weapon?.kind==='WAND'?10:weapon?.kind==='STAFF'?
-  (weapon.name==='Железный посох'?0:15):0;
+  (staffId===2841?20:(staffId===2802||staffId===2812)?0:15):0;
  const guild=[0,2,4,6][guildArouse],exact=100+step+passive+staff+guild;
  return {known:exact>=100?Math.floor(exact*10)/10:exact,
   base:100,intelligence:step,passive,staff,guild,verified:false};
@@ -460,6 +474,14 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    'conditional active skill discounts']};
  const magicAttack=magicAttackPreview({int:stats.int,jobKey,magicMastery,
   weapon,guildArouse});
+ // Current OS EP_ELEMENT_DAMAGE_SCALE often represents the same staff bonus
+ // already counted as +10/+15 above. Expose it, never double-add it to MATK.
+ const spellDamageEquipmentRate=equipped.elementDamageRate;
+ const castInterruption=equipped.castInterruptResist+(title.castingResist||0);
+ const movementSpeed={base:100,equipment:equipped.movement,
+  known:100+equipped.movement,verified:false};
+ const skillDelayEquipment=equipped.skillDelay;
+ const backAttackEquipmentRate=equipped.backAttackRate;
  const weaponPhysical=(meleeLineage.has(jobKey)?1+Math.floor(meleeMastery/10):0)
   +(title.weaponPhysical||0);
  const backAttack=15,frontAttack=title.frontAttack||0;
@@ -469,6 +491,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
   guildArouse,guildAtk,attackSpeed,castingSpeed,manaCost,
   weaponPhysical,backAttack,frontAttack,cooldown,
+  spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
+  backAttackEquipmentRate,
   criticalDamage,criticalIncoming,criticalIncomingDamage,
   accuracy:{base:accuracyBase,equipment:accEquip,passive:hunterEye,
    percentage:accuracyPercent,honor:title.accuracy||0,
