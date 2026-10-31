@@ -112,6 +112,8 @@ function previewBaseStats(){
  // Remaked Status.Skill[0][0] + [1]: innate branch green mastery
  // PLUS additionally trained green; exclude blue Potential from this sum.
  const masteries=window.PandoraSkillProgression.combatMasteries(state,initialBranches);
+ const branchMasteries={slash:window.PandoraSkillProgression.groupAdeptness(
+  state,['slash'],initialBranches)};
  const meleeMastery=masteries.melee;
  const benevolenceMastery=window.PandoraSkillProgression.groupAdeptness(
   state,['benevolence'],initialBranches);
@@ -127,7 +129,7 @@ function previewBaseStats(){
   potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
    jobKey:jobKeys[state.job],benevolenceMastery,legacyBuffMasteries,
-   skillCatalog:catalog.skills||{},...masteries}
+   skillCatalog:catalog.skills||{},branchMasteries,...masteries}
  });
 }
 function renderPotionPreview(calculated){
@@ -241,7 +243,8 @@ function setAttributeBuff(key,value){
   current.honorCuriosity=value===true;
   current.honorTitle=current.honorCuriosity?1:0;
  }else if(['proelium','potionEffectsEnabled','combatLunge','combatWarCry',
-  'combatRage','combatDefender','combatWindAssist','combatWindBlessing'].includes(key)){
+  'combatRage','combatDefender','combatWindAssist','combatWindBlessing',
+  'combatConcentration'].includes(key)){
   current[key]=value===true;
   if(current.combatRage&&key==='combatRage')current.combatDefender=false;
   if(current.combatDefender&&key==='combatDefender')current.combatRage=false;
@@ -520,11 +523,14 @@ function renderStageAttributes(){
  const equippedWeapon=state.equipment?.[0]&&
   catalog.equipment?.[String(state.equipment[0].id)]||null;
  const keys={combatLunge:'lunge',combatWarCry:'warCry',
-  combatRage:'raging',combatDefender:'defender'};
+  combatRage:'raging',combatDefender:'defender',
+  combatConcentration:'concentration'};
  const combatSkillCatalog=window.PandoraOSCalculator;
  const selectedCombat=Object.fromEntries(Object.keys(keys).map(k=>[k,true]));
+ const branchMasteries={slash:window.PandoraSkillProgression.groupAdeptness(
+  state,['slash'],innate)};
  const availableSkills=combatSkillCatalog.activeCombatSkills({
-  selected:selectedCombat,jobKey:cls,level:state.level,weapon:equippedWeapon,
+  selected:selectedCombat,jobKey:cls,level:state.level,weapon:equippedWeapon,branchMasteries,
   hasShield:equippedShield?.slot==='shield',skillCatalog:skillMap
  });
  const availability={},combatSkillCards={};
@@ -534,7 +540,8 @@ function renderStageAttributes(){
   availability[setting]=availableSkills[name]===true;
   const eff=combatSkillCatalog.combatSkillSource(skillMap,name)?.effects||{};
   const number=n=>n>0?'+'+n:String(n);
-  const summary=name==='lunge'?number(eff.EP_ATTACKINTERVAL_SCALE??0)+' к скорости атаки':
+  const summary=name==='concentration'?number(eff.EP_TOHIT_CONST??0)+' к точности':
+   name==='lunge'?number(eff.EP_ATTACKINTERVAL_SCALE??0)+' к скорости атаки':
    name==='warCry'?number(eff.EP_DAMAGERATE_CONST??0)+' атаки · '+
     number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки':
    name==='raging'?number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки · '+
@@ -545,6 +552,8 @@ function renderStageAttributes(){
    !ability.classes?.[cls]?'Недоступно для этой профессии':
    state.level<Number(ability.charLevel||0)?
     'Откроется на '+ability.charLevel+' уровне':
+   ability.reqs?.some(req=>branchMasteries[req.branch]<req.amount)?
+    'Нужно 26 очков мастерства рубящего оружия':
    name==='defender'&&equippedShield?.slot!=='shield'?'Необходимо экипировать щит':
    name==='lunge'&&Array.isArray(ability.weaponUse)&&ability.weaponUse.length&&
     !ability.weaponUse.includes(equippedWeapon?.kind??'BARE_HAND')?
@@ -1762,7 +1771,7 @@ function sanitizeSharedState(original){
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
   safe.attributeBuffs.potionEffectsEnabled=rawAttributes.potionEffectsEnabled===true;
   for(const key of ['combatWarCry','combatRage','combatDefender','combatLunge',
-   'combatWindAssist','combatWindBlessing'])
+   'combatWindAssist','combatWindBlessing','combatConcentration'])
    if(rawAttributes[key]===true)safe.attributeBuffs[key]=true;
   if(safe.attributeBuffs.combatRage===true)safe.attributeBuffs.combatDefender=false;
  }
