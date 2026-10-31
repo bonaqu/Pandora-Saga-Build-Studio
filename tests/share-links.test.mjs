@@ -32,6 +32,7 @@ test('share links display alongside saved builds with an inline copy fallback',(
  assert.match(src,/createShared\(b,shareSlot\)/);
  assert.match(src,/if\(host\.isConnected\)host\.replaceChildren\(message\)/);
  assert.match(src,/field\.focus\(\);field\.select\(\)/);
+ assert.match(src,/isVerifiedSharedBuild\(check\?\.share,build\.data\)/);
  assert.match(css,/\.build-share-slot/);
 });
 test('library maintains an offline cache and D1 sync without JSON import/export',()=>{

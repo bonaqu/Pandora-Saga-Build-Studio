@@ -2035,6 +2035,12 @@ function sanitizeSharedState(original){
   safe.racialPassiveId=original.racialPassiveId;
  return safe;
 }
+function isVerifiedSharedBuild(share,expectedData){
+ if(!share||share.schema!==1||share.type!=='build'||
+  !share.data||typeof share.data!=='object'||Array.isArray(share.data))return false;
+ try{return JSON.stringify(share.data)===JSON.stringify(expectedData)}
+ catch{return false}
+}
 async function createShared(build,host){
  if(!build||!host)return;
  const pending=h('p',{class:'muted',text:'Проверяем сохранение билда…'});
@@ -2048,14 +2054,15 @@ async function createShared(build,host){
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
   // Confirm that the new public link is immediately readable before showing it.
   const check=await apiRequest('/api/shared/'+response.id,null,'');
-  if(check?.share?.type!=='build')throw Error('Ссылка ещё не доступна');
+  if(!isVerifiedSharedBuild(check?.share,build.data))
+   throw Error('Ссылка не подтвердила выбранный билд. Попробуйте ещё раз.');
   const url=location.origin+location.pathname+'#b/'+response.id;
   const message=h('div',{class:'share-result'});
   const field=h('input',{type:'text',readOnly:true,value:url,'aria-label':'Ссылка на билд'});
   const copy=h('button',{type:'button',class:'button-action primary',text:'Скопировать ссылку',
    onclick:async()=>{
     try{await navigator.clipboard.writeText(url);copy.textContent='✓ Скопировано'}
-    catch{field.focus();field.select();copy.textContent='Выдели ссылку и скопируй Ctrl+C'}
+    catch{field.focus();field.select();copy.textContent='Ссылка выделена — скопируй через меню или Ctrl+C'}
    }});
   message.append(h('p',{text:response.reused?'Ссылка на билд уже создана.':'Ссылка на билд создана.'}),
    field,copy,h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));

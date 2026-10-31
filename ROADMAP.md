@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.157.0 (`2026.11.01.157`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.158.0 (`2026.11.01.158`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.158.0 — verified share content
+
+- Verify a share not merely exists but contains the exact saved build snapshot returned by the Worker; prevent accidental false-positive URL publication on stale/wrong-level equipment or mastery.
+- Guard this behavior with executable runtime tests, including future level-55 equipment, incorrect Soul/mastery values, incompatible schemas and invalid payloads.
+- Improve the clipboard failure hint for touch/mobile browsers while keeping Ctrl+C as a desktop fallback.
 
 ## Source update 0.157.0 — book, cloud library and RU source regressions
 

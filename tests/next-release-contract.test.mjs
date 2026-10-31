@@ -18,7 +18,7 @@ test('a published link is verified by the Worker before showing the URL and copy
   const probe=share.indexOf("apiRequest('/api/shared/'+response.id,null,'')");
   const announce=share.indexOf('Ссылка на билд создана.');
   assert.ok(probe>=0&&announce>probe,'cannot claim link exists before successful GET verification');
-  assert.match(share,/check\?\.share\?\.type!=='build'/);
+  assert.match(share,/isVerifiedSharedBuild\(check\?\.share,build\.data\)/);
   assert.match(share,/aria-label':'Ссылка на билд'/);
   assert.match(share,/navigator\.clipboard\.writeText\(url\)/);
   assert.match(share,/field\.focus\(\);field\.select\(\)/);
