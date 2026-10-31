@@ -1,4 +1,4 @@
 {
-  "release": "2026.10.31.112",
-  "notes": "Soul acquisition sources; real soul names in monster drops; named map NPC traders"
+  "release": "2026.10.31.113",
+  "notes": "OS-backed chest/soul sprites, NPC and map search, combat book, skill milestone previews, unsupported rune removed"
 }
