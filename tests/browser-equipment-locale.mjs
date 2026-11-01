@@ -16,6 +16,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.waitForFunction(()=>/\d+ навыков · \d+ предметов · \d+ душ/.test(
    document.querySelector('#catalogStatus')?.textContent||''),null,{timeout:20000});
   assert.equal(await page.locator('#nav [data-tab="equipment"]').count(),0);
+  assert.equal(await page.locator('#nav [data-tab="character"]').count(),0);
   await page.locator('#nav [data-tab="wiki"]').click();
   const picker=page.locator('.wiki-equipment-type'),rows=page.locator('.wiki-list .wiki-link');
   await picker.waitFor({state:'visible',timeout:20000});

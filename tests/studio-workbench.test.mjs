@@ -11,6 +11,7 @@ test('character portrait, Origin stats, and Hero Path are the core single-screen
   assert.match(html,new RegExp('role="tab" data-tab="'+tab+'"'));
  assert.doesNotMatch(html,/role="tab" data-tab="(?:character|equipment)"/);
  assert.doesNotMatch(html,/<nav id="nav">[^\n]*data-tab="equipment"/);
+ assert.doesNotMatch(html,/<nav id="nav">[^\n]*data-tab="character"/);
  assert.doesNotMatch(html,/data-tab="(?:skills|stats)"/);
  assert.doesNotMatch(html,/id="stageQuickbar"/);
  assert.match(app,/function renderBranches\(/);
