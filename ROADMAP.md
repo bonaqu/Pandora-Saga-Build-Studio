@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.216.0 (`2026.11.01.216`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.217.0 (`2026.11.01.217`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.217.0 — source-backed 3% physical-evasion preview
+
+- Surface only the verified physical-evasion special effect on current OS item 11552, `EP_DESTINE_WARDING` +3% TARGET, through the existing equipment special-effects preview. Do not apply it to numeric static Dodge and do not simulate successful avoidance/trigger chance.
+- Reject unrelated items, values or source direction and honour refinement gates. Test the original item source and ensure effect coverage remains conditional.
+- Formula parity with the OS combat server remains incomplete, and this addition is a source-backed conditional item description, not a completed combat mechanic.
+- Preserve the user-approved thin vertical skill notches, one-line Spent/Mastery controls, D1 schema and manual save rules.
 
 ## Source update 0.216.0 — user-requested slim vertical ticks, MP-cost previews and inline controls
 
