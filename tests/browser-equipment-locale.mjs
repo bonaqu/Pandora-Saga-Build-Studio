@@ -42,6 +42,14 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await picker.locator('option[value="ring"]').innerText(),'Кольца');
   await picker.selectOption('equipment');
   assert.equal((await rows.first().innerText()).trim(),firstRu);
+  // The reference tooltip in the game separates lore, parameters and upgrade conditions.
+  await page.locator('.wiki-controls input[type="search"]').fill('Алые астирские штаны');
+  await rows.first().click();
+  const description=page.locator('.wiki-page .wiki-description');
+  await description.waitFor({state:'visible'});
+  assert.match(await description.textContent(),
+   /Астира\.\n\nЛВК \+1, ОЗ \+30\n\nЗа каждые 2 единицы улучшения:\nАтака \+1%/);
+  assert.equal(await description.evaluate(el=>getComputedStyle(el).whiteSpace),'pre-wrap');
   assert.deepEqual(errors,[]);
   console.log('Chromium encyclopedia equipment RU/EN passed: source names, rings, and links');
  }finally{await context.close()}
