@@ -35,5 +35,5 @@ test('repeated wiki record click reuses same list and preserves its scroll posit
  assert.match(app,/const draw=\(detailOnly=false\)=>/);
  assert.match(app,/if\(!detailOnly\)browse\.replaceChildren\(\)/);
  assert.match(app,/if\(!detailOnly\)\{/);
- assert.match(app,/browse\.scrollTop=previousScroll/);
+ assert.match(app,/browse\.scrollTop=selectedIndex>=wikiShown\?0:previousScroll/);
 });

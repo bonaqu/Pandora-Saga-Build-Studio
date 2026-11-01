@@ -9,7 +9,7 @@ test('encyclopedia provides true counts and can progressively load all matches',
  assert.match(code,/results\.slice\(0,wikiShown\)/);
  assert.match(code,/Показано '\+visible.length\+' из '\+results.length/);
  assert.match(code,/wikiShown\+=100;draw\(\)/);
- assert.match(code,/browse.scrollTop=previousScroll/);
+ assert.match(code,/browse\.scrollTop=selectedIndex>=wikiShown\?0:previousScroll/);
 });
 test('search and category changes reset pagination without dropping entries',()=>{
  const code=get('app.js');
