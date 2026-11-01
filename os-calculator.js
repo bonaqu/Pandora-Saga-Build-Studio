@@ -905,7 +905,7 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
    entries.push({trigger,triggerEn:procTriggersEn[effect.func],skillId:isStun?null:effect.a,
     skillName:isStun?'Оглушение':String(skill?.name||'Особый эффект'),
     skillNameEn:isStun?'Stun':String(skill?.name||'Special effect'),
-    chance:corroborated&&!mismatch?sourceChance:null,source:String(record.name||source),
+    chance:corroborated?sourceChance:null,source:String(record.name||source),
     disputedChance:mismatch,code:effect.func,
     procIdentity:procIdentity(source,effect)});
   }
