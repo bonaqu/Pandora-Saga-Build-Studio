@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.248.0 (`2026.11.01.248`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.249.0 (`2026.11.01.249`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.249.0 — bilingual equipment catalog and skill navigation
+
+- [x] Localize the Equipment collection's filters, grid/list controls, status counts, inspector, acquisition-source labels, loading/failure states, empty state, aria labels and action texts to RU/EN.
+- [x] Give known equipment kind/slot types strict English display labels via the existing PandoraItemPresentation.kind API, keeping its Russian default and all game record IDs, names, descriptions, classes and stats unchanged.
+- [x] Replace the redundant technical note in the Skill details pane with a compact RU/EN navigation hint; no duplicate skill editor is created.
+- [x] Add bilingual item-kind and UI-source tests, then verify real Chromium and Pages separately.
+- [ ] Complete the remaining localized equipment inspection subcomponents, account UI and legacy sections after source checks; no user-defined names should be heuristically translated.
 
 ## Source update 0.248.0 — source integrity in Hero Path and quieter locked rail
 
