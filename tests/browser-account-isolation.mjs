@@ -53,6 +53,11 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   },{token,username});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
+  // Account bootstrapping is async. Wait until the actual scoped library has
+  // replaced the previous owner's storage before opening/saving a build.
+  await page.waitForFunction(expected=>
+   localStorage.getItem('ps-build-owner-scope.v1')===expected,
+   token?'account:'+username:'guest:'+guestToken);
   await openManager();
  }
  async function named(){
