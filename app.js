@@ -1614,6 +1614,10 @@ function renderWiki(root){
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
     h('h3',{text:dataName(type,id)}));
+   const namesakes=wikiIndex.sameName(type,id);
+   if(namesakes.length)detail.append(h('small',{class:'wiki-variant-note',
+    text:wt('Есть другие варианты с таким названием','Other entries share this name')}));
+
   if(type==='item'||type==='chest'||type==='soul'){
     const img=wikiImage(wikiIcon(type,id,rec),'wiki-record-icon wiki-item-portrait',type);
     if(img)detail.prepend(img);
