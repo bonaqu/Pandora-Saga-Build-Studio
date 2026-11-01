@@ -48,7 +48,9 @@ test('mastery threshold and caps are independent of viewing and of actual song a
  assert.deepEqual(invalid.rows.map(row=>row.available),[true,false],
   'invalid healing allocation blocks Peaceful but not unrelated Minstrel');
  const wrongCaps={...classes.CLERIC.branchCaps,hymn:29};
- assert.deepEqual(full('CLERIC',allMasteries('CLERIC'),skills,55,wrongCaps).rows,[]);
+ assert.deepEqual(full('CLERIC',allMasteries('CLERIC'),skills,55,wrongCaps).rows
+  .map(row=>[row.key,row.available]),[['minstrel',false]],
+  'lower cap hides Peaceful; impossible 45-point hymn allocation cannot enable Minstrel');
  const enchanter=full('ENCHANTER',{hymn:30,blessing:71,benevolence:0});
  assert.deepEqual(enchanter.rows.map(row=>row.available),[true,true]);
  assert.deepEqual(full('CLERIC',null).rows.map(row=>row.available),[false,false]);
