@@ -64,6 +64,12 @@ export async function runInlineMilestonesSmoke(browser,base){
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
+  // A brand-new level-1 hero has no allocatable mastery points. Set the
+  // planning level to 45 before exercising a real 0 -> 1 -> 2 allocation.
+  await page.locator('#level').evaluate(input=>{
+   input.value='45';input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  await page.locator('#levelOut').getByText('45').waitFor({state:'visible'});
   const group=page.locator('[data-path-group="prayer"]');
   if(await group.getAttribute('aria-expanded')!=='true')await group.click();
   const branch=page.locator('[data-path-branch="benevolence"]');
