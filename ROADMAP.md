@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.252.0 (`2026.11.01.252`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.253.0 (`2026.11.01.253`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.253.0 — indexed branch skill catalog and readable old builds
+
+- [x] Build skill eligibility/branch grouping in one source-order-preserving pass per Hero Path render instead of repeatedly filtering the full 569-record OS skill catalog for each expanded branch. Ignore malformed records and duplicate same-branch prerequisites safely.
+- [x] Preserve the true old-build invested balance when changing profession to one with a zero branch cap: show `12 / 0` if 12 was already saved, but still show an em dash for genuinely empty/inaccessible `0 / 0`. Keep historical allocations intact and disallow new spending beyond current class cap.
+- [x] Add parity checks for every official class and every visible branch against the previous filter, including corruption and duplicates; cover rendered over-cap legacy records.
+- [x] Update old source-shape assertions without changing user-visible layout, green mastery, skill icons, or interactive allocation.
+- [ ] Continue game formula source verification, Cloudflare D1 production acceptance, icon mirroring and remaining localization.
 
 ## Source update 0.252.0 — verified cleanup of unused mastery picker styling
 

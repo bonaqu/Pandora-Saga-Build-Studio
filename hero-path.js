@@ -25,6 +25,23 @@ function indexSkills(skills){
  }
  return byId;
 }
+// Group matching skills once per render; keep the source catalog's order and
+// include each skill once even if its requirements repeat the same branch.
+function indexSkillsByBranch(skills,job){
+ const byBranch=new Map();
+ for(const skill of skills||[]){
+  if(!skill?.classes?.[job]||!Array.isArray(skill.reqs))continue;
+  const seen=new Set();
+  for(const req of skill.reqs){
+   const branch=req?.branch;
+   if(typeof branch!=='string'||seen.has(branch))continue;
+   seen.add(branch);
+   if(!byBranch.has(branch))byBranch.set(branch,[]);
+   byBranch.get(branch).push(skill);
+  }
+ }
+ return byBranch;
+}
 function readiness(skill,api,seen=new Set(),skillIndex){
  const byId=skillIndex||indexSkills(api.skillCatalog);
  const problems=[],state=api.state,job=api.job;
@@ -101,7 +118,7 @@ function nearestMilestone(marks,fraction){
 function viewGrowth(target,api){
  target.replaceChildren();
  const {state,groups,selectedGroup,expandedBranch,job,skillCatalog,budget}=api,auto=state.masteryAuto!==false;
- const skillIndex=indexSkills(skillCatalog);
+ const skillIndex=indexSkills(skillCatalog),skillsByBranch=indexSkillsByBranch(skillCatalog,job);
  for(const group of groups){
   const branchKeys=group.branches.filter(key=>key!=='race');
   const wrap=make('section',{class:'game-tree-group'});
@@ -126,7 +143,7 @@ function viewGrowth(target,api){
     // Mastery is already displayed in its compact numeric input below the rail.
     // Duplicating it in the header adds/removes a whole line at zero -> one.
 
-    const branchCount=make('b',{class:'count',text:cap?points+' / '+cap:'—'});
+    const branchCount=make('b',{class:'count',text:cap>0||points>0?points+' / '+cap:'—'});
     info.append(make('strong',{text:api.branchName(key)}));
     branch.append(info,branchCount);wrap.append(branch);
     if(!isOpen)continue;
@@ -185,7 +202,7 @@ function viewGrowth(target,api){
      const target=api.onAllocate(key,requested,final);
      if(!Number.isInteger(target)){restorePotential();return}
      range.value=String(target);numeric.value=String(target);
-     branchCount.textContent=cap?target+' / '+cap:'—';
+     branchCount.textContent=cap>0||target>0?target+' / '+cap:'—';
 
      groupCount.textContent=groupSummary();
      input.value=String(M.trained(state,key));input.max=String(target);
@@ -198,8 +215,7 @@ function viewGrowth(target,api){
      const raw=numeric.value.trim();
      update(raw===''?0:Number(raw),true);
     });
-    const skills=skillCatalog.filter(s=>s.classes?.[job]&&Array.isArray(s.reqs)&&
-     s.reqs.some(req=>req.branch===key));
+    const skills=skillsByBranch.get(key)||[];
     const marks=api.milestones(skills,key,cap);
     let unlockDetails=null;
     if(marks.length){
