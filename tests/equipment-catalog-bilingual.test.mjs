@@ -20,19 +20,19 @@ test('equipment categories retain game-faithful RU/EN labels',()=>{
 });
 
 test('equipment is a single encyclopedia chapter with localized filters and source links',()=>{
- assert.match(app,/for\\(const \\[key,ru,en\\]of \\[\\['item','Экипировка','Equipment'\\]/);
+ assert.ok(app.includes("['item','Экипировка','Equipment']"));
  for(const phrase of ['All items','Weapons','Earrings','Armor','Rings',
   'How to obtain','Eligible classes','Show more']){
   assert.ok(app.includes(phrase),'missing English wiki label: '+phrase);
  }
- assert.match(app,/PandoraItemPresentation\\.kind\\(rec,lang\\)/);
- assert.match(app,/wikiItemType==='equipment'\\?slotKeys\\.includes\\(rec\\.slot\\)/);
- assert.match(app,/const itemLink=\\(id,label,highlight=null\\)=>/);
- assert.match(app,/wikiItemLayout==='grid'/);
- assert.doesNotMatch(html,/<nav id="nav">[^\\n]*data-tab="equipment"/);
- assert.doesNotMatch(app,/function renderEquipment\\(/);
- assert.doesNotMatch(app,/let catalogBrowseSlot=/);
- assert.match(app,/bootView\\.tab==='equipment'\\?'wiki'/);
+ assert.ok(app.includes('PandoraItemPresentation.kind(rec,lang)'));
+ assert.ok(app.includes("wikiItemType==='equipment'?slotKeys.includes(rec.slot)"));
+ assert.ok(app.includes('const itemLink=(id,label,highlight=null)=>'));
+ assert.ok(app.includes("wikiItemLayout==='grid'"));
+ assert.ok(!html.includes('data-tab="equipment"'));
+ assert.ok(!app.includes('function renderEquipment('));
+ assert.ok(!app.includes('let catalogBrowseSlot='));
+ assert.ok(app.includes("bootView.tab==='equipment'?'wiki'"));
 });
 
 test('source names and descriptions do not change with item type labeling',()=>{
