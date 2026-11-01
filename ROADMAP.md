@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.222.0 (`2026.11.01.222`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.223.0 (`2026.11.01.223`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.223.0 — lossless multi-proc book and source identity
+
+- Fix a subtle 0.221.0 deduplication weakness: two catalog items can share the same visible/localized name and effect code but represent **different source IDs**, while one item can carry multiple proc variations of the same code. Dedup by exact catalog source + code + skill ID + probability + direction instead of display name.
+- Use per-identity **occurrence counts**, so two copies of a source lose only their exact corresponding duplicate previews. Uncorroborated other sources and distinct procs stay visible with probabilities hidden unless description-verified.
+- Keep the nine on-hit rules, Traveler Boots Gust, zero-on-blur branch editing, saved builds, accounts, Cloudflare D1 and 1–55 planning untouched. Add standalone regression vectors for name collisions, multiple procs and repeated sources; combat server chance rolls still unverified.
 
 ## Source update 0.222.0 — owner-approved blank input resets spent or manual mastery
 

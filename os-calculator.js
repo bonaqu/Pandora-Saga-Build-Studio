@@ -855,6 +855,11 @@ const procTriggers=Object.freeze({
  EP_ONDAMAGE_SKILL_EXEC_ATTACKER:'При получении урона',
  EP_ONDAMAGE_ELEM_SKILL_EXEC:'При получении стихийного урона'
 });
+// Identity must include the catalog source AND every relevant proc field.
+// Names are localized/display-only and cannot safely identify distinct items.
+const procIdentity=(source,effect)=>JSON.stringify([
+ String(source),effect.func,effect.a,effect.b,effect.dir??null
+]);
 function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
@@ -876,7 +881,8 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
    entries.push({trigger,skillId:isStun?null:effect.a,
     skillName:isStun?'Оглушение':String(skill?.name||'Особый эффект'),
     chance:namedChance!==null&&!mismatch?sourceChance:null,source:String(record.name||source),
-    disputedChance:mismatch,code:effect.func});
+    disputedChance:mismatch,code:effect.func,
+    procIdentity:procIdentity(source,effect)});
   }
  }
  return {entries,verified:false};
@@ -1001,7 +1007,8 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
       (proc.sourcePhrase?record.desc.includes(proc.sourcePhrase):
        record.desc.includes(String(proc.b)+'%'))){
     entries.push({code:effect.func,source:String(record.name||source),
-     ru:proc.ru,en:proc.en,verified:false});
+     ru:proc.ru,en:proc.en,verified:false,
+     procIdentity:procIdentity(source,effect)});
     continue;
    }
    if(!Object.hasOwn(specialEquipmentRules,effect.func))continue;
@@ -1026,11 +1033,17 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
 // procs. Avoid repeating the same event as a separate generic proc summary.
 function deduplicateProcDescriptions(generic,precise){
  if(!generic?.entries?.length||!precise?.entries?.length)return generic;
- const described=new Set(precise.entries
-  .filter(entry=>Object.hasOwn(procTriggers,entry.code))
-  .map(entry=>entry.code+'\u0000'+entry.source));
- return {...generic,entries:generic.entries.filter(
-  entry=>!described.has(entry.code+'\u0000'+entry.source))};
+ const described=new Map();
+ for(const entry of precise.entries){
+  if(typeof entry.procIdentity!=='string')continue;
+  described.set(entry.procIdentity,(described.get(entry.procIdentity)||0)+1);
+ }
+ return {...generic,entries:generic.entries.filter(entry=>{
+  const remaining=described.get(entry.procIdentity)||0;
+  if(!remaining)return true;
+  described.set(entry.procIdentity,remaining-1);
+  return false;
+ })};
 }
 
 // Classify item effects by what THIS calculator can genuinely support.
