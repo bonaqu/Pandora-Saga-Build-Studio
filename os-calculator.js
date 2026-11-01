@@ -872,7 +872,7 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
  for(const [source,record,grade] of records){
-  if(!record||!Number.isInteger(grade))continue;
+  if(!record||!Number.isInteger(grade)||grade<0||grade>10)continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    const trigger=procTriggers[effect?.func];
    if(!trigger||!Number.isInteger(effect.a)||!Number.isFinite(effect.b))continue;
@@ -881,9 +881,12 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
    const isStun=effect.func==='EP_ONHIT_STUN';
    const skill=isStun?null:skills?.[String(effect.a)];
    const recordDescription=String(record.desc||'');
-   // If item text says 4% but source b says 5, do not present a fabricated certainty.
-   const labelChance=recordDescription.match(/(\d+(?:[.,]\d+)?)\s*%\s*(?:шанс|вероятност)/i);
-   const namedChance=labelChance?Number(labelChance[1].replace(',','.')):null;
+   // RU/EN source descriptions both describe rates. If two distinct rates
+   // appear on one item, never assume which event each percentage belongs to.
+   const textRates=[...recordDescription.matchAll(/(\d+(?:[.,]\d+)?)\s*%\s*(?:шанс|вероятност|chance|probabilit)/gi)]
+    .map(match=>Number(match[1].replace(',','.')));
+   const distinctRates=[...new Set(textRates)];
+   const namedChance=distinctRates.length===1?distinctRates[0]:null;
    const sourceChance=effect.b>=0&&effect.b<=100?effect.b:null;
    const mismatch=namedChance!==null&&sourceChance!==null&&namedChance!==sourceChance;
    entries.push({trigger,triggerEn:procTriggersEn[effect.func],skillId:isStun?null:effect.a,
@@ -902,7 +905,7 @@ function experienceBonusPreview({records=[],itemForth=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
  for(const [source,record,grade] of records){
-  if(!record||!Number.isInteger(grade))continue;
+  if(!record||!Number.isInteger(grade)||grade<0||grade>10)continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    if(effect?.func!=='EP_VOLUME_EXP'||!Number.isFinite(effect.a))continue;
    if((Number.isFinite(effect.min)&&grade<effect.min)||
@@ -996,13 +999,15 @@ const corroboratedProcRules=Object.freeze({
  'item:15082':Object.freeze({id:15082,func:'EP_ONDAMAGE_SKILL_EXEC',
   a:260003001,b:8,dir:'TARGET',
   sourcePhrase:'При получении физического урона есть 8% вероятность получения эффекта порыва',
+  sourcePhraseEn:"When taking physical damage, there's an 8% chance of gaining a Surge effect.",
   ru:'При получении физического урона: 8% шанс получить «Порыв»',
-  en:'On taking physical damage: 8% chance to gain Gust'})
+  en:'On taking physical damage: 8% chance to trigger Dash'})
 });
 function specialEquipmentPreview({records=[],itemForth=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
  for(const [source,record,grade] of records){
+  if(!record||!Number.isInteger(grade)||grade<0||grade>10)continue;
   for(const effect of sourceEffects(source,record,grade,itemForth)){
    if(!effect)continue;
    if((Number.isFinite(effect.min)&&grade<effect.min)||
@@ -1013,7 +1018,9 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
       effect.func===proc.func&&effect.a===proc.a&&effect.b===proc.b&&
       effect.dir===proc.dir&&Number.isInteger(grade)&&grade>=0&&grade<=10&&
       typeof record.desc==='string'&&
-      (proc.sourcePhrase?record.desc.includes(proc.sourcePhrase):
+      (proc.sourcePhrase?
+       (record.desc.includes(proc.sourcePhrase)||
+        (proc.sourcePhraseEn&&record.desc.includes(proc.sourcePhraseEn))):
        record.desc.includes(String(proc.b)+'%'))){
     entries.push({code:effect.func,source:String(record.name||source),
      ru:proc.ru,en:proc.en,verified:false,

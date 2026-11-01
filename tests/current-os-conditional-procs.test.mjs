@@ -142,3 +142,43 @@ test('generic conditional proc previews include accurate English triggers and sa
  assert.equal(unknown.skillNameEn,'Special effect');
  assert.equal(unknown.chance,null,'an unknown source never gets an invented chance');
 });
+
+test('English official OS descriptions retain corroborated chances without changing the underlying effects',()=>{
+ const en=JSON.parse(read('data/os/strings.en.json'));
+ for(const [kind,id,chance] of [
+  ['item',422,9],['item',1041,9],['item',1211,4],
+  ['item',15082,8],['soul',101010,4],['soul',101022,5]
+ ]){
+  const source=(kind==='item'?items:souls)[id];
+  const translated=(kind==='item'?en.items:en.souls)[id];
+  assert.ok(translated?.d,'Missing verified original English description '+kind+':'+id);
+  const row=preview({...source,name:translated.n,desc:translated.d},id,kind)[0];
+  assert.equal(row.chance,chance,'English chance '+kind+':'+id);
+  assert.equal(row.disputedChance,false);
+ }
+ const vampire={...souls[101009],desc:en.souls[101009].d};
+ assert.equal(preview(vampire,101009)[0].chance,null);
+ assert.equal(preview(vampire,101009)[0].disputedChance,true);
+});
+
+test('ambiguous multiple distinct percentages never become an asserted event chance',()=>{
+ const item={id:333,name:'Combined item',
+  desc:'4% chance on attack, 9% chance on taking damage',
+  effects:[{func:'EP_ONHIT_SKILL_EXEC',a:500000002,b:4,dir:'TARGET'},
+   {func:'EP_ONDAMAGE_SKILL_EXEC',a:260003001,b:9,dir:'TARGET'}]};
+ const rows=preview(item,333,'item');
+ assert.equal(rows.length,2);
+ assert.ok(rows.every(row=>row.chance===null&&!row.disputedChance),
+  'Without an unambiguous association to each proc, rates must stay hidden');
+});
+
+test('invalid enhancement grades cannot expose conditional events or experience gain',()=>{
+ for(const grade of [-1,11,1.5,NaN,undefined]){
+  const events=C.conditionalProcPreview({records:[['item:422',items[422],grade]],skills}).entries;
+  assert.equal(events.length,0,'invalid grade '+String(grade));
+  assert.equal(C.specialEquipmentPreview({records:[['item:422',items[422],grade]]}).entries.length,0);
+  assert.equal(C.experienceBonusPreview({records:[['item:18073',items[18073],grade]]}).entries.length,0);
+ }
+ assert.equal(preview(items[422],422,'item',10).length,1);
+ assert.equal(C.experienceBonusPreview({records:[['item:18073',items[18073],10]]}).entries.length,1);
+});
