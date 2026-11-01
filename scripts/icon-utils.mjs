@@ -13,3 +13,11 @@ export function isWebP(buffer){
  const size=(buffer[4]|buffer[5]<<8|buffer[6]<<16|buffer[7]<<24)>>>0;
  return size>=12&&size<=buffer.length-8;
 }
+
+export function originalIconUrl(kind,stem){
+ if(!['skills','items','souls'].includes(kind))throw Error('Unknown icon category: '+kind);
+ const filename=safeIconStem(stem);
+ // Official OS Souls reuse the same underlying artwork directory as items.
+ const directory=kind==='souls'?'items':kind;
+ return 'https://pandorasaga-os.com/icons/'+directory+'/'+filename+'.webp';
+}
