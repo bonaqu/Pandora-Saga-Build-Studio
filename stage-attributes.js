@@ -150,11 +150,87 @@ const bookEnglish=Object.freeze({
  'Дополнительные защитные параметры': "Additional defensive stats",
  'Физические состояния': "Physical conditions",
  'Психические состояния': "Mental conditions",
- 'Профессия': "Class"
+ 'Профессия': "Class",
+ 'Скорость естественного восстановления': 'Natural recovery speed',
+ 'Естественное восстановление (расчётная величина)': 'Estimated natural recovery',
+ 'Известные бонусы снаряжения и душ': 'Known equipment and Soul bonuses',
+ 'Сопротивления состояниям': 'Status resistances',
+ 'Восстановление каждые 2 секунды': 'Recovery every 2 seconds',
+ 'Лечащие умения': 'Healing skills',
+ 'Действие зелий': 'Potion effects',
+ 'Эффективность лечения': 'Healing effectiveness',
+ 'Пока недоступно': 'Not yet available',
+ 'Доступно при использовании умения': 'Available when using the skill'
+});
+// Translate only whitelisted composed UI lines, not OS item descriptions or user names.
+const bookLineHeads=Object.freeze({
+ 'Базовая атака ':'Base attack ','Базовая защита ':'Base defense ',
+ 'Не действует: ':'Inactive: ','Сейчас: ':'Current: ',
+ 'Навыки героя · ':'Hero skills · ','Найдено ':'Found ',
+ 'ОМ ':'MP ','ОЗ: ':'HP: ','ОМ: ':'MP: ',
+ 'Раскрытие характеристик верхом: ':'Mounted attribute release: ',
+ 'Профессия ':'Class ',
+ 'Дальность атаки: ':'Attack range: ','Дальность стрельбы: ':'Bow range: ',
+ 'Физическая атака оружия: ':'Physical weapon attack: ',
+ 'Точность: ':'Accuracy: ','Уклонение: ':'Evasion: ',
+ 'Критический шанс: ':'Critical chance: ',
+ 'Исходящий критический урон: ':'Outgoing critical damage: ',
+ 'Прямые бонусы атаки от вещей и душ: ':'Flat attack from equipment and Souls: ',
+ 'Выбранные навыки: ':'Selected skills: ','Рывок: ':'Lunge: ',
+ 'Процентная точность вещей: ':'Equipment accuracy rate: ',
+ 'Пассивная меткость лучника: ':'Archer passive accuracy: ',
+ 'Сосредоточенность: ':'Concentration: ',
+ 'Пассивное уклонение: ':'Passive evasion: ','Помощь ветра: ':'Wind Assist: ',
+ 'Подавление гнева: ':'Rage Suppression: ','Интуиция: ':'Intuition: ',
+ 'Магическая атака: ':'Magic attack: ',
+ 'Физический урон оружия, пассивки и титулы: ':'Weapon, passive and title damage: ',
+ 'АТК сзади: ':'Attack from behind: ',
+ 'Откат умений (базовый индекс): ':'Skill cooldown (base index): ',
+ 'Скорость передвижения: ':'Movement speed: ',
+ 'Скорость в городе: ':'Town movement speed: ',
+ 'Скорость атаки (индекс): ':'Attack speed (index): ',
+ 'Скорость заклинаний: ':'Casting speed: ',
+ 'Подтверждённая основа: ':'Known value: ',
+ 'Базовая защита снаряжения: ':'Equipment base defense: ',
+ 'Бонус заточки брони и щита: ':'Armor/shield refinement: ',
+ 'Прямые бонусы вещей и душ: ':'Flat gear/Soul bonuses: ',
+ 'Процентные бонусы защиты: ':'Defense percentage: ',
+ 'Титул чести: ':'Honor title: ',
+ 'Эффект выбранной стойки: ':'Selected stance effect: ',
+ 'Сопротивление прерыванию каста: ':'Cast interruption resistance: ',
+ 'Изменение шанса входящего крита: ':'Incoming critical chance change: ',
+ 'Множитель входящего критического урона: ':'Incoming critical damage multiplier: ',
+ 'Физические состояния: ':'Physical conditions: ',
+ 'Психические состояния: ':'Mental conditions: ',
+ 'От самоцветов: ':'From gems: ',
+ 'Получаемый физический урон: ':'Incoming physical damage: ',
+ 'Получаемый магический урон: ':'Incoming magical damage: ',
+ 'Отражение ближнего физического урона: ':'Melee physical reflection: ',
+ 'Изменение длительности дебаффов: ':'Debuff duration change: ',
+ 'Уклонение от физического урона: ':'Physical damage evasion: ',
+ 'Эффективность лечения: ':'Healing effectiveness: '
+});
+const bookLineFragments=Object.freeze({
+ ' · Дальность ':' · Range ',' · Скорость ':' · Speed ',
+ ' · Блок ':' · Block ',' · Гнёзда ':' · Soul sockets ',
+ ' (база ':' (base ', ', бонусы ':', bonuses ',
+ ', гильдия +':', guild +', ', снаряжение ':', equipment ',
+ ', лечение +':', healing +', ', навыки +':', skills +',
+ ', пассивка ':', passive ', ', оружие ':', weapon ',
+ ' · мастерство +':' · mastery +',' · титул +':' · title +',
+ ' · гильдия: ':' · guild: ',
+ ' (поштучное округление вверх)':' (rounded up per item)',
+ ' (отдельно от базового позиционного бонуса)':' (separate from base position bonus)',
+ ' ОЗ, ':' HP, ',' ОМ. Усиления сохраняются в билде.':' MP. Buffs are saved with the build.'
 });
 function bookText(value){
  if(typeof value!=='string'||document.documentElement?.lang!=='en')return value;
- return Object.hasOwn(bookEnglish,value)?bookEnglish[value]:value;
+ if(Object.hasOwn(bookEnglish,value))return bookEnglish[value];
+ const match=Object.entries(bookLineHeads).find(([ru])=>value.startsWith(ru));
+ if(!match)return value;
+ let tail=value.slice(match[0].length);
+ for(const [ru,en] of Object.entries(bookLineFragments))tail=tail.replaceAll(ru,en);
+ return match[1]+tail;
 }
 function make(tag,attrs={},children=[]){
  const n=document.createElement(tag);
