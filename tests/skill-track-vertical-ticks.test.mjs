@@ -30,9 +30,9 @@ test('source-backed tooltip includes ability name, description, required points 
   'Number.isFinite(skill.mana)&&skill.mana>=0',
   "tr(api,'Затрат ОМ: ','MP cost: ')+skill.mana"])
   assert.ok(ui.includes(fragment),fragment);
- assert.match(ui,/\.filter\(value=>Number\.isFinite\(value\)&&value>=0&&value<=visualMax\)/);
+ assert.match(ui,/if\(!Number\.isFinite\(threshold\)\|\|threshold<0\|\|threshold>visualMax\)continue/);
  assert.match(ui,/pointermove/);
- assert.match(ui,/at.distance<=10/);
+ assert.match(ui,/distance<=10\?nearest:null/);
  assert.match(ui,/tabindex:'0'/);
 });
 test('compact point and mastery fields share one responsive row with equal heights and source labels',()=>{
