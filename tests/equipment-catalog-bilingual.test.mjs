@@ -26,7 +26,7 @@ test('equipment is a single encyclopedia chapter with localized filters and sour
   assert.ok(app.includes(phrase),'missing English wiki label: '+phrase);
  }
  assert.ok(app.includes('PandoraItemPresentation.kind(rec,lang)'));
- assert.ok(app.includes("wikiItemType==='equipment'?slotKeys.includes(rec.slot)"));
+ assert.ok(/wikiItemType==='equipment'\?\s*slotKeys\.includes\(rec\.slot\)/.test(app));
  assert.ok(app.includes('const itemLink=(id,label,highlight=null)=>'));
  assert.ok(app.includes("wikiItemLayout==='grid'"));
  assert.ok(!html.includes('data-tab="equipment"'));

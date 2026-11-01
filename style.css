@@ -1651,7 +1651,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 
 /* Encyclopedia equipment view stays in the same linked item-source catalog. */
 .wiki-equipment-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.wiki-equipment-type{min-width:180px;max-width:100%;background:#18110c;color:#f4d6a3;
+.wiki-equipment-type,.wiki-eligibility-filter{min-width:180px;max-width:100%;background:#18110c;color:#f4d6a3;
  border:1px solid #947049;padding:8px 10px;border-radius:4px}
 .wiki-equipment-view{display:flex;gap:5px}
 .wiki-equipment-view button{background:#24180e;border:1px solid #795b39;

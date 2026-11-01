@@ -113,7 +113,7 @@ test('encyclopedia equipment owns catalog filters and coherent grid/list views',
  assert.doesNotMatch(html,/<nav id="nav">[^<]*<button data-tab="equipment"/);
  assert.doesNotMatch(html,/<nav id="dockTabs"[^>]*>\s*<button[^>]*data-tab="character"/);
  assert.match(html,/data-tab="wiki" data-i18n="wiki">📜 Энциклопедия/);
- assert.match(app,/wikiItemType==='equipment'\?slotKeys\.includes\(rec\.slot\)/);
+ assert.match(app,/wikiItemType==='equipment'\?\s*slotKeys\.includes\(rec\.slot\)/);
  assert.match(app,/class:'wiki-equipment-type'/);
  assert.match(app,/wiki-gear-grid/);
  assert.match(css,/\.wiki-list\.wiki-gear-grid/);
