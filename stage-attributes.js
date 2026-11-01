@@ -405,6 +405,26 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(page==='effects'){
   const english=document.documentElement?.lang==='en';
+  if(modifiers?.battleMapCloaks?.entries?.length){
+   const section=make('section',{class:'stage-attribute-row'});
+   section.append(make('strong',{text:english?
+    'Battle-map-only cloak bonuses':'Бонусы плаща на военных картах'}));
+   for(const row of modifiers.battleMapCloaks.entries){
+    const parts=english?[
+     'All attributes +'+row.all,'Defense +'+row.armor,'HP +'+row.hp
+    ]:[
+     'Все характеристики +'+row.all,'Защита +'+row.armor,'ОЗ +'+row.hp
+    ];
+    if(row.resistance){
+     parts.push(english?'All damage-type resistance +'+row.resistance:
+      'Сопротивление всем видам урона +'+row.resistance);
+     parts.push(english?'Magic resistance +'+row.magic:
+      'Сопротивление магии +'+row.magic);
+    }
+    section.append(make('p',{text:row.source+' · '+parts.join(' · ')}));
+   }
+   body.prepend(section);
+  }
   if(modifiers?.specialEquipment?.entries?.length){
    const section=make('section',{class:'stage-attribute-row'});
    section.append(make('strong',{text:english?'Special item and Soul effects':

@@ -853,6 +853,75 @@ function targetResistancePreview({records=[],itemForth=null}={}){
  return {entries,verified:false,source:'Pandora Saga OS EP_ONDAMAGE_FDS_RACE'};
 }
 
+// Nine official OS cloak records activate a separate passive only on battle
+// maps. This is intentionally an informational situational preview: the normal
+// HP, attribute, armor and resistance totals remain map-neutral.
+const battleMapCloakSkills=Object.freeze({
+ 18022:500000044,18023:500000045,18024:500000046,
+ 18025:500000044,18026:500000045,18027:500000046,
+ 18028:500000044,18029:500000045,18030:500000046
+});
+const battleMapCloakTiers=Object.freeze({
+ 500000044:Object.freeze({all:2,armor:1,hp:300,resistance:0,magic:0}),
+ 500000045:Object.freeze({all:3,armor:3,hp:1000,resistance:0,magic:0}),
+ 500000046:Object.freeze({all:5,armor:5,hp:2000,resistance:5,magic:10})
+});
+function battleMapCloakPreview({records=[],skills=null,itemForth=null}={}){
+ const entries=[];
+ if(!Array.isArray(records)||!skills||typeof skills!=='object')
+  return {entries,verified:false};
+ for(const [source,record,grade] of records){
+  if(!record||!Number.isInteger(record.id)||
+   !Object.hasOwn(battleMapCloakSkills,record.id)||
+   source!=='item:'+record.id||record.slot!=='cloak'||
+   !Number.isInteger(grade)||grade<0||grade>10)continue;
+  const skillId=battleMapCloakSkills[record.id],expected=battleMapCloakTiers[skillId];
+  const mapProcs=sourceEffects(source,record,grade,itemForth).filter(effect=>
+   effect?.func==='EP_SKILL_EXEC_MAPIN'&&
+   (!Number.isFinite(effect.min)||grade>=effect.min)&&
+   (!Number.isFinite(effect.max)||grade<=effect.max));
+  if(mapProcs.length!==1||mapProcs[0].a!==skillId||
+   mapProcs[0].b!==7||mapProcs[0].dir!=='TARGET')continue;
+  // Never infer map support from effect ID alone; both original locales
+  // explicitly say these cloak bonuses are battle-map-only.
+  const desc=String(record.desc||'');
+  const isRu=desc.includes('Действует только на военных картах.')&&
+   desc.includes('Защита +'+expected.armor+', ОЗ +'+expected.hp+
+    ', все характеристики +'+expected.all+'.');
+  const isEn=desc.includes('Effective only on battle maps.')&&
+   desc.includes('Defense +'+expected.armor+', HP +'+expected.hp+
+    ', all stats +'+expected.all+'.');
+  if(!isRu&&!isEn)continue;
+  if(expected.resistance&&!(isRu?
+   desc.includes('Сопротивляемость всем видам урона +'+expected.resistance+
+    ', магии +'+expected.magic+'.'):
+   desc.includes('Resistance to all damage types +'+expected.resistance+
+    ', Magic +'+expected.magic+'.')))continue;
+  const skill=skills[String(skillId)];
+  if(!skill||Number(skill.id)!==skillId||!Array.isArray(skill.funcs))continue;
+  const effects={
+   EP_ABILITY_ALL_CONST:expected.all,
+   EP_ARMORCLASS_CONST:expected.armor,
+   EP_MAXLIFE_CONST:expected.hp,
+   EP_LOST_MAPCHANGE:0,
+   ...(expected.resistance?{
+    EP_ALL_RESISTANCE_CONST:expected.resistance,
+    EP_MAGIC_RESISTANCE_CONST:expected.magic}: {})
+  };
+  if(skill.funcs.length!==Object.keys(effects).length||
+   Object.entries(effects).some(([ep,value])=>{
+    const found=skill.funcs.filter(row=>row.ep===ep&&row.dir==='TARGET');
+    return found.length!==1||found[0].fv1?.[3]!==value;
+   }))continue;
+  entries.push({source:String(record.name||source),itemId:record.id,skillId,
+   all:expected.all,armor:expected.armor,hp:expected.hp,
+   resistance:expected.resistance,magic:expected.magic,
+   verified:false});
+ }
+ return {entries,verified:false,condition:'battle maps only',
+  source:'Pandora Saga OS EP_SKILL_EXEC_MAPIN and catalog skill effects'};
+}
+
 // Conditional skill procs: report actual OS triggers without assuming a successful hit.
 const procTriggers=Object.freeze({
  EP_ONHIT_SKILL_EXEC:'При ударе',
@@ -1461,6 +1530,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const targetResistance=targetResistancePreview({records:combinedRecords,itemForth});
  const rawProcPreview=conditionalProcPreview({records:combinedRecords,itemForth,skills:combatContext.skillCatalog});
  const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
+ const battleMapCloaks=battleMapCloakPreview({
+  records:combinedRecords,itemForth,skills:combatContext.skillCatalog
+ });
  const specialEquipment=specialEquipmentPreview({records:combinedRecords,itemForth});
  const procPreview=deduplicateProcDescriptions(rawProcPreview,specialEquipment);
  if(otherEquipment&&resistances){
@@ -1522,7 +1594,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,specialEquipment,regeneration,legacyBuffs,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
@@ -1531,6 +1603,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
