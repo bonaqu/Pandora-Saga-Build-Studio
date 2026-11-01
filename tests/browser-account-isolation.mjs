@@ -50,7 +50,7 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   await page.locator('#nav [data-tab="builds"]').click();
  }
  async function named(){
-  await page.locator('#nav [data-tab="builds"]').click();
+  // The Build Manager is already open; its modal captures clicks outside itself.
   return page.locator('.build-card h3').allTextContents();
  }
  try{
