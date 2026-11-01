@@ -1412,7 +1412,7 @@ function renderWiki(root){
   detail.replaceChildren();
   const type=wikiSelection.type;
   const knownMaps=wikiIndex.records('map');
-  const catalog=wikiIndex.records(type);
+  const records=wikiIndex.records(type);
   const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id));
   const selectedIndex=wikiSelection.id==null?-1:results.findIndex(([id])=>id===wikiSelection.id);
   const visible=selectedIndex>=wikiShown?
@@ -1441,7 +1441,7 @@ function renderWiki(root){
     else row.removeAttribute('aria-current');
    });
   }
-  const id=wikiSelection.id,rec=id==null?null:catalog?.[id];
+  const id=wikiSelection.id,rec=id==null?null:records?.[id];
   if(!rec){detail.append(h('p',{class:'muted',text:!results.length?(lang==='en'?'No matching entries.':'Ничего не найдено.'):(lang==='en'?'Select an entry to view its details and sources.':'Выбери запись для просмотра характеристик и связанных источников.')}));return}
   const typeLabel=lang==='en'?{item:'Item',monster:'Monster',map:'Location',npc:'NPC',
     skill:'Skill',soul:'Soul',instance:'Dungeon',chest:'Chest'}:

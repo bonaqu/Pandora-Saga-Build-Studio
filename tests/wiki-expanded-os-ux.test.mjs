@@ -60,7 +60,7 @@ test('wiki item and skill details expose source fields, class names, and progres
  assert.match(app,/rec\.range/);
  assert.match(app,/wikiSourceShown\+=80;draw\(true\)/);
  assert.match(app,/wikiIndex\.records\('map'\)/);
- assert.match(app,/wikiIndex\.records\(type\)/);
+ assert.match(app,/const records=wikiIndex\.records\(type\)/);
  assert.match(app,/wikiIndex\.normalize\(recipeSearch\.value\)/);
  assert.match(app,/moreSources\(found\)/);
  assert.match(app,/moreSources\(usedIn\)/);
