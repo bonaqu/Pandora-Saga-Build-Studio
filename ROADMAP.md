@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.210.0 (`2026.11.01.210`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.211.0 (`2026.11.01.211`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.211.0 — local archive of 1,173 original OS item, skill and Soul images
+
+- Confirmed official Pandora Saga OS original WebP endpoints; imported 286 skills, 876 items, 11 Souls as local assets under `assets/*/icons/`. Each preserved source file passed RIFF/WebP validation, 0 corrupt; archive and manifest live in the Git branch.
+- Source inventory 1,437 expected = 1,173 present + 264 HTTP-404 missing (260 skills and 4 items). Missing game images are NOT faked, borrowed or counted as present; retain future recovery task for actual original assets.
+- Source URLs for Souls were wrong in the previous mirror tool. Verified they share `/icons/items/` upstream, while self-hosting copies as `/assets/souls/icons/`. Prefer these in runtime icon resolution.
+- Added strict archive/manifest integrity tests and a regression against reintroducing nonexistent Soul URL paths. Used a one-time isolated asset-import workflow and removed it from the proposed final repository diff.
+- Formula parity, save overwrite rules, D1, admin discovery and 1–55 planning stay unchanged. Public Pages deployment still requires independent success verification.
 
 ## Source update 0.210.0 — proper EN Hero Path status, prerequisites and skill details
 
