@@ -59,21 +59,64 @@ function build(data){
   instance:Object.fromEntries((data.instances||[]).map(x=>[String(x.id),x])),
   skill:data.skills||{},soul:data.souls||{}
  };
- const entries={},terms={};
+
+ // Preserve all original records for game formulas, links and source relations.
+ // Suppress only exact display copies and script-only variants of active skills.
+ const entries={},terms={},aliases={},variants={};
  for(const [type,records] of Object.entries(chapters)){
-  entries[type]=Object.entries(records);
-  const index=new Map();
-  for(const [id,rec] of entries[type]){
-   const relatedItem=type==='chest'||type==='soul'?data.items?.[id]:null;
-   const locations=type==='monster'?(mobLocations.get(id)||[]).map(x=>x.name):
-    type==='npc'?(rec.maps||[]).map(x=>maps[x]?.name):[];
-   index.set(id,normalizeSearch([rec.name,rec.desc,rec.blurb,rec.kind,
-    rec.level,rec.charLevel,rec.branch,rec.branchRaw,rec.skillType,rec.slot,
-    ...(rec.slots||[]),...Object.keys(rec.classes||{}),relatedItem?.name,
-    ...locations].filter(x=>x!=null).join(' ')));
+  const all=Object.entries(records),hidden=new Map(),signatures=new Map();
+  const nameGroups=new Map();
+  const label=([id,rec])=>type==='chest'?(data.items?.[id]?.name||rec.name):rec.name;
+  for(const pair of all){
+   const name=normalizeSearch(label(pair));
+   if(!name)continue;
+   const group=nameGroups.get(name)||[];
+   group.push(pair);nameGroups.set(name,group);
+   const content=Object.fromEntries(Object.entries(pair[1])
+    .filter(([key])=>key!=='id'&&key!=='iconId')
+    .sort(([a],[b])=>a.localeCompare(b)));
+   const signature=name+'|'+JSON.stringify(content);
+   if(signatures.has(signature))hidden.set(pair[0],signatures.get(signature));
+   else signatures.set(signature,pair[0]);
   }
-  terms[type]=index;
+  if(type==='skill')for(const group of nameGroups.values()){
+   const branches=new Map();
+   for(const pair of group){
+    const key=String(pair[1].branch||'');
+    const rows=branches.get(key)||[];
+    rows.push(pair);branches.set(key,rows);
+   }
+   for(const rows of branches.values()){
+    const primary=rows.find(([,skill])=>skill.learnable===true)?.[0]||rows[0]?.[0];
+    for(const [id,skill] of rows)
+     if(skill.learnable===false&&id!==primary)hidden.set(id,primary);
+   }
+  }
+  const canonical=id=>{
+   let key=String(id),hop=0;
+   while(hidden.has(key)&&hop++<all.length)key=hidden.get(key);
+   return key;
+  };
+  aliases[type]=new Map(all.map(([id])=>[id,canonical(id)]));
+  const groups=new Map();
+  for(const [id]of all){
+   const key=canonical(id),group=groups.get(key)||[];
+   group.push(id);groups.set(key,group);
+  }
+  variants[type]=groups;
+  entries[type]=all.filter(([id])=>canonical(id)===id);
+  terms[type]=new Map(all.map(([id,rec])=>[
+   id,normalizeSearch([label([id,rec]),type==='soul'?data.items?.[id]?.name:null]
+    .filter(Boolean).join(' '))
+  ]));
  }
+ const canonical=(type,id)=>aliases[type]?.get(String(id))||String(id);
+ const related=(type,id)=>variants[type]?.get(canonical(type,id))||[String(id)];
+ const uniqueRows=(rows,key)=>[...new Map(rows.map(row=>[key(row),row])).values()];
+ const allLocations=id=>uniqueRows(related('monster',id).flatMap(key=>mobLocations.get(key)||[]),
+  row=>row.type+':'+row.id);
+ const allDrops=id=>uniqueRows(related('monster',id).flatMap(key=>drops.get(key)||[]),
+  row=>[row.itemId,row.kind,row.percent,row.condition,row.quantity].join(':'));
  const search=(type,query,displayName)=>{
   const all=entries[type]||[],q=normalizeSearch(query).split(' ').filter(Boolean);
   if(!q.length)return all;
@@ -85,8 +128,8 @@ function build(data){
  };
  return Object.freeze({
   sources:id=>(sources.get(String(id))||[]).slice(),
-  drops:id=>(drops.get(String(id))||[]).slice(),
-  trades:id=>(npcTrades.get(String(id))||[]).slice(),locations,
+  drops:allDrops,
+  trades:id=>(npcTrades.get(String(id))||[]).slice(),locations:allLocations,canonical,related,
   materialUses:id=>(materialTrades.get(String(id))||[]).slice(),
   residents:id=>(npcLocations.get(String(id))||[]).slice(),
   zones:id=>(zoneLocations.get(String(id))||[]).slice(),
