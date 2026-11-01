@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.190.0 (`2026.11.01.190`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.191.0 (`2026.11.01.191`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.191.0 — compare gem settings and opt-in buffs
+
+- Show two saved builds' attached gem type/element choices, guild HP/MP boosts, Sign of Life, active potion/combat toggles, Proelium and trained combat choices, and selected honor title in the same comparison view.
+- Only compare gemstones attached to the **currently equipped item ID and slot**. Ignore unrelated stale gem keys, and treat legacy absent buff fields as off/zero to avoid false differences.
+- Support RU/EN comparisons with the same source ID-based game data and honor title names. No recalculation of combat statistics, D1 schema changes or implicit saves.
+- Add pure Node comparison regressions, including old-build compatibility and source data immutability. Full Chromium/Pages status requires independent CI and deployment checks.
 
 ## Source update 0.190.0 — durable cloud conflict copies and no implicit PUT
 

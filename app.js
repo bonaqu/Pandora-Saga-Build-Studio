@@ -1782,6 +1782,10 @@ function compareSnapshots(a,b){
   if(before!==after)rows.push('Профиль · '+field+': '+before.slice(0,50)+' → '+after.slice(0,50));
  }
  if(String(a.racialPassiveId||'')!==String(b.racialPassiveId||''))rows.push('Расовая пассивка: '+(a.racialPassiveId||'—')+' → '+(b.racialPassiveId||'—'));
+ rows.push(...window.PandoraBuildComparison.describe(a,b,{
+  lang,slotLabels:slots.map(x=>x[0]),enchant:window.PandoraEnchantModel,
+  honorTitles:window.PandoraOSCalculator.honorTitles
+ }));
  return rows;
 }
 function restoreLoadedBuildUI(){
