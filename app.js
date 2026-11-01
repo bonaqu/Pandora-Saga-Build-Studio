@@ -1470,6 +1470,12 @@ function renderWiki(root){
   const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id))
    .filter(([,rec])=>type!=='item'||wikiItemType==='all'||
     (wikiItemType==='equipment'?slotKeys.includes(rec.slot):rec.slot===wikiItemType));
+  // A source link outside the current search must clear that search, otherwise
+  // the linked record opens in details but never appears in the browse list.
+  if(wikiSearch&&wikiSelection.id!=null&&records?.[wikiSelection.id]&&
+   !results.some(([id])=>id===wikiSelection.id)){
+   wikiSearch='';search.value='';draw(false);return;
+  }
   browse.classList.toggle('wiki-gear-grid',type==='item'&&wikiItemLayout==='grid');
   const selectedIndex=wikiSelection.id==null?-1:results.findIndex(([id])=>id===wikiSelection.id);
   const visible=selectedIndex>=wikiShown?

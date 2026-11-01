@@ -36,6 +36,11 @@ test('deep-linked trade materials bypass an equipment-only filter without breaki
  assert.match(app,/wikiItemType=slotKeys\.includes\(selected\.slot\)\?'equipment':'all'/);
  assert.match(app,/if\(picker\)picker\.value=wikiItemType/);
 });
+test('cross-linked encyclopedia entries clear a stale search instead of disappearing',()=>{
+ const app=get('app.js');
+ assert.match(app,/if\(wikiSearch&&wikiSelection\.id!=null&&records\?\.\[wikiSelection\.id\]\)/);
+ assert.match(app,/wikiSearch='';search\.value='';draw\(false\);return/);
+});
 test('repeated wiki record click reuses same list and preserves its scroll position',()=>{
  const app=get('app.js');
  assert.match(app,/const draw=\(detailOnly=false\)=>/);

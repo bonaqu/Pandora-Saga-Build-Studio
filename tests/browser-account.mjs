@@ -74,7 +74,7 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await page.locator('.account-recovery input').inputValue(),'r'.repeat(43));
   assert.match(await page.locator('.account-user').innerText(),/testplayer_01/);
   // One-time secret is not lost on popover close and can be dismissed by its owner.
-  await page.locator('#nav [data-tab="character"]').click();
+  await page.locator('#profileTrigger').click();
   assert.equal(await page.locator('#accountPanel').isVisible(),false);
   await page.locator('#profileTrigger').click();
   assert.equal(await page.locator('.account-recovery input').inputValue(),'r'.repeat(43));
