@@ -74,11 +74,13 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   assert.ok(puts.some(x=>x.bearer===tokenB&&x.payload.entry.name==='Bob only'));
   assert.equal(puts.some(x=>x.bearer===tokenB&&x.payload.entry.name.startsWith('Alice')),false);
   await login(tabA,tokenA,'alice_01');
-  await tabA.locator('#nav [data-tab="builds"]').click();
+  if(!await tabA.locator('.build-name-input').isVisible())
+   await tabA.locator('#nav [data-tab="builds"]').click();
   assert.deepEqual((await tabA.locator('.build-card h3').allTextContents()).sort(),
    ['Alice first','Alice second']);
   await login(tabB,tokenB,'bob_222');
-  await tabB.locator('#nav [data-tab="builds"]').click();
+  if(!await tabB.locator('.build-name-input').isVisible())
+   await tabB.locator('#nav [data-tab="builds"]').click();
   assert.deepEqual(await tabB.locator('.build-card h3').allTextContents(),['Bob only']);
   assert.deepEqual(errors,[]);
   console.log('Chromium concurrent tabs passed: A cannot overwrite B active localStorage, both caches survive');
