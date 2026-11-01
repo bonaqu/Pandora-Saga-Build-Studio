@@ -2643,8 +2643,8 @@ async function showCatalogImport(){
 }
 
 function syncLocaleControls(){
- for(const button of document.querySelectorAll('#locale [data-locale], #dockLocale [data-dock-locale]')){
-  const active=(button.dataset.locale||button.dataset.dockLocale)===lang;
+ for(const button of document.querySelectorAll('#locale [data-locale]')){
+  const active=button.dataset.locale===lang;
   button.classList.toggle('chosen',active);
   button.setAttribute('aria-pressed',String(active));
  }
@@ -2785,13 +2785,7 @@ $('hero').addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){
   event.preventDefault();openHeroBook();
  }
-});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{changeTab('builds')};$('dockLocale').onclick=event=>{
- const button=event.target.closest('[data-dock-locale]');
- if(!button)return;
- // The existing locale handler remains the single source of truth.
- $('locale').querySelector('[data-locale="'+button.dataset.dockLocale+'"]')?.click();
-};
-$('locale').onclick=event=>{
+});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{changeTab('builds')};$('locale').onclick=event=>{
  const button=event.target.closest('[data-locale]');
  if(!button||button.dataset.locale===lang)return;
  lang=button.dataset.locale;

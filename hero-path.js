@@ -131,9 +131,6 @@ function viewGrowth(target,api){
     branch.append(info,branchCount);wrap.append(branch);
     if(!isOpen)continue;
     const editor=make('div',{class:'inline-branch-editor'});
-    const note=make('div',{class:'inline-branch-value'});
-    const label=make('strong',{text:points+' / '+cap});
-    note.append(make('span',{text:root.PandoraUILocale?.text('branchPoints',api.lang)||'Очки ветки'}),label);
     const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':tr(api,'Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ')+api.branchName(key)});
     const visualMax=Math.max(90,cap,points);
@@ -187,7 +184,7 @@ function viewGrowth(target,api){
      if(!Number.isInteger(requested)||requested<0){restorePotential();return}
      const target=api.onAllocate(key,requested,final);
      if(!Number.isInteger(target)){restorePotential();return}
-     range.value=String(target);numeric.value=String(target);label.textContent=target+' / '+cap;
+     range.value=String(target);numeric.value=String(target);
      branchCount.textContent=cap?target+' / '+cap:'—';
 
      groupCount.textContent=groupSummary();
@@ -329,7 +326,7 @@ function viewGrowth(target,api){
       'Class limit: '+cap:'Предел класса: '+cap}),
      make('span',{text:String(visualMax)})
     ]);
-    editor.append(note,track,legend);
+    editor.append(track,legend);
     if(unlockDetails)editor.append(unlockDetails);
     editor.append(controls);
     if(!available)editor.append(make('p',{class:'muted',
