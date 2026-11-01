@@ -24,7 +24,7 @@ test('all known race-specific and Astir outfits have an explicit wearable audien
 test('explicit gender-specific human and elf outfits never cross gender or race',()=>{
  let checked=0;
  for(const item of items){
-  const m=item.name.match(/для (человека|эльфа|эльфийки).*?\\(([МЖ])\\)/i);
+  const m=item.name.match(/для (человека|эльфа|эльфийки).*?\(([МЖ])\)/i);
   if(!m)continue;
   const race=m[1]==='человека'?0:1,sex=m[2]==='М'?1:0;
   assert.ok(planner.raceCompatible(item,race,sex),item.name);
