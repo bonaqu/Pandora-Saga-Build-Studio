@@ -376,17 +376,9 @@ a.wiki-link:hover{text-decoration:none}
 .stage-rich-result{display:flex;align-items:center;gap:8px;background:#26190f;color:#edc898;border:1px solid #7b5635;padding:5px;text-align:left}
 .stage-rich-result img{width:34px;height:34px;object-fit:contain}
 .stage-rich-result:hover{border-color:#f0c47e;background:#49311e}
-.stage-hover-preview{position:fixed;z-index:240;width:min(320px,90vw);max-height:75vh;overflow:auto;background:#261a12;color:#f4d5a6;border:2px double #c89b5d;box-shadow:0 15px 50px #000e;pointer-events:none;padding:8px}
+.stage-hover-preview{position:fixed;z-index:240;width:min(320px,90vw);max-height:75vh;overflow:auto;background:#261a12;color:#f4d5a6;border:2px double #c89b5d;box-shadow:0 15px 50px #000e;pointer-events:none;padding:8px}/* 2026.10.30.30: skill milestones in the right-hand hero path */
 
-/* 2026.10.30.30: skill milestones in the right-hand hero path */
-.inline-milestone-heading{font:600 11px Manrope,sans-serif;color:#d9b981;margin:11px 0 5px}
-.inline-branch-milestones{height:62px;position:relative;margin:2px 6px 8px;border-bottom:3px solid #8e6942;background:linear-gradient(transparent 70%,#4e342061 70%)}
-.inline-milestone{position:absolute;top:2px;transform:translateX(-50%);width:33px;min-height:50px;z-index:2;background:#241b12;border:1px solid #9e794a;padding:1px;color:#eccc8e;font-size:9px}
-.inline-milestone:first-child{transform:translateX(0)}
-.inline-milestone.reached{border-color:#b5d58d;background:#35412b}
-.inline-milestone img{width:27px;height:27px;object-fit:contain;display:block}
-.inline-milestone small{display:block;line-height:13px}
-@media(max-width:540px){.inline-branch-milestones{margin-inline:12px}}
+
 
 /* 2026.10.30.31: in-portrait, source-backed attribute inspection */
 .portrait-frame.attributes>img#hero,.portrait-frame.attributes>.ornament,.portrait-frame.attributes>.portrait-bottom{visibility:hidden}
@@ -593,11 +585,8 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track input[type=range]{appearance:none;-webkit-appearance:none;position:absolute;top:66px;left:12px;width:calc(100% - 24px);height:25px;margin:0;padding:0;z-index:3;background:transparent;cursor:ew-resize}
 .inline-mastery-track input[type=range]::-webkit-slider-runnable-track{height:8px;background:transparent;border:0}
 .inline-mastery-track input[type=range]::-moz-range-track{height:8px;background:transparent;border:0}
-.inline-mastery-track .inline-branch-milestones{position:absolute;inset:2px 12px 32px;height:auto;margin:0;border:0;background:none;pointer-events:none}
-.inline-mastery-track .inline-milestone{top:5px;min-height:50px;pointer-events:auto}
-.inline-mastery-track .inline-milestone.reached{border-color:#ead08b;background:#5f4729;box-shadow:0 0 9px #d6a5614d}
 .inline-mastery-track input:focus-visible{outline:2px solid #efd49b;outline-offset:2px}
-@media(max-width:460px){.inline-mastery-track{margin-inline:0}.inline-mastery-track .inline-milestone{width:29px}}
+@media(max-width:460px){.inline-mastery-track{margin-inline:0}}
 
 /* 2026.10.30.54: independent potential and trained mastery, in-Path skill gallery. */
 .path-budget{margin:8px 0 11px;padding:10px;border:1px solid #8b663a;background:linear-gradient(135deg,#24190f,#382618);border-radius:7px}
@@ -666,10 +655,8 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track .inline-mastery-locked[hidden]{display:none}
 .inline-mastery-track .inline-mastery-locked:after{content:'🔒';position:absolute;right:1px;bottom:9px;font-size:13px;color:#eeb8aa;text-shadow:0 1px 3px #000}
 .path-reset-points{width:100%;padding:8px;margin-top:8px;border:1px solid #715139;border-radius:3px;background:#25180f;color:#c8a68a;font-size:11px}
-.path-reset-points:hover{border-color:#cc9371;background:#3a2418;color:#efc6ae}
+.path-reset-points:hover{border-color:#cc9371;background:#3a2418;color:#efc6ae}/* 2026.10.30.60: center threshold icons at their exact point on the one slider. */
 
-/* 2026.10.30.60: center threshold icons at their exact point on the one slider. */
-.inline-mastery-track .inline-milestone{transform:translateX(-50%)}
 
 /* 2026.10.30.61 — complete source-backed skill details in the right Hero Path. */
 .path-skill-metadata{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:8px 0;border-block:1px solid #70543b;font-size:11px}
@@ -683,12 +670,8 @@ a.wiki-link:hover{text-decoration:none}
 .path-skill-details .wiki-link{display:inline-block;margin-top:9px}
 
 /* 2026.10.30.64 — visible instructions for direct drag and keyboard allocation. */
-.path-control-hint{display:block;margin:2px 0 7px;font-size:10px;line-height:1.4;color:#b7a88b}
+.path-control-hint{display:block;margin:2px 0 7px;font-size:10px;line-height:1.4;color:#b7a88b}/* 2026.10.30.65: skill thresholds above class maximum remain visible on red area. */
 
-/* 2026.10.30.65: skill thresholds above class maximum remain visible on red area. */
-.inline-mastery-track .inline-milestone.unreachable{opacity:.58;filter:grayscale(1);border-color:#a56358;background:#34211d}
-.inline-mastery-track .inline-milestone.unreachable:after{content:'🔒';position:absolute;right:-3px;top:-5px;font-size:12px;text-shadow:0 1px 4px #000}
-.inline-mastery-track .inline-milestone.unreachable:focus-visible{opacity:1;filter:none;outline:2px solid #f1b6a2}
 
 /* 2026.10.30.68: compact markers and one natural page scrollbar. */
 .workspace>.right{max-height:none!important;height:auto;overflow:visible!important}
@@ -701,14 +684,6 @@ a.wiki-link:hover{text-decoration:none}
 .path-sections{margin:6px 0}
 .path-skill-details[hidden]{display:none!important}
 .path-show-more{width:100%;padding:10px;margin:9px 0;border:1px solid #8b6844;background:#3b2818;color:#e9c894}
-.inline-mastery-track .inline-milestone.path-milestone-pin{
- display:grid;place-items:center;width:12px;height:12px;min-height:12px;padding:0;
- border-radius:50%;border:1px solid #c99c58;background:#614124;transform:translateX(-50%);z-index:2
-}
-.path-milestone-core{font-size:12px;line-height:8px;color:#f0d18d}
-.inline-mastery-track .path-milestone-pin.reached{background:#426b38;border-color:#a2e994}
-.inline-mastery-track .path-milestone-pin.unreachable{background:#572a2a;border-color:#cf7968;opacity:.9;filter:none}
-.inline-mastery-track .path-milestone-pin.unreachable:after{content:'';position:absolute;right:-3px;top:-3px;width:5px;height:5px;border-radius:50%;background:#ea786d}
 .path-skill-preview{width:min(370px,92vw);font-size:11px}
 .path-skill-preview-item{display:flex;gap:9px;align-items:flex-start;padding:5px 2px}
 .path-skill-preview-item+.path-skill-preview-item{border-top:1px solid #725235;padding-top:8px;margin-top:4px}
@@ -747,14 +722,7 @@ a.wiki-link:hover{text-decoration:none}
  .workspace .stage-inner .right-rail{right:calc((100% - var(--hero-width))/2 - 63px)}
 }
 .inline-mastery-track{height:94px}
-.inline-mastery-track .inline-branch-milestones{inset:0 12px 0;height:100%}
-.inline-mastery-track .inline-milestone.path-milestone-pin{
- top:69px;width:12px;height:12px;min-width:12px;min-height:12px;z-index:6;
- border-radius:3px;transform:translateX(-50%) rotate(45deg);
-}
-.inline-mastery-track .inline-milestone.path-milestone-pin .path-milestone-core{transform:rotate(-45deg);font-size:9px}
-.inline-mastery-track .path-milestone-pin:focus-visible{outline:2px solid #f6dfab;outline-offset:3px}
-@media(max-width:700px){.inline-mastery-track .inline-milestone.path-milestone-pin{width:12px;height:12px}}
+
 
 /* 2026.10.30.74 — explicit grouped skill picker, always below the track. */
 .path-milestone-picker[hidden]{display:none!important}
@@ -771,39 +739,6 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track .inline-mastery-fill,.inline-mastery-track .inline-mastery-green{top:24px}
 .inline-mastery-track .inline-mastery-locked{top:23px}
 .inline-mastery-track input[type=range]{top:13px;height:28px}
-.inline-mastery-track .inline-branch-milestones{inset:0 12px;height:100%;pointer-events:none}
-.inline-mastery-track .inline-milestone.path-milestone-pin{
- top:15px;width:20px;height:24px;min-width:20px;min-height:24px;max-width:none;
- padding:0;display:grid;place-items:center;transform:translateX(-50%);
- background:transparent;border:0;border-radius:3px;box-shadow:none;
- filter:none;opacity:1;pointer-events:auto;z-index:6;
-}
-.inline-mastery-track .path-milestone-pin::before{
- content:'';position:absolute;top:6px;left:50%;transform:translateX(-50%);
- width:6px;height:13px;border:1px solid #e5bd77;border-radius:2px;
- background:linear-gradient(#f6d8a1,#aa7030);box-shadow:0 1px 4px #000;
-}
-.inline-mastery-track .path-milestone-pin.reached::before{
- background:linear-gradient(#bbeba2,#4a833d);border-color:#c9f0ad;
-}
-.inline-mastery-track .path-milestone-pin.unreachable::before{
- background:linear-gradient(#cf7e70,#71312b);border-color:#eea194;
-}
-.inline-mastery-track .path-milestone-pin.unreachable::after{content:none}
-.inline-mastery-track .path-milestone-pin.multi::before{
- width:18px;height:19px;top:3px;border-radius:4px;
-}
-.inline-mastery-track .path-milestone-pin .path-milestone-core{
- display:none;transform:none;font:700 10px/1 Manrope,Arial,sans-serif;z-index:1;
- color:#1b130d;pointer-events:none;
-}
-.inline-mastery-track .path-milestone-pin.multi .path-milestone-core{display:block}
-.inline-mastery-track .path-milestone-pin:hover::before{
- border-color:#fff4d4;box-shadow:0 0 7px #ffdd93;
-}
-.inline-mastery-track .path-milestone-pin:focus-visible{
- outline:2px solid #f6dc9c;outline-offset:1px;
-}
 .inline-mastery-track .inline-mastery-locked:after{bottom:9px}
 .stage-hover-preview.path-skill-preview{
  width:min(300px,calc(100vw - 16px));max-height:270px;
@@ -923,17 +858,6 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track input[type=range]{
  top:8px;height:32px;z-index:7;cursor:ew-resize;touch-action:pan-y;
 }
-.inline-mastery-track .inline-branch-milestones{
- position:absolute;inset:0 12px;height:100%;width:auto;
- pointer-events:none!important;z-index:5;
-}
-.inline-mastery-track .path-threshold-tick{
- position:absolute;top:19px;height:9px;width:2px;
- border:0;border-radius:1px;background:#ecd09d;
- transform:translateX(-50%);box-shadow:0 0 2px #000;
- pointer-events:none!important;
-}
-.inline-mastery-track .path-threshold-tick.unreachable{background:#c98572}
 .path-unlock-details{margin:2px 0 6px;border:1px solid #58402b;background:#1b140e}
 .path-unlock-details>summary{
  cursor:pointer;padding:5px 8px;color:#d9b98a;
@@ -1361,17 +1285,7 @@ main{padding-top:10px}
 .class-wizard-choice strong{flex:1 1 100px}
 .inline-mastery-track input[type=range]{cursor:pointer}
 .branch-row{cursor:pointer}
-.inline-mastery-track .inline-branch-milestones{overflow:visible;z-index:9}
-.inline-mastery-track .path-threshold-tick{
- top:-9px;width:13px;height:14px;border:1px solid #f5d7aa;border-radius:3px;
- background:linear-gradient(160deg,#f3c675,#9c6e31);box-shadow:0 1px 6px #000b;
- pointer-events:auto!important;cursor:help;z-index:11;outline-offset:2px
-}
-.inline-mastery-track .path-threshold-tick::after{content:'';position:absolute;left:50%;bottom:-5px;transform:translateX(-50%);border-width:5px 4px 0;border-style:solid;border-color:#be934f transparent transparent}
-.inline-mastery-track .path-threshold-tick.unreachable{background:linear-gradient(#ad796d,#70433a);border-color:#d19a87}
-.path-threshold-tick:focus-visible{outline:2px solid #ffe0a7}
 .path-milestone-tooltip{display:none;position:absolute;left:50%;bottom:calc(100% + 10px);transform:translateX(-50%);z-index:40;width:min(275px,65vw);max-height:230px;overflow:auto;pointer-events:none;white-space:normal;text-align:left;padding:9px;background:#1d1511;border:1px solid #ddaf72;border-radius:6px;box-shadow:0 10px 26px #000e}
-.path-threshold-tick:hover .path-milestone-tooltip,.path-threshold-tick:focus .path-milestone-tooltip{display:grid;gap:7px}
 .path-milestone-tooltip>strong{font:650 11px Manrope,Arial,sans-serif;color:#f4c88c}
 .path-milestone-preview{display:flex;gap:7px;align-items:flex-start}
 .path-milestone-preview img{width:30px;height:30px;object-fit:contain;flex:none;border:1px solid #755635}
@@ -1574,10 +1488,6 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .locale-switch button{min-width:42px;min-height:36px;padding:6px 10px;color:#c9b090;font:700 12px Manrope,Arial,sans-serif;border:1px solid transparent;border-radius:3px;background:transparent}
 .locale-switch button[aria-pressed="true"]{color:#ffdf9d;background:#614326;border-color:#b88e59}
 .locale-switch button:hover{border-color:#947143;color:#f9dca9}
-.inline-mastery-track .path-threshold-tick{width:10px;height:10px;border-radius:50%}
-.inline-mastery-track .path-threshold-tick:nth-child(3n+1){top:-23px}
-.inline-mastery-track .path-threshold-tick:nth-child(3n+2){top:-12px}
-.inline-mastery-track .path-threshold-tick:nth-child(3n){top:-1px}
 .inline-branch-value{align-items:baseline;gap:8px}
 .stage-picker-head strong{overflow-wrap:anywhere}
 
@@ -1591,14 +1501,6 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .inline-mastery-track .inline-mastery-green{top:85px}
 .inline-mastery-track .inline-mastery-locked{top:84px}
 .inline-mastery-track input[type=range]{top:74px}
-.inline-mastery-track .inline-branch-milestones{inset:8px 12px 37px;overflow:visible}
-.inline-mastery-track .path-threshold-tick{width:10px;height:10px;top:9px;
- transform:translateX(-50%);border-radius:50%}
-.inline-mastery-track .path-threshold-tick:nth-child(3n+1){top:8px}
-.inline-mastery-track .path-threshold-tick:nth-child(3n+2){top:27px}
-.inline-mastery-track .path-threshold-tick:nth-child(3n){top:46px}
-.inline-mastery-track .path-threshold-tick::after{bottom:-5px}
-.inline-mastery-track .path-threshold-tick:focus-visible{outline-offset:4px}
 /* Account button and lightweight login profile in Pandora Saga colors. */
 .header-actions{position:relative;align-items:center}
 .profile-trigger{display:grid;place-items:center;min-width:42px;min-height:42px;color:#e7bd83;
@@ -1639,37 +1541,6 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .inline-mastery-track .inline-mastery-fill,
 .inline-mastery-track .inline-mastery-green{top:20px}
 .inline-mastery-track input[type=range]{top:7px;height:32px;z-index:7}
-.inline-mastery-track .inline-branch-milestones{
- position:absolute;inset:0 12px;height:100%;
- overflow:visible;pointer-events:none;z-index:9;
-}
-.inline-mastery-track .path-threshold-tick{
- position:absolute;top:15px;width:12px;height:17px;min-height:0;
- transform:translateX(-50%);padding:0;
- background:transparent!important;border:0!important;box-shadow:none!important;
- opacity:1;filter:none;pointer-events:auto!important;cursor:help;
- border-radius:2px;z-index:10;
-}
-.inline-mastery-track .path-threshold-tick::before{
- content:'';position:absolute;left:1px;top:4px;width:10px;height:9px;
- box-sizing:border-box;border:1px solid #ffde95;border-radius:2px;
- background:linear-gradient(180deg,#f8d68d,#b27c32);box-shadow:0 0 3px #140a04;
- transform:none;
-}
-.inline-mastery-track .path-threshold-tick.reached::before{
- background:linear-gradient(#b8e697,#4c8c4a);border-color:#cff2b5;
-}
-.inline-mastery-track .path-threshold-tick.unreachable::before{
- background:linear-gradient(#d89d90,#814b45);border-color:#edb4a4;
-}
-.inline-mastery-track .path-threshold-tick::after{content:none!important}
-.inline-mastery-track .path-threshold-tick:hover::before,
-.inline-mastery-track .path-threshold-tick:focus-visible::before{
- border-color:#fff9da;box-shadow:0 0 0 2px #d6a461,0 0 6px #f9d18e;
-}
-.inline-mastery-track .path-threshold-tick:focus-visible{
- outline:2px solid #ffdfa2;outline-offset:2px;
-}
 .inline-mastery-track .path-milestone-tooltip{
  bottom:calc(100% + 5px);z-index:30;width:min(280px,74vw);
 }
