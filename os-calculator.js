@@ -895,10 +895,13 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
    const distinctRates=[...new Set(textRates)];
    const namedChance=distinctRates.length===1?distinctRates[0]:null;
    const sourceChance=effect.b>=0&&effect.b<=100?effect.b:null;
-   const mismatch=namedChance!==null&&sourceChance!==null&&namedChance!==sourceChance;
-   // Show percentages only if the *specific event* was corroborated.
-   // A matching number elsewhere in the source text does not prove this proc.
+   // The EN catalog sometimes concatenates an adjacent attribute and proc
+   // percentage (e.g. "INT +24% Chance" means INT +2 and a 4% chance).
+   // Exact source/skill/action corroboration takes precedence over the loose
+   // prose number heuristic. Uncorroborated mismatches remain disputed.
    const corroborated=matchesCorroboratedProc(source,record,effect);
+   const mismatch=!corroborated&&namedChance!==null&&sourceChance!==null&&
+    namedChance!==sourceChance;
    entries.push({trigger,triggerEn:procTriggersEn[effect.func],skillId:isStun?null:effect.a,
     skillName:isStun?'Оглушение':String(skill?.name||'Особый эффект'),
     skillNameEn:isStun?'Stun':String(skill?.name||'Special effect'),
