@@ -28,6 +28,6 @@ test('the same interactive drag, nearest-notch tooltip and keyboard-accessible u
  assert.match(ui,/pointerType==='touch'/);
  assert.match(ui,/path-unlock-notch/);
  assert.match(ui,/tabindex:'0'/);
- assert.match(ui,/input=make\('input',\{type:'range'/);
+ assert.match(ui,/const range=make\('input',\{type:'range'/);
  assert.match(css,/\.path-unlock-notch:focus-visible/);
 });
