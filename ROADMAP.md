@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.218.0 (`2026.11.01.218`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.219.0 (`2026.11.01.219`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.219.0 — nine data-verified on-hit triggers
+
+- Expose nine official OS item/Soul on-hit skill procs through the existing natural-language special-effects preview. Every chance must match the original item/Soul description **and** structured effect B field, with exact source ID, effect code, skill ID and direction. Effects are not automatically applied to combat totals or treated as server-proven.
+- Confirm three classic weapons with knockdown or stun procs, the Iron Staff 4% stun, and five Souls with original 4/5% stun, weaken, sleep, poison and slow statuses. Preserve grade conditions.
+- Explicitly exclude inconsistent Vampire Soul (description 4%, data B=5%), weapons with only an unspecified activation probability and mixed attacker/defender triggers. Do not silently resolve conflicting historical game information.
+- Retain fixed branch-header geometry, source 1–55 planning, existing account and D1 state, and manual saved-build overwrite rules.
 
 ## Source update 0.218.0 — eliminate branch-header layout shift during mastery drag
 
