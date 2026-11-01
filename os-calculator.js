@@ -1769,6 +1769,10 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   blessing:combatContext.legacyBuffMasteries?.blessing??0,
   hymn:combatContext.legacyBuffMasteries?.hymn??0,
   alchemy:combatContext.legacyBuffMasteries?.alchemy??0});
+ const songSkills=songSkillPreview({skillCatalog:combatContext.skillCatalog,
+  jobKey:combatContext.jobKey,level,
+  branchMasteries:combatContext.branchMasteries,
+  branchCaps:classData.branchCaps});
  const coverage=effectCoverage({records:combinedRecords,itemForth});
  const recoveryAmount=recoveryAmountPreview({maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,stats});
@@ -1803,7 +1807,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
