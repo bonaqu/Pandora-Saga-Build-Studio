@@ -185,7 +185,8 @@ function viewGrowth(target,api){
        preview.append(row);
       }
       tick.append(preview);ticks.append(tick);
-      milestonesOnTrack.push({tick,skills:skillsAt,locked:lockedAt});
+      milestonesOnTrack.push({tick,skills:skillsAt,locked:lockedAt,
+       thresholdFraction:threshold/visualMax});
      }
      track.append(ticks);
      // Range handles dragging; hover the nearest notch without placing hit targets over the thumb.
@@ -203,8 +204,9 @@ function viewGrowth(target,api){
       const rect=range.getBoundingClientRect();
       const left=rect.left+9,travel=Math.max(1,rect.width-18);
       const at=milestonesOnTrack.reduce((nearest,mark)=>{
-       const threshold=Number(mark.tick.getAttribute('data-milestone-points'));
-       const distance=Math.abs(event.clientX-(left+threshold/visualMax*travel));
+       // Every threshold is immutable for this rendered branch; no need to
+       // repeatedly query and parse DOM attributes on pointer movement.
+       const distance=Math.abs(event.clientX-(left+mark.thresholdFraction*travel));
        return distance<nearest.distance?{mark,distance}:nearest;
       },{mark:null,distance:Infinity});
       const next=event.clientY>=rect.top&&event.clientY<=rect.bottom&&
