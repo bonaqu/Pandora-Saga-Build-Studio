@@ -828,26 +828,55 @@ function attributeBuffBonus(options={}){
 
 
 
-// Current OS Soul codes: source-backed creature-specific damage modifiers.
+// Creature damage reductions are source-backed, not a license to apply an
+// arbitrary same-shaped effect or equate today's OS families with Remaked.
 const osTargetFamilies=Object.freeze({
- 502:{key:'animal',name:'животных'},504:{key:'devil',name:'демонов'},
- 505:{key:'immortal',name:'нежити'},508:{key:'reptilian',name:'ящеров'},
- 511:{key:'ghost',name:'призраков'},512:{key:'golem',name:'големов'}
+ 502:{key:'animal',name:'животных',nameEn:'animals'},
+ 504:{key:'devil',name:'демонов',nameEn:'demons'},
+ 505:{key:'immortal',name:'нежити',nameEn:'undead'},
+ 508:{key:'reptilian',name:'ящеров',nameEn:'reptiles'},
+ 511:{key:'ghost',name:'призраков',nameEn:'ghosts'},
+ // Source EN explicitly says "Unliving"; its equivalence to old
+ // Remaked RESInanimate is NOT proven by the numeric OS family ID.
+ 512:{key:'golem',name:'големов',nameEn:'unliving creatures'}
+});
+const osCreatureSoulProof=Object.freeze({
+ 103029:{raceId:502,ru:'Урон, наносимый животными, -3%.',
+  en:'Damage Reduction against Animals +3%'},
+ 103030:{raceId:504,ru:'Урон, наносимый демонами, -3%.',
+  en:'Damage Reduction against Demons +3%'},
+ 103031:{raceId:505,ru:'Урон, наносимый нежитью, -3%.',
+  en:'Damage Reduction against Undead +3%'},
+ 103032:{raceId:508,ru:'Урон, наносимый ящерами, -3%.',
+  en:'Damage Reduction against Reptiles +3%'},
+ 103033:{raceId:511,ru:'Урон, наносимый призраками, -3%.',
+  en:'Damage Reduction against Ghosts +3%'},
+ 103034:{raceId:512,ru:'Урон, наносимый големами, -3%.',
+  en:'Damage Reduction against Unliving +3%'}
 });
 function targetResistancePreview({records=[],itemForth=null}={}){
- if(!Array.isArray(records))return null;
  const entries=[];
- for(const [source,record,grade] of records){
-  if(!record||!Number.isInteger(grade))continue;
-  for(const effect of sourceEffects(source,record,grade,itemForth)){
-   const race=osTargetFamilies[effect?.b];
-   if(effect?.func!=='EP_ONDAMAGE_FDS_RACE'||!race||
-    !Number.isFinite(effect.a)||!Number.isInteger(effect.b))continue;
-   if((Number.isFinite(effect.min)&&grade<effect.min)||
-      (Number.isFinite(effect.max)&&grade>effect.max))continue;
-   entries.push({key:race.key,name:race.name,raceId:effect.b,
-    change:effect.a,source:String(record.name||source)});
-  }
+ if(!Array.isArray(records))return {entries,verified:false};
+ for(const row of records){
+  if(!Array.isArray(row)||row.length<3)continue;
+  const [source,record,grade]=row;
+  const proof=osCreatureSoulProof[record?.id];
+  if(!proof||!Number.isInteger(record.id)||
+   source!=='soul:'+record.id||
+   !Number.isInteger(grade)||grade<0||grade>10||
+   !Array.isArray(record.slots)||!record.slots.includes('body')||
+   ![proof.ru,proof.en].includes(String(record.desc||'').trim()))continue;
+  // All six original sources have one grade-bound SELF effect. Fail
+  // closed on a forged extra event, swapped family, direction or range.
+  const effects=sourceEffects(source,record,grade,itemForth);
+  if(effects.length!==1)continue;
+  const effect=effects[0];
+  if(effect.func!=='EP_ONDAMAGE_FDS_RACE'||
+   effect.dir!=='SELF'||effect.b!==proof.raceId||
+   effect.a!==-3||effect.min!==0||effect.max!==10)continue;
+  const family=osTargetFamilies[proof.raceId];
+  entries.push({key:family.key,name:family.name,nameEn:family.nameEn,
+   raceId:proof.raceId,change:-3,source:String(record.name||source)});
  }
  // No aggregation: duplicate Soul stacking and OS damage packets are unverified.
  return {entries,verified:false,source:'Pandora Saga OS EP_ONDAMAGE_FDS_RACE'};
