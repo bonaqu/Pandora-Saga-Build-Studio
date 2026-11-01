@@ -986,7 +986,8 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
     confirmedOnHitRules[String(source)]:null;
    if(proc&&record&&Number(record.id)===proc.id&&
       effect.func===proc.func&&effect.a===proc.a&&effect.b===proc.b&&
-      effect.dir===proc.dir){
+      effect.dir===proc.dir&&Number.isInteger(grade)&&grade>=0&&grade<=10&&
+      typeof record.desc==='string'&&record.desc.includes(String(proc.b)+'%')){
     entries.push({code:effect.func,source:String(record.name||source),
      ru:proc.ru,en:proc.en,verified:false});
     continue;
