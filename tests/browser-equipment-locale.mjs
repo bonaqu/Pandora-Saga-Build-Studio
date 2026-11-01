@@ -21,9 +21,12 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await first.waitFor({state:'visible'});
   const firstName=await first.locator('strong').innerText();
   assert.ok(firstName.length>0);
-  await page.locator('#locale [data-locale="en"]').click();
+  // The workbench covers the header: its own switch must remain clickable.
+  await page.locator('#dockLocale [data-dock-locale="en"]').click();
   await page.waitForFunction(()=>document.querySelector(
    '.equipment-catalog-toolbar input[type=search]')?.placeholder==='Search items');
+  assert.equal(await page.locator('#dockLocale [data-dock-locale="en"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('#locale [data-locale="en"]').getAttribute('aria-pressed'),'true');
   assert.equal(await toolbar.locator('select option[value="ring"]').innerText(),'Rings');
   assert.match(await page.locator('.equipment-catalog-head h3').innerText(),/Pandora Saga Equipment/);
   assert.equal(await page.locator('.equipment-catalog-layout .item-card').first()
@@ -34,9 +37,11 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await ring.waitFor({state:'visible'});
   await ring.focus();
   assert.ok((await page.locator('.equipment-catalog-layout .item-info').innerText()).includes('Sources and details'));
-  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#dockLocale [data-dock-locale="ru"]').click();
   await page.waitForFunction(()=>document.querySelector(
    '.equipment-catalog-toolbar input[type=search]')?.placeholder==='Поиск по названию');
+  assert.equal(await page.locator('#dockLocale [data-dock-locale="ru"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('#locale [data-locale="ru"]').getAttribute('aria-pressed'),'true');
   assert.equal(await toolbar.locator('select option[value="ring"]').innerText(),'Кольца');
   assert.match(await page.locator('.equipment-catalog-layout .item-info h3').innerText(),/Сведения о предмете/);
   assert.deepEqual(errors,[]);

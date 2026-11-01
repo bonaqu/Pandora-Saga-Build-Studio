@@ -1716,3 +1716,15 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  }
 }
 
+
+/* Language stays accessible while the full-screen workbench covers the header. */
+.detail.is-open>.detail-title>div:first-child{min-width:0;flex:1}
+.detail.is-open .detail-title h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.detail.is-open .dock-locale{display:flex;flex:0 0 auto;gap:3px;margin-left:auto}
+.detail.is-open .dock-locale button{min-width:33px;padding:8px 7px;border:1px solid #795a3c;background:#24180f;color:#d7b990;font:700 11px Manrope,Arial,sans-serif}
+.detail.is-open .dock-locale button.chosen,.detail.is-open .dock-locale button[aria-pressed=true]{color:#ffe0aa;border-color:#d4a56c;background:#5d3c24}
+.detail.is-open .dock-locale button:focus-visible{outline:2px solid #f6cd91;outline-offset:2px}
+@media(max-width:500px){
+ .detail.is-open .detail-title h2{font-size:17px}
+ .detail.is-open .dock-locale button{min-width:28px;padding:6px 4px}
+}
