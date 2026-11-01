@@ -1691,7 +1691,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const healingSpells=healingSkill?healingSpellsPreview({
   level,int:stats.int,spi:stats.spi,
   benevolence:combatContext.benevolenceMastery??0,
-  jobKey:combatContext.jobKey,healingPercent:healingSkill.percent
+  jobKey:combatContext.jobKey,healingPercent:healingSkill.percent,
+  benevolenceCap:classData.branchCaps?.benevolence??null,
+  skillCatalog:combatContext.skillCatalog
  }):null;
  const statusCures=statusCurePreview({items:consumableItems});
  const consumableSkills=consumableSkillPreview({
