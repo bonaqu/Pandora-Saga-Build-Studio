@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.228.0 (`2026.11.01.228`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.229.0 (`2026.11.01.229`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.229.0 — no unverified generic proc rates and asynchronous guest cloud assertion
+
+- Generic conditional-proc entries now reveal numerical rates **only when the exact on-hit/on-damage event** is independently supported by a source-ID/EP/skill/direction/chance and RU/EN exact phrasing rule already used by detailed proc previews. A merely coincidental percentage from unrelated item prose cannot appear as a trigger rate. Unverified events remain present, but without claimed percentages.
+- Two similarly rated 4% triggers on the historical Wind Lord Fan remain visible yet unquantified until exact original trigger-to-skill mapping is established; conflicted Vampire Soul still marked disputed. All ten already corroborated items/Souls retain their respective 4–9% RU/EN previews.
+- Chromium concurrent-guest library test now awaits each exact **successful** Worker POST response containing the correct guest bearer token and build name, rather than asserting network side effects immediately after the local build card appears. A real missing/misrouted cloud save will still fail. No user account/build persistence logic changed.
+- Preserve automatic local draft and explicit named-build overwrite, level 1–55 planning, game formulas and D1 schema.
 
 ## Source update 0.228.0 — exact RU/EN provenance for special equipment/Soul effects
 
