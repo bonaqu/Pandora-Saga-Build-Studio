@@ -96,3 +96,17 @@ test('real OS Traveler Boots source confirms a separate 8% on-damage Gust previe
   assert.deepEqual(calc.specialEquipmentPreview({records:[[source,modified,0]]}).entries,[]);
  assert.deepEqual(calc.specialEquipmentPreview({records:[[source,record,11]]}).entries,[]);
 });
+
+test('official English Traveler Boots prose activates the exact RU/EN proc preview',()=>{
+ const en=JSON.parse(read('data/os/strings.en.json'));
+ const original=items[15082],translated=en.items[15082],record={
+  ...original,name:translated.n,desc:translated.d};
+ assert.match(translated.d,/8% chance of gaining a Surge effect/);
+ assert.equal(en.skills[260003001].n,'Dash','use the official skill name, not invented Gust');
+ const preview=calc.specialEquipmentPreview({records:[['item:15082',record,0]]});
+ assert.equal(preview.entries.length,1);
+ assert.match(preview.entries[0].en,/8% chance to trigger Dash/);
+ assert.equal(preview.entries[0].verified,false);
+ const corrupted={...record,desc:record.desc.replace('8%','9%')};
+ assert.equal(calc.specialEquipmentPreview({records:[['item:15082',corrupted,0]]}).entries.length,0);
+});

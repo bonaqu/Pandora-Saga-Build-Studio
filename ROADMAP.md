@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.224.0 (`2026.11.01.224`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.225.0 (`2026.11.01.225`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.225.0 — RU/EN conditional chance verification, actual skill localization and enhancement validation
+
+- Match source-backed percentages from both original RU `шанс/вероятность` and EN `chance/probability` item/Soul descriptions. An item containing two different quoted proc chances does **not** yield an invented one-to-one match; leave both generic rates unspecified until an event-specific source check exists.
+- Traveler Boots (OS item 15082) exact 8% on-physical-damage skill 260003001 now passes either verified RU or official EN descriptor. English caption uses official ID-keyed skill **Dash**, not the earlier informal **Gust** label. Changed numbers, source IDs, effect directions or descriptions still fail closed.
+- All generic conditional, detailed special-equipment and experience preview source rows require enhancement grade integer +0–+10; out-of-range records contribute no displayed proc/rate.
+- Add source-backed RU/EN, conflicting Vampire Soul, multi-percentage and invalid-grade vectors. No speculative server proc rolls, battle engine formula, storage migration, account or D1 write; planning 1–55 preserved.
 
 ## Source update 0.224.0 — bilingual equipment proc and experience sections
 
