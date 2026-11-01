@@ -1730,16 +1730,16 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 
 /* Two compact allocations in one row; wrap only when the actual space runs out. */
 .path-point-controls{
- display:flex;flex-wrap:wrap;align-items:center;column-gap:17px;row-gap:7px;
+ display:flex;flex-wrap:wrap;align-items:center;column-gap:8px;row-gap:6px;
  margin:6px 0 4px;min-width:0;
 }
 .path-point-controls .path-point-group{
- display:inline-flex;align-items:center;gap:7px;min-width:0;margin:0;
- font:11px/1.35 Manrope,Arial,sans-serif;color:#d9c29e;
+ display:inline-flex;align-items:center;gap:4px;min-width:0;margin:0;
+ font:10.5px/1.35 Manrope,Arial,sans-serif;color:#d9c29e;
 }
 .path-point-controls .path-point-mastery{color:#b5dba9}
 .path-point-controls .path-point-group input[type=number]{
- flex:0 0 58px;width:58px;min-width:0;height:28px;box-sizing:border-box;
+ flex:0 0 49px;width:49px;min-width:0;height:28px;box-sizing:border-box;
  margin:0;padding:3px 5px;border:1px solid #846845;border-radius:3px;
  background:#17130f;color:#f2d49f;text-align:center;
  font:12px/1.3 Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums;
