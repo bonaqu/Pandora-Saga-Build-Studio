@@ -28,7 +28,7 @@ test('path has gallery with available/grey skill cards and both pages',()=>{
  assert.match(html,/id="pathSkillGallery"/);
  assert.doesNotMatch(html,/id="allSkills"/);
  assert.match(ui,/path-skill-card/);
- assert.match(ui,/readiness\(previous,api,chain\)/);
+ assert.match(ui,/readiness\(previous,api,chain,byId\)/);
 });
 
 test('blue, amber, green are the SAME track rather than a second green bar',()=>{
