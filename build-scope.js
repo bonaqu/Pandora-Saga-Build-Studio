@@ -24,6 +24,35 @@ function write(storage,values){
  }
 }
 const slot=scope=>PREFIX+scope;
+function storedSnapshot(storage,scope){
+ try{
+  const value=JSON.parse(storage.getItem(slot(scope))||'null');
+  return Array.isArray(value)&&value.length===KEYS.length?value:DEFAULTS.slice();
+ }catch{return DEFAULTS.slice()}
+}
+// Multiple tabs can be signed into different accounts while sharing localStorage.
+// A tab may only write the generic active keys if those keys belong to its owner.
+// Otherwise save to that owner's own recovery cache and leave the other tab intact.
+function getOwned(storage,scope,key){
+ if(!validScope(scope)||!KEYS.includes(key))throw Error('Invalid owner or storage key');
+ const index=KEYS.indexOf(key);
+ return storage.getItem(MARKER)===scope?
+  storage.getItem(key)??DEFAULTS[index]:
+  storedSnapshot(storage,scope)[index]??DEFAULTS[index];
+}
+function setOwned(storage,scope,key,value){
+ if(!validScope(scope)||!KEYS.includes(key))throw Error('Invalid owner or storage key');
+ const index=KEYS.indexOf(key),next=value==null?DEFAULTS[index]:String(value);
+ if(storage.getItem(MARKER)===scope){
+  if(next==='')storage.removeItem(key);else storage.setItem(key,next);
+  sync(storage);
+ }else{
+  const values=storedSnapshot(storage,scope);
+  values[index]=next;
+  storage.setItem(slot(scope),JSON.stringify(values));
+ }
+ return true;
+}
 function sync(storage){
  const current=storage.getItem(MARKER);
  if(!validScope(current))return false;
@@ -74,5 +103,5 @@ function migrateLegacyGuest(storage,guestKey){
   return true;
  }catch{return false}
 }
-root.PandoraBuildScope=Object.freeze({owner,transition,sync,migrateLegacyGuest,MARKER});
+root.PandoraBuildScope=Object.freeze({owner,transition,sync,getOwned,setOwned,migrateLegacyGuest,MARKER});
 })(typeof window==='undefined'?globalThis:window);

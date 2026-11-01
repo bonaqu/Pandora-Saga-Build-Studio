@@ -95,3 +95,35 @@ test('legacy backup cannot overwrite an existing guest context or import malform
   JSON.stringify([{id:'not an id',data:{}}]));
  assert.equal(mod.migrateLegacyGuest(broken,'a'.repeat(64)),false);
 });
+
+test('a stale Alice tab cannot overwrite Bob primary saves, draft, or deletion queue',()=>{
+ const s=storage();
+ mod.transition(s,ownerA);put(s,'Alice',45,'["'+'a'.repeat(32)+'"]');mod.sync(s);
+ mod.transition(s,ownerB);put(s,'Bob',55,'["'+'b'.repeat(32)+'"]');mod.sync(s);
+ const bob=keys.map(k=>s.getItem(k));
+ mod.setOwned(s,ownerA,keys[0],JSON.stringify([{id:'a'.repeat(32),data:{level:46}}]));
+ mod.setOwned(s,ownerA,keys[1],JSON.stringify({level:46}));
+ mod.setOwned(s,ownerA,keys[2],JSON.stringify(['c'.repeat(32)]));
+ mod.setOwned(s,ownerA,keys[3],'a'.repeat(32));
+ assert.deepEqual(keys.map(k=>s.getItem(k)),bob,
+  'An old account tab must leave active Bob keys untouched');
+ assert.equal(JSON.parse(mod.getOwned(s,ownerA,keys[0]))[0].data.level,46);
+ assert.equal(JSON.parse(mod.getOwned(s,ownerA,keys[1])).level,46);
+ assert.deepEqual(JSON.parse(mod.getOwned(s,ownerA,keys[2])),['c'.repeat(32)]);
+ assert.equal(mod.getOwned(s,ownerA,keys[3]),'a'.repeat(32));
+ mod.transition(s,ownerA);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].data.level,46);
+ mod.transition(s,ownerB);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Bob');
+ assert.equal(JSON.parse(s.getItem(keys[2]))[0],'b'.repeat(32));
+});
+test('only owning tab writes active keys; unowned snapshot fallback is empty',()=>{
+ const s=storage();mod.transition(s,guest);
+ mod.setOwned(s,guest,keys[1],JSON.stringify({level:55}));
+ assert.equal(JSON.parse(s.getItem(keys[1])).level,55);
+ assert.equal(JSON.parse(mod.getOwned(s,guest,keys[1])).level,55);
+ assert.equal(mod.getOwned(s,ownerA,keys[0]),'[]');
+ assert.equal(mod.getOwned(s,ownerA,keys[1]),'');
+ assert.throws(()=>mod.setOwned(s,'other',keys[0],'[]'),/Invalid owner/);
+ assert.throws(()=>mod.getOwned(s,guest,'ps-account-session.v1'),/Invalid owner/);
+});

@@ -64,8 +64,7 @@ let activeBuildId=restoreActiveBuildId();
 function selectActiveBuild(id){
  activeBuildId=id;
  try{if(id)sessionStorage.setItem(ACTIVE_BUILD_KEY,id);else sessionStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
- try{if(id)localStorage.setItem(ACTIVE_BUILD_KEY,id);else localStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
- window.PandoraBuildScope.sync(localStorage);
+ try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),ACTIVE_BUILD_KEY,id)}catch{}
 }
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
 inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
@@ -78,22 +77,23 @@ stageGemQuery='',gameTables=null,gameItemForth=null,
 stageAttributesPage=['summary','attack','defense','recovery','effects','buffs'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 // Current character changes remain a local draft until explicit user save.
-function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state));
- window.PandoraBuildScope.sync(localStorage)}catch{}}
-function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds));
- window.PandoraBuildScope.sync(localStorage)}catch{}}
+function persist(){try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+ 'ps-build-studio.v1',JSON.stringify(state))}catch{}}
+function persistBuilds(){try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+ 'ps-build-library.v1',JSON.stringify(builds))}catch{}}
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
 const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
 let libraryChangeId=0;
 function queuedDeletes(){
- try{return JSON.parse(localStorage.getItem(CLOUD_DELETES_KEY)||'[]').filter(v=>/^[a-f0-9]{32}$/.test(v))}
+ try{return JSON.parse(window.PandoraBuildScope.getOwned(localStorage,libraryScopeId(),
+  CLOUD_DELETES_KEY)).filter(v=>/^[a-f0-9]{32}$/.test(v))}
  catch{return []}
 }
 function queueDelete(id){const ids=new Set(queuedDeletes());ids.add(id);
- localStorage.setItem(CLOUD_DELETES_KEY,JSON.stringify([...ids]));
- window.PandoraBuildScope.sync(localStorage)}
-function acknowledgeDelete(id){localStorage.setItem(CLOUD_DELETES_KEY,JSON.stringify(queuedDeletes().filter(v=>v!==id)));
- window.PandoraBuildScope.sync(localStorage)}
+ window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+  CLOUD_DELETES_KEY,JSON.stringify([...ids]))}
+function acknowledgeDelete(id){window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+ CLOUD_DELETES_KEY,JSON.stringify(queuedDeletes().filter(v=>v!==id)))}
 let cloudLibraryStatus='Подключаем облачную библиотеку…';
 function cloudToken(){
  let token=localStorage.getItem(CLOUD_TOKEN_KEY);
@@ -2104,7 +2104,8 @@ function saveBuild(name=state.name||'Новый герой',overwriteId=null){
   at:Math.max(Date.now(),(existingIndex>=0?Number(builds[existingIndex].at)||0:0)+1)};
  if(existingIndex>=0)builds.splice(existingIndex,1);
  builds.unshift(entry);
- try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}
+ try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+  'ps-build-library.v1',JSON.stringify(builds))}
  catch(error){
   builds=previousBuilds;state.name=previousName;selectActiveBuild(previousActive);
   showStudioToast('Не удалось сохранить билд. Проверь свободное место в браузере.','error');
@@ -2264,7 +2265,8 @@ function openSharedSnapshot(share){
   view.append(h('p',{text:'По ссылке найдено '+added.length+' сохранённых билдов. Текущие билды и активный черновик останутся без изменений.'}),
    h('button',{class:'button-action primary',text:'Добавить в мою библиотеку',onclick:()=>{
     const next=[...added,...builds];
-    try{localStorage.setItem('ps-build-library.v1',JSON.stringify(next))}
+    try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+     'ps-build-library.v1',JSON.stringify(next))}
     catch(e){alert('Не удалось сохранить библиотеку: '+e.message);return}
     builds=next;for(const entry of added)void putCloudBuild(entry);$('modalRoot').hidden=true;clear();changeTab('builds');
    }}));

@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.205.0 (`2026.11.01.205`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.206.0 (`2026.11.01.206`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.206.0 — prevent browser cross-tab account library contamination
+
+- Accounts open in multiple tabs share the same origin-localStorage but not the same in-memory session. All saved build writes, current hero drafts, active saved-build references, shared-library imports and pending deletion queues now use `PandoraBuildScope.setOwned/getOwned` with their initiating account or guest library identity.
+- A stale Alice tab writes **only Alice's isolated recovery cache** when another tab has switched the global active storage scope to Bob. Bob's primary localStorage records and pending deletions remain unchanged; switching back restores each owner's own saved records.
+- Retain compatibility with the pre-0.197 guest backups, existing active storage keys and accountless D1 keys; avoid rewriting unrelated localStorage secrets or account session tokens.
+- Add isolated Node tests for Alice/Bob simultaneous ownership and a fake-Worker Chromium scenario with two actual tabs saving independently. No Cloudflare migration, auto-save of unsaved heroes or game formula changes.
 
 ## Source update 0.205.0 — no false cloud-save success messages
 
