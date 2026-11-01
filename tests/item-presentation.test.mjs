@@ -58,6 +58,20 @@ test('all English source descriptions are stable when formatted twice',()=>{
   assert.equal(p.description(formatted),formatted,chapter+' translated description '+id);
  }
 });
+test('live screenshot examples keep lore sentences together and separate enhancement paragraphs',()=>{
+ const records=JSON.parse(readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+ const pants=p.description(records['13602'].desc);
+ assert.match(pants,/цвета зари\. Такие любят носить мужчины Астира\.\n\nЛВК \+1, ОЗ \+30\n\nЗа каждые 2 единицы улучшения:\nАтака \+1%/);
+ const dress=p.description(records['12612'].desc);
+ assert.match(dress,/платье цвета зари\. Такие любят носить женщины Астира\.\n\nСИЛ \+1/);
+ const dagger=p.description(records['1862'].desc);
+ assert.match(dagger,/начиная с \+7 и за каждый уровень:\nМагическая атака огнем \+1%/);
+ assert.match(dagger,/Пламя феникса\n\nПламя феникса:/);
+ const wand=p.description(records['2652'].desc);
+ assert.match(wand,/СД\+3\nСопротивляемость ожогам \+5%\nВремя перезарядки умения -5%/);
+ assert.equal(p.kind(records['12612']),'Броня');
+ assert.equal(p.kind(records['13602']),'Штаны');
+});
 test('source line breaks are not lost',()=>{
  assert.match(p.description('Описание.\nОЗ +15'),/\nОЗ \+15/);
 });

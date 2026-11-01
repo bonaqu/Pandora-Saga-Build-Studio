@@ -174,7 +174,7 @@
 .wiki-page{min-height:390px;background:linear-gradient(135deg,#281b14,#100c0b);border:2px double #987346;padding:18px}
 .wiki-page h3{font:600 29px Georgia;color:#eed09d;overflow-wrap:anywhere;margin:9px 0 16px}
 .wiki-page h4,.item-origin h4{font:600 18px Georgia;color:#e8bd7d;margin:14px 0 7px}
-.wiki-description{white-space:pre-line;overflow-wrap:anywhere;color:#d8c1a0;font-size:12px}
+.wiki-description{white-space:pre-wrap;overflow-wrap:anywhere;color:#d8c1a0;font-size:12px;line-height:1.55}
 .wiki-entry{padding:5px 0;border-bottom:1px solid #66452e70}
 .wiki-entry small{display:block;font-size:10px;color:#bb9c79}
 .item-origin{background:#20170f;border:1px solid #80613e;margin:15px 0;padding:9px}
@@ -546,7 +546,7 @@ a.wiki-link:hover{text-decoration:none}
 .stage-enchant-inline .stage-enchant-options button.chosen{box-shadow:inset 0 0 0 1px #edc88b}
 .stage-enchant-reset{padding:7px 8px;background:#2a1d14;border:1px solid #946b43;color:#e8c591}
 .stage-rich-sockets button.selected{border-color:#f1cc85;background:#684525;box-shadow:0 0 0 1px #edd09a}
-.stage-rich-desc,.item-description{white-space:pre-line;overflow-wrap:anywhere}
+.stage-rich-desc,.item-description{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 
 /* 2026.10.30.50: clickable skill list and detail inside Hero Path. */
 .inline-skill-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;max-height:220px;overflow-y:auto;margin:8px 0}
@@ -1712,7 +1712,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  width:64px;height:64px;margin:0 0 10px 14px;
  border:2px double #86663e;background:#211710;color:#debc81;
  font:32px Georgia,serif}
-.stage-attribute-soul{white-space:pre-line;overflow-wrap:anywhere}
+.stage-attribute-soul{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 .wiki-record-glyph{float:right;display:grid;place-items:center;
  width:76px;height:76px;margin:0 0 12px 14px;border:2px double #9d794f;
  background:#211710;color:#e2bd7b;font:34px Georgia,serif}

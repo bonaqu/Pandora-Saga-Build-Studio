@@ -3,7 +3,7 @@
 const names={'1H_SWORD':'Одноручный меч','2H_SWORD':'Двуручный меч','1H_AXE':'Одноручный топор','2H_AXE':'Двуручный топор',
 '1H_BLUNT_WEAPON':'Одноручное дробящее оружие','2H_BLUNT_WEAPON':'Двуручное дробящее оружие','POLE_ARM':'Древковое оружие',
 'LANCE':'Копьё','1H_TRUMP_WEAPON':'Одноручное оружие','2H_TRUMP_WEAPON':'Двуручное оружие','BOW':'Лук','CROSSBOW':'Арбалет',
-'WAND':'Жезл','STAFF':'Посох','HELMET':'Шлем','TORSO':'Нагрудник','CUISSES':'Поножи','GLOVES':'Перчатки','BOOTS':'Обувь',
+'WAND':'Жезл','STAFF':'Посох','HELMET':'Шлем','TORSO':'Броня','CUISSES':'Штаны','GLOVES':'Перчатки','BOOTS':'Обувь',
 'FOOT_SHIELD':'Щит','HORSE_SHIELD':'Щит','MANTLE':'Плащ','RING':'Кольцо','AMULET':'Амулет','BELT':'Пояс','EARRING':'Серьга',
 'BRIDLE':'Уздечка','SADDLE':'Седло','STALL':'Стойло','POTION':'Зелье','TOY':'Игровой предмет','ETC':'Материал',
 'RUNEGEM':'Самоцвет','ARROW':'Стрела','BOLT':'Болт','EGGMAKE_KIT':'Набор','MASTER_TALKEGG':'Яйцо','TALKEGG':'Яйцо',
@@ -28,7 +28,7 @@ const slotsEn={weapon:'Weapon',shield:'Shield',head:'Helmet',body:'Armor',
  gloves:'Gloves',legs:'Leg armor',feet:'Boots',cloak:'Cloak',
  ring:'Ring',neck:'Amulet',belt:'Belt',ear:'Earring',
  arm:'Arms',boots:'Boots',necklace:'Necklace',accessory:'Accessory'};
-const slots={weapon:'Оружие',shield:'Щит',head:'Шлем',body:'Нагрудник',gloves:'Перчатки',legs:'Поножи',feet:'Обувь',cloak:'Плащ',ring:'Кольцо',neck:'Амулет',belt:'Пояс',ear:'Серьга',
+const slots={weapon:'Оружие',shield:'Щит',head:'Шлем',body:'Броня',gloves:'Перчатки',legs:'Штаны',feet:'Обувь',cloak:'Плащ',ring:'Кольцо',neck:'Амулет',belt:'Пояс',ear:'Серьга',
  arm:'Руки',boots:'Обувь',necklace:'Ожерелье',accessory:'Аксессуар'};
 function slotLabel(slot,lang='ru'){return (lang==='en'?slotsEn:slots)[slot]||String(slot||'')}
 function kind(record,lang='ru'){
@@ -47,17 +47,22 @@ function displayName(record,fallback='Без названия',lang='ru'){
 }
 function description(s){
  if(typeof s!=='string')return '';
- const headers='За кажд(?:ую|ые|ый)|При улучшении|При заточке|При экипировке|При наличии|Per every|At \\+\\d+ and above|When enhanced|With refinement';
- const stats='(?:ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Cooldown|Healing|Reduction)';
+ // Keep the original source wording, numbers and manually entered paragraphs.
+ // OS exports sometimes concatenate lore, bonuses and upgrade conditions.
+ const conditions='За кажд(?:ую|ые|ый)|При улучшении|При заточке|При экипировке|При наличии|Закалка самоцветом|Каждое следующее улучшение|Per every|At \\+\\d+ and above|When enhanced|With refinement';
+ const stats='ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Cooldown|Healing|Reduction';
  return s.replace(/\r\n?/g,'\n').replace(/<br\s*\/?>/gi,'\n')
   .replace(/[ \t]*\n[ \t]*/g,'\n')
-  .replace(new RegExp('([.!?])[ \\t]*(?='+stats+'(?:\\b|\\s|[+-]))','gi'),'$1\n\n')
-  .replace(/([.!?])(?=[A-ZА-ЯЁ])/g,'$1\n')
-  .replace(/([+-]\d+(?:[.,]\d+)?%?)(?=[A-ZА-ЯЁ])/g,'$1\n')
-  .replace(new RegExp('([^\\n])('+headers+')','gi'),'$1\n$2')
-  .replace(new RegExp('\\n('+headers+')','gi'),'\n\n$1')
+  .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+stats+')(?:\\s|[+-]|\\d))','gi'),'$1\n\n')
+  .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+conditions+'))','gi'),'$1\n\n')
+  // Missing spaces between two normal sentences are not paragraph breaks.
+  .replace(/([.!?])(?=[A-ZА-ЯЁ])/g,'$1 ')
+  .replace(/([+-]\d+(?:[.,]\d+)?%?)(?=[A-ZА-ЯЁ]|\+\d+%)/g,'$1\n')
+  .replace(new RegExp('\\n('+conditions+')','gi'),'\n\n$1')
+  .replace(/(Пламя феникса)(?=Пламя феникса:)/gi,'$1\n\n')
   .replace(/(:)[ \t]*(?=[A-ZА-ЯЁ])/g,'$1\n')
   .replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
+
 root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,displayName});
 })(typeof window==='undefined'?globalThis:window);
