@@ -174,7 +174,8 @@ test('ambiguous multiple distinct percentages never become an asserted event cha
 
 test('invalid enhancement grades cannot expose conditional events or experience gain',()=>{
  for(const grade of [-1,11,1.5,NaN,undefined]){
-  assert.equal(preview(items[422],422,'item',grade).length,0);
+  const events=C.conditionalProcPreview({records:[['item:422',items[422],grade]],skills}).entries;
+  assert.equal(events.length,0,'invalid grade '+String(grade));
   assert.equal(C.specialEquipmentPreview({records:[['item:422',items[422],grade]]}).entries.length,0);
   assert.equal(C.experienceBonusPreview({records:[['item:18073',items[18073],grade]]}).entries.length,0);
  }
