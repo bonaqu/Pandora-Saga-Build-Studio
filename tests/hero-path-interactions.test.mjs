@@ -323,36 +323,49 @@ test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch
  assert.match(css,/\.game-tree-group \.branch-row>\.count\{[\s\S]*?white-space:nowrap/);
 });
 
-test('empty, negative and fractional precise inputs never erase invested points',()=>{
+test('clearing invested field then committing resets ONLY that branch to zero',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
  const field=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:potential-number');
+ f.state.points.blessing=4;
  f.range.value='7';f.range.listeners.input();
- assert.equal(f.state.points.benevolence,7);
- for(const raw of ['', '-1','1.5']){
+ assert.equal(f.budget().spent,11);
+ for(const raw of ['-1','1.5']){
   field.value=raw;field.listeners.change();
-  assert.equal(f.state.points.benevolence,7,'unchanged after '+JSON.stringify(raw));
-  assert.equal(field.value,'7','invalid numeric entry restored');
-  assert.equal(f.range.value,'7','slider remains in sync');
+  assert.equal(f.state.points.benevolence,7,'invalid entry rejected: '+raw);
+  assert.equal(field.value,'7');
+  assert.equal(f.range.value,'7');
  }
+ field.value='';field.listeners.change();
+ assert.equal(f.state.points.benevolence,0,'blank committed input is an explicit refund');
+ assert.equal(f.state.points.blessing,4,'other branches stay intact');
+ assert.equal(f.budget().spent,4,'all seven invested points become available');
+ assert.equal(field.value,'0','cleared field displays normalized zero');
+ assert.equal(f.range.value,'0','slider synchronizes to empty committed input');
  field.value='5';field.listeners.change();
- assert.equal(f.state.points.benevolence,5,'valid precise value still works');
+ assert.equal(f.state.points.benevolence,5,'precise input still adds points');
  field.value='0';field.listeners.change();
- assert.equal(f.state.points.benevolence,0,'explicit zero still refunds');
+ assert.equal(f.state.points.benevolence,0,'explicit zero remains valid');
 });
 
-test('empty or invalid manual mastery restores trained amount instead of resetting it',()=>{
+test('empty manual green mastery is a deliberate reset, invalid entries remain safe',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
  f.state.masteryAuto=false;f.state.points.benevolence=8;f.state.mastery.benevolence=6;
- let calls=0;
- f.api.onMastery=()=>{calls++;return false};
+ const called=[];
+ f.api.onMastery=(key,n)=>{called.push(n);return points.setTrained(f.state,key,n)};
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const field=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:mastery-number');
- for(const raw of ['', '-2','2.5']){
+ for(const raw of ['-2','2.5']){
   field.value=raw;field.listeners.change();
-  assert.equal(field.value,'6','existing green mastery restored');
+  assert.equal(field.value,'6','bad value restores previous mastery');
+  assert.equal(points.trained(f.state,'benevolence'),6);
  }
- assert.equal(calls,0,'invalid entries must not reach the mastery mutation');
+ assert.deepEqual(called,[],'negative and fractional values do not reach the model');
+ field.value='';field.listeners.change();
+ assert.deepEqual(called,[0],'blank value commits actual zero to the mastery model');
+ assert.equal(points.trained(f.state,'benevolence'),0);
+ assert.equal(f.state.points.benevolence,8,'blue allocated points stay put');
  field.value='4';field.listeners.change();
- assert.equal(calls,1,'valid mastery still invokes the existing API');
- assert.equal(field.value,'6','rejected changes still restore the current value');
+ assert.equal(points.trained(f.state,'benevolence'),4);
+ field.value='0';field.listeners.change();
+ assert.equal(points.trained(f.state,'benevolence'),0);
 });

@@ -132,8 +132,7 @@ function viewGrowth(target,api){
     range.addEventListener('change',()=>update(Number(range.value),true));
     numeric.addEventListener('change',()=>{
      const raw=numeric.value.trim();
-     if(!raw){restorePotential();return}
-     update(Number(raw),true);
+     update(raw===''?0:Number(raw),true);
     });
     const skills=skillCatalog.filter(s=>s.classes?.[job]&&Array.isArray(s.reqs)&&
      s.reqs.some(req=>req.branch===key));
@@ -236,8 +235,8 @@ function viewGrowth(target,api){
      'aria-label':tr(api,'Мастерство ','Mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
     input.addEventListener('change',()=>{
-     const raw=input.value.trim(),requested=Number(raw);
-     if(!raw||!Number.isInteger(requested)||requested<0||
+     const raw=input.value.trim(),requested=raw===''?0:Number(raw);
+     if(!Number.isInteger(requested)||requested<0||
       !api.onMastery(key,requested))input.value=String(M.trained(state,key));
     });
     const controls=make('div',{class:'path-point-controls'});
