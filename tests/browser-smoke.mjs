@@ -6,6 +6,7 @@ import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
 import {runCloudSaveFailureSmoke} from './browser-cloud-save-failure.mjs';
 import {runDeletedBuildRecoverySmoke} from './browser-deleted-recovery.mjs';
 import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs';
+import {runEquipmentLocaleSmoke} from './browser-equipment-locale.mjs';
 import {runTwoHandedSmoke} from './browser-two-handed.mjs';
 import {runFutureGearSmoke} from './browser-future-gear.mjs';
 import {runSavedAutosaveSmoke} from './browser-saved-autosave.mjs';
@@ -147,6 +148,7 @@ async function main(){
  await runCloudSaveFailureSmoke(browser,base);
  await runDeletedBuildRecoverySmoke(browser,base);
  await runEquipmentEligibilitySmoke(browser,base);
+ await runEquipmentLocaleSmoke(browser,base);
  await runTwoHandedSmoke(browser,base);
  await runFutureGearSmoke(browser,base);
  await runSavedAutosaveSmoke(browser,base);

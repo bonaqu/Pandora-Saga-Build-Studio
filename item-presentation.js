@@ -34,9 +34,10 @@ function kind(record,lang='ru'){
  const fallback=lang==='en'?'Item':'Предмет';
  return record?(source[String(record.kind||'').toUpperCase()]||slotSource[record.slot]||fallback):fallback;
 }
-function displayName(record,fallback='Без названия'){
- const candidate=record?.name?.en||record?.names?.en||record?.name?.ru||
-  record?.names?.ru||record?.name;
+function displayName(record,fallback='Без названия',lang='ru'){
+ const first=lang==='en'?'en':'ru',second=first==='en'?'ru':'en';
+ const candidate=record?.name?.[first]||record?.names?.[first]||
+  record?.name?.[second]||record?.names?.[second]||record?.name;
  const name=typeof candidate==='string'?candidate.trim():'';
  // Historical imported builds may have stored the database ID as the item's name.
  return name&&!/^\d{1,20}$/.test(name)?name:fallback;

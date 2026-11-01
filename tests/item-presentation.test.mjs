@@ -19,3 +19,16 @@ test('Golden Astir jacket gains meaningful source-line breaks',()=>{
 test('source line breaks are not lost',()=>{
  assert.match(p.description('Описание.\nОЗ +15'),/\nОЗ \+15/);
 });
+
+test('localized item names prefer the active language without translating original source text',()=>{
+ const item={id:19022,name:{ru:'Кольцо метели',en:'Blizzard Ring'},kind:'RING'};
+ assert.equal(p.displayName(item),'Кольцо метели');
+ assert.equal(p.displayName(item,'Unknown','ru'),'Кольцо метели');
+ assert.equal(p.displayName(item,'Unknown','en'),'Blizzard Ring');
+ assert.equal(p.displayName({names:{ru:'Руна',en:'Rune'}},'Unknown','en'),'Rune');
+ assert.equal(p.displayName({name:{ru:'Только русское'}},'Unknown','en'),'Только русское');
+ assert.equal(p.displayName({name:'Оригинальное имя'},'Unknown','en'),'Оригинальное имя');
+ assert.equal(p.displayName({name:'19022'},'Unnamed item','en'),'Unnamed item');
+ assert.equal(item.id,19022);
+ assert.deepEqual(item.name,{ru:'Кольцо метели',en:'Blizzard Ring'});
+});

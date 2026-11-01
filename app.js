@@ -1715,7 +1715,8 @@ function renderSkills(root){
  }}));
 }
 function isCostumeOverlay(item){return Boolean(item&&(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_')))}
-function itemName(r){return window.PandoraItemPresentation.displayName(r,'Предмет без названия')}
+function itemName(r){return window.PandoraItemPresentation.displayName(
+ r,lang==='en'?'Unnamed item':'Предмет без названия',lang)}
 let catalogBrowseSlot='all';
 function renderEquipment(root){
  const tx=(ru,en)=>lang==='en'?en:ru;
