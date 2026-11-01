@@ -136,6 +136,16 @@ test('game encyclopedia explains race/sex restrictions without exposing technica
  assert.match(css,/\.wiki-item-wearers\{/);
  assert.match(hover,/PandoraUIPlanner\?\.outfitWearers\?\.\(record,locale\)/);
 });
+test('equipment chapter filters current versus 55-level class and race compatibility',()=>{
+ const app=read('app.js');
+ assert.match(app,/wikiItemEligibility='all'/);
+ assert.match(app,/class:'wiki-eligibility-filter'/);
+ assert.match(app,/Подходит до 55 уровня/);
+ assert.match(app,/Можно надеть сейчас/);
+ assert.match(app,/const heroCompatible=\(rec,level\)=>/);
+ assert.match(app,/PandoraUIPlanner\.raceCompatible\(rec,state\.race,state\.gender\)/);
+ assert.match(app,/nameCache\.set\(key,value\)/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');
