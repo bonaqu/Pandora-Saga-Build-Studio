@@ -29,7 +29,7 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Mirror remaining catalog icons in one verified pass
+      - name: Recover original Soul sprites from official shared item artwork
         run: node scripts/mirror-os-icons.mjs --limit=1437
       - name: Audit every available icon against catalog
         run: npm run assets:audit
