@@ -1706,7 +1706,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered,
 .inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible{
- border-color:#f6dfa9;box-shadow:0 0 0 1px #e0be81,0 0 3px #d0ad78a0;
+ border-color:#f6dfa9;box-shadow:0 0 0 1px #e0be81,0 0 2px #d0ad78a0;
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible{
  outline:2px solid #ffe0a1;outline-offset:2px;
@@ -1726,6 +1726,17 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch.edge-right .path-milestone-tooltip{
  transform:translateX(-92%);
+}
+
+/* Keep branch headers to ONE line while dragging points 0 -> 1 -> 0.
+   Mastery is readable in the dedicated green numeric field, not duplicated here. */
+.game-tree-group .branch-row{min-height:32px}
+.game-tree-group .branch-row>div{flex:1 1 auto;min-width:0}
+.game-tree-group .branch-row>div>strong{
+ display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.game-tree-group .branch-row>.count{
+ flex:0 0 auto;white-space:nowrap;font-variant-numeric:tabular-nums;
 }
 
 /* Two compact allocations in one row; wrap only when the actual space runs out. */
