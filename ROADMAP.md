@@ -1,9 +1,18 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.249.0 (`2026.11.01.249`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.250.0 (`2026.11.01.250`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.250.0 — locale-aware item names and real bilingual equipment acceptance
+
+- [x] Prefer official localized RU/EN item name when both versions are included in a source record, falling back to the other official language only if missing. Preserve original plain-string OS names and reject names that are merely numeric IDs; player/admin overrides remain untouched.
+- [x] Pass active site language from the equipment catalog's item display helper without changing record IDs, sorting, slot relationships, damage or combat calculations.
+- [x] Add genuine Chromium integration of the open equipment panel: RU → EN → RU search and slot labels, same item name for single-locale OS records, source/inspector interaction and JavaScript error guard.
+- [x] Keep RU/EN reachable while the workbench blocks header pointer events: add a compact keyboard-accessible dock-local switch wired into the **same** existing site locale handler and synchronized pressed state, without making the modal's backdrop nonmodal.
+- [x] Add locale-order and original-record-preservation unit regressions. Confirm Pages and Worker readiness separately after merging.
+- [ ] Remaining dense Hero Book/external item display translation, real game combat parity, original binary icon mirroring and production D1 authenticated write acceptance stay open.
 
 ## Source update 0.249.0 — bilingual equipment catalog and skill navigation
 

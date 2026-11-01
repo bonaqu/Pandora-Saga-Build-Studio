@@ -1715,7 +1715,8 @@ function renderSkills(root){
  }}));
 }
 function isCostumeOverlay(item){return Boolean(item&&(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_')))}
-function itemName(r){return window.PandoraItemPresentation.displayName(r,'Предмет без названия')}
+function itemName(r){return window.PandoraItemPresentation.displayName(
+ r,lang==='en'?'Unnamed item':'Предмет без названия',lang)}
 let catalogBrowseSlot='all';
 function renderEquipment(root){
  const tx=(ru,en)=>lang==='en'?en:ru;
@@ -2641,17 +2642,18 @@ async function showCatalogImport(){
  modal('Каталог Pandora Saga · сравнение и обновление D1',view);
 }
 
+function syncLocaleControls(){
+ for(const button of document.querySelectorAll('#locale [data-locale], #dockLocale [data-dock-locale]')){
+  const active=(button.dataset.locale||button.dataset.dockLocale)===lang;
+  button.classList.toggle('chosen',active);
+  button.setAttribute('aria-pressed',String(active));
+ }
+}
 function applyGameLocale(){
  window.PandoraUILocale.apply(lang);
  window.PandoraAccountUI?.refresh?.();
- if(!catalogSource){
-  for(const button of document.querySelectorAll('#locale [data-locale]')){
-   const active=button.dataset.locale===lang;
-   button.classList.toggle('chosen',active);
-   button.setAttribute('aria-pressed',String(active));
-  }
-  return;
- }
+ syncLocaleControls();
+ if(!catalogSource)return;
  const translate=(original,map,keepSourceDesc=false)=>{
   if(lang!=='en'||!map)return original;
   return Object.fromEntries(Object.entries(original).map(([id,item])=>{
@@ -2676,12 +2678,6 @@ function applyGameLocale(){
    equipment:translate(catalogSource.items,en?.items,true),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
- const label=document.getElementById('locale');
- if(label)for(const button of label.querySelectorAll('[data-locale]')){
-  const active=button.dataset.locale===lang;
-  button.setAttribute('aria-pressed',String(active));
-  button.classList.toggle('chosen',active);
- }
  render();
 }
 async function loadCatalog(){
@@ -2789,7 +2785,13 @@ $('hero').addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){
   event.preventDefault();openHeroBook();
  }
-});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{changeTab('builds')};$('locale').onclick=event=>{
+});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{changeTab('builds')};$('dockLocale').onclick=event=>{
+ const button=event.target.closest('[data-dock-locale]');
+ if(!button)return;
+ // The existing locale handler remains the single source of truth.
+ $('locale').querySelector('[data-locale="'+button.dataset.dockLocale+'"]')?.click();
+};
+$('locale').onclick=event=>{
  const button=event.target.closest('[data-locale]');
  if(!button||button.dataset.locale===lang)return;
  lang=button.dataset.locale;
