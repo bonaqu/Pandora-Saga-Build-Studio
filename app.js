@@ -1364,7 +1364,7 @@ function renderWiki(root){
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
- let wikiSourceShown=80,wikiSourceRecord='';
+ let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:lang==='en'?en:ru,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
@@ -1470,10 +1470,39 @@ function renderWiki(root){
   const dest=record?kind:'item';
   return withIcon(wikiLink(label,dest,id,highlight),record?wikiIcon(kind,id,record):null,dest);
  };
+ const sourceEntry=(row,itemId)=>{
+  const line=h('div',{class:'wiki-entry'+
+   (wikiSelection.type==='soul'?' wiki-soul-source':'')+
+   (wikiSelection.highlight===String(row.id)?' highlighted':'')});
+  if(row.type==='monster'){
+   line.append(wikiLink(wt('Монстр: ','Monster: ')+dataName('monster',row.id)+
+    (row.percent==null?'':' · '+row.percent+wt('% по таблице','% listed'))+
+    (row.kind==='conditional'?wt(' · особый дроп',' · conditional drop'):''),
+    'monster',row.id,itemId));
+   for(const loc of wikiIndex.locations(row.id).slice(0,3))
+    if(loc.type==='map')line.append(wikiLink('◈ '+dataName('map',loc.id),
+     'map',loc.id,row.id));
+  }else if(row.type==='npc'){
+   line.append(wikiLink(wt('Обмен у ','Trade with ')+dataName('npc',row.id),
+    'npc',row.id,itemId));
+  }else if(row.type==='chest'){
+   line.append(withIcon(wikiLink(dataName('chest',row.id)+
+    wt(' · группа ',' · group ')+row.roll+
+    (row.percent==null?'':' · '+row.percent+wt('% в группе','% in group')),
+    'chest',row.id,itemId),wikiIcon('chest',row.id),'chest'));
+  }else if(row.type==='zone'){
+   line.append(wikiLink(wt('Дроп локации: ','Location loot: ')+
+    dataName('map',row.id)+wt(' · точный шанс предмета не указан',
+     ' · individual probability unknown'),'map',row.id,itemId));
+  }
+  return line;
+ };
  const draw=(detailOnly=false)=>{
   const previousScroll=browse.scrollTop,previousDetailScroll=detail.scrollTop;
   const sourceKey=wikiSelection.type+':'+String(wikiSelection.id??'');
-  if(wikiSourceRecord!==sourceKey){wikiSourceShown=80;wikiSourceRecord=sourceKey}
+  if(wikiSourceRecord!==sourceKey){
+   wikiSourceShown=80;wikiUsageShown=80;wikiSourceRecord=sourceKey;
+  }
   if(!detailOnly)browse.replaceChildren();
   detail.replaceChildren();
   const type=wikiSelection.type;
@@ -1566,11 +1595,16 @@ function renderWiki(root){
    detail.append(h('p',{class:'wiki-description',text:
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text}));
   }
-  const moreSources=rows=>{
-   if(rows.length<=wikiSourceShown)return;
+  const moreSources=(rows,group='sources')=>{
+   const shown=group==='usage'?wikiUsageShown:wikiSourceShown;
+   if(rows.length<=shown)return;
    detail.append(h('button',{type:'button',class:'wiki-more',text:wt('Показать ещё ','Show more ')+
-    Math.min(80,rows.length-wikiSourceShown)+' / '+(rows.length-wikiSourceShown),
-    onclick:()=>{wikiSourceShown+=80;draw(true)}}));
+    Math.min(80,rows.length-shown)+' / '+(rows.length-shown),
+    onclick:()=>{
+     if(group==='usage')wikiUsageShown+=80;
+     else wikiSourceShown+=80;
+     draw(true);
+    }}));
   };
   if(type==='item'){
     const dl=h('dl',{class:'item-fields'});
@@ -1601,30 +1635,21 @@ function renderWiki(root){
      text:wt('Для: ','Wearable by: ')+wearers.join(' · ')}));
     detail.append(h('h4',{text:wt('Где получить','How to obtain')}));
     const found=wikiIndex.sources(id);
-    if(!found.length)detail.append(h('p',{class:'muted',text:'Подтверждённые источники в доступном каталоге не найдены.'}));
-    for(const row of found.slice(0,wikiSourceShown)){
-     const line=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(row.id)?' highlighted':'')});
-     if(row.type==='monster'){
-      line.append(wikiLink('Монстр: '+dataName('monster',row.id)+(row.percent!=null?' · '+row.percent+'% по таблице':'')+(row.kind==='conditional'?' · условный дроп':''),'monster',row.id,id));
-      for(const loc of wikiIndex.locations(row.id).slice(0,3))if(loc.type==='map')line.append(wikiLink('◈ '+loc.name,'map',loc.id,row.id));
-     }else if(row.type==='npc')line.append(wikiLink('Обмен у '+dataName('npc',row.id),'npc',row.id,id));
-     else if(row.type==='chest')line.append(withIcon(wikiLink(dataName('chest',row.id)+' · группа '+row.roll+
-      (row.percent==null?'':' · '+row.percent+'% в группе'),'chest',row.id,id),wikiIcon('chest',row.id)));
-     else line.append(wikiLink('Групповой дроп, локация '+dataName('map',row.id)+' (точный шанс предмета неизвестен)','map',row.id,id));
-     detail.append(line);
-    }
+    if(!found.length)detail.append(h('p',{class:'muted',text:wt('Подтверждённые источники в доступном каталоге не найдены.','No confirmed sources in the current catalog.')}));
+    for(const row of found.slice(0,wikiSourceShown))
+     detail.append(sourceEntry(row,id));
     moreSources(found);
     const usedIn=wikiIndex.materialUses(id);
     if(usedIn.length){
      detail.append(h('h4',{text:(lang==='en'?'Used in NPC trades · ':'Используется в обмене NPC · ')+usedIn.length}));
-     for(const trade of usedIn.slice(0,wikiSourceShown)){
+     for(const trade of usedIn.slice(0,wikiUsageShown)){
       const entry=h('div',{class:'wiki-entry'});
       entry.append(itemLink(trade.i,dataName('item',trade.i),id));
       for(const npcId of (trade.npc||[]).slice(0,5))
        entry.append(wikiLink(dataName('npc',npcId),'npc',npcId,trade.i));
       detail.append(entry);
      }
-     moreSources(usedIn);
+     moreSources(usedIn,'usage');
     }
   }else if(type==='skill'){
     const skillFields=[
@@ -1656,24 +1681,9 @@ function renderWiki(root){
     detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:
-     'Источник получения в доступном каталоге не указан.'}));
-    for(const row of found.slice(0,wikiSourceShown)){
-     const line=h('div',{class:'wiki-entry wiki-soul-source'});
-     if(row.type==='monster'){
-      line.append(wikiLink('Монстр: '+dataName('monster',row.id)+
-       (row.percent==null?'':' · '+row.percent+'% по таблице')+
-       (row.kind==='conditional'?' · особое условие':''),'monster',row.id,id));
-      for(const loc of wikiIndex.locations(row.id).slice(0,3))
-       if(loc.type==='map')line.append(wikiLink('◈ '+loc.name,'map',loc.id,row.id));
-     }else if(row.type==='npc')line.append(wikiLink('Обмен у '+dataName('npc',row.id),
-      'npc',row.id,id));
-     else if(row.type==='chest')line.append(withIcon(wikiLink(dataName('chest',row.id)+
-      ' · группа '+row.roll+(row.percent==null?'':' · '+row.percent+'% в группе'),
-      'chest',row.id,id),wikiIcon('chest',row.id)));
-     else if(row.type==='zone')line.append(wikiLink('Дроп локации: '+dataName('map',row.id)+
-      ' · точный шанс души не указан','map',row.id,id));
-     detail.append(line);
-    }
+     wt('Источник получения в доступном каталоге не указан.','No source listed in the current catalog.')}));
+    for(const row of found.slice(0,wikiSourceShown))
+     detail.append(sourceEntry(row,id));
     moreSources(found);
   }else if(type==='monster'){
     const monsterStats=[[wt('Уровень','Level'),rec.level],[wt('ОЗ','HP'),rec.life],

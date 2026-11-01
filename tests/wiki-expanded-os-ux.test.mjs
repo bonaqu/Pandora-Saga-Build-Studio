@@ -58,12 +58,13 @@ test('wiki item and skill details expose source fields, class names, and progres
  assert.match(app,/rec\.cast/);
  assert.match(app,/rec\.cooldown/);
  assert.match(app,/rec\.range/);
- assert.match(app,/wikiSourceShown\+=80;draw\(true\)/);
+ assert.match(app,/wikiSourceShown\+=80;/);
+ assert.match(app,/wikiUsageShown\+=80;/);
  assert.match(app,/wikiIndex\.records\('map'\)/);
  assert.match(app,/const records=wikiIndex\.records\(type\)/);
  assert.match(app,/wikiIndex\.normalize\(recipeSearch\.value\)/);
  assert.match(app,/moreSources\(found\)/);
- assert.match(app,/moreSources\(usedIn\)/);
+ assert.match(app,/moreSources\(usedIn,'usage'\)/);
  assert.match(app,/\(trade\.mats\|\|\[\]\)\.map/);
 });
 test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-less locations',()=>{
@@ -145,6 +146,16 @@ test('equipment chapter filters current versus 55-level class and race compatibi
  assert.match(app,/const heroCompatible=\(rec,level\)=>/);
  assert.match(app,/PandoraUIPlanner\.raceCompatible\(rec,state\.race,state\.gender\)/);
  assert.match(app,/nameCache\.set\(key,value\)/);
+});
+test('item and soul sources use one translated renderer and independent pagination counters',()=>{
+ const app=read('app.js');
+ assert.match(app,/const sourceEntry=\(row,itemId\)=>/);
+ assert.equal((app.match(/detail\.append\(sourceEntry\(row,id\)\)/g)||[]).length,2);
+ assert.match(app,/const shown=group==='usage'\?wikiUsageShown:wikiSourceShown/);
+ assert.match(app,/if\(group==='usage'\)wikiUsageShown\+=80/);
+ assert.match(app,/for\(const trade of usedIn\.slice\(0,wikiUsageShown\)\)/);
+ assert.match(app,/dataName\('map',loc\.id\)/);
+ assert.match(app,/No confirmed sources in the current catalog/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
