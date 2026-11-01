@@ -157,10 +157,13 @@ function viewGrowth(target,api){
         img.onerror=()=>img.remove();
         row.append(img);
        }
-       row.append(make('div',{},[
-        make('b',{text:skill.name||tr(api,'Умение','Skill')}),
-        make('small',{text:skill.desc||tr(api,'Описание отсутствует.','No description available.')})
-       ]));
+       const info=make('div',{class:'path-milestone-copy'});
+       info.append(make('b',{text:skill.name||tr(api,'Умение','Skill')}),
+        make('small',{text:skill.desc||tr(api,'Описание отсутствует.','No description available.')}));
+       if(Number.isFinite(skill.mana)&&skill.mana>=0)
+        info.append(make('small',{class:'path-milestone-cost',
+         text:tr(api,'Затрат ОМ: ','MP cost: ')+skill.mana}));
+       row.append(info);
        preview.append(row);
       }
       tick.append(preview);ticks.append(tick);
@@ -219,18 +222,26 @@ function viewGrowth(target,api){
      }
      unlockDetails.append(list);
     }
-    const greenRow=make('div',{class:'path-green-controls'});
     const input=make('input',{type:'number',min:'0',max:String(points),step:'1',
      value:String(trained),disabled:auto||!available,
-     'aria-label':tr(api,'Зелёное мастерство ','Trained mastery: ')+api.branchName(key),
+     'aria-label':tr(api,'Мастерство ','Mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
     input.addEventListener('change',()=>{
      if(!api.onMastery(key,Number(input.value)))input.value=String(M.trained(state,key));
     });
-    const greenLabel=make('label');greenLabel.append(make('span',{text:root.PandoraUILocale?.text('greenMastery',api.lang)||'Зелёное мастерство'}),input);
-    greenRow.append(greenLabel);
-    const exact=make('div',{class:'path-allocation-input'});
-    exact.append(make('span',{text:root.PandoraUILocale?.text('exactPoints',api.lang)||'Точно вложено'}),numeric);
+    const controls=make('div',{class:'path-point-controls'});
+    const pointField=(name,help,field,mastery=false)=>{
+     const group=make('label',{class:'path-point-group'+(mastery?' path-point-mastery':'')});
+     const title=make('span',{class:'path-point-name',text:name,tabindex:'0',
+      'data-help':help,'aria-label':name+'. '+help});
+     group.append(title,field);return group;
+    };
+    controls.append(
+     pointField(root.PandoraUILocale?.text('exactPoints',api.lang)||tr(api,'Вложено','Spent'),
+      tr(api,'Очки, распределённые в этой ветке. Меняются ползунком или точным вводом.','Points allocated to this branch. Adjust with the slider or number input.'),numeric),
+     pointField(root.PandoraUILocale?.text('greenMastery',api.lang)||tr(api,'Мастерство','Mastery'),
+      tr(api,'Фактически освоенные очки ветки. При автоматическом режиме значение рассчитывается само.','Actually trained mastery in this branch. Automatic mode calculates it for you.'),input,true)
+    );
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
      make('span',{class:'path-track-limit',text:api.lang==='en'?
@@ -239,7 +250,7 @@ function viewGrowth(target,api){
     ]);
     editor.append(note,track,legend);
     if(unlockDetails)editor.append(unlockDetails);
-    editor.append(exact,greenRow);
+    editor.append(controls);
     if(!available)editor.append(make('p',{class:'muted',
      text:!api.allocationReady?tr(api,'Загружаются таблицы очков и лимитов класса.','Loading class point and limit tables…'):
       cap===0?tr(api,'Для этой профессии ветка заблокирована (лимит 0).','This class cannot train this branch (limit 0).'):tr(api,'Недостаточно доступных очков.','Not enough available points.')}));
