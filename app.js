@@ -1490,6 +1490,8 @@ function renderWiki(root){
   const dest=record?kind:'item';
   return withIcon(wikiLink(label,dest,id,highlight),record?wikiIcon(kind,id,record):null,dest);
  };
+ const matchesWords=(text,query)=>wikiIndex.normalize(query).split(' ')
+  .filter(Boolean).every(term=>text.includes(term));
  const sourceEntry=(row,itemId)=>{
   const line=h('div',{class:'wiki-entry'+
    (wikiSelection.type==='soul'?' wiki-soul-source':'')+
@@ -1778,10 +1780,9 @@ function renderWiki(root){
      recipesBox.append(entry);cards.push({entry,searchText});
     }
     const filterRecipes=()=>{
-     const query=wikiIndex.normalize(recipeSearch.value);
      let visible=0;
      for(const card of cards){
-      card.entry.hidden=!!query&&!card.searchText.includes(query);
+      card.entry.hidden=!matchesWords(card.searchText,recipeSearch.value);
       if(!card.entry.hidden)visible++;
      }
      counter.textContent=lang==='en'?visible+' of '+cards.length:visible+' из '+cards.length;
@@ -1810,8 +1811,7 @@ function renderWiki(root){
       list.append(entry);rows.push({entry,name:wikiIndex.normalize(dataName('monster',mob))});
      }
      search.addEventListener('input',()=>{
-      const q=wikiIndex.normalize(search.value);
-      for(const row of rows)row.entry.hidden=!!q&&!row.name.includes(q);
+      for(const row of rows)row.entry.hidden=!matchesWords(row.name,search.value);
      });
      detail.append(search,list);
     }

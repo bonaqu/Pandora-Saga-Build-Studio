@@ -62,7 +62,7 @@ test('wiki item and skill details expose source fields, class names, and progres
  assert.match(app,/wikiUsageShown\+=80;/);
  assert.match(app,/wikiIndex\.records\('map'\)/);
  assert.match(app,/const records=wikiIndex\.records\(type\)/);
- assert.match(app,/wikiIndex\.normalize\(recipeSearch\.value\)/);
+ assert.match(app,/matchesWords\(card\.searchText,recipeSearch\.value\)/);
  assert.match(app,/moreSources\(found\)/);
  assert.match(app,/moreSources\(usedIn,'usage'\)/);
  assert.match(app,/\(trade\.mats\|\|\[\]\)\.map/);
@@ -167,6 +167,13 @@ test('English encyclopedia indexes confirmed descriptions and never reveals raw 
  assert.match(app,/const classLabel=id=>/);
  assert.match(app,/const branchLabel=id=>/);
  assert.doesNotMatch(app,/names\.join\(', '\)/);
+});
+test('nested trade and map searches use the same order-independent token matching',()=>{
+ const app=read('app.js');
+ assert.match(app,/const matchesWords=\(text,query\)=>/);
+ assert.match(app,/matchesWords\(card\.searchText,recipeSearch\.value\)/);
+ assert.match(app,/matchesWords\(row\.name,search\.value\)/);
+ assert.doesNotMatch(app,/card\.searchText\.includes\(query\)/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');

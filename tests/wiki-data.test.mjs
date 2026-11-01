@@ -34,6 +34,17 @@ test('searches across names, descriptions, class restrictions and alternate disp
  assert.equal(wiki.records('item')['1'].name,'Крепкий шлем');
  assert.equal(wiki.normalize('ЁЖ'),'еж');
 });
+test('real source English description is searchable even when the Russian name differs',()=>{
+ const items=JSON.parse(fs.readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+ const en=JSON.parse(fs.readFileSync(new URL('../data/os/strings.en.json',import.meta.url),'utf8'));
+ assert.match(en.items['1822'].d,/meteoric ore/i);
+ const wiki=ctx.window.PandoraWikiData.build({items,instances:[],
+  trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
+ const matches=wiki.search('item','meteoric ore',id=>en.items?.[id]?.d||'');
+ assert.ok(matches.some(([id])=>id==='1822'));
+ assert.equal(wiki.search('item','meteoric ore').some(([id])=>id==='1822'),false,
+  'only a sourced translation enables the English-only search');
+});
 test('materials link back to unique NPC trades, and zones use one location index',()=>{
  const wiki=ctx.window.PandoraWikiData.build({trades:{trades:[
   {id:1,i:40,npc:[7,8],mats:[{i:11},{i:11}]},
