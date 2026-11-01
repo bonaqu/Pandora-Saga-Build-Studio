@@ -47,7 +47,7 @@ export async function runSavedAutosaveSmoke(browser,base){
   assert.equal(writes.length,0);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='46');
-  await page.locator('[data-tab="builds"]').click();
+  await page.locator('#nav [data-tab="builds"]').click();
   page.once('dialog',dialog=>dialog.accept());
   await page.getByRole('button',{name:'Перезаписать'}).click();
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')

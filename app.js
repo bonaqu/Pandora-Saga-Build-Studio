@@ -2793,11 +2793,14 @@ void window.PandoraAccountUI.init({
   void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
  },
- onLogout:()=>{
+ onLogout:({bootstrap=false}={})=>{
+  // Account-specific saved records must not become visible as a guest cache.
+  let prior=[];
   try{const copy=JSON.parse(localStorage.getItem('ps-preaccount-library.v1')||'null');
-   if(Array.isArray(copy))builds=copy;
+   if(Array.isArray(copy))prior=copy;
   }catch{}
-  persistBuilds();selectActiveBuild(null);libraryChangeId++;
+  builds=prior;persistBuilds();selectActiveBuild(null);libraryChangeId++;
+  if(!bootstrap){state=fresh();persist();render()}
   void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
  },
