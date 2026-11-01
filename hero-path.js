@@ -307,8 +307,8 @@ function viewSkills(target,details,api){
    for(const req of requirements){
     if(!req||!req.branch)continue;
     const value=M.potential(api.state,req.branch),green=M.trained(api.state,req.branch);
-    reqList.append(make('p',{text:api.branchName(req.branch)+' · порог '+req.amount+
-     ' · вложено '+value+' · освоено '+green}));
+    reqList.append(make('p',{text:api.branchName(req.branch)+tr(api,' · порог ',' · threshold ')+req.amount+
+     tr(api,' · вложено ',' · spent ')+value+tr(api,' · освоено ',' · trained ')+green}));
    }
    details.append(reqList);
   }
