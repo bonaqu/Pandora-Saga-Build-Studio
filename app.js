@@ -1368,9 +1368,12 @@ function renderWiki(root){
  const dataName=(type,id)=>{
   const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):type==='monster'?wikiData.monsters?.[id]:type==='map'?(wikiData.maps?.[id]||wikiData.trades?.mapNames?.[id]):type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:type==='instance'?wikiData.instances?.find(x=>String(x.id)===String(id)):type==='npc'?wikiData.trades?.npcs?.[id]:type==='chest'?wikiData.items?.[id]:null;
   const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':type==='instance'?'instances':type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
-  const fallback={item:'Предмет без названия',monster:'Монстр без названия',
-    map:'Локация',npc:'Персонаж',chest:'Сундук',skill:'Умение без названия',
-    soul:'Душа без названия',instance:'Подземелье'};
+  const fallback=lang==='en'?
+    {item:'Unnamed item',monster:'Unnamed monster',map:'Location',npc:'NPC',
+     chest:'Chest',skill:'Unnamed skill',soul:'Unnamed soul',instance:'Dungeon'}:
+    {item:'Предмет без названия',monster:'Монстр без названия',
+     map:'Локация',npc:'Персонаж',chest:'Сундук',skill:'Умение без названия',
+     soul:'Душа без названия',instance:'Подземелье'};
    return lang==='en'&&en?en:obj?.name||fallback[type]||'Без названия';
  };
  const wikiIcon=(type,id,record=null)=>{
@@ -1471,7 +1474,7 @@ function renderWiki(root){
   if(type==='item'){
     const dl=h('dl',{class:'item-fields'});
     const itemFields=[
-     [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec)],
+     [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang)],
      [wt('Уровень','Level'),rec.level],
      [wt('Атака','Attack'),rec.W],
      [wt('Пробитие','Penetration'),rec.PEN],
@@ -1489,8 +1492,7 @@ function renderWiki(root){
      const classes=Object.keys(rec.classes).filter(id=>rec.classes[id]);
      if(classes.length)detail.append(h('div',{class:'wiki-allowed-classes'},[
       h('h4',{text:wt('Доступные классы','Eligible classes')}),
-      h('p',{text:classes.map(id=>lang==='en'?id.replaceAll('_',' '):
-       (catalog.classes?.[id]?.name||id)).join(' · ')})
+      h('p',{text:classes.map(id=>catalog.classes?.[id]?.name||id).join(' · ')})
      ]));
     }
     detail.append(h('h4',{text:wt('Где получить','How to obtain')}));
@@ -1537,7 +1539,7 @@ function renderWiki(root){
     if(rec.prereq!=null&&wikiData.skills?.[rec.prereq])detail.append(wikiLink((lang==='en'?'Prerequisite: ':'Предыдущее умение: ')+dataName('skill',rec.prereq),'skill',rec.prereq));
     if(rec.classes&&Object.keys(rec.classes).length){
      const names=Object.keys(rec.classes).filter(name=>rec.classes[name]);
-     if(names.length)detail.append(h('p',{class:'muted',text:(lang==='en'?'Classes: ':'Классы: ')+names.join(', ')}));
+     if(names.length)detail.append(h('p',{class:'muted',text:(lang==='en'?'Classes: ':'Классы: ')+names.map(id=>catalog.classes?.[id]?.name||id).join(', ')}));
     }
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){const image=wikiImage(icon,'wiki-record-icon',type);detail.prepend(image)}
@@ -1545,7 +1547,7 @@ function renderWiki(root){
     const slotLabel=slot=>window.PandoraItemPresentation.slotLabel(slot,lang);
     const traits=h('div',{class:'wiki-soul-traits'});
     for(const slot of rec.slots||[])traits.append(h('span',{text:slotLabel(slot)}));
-    if(rec.price!=null)traits.append(h('span',{text:'Стоимость: '+Number(rec.price).toLocaleString('ru-RU')}));
+    if(rec.price!=null)traits.append(h('span',{text:wt('Стоимость: ','Cost: ')+Number(rec.price).toLocaleString(lang==='en'?'en-US':'ru-RU')}));
     if(traits.childElementCount)detail.append(traits);
     detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));
     const found=wikiIndex.sources(id);
@@ -1570,21 +1572,25 @@ function renderWiki(root){
     }
     moreSources(found);
   }else if(type==='monster'){
-    const monsterStats=[['Уровень',rec.level],['ОЗ',rec.life],
+    const monsterStats=[[wt('Уровень','Level'),rec.level],[wt('ОЗ','HP'),rec.life],
      [wt('Защита','Defense'),rec.ac],[wt('Маг. защита','Magic defense'),rec.magicProtection],
-     ['Защитный показатель',rec.warding],['Сила',rec.str],['Выносливость',rec.vit],
-     ['Ловкость',rec.agi],['Проворство',rec.dex],
-     ['Дух',rec.spi],['Интеллект',rec.int]];
+     [wt('Защитный показатель','Warding'),rec.warding],[wt('Сила','Strength'),rec.str],
+     [wt('Выносливость','Vitality'),rec.vit],[wt('Ловкость','Agility'),rec.agi],
+     [wt('Проворство','Dexterity'),rec.dex],[wt('Дух','Spirit'),rec.spi],
+     [wt('Интеллект','Intelligence'),rec.int]];
     detail.append(h('div',{class:'wiki-monster-stats'},
      monsterStats.filter(([,value])=>Number.isFinite(value)).map(([label,value])=>
       h('div',{class:'wiki-monster-stat'},[
        h('small',{text:label}),h('strong',{text:Number(value).toLocaleString('ru-RU')})]))));
     if(rec.resists&&Object.keys(rec.resists).length){
-     const names={physical:'Физическая',fire:'Огонь',cold:'Лёд',
-      lightning:'Молния',poison:'Яд',charm:'Чары',
-      magic:'Магия',holy:'Свет',dark:'Тьма'};
+     const names=lang==='en'?{physical:'Physical',fire:'Fire',cold:'Ice',
+      lightning:'Lightning',poison:'Poison',charm:'Charm',magic:'Magic',
+      holy:'Holy',dark:'Dark'}:
+      {physical:'Физическая',fire:'Огонь',cold:'Лёд',
+       lightning:'Молния',poison:'Яд',charm:'Чары',
+       magic:'Магия',holy:'Свет',dark:'Тьма'};
      const box=h('details',{class:'wiki-monster-resists'},[
-      h('summary',{text:'Сопротивления монстра'})
+      h('summary',{text:wt('Сопротивления монстра','Monster resistances')})
      ]);
      for(const [key,value] of Object.entries(rec.resists))
       box.append(h('span',{text:(names[key]||key)+': '+value}));
@@ -1595,7 +1601,6 @@ function renderWiki(root){
     detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')}));
     for(const row of wikiIndex.drops(id)){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===row.itemId?' highlighted':'')});
-     const item=wikiData.items?.[row.itemId];
      const linked=itemLink(row.itemId,dataName('item',row.itemId)+
       (row.quantity>1?' ×'+row.quantity:'')+
       (row.percent==null?'':' · '+row.percent+'%')+
@@ -1609,7 +1614,7 @@ function renderWiki(root){
      if(knownMaps[mapId])detail.append(wikiLink('◈ '+dataName('map',mapId),'map',mapId,id));
     }
     const recipes=wikiIndex.trades(id);
-    detail.append(h('h4',{text:'Обмен · '+recipes.length}));
+    detail.append(h('h4',{text:wt('Обмен · ','Trades · ')+recipes.length}));
     const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
      placeholder:wt('Найти предмет или материал…','Find an item or material…'),
      'aria-label':wt('Поиск среди обменов NPC','Search NPC trades')});
@@ -1619,22 +1624,22 @@ function renderWiki(root){
      const entry=h('section',{class:'wiki-trade-card'+
       (wikiSelection.highlight===String(trade.i)?' highlighted':'')});
      const output=h('div',{class:'wiki-trade-output'});
-     output.append(h('small',{text:'Получить'}),
+     output.append(h('small',{text:wt('Получить','Receive')}),
       itemLink(trade.i,dataName('item',trade.i),id));
      entry.append(output);
      if(trade.mats?.length){
       const mats=h('div',{class:'wiki-recipe-mats'});
-      mats.append(h('small',{text:'Необходимые материалы'}));
+      mats.append(h('small',{text:wt('Необходимые материалы','Required materials')}));
       for(const material of trade.mats)
        mats.append(itemLink(material.i,dataName('item',material.i)+' ×'+(material.n??1),trade.i));
       entry.append(mats);
      }
-     const currencies=[['Золото',trade.gold],['Честь',trade.honor],['Опыт',trade.exp]]
+     const currencies=[[wt('Золото','Gold'),trade.gold],[wt('Честь','Honor'),trade.honor],[wt('Опыт','Experience'),trade.exp]]
       .filter(([,value])=>Number(value)>0);
      if(currencies.length)entry.append(h('div',{class:'wiki-trade-cost',text:
       currencies.map(([name,value])=>name+': '+Number(value).toLocaleString('ru-RU')).join(' · ')}));
-     const searchText=wikiIndex.normalize([dataName('item',trade.i),String(trade.i),
-      ...(trade.mats||[]).flatMap(m=>[String(m.i),dataName('item',m.i)])].join(' '));
+     const searchText=wikiIndex.normalize([dataName('item',trade.i),
+      ...(trade.mats||[]).map(m=>dataName('item',m.i))].join(' '));
      recipesBox.append(entry);cards.push({entry,searchText});
     }
     const filterRecipes=()=>{
@@ -1644,7 +1649,7 @@ function renderWiki(root){
       card.entry.hidden=!!query&&!card.searchText.includes(query);
       if(!card.entry.hidden)visible++;
      }
-     counter.textContent=visible+' из '+cards.length;
+     counter.textContent=lang==='en'?visible+' of '+cards.length:visible+' из '+cards.length;
     };
     recipeSearch.addEventListener('input',filterRecipes);
     detail.append(recipeSearch,counter,recipesBox);filterRecipes();
@@ -1667,7 +1672,7 @@ function renderWiki(root){
        (wikiSelection.highlight===String(mob)?' highlighted':'')});
       entry.append(wikiLink(dataName('monster',mob)+
        (mon?.level!=null?' · ур. '+mon.level:''),'monster',mob));
-      list.append(entry);rows.push({entry,name:wikiIndex.normalize(dataName('monster',mob)+' '+mob)});
+      list.append(entry);rows.push({entry,name:wikiIndex.normalize(dataName('monster',mob))});
      }
      search.addEventListener('input',()=>{
       const q=wikiIndex.normalize(search.value);
@@ -2796,7 +2801,7 @@ async function loadCatalog(){
    }
    return [name,await response.json()];
   }));
-  if(fromD1&&snapshots.size&&(snapshots.size!==1||unknown.length))
+  if(fromD1&&(snapshots.size!==1||unknown.length))
    throw Error('Несогласованные версии каталога D1');
   const data=Object.fromEntries(entries);
   for(const name of names.filter(x=>x!=='meta')){

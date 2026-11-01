@@ -78,6 +78,16 @@ test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-
  assert.match(book,/PandoraItemPresentation\?\.description\(soul\.desc\)/);
  assert.match(app,/type==='item'\|\|type==='soul'\?window\.PandoraItemPresentation\.description/);
 });
+test('wiki shows localized game class names and consistent source labels',()=>{
+ const app=read('app.js');
+ assert.match(app,/PandoraItemPresentation\.kind\(rec,lang\)/);
+ assert.match(app,/classes\.map\(id=>catalog\.classes\?\.\[id\]\?\.name\|\|id\)/);
+ assert.match(app,/const monsterStats=/);
+ assert.match(app,/Monster resistances/);
+ assert.match(app,/const currencies=\[\[wt\('Золото','Gold'\)/);
+ assert.doesNotMatch(app,/id\.replaceAll\('_',' '\)/);
+ assert.match(app,/if\(fromD1&&\(snapshots\.size!==1\|\|unknown\.length\)\)/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');
