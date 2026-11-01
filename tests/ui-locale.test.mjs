@@ -36,3 +36,10 @@ test('locale markers never replace the dynamic racial passive selection element'
  assert.match(html,/<span id="originRaceName" data-i18n="chooseOne">/);
  assert.doesNotMatch(html,/origin-passive-heading" data-i18n=/);
 });
+
+test('account session verification preserves local identity on temporary failures',()=>{
+ const source=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+ assert.match(source,/error\.httpStatus=response\.status/);
+ assert.match(source,/httpStatus===401\|\|error\?\.httpStatus===403/);
+ assert.match(source,/options\.onLogin\?\.\(\{register:false,bootstrap:true\}\)/);
+});

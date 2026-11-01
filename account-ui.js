@@ -32,7 +32,7 @@ async function request(kind,data=null,auth=token()){
   ...(data===null?{}:{body:JSON.stringify(data)})
  });
  const result=await response.json().catch(()=>({}));
- if(!response.ok)throw Error(result.error||'Ошибка сервера');
+ if(!response.ok){const error=new Error(result.error||'Ошибка сервера');error.httpStatus=response.status;throw error;}
  return result;
 }
 function setSession(result){
@@ -144,9 +144,15 @@ async function init(config){
    const data=await request('me',null,session.token);
    session.username=data.account.username;
    options.onLogin?.({register:false,bootstrap:true});
-  }catch{
-   clearSession();
-   options.onLogout?.({bootstrap:true});
+  }catch(error){
+   if(error?.httpStatus===401||error?.httpStatus===403){
+    clearSession();
+    options.onLogout?.({bootstrap:true});
+   }else{
+    // Keep an unexpired account session on temporary network / Worker outages.
+    // A failed availability check is not evidence of revoked credentials.
+    options.onLogin?.({register:false,bootstrap:true});
+   }
   }
  }else options.onGuest?.();
  render();

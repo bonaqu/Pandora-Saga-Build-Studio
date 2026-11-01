@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 export async function runAccountSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev',token='t'.repeat(43);
- let calls=[],username=null,passwd=null;
+ let calls=[],username=null,passwd=null,offlineMe=false,expiredMe=false;
  const context=await browser.newContext({viewport:{width:1280,height:900}});
  await context.route('**/*',async route=>{
   const url=route.request().url();
@@ -28,7 +28,11 @@ export async function runAccountSmoke(browser,base){
       recoveryCode:'r'.repeat(43)},201);
    }
    if(action==='logout')return send({ok:true});
-   if(action==='me')return send({account:{username}});
+   if(action==='me'){
+    if(expiredMe)return send({error:'Sign in required'},401);
+    if(offlineMe)return send({error:'Cloud temporarily unavailable'},503);
+    return send({account:{username}});
+   }
    if(action==='login'){
     return body.username.toLowerCase()===username&&body.password===passwd?
       send({account:{username},token,expires:Date.now()+7200000}):
@@ -73,7 +77,21 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-user').waitFor({state:'visible'});
   assert.equal(calls.filter(c=>c.action==='register').length,1);
   assert.ok(calls.some(c=>c.action==='login'));
+  // A transient outage must not erase a valid saved session from this browser.
+  offlineMe=true;
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#profileTrigger').click();
+  await page.locator('.account-user').waitFor({state:'visible'});
+  assert.equal((await page.locator('.account-user').innerText()).trim(),'@testplayer_01');
+  assert.equal(await page.evaluate(()=>Boolean(localStorage.getItem('ps-account-session.v1'))),true);
+  // A confirmed server-side 401 must still clear the revoked session.
+  offlineMe=false;expiredMe=true;
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#profileTrigger').click();
+  await page.locator('.account-tabs').waitFor({state:'visible'});
+  assert.equal(await page.locator('.account-user').count(),0);
+  assert.equal(await page.evaluate(()=>localStorage.getItem('ps-account-session.v1')),null);
   assert.deepEqual(errors,[]);
-  console.log('Chromium account UI passed: register, recovery code, persistent sign-in, logout, login; no draft upload');
+  console.log('Chromium account UI passed: registration, login, recovery, transient 503 session retention and confirmed 401 logout');
  }finally{await context.close()}
 }

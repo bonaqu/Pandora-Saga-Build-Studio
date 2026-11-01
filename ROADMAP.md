@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.188.0 (`2026.11.01.188`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.189.0 (`2026.11.01.189`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.189.0 — resilient sessions and explicit save UI
+
+- A temporary offline / 5xx / network error while verifying an otherwise unexpired account session does not trigger a false logout or drop the stored session. A confirmed 401/403 still revokes the local session.
+- Add Chromium account regression for a transient account-me 503 followed by a genuine 401, with Node source validation; browser and D1 production state remain subject to independent checks.
+- Style the inline overwrite card, retain the no-background-write contract, and refresh the public cache key for stylesheet/client updates.
 
 ## Source update 0.188.0 — clearer RU/EN UI and explicit inline overwrites
 
