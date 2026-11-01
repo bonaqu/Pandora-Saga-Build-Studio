@@ -1,3 +1,4 @@
+import {accountApi,principal as accountPrincipal} from './account.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
 // Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.
@@ -144,7 +145,8 @@ async function shareApi(request,env,path,ip){
  }
  if(request.method!=='POST'||path!=='/api/shared')return no('Not found',404);
  const bearer=request.headers.get('authorization')||'';
- if(!/^Bearer [a-f0-9]{64}$/.test(bearer))return no('Доступ к созданию ссылки требует владельца билда',401);
+ if(!/^Bearer (?:[a-f0-9]{64}|[A-Za-z0-9_-]{43})$/.test(bearer))
+  return no('Доступ к созданию ссылки требует владельца билда',401);
  if(Number(request.headers.get('content-length')||0)>48000)return no('Payload too large',413);
  const input=await request.text();
  if(input.length>48000)return no('Payload too large',413);
@@ -156,7 +158,9 @@ async function shareApi(request,env,path,ip){
   Number.isInteger(entry.race)&&entry.race>=0&&entry.race<=5&&
   Number.isInteger(entry.job)&&entry.job>=0&&entry.job<28&&
   Number.isInteger(entry.level)&&entry.level>=1&&entry.level<=55;
- const owner=await sha(bearer.slice(7));
+ const owner=/^Bearer [a-f0-9]{64}$/.test(bearer)?
+  await sha(bearer.slice(7)):(await accountPrincipal(request,env))?.owner_hash;
+ if(!owner)return no('Требуется вход в профиль',401);
  const saved=await env.DB.prepare('SELECT payload,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,payload.buildId).first();
  if(!saved||saved.deleted_at!==null)return no('Сохранённый билд не найден или уже удалён',409);
  // Only the owned D1 record is authoritative. Never trust arbitrary character data from the share POST.
@@ -197,8 +201,9 @@ async function libraryApi(request,env){
   }catch{return no('Хранилище билдов не подготовлено',503)}
  }
  const bearer=request.headers.get('authorization')||'';
- if(!/^Bearer [a-f0-9]{64}$/.test(bearer))return no('Library key required',401);
- const owner=await sha(bearer.slice(7));
+ const owner=/^Bearer [a-f0-9]{64}$/.test(bearer)?
+  await sha(bearer.slice(7)):(await accountPrincipal(request,env))?.owner_hash;
+ if(!owner)return no('Library key or account session required',401);
  if(request.method==='GET'){
   const rows=await env.DB.prepare('SELECT build_id,payload,deleted_at FROM private_builds WHERE owner_hash=? ORDER BY (deleted_at IS NOT NULL), updated_at DESC').bind(owner).all();
   return json({records:(rows.results||[]).map(r=>({id:r.build_id,deleted:r.deleted_at!==null,
@@ -258,6 +263,11 @@ async function libraryApi(request,env){
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 // No runtime calls to the third-party game server. All game data is read from our own D1.
  if(!env.DB)return no('Database not configured',503);
+ if(path.startsWith('/api/account/')){
+  const rows=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('user_accounts','user_sessions','user_registration_limits')").all();
+  if((rows.results||[]).length!==3)return no('Аккаунты ещё не активированы в D1: требуется миграция 0005',503);
+  return accountApi(request,env,path,{ip,throttle,recordFailed,clearFailed});
+ }
  if(path==='/api/library')return libraryApi(request,env);
  if(path==='/api/shared'||/^\/api\/shared\/[A-Za-z0-9_-]{11}$/.test(path))return shareApi(request,env,path,ip);
 if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
@@ -284,13 +294,14 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/health'&&method==='GET'){
- const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds')").all();
+ const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
  const ready=['admins','sessions','overrides','login_attempts'].every(name=>found.has(name));
  const sharingReady=['shared_builds','shared_build_limits','shared_build_sources'].every(name=>found.has(name));
  const catalogPublished=Boolean(await activeCatalog(env));
  return json({status:ready?'ok':'setup_required',storage:'d1',tablesReady:ready,
-  features:{sharing:sharingReady,catalog:catalogPublished,library:found.has('private_builds')}},ready?200:503);
+  features:{sharing:sharingReady,catalog:catalogPublished,library:found.has('private_builds'),
+   accounts:['user_accounts','user_sessions','user_registration_limits'].every(n=>found.has(n))}},ready?200:503);
 }
 if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){

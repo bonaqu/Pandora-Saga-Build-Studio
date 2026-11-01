@@ -20,13 +20,11 @@ test('two explicit RU/EN buttons keep the selected language accessible',()=>{
  host.PandoraUILocale.apply('ru',doc);
  assert.deepEqual(nodes.map(n=>n.textContent),['Образ героя','Путь героя']);
 });
-test('item details use global item presenter and never leak English slot key into visible header',()=>{
- const source=read('stage-item-ui.js');
- assert.match(source,/globalThis\.PandoraItemPresentation\?\.displayName\(record\)/);
- assert.match(source,/api\.slotLabel/);
- assert.doesNotMatch(source,/root\.PandoraItemPresentation\?\.displayName\(record\)\|\|'Слот:/);
- const app=read('app.js');
- assert.match(app,/slotLabel:slots\[selectedSlot\]\[0\]/);
+test('item dialog header shows localized slot type, not duplicated item name',()=>{
+ const source=read('stage-item-ui.js'),app=read('app.js');
+ assert.match(source,/api\.slotLabel\|\|'Слот: '\+slot/);
+ assert.match(app,/\['Оружие','Щит','Шлем','Броня','Перчатки','Штаны','Обувь','Плащ'/);
+ assert.match(app,/\['Weapon','Shield','Helmet','Armor','Gloves','Pants'/);
 });
 test('skill markers keep tooltips, use three distinct vertical lanes, and do not block slider',()=>{
  const css=read('style.css'),hero=read('hero-path.js');
@@ -36,16 +34,15 @@ test('skill markers keep tooltips, use three distinct vertical lanes, and do not
  assert.match(hero,/class:'path-milestone-tooltip',role:'tooltip'/);
  assert.match(hero,/track\.append\(range\);paint\(\)/);
 });
-test('auto cloud saves happen only after an intentional edit and only for existing IDs',()=>{
- const app=read('app.js'),helper=read('saved-build-autosave.js');
- assert.match(app,/if\(event\.isTrusted\)savedEditIntent=true/);
- assert.match(app,/if\(!savedEditIntent\)return/);
- assert.match(app,/const update=window\.PandoraSavedBuildAutosave\.updatedSaved/);
- assert.match(app,/if\(!cloudReadSucceeded\)return/);
- assert.match(helper,/if\(index<0\)return null/);
- assert.match(app,/void putCloudBuild\(entry\)/);
+test('saved builds stay local until the user explicitly overwrites',()=>{
+ const app=read('app.js');
+ assert.match(app,/function persist\(\)\{try\{localStorage\.setItem/);
+ assert.doesNotMatch(app,/PandoraSavedBuildAutosave\.updatedSaved/);
+ assert.match(app,/text:'↻ Перезаписать'/);
+ assert.match(app,/saveBuild\(state\.name,b\.id\)/);
+ assert.match(app,/function saveBuild\(name=state\.name\|\|'Новый герой',overwriteId=null\)/);
+ assert.match(app,/\$\('snapshot'\)\.onclick=\(\)=>\{changeTab\('builds'\)\}/);
 });
-
 test('locale selection works before async catalog is available',()=>{
  const app=read('app.js');
  assert.match(app,/function applyGameLocale\(\)\{\n window\.PandoraUILocale\.apply\(lang\)/);

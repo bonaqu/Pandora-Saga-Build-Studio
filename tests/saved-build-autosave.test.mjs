@@ -29,8 +29,8 @@ test('editing another saved build cannot affect the other originals',()=>{
 });
 test('actual app invokes persisted-saved update only after direct user edit intent',()=>{
  const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
- assert.match(source,/PandoraSavedBuildAutosave\.updatedSaved/);
- assert.match(source,/savedEditIntent/);
- assert.match(source,/builds\.find\(x=>x\.id===entry\.id\)/);
- assert.match(source,/void putCloudBuild\(entry\)/);
+ assert.match(source,/function persist\(\)\{try\{localStorage\.setItem/);
+ assert.doesNotMatch(source,/PandoraSavedBuildAutosave\.updatedSaved/);
+ assert.match(source,/saveBuild\(state\.name,b\.id\)/);
+ assert.match(source,/function saveBuild\(name=state\.name\|\|'Новый герой',overwriteId=null\)/);
 });

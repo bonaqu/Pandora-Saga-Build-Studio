@@ -43,9 +43,19 @@ export async function runSavedAutosaveSmoke(browser,base){
   await input.press('ArrowRight'); // Genuine trusted keyboard action, no Save click.
   await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='46');
   await page.waitForTimeout(900);
-  assert.equal(online.get(id).data.level,46,'A previously saved build must auto-save to D1 after edits');
-  assert.equal(online.size,1,'Editing must retain the original saved ID');
-  assert.ok(writes.length>0);
+  assert.equal(online.get(id).data.level,45,'An edit must not silently overwrite D1');
+  assert.equal(writes.length,0);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='46');
+  await page.locator('[data-tab="builds"]').click();
+  page.once('dialog',dialog=>dialog.accept());
+  await page.getByRole('button',{name:'Перезаписать'}).click();
+  await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')
+   .some(entry=>entry.id==='dddddddddddddddddddddddddddddddd'&&entry.data.level===46));
+  await page.waitForTimeout(300);
+  assert.equal(online.get(id).data.level,46,'Explicit overwrite must update the original cloud build');
+  assert.equal(online.size,1);
+  assert.equal(writes.length,1);
   // Explicitly start a new blank draft without saving it to the library.
   await page.locator('#newBuildQuick').click();
   const choice=page.locator('.new-build-choice');
@@ -57,6 +67,6 @@ export async function runSavedAutosaveSmoke(browser,base){
   assert.equal(online.size,1,'Changing an unsaved draft must not create a cloud build');
   assert.equal(writes.length,1,'No automatic PUT is allowed for an unsaved hero');
   assert.deepEqual(errors,[]);
-  console.log('Chromium saved-build autosave passed: existing cloud ID updated; new draft never auto-created');
+  console.log('Chromium manual overwrite passed: edits survive reload, saved D1 unchanged until confirmed, new draft not uploaded');
  }finally{await context.close()}
 }

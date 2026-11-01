@@ -37,3 +37,13 @@ test('saved cloud data retries after network recovery with an explicit key warni
  assert.match(app,/Сохраните личный код библиотеки до очистки данных браузера/);
  assert.match(app,/Перенести или восстановить облачные билды/);
 });
+
+test('account bearer joins private library and sharing without removing legacy secret-key access',()=>{
+ const app=read('app.js'),worker=read('worker/index.js'),html=read('index.html');
+ assert.match(app,/window\.PandoraAccountUI\?\.token\(\)\|\|cloudToken\(\)/);
+ assert.match(app,/window\.PandoraAccountUI\.init\(/);
+ assert.match(worker,/accountPrincipal\(request,env\)/);
+ assert.match(worker,/path\.startsWith\('\/api\/account\/'\)/);
+ assert.match(html,/id="profileTrigger"/);
+ assert.match(html,/id="accountPanel"/);
+});

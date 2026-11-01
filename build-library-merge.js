@@ -22,7 +22,7 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}
   const suffix=origin==='local'?' · локальная копия':' · облачная копия';
   const duplicate={...source,id,name:String(source.name||'Билд').slice(0,70-suffix.length)+suffix,
    at:Math.max(Date.now(),Number(source.at)||0)};
-  merged.push(duplicate);outgoing.push(duplicate);
+  merged.push(duplicate); // A conflict copy stays local until explicitly saved.
   return id;
  };
  const same=(a,b)=>{

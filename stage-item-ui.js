@@ -94,7 +94,7 @@ function render(root,api){
  const cap=hasSouls?plan.socketCapacity(record):0;
  if(mode==='gems'||mode==='souls'&&!hasSouls){api.changeMode('details');return}
  const head=el('div',{class:'stage-picker-head'},[
-  el('strong',{text:globalThis.PandoraItemPresentation?.displayName(record)||api.slotLabel||'Слот: '+slot}),
+  el('strong',{text:api.slotLabel||'Слот: '+slot}),
   el('button',{type:'button',text:'✕',onclick:api.close,'aria-label':'Закрыть настройку'})
  ]);root.append(head);
  const tabs=el('nav',{class:'stage-rich-tabs',role:'group','aria-label':'Настройка предмета'});

@@ -11,7 +11,7 @@ test('D1 remains authoritative and the offline edited saved build becomes a sepa
  const result=merge({local:[local],remote:[{id:A,entry:remote}],activeId:A,newId:()=>B});
  assert.deepEqual(result.merged.find(v=>v.id===A),remote);
  assert.equal(result.merged.find(v=>v.id===B).data.level,55);
- assert.deepEqual(result.outgoing.map(v=>v.id),[B]);
+ assert.deepEqual(result.outgoing.map(v=>v.id),[]);
  assert.equal(result.activeId,B);
  const app=read('app.js');
  assert.match(app,/const reconciled=window\.PandoraBuildLibraryMerge\.reconcile/);

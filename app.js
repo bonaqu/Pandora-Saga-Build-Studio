@@ -76,29 +76,8 @@ stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,1
 stageGemQuery='',gameTables=null,gameItemForth=null,
 stageAttributesPage=['summary','attack','defense','recovery','effects','buffs'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
-let savedEditIntent=false,cloudReadSucceeded=false,savedWriteTimer=null;
-for(const eventName of ['input','change','click']){
- document.addEventListener(eventName,event=>{
-  if(event.isTrusted)savedEditIntent=true;
- },true);
-}
-function persist(){
- try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}
- if(!savedEditIntent)return;
- const update=window.PandoraSavedBuildAutosave.updatedSaved({
-  activeId:activeBuildId,builds,state
- });
- if(!update)return;
- builds=update.builds;persistBuilds();libraryChangeId++;
- const entry=update.entry;
- clearTimeout(savedWriteTimer);
- savedWriteTimer=setTimeout(()=>{
-  if(!cloudReadSucceeded)return;
-  const current=builds.find(x=>x.id===entry.id);
-  if(current?.at!==entry.at||queuedDeletes().includes(entry.id))return;
-  void putCloudBuild(entry);
- },700);
-}
+// Current character changes remain a local draft until explicit user save.
+function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
 function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
 const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
@@ -117,9 +96,10 @@ function cloudToken(){
  }
  return token;
 }
-async function cloudLibraryRequest(payload,secret=cloudToken()){
+async function cloudLibraryRequest(payload,secret=null){
+ const bearer=secret||window.PandoraAccountUI?.token()||cloudToken();
  const response=await fetch(API+'/api/library',{method:payload?'POST':'GET',
-  headers:{'Content-Type':'application/json',Authorization:'Bearer '+secret},
+  headers:{'Content-Type':'application/json',Authorization:'Bearer '+bearer},
   ...(payload?{body:JSON.stringify(payload)}:{})});
  let data;try{data=await response.json()}catch{throw Error('Нет ответа облачного сервера')}
  if(!response.ok){
@@ -181,7 +161,6 @@ async function loadCloudBuilds(){
   });
   const {outgoing,copies}=reconciled;
   builds=reconciled.merged;persistBuilds();
-  cloudReadSucceeded=true;
   if(reconciled.activeId!==activeBuildId)selectActiveBuild(reconciled.activeId);
   if(activeTab==='builds')renderDetails();
   reportCloudStatus(outgoing.length?'Синхронизируем локальные изменения…':'Облачная библиотека подключена');
@@ -813,7 +792,13 @@ function renderStagePicker(focusSearch=false){
  if(stageSlotView!=='choose'){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
-   record,item:equipped,slot:key,slotLabel:slots[selectedSlot][0],slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
+   record,item:equipped,slot:key,
+   slotLabel:(lang==='en'?'Slot: ':'Слот: ')+
+    (lang==='en'?['Weapon','Shield','Helmet','Armor','Gloves','Pants',
+     'Boots','Cloak','Ring','Ring','Amulet','Belt','Earring','Earring'][selectedSlot]:
+     ['Оружие','Щит','Шлем','Броня','Перчатки','Штаны','Обувь','Плащ',
+      'Кольцо','Кольцо','Амулет','Пояс','Серьга','Серьга'][selectedSlot]),
+   slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
@@ -1830,6 +1815,10 @@ let buildSearchQuery='';
 // Reveal or switch it only after a deliberate user interaction.
 async function connectCloudLibrary(secret,feedback){
  const trimmed=String(secret||'').trim().toLowerCase();
+ if(window.PandoraAccountUI?.isLoggedIn()){
+  feedback.textContent='Выйдите из аккаунта, чтобы переключить библиотеку по старому коду.';
+  return false;
+ }
  if(!/^[a-f0-9]{64}$/.test(trimmed)){
   feedback.textContent='Код должен содержать 64 символа. Скопируйте его с другого устройства.';
   return false;
@@ -1850,7 +1839,6 @@ async function connectCloudLibrary(secret,feedback){
    return true;
   }
   localStorage.setItem(CLOUD_TOKEN_KEY,trimmed);
-  cloudReadSucceeded=false;
   selectActiveBuild(null);libraryChangeId++;
   feedback.textContent='Подключено. Объединяем сохранения…';
   void loadCloudBuilds();
@@ -1908,7 +1896,7 @@ function renderBuilds(root){
   ]));
  toolbar.append(name,
   h('button',{type:'button',class:'button-action primary',
-   text:activeBuildId&&builds.some(b=>b.id===activeBuildId)?'✓ Сохранить изменения':'✧ Сохранить билд',
+   text:'✧ Сохранить новый билд',
    onclick:()=>saveBuild(name.value)}),
   ...(activeBuildId&&builds.some(b=>b.id===activeBuildId)?[
    h('button',{type:'button',class:'button-action',text:'Сохранить копию',onclick:()=>{
@@ -1958,6 +1946,11 @@ function renderBuilds(root){
     if(!unsavedBuild()){openSavedBuild(b);return}
     openChoice.hidden=!openChoice.hidden;
    }}),
+   ...(activeBuildId===b.id?[h('button',{class:'button-action primary',
+    text:'↻ Перезаписать',onclick:()=>{
+     if(!confirm('Перезаписать сохранённый билд «'+b.name+'» текущими локальными изменениями?'))return;
+     if(saveBuild(state.name,b.id))showStudioToast('Билд перезаписан по вашему запросу.','success');
+    }})]:[]),
    h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared(b,shareSlot)}),
    h('button',{class:'button-action',text:'Удалить',onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}}));
   box.append(openChoice);
@@ -1991,11 +1984,12 @@ function renderBuilds(root){
  }
 }
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
-function saveBuild(name=state.name||'Новый герой'){
+function saveBuild(name=state.name||'Новый герой',overwriteId=null){
  if(typeof name!=='string'||!name.trim())return false;
  const cleanName=name.trim().slice(0,70),previousName=state.name;
  const previousBuilds=builds.slice(),previousActive=activeBuildId;
- const existingIndex=builds.findIndex(b=>b.id===activeBuildId);
+ const existingIndex=overwriteId&&overwriteId===activeBuildId?
+  builds.findIndex(b=>b.id===overwriteId):-1;
  const id=existingIndex>=0?builds[existingIndex].id:newId();
  state.name=cleanName;
  const entry={id,name:cleanName,data:structuredClone(state),
@@ -2121,9 +2115,9 @@ async function createShared(build,host){
  try{
   // Invalid saved state must show a card error instead of escaping the click handler.
   sanitizeSharedState(build.data);
-  if(!await putCloudBuild(build))throw Error('Не удалось сохранить билд в облаке. Попробуйте ещё раз.');
-  pending.textContent='Создаём ссылку…';
-  const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},cloudToken());
+  pending.textContent='Создаём ссылку из последней сохранённой облачной версии…';
+  const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},
+   window.PandoraAccountUI?.token()||cloudToken());
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
   // Confirm that the new public link is immediately readable before showing it.
   const check=await apiRequest('/api/shared/'+response.id,null,'');
@@ -2636,7 +2630,7 @@ $('hero').addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){
   event.preventDefault();openHeroBook();
  }
-});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{saveBuild();changeTab('builds')};$('locale').onclick=event=>{
+});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{changeTab('builds')};$('locale').onclick=event=>{
  const button=event.target.closest('[data-locale]');
  if(!button||button.dataset.locale===lang)return;
  lang=button.dataset.locale;
@@ -2787,7 +2781,28 @@ for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','
  ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
 }
-render();loadCatalog();loadOverrides();void loadCloudBuilds();
+render();loadCatalog();loadOverrides();
+void window.PandoraAccountUI.init({
+ baseUrl:API,legacyKey:()=>cloudToken(),
+ onLogin:({register,bootstrap})=>{
+  if(!register&&!bootstrap){
+   try{localStorage.setItem('ps-preaccount-library.v1',JSON.stringify(builds))}catch{}
+   builds=[];persistBuilds();selectActiveBuild(null);
+  }
+  libraryChangeId++;
+  void loadCloudBuilds();
+  if(activeTab==='builds')renderDetails();
+ },
+ onLogout:()=>{
+  try{const copy=JSON.parse(localStorage.getItem('ps-preaccount-library.v1')||'null');
+   if(Array.isArray(copy))builds=copy;
+  }catch{}
+  persistBuilds();selectActiveBuild(null);libraryChangeId++;
+  void loadCloudBuilds();
+  if(activeTab==='builds')renderDetails();
+ },
+ onGuest:()=>{void loadCloudBuilds()}
+}).catch(error=>{console.warn('Account UI unavailable',error);void loadCloudBuilds()});
 // Return to a saved library after network loss; an unsaved draft is never uploaded.
 let lastCloudReconnect=0;
 function resumeCloudLibrary(){

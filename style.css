@@ -1564,3 +1564,48 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 
 /* Clearly visible only within the user's deliberate recovery-code section. */
 .library-key-warning{font-size:12px;line-height:1.55;color:#f0d4a4}
+
+/* Milestone pins occupy a dedicated inner lane, not the branch name or range thumb. */
+.inline-mastery-track{height:112px;margin:8px 3px 12px}
+.inline-mastery-track .inline-mastery-bed{top:84px}
+.inline-mastery-track .inline-mastery-fill,
+.inline-mastery-track .inline-mastery-green{top:85px}
+.inline-mastery-track .inline-mastery-locked{top:84px}
+.inline-mastery-track input[type=range]{top:74px}
+.inline-mastery-track .inline-branch-milestones{inset:8px 12px 37px;overflow:visible}
+.inline-mastery-track .path-threshold-tick{width:10px;height:10px;top:9px;
+ transform:translateX(-50%);border-radius:50%}
+.inline-mastery-track .path-threshold-tick:nth-child(3n+1){top:8px}
+.inline-mastery-track .path-threshold-tick:nth-child(3n+2){top:27px}
+.inline-mastery-track .path-threshold-tick:nth-child(3n){top:46px}
+.inline-mastery-track .path-threshold-tick::after{bottom:-5px}
+.inline-mastery-track .path-threshold-tick:focus-visible{outline-offset:4px}
+/* Account button and lightweight login profile in Pandora Saga colors. */
+.header-actions{position:relative;align-items:center}
+.profile-trigger{display:grid;place-items:center;min-width:42px;min-height:42px;color:#e7bd83;
+ background:linear-gradient(#33241b,#1a120e);border:1px solid #917047;border-radius:4px}
+.profile-trigger:hover,.profile-trigger.active,.profile-trigger:focus-visible{color:#ffe5b6;border-color:#ebbe80}
+.account-panel{position:absolute;z-index:120;right:0;top:calc(100% + 12px);
+ width:min(360px,calc(100vw - 24px));max-height:min(80vh,710px);overflow-y:auto;
+ padding:16px;border:1px solid #ad8250;background:linear-gradient(140deg,#302116,#18110d);
+ box-shadow:0 20px 44px #060302dd, inset 0 0 0 3px #221810;border-radius:6px}
+.account-panel[hidden]{display:none!important}
+.account-title{font:600 27px Georgia,serif;color:#f4d4a3}
+.account-lead,.account-small{font:12px/1.5 Manrope,Arial,sans-serif;color:#c8af8e;margin:8px 0}
+.account-small{font-size:10px}
+.account-tabs{display:flex;flex-wrap:wrap;gap:4px;margin:13px 0}
+.account-action{padding:8px 10px;border:1px solid #76583b;background:#251a13;
+ color:#e8c38a;font:600 11px Manrope,Arial,sans-serif;border-radius:3px}
+.account-action.selected,.account-action.primary{background:#654528;color:#ffe2ab;border-color:#d0a064}
+.account-action:hover{border-color:#e5b876}
+.account-form{display:grid;gap:9px;margin:10px 0}
+.account-input{min-width:0;width:100%;padding:10px;color:#ffe3b3;background:#120e0b;
+ border:1px solid #84613a;border-radius:3px;font:12px Manrope,Arial,sans-serif}
+.account-feedback{min-height:17px;color:#f3bf89;font-size:11px;line-height:1.5;
+ white-space:pre-wrap;overflow-wrap:anywhere}
+.account-user{display:inline-block;border:1px solid #795b37;background:#3c2b1b;
+ padding:6px 10px;color:#f4d198;border-radius:3px;font:600 15px Georgia,serif}
+.account-recovery{display:grid;gap:8px;padding:11px;margin:10px 0;border:1px solid #bd945c;
+ background:#251b12;font-size:11px}
+.account-recovery p{color:#dec29d}
+@media(max-width:790px){.account-panel{right:0;top:calc(100% + 6px)}}

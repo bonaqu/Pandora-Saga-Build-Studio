@@ -13,7 +13,7 @@ test('equal cloud timestamp with differing data keeps both builds and retains lo
  assert.deepEqual(r.merged.find(x=>x.id===A),cloud);
  assert.equal(r.merged.find(x=>x.id===B).data.level,55);
  assert.equal(r.activeId,B);
- assert.equal(r.outgoing.length,1);
+ assert.equal(r.outgoing.length,0);
  assert.match(r.merged.find(x=>x.id===B).name,/локальная копия/);
  assert.equal(local.name,'Hero');
 });
@@ -23,7 +23,7 @@ test('cloud always wins original ID even when local timestamp is newer',()=>{
  assert.deepEqual(r.merged.find(x=>x.id===A),cloud);
  assert.equal(r.merged.find(x=>x.id===B).data.level,55);
  assert.equal(r.activeId,B);
- assert.deepEqual(r.outgoing.map(v=>v.id),[B]);
+ assert.deepEqual(r.outgoing.map(v=>v.id),[]);
 });
 test('older local version remains available if newer cloud build is different',()=>{
  const r=reconcile({local:[mk(A,100,54)],

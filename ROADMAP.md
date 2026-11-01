@@ -1,9 +1,20 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.186.0 (`2026.11.01.186`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.187.0 (`2026.11.01.187`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.187.0 — user accounts and explicit save semantics
+
+- Revert automatic cloud PUTs of already saved character revisions: state changes are only browser-local until the user opens the saved build in «Мои билды» and explicitly chooses «↻ Перезаписать» with confirmation. The original ID is kept. The quick hero Save button navigates to library management; «Сохранить новый билд» deliberately creates a new saved entry.
+- Keep D1 authoritative under an unchanged saved ID. Conflicting locally saved snapshots are preserved as **local copies only** rather than implicitly uploading an unapproved additional cloud build. Explicitly saved local new IDs may still upload when the network returns.
+- Fix screenshot header to show the SLOT («Слот: Оружие / Щит / ...») rather than duplicating item name. Correct RU/EN slot labels for the 14 official equipment positions.
+- Place milestone pins entirely within a dedicated three-row band above the existing interactive slider, separate from the label and thumb.
+- Add a small top-right profile control and Worker/D1 account module with case-insensitive unique Latin usernames (3–20 chars, a-z starting letter, digits/underscore), long passwords (15–128 Unicode characters with punctuation/spaces allowed), salted PBKDF2-SHA256 hashes, random hashed seven-day sessions, rate-limited login/registration, password change and one-time printable recovery code. No email/SMS/payments.
+- Existing account-free 64-hex-key D1 libraries remain available. Registration can bind an existing legacy library's **same** owner hash; account session access to `/api/library` and share creation recognizes it without moving existing build/share IDs.
+- **Deployment gate:** `worker/migrations/0005_user_accounts.sql` must be applied to the actual production D1 and Worker code redeployed before live account APIs are available. Pages publication, Node and mock Chromium tests alone do not prove live registration.
+- Remaining: end-to-end live D1 account acceptance after migration, complete RU/EN interface translations, remaining formula port and combat/server parity.
 
 ## Source update 0.186.0 — reconnect saved libraries and restore language without game data
 
