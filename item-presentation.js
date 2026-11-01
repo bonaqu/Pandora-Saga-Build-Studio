@@ -49,8 +49,8 @@ function description(s){
  if(typeof s!=='string')return '';
  // Keep the original source wording, numbers and manually entered paragraphs.
  // OS exports sometimes concatenate lore, bonuses and upgrade conditions.
- const conditions='За кажд(?:ую|ые|ый)|При улучшении|При заточке|При экипировке|При наличии|Закалка самоцветом|Каждое следующее улучшение|Per every|At \\+\\d+ and above|When enhanced|With refinement';
- const stats='ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Cooldown|Healing|Reduction';
+ const conditions='За кажд(?:ую|ые|ый|ое)|При улучшении|При усовершенствовании|При заточке|При экипировке|При наличии|Закалка самоцветом|Каждое следующее улучшение|Per every|At \\+\\d+ and above|When enhanced|With refinement';
+ const stats='ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|STA|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Skill Cooldown|Cooldown|Healing|Reduction';
  return s.replace(/\r\n?/g,'\n').replace(/<br\s*\/?>/gi,'\n')
   .replace(/[ \t]*\n[ \t]*/g,'\n')
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+stats+')(?:\\s|[+-]|\\d))','gi'),'$1\n\n')
@@ -58,6 +58,7 @@ function description(s){
   // Missing spaces between two normal sentences are not paragraph breaks.
   .replace(/([.!?])(?=[A-ZА-ЯЁ])/g,'$1 ')
   .replace(/([+-]\d+(?:[.,]\d+)?%?)(?=[A-ZА-ЯЁ]|\+\d+%)/g,'$1\n')
+  .replace(/([+-]\d+(?:[.,]\d+)?%)(?=\d+%\s*(?:chance|шанс))/gi,'$1\n')
   .replace(new RegExp('\\n('+conditions+')','gi'),'\n\n$1')
   .replace(/(Пламя феникса)(?=Пламя феникса:)/gi,'$1\n\n')
   .replace(/(:)[ \t]*(?=[A-ZА-ЯЁ])/g,'$1\n')
