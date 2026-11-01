@@ -132,7 +132,10 @@ function viewGrowth(target,api){
     let unlockDetails=null;
     if(marks.length){
      const ticks=make('div',{class:'path-integrated-milestones'});
-     const thresholds=[...new Set(marks.map(mark=>mark.threshold))].sort((a,b)=>a-b);
+     // A future/unreachable skill can require more than the 90-point track.
+     // Keep it in the accessible list below, but never draw its marker off-rail.
+     const thresholds=[...new Set(marks.map(mark=>mark.threshold)
+      .filter(value=>Number.isFinite(value)&&value>=0&&value<=visualMax))].sort((a,b)=>a-b);
      for(const threshold of thresholds){
       const at=marks.filter(mark=>mark.threshold===threshold);
       const lockedAt=at.every(mark=>mark.locked);

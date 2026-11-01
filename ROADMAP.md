@@ -8,7 +8,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 ## Source update 0.215.0 — readable in-track unlock threshold markers
 
 - Replace full-height ruler ticks on the shared mastery/allocation bar with 8×8-pixel diamond glyphs drawn by CSS. The markers keep exact positions, and their colour indicates whether a skill threshold is achieved or beyond the class cap.
-- Do not add separate image icons or extra buttons on the track. Preserve accessible tabindex, proximity-based hover tooltips, pointer dragging, and numeric input controls.
+- Do not add separate image icons or extra buttons on the track. Render only numerical thresholds between 0 and 90 on the rail; future skill requirements exceeding 90 remain in the accessible expanded list. Preserve accessible tabindex, proximity-based hover tooltips, pointer dragging, and numeric input controls.
 - Check by full Node and Chromium desktop/mobile regressions, including generated layout screenshots. No changes to game formulas, stored builds or D1.
 
 ## Source update 0.214.0 — valid branch icon fallback without broken files

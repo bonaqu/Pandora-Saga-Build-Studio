@@ -82,7 +82,7 @@ export async function runInlineMilestonesSmoke(browser,base){
     width:x.getBoundingClientRect().width,
     pointer:getComputedStyle(x).pointerEvents
    }));
-   return {geom,barTop:barRect.top,barBottom:barRect.bottom,
+   return {geom,barLeft:barRect.left,barRight:barRect.right,barTop:barRect.top,barBottom:barRect.bottom,
     rangeZ:Number(getComputedStyle(range).zIndex),
     markerZ:Number(getComputedStyle(mark).zIndex),
     thumbCenterStart:range.getBoundingClientRect().left+9};
@@ -94,6 +94,8 @@ export async function runInlineMilestonesSmoke(browser,base){
   assert.ok(result.geom.length>=3,'Expected several source-backed unlock thresholds');
   assert.ok(result.geom.every(x=>x.top>=result.barTop-1&&x.bottom<=result.barBottom+1),
    'Every skill threshold belongs inside the SAME horizontal bar: '+JSON.stringify(result));
+  assert.ok(result.geom.every(x=>x.x+x.width/2>=result.barLeft-1&&
+   x.x+x.width/2<=result.barRight+1),'Unlock thresholds must stay within 0–90 rail');
   assert.ok(result.geom.every(x=>x.width===12&&x.height===12&&x.pointer==='none'),
    'Diamond unlock containers must match the 12px rail without stealing slider events');
   assert.ok(result.geom.every((x,i,a)=>i===0||x.x>a[i-1].x),
