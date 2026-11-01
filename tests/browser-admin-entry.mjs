@@ -69,7 +69,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.locator('#level').evaluate(input=>{
    input.value='45';input.dispatchEvent(new Event('input',{bubbles:true}));
   });
-  await page.locator('#levelOut').getByText('45').waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent?.trim()==='45');
   const group=page.locator('[data-path-group="prayer"]');
   if(await group.getAttribute('aria-expanded')!=='true')await group.click();
   const branch=page.locator('[data-path-branch="benevolence"]');
