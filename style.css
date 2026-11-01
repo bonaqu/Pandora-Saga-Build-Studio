@@ -1688,6 +1688,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .wiki-allowed-classes summary{cursor:pointer;color:#e8c38c;list-style-position:inside}
 .wiki-allowed-classes summary:hover{color:#ffe1ae}
 .wiki-allowed-classes summary:focus-visible{outline:2px solid #e7b978;outline-offset:3px}
+.wiki-variant-note{display:block;margin:0 0 12px;color:#b79a75;font-size:11px;letter-spacing:.01em}
 .wiki-class-tags,.wiki-wearer-tags{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:9px}
 .wiki-class-tag,.wiki-wearer-tag{display:inline-flex;align-items:center;gap:6px;
  min-height:29px;padding:5px 9px;border:1px solid #705438;border-radius:5px;
