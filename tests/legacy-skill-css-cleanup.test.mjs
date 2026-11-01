@@ -45,3 +45,14 @@ test('cross-tab acceptance requires scope, profile and complete OS catalog befor
  for(const expected of ["'Alice first',tokenA","'Bob only',tokenB",
    "'Alice second',tokenA"])assert.ok(c.includes(expected),expected);
 });
+
+test('guest tabs also wait for their actual owner and current OS catalog before saving',()=>{
+ const guest=read('tests/browser-cross-tab-guest.mjs');
+ assert.match(guest,/async function loaded\(page,expectedKey\)/);
+ assert.match(guest,/localStorage\.getItem\('ps-build-owner-scope\.v1'\)==='guest:'\+expected/);
+ assert.match(guest,/document\.querySelector\('#catalogStatus'\)/);
+ assert.match(guest,/await loaded\(tabA,keyA\)/);
+ assert.match(guest,/await loaded\(tabB,keyB\)/);
+ assert.match(guest,/await nameInput\.inputValue\(\),name/);
+ assert.match(guest,/request\.headers\(\)\.authorization==='Bearer '\+expectedKey/);
+});
