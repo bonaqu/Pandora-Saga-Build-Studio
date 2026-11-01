@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.212.0 (`2026.11.01.212`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.213.0 (`2026.11.01.213`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.213.0 — correct Remaked periodic HP recovery to use effective SPI
+
+- Repair two Remaked `LPsec` preview calculations that mistakenly used hero level instead of the actual SPI attribute. Use source-backed formulas `15 + floor(SPI/10) + floor(benevolence/10)` for Regenerate and `7 + floor(SPI/5) + floor(benevolence/10)` for Restoration.
+- Pass the effective SPI from the current hero's actual calculated attributes; preserve character level for skill gating, not the numeric recovery pulse.
+- Keep preview separate from passive regeneration and current HP/MP. Legacy computations remain historical unless validated against current OS gameplay.
+- Extend source-backed vectors, level-independence checks, missing-data validation, and 1–55 coverage; no D1 or build-data changes.
 
 ## Source update 0.212.0 — never refetch known HTTP 404 game icons
 

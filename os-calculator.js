@@ -1075,8 +1075,10 @@ function statusCurePreview({items=null}={}){
  return {rows,verified:false};
 }
 
-// Two-second healing spell previews from Remaked Legacy LPsec/MPsec.
-// The source values are never added to natural regeneration or current HP/MP.
+// Two-second spell recovery previews from Remaked Legacy Calc('LPsec'/'MPsec').
+// The source's InBuff_0 input is SPI (not character level). Use the actual
+// effective SPI after equipment, racial stats, and chosen attribute buffs.
+// These historical pulse values are never added to natural HP/MP or server HP/MP.
 // Availability is gated by current OS skill IDs and actual trained mastery.
 
 
@@ -1125,14 +1127,15 @@ function consumableRecoveryPreview({items=null,maxHp=null,maxMp=null,potionRate=
  return {rows,healthRows,allRows,verified:false};
 }
 
-function periodicRecoveryPreview({level,benevolence=0,jobKey=null,skillCatalog=null}={}){
+function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,skillCatalog=null}={}){
  if(!Number.isInteger(level)||level<1||level>55||
+  !Number.isFinite(spi)||spi<0||
   !Number.isInteger(benevolence)||benevolence<0||typeof jobKey!=='string')
   return null;
  const candidates=[
-  {id:310002001,key:'regenerate',amount:15+Math.floor(level/10)+Math.floor(benevolence/10),
+  {id:310002001,key:'regenerate',amount:15+Math.floor(spi/10)+Math.floor(benevolence/10),
    kind:'hp',name:'Регенерация'},
-  {id:310022001,key:'restoration',amount:7+Math.floor(level/5)+Math.floor(benevolence/10),
+  {id:310022001,key:'restoration',amount:7+Math.floor(spi/5)+Math.floor(benevolence/10),
    kind:'hp',name:'Восстановление'},
   {id:330005001,key:'natural',amount:5,kind:'mp',name:'Природное восстановление'}
  ];
@@ -1150,7 +1153,7 @@ function periodicRecoveryPreview({level,benevolence=0,jobKey=null,skillCatalog=n
   rows.push({...candidate,available:eligible&&benevolence>=required,
    required,skillLevel:skill.charLevel,verified:false});
  }
- return {rows,verified:false,source:'Remaked Legacy js/calc.js:1009-1026'};
+ return {rows,verified:false,source:'Remaked Legacy js/calc.js:1009-1026 (SPI-based LPsec)'};
 }
 
 // Historical Remaked Legacy js/equip.js weapon-gem switch for enhancement +1..+10.
@@ -1362,7 +1365,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   applyHpPotionBonus:attributeBuffs?.potionEffectsEnabled===true
  });
  const periodicRecovery=periodicRecoveryPreview({
-  level,benevolence:combatContext.benevolenceMastery??0,
+  level,spi:stats.spi,benevolence:combatContext.benevolenceMastery??0,
   jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog
  });
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records:combinedRecords,itemForth,
