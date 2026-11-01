@@ -629,44 +629,54 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   if(modifiers?.gemstones&&(modifiers.gemstones.items.length||modifiers.gemstones.uncertain.length)){
    const gem=modifiers.gemstones,card=make('section',{class:'stage-attribute-row'});
    card.append(make('strong',{text:'Самоцветы'}));
-   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
-    light:'Свет',dark:'Тьма',charm:'Чары'};
+   const labels=english?
+    {fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
+     light:'Light',dark:'Dark',charm:'Arcane'}:
+    {fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
+     light:'Свет',dark:'Тьма',charm:'Чары'};
    const show=(title,values,suffix='')=>{
     for(const [key,value] of Object.entries(values||{}))
      card.append(make('p',{text:title+' · '+(labels[key]||key)+': +'+value+suffix}));
    };
-   show('Основа ауры оружия',gem.auras);
+   show(english?'Weapon aura base':'Основа ауры оружия',gem.auras);
    const totalAura=modifiers?.auraDamage?.elements||{};
    for(const [element,amount] of Object.entries(totalAura))
-    card.append(make('p',{text:'Итог ауры · '+(labels[element]||element)+': '+
-     (amount.known>0?'+':'')+amount.known}));
-   show('Магическое усиление оружия',gem.magic);
-   show('Сопротивление от брони',gem.resistance);
-   show('Шанс наложения состояния',gem.status,'%');
-   if(gem.uncertain.length)card.append(make('p',{text:'Радужные самоцветы: '+
-    gem.uncertain.length}));
-   card.append(make('p',{class:'stage-attribute-note',text:
+    card.append(make('p',{text:(english?'Total aura':'Итог ауры')+' · '+
+     (labels[element]||element)+': '+(amount.known>0?'+':'')+amount.known}));
+   show(english?'Weapon magic enhancement':'Магическое усиление оружия',gem.magic);
+   show(english?'Armor resistance':'Сопротивление от брони',gem.resistance);
+   show(english?'Status effect chance':'Шанс наложения состояния',gem.status,'%');
+   if(gem.uncertain.length)card.append(make('p',{text:
+    (english?'Rainbow gems: ':'Радужные самоцветы: ')+gem.uncertain.length}));
+   card.append(make('p',{class:'stage-attribute-note',text:english?
+    'Gem resistances are included in defense. Auras include equipment bonuses and remain separate from physical attack.':
     'Сопротивления от самоцветов включены в защиту. Аура учитывает бонусы снаряжения и остаётся отдельной от физической атаки.'}));
    body.prepend(card);
   }
   if(modifiers?.healingSkill){
    const heal=modifiers.healingSkill,card=make('section',{class:'stage-attribute-row'});
-   card.append(make('strong',{text:'Эффективность лечащих навыков'}),
-    make('p',{text:'Эффективность: '+heal.percent+'% (основа 100%, честь +'+
-     heal.honor+'%, предметы/души +'+heal.equipment+'%)'}),
-    make('p',{class:'stage-attribute-note',
-     text:'Это действие лечащих умений, а не эффективность зелий; не учтены все активные особенности навыков.'}));
+   card.append(make('strong',{text:english?
+    'Healing-skill effectiveness':'Эффективность лечащих навыков'}),
+    make('p',{text:(english?'Effectiveness: ':'Эффективность: ')+heal.percent+
+     (english?'% (base 100%, honor +':'% (основа 100%, честь +')+heal.honor+
+     (english?'%, equipment/Souls +':'%, предметы/души +')+heal.equipment+'%)'}),
+    make('p',{class:'stage-attribute-note',text:english?
+     'Healing-skill effectiveness is separate from potions. Not all active skill conditions are included.':
+     'Это действие лечащих умений, а не эффективность зелий; не учтены все активные особенности навыков.'}));
    body.prepend(card);
   }
   if(modifiers?.combat?.manaCost){
    const mp=modifiers.combat.manaCost,card=make('section',{class:'stage-attribute-row'});
-   card.append(make('strong',{text:'Расход ОМ'}),
-    make('p',{text:'Индекс остаточного расхода: '+mp.remaining+'%'}),
-    make('p',{text:'База от ИНТ: '+mp.base+'%'}),
-    make('p',{text:'Расовая способность: −'+mp.racial+'%'}),
-    make('p',{text:'Снаряжение и души: −'+mp.equipment+'%'}),
-    make('p',{class:'stage-attribute-note',
-     text:'Это расчёт без активных эффектов и неструктурированных бонусов заточки; 100% означает исходный расход ОМ.'}));
+   card.append(make('strong',{text:english?'MP cost':'Расход ОМ'}),
+    make('p',{text:(english?'Remaining cost index: ':'Индекс остаточного расхода: ')+
+     mp.remaining+'%'}),
+    make('p',{text:(english?'INT base: ':'База от ИНТ: ')+mp.base+'%'}),
+    make('p',{text:(english?'Racial passive: −':'Расовая способность: −')+mp.racial+'%'}),
+    make('p',{text:(english?'Equipment and Souls: −':'Снаряжение и души: −')+
+     mp.equipment+'%'}),
+    make('p',{class:'stage-attribute-note',text:english?
+     'This preview excludes active effects and unstructured refinement bonuses; 100% means the original MP cost.':
+     'Это расчёт без активных эффектов и неструктурированных бонусов заточки; 100% означает исходный расход ОМ.'}));
    body.prepend(card);
   }
   const honor=modifiers?.honor;
@@ -719,18 +729,23 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   if(modifiers?.potion){
    const potion=make('section',{class:'stage-attribute-row'});
-   potion.append(make('strong',{text:'Действие зелий'}),
-    make('p',{text:'Эффективность: '+modifiers.potion.percent+'%'}));
+   potion.append(make('strong',{text:english?'Potion effects':'Действие зелий'}),
+    make('p',{text:(english?'Effectiveness: ':'Эффективность: ')+
+     modifiers.potion.percent+'%'}));
    const parts=[
-    ['Выносливость (базовая эффективность)',modifiers.potion.base],
-    ['Знахарство (расовая способность человека)',modifiers.potion.racial],
-    ['Улучшение лечения (мастерство ближнего боя, воин с 12 уровня)',modifiers.potion.mastery],
-    ['Титул чести',modifiers.potion.honor],
-    ['Экипировка и души',modifiers.potion.equipment]
+    [english?'Stamina (base effectiveness)':'Выносливость (базовая эффективность)',
+     modifiers.potion.base,true],
+    [english?'Herbalist (human racial passive)':'Знахарство (расовая способность человека)',
+     modifiers.potion.racial,false],
+    [english?'Improved healing (melee mastery, Warrior level 12+)':
+     'Улучшение лечения (мастерство ближнего боя, воин с 12 уровня)',
+     modifiers.potion.mastery,false],
+    [english?'Honor title':'Титул чести',modifiers.potion.honor,false],
+    [english?'Equipment and Souls':'Экипировка и души',modifiers.potion.equipment,false]
    ];
-   for(const [name,value] of parts){
+   for(const [name,value,isBase] of parts){
     if(!Number.isFinite(value)||value===0)continue;
-    potion.append(make('p',{text:name+': '+(name.startsWith('Выносливость')?'':'+')+value+'%'}));
+    potion.append(make('p',{text:name+': '+(isBase?'':value>0?'+':'')+value+'%'}));
    }
    body.prepend(potion);
   }
