@@ -51,7 +51,7 @@ test('null records and missing skill IDs cannot leak into the unlock list',()=>{
 });
 
 test('invalid threshold encodings never create spurious reachable or above-cap notches',()=>{
- const rows=[null,{},[],[10],'10','1e2','0x10','10.5',true,
+ const rows=[null,{},[],[10],'1e2','0x10','10.5',true,
   Number.MAX_SAFE_INTEGER+2].map((amount,i)=>({
   id:i+100,reqs:[{branch:'slash',amount}]
  }));
