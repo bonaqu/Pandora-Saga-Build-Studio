@@ -592,9 +592,7 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-fill{position:absolute;left:12px;top:76px;height:6px;background:linear-gradient(90deg,#92692d,#e9b65e);border-radius:6px;pointer-events:none;transition:width .08s ease-out;max-width:calc(100% - 24px)}
 .inline-mastery-track input[type=range]{appearance:none;-webkit-appearance:none;position:absolute;top:66px;left:12px;width:calc(100% - 24px);height:25px;margin:0;padding:0;z-index:3;background:transparent;cursor:ew-resize}
 .inline-mastery-track input[type=range]::-webkit-slider-runnable-track{height:8px;background:transparent;border:0}
-.inline-mastery-track input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;margin-top:-5px;border:2px solid #f6d38e;border-radius:50%;background:#5c3b1e;box-shadow:0 0 7px #000}
 .inline-mastery-track input[type=range]::-moz-range-track{height:8px;background:transparent;border:0}
-.inline-mastery-track input[type=range]::-moz-range-thumb{width:16px;height:16px;border:2px solid #f6d38e;border-radius:50%;background:#5c3b1e}
 .inline-mastery-track .inline-branch-milestones{position:absolute;inset:2px 12px 32px;height:auto;margin:0;border:0;background:none;pointer-events:none}
 .inline-mastery-track .inline-milestone{top:5px;min-height:50px;pointer-events:auto}
 .inline-mastery-track .inline-milestone.reached{border-color:#ead08b;background:#5f4729;box-shadow:0 0 9px #d6a5614d}
@@ -1815,3 +1813,32 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  .path-integrated-track .inline-mastery-fill,
  .path-integrated-track .inline-mastery-green{transition:none}
 }
+
+/* 0.240.0 — source-of-truth native 18px hit area, separate narrow value notch.
+   The rail is inset 21px; the invisible native thumb is 18px wide inside a
+   range inset 12px, so the visible tick and original milestones agree. */
+.inline-mastery-track.path-integrated-track input[type=range]::-webkit-slider-thumb{
+ -webkit-appearance:none;appearance:none;
+ box-sizing:border-box;width:18px;height:18px;margin-top:-5px;
+ padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;
+ opacity:0;
+}
+.inline-mastery-track.path-integrated-track input[type=range]::-moz-range-thumb{
+ box-sizing:border-box;width:18px;height:18px;
+ padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;
+ opacity:0;
+}
+.inline-mastery-track.path-integrated-track .path-current-notch{
+ position:absolute;top:9px;left:21px;width:4px;height:26px;
+ box-sizing:border-box;transform:translateX(-50%);
+ border:1px solid #784817;border-radius:2px;
+ background:linear-gradient(90deg,#d59034 0%,#ffdda0 50%,#c47d28 100%);
+ box-shadow:0 0 0 1px #21150b,0 0 6px #ecad4b99;
+ pointer-events:none;z-index:13;user-select:none;
+}
+@media(forced-colors:active){
+ .inline-mastery-track.path-integrated-track .path-current-notch{
+  background:Highlight;border:1px solid CanvasText;box-shadow:none;
+ }
+}
+
