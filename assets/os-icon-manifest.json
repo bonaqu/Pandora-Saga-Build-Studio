@@ -1,16 +1,176 @@
 {
   "source": "Pandora Saga OS, one-time archive",
-  "createdAt": "2026-11-01T09:18:41.502Z",
+  "createdAt": "2026-11-01T09:19:30.283Z",
   "icons": {
     "skills": {
-      "skill_100001001": "assets/skills/icons/skill_100001001.webp",
+      "skill_320007001": "assets/skills/icons/skill_320007001.webp",
+      "skill_320008001": "assets/skills/icons/skill_320008001.webp",
+      "skill_320009001": "assets/skills/icons/skill_320009001.webp",
+      "skill_320010001": "assets/skills/icons/skill_320010001.webp",
+      "skill_320011001": "assets/skills/icons/skill_320011001.webp",
+      "skill_320012001": "assets/skills/icons/skill_320012001.webp",
+      "skill_320013001": "assets/skills/icons/skill_320013001.webp",
+      "skill_320091001": "assets/skills/icons/skill_320091001.webp",
+      "skill_320092001": "assets/skills/icons/skill_320092001.webp",
+      "skill_330001001": "assets/skills/icons/skill_330001001.webp",
+      "skill_330002001": "assets/skills/icons/skill_330002001.webp",
+      "skill_330003001": "assets/skills/icons/skill_330003001.webp",
+      "skill_330004001": "assets/skills/icons/skill_330004001.webp",
+      "skill_330005001": "assets/skills/icons/skill_330005001.webp",
+      "skill_330051001": "assets/skills/icons/skill_330051001.webp",
+      "skill_330061001": "assets/skills/icons/skill_330061001.webp",
+      "skill_330071001": "assets/skills/icons/skill_330071001.webp",
+      "skill_330072001": "assets/skills/icons/skill_330072001.webp",
+      "skill_330081001": "assets/skills/icons/skill_330081001.webp",
+      "skill_330091001": "assets/skills/icons/skill_330091001.webp",
+      "skill_330101001": "assets/skills/icons/skill_330101001.webp",
+      "skill_340001001": "assets/skills/icons/skill_340001001.webp",
+      "skill_340002001": "assets/skills/icons/skill_340002001.webp",
+      "skill_340003001": "assets/skills/icons/skill_340003001.webp",
+      "skill_340004001": "assets/skills/icons/skill_340004001.webp",
+      "skill_350001001": "assets/skills/icons/skill_350001001.webp",
+      "skill_410000101": "assets/skills/icons/skill_410000101.webp",
+      "skill_410000201": "assets/skills/icons/skill_410000201.webp",
+      "skill_410000301": "assets/skills/icons/skill_410000301.webp",
+      "skill_410000401": "assets/skills/icons/skill_410000401.webp",
+      "skill_410001001": "assets/skills/icons/skill_410001001.webp",
+      "skill_410002001": "assets/skills/icons/skill_410002001.webp",
+      "skill_410003001": "assets/skills/icons/skill_410003001.webp",
+      "skill_410004001": "assets/skills/icons/skill_410004001.webp",
+      "skill_410005001": "assets/skills/icons/skill_410005001.webp",
+      "skill_410011001": "assets/skills/icons/skill_410011001.webp",
+      "skill_410012001": "assets/skills/icons/skill_410012001.webp",
+      "skill_410013001": "assets/skills/icons/skill_410013001.webp",
+      "skill_410014001": "assets/skills/icons/skill_410014001.webp",
+      "skill_410014003": "assets/skills/icons/skill_410014003.webp",
+      "skill_410015001": "assets/skills/icons/skill_410015001.webp",
+      "skill_410021001": "assets/skills/icons/skill_410021001.webp",
+      "skill_410022001": "assets/skills/icons/skill_410022001.webp",
+      "skill_410023001": "assets/skills/icons/skill_410023001.webp",
+      "skill_410024001": "assets/skills/icons/skill_410024001.webp",
+      "skill_410025001": "assets/skills/icons/skill_410025001.webp",
+      "skill_410026001": "assets/skills/icons/skill_410026001.webp",
+      "skill_420001001": "assets/skills/icons/skill_420001001.webp",
+      "skill_420002001": "assets/skills/icons/skill_420002001.webp",
+      "skill_420003001": "assets/skills/icons/skill_420003001.webp",
+      "skill_420004001": "assets/skills/icons/skill_420004001.webp",
+      "skill_420005001": "assets/skills/icons/skill_420005001.webp",
+      "skill_420006001": "assets/skills/icons/skill_420006001.webp",
+      "skill_420007001": "assets/skills/icons/skill_420007001.webp",
+      "skill_420008001": "assets/skills/icons/skill_420008001.webp",
+      "skill_420009001": "assets/skills/icons/skill_420009001.webp",
+      "skill_430001001": "assets/skills/icons/skill_430001001.webp",
+      "skill_430051001": "assets/skills/icons/skill_430051001.webp",
+      "skill_430052001": "assets/skills/icons/skill_430052001.webp",
+      "skill_430053001": "assets/skills/icons/skill_430053001.webp",
+      "skill_430054001": "assets/skills/icons/skill_430054001.webp",
+      "skill_430055001": "assets/skills/icons/skill_430055001.webp",
+      "skill_430056001": "assets/skills/icons/skill_430056001.webp",
+      "skill_430057001": "assets/skills/icons/skill_430057001.webp",
+      "skill_430058001": "assets/skills/icons/skill_430058001.webp",
+      "skill_430059001": "assets/skills/icons/skill_430059001.webp",
+      "skill_440001001": "assets/skills/icons/skill_440001001.webp",
+      "skill_440002001": "assets/skills/icons/skill_440002001.webp",
+      "skill_440003001": "assets/skills/icons/skill_440003001.webp",
+      "skill_440004001": "assets/skills/icons/skill_440004001.webp",
+      "skill_440005001": "assets/skills/icons/skill_440005001.webp",
+      "skill_440005501": "assets/skills/icons/skill_440005501.webp",
+      "skill_440006001": "assets/skills/icons/skill_440006001.webp",
+      "skill_440007001": "assets/skills/icons/skill_440007001.webp",
+      "skill_440008001": "assets/skills/icons/skill_440008001.webp",
+      "skill_440009001": "assets/skills/icons/skill_440009001.webp",
+      "skill_440010001": "assets/skills/icons/skill_440010001.webp",
+      "skill_440011001": "assets/skills/icons/skill_440011001.webp",
+      "skill_500000047": "assets/skills/icons/skill_500000047.webp",
+      "skill_520000001": "assets/skills/icons/skill_520000001.webp",
+      "skill_520001001": "assets/skills/icons/skill_520001001.webp",
+      "skill_520003001": "assets/skills/icons/skill_520003001.webp",
+      "skill_520004001": "assets/skills/icons/skill_520004001.webp",
+      "skill_520005001": "assets/skills/icons/skill_520005001.webp",
+      "skill_600000001": "assets/skills/icons/skill_600000001.webp",
+      "skill_520002001": "assets/skills/icons/skill_520002001.webp",
+      "skill_600000011": "assets/skills/icons/skill_600000011.webp",
+      "skill_600000021": "assets/skills/icons/skill_600000021.webp",
+      "skill_600000031": "assets/skills/icons/skill_600000031.webp",
+      "skill_600000041": "assets/skills/icons/skill_600000041.webp",
+      "skill_600000051": "assets/skills/icons/skill_600000051.webp",
+      "skill_600000061": "assets/skills/icons/skill_600000061.webp",
+      "skill_600000071": "assets/skills/icons/skill_600000071.webp",
+      "skill_600000081": "assets/skills/icons/skill_600000081.webp",
+      "skill_600000201": "assets/skills/icons/skill_600000201.webp",
+      "skill_600000211": "assets/skills/icons/skill_600000211.webp",
+      "skill_600000221": "assets/skills/icons/skill_600000221.webp",
+      "skill_600000231": "assets/skills/icons/skill_600000231.webp",
+      "skill_620000001": "assets/skills/icons/skill_620000001.webp",
+      "skill_620000011": "assets/skills/icons/skill_620000011.webp",
+      "skill_620000012": "assets/skills/icons/skill_620000012.webp",
+      "skill_620000013": "assets/skills/icons/skill_620000013.webp",
+      "skill_620000021": "assets/skills/icons/skill_620000021.webp",
+      "skill_620000022": "assets/skills/icons/skill_620000022.webp",
+      "skill_620000023": "assets/skills/icons/skill_620000023.webp",
+      "skill_620000031": "assets/skills/icons/skill_620000031.webp",
+      "skill_620000032": "assets/skills/icons/skill_620000032.webp",
+      "skill_620000033": "assets/skills/icons/skill_620000033.webp",
+      "skill_620000041": "assets/skills/icons/skill_620000041.webp",
+      "skill_620000042": "assets/skills/icons/skill_620000042.webp",
+      "skill_620000043": "assets/skills/icons/skill_620000043.webp",
+      "skill_620001011": "assets/skills/icons/skill_620001011.webp",
+      "skill_620001021": "assets/skills/icons/skill_620001021.webp",
+      "skill_620001031": "assets/skills/icons/skill_620001031.webp",
+      "skill_620001041": "assets/skills/icons/skill_620001041.webp",
+      "skill_620001051": "assets/skills/icons/skill_620001051.webp",
+      "skill_620001061": "assets/skills/icons/skill_620001061.webp",
+      "skill_620002011": "assets/skills/icons/skill_620002011.webp",
+      "skill_620002021": "assets/skills/icons/skill_620002021.webp",
+      "skill_620002031": "assets/skills/icons/skill_620002031.webp",
+      "skill_900010001": "assets/skills/icons/skill_900010001.webp",
+      "skill_900010002": "assets/skills/icons/skill_900010002.webp",
+      "skill_900010003": "assets/skills/icons/skill_900010003.webp",
+      "skill_900020001": "assets/skills/icons/skill_900020001.webp",
+      "skill_900020002": "assets/skills/icons/skill_900020002.webp",
+      "skill_900020003": "assets/skills/icons/skill_900020003.webp",
+      "skill_900030001": "assets/skills/icons/skill_900030001.webp",
+      "skill_900030003": "assets/skills/icons/skill_900030003.webp",
+      "skill_900030002": "assets/skills/icons/skill_900030002.webp",
+      "skill_900040001": "assets/skills/icons/skill_900040001.webp",
+      "skill_900040002": "assets/skills/icons/skill_900040002.webp",
+      "skill_900040003": "assets/skills/icons/skill_900040003.webp",
+      "skill_900050001": "assets/skills/icons/skill_900050001.webp",
+      "skill_900050002": "assets/skills/icons/skill_900050002.webp",
+      "skill_900050003": "assets/skills/icons/skill_900050003.webp",
+      "skill_900060001": "assets/skills/icons/skill_900060001.webp",
+      "skill_900060002": "assets/skills/icons/skill_900060002.webp",
+      "skill_910110001": "assets/skills/icons/skill_910110001.webp",
+      "skill_900060003": "assets/skills/icons/skill_900060003.webp",
+      "skill_910120001": "assets/skills/icons/skill_910120001.webp",
+      "skill_920110001": "assets/skills/icons/skill_920110001.webp",
+      "skill_930110001": "assets/skills/icons/skill_930110001.webp",
+      "skill_920120001": "assets/skills/icons/skill_920120001.webp",
+      "skill_930120001": "assets/skills/icons/skill_930120001.webp",
+      "skill_940110001": "assets/skills/icons/skill_940110001.webp",
+      "skill_940120001": "assets/skills/icons/skill_940120001.webp",
+      "skill_950000001": "assets/skills/icons/skill_950000001.webp",
+      "skill_950000003": "assets/skills/icons/skill_950000003.webp",
+      "skill_950000002": "assets/skills/icons/skill_950000002.webp",
+      "skill_950000004": "assets/skills/icons/skill_950000004.webp",
+      "skill_950000005": "assets/skills/icons/skill_950000005.webp",
+      "skill_950000006": "assets/skills/icons/skill_950000006.webp",
+      "skill_950000007": "assets/skills/icons/skill_950000007.webp",
+      "skill_950000009": "assets/skills/icons/skill_950000009.webp",
+      "skill_950000010": "assets/skills/icons/skill_950000010.webp",
+      "skill_950000011": "assets/skills/icons/skill_950000011.webp",
+      "skill_950000012": "assets/skills/icons/skill_950000012.webp",
+      "skill_950000013": "assets/skills/icons/skill_950000013.webp",
+      "skill_999999998": "assets/skills/icons/skill_999999998.webp",
+      "skill_950000008": "assets/skills/icons/skill_950000008.webp",
       "skill_100000501": "assets/skills/icons/skill_100000501.webp",
+      "skill_100001001": "assets/skills/icons/skill_100001001.webp",
       "skill_100002001": "assets/skills/icons/skill_100002001.webp",
       "skill_100002002": "assets/skills/icons/skill_100002002.webp",
-      "skill_100052001": "assets/skills/icons/skill_100052001.webp",
       "skill_100051001": "assets/skills/icons/skill_100051001.webp",
-      "skill_100054001": "assets/skills/icons/skill_100054001.webp",
+      "skill_100052001": "assets/skills/icons/skill_100052001.webp",
       "skill_100053001": "assets/skills/icons/skill_100053001.webp",
+      "skill_100054001": "assets/skills/icons/skill_100054001.webp",
       "skill_100055001": "assets/skills/icons/skill_100055001.webp",
       "skill_100056001": "assets/skills/icons/skill_100056001.webp",
       "skill_100057001": "assets/skills/icons/skill_100057001.webp",
@@ -20,8 +180,8 @@
       "skill_100061001": "assets/skills/icons/skill_100061001.webp",
       "skill_100091001": "assets/skills/icons/skill_100091001.webp",
       "skill_100101001": "assets/skills/icons/skill_100101001.webp",
-      "skill_100103001": "assets/skills/icons/skill_100103001.webp",
       "skill_100102001": "assets/skills/icons/skill_100102001.webp",
+      "skill_100103001": "assets/skills/icons/skill_100103001.webp",
       "skill_110101001": "assets/skills/icons/skill_110101001.webp",
       "skill_110101002": "assets/skills/icons/skill_110101002.webp",
       "skill_110102001": "assets/skills/icons/skill_110102001.webp",
@@ -130,7 +290,884 @@
       "skill_320005001": "assets/skills/icons/skill_320005001.webp",
       "skill_320006001": "assets/skills/icons/skill_320006001.webp"
     },
-    "items": {},
+    "items": {
+      "I_000001_00": "assets/items/icons/I_000001_00.webp",
+      "I_000011_00": "assets/items/icons/I_000011_00.webp",
+      "I_000021_00": "assets/items/icons/I_000021_00.webp",
+      "I_000022_00": "assets/items/icons/I_000022_00.webp",
+      "I_000023_00": "assets/items/icons/I_000023_00.webp",
+      "I_000024_00": "assets/items/icons/I_000024_00.webp",
+      "I_000031_00": "assets/items/icons/I_000031_00.webp",
+      "I_000041_00": "assets/items/icons/I_000041_00.webp",
+      "I_000051_00": "assets/items/icons/I_000051_00.webp",
+      "I_000201_00": "assets/items/icons/I_000201_00.webp",
+      "I_000211_00": "assets/items/icons/I_000211_00.webp",
+      "I_000221_00": "assets/items/icons/I_000221_00.webp",
+      "I_000222_00": "assets/items/icons/I_000222_00.webp",
+      "I_000231_00": "assets/items/icons/I_000231_00.webp",
+      "I_000241_00": "assets/items/icons/I_000241_00.webp",
+      "I_000252_00": "assets/items/icons/I_000252_00.webp",
+      "I_000401_00": "assets/items/icons/I_000401_00.webp",
+      "I_000402_00": "assets/items/icons/I_000402_00.webp",
+      "I_000403_00": "assets/items/icons/I_000403_00.webp",
+      "I_000411_00": "assets/items/icons/I_000411_00.webp",
+      "I_000421_00": "assets/items/icons/I_000421_00.webp",
+      "I_000422_00": "assets/items/icons/I_000422_00.webp",
+      "I_000431_00": "assets/items/icons/I_000431_00.webp",
+      "I_000432_00": "assets/items/icons/I_000432_00.webp",
+      "I_000441_00": "assets/items/icons/I_000441_00.webp",
+      "I_000452_00": "assets/items/icons/I_000452_00.webp",
+      "I_000601_00": "assets/items/icons/I_000601_00.webp",
+      "I_000603_00": "assets/items/icons/I_000603_00.webp",
+      "I_000602_00": "assets/items/icons/I_000602_00.webp",
+      "I_000611_00": "assets/items/icons/I_000611_00.webp",
+      "I_000621_00": "assets/items/icons/I_000621_00.webp",
+      "I_000631_00": "assets/items/icons/I_000631_00.webp",
+      "I_000641_00": "assets/items/icons/I_000641_00.webp",
+      "I_000652_00": "assets/items/icons/I_000652_00.webp",
+      "I_000801_00": "assets/items/icons/I_000801_00.webp",
+      "I_000811_00": "assets/items/icons/I_000811_00.webp",
+      "I_000812_00": "assets/items/icons/I_000812_00.webp",
+      "I_000821_00": "assets/items/icons/I_000821_00.webp",
+      "I_000831_00": "assets/items/icons/I_000831_00.webp",
+      "I_000832_00": "assets/items/icons/I_000832_00.webp",
+      "I_000841_00": "assets/items/icons/I_000841_00.webp",
+      "I_000852_00": "assets/items/icons/I_000852_00.webp",
+      "I_000860_00": "assets/items/icons/I_000860_00.webp",
+      "I_001001_00": "assets/items/icons/I_001001_00.webp",
+      "I_001002_00": "assets/items/icons/I_001002_00.webp",
+      "I_001011_00": "assets/items/icons/I_001011_00.webp",
+      "I_001012_00": "assets/items/icons/I_001012_00.webp",
+      "I_001014_00": "assets/items/icons/I_001014_00.webp",
+      "I_001021_00": "assets/items/icons/I_001021_00.webp",
+      "I_001031_00": "assets/items/icons/I_001031_00.webp",
+      "I_001041_00": "assets/items/icons/I_001041_00.webp",
+      "I_001052_00": "assets/items/icons/I_001052_00.webp",
+      "I_001091_00": "assets/items/icons/I_001091_00.webp",
+      "I_001201_00": "assets/items/icons/I_001201_00.webp",
+      "I_001211_00": "assets/items/icons/I_001211_00.webp",
+      "I_001212_00": "assets/items/icons/I_001212_00.webp",
+      "I_001221_00": "assets/items/icons/I_001221_00.webp",
+      "I_001231_00": "assets/items/icons/I_001231_00.webp",
+      "I_001241_00": "assets/items/icons/I_001241_00.webp",
+      "I_001252_00": "assets/items/icons/I_001252_00.webp",
+      "I_001401_00": "assets/items/icons/I_001401_00.webp",
+      "I_001411_00": "assets/items/icons/I_001411_00.webp",
+      "I_001421_00": "assets/items/icons/I_001421_00.webp",
+      "I_001431_00": "assets/items/icons/I_001431_00.webp",
+      "I_001441_00": "assets/items/icons/I_001441_00.webp",
+      "I_001451_00": "assets/items/icons/I_001451_00.webp",
+      "I_001461_00": "assets/items/icons/I_001461_00.webp",
+      "I_001482_00": "assets/items/icons/I_001482_00.webp",
+      "I_001491_00": "assets/items/icons/I_001491_00.webp",
+      "I_001493_00": "assets/items/icons/I_001493_00.webp",
+      "I_001601_00": "assets/items/icons/I_001601_00.webp",
+      "I_001611_00": "assets/items/icons/I_001611_00.webp",
+      "I_001613_00": "assets/items/icons/I_001613_00.webp",
+      "I_001621_00": "assets/items/icons/I_001621_00.webp",
+      "I_001631_00": "assets/items/icons/I_001631_00.webp",
+      "I_001641_00": "assets/items/icons/I_001641_00.webp",
+      "I_001652_00": "assets/items/icons/I_001652_00.webp",
+      "I_001801_00": "assets/items/icons/I_001801_00.webp",
+      "I_001802_00": "assets/items/icons/I_001802_00.webp",
+      "I_001811_00": "assets/items/icons/I_001811_00.webp",
+      "I_001812_00": "assets/items/icons/I_001812_00.webp",
+      "I_001813_00": "assets/items/icons/I_001813_00.webp",
+      "I_001814_00": "assets/items/icons/I_001814_00.webp",
+      "I_001821_00": "assets/items/icons/I_001821_00.webp",
+      "I_001822_00": "assets/items/icons/I_001822_00.webp",
+      "I_001831_00": "assets/items/icons/I_001831_00.webp",
+      "I_001841_00": "assets/items/icons/I_001841_00.webp",
+      "I_001851_00": "assets/items/icons/I_001851_00.webp",
+      "I_001862_00": "assets/items/icons/I_001862_00.webp",
+      "I_002001_00": "assets/items/icons/I_002001_00.webp",
+      "I_002002_00": "assets/items/icons/I_002002_00.webp",
+      "I_002003_00": "assets/items/icons/I_002003_00.webp",
+      "I_002004_00": "assets/items/icons/I_002004_00.webp",
+      "I_002011_00": "assets/items/icons/I_002011_00.webp",
+      "I_002021_00": "assets/items/icons/I_002021_00.webp",
+      "I_002022_00": "assets/items/icons/I_002022_00.webp",
+      "I_002201_00": "assets/items/icons/I_002201_00.webp",
+      "I_002042_00": "assets/items/icons/I_002042_00.webp",
+      "I_002031_00": "assets/items/icons/I_002031_00.webp",
+      "I_002202_00": "assets/items/icons/I_002202_00.webp",
+      "I_002203_00": "assets/items/icons/I_002203_00.webp",
+      "I_002211_00": "assets/items/icons/I_002211_00.webp",
+      "I_002221_00": "assets/items/icons/I_002221_00.webp",
+      "I_002222_00": "assets/items/icons/I_002222_00.webp",
+      "I_002224_00": "assets/items/icons/I_002224_00.webp",
+      "I_002223_00": "assets/items/icons/I_002223_00.webp",
+      "I_002231_00": "assets/items/icons/I_002231_00.webp",
+      "I_002262_00": "assets/items/icons/I_002262_00.webp",
+      "I_002401_00": "assets/items/icons/I_002401_00.webp",
+      "I_002402_00": "assets/items/icons/I_002402_00.webp",
+      "I_002411_00": "assets/items/icons/I_002411_00.webp",
+      "I_002421_00": "assets/items/icons/I_002421_00.webp",
+      "I_002431_00": "assets/items/icons/I_002431_00.webp",
+      "I_002442_00": "assets/items/icons/I_002442_00.webp",
+      "I_002601_00": "assets/items/icons/I_002601_00.webp",
+      "I_002602_00": "assets/items/icons/I_002602_00.webp",
+      "I_002611_00": "assets/items/icons/I_002611_00.webp",
+      "I_002612_00": "assets/items/icons/I_002612_00.webp",
+      "I_002621_00": "assets/items/icons/I_002621_00.webp",
+      "I_002631_00": "assets/items/icons/I_002631_00.webp",
+      "I_002622_00": "assets/items/icons/I_002622_00.webp",
+      "I_002641_00": "assets/items/icons/I_002641_00.webp",
+      "I_002651_00": "assets/items/icons/I_002651_00.webp",
+      "I_002652_00": "assets/items/icons/I_002652_00.webp",
+      "I_002653_00": "assets/items/icons/I_002653_00.webp",
+      "I_002655_00": "assets/items/icons/I_002655_00.webp",
+      "I_002801_00": "assets/items/icons/I_002801_00.webp",
+      "I_002802_00": "assets/items/icons/I_002802_00.webp",
+      "I_002811_00": "assets/items/icons/I_002811_00.webp",
+      "I_002812_00": "assets/items/icons/I_002812_00.webp",
+      "I_002822_00": "assets/items/icons/I_002822_00.webp",
+      "I_002821_00": "assets/items/icons/I_002821_00.webp",
+      "I_002831_00": "assets/items/icons/I_002831_00.webp",
+      "I_002841_00": "assets/items/icons/I_002841_00.webp",
+      "I_002852_00": "assets/items/icons/I_002852_00.webp",
+      "I_002855_00": "assets/items/icons/I_002855_00.webp",
+      "I_011001_00": "assets/items/icons/I_011001_00.webp",
+      "I_002857_00": "assets/items/icons/I_002857_00.webp",
+      "I_011002_00": "assets/items/icons/I_011002_00.webp",
+      "I_011011_00": "assets/items/icons/I_011011_00.webp",
+      "I_011012_00": "assets/items/icons/I_011012_00.webp",
+      "I_011021_00": "assets/items/icons/I_011021_00.webp",
+      "I_011031_00": "assets/items/icons/I_011031_00.webp",
+      "I_011023_00": "assets/items/icons/I_011023_00.webp",
+      "I_011041_00": "assets/items/icons/I_011041_00.webp",
+      "I_011061_00": "assets/items/icons/I_011061_00.webp",
+      "I_011051_00": "assets/items/icons/I_011051_00.webp",
+      "I_011073_00": "assets/items/icons/I_011073_00.webp",
+      "I_011081_00": "assets/items/icons/I_011081_00.webp",
+      "I_011082_00": "assets/items/icons/I_011082_00.webp",
+      "I_011083_00": "assets/items/icons/I_011083_00.webp",
+      "I_011084_00": "assets/items/icons/I_011084_00.webp",
+      "I_011086_00": "assets/items/icons/I_011086_00.webp",
+      "I_011091_00": "assets/items/icons/I_011091_00.webp",
+      "I_011087_00": "assets/items/icons/I_011087_00.webp",
+      "I_011092_00": "assets/items/icons/I_011092_00.webp",
+      "I_011093_00": "assets/items/icons/I_011093_00.webp",
+      "I_011094_00": "assets/items/icons/I_011094_00.webp",
+      "I_011095_00": "assets/items/icons/I_011095_00.webp",
+      "I_011096_00": "assets/items/icons/I_011096_00.webp",
+      "I_011121_00": "assets/items/icons/I_011121_00.webp",
+      "I_011122_00": "assets/items/icons/I_011122_00.webp",
+      "I_011123_00": "assets/items/icons/I_011123_00.webp",
+      "I_011202_00": "assets/items/icons/I_011202_00.webp",
+      "I_011212_00": "assets/items/icons/I_011212_00.webp",
+      "I_011214_00": "assets/items/icons/I_011214_00.webp",
+      "I_011221_00": "assets/items/icons/I_011221_00.webp",
+      "I_011231_00": "assets/items/icons/I_011231_00.webp",
+      "I_011282_00": "assets/items/icons/I_011282_00.webp",
+      "I_011502_00": "assets/items/icons/I_011502_00.webp",
+      "I_011512_00": "assets/items/icons/I_011512_00.webp",
+      "I_011522_00": "assets/items/icons/I_011522_00.webp",
+      "I_011532_00": "assets/items/icons/I_011532_00.webp",
+      "I_011552_00": "assets/items/icons/I_011552_00.webp",
+      "I_011542_00": "assets/items/icons/I_011542_00.webp",
+      "I_011562_00": "assets/items/icons/I_011562_00.webp",
+      "I_011572_00": "assets/items/icons/I_011572_00.webp",
+      "I_012001_00": "assets/items/icons/I_012001_00.webp",
+      "I_012002_00": "assets/items/icons/I_012002_00.webp",
+      "I_012011_00": "assets/items/icons/I_012011_00.webp",
+      "I_012021_00": "assets/items/icons/I_012021_00.webp",
+      "I_012013_00": "assets/items/icons/I_012013_00.webp",
+      "I_012022_00": "assets/items/icons/I_012022_00.webp",
+      "I_012031_00": "assets/items/icons/I_012031_00.webp",
+      "I_012032_00": "assets/items/icons/I_012032_00.webp",
+      "I_012023_00": "assets/items/icons/I_012023_00.webp",
+      "I_012033_00": "assets/items/icons/I_012033_00.webp",
+      "I_012041_00": "assets/items/icons/I_012041_00.webp",
+      "I_012042_00": "assets/items/icons/I_012042_00.webp",
+      "I_012051_00": "assets/items/icons/I_012051_00.webp",
+      "I_012061_00": "assets/items/icons/I_012061_00.webp",
+      "I_012062_00": "assets/items/icons/I_012062_00.webp",
+      "I_012071_00": "assets/items/icons/I_012071_00.webp",
+      "I_012073_00": "assets/items/icons/I_012073_00.webp",
+      "I_012081_00": "assets/items/icons/I_012081_00.webp",
+      "I_012091_00": "assets/items/icons/I_012091_00.webp",
+      "I_012101_00": "assets/items/icons/I_012101_00.webp",
+      "I_012103_00": "assets/items/icons/I_012103_00.webp",
+      "I_012111_00": "assets/items/icons/I_012111_00.webp",
+      "I_012112_00": "assets/items/icons/I_012112_00.webp",
+      "I_012113_00": "assets/items/icons/I_012113_00.webp",
+      "I_012114_00": "assets/items/icons/I_012114_00.webp",
+      "I_012115_00": "assets/items/icons/I_012115_00.webp",
+      "I_012116_00": "assets/items/icons/I_012116_00.webp",
+      "I_012118_00": "assets/items/icons/I_012118_00.webp",
+      "I_012119_00": "assets/items/icons/I_012119_00.webp",
+      "I_012121_00": "assets/items/icons/I_012121_00.webp",
+      "I_012122_00": "assets/items/icons/I_012122_00.webp",
+      "I_012123_00": "assets/items/icons/I_012123_00.webp",
+      "I_012124_00": "assets/items/icons/I_012124_00.webp",
+      "I_012501_00": "assets/items/icons/I_012501_00.webp",
+      "I_012502_00": "assets/items/icons/I_012502_00.webp",
+      "I_012511_00": "assets/items/icons/I_012511_00.webp",
+      "I_012512_00": "assets/items/icons/I_012512_00.webp",
+      "I_012521_00": "assets/items/icons/I_012521_00.webp",
+      "I_012522_00": "assets/items/icons/I_012522_00.webp",
+      "I_012531_00": "assets/items/icons/I_012531_00.webp",
+      "I_012532_00": "assets/items/icons/I_012532_00.webp",
+      "I_012541_00": "assets/items/icons/I_012541_00.webp",
+      "I_012542_00": "assets/items/icons/I_012542_00.webp",
+      "I_012551_00": "assets/items/icons/I_012551_00.webp",
+      "I_012552_00": "assets/items/icons/I_012552_00.webp",
+      "I_012561_00": "assets/items/icons/I_012561_00.webp",
+      "I_012562_00": "assets/items/icons/I_012562_00.webp",
+      "I_012571_00": "assets/items/icons/I_012571_00.webp",
+      "I_012572_00": "assets/items/icons/I_012572_00.webp",
+      "I_012601_00": "assets/items/icons/I_012601_00.webp",
+      "I_012602_00": "assets/items/icons/I_012602_00.webp",
+      "I_012603_00": "assets/items/icons/I_012603_00.webp",
+      "I_012604_00": "assets/items/icons/I_012604_00.webp",
+      "I_012605_00": "assets/items/icons/I_012605_00.webp",
+      "I_012606_00": "assets/items/icons/I_012606_00.webp",
+      "I_012607_00": "assets/items/icons/I_012607_00.webp",
+      "I_012608_00": "assets/items/icons/I_012608_00.webp",
+      "I_012611_00": "assets/items/icons/I_012611_00.webp",
+      "I_012612_00": "assets/items/icons/I_012612_00.webp",
+      "I_012613_00": "assets/items/icons/I_012613_00.webp",
+      "I_012614_00": "assets/items/icons/I_012614_00.webp",
+      "I_012615_00": "assets/items/icons/I_012615_00.webp",
+      "I_012616_00": "assets/items/icons/I_012616_00.webp",
+      "I_012617_00": "assets/items/icons/I_012617_00.webp",
+      "I_012618_00": "assets/items/icons/I_012618_00.webp",
+      "I_012701_00": "assets/items/icons/I_012701_00.webp",
+      "I_013001_00": "assets/items/icons/I_013001_00.webp",
+      "I_013011_00": "assets/items/icons/I_013011_00.webp",
+      "I_013012_00": "assets/items/icons/I_013012_00.webp",
+      "I_013021_00": "assets/items/icons/I_013021_00.webp",
+      "I_013013_00": "assets/items/icons/I_013013_00.webp",
+      "I_013031_00": "assets/items/icons/I_013031_00.webp",
+      "I_013032_00": "assets/items/icons/I_013032_00.webp",
+      "I_013041_00": "assets/items/icons/I_013041_00.webp",
+      "I_013051_00": "assets/items/icons/I_013051_00.webp",
+      "I_013052_00": "assets/items/icons/I_013052_00.webp",
+      "I_013061_00": "assets/items/icons/I_013061_00.webp",
+      "I_013053_00": "assets/items/icons/I_013053_00.webp",
+      "I_013071_00": "assets/items/icons/I_013071_00.webp",
+      "I_013081_00": "assets/items/icons/I_013081_00.webp",
+      "I_013083_00": "assets/items/icons/I_013083_00.webp",
+      "I_013091_00": "assets/items/icons/I_013091_00.webp",
+      "I_013092_00": "assets/items/icons/I_013092_00.webp",
+      "I_013093_00": "assets/items/icons/I_013093_00.webp",
+      "I_013094_00": "assets/items/icons/I_013094_00.webp",
+      "I_013096_00": "assets/items/icons/I_013096_00.webp",
+      "I_013101_00": "assets/items/icons/I_013101_00.webp",
+      "I_013102_00": "assets/items/icons/I_013102_00.webp",
+      "I_013104_00": "assets/items/icons/I_013104_00.webp",
+      "I_013111_00": "assets/items/icons/I_013111_00.webp",
+      "I_013501_00": "assets/items/icons/I_013501_00.webp",
+      "I_013502_00": "assets/items/icons/I_013502_00.webp",
+      "I_013511_00": "assets/items/icons/I_013511_00.webp",
+      "I_013512_00": "assets/items/icons/I_013512_00.webp",
+      "I_013521_00": "assets/items/icons/I_013521_00.webp",
+      "I_013522_00": "assets/items/icons/I_013522_00.webp",
+      "I_013531_00": "assets/items/icons/I_013531_00.webp",
+      "I_013532_00": "assets/items/icons/I_013532_00.webp",
+      "I_013541_00": "assets/items/icons/I_013541_00.webp",
+      "I_013542_00": "assets/items/icons/I_013542_00.webp",
+      "I_013551_00": "assets/items/icons/I_013551_00.webp",
+      "I_013552_00": "assets/items/icons/I_013552_00.webp",
+      "I_013561_00": "assets/items/icons/I_013561_00.webp",
+      "I_013562_00": "assets/items/icons/I_013562_00.webp",
+      "I_013571_00": "assets/items/icons/I_013571_00.webp",
+      "I_013572_00": "assets/items/icons/I_013572_00.webp",
+      "I_013601_00": "assets/items/icons/I_013601_00.webp",
+      "I_013602_00": "assets/items/icons/I_013602_00.webp",
+      "I_013603_00": "assets/items/icons/I_013603_00.webp",
+      "I_013604_00": "assets/items/icons/I_013604_00.webp",
+      "I_013605_00": "assets/items/icons/I_013605_00.webp",
+      "I_013606_00": "assets/items/icons/I_013606_00.webp",
+      "I_013607_00": "assets/items/icons/I_013607_00.webp",
+      "I_013608_00": "assets/items/icons/I_013608_00.webp",
+      "I_013701_00": "assets/items/icons/I_013701_00.webp",
+      "I_014001_00": "assets/items/icons/I_014001_00.webp",
+      "I_014003_00": "assets/items/icons/I_014003_00.webp",
+      "I_014004_00": "assets/items/icons/I_014004_00.webp",
+      "I_014006_00": "assets/items/icons/I_014006_00.webp",
+      "I_014007_00": "assets/items/icons/I_014007_00.webp",
+      "I_014008_00": "assets/items/icons/I_014008_00.webp",
+      "I_014011_00": "assets/items/icons/I_014011_00.webp",
+      "I_014013_00": "assets/items/icons/I_014013_00.webp",
+      "I_014021_00": "assets/items/icons/I_014021_00.webp",
+      "I_014022_00": "assets/items/icons/I_014022_00.webp",
+      "I_014031_00": "assets/items/icons/I_014031_00.webp",
+      "I_014032_00": "assets/items/icons/I_014032_00.webp",
+      "I_014034_00": "assets/items/icons/I_014034_00.webp",
+      "I_014036_00": "assets/items/icons/I_014036_00.webp",
+      "I_014041_00": "assets/items/icons/I_014041_00.webp",
+      "I_014051_00": "assets/items/icons/I_014051_00.webp",
+      "I_014061_00": "assets/items/icons/I_014061_00.webp",
+      "I_014063_00": "assets/items/icons/I_014063_00.webp",
+      "I_014071_00": "assets/items/icons/I_014071_00.webp",
+      "I_014073_00": "assets/items/icons/I_014073_00.webp",
+      "I_014081_00": "assets/items/icons/I_014081_00.webp",
+      "I_014094_00": "assets/items/icons/I_014094_00.webp",
+      "I_014511_00": "assets/items/icons/I_014511_00.webp",
+      "I_014501_00": "assets/items/icons/I_014501_00.webp",
+      "I_014502_00": "assets/items/icons/I_014502_00.webp",
+      "I_014512_00": "assets/items/icons/I_014512_00.webp",
+      "I_014521_00": "assets/items/icons/I_014521_00.webp",
+      "I_014522_00": "assets/items/icons/I_014522_00.webp",
+      "I_014531_00": "assets/items/icons/I_014531_00.webp",
+      "I_014532_00": "assets/items/icons/I_014532_00.webp",
+      "I_014541_00": "assets/items/icons/I_014541_00.webp",
+      "I_014542_00": "assets/items/icons/I_014542_00.webp",
+      "I_014551_00": "assets/items/icons/I_014551_00.webp",
+      "I_014552_00": "assets/items/icons/I_014552_00.webp",
+      "I_014561_00": "assets/items/icons/I_014561_00.webp",
+      "I_014562_00": "assets/items/icons/I_014562_00.webp",
+      "I_014571_00": "assets/items/icons/I_014571_00.webp",
+      "I_014572_00": "assets/items/icons/I_014572_00.webp",
+      "I_014601_00": "assets/items/icons/I_014601_00.webp",
+      "I_014602_00": "assets/items/icons/I_014602_00.webp",
+      "I_014603_00": "assets/items/icons/I_014603_00.webp",
+      "I_014604_00": "assets/items/icons/I_014604_00.webp",
+      "I_014605_00": "assets/items/icons/I_014605_00.webp",
+      "I_014606_00": "assets/items/icons/I_014606_00.webp",
+      "I_014607_00": "assets/items/icons/I_014607_00.webp",
+      "I_014611_00": "assets/items/icons/I_014611_00.webp",
+      "I_014608_00": "assets/items/icons/I_014608_00.webp",
+      "I_014612_00": "assets/items/icons/I_014612_00.webp",
+      "I_014613_00": "assets/items/icons/I_014613_00.webp",
+      "I_014614_00": "assets/items/icons/I_014614_00.webp",
+      "I_014615_00": "assets/items/icons/I_014615_00.webp",
+      "I_014616_00": "assets/items/icons/I_014616_00.webp",
+      "I_014617_00": "assets/items/icons/I_014617_00.webp",
+      "I_014618_00": "assets/items/icons/I_014618_00.webp",
+      "I_015001_00": "assets/items/icons/I_015001_00.webp",
+      "I_015003_00": "assets/items/icons/I_015003_00.webp",
+      "I_015004_00": "assets/items/icons/I_015004_00.webp",
+      "I_015005_00": "assets/items/icons/I_015005_00.webp",
+      "I_015011_00": "assets/items/icons/I_015011_00.webp",
+      "I_015012_00": "assets/items/icons/I_015012_00.webp",
+      "I_015013_00": "assets/items/icons/I_015013_00.webp",
+      "I_015014_00": "assets/items/icons/I_015014_00.webp",
+      "I_015021_00": "assets/items/icons/I_015021_00.webp",
+      "I_015022_00": "assets/items/icons/I_015022_00.webp",
+      "I_015024_00": "assets/items/icons/I_015024_00.webp",
+      "I_015031_00": "assets/items/icons/I_015031_00.webp",
+      "I_015032_00": "assets/items/icons/I_015032_00.webp",
+      "I_015041_00": "assets/items/icons/I_015041_00.webp",
+      "I_015051_00": "assets/items/icons/I_015051_00.webp",
+      "I_015053_00": "assets/items/icons/I_015053_00.webp",
+      "I_015061_00": "assets/items/icons/I_015061_00.webp",
+      "I_015062_00": "assets/items/icons/I_015062_00.webp",
+      "I_015076_00": "assets/items/icons/I_015076_00.webp",
+      "I_015081_00": "assets/items/icons/I_015081_00.webp",
+      "I_015082_00": "assets/items/icons/I_015082_00.webp",
+      "I_015092_00": "assets/items/icons/I_015092_00.webp",
+      "I_015501_00": "assets/items/icons/I_015501_00.webp",
+      "I_015502_00": "assets/items/icons/I_015502_00.webp",
+      "I_015511_00": "assets/items/icons/I_015511_00.webp",
+      "I_015512_00": "assets/items/icons/I_015512_00.webp",
+      "I_015521_00": "assets/items/icons/I_015521_00.webp",
+      "I_015522_00": "assets/items/icons/I_015522_00.webp",
+      "I_015531_00": "assets/items/icons/I_015531_00.webp",
+      "I_015541_00": "assets/items/icons/I_015541_00.webp",
+      "I_015532_00": "assets/items/icons/I_015532_00.webp",
+      "I_015542_00": "assets/items/icons/I_015542_00.webp",
+      "I_015551_00": "assets/items/icons/I_015551_00.webp",
+      "I_015552_00": "assets/items/icons/I_015552_00.webp",
+      "I_015561_00": "assets/items/icons/I_015561_00.webp",
+      "I_015562_00": "assets/items/icons/I_015562_00.webp",
+      "I_015571_00": "assets/items/icons/I_015571_00.webp",
+      "I_015572_00": "assets/items/icons/I_015572_00.webp",
+      "I_015601_00": "assets/items/icons/I_015601_00.webp",
+      "I_015602_00": "assets/items/icons/I_015602_00.webp",
+      "I_015603_00": "assets/items/icons/I_015603_00.webp",
+      "I_015604_00": "assets/items/icons/I_015604_00.webp",
+      "I_015605_00": "assets/items/icons/I_015605_00.webp",
+      "I_015606_00": "assets/items/icons/I_015606_00.webp",
+      "I_015607_00": "assets/items/icons/I_015607_00.webp",
+      "I_015608_00": "assets/items/icons/I_015608_00.webp",
+      "I_015611_00": "assets/items/icons/I_015611_00.webp",
+      "I_015612_00": "assets/items/icons/I_015612_00.webp",
+      "I_015613_00": "assets/items/icons/I_015613_00.webp",
+      "I_015616_00": "assets/items/icons/I_015616_00.webp",
+      "I_015614_00": "assets/items/icons/I_015614_00.webp",
+      "I_015615_00": "assets/items/icons/I_015615_00.webp",
+      "I_015618_00": "assets/items/icons/I_015618_00.webp",
+      "I_015617_00": "assets/items/icons/I_015617_00.webp",
+      "I_016001_00": "assets/items/icons/I_016001_00.webp",
+      "I_016011_00": "assets/items/icons/I_016011_00.webp",
+      "I_016021_00": "assets/items/icons/I_016021_00.webp",
+      "I_016031_00": "assets/items/icons/I_016031_00.webp",
+      "I_017001_00": "assets/items/icons/I_017001_00.webp",
+      "I_017011_00": "assets/items/icons/I_017011_00.webp",
+      "I_017031_00": "assets/items/icons/I_017031_00.webp",
+      "I_017021_00": "assets/items/icons/I_017021_00.webp",
+      "I_017033_00": "assets/items/icons/I_017033_00.webp",
+      "I_017032_00": "assets/items/icons/I_017032_00.webp",
+      "I_018001_00": "assets/items/icons/I_018001_00.webp",
+      "I_017041_00": "assets/items/icons/I_017041_00.webp",
+      "I_018003_00": "assets/items/icons/I_018003_00.webp",
+      "I_018005_00": "assets/items/icons/I_018005_00.webp",
+      "I_018008_00": "assets/items/icons/I_018008_00.webp",
+      "I_018009_00": "assets/items/icons/I_018009_00.webp",
+      "I_018011_00": "assets/items/icons/I_018011_00.webp",
+      "I_018018_00": "assets/items/icons/I_018018_00.webp",
+      "I_018019_00": "assets/items/icons/I_018019_00.webp",
+      "I_018022_00": "assets/items/icons/I_018022_00.webp",
+      "I_018023_00": "assets/items/icons/I_018023_00.webp",
+      "I_018024_00": "assets/items/icons/I_018024_00.webp",
+      "I_018025_00": "assets/items/icons/I_018025_00.webp",
+      "I_018026_00": "assets/items/icons/I_018026_00.webp",
+      "I_018027_00": "assets/items/icons/I_018027_00.webp",
+      "I_018028_00": "assets/items/icons/I_018028_00.webp",
+      "I_018029_00": "assets/items/icons/I_018029_00.webp",
+      "I_018030_00": "assets/items/icons/I_018030_00.webp",
+      "I_018073_00": "assets/items/icons/I_018073_00.webp",
+      "I_019001_00": "assets/items/icons/I_019001_00.webp",
+      "I_019002_00": "assets/items/icons/I_019002_00.webp",
+      "I_019004_00": "assets/items/icons/I_019004_00.webp",
+      "I_019006_00": "assets/items/icons/I_019006_00.webp",
+      "I_019019_00": "assets/items/icons/I_019019_00.webp",
+      "I_019020_00": "assets/items/icons/I_019020_00.webp",
+      "I_019021_00": "assets/items/icons/I_019021_00.webp",
+      "I_019022_00": "assets/items/icons/I_019022_00.webp",
+      "I_019012_00": "assets/items/icons/I_019012_00.webp",
+      "I_019029_00": "assets/items/icons/I_019029_00.webp",
+      "I_020001_00": "assets/items/icons/I_020001_00.webp",
+      "I_020006_00": "assets/items/icons/I_020006_00.webp",
+      "I_020008_00": "assets/items/icons/I_020008_00.webp",
+      "I_020009_00": "assets/items/icons/I_020009_00.webp",
+      "I_020010_00": "assets/items/icons/I_020010_00.webp",
+      "I_020013_00": "assets/items/icons/I_020013_00.webp",
+      "I_020014_00": "assets/items/icons/I_020014_00.webp",
+      "I_020021_00": "assets/items/icons/I_020021_00.webp",
+      "I_021001_00": "assets/items/icons/I_021001_00.webp",
+      "I_021002_00": "assets/items/icons/I_021002_00.webp",
+      "I_021003_00": "assets/items/icons/I_021003_00.webp",
+      "I_021004_00": "assets/items/icons/I_021004_00.webp",
+      "I_021005_00": "assets/items/icons/I_021005_00.webp",
+      "I_021006_00": "assets/items/icons/I_021006_00.webp",
+      "I_021011_00": "assets/items/icons/I_021011_00.webp",
+      "I_021025_00": "assets/items/icons/I_021025_00.webp",
+      "I_021009_00": "assets/items/icons/I_021009_00.webp",
+      "I_021015_00": "assets/items/icons/I_021015_00.webp",
+      "I_021016_00": "assets/items/icons/I_021016_00.webp",
+      "I_022001_00": "assets/items/icons/I_022001_00.webp",
+      "I_022002_00": "assets/items/icons/I_022002_00.webp",
+      "I_022003_00": "assets/items/icons/I_022003_00.webp",
+      "I_022004_00": "assets/items/icons/I_022004_00.webp",
+      "I_022005_00": "assets/items/icons/I_022005_00.webp",
+      "I_022009_00": "assets/items/icons/I_022009_00.webp",
+      "I_022017_00": "assets/items/icons/I_022017_00.webp",
+      "I_023023_00": "assets/items/icons/I_023023_00.webp",
+      "I_024023_00": "assets/items/icons/I_024023_00.webp",
+      "I_025011_00": "assets/items/icons/I_025011_00.webp",
+      "I_050001_00": "assets/items/icons/I_050001_00.webp",
+      "I_050002_00": "assets/items/icons/I_050002_00.webp",
+      "I_050003_00": "assets/items/icons/I_050003_00.webp",
+      "I_050004_00": "assets/items/icons/I_050004_00.webp",
+      "I_050006_00": "assets/items/icons/I_050006_00.webp",
+      "I_050007_00": "assets/items/icons/I_050007_00.webp",
+      "I_050008_00": "assets/items/icons/I_050008_00.webp",
+      "I_050009_00": "assets/items/icons/I_050009_00.webp",
+      "I_050013_00": "assets/items/icons/I_050013_00.webp",
+      "I_050014_00": "assets/items/icons/I_050014_00.webp",
+      "I_050017_00": "assets/items/icons/I_050017_00.webp",
+      "I_050015_00": "assets/items/icons/I_050015_00.webp",
+      "I_050016_00": "assets/items/icons/I_050016_00.webp",
+      "I_050018_00": "assets/items/icons/I_050018_00.webp",
+      "I_050021_00": "assets/items/icons/I_050021_00.webp",
+      "I_050022_00": "assets/items/icons/I_050022_00.webp",
+      "I_050023_00": "assets/items/icons/I_050023_00.webp",
+      "I_050024_00": "assets/items/icons/I_050024_00.webp",
+      "I_050025_00": "assets/items/icons/I_050025_00.webp",
+      "I_050026_00": "assets/items/icons/I_050026_00.webp",
+      "I_050027_00": "assets/items/icons/I_050027_00.webp",
+      "I_050028_00": "assets/items/icons/I_050028_00.webp",
+      "I_050029_00": "assets/items/icons/I_050029_00.webp",
+      "I_050030_00": "assets/items/icons/I_050030_00.webp",
+      "I_050032_00": "assets/items/icons/I_050032_00.webp",
+      "I_050031_00": "assets/items/icons/I_050031_00.webp",
+      "I_050033_00": "assets/items/icons/I_050033_00.webp",
+      "I_050035_00": "assets/items/icons/I_050035_00.webp",
+      "I_050036_00": "assets/items/icons/I_050036_00.webp",
+      "I_050037_00": "assets/items/icons/I_050037_00.webp",
+      "I_050038_00": "assets/items/icons/I_050038_00.webp",
+      "I_050040_00": "assets/items/icons/I_050040_00.webp",
+      "I_050039_00": "assets/items/icons/I_050039_00.webp",
+      "I_050041_00": "assets/items/icons/I_050041_00.webp",
+      "I_050056_00": "assets/items/icons/I_050056_00.webp",
+      "I_050057_00": "assets/items/icons/I_050057_00.webp",
+      "I_050058_00": "assets/items/icons/I_050058_00.webp",
+      "I_050061_00": "assets/items/icons/I_050061_00.webp",
+      "I_050060_00": "assets/items/icons/I_050060_00.webp",
+      "I_050059_00": "assets/items/icons/I_050059_00.webp",
+      "I_050062_00": "assets/items/icons/I_050062_00.webp",
+      "I_050063_00": "assets/items/icons/I_050063_00.webp",
+      "I_050065_00": "assets/items/icons/I_050065_00.webp",
+      "I_050066_00": "assets/items/icons/I_050066_00.webp",
+      "I_050068_00": "assets/items/icons/I_050068_00.webp",
+      "I_050067_00": "assets/items/icons/I_050067_00.webp",
+      "I_050070_00": "assets/items/icons/I_050070_00.webp",
+      "I_050069_00": "assets/items/icons/I_050069_00.webp",
+      "I_051003_00": "assets/items/icons/I_051003_00.webp",
+      "I_051004_00": "assets/items/icons/I_051004_00.webp",
+      "I_051005_00": "assets/items/icons/I_051005_00.webp",
+      "I_051006_00": "assets/items/icons/I_051006_00.webp",
+      "I_051007_00": "assets/items/icons/I_051007_00.webp",
+      "I_051008_00": "assets/items/icons/I_051008_00.webp",
+      "I_051009_00": "assets/items/icons/I_051009_00.webp",
+      "I_051010_00": "assets/items/icons/I_051010_00.webp",
+      "I_051011_00": "assets/items/icons/I_051011_00.webp",
+      "I_051012_00": "assets/items/icons/I_051012_00.webp",
+      "I_051013_00": "assets/items/icons/I_051013_00.webp",
+      "I_051014_00": "assets/items/icons/I_051014_00.webp",
+      "I_051015_00": "assets/items/icons/I_051015_00.webp",
+      "I_051016_00": "assets/items/icons/I_051016_00.webp",
+      "I_051017_00": "assets/items/icons/I_051017_00.webp",
+      "I_051018_00": "assets/items/icons/I_051018_00.webp",
+      "I_051019_00": "assets/items/icons/I_051019_00.webp",
+      "I_051020_00": "assets/items/icons/I_051020_00.webp",
+      "I_051021_00": "assets/items/icons/I_051021_00.webp",
+      "I_051022_00": "assets/items/icons/I_051022_00.webp",
+      "I_051023_00": "assets/items/icons/I_051023_00.webp",
+      "I_051024_00": "assets/items/icons/I_051024_00.webp",
+      "I_051025_00": "assets/items/icons/I_051025_00.webp",
+      "I_051027_00": "assets/items/icons/I_051027_00.webp",
+      "I_051026_00": "assets/items/icons/I_051026_00.webp",
+      "I_051028_00": "assets/items/icons/I_051028_00.webp",
+      "I_051029_00": "assets/items/icons/I_051029_00.webp",
+      "I_051030_00": "assets/items/icons/I_051030_00.webp",
+      "I_051031_00": "assets/items/icons/I_051031_00.webp",
+      "I_051032_00": "assets/items/icons/I_051032_00.webp",
+      "I_051035_00": "assets/items/icons/I_051035_00.webp",
+      "I_051033_00": "assets/items/icons/I_051033_00.webp",
+      "I_051034_00": "assets/items/icons/I_051034_00.webp",
+      "I_051038_00": "assets/items/icons/I_051038_00.webp",
+      "I_051040_00": "assets/items/icons/I_051040_00.webp",
+      "I_051042_00": "assets/items/icons/I_051042_00.webp",
+      "I_051049_00": "assets/items/icons/I_051049_00.webp",
+      "I_051069_00": "assets/items/icons/I_051069_00.webp",
+      "I_052000_00": "assets/items/icons/I_052000_00.webp",
+      "I_052001_00": "assets/items/icons/I_052001_00.webp",
+      "I_052003_00": "assets/items/icons/I_052003_00.webp",
+      "I_052002_00": "assets/items/icons/I_052002_00.webp",
+      "I_052004_00": "assets/items/icons/I_052004_00.webp",
+      "I_052005_00": "assets/items/icons/I_052005_00.webp",
+      "I_052006_00": "assets/items/icons/I_052006_00.webp",
+      "I_052007_00": "assets/items/icons/I_052007_00.webp",
+      "I_052008_00": "assets/items/icons/I_052008_00.webp",
+      "I_052009_00": "assets/items/icons/I_052009_00.webp",
+      "I_052010_00": "assets/items/icons/I_052010_00.webp",
+      "I_052011_00": "assets/items/icons/I_052011_00.webp",
+      "I_052100_00": "assets/items/icons/I_052100_00.webp",
+      "I_052101_00": "assets/items/icons/I_052101_00.webp",
+      "I_052102_00": "assets/items/icons/I_052102_00.webp",
+      "I_052103_00": "assets/items/icons/I_052103_00.webp",
+      "I_052104_00": "assets/items/icons/I_052104_00.webp",
+      "I_052105_00": "assets/items/icons/I_052105_00.webp",
+      "I_052106_00": "assets/items/icons/I_052106_00.webp",
+      "I_052108_00": "assets/items/icons/I_052108_00.webp",
+      "I_052107_00": "assets/items/icons/I_052107_00.webp",
+      "I_052109_00": "assets/items/icons/I_052109_00.webp",
+      "I_052110_00": "assets/items/icons/I_052110_00.webp",
+      "I_052111_00": "assets/items/icons/I_052111_00.webp",
+      "I_053001_00": "assets/items/icons/I_053001_00.webp",
+      "I_053002_00": "assets/items/icons/I_053002_00.webp",
+      "I_053004_00": "assets/items/icons/I_053004_00.webp",
+      "I_053003_00": "assets/items/icons/I_053003_00.webp",
+      "I_053005_00": "assets/items/icons/I_053005_00.webp",
+      "I_053007_00": "assets/items/icons/I_053007_00.webp",
+      "I_053006_00": "assets/items/icons/I_053006_00.webp",
+      "I_053008_00": "assets/items/icons/I_053008_00.webp",
+      "I_053009_00": "assets/items/icons/I_053009_00.webp",
+      "I_053010_00": "assets/items/icons/I_053010_00.webp",
+      "I_053011_00": "assets/items/icons/I_053011_00.webp",
+      "I_053012_00": "assets/items/icons/I_053012_00.webp",
+      "I_053013_00": "assets/items/icons/I_053013_00.webp",
+      "I_053014_00": "assets/items/icons/I_053014_00.webp",
+      "I_053015_00": "assets/items/icons/I_053015_00.webp",
+      "I_053016_00": "assets/items/icons/I_053016_00.webp",
+      "I_053017_00": "assets/items/icons/I_053017_00.webp",
+      "I_053018_00": "assets/items/icons/I_053018_00.webp",
+      "I_053019_00": "assets/items/icons/I_053019_00.webp",
+      "I_053020_00": "assets/items/icons/I_053020_00.webp",
+      "I_053021_00": "assets/items/icons/I_053021_00.webp",
+      "I_053022_00": "assets/items/icons/I_053022_00.webp",
+      "I_053023_00": "assets/items/icons/I_053023_00.webp",
+      "I_053024_00": "assets/items/icons/I_053024_00.webp",
+      "I_053025_00": "assets/items/icons/I_053025_00.webp",
+      "I_053026_00": "assets/items/icons/I_053026_00.webp",
+      "I_053027_00": "assets/items/icons/I_053027_00.webp",
+      "I_053030_00": "assets/items/icons/I_053030_00.webp",
+      "I_053028_00": "assets/items/icons/I_053028_00.webp",
+      "I_053029_00": "assets/items/icons/I_053029_00.webp",
+      "I_053031_00": "assets/items/icons/I_053031_00.webp",
+      "I_053032_00": "assets/items/icons/I_053032_00.webp",
+      "I_053033_00": "assets/items/icons/I_053033_00.webp",
+      "I_053034_00": "assets/items/icons/I_053034_00.webp",
+      "I_053035_00": "assets/items/icons/I_053035_00.webp",
+      "I_053037_00": "assets/items/icons/I_053037_00.webp",
+      "I_053036_00": "assets/items/icons/I_053036_00.webp",
+      "I_053038_00": "assets/items/icons/I_053038_00.webp",
+      "I_053039_00": "assets/items/icons/I_053039_00.webp",
+      "I_053040_00": "assets/items/icons/I_053040_00.webp",
+      "I_053041_00": "assets/items/icons/I_053041_00.webp",
+      "I_053042_00": "assets/items/icons/I_053042_00.webp",
+      "I_053044_00": "assets/items/icons/I_053044_00.webp",
+      "I_053043_00": "assets/items/icons/I_053043_00.webp",
+      "I_053045_00": "assets/items/icons/I_053045_00.webp",
+      "I_053046_00": "assets/items/icons/I_053046_00.webp",
+      "I_053048_00": "assets/items/icons/I_053048_00.webp",
+      "I_053047_00": "assets/items/icons/I_053047_00.webp",
+      "I_053049_00": "assets/items/icons/I_053049_00.webp",
+      "I_053051_00": "assets/items/icons/I_053051_00.webp",
+      "I_053050_00": "assets/items/icons/I_053050_00.webp",
+      "I_053052_00": "assets/items/icons/I_053052_00.webp",
+      "I_065002_00": "assets/items/icons/I_065002_00.webp",
+      "I_065004_00": "assets/items/icons/I_065004_00.webp",
+      "I_065006_00": "assets/items/icons/I_065006_00.webp",
+      "I_065031_00": "assets/items/icons/I_065031_00.webp",
+      "I_065008_00": "assets/items/icons/I_065008_00.webp",
+      "I_065012_00": "assets/items/icons/I_065012_00.webp",
+      "I_065011_00": "assets/items/icons/I_065011_00.webp",
+      "I_065013_00": "assets/items/icons/I_065013_00.webp",
+      "I_065014_00": "assets/items/icons/I_065014_00.webp",
+      "I_065015_00": "assets/items/icons/I_065015_00.webp",
+      "I_065016_00": "assets/items/icons/I_065016_00.webp",
+      "I_065017_00": "assets/items/icons/I_065017_00.webp",
+      "I_065018_00": "assets/items/icons/I_065018_00.webp",
+      "I_065019_00": "assets/items/icons/I_065019_00.webp",
+      "I_065021_00": "assets/items/icons/I_065021_00.webp",
+      "I_065022_00": "assets/items/icons/I_065022_00.webp",
+      "I_065023_00": "assets/items/icons/I_065023_00.webp",
+      "I_065025_00": "assets/items/icons/I_065025_00.webp",
+      "I_065024_00": "assets/items/icons/I_065024_00.webp",
+      "I_065026_00": "assets/items/icons/I_065026_00.webp",
+      "I_070002_00": "assets/items/icons/I_070002_00.webp",
+      "I_070001_00": "assets/items/icons/I_070001_00.webp",
+      "I_070003_00": "assets/items/icons/I_070003_00.webp",
+      "I_070004_00": "assets/items/icons/I_070004_00.webp",
+      "I_070006_00": "assets/items/icons/I_070006_00.webp",
+      "I_070005_00": "assets/items/icons/I_070005_00.webp",
+      "I_070007_00": "assets/items/icons/I_070007_00.webp",
+      "I_070008_00": "assets/items/icons/I_070008_00.webp",
+      "I_070009_00": "assets/items/icons/I_070009_00.webp",
+      "I_070010_00": "assets/items/icons/I_070010_00.webp",
+      "I_070011_00": "assets/items/icons/I_070011_00.webp",
+      "I_070012_00": "assets/items/icons/I_070012_00.webp",
+      "I_070015_00": "assets/items/icons/I_070015_00.webp",
+      "I_070016_00": "assets/items/icons/I_070016_00.webp",
+      "I_070017_00": "assets/items/icons/I_070017_00.webp",
+      "I_070018_00": "assets/items/icons/I_070018_00.webp",
+      "I_070019_00": "assets/items/icons/I_070019_00.webp",
+      "I_070020_00": "assets/items/icons/I_070020_00.webp",
+      "I_070021_00": "assets/items/icons/I_070021_00.webp",
+      "I_070022_00": "assets/items/icons/I_070022_00.webp",
+      "I_070023_00": "assets/items/icons/I_070023_00.webp",
+      "I_070024_00": "assets/items/icons/I_070024_00.webp",
+      "I_080071_00": "assets/items/icons/I_080071_00.webp",
+      "I_080001_00": "assets/items/icons/I_080001_00.webp",
+      "I_080002_00": "assets/items/icons/I_080002_00.webp",
+      "I_080003_00": "assets/items/icons/I_080003_00.webp",
+      "I_080004_00": "assets/items/icons/I_080004_00.webp",
+      "I_080005_00": "assets/items/icons/I_080005_00.webp",
+      "I_080006_00": "assets/items/icons/I_080006_00.webp",
+      "I_080007_00": "assets/items/icons/I_080007_00.webp",
+      "I_080008_00": "assets/items/icons/I_080008_00.webp",
+      "I_080009_00": "assets/items/icons/I_080009_00.webp",
+      "I_080011_00": "assets/items/icons/I_080011_00.webp",
+      "I_080012_00": "assets/items/icons/I_080012_00.webp",
+      "I_080013_00": "assets/items/icons/I_080013_00.webp",
+      "I_080014_00": "assets/items/icons/I_080014_00.webp",
+      "I_080015_00": "assets/items/icons/I_080015_00.webp",
+      "I_080016_00": "assets/items/icons/I_080016_00.webp",
+      "I_080017_00": "assets/items/icons/I_080017_00.webp",
+      "I_080018_00": "assets/items/icons/I_080018_00.webp",
+      "I_080021_00": "assets/items/icons/I_080021_00.webp",
+      "I_080022_00": "assets/items/icons/I_080022_00.webp",
+      "I_080023_00": "assets/items/icons/I_080023_00.webp",
+      "I_080025_00": "assets/items/icons/I_080025_00.webp",
+      "I_080024_00": "assets/items/icons/I_080024_00.webp",
+      "I_080026_00": "assets/items/icons/I_080026_00.webp",
+      "I_080027_00": "assets/items/icons/I_080027_00.webp",
+      "I_080028_00": "assets/items/icons/I_080028_00.webp",
+      "I_080029_00": "assets/items/icons/I_080029_00.webp",
+      "I_080031_00": "assets/items/icons/I_080031_00.webp",
+      "I_080032_00": "assets/items/icons/I_080032_00.webp",
+      "I_080033_00": "assets/items/icons/I_080033_00.webp",
+      "I_080034_00": "assets/items/icons/I_080034_00.webp",
+      "I_080035_00": "assets/items/icons/I_080035_00.webp",
+      "I_080036_00": "assets/items/icons/I_080036_00.webp",
+      "I_080037_00": "assets/items/icons/I_080037_00.webp",
+      "I_080038_00": "assets/items/icons/I_080038_00.webp",
+      "I_080039_00": "assets/items/icons/I_080039_00.webp",
+      "I_080040_00": "assets/items/icons/I_080040_00.webp",
+      "I_080041_00": "assets/items/icons/I_080041_00.webp",
+      "I_080042_00": "assets/items/icons/I_080042_00.webp",
+      "I_080043_00": "assets/items/icons/I_080043_00.webp",
+      "I_080044_00": "assets/items/icons/I_080044_00.webp",
+      "I_080045_00": "assets/items/icons/I_080045_00.webp",
+      "I_080046_00": "assets/items/icons/I_080046_00.webp",
+      "I_080047_00": "assets/items/icons/I_080047_00.webp",
+      "I_080049_00": "assets/items/icons/I_080049_00.webp",
+      "I_080048_00": "assets/items/icons/I_080048_00.webp",
+      "I_080050_00": "assets/items/icons/I_080050_00.webp",
+      "I_080051_00": "assets/items/icons/I_080051_00.webp",
+      "I_080052_00": "assets/items/icons/I_080052_00.webp",
+      "I_080053_00": "assets/items/icons/I_080053_00.webp",
+      "I_080054_00": "assets/items/icons/I_080054_00.webp",
+      "I_080055_00": "assets/items/icons/I_080055_00.webp",
+      "I_080056_00": "assets/items/icons/I_080056_00.webp",
+      "I_080057_00": "assets/items/icons/I_080057_00.webp",
+      "I_080058_00": "assets/items/icons/I_080058_00.webp",
+      "I_080061_00": "assets/items/icons/I_080061_00.webp",
+      "I_080062_00": "assets/items/icons/I_080062_00.webp",
+      "I_080063_00": "assets/items/icons/I_080063_00.webp",
+      "I_080064_00": "assets/items/icons/I_080064_00.webp",
+      "I_080065_00": "assets/items/icons/I_080065_00.webp",
+      "I_080066_00": "assets/items/icons/I_080066_00.webp",
+      "I_080067_00": "assets/items/icons/I_080067_00.webp",
+      "I_080068_00": "assets/items/icons/I_080068_00.webp",
+      "I_080069_00": "assets/items/icons/I_080069_00.webp",
+      "I_080072_00": "assets/items/icons/I_080072_00.webp",
+      "I_080073_00": "assets/items/icons/I_080073_00.webp",
+      "I_080074_00": "assets/items/icons/I_080074_00.webp",
+      "I_080076_00": "assets/items/icons/I_080076_00.webp",
+      "I_080077_00": "assets/items/icons/I_080077_00.webp",
+      "I_080078_00": "assets/items/icons/I_080078_00.webp",
+      "I_080079_00": "assets/items/icons/I_080079_00.webp",
+      "I_080080_00": "assets/items/icons/I_080080_00.webp",
+      "I_080081_00": "assets/items/icons/I_080081_00.webp",
+      "I_080082_00": "assets/items/icons/I_080082_00.webp",
+      "I_080083_00": "assets/items/icons/I_080083_00.webp",
+      "I_080084_00": "assets/items/icons/I_080084_00.webp",
+      "I_080085_00": "assets/items/icons/I_080085_00.webp",
+      "I_080086_00": "assets/items/icons/I_080086_00.webp",
+      "I_080087_00": "assets/items/icons/I_080087_00.webp",
+      "I_080088_00": "assets/items/icons/I_080088_00.webp",
+      "I_080089_00": "assets/items/icons/I_080089_00.webp",
+      "I_080091_00": "assets/items/icons/I_080091_00.webp",
+      "I_080092_00": "assets/items/icons/I_080092_00.webp",
+      "I_080093_00": "assets/items/icons/I_080093_00.webp",
+      "I_080094_00": "assets/items/icons/I_080094_00.webp",
+      "I_080095_00": "assets/items/icons/I_080095_00.webp",
+      "I_080096_00": "assets/items/icons/I_080096_00.webp",
+      "I_080097_00": "assets/items/icons/I_080097_00.webp",
+      "I_080098_00": "assets/items/icons/I_080098_00.webp",
+      "I_080100_00": "assets/items/icons/I_080100_00.webp",
+      "I_080101_00": "assets/items/icons/I_080101_00.webp",
+      "I_080102_00": "assets/items/icons/I_080102_00.webp",
+      "I_080103_00": "assets/items/icons/I_080103_00.webp",
+      "I_080104_00": "assets/items/icons/I_080104_00.webp",
+      "I_080105_00": "assets/items/icons/I_080105_00.webp",
+      "I_080106_00": "assets/items/icons/I_080106_00.webp",
+      "I_080107_00": "assets/items/icons/I_080107_00.webp",
+      "I_080108_00": "assets/items/icons/I_080108_00.webp",
+      "I_080110_00": "assets/items/icons/I_080110_00.webp",
+      "I_080111_00": "assets/items/icons/I_080111_00.webp",
+      "I_080115_00": "assets/items/icons/I_080115_00.webp",
+      "I_080116_00": "assets/items/icons/I_080116_00.webp",
+      "I_080117_00": "assets/items/icons/I_080117_00.webp",
+      "I_080118_00": "assets/items/icons/I_080118_00.webp",
+      "I_080119_00": "assets/items/icons/I_080119_00.webp",
+      "I_080121_00": "assets/items/icons/I_080121_00.webp",
+      "I_080120_00": "assets/items/icons/I_080120_00.webp",
+      "I_080122_00": "assets/items/icons/I_080122_00.webp",
+      "I_080123_00": "assets/items/icons/I_080123_00.webp",
+      "I_080133_00": "assets/items/icons/I_080133_00.webp",
+      "I_400037_00": "assets/items/icons/I_400037_00.webp",
+      "I_400028_00": "assets/items/icons/I_400028_00.webp",
+      "I_400038_00": "assets/items/icons/I_400038_00.webp",
+      "I_400039_00": "assets/items/icons/I_400039_00.webp",
+      "I_400034_00": "assets/items/icons/I_400034_00.webp",
+      "I_400026_00": "assets/items/icons/I_400026_00.webp",
+      "I_400035_00": "assets/items/icons/I_400035_00.webp",
+      "I_090001_00": "assets/items/icons/I_090001_00.webp",
+      "I_090002_00": "assets/items/icons/I_090002_00.webp",
+      "I_090003_00": "assets/items/icons/I_090003_00.webp",
+      "I_403000_00": "assets/items/icons/I_403000_00.webp",
+      "I_090004_00": "assets/items/icons/I_090004_00.webp",
+      "I_403001_00": "assets/items/icons/I_403001_00.webp",
+      "I_403002_00": "assets/items/icons/I_403002_00.webp",
+      "I_403003_00": "assets/items/icons/I_403003_00.webp",
+      "I_403004_00": "assets/items/icons/I_403004_00.webp",
+      "I_403005_00": "assets/items/icons/I_403005_00.webp",
+      "I_090011_00": "assets/items/icons/I_090011_00.webp",
+      "I_090012_00": "assets/items/icons/I_090012_00.webp",
+      "I_090013_00": "assets/items/icons/I_090013_00.webp",
+      "I_090014_00": "assets/items/icons/I_090014_00.webp",
+      "I_090015_00": "assets/items/icons/I_090015_00.webp",
+      "I_090016_00": "assets/items/icons/I_090016_00.webp",
+      "I_090017_00": "assets/items/icons/I_090017_00.webp",
+      "I_090018_00": "assets/items/icons/I_090018_00.webp",
+      "I_090019_00": "assets/items/icons/I_090019_00.webp",
+      "I_090121_00": "assets/items/icons/I_090121_00.webp",
+      "I_090021_00": "assets/items/icons/I_090021_00.webp",
+      "I_090022_00": "assets/items/icons/I_090022_00.webp",
+      "I_090024_00": "assets/items/icons/I_090024_00.webp",
+      "I_090034_00": "assets/items/icons/I_090034_00.webp",
+      "I_090035_00": "assets/items/icons/I_090035_00.webp",
+      "I_090036_00": "assets/items/icons/I_090036_00.webp",
+      "I_090038_00": "assets/items/icons/I_090038_00.webp",
+      "I_090037_00": "assets/items/icons/I_090037_00.webp",
+      "I_090039_00": "assets/items/icons/I_090039_00.webp",
+      "I_090045_00": "assets/items/icons/I_090045_00.webp",
+      "I_090049_00": "assets/items/icons/I_090049_00.webp",
+      "I_090053_00": "assets/items/icons/I_090053_00.webp",
+      "I_090054_00": "assets/items/icons/I_090054_00.webp",
+      "I_090057_00": "assets/items/icons/I_090057_00.webp",
+      "I_090060_00": "assets/items/icons/I_090060_00.webp",
+      "I_090073_00": "assets/items/icons/I_090073_00.webp",
+      "I_094355_00": "assets/items/icons/I_094355_00.webp",
+      "I_090079_00": "assets/items/icons/I_090079_00.webp",
+      "I_090075_00": "assets/items/icons/I_090075_00.webp",
+      "I_094338_00": "assets/items/icons/I_094338_00.webp",
+      "I_101000_00": "assets/items/icons/I_101000_00.webp",
+      "I_102000_00": "assets/items/icons/I_102000_00.webp",
+      "I_102025_00": "assets/items/icons/I_102025_00.webp",
+      "I_103000_00": "assets/items/icons/I_103000_00.webp",
+      "I_103023_00": "assets/items/icons/I_103023_00.webp",
+      "I_103025_00": "assets/items/icons/I_103025_00.webp",
+      "I_103028_00": "assets/items/icons/I_103028_00.webp",
+      "I_104000_00": "assets/items/icons/I_104000_00.webp",
+      "I_105000_00": "assets/items/icons/I_105000_00.webp",
+      "I_106000_00": "assets/items/icons/I_106000_00.webp",
+      "I_107000_00": "assets/items/icons/I_107000_00.webp",
+      "I_300001_00": "assets/items/icons/I_300001_00.webp",
+      "I_300002_00": "assets/items/icons/I_300002_00.webp",
+      "I_300003_00": "assets/items/icons/I_300003_00.webp",
+      "I_300004_00": "assets/items/icons/I_300004_00.webp",
+      "I_300005_00": "assets/items/icons/I_300005_00.webp",
+      "I_300013_00": "assets/items/icons/I_300013_00.webp",
+      "I_011301_00": "assets/items/icons/I_011301_00.webp",
+      "I_011302_00": "assets/items/icons/I_011302_00.webp",
+      "I_011303_00": "assets/items/icons/I_011303_00.webp",
+      "I_011304_00": "assets/items/icons/I_011304_00.webp",
+      "I_011305_00": "assets/items/icons/I_011305_00.webp",
+      "I_011306_00": "assets/items/icons/I_011306_00.webp",
+      "I_012301_00": "assets/items/icons/I_012301_00.webp",
+      "I_012302_00": "assets/items/icons/I_012302_00.webp",
+      "I_012303_00": "assets/items/icons/I_012303_00.webp",
+      "I_012304_00": "assets/items/icons/I_012304_00.webp",
+      "I_013301_00": "assets/items/icons/I_013301_00.webp",
+      "I_013302_00": "assets/items/icons/I_013302_00.webp",
+      "I_013303_00": "assets/items/icons/I_013303_00.webp",
+      "I_013304_00": "assets/items/icons/I_013304_00.webp",
+      "I_014301_00": "assets/items/icons/I_014301_00.webp",
+      "I_014302_00": "assets/items/icons/I_014302_00.webp",
+      "I_014303_00": "assets/items/icons/I_014303_00.webp",
+      "I_014304_00": "assets/items/icons/I_014304_00.webp",
+      "I_015301_00": "assets/items/icons/I_015301_00.webp",
+      "I_015302_00": "assets/items/icons/I_015302_00.webp",
+      "I_015303_00": "assets/items/icons/I_015303_00.webp",
+      "I_018102_00": "assets/items/icons/I_018102_00.webp",
+      "I_015304_00": "assets/items/icons/I_015304_00.webp",
+      "I_018101_00": "assets/items/icons/I_018101_00.webp",
+      "I_018103_00": "assets/items/icons/I_018103_00.webp",
+      "I_018104_00": "assets/items/icons/I_018104_00.webp",
+      "I_018105_00": "assets/items/icons/I_018105_00.webp",
+      "I_018106_00": "assets/items/icons/I_018106_00.webp",
+      "I_018107_00": "assets/items/icons/I_018107_00.webp",
+      "I_018108_00": "assets/items/icons/I_018108_00.webp"
+    },
     "souls": {}
   },
   "missing": [
@@ -146,12 +1183,7 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_100059004",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
-      "stem": "skill_100059003",
+      "stem": "skill_121703511",
       "error": "HTTP 404"
     },
     {
@@ -161,7 +1193,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_121703511",
+      "stem": "skill_100059004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_100059003",
       "error": "HTTP 404"
     },
     {
@@ -186,22 +1223,22 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_142502050",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
-      "stem": "skill_142503002",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
       "stem": "skill_161202050",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
+      "stem": "skill_142502050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
       "stem": "skill_168005050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_142503002",
       "error": "HTTP 404"
     },
     {
@@ -226,22 +1263,22 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_213603521",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
-      "stem": "skill_213607002",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
       "stem": "skill_213608002",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
       "stem": "skill_213700550",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_213603521",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_213607002",
       "error": "HTTP 404"
     },
     {
@@ -276,12 +1313,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_240002051",
+      "stem": "skill_240003002",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_240003002",
+      "stem": "skill_240002051",
       "error": "HTTP 404"
     },
     {
@@ -306,12 +1343,7 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_240010002",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
-      "stem": "skill_240010003",
+      "stem": "skill_260006002",
       "error": "HTTP 404"
     },
     {
@@ -321,7 +1353,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_260006002",
+      "stem": "skill_240010002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240010003",
       "error": "HTTP 404"
     },
     {
@@ -346,7 +1383,12 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_310002002",
+      "stem": "skill_310012002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_310014002",
       "error": "HTTP 404"
     },
     {
@@ -356,12 +1398,7 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_310012002",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
-      "stem": "skill_310014002",
+      "stem": "skill_310002002",
       "error": "HTTP 404"
     },
     {
@@ -376,17 +1413,17 @@
     },
     {
       "kind": "skills",
-      "stem": "skill_320003002",
-      "error": "HTTP 404"
-    },
-    {
-      "kind": "skills",
       "stem": "skill_320004002",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_320004051",
+      "stem": "skill_320003002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_320006051",
       "error": "HTTP 404"
     },
     {
@@ -396,20 +1433,1125 @@
     },
     {
       "kind": "skills",
+      "stem": "skill_320004051",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
       "stem": "skill_320006002",
       "error": "HTTP 404"
     },
     {
       "kind": "skills",
-      "stem": "skill_320006051",
+      "stem": "skill_330002002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_330003002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_330004002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_330005002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_330061002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_330081002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_330091002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_340001002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_340001003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_340001005",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_340001006",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_340003002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_340003003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_340004002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_340004003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_350001002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410000202",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410000203",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410005002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410005003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410012000",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410014002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410014004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410021002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410022050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410026002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410026003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_410026004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_420001003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_420005003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_420005004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_420007002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430001002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430001004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430052003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430053002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430053004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430053005",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430056002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430057002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430058002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_430058003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440002003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440003002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440003003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440004003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440004004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440006002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440007002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440009002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_440011002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000000",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000001",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000005",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000006",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000007",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000008",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000009",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000010",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000011",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000012",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000013",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000014",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000015",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000016",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000017",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000018",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000019",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000020",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000021",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000022",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000023",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000024",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000025",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000026",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000027",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000029",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000028",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000030",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000031",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000032",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000033",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000034",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000035",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000037",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000036",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000038",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000039",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000040",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000041",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000042",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000043",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000045",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000044",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000046",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000048",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000049",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000051",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000052",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000053",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_500000054",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_520005002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_520005003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000005",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000006",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000012",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000013",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000014",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000015",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000016",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000022",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000023",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000024",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000032",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000033",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000034",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000042",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000043",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000044",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000045",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000046",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000047",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000052",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000053",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000054",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000055",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000056",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000057",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000062",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000063",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000064",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000065",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000066",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000067",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000068",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000072",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000073",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000082",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000083",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000202",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000203",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000204",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000205",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000212",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000213",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000214",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000215",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000222",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000223",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000224",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000225",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000232",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000233",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000234",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_600000235",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000201",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000202",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000203",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000204",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000205",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000211",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000212",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000213",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000214",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000215",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000221",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000222",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000223",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000224",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000225",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000231",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000232",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000234",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000233",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_610000235",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002012",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002013",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002032",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002033",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002041",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002043",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002042",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002051",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002052",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002061",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002062",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002071",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_620002072",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000001",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000011",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000012",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000021",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000022",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000023",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000024",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000026",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_700000025",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_999999999",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "items",
+      "stem": "I_050011_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "items",
+      "stem": "I_900001_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "items",
+      "stem": "I_900002_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "items",
+      "stem": "I_900003_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_101000_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_102000_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_103000_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_102025_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_103023_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_103025_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_103028_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_104000_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_105000_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_106000_00",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "souls",
+      "stem": "I_107000_00",
       "error": "HTTP 404"
     }
   ],
   "count": {
     "expected": 1437,
-    "present": 126,
-    "missing": 1311,
-    "processed": 180,
-    "planned": 180
+    "present": 1162,
+    "missing": 275,
+    "processed": 1311,
+    "planned": 1311
   }
 }
