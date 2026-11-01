@@ -27,7 +27,7 @@ test('above-cap skill adapter resolves IDs once and preserves first-match semant
 });
 
 test('skill thresholds and class caps are validated before showing a milestone',()=>{
- assert.match(milestones,/const rawMax=Number\(cap\),max=Number\.isInteger\(rawMax\)/);
+ assert.match(milestones,/const rawMax=Number\(cap\),max=Number\.isSafeInteger\(rawMax\)/);
  assert.match(milestones,/Number\(amount\)<=0\)continue/);
  assert.match(milestones,/record\.id===undefined\|\|record\.id===null/);
 });
