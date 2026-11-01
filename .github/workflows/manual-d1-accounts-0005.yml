@@ -1,0 +1,94 @@
+name: Apply production D1 user accounts 0005 (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type APPLY-0005-TO-ps-build-studio-db to confirm the target'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pandora-production-d1-migration-0005
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: github.ref == 'refs/heads/bonaqu_projects'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 57ac934cd0f0a7f5e8533177d612f893
+      PS_D1_DATABASE_ID: 0f8fbcd8-be06-414c-844b-a2091fdf6784
+    steps:
+      - name: Checkout exact reviewed source
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Require explicit production confirmation and Cloudflare permissions
+        env:
+          CONFIRM: ${{ inputs.confirmation }}
+        run: |
+          test "$CONFIRM" = 'APPLY-0005-TO-ps-build-studio-db'
+          test "$PS_D1_DATABASE_ID" = '0f8fbcd8-be06-414c-844b-a2091fdf6784'
+          test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
+          test -n "$CLOUDFLARE_API_TOKEN"
+          node -e '
+            const fs = require("node:fs");
+            const text=fs.readFileSync("migrations/0005_user_accounts.sql","utf8").replace(/--[^\n]*/g,"");
+            const statements=text.split(";").map(x=>x.trim()).filter(Boolean);
+            if(statements.length!==4 || statements.some(x=>!/^CREATE (?:TABLE|INDEX) IF NOT EXISTS /i.test(x)))
+              throw Error("Expected only four additive CREATE IF NOT EXISTS statements in migration 0005");
+            if(!text.includes("user_accounts")||!text.includes("user_sessions")||
+               !text.includes("user_registration_limits"))throw Error("Unexpected migration contents");
+            console.log("0005 file verified: additive schema only");
+          '
+
+      - name: Generate local Wrangler config for exact existing D1 UUID
+        run: node scripts/prepare-config.mjs
+
+      - name: Verify original D1 schema before making any change
+        run: |
+          npx --yes wrangler@4 d1 execute ps-build-studio-db --remote --json \
+            --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','private_builds','shared_build_sources') ORDER BY name" > /tmp/ps-d1-tables-before.json
+          node scripts/assert-d1-tables.mjs /tmp/ps-d1-tables-before.json \
+            admins sessions overrides login_attempts private_builds shared_build_sources
+
+      - name: Record production D1 Time Travel bookmark before migration
+        run: npx --yes wrangler@4 d1 time-travel info ps-build-studio-db
+
+      - name: Create ONLY three account tables and one index (no existing data touched)
+        run: |
+          npx --yes wrangler@4 d1 execute ps-build-studio-db --remote --yes \
+            --file migrations/0005_user_accounts.sql
+
+      - name: Verify account tables exist on the SAME existing D1
+        run: |
+          npx --yes wrangler@4 d1 execute ps-build-studio-db --remote --json \
+            --command "SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','private_builds','shared_build_sources','user_accounts','user_sessions','user_registration_limits') ORDER BY name" > /tmp/ps-d1-tables-after.json
+          node scripts/assert-d1-tables.mjs /tmp/ps-d1-tables-after.json \
+            admins sessions overrides login_attempts private_builds shared_build_sources \
+            user_accounts user_sessions user_registration_limits
+
+      - name: Check live Worker detects new player account schema
+        run: |
+          node --input-type=module -e '
+            const url="https://ps-build-studio-cloud.bonaqu.workers.dev/api/health";
+            const r=await fetch(url,{signal:AbortSignal.timeout(15000)});
+            const data=await r.json();
+            if(!r.ok||data.storage!=="d1"||!data.features?.library||
+               !data.features?.accounts)
+              throw Error("Remote Worker has not activated account tables yet: "+JSON.stringify(data));
+            console.log("Existing library and new player accounts active in the same D1");
+          '

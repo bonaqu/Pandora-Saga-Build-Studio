@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.193.0 (`2026.11.01.193`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.194.0 (`2026.11.01.194`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.194.0 — one-click, owner-confirmed D1 account migration path
+
+- Prepare a **manual-only** GitHub Actions workflow explicitly gated by owner confirmation, the exact existing Cloudflare account/database IDs and a server-side `CLOUDFLARE_API_TOKEN` secret. It checks legacy admin/saved-build tables before doing anything, records a Time Travel bookmark, and applies **only** the additive `worker/migrations/0005_user_accounts.sql`. No earlier migrations and no production data re-imports run.
+- After application, validate expected account tables and the live Worker reporting `features.accounts=true` while `features.library=true`. Failure or missing token leaves the migration unverified and surfaces in workflow results.
+- This workflow has not been triggered by source commits; real production migration and actual admin login remain unverified until the owner runs the explicitly confirmed action and acceptance checks.
+- Include independent Node assertions for workflow gating, expected D1 UUID, SQL additivity and script correctness.
 
 ## Source update 0.193.0 — actual inline skill ticks and legacy administrator entry
 
