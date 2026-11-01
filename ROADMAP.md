@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.253.0 (`2026.11.01.253`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.254.0 (`2026.11.01.254`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.254.0 — no redundant persistence while dragging skill points
+
+- [x] Avoid local draft rewrites and budget widget rebuilds when the range fires many events for an allocation value clamped to the existing cap or already saved value.
+- [x] Keep an immediate owned/scoped draft write for every genuinely changed allocation or selected branch; a zero-point branch navigation still persists correctly.
+- [x] Preserve end-of-drag / blur UI refresh, native focus restoration, attribute/book recalculation, 1–55 points, named-build explicit overwrite, account/D1 isolation and ability to refund old over-budget builds.
+- [x] Unit-test real app allocation callback through unchanged, capped, changed, refunded, branch-navigation, final-commit and malformed-input scenarios; keep Chromium regression for 0→1→0 and exact input clearing.
+- [ ] Investigate future measured renderer performance and verified current OS game formula parity; production D1 authenticated write acceptance remains a distinct unresolved task.
 
 ## Source update 0.253.0 — indexed branch skill catalog and readable old builds
 
