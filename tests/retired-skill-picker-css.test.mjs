@@ -17,5 +17,6 @@ test('old grouped skill-picker CSS is unreachable and removed, without deleting 
   'path-unlock-notch','path-unlock-details','path-skill-preview-item','path-point-controls']){
   assert.ok(css.includes(active),'Current UI style '+active+' must remain');
  }
- assert.match(html,/hero-path\.js\?v=2026\.11\.01\.252/);
+ const release=JSON.parse(read('package.json')).pandoraRelease;
+ assert.ok(html.includes('hero-path.js?v='+release),'Hero Path must use current release cache key');
 });
