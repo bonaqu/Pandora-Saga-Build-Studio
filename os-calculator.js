@@ -1271,6 +1271,12 @@ const statusCureCodes=Object.freeze({
  EP_RECOVERY_POISON:'Яд',
  EP_RECOVERY_SILENCE:'Немота'
 });
+const statusCureCodesEn=Object.freeze({
+ EP_RECOVERY_BURN:'Burn',EP_RECOVERY_CURSE:'Weakness and curse',
+ EP_RECOVERY_RAVING:'Madness',EP_RECOVERY_DISEASE:'Disease',
+ EP_RECOVERY_NUMB:'Freeze',EP_RECOVERY_POISON:'Poison',
+ EP_RECOVERY_SILENCE:'Silence'
+});
 
 function statusCurePreview({items=null}={}){
  if(!items||typeof items!=='object'||Array.isArray(items))return null;
@@ -1281,7 +1287,12 @@ function statusCurePreview({items=null}={}){
   const conditions=[...new Set(item.effects.filter(e=>
    e&&e.dir==='TARGET'&&Object.hasOwn(statusCureCodes,e.func))
    .map(e=>statusCureCodes[e.func]))];
-  if(conditions.length)rows.push({id,name:String(item.name||id),conditions});
+  if(conditions.length){
+   const conditionsEn=[...new Set(item.effects.filter(e=>
+    e&&e.dir==='TARGET'&&Object.hasOwn(statusCureCodesEn,e.func))
+    .map(e=>statusCureCodesEn[e.func]))];
+   rows.push({id,name:String(item.name||id),conditions,conditionsEn});
+  }
  }
  rows.sort((a,b)=>a.id-b.id);
  return {rows,verified:false};

@@ -453,7 +453,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   renderSkillInspector(body,skillModel);
   if(modifiers?.unison?.active?.length){
-   const labels={
+   const labels=english?{
+    EP_MAXMANA_CONST:'Max MP',EP_MAXLIFE_CONST:'Max HP',
+    EP_ARMORCLASS_CONST:'Defense',
+    EP_CASTINGCANCEL_RESISTANCE_CONST:'Cast interruption resistance',
+    EP_SKILL_BENCH:'Skill cooldown',
+    EP_VITARITY_CONST:'Vitality',
+    EP_ATTACK_BACKATK_RATE:'Back attack'
+   }:{
     EP_MAXMANA_CONST:'Максимум ОМ',EP_MAXLIFE_CONST:'Максимум ОЗ',
     EP_ARMORCLASS_CONST:'Защита',
     EP_CASTINGCANCEL_RESISTANCE_CONST:'Сопротивление прерыванию',
@@ -464,15 +471,16 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    const percentages=new Set(['EP_CASTINGCANCEL_RESISTANCE_CONST',
     'EP_SKILL_BENCH','EP_ATTACK_BACKATK_RATE']);
    const section=make('section',{class:'stage-attribute-row'});
-   section.append(make('strong',{text:'Активные комплекты'}));
+   section.append(make('strong',{text:english?'Active equipment sets':'Активные комплекты'}));
    for(const set of modifiers.unison.active){
     section.append(make('p',{text:set.name+' · '+set.companionCount+
-     '/'+set.required+' частей · заточка +'+set.grade}));
+     '/'+set.required+(english?' pieces · enhancement +':' частей · заточка +')+set.grade}));
     for(const effect of set.effects)
-     section.append(make('p',{text:(labels[effect.func]||'Эффект комплекта')+
+     section.append(make('p',{text:(labels[effect.func]||(english?'Set bonus':'Эффект комплекта'))+
       ': '+(effect.a>=0?'+':'')+effect.a+
       (percentages.has(effect.func)?'%':'')}));
-    for(const condition of set.conditions)section.append(make('p',{text:condition.label}));
+    for(const condition of set.conditions)section.append(make('p',{text:
+     english&&condition.func==='EP_PROTECTION_TUMBLE'?'Fall protection':condition.label}));
    }
    body.prepend(section);
   }
@@ -850,21 +858,22 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   body.prepend(card);
  }
  if(chosen==='recovery'){
+  const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent,heal=modifiers?.healingSkill?.percent;
   const quick=make('div',{class:'stage-result-grid'});
   for(const [title,value,note] of [
-   ['Эффективность зелий',Number.isFinite(percent)?percent+'%':'—','Восстановление ОЗ'],
-   ['Эффективность лечения',Number.isFinite(heal)?heal+'%':'—','Лечащие навыки']
+   [english?'Potion effectiveness':'Эффективность зелий',Number.isFinite(percent)?percent+'%':'—',english?'HP recovery':'Восстановление ОЗ'],
+   [english?'Healing effectiveness':'Эффективность лечения',Number.isFinite(heal)?heal+'%':'—',english?'Healing skills':'Лечащие навыки']
   ])quick.append(make('div',{class:'stage-result-tile'},[
    make('span',{text:title}),make('strong',{text:value}),make('small',{text:note})]));
   body.prepend(quick);
   const potions=make('section',{class:'stage-attribute-row stage-potion-book'});
-  potions.append(make('strong',{text:'Эффекты зелий'}));
+  potions.append(make('strong',{text:english?'Potion effects':'Эффекты зелий'}));
   potions.append(make('label',{class:'stage-book-check'},[
    make('input',{type:'checkbox','data-book-setting':'potionEffectsEnabled',
     checked:buffs.potionEffectsEnabled===true,
     onchange:event=>onBuff('potionEffectsEnabled',event.target.checked)}),
-   make('span',{text:'Показывать восстановление от зелий'})]));
+   make('span',{text:english?'Show potion recovery':'Показывать восстановление от зелий'})]));
   const known=root.PandoraOSCalculator?.potionPreview?.({
    enabled:buffs.potionEffectsEnabled===true,
    potionRate:percent??null,maxHp:modifiers?.hp??null
@@ -873,9 +882,9 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   for(const entry of shown){
    const item=entry.id==null?null:itemById(entry.id);
    const row=make(item?'button':'div',{class:'stage-potion-item',
-    ...(item?{type:'button','aria-label':'Открыть в энциклопедии: '+(item.name||entry.ru),
+    ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item.name||entry.ru),
      onclick:()=>onItem(entry.id)}:{})});
-   const label=make('span',{class:'stage-potion-name',text:entry.ru||entry.en||'Зелье'});
+   const label=make('span',{class:'stage-potion-name',text:item?.name||(english?(entry.en||entry.ru):(entry.ru||entry.en))||(english?'Potion':'Зелье')});
    if(item){
     const source=icon(item);
     if(source){
@@ -885,50 +894,50 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     }
    }
    row.append(label,make('strong',{text:entry.value==null?'—':
-    String(entry.value)+(entry.enabled?' ОЗ':'')}));
+    String(entry.value)+(entry.enabled?(english?' HP':' ОЗ'):'')}));
    potions.append(row);
   }
   if(!shown.length)potions.append(make('p',{class:'muted',
-   text:'Для текущих зелий ещё нет доступных значений.'}));
+   text:english?'No potion values are available yet.':'Для текущих зелий ещё нет доступных значений.'}));
   body.append(potions);
   const manaItems=modifiers?.consumableRecovery?.rows||[];
   if(manaItems.length){
    const mana=make('section',{class:'stage-attribute-row stage-mana-consumables'});
-   mana.append(make('strong',{text:'Предметы восстановления ОМ'}));
+   mana.append(make('strong',{text:english?'MP recovery items':'Предметы восстановления ОМ'}));
    for(const entry of manaItems){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':'Открыть в энциклопедии: '+entry.name,
+     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const src=icon(item);
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture);}
     }
-    row.append(make('span',{class:'stage-potion-name',text:entry.name}),
-     make('strong',{text:(entry.hp>0?entry.hp+' ОЗ + ':'')+entry.mp+' ОМ'}));
+    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
+     make('strong',{text:(entry.hp>0?entry.hp+(english?' HP + ':' ОЗ + '):'')+entry.mp+(english?' MP':' ОМ')}));
     mana.append(row);
    }
    mana.append(make('p',{class:'stage-periodic-hint',
-    text:'Эффект при использовании. Бонус эффективности зелий к ОМ не применён.'}));
+    text:english?'Effect on use. Potion effectiveness is not applied to MP.':'Эффект при использовании. Бонус эффективности зелий к ОМ не применён.'}));
    body.append(mana);
   }
   const lifeItems=modifiers?.consumableRecovery?.healthRows||[];
   if(lifeItems.length){
    const health=make('details',{class:'stage-attribute-row stage-health-consumables'});
-   health.append(make('summary',{text:'Предметы восстановления ОЗ · '+lifeItems.length}));
+   health.append(make('summary',{text:(english?'HP recovery items':'Предметы восстановления ОЗ')+' · '+lifeItems.length}));
    for(const entry of lifeItems){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':'Открыть в энциклопедии: '+entry.name,
+     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const src=icon(item);
      if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture)}
     }
-    row.append(make('span',{class:'stage-potion-name',text:entry.name}),
-     make('strong',{text:entry.hp+' ОЗ'}));
+    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
+     make('strong',{text:entry.hp+(english?' HP':' ОЗ')}));
     health.append(row);
    }
    body.append(health);
@@ -936,19 +945,19 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   const cures=modifiers?.statusCures?.rows||[];
   if(cures.length){
    const panel=make('details',{class:'stage-attribute-row stage-status-cures'});
-   panel.append(make('summary',{text:'Снятие состояний · '+cures.length+' предметов'}));
+   panel.append(make('summary',{text:(english?'Remove status effects':'Снятие состояний')+' · '+cures.length+(english?' items':' предметов')}));
    for(const entry of cures){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
-     ...(item?{type:'button','aria-label':'Открыть в энциклопедии: '+entry.name,
+     ...(item?{type:'button','aria-label':(english?'Open in encyclopedia: ':'Открыть в энциклопедии: ')+(item?.name||entry.name),
       onclick:()=>onItem(entry.id)}:{})});
     if(item){
      const source=icon(item);
      if(source){const picture=make('img',{src:source,alt:'',loading:'lazy'});
       picture.onerror=()=>picture.remove();row.append(picture);}
     }
-    row.append(make('span',{class:'stage-potion-name',text:entry.name}),
-     make('strong',{text:entry.conditions.join(', ')}));
+    row.append(make('span',{class:'stage-potion-name',text:item?.name||entry.name}),
+     make('strong',{text:(english?entry.conditionsEn:entry.conditions).join(', ')}));
     panel.append(row);
    }
    body.append(panel);
@@ -956,7 +965,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   const consumableSkills=modifiers?.consumableSkills?.rows||[];
   if(consumableSkills.length){
    const section=make('details',{class:'stage-attribute-row stage-consumable-skills'});
-   const english=document.documentElement?.lang==='en';
    section.append(make('summary',{text:(english?
     'Items that activate skills':'Предметы, активирующие умения')+
     ' · '+consumableSkills.length}));

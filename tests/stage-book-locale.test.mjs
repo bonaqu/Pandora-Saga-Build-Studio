@@ -44,3 +44,14 @@ test('equipment effects, item procs and experience preview headings follow RU/EN
  assert.match(code,/english\?\(proc\.skillNameEn\|\|proc\.skillName\):proc\.skillName/);
  assert.match(code,/english\?'% experience':'% опыта'/);
 });
+
+test('equipment sets and consumable recovery sections switch to RU/EN without touching item IDs',()=>{
+ assert.match(code,/english\?'Active equipment sets':'Активные комплекты'/);
+ assert.match(code,/english\?'Potion effects':'Эффекты зелий'/);
+ assert.match(code,/english\?'MP recovery items':'Предметы восстановления ОМ'/);
+ assert.match(code,/english\?'HP recovery items':'Предметы восстановления ОЗ'/);
+ assert.match(code,/english\?'Remove status effects':'Снятие состояний'/);
+ assert.match(code,/english\?entry\.conditionsEn:entry\.conditions/);
+ assert.match(code,/text:item\?\.name\|\|entry\.name/);
+ assert.match(code,/english\?'Potion effectiveness':'Эффективность зелий'/);
+});

@@ -39,3 +39,10 @@ test('Hero Book keeps cleansing consumables separate and directly linked to the 
  assert.match(calculator,/const statusCures=statusCurePreview\(\{items:consumableItems\}\)/);
  assert.match(calculator,/consumableRecovery,consumableSkills,statusCures,combat/);
 });
+
+test('RU and EN status cure labels preserve every original source effect',()=>{
+ assert.deepEqual(byId(50013).conditionsEn,['Burn']);
+ assert.deepEqual(byId(50015).conditionsEn,['Weakness and curse','Madness','Disease']);
+ assert.deepEqual(byId(50058).conditionsEn,['Freeze','Silence','Disease','Burn']);
+ assert.equal(byId(50065).conditionsEn.length,byId(50065).conditions.length);
+});
