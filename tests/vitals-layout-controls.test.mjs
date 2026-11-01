@@ -52,7 +52,7 @@ test('old saved build starts with disabled buffs; controls update without resett
  assert.equal(dom.originVitalsCoverage.textContent,'');
 });
 test('race selection and equipped portrait stay distinct on narrow viewports',()=>{
- assert.match(html,/<h2 id="stageHeading">Образ героя<\/h2>/);
+ assert.match(html,/<h2 id="stageHeading" data-i18n="appearance">Образ героя<\/h2>/);
  assert.match(html,/<span class="hint">Экипировка персонажа<\/span>/);
  assert.match(html,/Раса <span>Выбери расу<\/span>/);
  for(const media of ['@media(max-width:790px)','@media(max-width:460px)',

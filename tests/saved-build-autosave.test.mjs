@@ -31,6 +31,6 @@ test('actual app invokes persisted-saved update only after direct user edit inte
  const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
  assert.match(source,/PandoraSavedBuildAutosave\.updatedSaved/);
  assert.match(source,/savedEditIntent/);
- assert.match(source,/entry\.id===activeBuildId/);
+ assert.match(source,/builds\.find\(x=>x\.id===entry\.id\)/);
  assert.match(source,/void putCloudBuild\(entry\)/);
 });
