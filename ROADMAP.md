@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.219.0 (`2026.11.01.219`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.220.0 (`2026.11.01.220`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.220.0 — one-pixel tick glow and safe numeric edits
+
+- Reduce only the soft glow blur on hovered/focused 3×12 px skill unlock ticks from 2px to 1px. Keep the permanent one-pixel border, focus outline, geometry, tooltip, and pointer-safe slider interaction intact.
+- Reject blank, negative or fractional precise branch investments and manual mastery edits without sending a zero or invalid number to state mutation. Restore the accepted value in the input, keeping slider and green mastery consistent; valid zero remains a deliberate refund.
+- Add Chromium assertions for the 1px computed glow and blank-input preservation, plus Node handler tests for invalid and valid investment/mastery values. Preserve 0→1→2→0 layout stability, current builds, D1, auth and level 1–55.
+- Pages publication, browser QA and Cloudflare Worker deployment require independent verification.
 
 ## Source update 0.219.0 — nine data-verified on-hit triggers
 

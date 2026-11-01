@@ -135,6 +135,14 @@ export async function runInlineMilestonesSmoke(browser,base){
    'The expanded mastery track must NOT jump vertically: '+JSON.stringify(stable));
   assert.ok(stable.every(x=>x.extraMasteryLine===''),
    'Mastery lives in the green numeric field, not an inserted header row');
+  const exact=page.locator('[data-branch-control="benevolence:potential-number"]');
+  await drag(2);
+  await exact.evaluate(input=>{
+   input.value='';input.dispatchEvent(new Event('change',{bubbles:true}));
+  });
+  assert.equal(await exact.inputValue(),'2','Clearing a precise value must not reset invested points');
+  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'2');
+  await drag(0);
   const points=Number(await mark.getAttribute('data-milestone-points'));
   const range=page.locator('.path-integrated-track input[type=range]').first();
   const rect=await range.boundingBox();
@@ -168,6 +176,8 @@ export async function runInlineMilestonesSmoke(browser,base){
   await fields.evaluate(element=>{element.style.removeProperty('width')});
   await mark.focus();
   await mark.locator('.path-milestone-tooltip').waitFor({state:'visible'});
+  const glow=await mark.evaluate(element=>getComputedStyle(element).boxShadow);
+  assert.match(glow,/0px 0px 1px 0px/,'Focused skill tick glow radius must be 1px');
   await page.locator('#locale [data-locale="en"]').click();
   assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Class limit:'));
   await page.locator('#pathSkillsTab').click();

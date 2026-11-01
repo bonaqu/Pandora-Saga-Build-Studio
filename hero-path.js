@@ -112,10 +112,14 @@ function viewGrowth(target,api){
      value:String(points),class:'path-potential-number',disabled:!available,
      'aria-label':tr(api,'Точное количество вложенных очков ','Exact branch points: ')+api.branchName(key),
      'data-branch-control':key+':potential-number'});
+    const restorePotential=()=>{
+     const current=String(M.potential(state,key));
+     range.value=current;numeric.value=current;
+    };
     const update=(requested,final)=>{
-     if(!Number.isInteger(requested)||requested<0)return;
+     if(!Number.isInteger(requested)||requested<0){restorePotential();return}
      const target=api.onAllocate(key,requested,final);
-     if(!Number.isInteger(target))return;
+     if(!Number.isInteger(target)){restorePotential();return}
      range.value=String(target);numeric.value=String(target);label.textContent=target+' / '+cap;
      branchCount.textContent=cap?target+' / '+cap:'—';
 
@@ -126,7 +130,11 @@ function viewGrowth(target,api){
     };
     range.addEventListener('input',()=>update(Number(range.value),false));
     range.addEventListener('change',()=>update(Number(range.value),true));
-    numeric.addEventListener('change',()=>update(Number(numeric.value),true));
+    numeric.addEventListener('change',()=>{
+     const raw=numeric.value.trim();
+     if(!raw){restorePotential();return}
+     update(Number(raw),true);
+    });
     const skills=skillCatalog.filter(s=>s.classes?.[job]&&Array.isArray(s.reqs)&&
      s.reqs.some(req=>req.branch===key));
     const marks=api.milestones(skills,key,cap);
@@ -228,7 +236,9 @@ function viewGrowth(target,api){
      'aria-label':tr(api,'Мастерство ','Mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
     input.addEventListener('change',()=>{
-     if(!api.onMastery(key,Number(input.value)))input.value=String(M.trained(state,key));
+     const raw=input.value.trim(),requested=Number(raw);
+     if(!raw||!Number.isInteger(requested)||requested<0||
+      !api.onMastery(key,requested))input.value=String(M.trained(state,key));
     });
     const controls=make('div',{class:'path-point-controls'});
     const pointField=(name,help,field,mastery=false)=>{
