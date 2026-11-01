@@ -10,7 +10,9 @@ test('skill hover thresholds are cached once per rendered marker, not read from 
  const end=path.indexOf("const next=event.clientY",start);
  assert.ok(start>0&&end>start);
  const hover=path.slice(start,end);
- assert.match(hover,/mark\.thresholdFraction\*travel/);
+ assert.match(hover,/nearestMilestone\(milestonesOnTrack,\(event\.clientX-left\)\/travel\)/);
+ assert.match(hover,/nearest\.thresholdFraction\*travel/);
+ assert.doesNotMatch(hover,/\.reduce\(/);
  assert.doesNotMatch(hover,/getAttribute\(/);
  assert.doesNotMatch(hover,/parseInt\(|parseFloat\(/);
  assert.match(hover,/const rect=range\.getBoundingClientRect\(\)/);
