@@ -34,6 +34,24 @@ export async function runEquipmentEligibilitySmoke(browser,base){
   await page.getByRole('button',{name:'Снять предмет'}).click();
   const withoutHat=Number(await page.locator('#originHp').textContent());
   assert.equal(withHat-withoutHat,50,'Level-38 Cardinal Cap must give precisely its OS HP bonus');
+  // In the actual female-elf gear picker, male-only Astir and tailored armor
+  // must be absent, while corresponding female versions stay selectable.
+  for(const [slot,male,female] of [
+   [3,'Астирская куртка','Астирское платье'],
+   [4,'Астирские краги','Астирские перчатки'],
+   [6,'Астирские башмаки','Астирские туфли'],
+   [3,'Жилет для эльфа (М)','Жилет для эльфа (Ж)']
+  ]){
+   await page.locator('.equipment-slot[data-slot-index="'+slot+'"]').click();
+   const search=page.locator('#stagePicker input[type="search"]');
+   await search.waitFor({state:'visible'});
+   await search.fill(male);
+   assert.equal(await page.locator('#stagePicker .stage-picker-item').count(),0,
+    'Female elf must not see '+male);
+   await search.fill(female);
+   assert.ok(await page.locator('#stagePicker .stage-picker-item').count()>0,
+    'Female elf must see '+female);
+  }
   assert.deepEqual(errors,[]);
   console.log('Chromium gear eligibility smoke passed: saved underlevel gear grants no HP; +50 activates at required level');
  }finally{await context.close();}
