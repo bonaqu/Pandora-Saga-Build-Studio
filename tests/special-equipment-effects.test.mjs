@@ -49,3 +49,31 @@ test('the hero book shows special equipment effects without raw EP identifiers',
  assert.match(read('os-calculator.js'),/const specialEquipment=specialEquipmentPreview/);
  assert.match(read('os-calculator.js'),/experienceBonus,specialEquipment,regeneration/);
 });
+
+test('the official Dawn Veil physical-evasion chance remains a conditional, source-backed preview',()=>{
+ const veil=items['11552'];
+ assert.equal(veil.name,'Рассветная вуаль для мирины');
+ assert.match(veil.desc,/Шанс уклониться от физической атаки \+3%/);
+ assert.ok(veil.effects.some(e=>e.func==='EP_DESTINE_WARDING'&&
+  e.dir==='TARGET'&&e.a===3));
+ const result=calc.specialEquipmentPreview({records:[['item:11552',veil,0]]});
+ assert.equal(result.entries.length,1);
+ assert.equal(result.entries[0].code,'EP_DESTINE_WARDING');
+ assert.equal(result.entries[0].ru,'Шанс уклониться от физической атаки +3%');
+ assert.equal(result.entries[0].en,'Physical attack evasion chance +3%');
+ assert.equal(result.entries[0].verified,false);
+ const raw=calc.gatherEffects([['item:11552',veil,0]]);
+ assert.equal(raw.bonuses.dodge||0,0,'proc must not inflate static Dodge');
+ const coverage=calc.effectCoverage({records:[['item:11552',veil,0]]});
+ assert.ok(coverage.counts.conditional>=1,'the proc still awaits its OS combat roll');
+});
+test('mismatched IDs, values or invalid grade gates never claim Dawn Veil evasion',()=>{
+ const fake=(id,a,dir='TARGET')=>['item:'+id,{id,name:'unverified',
+  effects:[{func:'EP_DESTINE_WARDING',a,dir}]},0];
+ for(const row of [fake(11552,10),fake(11553,3),fake(11552,3,'CASTER')])
+  assert.equal(calc.specialEquipmentPreview({records:[row]}).entries.length,0);
+ const gated={...items['11552'],effects:[{func:'EP_DESTINE_WARDING',
+  dir:'TARGET',a:3,min:5,max:10}]};
+ assert.equal(calc.specialEquipmentPreview({records:[['item:11552',gated,4]]}).entries.length,0);
+ assert.equal(calc.specialEquipmentPreview({records:[['item:11552',gated,5]]}).entries.length,1);
+});

@@ -124,6 +124,15 @@ export async function runInlineMilestonesSmoke(browser,base){
     bottom:Math.round(label.getBoundingClientRect().bottom)})));
   assert.ok(controlsPosition.every(item=>item.top===controlsPosition[0].top),
    'At desktop viewport, invested points and mastery share one horizontal row');
+  // Exercise a genuinely narrow branch editor without changing the viewport
+  // or forcing the whole site into an unrelated mobile layout.
+  await fields.evaluate(element=>{element.style.width='175px'});
+  const narrow=await fields.locator('label.path-point-group').evaluateAll(labels=>
+   labels.map(label=>({top:Math.round(label.getBoundingClientRect().top),
+    right:label.getBoundingClientRect().right})));
+  assert.ok(narrow[1].top>narrow[0].top,
+   'At constrained widths, both compact controls must wrap cleanly');
+  await fields.evaluate(element=>{element.style.removeProperty('width')});
   await mark.focus();
   await mark.locator('.path-milestone-tooltip').waitFor({state:'visible'});
   await page.locator('#locale [data-locale="en"]').click();
