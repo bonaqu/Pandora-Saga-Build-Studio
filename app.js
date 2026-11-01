@@ -2818,6 +2818,7 @@ for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','
 render();loadCatalog();loadOverrides();
 void window.PandoraAccountUI.init({
  baseUrl:API,legacyKey:()=>cloudToken(),
+ onAdministratorLogin:()=>showAdmin(),
  onLogin:({register,bootstrap})=>{
   if(!register&&!bootstrap){
    try{localStorage.setItem('ps-preaccount-library.v1',JSON.stringify(builds))}catch{}

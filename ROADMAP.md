@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.192.0 (`2026.11.01.192`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.193.0 (`2026.11.01.193`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.193.0 — actual inline skill ticks and legacy administrator entry
+
+- Replace the detached skill-pins rule that erroneously placed skill milestone icons above the slider. Milestone symbols occupy the progress line itself, with gold/green/red states; hover and keyboard focus reveal source-backed names, original icons and skill descriptions. The same drag range remains intact.
+- Expose a clear, independent «Вход администратора» entry from the regular account menu. Legacy `administrator` belongs to `POST /api/admin/login` and existing D1 `admins`/`sessions` — not `POST /api/account/login` and uninstalled `user_accounts` tables. Never send administrator credentials to the new player account route. The existing five-logo-click and Ctrl+Alt+Shift+P options remain.
+- When player-account registration returns the known 0005-migration error, explain the player-account unavailability without implying that the old administrative account is unavailable. No admin secrets stored or published.
+- Add Node regressions and independent mocked Chromium tests for in-bar milestone geometry/tooltips and a working administrator login while player account routes return 503.
+- **Deployment limit:** no direct Cloudflare account/D1 admin connector is currently available. Do not claim migration 0005 was applied or that a live administrator login was tested with real credentials.
 
 ## Source update 0.192.0 — account password confirmation and legacy comparison
 

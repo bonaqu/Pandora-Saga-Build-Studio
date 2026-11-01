@@ -88,6 +88,7 @@ function viewGrowth(target,api){
     // Standard CSS calc, no browser-dependent multiplication.
     locked.style.left='calc('+(lockedFraction*100).toFixed(6)+'% '+
       (lockedOffset<0?'-':'+')+' '+Math.abs(lockedOffset).toFixed(6)+'px)';
+    const milestonesOnTrack=[];
     const paint=()=>{
      const invested=M.potential(state,key),mastery=M.trained(state,key);
      const goldFraction=Math.max(0,Math.min(1,invested/visualMax));
@@ -95,6 +96,9 @@ function viewGrowth(target,api){
      gold.style.width='calc('+(goldFraction*100).toFixed(6)+'% - '+(24*goldFraction).toFixed(6)+'px)';
      green.style.width='calc('+(greenFraction*100).toFixed(6)+'% - '+(24*greenFraction).toFixed(6)+'px)';
      range.setAttribute('aria-valuetext', invested+' вложено, '+mastery+' освоено, предел '+cap);
+     for(const entry of milestonesOnTrack)
+      entry.tick.classList.toggle('reached',
+       !entry.locked&&entry.skills.some(skill=>readiness(skill,api).learned));
     };
     track.append(bed,gold,green,locked);
     const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
@@ -132,7 +136,9 @@ function viewGrowth(target,api){
       const at=marks.filter(mark=>mark.threshold===threshold);
       const lockedAt=at.every(mark=>mark.locked);
       const skillsAt=at.flatMap(mark=>mark.skills);
-      const tick=make('span',{class:'path-threshold-tick'+(lockedAt?' unreachable':''),
+      const learned=skillsAt.some(skill=>readiness(skill,api).learned);
+      const tick=make('span',{class:'path-threshold-tick'+
+       (lockedAt?' unreachable':learned?' reached':''),
        'data-milestone-points':String(threshold),tabindex:'0',
        'aria-label':threshold+' очков: '+skillsAt.map(skill=>skill.name).join(', ')});
       tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';
@@ -153,6 +159,7 @@ function viewGrowth(target,api){
        preview.append(row);
       }
       tick.append(preview);ticks.append(tick);
+      milestonesOnTrack.push({tick,skills:skillsAt,locked:lockedAt});
      }
      track.append(ticks);
      // A separate collapsed list provides access to every skill without covering the drag surface.

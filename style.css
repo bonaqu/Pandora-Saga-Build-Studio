@@ -1619,3 +1619,52 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  background:#251b12;font-size:11px}
 .account-recovery p{color:#dec29d}
 @media(max-width:790px){.account-panel{right:0;top:calc(100% + 6px)}}
+
+/* 0.193.0 — skill milestones belong INSIDE the interactive progress line.
+   These rules intentionally supersede the obsolete detached-pin positions above. */
+.inline-mastery-track{
+ height:44px;margin:7px 3px 8px;overflow:visible;
+}
+.inline-mastery-track .inline-mastery-bed,
+.inline-mastery-track .inline-mastery-locked{top:19px}
+.inline-mastery-track .inline-mastery-fill,
+.inline-mastery-track .inline-mastery-green{top:20px}
+.inline-mastery-track input[type=range]{top:7px;height:32px;z-index:7}
+.inline-mastery-track .inline-branch-milestones{
+ position:absolute;inset:0 12px;height:100%;
+ overflow:visible;pointer-events:none;z-index:9;
+}
+.inline-mastery-track .path-threshold-tick{
+ position:absolute;top:15px;width:12px;height:17px;min-height:0;
+ transform:translateX(-50%);padding:0;
+ background:transparent!important;border:0!important;box-shadow:none!important;
+ opacity:1;filter:none;pointer-events:auto!important;cursor:help;
+ border-radius:2px;z-index:10;
+}
+.inline-mastery-track .path-threshold-tick::before{
+ content:'';position:absolute;left:1px;top:4px;width:10px;height:9px;
+ box-sizing:border-box;border:1px solid #ffde95;border-radius:2px;
+ background:linear-gradient(180deg,#f8d68d,#b27c32);box-shadow:0 0 3px #140a04;
+ transform:none;
+}
+.inline-mastery-track .path-threshold-tick.reached::before{
+ background:linear-gradient(#b8e697,#4c8c4a);border-color:#cff2b5;
+}
+.inline-mastery-track .path-threshold-tick.unreachable::before{
+ background:linear-gradient(#d89d90,#814b45);border-color:#edb4a4;
+}
+.inline-mastery-track .path-threshold-tick::after{content:none!important}
+.inline-mastery-track .path-threshold-tick:hover::before,
+.inline-mastery-track .path-threshold-tick:focus-visible::before{
+ border-color:#fff9da;box-shadow:0 0 0 2px #d6a461,0 0 6px #f9d18e;
+}
+.inline-mastery-track .path-threshold-tick:focus-visible{
+ outline:2px solid #ffdfa2;outline-offset:2px;
+}
+.inline-mastery-track .path-milestone-tooltip{
+ bottom:calc(100% + 5px);z-index:30;width:min(280px,74vw);
+}
+.account-admin-entry{border-top:1px solid #67472c;padding-top:10px;margin-top:10px}
+.account-admin-entry .account-action{width:100%;background:transparent;border:1px solid #81613c;color:#ecc897}
+.account-admin-entry .account-action:hover,
+.account-admin-entry .account-action:focus-visible{border-color:#e8b575;background:#342314}

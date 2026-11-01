@@ -9,6 +9,11 @@ class BrowserElement {
   this.tag=tag;this.children=[];this.attributes={};this.listeners={};this.style={};
   this.className='';this.textContent='';this.value='';this._disabled=false;this._checked=false;
   this.hidden=false;this.scrollTop=0;this.dataset={};
+  this.classList={toggle:(name,on)=>{
+   const parts=new Set(this.className.split(/\s+/).filter(Boolean));
+   if(on)parts.add(name);else parts.delete(name);
+   this.className=[...parts].join(' ');
+  }};
  }
  append(...parts){this.children.push(...parts)}
  replaceChildren(...parts){this.children=[...parts]}
@@ -257,4 +262,25 @@ test('class-limited skills keep individual numbers in the separate details list'
  options[1].listeners.click();assert.equal(selected.id,981);
  const heading=walk(f.target).find(x=>String(x.className).includes('game-tree-head active'));
  assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent==='0 вложено'));
+});
+
+test('skill milestones remain inside the bar and update their reached state after allocating mastery',()=>{
+ const css=read('style.css');
+ const patch=css.slice(css.lastIndexOf('/* 0.193.0 — skill milestones'));
+ assert.match(patch,/\.inline-mastery-track \.path-threshold-tick\{[\s\S]*?top:15px/);
+ assert.match(patch,/\.inline-mastery-track \.path-threshold-tick::before/);
+ assert.match(patch,/\.inline-mastery-track \.path-threshold-tick::after\{content:none!important\}/);
+ const f=fixture('CLERIC','prayer','benevolence');
+ const skill={id:9099,name:'Skill at 8',branch:'benevolence',
+  classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:8}]};
+ f.api.skillCatalog=[skill];
+ f.api.milestones=()=>[{threshold:8,skills:[skill],locked:false}];
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const tick=walk(f.target).find(x=>String(x.className).includes('path-threshold-tick'));
+ assert.ok(tick);
+ assert.ok(!tick.className.includes('reached'));
+ assert.ok(!Object.hasOwn(tick.style,'top'));
+ const range=walk(f.target).find(x=>x.tag==='input'&&x.attributes.type==='range');
+ range.value='8';range.listeners.input();
+ assert.ok(tick.className.includes('reached'),'green mastery unlocks the marker');
 });
