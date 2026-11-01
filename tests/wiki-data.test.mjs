@@ -64,6 +64,18 @@ test('display dedup keeps source records, collapses exact mobs and script-only s
  assert.ok(wiki.records('monster')['22']);
  assert.ok(wiki.records('skill')['102']);
 });
+test('identical monster stats with different loot cannot be merged',()=>{
+ const data={monsters:{
+  11:{id:11,name:'Страж',level:25,life:900},
+  22:{id:22,name:'Страж',level:25,life:900}},
+  drops:{11:{d:[{i:41,p:20}]},22:{d:[{i:42,p:50}]}},
+  trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}};
+ const wiki=ctx.window.PandoraWikiData.build(data);
+ assert.equal(wiki.search('monster','страж').length,2);
+ assert.equal(wiki.sameName('monster',11).length,1);
+ assert.equal(wiki.drops(11)[0].itemId,'41');
+ assert.equal(wiki.drops(22)[0].itemId,'42');
+});
 test('materials link back to unique NPC trades, and zones use one location index',()=>{
  const wiki=ctx.window.PandoraWikiData.build({trades:{trades:[
   {id:1,i:40,npc:[7,8],mats:[{i:11},{i:11}]},
