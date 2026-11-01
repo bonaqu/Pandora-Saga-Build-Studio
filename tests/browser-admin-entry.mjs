@@ -137,12 +137,22 @@ export async function runInlineMilestonesSmoke(browser,base){
    'Mastery lives in the green numeric field, not an inserted header row');
   const exact=page.locator('[data-branch-control="benevolence:potential-number"]');
   await drag(2);
-  await exact.evaluate(input=>{
-   input.value='';input.dispatchEvent(new Event('change',{bubbles:true}));
-  });
-  assert.equal(await exact.inputValue(),'2','Clearing a precise value must not reset invested points');
-  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'2');
+  await exact.fill('');
+  await exact.press('Tab');
+  assert.equal(await exact.inputValue(),'0','Clearing and blurring precise field must refund points');
+  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'0');
+  await drag(5);
+  await page.locator('#pathAutoMastery').uncheck();
+  const mastery=page.locator('[data-branch-control="benevolence:mastery-number"]');
+  assert.equal(await mastery.isEnabled(),true,'manual mastery control must be editable');
+  await mastery.fill('3');await mastery.press('Tab');
+  assert.equal(await mastery.inputValue(),'3');
+  await mastery.fill('');await mastery.press('Tab');
+  assert.equal(await mastery.inputValue(),'0','Clearing and blurring manual mastery must reset green to zero');
+  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'5',
+   'Clearing manual green must not refund invested blue points');
   await drag(0);
+  await page.locator('#pathAutoMastery').check();
   const points=Number(await mark.getAttribute('data-milestone-points'));
   const range=page.locator('.path-integrated-track input[type=range]').first();
   const rect=await range.boundingBox();

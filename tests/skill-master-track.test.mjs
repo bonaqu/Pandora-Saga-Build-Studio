@@ -17,8 +17,8 @@ test('right side exposes free/spent/total budget and immediate branch allocation
  for(const text of ['Свободно','Вложено','Всего'])assert.ok(app.includes(text));
  assert.match(ui,/onAllocate\(key,requested,final\)/);
  assert.match(app,/model\.canAllocate\(gameTables\?\.abilityPoint/);
- assert.match(ui,/const raw=input\.value\.trim\(\),requested=Number\(raw\)/);
- assert.match(ui,/!raw\|\|!Number\.isInteger\(requested\)\|\|requested<0\|\|/);
+ assert.match(ui,/const raw=input\.value\.trim\(\),requested=raw===''\?0:Number\(raw\)/);
+ assert.match(ui,/!Number\.isInteger\(requested\)\|\|requested<0\|\|/);
  assert.match(ui,/!api\.onMastery\(key,requested\)/);
 });
 test('path has gallery with available/grey skill cards and both pages',()=>{

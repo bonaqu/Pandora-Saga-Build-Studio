@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.221.0 (`2026.11.01.221`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.222.0 (`2026.11.01.222`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.222.0 — owner-approved blank input resets spent or manual mastery
+
+- Intentional input clearing followed by `change` (blur/tab/click elsewhere) resets **that branch** to 0 in both invested/spent and manually trained/green mastery fields. This supersedes the blank-input preservation introduced in 0.220.0.
+- Keep negative, fractional and nonfinite inputs rejected, while numeric zero still refunds. Resetting invested potential also clamps this branch's trained mastery and refunds its allocation budget; clearing manual mastery does not decrease invested potential.
+- Commit changes to the existing local draft through unchanged handlers, never silently overwrite an already saved named/cloud build; preserve other branches and planning 1–55.
+- Add direct event-handler tests and real Chromium focus-transfer checks for both fields. No D1 migration, authentication or game formula change.
 
 ## Source update 0.221.0 — accurate conditional percentages and no repeated proc descriptions
 
