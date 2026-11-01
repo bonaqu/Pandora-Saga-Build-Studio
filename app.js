@@ -776,7 +776,7 @@ function renderStageAttributes(){
  const bookEn=lang==='en';
  const levelReason=n=>bookEn?'Available at level '+n:'Откроется на '+n+' уровне';
  const missingCombatMastery=ability=>{
-  const req=ability?.reqs?.find(req=>branchMasteries[req.branch]<req.amount);
+  const req=ability?.reqs?.find(req=>(branchMasteries[req.branch]??0)<req.amount);
   if(!req)return null;
   const branchName=catalog.meta?.branchLabels?.[req.branch]||req.branch;
   return bookEn?'Requires '+req.amount+' '+branchName+' mastery':
