@@ -110,3 +110,25 @@ test('official English Traveler Boots prose activates the exact RU/EN proc previ
  const corrupted={...record,desc:record.desc.replace('8%','9%')};
  assert.equal(calc.specialEquipmentPreview({records:[['item:15082',corrupted,0]]}).entries.length,0);
 });
+
+test('all nine detailed on-hit descriptions match exact action phrasing in official RU and EN',()=>{
+ const english=JSON.parse(read('data/os/strings.en.json'));
+ for(const [kind,sourceId] of [
+  ['item',422],['item',1041],['item',1211],['item',2802],
+  ['soul',101010],['soul',101011],['soul',101012],
+  ['soul',101021],['soul',101022]
+ ]){
+  const id=kind+':'+sourceId,base=(kind==='item'?items:souls)[sourceId];
+  const translated=(kind==='item'?english.items:english.souls)[sourceId];
+  const enRecord={...base,name:translated.n,desc:translated.d};
+  assert.equal(calc.specialEquipmentPreview({records:[[id,base,0]]}).entries.length,1,id+' RU');
+  assert.equal(calc.specialEquipmentPreview({records:[[id,enRecord,0]]}).entries.length,1,id+' EN');
+  const otherChanceDescription={...base,desc:'Other effect triggers: '+base.effects.find(
+   e=>['EP_ONHIT_SKILL_EXEC','EP_ONHIT_STUN'].includes(e.func)).b+'% chance to do something else'};
+  assert.equal(calc.specialEquipmentPreview({records:[[id,otherChanceDescription,0]]}).entries.length,0,
+   'same percent alone must not substantiate this specific proc: '+id);
+  const tampered={...enRecord,desc:translated.d.replace(/chance/i,'opportunity')};
+  assert.equal(calc.specialEquipmentPreview({records:[[id,tampered,0]]}).entries.length,0,
+   'modified trigger wording cannot be silently accepted: '+id);
+ }
+});
