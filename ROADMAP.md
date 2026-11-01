@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.206.0 (`2026.11.01.206`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.207.0 (`2026.11.01.207`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.207.0 — keep guest cloud secrets isolated across tabs
+
+- Capture each tab's **own** account-free D1 library secret at startup. If another tab connects to a different 64-character guest library key, the first tab continues using its original secret for GET/PUT, public-link creation, displayed recovery code and optional account registration linkage.
+- Explicit in-tab «Подключить и объединить» updates that tab's guest identity and merges **its own** existing local snapshots. A different tab's currently active browser-local records cannot be carried into the newly connected guest library.
+- Account-scoped tokens retain higher priority when the user is signed in. No storage secret is embedded in an external URL or logged as a browser diagnostic.
+- Source and pure Node tests cover carryFrom and guest data isolation; fake-Worker Chromium tests use two simultaneous guest tabs with different D1 keys and assert no PUT to the other key.
+- All level 1–55 planning, database migrations and direct source-backed game calculations remain unchanged.
 
 ## Source update 0.206.0 — prevent browser cross-tab account library contamination
 

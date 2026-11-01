@@ -59,7 +59,7 @@ function sync(storage){
  storage.setItem(slot(current),JSON.stringify(snapshot(storage)));
  return true;
 }
-function transition(storage,next,{carry=false,legacyOwner=null}={}){
+function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={}){
  if(!validScope(next))throw Error('Invalid library owner context');
  const raw=storage.getItem(MARKER);
  const previous=validScope(raw)?raw:validScope(legacyOwner)?legacyOwner:next;
@@ -72,12 +72,17 @@ function transition(storage,next,{carry=false,legacyOwner=null}={}){
  // Do not accidentally overwrite a newer saved context on a second tab.
  syncWithOwner(storage,previous);
  let saved=null;
- if(!carry){
+ if(carry){
+  // A different tab may currently own the shared top-level keys. Carry only
+  // the initiating tab's guest records, never that other tab's active records.
+  const source=validScope(carryFrom)?carryFrom:previous;
+  saved=source===previous?snapshotBeforeSwitch(storage):storedSnapshot(storage,source);
+ }else{
   try{const restored=JSON.parse(storage.getItem(slot(next))||'null');
    if(Array.isArray(restored)&&restored.length===KEYS.length)saved=restored;
   }catch{}
  }
- write(storage,saved|| (carry?snapshotBeforeSwitch(storage):DEFAULTS));
+ write(storage,saved||DEFAULTS);
  storage.setItem(MARKER,next);sync(storage);
  return {changed:true,owner:next,previous};
 }

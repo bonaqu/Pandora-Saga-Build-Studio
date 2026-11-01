@@ -127,3 +127,19 @@ test('only owning tab writes active keys; unowned snapshot fallback is empty',()
  assert.throws(()=>mod.setOwned(s,'other',keys[0],'[]'),/Invalid owner/);
  assert.throws(()=>mod.getOwned(s,guest,'ps-account-session.v1'),/Invalid owner/);
 });
+
+test('cross-tab guest library transfer only carries the initiating guest, never the active stranger',()=>{
+ const s=storage();
+ const guestB=mod.owner(null,'b'.repeat(64));
+ const guestC=mod.owner(null,'c'.repeat(64));
+ mod.transition(s,guest);put(s,'Guest A',30);mod.sync(s);
+ mod.transition(s,guestB);put(s,'Guest B',40);mod.sync(s);
+ const result=mod.transition(s,guestC,{carry:true,carryFrom:guest});
+ assert.equal(result.changed,true);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Guest A',
+  'Guest C may import only initiating tab A when another tab B owns primary keys');
+ mod.transition(s,guestB);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Guest B');
+ mod.transition(s,guest);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Guest A');
+});

@@ -12,6 +12,7 @@ import {runSavedAutosaveSmoke} from './browser-saved-autosave.mjs';
 import {runAccountSmoke} from './browser-account.mjs';
 import {runAccountLibraryIsolationSmoke} from './browser-account-isolation.mjs';
 import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs';
+import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 
 const base='http://127.0.0.1:4173';
@@ -152,6 +153,7 @@ async function main(){
  await runAccountSmoke(browser,base);
  await runAccountLibraryIsolationSmoke(browser,base);
  await runCrossTabAccountIsolationSmoke(browser,base);
+ await runCrossTabGuestIsolationSmoke(browser,base);
  await runAdminEntrySmoke(browser,base);
  await runInlineMilestonesSmoke(browser,base);
  await runLayoutAudit(browser,base);

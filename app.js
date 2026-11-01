@@ -102,8 +102,11 @@ function cloudToken(){
  }
  return token;
 }
+// This tab owns its guest secret for its lifetime. Another browser tab may
+// connect a different guest library using the same origin-localStorage.
+let tabGuestSecret=cloudToken(),tabOwnerScope=null;
 function libraryScopeId(){
- return window.PandoraBuildScope.owner(window.PandoraAccountUI?.username(),cloudToken());
+ return window.PandoraBuildScope.owner(window.PandoraAccountUI?.username(),tabGuestSecret);
 }
 function restoreScopedDraft({initial=false}={}){
  try{
@@ -122,14 +125,19 @@ function restoreScopedDraft({initial=false}={}){
  compareIds=[];
  if(!initial)buildSearchQuery='';
 }
-function activateLibraryScope({carry=false,initial=false}={}){
+function activateLibraryScope({carry=false,carryFrom=null,initial=false}={}){
  const next=libraryScopeId();
  let legacyOwner=null;
  try{
   const old=JSON.parse(localStorage.getItem('ps-account-session.v1')||'null')?.username;
   if(typeof old==='string')legacyOwner='account:'+old.toLowerCase();
  }catch{}
- const changed=window.PandoraBuildScope.transition(localStorage,next,{carry,legacyOwner}).changed;
+ const changedInStorage=window.PandoraBuildScope.transition(localStorage,next,{
+  carry,carryFrom:carryFrom||window.PandoraBuildScope.owner(null,tabGuestSecret),
+  legacyOwner
+ }).changed;
+ const changed=changedInStorage||(tabOwnerScope!==null&&tabOwnerScope!==next);
+ tabOwnerScope=next;
  if(changed){
   libraryChangeId++;
   restoreScopedDraft({initial});
@@ -138,11 +146,11 @@ function activateLibraryScope({carry=false,initial=false}={}){
  return changed;
 }
 // Preserve pre-0.197 guest backups when upgrading a browser already signed in.
-window.PandoraBuildScope.migrateLegacyGuest(localStorage,cloudToken());
+window.PandoraBuildScope.migrateLegacyGuest(localStorage,tabGuestSecret);
 // Claim existing pre-upgrade local records for their former owner without losing them.
 activateLibraryScope({initial:true});
 async function cloudLibraryRequest(payload,secret=null){
- const bearer=secret||window.PandoraAccountUI?.token()||cloudToken();
+ const bearer=secret||window.PandoraAccountUI?.token()||tabGuestSecret;
  const response=await fetch(API+'/api/library',{method:payload?'POST':'GET',
   headers:{'Content-Type':'application/json',Authorization:'Bearer '+bearer},
   ...(payload?{body:JSON.stringify(payload)}:{})});
@@ -1922,12 +1930,15 @@ async function connectCloudLibrary(secret,feedback){
    feedback.textContent='По этому коду сохранённые билды не найдены. Проверьте, что код скопирован полностью.';
    return false;
   }
-  if(trimmed===cloudToken()){
+  if(trimmed===tabGuestSecret){
    feedback.textContent='Эта библиотека уже подключена.';
    return true;
   }
+  const previousGuest=tabGuestSecret;
   localStorage.setItem(CLOUD_TOKEN_KEY,trimmed);
-  activateLibraryScope({carry:true});
+  tabGuestSecret=trimmed;
+  activateLibraryScope({carry:true,
+   carryFrom:window.PandoraBuildScope.owner(null,previousGuest)});
   selectActiveBuild(null);libraryChangeId++;
   feedback.textContent='Подключено. Объединяем сохранения…';
   void loadCloudBuilds();
@@ -1945,7 +1956,7 @@ function buildLibraryTransfer(){
  let codeVisible=false;
  const copy=h('button',{type:'button',class:'button-action',text:'Показать мой код',onclick:async()=>{
   if(!codeVisible){
-   field.value=cloudToken();
+   field.value=tabGuestSecret;
    codeVisible=true;field.focus();field.select();
    copy.textContent='Скопировать мой код';
    return;
@@ -2231,7 +2242,7 @@ async function createShared(build,host){
   sanitizeSharedState(build.data);
   pending.textContent='Создаём ссылку из последней сохранённой облачной версии…';
   const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},
-   window.PandoraAccountUI?.token()||cloudToken());
+   window.PandoraAccountUI?.token()||tabGuestSecret);
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
   // Confirm that the new public link is immediately readable before showing it.
   const check=await apiRequest('/api/shared/'+response.id,null,'');
@@ -2900,7 +2911,7 @@ for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','
 }
 render();loadCatalog();loadOverrides();
 void window.PandoraAccountUI.init({
- baseUrl:API,legacyKey:()=>cloudToken(),
+ baseUrl:API,legacyKey:()=>tabGuestSecret,
  onLogin:({register})=>{
   // New registration adopts the guest library because its existing D1 owner hash
   // is intentionally bound to that browser key. Logging into a different existing
