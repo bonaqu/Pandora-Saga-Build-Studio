@@ -1355,6 +1355,8 @@ function renderWiki(root){
  wikiRenderedRoot=root;
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
+ const wt=(ru,en)=>lang==='en'?en:ru;
+ let wikiSourceShown=80,wikiSourceRecord='';
  for(const [key,ru,en]of[['item','Предметы','Items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:lang==='en'?en:ru,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
@@ -1403,7 +1405,9 @@ function renderWiki(root){
   return withIcon(wikiLink(label,dest,id,highlight),record?wikiIcon(kind,id,record):null);
  };
  const draw=(detailOnly=false)=>{
-  const previousScroll=browse.scrollTop;
+  const previousScroll=browse.scrollTop,previousDetailScroll=detail.scrollTop;
+  const sourceKey=wikiSelection.type+':'+String(wikiSelection.id??'');
+  if(wikiSourceRecord!==sourceKey){wikiSourceShown=80;wikiSourceRecord=sourceKey}
   if(!detailOnly)browse.replaceChildren();
   detail.replaceChildren();
   const type=wikiSelection.type;
@@ -1431,7 +1435,9 @@ function renderWiki(root){
   }
   const id=wikiSelection.id,rec=id==null?null:catalog?.[id];
   if(!rec){detail.append(h('p',{class:'muted',text:!results.length?(lang==='en'?'No matching entries.':'Ничего не найдено.'):(lang==='en'?'Select an entry to view its details and sources.':'Выбери запись для просмотра характеристик и связанных источников.')}));return}
-  const typeLabel={item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
+  const typeLabel=lang==='en'?{item:'Item',monster:'Monster',map:'Location',npc:'NPC',
+    skill:'Skill',soul:'Soul',instance:'Dungeon',chest:'Chest'}:
+   {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
     h('h3',{text:dataName(type,id)}));
@@ -1441,13 +1447,41 @@ function renderWiki(root){
   }
   if(rec.desc){const text=lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='skill'?'skills':type==='soul'?'souls':'maps']?.[id]?.d||rec.desc):rec.desc;
     detail.append(h('p',{class:'wiki-description',text:type==='item'?window.PandoraItemPresentation.description(text):text}));}
+  const moreSources=rows=>{
+   if(rows.length<=wikiSourceShown)return;
+   detail.append(h('button',{type:'button',class:'wiki-more',text:wt('Показать ещё ','Show more ')+
+    Math.min(80,rows.length-wikiSourceShown)+' / '+(rows.length-wikiSourceShown),
+    onclick:()=>{wikiSourceShown+=80;draw(true)}}));
+  };
   if(type==='item'){
     const dl=h('dl',{class:'item-fields'});
-    for(const [label,value]of[['Тип',window.PandoraItemPresentation.kind(rec)],['Уровень',rec.level],['Атака',rec.W],['Защита',rec.AC],['Гнёзда',rec.soulslot]])if(value!=null)dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
-    detail.append(dl,h('h4',{text:'Где получить'}));
+    const itemFields=[
+     [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec)],
+     [wt('Уровень','Level'),rec.level],
+     [wt('Атака','Attack'),rec.W],
+     [wt('Пробитие','Penetration'),rec.PEN],
+     [wt('Защита','Defense'),rec.AC],
+     [wt('Скорость атаки','Attack speed'),rec.atkspeed],
+     [wt('Дальность','Range'),rec.range],
+     [wt('Гнёзда душ','Soul sockets'),rec.soulslot]
+    ];
+    for(const [label,value]of itemFields)if(value!=null)
+     dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
+    if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
+     h('dd',{text:wt('Двуручное','Two-handed')}));
+    detail.append(dl);
+    if(rec.classes&&Object.keys(rec.classes).length){
+     const classes=Object.keys(rec.classes).filter(id=>rec.classes[id]);
+     if(classes.length)detail.append(h('div',{class:'wiki-allowed-classes'},[
+      h('h4',{text:wt('Доступные классы','Eligible classes')}),
+      h('p',{text:classes.map(id=>lang==='en'?id.replaceAll('_',' '):
+       (catalog.classes?.[id]?.name||id)).join(' · ')})
+     ]));
+    }
+    detail.append(h('h4',{text:wt('Где получить','How to obtain')}));
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:'Подтверждённые источники в доступном каталоге не найдены.'}));
-    for(const row of found.slice(0,80)){
+    for(const row of found.slice(0,wikiSourceShown)){
      const line=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(row.id)?' highlighted':'')});
      if(row.type==='monster'){
       line.append(wikiLink('Монстр: '+dataName('monster',row.id)+(row.percent!=null?' · '+row.percent+'% по таблице':'')+(row.kind==='conditional'?' · условный дроп':''),'monster',row.id,id));
@@ -1458,21 +1492,32 @@ function renderWiki(root){
      else line.append(wikiLink('Групповой дроп, локация '+dataName('map',row.id)+' (точный шанс предмета неизвестен)','map',row.id,id));
      detail.append(line);
     }
+    moreSources(found);
     const usedIn=wikiIndex.materialUses(id);
     if(usedIn.length){
      detail.append(h('h4',{text:(lang==='en'?'Used in NPC trades · ':'Используется в обмене NPC · ')+usedIn.length}));
-     for(const trade of usedIn.slice(0,80)){
+     for(const trade of usedIn.slice(0,wikiSourceShown)){
       const entry=h('div',{class:'wiki-entry'});
       entry.append(itemLink(trade.i,dataName('item',trade.i),id));
-      const npcId=trade.npc?.[0];
-      if(npcId!=null)entry.append(wikiLink(dataName('npc',npcId),'npc',npcId,trade.i));
+      for(const npcId of (trade.npc||[]).slice(0,5))
+       entry.append(wikiLink(dataName('npc',npcId),'npc',npcId,trade.i));
       detail.append(entry);
      }
+     moreSources(usedIn);
     }
   }else if(type==='skill'){
-    detail.append(h('p',{class:'muted',text:'Уровень персонажа '+(rec.charLevel??'—')+' · ОМ '+(rec.mana??'—')+' · перезарядка '+(rec.cooldown??'—')+' с'}));
-    detail.append(h('h4',{text:'Требования'}));
-    if(!rec.reqs?.length)detail.append(h('p',{class:'muted',text:'Ветка требований не указана'}));
+    const skillFields=[
+     [wt('Уровень героя','Hero level'),rec.charLevel],
+     [wt('Затраты ОМ','MP cost'),rec.mana],
+     [wt('Подготовка, с','Cast, sec'),rec.cast],
+     [wt('Перезарядка, с','Cooldown, sec'),rec.cooldown],
+     [wt('Дальность','Range'),rec.range]
+    ];
+    const dl=h('dl',{class:'item-fields'});
+    for(const [label,value] of skillFields)if(value!=null)
+     dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
+    detail.append(dl,h('h4',{text:wt('Требования','Requirements')}));
+    if(!rec.reqs?.length)detail.append(h('p',{class:'muted',text:wt('Ветка требований не указана','No branch requirement listed')}));
     for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:(wikiData.meta?.branchLabels?.[req.branch]||req.branch)+' ≥ '+req.amount}));
     if(rec.prereq!=null&&wikiData.skills?.[rec.prereq])detail.append(wikiLink((lang==='en'?'Prerequisite: ':'Предыдущее умение: ')+dataName('skill',rec.prereq),'skill',rec.prereq));
     if(rec.classes&&Object.keys(rec.classes).length){
@@ -1489,11 +1534,11 @@ function renderWiki(root){
     for(const slot of rec.slots||[])traits.append(h('span',{text:slots[slot]||slot}));
     if(rec.price!=null)traits.append(h('span',{text:'Стоимость: '+Number(rec.price).toLocaleString('ru-RU')}));
     if(traits.childElementCount)detail.append(traits);
-    detail.append(h('h4',{text:'Где получить душу'}));
+    detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:
      'Источник получения в доступном каталоге не указан.'}));
-    for(const row of found.slice(0,60)){
+    for(const row of found.slice(0,wikiSourceShown)){
      const line=h('div',{class:'wiki-entry wiki-soul-source'});
      if(row.type==='monster'){
       line.append(wikiLink('Монстр: '+dataName('monster',row.id)+
@@ -1510,9 +1555,10 @@ function renderWiki(root){
       ' · точный шанс души не указан','map',row.id,id));
      detail.append(line);
     }
+    moreSources(found);
   }else if(type==='monster'){
     const monsterStats=[['Уровень',rec.level],['ОЗ',rec.life],
-     ['Защита',rec.ac],['Маг. защита',rec.magicProtection],
+     [wt('Защита','Defense'),rec.ac],[wt('Маг. защита','Magic defense'),rec.magicProtection],
      ['Защитный показатель',rec.warding],['Сила',rec.str],['Выносливость',rec.vit],
      ['Ловкость',rec.agi],['Проворство',rec.dex],
      ['Дух',rec.spi],['Интеллект',rec.int]];
@@ -1531,9 +1577,9 @@ function renderWiki(root){
       box.append(h('span',{text:(names[key]||key)+': '+value}));
      detail.append(box);
     }
-    detail.append(h('h4',{text:'Места появления'}));
+    detail.append(h('h4',{text:wt('Места появления','Spawn locations')}));
     for(const loc of wikiIndex.locations(id))detail.append(wikiLink(loc.name,loc.type,loc.id,id));
-    detail.append(h('h4',{text:'Выпадающие предметы'}));
+    detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')}));
     for(const row of wikiIndex.drops(id)){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===row.itemId?' highlighted':'')});
      const item=wikiData.items?.[row.itemId];
@@ -1552,7 +1598,8 @@ function renderWiki(root){
     const recipes=wikiIndex.trades(id);
     detail.append(h('h4',{text:'Обмен · '+recipes.length}));
     const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
-     placeholder:'Найти предмет или материал…','aria-label':'Поиск среди обменов NPC'});
+     placeholder:wt('Найти предмет или материал…','Find an item or material…'),
+     'aria-label':wt('Поиск среди обменов NPC','Search NPC trades')});
     const counter=h('small',{class:'wiki-result-counter'});
     const recipesBox=h('div',{class:'wiki-trade-list'}),cards=[];
     for(const trade of recipes){
@@ -1574,7 +1621,7 @@ function renderWiki(root){
      if(currencies.length)entry.append(h('div',{class:'wiki-trade-cost',text:
       currencies.map(([name,value])=>name+': '+Number(value).toLocaleString('ru-RU')).join(' · ')}));
      const searchText=[dataName('item',trade.i),String(trade.i),
-      ...(trade.mats||[]).map(m=>dataName('item',m.i))].join(' ').toLocaleLowerCase('ru');
+      ...(trade.mats||[]).flatMap(m=>[String(m.i),dataName('item',m.i)])].join(' ').toLocaleLowerCase('ru');
      recipesBox.append(entry);cards.push({entry,searchText});
     }
     const filterRecipes=()=>{
@@ -1598,7 +1645,8 @@ function renderWiki(root){
       (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
      detail.append(h('h4',{text:'Монстры · '+mobs.length+levelRange}));
      const search=h('input',{type:'search',class:'wiki-inline-search',
-      placeholder:'Поиск монстра…','aria-label':'Поиск монстра в локации'});
+      placeholder:wt('Поиск монстра…','Search monsters…'),
+      'aria-label':wt('Поиск монстра в локации','Search monsters in this location')});
      const list=h('div',{class:'wiki-map-monsters'}),rows=[];
      for(const {id:mob,mon} of roster.sort((a,b)=>(a.mon?.level??999)-
       (b.mon?.level??999)||dataName('monster',a.id).localeCompare(dataName('monster',b.id),'ru'))){
@@ -1617,13 +1665,13 @@ function renderWiki(root){
     if(type==='map'){
      const residents=wikiIndex.residents(id);
      if(residents.length){
-      detail.append(h('h4',{text:'NPC в локации'}));
+      detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')}));
       for(const [npcId] of residents)
        detail.append(wikiLink(dataName('npc',npcId),'npc',npcId));
      }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
-      detail.append(h('h4',{text:'Добыча в локации'}));
+      detail.append(h('h4',{text:wt('Добыча в локации','Location loot')}));
       for(const zone of dropZones)for(const group of zone.rows||[]){
        const block=h('section',{class:'wiki-zone-group'});
        if(group.mob!=null&&wikiData.monsters?.[group.mob])
@@ -1638,9 +1686,9 @@ function renderWiki(root){
      }
     }
   }else{
-    detail.append(h('h4',{text:'Содержимое сундука по группам'}));
+    detail.append(h('h4',{text:wt('Содержимое сундука по группам','Chest contents by groups')}));
     for(const [i,group]of(rec.rolls||[]).entries()){
-     detail.append(h('p',{class:'muted',text:'Группа '+(i+1)}));
+     detail.append(h('p',{class:'muted',text:wt('Группа ','Group ')+(i+1)}));
      for(const row of group){
       const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(row.i)?' highlighted':'')});
       entry.append(itemLink(row.i,dataName('item',row.i)+
@@ -1649,6 +1697,7 @@ function renderWiki(root){
      }
     }
   }
+  if(detailOnly)detail.scrollTop=previousDetailScroll;
  };
  wikiRenderSelected=()=>{if(root.isConnected&&wikiIndex)draw(true)};
  browse.append(h('p',{class:'muted',text:'Загружаю записи…'}));

@@ -49,6 +49,20 @@ test('NPC recipes, monster details and locations are searchable game data',()=>{
  assert.match(styles,/\.wiki-trade-card/);
 });
 
+test('wiki item and skill details expose source fields, class names, and progressive source lists',()=>{
+ const app=read('app.js');
+ assert.match(app,/rec\.PEN/);
+ assert.match(app,/rec\.atkspeed/);
+ assert.match(app,/rec\.twoHanded===true/);
+ assert.match(app,/catalog\.classes\?\.\[id\]\?\.name/);
+ assert.match(app,/rec\.cast/);
+ assert.match(app,/rec\.cooldown/);
+ assert.match(app,/rec\.range/);
+ assert.match(app,/wikiSourceShown\+=80;draw\(true\)/);
+ assert.match(app,/moreSources\(found\)/);
+ assert.match(app,/moreSources\(usedIn\)/);
+ assert.match(app,/\(trade\.mats\|\|\[\]\)\.flatMap/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');
