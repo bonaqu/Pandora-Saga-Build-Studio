@@ -1921,7 +1921,7 @@ function renderBuilds(root){
   const box=h('div',{class:'build-card'});
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
   const openChoice=h('div',{class:'build-open-choice',hidden:true});
-  const check=h('input',{type:'checkbox','aria-label':'Сравнить '+b.name});
+  const check=h('input',{type:'checkbox','aria-label':(lang==='en'?'Compare ':'Сравнить ')+b.name});
   openChoice.append(h('p',{text:'Есть несохранённые изменения. Открыть другой билд?'}),
    h('button',{type:'button',class:'button-action primary',text:'Сохранить текущий и открыть',
     onclick:()=>{if(saveBuild())openSavedBuild(b)}}),
@@ -1929,6 +1929,12 @@ function renderBuilds(root){
     onclick:()=>openSavedBuild(b)}),
    h('button',{type:'button',class:'button-action',text:'Отмена',
     onclick:()=>{openChoice.hidden=true}}));
+  const overwriteChoice=h('div',{class:'build-overwrite-choice',hidden:true});
+  overwriteChoice.append(h('p',{text:'Перезаписать этот сохранённый билд текущими локальными изменениями?'}),
+   h('button',{type:'button',class:'button-action primary',text:'Подтвердить перезапись',onclick:()=>{
+    if(saveBuild(state.name,b.id))showStudioToast('Билд перезаписан по вашему запросу.','success');
+   }}),
+   h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{overwriteChoice.hidden=true}}));
   const deleteChoice=h('div',{class:'build-delete-choice',hidden:true});
   deleteChoice.append(h('p',{text:'Удалить билд и отозвать все созданные ссылки?'}),
    h('button',{class:'button-action danger',type:'button',text:'Удалить билд',onclick:()=>{
@@ -1940,7 +1946,7 @@ function renderBuilds(root){
   check.checked=compareIds.includes(b.id);
   check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};
   box.append(h('h3',{text:b.name}),h('p',{
-   text:(races[b.data?.race]?.[0]||'?')+' · '+(jobs[b.data?.job]||'?')+' · ур. '+(b.data?.level||'?')}),
+   text:(races[b.data?.race]?.[0]||'?')+' · '+(jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
    h('label',{},[check,' Сравнить']),
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
     if(!unsavedBuild()){openSavedBuild(b);return}
@@ -1948,17 +1954,18 @@ function renderBuilds(root){
    }}),
    ...(activeBuildId===b.id?[h('button',{class:'button-action primary',
     text:'↻ Перезаписать',onclick:()=>{
-     if(!confirm('Перезаписать сохранённый билд «'+b.name+'» текущими локальными изменениями?'))return;
-     if(saveBuild(state.name,b.id))showStudioToast('Билд перезаписан по вашему запросу.','success');
+     overwriteChoice.hidden=!overwriteChoice.hidden;
+     if(!overwriteChoice.hidden)overwriteChoice.querySelector('button')?.focus({preventScroll:true});
     }})]:[]),
    h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared(b,shareSlot)}),
    h('button',{class:'button-action',text:'Удалить',onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}}));
   box.append(openChoice);
   box.append(deleteChoice);
+  box.append(overwriteChoice);
   box.append(shareSlot);
   grid.append(box);
   searchable.push({box,searchText:[b.name,races[b.data?.race]?.[0],jobs[b.data?.job],
-   'ур. '+(b.data?.level??'')].filter(Boolean).join(' ').toLocaleLowerCase()});
+   (lang==='en'?'Lv. ':'ур. ')+(b.data?.level??'')].filter(Boolean).join(' ').toLocaleLowerCase()});
  }
  root.append(grid);
  if(search){
@@ -1979,9 +1986,10 @@ function renderBuilds(root){
  if(!builds.length)root.append(h('p',{class:'muted',text:'Сохранённых билдов пока нет.'}));
  if(compareIds.length===2){
   const [a,b]=compareIds.map(id=>builds.find(v=>v.id===id));
-  if(a&&b)root.append(h('h3',{text:'Сравнение: '+a.name+' / '+b.name}),
+  if(a&&b)root.append(h('h3',{text:(lang==='en'?'Comparison: ':'Сравнение: ')+a.name+' / '+b.name}),
    h('p',{class:'muted',text:compareSnapshots(a.data,b.data).join(' · ')||'Выборы совпадают'}));
  }
+ window.PandoraUILocale.localize(root,lang);
 }
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
 function saveBuild(name=state.name||'Новый герой',overwriteId=null){
@@ -2486,6 +2494,7 @@ async function showCatalogImport(){
 
 function applyGameLocale(){
  window.PandoraUILocale.apply(lang);
+ window.PandoraAccountUI?.refresh?.();
  if(!catalogSource){
   for(const button of document.querySelectorAll('#locale [data-locale]')){
    const active=button.dataset.locale===lang;

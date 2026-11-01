@@ -48,8 +48,12 @@ export async function runSavedAutosaveSmoke(browser,base){
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='46');
   await page.locator('#nav [data-tab="builds"]').click();
-  page.once('dialog',dialog=>dialog.accept());
   await page.getByRole('button',{name:'Перезаписать'}).click();
+  assert.equal(writes.length,0,'Opening the inline confirmation must not write to D1');
+  await page.locator('.build-overwrite-choice').getByRole('button',{name:'Отмена'}).click();
+  assert.equal(writes.length,0,'Cancel must not write to D1');
+  await page.getByRole('button',{name:'Перезаписать'}).click();
+  await page.getByRole('button',{name:'Подтвердить перезапись'}).click();
   await page.waitForFunction(()=>JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')
    .some(entry=>entry.id==='dddddddddddddddddddddddddddddddd'&&entry.data.level===46));
   await page.waitForTimeout(300);

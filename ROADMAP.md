@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.187.0 (`2026.11.01.187`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.188.0 (`2026.11.01.188`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.188.0 — clearer RU/EN UI and explicit inline overwrites
+
+- Translate main static labels, controls and accessibility descriptions through exact UI keys; avoid altering OS item names, custom build titles and game records.
+- Translate account registration/login/recovery/password interfaces on language switch, including the account popover shown before the catalog finishes loading.
+- Translate saved-build management buttons and messages with exact UI-only mappings. A saved build still changes in the cloud **only** after a second in-app confirmation; cancelling or merely opening the confirmation makes no cloud PUT.
+- Add pure Node localization tests and Chromium account/overwrite regressions. Live Pages / Worker and end-to-end browser acceptance remain unverified until run.
 
 ## Source update 0.187.0 — user accounts and explicit save semantics
 

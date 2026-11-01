@@ -8,10 +8,11 @@ try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');
   Number(raw.expires)>Date.now())session=raw;
 }catch{}
 function token(){return session?.token||null}
+const tr=value=>root.PandoraUILocale?.ui(value,document.documentElement.lang)||value;
 function node(tag,cls='',text=''){
  const el=document.createElement(tag);
  if(cls)el.className=cls;
- if(text)el.textContent=text;
+ if(text)el.textContent=tr(text);
  return el;
 }
 function button(text,action,cls=''){
@@ -20,10 +21,10 @@ function button(text,action,cls=''){
 }
 function field(placeholder,type='text',auto='off',max=128){
  const input=node('input','account-input');
- input.type=type;input.placeholder=placeholder;input.maxLength=max;
+ input.type=type;input.placeholder=tr(placeholder);input.maxLength=max;
  input.autocomplete=auto;return input;
 }
-function info(message){if(errorLine)errorLine.textContent=message}
+function info(message){if(errorLine)errorLine.textContent=tr(message)}
 async function request(kind,data=null,auth=token()){
  const response=await fetch(options.baseUrl+'/api/account/'+kind,{
   method:data===null?'GET':'POST',
@@ -43,7 +44,7 @@ function render(){
  if(!panel||!trigger)return;
  panel.replaceChildren();
  trigger.classList.toggle('active',Boolean(session));
- trigger.title=session?'Профиль · '+session.username:'Войти или зарегистрироваться';
+ trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
  trigger.setAttribute('aria-label',trigger.title);
  const title=node('h3','account-title',session?'Профиль':'Аккаунт');
  panel.append(title);
@@ -150,5 +151,5 @@ async function init(config){
  }else options.onGuest?.();
  render();
 }
-root.PandoraAccountUI=Object.freeze({init,token,isLoggedIn:()=>Boolean(session)});
+root.PandoraAccountUI=Object.freeze({init,token,refresh:render,isLoggedIn:()=>Boolean(session)});
 })(typeof window==='undefined'?globalThis:window);
