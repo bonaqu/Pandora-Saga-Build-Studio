@@ -105,7 +105,7 @@ function cloudToken(){
 function libraryScopeId(){
  return window.PandoraBuildScope.owner(window.PandoraAccountUI?.username(),cloudToken());
 }
-function restoreScopedDraft(){
+function restoreScopedDraft({initial=false}={}){
  try{
   const raw=JSON.parse(localStorage.getItem('ps-build-studio.v1')||'null');
   const base=fresh();state=raw&&typeof raw==='object'&&!Array.isArray(raw)?
@@ -119,9 +119,10 @@ function restoreScopedDraft(){
   builds=Array.isArray(rows)?rows:[];
  }catch{builds=[]}
  activeBuildId=restoreActiveBuildId();
- compareIds=[];buildSearchQuery='';
+ compareIds=[];
+ if(!initial)buildSearchQuery='';
 }
-function activateLibraryScope({carry=false}={}){
+function activateLibraryScope({carry=false,initial=false}={}){
  const next=libraryScopeId();
  let legacyOwner=null;
  try{
@@ -131,14 +132,13 @@ function activateLibraryScope({carry=false}={}){
  const changed=window.PandoraBuildScope.transition(localStorage,next,{carry,legacyOwner}).changed;
  if(changed){
   libraryChangeId++;
-  restoreScopedDraft();
-  restoreLoadedBuildUI();
-  render();
+  restoreScopedDraft({initial});
+  if(!initial){restoreLoadedBuildUI();render()}
  }
  return changed;
 }
 // Claim existing pre-upgrade local records for their former owner without losing them.
-activateLibraryScope();
+activateLibraryScope({initial:true});
 async function cloudLibraryRequest(payload,secret=null){
  const bearer=secret||window.PandoraAccountUI?.token()||cloudToken();
  const response=await fetch(API+'/api/library',{method:payload?'POST':'GET',

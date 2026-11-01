@@ -10,7 +10,8 @@ const DEFAULTS=['[]','', '[]', ''];
 const validScope=value=>typeof value==='string'&&
  (/^account:[a-z][a-z0-9_]{2,19}$/.test(value)||
  /^guest:[a-f0-9]{64}$/.test(value));
-const owner=(username,guestKey)=>username&&/^[a-z][a-z0-9_]{2,19}$/.test(username.toLowerCase())?
+const owner=(username,guestKey)=>typeof username==='string'&&
+ /^[a-z][a-z0-9_]{2,19}$/.test(username.toLowerCase())?
  'account:'+username.toLowerCase():'guest:'+guestKey;
 function snapshot(storage){
  return KEYS.map((key,i)=>storage.getItem(key)??DEFAULTS[i]);

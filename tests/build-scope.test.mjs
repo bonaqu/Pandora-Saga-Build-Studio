@@ -63,3 +63,8 @@ test('persisting a draft or queued deletion has an owner-specific recovery cache
  assert.equal(JSON.parse(s.getItem(keys[1])).level,55);
  assert.equal(mod.transition(s,ownerA).changed,false);
 });
+
+test('malformed remembered username never crashes the guest scope boundary',()=>{
+ assert.equal(mod.owner(42,'a'.repeat(64)),guest);
+ assert.equal(mod.owner(null,'a'.repeat(64)),guest);
+});

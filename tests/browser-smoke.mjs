@@ -8,6 +8,7 @@ import {runTwoHandedSmoke} from './browser-two-handed.mjs';
 import {runFutureGearSmoke} from './browser-future-gear.mjs';
 import {runSavedAutosaveSmoke} from './browser-saved-autosave.mjs';
 import {runAccountSmoke} from './browser-account.mjs';
+import {runAccountLibraryIsolationSmoke} from './browser-account-isolation.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 
 const base='http://127.0.0.1:4173';
@@ -131,6 +132,7 @@ async function main(){
  await runFutureGearSmoke(browser,base);
  await runSavedAutosaveSmoke(browser,base);
  await runAccountSmoke(browser,base);
+ await runAccountLibraryIsolationSmoke(browser,base);
  await runAdminEntrySmoke(browser,base);
  await runInlineMilestonesSmoke(browser,base);
  await runLayoutAudit(browser,base);
