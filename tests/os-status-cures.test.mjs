@@ -33,9 +33,16 @@ test('missing or unexpected effects never invent a cure',()=>{
 });
 test('Hero Book keeps cleansing consumables separate and directly linked to the wiki',()=>{
  const book=read('stage-attributes.js'),calculator=read('os-calculator.js');
- assert.match(book,/Снятие состояний · /);
+ assert.match(book,/english\?'Remove status effects':'Снятие состояний'/);
  assert.match(book,/stage-status-cures/);
  assert.match(book,/onItem\(entry\.id\)/);
  assert.match(calculator,/const statusCures=statusCurePreview\(\{items:consumableItems\}\)/);
  assert.match(calculator,/consumableRecovery,consumableSkills,statusCures,combat/);
+});
+
+test('RU and EN status cure labels preserve every original source effect',()=>{
+ assert.deepEqual(byId(50013).conditionsEn,['Burn']);
+ assert.deepEqual(byId(50015).conditionsEn,['Weakness and curse','Madness','Disease']);
+ assert.deepEqual(byId(50058).conditionsEn,['Freeze','Silence','Disease','Burn']);
+ assert.equal(byId(50065).conditionsEn.length,byId(50065).conditions.length);
 });

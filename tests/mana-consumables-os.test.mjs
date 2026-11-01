@@ -46,5 +46,5 @@ test('model passes actual OS items and displays clickable items in the hero book
  assert.match(read('app.js'),/consumableItems:catalogSource\?\.items/);
  assert.match(read('os-calculator.js'),/const consumableRecovery=consumableRecoveryPreview/);
  assert.match(read('stage-attributes.js'),/Предметы восстановления ОМ/);
- assert.match(read('stage-attributes.js'),/entry\.mp\+' ОМ'/);
+ assert.match(read('stage-attributes.js'),/entry\.mp\+\(english\?' MP':' ОМ'\)/);
 });

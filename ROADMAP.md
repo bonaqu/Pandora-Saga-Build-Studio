@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.231.0 (`2026.11.01.231`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.232.0 (`2026.11.01.232`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.232.0 — bilingual Hero Book sets and recovery effects
+
+- Finish RU/EN display for active equipment sets: titles, familiar bonus names, item piece counts, enhancement and fall-protection condition. Keep the original underlying `unison.json` calculations and fully localized item names.
+- In Hero Book recovery, translate potion-healing captions, on-use check, HP/MP sections and units, encyclopedia item names, and status-cure section. Add exact English companion labels for the seven current OS `EP_RECOVERY_*` effects without changing their actual targets.
+- Retain collapsed large lists, no invented potion effects, no hidden administrative diagnostics, saved named-build edit rules, account/D1 behavior and planning level 1–55.
 
 ## Source update 0.231.0 — source-linked on-use consumable skill index
 
