@@ -120,7 +120,17 @@ async function main(){
  // Creating a new build must ask about the unsaved level-55 character.
  await page.locator('#newBuildQuick').click();
  await page.locator('.new-build-choice').waitFor({state:'visible'});
- await page.getByRole('button',{name:'Создать без сохранения'}).click();
+ const draftName=page.locator('.new-build-choice input');
+ await draftName.fill('Черновик после синхронизации');
+ // A background catalog/library refresh rerenders the panel. The confirmation
+ // and its typed name must survive rather than silently disappearing.
+ await page.evaluate(()=>{
+  document.querySelector('#locale [data-locale="en"]').click();
+ });
+ await page.locator('.new-build-choice').waitFor({state:'visible'});
+ assert.equal(await page.locator('.new-build-choice input').inputValue(),
+  'Черновик после синхронизации');
+ await page.getByRole('button',{name:'Create without saving'}).click();
  assert.equal(await page.locator('#levelOut').textContent(),'1');
  assert.equal(await page.locator('#level').inputValue(),'1');
  assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
