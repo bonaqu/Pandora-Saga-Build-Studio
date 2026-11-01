@@ -511,14 +511,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     ' · Гнёзда '+(rec.soulslot??'—')+' · +'+row.refinement}));
   }else{
    const effects=Array.isArray(rec.effects)?rec.effects:[];
-   if(rec.desc)card.append(make('p',{class:'stage-rich-desc',text:rec.desc}));
+   if(rec.desc)card.append(make('p',{class:'stage-rich-desc',text:root.PandoraItemPresentation?.description(rec.desc)||rec.desc}));
    // Raw EP_* codes are database diagnostics, not a useful player-facing description.
    if(effects.length&&root.PandoraStudioAdminActive?.())card.append(make('p',{class:'stage-attribute-note',text:
     'Исходные коды эффектов: '+effects.map(e=>e.func+
      (e.a==null?'':' ('+e.a+(e.b==null?'':', '+e.b)+')')).join('; ')}));
    if(row.souls.length)for(const soul of row.souls){
     card.append(make('p',{class:'stage-attribute-soul',text:'✦ '+(root.PandoraItemPresentation?.displayName(soul,'Душа без названия')||'Душа без названия')+
-     ' · '+(soul.desc||'Описание души не найдено')}));
+     ' · '+(root.PandoraItemPresentation?.description(soul.desc)||soul.desc||'Описание души не найдено')}));
    }
   }body.append(card);
  }

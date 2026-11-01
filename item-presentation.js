@@ -44,16 +44,16 @@ function displayName(record,fallback='Без названия',lang='ru'){
 }
 function description(s){
  if(typeof s!=='string')return '';
- const headers='За кажд(?:ую|ые|ый)|При улучшении|При заточке|При экипировке|При наличии';
- const stats='(?:ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение)';
+ const headers='За кажд(?:ую|ые|ый)|При улучшении|При заточке|При экипировке|При наличии|Per every|At \\+\\d+ and above|When enhanced|With refinement';
+ const stats='(?:ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Cooldown|Healing|Reduction)';
  return s.replace(/\r\n?/g,'\n').replace(/<br\s*\/?>/gi,'\n')
   .replace(/[ \t]*\n[ \t]*/g,'\n')
   .replace(new RegExp('([.!?])[ \\t]*(?='+stats+'(?:\\b|\\s|[+-]))','gi'),'$1\n\n')
-  .replace(/([.!?])(?=[А-ЯЁ])/g,'$1\n')
-  .replace(/([+-]\d+(?:[.,]\d+)?%?)(?=[А-ЯЁ])/g,'$1\n')
+  .replace(/([.!?])(?=[A-ZА-ЯЁ])/g,'$1\n')
+  .replace(/([+-]\d+(?:[.,]\d+)?%?)(?=[A-ZА-ЯЁ])/g,'$1\n')
   .replace(new RegExp('([^\\n])('+headers+')','gi'),'$1\n$2')
   .replace(new RegExp('\\n('+headers+')','gi'),'\n\n$1')
-  .replace(/(:)[ \t]*(?=[А-ЯЁ])/g,'$1\n')
+  .replace(/(:)[ \t]*(?=[A-ZА-ЯЁ])/g,'$1\n')
   .replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
 root.PandoraItemPresentation=Object.freeze({kind,description,displayName});

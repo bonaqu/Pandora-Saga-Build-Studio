@@ -1394,16 +1394,20 @@ function renderWiki(root){
   }else img.remove()};
   return img;
  };
- const withIcon=(link,src)=>{
+ const wikiGlyphs={item:'✦',monster:'♞',map:'◈',npc:'♙',chest:'▣',
+  instance:'⌂',skill:'✶',soul:'✧'};
+ const withIcon=(link,src,type='item')=>{
   const img=wikiImage(src,'wiki-list-icon');
   if(img)link.prepend(img);
+  else link.prepend(h('span',{class:'wiki-list-glyph','aria-hidden':'true',
+   text:wikiGlyphs[type]||'✦'}));
   return link;
  };
  const itemLink=(id,label,highlight=null)=>{
   const hasSoul=Boolean(wikiData.souls?.[id]),kind=hasSoul?'soul':'item';
   const record=hasSoul?wikiData.souls?.[id]:wikiData.items?.[id];
   const dest=record?kind:'item';
-  return withIcon(wikiLink(label,dest,id,highlight),record?wikiIcon(kind,id,record):null);
+  return withIcon(wikiLink(label,dest,id,highlight),record?wikiIcon(kind,id,record):null,dest);
  };
  const draw=(detailOnly=false)=>{
   const previousScroll=browse.scrollTop,previousDetailScroll=detail.scrollTop;
@@ -1421,7 +1425,7 @@ function renderWiki(root){
   if(!detailOnly){
    browse.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
    for(const [id,rec]of visible){
-    const row=withIcon(wikiLink(dataName(type,id),type,id),wikiIcon(type,id,rec));
+    const row=withIcon(wikiLink(dataName(type,id),type,id),wikiIcon(type,id,rec),type);
     row.setAttribute('data-wiki-record',String(id));
     if(wikiSelection.id===id){
      row.classList.add('selected');
@@ -1448,6 +1452,7 @@ function renderWiki(root){
     skill:'Skill',soul:'Soul',instance:'Dungeon',chest:'Chest'}:
    {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
+   if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
     h('h3',{text:dataName(type,id)}));
   if(type==='item'||type==='chest'||type==='soul'){
@@ -1455,7 +1460,7 @@ function renderWiki(root){
     if(img)detail.prepend(img);
   }
   if(rec.desc){const text=lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='skill'?'skills':type==='soul'?'souls':'maps']?.[id]?.d||rec.desc):rec.desc;
-    detail.append(h('p',{class:'wiki-description',text:type==='item'?window.PandoraItemPresentation.description(text):text}));}
+    detail.append(h('p',{class:'wiki-description',text:type==='item'||type==='soul'?window.PandoraItemPresentation.description(text):text}));}
   const moreSources=rows=>{
    if(rows.length<=wikiSourceShown)return;
    detail.append(h('button',{type:'button',class:'wiki-more',text:wt('Показать ещё ','Show more ')+

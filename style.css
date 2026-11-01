@@ -1695,4 +1695,12 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  }
 }
 
-
+/* Source-backed art is used when present; neutral category glyphs never impersonate game sprites. */
+.wiki-list-glyph{display:grid;place-items:center;width:34px;height:34px;
+ flex:0 0 34px;border:1px solid #775d40;border-radius:4px;
+ background:#24180f;color:#d9ad70;font:19px Georgia,serif}
+.wiki-category-symbol{float:right;display:grid;place-items:center;
+ width:64px;height:64px;margin:0 0 10px 14px;
+ border:2px double #86663e;background:#211710;color:#debc81;
+ font:32px Georgia,serif}
+.stage-attribute-soul{white-space:pre-line;overflow-wrap:anywhere}

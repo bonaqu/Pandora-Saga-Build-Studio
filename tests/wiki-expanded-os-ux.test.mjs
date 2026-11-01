@@ -66,6 +66,16 @@ test('wiki item and skill details expose source fields, class names, and progres
  assert.match(app,/moreSources\(usedIn\)/);
  assert.match(app,/\(trade\.mats\|\|\[\]\)\.flatMap/);
 });
+test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-less locations',()=>{
+ const app=read('app.js'),css=read('style.css'),book=read('stage-attributes.js');
+ assert.match(app,/const wikiGlyphs=/);
+ assert.match(app,/class:'wiki-list-glyph'/);
+ assert.match(app,/class:'wiki-category-symbol'/);
+ assert.match(css,/\.wiki-list-glyph/);
+ assert.match(book,/PandoraItemPresentation\?\.description\(rec\.desc\)/);
+ assert.match(book,/PandoraItemPresentation\?\.description\(soul\.desc\)/);
+ assert.match(app,/type==='item'\|\|type==='soul'\?window\.PandoraItemPresentation\.description/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');

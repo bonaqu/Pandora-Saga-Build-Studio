@@ -26,6 +26,24 @@ test('glued gameplay effects break cleanly but ordinary sentence spaces remain i
  assert.match(output,/улучшения:\nМагическая атака \+1%\nВремя/);
  assert.equal(p.description(output),output);
 });
+test('English OS item effects and enhancement conditions are separated without rewriting text',()=>{
+ const src='A sword resembling a dagger.AGI +1Per every 2 enhancement levels:MP +20At +7 and above: AGI +1';
+ const output=p.description(src);
+ assert.match(output,/dagger\.\n\nAGI \+1/);
+ assert.match(output,/AGI \+1\n\nPer every 2 enhancement levels:/);
+ assert.match(output,/levels:\nMP \+20\n\nAt \+7 and above:/);
+ assert.equal(p.description(output),output);
+});
+test('all bundled item and soul descriptions remain stable under a second formatting pass',()=>{
+ for(const file of ['items','souls']){
+  const records=JSON.parse(readFileSync(new URL('../data/os/'+file+'.json',import.meta.url),'utf8'));
+  for(const row of Object.values(records)){
+   if(typeof row.desc!=='string')continue;
+   const one=p.description(row.desc);
+   assert.equal(p.description(one),one,file+' description unstable: '+row.name);
+  }
+ }
+});
 test('source line breaks are not lost',()=>{
  assert.match(p.description('Описание.\nОЗ +15'),/\nОЗ \+15/);
 });
