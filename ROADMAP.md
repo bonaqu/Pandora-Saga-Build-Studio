@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.199.0 (`2026.11.01.199`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.200.0 (`2026.11.01.200`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.200.0 — source-backed special Soul/equipment effects in Hero Book
+
+- When the existing equipment eligibility gate activates `Душа несчастья` (`EP_ALL_CRITICAL`), show its OS-stated drawback: all incoming attacks are critical. For `Вечная душа` (`EP_RACE_TOUGH_HEART`), show the sourced 5% HP trigger without inventing a trigger probability. For `Проклятый посох` (`EP_HEAL_LIFE_REGENERATOR` with a negative value), show gradual HP loss without inventing a tick interval or amount.
+- Render these effects in the Hero Book Effects tab with RU/EN labels; do not expose technical EP identifiers to ordinary players. Source item eligibility, sockets and refinement thresholds remain mandatory.
+- Move the three codes from wholly-unmapped to **descriptive preview only** in the effect-coverage audit. This is not a completed Remaked formula port, and no character HP, critical-chance or combat damage number is altered.
+- Add Node tests against current OS records, grade gating, other item effects, source descriptions, absence of fabricated proc rates, and Hero Book wiring.
 
 ## Source update 0.199.0 — recover pre-account guest library backups
 

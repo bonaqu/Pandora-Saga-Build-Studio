@@ -245,6 +245,15 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }body.append(card);
  }
  if(page==='effects'){
+  if(modifiers?.specialEquipment?.entries?.length){
+   const english=document.documentElement.lang==='en';
+   const section=make('section',{class:'stage-attribute-row'});
+   section.append(make('strong',{text:english?'Special item and Soul effects':
+    'Особые эффекты предметов и душ'}));
+   for(const effect of modifiers.specialEquipment.entries)
+    section.append(make('p',{text:effect.source+' · '+(english?effect.en:effect.ru)}));
+   body.prepend(section);
+  }
   if(modifiers?.experienceBonus?.entries?.length){
    const section=make('section',{class:'stage-attribute-row'});
    section.append(make('strong',{text:'Бонус к получаемому опыту'}));

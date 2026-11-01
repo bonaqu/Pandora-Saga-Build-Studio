@@ -919,6 +919,44 @@ function attackRangePreview({records=[],itemForth=null}={}){
  return {...totals,entries,verified:false};
 }
 
+// Source-backed conditional properties; no chance, tick rate or damage packet is inferred.
+// The scanner receives ONLY currently eligible equipped items and Souls from base().
+const specialEquipmentRules=Object.freeze({
+ EP_ALL_CRITICAL:Object.freeze({
+  ru:'Все получаемые атаки — критические удары',
+  en:'All incoming attacks are critical hits'
+ }),
+ EP_RACE_TOUGH_HEART:Object.freeze({
+  ru:'«Упрямое сердце»: возможно срабатывание при 5% ОЗ',
+  en:'Stubborn Heart: may trigger at 5% HP'
+ }),
+ EP_HEAL_LIFE_REGENERATOR:Object.freeze({
+  ru:'Постепенное уменьшение ОЗ от предмета',
+  en:'Gradual HP loss caused by equipment'
+ })
+});
+function specialEquipmentPreview({records=[],itemForth=null}={}){
+ if(!Array.isArray(records))return null;
+ const entries=[];
+ for(const [source,record,grade] of records){
+  for(const effect of sourceEffects(source,record,grade,itemForth)){
+   if(!effect||!Object.hasOwn(specialEquipmentRules,effect.func))continue;
+   if((Number.isFinite(effect.min)&&grade<effect.min)||
+      (Number.isFinite(effect.max)&&grade>effect.max))continue;
+   // These two descriptions are restricted to their verified OS item data.
+   if(effect.func==='EP_RACE_TOUGH_HEART'&&effect.a!==5)continue;
+   if(effect.func==='EP_HEAL_LIFE_REGENERATOR'&&
+      !(Number.isFinite(effect.a)&&effect.a<0))continue;
+   const labels=specialEquipmentRules[effect.func];
+   entries.push({code:effect.func,source:String(record.name||source),
+    ru:labels.ru,en:labels.en,
+    // No arbitrary chance, frequency or damage value is presented.
+    verified:false});
+  }
+ }
+ return {entries,verified:false,source:'Pandora Saga OS item/Soul descriptions'};
+}
+
 // Classify item effects by what THIS calculator can genuinely support.
 // A code being present in OS does not mean it has been included in a stat.
 // Keep conditional procs and unmapped effects visible, not silently counted.
@@ -935,7 +973,8 @@ const previewCodes=new Set([
  'EP_MOVESPEED_SCALE','EP_SKILL_DELAY','EP_SKILL_DELAY_FIN',
  'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE','EP_ONDAMAGE_FDS_RACE','EP_VOLUME_EXP',
  'EP_CASTINGCANCEL_RESISTANCE_CONST','EP_HEAL_TIME_SCALE',
- 'EP_RACE_RANGE','EP_BOW_RANGE'
+ 'EP_RACE_RANGE','EP_BOW_RANGE',
+ 'EP_ALL_CRITICAL','EP_RACE_TOUGH_HEART','EP_HEAL_LIFE_REGENERATOR'
 ]);
 function effectCoverage({records=[],itemForth=null}={}){
  const counts={calculated:0,preview:0,conditional:0,missing:0,inactive:0};
@@ -1276,6 +1315,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const targetResistance=targetResistancePreview({records:combinedRecords,itemForth});
  const procPreview=conditionalProcPreview({records:combinedRecords,itemForth,skills:combatContext.skillCatalog});
  const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
+ const specialEquipment=specialEquipmentPreview({records:combinedRecords,itemForth});
  if(otherEquipment&&resistances){
   resistances.mitigation.physical+=otherEquipment.incomingPhysicalPercent;
   resistances.mitigation.magic+=otherEquipment.incomingMagicPercent;
@@ -1335,7 +1375,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,regeneration,legacyBuffs,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,specialEquipment,regeneration,legacyBuffs,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
@@ -1344,6 +1384,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,specialEquipmentPreview,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
