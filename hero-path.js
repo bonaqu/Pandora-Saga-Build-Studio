@@ -66,10 +66,11 @@ function viewGrowth(target,api){
      'aria-expanded':String(isOpen),'data-path-branch':key,
      onclick:()=>api.onExpand(key,isOpen)});
     const info=make('div');
-    const summaryText=(value,mastery)=>cap===0&&value===0?'':mastery>0?mastery+tr(api,' мастерство',' mastery'):'';
-     const branchSummary=make('span',{text:summaryText(points,trained)});
+    // Mastery is already displayed in its compact numeric input below the rail.
+    // Duplicating it in the header adds/removes a whole line at zero -> one.
+
     const branchCount=make('b',{class:'count',text:cap?points+' / '+cap:'—'});
-    info.append(make('strong',{text:api.branchName(key)}),branchSummary);
+    info.append(make('strong',{text:api.branchName(key)}));
     branch.append(info,branchCount);wrap.append(branch);
     if(!isOpen)continue;
     const editor=make('div',{class:'inline-branch-editor'});
@@ -117,7 +118,7 @@ function viewGrowth(target,api){
      if(!Number.isInteger(target))return;
      range.value=String(target);numeric.value=String(target);label.textContent=target+' / '+cap;
      branchCount.textContent=cap?target+' / '+cap:'—';
-     branchSummary.textContent=summaryText(target,M.trained(state,key));
+
      groupCount.textContent=groupSummary();
      input.value=String(M.trained(state,key));input.max=String(target);
      paint();

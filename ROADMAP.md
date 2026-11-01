@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.217.0 (`2026.11.01.217`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.218.0 (`2026.11.01.218`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.218.0 — eliminate branch-header layout shift during mastery drag
+
+- Remove the redundant mastery subtitle that was conditionally inserted into branch headers at 0→1 point, causing a second line and vertical editor/slider jumps. The same actual mastery value remains visible in the numeric green control; branch title and spent/cap remain a single stable line.
+- Truncate only long branch names via ellipsis when needed and prevent the right-hand count from wrapping. Check 0→1→2→0 with a live Chromium bounding-rectangle comparison of the header and editor, plus unit-level structure/value assertions.
+- Reduce the thin vertical skill marker hover glow by one CSS pixel (3px→2px), without changing the permanent 3×12px tick size, source skill tooltips or threshold positions.
+- Keep the explicit save behavior, level 1–55 planning, user accounts, D1, and all existing game computations untouched.
 
 ## Source update 0.217.0 — source-backed 3% physical-evasion preview
 

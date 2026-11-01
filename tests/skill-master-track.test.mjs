@@ -120,16 +120,15 @@ test('red locked region shows OS skills beyond the class skill cap',()=>{
  assert.match(ui,/if\(marks\.length\)\{/);
  assert.match(css,/inline-milestone\.unreachable/);
 });
-test('branch summary, green mastery and group totals update on input, not only change',()=>{
+test('branch count, green mastery and group totals update on input, without a new header row',()=>{
  const ui=read('hero-path.js');
  for(const part of ['groupCount.textContent=groupSummary()',
   "branchCount.textContent=cap?target+' / '+cap:'—'",
-  'branchSummary.textContent=summaryText(target,M.trained(state,key))',
   'input.value=String(M.trained(state,key))'])
   assert.ok(ui.includes(part),part);
 });
 
-test('milestones are bounded diamond markers in one shared bar with hover descriptions',()=>{
+test('milestones are bounded vertical ticks in one shared bar with hover descriptions',()=>{
  const ui=read('hero-path.js'),app=read('app.js'),css=read('style.css');
  assert.match(ui,/path-unlock-notch/);
  assert.match(ui,/const thresholds=\[\.\.\.new Set\(marks\.map\(mark=>mark\.threshold\)/);

@@ -64,6 +64,12 @@ export async function runInlineMilestonesSmoke(browser,base){
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
+  // A brand-new level-1 hero has no allocatable mastery points. Set the
+  // planning level to 45 before exercising a real 0 -> 1 -> 2 allocation.
+  await page.locator('#level').evaluate(input=>{
+   input.value='45';input.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent?.trim()==='45');
   const group=page.locator('[data-path-group="prayer"]');
   if(await group.getAttribute('aria-expanded')!=='true')await group.click();
   const branch=page.locator('[data-path-branch="benevolence"]');
@@ -102,6 +108,33 @@ export async function runInlineMilestonesSmoke(browser,base){
    'Thresholds must be ordered left to right, not staggered over rows');
   assert.ok(result.geom.every(x=>Math.abs(x.top-result.geom[0].top)<=1));
   assert.ok(result.rangeZ>result.markerZ,'The slider must own pointer events');
+  // User regression: 0 -> 1 inserts a green mastery count into the branch header
+  // and previously made the branch editor jump vertically while dragging.
+  const measureBranch=()=>page.evaluate(()=>{
+   const row=document.querySelector('[data-path-branch="benevolence"]');
+   const editor=row.nextElementSibling;
+   return {height:row.getBoundingClientRect().height,
+    editorTop:editor.getBoundingClientRect().top,
+    extraMasteryLine:row.querySelector('span')?.textContent||'',
+    points:row.querySelector('.count')?.textContent||''};
+  });
+  const drag=async value=>{
+   await page.locator('[data-branch-control="benevolence:potential-range"]').evaluate((input,n)=>{
+    input.value=String(n);input.dispatchEvent(new Event('input',{bubbles:true}));
+   },value);
+   await page.evaluate(()=>new Promise(requestAnimationFrame));
+   return measureBranch();
+  };
+  const stable=[await measureBranch(),await drag(1),await drag(2),await drag(0)];
+  assert.ok(stable[0].points.includes('0 /'),'Test starts with an empty branch');
+  assert.ok(stable[1].points.includes('1 /')&&stable[2].points.includes('2 /'),
+   'Dragging must update actual invested branch points');
+  assert.ok(stable.every(x=>Math.abs(x.height-stable[0].height)<=1),
+   'Mastery changes must NOT increase the branch row height: '+JSON.stringify(stable));
+  assert.ok(stable.every(x=>Math.abs(x.editorTop-stable[0].editorTop)<=1),
+   'The expanded mastery track must NOT jump vertically: '+JSON.stringify(stable));
+  assert.ok(stable.every(x=>x.extraMasteryLine===''),
+   'Mastery lives in the green numeric field, not an inserted header row');
   const points=Number(await mark.getAttribute('data-milestone-points'));
   const range=page.locator('.path-integrated-track input[type=range]').first();
   const rect=await range.boundingBox();
