@@ -39,7 +39,42 @@ test('Soul grade gates and unknown skill names are safe',()=>{
 });
 test('Proc preview is not applied as deterministic attack bonus',()=>{
  const src=read('os-calculator.js'),book=read('stage-attributes.js');
- assert.match(src,/const procPreview=conditionalProcPreview\(/);
+ assert.match(src,/const rawProcPreview=conditionalProcPreview\(/);
+ assert.match(src,/const procPreview=deduplicateProcDescriptions\(rawProcPreview,specialEquipment\)/);
  assert.match(src,/resistances,targetResistance,procPreview,experienceBonus,specialEquipment,regeneration/);
  assert.match(book,/Срабатывания предметов и душ/);
+});
+
+test('only a chance corroborated by original description is shown to players',()=>{
+ for(const [id,expected] of [[1241,'Массивная кувалда'],[1851,'Легкий клинок'],
+  [12123,'Мантия равновесия']]){
+  const result=preview(items[id],id,'item');
+  assert.equal(result.length,1,'source must still be visible: '+id);
+  assert.equal(result[0].source,expected);
+  assert.equal(result[0].chance,null,'unsupported percent is hidden: '+id);
+  assert.equal(result[0].disputedChance,false,'unmentioned is not contradictory: '+id);
+ }
+ const boots=preview(items[15082],15082,'item')[0];
+ assert.equal(boots.chance,8,'catalog description and effect code agree');
+ assert.equal(boots.disputedChance,false);
+});
+
+test('hero book does not duplicate events already explained in the detailed equipment preview',()=>{
+ for(const [source,record] of [['item:422',items[422]],
+  ['soul:101010',souls[101010]],['item:15082',items[15082]]]){
+  const records=[[source,record,0]];
+  const raw=C.conditionalProcPreview({records,skills});
+  const exact=C.specialEquipmentPreview({records});
+  assert.equal(raw.entries.length,1,source);
+  assert.equal(exact.entries.length,1,source);
+  const filtered=C.deduplicateProcDescriptions(raw,exact);
+  assert.deepEqual(filtered.entries,[],'same source + proc code appears once');
+  assert.equal(raw.entries.length,1,'standalone generic scan is not mutated');
+ }
+ const unknown=[['item:1241',items[1241],0]];
+ const scan=C.conditionalProcPreview({records:unknown,skills});
+ const narrow=C.specialEquipmentPreview({records:unknown});
+ assert.equal(narrow.entries.length,0);
+ assert.equal(C.deduplicateProcDescriptions(scan,narrow).entries.length,1,
+  'unverified-probability proc still appears without an invented percent');
 });

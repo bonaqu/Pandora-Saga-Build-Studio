@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.220.0 (`2026.11.01.220`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.221.0 (`2026.11.01.221`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.221.0 — accurate conditional percentages and no repeated proc descriptions
+
+- Restrict numeric conditional-proc previews to values explicitly corroborated by their own item/Soul text, instead of treating any raw `effect.b` as a user-facing probability. Keep unquantified events visible without percent claims, and explicitly conflicting Vampire Soul chance hidden.
+- Add the exact **Traveller Boots** (OS item 15082, `EP_ONDAMAGE_SKILL_EXEC` for skill 260003001, `b=8`, TARGET) as a source-backed on-physical-damage Gust proc with matching original 8% description. Reject altered IDs, direction, code, chance, source text and invalid enhancement grades.
+- Deduplicate generic and detailed previews of the same source+effect code in the hero book without discarding any unique event or adjusting battle statistics. The standalone generic preview remains available for diagnosis/tests.
+- Preserve full 1–55 planning, nine previously confirmed on-hit descriptions, manual build-save semantics, accounts, D1 and administrator access. Formula/server combat parity remains open.
 
 ## Source update 0.220.0 — one-pixel tick glow and safe numeric edits
 
