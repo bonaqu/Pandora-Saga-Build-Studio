@@ -83,3 +83,37 @@ test('skill gallery greys 45-potential/42-green threshold until training complet
  S.setAuto(state,true,['slash']);
  assert.equal(scope.PandoraHeroPath.readiness(upgrade,api).learned,true);
 });
+
+test('damaged boolean and array point values cannot become imaginary invested or trained mastery',()=>{
+ const state={level:45,masteryAuto:false,
+  points:{slash:true,thrust:[5],blow:{value:9},benevolence:'8',
+   blessing:'08',exorcism:'5.0',hymn:'+2'},
+  mastery:{slash:true,thrust:[5],benevolence:'7',blessing:'8'}};
+ assert.equal(S.potential(state,'slash'),0);
+ assert.equal(S.potential(state,'thrust'),0);
+ assert.equal(S.potential(state,'blow'),0);
+ assert.equal(S.trained(state,'slash'),0);
+ assert.equal(S.trained(state,'thrust'),0);
+ assert.equal(S.potential(state,'benevolence'),8);
+ assert.equal(S.potential(state,'blessing'),8);
+ assert.equal(S.potential(state,'exorcism'),5);
+ assert.equal(S.potential(state,'hymn'),2);
+ assert.equal(S.trained(state,'benevolence'),7);
+ const budget=S.spending(tables.abilityPoint,45,state.points);
+ assert.equal(budget.spent,23,'Only real positive integral points count toward budget');
+ assert.equal(S.prayerAdeptness(state),15,'Trained/innate calculations ignore coerced objects');
+ assert.equal(S.setTrained(state,'slash',1),false,'Phantom points cannot be manually trained');
+});
+test('non-decimal and unsafe legacy values fail closed without throwing',()=>{
+ const bad=[null,undefined,true,false,{},[],[5],-5,-1.5,
+  '',' ','-5','1e2','0x10','8.5',Number.POSITIVE_INFINITY,Number.NaN,
+  Number.MAX_SAFE_INTEGER+2];
+ for(const value of bad){
+  const state={points:{slash:value},masteryAuto:true};
+  assert.equal(S.potential(state,'slash'),0,'invalid '+String(value));
+  assert.equal(S.spending(tables.abilityPoint,45,state.points).spent,0);
+ }
+ for(const ok of [1,'1',' 1 ',10,'10','10.0','+10']){
+  assert.equal(S.potential({points:{slash:ok}},'slash'),Number(ok));
+ }
+});
