@@ -71,3 +71,28 @@ test('on-hit previews use existing user-facing special effect UI, not physical c
  assert.match(source,/entries\.push\(\{code:effect\.func,source:String\(record\.name\|\|source\)/);
  assert.match(source,/verified:false/);
 });
+
+test('real OS Traveler Boots source confirms a separate 8% on-damage Gust preview',()=>{
+ const record=items[15082],source='item:15082',effect=record.effects.find(
+  e=>e.func==='EP_ONDAMAGE_SKILL_EXEC');
+ assert.equal(effect.a,260003001);
+ assert.equal(effect.b,8);
+ assert.equal(effect.dir,'TARGET');
+ assert.match(record.desc,/При получении физического урона есть 8% вероятность получения эффекта порыва/);
+ const original=calc.specialEquipmentPreview({records:[[source,record,0]]}).entries;
+ assert.equal(original.length,1);
+ assert.equal(original[0].ru,'При получении физического урона: 8% шанс получить «Порыв»');
+ assert.match(original[0].en,/8% chance/);
+ assert.equal(original[0].verified,false);
+ for(const change of [{b:9},{a:260003002},{dir:'SELF'},{func:'EP_ONHIT_SKILL_EXEC'}]){
+  const modified={...record,effects:record.effects.map(e=>
+   e.func==='EP_ONDAMAGE_SKILL_EXEC'?{...e,...change}:e)};
+  assert.deepEqual(calc.specialEquipmentPreview({records:[[source,modified,0]]}).entries,[],
+   'must not trust changed game-data effect '+JSON.stringify(change));
+ }
+ for(const modified of [{...record,id:15083},
+  {...record,desc:'Неизвестный шанс срабатывания'},
+  {...record,desc:record.desc.replace('8%','9%')}])
+  assert.deepEqual(calc.specialEquipmentPreview({records:[[source,modified,0]]}).entries,[]);
+ assert.deepEqual(calc.specialEquipmentPreview({records:[[source,record,11]]}).entries,[]);
+});

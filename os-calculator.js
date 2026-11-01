@@ -875,7 +875,7 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
    const mismatch=namedChance!==null&&sourceChance!==null&&namedChance!==sourceChance;
    entries.push({trigger,skillId:isStun?null:effect.a,
     skillName:isStun?'Оглушение':String(skill?.name||'Особый эффект'),
-    chance:mismatch?null:sourceChance,source:String(record.name||source),
+    chance:namedChance!==null&&!mismatch?sourceChance:null,source:String(record.name||source),
     disputedChance:mismatch,code:effect.func});
   }
  }
@@ -974,6 +974,16 @@ const confirmedOnHitRules=Object.freeze({
   ru:'При атаке: 5% шанс замедлить цель',
   en:'On attack: 5% chance to slow the target'})
 });
+// Current OS text explicitly names the physical-damage trigger and 8% Gust chance.
+// Keep this separate from on-hit effects; never claim a server-verified proc roll.
+const corroboratedProcRules=Object.freeze({
+ ...confirmedOnHitRules,
+ 'item:15082':Object.freeze({id:15082,func:'EP_ONDAMAGE_SKILL_EXEC',
+  a:260003001,b:8,dir:'TARGET',
+  sourcePhrase:'При получении физического урона есть 8% вероятность получения эффекта порыва',
+  ru:'При получении физического урона: 8% шанс получить «Порыв»',
+  en:'On taking physical damage: 8% chance to gain Gust'})
+});
 function specialEquipmentPreview({records=[],itemForth=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
@@ -982,12 +992,14 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
    if(!effect)continue;
    if((Number.isFinite(effect.min)&&grade<effect.min)||
       (Number.isFinite(effect.max)&&grade>effect.max))continue;
-   const proc=Object.hasOwn(confirmedOnHitRules,String(source))?
-    confirmedOnHitRules[String(source)]:null;
+   const proc=Object.hasOwn(corroboratedProcRules,String(source))?
+    corroboratedProcRules[String(source)]:null;
    if(proc&&record&&Number(record.id)===proc.id&&
       effect.func===proc.func&&effect.a===proc.a&&effect.b===proc.b&&
       effect.dir===proc.dir&&Number.isInteger(grade)&&grade>=0&&grade<=10&&
-      typeof record.desc==='string'&&record.desc.includes(String(proc.b)+'%')){
+      typeof record.desc==='string'&&
+      (proc.sourcePhrase?record.desc.includes(proc.sourcePhrase):
+       record.desc.includes(String(proc.b)+'%'))){
     entries.push({code:effect.func,source:String(record.name||source),
      ru:proc.ru,en:proc.en,verified:false});
     continue;
@@ -1008,6 +1020,17 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
   }
  }
  return {entries,verified:false,source:'Pandora Saga OS item/Soul descriptions'};
+}
+
+// The hero book already shows a precise verified-description preview for these
+// procs. Avoid repeating the same event as a separate generic proc summary.
+function deduplicateProcDescriptions(generic,precise){
+ if(!generic?.entries?.length||!precise?.entries?.length)return generic;
+ const described=new Set(precise.entries
+  .filter(entry=>Object.hasOwn(procTriggers,entry.code))
+  .map(entry=>entry.code+'\u0000'+entry.source));
+ return {...generic,entries:generic.entries.filter(
+  entry=>!described.has(entry.code+'\u0000'+entry.source))};
 }
 
 // Classify item effects by what THIS calculator can genuinely support.
@@ -1369,9 +1392,10 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const gemstones=gemstonePreview(gemSelections);
  const otherEquipment=secondaryEffectsPreview({records:combinedRecords,itemForth});
  const targetResistance=targetResistancePreview({records:combinedRecords,itemForth});
- const procPreview=conditionalProcPreview({records:combinedRecords,itemForth,skills:combatContext.skillCatalog});
+ const rawProcPreview=conditionalProcPreview({records:combinedRecords,itemForth,skills:combatContext.skillCatalog});
  const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
  const specialEquipment=specialEquipmentPreview({records:combinedRecords,itemForth});
+ const procPreview=deduplicateProcDescriptions(rawProcPreview,specialEquipment);
  if(otherEquipment&&resistances){
   resistances.mitigation.physical+=otherEquipment.incomingPhysicalPercent;
   resistances.mitigation.magic+=otherEquipment.incomingMagicPercent;
@@ -1440,6 +1464,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,specialEquipmentPreview,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
