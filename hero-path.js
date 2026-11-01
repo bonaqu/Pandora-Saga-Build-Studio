@@ -53,7 +53,7 @@ function viewGrowth(target,api){
    onclick:()=>api.onGroup(group.id)});
   const groupSummary=()=>{
    const total=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
-   return total+' вложено';
+   return total+tr(api,' вложено',' spent');
   };
   const groupCount=make('small',{text:groupSummary()});
   groupButton.append(make('strong',{text:api.lang==='en'?group.en:group.ru}),groupCount);
@@ -66,7 +66,7 @@ function viewGrowth(target,api){
      'aria-expanded':String(isOpen),'data-path-branch':key,
      onclick:()=>api.onExpand(key,isOpen)});
     const info=make('div');
-    const summaryText=(value,mastery)=>cap===0&&value===0?'':mastery>0?mastery+' мастерство':'';
+    const summaryText=(value,mastery)=>cap===0&&value===0?'':mastery>0?mastery+tr(api,' мастерство',' mastery'):'';
      const branchSummary=make('span',{text:summaryText(points,trained)});
     const branchCount=make('b',{class:'count',text:cap?points+' / '+cap:'—'});
     info.append(make('strong',{text:api.branchName(key)}),branchSummary);
@@ -77,12 +77,12 @@ function viewGrowth(target,api){
     const label=make('strong',{text:points+' / '+cap});
     note.append(make('span',{text:root.PandoraUILocale?.text('branchPoints',api.lang)||'Очки ветки'}),label);
     const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
-    const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':'Единая полоса вложенных очков и освоенного мастерства '+api.branchName(key)});
+    const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':tr(api,'Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ')+api.branchName(key)});
     const visualMax=Math.max(90,cap,points);
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
           locked=make('div',{class:'inline-mastery-locked',
-           'aria-label':'Предел класса: '+cap+' из '+visualMax+'. Красная часть недоступна.'});
+           'aria-label':tr(api,'Предел класса: ','Class limit: ')+cap+tr(api,' из ',' of ')+visualMax+tr(api,'. Красная часть недоступна.','. Red segment is locked.')});
     if(cap>=visualMax)locked.hidden=true;
     const lockedFraction=Math.max(0,Math.min(1,cap/visualMax));
     const lockedOffset=21-42*lockedFraction;
@@ -96,7 +96,7 @@ function viewGrowth(target,api){
      const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
      gold.style.width='calc('+(goldFraction*100).toFixed(6)+'% - '+(42*goldFraction).toFixed(6)+'px)';
      green.style.width='calc('+(greenFraction*100).toFixed(6)+'% - '+(42*greenFraction).toFixed(6)+'px)';
-     range.setAttribute('aria-valuetext', invested+' вложено, '+mastery+' освоено, предел '+cap);
+     range.setAttribute('aria-valuetext', invested+tr(api,' вложено, ',' spent, ')+mastery+tr(api,' освоено, предел ',' trained, class limit ')+cap);
      for(const entry of milestonesOnTrack)
       entry.tick.classList.toggle('reached',
        !entry.locked&&entry.skills.some(skill=>readiness(skill,api).learned));
@@ -104,12 +104,12 @@ function viewGrowth(target,api){
     track.append(bed,gold,green,locked);
     const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
      value:String(points),disabled:!available,
-     'aria-label':'Вложенные очки '+api.branchName(key),
+     'aria-label':tr(api,'Вложенные очки ','Spent branch points: ')+api.branchName(key),
      'data-branch-control':key+':potential-range'});
     track.append(range);paint();
     const numeric=make('input',{type:'number',min:'0',max:String(Math.max(cap,points)),step:'1',
      value:String(points),class:'path-potential-number',disabled:!available,
-     'aria-label':'Точное количество вложенных очков '+api.branchName(key),
+     'aria-label':tr(api,'Точное количество вложенных очков ','Exact branch points: ')+api.branchName(key),
      'data-branch-control':key+':potential-number'});
     const update=(requested,final)=>{
      if(!Number.isInteger(requested)||requested<0)return;
@@ -142,10 +142,10 @@ function viewGrowth(target,api){
        (lockedAt?' unreachable':learned?' reached':'')+
        (threshold/visualMax<.26?' edge-left':threshold/visualMax>.74?' edge-right':''),
        'data-milestone-points':String(threshold),tabindex:'0',
-       'aria-label':threshold+' очков: '+skillsAt.map(skill=>skill.name).join(', ')});
+       'aria-label':threshold+tr(api,' очков: ',' points: ')+skillsAt.map(skill=>skill.name).join(', ')});
       tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';
       const preview=make('div',{class:'path-milestone-tooltip',role:'tooltip'});
-      preview.append(make('strong',{text:threshold+' очков'}));
+      preview.append(make('strong',{text:threshold+tr(api,' очков',' points')}));
       for(const skill of skillsAt){
        const row=make('div',{class:'path-milestone-preview'});
        const source=api.icon(skill.branch,skill);
@@ -155,8 +155,8 @@ function viewGrowth(target,api){
         row.append(img);
        }
        row.append(make('div',{},[
-        make('b',{text:skill.name||'Умение'}),
-        make('small',{text:skill.desc||'Описание отсутствует.'})
+        make('b',{text:skill.name||tr(api,'Умение','Skill')}),
+        make('small',{text:skill.desc||tr(api,'Описание отсутствует.','No description available.')})
        ]));
        preview.append(row);
       }
@@ -199,7 +199,7 @@ function viewGrowth(target,api){
        const gate=readiness(skill,api);
        const button=make('button',{type:'button',class:'path-unlock-skill'+
         (mark.locked?' unreachable':gate.learned?' reached':''),
-        'aria-label':(skill.name||'Умение')+', '+mark.threshold+' очков',
+        'aria-label':(skill.name||tr(api,'Умение','Skill'))+', '+mark.threshold+tr(api,' очков',' points'),
         onclick:()=>api.onSkill(skill)});
        const icon=api.icon(skill.branch,skill);
        if(icon){
@@ -208,9 +208,9 @@ function viewGrowth(target,api){
         button.append(img);
        }
        const copy=make('span',{class:'path-unlock-copy'});
-       copy.append(make('strong',{text:skill.name||'Умение'}),
-        make('small',{text:mark.threshold+' очков'+
-         (mark.locked?' · выше лимита':gate.learned?' · доступно':'')}));
+       copy.append(make('strong',{text:skill.name||tr(api,'Умение','Skill')}),
+        make('small',{text:mark.threshold+tr(api,' очков',' points')+
+         (mark.locked?tr(api,' · выше лимита',' · above limit'):gate.learned?tr(api,' · доступно',' · available'):'')}));
        button.append(copy);list.append(button);
       }
      }
@@ -219,7 +219,7 @@ function viewGrowth(target,api){
     const greenRow=make('div',{class:'path-green-controls'});
     const input=make('input',{type:'number',min:'0',max:String(points),step:'1',
      value:String(trained),disabled:auto||!available,
-     'aria-label':'Зелёное мастерство '+api.branchName(key),
+     'aria-label':tr(api,'Зелёное мастерство ','Trained mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
     input.addEventListener('change',()=>{
      if(!api.onMastery(key,Number(input.value)))input.value=String(M.trained(state,key));
@@ -238,10 +238,10 @@ function viewGrowth(target,api){
     if(unlockDetails)editor.append(unlockDetails);
     editor.append(exact,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
-     text:!api.allocationReady?'Загружаются таблицы очков и лимитов класса.':
-      cap===0?'Для этой профессии ветка заблокирована (лимит 0).':'Недостаточно доступных очков.'}));
+     text:!api.allocationReady?tr(api,'Загружаются таблицы очков и лимитов класса.','Loading class point and limit tables…'):
+      cap===0?tr(api,'Для этой профессии ветка заблокирована (лимит 0).','This class cannot train this branch (limit 0).'):tr(api,'Недостаточно доступных очков.','Not enough available points.')}));
     if(points>cap)editor.append(make('p',{class:'budget-excess',
-     text:'Сохранено '+points+' очков сверх текущего лимита '+cap+'. Ничего не удалено автоматически.'}));
+     text:tr(api,'Сохранено ','Saved ')+points+tr(api,' очков сверх текущего лимита ',' points above the current class limit ')+cap+tr(api,'. Ничего не удалено автоматически.','. No points were removed automatically.')}));
     wrap.append(editor);
    }
    // Race passives belong in Origin and need no extra reminder on this screen.
@@ -270,7 +270,7 @@ function viewSkills(target,details,api){
   const src=api.icon(skill.branch,skill);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));item.append(img)}
   else item.append(make('span',{text:'✦'}));
-  item.append(make('span',{text:skill.name||'Умение без названия'}));
+  item.append(make('span',{text:skill.name||tr(api,'Умение без названия','Unnamed skill')}));
   grid.append(item);api.hover(item,skill);
  }
  target.append(grid);grid.scrollTop=previousScroll;
@@ -281,7 +281,7 @@ function viewSkills(target,details,api){
  const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===String(api.selectedSkill.id)):null;
  if(selected){details.hidden=false;
   const skill=selected.skill,gate=selected.gate;
-  details.append(make('h3',{text:skill.name||'Умение без названия'}),
+  details.append(make('h3',{text:skill.name||tr(api,'Умение без названия','Unnamed skill')}),
    make('p',{text:skill.desc||tr(api,'Описание умения отсутствует.','Skill description unavailable.')}),
    make('p',{class:gate.learned?'path-skill-yes':'path-skill-no',
     text:gate.learned?tr(api,'✓ Условия выполнены','✓ Requirements met'):
