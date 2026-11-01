@@ -279,6 +279,7 @@ function summaryPage(body,calc){
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
   availability={},combatSkillCards={},modifiers}=options;
+ const english=document.documentElement?.lang==='en';
  body.append(make('p',{class:'stage-attribute-note',text:
   'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
  const section=(name)=>{
@@ -321,7 +322,7 @@ function buffsPage(body,options){
  const guild=section('Гильдия и честь');
  select(guild,'Все характеристики','guildAll',opts([0,1,2,3,4,5,6]));
  select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
- select(guild,'Титул чести','honorTitle',honorTitles.map(x=>[x.id,x.ru]));
+ select(guild,'Титул чести','honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]));
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
@@ -403,36 +404,47 @@ function buffsPage(body,options){
 // Nonintrusive skill catalog: the user opens this section on demand.
 function renderSkillInspector(body,model){
  if(!model||!model.total)return;
+ const english=document.documentElement?.lang==='en';
  const details=make('details',{class:'stage-skill-inspector'});
- details.append(make('summary',{text:'Навыки героя · '+model.available+
-  ' по базовым условиям из '+model.total}));
- details.append(make('p',{class:'stage-attribute-note',text:
-  'Наведи на навык в Пути героя, чтобы увидеть его требования.'}));
- const search=make('input',{type:'search','aria-label':'Поиск навыка по названию',
-  placeholder:'Найти навык…'});
+ details.append(make('summary',{text:english?
+  'Hero skills · '+model.available+' meet basic requirements of '+model.total:
+  'Навыки героя · '+model.available+' по базовым условиям из '+model.total}));
+ details.append(make('p',{class:'stage-attribute-note',text:english?
+  'Select a skill in Hero Path to inspect its requirements.':
+  'Выбери навык в Пути героя, чтобы посмотреть требования.'}));
+ const search=make('input',{type:'search',
+  'aria-label':english?'Find skill by name':'Поиск навыка по названию',
+  placeholder:english?'Search skills…':'Найти навык…'});
  const list=make('div',{class:'stage-skill-list'});
  const draw=()=>{
-  const query=String(search.value||'').trim().toLocaleLowerCase('ru');
+  const locale=english?'en':'ru';
+  const query=String(search.value||'').trim().toLocaleLowerCase(locale);
   const filtered=model.records.filter(x=>
-   (x.name+' '+x.desc).toLocaleLowerCase('ru').includes(query));
+   (x.name+' '+x.desc).toLocaleLowerCase(locale).includes(query));
   list.replaceChildren();
   for(const skill of filtered.slice(0,16)){
    const card=make('div',{class:'stage-skill-card'},[
     make('div',{class:'stage-skill-heading'},[
      make('strong',{text:skill.name}),
-     make('span',{text:skill.available?'По базовым условиям доступен':'Требования не выполнены'})]),
-    make('p',{text:'ОМ '+(skill.mana??'—')+' · Применение '+
-     (skill.cast??'—')+' с · Откат '+(skill.cooldown??'—')+' с'}),
-    make('p',{text:skill.available?'Доступен':'Не изучен'})
+     make('span',{text:skill.available?
+      (english?'Basic requirements met':'По базовым условиям доступен'):
+      (english?'Requirements not met':'Требования не выполнены')})]),
+    make('p',{text:(english?'MP ':'ОМ ')+(skill.mana??'—')+
+     (english?' · Cast ':' · Применение ')+(skill.cast??'—')+
+     (english?' s · Cooldown ':' с · Откат ')+(skill.cooldown??'—')+
+     (english?' s':' с')}),
+    make('p',{text:skill.available?(english?'Available':'Доступен'):
+     (english?'Not learned':'Не изучен')})
    ]);
    if(skill.requirement)card.append(make('small',{text:skill.requirement}));
    if(skill.desc)card.append(make('p',{text:skill.desc}));
    list.append(card);
   }
   if(filtered.length>16)list.append(make('p',{class:'stage-attribute-note',
-   text:'Найдено '+filtered.length+' записей; уточните поиск для остальных.'}));
+   text:english?'Found '+filtered.length+' entries; refine your search to see more.':
+    'Найдено '+filtered.length+' записей; уточните поиск для остальных.'}));
   if(!filtered.length)list.append(make('p',{class:'stage-attribute-note',
-   text:'Для текущего поиска навыки не найдены.'}));
+   text:english?'No skills match this search.':'Для текущего поиска навыки не найдены.'}));
  };
  search.addEventListener('input',draw);
  details.append(search,list);draw();body.append(details);
@@ -675,15 +687,32 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     dodge:'Уклонение',rangedDodge:'Уклонение от дальнего боя',
     frontAttack:'Фронтальная атака'
    };
+   const honorEnglishLabels={
+    allAttributes:'All attributes',healingSkills:'Healing skills',
+    attackPercent:'Attack power',fireMagic:'Fire magic',iceMagic:'Ice magic',
+    lightningMagic:'Lightning magic',fire:'Fire',ice:'Ice',lightning:'Lightning',
+    burn:'Burn',freeze:'Freeze',knockdown:'Knockdown',
+    castingResist:'Casting interruption resistance',accuracy:'Accuracy',
+    weaponPhysical:'Physical weapon damage',mountedRelease:'Mounted release',
+    incomingCriticalChance:'Incoming critical chance',
+    incomingCriticalDamage:'Incoming critical damage',
+    light:'Light',dark:'Dark',charm:'Charm',
+    mentalState:'Mental conditions',magic:'Magic',
+    physicalState:'Physical conditions',potionRecovery:'Potion healing',
+    defense:'Defense',incomingPhysical:'Incoming physical damage',
+    dodge:'Evasion',rangedDodge:'Ranged evasion',frontAttack:'Front attack'
+   };
    const percent=new Set(['healingSkills','attackPercent','fireMagic','iceMagic',
     'lightningMagic','burn','freeze','knockdown','castingResist','mountedRelease',
     'incomingCriticalChance','incomingCriticalDamage','potionRecovery',
     'incomingPhysical','rangedDodge','frontAttack']);
    const card=make('section',{class:'stage-attribute-row'});
-   card.append(make('strong',{text:'Титул чести: '+honor.ru}));
+   card.append(make('strong',{text:document.documentElement?.lang==='en'?
+    'Honor title: '+honor.en:'Титул чести: '+honor.ru}));
    for(const [key,value] of Object.entries(honor.effects)){
     if(key==='allAttributes')continue; // already included in visible six stats
-    card.append(make('p',{text:(labels[key]||key)+': '+(value>0?'+':'')+value+
+    card.append(make('p',{text:(document.documentElement?.lang==='en'?
+     honorEnglishLabels[key]:labels[key]||key)+': '+(value>0?'+':'')+value+
      (percent.has(key)?'%':'')}));
    }
    body.prepend(card);

@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.236.0 (`2026.11.01.236`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.237.0 (`2026.11.01.237`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.237.0 — full bilingual skill inspector and Honor Book controls
+
+- [x] Skill Results inspector now explicitly receives current document language and the localized original branch names from the class/skill catalog. Numeric level/mastery requirements, search placeholder and accessibility labels, available/locked status, mana/casting/cooldown labels, result counts and help copy display entirely in the selected RU/EN language without fuzzy item or player-name translation.
+- [x] The Hero Book Buffs screen now uses the exact preserved English Honor title strings for selection and the detailed original Honor effect labels. The stored integer Honor title ID remains identical in RU and EN; all effects and computation stay untouched.
+- [x] Source-specific combat-skill gating message: only a skill **actually requiring mastery** can say so, with its real branch and amount rather than a blanket `26 points of slashing mastery` across unrelated skills. Combat/Wind buffs show English or Russian status, shield/weapon prerequisites and numeric effect summaries in the chosen locale.
+- [x] Read-only skill inspector continues to display already-translated official OS skill names/descriptions; no guessed English name, fake damage or live skill activation. Test vectors cover RU/EN output, class/branch gates, preserved title IDs and player-defined text.
+- [ ] Remaining separate translations of dense combat/equipment explanatory sections, live in-game numeric parity and browser/manual mobile + keyboard experience still require verification.
 
 ## Source update 0.236.0 — verified OS periodic healing/recovery source effects
 

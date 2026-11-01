@@ -3,7 +3,7 @@
 // Read-only, locale-safe catalog inspector. This is NOT a damage simulator:
 // the OS skill packets contain conditional effects and multi-parameter
 // formulas whose runtime semantics have not all been validated.
-function create({catalog={},jobKey=null,level=1,innate={},trained={}}={}){
+function create({catalog={},jobKey=null,level=1,innate={},trained={},lang='ru',branchLabels={}}={}){
  if(!catalog||typeof catalog!=='object'||!Number.isInteger(level)||level<1)return null;
  const records=[];
  for(const skill of Object.values(catalog)){
@@ -21,8 +21,12 @@ function create({catalog={},jobKey=null,level=1,innate={},trained={}}={}){
   const cast=Number.isFinite(skill.cast)?skill.cast:null;
   const cooldown=Number.isFinite(skill.cooldown)?skill.cooldown:null;
   const mana=Number.isFinite(skill.mana)?skill.mana:null;
-  const missing=[...(classLevelReady?[]:['Уровень '+charLevel]),
-   ...checks.filter(x=>!x.met).map(x=>'Ветка '+x.branch+' '+x.current+'/'+x.amount)];
+  const english=lang==='en';
+  const missing=[...(classLevelReady?[]:[(english?'Level ':'Уровень ')+charLevel]),
+   ...checks.filter(x=>!x.met).map(x=>
+    (english?'Branch ':'Ветка ')+
+    (typeof branchLabels?.[x.branch]==='string'&&branchLabels[x.branch].trim()?
+     branchLabels[x.branch]:x.branch)+' '+x.current+'/'+x.amount)];
   records.push({
    id:String(skill.id),name:String(skill.name||'Навык'),desc:String(skill.desc||''),
    available,requirement:missing.join(' · '),cast,cooldown,mana,
