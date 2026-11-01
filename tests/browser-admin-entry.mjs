@@ -87,6 +87,10 @@ export async function runInlineMilestonesSmoke(browser,base){
     markerZ:Number(getComputedStyle(mark).zIndex),
     thumbCenterStart:range.getBoundingClientRect().left+9};
   });
+  const legend=page.locator('.path-track-legend').first();
+  assert.ok(await legend.isVisible(),'Skill scale labels must be visible below the drag track');
+  assert.ok((await legend.innerText()).includes('Предел класса: '));
+  assert.ok((await legend.innerText()).includes('90'));
   assert.ok(result.geom.length>=3,'Expected several source-backed unlock thresholds');
   assert.ok(result.geom.every(x=>x.top>=result.barTop-1&&x.bottom<=result.barBottom+1),
    'Every skill threshold belongs inside the SAME horizontal bar: '+JSON.stringify(result));

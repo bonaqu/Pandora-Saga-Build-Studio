@@ -1724,3 +1724,17 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .inline-mastery-track.path-integrated-track .path-unlock-notch.edge-right .path-milestone-tooltip{
  transform:translateX(-92%);
 }
+
+/* Scale labels remain below the slider: no obstruction to dragging. */
+.path-track-legend{
+ display:grid;grid-template-columns:minmax(18px,1fr) auto minmax(18px,1fr);
+ align-items:center;gap:7px;margin:-2px 3px 9px;padding:0 21px;
+ color:#d5bb91;font-size:11px;line-height:1.4;font-variant-numeric:tabular-nums;
+}
+.path-track-legend>span:last-child{text-align:right}
+.path-track-legend .path-track-limit{color:#eaca94;text-align:center}
+@media(max-width:420px){.path-track-legend{font-size:10px;gap:4px;padding:0 15px}}
+@media(prefers-reduced-motion:reduce){
+ .path-integrated-track .inline-mastery-fill,
+ .path-integrated-track .inline-mastery-green{transition:none}
+}

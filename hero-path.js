@@ -227,7 +227,13 @@ function viewGrowth(target,api){
     greenRow.append(greenLabel);
     const exact=make('div',{class:'path-allocation-input'});
     exact.append(make('span',{text:root.PandoraUILocale?.text('exactPoints',api.lang)||'Точно вложено'}),numeric);
-    editor.append(note,track);
+    const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
+     make('span',{text:'0'}),
+     make('span',{class:'path-track-limit',text:api.lang==='en'?
+      'Class limit: '+cap:'Предел класса: '+cap}),
+     make('span',{text:String(visualMax)})
+    ]);
+    editor.append(note,track,legend);
     if(unlockDetails)editor.append(unlockDetails);
     editor.append(exact,greenRow);
     if(!available)editor.append(make('p',{class:'muted',
