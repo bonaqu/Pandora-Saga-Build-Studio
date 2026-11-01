@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
+import {runIndependentSmokes} from './browser-runner.mjs';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
 import {runLayoutAudit} from './browser-layout.mjs';
 import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
@@ -18,6 +19,10 @@ import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 
 const base='http://127.0.0.1:4173';
+const argv=new Set(process.argv.slice(2));
+for(const arg of argv)if(!['--quick','--serial'].includes(arg))
+ throw Error('Unsupported browser test option '+arg);
+const quick=argv.has('--quick'),concurrency=argv.has('--serial')?1:3;
 const errors=[];
 let browser;
 async function main(){
@@ -144,22 +149,35 @@ async function main(){
  assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
  console.log('Chromium mobile smoke passed: touch book, responsive width');
  await mobile.close();
- await runShareLinkSmoke(browser,base);
- await runCloudConflictSmoke(browser,base);
- await runCloudSaveFailureSmoke(browser,base);
- await runDeletedBuildRecoverySmoke(browser,base);
- await runEquipmentEligibilitySmoke(browser,base);
- await runEquipmentLocaleSmoke(browser,base);
- await runLegacySkillCapSmoke(browser,base);
- await runTwoHandedSmoke(browser,base);
- await runFutureGearSmoke(browser,base);
- await runSavedAutosaveSmoke(browser,base);
- await runAccountSmoke(browser,base);
- await runAccountLibraryIsolationSmoke(browser,base);
- await runCrossTabAccountIsolationSmoke(browser,base);
- await runCrossTabGuestIsolationSmoke(browser,base);
- await runAdminEntrySmoke(browser,base);
- await runInlineMilestonesSmoke(browser,base);
- await runLayoutAudit(browser,base);
+ // Every smoke creates its own isolated browser context and network stubs.
+ // Execute at most three at once: this reduces wall time without risking
+ // cross-test localStorage/account contamination or high 4K screenshot memory.
+ const scenarios=[
+  ['share-link',runShareLinkSmoke],
+  ['cloud-conflict',runCloudConflictSmoke],
+  ['cloud-save-failure',runCloudSaveFailureSmoke],
+  ['deleted-build-recovery',runDeletedBuildRecoverySmoke],
+  ['equipment-eligibility',runEquipmentEligibilitySmoke],
+  ['equipment-locale',runEquipmentLocaleSmoke],
+  ['legacy-class-cap',runLegacySkillCapSmoke],
+  ['two-handed-gear',runTwoHandedSmoke],
+  ['future-level-gear',runFutureGearSmoke],
+  ['manual-saved-overwrite',runSavedAutosaveSmoke],
+  ['account-login',runAccountSmoke],
+  ['account-isolation',runAccountLibraryIsolationSmoke],
+  ['cross-tab-account',runCrossTabAccountIsolationSmoke],
+  ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
+  ['hidden-admin-entry',runAdminEntrySmoke],
+  ['inline-skill-milestones',runInlineMilestonesSmoke]
+ ];
+ const quickCases=new Set(['share-link','equipment-locale','legacy-class-cap',
+  'manual-saved-overwrite','account-isolation','inline-skill-milestones']);
+ const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
+ const report=await runIndependentSmokes(selected,browser,base,{concurrency});
+ console.log('Chromium '+(quick?'quick':'full')+' suite: '+
+  report.length+' isolated flows, concurrency '+concurrency+
+  ', aggregate scenario time '+report.reduce((sum,row)=>sum+row.ms,0)+'ms');
+ // 4K full-page screenshots are memory-heavy: run layout after regular flows.
+ if(!quick)await runLayoutAudit(browser,base);
 }
 main().catch(error=>{console.error(error);process.exitCode=1}).finally(async()=>{await browser?.close()});
