@@ -138,7 +138,7 @@ export async function runAccountSmoke(browser,base){
   assert.equal(calls.filter(c=>c.action==='recover').length,1);
   // A valid bearer that unexpectedly resolves to a different owner must not
   // be allowed to keep that token while attaching the saved-build guest scope.
-  misidentifiedMe=true;
+  expiredMe=false;misidentifiedMe=true;
   const cloudWritesBefore=calls.filter(c=>c.path==='/api/library'&&c.body).length;
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>localStorage.getItem('ps-account-session.v1')===null);
