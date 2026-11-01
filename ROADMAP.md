@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.195.0 (`2026.11.01.195`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.196.0 (`2026.11.01.196`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.196.0 — guard live user accounts after migration 0005
+
+- Following successfully applied production migration 0005, read-only live checks now REQUIRE `/api/health.features.accounts=true`, alongside intact existing D1 library and catalogs; a future regression no longer logs an ignored INFO warning.
+- Verify `GET /api/account/me` correctly rejects an anonymous caller with `401 Sign in required`, proving the actual deployed login route and CORS work without creating accounts, submitting credentials or writing any D1 records.
+- Add Node source-policy regression so no production registration/password writes are inadvertently added to automated diagnostics.
+- All player build editing and account passwords remain unchanged.
 
 ## Source update 0.195.0 — one clean skill bar, private administrator access, live D1 accounts
 

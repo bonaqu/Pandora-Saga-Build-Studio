@@ -34,10 +34,17 @@ try{
  check(payload?.features?.sharing===true,'D1 sharing tables','migration 0003 required if false');
  check(payload?.features?.library===true,'D1 cloud build library','library tables or Worker release missing');
  check(payload?.features?.catalog===true,'D1 active catalog publication','publish own catalog if false');
- console.log((payload?.features?.accounts===true?'OK  ':'INFO')+
-  ' D1 user accounts '+(payload?.features?.accounts===true?
-   'ready':'require migration 0005 and current Worker deployment; existing library stays usable'));
+ check(payload?.features?.accounts===true,'D1 player accounts',
+  'migration 0005 confirmed in production run 41263185077; check connected Worker if false');
 }catch(e){check(false,'Worker and D1 health',e.message)}
+try{
+ // Read-only negative authentication probe: no account, password, session or D1 write.
+ const {response,payload}=await read(worker+'/api/account/me',{cors:true});
+ check(response.status===401&&payload?.error==='Sign in required'&&
+  response.headers.get('access-control-allow-origin')===origin,
+  'Player-account authentication endpoint',
+  response.status+' / anonymous request rejected without credentials');
+}catch(e){check(false,'Player-account authentication endpoint',e.message)}
 try{
  const {response}=await read(worker+'/api/health',{method:'OPTIONS',cors:true});
  check(response.status===204&&response.headers.get('access-control-allow-origin')===origin,
