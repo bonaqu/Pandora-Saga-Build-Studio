@@ -25,6 +25,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal((await rows.first().innerText()).trim(),firstRu);
   assert.equal(await page.locator('#dockLocale').count(),0);
   await page.locator('#dockClose').click();
+  assert.equal(await page.locator('#nav [data-tab="wiki"].active').count(),0);
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-equipment-type').waitFor({state:'visible'});

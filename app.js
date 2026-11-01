@@ -643,6 +643,8 @@ function closeWorkbench(){
  document.body.classList.remove('studio-workbench-open');
  const old=workbenchReturnFocus;workbenchReturnFocus=null;
  if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
+ // The main character editor has no navigation tab; closing a dock leaves none selected.
+ $('nav')?.querySelectorAll('[data-tab]').forEach(button=>button.classList.remove('active'));
  // Closing the encyclopedia must clear its deep link as well, not resurrect the dock on reload.
  if(activeTab==='wiki'&&location.hash.startsWith('#wiki/'))
   history.replaceState(history.state,'',location.pathname+location.search);
