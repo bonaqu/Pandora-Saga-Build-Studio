@@ -4,9 +4,16 @@
 const KEY='ps-account-session.v1';
 let session=null,options=null,trigger=null,panel=null,mode='login',errorLine=null;
 let pendingRecoveryCode=null;
+const TOKEN=/^[A-Za-z0-9_-]{43}$/;
+const USERNAME=/^[a-z][a-z0-9_]{2,19}$/;
+const validName=value=>typeof value==='string'&&USERNAME.test(value.toLowerCase())?
+ value.toLowerCase():null;
+const validSession=value=>value&&typeof value==='object'&&!Array.isArray(value)&&
+ TOKEN.test(value.token||'')&&validName(value.username)&&
+ Number.isSafeInteger(value.expires)&&value.expires>Date.now();
 try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');
- if(raw&&/^[A-Za-z0-9_-]{43}$/.test(raw.token||'')&&
-  Number(raw.expires)>Date.now())session=raw;
+ if(validSession(raw))session={token:raw.token,expires:raw.expires,
+  username:validName(raw.username)};
 }catch{}
 function token(){return session?.token||null}
 const tr=value=>root.PandoraUILocale?.ui(value,document.documentElement.lang)||value;
@@ -38,9 +45,16 @@ async function request(kind,data=null,auth=token()){
  return result;
 }
 function setSession(result){
- pendingRecoveryCode=typeof result.recoveryCode==='string'?result.recoveryCode:null;
- session={token:result.token,expires:result.expires,username:result.account.username};
- localStorage.setItem(KEY,JSON.stringify(session));
+ const next={token:result?.token,expires:result?.expires,
+  username:validName(result?.account?.username)};
+ if(!validSession(next))throw Error('Некорректный ответ авторизации');
+ // A rejected/malformed successful response must not overwrite the current
+ // session, active owner scope or recovery code.
+ const recovery=typeof result.recoveryCode==='string'&&TOKEN.test(result.recoveryCode)?
+  result.recoveryCode:null;
+ localStorage.setItem(KEY,JSON.stringify(next));
+ session=next;
+ pendingRecoveryCode=recovery;
 }
 function clearSession(){session=null;pendingRecoveryCode=null;localStorage.removeItem(KEY)}
 function render(){
@@ -155,11 +169,21 @@ async function init(config){
    panel.hidden=true;
  });
  if(session){
+  const bootstrapToken=session.token,expectedName=session.username;
   try{
-   const data=await request('me',null,session.token);
-   session.username=data.account.username;
+   const data=await request('me',null,bootstrapToken);
+   // A login or logout may complete while a previous /me is in flight.
+   // Never allow its late answer to switch or clear the new account.
+   if(session?.token!==bootstrapToken){render();return}
+   const verified=validName(data?.account?.username);
+   if(!verified||verified!==expectedName){
+    const invalid=new Error('Некорректный владелец аккаунта');
+    invalid.httpStatus=403;throw invalid;
+   }
+   session.username=verified;
    options.onLogin?.({register:false,bootstrap:true});
   }catch(error){
+   if(session?.token!==bootstrapToken){render();return}
    if(error?.httpStatus===401||error?.httpStatus===403){
     clearSession();
     options.onLogout?.({bootstrap:true});

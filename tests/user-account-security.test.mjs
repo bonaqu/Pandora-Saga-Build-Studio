@@ -26,7 +26,10 @@ test('account API is added without reusing or weakening legacy admin secrets',as
 test('the one-time recovery code stays only in profile memory until acknowledged',()=>{
  const source=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
  assert.match(source,/let pendingRecoveryCode=null/);
- assert.match(source,/pendingRecoveryCode=typeof result\.recoveryCode/);
+ assert.match(source,/typeof result\.recoveryCode==='string'&&TOKEN\.test\(result\.recoveryCode\)/);
+ assert.match(source,/pendingRecoveryCode=recovery;/);
+ assert.match(source,/localStorage\.setItem\(KEY,JSON\.stringify\(next\)\)/);
+ assert.doesNotMatch(source,/localStorage\.setItem\([^\n]*pendingRecoveryCode/);
  assert.match(source,/if\(pendingRecoveryCode\)\{/);
  assert.match(source,/pendingRecoveryCode=null;card\.remove\(\)/);
  assert.match(source,/render\(\);\s*if\(pendingRecoveryCode\)info\(/);

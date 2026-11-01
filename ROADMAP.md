@@ -1,9 +1,18 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.241.0 (`2026.11.01.241`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.242.0 (`2026.11.01.242`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.242.0 — verified account ownership and asynchronous /me protection
+
+- [x] Validate stored and newly issued account sessions before accepting them: canonical username, 43-character bearer, safe future Unix-ms expiry and valid account object. A malformed 200 response to registration/login or recovery cannot replace an existing session, fallback into guest ownership or accept a malformed recovery code.
+- [x] An authenticated `/api/account/me` 200 reply must have a **canonical valid username matching the stored session owner**; an unexpected identity or missing owner is treated as a failed identity validation, not silently replaced. An owner mismatch invokes existing session logout/guest transition while preserving the owner's saved library cache.
+- [x] Protect asynchronous initialization from stale `/me` responses: capture bootstrap token and refuse to change/clear a newer session on late 200 or 401. Transient 503/network errors continue to retain the valid original session.
+- [x] New sandboxed client-model tests for malformed sessions, mismatch, outage and late response; true Chromium acceptance injects an HTTP 200 different owner and verifies no cross-owner D1 PUT.
+- [x] Remove never-read static `branchNames` array from `app.js`: current canonical localized path navigation/catalog already owns branch IDs and labels.
+- [ ] Keep full D1 authenticated live write lifecycle and server numeric formula parity open. Level planning remains 1–55; named-build explicit overwrite, account recovery and data remain unchanged.
 
 ## Source update 0.241.0 — remove dead milestone CSS, harden cross-tab acceptance
 
