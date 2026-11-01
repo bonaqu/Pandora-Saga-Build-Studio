@@ -95,7 +95,7 @@ test('encyclopedia CSS has one canonical image size, descriptions and monster gr
   assert.equal([...css.matchAll(selector)].length,1,'Duplicate encyclopedia CSS selector');
  }
  assert.match(css,/\.wiki-list-icon\{width:34px/);
- assert.match(css,/\.wiki-description\{white-space:pre-line;overflow-wrap:anywhere/);
+ assert.match(css,/\.wiki-description\{white-space:pre-wrap;overflow-wrap:anywhere/);
 });
 test('EN encyclopedia uses authoritative NPC/chest/settlement names, and chest descriptions from item source',()=>{
  const app=read('app.js'),wiki=read('wiki-data.js'),en=JSON.parse(read('data/os/strings.en.json'));
