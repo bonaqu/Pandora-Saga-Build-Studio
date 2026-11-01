@@ -81,8 +81,10 @@ test('hero book does not duplicate events already explained in the detailed equi
 
 test('same visible item name does not erase a different source proc',()=>{
  const known=items[422];
+ const original=known.effects.find(effect=>effect.func==='EP_ONHIT_SKILL_EXEC');
+ assert.ok(original,'source has an on-hit proc');
  const alternate={...known,id:777777,
-  effects:[{...known.effects[0],b:8}]};
+  effects:[{...original,b:8}]};
  const records=[['item:422',known,0],['item:777777',alternate,0]];
  const raw=C.conditionalProcPreview({records,skills});
  const exact=C.specialEquipmentPreview({records});
@@ -97,7 +99,9 @@ test('same visible item name does not erase a different source proc',()=>{
 });
 
 test('only the exact corroborated event is suppressed on a multi-proc item',()=>{
- const known=items[422],other={...known.effects[0],a:500000002,b:4};
+ const known=items[422],proc=known.effects.find(effect=>effect.func==='EP_ONHIT_SKILL_EXEC');
+ assert.ok(proc);
+ const other={...proc,a:500000002,b:4};
  const compound={...known,effects:[...known.effects,other]};
  const records=[['item:422',compound,0]];
  const generic=C.conditionalProcPreview({records,skills});
