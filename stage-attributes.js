@@ -368,6 +368,34 @@ function buffsPage(body,options){
    'Мощность при применении навыка. Просмотр не включает усиление на персонаже.'}));
   body.append(details);
  }
+ const songRows=modifiers?.songSkills?.rows||[];
+ if(songRows.length){
+  const english=document.documentElement?.lang==='en';
+  const branchLabels=english?
+   {benevolence:'Healing',hymn:'Hymns',blessing:'Blessing'}:
+   {benevolence:'Исцеление',hymn:'Гимны',blessing:'Благословение'};
+  const details=make('details',{class:'stage-legacy-buff-previews stage-song-skills'});
+  details.append(make('summary',{text:english?'Songs available to this class':
+   'Песни для выбранного класса'}));
+  const rows=make('div',{class:'stage-song-skill-list'});
+  for(const entry of songRows){
+   const requirements=entry.requirements.map(req=>
+    (branchLabels[req.branch]||req.branch)+' '+req.amount).join(' · ');
+   const card=make('div',{class:'stage-song-skill-row'});
+   card.append(make('strong',{text:english?entry.nameEn:entry.name}),
+    make('small',{text:english?entry.descriptionEn:entry.description}),
+    make('span',{class:entry.available?'stage-song-skill-ready':'stage-song-skill-locked',
+     text:(entry.available?
+      (english?'Requirements met':'Требования выполнены'):
+      (english?'Requires mastery':'Требуется мастерство'))+' · '+requirements}));
+   rows.append(card);
+  }
+  details.append(rows,make('p',{class:'stage-legacy-buff-intro',
+   text:english?
+    'Song effects apply only when activated in the game. No bonus is added to this build automatically.':
+    'Эффекты песен действуют после применения в игре. Бонусы не прибавляются к билду автоматически.'}));
+  body.append(details);
+ }
  if(modifiers)body.append(make('p',{class:'stage-attribute-note',text:
   'Сейчас: '+modifiers.hp+' ОЗ, '+modifiers.mp+' ОМ. Усиления сохраняются в билде.'}));
 }
