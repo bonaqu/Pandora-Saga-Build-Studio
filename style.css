@@ -1559,6 +1559,9 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 }
 .inline-mastery-track.path-integrated-track .inline-mastery-locked{
  top:16px;right:21px;height:12px;box-sizing:border-box;border-radius:0 3px 3px 0;
+ /* Mute the unavailable segment without hiding the class boundary or skill ticks. */
+ background:repeating-linear-gradient(120deg,#432d2b,#432d2b 6px,#67403b 6px,#67403b 11px);
+ border-color:#94746a;
 }
 .inline-mastery-track.path-integrated-track .inline-mastery-locked::after{content:none!important}
 .inline-mastery-track.path-integrated-track input[type=range]{
