@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.211.0 (`2026.11.01.211`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.212.0 (`2026.11.01.212`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.212.0 — never refetch known HTTP 404 game icons
+
+- Once the versioned self-hosted manifest has loaded, its explicit HTTP-404 missing records are the authority for whether an original sprite was absent at archive time. Do not repeatedly request an unchanged missing source on each redraw.
+- Prefer verified user overrides and original local WebP files; keep unverified source errors eligible for future fetching. For source-backed absent assets, a plain neutral glyph is safer than inventing a game icon.
+- Ensure racial passives do not create an empty <img> when no URL is available. Protect skill/item/Soul resolvers and missing-sprite fallback with Node regressions.
+- Gameplay formulas, D1 migrations, account secrets and 1–55 progression are unaffected.
 
 ## Source update 0.211.0 — local archive of 1,173 original OS item, skill and Soul images
 
