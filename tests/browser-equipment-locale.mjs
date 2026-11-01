@@ -10,7 +10,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
  page.on('pageerror',error=>errors.push(error.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>/\\d+ навыков · \\d+ предметов · \\d+ душ/.test(
+  await page.waitForFunction(()=>/\d+ навыков · \d+ предметов · \d+ душ/.test(
    document.querySelector('#catalogStatus')?.textContent||''),null,{timeout:20000});
   await page.locator('#nav [data-tab="equipment"]').click();
   const toolbar=page.locator('.equipment-catalog-toolbar');
