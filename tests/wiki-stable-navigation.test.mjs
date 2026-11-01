@@ -20,7 +20,7 @@ test('chests resolve names and icons from OS item catalog, NPC from real NPC nam
  assert.ok(chests.boxes.some(c=>data[c.i]?.icon&&data[c.i]?.name));
  assert.ok(Object.values(names).some(n=>n.name));
  assert.match(app,/type==='chest'\?wikiData\.items\?\.\[id\]/);
- assert.match(app,/type==='npc'\?wikiData\.trades\?\.npcs\?\.\[id\]/);
+ assert.match(app,/wikiIndex\.records\(type\)\?\.\[id\]/);
  assert.match(app,/wikiIcon\('chest',row\.id\)/);
 });
 test('drops and NPC exchange rewards include actual item icon and linked ingredient rows',()=>{
