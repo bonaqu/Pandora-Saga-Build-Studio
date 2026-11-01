@@ -49,7 +49,7 @@ test('the hero book shows special equipment effects without raw EP identifiers',
  assert.match(source,/Особые эффекты предметов и душ/);
  assert.match(source,/Special item and Soul effects/);
  assert.match(read('os-calculator.js'),/const specialEquipment=specialEquipmentPreview/);
- assert.match(read('os-calculator.js'),/experienceBonus,specialEquipment,regeneration/);
+ assert.match(read('os-calculator.js'),/experienceBonus,battleMapCloaks,specialEquipment,regeneration/);
 });
 
 test('the official Dawn Veil physical-evasion chance remains a conditional, source-backed preview',()=>{

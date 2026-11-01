@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.229.0 (`2026.11.01.229`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.230.0 (`2026.11.01.230`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.230.0 — original OS battle-map-only cloak bonuses
+
+- Add a separate Hero Book Effects preview for **nine** source-backed battlefield cloaks (OS item IDs 18022–18030). Every item requires canonical source ID, cloak slot, valid enhancement and the precise RU/EN original map-only description, plus its mapped OS skill 500000044/45/46 and exact structured EP effect rows including `EP_LOST_MAPCHANGE`.
+- For the three ranks show source values **+2/+3/+5 to all attributes**, **+1/+3/+5 armor**, **+300/+1000/+2000 HP**; top-tier OS skill also has **+5 resistance to all damage types** and **+10 magic resistance**. Only show as map-conditional effects and **never** add them to usual stat/combat totals outside a declared map context.
+- Prevent another equipped item with a similar EP code or forged skill rows from inheriting these exact battlefield bonuses; fail closed for incorrect language descriptions/grade/source and unknown skills. No speculative server map ID behavior beyond the explicit OS cloak text.
+- Keep manual save semantics, D1, account controls, new build level 1 and long-term plan through 55.
 
 ## Source update 0.229.0 — no unverified generic proc rates and asynchronous guest cloud assertion
 

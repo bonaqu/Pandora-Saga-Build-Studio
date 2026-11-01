@@ -41,7 +41,7 @@ test('Proc preview is not applied as deterministic attack bonus',()=>{
  const src=read('os-calculator.js'),book=read('stage-attributes.js');
  assert.match(src,/const rawProcPreview=conditionalProcPreview\(/);
  assert.match(src,/const procPreview=deduplicateProcDescriptions\(rawProcPreview,specialEquipment\)/);
- assert.match(src,/resistances,targetResistance,procPreview,experienceBonus,specialEquipment,regeneration/);
+ assert.match(src,/resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration/);
  assert.match(book,/Срабатывания предметов и душ/);
 });
 
