@@ -1,0 +1,415 @@
+{
+  "source": "Pandora Saga OS, one-time archive",
+  "createdAt": "2026-11-01T09:18:41.502Z",
+  "icons": {
+    "skills": {
+      "skill_100001001": "assets/skills/icons/skill_100001001.webp",
+      "skill_100000501": "assets/skills/icons/skill_100000501.webp",
+      "skill_100002001": "assets/skills/icons/skill_100002001.webp",
+      "skill_100002002": "assets/skills/icons/skill_100002002.webp",
+      "skill_100052001": "assets/skills/icons/skill_100052001.webp",
+      "skill_100051001": "assets/skills/icons/skill_100051001.webp",
+      "skill_100054001": "assets/skills/icons/skill_100054001.webp",
+      "skill_100053001": "assets/skills/icons/skill_100053001.webp",
+      "skill_100055001": "assets/skills/icons/skill_100055001.webp",
+      "skill_100056001": "assets/skills/icons/skill_100056001.webp",
+      "skill_100057001": "assets/skills/icons/skill_100057001.webp",
+      "skill_100058001": "assets/skills/icons/skill_100058001.webp",
+      "skill_100059001": "assets/skills/icons/skill_100059001.webp",
+      "skill_100060001": "assets/skills/icons/skill_100060001.webp",
+      "skill_100061001": "assets/skills/icons/skill_100061001.webp",
+      "skill_100091001": "assets/skills/icons/skill_100091001.webp",
+      "skill_100101001": "assets/skills/icons/skill_100101001.webp",
+      "skill_100103001": "assets/skills/icons/skill_100103001.webp",
+      "skill_100102001": "assets/skills/icons/skill_100102001.webp",
+      "skill_110101001": "assets/skills/icons/skill_110101001.webp",
+      "skill_110101002": "assets/skills/icons/skill_110101002.webp",
+      "skill_110102001": "assets/skills/icons/skill_110102001.webp",
+      "skill_111201001": "assets/skills/icons/skill_111201001.webp",
+      "skill_121701001": "assets/skills/icons/skill_121701001.webp",
+      "skill_121702001": "assets/skills/icons/skill_121702001.webp",
+      "skill_121703001": "assets/skills/icons/skill_121703001.webp",
+      "skill_121703501": "assets/skills/icons/skill_121703501.webp",
+      "skill_121704001": "assets/skills/icons/skill_121704001.webp",
+      "skill_121705001": "assets/skills/icons/skill_121705001.webp",
+      "skill_121707001": "assets/skills/icons/skill_121707001.webp",
+      "skill_131201001": "assets/skills/icons/skill_131201001.webp",
+      "skill_142001001": "assets/skills/icons/skill_142001001.webp",
+      "skill_142002001": "assets/skills/icons/skill_142002001.webp",
+      "skill_142003001": "assets/skills/icons/skill_142003001.webp",
+      "skill_142005001": "assets/skills/icons/skill_142005001.webp",
+      "skill_142051001": "assets/skills/icons/skill_142051001.webp",
+      "skill_142501001": "assets/skills/icons/skill_142501001.webp",
+      "skill_142501101": "assets/skills/icons/skill_142501101.webp",
+      "skill_142502001": "assets/skills/icons/skill_142502001.webp",
+      "skill_142503001": "assets/skills/icons/skill_142503001.webp",
+      "skill_142504001": "assets/skills/icons/skill_142504001.webp",
+      "skill_161201001": "assets/skills/icons/skill_161201001.webp",
+      "skill_161202001": "assets/skills/icons/skill_161202001.webp",
+      "skill_168001001": "assets/skills/icons/skill_168001001.webp",
+      "skill_168001002": "assets/skills/icons/skill_168001002.webp",
+      "skill_168002001": "assets/skills/icons/skill_168002001.webp",
+      "skill_168003001": "assets/skills/icons/skill_168003001.webp",
+      "skill_168004001": "assets/skills/icons/skill_168004001.webp",
+      "skill_168005001": "assets/skills/icons/skill_168005001.webp",
+      "skill_168051001": "assets/skills/icons/skill_168051001.webp",
+      "skill_168052001": "assets/skills/icons/skill_168052001.webp",
+      "skill_168053001": "assets/skills/icons/skill_168053001.webp",
+      "skill_168054001": "assets/skills/icons/skill_168054001.webp",
+      "skill_168055001": "assets/skills/icons/skill_168055001.webp",
+      "skill_213601001": "assets/skills/icons/skill_213601001.webp",
+      "skill_213602001": "assets/skills/icons/skill_213602001.webp",
+      "skill_213603001": "assets/skills/icons/skill_213603001.webp",
+      "skill_213603002": "assets/skills/icons/skill_213603002.webp",
+      "skill_213603501": "assets/skills/icons/skill_213603501.webp",
+      "skill_213605001": "assets/skills/icons/skill_213605001.webp",
+      "skill_213606001": "assets/skills/icons/skill_213606001.webp",
+      "skill_213607001": "assets/skills/icons/skill_213607001.webp",
+      "skill_213608001": "assets/skills/icons/skill_213608001.webp",
+      "skill_213700501": "assets/skills/icons/skill_213700501.webp",
+      "skill_213701001": "assets/skills/icons/skill_213701001.webp",
+      "skill_213702001": "assets/skills/icons/skill_213702001.webp",
+      "skill_213703001": "assets/skills/icons/skill_213703001.webp",
+      "skill_220001001": "assets/skills/icons/skill_220001001.webp",
+      "skill_220001002": "assets/skills/icons/skill_220001002.webp",
+      "skill_220002001": "assets/skills/icons/skill_220002001.webp",
+      "skill_220003001": "assets/skills/icons/skill_220003001.webp",
+      "skill_220004001": "assets/skills/icons/skill_220004001.webp",
+      "skill_220005001": "assets/skills/icons/skill_220005001.webp",
+      "skill_220006001": "assets/skills/icons/skill_220006001.webp",
+      "skill_220007001": "assets/skills/icons/skill_220007001.webp",
+      "skill_230001001": "assets/skills/icons/skill_230001001.webp",
+      "skill_230002001": "assets/skills/icons/skill_230002001.webp",
+      "skill_230002002": "assets/skills/icons/skill_230002002.webp",
+      "skill_230002003": "assets/skills/icons/skill_230002003.webp",
+      "skill_233001001": "assets/skills/icons/skill_233001001.webp",
+      "skill_233002001": "assets/skills/icons/skill_233002001.webp",
+      "skill_233003001": "assets/skills/icons/skill_233003001.webp",
+      "skill_233005001": "assets/skills/icons/skill_233005001.webp",
+      "skill_233006001": "assets/skills/icons/skill_233006001.webp",
+      "skill_233101001": "assets/skills/icons/skill_233101001.webp",
+      "skill_233151001": "assets/skills/icons/skill_233151001.webp",
+      "skill_233200101": "assets/skills/icons/skill_233200101.webp",
+      "skill_240001001": "assets/skills/icons/skill_240001001.webp",
+      "skill_240002001": "assets/skills/icons/skill_240002001.webp",
+      "skill_240003001": "assets/skills/icons/skill_240003001.webp",
+      "skill_240004001": "assets/skills/icons/skill_240004001.webp",
+      "skill_240005001": "assets/skills/icons/skill_240005001.webp",
+      "skill_240006001": "assets/skills/icons/skill_240006001.webp",
+      "skill_240008001": "assets/skills/icons/skill_240008001.webp",
+      "skill_240009001": "assets/skills/icons/skill_240009001.webp",
+      "skill_240010001": "assets/skills/icons/skill_240010001.webp",
+      "skill_260001001": "assets/skills/icons/skill_260001001.webp",
+      "skill_260002001": "assets/skills/icons/skill_260002001.webp",
+      "skill_260003001": "assets/skills/icons/skill_260003001.webp",
+      "skill_260004001": "assets/skills/icons/skill_260004001.webp",
+      "skill_260005001": "assets/skills/icons/skill_260005001.webp",
+      "skill_260006001": "assets/skills/icons/skill_260006001.webp",
+      "skill_260007001": "assets/skills/icons/skill_260007001.webp",
+      "skill_260008001": "assets/skills/icons/skill_260008001.webp",
+      "skill_260009001": "assets/skills/icons/skill_260009001.webp",
+      "skill_260010001": "assets/skills/icons/skill_260010001.webp",
+      "skill_300001001": "assets/skills/icons/skill_300001001.webp",
+      "skill_300002001": "assets/skills/icons/skill_300002001.webp",
+      "skill_300003001": "assets/skills/icons/skill_300003001.webp",
+      "skill_300004001": "assets/skills/icons/skill_300004001.webp",
+      "skill_310001001": "assets/skills/icons/skill_310001001.webp",
+      "skill_310002001": "assets/skills/icons/skill_310002001.webp",
+      "skill_310003001": "assets/skills/icons/skill_310003001.webp",
+      "skill_310004001": "assets/skills/icons/skill_310004001.webp",
+      "skill_310011001": "assets/skills/icons/skill_310011001.webp",
+      "skill_310012001": "assets/skills/icons/skill_310012001.webp",
+      "skill_310014001": "assets/skills/icons/skill_310014001.webp",
+      "skill_310021001": "assets/skills/icons/skill_310021001.webp",
+      "skill_310022001": "assets/skills/icons/skill_310022001.webp",
+      "skill_310023001": "assets/skills/icons/skill_310023001.webp",
+      "skill_320001001": "assets/skills/icons/skill_320001001.webp",
+      "skill_320002001": "assets/skills/icons/skill_320002001.webp",
+      "skill_320003001": "assets/skills/icons/skill_320003001.webp",
+      "skill_320004001": "assets/skills/icons/skill_320004001.webp",
+      "skill_320005001": "assets/skills/icons/skill_320005001.webp",
+      "skill_320006001": "assets/skills/icons/skill_320006001.webp"
+    },
+    "items": {},
+    "souls": {}
+  },
+  "missing": [
+    {
+      "kind": "skills",
+      "stem": "skill_100055002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_100059002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_100059004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_100059003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_100103050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_121703511",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_121703512",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_121704002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_121707002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_121707003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_142502050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_142503002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_161202050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_168005050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_168051002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_168052002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_213603003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_213603511",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_213603521",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_213607002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_213608002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_213700550",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_220006002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_230001002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_233005002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_233006002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240001050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240002050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240002051",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240003002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240004050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240005002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240005003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240008002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240010002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_240010003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_260003002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_260006002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_300004002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_300004003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_300004004",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_310001003",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_310002002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_310011002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_310012002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_310014002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_310023002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_320001050",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_320003002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_320004002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_320004051",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_320005051",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_320006002",
+      "error": "HTTP 404"
+    },
+    {
+      "kind": "skills",
+      "stem": "skill_320006051",
+      "error": "HTTP 404"
+    }
+  ],
+  "count": {
+    "expected": 1437,
+    "present": 126,
+    "missing": 1311,
+    "processed": 180,
+    "planned": 180
+  }
+}
