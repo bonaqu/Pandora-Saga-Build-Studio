@@ -94,7 +94,8 @@ export async function runInlineMilestonesSmoke(browser,base){
   assert.ok(result.geom.length>=3,'Expected several source-backed unlock thresholds');
   assert.ok(result.geom.every(x=>x.top>=result.barTop-1&&x.bottom<=result.barBottom+1),
    'Every skill threshold belongs inside the SAME horizontal bar: '+JSON.stringify(result));
-  assert.ok(result.geom.every(x=>x.width<=4&&x.height<=13&&x.pointer==='none'));
+  assert.ok(result.geom.every(x=>x.width===12&&x.height===12&&x.pointer==='none'),
+   'Diamond unlock containers must match the 12px rail without stealing slider events');
   assert.ok(result.geom.every((x,i,a)=>i===0||x.x>a[i-1].x),
    'Thresholds must be ordered left to right, not staggered over rows');
   assert.ok(result.geom.every(x=>Math.abs(x.top-result.geom[0].top)<=1));
