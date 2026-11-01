@@ -118,10 +118,20 @@ export async function runInlineMilestonesSmoke(browser,base){
   const measureBranch=()=>page.evaluate(()=>{
    const row=document.querySelector('[data-path-branch="benevolence"]');
    const editor=row.nextElementSibling;
+   const rail=editor.querySelector('.inline-mastery-bed').getBoundingClientRect();
+   const range=editor.querySelector('input[type=range]');
+   const notch=editor.querySelector('.path-current-notch');
+   const notchRect=notch.getBoundingClientRect();
    return {height:row.getBoundingClientRect().height,
     editorTop:editor.getBoundingClientRect().top,
     extraMasteryLine:row.querySelector('span')?.textContent||'',
-    points:row.querySelector('.count')?.textContent||''};
+    points:row.querySelector('.count')?.textContent||'',
+    notchX:notchRect.left+notchRect.width/2,
+    expectedX:rail.left+Number(range.value)/Number(range.max)*rail.width,
+    notchWidth:notchRect.width,notchHeight:notchRect.height,
+    notchPointer:getComputedStyle(notch).pointerEvents,
+    notchAria:notch.getAttribute('aria-hidden'),
+    thumbWidth:range.getBoundingClientRect().width};
   });
   const drag=async value=>{
    await page.locator('[data-branch-control="benevolence:potential-range"]').evaluate((input,n)=>{
@@ -140,6 +150,17 @@ export async function runInlineMilestonesSmoke(browser,base){
    'The expanded mastery track must NOT jump vertically: '+JSON.stringify(stable));
   assert.ok(stable.every(x=>x.extraMasteryLine===''),
    'Mastery lives in the green numeric field, not an inserted header row');
+  assert.ok(stable.every(x=>Math.abs(x.notchX-x.expectedX)<=1.25),
+   'The vertical value notch must follow the exact current range value: '+JSON.stringify(stable));
+  assert.ok(stable.every(x=>x.notchWidth===4&&x.notchHeight===26&&
+   x.notchPointer==='none'&&x.notchAria==='true'),
+   'The decorative notch must stay narrow and never steal slider input');
+  // The invisible native 18px thumb still exposes normal keyboard and
+  // pointer hit testing, even though the value marker itself is only 4px wide.
+  const arrowRange=page.locator('[data-branch-control="benevolence:potential-range"]');
+  await arrowRange.focus();await page.keyboard.press('ArrowRight');
+  assert.equal(await arrowRange.inputValue(),'1','Keyboard allocation remains functional');
+  await drag(0);
   const exact=page.locator('[data-branch-control="benevolence:potential-number"]');
   await drag(2);
   await exact.fill('');
