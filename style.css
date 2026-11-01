@@ -1690,20 +1690,28 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  z-index:10;overflow:visible;pointer-events:none;
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch{
- position:absolute;top:0;width:3px;height:12px;
+ position:absolute;top:-3px;width:12px;height:18px;
  transform:translateX(-50%);margin:0;padding:0;
- border:0;border-radius:1px;background:#ffdb93;
- box-shadow:0 0 0 1px #28170bd9;z-index:10;
+ border:0;background:transparent;box-shadow:none;z-index:10;
  pointer-events:none;opacity:1;cursor:default;
 }
-.inline-mastery-track.path-integrated-track .path-unlock-notch.reached{
- background:#d7ffc0;box-shadow:0 0 0 1px #18390f,0 0 4px #bcff8d;
+/* The small diamond marks a skill unlock without obscuring the coloured bar. */
+.inline-mastery-track.path-integrated-track .path-unlock-notch::before{
+ content:'';position:absolute;left:2px;top:5px;width:8px;height:8px;
+ box-sizing:border-box;transform:rotate(45deg);border-radius:1px;
+ border:1px solid #ffdb93;background:#6c4c29;
+ box-shadow:0 0 0 1px #251608;
 }
-.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable{
- background:#fac4ac;box-shadow:0 0 0 1px #582a22;
+.inline-mastery-track.path-integrated-track .path-unlock-notch.reached::before{
+ background:#518a4a;border-color:#e1ffbf;
+ box-shadow:0 0 0 1px #18390f,0 0 4px #a7e58d;
 }
-.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered{
- width:5px;box-shadow:0 0 0 2px #ffe5ae,0 0 7px #fff0c9;
+.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable::before{
+ background:#864d49;border-color:#fac4ac;
+ box-shadow:0 0 0 1px #582a22;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered::before{
+ border-color:#fff2cd;box-shadow:0 0 0 2px #e6b577,0 0 8px #fff0c9;
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible{
  outline:2px solid #ffe0a1;outline-offset:2px;
