@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.197.0 (`2026.11.01.197`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.198.0 (`2026.11.01.198`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.198.0 — protect old offline snapshots when saved builds are deleted elsewhere
+
+- D1 remote deletion tombstones remain authoritative and existing public links are never revived. If a device still has a snapshot under that ID, preserve its exact snapshot under a **new browser-only recovery ID** with an explanatory local-copy title, instead of silently dropping the user's work.
+- An explicitly queued local deletion takes precedence: do not create recovery copies for the player's own delete action. Reopening/reloading does not spawn endless duplicate recovery records.
+- Sharing and D1 PUT for this recovered snapshot remain blocked until the player explicitly chooses «Перезаписать» on that local copy. The original deleted ID is never written again.
+- Extend Node and fake-Worker Chromium regressions. No schema changes; current 1–55 range and formula parity inventory unchanged.
 
 ## Source update 0.197.0 — browser library ownership boundaries
 

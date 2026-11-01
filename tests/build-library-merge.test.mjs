@@ -40,13 +40,28 @@ test('identical data with different at uses newer revision without unnecessary d
  assert.deepEqual(result.merged.find(x=>x.id===A),mk(A,200,55));
  assert.deepEqual(result.outgoing.map(x=>x.id),[]);
 });
-test('cloud tombstones and pending deletes never resurrect deleted builds',()=>{
+test('remote tombstone keeps a local-only recovery without reviving deleted ID',()=>{
  const result=reconcile({local:[mk(A,100,55),mk(B,110,54),mk(C,120,53)],
   remote:[{id:A,deleted:true,entry:null},{id:B,entry:mk(B,101,45)}],
   pendingDeletes:[B],activeId:A,newId:()=>D});
- assert.deepEqual(result.merged.map(x=>x.id),[C]);
- assert.equal(result.activeId,null);
+ assert.deepEqual(new Set(result.merged.map(x=>x.id)),new Set([C,D]));
+ assert.ok(!result.merged.some(x=>x.id===A||x.id===B));
+ assert.equal(result.activeId,D);
+ assert.equal(result.merged.find(x=>x.id===D).localOnly,true);
+ assert.match(result.merged.find(x=>x.id===D).name,/копия удалённого билда/);
  assert.deepEqual(result.outgoing.map(x=>x.id),[C]);
+ const repeat=reconcile({local:result.merged,
+  remote:[{id:A,deleted:true,entry:null}],activeId:D,newId:()=>A});
+ assert.equal(repeat.copies,0,'Refresh never creates another recovery copy');
+ assert.equal(repeat.activeId,D);
+ assert.deepEqual(repeat.outgoing,[],'Only already explicitly saved C is allowed');
+});
+test('a locally queued delete never generates a recovery copy',()=>{
+ const result=reconcile({local:[mk(A,100,55)],remote:[{id:A,deleted:true}],
+  pendingDeletes:[A],activeId:A,newId:()=>B});
+ assert.deepEqual(result.merged,[]);
+ assert.deepEqual(result.outgoing,[]);
+ assert.equal(result.activeId,null);
 });
 test('malformed cloud payload cannot delete valid local save; ID collisions cannot erase copies',()=>{
  const local=mk(A,100,55),remote=[{id:A,entry:{id:'wrong',at:101,data:{}}}];

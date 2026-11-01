@@ -19,7 +19,8 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}
   }
   if(!id)throw Error('Unable to reserve unique local conflict copy ID');
   known.add(id);copies++;
-  const suffix=origin==='local'?' · локальная копия':' · облачная копия';
+  const suffix=origin==='deleted'?' · копия удалённого билда':
+   origin==='local'?' · локальная копия':' · облачная копия';
   const duplicate={...source,id,name:String(source.name||'Билд').slice(0,70-suffix.length)+suffix,
    at:Math.max(Date.now(),Number(source.at)||0),localOnly:true};
   merged.push(duplicate); // A conflict copy stays local until explicitly saved.
@@ -32,7 +33,15 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}
  for(const record of remote){
   if(!record||!ID.test(record.id)||remoteIds.has(record.id))continue;
   if(record.deleted){
-   remoteIds.add(record.id);continue;
+   // The D1 tombstone remains authoritative. Preserve an offline snapshot only
+   // under a new browser-only ID; never revive the deleted original or its links.
+   remoteIds.add(record.id);
+   const offline=originals.get(record.id);
+   if(offline&&!pending.has(record.id)){
+    const recovered=copy(offline,'deleted');
+    if(selected===record.id)selected=recovered;
+   }
+   continue;
   }
   const cloud=record.entry;
   if(!cloud||cloud.id!==record.id||!Number.isSafeInteger(cloud.at)||

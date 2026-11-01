@@ -3,6 +3,7 @@ import {chromium} from 'playwright';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
 import {runLayoutAudit} from './browser-layout.mjs';
 import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
+import {runDeletedBuildRecoverySmoke} from './browser-deleted-recovery.mjs';
 import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs';
 import {runTwoHandedSmoke} from './browser-two-handed.mjs';
 import {runFutureGearSmoke} from './browser-future-gear.mjs';
@@ -127,6 +128,7 @@ async function main(){
  await mobile.close();
  await runShareLinkSmoke(browser,base);
  await runCloudConflictSmoke(browser,base);
+ await runDeletedBuildRecoverySmoke(browser,base);
  await runEquipmentEligibilitySmoke(browser,base);
  await runTwoHandedSmoke(browser,base);
  await runFutureGearSmoke(browser,base);
