@@ -27,6 +27,9 @@ test('searches across names, descriptions, class restrictions and alternate disp
  assert.equal(wiki.search('soul','weapon').length,1);
  assert.equal(wiki.search('item','unmatched').length,0);
  assert.equal(wiki.residents(8).length,1);
+ assert.equal(wiki.records('map')['8'].name,'Лес');
+ assert.equal(wiki.records('item')['1'].name,'Крепкий шлем');
+ assert.equal(wiki.normalize('ЁЖ'),'еж');
 });
 test('materials link back to unique NPC trades, and zones use one location index',()=>{
  const wiki=ctx.window.PandoraWikiData.build({trades:{trades:[

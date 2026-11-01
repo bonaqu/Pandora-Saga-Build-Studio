@@ -90,7 +90,7 @@ function build(data){
   materialUses:id=>(materialTrades.get(String(id))||[]).slice(),
   residents:id=>(npcLocations.get(String(id))||[]).slice(),
   zones:id=>(zoneLocations.get(String(id))||[]).slice(),
-  records:type=>chapters[type]||{},search,sourceCount:sources.size
+  records:type=>chapters[type]||{},search,normalize:normalizeSearch,sourceCount:sources.size
  });
 }
 root.PandoraWikiData=Object.freeze({build});

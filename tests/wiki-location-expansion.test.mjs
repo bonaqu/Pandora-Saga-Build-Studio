@@ -11,8 +11,8 @@ test('wiki location list includes named NPC settlements even when mob map table 
  assert.ok(names.length>=10);
  const extra=names.filter(id=>!maps[id]);
  assert.ok(extra.length>=1);
- assert.match(app,/const knownMaps=\{\.\.\.\(wikiData\.trades\?\.mapNames\|\|\{\}\),\.\.\.\(wikiData\.maps\|\|\{\}\)\}/);
- assert.match(app,/type==='map'\?knownMaps/);
+ assert.match(app,/const knownMaps=wikiIndex\.records\('map'\)/);
+ assert.match(app,/const catalog=wikiIndex\.records\(type\)/);
 });
 test('zone drops are presented as group probabilities, never fake per-item chance',()=>{
  assert.ok(tables.zoneDrops.length>0);

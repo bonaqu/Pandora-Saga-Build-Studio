@@ -1411,9 +1411,8 @@ function renderWiki(root){
   if(!detailOnly)browse.replaceChildren();
   detail.replaceChildren();
   const type=wikiSelection.type;
-  const knownMaps={...(wikiData.trades?.mapNames||{}),...(wikiData.maps||{})};
-  const catalog=type==='item'?wikiData.items:type==='monster'?wikiData.monsters:type==='map'?knownMaps:
-    type==='npc'?wikiData.trades?.npcs:type==='skill'?wikiData.skills:type==='soul'?wikiData.souls:type==='instance'?Object.fromEntries((wikiData.instances||[]).map(i=>[i.id,i])):Object.fromEntries((wikiData.chests?.boxes||[]).map(item=>[item.i,item]));
+  const knownMaps=wikiIndex.records('map');
+  const catalog=wikiIndex.records(type);
   const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id));
   const visible=results.slice(0,wikiShown);
   if(!detailOnly){
@@ -1620,12 +1619,12 @@ function renderWiki(root){
       .filter(([,value])=>Number(value)>0);
      if(currencies.length)entry.append(h('div',{class:'wiki-trade-cost',text:
       currencies.map(([name,value])=>name+': '+Number(value).toLocaleString('ru-RU')).join(' · ')}));
-     const searchText=[dataName('item',trade.i),String(trade.i),
-      ...(trade.mats||[]).flatMap(m=>[String(m.i),dataName('item',m.i)])].join(' ').toLocaleLowerCase('ru');
+     const searchText=wikiIndex.normalize([dataName('item',trade.i),String(trade.i),
+      ...(trade.mats||[]).flatMap(m=>[String(m.i),dataName('item',m.i)])].join(' '));
      recipesBox.append(entry);cards.push({entry,searchText});
     }
     const filterRecipes=()=>{
-     const query=recipeSearch.value.trim().toLocaleLowerCase('ru');
+     const query=wikiIndex.normalize(recipeSearch.value);
      let visible=0;
      for(const card of cards){
       card.entry.hidden=!!query&&!card.searchText.includes(query);
@@ -1654,10 +1653,10 @@ function renderWiki(root){
        (wikiSelection.highlight===String(mob)?' highlighted':'')});
       entry.append(wikiLink(dataName('monster',mob)+
        (mon?.level!=null?' · ур. '+mon.level:''),'monster',mob));
-      list.append(entry);rows.push({entry,name:dataName('monster',mob).toLocaleLowerCase('ru')});
+      list.append(entry);rows.push({entry,name:wikiIndex.normalize(dataName('monster',mob)+' '+mob)});
      }
      search.addEventListener('input',()=>{
-      const q=search.value.trim().toLocaleLowerCase('ru');
+      const q=wikiIndex.normalize(search.value);
       for(const row of rows)row.entry.hidden=!!q&&!row.name.includes(q);
      });
      detail.append(search,list);
