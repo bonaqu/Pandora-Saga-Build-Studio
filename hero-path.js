@@ -50,6 +50,14 @@ function allowedForJob(skill,job){
  return !!classes&&typeof classes==='object'&&!Array.isArray(classes)&&
   Object.hasOwn(classes,job)&&(classes[job]===1||classes[job]===true);
 }
+function validSourceLevel(raw){
+ // Optional metadata may be absent; if supplied, require a nonnegative
+ // integer number/decimal text.  JS coercion of [] and blanks into zero is
+ // not evidence of a real game requirement.
+ if(typeof raw!=='number'&&typeof raw!=='string')return false;
+ if(typeof raw==='string'&&!/^\+?\d+(?:\.0+)?$/.test(raw.trim()))return false;
+ return Number.isSafeInteger(Number(raw))&&Number(raw)>=0;
+}
 function readiness(skill,api,seen=new Set(),skillIndex){
  const byId=skillIndex||indexSkills(api.skillCatalog);
  const problems=[],state=api.state,job=api.job;
@@ -57,9 +65,7 @@ function readiness(skill,api,seen=new Set(),skillIndex){
  const chain=new Set(seen);chain.add(String(skill.id));
  if(!allowedForJob(skill,job))
   problems.push(tr(api,'Не подходит профессии','Unavailable to this class'));
- if(skill.charLevel!==undefined&&
-  (skill.charLevel===null||typeof skill.charLevel==='boolean'||
-   !Number.isInteger(Number(skill.charLevel))||Number(skill.charLevel)<0))
+ if(skill.charLevel!==undefined&&!validSourceLevel(skill.charLevel))
   problems.push(tr(api,'Неизвестный уровень изучения','Unknown character level requirement'));
  else if(Number(skill.charLevel)>state.level)
   problems.push(tr(api,'Требуется уровень ','Requires level ')+skill.charLevel);
@@ -98,9 +104,7 @@ function readiness(skill,api,seen=new Set(),skillIndex){
  if(skill.learnable===false)problems.push(tr(api,'Особый способ изучения','Special learning method required'));
  else if(skill.learnable!==undefined&&skill.learnable!==true)
   problems.push(tr(api,'Неизвестный способ изучения','Unknown learning method'));
- if(skill.reqLevel!==undefined&&
-  (skill.reqLevel===null||typeof skill.reqLevel==='boolean'||
-   !Number.isInteger(Number(skill.reqLevel))||Number(skill.reqLevel)<0))
+ if(skill.reqLevel!==undefined&&!validSourceLevel(skill.reqLevel))
   problems.push(tr(api,'Неизвестное дополнительное условие','Unknown additional requirement'));
  else if(Number(skill.reqLevel)>0&&!required.length)
   problems.push(tr(api,'Дополнительное условие ','Unverified additional requirement ')+skill.reqLevel);
