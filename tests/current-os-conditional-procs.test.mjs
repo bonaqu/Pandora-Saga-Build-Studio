@@ -40,6 +40,6 @@ test('Soul grade gates and unknown skill names are safe',()=>{
 test('Proc preview is not applied as deterministic attack bonus',()=>{
  const src=read('os-calculator.js'),book=read('stage-attributes.js');
  assert.match(src,/const procPreview=conditionalProcPreview\(/);
- assert.match(src,/resistances,targetResistance,procPreview,experienceBonus,regeneration/);
+ assert.match(src,/resistances,targetResistance,procPreview,experienceBonus,specialEquipment,regeneration/);
  assert.match(book,/Срабатывания предметов и душ/);
 });

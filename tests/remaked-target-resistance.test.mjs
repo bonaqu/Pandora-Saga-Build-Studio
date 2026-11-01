@@ -29,7 +29,7 @@ test('unknown type ignored and duplicate Souls not falsely aggregated',()=>{
 test('Book shows category modifiers without injecting them into global armor',()=>{
  const calc=read('os-calculator.js'),book=read('stage-attributes.js');
  assert.match(calc,/const targetResistance=targetResistancePreview\(/);
- assert.match(calc,/resistances,targetResistance,procPreview,experienceBonus,regeneration/);
+ assert.match(calc,/resistances,targetResistance,procPreview,experienceBonus,specialEquipment,regeneration/);
  assert.match(book,/modifiers\?\.targetResistance\?\.entries\?\.length/);
  assert.match(book,/Защита от отдельных типов противников/);
 });

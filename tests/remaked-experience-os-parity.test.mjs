@@ -23,7 +23,7 @@ test('EXP grade gate respects future refinement requirements without inventing a
 test('experience is shown as a separate Hero Book effect rather than added to damage',()=>{
  const app=read('os-calculator.js'),stage=read('stage-attributes.js');
  assert.match(app,/experienceBonus=experienceBonusPreview\(\{records:combinedRecords,itemForth\}\)/);
- assert.match(app,/procPreview,experienceBonus,regeneration/);
+ assert.match(app,/procPreview,experienceBonus,specialEquipment,regeneration/);
  assert.match(stage,/Бонус к получаемому опыту/);
  assert.match(stage,/modifiers\?\.experienceBonus\?\.entries\?\.length/);
 });
