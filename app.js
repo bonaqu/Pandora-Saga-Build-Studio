@@ -1537,6 +1537,9 @@ function renderWiki(root){
       h('p',{text:classes.map(id=>catalog.classes?.[id]?.name||id).join(' · ')})
      ]));
     }
+    const wearers=window.PandoraUIPlanner.outfitWearers(rec,lang);
+    if(wearers?.length)detail.append(h('p',{class:'wiki-item-wearers',
+     text:wt('Для: ','Wearable by: ')+wearers.join(' · ')}));
     detail.append(h('h4',{text:wt('Где получить','How to obtain')}));
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:'Подтверждённые источники в доступном каталоге не найдены.'}));

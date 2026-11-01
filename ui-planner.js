@@ -61,5 +61,22 @@ function raceCompatible(item,race,gender){
  if(isAstirMale(item))return race===4||race===5||(race===0||race===1)&&gender===1;
  return true;
 }
-root.PandoraUIPlanner=Object.freeze({raceHasGender,normalizeGender,equippable,planningEquippable,isAstirDress,isAstirMale,raceCompatible});
+function outfitWearers(item,lang='ru'){
+ const en=lang==='en',kroll=en?'Kroll':'Кролль';
+ if(astirFemale(item))return en?
+  ['Human (F)','Elf (F)','Myrine',kroll]:
+  ['Человек (Ж)','Эльф (Ж)','Мирина',kroll];
+ if(isAstirMale(item))return en?
+  ['Human (M)','Elf (M)','Enkidu',kroll]:
+  ['Человек (М)','Эльф (М)','Энкиду',kroll];
+ const requirement=tailoredRestriction(item);
+ if(!requirement)return null;
+ if(requirement.race===5)return [kroll];
+ const races=en?['Human','Elf','Dwarf','Myrine','Enkidu','Kroll']:
+  ['Человек','Эльф','Цверг','Мирина','Энкиду','Кролль'];
+ const gendered=requirement.race<2?
+  (requirement.gender===1?(en?' (M)':' (М)'):(en?' (F)':' (Ж)')):'';
+ return [races[requirement.race]+gendered,kroll];
+}
+root.PandoraUIPlanner=Object.freeze({raceHasGender,normalizeGender,equippable,planningEquippable,isAstirDress,isAstirMale,raceCompatible,outfitWearers});
 })(typeof window==='undefined'?globalThis:window);

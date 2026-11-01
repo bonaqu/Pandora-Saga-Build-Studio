@@ -129,6 +129,13 @@ test('removed equipment catalog has no duplicate CSS components or unused tabs',
  assert.match(css,/\.wiki-equipment-toolbar\{/);
  assert.match(css,/\.wiki-gear-grid\{/);
 });
+test('game encyclopedia explains race/sex restrictions without exposing technical IDs',()=>{
+ const app=read('app.js'),css=read('style.css'),hover=read('stage-item-ui.js');
+ assert.match(app,/PandoraUIPlanner\.outfitWearers\(rec,lang\)/);
+ assert.match(app,/class:'wiki-item-wearers'/);
+ assert.match(css,/\.wiki-item-wearers\{/);
+ assert.match(hover,/PandoraUIPlanner\?\.outfitWearers\?\.\(record,locale\)/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');

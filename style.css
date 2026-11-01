@@ -1677,4 +1677,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .wiki-record-glyph{float:right;display:grid;place-items:center;
  width:76px;height:76px;margin:0 0 12px 14px;border:2px double #9d794f;
  background:#211710;color:#e2bd7b;font:34px Georgia,serif}
+.wiki-item-wearers{display:block;margin:10px 0;padding:9px 12px;
+ border-left:3px solid #b78f57;background:#241a12;color:#edcc98;
+ font-size:12px;overflow-wrap:anywhere}
 

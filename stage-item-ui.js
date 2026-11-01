@@ -29,6 +29,8 @@ function summary(record,icon,kind='item'){
  [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),record.W],
  [tr('Защита','Defense'),record.AC],[tr('Гнёзда','Sockets'),record.soulslot],
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
+ const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
+ if(wearers?.length)rows.push([tr('Подходит','Wearable by'),wearers.join(' · ')]);
  if(root.PandoraStudioAdminActive?.())rows.push(['ID',record.id]);
  const dl=el('dl',{class:'stage-rich-fields'});
  for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){

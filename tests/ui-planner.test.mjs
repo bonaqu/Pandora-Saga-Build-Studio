@@ -52,6 +52,22 @@ test('all Astir gloves and boots follow same gender policy as body outfits',()=>
  assert.equal(ui.raceCompatible({id:14601,slot:'head'},1,0),true);
  assert.equal(ui.raceCompatible({id:98001,slot:'gloves'},1,0),true);
 });
+test('equipment tooltips name only verified compatible races and genders',()=>{
+ assert.deepEqual(ui.outfitWearers({id:12601,slot:'body'}),
+  ['Человек (М)','Эльф (М)','Энкиду','Кролль']);
+ assert.deepEqual(ui.outfitWearers({id:12612,slot:'body'}),
+  ['Человек (Ж)','Эльф (Ж)','Мирина','Кролль']);
+ assert.deepEqual(ui.outfitWearers({id:14531,slot:'gloves'}),
+  ['Эльф (Ж)','Кролль']);
+ assert.deepEqual(ui.outfitWearers({id:11552,slot:'head'}),
+  ['Мирина','Кролль']);
+ assert.deepEqual(ui.outfitWearers({id:15561,slot:'feet'}),
+  ['Энкиду','Кролль']);
+ assert.deepEqual(ui.outfitWearers({id:12571,slot:'body'}),['Кролль']);
+ assert.equal(ui.outfitWearers({id:19022,slot:'ring'}),null);
+ assert.deepEqual(ui.outfitWearers({id:12601,slot:'body'},'en'),
+  ['Human (M)','Elf (M)','Enkidu','Kroll']);
+});
 test('in-portrait picker includes only allowed, slot-matching, non-decorative equipment',()=>{
  const records=[
   {id:1,slot:'weapon',level:1},{id:2,slot:'weapon',level:99},
