@@ -6,7 +6,7 @@ test('transfer key is revealed on demand, not embedded directly in public librar
  const src=read('app.js'),html=read('index.html');
  assert.match(src,/function buildLibraryTransfer\(\)/);
  assert.match(src,/value:'',class:'build-transfer-key'/);
- assert.match(src,/field\.value=cloudToken\(\)/);
+ assert.match(src,/field\.value=tabGuestSecret/);
  assert.match(src,/navigator\.clipboard\.writeText\(field\.value\)/);
  assert.match(src,/if\(!codeVisible\)/);
  assert.doesNotMatch(src,/copy\.onclick=/);

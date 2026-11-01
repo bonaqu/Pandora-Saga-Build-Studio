@@ -8,6 +8,6 @@ test('guest and account saved builds cannot mix when switching session identitie
  assert.match(app,/activateLibraryScope\(\{carry:Boolean\(register\)\}\)/);
  assert.match(app,/onLogout:\(\)=>\{[\s\S]*?activateLibraryScope\(\)/);
  assert.doesNotMatch(app,/localStorage\.setItem\('ps-preaccount-library\.v1'/);
- assert.match(app,/PandoraBuildScope\.migrateLegacyGuest\(localStorage,cloudToken\(\)\)/);
+ assert.match(app,/PandoraBuildScope\.migrateLegacyGuest\(localStorage,tabGuestSecret\)/);
  assert.match(app,/if\(libraryChangeId!==generation\)return/);
 });
