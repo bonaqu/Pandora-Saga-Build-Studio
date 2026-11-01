@@ -1,6 +1,7 @@
 (function(root){
 'use strict';
 const M=root.PandoraSkillProgression;
+const tr=(api,ru,en)=>api.lang==='en'?en:ru;
 function make(tag,attr={},children=[]){
  const e=document.createElement(tag);
  for(const [key,val]of Object.entries(attr)){
@@ -16,28 +17,28 @@ function make(tag,attr={},children=[]){
 }
 function readiness(skill,api,seen=new Set()){
  const problems=[],state=api.state,job=api.job;
- if(seen.has(String(skill.id)))return {learned:false,problems:['Циклическая зависимость навыков']};
+ if(seen.has(String(skill.id)))return {learned:false,problems:[tr(api,'Циклическая зависимость навыков','Cyclic skill prerequisite')]};
  const chain=new Set(seen);chain.add(String(skill.id));
- if(skill.classes&&!Object.hasOwn(skill.classes,job))problems.push('Не подходит профессии');
- if(Number(skill.charLevel)>state.level)problems.push('Требуется уровень '+skill.charLevel);
+ if(skill.classes&&!Object.hasOwn(skill.classes,job))problems.push(tr(api,'Не подходит профессии','Unavailable to this class'));
+ if(Number(skill.charLevel)>state.level)problems.push(tr(api,'Требуется уровень ','Requires level ')+skill.charLevel);
  const required=Array.isArray(skill.reqs)?skill.reqs:[];
  for(const req of required){
-  if(!req||!Number.isInteger(Number(req.amount))){problems.push('Неизвестное условие');continue}
+  if(!req||!Number.isInteger(Number(req.amount))){problems.push(tr(api,'Неизвестное условие','Unknown requirement'));continue}
   const need=Number(req.amount),points=M.potential(state,req.branch),green=M.trained(state,req.branch);
   const name=api.branchName(req.branch);
-  if(points<need)problems.push(name+': вложено '+points+'/'+need);
-  if(green<need)problems.push(name+': мастерство '+green+'/'+need);
+  if(points<need)problems.push(name+tr(api,': вложено ',': spent ')+points+'/'+need);
+  if(green<need)problems.push(name+tr(api,': мастерство ',': mastery ')+green+'/'+need);
  }
  if(skill.prereq){
   const previous=api.skillCatalog.find(row=>String(row.id)===String(skill.prereq));
-  if(!previous)problems.push('Предыдущее умение не найдено');
+  if(!previous)problems.push(tr(api,'Предыдущее умение не найдено','Required previous skill not found'));
   else{
    const prerequisite=readiness(previous,api,chain);
-   if(!prerequisite.learned)problems.push('Требуется предыдущее умение «'+previous.name+'»');
+   if(!prerequisite.learned)problems.push(tr(api,'Требуется предыдущее умение «','Requires previous skill “')+previous.name+tr(api,'»','”'));
   }
  }
- if(skill.learnable===false)problems.push('Особый способ изучения');
- if(Number(skill.reqLevel)>0&&!required.length)problems.push('Дополнительное условие '+skill.reqLevel+' не подтверждено');
+ if(skill.learnable===false)problems.push(tr(api,'Особый способ изучения','Special learning method required'));
+ if(Number(skill.reqLevel)>0&&!required.length)problems.push(tr(api,'Дополнительное условие ','Unverified additional requirement ')+skill.reqLevel);
  return {learned:!problems.length,problems};
 }
 function viewGrowth(target,api){
@@ -251,7 +252,7 @@ function viewGrowth(target,api){
 function viewSkills(target,details,api){
  const previousScroll=target.querySelector?.('.path-skill-grid')?.scrollTop||0;
  target.replaceChildren();details.replaceChildren();details.hidden=true;
- if(!api.catalogReady){target.append(make('p',{class:'muted',text:'Каталог умений загружается.'}));return}
+ if(!api.catalogReady){target.append(make('p',{class:'muted',text:tr(api,'Каталог умений загружается.','Loading skill catalog…')}));return}
  const needle=String(api.query||'').trim().toLocaleLowerCase('ru');
  const rows=api.skillCatalog.filter(skill=>skill.classes?.[api.job]&&
   (String(skill.name||'')+' '+skill.id).toLocaleLowerCase('ru').includes(needle))
@@ -259,12 +260,12 @@ function viewSkills(target,details,api){
    api.filter==='all'||(api.filter==='known'?gate.learned:!gate.learned));
  rows.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
   String(a.skill.name||'').localeCompare(String(b.skill.name||''),'ru'));
- target.append(make('p',{class:'path-skill-count',text:rows.length+' умений'}));
+ target.append(make('p',{class:'path-skill-count',text:rows.length+tr(api,' умений',' skills')}));
  const grid=make('div',{class:'path-skill-grid'});
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
     (String(api.selectedSkill?.id)===String(skill.id)?' active':''),
-      'aria-label':skill.name+' · '+(gate.learned?'доступно':'недоступно'),
+      'aria-label':skill.name+' · '+(gate.learned?tr(api,'доступно','available'):tr(api,'недоступно','unavailable')),
    'data-skill-id':String(skill.id),onclick:()=>api.onInspect(skill)});
   const src=api.icon(skill.branch,skill);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));item.append(img)}
@@ -275,34 +276,34 @@ function viewSkills(target,details,api){
  target.append(grid);grid.scrollTop=previousScroll;
  if(rows.length>(api.shown||24))
   target.append(make('button',{type:'button',class:'path-show-more',
-   text:'Показать ещё ('+(rows.length-(api.shown||24))+')',onclick:api.onMoreSkills}));
- if(!rows.length)target.append(make('p',{class:'muted',text:'По этим параметрам навыки не найдены.'}));
+   text:tr(api,'Показать ещё (','Show more (')+(rows.length-(api.shown||24))+')',onclick:api.onMoreSkills}));
+ if(!rows.length)target.append(make('p',{class:'muted',text:tr(api,'По этим параметрам навыки не найдены.','No skills match these filters.')}));
  const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===String(api.selectedSkill.id)):null;
  if(selected){details.hidden=false;
   const skill=selected.skill,gate=selected.gate;
   details.append(make('h3',{text:skill.name||'Умение без названия'}),
-   make('p',{text:skill.desc||'Описание умения отсутствует.'}),
+   make('p',{text:skill.desc||tr(api,'Описание умения отсутствует.','Skill description unavailable.')}),
    make('p',{class:gate.learned?'path-skill-yes':'path-skill-no',
-    text:gate.learned?'✓ Условия выполнены':
+    text:gate.learned?tr(api,'✓ Условия выполнены','✓ Requirements met'):
      '🔒 '+gate.problems.join(' · ')}));
   const stats=make('dl',{class:'path-skill-metadata'});
   const field=(label,value)=>{
    if(value===null||value===undefined||value==='')return;
    stats.append(make('dt',{text:label}),make('dd',{text:String(value)}));
   };
-  field('Уровень персонажа',skill.charLevel||'Нет известного порога');
-  field('Мана / ОМ',skill.mana);
-  field('Подготовка',skill.cast);
-  field('Перезарядка',skill.cooldown);
-  field('Дальность',skill.rangeFromWeapon?'Зависит от оружия':skill.range);
-  field('Стихия',skill.element);
-  field('Характеристика',skill.powerStat);
-  field('ID умения',skill.id);
+  field(tr(api,'Уровень персонажа','Character level'),skill.charLevel||tr(api,'Нет известного порога','Unknown requirement'));
+  field(tr(api,'Мана / ОМ','Mana / MP'),skill.mana);
+  field(tr(api,'Подготовка','Cast time'),skill.cast);
+  field(tr(api,'Перезарядка','Cooldown'),skill.cooldown);
+  field(tr(api,'Дальность','Range'),skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
+  field(tr(api,'Стихия','Element'),skill.element);
+  field(tr(api,'Характеристика','Attribute'),skill.powerStat);
+  field(tr(api,'ID умения','Skill ID'),skill.id);
   details.append(stats);
   const requirements=Array.isArray(skill.reqs)?skill.reqs:[];
   if(requirements.length){
    const reqList=make('div',{class:'path-skill-prereqs'});
-   reqList.append(make('strong',{text:'Требования по веткам'}));
+   reqList.append(make('strong',{text:tr(api,'Требования по веткам','Branch requirements')}));
    for(const req of requirements){
     if(!req||!req.branch)continue;
     const value=M.potential(api.state,req.branch),green=M.trained(api.state,req.branch);
@@ -313,7 +314,7 @@ function viewSkills(target,details,api){
   }
   if(skill.prereq){
    const before=api.skillCatalog.find(s=>String(s.id)===String(skill.prereq));
-   details.append(make('p',{class:'path-skill-prereqs',text:'Предыдущее умение: '+
+   details.append(make('p',{class:'path-skill-prereqs',text:tr(api,'Предыдущее умение: ','Previous skill: ')+
      (before?.name||String(skill.prereq))}));
   }
   // Raw effect codes remain in the encyclopedia, not the quick skill card.
