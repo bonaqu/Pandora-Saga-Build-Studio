@@ -49,6 +49,9 @@ test('grade gates and modified chance, effect code, skill ID or source identity 
  }
  assert.deepEqual(calc.specialEquipmentPreview({records:[[
   'soul:101010',{...record,id:101011},0]]}).entries,[]);
+ assert.deepEqual(calc.specialEquipmentPreview({records:[[
+  source,{...record,desc:'Effect description currently unverified'},0]]}).entries,[]);
+ assert.deepEqual(calc.specialEquipmentPreview({records:[[source,record,undefined]]}).entries,[]);
 });
 test('conflicting or unsupported proc chance sources are never presented as verified gameplay percentages',()=>{
  const vampire=souls[101009];
