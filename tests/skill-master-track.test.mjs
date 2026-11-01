@@ -121,7 +121,7 @@ test('red locked region shows OS skills beyond the class skill cap',()=>{
  assert.match(app,/locked:true/);
  assert.match(ui,/mark\.locked\?' unreachable'/);
  assert.match(ui,/if\(marks\.length\)\{/);
- assert.match(css,/inline-milestone\.unreachable/);
+ assert.match(css,/path-unlock-notch\.unreachable/);
 });
 test('branch count, green mastery and group totals update on input, without a new header row',()=>{
  const ui=read('hero-path.js');
