@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.196.0 (`2026.11.01.196`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.197.0 (`2026.11.01.197`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.197.0 — browser library ownership boundaries
+
+- Browser saved builds, current local hero draft and pending cloud deletions now maintain separate recovery snapshots per logged-in account or account-free library key. Logging into another existing account does not merge that account's saves with local guest saves.
+- New account registration intentionally retains the guest library **only when registration is made from that guest browser**; the same legacy key remains bound in D1. Logging out restores the guest-owned draft instead of another user's private build.
+- Existing unscoped browser storage is migrated without changing D1 or deleting earlier local records; an expired old account's browser snapshot is attributed to its previous account where identifiable.
+- Cloud reconciliation now exits immediately if an account switch happens while pending deletes are being processed. Source-backed Node tests cover account A/B/guest switching, registration transfer, legacy cache and pending-delete isolation.
+- No server migration needed; independent Chromium browser and live-user acceptance still required.
 
 ## Source update 0.196.0 — guard live user accounts after migration 0005
 

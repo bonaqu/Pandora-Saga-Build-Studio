@@ -65,6 +65,7 @@ function selectActiveBuild(id){
  activeBuildId=id;
  try{if(id)sessionStorage.setItem(ACTIVE_BUILD_KEY,id);else sessionStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
  try{if(id)localStorage.setItem(ACTIVE_BUILD_KEY,id);else localStorage.removeItem(ACTIVE_BUILD_KEY)}catch{}
+ window.PandoraBuildScope.sync(localStorage);
 }
 let racePreviewIndex=selectedPortraitIndex(state.race,state.gender),stageSlotPickerOpen=false,stageSlotQuery='',stageSlotShown=48,
 inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
@@ -77,8 +78,10 @@ stageGemQuery='',gameTables=null,gameItemForth=null,
 stageAttributesPage=['summary','attack','defense','recovery','effects','buffs'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 // Current character changes remain a local draft until explicit user save.
-function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state))}catch{}}
-function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds))}catch{}}
+function persist(){try{localStorage.setItem('ps-build-studio.v1',JSON.stringify(state));
+ window.PandoraBuildScope.sync(localStorage)}catch{}}
+function persistBuilds(){try{localStorage.setItem('ps-build-library.v1',JSON.stringify(builds));
+ window.PandoraBuildScope.sync(localStorage)}catch{}}
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
 const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
 let libraryChangeId=0;
@@ -86,8 +89,11 @@ function queuedDeletes(){
  try{return JSON.parse(localStorage.getItem(CLOUD_DELETES_KEY)||'[]').filter(v=>/^[a-f0-9]{32}$/.test(v))}
  catch{return []}
 }
-function queueDelete(id){const ids=new Set(queuedDeletes());ids.add(id);localStorage.setItem(CLOUD_DELETES_KEY,JSON.stringify([...ids]))}
-function acknowledgeDelete(id){localStorage.setItem(CLOUD_DELETES_KEY,JSON.stringify(queuedDeletes().filter(v=>v!==id)))}
+function queueDelete(id){const ids=new Set(queuedDeletes());ids.add(id);
+ localStorage.setItem(CLOUD_DELETES_KEY,JSON.stringify([...ids]));
+ window.PandoraBuildScope.sync(localStorage)}
+function acknowledgeDelete(id){localStorage.setItem(CLOUD_DELETES_KEY,JSON.stringify(queuedDeletes().filter(v=>v!==id)));
+ window.PandoraBuildScope.sync(localStorage)}
 let cloudLibraryStatus='Подключаем облачную библиотеку…';
 function cloudToken(){
  let token=localStorage.getItem(CLOUD_TOKEN_KEY);
@@ -96,6 +102,43 @@ function cloudToken(){
  }
  return token;
 }
+function libraryScopeId(){
+ return window.PandoraBuildScope.owner(window.PandoraAccountUI?.username(),cloudToken());
+}
+function restoreScopedDraft(){
+ try{
+  const raw=JSON.parse(localStorage.getItem('ps-build-studio.v1')||'null');
+  const base=fresh();state=raw&&typeof raw==='object'&&!Array.isArray(raw)?
+   {...base,...raw,points:{...base.points,...raw.points},
+    stats:{...base.stats,...raw.stats},equipment:{...base.equipment,...raw.equipment},
+    souls:{...base.souls,...raw.souls},refinements:{...base.refinements,...raw.refinements},
+    gems:{...base.gems,...raw.gems},profile:{...base.profile,...raw.profile}}:base;
+ }catch{state=fresh()}
+ try{
+  const rows=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]');
+  builds=Array.isArray(rows)?rows:[];
+ }catch{builds=[]}
+ activeBuildId=restoreActiveBuildId();
+ compareIds=[];buildSearchQuery='';
+}
+function activateLibraryScope({carry=false}={}){
+ const next=libraryScopeId();
+ let legacyOwner=null;
+ try{
+  const old=JSON.parse(localStorage.getItem('ps-account-session.v1')||'null')?.username;
+  if(typeof old==='string')legacyOwner='account:'+old.toLowerCase();
+ }catch{}
+ const changed=window.PandoraBuildScope.transition(localStorage,next,{carry,legacyOwner}).changed;
+ if(changed){
+  libraryChangeId++;
+  restoreScopedDraft();
+  restoreLoadedBuildUI();
+  render();
+ }
+ return changed;
+}
+// Claim existing pre-upgrade local records for their former owner without losing them.
+activateLibraryScope();
 async function cloudLibraryRequest(payload,secret=null){
  const bearer=secret||window.PandoraAccountUI?.token()||cloudToken();
  const response=await fetch(API+'/api/library',{method:payload?'POST':'GET',
@@ -151,7 +194,10 @@ async function loadCloudBuilds(){
  const generation=libraryChangeId;
  try{
   for(const id of queuedDeletes()){
-   await cloudLibraryRequest({action:'delete',id});acknowledgeDelete(id);
+   if(libraryChangeId!==generation)return;
+   await cloudLibraryRequest({action:'delete',id});
+   if(libraryChangeId!==generation)return;
+   acknowledgeDelete(id);
   }
   const response=await cloudLibraryRequest();
   if(!Array.isArray(response.records))throw Error('Некорректная библиотека');
@@ -1848,6 +1894,7 @@ async function connectCloudLibrary(secret,feedback){
    return true;
   }
   localStorage.setItem(CLOUD_TOKEN_KEY,trimmed);
+  activateLibraryScope({carry:true});
   selectActiveBuild(null);libraryChangeId++;
   feedback.textContent='Подключено. Объединяем сохранения…';
   void loadCloudBuilds();
@@ -2818,23 +2865,19 @@ for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','
 render();loadCatalog();loadOverrides();
 void window.PandoraAccountUI.init({
  baseUrl:API,legacyKey:()=>cloudToken(),
- onLogin:({register,bootstrap})=>{
-  if(!register&&!bootstrap){
-   try{localStorage.setItem('ps-preaccount-library.v1',JSON.stringify(builds))}catch{}
-   builds=[];persistBuilds();selectActiveBuild(null);
-  }
+ onLogin:({register})=>{
+  // New registration adopts the guest library because its existing D1 owner hash
+  // is intentionally bound to that browser key. Logging into a different existing
+  // account never transfers another owner's cached saves.
+  activateLibraryScope({carry:Boolean(register)});
   libraryChangeId++;
   void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
  },
- onLogout:({bootstrap=false}={})=>{
-  // Account-specific saved records must not become visible as a guest cache.
-  let prior=[];
-  try{const copy=JSON.parse(localStorage.getItem('ps-preaccount-library.v1')||'null');
-   if(Array.isArray(copy))prior=copy;
-  }catch{}
-  builds=prior;persistBuilds();selectActiveBuild(null);libraryChangeId++;
-  if(!bootstrap){state=fresh();persist();render()}
+ onLogout:()=>{
+  // Restore the previous guest's own saves and draft, not a different account's.
+  activateLibraryScope();
+  libraryChangeId++;
   void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
  },

@@ -166,5 +166,6 @@ async function init(config){
  }else options.onGuest?.();
  render();
 }
-root.PandoraAccountUI=Object.freeze({init,token,refresh:render,isLoggedIn:()=>Boolean(session)});
+root.PandoraAccountUI=Object.freeze({init,token,username:()=>session?.username||null,
+ refresh:render,isLoggedIn:()=>Boolean(session)});
 })(typeof window==='undefined'?globalThis:window);
