@@ -48,3 +48,12 @@ test('locale selection works before async catalog is available',()=>{
  assert.match(app,/function applyGameLocale\(\)\{\n window\.PandoraUILocale\.apply\(lang\)/);
  assert.match(app,/button\.setAttribute\('aria-pressed',String\(active\)\)/);
 });
+
+test('saved build overwrite confirms inside a visible card, not a native dialog',()=>{
+ const app=read('app.js'),css=read('style.css');
+ assert.match(app,/class:'build-overwrite-choice',hidden:true/);
+ assert.match(app,/text:'Подтвердить перезапись'/);
+ assert.doesNotMatch(app,/if\(!confirm\('Перезаписать сохранённый билд/);
+ assert.match(css,/\.build-overwrite-choice\[hidden\]\{display:none\}/);
+ assert.match(css,/\.build-overwrite-choice\{display:flex/);
+});

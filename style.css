@@ -1476,6 +1476,13 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .build-share-slot .button-action{justify-self:start;margin:0}
 .build-share-error{color:#eda98f!important;font-size:12px!important;overflow-wrap:anywhere}
 
+/* Explicit overwrite confirmation belongs to the saved build card. */
+.build-overwrite-choice{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:9px 0 2px;
+ padding:11px 12px;background:#2c261a;border:1px solid #c19a59;border-radius:5px}
+.build-overwrite-choice[hidden]{display:none}
+.build-overwrite-choice p{flex:1 0 100%;font-size:12px;color:#f0d3a1}
+.build-overwrite-choice .button-action{margin:0}
+
 /* Saved build deletion is confirmed inline, never with the browser's confirm dialog. */
 .build-delete-choice{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:8px 0;
  padding:10px 12px;border:1px solid #a1664a;border-radius:5px;background:#351e18}
