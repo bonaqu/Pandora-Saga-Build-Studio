@@ -174,9 +174,8 @@
 .wiki-page{min-height:390px;background:linear-gradient(135deg,#281b14,#100c0b);border:2px double #987346;padding:18px}
 .wiki-page h3{font:600 29px Georgia;color:#eed09d;overflow-wrap:anywhere;margin:9px 0 16px}
 .wiki-page h4,.item-origin h4{font:600 18px Georgia;color:#e8bd7d;margin:14px 0 7px}
-.wiki-description{white-space:pre-line;color:#d8c1a0;font-size:12px}
+.wiki-description{white-space:pre-line;overflow-wrap:anywhere;color:#d8c1a0;font-size:12px}
 .wiki-entry{padding:5px 0;border-bottom:1px solid #66452e70}
-.wiki-entry.highlighted{outline:1px solid #dfac66;background:#624321}
 .wiki-entry small{display:block;font-size:10px;color:#bb9c79}
 .item-origin{background:#20170f;border:1px solid #80613e;margin:15px 0;padding:9px}
 @media(max-width:780px){.wiki-layout{grid-template-columns:1fr}.wiki-list{max-height:240px}}
@@ -220,9 +219,7 @@
 
 
 /* Visually scannable encyclopedia: stable image rows with deep-linked highlights. */
-.wiki-list .wiki-link,.wiki-page .wiki-link{display:flex;align-items:center;gap:8px}
-.wiki-list .wiki-link{min-height:38px}
-.wiki-list-icon{width:29px;height:29px;object-fit:contain;flex:0 0 29px;background:#0d0b0a;border:1px solid #6d5238}
+.wiki-page .wiki-link{display:flex;align-items:center;gap:8px}
 .wiki-item-portrait{float:right;width:76px;height:76px;object-fit:contain;margin:0 0 12px 14px;border:2px double #9d794f;background:#130e0c}
 .wiki-entry.highlighted{outline:2px solid #e9bf82;box-shadow:inset 0 0 0 1px #b17c45;background:#64401f}
 
@@ -573,7 +570,6 @@ a.wiki-link:hover{text-decoration:none}
 @media(max-width:880px){.equipment-catalog-layout{grid-template-columns:1fr}
 .equipment-catalog-layout .item-info{position:static;max-height:none}}
 
-.wiki-description{white-space:pre-line;overflow-wrap:anywhere}
 
 /* 2026.10.30.51 — mastery slider and skill-unlock markers share the same bar. */
 .inline-mastery-track{height:106px;position:relative;margin:8px 3px 9px;background:linear-gradient(180deg,#271b11,#140f0b);border:1px solid #89653e;box-shadow:inset 0 0 10px #070502}
@@ -1217,10 +1213,8 @@ main{padding-top:10px}
 .wiki-link:focus-visible{outline:2px solid #efc88b;outline-offset:2px}
 
 /* Compact OS-provided monster parameters and real location-group loot. */
-.wiki-monster-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+.wiki-monster-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
  gap:5px;margin:10px 0}
-.wiki-monster-stats span{padding:7px 9px;background:#312117;border:1px solid #795a38;
- color:#e8c794;font:600 11px Manrope,Arial,sans-serif}
 .wiki-monster-resists{display:flex;flex-wrap:wrap;gap:6px;
  padding:8px;background:#24180f;border:1px solid #755537}
 .wiki-monster-resists summary{width:100%;cursor:pointer;color:#e9c997;font-size:12px}
@@ -1251,7 +1245,6 @@ main{padding-top:10px}
 .wiki-inline-search{display:block;width:100%;padding:9px 12px;margin:8px 0;border:1px solid #95714d;border-radius:5px;background:#18110c;color:#f5d9a5;font:12px Manrope,Arial,sans-serif}
 .wiki-inline-search:focus-visible{outline:2px solid #e9b96b;outline-offset:1px}
 .wiki-result-counter{display:block;color:#bc9d76;margin:4px 0;font-size:10px}
-.wiki-monster-stats{grid-template-columns:repeat(auto-fit,minmax(110px,1fr))}
 .wiki-monster-stat{min-width:0;display:grid;gap:4px;padding:8px 10px;border:1px solid #765839;border-radius:4px;background:#291d14}
 .wiki-monster-stat small{color:#baa080;font-size:10px}
 .wiki-monster-stat strong{color:#f5d4a0;font:650 17px Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums}

@@ -88,6 +88,15 @@ test('wiki shows localized game class names and consistent source labels',()=>{
  assert.doesNotMatch(app,/id\.replaceAll\('_',' '\)/);
  assert.match(app,/if\(fromD1&&\(snapshots\.size!==1\|\|unknown\.length\)\)/);
 });
+test('encyclopedia CSS has one canonical image size, descriptions and monster grid',()=>{
+ const css=read('style.css');
+ for(const selector of [/\.wiki-list-icon\s*\{/g,/\.wiki-monster-stats\s*\{/g,
+  /\.wiki-description\s*\{/g]){
+  assert.equal([...css.matchAll(selector)].length,1,'Duplicate encyclopedia CSS selector');
+ }
+ assert.match(css,/\.wiki-list-icon\{width:34px/);
+ assert.match(css,/\.wiki-description\{white-space:pre-line;overflow-wrap:anywhere/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');
