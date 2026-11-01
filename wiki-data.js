@@ -72,7 +72,10 @@ function build(data){
    const content=Object.fromEntries(Object.entries(pair[1])
     .filter(([key])=>key!=='id'&&key!=='iconId')
     .sort(([a],[b])=>a.localeCompare(b)));
-   const signature=name+'|'+JSON.stringify(content);
+   // Monsters with the same stats but different loot tables may be distinct
+   // in-world variants. Do not merge those sources automatically.
+   const loot=type==='monster'?data.drops?.[pair[0]]||null:null;
+   const signature=name+'|'+JSON.stringify(content)+'|'+JSON.stringify(loot);
    if(signatures.has(signature))hidden.set(pair[0],signatures.get(signature));
    else signatures.set(signature,pair[0]);
   }
@@ -111,6 +114,14 @@ function build(data){
  }
  const canonical=(type,id)=>aliases[type]?.get(String(id))||String(id);
  const related=(type,id)=>variants[type]?.get(canonical(type,id))||[String(id)];
+ const sameName=(type,id)=>{
+  const records=chapters[type]||{},entry=records[String(id)];
+  const name=normalizeSearch(type==='chest'?data.items?.[id]?.name:entry?.name);
+  if(!name)return [];
+  return (entries[type]||[]).filter(([key,rec])=>
+   key!==canonical(type,id)&&normalizeSearch(
+    type==='chest'?data.items?.[key]?.name:rec.name)===name);
+ };
  const uniqueRows=(rows,key)=>[...new Map(rows.map(row=>[key(row),row])).values()];
  const allLocations=id=>uniqueRows(related('monster',id).flatMap(key=>mobLocations.get(key)||[]),
   row=>row.type+':'+row.id);
@@ -128,7 +139,7 @@ function build(data){
  return Object.freeze({
   sources:id=>(sources.get(String(id))||[]).slice(),
   drops:allDrops,
-  trades:id=>(npcTrades.get(String(id))||[]).slice(),locations:allLocations,canonical,related,
+  trades:id=>(npcTrades.get(String(id))||[]).slice(),locations:allLocations,canonical,related,sameName,
   materialUses:id=>(materialTrades.get(String(id))||[]).slice(),
   residents:id=>(npcLocations.get(String(id))||[]).slice(),
   zones:id=>(zoneLocations.get(String(id))||[]).slice(),
