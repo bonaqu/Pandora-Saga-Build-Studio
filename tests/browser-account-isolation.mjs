@@ -33,8 +33,14 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
  });
  const page=await context.newPage(),exceptions=[];
  page.on('pageerror',error=>exceptions.push(error.message));
+ async function openManager(){
+  // The last visible tab is restored after F5; its dialog must not be clicked through.
+  if(!await page.locator('.build-name-input').isVisible())
+   await page.locator('#nav [data-tab="builds"]').click();
+  await page.locator('.build-name-input').waitFor({state:'visible'});
+ }
  async function saveNamed(name){
-  await page.locator('#nav [data-tab="builds"]').click();
+  await openManager();
   await page.locator('.build-name-input').fill(name);
   await page.getByRole('button',{name:'Сохранить новый билд'}).click();
   await page.locator('.build-card h3').filter({hasText:name}).waitFor({state:'visible'});
@@ -47,7 +53,7 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   },{token,username});
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
-  await page.locator('#nav [data-tab="builds"]').click();
+  await openManager();
  }
  async function named(){
   // The Build Manager is already open; its modal captures clicks outside itself.
