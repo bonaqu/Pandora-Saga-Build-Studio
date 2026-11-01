@@ -82,7 +82,7 @@ test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-
 test('wiki shows localized game class names and consistent source labels',()=>{
  const app=read('app.js');
  assert.match(app,/PandoraItemPresentation\.kind\(rec,lang\)/);
- assert.match(app,/classes\.map\(classLabel\)\.filter\(Boolean\)/);
+ assert.match(app,/keys\.map\(classLabel\)\.filter\(Boolean\)/);
  assert.match(app,/const monsterStats=/);
  assert.match(app,/Monster resistances/);
  assert.match(app,/const currencies=\[\[wt\('Золото','Gold'\)/);
@@ -174,6 +174,16 @@ test('nested trade and map searches use the same order-independent token matchin
  assert.match(app,/matchesWords\(card\.searchText,recipeSearch\.value\)/);
  assert.match(app,/matchesWords\(row\.name,search\.value\)/);
  assert.doesNotMatch(app,/card\.searchText\.includes\(query\)/);
+});
+test('all-class gear stays compact while restricted classes are readable on demand',()=>{
+ const app=read('app.js'),css=read('style.css');
+ assert.match(app,/const renderClassEligibility=keys=>/);
+ assert.match(app,/jobKeys\.every\(id=>keys\.includes\(id\)\)/);
+ assert.match(app,/class:'wiki-class-all'/);
+ assert.match(app,/class:'wiki-allowed-classes'/);
+ assert.match(app,/h\('details',\{class:'wiki-allowed-classes'\}/);
+ assert.equal((app.match(/renderClassEligibility\(Object\.keys\(rec\.classes\)/g)||[]).length,2);
+ assert.match(css,/\.wiki-class-all\{/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');

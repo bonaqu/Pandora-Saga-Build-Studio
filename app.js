@@ -1617,6 +1617,24 @@ function renderWiki(root){
    detail.append(h('p',{class:'wiki-description',text:
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text}));
   }
+  const renderClassEligibility=keys=>{
+   const labels=keys.map(classLabel).filter(Boolean);
+   if(!labels.length)return;
+   const all=jobKeys.every(id=>keys.includes(id));
+   if(all){
+    detail.append(h('p',{class:'wiki-class-all',text:wt('Все классы','All classes')}));
+    return;
+   }
+   if(labels.length<=6){
+    detail.append(h('div',{class:'wiki-allowed-classes'},[
+     h('h4',{text:wt('Доступные классы','Eligible classes')}),
+     h('p',{text:labels.join(' · ')})
+    ]));
+   }else detail.append(h('details',{class:'wiki-allowed-classes'},[
+    h('summary',{text:wt('Доступные классы · ','Eligible classes · ')+labels.length}),
+    h('p',{text:labels.join(' · ')})
+   ]));
+  };
   const moreSources=(rows,group='sources')=>{
    const shown=group==='usage'?wikiUsageShown:wikiSourceShown;
    if(rows.length<=shown)return;
@@ -1645,13 +1663,8 @@ function renderWiki(root){
     if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
      h('dd',{text:wt('Двуручное','Two-handed')}));
     detail.append(dl);
-    if(rec.classes&&Object.keys(rec.classes).length){
-     const classes=Object.keys(rec.classes).filter(id=>rec.classes[id]);
-     if(classes.some(id=>classLabel(id)))detail.append(h('div',{class:'wiki-allowed-classes'},[
-      h('h4',{text:wt('Доступные классы','Eligible classes')}),
-      h('p',{text:classes.map(classLabel).filter(Boolean).join(' · ')})
-     ]));
-    }
+    if(rec.classes&&Object.keys(rec.classes).length)
+     renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]));
     const wearers=window.PandoraUIPlanner.outfitWearers(rec,lang);
     if(wearers?.length)detail.append(h('p',{class:'wiki-item-wearers',
      text:wt('Для: ','Wearable by: ')+wearers.join(' · ')}));
@@ -1688,11 +1701,8 @@ function renderWiki(root){
     if(!rec.reqs?.length)detail.append(h('p',{class:'muted',text:wt('Ветка требований не указана','No branch requirement listed')}));
     for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:branchLabel(req.branch)+' ≥ '+req.amount}));
     if(rec.prereq!=null&&wikiData.skills?.[rec.prereq])detail.append(wikiLink((lang==='en'?'Prerequisite: ':'Предыдущее умение: ')+dataName('skill',rec.prereq),'skill',rec.prereq));
-    if(rec.classes&&Object.keys(rec.classes).length){
-     const names=Object.keys(rec.classes).filter(name=>rec.classes[name]);
-     if(names.some(id=>classLabel(id)))detail.append(h('p',{class:'muted',
-      text:wt('Классы: ','Classes: ')+names.map(classLabel).filter(Boolean).join(', ')}));
-    }
+    if(rec.classes&&Object.keys(rec.classes).length)
+     renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]));
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){const image=wikiImage(icon,'wiki-record-icon',type);detail.prepend(image)}
   }else if(type==='soul'){

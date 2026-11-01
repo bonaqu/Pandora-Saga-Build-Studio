@@ -1680,4 +1680,11 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .wiki-item-wearers{display:block;margin:10px 0;padding:9px 12px;
  border-left:3px solid #b78f57;background:#241a12;color:#edcc98;
  font-size:12px;overflow-wrap:anywhere}
+.wiki-class-all{display:inline-block;margin:8px 0;padding:5px 11px;
+ background:#302319;border:1px solid #8b6b43;border-radius:15px;
+ color:#e7c799;font-size:11px}
+.wiki-allowed-classes{margin:10px 0;padding:8px 11px;
+ border:1px solid #6e5033;background:#211710;color:#d8be97;font-size:12px}
+.wiki-allowed-classes summary{cursor:pointer;color:#e8c38c}
+.wiki-allowed-classes p{margin-top:7px;line-height:1.55;overflow-wrap:anywhere}
 
