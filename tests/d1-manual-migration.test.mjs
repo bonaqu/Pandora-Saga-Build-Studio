@@ -20,7 +20,8 @@ test('0005 cannot modify the existing administrator or saved-build tables',()=>{
  const statements=sql.replace(/--[^\n]*/g,'').split(';').map(x=>x.trim()).filter(Boolean);
  assert.equal(statements.length,4);
  assert.ok(statements.every(x=>/^CREATE (?:TABLE|INDEX) IF NOT EXISTS /i.test(x)));
- assert.ok(!/\b(?:DROP|DELETE|UPDATE|ALTER)\b/i.test(statements.join(' ')));
+ assert.ok(!/^\s*(?:DROP|DELETE|UPDATE|ALTER)\b/im.test(statements.join('\n')),
+  'Foreign-key ON DELETE CASCADE is allowed inside additive table definitions');
  const validator=read('worker/scripts/assert-d1-tables.mjs');
  assert.match(validator,/Production D1 does not contain required table/);
 });
