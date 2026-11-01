@@ -108,6 +108,14 @@ export async function runInlineMilestonesSmoke(browser,base){
   assert.ok((await mark.locator('.path-milestone-preview').count())>=1);
   await mark.focus();
   await mark.locator('.path-milestone-tooltip').waitFor({state:'visible'});
+  await page.locator('#locale [data-locale="en"]').click();
+  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Class limit:'));
+  await page.locator('#pathSkillsTab').click();
+  await page.locator('.path-skill-count').waitFor({state:'visible'});
+  assert.match(await page.locator('.path-skill-count').innerText(),/skills/);
+  await page.locator('.path-skill-card').first().click();
+  await page.locator('#pathSkillDetails').waitFor({state:'visible'});
+  assert.match(await page.locator('#pathSkillDetails').innerText(),/Character level/);
   assert.deepEqual(errors,[]);
   console.log('Chromium skill track passed: thin notches share one bar, slider takes input, pointer and keyboard tooltips work');
  }finally{await context.close()}
