@@ -36,29 +36,46 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
    }));
   },{token,username,guestKey});
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
-  await page.waitForFunction(expected=>
-   localStorage.getItem('ps-build-owner-scope.v1')===expected,
-   'account:'+username);
+  // The owner marker changes before the account and OS catalog finish
+  // rendering. A save issued mid-render can lose the typed name.
+  await page.waitForFunction(expected=>{
+   const catalog=document.querySelector('#catalogStatus')?.textContent||'';
+   const profile=document.querySelector('#profileTrigger')?.title||'';
+   return localStorage.getItem('ps-build-owner-scope.v1')==='account:'+expected&&
+    /\d+ навыков · \d+ предметов · \d+ душ/.test(catalog)&&
+    profile.includes(expected);
+  },username,{timeout:25000});
  }
- async function save(page,name){
+ async function save(page,name,expectedToken){
   if(!await page.locator('.build-name-input').isVisible())
    await page.locator('#nav [data-tab="builds"]').click();
-  await page.locator('.build-name-input').fill(name);
+  const input=page.locator('.build-name-input');
+  await input.fill(name);
+  assert.equal(await input.inputValue(),name,'Save form must retain typed name');
+  // The local card can appear before the Worker save is acknowledged. Require
+  // the intended account's bearer token and the actual POST response.
+  const persisted=page.waitForResponse(response=>{
+   if(!response.url().startsWith(api+'/api/library')||
+    response.request().method()!=='POST'||!response.ok())return false;
+   try{return response.request().headers().authorization==='Bearer '+expectedToken&&
+    response.request().postDataJSON()?.entry?.name===name}
+   catch{return false}
+  },{timeout:20000});
   await page.getByRole('button',{name:'Сохранить новый билд'}).click();
   await page.locator('.build-card h3').filter({hasText:name}).waitFor({state:'visible'});
+  await persisted;
  }
  try{
   await tabA.goto(base+'/',{waitUntil:'domcontentloaded'});
   await login(tabA,tokenA,'alice_01');
-  await save(tabA,'Alice first');
+  await save(tabA,'Alice first',tokenA);
   assert.equal(await tabA.locator('.build-transfer').count(),0,
    'A signed-in account must not display its unrelated guest recovery key');
   await tabB.goto(base+'/',{waitUntil:'domcontentloaded'});
   await login(tabB,tokenB,'bob_222');
-  await save(tabB,'Bob only');
+  await save(tabB,'Bob only',tokenB);
   // Alice is still running in tab A with its original in-memory session.
-  await save(tabA,'Alice second');
+  await save(tabA,'Alice second',tokenA);
   const bob=await tabB.evaluate(()=>{
    return {
     owner:localStorage.getItem('ps-build-owner-scope.v1'),
