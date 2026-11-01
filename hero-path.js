@@ -90,6 +90,14 @@ function viewGrowth(target,api){
     // Standard CSS calc, no browser-dependent multiplication.
     locked.style.left='calc('+(lockedFraction*100).toFixed(6)+'% '+
       (lockedOffset<0?'-':'+')+' '+Math.abs(lockedOffset).toFixed(6)+'px)';
+    const currentNotch=make('span',{class:'path-current-notch','aria-hidden':'true'});
+    // Both the red class limit and the value marker use the same 21px rail
+    // inset as the native 18px range thumb. This avoids drifting at 0 / max.
+    const positionOnRail=(fraction)=>{
+     const offset=21-42*fraction;
+     return 'calc('+(fraction*100).toFixed(6)+'% '+
+      (offset<0?'-':'+')+' '+Math.abs(offset).toFixed(6)+'px)';
+    };
     const milestonesOnTrack=[];
     const paint=()=>{
      const invested=M.potential(state,key),mastery=M.trained(state,key);
@@ -97,12 +105,14 @@ function viewGrowth(target,api){
      const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
      gold.style.width='calc('+(goldFraction*100).toFixed(6)+'% - '+(42*goldFraction).toFixed(6)+'px)';
      green.style.width='calc('+(greenFraction*100).toFixed(6)+'% - '+(42*greenFraction).toFixed(6)+'px)';
+     currentNotch.style.left=positionOnRail(goldFraction);
      range.setAttribute('aria-valuetext', invested+tr(api,' вложено, ',' spent, ')+mastery+tr(api,' освоено, предел ',' trained, class limit ')+cap);
      for(const entry of milestonesOnTrack)
       entry.tick.classList.toggle('reached',
        !entry.locked&&entry.skills.some(skill=>readiness(skill,api).learned));
     };
     track.append(bed,gold,green,locked);
+    track.append(currentNotch);
     const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
      value:String(points),disabled:!available,
      'aria-label':tr(api,'Вложенные очки ','Spent branch points: ')+api.branchName(key),
