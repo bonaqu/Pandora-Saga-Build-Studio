@@ -83,6 +83,19 @@ async function main(){
  await page.locator('#stageAttributes .stage-book-close').click();
  assert.equal(await page.locator('#stageAttributes').isHidden(),true);
 
+ // Switching site language must translate Hero Book navigation, accessibility
+ // and summary without touching player-defined names or OS item IDs.
+ await page.locator('#locale [data-locale="en"]').click();
+ await page.locator('#hero').click();
+ await page.locator('#stageAttributes [data-book-page="summary"]').waitFor({state:'visible'});
+ assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Calculated results'),true);
+ assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potions & skills');
+ assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
+ await page.locator('#stageAttributes [data-book-page="buffs"]').click();
+ assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild & honor'));
+ await page.locator('#stageAttributes .stage-book-close').click();
+ await page.locator('#locale [data-locale="ru"]').click();
+
  // The planner is future-ready for all 55 levels, independent of live server 45.
  await page.locator('[data-origin-tab="stats"]').click();
  await page.locator('#level').evaluate(el=>{

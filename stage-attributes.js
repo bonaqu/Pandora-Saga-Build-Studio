@@ -1,17 +1,173 @@
 (function(root){
 'use strict';
 // Partial source-backed combat preview. Do not claim current OS parity for missing buffs or procs.
+// Exact, player-interface labels only; source names and item descriptions stay untouched.
+const bookEnglish=Object.freeze({
+ 'Итоги': "Summary",
+ 'Атака': "Attack",
+ 'Защита': "Defense",
+ 'Зелья и умения': "Potions & skills",
+ 'Эффекты': "Effects",
+ 'Усиления': "Buffs",
+ 'Параметры появятся после загрузки игровых данных.': "Stats appear when game data has loaded.",
+ 'Результаты расчёта': "Calculated results",
+ 'Выберите раздел, чтобы посмотреть подробности.': "Select a chapter for details.",
+ 'ОЗ': "HP",
+ 'Здоровье': "Health",
+ 'ОМ': "MP",
+ 'Мана': "Mana",
+ 'Физическая': "Physical",
+ 'С заточкой': "With refinement",
+ 'Маг. атака': "Magic attack",
+ 'Коэффициент': "Multiplier",
+ 'Точность': "Accuracy",
+ 'Попадание': "Hit rate",
+ 'Уклонение': "Evasion",
+ 'Крит. шанс': "Crit chance",
+ 'Вероятность': "Chance",
+ 'Зелья': "Potions",
+ 'Эффект': "Effect",
+ 'Лечение': "Healing",
+ 'Эффект навыков': "Skill effect",
+ 'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.': "All settings immediately affect this build. Numbers update in other chapters.",
+ 'Недоступно для героя': "Unavailable to this hero",
+ 'Выключено': "Off",
+ 'ОЗ и ОМ': "HP & MP",
+ 'Гильдейское ОЗ': "Guild HP",
+ 'Гильдейское ОМ': "Guild MP",
+ 'Знак жизни': "Sign of Life",
+ 'Гильдия и честь': "Guild & honor",
+ 'Все характеристики': "All attributes",
+ 'Пробуждение': "Awakening",
+ 'Титул чести': "Honor title",
+ 'Боевые умения': "Combat skills",
+ 'Рывок': "Lunge",
+ 'Боевой клич': "War Cry",
+ 'Яростная атака': "Rage Attack",
+ 'Бастион (нужен щит)': "Bastion (shield required)",
+ 'Помощь ветра': "Wind Assist",
+ 'Благословение ветра': "Wind Blessing",
+ 'Сосредоточенность': "Concentration",
+ 'Восстановление': "Recovery",
+ 'Гильдия: скорость ОЗ': "Guild: HP recovery",
+ 'Гильдия: скорость ОМ': "Guild: MP recovery",
+ 'Гильдейское лечение': "Guild healing",
+ 'Показывать действие зелий': "Show potion effects",
+ 'Дополнительно': "Additional",
+ 'Проэлиум': "Proelium",
+ 'Мощность Проэлиума': "Proelium potency",
+ 'Мощность поддерживающих навыков': "Support skill potency",
+ 'Грация': "Grace",
+ 'Скорость атаки': "Attack speed",
+ 'Ляпис Медио': "Lapis Medio",
+ 'Групповой барьер': "Group Barrier",
+ 'Получаемый физический урон': "Incoming physical damage",
+ 'Святое оружие': "Holy Weapon",
+ 'Усиление': "Enhancement",
+ 'Мрачный эффект': "Gloomy Effect",
+ 'Усиление чар': "Enchant Enhancement",
+ 'Магические чары': "Magic Enchantment",
+ 'Песня менестреля': "Minstrel Song",
+ 'Точность и уклонение': "Accuracy & Evasion",
+ 'Песня мудрости': "Song of Wisdom",
+ 'Усиление магии': "Magic Enhancement",
+ 'Отравляющее покрытие': "Poison Coating",
+ 'Сила эффекта': "Effect power",
+ 'Ядовитая аура': "Poison Aura",
+ 'Мощность при применении навыка. Просмотр не включает усиление на персонаже.': "Potency when casting a skill. This preview does not apply the buff to the hero.",
+ 'Поиск навыка по названию': "Find skill by name",
+ 'Найти навык…': "Search skills…",
+ 'По базовым условиям доступен': "Available by basic requirements",
+ 'Требования не выполнены': "Requirements not met",
+ 'Доступен': "Available",
+ 'Не изучен': "Not learned",
+ 'Для текущего поиска навыки не найдены.': "No skills match this search.",
+ 'Предыдущая страница': "Previous chapter",
+ 'Следующая страница': "Next chapter",
+ 'Вернуть портрет': "Return to portrait",
+ 'Разделы книги героя': "Hero Book chapters",
+ 'Параметры оружия': "Weapon properties",
+ 'Защита снаряжения': "Equipment defense",
+ 'Бонусы предметов и душ': "Item & Soul bonuses",
+ 'Нет записей для этой вкладки': "No entries for this chapter",
+ 'Предмет без названия': "Unnamed item",
+ 'Душа без названия': "Unnamed Soul",
+ 'Описание души не найдено': "Soul description unavailable",
+ 'Особые эффекты предметов и душ': "Special item and Soul effects",
+ 'Бонус к получаемому опыту': "Experience bonus",
+ 'Срабатывания предметов и душ': "Item & Soul triggers",
+ 'Максимум ОМ': "Max MP",
+ 'Максимум ОЗ': "Max HP",
+ 'Сопротивление прерыванию': "Interruption resistance",
+ 'Перезарядка умений': "Skill cooldown",
+ 'Выносливость': "Stamina",
+ 'Атака со спины': "Back attack",
+ 'Активные комплекты': "Active equipment sets",
+ 'Эффект комплекта': "Set bonus",
+ 'Самоцветы': "Gems",
+ 'Огонь': "Fire",
+ 'Лёд': "Ice",
+ 'Молния': "Lightning",
+ 'Яд': "Poison",
+ 'Свет': "Light",
+ 'Тьма': "Dark",
+ 'Чары': "Arcane",
+ 'Лечащие навыки': "Healing skills",
+ 'Расход ОМ': "MP cost",
+ 'Лечение зельями': "Potion healing",
+ 'Магия огня': "Fire magic",
+ 'Магия льда': "Ice magic",
+ 'Магия молнии': "Lightning magic",
+ 'Защита от отдельных типов противников': "Defense by enemy type",
+ 'Сопротивления': "Resistances",
+ 'Ожоги': "Burn",
+ 'Оглушение': "Stun",
+ 'Заморозка': "Freeze",
+ 'Падение': "Knockdown",
+ 'Отбрасывание': "Knockback",
+ 'Сон': "Sleep",
+ 'Немота': "Silence",
+ 'Подробнее о точности расчёта': "Calculation details",
+ 'Критический шанс': "Critical chance",
+ 'Физическая атака': "Physical attack",
+ 'Магическая атака': "Magic attack",
+ 'Входящий крит. урон': "Incoming critical damage",
+ 'Устойчивость к сбою': "Cast interruption resistance",
+ 'Боевые параметры': "Combat stats",
+ 'Магическое усиление оружия': "Weapon magic enhancement",
+ 'Сопротивление от брони': "Armor resistance",
+ 'Шанс наложения состояния': "Status effect chance",
+ 'Эффективность лечащих навыков': "Healing-skill effectiveness",
+ 'Физическая атака оружия': "Physical weapon attack",
+ 'Сила атаки': "Attack power",
+ 'Верховая езда': "Riding",
+ 'Бонусы дальности от снаряжения': "Equipment range bonuses",
+ 'Усиление стихийной магии': "Elemental magic bonus",
+ 'Аурный урон от снаряжения': "Equipment aura damage",
+ 'Продолжительность дебаффов': "Debuff duration",
+ 'Шанс наложения дебаффов': "Debuff chance",
+ 'Изменение отката от предметов': "Equipment cooldown changes",
+ 'Дополнительные защитные параметры': "Additional defensive stats",
+ 'Физические состояния': "Physical conditions",
+ 'Психические состояния': "Mental conditions",
+ 'Профессия': "Class"
+});
+function bookText(value){
+ if(typeof value!=='string'||document.documentElement?.lang!=='en')return value;
+ return Object.hasOwn(bookEnglish,value)?bookEnglish[value]:value;
+}
 function make(tag,attrs={},children=[]){
  const n=document.createElement(tag);
  for(const [key,value] of Object.entries(attrs)){
-  if(key==='text')n.textContent=value;
+  if(key==='text')n.textContent=bookText(value);
   else if(key==='class')n.className=value;
   else if(key.startsWith('on'))n.addEventListener(key.slice(2),value);
   else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(key))
    n[key]=Boolean(value);
-  else if(value!==null&&value!==undefined)n.setAttribute(key,String(value));
+  else if(value!==null&&value!==undefined)n.setAttribute(key,bookText(String(value)));
+
  }
- for(const child of children)n.append(typeof child==='string'?document.createTextNode(child):child);
+ for(const child of children)n.append(typeof child==='string'?document.createTextNode(bookText(child)):child);
  return n;
 }
 
@@ -77,7 +233,8 @@ function buffsPage(body,options){
   else if(skill?.summary)info.append(make('small',{text:skill.summary}));
   node.append(info);parent.append(node);
  };
- const opts=(units)=>units.map((n,i)=>[i,i===0?'Выключено':'Уровень '+i+' · +'+n]);
+ const opts=(units)=>units.map((n,i)=>[i,i===0?bookText('Выключено'):
+  (document.documentElement.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const vitals=section('ОЗ и ОМ');
  select(vitals,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
  select(vitals,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
@@ -181,12 +338,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
   next=bookPages[(index+1)%bookPages.length][0];
  target.setAttribute('role','region');
- target.setAttribute('aria-label','Книга героя. '+bookPages[index][1]+'. Страница '+(index+1)+' из 6');
+ target.setAttribute('aria-label',document.documentElement.lang==='en'?
+  'Hero Book. '+bookText(bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
+  'Книга героя. '+bookPages[index][1]+'. Страница '+(index+1)+' из 6');
  target.append(make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
    onclick:()=>onPage(prior),'aria-label':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
-   make('span',{text:'КНИГА ГЕРОЯ · '+(index+1)+' / 6'}),
+   make('span',{text:(document.documentElement.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
    make('strong',{text:bookPages[index][1]})]),
   make('button',{type:'button',class:'stage-book-arrow',text:'›',
    onclick:()=>onPage(next),'aria-label':'Следующая страница'}),
@@ -844,5 +1003,5 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render,bookPages});
+root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText});
 })(typeof window==='undefined'?globalThis:window);

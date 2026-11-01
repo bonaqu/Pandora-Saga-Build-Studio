@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.202.0 (`2026.11.01.202`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.203.0 (`2026.11.01.203`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.203.0 — real Hero Book RU/EN interface translations
+
+- Hero Book chapter headings, tabs, accessibility names, summary labels, buff names and many known combat/equipment headers now use exact, two-way RU/EN interface keys.
+- The English chapter names are **Summary, Attack, Defense, Potions & skills, Effects, Buffs**; switching language while using the Hero Book updates rendered labels and controls without rewriting official game entity IDs or freeform character data.
+- Translate unit and skill settings in the saved Hero Book UI, including source-defined labels such as HP/MP, guild bonuses and individual combat skills. Unknown official game strings remain unchanged until ID-backed translations exist.
+- Add Node and Chromium tests of book chapters, English summary, buff chapter, access labels and unknown source strings. Other game mechanics and D1 user account data stay unchanged.
 
 ## Source update 0.202.0 — ignore stale cloud replies after switching account/library
 
