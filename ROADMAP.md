@@ -7,6 +7,9 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 
 ## Source update 0.187.0 — user accounts and explicit save semantics
 
+- Read-only connection checks now distinguish the source feature from actual deployment: `features.accounts=false` is reported as INFO until migration 0005 is applied; current library/catalog tests continue independently. Do not report production signup as active before server evidence.
+
+
 - Revert automatic cloud PUTs of already saved character revisions: state changes are only browser-local until the user opens the saved build in «Мои билды» and explicitly chooses «↻ Перезаписать» with confirmation. The original ID is kept. The quick hero Save button navigates to library management; «Сохранить новый билд» deliberately creates a new saved entry.
 - Keep D1 authoritative under an unchanged saved ID. Conflicting locally saved snapshots are preserved as **local copies only** rather than implicitly uploading an unapproved additional cloud build. Explicitly saved local new IDs may still upload when the network returns.
 - Fix screenshot header to show the SLOT («Слот: Оружие / Щит / ...») rather than duplicating item name. Correct RU/EN slot labels for the 14 official equipment positions.

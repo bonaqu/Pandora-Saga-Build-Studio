@@ -34,6 +34,9 @@ try{
  check(payload?.features?.sharing===true,'D1 sharing tables','migration 0003 required if false');
  check(payload?.features?.library===true,'D1 cloud build library','library tables or Worker release missing');
  check(payload?.features?.catalog===true,'D1 active catalog publication','publish own catalog if false');
+ console.log((payload?.features?.accounts===true?'OK  ':'INFO')+
+  ' D1 user accounts '+(payload?.features?.accounts===true?
+   'ready':'require migration 0005 and current Worker deployment; existing library stays usable'));
 }catch(e){check(false,'Worker and D1 health',e.message)}
 try{
  const {response}=await read(worker+'/api/health',{method:'OPTIONS',cors:true});
