@@ -26,7 +26,7 @@ test('actual milestone tooltip and 18px hidden native thumb remain after pruning
   '.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable{',
   '.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered',
   '.inline-mastery-track.path-integrated-track .path-current-notch{',
-  '.inline-mastery-track.path-integrated-track .path-milestone-tooltip{'
+  '.inline-mastery-track.path-integrated-track .path-unlock-notch .path-milestone-tooltip{'
  ])assert.ok(css.includes(expression),expression);
  assert.match(path,/range\.addEventListener\('input'/);
  assert.match(path,/track\.addEventListener\('pointermove'/);
