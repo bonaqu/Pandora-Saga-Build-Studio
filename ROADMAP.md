@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.237.0 (`2026.11.01.237`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.238.0 (`2026.11.01.238`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.238.0 — bilingual Effects gemstones, healing, mana, potion breakdown
+
+- [x] Full RU/EN choice for the Hero Book Effects gemstone subsections: seven elemental labels, weapon aura, total aura, magical weapon enhancement, armor resistance, status chance, rainbow gems and the existing explanation of aura/physical damage. Values, source attribution and numeric formulas unchanged.
+- [x] RU/EN explanations for Healing Skill effectiveness and its honor/gear contributions, MP cost index, base INT, racial passive, gear/Souls and explicit limits of the preview.
+- [x] Potion recovery effectiveness now shows official model portions in RU/EN for base stamina, human Herbalist, warrior melee mastery, honor and equipment/Souls. The base-versus-additive percentage sign is tracked structurally as `isBase` instead of inspecting a Russian string; negative values no longer display `+-`.
+- [x] New tests assert locale text paths, known numeric source fields, sign treatment, lack of translated source/player names and existing bilingual Book behavior.
+- [ ] Still pending: complete RU/EN in some attack/defense detailed captions, browser and live game calculation parity, D1 real write lifecycle/manual user acceptance. Preserve levels 1–55 and existing build persistence.
 
 ## Source update 0.237.0 — full bilingual skill inspector and Honor Book controls
 
