@@ -267,7 +267,7 @@ test('class-limited skills keep individual numbers in the separate details list'
 test('skill milestones remain inside the bar and update their reached state after allocating mastery',()=>{
  const css=read('style.css');
  const patch=css.slice(css.lastIndexOf('/* 0.195.0 — independent skill notches'));
- assert.match(patch,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?top:-3px/);
+ assert.match(patch,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?top:0/);
  assert.match(patch,/\.path-integrated-track \.path-integrated-milestones\{/);
  assert.match(patch,/pointer-events:none/);
  const f=fixture('CLERIC','prayer','benevolence');

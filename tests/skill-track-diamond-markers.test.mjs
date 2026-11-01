@@ -12,11 +12,11 @@ const rule=selector=>{
 };
 test('skill thresholds are discrete diamonds, not crowded full-height vertical ruler ticks',()=>{
  const base=rule('.inline-mastery-track.path-integrated-track .path-unlock-notch');
- assert.match(base,/width:12px;height:18px/);
+ assert.match(base,/top:0;width:12px;height:12px/);
  assert.match(base,/background:transparent/);
  assert.match(base,/pointer-events:none/);
  const diamond=rule('.inline-mastery-track.path-integrated-track .path-unlock-notch::before');
- assert.match(diamond,/width:8px;height:8px/);
+ assert.match(diamond,/top:2px;width:8px;height:8px/);
  assert.match(diamond,/rotate\(45deg\)/);
  assert.match(rule('.inline-mastery-track.path-integrated-track .path-unlock-notch.reached::before'),/background:/);
  assert.match(rule('.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable::before'),/background:/);

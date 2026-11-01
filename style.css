@@ -1690,14 +1690,14 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  z-index:10;overflow:visible;pointer-events:none;
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch{
- position:absolute;top:-3px;width:12px;height:18px;
+ position:absolute;top:0;width:12px;height:12px;
  transform:translateX(-50%);margin:0;padding:0;
  border:0;background:transparent;box-shadow:none;z-index:10;
  pointer-events:none;opacity:1;cursor:default;
 }
 /* The small diamond marks a skill unlock without obscuring the coloured bar. */
 .inline-mastery-track.path-integrated-track .path-unlock-notch::before{
- content:'';position:absolute;left:2px;top:5px;width:8px;height:8px;
+ content:'';position:absolute;left:2px;top:2px;width:8px;height:8px;
  box-sizing:border-box;transform:rotate(45deg);border-radius:1px;
  border:1px solid #ffdb93;background:#6c4c29;
  box-shadow:0 0 0 1px #251608;
