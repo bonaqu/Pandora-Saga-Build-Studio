@@ -114,3 +114,22 @@ test('shared class predicate agrees between readiness, skill gallery and growth'
  assert.equal(source.split('allowedForJob(').length-1,4,
   'One helper plus growth, readiness and skill gallery call sites');
 });
+
+test('character levels and supplemental requirements never coerce arrays or blank strings to zero',()=>{
+ const malformed=[[],[8],{},'','   ','0x10','1e2','2.5',true,false,
+  Number.MAX_SAFE_INTEGER+2,Number.POSITIVE_INFINITY];
+ for(const raw of malformed){
+  const char=verdict({...skill(),charLevel:raw});
+  assert.equal(char.learned,false,'character level '+String(raw));
+  assert.ok(char.problems.includes('Unknown character level requirement'));
+  const supplemental=verdict({...skill(),reqLevel:raw});
+  assert.equal(supplemental.learned,false,'supplemental '+String(raw));
+  assert.ok(supplemental.problems.includes('Unknown additional requirement'));
+ }
+ for(const valid of [0,'0',1,'1','01','1.0','+1',' 1 ',55,'55']){
+  assert.equal(verdict({...skill(),charLevel:valid}).learned,true,
+   'valid level '+String(valid));
+  assert.equal(verdict({...skill(),reqLevel:valid}).learned,true,
+   'valid supplementary '+String(valid));
+ }
+});

@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.259.0 (`2026.11.01.259`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.260.0 (`2026.11.01.260`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.260.0 — safe source skill level parsing and no synthetic zeroes
+
+- [x] Use one strict, nonnegative safe-integer validation for character-level requirements and supplementary skill requirements. Reject malformed values (empty string, arrays, objects, hex/exponent text, booleans and unsafe integers) instead of coercing them to zero or to fake requirements.
+- [x] Preserve legitimate official zero/positive source values and decimal-text legacy imports without altering skills, source records, future planning 50–55, or any character build.
+- [x] Extend existing source-skill regression suite; retain full Node and Chromium acceptance and independently check published Pages / Worker read-only state.
+- [ ] Formula parity and authenticated production D1 write lifecycle still require source-backed controlled acceptance, and original game assets remain open.
 
 ## Source update 0.259.0 — single source of truth for class permission throughout Hero Path
 
