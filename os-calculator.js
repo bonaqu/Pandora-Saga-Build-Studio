@@ -1254,9 +1254,56 @@ function effectCoverage({records=[],itemForth=null}={}){
 // 'Sanctuary'/'Restoration') from js/calc.js Flag[5].
 // Spell unlocks are informative gates. Exact current OS server damage/heal
 // packets remain unverified; show unavailable spells as theoretical previews.
-const healingJobs=new Set(['ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST']);
+// Remaked computes magnitudes; the OS skill catalogue decides whether the
+// corresponding spell is available to this character. Keep these independent.
+const healingSourceSpecs=Object.freeze({
+ firstAid:Object.freeze({standard:[310001001,'ALLY',0,8,null,[100,250,140,25]],
+  cleric:[310001002,'ALLY',50,8,310001001,[300,250,280,25]],
+  ep:'EP_HEAL_LIFE',nameEn:'First Aid'}),
+ heal:Object.freeze({standard:[310004001,'ALLY',18,0,null,[600,200,300,50]],
+  cleric:[310004002,'ALLY',50,0,310004001,[1000,300,500,50]],
+  ep:'EP_HEAL_LIFE',nameEn:'Heal'}),
+ healingAura:Object.freeze({standard:[310021001,'PARTY_ALL',0,54,null,[600,200,300,150]],
+  cleric:[310021002,'PARTY_ALL',50,54,310021001,[850,200,400,150]],
+  ep:'EP_HEAL_LIFE',nameEn:'Healing Aura'}),
+ sanctuary:Object.freeze({standard:[310023001,'POINT',45,0,null,[0,0,0,310023002]],
+  ep:'EP_SKILL_EXEC',nameEn:'Sanctuary'}),
+ restoration:Object.freeze({standard:[310022001,'PARTY_ALL',0,41,null,[20,5,5,5]],
+  ep:'EP_HEAL_LIFE_REGENERATOR',nameEn:'Restoration'})
+});
+function healingSourceGate({id,cleric,jobKey,level,benevolence,benevolenceCap,
+ skillCatalog}){
+ const spec=healingSourceSpecs[id];
+ const [skillId,type,requiredLevel,requiredMastery,prereq,effectValues]=
+  cleric&&spec?.cleric?spec.cleric:(spec?.standard||[]);
+ const skill=skillCatalog?.[String(skillId)];
+ if(!skill||Number(skill.id)!==skillId||skill.skillType!==type||
+  !Number.isInteger(benevolenceCap)||benevolenceCap<0||
+  !Number.isInteger(benevolence)||benevolence<0||
+  benevolence>benevolenceCap||requiredMastery>benevolenceCap||
+  benevolence<requiredMastery||!skill.classes?.[jobKey]||
+  skill.learnable!==true||skill.charLevel!==requiredLevel||
+  level<requiredLevel||skill.prereq!==prereq||
+  !Array.isArray(skill.reqs)||skill.reqs.length!==(requiredMastery?1:0)||
+  (requiredMastery&&(skill.reqs[0]?.branch!=='benevolence'||
+   skill.reqs[0]?.amount!==requiredMastery))||
+  !Array.isArray(skill.funcs)||skill.funcs.length!==1)return null;
+ const effect=skill.funcs[0];
+ if(effect.ep!==spec.ep||effect.dir!=='TARGET'||
+  !Array.isArray(effect.fv1)||effect.fv1.length!==4||
+  effect.fv1.some((n,i)=>n!==effectValues[i]))return null;
+ if(prereq!=null&&!skillCatalog?.[String(prereq)])return null;
+ if(id==='sanctuary'){
+  const linked=skillCatalog?.['310023002'];
+  if(Number(linked?.id)!==310023002||!Array.isArray(linked.funcs)||
+   linked.funcs.length!==1||linked.funcs[0].ep!=='EP_HEAL_LIFE'||
+   linked.funcs[0].dir!=='TARGET'||
+   JSON.stringify(linked.funcs[0].fv1)!=='[200,0,200,100]')return null;
+ }
+ return skillId;
+}
 function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
- jobKey=null}={}){
+ jobKey=null,skillCatalog=null,benevolenceCap=null}={}){
  if(!Number.isInteger(level)||level<1||level>55||
   ![int,spi,benevolence,healingPercent].every(n=>Number.isFinite(n)&&n>=0))
   return null;
@@ -1270,24 +1317,28 @@ function healingSpellsPreview({level,int,spi,benevolence=0,healingPercent=100,
   150+level*2+benevolence*3+int*6;
  const sanctuary=100+level*2+benevolence*2+int*2;
  const restore=7+Math.floor(benevolence/10)+Math.floor(spi/5);
- return {
-  formulaSource:'Remaked Legacy js/calc.js, Flag[5], Status.LSk',
-  clericLevel50:cleric,verified:false,rows:[
-   {id:'firstAid',name:'Первая помощь',amount:calc(firstAid),available:benevolence>=8,
-    requires:'Мастерство исцеления 8',scaledBySkill:true},
-   {id:'heal',name:'Лечение',amount:calc(heal),
-    available:healingJobs.has(jobKey)&&level>=18,
-    requires:'Ветвь аколита, уровень 18',scaledBySkill:true},
-   {id:'healingAura',name:'Массовое исцеление',amount:calc(aura),
-    available:benevolence>=54,requires:'Мастерство исцеления 54',
-    scaledBySkill:true},
-   {id:'sanctuary',name:'Храм',amount:calc(sanctuary),
-    available:jobKey==='CLERIC'&&level>=45,
-    requires:'Клирик, уровень 45',scaledBySkill:true},
-   {id:'restoration',name:'Восстановление',amount:restore,
-    available:benevolence>=41,requires:'Мастерство исцеления 41',
-    scaledBySkill:false}
-  ],notes:'Восстановление — периодическая величина; множитель лечения навыками не применяется.'};
+ const rows=[
+  {id:'firstAid',name:'Первая помощь',amount:calc(firstAid),requires:'Мастерство исцеления 8',
+   requiresEn:'Healing mastery 8',scaledBySkill:true},
+  {id:'heal',name:'Лечение',amount:calc(heal),requires:'Ветвь аколита, уровень 18',
+   requiresEn:'Acolyte class, level 18',scaledBySkill:true},
+  {id:'healingAura',name:'Массовое исцеление',amount:calc(aura),
+   requires:'Мастерство исцеления 54',requiresEn:'Healing mastery 54',scaledBySkill:true},
+  {id:'sanctuary',name:'Храм',amount:calc(sanctuary),
+   requires:'Клирик, уровень 45',requiresEn:'Cleric class, level 45',scaledBySkill:true},
+  {id:'restoration',name:'Восстановление',amount:restore,
+   requires:'Мастерство исцеления 41',requiresEn:'Healing mastery 41',scaledBySkill:false}
+ ];
+ for(const row of rows){
+  const skillId=healingSourceGate({id:row.id,cleric,jobKey,level,benevolence,
+   benevolenceCap,skillCatalog});
+  row.skillId=skillId;
+  row.nameEn=healingSourceSpecs[row.id].nameEn;
+  row.available=skillId!==null;
+ }
+ return {formulaSource:'Remaked Legacy js/calc.js, Flag[5], Status.LSk',
+  clericLevel50:cleric,verified:false,rows,
+  notes:'Восстановление — периодическая величина; множитель лечения навыками не применяется.'};
 }
 // Real OS used-on-demand cleansing items. Their effects remove named
 // conditions; no numeric healing, duration or server-side cooldown is inferred.
@@ -1640,7 +1691,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const healingSpells=healingSkill?healingSpellsPreview({
   level,int:stats.int,spi:stats.spi,
   benevolence:combatContext.benevolenceMastery??0,
-  jobKey:combatContext.jobKey,healingPercent:healingSkill.percent
+  jobKey:combatContext.jobKey,healingPercent:healingSkill.percent,
+  benevolenceCap:classData.branchCaps?.benevolence??null,
+  skillCatalog:combatContext.skillCatalog
  }):null;
  const statusCures=statusCurePreview({items:consumableItems});
  const consumableSkills=consumableSkillPreview({

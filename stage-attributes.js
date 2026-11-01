@@ -1070,17 +1070,21 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   renderSkillInspector(body,skillModel);
  }
  if(chosen==='recovery'&&modifiers?.healingSkill){
+  const english=document.documentElement?.lang==='en';
   const spells=modifiers.healingSpells,heal=modifiers.healingSkill;
   const card=make('section',{class:'stage-attribute-row stage-healing-spells'});
-  card.append(make('strong',{text:'Лечащие умения'}),
-   make('p',{text:'Эффективность лечения: '+heal.percent+'%'}));
+  card.append(make('strong',{text:english?'Healing skills':'Лечащие умения'}),
+   make('p',{text:(english?'Healing effectiveness: ':'Эффективность лечения: ')+heal.percent+'%'}));
   if(spells){
    for(const row of spells.rows){
     const label=make('div',{class:'stage-heal-row'},[
-     make('span',{text:row.name}),
-     make('strong',{text:String(row.amount)+(row.scaledBySkill?' ОЗ':' / период')}),
-     make('small',{text:row.available?'Доступен по проверенным базовым условиям':
-      'Теоретический · '+row.requires})
+     make('span',{text:english?(row.nameEn||row.name):row.name}),
+     make('strong',{text:String(row.amount)+(row.scaledBySkill?
+      (english?' HP':' ОЗ'):(english?' / period':' / период'))}),
+     make('small',{text:row.available?
+      (english?'Available by skill requirements':'Доступен по проверенным базовым условиям'):
+      (english?'Preview · '+(row.requiresEn||row.requires):
+       'Теоретический · '+row.requires)})
     ]);
     card.append(label);
    }
@@ -1090,19 +1094,27 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   body.prepend(card);
  }
  if(chosen==='recovery'&&modifiers?.periodicRecovery?.rows?.length){
+  const english=document.documentElement?.lang==='en';
+  const skillNamesEn={310002001:'Regenerate',310022001:'Restoration',330005001:'Mana Restore'};
   const details=make('details',{class:'stage-attribute-row stage-periodic-recovery'});
-  details.append(make('summary',{text:'Восстановление каждые 2 секунды'}));
+  details.append(make('summary',{text:english?'Recovery every 2 seconds':
+   'Восстановление каждые 2 секунды'}));
   for(const entry of modifiers.periodicRecovery.rows){
    details.append(make('div',{class:'stage-periodic-row'},[
-    make('span',{text:entry.name}),
-    make('strong',{text:'≈ '+entry.amount+' '+(entry.kind==='hp'?'ОЗ':'ОМ')}),
-    make('small',{text:entry.available?'Доступно при использовании умения':
-     entry.required>0?'Для изучения нужно мастерство '+entry.required:
-     'Пока недоступно'})
+    make('span',{text:english?(skillNamesEn[entry.id]||entry.name):entry.name}),
+    make('strong',{text:'≈ '+entry.amount+' '+(entry.kind==='hp'?
+     (english?'HP':'ОЗ'):(english?'MP':'ОМ'))}),
+    make('small',{text:entry.available?
+     (english?'Available when using the skill':'Доступно при использовании умения'):
+     entry.required>0?(english?'Requires healing mastery '+entry.required:
+      'Для изучения нужно мастерство '+entry.required):
+     (english?'Not yet available':'Пока недоступно')})
    ]));
   }
   details.append(make('p',{class:'stage-periodic-hint',
-   text:'Ориентировочное действие умения. Не входит в постоянное восстановление персонажа.'}));
+   text:english?
+    'Estimated skill effect. Not included in the hero’s permanent recovery.':
+    'Ориентировочное действие умения. Не входит в постоянное восстановление персонажа.'}));
   body.append(details);
  }
  if(['attack','defense'].includes(chosen)&&modifiers?.combat){
