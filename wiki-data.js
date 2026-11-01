@@ -67,7 +67,7 @@ function build(data){
    const relatedItem=type==='chest'||type==='soul'?data.items?.[id]:null;
    const locations=type==='monster'?(mobLocations.get(id)||[]).map(x=>x.name):
     type==='npc'?(rec.maps||[]).map(x=>maps[x]?.name):[];
-   index.set(id,normalizeSearch([id,rec.name,rec.desc,rec.blurb,rec.kind,
+   index.set(id,normalizeSearch([rec.name,rec.desc,rec.blurb,rec.kind,
     rec.level,rec.charLevel,rec.branch,rec.branchRaw,rec.skillType,rec.slot,
     ...(rec.slots||[]),...Object.keys(rec.classes||{}),relatedItem?.name,
     ...locations].filter(x=>x!=null).join(' ')));

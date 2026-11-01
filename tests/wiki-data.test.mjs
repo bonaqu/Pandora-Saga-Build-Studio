@@ -26,6 +26,7 @@ test('searches across names, descriptions, class restrictions and alternate disp
  assert.equal(wiki.search('item','helmet',id=>id==='1'?'Heavy Helmet':'').length,1);
  assert.equal(wiki.search('soul','weapon').length,1);
  assert.equal(wiki.search('item','unmatched').length,0);
+ assert.equal(wiki.search('item','1').length,0,'database IDs are not a public search field');
  assert.equal(wiki.residents(8).length,1);
  assert.equal(wiki.records('map')['8'].name,'Лес');
  assert.equal(wiki.records('item')['1'].name,'Крепкий шлем');

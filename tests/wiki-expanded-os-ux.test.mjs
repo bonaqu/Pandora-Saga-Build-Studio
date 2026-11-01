@@ -97,6 +97,17 @@ test('encyclopedia CSS has one canonical image size, descriptions and monster gr
  assert.match(css,/\.wiki-list-icon\{width:34px/);
  assert.match(css,/\.wiki-description\{white-space:pre-line;overflow-wrap:anywhere/);
 });
+test('EN encyclopedia uses authoritative NPC/chest/settlement names, and chest descriptions from item source',()=>{
+ const app=read('app.js'),wiki=read('wiki-data.js'),en=JSON.parse(read('data/os/strings.en.json'));
+ assert.ok(en.tradeNpcs?.['53']?.n);
+ assert.ok(en.tradeMaps?.['1001004']?.n);
+ assert.ok(en.items?.['51003']?.d);
+ assert.match(app,/officialEnglish\?\.tradeMaps\?\.\[id\]/);
+ assert.match(app,/type==='chest'\?wikiData\.items\?\.\[id\]/);
+ assert.match(app,/type==='item'\|\|type==='chest'\?'items'/);
+ assert.match(app,/const described=type==='chest'\?wikiData\.items\?\.\[id\]:rec/);
+ assert.match(wiki,/index\.set\(id,normalizeSearch\(\[rec\.name/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');

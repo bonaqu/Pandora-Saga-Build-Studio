@@ -1366,8 +1366,13 @@ function renderWiki(root){
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
  const dataName=(type,id)=>{
-  const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):type==='monster'?wikiData.monsters?.[id]:type==='map'?(wikiData.maps?.[id]||wikiData.trades?.mapNames?.[id]):type==='skill'?wikiData.skills?.[id]:type==='soul'?wikiData.souls?.[id]:type==='instance'?wikiData.instances?.find(x=>String(x.id)===String(id)):type==='npc'?wikiData.trades?.npcs?.[id]:type==='chest'?wikiData.items?.[id]:null;
-  const en=officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='map'?'maps':type==='instance'?'instances':type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
+  const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):
+   type==='chest'?wikiData.items?.[id]:wikiIndex.records(type)?.[id];
+  const en=type==='map'?(officialEnglish?.maps?.[id]?.n||
+   officialEnglish?.tradeMaps?.[id]?.n):officialEnglish?.[
+   type==='item'||type==='chest'?'items':type==='npc'?'tradeNpcs':
+   type==='monster'?'monsters':type==='instance'?'instances':
+   type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
   const fallback=lang==='en'?
     {item:'Unnamed item',monster:'Unnamed monster',map:'Location',npc:'NPC',
      chest:'Chest',skill:'Unnamed skill',soul:'Unnamed soul',instance:'Dungeon'}:
@@ -1463,8 +1468,15 @@ function renderWiki(root){
     const img=wikiImage(wikiIcon(type,id,rec),'wiki-record-icon wiki-item-portrait',type);
     if(img)detail.prepend(img);
   }
-  if(rec.desc){const text=lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='skill'?'skills':type==='soul'?'souls':'maps']?.[id]?.d||rec.desc):rec.desc;
-    detail.append(h('p',{class:'wiki-description',text:type==='item'||type==='soul'?window.PandoraItemPresentation.description(text):text}));}
+  const described=type==='chest'?wikiData.items?.[id]:rec;
+  const englishDescription=lang==='en'?(officialEnglish?.[
+   type==='item'||type==='chest'?'items':type==='soul'?'souls':
+   type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
+  if(described?.desc){
+   const text=englishDescription||described.desc;
+   detail.append(h('p',{class:'wiki-description',text:
+    ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text}));
+  }
   const moreSources=rows=>{
    if(rows.length<=wikiSourceShown)return;
    detail.append(h('button',{type:'button',class:'wiki-more',text:wt('Показать ещё ','Show more ')+
