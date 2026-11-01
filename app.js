@@ -1219,11 +1219,16 @@ function heroPathApi(){
   },
   onAllocate:(key,requested,final)=>{
    const model=window.PandoraSkillProgression,current=model.potential(state,key);
+   if(!Number.isInteger(requested)||requested<0)return current;
    const target=requested<=current?Math.max(0,requested):Math.min(Math.max(0,requested),allowedBranch(key));
    if(!model.canAllocate(gameTables?.abilityPoint,state.level,state.points,key,branchCap(key),target))
     return current;
-   model.setPotential(state,key,target);
-   state.branch=key;persist();refreshBudgetLabel();
+   const allocationChanged=target!==current,branchChanged=state.branch!==key;
+   if(allocationChanged)model.setPotential(state,key,target);
+   state.branch=key;
+   // A capped slider may emit many input events that cannot change the build.
+   // Do not rewrite the draft or rebuild the budget for those no-op inputs.
+   if(allocationChanged||branchChanged){persist();refreshBudgetLabel()}
    if(final){
     const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
     renderBranches();renderOriginStats();renderOriginVitals();
