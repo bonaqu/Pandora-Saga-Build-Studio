@@ -113,6 +113,8 @@ function reportCloudStatus(message){
  const node=document.querySelector('.cloud-library-status');if(node)node.textContent=message;
 }
 async function putCloudBuild(entry){
+ // This guard also protects accidental call sites added in future changes.
+ if(entry?.localOnly===true)return false;
  try{
   await cloudLibraryRequest({action:'put',entry});
   reportCloudStatus('Сохранено в облаке');return true;
@@ -163,7 +165,10 @@ async function loadCloudBuilds(){
   builds=reconciled.merged;persistBuilds();
   if(reconciled.activeId!==activeBuildId)selectActiveBuild(reconciled.activeId);
   if(activeTab==='builds')renderDetails();
-  reportCloudStatus(outgoing.length?'Синхронизируем локальные изменения…':'Облачная библиотека подключена');
+  reportCloudStatus(outgoing.length?'Синхронизируем локальные изменения…':
+   builds.some(entry=>entry.localOnly===true)?
+    'Облако подключено · локальные копии ещё не сохранены':
+    'Облачная библиотека подключена');
   for(const entry of outgoing){
    if(libraryChangeId!==generation)break;
    const current=builds.find(x=>x.id===entry.id);
@@ -1936,16 +1941,26 @@ function renderBuilds(root){
    }}),
    h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{overwriteChoice.hidden=true}}));
   const deleteChoice=h('div',{class:'build-delete-choice',hidden:true});
-  deleteChoice.append(h('p',{text:'Удалить билд и отозвать все созданные ссылки?'}),
+  deleteChoice.append(h('p',{text:b.localOnly===true?
+   'Удалить локальную копию? Она ещё не сохранена в облаке.':
+   'Удалить билд и отозвать все созданные ссылки?'}),
    h('button',{class:'button-action danger',type:'button',text:'Удалить билд',onclick:()=>{
     builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);
     if(activeBuildId===b.id)selectActiveBuild(null);
-    persistBuilds();void deleteCloudBuild(b.id);renderDetails();
+    persistBuilds();
+    if(b.localOnly===true){
+     libraryChangeId++;
+     reportCloudStatus('Локальная копия удалена');
+    }else void deleteCloudBuild(b.id);
+    renderDetails();
    }}),
    h('button',{class:'button-action',type:'button',text:'Отмена',onclick:()=>{deleteChoice.hidden=true}}));
   check.checked=compareIds.includes(b.id);
   check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};
-  box.append(h('h3',{text:b.name}),h('p',{
+  box.append(h('h3',{text:b.name}),
+   ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
+    text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
+   h('p',{
    text:(races[b.data?.race]?.[0]||'?')+' · '+(jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
    h('label',{},[check,' Сравнить']),
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
@@ -2118,6 +2133,11 @@ function isVerifiedSharedBuild(share,expectedData){
 }
 async function createShared(build,host){
  if(!build||!host)return;
+ if(build.localOnly===true){
+  host.replaceChildren(h('p',{class:'build-share-error',
+   text:'Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».'}));
+  return;
+ }
  const pending=h('p',{class:'muted',text:'Проверяем сохранение билда…'});
  host.replaceChildren(pending);
  try{
@@ -2141,6 +2161,7 @@ async function createShared(build,host){
    }});
   message.append(h('p',{text:response.reused?'Ссылка на билд уже создана.':'Ссылка на билд создана.'}),
    field,copy,h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));
+  window.PandoraUILocale.localize(message,lang);
   if(host.isConnected)host.replaceChildren(message);
  }catch(error){
   if(host.isConnected)host.replaceChildren(h('p',{class:'build-share-error',

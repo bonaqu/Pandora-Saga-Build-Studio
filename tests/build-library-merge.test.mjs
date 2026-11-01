@@ -14,6 +14,7 @@ test('equal cloud timestamp with differing data keeps both builds and retains lo
  assert.equal(r.merged.find(x=>x.id===B).data.level,55);
  assert.equal(r.activeId,B);
  assert.equal(r.outgoing.length,0);
+ assert.equal(r.merged.find(x=>x.id===B).localOnly,true);
  assert.match(r.merged.find(x=>x.id===B).name,/локальная копия/);
  assert.equal(local.name,'Hero');
 });
@@ -58,4 +59,23 @@ test('malformed cloud payload cannot delete valid local save; ID collisions cann
  assert.equal(both.merged.find(x=>x.id===B).data.level,55);
  assert.throws(()=>reconcile({local:[local],remote:[{id:A,entry:mk(A,101,54)}],
   newId:()=>A}),/unique local conflict/);
+});
+
+test('conflict copies remain browser-only across repeated cloud refreshes',()=>{
+ const first=reconcile({local:[mk(A,210,55)],remote:[{id:A,entry:mk(A,180,54)}],
+  activeId:A,newId:()=>B});
+ const second=reconcile({local:first.merged,remote:[{id:A,entry:mk(A,180,54)}],
+  activeId:first.activeId,newId:()=>C});
+ assert.equal(first.copies,1);
+ assert.equal(second.copies,0);
+ assert.equal(second.merged.length,2);
+ assert.equal(second.activeId,B);
+ assert.equal(second.merged.find(x=>x.id===B).localOnly,true);
+ assert.deepEqual(second.outgoing,[],'refresh must not send conflict copies to D1');
+});
+test('user-created offline saved builds still retry while local-only copies never do',()=>{
+ const r=reconcile({local:[mk(C,80,48),{...mk(B,95,55),localOnly:true}],
+  remote:[],newId:()=>D});
+ assert.deepEqual(r.outgoing.map(x=>x.id),[C]);
+ assert.ok(r.merged.some(x=>x.id===B&&x.localOnly));
 });

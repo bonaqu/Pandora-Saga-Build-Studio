@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.189.0 (`2026.11.01.189`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.190.0 (`2026.11.01.190`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.190.0 — durable cloud conflict copies and no implicit PUT
+
+- A divergent local snapshot becomes an explicitly marked browser-only recovery copy. Reconciliation preserves `localOnly:true` through reloads and excludes those copies from the automatic retry queue. Other previously **explicitly saved** offline builds still retry after connectivity is restored.
+- The card explains how to publish that copy: open it and explicitly choose «Перезаписать». Only that confirmation clears the local-only marker and submits an existing saved ID to D1.
+- Deleting an unpublished copy does not issue a remote delete or create an unnecessary D1 tombstone; sharing is blocked with a useful action hint until explicit save.
+- Node merge regressions and a fake-Worker Chromium conflict/refresh/share/manual-save scenario verify no accidental PUT. Published Pages and independent live D1 behavior require separate acceptance; formulas and 1–55 planning are unchanged.
 
 ## Source update 0.189.0 — resilient sessions and explicit save UI
 

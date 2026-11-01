@@ -5,13 +5,17 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const scope={};Function('window',read('build-library-merge.js'))(scope);
 const merge=scope.PandoraBuildLibraryMerge.reconcile;
 const A='a'.repeat(32),B='b'.repeat(32);
-test('D1 remains authoritative and the offline edited saved build becomes a separate cloud-synced copy',()=>{
+test('D1 remains authoritative and a conflicting offline edit becomes a browser-only copy',()=>{
  const local={id:A,name:'Local',at:200,data:{race:1,job:0,level:55}};
  const remote={id:A,name:'Cloud',at:100,data:{race:1,job:0,level:54}};
  const result=merge({local:[local],remote:[{id:A,entry:remote}],activeId:A,newId:()=>B});
  assert.deepEqual(result.merged.find(v=>v.id===A),remote);
  assert.equal(result.merged.find(v=>v.id===B).data.level,55);
  assert.deepEqual(result.outgoing.map(v=>v.id),[]);
+ assert.equal(result.merged.find(v=>v.id===B).localOnly,true);
+ const repeated=merge({local:result.merged,remote:[{id:A,entry:remote}],
+  activeId:B,newId:()=>A});
+ assert.deepEqual(repeated.outgoing,[]);
  assert.equal(result.activeId,B);
  const app=read('app.js');
  assert.match(app,/const reconciled=window\.PandoraBuildLibraryMerge\.reconcile/);

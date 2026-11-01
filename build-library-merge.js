@@ -21,7 +21,7 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}
   known.add(id);copies++;
   const suffix=origin==='local'?' · локальная копия':' · облачная копия';
   const duplicate={...source,id,name:String(source.name||'Билд').slice(0,70-suffix.length)+suffix,
-   at:Math.max(Date.now(),Number(source.at)||0)};
+   at:Math.max(Date.now(),Number(source.at)||0),localOnly:true};
   merged.push(duplicate); // A conflict copy stays local until explicitly saved.
   return id;
  };
@@ -54,7 +54,9 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}
   if(!entry||!ID.test(entry.id)||remoteIds.has(entry.id)||
    pending.has(entry.id))continue;
   if(known.has(entry.id)&&merged.some(x=>x.id===entry.id))continue;
-  merged.push(entry);outgoing.push(entry);
+  merged.push(entry);
+  // A conflict copy is a private browser-only recovery snapshot until manually saved.
+  if(entry.localOnly!==true)outgoing.push(entry);
   remoteIds.add(entry.id);
  }
  merged.sort((a,b)=>(b.at||0)-(a.at||0));
