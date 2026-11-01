@@ -8,7 +8,14 @@ const MAGIC=['element','embody','darkness','charm'];
 const TECHNIQUE=['archery','alchemy','assassin','trap','warding'];
 const MELEE=['slash','thrust','brush','blow','defense'];
 const INSPIRED=new Set(['PRIEST','CLERIC','ENCHANTER']);
-function value(raw){const n=Number(raw);return Number.isInteger(n)&&n>0?n:0}
+function value(raw){
+ // Keep legacy numeric text, but never let JSON booleans, arrays or objects
+ // coerce into synthetic invested points or trained mastery.
+ if(typeof raw!=='number'&&typeof raw!=='string')return 0;
+ if(typeof raw==='string'&&!/^\+?\d+(?:\.0+)?$/.test(raw.trim()))return 0;
+ const n=Number(raw);
+ return Number.isSafeInteger(n)&&n>0?n:0;
+}
 function potential(state,key){return value(state?.points?.[key])}
 function trained(state,key){
  const max=potential(state,key);

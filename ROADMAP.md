@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.256.0 (`2026.11.01.256`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.257.0 (`2026.11.01.257`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.257.0 — prevent coerced ghost points from damaged saved builds
+
+- [x] Do not treat JSON boolean `true`, arrays, objects or non-decimal strings as valid positive branch investments/mastery. Preserve ordinary numeric values and legacy decimal numeric strings, including whole-value `.0` and leading `+`.
+- [x] Use safe integer validation for existing investments, blue point budgets, trained green mastery and derived group adeptness to prevent out-of-range input from corrupting totals; do not mutate historic saved builds or alter valid number semantics.
+- [x] Add model-level regressions for budget, ability to train, prayer adeptness, accepted legacy formats and all malformed input classes. Keep full Node+real Chromium verification and read-only Worker/D1 publication check.
+- [ ] Further validate real OS game packet/formula parity, icon coverage and authenticated cloud lifecycle without inventing source mechanics.
 
 ## Source update 0.256.0 — efficient, tiered regression execution without deleting coverage
 
