@@ -102,14 +102,19 @@ function unisonPreview({records=[],catalog=null}={}){
   return {active,supplemental,pending};
  const equipped=new Map();
  for(const [source,item,grade] of records){
-  if(!String(source).startsWith('item:')||!item||!Number.isInteger(item.id))continue;
+  // Invalid or mismatched imported records must never count as set pieces.
+  // Equipment eligibility (slot, class, race, level) is checked upstream.
+  if(!item||!Number.isInteger(item.id)||item.id<0||
+   String(source)!=='item:'+item.id||
+   !Number.isInteger(grade)||grade<0||grade>10)continue;
   equipped.set(String(item.id),{item,grade});
  }
  for(const [id,set] of Object.entries(catalog)){
   if(!Array.isArray(set?.members)||!Array.isArray(set?.rows))continue;
   const root=equipped.get(id);
-  if(!root||!Number.isInteger(root.grade))continue;
-  const companionIds=[...new Set(set.members.map(String))];
+  if(!root)continue;
+  // The item itself cannot also count as one of its set companions.
+  const companionIds=[...new Set(set.members.map(String).filter(key=>key!==id))];
   const count=companionIds.filter(key=>equipped.has(key)).length;
   const matched=companionIds.filter(key=>equipped.has(key));
   const effects=[],conditions=[];

@@ -64,6 +64,11 @@ export async function runInlineMilestonesSmoke(browser,base){
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
+  // The initial race UI renders before the D1/local catalog has finished
+  // loading. Opening the branch during catalog replacement is a timing race.
+  // Require the real fully validated catalog before exercising the tree.
+  await page.waitForFunction(()=>/\d+ навыков · \d+ предметов · \d+ душ/.test(
+   document.querySelector('#catalogStatus')?.textContent||''),null,{timeout:20000});
   // A brand-new level-1 hero has no allocatable mastery points. Set the
   // planning level to 45 before exercising a real 0 -> 1 -> 2 allocation.
   await page.locator('#level').evaluate(input=>{
