@@ -54,3 +54,28 @@ test('the comparison helper is loaded before the main app and included in saved 
  assert.ok(html.indexOf('build-comparison.js?v=')<html.indexOf('src="app.js?v='));
  assert.match(app,/PandoraBuildComparison\.describe\(a,b/);
 });
+
+test('saved gear and Soul identities use OS names instead of falsely saying empty',()=>{
+ const name=root.PandoraBuildComparison.savedItemName;
+ const equipment=JSON.parse(readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+ const souls=JSON.parse(readFileSync(new URL('../data/os/souls.json',import.meta.url),'utf8'));
+ assert.equal(name({id:1},equipment),equipment['1'].name);
+ assert.equal(name({id:103013},souls,{kind:'soul'}),souls['103013'].name);
+ assert.equal(name({id:987654},equipment),'Предмет №987654');
+ assert.equal(name(null,equipment),'пусто');
+ assert.equal(name({id:987654},equipment,{lang:'en'}),'Item #987654');
+ assert.equal(name({id:1,name:'Obsolete copied name'},equipment),equipment['1'].name);
+ assert.equal(name({id:'not-an-id',name:'Old custom gear'},equipment),'Old custom gear');
+});
+test('main build diff now compares race and resolves equipment/Soul names from the source catalogs',()=>{
+ const code=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+ const from=code.indexOf('function compareSnapshots(a,b){');
+ const to=code.indexOf('function restoreLoadedBuildUI(){',from);
+ assert.ok(from>0&&to>from);
+ const part=code.slice(from,to);
+ assert.match(part,/races\[a\.race\]/);
+ assert.match(part,/PandoraBuildComparison\.savedItemName/);
+ assert.match(part,/kind==='soul'\?catalog\.souls:catalog\.equipment/);
+ assert.doesNotMatch(part,/x\?\.name\|\|'пусто'/);
+ assert.doesNotMatch(part,/xa\[s\]\?\.name\|\|'пусто'/);
+});

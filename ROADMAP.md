@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.200.0 (`2026.11.01.200`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.201.0 (`2026.11.01.201`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.201.0 — saved-build comparison names from current OS catalogs
+
+- Correct an actual misleading comparison: saved equipment and socket Soul records often contain only the `id`; the old comparison printed «пусто → пусто» even when different items were selected. Look up each ID against the current OS/D1 `catalog.equipment` and `catalog.souls` instead, preserving safe source-backed legacy names and showing a distinct ID fallback for missing records.
+- Compare race, profession and level on their own lines instead of giving an unchanged profession and level when only the selected race changed. RU/EN headings are supported without changing official game names.
+- Add tests against the real OS item and Soul catalog, absent catalog entries, old embedded names and unknown IDs. No gameplay formula, save semantics or cloud migration changes.
 
 ## Source update 0.200.0 — source-backed special Soul/equipment effects in Hero Book
 

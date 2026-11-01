@@ -25,6 +25,21 @@ const BUFFS=[
 ];
 const EN_SLOTS=['Weapon','Shield','Helmet','Armor','Gloves','Pants','Boots','Cloak',
  'Ring I','Ring II','Amulet','Belt','Earring I','Earring II'];
+function savedItemName(selection,records,{lang='ru',kind='item'}={}){
+ if(!selection||selection.id===undefined||selection.id===null)return lang==='en'?'empty':'пусто';
+ const id=String(selection.id),numeric=/^[1-9][0-9]{0,14}$/.test(id);
+ const record=numeric?records?.[id]:null;
+ // The official catalog takes precedence over obsolete names embedded in saved builds.
+ const candidate=record?.name?.[lang]||record?.names?.[lang]||record?.name?.ru||
+  record?.names?.ru||record?.name;
+ if(typeof candidate==='string'&&candidate.trim()&&!/^\d+$/.test(candidate.trim()))
+  return candidate.trim();
+ const legacy=selection?.name;
+ if(typeof legacy==='string'&&legacy.trim()&&!/^\d+$/.test(legacy.trim()))
+  return legacy.trim().slice(0,80);
+ if(!numeric)return lang==='en'?'Unknown selection':'Неизвестный предмет';
+ return (kind==='soul'?lang==='en'?'Soul #':'Душа №':lang==='en'?'Item #':'Предмет №')+id;
+}
 function asValue(v,defaultValue){
  return typeof defaultValue==='boolean'?v===true:
   Number.isFinite(v)&&Number.isInteger(v)&&v>=0?v:defaultValue;
@@ -77,5 +92,5 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
  }
  return rows;
 }
-root.PandoraBuildComparison=Object.freeze({describe});
+root.PandoraBuildComparison=Object.freeze({describe,savedItemName});
 })(typeof window==='undefined'?globalThis:window);

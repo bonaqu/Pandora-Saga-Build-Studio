@@ -1809,7 +1809,16 @@ function renderStats(root){
 }
 function compareSnapshots(a,b){
  const rows=[];const lib=window.PandoraEquipmentPlan;
- if(a.race!==b.race||a.job!==b.job||a.level!==b.level)rows.push('Персонаж: '+(jobs[a.job]||'?')+' → '+(jobs[b.job]||'?')+' · уровень '+a.level+' → '+b.level);
+ const label=(ru,en)=>lang==='en'?en:ru;
+ const name=(selected,kind)=>window.PandoraBuildComparison.savedItemName(selected,
+  kind==='soul'?catalog.souls:catalog.equipment,{lang,kind});
+ if(a.race!==b.race)
+  rows.push(label('Раса','Race')+': '+(races[a.race]?.[lang==='en'?1:0]||'?')+
+   ' → '+(races[b.race]?.[lang==='en'?1:0]||'?'));
+ if(a.job!==b.job)
+  rows.push(label('Профессия','Class')+': '+(jobs[a.job]||'?')+' → '+(jobs[b.job]||'?'));
+ if(a.level!==b.level)
+  rows.push(label('Уровень','Level')+': '+(a.level??'?')+' → '+(b.level??'?'));
  for(const branch of branches){const p=a.points?.[branch.id]||0,q=b.points?.[branch.id]||0;if(p!==q)rows.push((catalog.meta?.branchLabels?.[branch.id]||branch.name)+': '+p+' → '+q)}
  for(const stat of STATS){const p=a.stats?.[stat]||0,q=b.stats?.[stat]||0;if(p!==q)rows.push((ORIGIN_STAT_LABELS[STATS.indexOf(stat)]?.name||stat)+': '+p+' → '+q)}
  if((a.masteryAuto!==false)!==(b.masteryAuto!==false))rows.push('Автозаполнение мастерства: '+(a.masteryAuto!==false?'вкл':'выкл')+' → '+(b.masteryAuto!==false?'вкл':'выкл'));
@@ -1818,12 +1827,18 @@ function compareSnapshots(a,b){
   if(p!==q)rows.push('Мастерство '+branch.name+': '+p+' → '+q);
  }
  for(let i=0;i<slots.length;i++){
-  const x=a.equipment?.[i],y=b.equipment?.[i];if(String(x?.id??'')!==String(y?.id??''))rows.push(slots[i][0]+': '+(x?.name||'пусто')+' → '+(y?.name||'пусто'));
+  const x=a.equipment?.[i],y=b.equipment?.[i];
+  if(String(x?.id??'')!==String(y?.id??''))
+   rows.push((lang==='en'?['Weapon','Shield','Helmet','Armor','Gloves','Pants','Boots',
+    'Cloak','Ring I','Ring II','Amulet','Belt','Earring I','Earring II'][i]:slots[i][0])+
+    ': '+name(x,'item')+' → '+name(y,'item'));
   const xp=lib.refinementValue(a.refinements,i,x),yp=lib.refinementValue(b.refinements,i,y);
   if(xp!==yp)rows.push('Заточка '+slots[i][0]+': +'+xp+' → +'+yp);
   const xa=lib.asSocketArray(a.souls?.[i]),ya=lib.asSocketArray(b.souls?.[i]);
   for(let s=0;s<Math.max(xa.length,ya.length);s++)
-   if(String(xa[s]?.id??'')!==String(ya[s]?.id??''))rows.push('Душа '+slots[i][0]+' / '+(s+1)+': '+(xa[s]?.name||'пусто')+' → '+(ya[s]?.name||'пусто'));
+   if(String(xa[s]?.id??'')!==String(ya[s]?.id??''))
+    rows.push(label('Душа ','Soul ')+slots[i][0]+' / '+(s+1)+
+     ': '+name(xa[s],'soul')+' → '+name(ya[s],'soul'));
  }
  for(const field of ['guild','nation','rank','about']){
   const before=String(a.profile?.[field]||''),after=String(b.profile?.[field]||'');
