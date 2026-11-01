@@ -754,7 +754,8 @@ function renderStageAttributes(){
  const jobBase=catalog.classes?.[cls]?.baseClass||cls;
  const innate=gameTables?.jobInit?.[jobBase]?.branches||{};
  const skillModel=window.PandoraSkillResults.create({
-  catalog:skillMap,jobKey:cls,level:state.level,innate,
+  catalog:skillMap,jobKey:cls,level:state.level,innate,lang,
+  branchLabels:catalog.meta?.branchLabels||{},
   trained:Object.fromEntries(branches.map(b=>[
    b.id,window.PandoraSkillProgression.trained(state,b.id)]))
  });
@@ -772,6 +773,21 @@ function renderStageAttributes(){
  const combatSkillCatalog=window.PandoraOSCalculator;
  const selectedCombat=Object.fromEntries(Object.keys(keys).map(k=>[k,true]));
  const branchMasteries=trainedBranchMasteries(innate);
+ const bookEn=lang==='en';
+ const levelReason=n=>bookEn?'Available at level '+n:'Откроется на '+n+' уровне';
+ const missingCombatMastery=ability=>{
+  const req=ability?.reqs?.find(req=>branchMasteries[req.branch]<req.amount);
+  if(!req)return null;
+  const branchName=catalog.meta?.branchLabels?.[req.branch]||req.branch;
+  return bookEn?'Requires '+req.amount+' '+branchName+' mastery':
+   'Требуется мастерство «'+branchName+'»: '+req.amount;
+ };
+ const unavailableReason=(ability,hasMastery=true)=>{
+  if(!ability)return bookEn?'Skill missing from catalog':'Умение отсутствует в каталоге';
+  if(!ability.classes?.[cls])return bookEn?'Unavailable to this class':'Недоступно для этой профессии';
+  if(state.level<Number(ability.charLevel||0))return levelReason(ability.charLevel);
+  return hasMastery?missingCombatMastery(ability):null;
+ };
  const availableSkills=combatSkillCatalog.activeCombatSkills({
   selected:selectedCombat,jobKey:cls,level:state.level,weapon:equippedWeapon,branchMasteries,
   hasShield:equippedShield?.slot==='shield',skillCatalog:skillMap
@@ -783,24 +799,21 @@ function renderStageAttributes(){
   availability[setting]=availableSkills[name]===true;
   const eff=combatSkillCatalog.combatSkillSource(skillMap,name)?.effects||{};
   const number=n=>n>0?'+'+n:String(n);
-  const summary=name==='concentration'?number(eff.EP_TOHIT_CONST??0)+' к точности':
-   name==='lunge'?number(eff.EP_ATTACKINTERVAL_SCALE??0)+' к скорости атаки':
-   name==='warCry'?number(eff.EP_DAMAGERATE_CONST??0)+' атаки · '+
-    number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки':
-   name==='raging'?number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки · '+
-    number(eff.EP_ARMORCLASS_SCALE??0)+'% защиты':
-    number(eff.EP_DAMAGERATE_SCALE??0)+'% атаки · '+
-    number(eff.EP_ARMORCLASS_SCALE??0)+'% защиты';
-  const reason=!ability?'Умение отсутствует в каталоге':
-   !ability.classes?.[cls]?'Недоступно для этой профессии':
-   state.level<Number(ability.charLevel||0)?
-    'Откроется на '+ability.charLevel+' уровне':
-   ability.reqs?.some(req=>branchMasteries[req.branch]<req.amount)?
-    'Нужно 26 очков мастерства рубящего оружия':
-   name==='defender'&&equippedShield?.slot!=='shield'?'Необходимо экипировать щит':
-   name==='lunge'&&Array.isArray(ability.weaponUse)&&ability.weaponUse.length&&
+  const summary=name==='concentration'?number(eff.EP_TOHIT_CONST??0)+
+    (bookEn?' accuracy':' к точности'):
+   name==='lunge'?number(eff.EP_ATTACKINTERVAL_SCALE??0)+
+    (bookEn?' attack speed':' к скорости атаки'):
+   name==='warCry'?number(eff.EP_DAMAGERATE_CONST??0)+
+    (bookEn?' attack · ':' атаки · ')+
+    number(eff.EP_DAMAGERATE_SCALE??0)+'% '+(bookEn?'attack':'атаки'):
+   number(eff.EP_DAMAGERATE_SCALE??0)+'% '+(bookEn?'attack':'атаки')+' · '+
+    number(eff.EP_ARMORCLASS_SCALE??0)+'% '+(bookEn?'defense':'защиты');
+  const reason=unavailableReason(ability)||
+   (name==='defender'&&equippedShield?.slot!=='shield'?
+    (bookEn?'Equip a shield':'Необходимо экипировать щит'):
+   name==='lunge'&&Array.isArray(ability?.weaponUse)&&ability.weaponUse.length&&
     !ability.weaponUse.includes(equippedWeapon?.kind??'BARE_HAND')?
-    'Недоступно с выбранным оружием':null;
+    (bookEn?'Unavailable with current weapon':'Недоступно с выбранным оружием'):null);
   combatSkillCards[setting]=ability?{
    name:ability.name,desc:ability.desc,level:ability.charLevel,summary,reason,
    icon:skillIcon(ability.branch,0,ability)
@@ -817,13 +830,11 @@ function renderStageAttributes(){
   const effects=source?.values||{};
   availability[setting]=supportAvailable[kind]===true;
   const summary=kind==='windAssist'?
-   '+'+(effects.EP_AVOIDANCE_CONST??0)+' уклонения и '+
-    '+'+(effects.EP_AVOIDANCE_SCALE??0)+'% от базы':
-   '+'+(effects.EP_MOVESPEED_SCALE??0)+' к скорости передвижения';
-  const reason=!ability?'Умение отсутствует в каталоге':
-   !ability.classes?.[cls]?'Недоступно для этой профессии':
-   state.level<Number(ability.charLevel||0)?
-    'Откроется на '+ability.charLevel+' уровне':null;
+   '+'+(effects.EP_AVOIDANCE_CONST??0)+(bookEn?' evasion and ':' уклонения и ')+
+    '+'+(effects.EP_AVOIDANCE_SCALE??0)+'% '+(bookEn?'of base evasion':'от базы'):
+   '+'+(effects.EP_MOVESPEED_SCALE??0)+
+    (bookEn?' movement speed':' к скорости передвижения');
+  const reason=unavailableReason(ability,false);
   combatSkillCards[setting]=ability?{
    name:ability.name,desc:ability.desc,level:ability.charLevel,summary,reason,
    icon:skillIcon(ability.branch,0,ability)
