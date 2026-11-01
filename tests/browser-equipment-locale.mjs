@@ -25,11 +25,13 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await first.waitFor({state:'visible'});
   const firstName=await first.locator('strong').innerText();
   assert.equal(firstName,firstOfficialRu,'RU item name comes from the original OS catalog');
-  // The workbench covers the header: its own switch must remain clickable.
-  await page.locator('#dockLocale [data-dock-locale="en"]').click();
+  // Only the header owns the locale. Closing the workbench allows using it.
+  assert.equal(await page.locator('#dockLocale').count(),0);
+  await page.locator('#dockClose').click();
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#nav [data-tab="equipment"]').click();
   await page.waitForFunction(()=>document.querySelector(
    '.equipment-catalog-toolbar input[type=search]')?.placeholder==='Search items');
-  assert.equal(await page.locator('#dockLocale [data-dock-locale="en"]').getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#locale [data-locale="en"]').getAttribute('aria-pressed'),'true');
   assert.equal(await toolbar.locator('select option[value="ring"]').innerText(),'Rings');
   assert.match(await page.locator('.equipment-catalog-head h3').innerText(),/Pandora Saga Equipment/);
@@ -42,10 +44,11 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await ring.waitFor({state:'visible'});
   await ring.focus();
   assert.ok((await page.locator('.equipment-catalog-layout .item-info').innerText()).includes('Sources and details'));
-  await page.locator('#dockLocale [data-dock-locale="ru"]').click();
+  await page.locator('#dockClose').click();
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#nav [data-tab="equipment"]').click();
   await page.waitForFunction(()=>document.querySelector(
    '.equipment-catalog-toolbar input[type=search]')?.placeholder==='Поиск по названию');
-  assert.equal(await page.locator('#dockLocale [data-dock-locale="ru"]').getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#locale [data-locale="ru"]').getAttribute('aria-pressed'),'true');
   assert.equal(await toolbar.locator('select option[value="ring"]').innerText(),'Кольца');
   await toolbar.locator('select').selectOption('all');

@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.250.0 (`2026.11.01.250`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.251.0 (`2026.11.01.251`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.251.0 — single header locale and concise Hero Path
+
+- [x] Screenshot/user request: remove redundant `Очки ветки N / cap` from the expanded tree, retaining `Стрельба 12 / 45` in the branch header and precise invested/mastery inputs below the rail.
+- [x] Keep gold value notch, all milestone markers, group invested totals and drag/keyboard/manual-input behavior unchanged. Add real browser 0→1→2→0 and exact-input regression verifying no duplicate.
+- [x] Remove second language switch in workbench: RU/EN available only in the site header's top-right. To switch while the modal is open, close it, use header RU/EN, then reopen. Preserve one locale handler.
+- [x] Remove now-dead CSS for repeated point row and dock language switch, and the old modal click handler, dual synchronization logic, and obsolete tests.
+- [ ] Full formula parity, real D1 authenticated write acceptance, original icons and remaining RU/EN subcomponents continue separately.
 
 ## Source update 0.250.0 — locale-aware item names and real bilingual equipment acceptance
 

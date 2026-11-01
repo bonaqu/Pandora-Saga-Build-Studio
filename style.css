@@ -276,7 +276,6 @@ a.wiki-link:hover{text-decoration:none}
 .origin-passive small{display:block;font-size:10px;color:#cdaa74}
 .branch-racial-note{padding:10px;color:#c1a681;font-size:11px}
 .inline-branch-editor{margin:1px 5px 8px;padding:9px;background:#110d0af0;border:1px solid #967146}
-.inline-branch-value{display:flex;justify-content:space-between;color:#e9c48e;font-size:11px}
 .inline-branch-editor input[type=range]{margin:8px 0;display:block;accent-color:#d9a95b}
 .inline-branch-controls{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
 .inline-branch-controls button{padding:5px 0;background:#392618;color:#f2c993;border:1px solid #906b45}
@@ -759,7 +758,6 @@ a.wiki-link:hover{text-decoration:none}
 .right .branch-row.disabled-branch .count{font-size:11px}
 .right .branch-row.disabled-branch span:empty{display:none}
 .right .inline-branch-editor{padding:7px;margin-bottom:6px}
-.right .inline-branch-value{font-size:10px}
 .right .path-allocation-input{margin:5px 0}
 @media(max-width:460px){
  .path-milestone-picker{grid-template-columns:1fr}
@@ -1488,7 +1486,6 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .locale-switch button{min-width:42px;min-height:36px;padding:6px 10px;color:#c9b090;font:700 12px Manrope,Arial,sans-serif;border:1px solid transparent;border-radius:3px;background:transparent}
 .locale-switch button[aria-pressed="true"]{color:#ffdf9d;background:#614326;border-color:#b88e59}
 .locale-switch button:hover{border-color:#947143;color:#f9dca9}
-.inline-branch-value{align-items:baseline;gap:8px}
 .stage-picker-head strong{overflow-wrap:anywhere}
 
 /* Clearly visible only within the user's deliberate recovery-code section. */
@@ -1717,14 +1714,3 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 }
 
 
-/* Language stays accessible while the full-screen workbench covers the header. */
-.detail.is-open>.detail-title>div:first-child{min-width:0;flex:1}
-.detail.is-open .detail-title h2{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.detail.is-open .dock-locale{display:flex;flex:0 0 auto;gap:3px;margin-left:auto}
-.detail.is-open .dock-locale button{min-width:33px;padding:8px 7px;border:1px solid #795a3c;background:#24180f;color:#d7b990;font:700 11px Manrope,Arial,sans-serif}
-.detail.is-open .dock-locale button.chosen,.detail.is-open .dock-locale button[aria-pressed=true]{color:#ffe0aa;border-color:#d4a56c;background:#5d3c24}
-.detail.is-open .dock-locale button:focus-visible{outline:2px solid #f6cd91;outline-offset:2px}
-@media(max-width:500px){
- .detail.is-open .detail-title h2{font-size:17px}
- .detail.is-open .dock-locale button{min-width:28px;padding:6px 4px}
-}

@@ -119,10 +119,12 @@ export async function runInlineMilestonesSmoke(browser,base){
    const row=document.querySelector('[data-path-branch="benevolence"]');
    const editor=row.nextElementSibling;
    const rail=editor.querySelector('.inline-mastery-bed').getBoundingClientRect();
+   const duplicatePoints=editor.querySelectorAll('.inline-branch-value').length;
+   const exactControls=editor.querySelectorAll('.path-point-controls input[type=number]').length;
    const range=editor.querySelector('input[type=range]');
    const notch=editor.querySelector('.path-current-notch');
    const notchRect=notch.getBoundingClientRect();
-   return {height:row.getBoundingClientRect().height,
+   return {height:row.getBoundingClientRect().height,duplicatePoints,exactControls,
     editorTop:editor.getBoundingClientRect().top,
     extraMasteryLine:row.querySelector('span')?.textContent||'',
     points:row.querySelector('.count')?.textContent||'',
@@ -141,6 +143,8 @@ export async function runInlineMilestonesSmoke(browser,base){
    return measureBranch();
   };
   const stable=[await measureBranch(),await drag(1),await drag(2),await drag(0)];
+  assert.ok(stable.every(x=>x.duplicatePoints===0&&x.exactControls===2),
+   'The duplicate points row is absent; both exact controls remain');
   assert.ok(stable[0].points.includes('0 /'),'Test starts with an empty branch');
   assert.ok(stable[1].points.includes('1 /')&&stable[2].points.includes('2 /'),
    'Dragging must update actual invested branch points');
@@ -168,6 +172,8 @@ export async function runInlineMilestonesSmoke(browser,base){
   assert.equal(await exact.inputValue(),'0','Clearing and blurring precise field must refund points');
   assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'0');
   await drag(5);
+  assert.match(await page.locator('[data-path-branch="benevolence"] .count').innerText(),/5\s*\/\s*90/);
+  assert.equal(await page.locator('.inline-branch-value').count(),0);
   await page.locator('#pathAutoMastery').uncheck();
   const mastery=page.locator('[data-branch-control="benevolence:mastery-number"]');
   assert.equal(await mastery.isEnabled(),true,'manual mastery control must be editable');
