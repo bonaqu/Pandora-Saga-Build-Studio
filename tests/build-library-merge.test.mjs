@@ -54,7 +54,8 @@ test('remote tombstone keeps a local-only recovery without reviving deleted ID',
   remote:[{id:A,deleted:true,entry:null}],activeId:D,newId:()=>A});
  assert.equal(repeat.copies,0,'Refresh never creates another recovery copy');
  assert.equal(repeat.activeId,D);
- assert.deepEqual(repeat.outgoing,[],'Only already explicitly saved C is allowed');
+ assert.deepEqual(repeat.outgoing.map(x=>x.id),[C],
+  'Only the previously explicitly saved C may retry; never the recovered D');
 });
 test('a locally queued delete never generates a recovery copy',()=>{
  const result=reconcile({local:[mk(A,100,55)],remote:[{id:A,deleted:true}],
