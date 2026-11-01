@@ -49,9 +49,6 @@ function build(data){
   const location={type:'instance',id:String(row.id),name:row.name};
   for(const mob of row.mobs||[])addLocation(mob,location);
  }
- function locations(mobId){
-  return (mobLocations.get(String(mobId))||[]).slice();
- }
  const maps={...(data.trades?.mapNames||{}),...(data.maps||{})};
  const chapters={
   item:data.items||{},monster:data.monsters||{},map:maps,npc:data.trades?.npcs||{},
@@ -87,8 +84,10 @@ function build(data){
     rows.push(pair);branches.set(key,rows);
    }
    for(const rows of branches.values()){
-    const primary=rows.find(([,skill])=>skill.learnable===true)?.[0]||rows[0]?.[0];
-    for(const [id,skill] of rows)
+    const primary=rows.find(([,skill])=>skill.learnable===true)?.[0];
+    // Without an authoritative playable variant, do not guess which version
+    // is current. Keep ambiguous non-learnable records separately.
+    if(primary)for(const [id,skill] of rows)
      if(skill.learnable===false&&id!==primary)hidden.set(id,primary);
    }
   }
