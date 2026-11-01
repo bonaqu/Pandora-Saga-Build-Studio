@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.255.0 (`2026.11.01.255`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.256.0 (`2026.11.01.256`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.256.0 — efficient, tiered regression execution without deleting coverage
+
+- [x] Confirm from actual Actions timing: full quality workflow is ~16s, full Chromium workflow ~58s; browser scenarios themselves ran ~30s sequentially, and the package/browser/OS dependency setup occupied the rest.
+- [x] Keep all 722+ full Node assertions and all existing browser scenarios; run independent isolated Playwright contexts through a concurrency-limited (3) scheduler, while 4K screenshot/layout audit remains sequential outside the worker pool to prevent memory contention. Fail with scenario name/cause and preserve deterministic source-order results.
+- [x] Add optional `npm run test:quick` (focused local checks), `npm run test:browser:quick` (core + selected high-risk isolation flows), and `npm run test:browser:serial` (full reproducible debugging). `npm test` and `npm run test:browser` remain the comprehensive CI gate.
+- [x] Test runner concurrency, order, failure propagation and serial reproduction in Node. Compare GitHub browser workflow elapsed time before/after and independently verify GitHub Pages / Worker readiness.
+- [ ] Future measured tuning: benchmark Node worker-file overhead before regrouping independent tests; keep source-backed gameplay parity and live D1 write acceptance open.
 
 ## Source update 0.255.0 — shared skill-row snapshot and saved class-switch browser acceptance
 
