@@ -77,3 +77,48 @@ test('OS catalog atomic snapshot includes unison and the book shows active set e
  assert.match(book,/modifiers\?\.unison\?\.active/);
  assert.match(book,/Перезарядка умений/);
 });
+
+test('invalid root or companion enhancement never activates a real OS set',()=>{
+ const baseline=calc.unisonPreview({records:rows(divine,12081,5),catalog:sets});
+ assert.equal(baseline.active.length,1);
+ for(const grade of [-1,11,1.5,undefined]){
+  const badRoot=rows(divine,12081,grade);
+  assert.equal(calc.unisonPreview({records:badRoot,catalog:sets}).active.length,0,
+   'root grade '+String(grade));
+  const badCompanion=rows(divine,12081,5);
+  badCompanion[1][2]=grade;
+  assert.equal(calc.unisonPreview({records:badCompanion,catalog:sets}).active.length,0,
+   'companion grade '+String(grade));
+ }
+});
+
+test('forged source names and mismatched item IDs do not count as set pieces',()=>{
+ const original=rows(divine,12081,5);
+ const real=calc.unisonPreview({records:original,catalog:sets});
+ assert.equal(real.active.length,1);
+ const fakeSource=original.map(row=>row.slice());
+ fakeSource[2][0]='item:wrong';
+ assert.equal(calc.unisonPreview({records:fakeSource,catalog:sets}).active.length,0);
+ const mismatched=original.map(row=>row.slice());
+ mismatched[1][0]='item:12081';
+ assert.equal(calc.unisonPreview({records:mismatched,catalog:sets}).active.length,0);
+ const spoofRoot=original.map(row=>row.slice());
+ spoofRoot[0][0]='soul:12081';
+ assert.equal(calc.unisonPreview({records:spoofRoot,catalog:sets}).active.length,0);
+ assert.equal(calc.unisonPreview({records:original,catalog:sets}).active.length,1,
+  'rejected malformed inputs must not mutate original equipment');
+});
+
+test('set root never counts as its own companion and repeated entries count only once',()=>{
+ const source={...sets['14094'],members:[14094,17034,17034],
+  rows:[{func:'EP_VITARITY_CONST',minC:1,maxC:1,minL:0,maxL:10,
+   a:{f:0,p:0,c:2},b:{f:0,p:0,c:0}}]};
+ const custom={'14094':source};
+ const rootOnly=calc.unisonPreview({records:rows([14094],14094,0),catalog:custom});
+ assert.equal(rootOnly.active.length,0,'root alone is not a companion');
+ const repeated=calc.unisonPreview({records:rows([14094,17034,17034],14094,0),catalog:custom});
+ assert.equal(repeated.active.length,1);
+ assert.equal(repeated.active[0].companionCount,1);
+ assert.equal(repeated.active[0].required,1);
+ assert.deepEqual(repeated.active[0].matched,['17034']);
+});

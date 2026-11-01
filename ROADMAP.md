@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.225.0 (`2026.11.01.225`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.226.0 (`2026.11.01.226`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.226.0 — source-ID and grade-safe OS equipment sets
+
+- A stored item counts as an OS unison set root or companion **only** when it has a canonical `item:<numeric id>` source, that ID agrees with the actual catalog record, and enhancement is an integer +0…+10. Unknown, mismatched or corrupted rows cannot activate a complete set.
+- Deduplicate companion IDs while excluding the set root itself, including for future catalog updates. Set activation still uses verified OS min/max companion and root-grade rows, and existing calculations/rounding remain unchanged.
+- Test all three actual OS sets plus malformed root/companion grades, forged source IDs, root-self membership and repeated companions. Preserve state data in existing builds without irreversible cleanup; no D1 or auth changes, permanent 1–55 planning intact.
 
 ## Source update 0.225.0 — RU/EN conditional chance verification, actual skill localization and enhancement validation
 
