@@ -24,6 +24,8 @@ test('searches across names, descriptions, class restrictions and alternate disp
  assert.equal(wiki.search('monster','лес').length,1);
  assert.equal(wiki.search('skill','warrior').length,1);
  assert.equal(wiki.search('item','helmet',id=>id==='1'?'Heavy Helmet':'').length,1);
+ assert.equal(wiki.search('item','heals mana',id=>id==='2'?'Potion: heals mana':'').length,1,
+  'English translation text participates in the same token-matching search');
  assert.equal(wiki.search('soul','weapon').length,1);
  assert.equal(wiki.search('item','unmatched').length,0);
  assert.equal(wiki.search('item','000001').length,0,'database IDs are not a public search field');

@@ -1433,6 +1433,26 @@ function renderWiki(root){
    nameCache.set(key,value);
    return value;
  };
+ // Search both authoritative RU records and available official EN descriptions.
+ const searchCache=new Map();
+ const searchTerms=(type,id)=>{
+  const key=type+':'+String(id);
+  if(searchCache.has(key))return searchCache.get(key);
+  const chapter=type==='item'||type==='chest'?'items':
+   type==='npc'?'tradeNpcs':type==='map'?'maps':
+   type==='monster'?'monsters':type==='instance'?'instances':
+   type==='skill'?'skills':type==='soul'?'souls':null;
+  const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
+  const value=[dataName(type,id),translated?.d,
+   type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
+   .filter(Boolean).join(' ');
+  searchCache.set(key,value);
+  return value;
+ };
+ const classLabel=id=>(lang==='en'?officialEnglish?.classes?.[id]?.n:null)||
+  catalog.classes?.[id]?.name||null;
+ const branchLabel=id=>(lang==='en'?officialEnglish?.branches?.[id]:null)||
+  wikiData.meta?.branchLabels?.[id]||wt('Ветка умений','Skill branch');
  const wikiIcon=(type,id,record=null)=>{
   const row=type==='chest'?wikiData.items?.[id]:record||
    (type==='item'?wikiData.items?.[id]:
@@ -1531,7 +1551,7 @@ function renderWiki(root){
     if(picker)picker.value='all';
    }
   }
-  const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id))
+  const results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id))
    .filter(([,rec])=>{
     if(type!=='item')return true;
     if(wikiItemType!=='all'&&!(wikiItemType==='equipment'?
@@ -1625,9 +1645,9 @@ function renderWiki(root){
     detail.append(dl);
     if(rec.classes&&Object.keys(rec.classes).length){
      const classes=Object.keys(rec.classes).filter(id=>rec.classes[id]);
-     if(classes.length)detail.append(h('div',{class:'wiki-allowed-classes'},[
+     if(classes.some(id=>classLabel(id)))detail.append(h('div',{class:'wiki-allowed-classes'},[
       h('h4',{text:wt('Доступные классы','Eligible classes')}),
-      h('p',{text:classes.map(id=>catalog.classes?.[id]?.name||id).join(' · ')})
+      h('p',{text:classes.map(classLabel).filter(Boolean).join(' · ')})
      ]));
     }
     const wearers=window.PandoraUIPlanner.outfitWearers(rec,lang);
@@ -1664,11 +1684,12 @@ function renderWiki(root){
      dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
     detail.append(dl,h('h4',{text:wt('Требования','Requirements')}));
     if(!rec.reqs?.length)detail.append(h('p',{class:'muted',text:wt('Ветка требований не указана','No branch requirement listed')}));
-    for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:(wikiData.meta?.branchLabels?.[req.branch]||req.branch)+' ≥ '+req.amount}));
+    for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:branchLabel(req.branch)+' ≥ '+req.amount}));
     if(rec.prereq!=null&&wikiData.skills?.[rec.prereq])detail.append(wikiLink((lang==='en'?'Prerequisite: ':'Предыдущее умение: ')+dataName('skill',rec.prereq),'skill',rec.prereq));
     if(rec.classes&&Object.keys(rec.classes).length){
      const names=Object.keys(rec.classes).filter(name=>rec.classes[name]);
-     if(names.length)detail.append(h('p',{class:'muted',text:(lang==='en'?'Classes: ':'Классы: ')+names.map(id=>catalog.classes?.[id]?.name||id).join(', ')}));
+     if(names.some(id=>classLabel(id)))detail.append(h('p',{class:'muted',
+      text:wt('Классы: ','Classes: ')+names.map(classLabel).filter(Boolean).join(', ')}));
     }
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){const image=wikiImage(icon,'wiki-record-icon',type);detail.prepend(image)}

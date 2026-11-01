@@ -54,7 +54,7 @@ test('wiki item and skill details expose source fields, class names, and progres
  assert.match(app,/rec\.PEN/);
  assert.match(app,/rec\.atkspeed/);
  assert.match(app,/rec\.twoHanded===true/);
- assert.match(app,/catalog\.classes\?\.\[id\]\?\.name/);
+ assert.match(app,/const classLabel=id=>/);
  assert.match(app,/rec\.cast/);
  assert.match(app,/rec\.cooldown/);
  assert.match(app,/rec\.range/);
@@ -82,7 +82,7 @@ test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-
 test('wiki shows localized game class names and consistent source labels',()=>{
  const app=read('app.js');
  assert.match(app,/PandoraItemPresentation\.kind\(rec,lang\)/);
- assert.match(app,/classes\.map\(id=>catalog\.classes\?\.\[id\]\?\.name\|\|id\)/);
+ assert.match(app,/classes\.map\(classLabel\)\.filter\(Boolean\)/);
  assert.match(app,/const monsterStats=/);
  assert.match(app,/Monster resistances/);
  assert.match(app,/const currencies=\[\[wt\('Золото','Gold'\)/);
@@ -156,6 +156,17 @@ test('item and soul sources use one translated renderer and independent paginati
  assert.match(app,/for\(const trade of usedIn\.slice\(0,wikiUsageShown\)\)/);
  assert.match(app,/dataName\('map',loc\.id\)/);
  assert.match(app,/No confirmed sources in the current catalog/);
+});
+test('English encyclopedia indexes confirmed descriptions and never reveals raw class codes',()=>{
+ const app=read('app.js'),english=JSON.parse(read('data/os/strings.en.json'));
+ assert.ok(english.classes?.WARRIOR?.n);
+ assert.equal(typeof english.branches?.slash,'string');
+ assert.match(app,/const searchTerms=\(type,id\)=>/);
+ assert.match(app,/translated\?\.d/);
+ assert.match(app,/id=>searchTerms\(type,id\)/);
+ assert.match(app,/const classLabel=id=>/);
+ assert.match(app,/const branchLabel=id=>/);
+ assert.doesNotMatch(app,/names\.join\(', '\)/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
