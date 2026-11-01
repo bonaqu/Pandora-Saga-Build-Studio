@@ -59,10 +59,11 @@ test('skill-unlock icons use the full 90-point track scale even for low class ca
 
 test('one bar uses standard CSS calc and correctly centered milestone markers',()=>{
  const ui=read('hero-path.js'),css=read('style.css');
- assert.match(ui,/const lockedOffset=21-42\*lockedFraction/);
+ assert.match(ui,/const railInset=21/);
+ assert.match(ui,/locked\.style\.left=positionOnRail\(lockedFraction\)/);
  assert.doesNotMatch(ui,/calc\(12px \+ \(100% - 24px\) \*/);
- assert.match(ui,/gold\.style\.width='calc\('/);
- assert.match(ui,/green\.style\.width='calc\('/);
+ assert.match(ui,/gold\.style\.width=widthOnRail\(goldFraction\)/);
+ assert.match(ui,/green\.style\.width=widthOnRail\(greenFraction\)/);
  assert.match(ui,/tick\.style\.left=\(threshold\/visualMax\*100\)\.toFixed\(4\)/);
  assert.match(css,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?transform:translateX\(-50%\)/);
 });
