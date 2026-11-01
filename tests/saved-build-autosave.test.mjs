@@ -12,7 +12,7 @@ test('the retired saved-build auto-overwrite module cannot run in production',()
 
 test('ordinary autosave writes only the owner-scoped character draft, never named builds or D1',()=>{
  const start=app.indexOf('function persist(){');
- const end=app.indexOf("const CLOUD_TOKEN_KEY=",start);
+ const end=app.indexOf('function persistBuilds(){',start);
  assert.ok(start>0&&end>start);
  const persist=app.slice(start,end);
  assert.match(persist,/window\.PandoraBuildScope\.setOwned\(localStorage,libraryScopeId\(\)/);
