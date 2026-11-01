@@ -29,13 +29,22 @@ export async function runCrossTabGuestIsolationSmoke(browser,base){
  });
  const tabA=await context.newPage(),tabB=await context.newPage(),errors=[];
  for(const page of [tabA,tabB])page.on('pageerror',e=>errors.push(e.message));
- async function loaded(page){
-  await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
+ async function loaded(page,expectedKey){
+  // The race grid renders before the verified catalog and before the guest
+  // owner transition commits. Waiting for the grid alone can lead to input
+  // replacement or a POST sent from a stale initial tab state.
+  await page.waitForFunction(expected=>
+   localStorage.getItem('ps-build-owner-scope.v1')==='guest:'+expected&&
+   /\d+ навыков · \d+ предметов · \d+ душ/.test(
+    document.querySelector('#catalogStatus')?.textContent||''),
+   expectedKey,{timeout:25000});
  }
  async function save(page,name,expectedKey){
   if(!await page.locator('.build-name-input').isVisible())
    await page.locator('#nav [data-tab="builds"]').click();
-  await page.locator('.build-name-input').fill(name);
+  const nameInput=page.locator('.build-name-input');
+  await nameInput.fill(name);
+  assert.equal(await nameInput.inputValue(),name,'Guest save name must survive before POST');
   // A card may render as soon as the local draft is saved, before the
   // asynchronous POST reaches the mock Worker. Check the exact owner,
   // build name AND server response; do not merely sleep or weaken assertions.
@@ -52,13 +61,13 @@ export async function runCrossTabGuestIsolationSmoke(browser,base){
   await persisted;
  }
  try{
-  await tabA.goto(base+'/',{waitUntil:'domcontentloaded'});await loaded(tabA);
+  await tabA.goto(base+'/',{waitUntil:'domcontentloaded'});await loaded(tabA,keyA);
   await save(tabA,'Guest A one',keyA);
   assert.equal(await tabA.locator('.build-transfer').count(),1,
    'Guest transfer controls remain available to account-free libraries');
-  await tabB.goto(base+'/',{waitUntil:'domcontentloaded'});await loaded(tabB);
+  await tabB.goto(base+'/',{waitUntil:'domcontentloaded'});await loaded(tabB,keyA);
   await tabB.evaluate(key=>localStorage.setItem('ps-build-library-secret.v1',key),keyB);
-  await tabB.reload({waitUntil:'domcontentloaded'});await loaded(tabB);
+  await tabB.reload({waitUntil:'domcontentloaded'});await loaded(tabB,keyB);
   await save(tabB,'Guest B one',keyB);
   // Tab A remains on its original account-free library even though tab B
   // wrote a different key to origin-shared localStorage.

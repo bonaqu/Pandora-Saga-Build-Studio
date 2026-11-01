@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.240.0 (`2026.11.01.240`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.241.0 (`2026.11.01.241`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.241.0 — remove dead milestone CSS, harden cross-tab acceptance
+
+- [x] Complete source audit of all **27 active top-level JavaScript modules**: none creates retired `inline-branch-milestones`, `inline-milestone`, `path-threshold-tick`, `path-milestone-pin`, or `path-milestone-core` nodes; the live Hero Path uses `path-integrated-milestones`, `path-unlock-notch`, `path-current-notch` and `path-milestone-tooltip`.
+- [x] Remove **65 unreachable legacy marker/diamond CSS rules (~8.1 KB)**, including repeated historical round markers and abandoned staggered layout overrides; preserve the real current 90-point bar, native range thumb, compact unlock ticks, current-value notch and existing accessible tooltip.
+- [x] A post-merge 0.240.0 Chromium run initially timed out while testing concurrent Alice/Bob account tabs, despite the PR run and retry passing. Harden cross-tab smoke to wait for **both** account-owner scope, verified profile and complete OS catalog before entering a build name; require successful mock Worker POST with the **exact intended bearer + saved name**, not only a local card. Do not weaken any owner isolation assertions.
+- [x] Add source regressions to prevent return of retired CSS selectors and preserve live value-marker/tooltip behavior.
+- [ ] Finish more performance and dead-code audits with proof of reachability; independently test live D1 write lifecycle and in-game formula parity. The 39 unported / 77 partial Remaked keys remain open; planning stays 1–55.
 
 ## Source update 0.240.0 — vertical mastery value marker and shared geometry
 

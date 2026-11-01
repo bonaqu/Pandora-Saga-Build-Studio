@@ -26,11 +26,12 @@ test('item dialog header shows localized slot type, not duplicated item name',()
  assert.match(app,/\['Оружие','Щит','Шлем','Броня','Перчатки','Штаны','Обувь','Плащ'/);
  assert.match(app,/\['Weapon','Shield','Helmet','Armor','Gloves','Pants'/);
 });
-test('skill markers keep tooltips, use three distinct vertical lanes, and do not block slider',()=>{
+test('skill markers keep tooltips in one shared bar and never block the slider',()=>{
  const css=read('style.css'),hero=read('hero-path.js');
- assert.match(css,/\.path-threshold-tick:nth-child\(3n\+1\)/);
- assert.match(css,/\.path-threshold-tick:nth-child\(3n\+2\)/);
- assert.match(css,/\.path-threshold-tick:nth-child\(3n\)\{/);
+ assert.match(css,/\.path-integrated-track \.path-unlock-notch\{/);
+ assert.match(css,/\.path-integrated-track \.path-unlock-notch\{[^}]*pointer-events:none/);
+ assert.match(css,/\.path-integrated-track \.path-current-notch\{/);
+ assert.doesNotMatch(css,/\.path-threshold-tick:nth-child\(3n/);
  assert.match(hero,/class:'path-milestone-tooltip',role:'tooltip'/);
  assert.match(hero,/track\.append\(range\);paint\(\)/);
 });
