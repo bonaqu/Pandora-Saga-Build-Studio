@@ -260,7 +260,8 @@ function itemIcon(rec,kind='items'){
  if(custom)return custom;
  if(!rec?.icon)return null;
  const pathKind=soul?'items':kind;
- return iconManifest?.icons?.[pathKind]?.[rec.icon]||
+ const selfHostedSoul=soul?iconManifest?.icons?.souls?.[rec.icon]:null;
+ return selfHostedSoul||iconManifest?.icons?.[pathKind]?.[rec.icon]||
   `${OS}/icons/${pathKind}/${rec.icon}.webp?v=07682901`;
 }
 function branchCap(branch){

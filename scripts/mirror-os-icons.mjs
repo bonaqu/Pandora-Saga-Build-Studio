@@ -4,7 +4,7 @@
 import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
-import {safeIconStem,isWebP} from './icon-utils.mjs';
+import {safeIconStem,isWebP,originalIconUrl} from './icon-utils.mjs';
 const root=join(dirname(fileURLToPath(import.meta.url)),'..');
 const dry=process.argv.includes('--dry-run'),retries=2,concurrency=8;
 const limitArg=process.argv.find(x=>x.startsWith('--limit='));
@@ -39,7 +39,7 @@ async function one(row){
  try{
   try{const old=await readFile(path);if(valid(old)){manifest.icons[row.kind][row.stem]=file;done++;return}}catch{}
   if(dry)return; // Planning never marks missing files as downloaded.
-  const url='https://pandorasaga-os.com/icons/'+row.kind+'/'+row.stem+'.webp';
+  const url=originalIconUrl(row.kind,row.stem);
   let last;
   for(let n=0;n<=retries;n++){
    try{

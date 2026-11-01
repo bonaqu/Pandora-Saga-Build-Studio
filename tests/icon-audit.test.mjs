@@ -11,3 +11,9 @@ test('strict icon audit reports incomplete archive',()=>{
  assert.match(src('scripts/audit-os-icons.mjs'),/process.argv.includes\('--strict'\)/);
  assert.match(src('package.json'),/assets:audit:strict/);
 });
+
+test('Soul icon renderer uses physically archived original Soul WebP first',()=>{
+ const app=src('app.js');
+ assert.match(app,/const selfHostedSoul=soul\?iconManifest\?\.icons\?\.souls\?\.\[rec\.icon\]:null/);
+ assert.match(app,/return selfHostedSoul\|\|iconManifest/);
+});
