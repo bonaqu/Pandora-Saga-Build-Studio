@@ -29,3 +29,10 @@ test('static locale attributes update without touching user input values',()=>{
  locale.apply('ru',doc);
  assert.equal(element.attrs.placeholder,'Найти умение');
 });
+
+test('locale markers never replace the dynamic racial passive selection element',()=>{
+ const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+ assert.match(html,/<div class="subhead origin-passive-heading"><span data-i18n="racePassive">/);
+ assert.match(html,/<span id="originRaceName" data-i18n="chooseOne">/);
+ assert.doesNotMatch(html,/origin-passive-heading" data-i18n=/);
+});
