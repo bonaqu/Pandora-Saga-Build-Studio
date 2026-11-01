@@ -72,3 +72,12 @@ test('marker readiness uses shared prerequisite index and dead spent subtotal is
  assert.doesNotMatch(source,/const spent=branchKeys\.reduce/);
  assert.match(source,/entry\.skills\.some\(skill=>readiness\(skill,api,new Set\(\),skillIndex\)\.learned\)/);
 });
+
+test('malformed object-shaped branch amounts do not unlock class-bound skill',()=>{
+ for(const amount of [[8],{value:8},'1e1']){
+  const invalid=make(41,[{branch:'brush',amount}]);
+  const result=readiness(invalid,fixture([invalid]));
+  assert.equal(result.learned,false);
+  assert.ok(result.problems.includes('Unknown requirement'));
+ }
+});

@@ -47,10 +47,9 @@ function readiness(skill,api,seen=new Set(),skillIndex){
  const problems=[],state=api.state,job=api.job;
  if(seen.has(String(skill.id)))return {learned:false,problems:[tr(api,'Циклическая зависимость навыков','Cyclic skill prerequisite')]};
  const chain=new Set(seen);chain.add(String(skill.id));
- if(skill.classes!==undefined&&
-  (!skill.classes||typeof skill.classes!=='object'||Array.isArray(skill.classes)||
-   !Object.hasOwn(skill.classes,job)||
-   (skill.classes[job]!==1&&skill.classes[job]!==true)))
+ if(!skill.classes||typeof skill.classes!=='object'||Array.isArray(skill.classes)||
+  !Object.hasOwn(skill.classes,job)||
+  (skill.classes[job]!==1&&skill.classes[job]!==true))
   problems.push(tr(api,'Не подходит профессии','Unavailable to this class'));
  if(skill.charLevel!==undefined&&
   (skill.charLevel===null||typeof skill.charLevel==='boolean'||
@@ -62,10 +61,11 @@ function readiness(skill,api,seen=new Set(),skillIndex){
   problems.push(tr(api,'Неизвестные требования навыка','Unknown skill requirements'));
  const required=Array.isArray(skill.reqs)?skill.reqs:[];
  for(const req of required){
-  const need=Number(req?.amount);
+  const raw=req?.amount,need=Number(raw);
   if(!req||typeof req.branch!=='string'||!req.branch.trim()||
-   req.amount===null||req.amount===''||typeof req.amount==='boolean'||
-   !Number.isInteger(need)||need<=0){
+   (typeof raw!=='number'&&typeof raw!=='string')||
+   (typeof raw==='string'&&!/^\+?\d+(?:\.0+)?$/.test(raw.trim()))||
+   !Number.isSafeInteger(need)||need<=0){
    problems.push(tr(api,'Неизвестное условие','Unknown requirement'));continue;
   }
   const name=api.branchName(req.branch);

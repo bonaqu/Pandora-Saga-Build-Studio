@@ -49,3 +49,28 @@ test('null records and missing skill IDs cannot leak into the unlock list',()=>{
  assert.equal(r.milestones[0].skills.length,1);
  assert.equal(r.milestones[0].skills[0].id,99);
 });
+
+test('invalid threshold encodings never create spurious reachable or above-cap notches',()=>{
+ const rows=[null,{},[],[10],'1e2','0x10','10.5',true,
+  Number.MAX_SAFE_INTEGER+2].map((amount,i)=>({
+  id:i+100,reqs:[{branch:'slash',amount}]
+ }));
+ const r=f(rows,'slash',9);
+ assert.equal(r.milestones.length,0);
+ assert.equal(r.above.length,0);
+});
+
+test('duplicate requirements and catalog IDs produce only one unreachable marker per skill and threshold',()=>{
+ const rows=[
+  {id:55,name:'First',reqs:[{branch:'slash',amount:45},
+   {branch:'slash',amount:45},{branch:'slash',amount:'45'}]},
+  {id:'55',name:'Duplicate record',reqs:[{branch:'slash',amount:45}]},
+  {id:77,name:'Second',reqs:[{branch:'slash',amount:45}]},
+ ];
+ const above=f(rows,'slash',15).above;
+ assert.deepEqual(Array.from(above.map(x=>String(x.id))),['55','77']);
+ assert.equal(above[0].name,'First','First source occurrence wins');
+ const reachable=f(rows,'slash',90).milestones;
+ assert.equal(reachable.length,1);
+ assert.deepEqual(Array.from(reachable[0].skills.map(x=>String(x.id))),['55','77']);
+});
