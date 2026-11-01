@@ -975,7 +975,7 @@ function renderStagePicker(focusSearch=false){
  const draw=()=>{
   list.replaceChildren();
   const query=stageSlotQuery.trim().toLocaleLowerCase('ru');
-  const matches=records.filter(rec=>(itemName(rec)+' '+rec.id).toLocaleLowerCase('ru').includes(query));
+  const matches=records.filter(rec=>itemName(rec).toLocaleLowerCase('ru').includes(query));
   count.textContent=matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
   if(!catalog.live)list.append(h('p',{class:'muted',text:'Каталог ещё не загружен.'}));
   else if(!matches.length)list.append(h('p',{class:'muted',text:'Нет совместимых предметов. Измени поиск или слот.'}));
@@ -1361,7 +1361,7 @@ function renderWiki(root){
  for(const [key,ru,en]of[['item','Предметы','Items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:lang==='en'?en:ru,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
- const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name, ID or description':'Поиск по названию, ID или описанию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии'});
+ const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name or description':'Поиск по названию или описанию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии'});
  controls.append(categories,search);
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
@@ -1855,7 +1855,7 @@ function renderEquipment(root){
  row.append(view);head.append(row);root.append(head);
  const q=filter.trim().toLocaleLowerCase('ru');
  const matches=inventory.filter(rec=>(catalogBrowseSlot==='all'||rec.slot===catalogBrowseSlot)&&
-  (itemName(rec)+' '+rec.id).toLocaleLowerCase('ru').includes(q));
+  itemName(rec).toLocaleLowerCase('ru').includes(q));
  root.append(h('p',{class:'muted item-count',
   text:matches.length+tx(' предметов · показано ',' items · showing ')+Math.min(gearShown,matches.length)}));
  const layout=h('div',{class:'equipment-catalog-layout'});

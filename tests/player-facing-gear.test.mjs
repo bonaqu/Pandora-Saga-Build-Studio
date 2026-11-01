@@ -74,6 +74,13 @@ test('stage rails expose grade and Souls count without title or duplicate labels
  assert.match(css,/\.equipment-rail \.stage-sockets\{[\s\S]*?bottom:1px/);
  assert.match(css,/\.equipment-rail \.stage-enhance\{[\s\S]*?top:1px/);
 });
+test('public item searches do not advertise or search raw database IDs',()=>{
+ const app=read('app.js'),picker=read('stage-item-ui.js');
+ assert.doesNotMatch(app,/Search by name, ID/);
+ assert.doesNotMatch(app,/Поиск по названию, ID/);
+ assert.doesNotMatch(app,/itemName\(rec\)\+' '\+rec\.id/);
+ assert.doesNotMatch(picker,/String\(rec\.name\|\|''\)\+' '\+rec\.id/);
+});
 test('player item encyclopedia does not display IDs or duplicate native hover titles',()=>{
  const source=read('app.js');
  assert.doesNotMatch(source,/['"]ID ['"]\s*\+rec\.id/);

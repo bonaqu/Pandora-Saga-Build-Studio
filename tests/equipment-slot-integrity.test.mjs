@@ -39,6 +39,13 @@ test('untrusted saved slot IDs cannot forge an equipped item or grant bonuses',(
  state.level=55;
  assert.deepEqual(issue(items[422],0),[]);
 });
+test('an incompatible saved elf costume cannot contribute effects to stats',()=>{
+ const state={job:0,race:1,gender:0,level:55,equipment:{}};
+ const issue=dynamicIssue(state);
+ for(const id of [12601,13601,14601,15601,12521,13521,14521,15521])
+  assert.ok(issue(items[id],slots.indexOf(items[id].slot)).length>0,
+   'incompatible costume should be blocked: '+id);
+});
 test('stats, soul and gem aggregators ignore corrupted slots while local data stays intact',()=>{
  const app=read('app.js');
  assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\)\)\.length\)continue/);

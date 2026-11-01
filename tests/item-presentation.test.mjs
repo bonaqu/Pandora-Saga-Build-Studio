@@ -16,6 +16,16 @@ test('Golden Astir jacket gains meaningful source-line breaks',()=>{
  assert.match(output,/ОМ \+10\nЗа каждые 2/);
  assert.match(output,/улучшения:\nМагическая атака/);
 });
+test('glued gameplay effects break cleanly but ordinary sentence spaces remain intact',()=>{
+ const source='Красивая куртка. Такие любят носить мужчины Астира.ИНТ +1, ОЗ +15, ОМ +10Сопротивляемость магии +5%За каждые 2 единицы улучшения:Магическая атака +1%Время перезарядки -1%';
+ const output=p.description(source);
+ assert.match(output,/Красивая куртка\. Такие любят/);
+ assert.match(output,/Астира\.\n\nИНТ \+1/);
+ assert.match(output,/ОМ \+10\nСопротивляемость/);
+ assert.match(output,/\+5%\n\nЗа каждые 2/);
+ assert.match(output,/улучшения:\nМагическая атака \+1%\nВремя/);
+ assert.equal(p.description(output),output);
+});
 test('source line breaks are not lost',()=>{
  assert.match(p.description('Описание.\nОЗ +15'),/\nОЗ \+15/);
 });

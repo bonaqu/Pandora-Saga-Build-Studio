@@ -19,13 +19,39 @@ function planningEquippable(records,slot,job,currentLevel,check){
  if(!Number.isInteger(currentLevel)||currentLevel<1||currentLevel>55)return [];
  return equippable(records,slot,job,55,check);
 }
-// Astir outfit IDs and descriptions are copied from the local OS item catalog.
-// Do not generalize these rules to unknown outfits or claim server verification.
-function isAstirDress(item){return item?.slot==='body'&&Number(item.id)>=12611&&Number(item.id)<=12618}
-function isAstirMale(item){return Number(item?.id)>=12601&&Number(item?.id)<=12608||
- Number(item?.id)>=13601&&Number(item?.id)<=13608}
+// Only explicit, source-backed outfit families have race/gender restrictions.
+// Astir outfits use the game's established single-portrait race exceptions.
+const astirSlots=Object.freeze({126:'body',136:'legs',146:'gloves',156:'feet'});
+const tailoredSlots=Object.freeze({115:'head',125:'body',135:'legs',145:'gloves',155:'feet'});
+function family(item,table){
+ const id=Number(item?.id),group=Math.trunc(id/100);
+ return Number.isSafeInteger(id)&&table[group]===item?.slot?{group,variant:id%100}:null;
+}
+function isAstirDress(item){
+ const part=family(item,astirSlots);
+ return part?.group===126&&part.variant>=11&&part.variant<=18;
+}
+function isAstirMale(item){
+ const part=family(item,astirSlots);
+ return !!part&&part.variant>=1&&part.variant<=8;
+}
+function astirFemale(item){
+ const part=family(item,astirSlots);
+ return !!part&&part.variant>=11&&part.variant<=18;
+}
+function tailoredRestriction(item){
+ const part=family(item,tailoredSlots);
+ if(!part)return null;
+ const variant=part.variant;
+ if(part.group===115&&![2,12,22,32].includes(variant))return null;
+ if(part.group!==115&&![1,2,11,12,21,22,31,32].includes(variant))return null;
+ const series=Math.trunc(variant/10);
+ return {race:series>=2?1:0,gender:series%2===0?1:0};
+}
 function raceCompatible(item,race,gender){
- if(isAstirDress(item))return race===3||race===5||(race===0||race===1)&&gender===0;
+ const tailored=tailoredRestriction(item);
+ if(tailored)return race===tailored.race&&gender===tailored.gender;
+ if(astirFemale(item))return race===3||race===5||(race===0||race===1)&&gender===0;
  if(isAstirMale(item))return race===4||race===5||(race===0||race===1)&&gender===1;
  return true;
 }
