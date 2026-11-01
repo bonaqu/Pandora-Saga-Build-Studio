@@ -4,42 +4,40 @@ import {readFileSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const host={};
 Function('window',read('item-presentation.js'))(host);
-const names=host.PandoraItemPresentation;
-const app=read('app.js');
-const start=app.indexOf('function renderEquipment(root){');
-const end=app.indexOf('function renderStats(',start);
-assert.ok(start>=0&&end>start);
-const catalog=app.slice(start,end);
+const presenter=host.PandoraItemPresentation,app=read('app.js'),html=read('index.html');
 
-test('item categories retain Russian defaults and exact English labels',()=>{
- for(const [kind,ru,en] of [['RING','Кольцо','Ring'],['1H_SWORD','Одноручный меч','One-handed sword'],
-  ['DECO_MANTLE','Декоративный плащ','Cosmetic cloak'],['SOUL','Душа','Soul'],
-  ['STAFF','Посох','Staff'],['BELT','Пояс','Belt']]){
-  assert.equal(names.kind({kind}),ru);
-  assert.equal(names.kind({kind},'en'),en);
+test('equipment categories retain game-faithful RU/EN labels',()=>{
+ for(const [kind,ru,en] of [['RING','Кольцо','Ring'],
+  ['1H_SWORD','Одноручный меч','One-handed sword'],
+  ['TORSO','Броня','Armor'],['CUISSES','Штаны','Leg armor'],
+  ['DECO_MANTLE','Декоративный плащ','Cosmetic cloak'],
+  ['SOUL','Душа','Soul'],['STAFF','Посох','Staff'],['BELT','Пояс','Belt']]){
+  assert.equal(presenter.kind({kind}),ru);
+  assert.equal(presenter.kind({kind},'en'),en);
  }
- assert.equal(names.kind({slot:'ear'},'en'),'Earring');
- assert.equal(names.kind({kind:'unknown'},'en'),'Item');
- assert.equal(names.kind(null,'en'),'Item');
+ assert.equal(presenter.kind({slot:'ear'},'en'),'Earring');
+ assert.equal(presenter.kind(null,'en'),'Item');
 });
 
-test('equipment editor chrome is bilingual without changes to saved record IDs or names',()=>{
- assert.match(catalog,/const tx=\(ru,en\)=>lang==='en'\?en:ru/);
- for(const phrase of ['All types','Weapons','Earrings','Search items','Item details',
-  'Where to obtain','Sources and details','No results','Show more','Sources are currently unavailable'])
-  assert.ok(catalog.includes(phrase),'missing EN: '+phrase);
- assert.match(catalog,/PandoraItemPresentation\.kind\(rec,lang\)/);
- assert.match(catalog,/const matches=inventory\.filter/);
- assert.match(catalog,/const key=entry\.type==='drop'\?'map':entry\.type/);
- assert.match(catalog,/String\(rec\.id\)/);
- assert.match(catalog,/itemName\(rec\)/);
- assert.match(catalog,/onmouseenter:\(\)=>inspect\(rec\),onfocus:\(\)=>inspect\(rec\),onclick:\(\)=>inspect\(rec\)/);
- assert.match(app,/lang==='en'\?'Open skills':'Открыть умения'/);
+test('equipment is a single encyclopedia chapter with localized filters and source links',()=>{
+ assert.match(app,/for\\(const \\[key,ru,en\\]of \\[\\['item','Экипировка','Equipment'\\]/);
+ for(const phrase of ['All items','Weapons','Earrings','Armor','Rings',
+  'How to obtain','Eligible classes','Show more']){
+  assert.ok(app.includes(phrase),'missing English wiki label: '+phrase);
+ }
+ assert.match(app,/PandoraItemPresentation\\.kind\\(rec,lang\\)/);
+ assert.match(app,/wikiItemType==='equipment'\\?slotKeys\\.includes\\(rec\\.slot\\)/);
+ assert.match(app,/const itemLink=\\(id,label,highlight=null\\)=>/);
+ assert.match(app,/wikiItemLayout==='grid'/);
+ assert.doesNotMatch(html,/<nav id="nav">[^\\n]*data-tab="equipment"/);
+ assert.doesNotMatch(app,/function renderEquipment\\(/);
+ assert.doesNotMatch(app,/let catalogBrowseSlot=/);
+ assert.match(app,/bootView\\.tab==='equipment'\\?'wiki'/);
 });
 
-test('game-provided names and descriptions are not translated by kind formatting',()=>{
+test('source names and descriptions do not change with item type labeling',()=>{
  const item={id:19022,name:'Кольцо метели',kind:'RING',desc:'Проверенное игровое описание'};
- assert.equal(names.kind(item,'en'),'Ring');
+ assert.equal(presenter.kind(item,'en'),'Ring');
  assert.equal(item.name,'Кольцо метели');
  assert.equal(item.desc,'Проверенное игровое описание');
  assert.equal(item.id,19022);

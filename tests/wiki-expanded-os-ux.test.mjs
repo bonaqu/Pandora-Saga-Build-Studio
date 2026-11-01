@@ -117,6 +117,7 @@ test('encyclopedia equipment owns catalog filters and coherent grid/list views',
  assert.match(app,/class:'wiki-equipment-type'/);
  assert.match(app,/wiki-gear-grid/);
  assert.match(css,/\.wiki-list\.wiki-gear-grid/);
+ assert.doesNotMatch(app,/function renderEquipment\(/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');

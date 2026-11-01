@@ -48,7 +48,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiItemLayout='list';
+let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiItemLayout='list';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
 function restoreActiveBuildId(){
@@ -660,7 +660,8 @@ function changeTab(tab){
   state.branch=inlineBranchId;renderBranches();
   $('skillBranches')?.scrollIntoView({block:'nearest',behavior:'smooth'});saveView();return;
  }
- if(!['character','equipment','builds','wiki'].includes(tab))return;
+ if(tab==='equipment')tab='wiki';
+ if(!['character','builds','wiki'].includes(tab))return;
  if(tab==='character'){
   activeTab='character';closeWorkbench();
   document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab==='character'));
@@ -1315,7 +1316,7 @@ function renderPathPages(){
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
-function renderDetails(){const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',equipment:'Equipment & Souls',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
+function renderDetails(){const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
 let wikiRenderSelected=null,wikiRenderedRoot=null;
 async function loadWiki(){
@@ -1862,95 +1863,8 @@ function renderSkills(root){
   closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
  }}));
 }
-function isCostumeOverlay(item){return Boolean(item&&(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_')))}
 function itemName(r){return window.PandoraItemPresentation.displayName(
  r,lang==='en'?'Unnamed item':'Предмет без названия',lang)}
-let catalogBrowseSlot='all';
-function renderEquipment(root){
- const tx=(ru,en)=>lang==='en'?en:ru;
- const types=[['all',tx('Все типы','All types')],['weapon',tx('Оружие','Weapons')],
-  ['shield',tx('Щиты','Shields')],['head',tx('Шлемы','Helmets')],
-  ['body',tx('Нагрудники','Armor')],['gloves',tx('Перчатки','Gloves')],
-  ['legs',tx('Поножи','Leg armor')],['feet',tx('Обувь','Boots')],
-  ['cloak',tx('Плащи','Cloaks')],['ring',tx('Кольца','Rings')],
-  ['neck',tx('Амулеты','Amulets')],['belt',tx('Пояса','Belts')],
-  ['ear',tx('Серьги','Earrings')]];
- const inventory=Object.values(catalog.equipment||{}).filter(rec=>rec&&slotKeys.includes(rec.slot))
-  .map(rec=>itemWithOverrides(rec));
- const head=h('div',{class:'equipment-catalog-head'});
- head.append(h('h3',{text:tx('Коллекция предметов Pandora Saga','Pandora Saga Equipment')}),
-  h('p',{class:'muted',text:tx('Справочник экипировки. Изменить надетые вещи можно на портрете персонажа.','Browse equipment. Change equipped items from the character portrait.')}));
- const row=h('div',{class:'equipment-catalog-toolbar'});
- const search=h('input',{type:'search',value:filter,placeholder:tx('Поиск по названию','Search items'),
-  'aria-label':tx('Поиск предметов','Search equipment'),
-  oninput:e=>{filter=e.target.value;gearShown=60;renderDetails();
-   const input=document.querySelector('.equipment-catalog-toolbar input');
-   input?.focus({preventScroll:true});input?.setSelectionRange(filter.length,filter.length)}});
- const select=h('select',{'aria-label':tx('Тип предмета','Equipment type'),onchange:e=>{
-  catalogBrowseSlot=e.target.value;gearShown=60;renderDetails();
- }});
- for(const [value,label]of types){
-  const option=h('option',{value,text:label});
-  if(catalogBrowseSlot===value)option.selected=true;
-  select.append(option);
- }
- row.append(search,select);
- const view=h('div',{class:'gear-view-options'});
- for(const [key,label]of [['grid',tx('▦ Сетка','▦ Grid')],['list',tx('☰ Список','☰ List')]]){
-  view.append(h('button',{type:'button',text:label,class:gearDisplayMode===key?'chosen':'',
-   'aria-pressed':String(gearDisplayMode===key),onclick:()=>{
-    gearDisplayMode=key;localStorage.setItem('ps-gear-view',key);renderDetails();
-   }}));
- }
- row.append(view);head.append(row);root.append(head);
- const q=filter.trim().toLocaleLowerCase('ru');
- const matches=inventory.filter(rec=>(catalogBrowseSlot==='all'||rec.slot===catalogBrowseSlot)&&
-  itemName(rec).toLocaleLowerCase('ru').includes(q));
- root.append(h('p',{class:'muted item-count',
-  text:matches.length+tx(' предметов · показано ',' items · showing ')+Math.min(gearShown,matches.length)}));
- const layout=h('div',{class:'equipment-catalog-layout'});
- const collection=h('div',{class:'gear-list'+(gearDisplayMode==='grid'?' inventory-grid':' inventory-list')});
- const inspector=h('aside',{class:'item-info'});
- function inspect(rec){
-  inspector.replaceChildren(h('h3',{text:tx('Сведения о предмете','Item details')}));
-  if(!rec){inspector.append(h('p',{class:'muted',text:tx('Наведите курсор или выберите предмет.','Hover over or select an item.')}));return}
-  inspector.append(window.PandoraStageItemUI.summary(rec,(r)=>itemIcon(r)));
-  if(isCostumeOverlay(rec))inspector.append(h('p',{class:'muted',text:tx('Декоративный предмет: боевые свойства не применяются.','Cosmetic item: combat attributes do not apply.')}));
-  inspector.append(wikiLink(tx('📜 Источники и подробности','📜 Sources and details'),'item',String(rec.id)));
-  const sources=h('div',{class:'item-origin'});
-  inspector.append(sources);
-  loadWiki().then(index=>{
-   if(!sources.isConnected)return;
-   const rows=index.sources(rec.id);sources.replaceChildren(h('h4',{text:tx('Где получить','Where to obtain')}));
-   if(!rows.length){sources.append(h('p',{class:'muted',text:tx('Подтверждённый источник не указан','No verified source listed')}));return}
-   for(const entry of rows.slice(0,5)){
-    const label=entry.type==='monster'?tx('Монстр','Monster'):entry.type==='npc'?'NPC':
-     entry.type==='chest'?tx('Сундук','Chest'):tx('Локация','Location');
-    const key=entry.type==='drop'?'map':entry.type;
-    const sourceName=key==='monster'?wikiData?.monsters?.[entry.id]?.name:
-      key==='npc'?wikiData?.trades?.npcs?.[entry.id]?.name:
-      key==='map'?wikiData?.maps?.[entry.id]?.name:null;
-     sources.append(wikiLink(label+(sourceName?' · '+sourceName:''),key,String(entry.id),String(rec.id)));
-   }
-  }).catch(()=>{if(sources.isConnected)sources.textContent=tx('Источники пока недоступны','Sources are currently unavailable')});
- }
- for(const rec of matches.slice(0,gearShown)){
-  const card=h('button',{class:'item-card',type:'button',
-   'aria-label':tx('Сведения о ','Details for ')+itemName(rec),
-   onmouseenter:()=>inspect(rec),onfocus:()=>inspect(rec),onclick:()=>inspect(rec)});
-  const src=itemIcon(rec);
-  if(src){const image=h('img',{src,alt:'',loading:'lazy'});
-   image.onerror=()=>image.replaceWith(h('span',{class:'item-glyph',text:'✦'}));card.append(image)}
-  else card.append(h('span',{class:'item-glyph',text:'✦'}));
-  card.append(h('strong',{text:itemName(rec)}),
-   h('small',{text:window.PandoraItemPresentation.kind(rec,lang)}));
-  collection.append(card);
- }
- if(!matches.length)collection.append(h('p',{class:'muted',text:tx('Ничего не найдено. Попробуйте другой фильтр.','No results. Try a different filter.')}));
- if(matches.length>gearShown)collection.append(h('button',{class:'button-action show-more',
-  text:tx('Показать ещё · ','Show more · ')+(matches.length-gearShown),onclick:()=>{gearShown+=60;renderDetails()}}));
- layout.append(collection,inspector);root.append(layout);inspect(null);
-}
 function renderStats(root){
  const icons=['♥','⚔','➶','✥','✦','❂'];
  const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:'Характеристики'});
