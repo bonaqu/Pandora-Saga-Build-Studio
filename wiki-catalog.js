@@ -30,6 +30,44 @@ function validate(input){
   if(!Number.isSafeInteger(expected)||expected<1||observed<expected)
    throw Error('Неполный каталог '+key+': '+observed+' из '+expected);
  }
+ const exists=(records,id)=>id!=null&&Object.hasOwn(records,String(id));
+ const item=id=>exists(data.items,id)||exists(data.souls,id);
+ const monster=id=>exists(data.monsters,id);
+ const map=id=>exists(data.maps,id)||exists(data.trades.mapNames,id);
+ const npc=id=>exists(data.trades.npcs,id);
+ const requireRef=(valid,relation)=>{
+  if(!valid)throw Error('Нарушены связи игрового каталога: '+relation);
+ };
+ for(const row of Object.values(data.maps))
+  for(const id of row.mobs||[])requireRef(monster(id),'монстры локаций');
+ for(const row of data.instances)
+  for(const id of row.mobs||[])requireRef(monster(id),'монстры подземелий');
+ for(const [id,group] of Object.entries(data.drops)){
+  requireRef(monster(id),'таблица добычи монстра');
+  for(const row of [...(group.d||[]),...(group.s||[])])
+   if(row.i!=null)requireRef(item(row.i),'предмет добычи монстра');
+ }
+ for(const recipe of data.trades.trades){
+  requireRef(item(recipe.i),'награда обмена NPC');
+  for(const material of recipe.mats||[])
+   requireRef(item(material.i),'материал обмена NPC');
+  for(const id of recipe.npc||[])requireRef(npc(id),'NPC обмена');
+ }
+ for(const row of Object.values(data.trades.npcs))
+  for(const id of row.maps||[])requireRef(map(id),'расположение NPC');
+ for(const chest of data.chests.boxes){
+  requireRef(item(chest.i),'сундук');
+  for(const group of chest.rolls||[])for(const row of group||[])
+   if(row.i!=null)requireRef(item(row.i),'награда сундука');
+ }
+ for(const zone of data.tables.zoneDrops){
+  requireRef(map(zone.map),'место добычи');
+  for(const group of zone.rows||[]){
+   if(group.mob!=null)requireRef(monster(group.mob),'монстр добычи локации');
+   for(const row of group.items||[])
+    if(row.i!=null)requireRef(item(row.i),'награда добычи локации');
+  }
+ }
  return data;
 }
 async function load({api,fetcher,local='./data/os',timeout=12000}={}){

@@ -58,6 +58,16 @@ test('a D1 reply without a snapshot identifier cannot silently mix releases',asy
  assert.equal(fallback.source,'local');
  assert.equal(fallback.data.items[1].name,'bundled');
 });
+test('broken D1 cross-links cause an atomic fallback instead of dead encyclopedia pages',async()=>{
+ const remote=catalog('remote'),safe=catalog('safe');
+ remote.maps[1].mobs=[999];
+ assert.throws(()=>loader.validate(remote),/связи игрового каталога/);
+ const mock=mockFetch(remote,safe);
+ const res=await loader.load({api:'https://worker.example',fetcher:mock.fetcher});
+ assert.equal(res.source,'local');
+ assert.equal(res.data.items[1].name,'safe');
+ assert.deepEqual(res.data.maps[1].mobs,[1]);
+});
 test('one unavailable D1 dataset switches the ENTIRE catalog to local files',async()=>{
  const mock=mockFetch(catalog('online'),catalog('local'),{fail:'souls'});
  const res=await loader.load({api:'https://worker.example',fetcher:mock.fetcher});
