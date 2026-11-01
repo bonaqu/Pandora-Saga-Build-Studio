@@ -39,7 +39,6 @@ function selectedPortraitIndex(race,gender){
 }
 const races=[['Человек','Human','human_f','human_m'],['Эльф','Elf','elf_f','elf_m'],['Цверг','Dwarf','dwarf','dwarf'],['Мирина','Myrine','myrine','myrine'],['Энкиду','Enkidu','enkidu','enkidu'],['Кролль','Lapin','lapin','lapin']];
 let jobs=['Warrior','Gradiator','Juggernaut','Dragoon','Knight','General','Paladin','Scout','Archer','Sniper','Hunter','Provocateur','Assassin','Saboteur','Acolyte','Priest','Cleric','Enchanter','Ascetic','Monk','Exorcist','Mage','Wizard','Warlock','Conjurer','Sorcerer','Corrupter','Shadowblade'];
-const branchNames=['Melee','Slash','Thrust','Cleave','Bash','Defend','Technique','Shot','Alchemy','Assassination','Trapping','Dodge','Grace','Banevolence','Blessing','Exorcism','Hymn','Magic','Elemental','Invocation','Darkness','Confusion','Special','Racial','Horsemanship'];
 let branches=window.PandoraGameNavigation.groups.flatMap(group=>group.branches.map(id=>({id,name:id})));
 let selectedSkillGroup=bootView.groupTouched&&bootView.skillGroup===null?null:
  window.PandoraGameNavigation.groups.some(group=>group.id===bootView.skillGroup)?bootView.skillGroup:'melee';
