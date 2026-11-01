@@ -37,5 +37,5 @@ test('Hero Book keeps cleansing consumables separate and directly linked to the 
  assert.match(book,/stage-status-cures/);
  assert.match(book,/onItem\(entry\.id\)/);
  assert.match(calculator,/const statusCures=statusCurePreview\(\{items:consumableItems\}\)/);
- assert.match(calculator,/consumableRecovery,statusCures,combat/);
+ assert.match(calculator,/consumableRecovery,consumableSkills,statusCures,combat/);
 });
