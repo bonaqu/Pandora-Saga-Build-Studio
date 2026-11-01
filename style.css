@@ -1685,6 +1685,23 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  color:#e7c799;font-size:11px}
 .wiki-allowed-classes{margin:10px 0;padding:8px 11px;
  border:1px solid #6e5033;background:#211710;color:#d8be97;font-size:12px}
-.wiki-allowed-classes summary{cursor:pointer;color:#e8c38c}
-.wiki-allowed-classes p{margin-top:7px;line-height:1.55;overflow-wrap:anywhere}
+.wiki-allowed-classes summary{cursor:pointer;color:#e8c38c;list-style-position:inside}
+.wiki-allowed-classes summary:hover{color:#ffe1ae}
+.wiki-allowed-classes summary:focus-visible{outline:2px solid #e7b978;outline-offset:3px}
+.wiki-class-tags,.wiki-wearer-tags{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:9px}
+.wiki-class-tag,.wiki-wearer-tag{display:inline-flex;align-items:center;gap:6px;
+ min-height:29px;padding:5px 9px;border:1px solid #705438;border-radius:5px;
+ background:linear-gradient(145deg,#352519,#1e1711);color:#ebcca0;
+ font-size:11px;line-height:1.35;transition:border-color .15s,background .15s,transform .15s}
+.wiki-class-tag:hover,.wiki-wearer-tag:hover{border-color:#d5a568;
+ background:linear-gradient(145deg,#4a3220,#251a12);transform:translateY(-1px)}
+.wiki-class-sigil{color:#ba9157;font-size:12px}
+.wiki-class-tag.is-hero-class{border-color:#d5ab70;background:#51371e;color:#fff0d6}
+.wiki-class-tag.is-hero-class .wiki-class-sigil{color:#f8d99d}
+.wiki-item-wearers small{display:block;color:#d0a877;font-size:11px}
+.wiki-item-wearers .wiki-wearer-tags{margin-top:6px}
+@media(prefers-reduced-motion:reduce){
+ .wiki-class-tag,.wiki-wearer-tag{transition:none}
+ .wiki-class-tag:hover,.wiki-wearer-tag:hover{transform:none}
+}
 
