@@ -160,31 +160,38 @@ function reportCloudStatus(message){
 async function putCloudBuild(entry){
  // This guard also protects accidental call sites added in future changes.
  if(entry?.localOnly===true)return false;
+ const owner=libraryScopeId();
  try{
   await cloudLibraryRequest({action:'put',entry});
-  reportCloudStatus('Сохранено в облаке');return true;
+  if(libraryScopeId()===owner)reportCloudStatus('Сохранено в облаке');
+  return true;
  }catch(error){
   console.warn('Build cloud save failed',error);
-  reportCloudStatus(error.reason==='stale'||error.reason==='conflict'?
-   'В облаке другая редакция · обновите библиотеку для сохранения обеих версий':
-   error.reason==='deleted'?
-   'Сохранено в браузере · исходный билд в облаке уже удалён':
-   'Сохранено в браузере · облако недоступно');
+  if(libraryScopeId()===owner)reportCloudStatus(
+   error.reason==='stale'||error.reason==='conflict'?
+    'В облаке другая редакция · обновите библиотеку для сохранения обеих версий':
+    error.reason==='deleted'?
+     'Сохранено в браузере · исходный билд в облаке уже удалён':
+     'Сохранено в браузере · облако недоступно');
   return false;
  }
 }
 async function deleteCloudBuild(id){
+ const owner=libraryScopeId();
  let queued=false;
  try{queueDelete(id);queued=true}
  catch(error){console.warn('Cannot persist pending deletion',error)}
  libraryChangeId++;
  try{
   await cloudLibraryRequest({action:'delete',id});
+  // Only the owner who initiated deletion can clear its local pending tombstone.
+  if(libraryScopeId()!==owner)return;
   if(queued)acknowledgeDelete(id);
   reportCloudStatus('Билд удалён · все его ссылки отозваны');
   showStudioToast('Билд удалён. Все его ссылки больше не работают.','success');
  }catch(error){
   console.warn('Build cloud delete pending',error);
+  if(libraryScopeId()!==owner)return;
   reportCloudStatus(queued?'Удалено в браузере · синхронизируем позже':
    'Не удалось записать удаление для повторной отправки');
   showStudioToast(queued?
@@ -223,11 +230,15 @@ async function loadCloudBuilds(){
    if(!current||current.at!==entry.at||queuedDeletes().includes(entry.id))continue;
    await putCloudBuild(entry);
   }
-  if(copies){
+  if(copies&&libraryChangeId===generation){
    reportCloudStatus('Облачная версия основная · локальные отличия сохранены отдельной копией');
    showStudioToast('Обнаружены разные версии билда. Обе сохранены отдельно в библиотеке.','warning');
   }
- }catch(error){console.warn('Cloud library unavailable',error);reportCloudStatus('Локальные билды доступны · облако пока недоступно')}
+ }catch(error){
+  console.warn('Cloud library unavailable',error);
+  if(libraryChangeId===generation)
+   reportCloudStatus('Локальные билды доступны · облако пока недоступно');
+ }
 }
 
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))el[k]=Boolean(v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
@@ -1899,8 +1910,13 @@ async function connectCloudLibrary(secret,feedback){
   feedback.textContent='Сначала синхронизируйте удаления с прежней библиотекой, чтобы старые ссылки перестали работать.';
   return false;
  }
+ const previousOwner=libraryScopeId();
  try{
   const response=await cloudLibraryRequest(null,trimmed);
+  if(libraryScopeId()!==previousOwner||window.PandoraAccountUI?.isLoggedIn()){
+   feedback.textContent='Контекст библиотеки изменился. Проверьте текущий профиль.';
+   return false;
+  }
   if(!Array.isArray(response.records))throw Error('Не удалось прочитать библиотеку');
   if(!response.records.some(record=>!record.deleted&&record.entry)){
    feedback.textContent='По этому коду сохранённые билды не найдены. Проверьте, что код скопирован полностью.';

@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.201.0 (`2026.11.01.201`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.202.0 (`2026.11.01.202`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.202.0 — ignore stale cloud replies after switching account/library
+
+- Capture the initiating library owner before each cloud PUT or DELETE and check that same owner before changing any visible cloud status or acknowledging pending deletion. Network responses from a previously signed-in user must not consume the new user's pending tombstones or show a false success.
+- A delayed legacy-library-key validation cannot switch the active guest scope after the player signs in or otherwise changes its owner.
+- Ignore failed refresh messages and stale conflict toasts from an earlier library generation. Only the current user's cloud refresh may report status.
+- Isolated promise-based Node tests exercise delayed PUT/delete responses, expected same-owner success and safe legacy transfer. No actual D1 write or schema migration is performed.
 
 ## Source update 0.201.0 — saved-build comparison names from current OS catalogs
 
