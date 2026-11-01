@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.213.0 (`2026.11.01.213`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.214.0 (`2026.11.01.214`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.214.0 — valid branch icon fallback without broken files
+
+- Remove nonexistent default icon path `assets/ui/icons/skill-unknown.svg` from the skill branch image resolver. Missing source art should be represented by the caller's neutral glyph, not by a broken network resource.
+- Treat the 19 actually archived branch icons as an exact allowlist; inherited JavaScript object names must not be considered real branch artwork.
+- Cover every path's physical existence and unknown/malformed branch handling in Node tests. Formula and D1 behavior remain unchanged.
 
 ## Source update 0.213.0 — correct Remaked periodic HP recovery to use effective SPI
 
