@@ -301,3 +301,24 @@ test('skill milestones remain inside the bar and update their reached state afte
  range.value='8';range.listeners.input();
  assert.ok(tick.className.includes('reached'),'green mastery unlocks the marker');
 });
+
+test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch header',()=>{
+ const f=fixture('CLERIC','prayer','benevolence');
+ const row=walk(f.target).find(x=>x.attributes?.['data-path-branch']==='benevolence');
+ assert.ok(row,'expanded branch header exists');
+ assert.equal(row.children.length,2,'branch title + invested/cap count only');
+ assert.equal(row.children[0].children.length,1,'no dynamic mastery summary below branch title');
+ const counter=row.children[1];
+ const mastery=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:mastery-number');
+ assert.ok(mastery,'green mastery remains accessible in the dedicated field');
+ for(const n of [0,1,2,0]){
+  f.range.value=String(n);f.range.listeners.input();
+  assert.equal(row.children.length,2,'stable heading structure at '+n);
+  assert.equal(row.children[0].children.length,1,'no extra subtitle at '+n);
+  assert.equal(counter.textContent,n+' / 90','correct invested count at '+n);
+  assert.equal(mastery.value,String(n),'mastery value still updates at '+n);
+ }
+ const css=read('style.css');
+ assert.match(css,/\.game-tree-group \.branch-row>div>strong\{[\s\S]*?white-space:nowrap/);
+ assert.match(css,/\.game-tree-group \.branch-row>\.count\{[\s\S]*?white-space:nowrap/);
+});
