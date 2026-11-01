@@ -2011,7 +2011,8 @@ function renderBuilds(root){
   }}),
   h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
- root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}),buildLibraryTransfer());
+ root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}),
+  ...(window.PandoraAccountUI?.isLoggedIn()?[]:[buildLibraryTransfer()]));
  const grid=h('div',{class:'build-grid'}),searchable=[];
  const search=builds.length>5?h('input',{type:'search',class:'build-library-search',
   'aria-label':'Найти сохранённый билд',placeholder:'Поиск по названию, классу, уровню…',

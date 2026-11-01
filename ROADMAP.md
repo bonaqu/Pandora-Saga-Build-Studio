@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.207.0 (`2026.11.01.207`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.208.0 (`2026.11.01.208`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.208.0 — show library recovery key only for the guest who owns it
+
+- A signed-in account previously saw a «Показать мой код» transfer control that actually revealed this browser's unrelated **guest** secret. On a new device signed in to an existing user account, that guest key is not the account's owner hash and cannot recover account builds.
+- Hide guest-library recovery/transfer controls while an account is signed in. The actual saved account library continues to appear under «Мои билды» and transfers by username/password; after logout the separate guest key can be shown again.
+- Preserve all legacy guest recovery and explicit cross-device guest-code flows. Add source test and Chromium assertions that signed-in and guest modes show only their appropriate controls.
+- No change to password sessions, user-account database schema, 1–55 planning levels or game formulas.
 
 ## Source update 0.207.0 — keep guest cloud secrets isolated across tabs
 

@@ -52,6 +52,8 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   await tabA.goto(base+'/',{waitUntil:'domcontentloaded'});
   await login(tabA,tokenA,'alice_01');
   await save(tabA,'Alice first');
+  assert.equal(await tabA.locator('.build-transfer').count(),0,
+   'A signed-in account must not display its unrelated guest recovery key');
   await tabB.goto(base+'/',{waitUntil:'domcontentloaded'});
   await login(tabB,tokenB,'bob_222');
   await save(tabB,'Bob only');

@@ -42,6 +42,8 @@ export async function runCrossTabGuestIsolationSmoke(browser,base){
  try{
   await tabA.goto(base+'/',{waitUntil:'domcontentloaded'});await loaded(tabA);
   await save(tabA,'Guest A one');
+  assert.equal(await tabA.locator('.build-transfer').count(),1,
+   'Guest transfer controls remain available to account-free libraries');
   await tabB.goto(base+'/',{waitUntil:'domcontentloaded'});await loaded(tabB);
   await tabB.evaluate(key=>localStorage.setItem('ps-build-library-secret.v1',key),keyB);
   await tabB.reload({waitUntil:'domcontentloaded'});await loaded(tabB);
