@@ -32,5 +32,5 @@ test('Hero Book UI and aria descriptions follow document language on rerender',(
  assert.match(code,/n\.textContent=bookText\(value\)/);
  assert.match(code,/document\.documentElement\?\.lang==='en'\?/);
  assert.match(code,/Hero Book\./);
- assert.match(code,/make\('span',\{text:\(document\.documentElement\.lang==='en'\?'HERO BOOK'/);
+ assert.match(code,/make\('span',\{text:\(document\.documentElement\?\.lang==='en'\?'HERO BOOK'/);
 });
