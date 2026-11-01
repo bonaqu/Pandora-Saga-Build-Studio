@@ -30,8 +30,19 @@ function readiness(skill,api,seen=new Set(),skillIndex){
  const problems=[],state=api.state,job=api.job;
  if(seen.has(String(skill.id)))return {learned:false,problems:[tr(api,'Циклическая зависимость навыков','Cyclic skill prerequisite')]};
  const chain=new Set(seen);chain.add(String(skill.id));
- if(skill.classes&&!Object.hasOwn(skill.classes,job))problems.push(tr(api,'Не подходит профессии','Unavailable to this class'));
- if(Number(skill.charLevel)>state.level)problems.push(tr(api,'Требуется уровень ','Requires level ')+skill.charLevel);
+ if(skill.classes!==undefined&&
+  (!skill.classes||typeof skill.classes!=='object'||Array.isArray(skill.classes)||
+   !Object.hasOwn(skill.classes,job)||
+   (skill.classes[job]!==1&&skill.classes[job]!==true)))
+  problems.push(tr(api,'Не подходит профессии','Unavailable to this class'));
+ if(skill.charLevel!==undefined&&
+  (skill.charLevel===null||typeof skill.charLevel==='boolean'||
+   !Number.isInteger(Number(skill.charLevel))||Number(skill.charLevel)<0))
+  problems.push(tr(api,'Неизвестный уровень изучения','Unknown character level requirement'));
+ else if(Number(skill.charLevel)>state.level)
+  problems.push(tr(api,'Требуется уровень ','Requires level ')+skill.charLevel);
+ if(skill.reqs!==undefined&&!Array.isArray(skill.reqs))
+  problems.push(tr(api,'Неизвестные требования навыка','Unknown skill requirements'));
  const required=Array.isArray(skill.reqs)?skill.reqs:[];
  for(const req of required){
   const need=Number(req?.amount);
@@ -62,7 +73,14 @@ function readiness(skill,api,seen=new Set(),skillIndex){
   }
  }
  if(skill.learnable===false)problems.push(tr(api,'Особый способ изучения','Special learning method required'));
- if(Number(skill.reqLevel)>0&&!required.length)problems.push(tr(api,'Дополнительное условие ','Unverified additional requirement ')+skill.reqLevel);
+ else if(skill.learnable!==undefined&&skill.learnable!==true)
+  problems.push(tr(api,'Неизвестный способ изучения','Unknown learning method'));
+ if(skill.reqLevel!==undefined&&
+  (skill.reqLevel===null||typeof skill.reqLevel==='boolean'||
+   !Number.isInteger(Number(skill.reqLevel))||Number(skill.reqLevel)<0))
+  problems.push(tr(api,'Неизвестное дополнительное условие','Unknown additional requirement'));
+ else if(Number(skill.reqLevel)>0&&!required.length)
+  problems.push(tr(api,'Дополнительное условие ','Unverified additional requirement ')+skill.reqLevel);
  return {learned:!problems.length,problems};
 }
 // Skill markers are sorted once per render; nearest hover uses binary search.

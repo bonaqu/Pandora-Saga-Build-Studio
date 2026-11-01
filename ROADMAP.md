@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.247.0 (`2026.11.01.247`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.248.0 (`2026.11.01.248`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.248.0 — source integrity in Hero Path and quieter locked rail
+
+- [x] Do not report learnable skills when the current class has a disabled/false/fabricated membership value; allow only source-backed 1/true.
+- [x] Fail closed on malformed explicitly provided character levels, non-array requirements, unsupported learnability flags and invalid supplementary requirement levels. Valid zero character level remains supported, as do future-level skill requirements above 55 (they remain locked at planner level 55).
+- [x] Lower contrast of the integrated bar's unavailable red hatching while keeping the fixed class boundary, golden value notch, exact 21px rail geometry, tooltips and native pointer/keyboard interactions.
+- [x] Add source-contract tests against all 569 official OS skill records and malformed fixture records; avoid touching saved builds, Cloudflare D1 or combat formulas.
+- [ ] Measure actual hover/render performance and verify remaining game combat formula parity. Authenticated live D1 write acceptance still requires a controlled separate check.
 
 ## Source update 0.247.0 — validated milestone source integrity and dead handler cleanup
 
