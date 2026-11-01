@@ -56,7 +56,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
    'Race-locked Myrine corset must not be compatible with an elf');
   await page.locator('.wiki-eligibility-filter').selectOption('all');
   await page.locator('.wiki-list [data-wiki-record]').first().click();
-  assert.match(await page.locator('.wiki-item-wearers').innerText(),/Мирина.*Кролль/);
+  assert.match(await page.locator('.wiki-item-wearers').innerText(),/Мирина[\s\S]*Кролль/);
   await page.locator('.wiki-controls input[type="search"]').fill('');
   // The reference tooltip in the game separates lore, parameters and upgrade conditions.
   await page.locator('.wiki-controls input[type="search"]').fill('Алые астирские штаны');
