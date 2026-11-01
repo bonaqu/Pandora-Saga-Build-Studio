@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.215.0 (`2026.11.01.215`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.216.0 (`2026.11.01.216`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.216.0 — user-requested slim vertical ticks, MP-cost previews and inline controls
+
+- Restore the preferred three-pixel vertical skill-unlock ticks within the 12px track. Preserve exact skill unlock positions, the 0–90 bound, three status colours, keyboard focus, proximity hover and unobstructed range dragging. No large diamond indicators or persistent glow.
+- Pull optional MP cost only from source-backed `skill.mana`; retain original skill icon, name, description and point threshold in the same small tooltip. Never infer missing costs.
+- Put `Вложено / Spent` and `Мастерство / Mastery` in one flex row with identical 28px fields, mild green mastery accent, contextual label help, automatic wrapping on narrow screens.
+- Update regressions and Chromium actual-layout assertions, and inspect desktop/mobile screenshot artifacts. Leave user save semantics, D1, formulas, character starting level 1 and planning through level 55 intact.
 
 ## Source update 0.215.0 — readable in-track unlock threshold markers
 

@@ -96,8 +96,8 @@ export async function runInlineMilestonesSmoke(browser,base){
    'Every skill threshold belongs inside the SAME horizontal bar: '+JSON.stringify(result));
   assert.ok(result.geom.every(x=>x.x+x.width/2>=result.barLeft-1&&
    x.x+x.width/2<=result.barRight+1),'Unlock thresholds must stay within 0–90 rail');
-  assert.ok(result.geom.every(x=>x.width===12&&x.height===12&&x.pointer==='none'),
-   'Diamond unlock containers must match the 12px rail without stealing slider events');
+  assert.ok(result.geom.every(x=>x.width===3&&x.height===12&&x.pointer==='none'),
+   'Vertical skill ticks must remain compact and never steal slider events');
   assert.ok(result.geom.every((x,i,a)=>i===0||x.x>a[i-1].x),
    'Thresholds must be ordered left to right, not staggered over rows');
   assert.ok(result.geom.every(x=>Math.abs(x.top-result.geom[0].top)<=1));
@@ -109,6 +109,21 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.mouse.move(rect.x+9+points/90*travel,rect.y+rect.height/2);
   await mark.locator('.path-milestone-tooltip').waitFor({state:'visible',timeout:4000});
   assert.ok((await mark.locator('.path-milestone-preview').count())>=1);
+  assert.ok((await mark.locator('.path-milestone-cost').count())>=1,
+   'Skill hover must expose current source-backed MP cost');
+  assert.match(await mark.locator('.path-milestone-cost').first().innerText(),/Затрат ОМ: [0-9]+/);
+  const fields=page.locator('.path-point-controls').first();
+  await fields.waitFor({state:'visible'});
+  assert.deepEqual(await fields.locator('label.path-point-group .path-point-name').allTextContents(),
+   ['Вложено','Мастерство']);
+  const inputHeights=await fields.locator('input[type=number]').evaluateAll(inputs=>
+   inputs.map(input=>Math.round(input.getBoundingClientRect().height)));
+  assert.deepEqual(inputHeights,[28,28],'Both compact fields have equal height');
+  const controlsPosition=await fields.locator('label.path-point-group').evaluateAll(labels=>
+   labels.map(label=>({top:Math.round(label.getBoundingClientRect().top),
+    bottom:Math.round(label.getBoundingClientRect().bottom)})));
+  assert.ok(controlsPosition.every(item=>item.top===controlsPosition[0].top),
+   'At desktop viewport, invested points and mastery share one horizontal row');
   await mark.focus();
   await mark.locator('.path-milestone-tooltip').waitFor({state:'visible'});
   await page.locator('#locale [data-locale="en"]').click();
