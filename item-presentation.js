@@ -9,8 +9,31 @@ const names={'1H_SWORD':'Одноручный меч','2H_SWORD':'Двуручн
 'RUNEGEM':'Самоцвет','ARROW':'Стрела','BOLT':'Болт','EGGMAKE_KIT':'Набор','MASTER_TALKEGG':'Яйцо','TALKEGG':'Яйцо',
 'RECIPE':'Рецепт','BALM':'Бальзам','SOUL':'Душа','DECO_HELMET':'Декоративный шлем','DECO_TORSO':'Декоративная одежда',
 'DECO_CUISSES':'Декоративные поножи','DECO_GLOVES':'Декоративные перчатки','DECO_BOOTS':'Декоративная обувь','DECO_MANTLE':'Декоративный плащ'};
+const namesEn={'1H_SWORD':'One-handed sword','2H_SWORD':'Two-handed sword',
+'1H_AXE':'One-handed axe','2H_AXE':'Two-handed axe',
+'1H_BLUNT_WEAPON':'One-handed blunt weapon','2H_BLUNT_WEAPON':'Two-handed blunt weapon',
+'POLE_ARM':'Polearm','LANCE':'Lance','1H_TRUMP_WEAPON':'One-handed weapon',
+'2H_TRUMP_WEAPON':'Two-handed weapon','BOW':'Bow','CROSSBOW':'Crossbow',
+'WAND':'Wand','STAFF':'Staff','HELMET':'Helmet','TORSO':'Armor',
+'CUISSES':'Leg armor','GLOVES':'Gloves','BOOTS':'Boots','FOOT_SHIELD':'Shield',
+'HORSE_SHIELD':'Shield','MANTLE':'Cloak','RING':'Ring','AMULET':'Amulet',
+'BELT':'Belt','EARRING':'Earring','BRIDLE':'Bridle','SADDLE':'Saddle',
+'STALL':'Stable','POTION':'Potion','TOY':'Toy','ETC':'Material',
+'RUNEGEM':'Gemstone','ARROW':'Arrow','BOLT':'Bolt','EGGMAKE_KIT':'Kit',
+'MASTER_TALKEGG':'Egg','TALKEGG':'Egg','RECIPE':'Recipe','BALM':'Balm',
+'SOUL':'Soul','DECO_HELMET':'Cosmetic helmet','DECO_TORSO':'Cosmetic armor',
+'DECO_CUISSES':'Cosmetic leg armor','DECO_GLOVES':'Cosmetic gloves',
+'DECO_BOOTS':'Cosmetic boots','DECO_MANTLE':'Cosmetic cloak'};
+const slotsEn={weapon:'Weapon',shield:'Shield',head:'Helmet',body:'Armor',
+ gloves:'Gloves',legs:'Leg armor',feet:'Boots',cloak:'Cloak',
+ ring:'Ring',neck:'Amulet',belt:'Belt',ear:'Earring'};
 const slots={weapon:'Оружие',shield:'Щит',head:'Шлем',body:'Нагрудник',gloves:'Перчатки',legs:'Поножи',feet:'Обувь',cloak:'Плащ',ring:'Кольцо',neck:'Амулет',belt:'Пояс',ear:'Серьга'};
-function kind(record){return record?(names[String(record.kind||'').toUpperCase()]||slots[record.slot]||'Предмет'):'Предмет'}
+function kind(record,lang='ru'){
+ const source=lang==='en'?namesEn:names;
+ const slotSource=lang==='en'?slotsEn:slots;
+ const fallback=lang==='en'?'Item':'Предмет';
+ return record?(source[String(record.kind||'').toUpperCase()]||slotSource[record.slot]||fallback):fallback;
+}
 function displayName(record,fallback='Без названия'){
  const candidate=record?.name?.en||record?.names?.en||record?.name?.ru||
   record?.names?.ru||record?.name;

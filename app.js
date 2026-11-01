@@ -1708,8 +1708,9 @@ function renderCharacter(root){
 }
 // Legacy duplicate skill editor retired; all changes happen in the live Hero Path.
 function renderSkills(root){
- root.append(h('p',{class:'muted',text:'Умения доступны в правой панели «Путь героя». Здесь нет отдельного редактора.'}));
- root.append(h('button',{class:'button-action',text:'Перейти к умениям',onclick:()=>{
+ root.append(h('p',{class:'muted',text:lang==='en'?
+  'View skills and their requirements in Hero Path.':'Просматривайте умения и требования в «Пути героя».'}));
+ root.append(h('button',{class:'button-action',text:lang==='en'?'Open skills':'Открыть умения',onclick:()=>{
   closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
  }}));
 }
@@ -1717,21 +1718,26 @@ function isCostumeOverlay(item){return Boolean(item&&(item.isCostumeOverlay===tr
 function itemName(r){return window.PandoraItemPresentation.displayName(r,'Предмет без названия')}
 let catalogBrowseSlot='all';
 function renderEquipment(root){
- const types=[['all','Все типы'],['weapon','Оружие'],['shield','Щиты'],['head','Шлемы'],
- ['body','Нагрудники'],['gloves','Перчатки'],['legs','Поножи'],['feet','Обувь'],
- ['cloak','Плащи'],['ring','Кольца'],['neck','Амулеты'],['belt','Пояса'],['ear','Серьги']];
+ const tx=(ru,en)=>lang==='en'?en:ru;
+ const types=[['all',tx('Все типы','All types')],['weapon',tx('Оружие','Weapons')],
+  ['shield',tx('Щиты','Shields')],['head',tx('Шлемы','Helmets')],
+  ['body',tx('Нагрудники','Armor')],['gloves',tx('Перчатки','Gloves')],
+  ['legs',tx('Поножи','Leg armor')],['feet',tx('Обувь','Boots')],
+  ['cloak',tx('Плащи','Cloaks')],['ring',tx('Кольца','Rings')],
+  ['neck',tx('Амулеты','Amulets')],['belt',tx('Пояса','Belts')],
+  ['ear',tx('Серьги','Earrings')]];
  const inventory=Object.values(catalog.equipment||{}).filter(rec=>rec&&slotKeys.includes(rec.slot))
   .map(rec=>itemWithOverrides(rec));
  const head=h('div',{class:'equipment-catalog-head'});
- head.append(h('h3',{text:'Коллекция предметов Pandora Saga'}),
-  h('p',{class:'muted',text:'Полный справочник экипировки по загруженному каталогу. Надетые вещи изменяются только в портрете персонажа.'}));
+ head.append(h('h3',{text:tx('Коллекция предметов Pandora Saga','Pandora Saga Equipment')}),
+  h('p',{class:'muted',text:tx('Справочник экипировки. Изменить надетые вещи можно на портрете персонажа.','Browse equipment. Change equipped items from the character portrait.')}));
  const row=h('div',{class:'equipment-catalog-toolbar'});
- const search=h('input',{type:'search',value:filter,placeholder:'Поиск по названию',
-  'aria-label':'Поиск предметов',
+ const search=h('input',{type:'search',value:filter,placeholder:tx('Поиск по названию','Search items'),
+  'aria-label':tx('Поиск предметов','Search equipment'),
   oninput:e=>{filter=e.target.value;gearShown=60;renderDetails();
    const input=document.querySelector('.equipment-catalog-toolbar input');
    input?.focus({preventScroll:true});input?.setSelectionRange(filter.length,filter.length)}});
- const select=h('select',{'aria-label':'Тип предмета',onchange:e=>{
+ const select=h('select',{'aria-label':tx('Тип предмета','Equipment type'),onchange:e=>{
   catalogBrowseSlot=e.target.value;gearShown=60;renderDetails();
  }});
  for(const [value,label]of types){
@@ -1741,7 +1747,7 @@ function renderEquipment(root){
  }
  row.append(search,select);
  const view=h('div',{class:'gear-view-options'});
- for(const [key,label]of [['grid','▦ Сетка'],['list','☰ Список']]){
+ for(const [key,label]of [['grid',tx('▦ Сетка','▦ Grid')],['list',tx('☰ Список','☰ List')]]){
   view.append(h('button',{type:'button',text:label,class:gearDisplayMode===key?'chosen':'',
    'aria-pressed':String(gearDisplayMode===key),onclick:()=>{
     gearDisplayMode=key;localStorage.setItem('ps-gear-view',key);renderDetails();
@@ -1752,48 +1758,48 @@ function renderEquipment(root){
  const matches=inventory.filter(rec=>(catalogBrowseSlot==='all'||rec.slot===catalogBrowseSlot)&&
   (itemName(rec)+' '+rec.id).toLocaleLowerCase('ru').includes(q));
  root.append(h('p',{class:'muted item-count',
-  text:matches.length+' предметов · показано '+Math.min(gearShown,matches.length)}));
+  text:matches.length+tx(' предметов · показано ',' items · showing ')+Math.min(gearShown,matches.length)}));
  const layout=h('div',{class:'equipment-catalog-layout'});
  const collection=h('div',{class:'gear-list'+(gearDisplayMode==='grid'?' inventory-grid':' inventory-list')});
  const inspector=h('aside',{class:'item-info'});
  function inspect(rec){
-  inspector.replaceChildren(h('h3',{text:'Сведения о предмете'}));
-  if(!rec){inspector.append(h('p',{class:'muted',text:'Наведи курсор или выбери предмет.'}));return}
+  inspector.replaceChildren(h('h3',{text:tx('Сведения о предмете','Item details')}));
+  if(!rec){inspector.append(h('p',{class:'muted',text:tx('Наведите курсор или выберите предмет.','Hover over or select an item.')}));return}
   inspector.append(window.PandoraStageItemUI.summary(rec,(r)=>itemIcon(r)));
-  if(isCostumeOverlay(rec))inspector.append(h('p',{class:'muted',text:'Декоративный предмет: боевые свойства не применяются.'}));
-  inspector.append(wikiLink('📜 Источники и подробности','item',String(rec.id)));
+  if(isCostumeOverlay(rec))inspector.append(h('p',{class:'muted',text:tx('Декоративный предмет: боевые свойства не применяются.','Cosmetic item: combat attributes do not apply.')}));
+  inspector.append(wikiLink(tx('📜 Источники и подробности','📜 Sources and details'),'item',String(rec.id)));
   const sources=h('div',{class:'item-origin'});
   inspector.append(sources);
   loadWiki().then(index=>{
    if(!sources.isConnected)return;
-   const rows=index.sources(rec.id);sources.replaceChildren(h('h4',{text:'Где получить'}));
-   if(!rows.length){sources.append(h('p',{class:'muted',text:'Подтверждённый источник не указан'}));return}
+   const rows=index.sources(rec.id);sources.replaceChildren(h('h4',{text:tx('Где получить','Where to obtain')}));
+   if(!rows.length){sources.append(h('p',{class:'muted',text:tx('Подтверждённый источник не указан','No verified source listed')}));return}
    for(const entry of rows.slice(0,5)){
-    const label=entry.type==='monster'?'Монстр':entry.type==='npc'?'NPC':
-     entry.type==='chest'?'Сундук':'Локация';
+    const label=entry.type==='monster'?tx('Монстр','Monster'):entry.type==='npc'?'NPC':
+     entry.type==='chest'?tx('Сундук','Chest'):tx('Локация','Location');
     const key=entry.type==='drop'?'map':entry.type;
     const sourceName=key==='monster'?wikiData?.monsters?.[entry.id]?.name:
       key==='npc'?wikiData?.trades?.npcs?.[entry.id]?.name:
       key==='map'?wikiData?.maps?.[entry.id]?.name:null;
      sources.append(wikiLink(label+(sourceName?' · '+sourceName:''),key,String(entry.id),String(rec.id)));
    }
-  }).catch(()=>{if(sources.isConnected)sources.textContent='Источники пока недоступны'});
+  }).catch(()=>{if(sources.isConnected)sources.textContent=tx('Источники пока недоступны','Sources are currently unavailable')});
  }
  for(const rec of matches.slice(0,gearShown)){
   const card=h('button',{class:'item-card',type:'button',
-   'aria-label':'Сведения о '+itemName(rec),
+   'aria-label':tx('Сведения о ','Details for ')+itemName(rec),
    onmouseenter:()=>inspect(rec),onfocus:()=>inspect(rec),onclick:()=>inspect(rec)});
   const src=itemIcon(rec);
   if(src){const image=h('img',{src,alt:'',loading:'lazy'});
    image.onerror=()=>image.replaceWith(h('span',{class:'item-glyph',text:'✦'}));card.append(image)}
   else card.append(h('span',{class:'item-glyph',text:'✦'}));
   card.append(h('strong',{text:itemName(rec)}),
-   h('small',{text:window.PandoraItemPresentation.kind(rec)}));
+   h('small',{text:window.PandoraItemPresentation.kind(rec,lang)}));
   collection.append(card);
  }
- if(!matches.length)collection.append(h('p',{class:'muted',text:'Ничего не найдено. Попробуй другой фильтр.'}));
+ if(!matches.length)collection.append(h('p',{class:'muted',text:tx('Ничего не найдено. Попробуйте другой фильтр.','No results. Try a different filter.')}));
  if(matches.length>gearShown)collection.append(h('button',{class:'button-action show-more',
-  text:'Показать ещё · '+(matches.length-gearShown),onclick:()=>{gearShown+=60;renderDetails()}}));
+  text:tx('Показать ещё · ','Show more · ')+(matches.length-gearShown),onclick:()=>{gearShown+=60;renderDetails()}}));
  layout.append(collection,inspector);root.append(layout);inspect(null);
 }
 function renderStats(root){
