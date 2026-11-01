@@ -130,7 +130,7 @@ async function main(){
  await page.locator('.new-build-choice').waitFor({state:'visible'});
  assert.equal(await page.locator('.new-build-choice input').inputValue(),
   'Черновик после синхронизации');
- await page.getByRole('button',{name:'Create without saving'}).click();
+ await page.getByRole('button',{name:/^(Создать без сохранения|Create without saving)$/}).click();
  assert.equal(await page.locator('#levelOut').textContent(),'1');
  assert.equal(await page.locator('#level').inputValue(),'1');
  assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
