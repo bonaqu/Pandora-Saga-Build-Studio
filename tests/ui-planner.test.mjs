@@ -24,7 +24,7 @@ test('source-backed human/elf tailored sets exclude wrong sex and race in every 
    const series=Math.trunc(variant/10),target=[0,0,1,1,2,3,4,5][series];
    for(const race of [0,1,2,3,4,5])for(const gender of [0,1])
     assert.equal(ui.raceCompatible(item,race,gender),
-     race===5||(race===target&&(series>=4||gender===(series%2===0?1:0))),
+     race===5||(race===target&&gender===(series>=4?0:series%2===0?1:0)),
      'wrong tailored eligibility '+item.id+' / '+race+' / '+gender);
   }
  }

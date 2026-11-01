@@ -7,8 +7,10 @@ test('character portrait, Origin stats, and Hero Path are the core single-screen
  const html=source('index.html'),app=source('app.js'),css=source('style.css');
  for(const id of ['workspace','originPanelStats','skillBranches','stagePicker','railLeft','railRight','detailPanel','dockClose','dockTabs'])
   assert.match(html,new RegExp('id="'+id+'"'));
- for(const tab of ['character','equipment','builds','wiki'])
+ for(const tab of ['builds','wiki'])
   assert.match(html,new RegExp('role="tab" data-tab="'+tab+'"'));
+ assert.doesNotMatch(html,/role="tab" data-tab="(?:character|equipment)"/);
+ assert.doesNotMatch(html,/<nav id="nav">[^\n]*data-tab="equipment"/);
  assert.doesNotMatch(html,/data-tab="(?:skills|stats)"/);
  assert.doesNotMatch(html,/id="stageQuickbar"/);
  assert.match(app,/function renderBranches\(/);
