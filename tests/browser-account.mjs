@@ -47,7 +47,7 @@ export async function runAccountSmoke(browser,base){
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await page.locator('#profileTrigger').getAttribute('aria-label'),'Sign in or register');
-  assert.ok(await page.getByRole('button',{name:'Register'}).isVisible());
+  assert.ok(await page.getByRole('button',{name:'Register',exact:true}).isVisible());
   await page.locator('#locale [data-locale="ru"]').click();
   await page.getByRole('button',{name:'Регистрация'}).click();
   const inputs=page.locator('#accountPanel .account-form input');
