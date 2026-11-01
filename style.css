@@ -1689,29 +1689,24 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  position:absolute;left:21px;right:21px;top:16px;height:12px;
  z-index:10;overflow:visible;pointer-events:none;
 }
+/* Compact vertical skill unlock ticks: one bar, no diamonds or size jumps. */
 .inline-mastery-track.path-integrated-track .path-unlock-notch{
- position:absolute;top:0;width:12px;height:12px;
+ position:absolute;top:0;width:3px;height:12px;
  transform:translateX(-50%);margin:0;padding:0;
- border:0;background:transparent;box-shadow:none;z-index:10;
+ box-sizing:border-box;border:1px solid #8d663a;border-radius:1px;
+ background:#f1ce86;box-shadow:0 0 0 1px #21160e;z-index:10;
  pointer-events:none;opacity:1;cursor:default;
 }
-/* The small diamond marks a skill unlock without obscuring the coloured bar. */
-.inline-mastery-track.path-integrated-track .path-unlock-notch::before{
- content:'';position:absolute;left:2px;top:2px;width:8px;height:8px;
- box-sizing:border-box;transform:rotate(45deg);border-radius:1px;
- border:1px solid #ffdb93;background:#6c4c29;
- box-shadow:0 0 0 1px #251608;
+.inline-mastery-track.path-integrated-track .path-unlock-notch::before{content:none}
+.inline-mastery-track.path-integrated-track .path-unlock-notch.reached{
+ background:#a9df8d;border-color:#517c3e;box-shadow:0 0 0 1px #1d301b;
 }
-.inline-mastery-track.path-integrated-track .path-unlock-notch.reached::before{
- background:#518a4a;border-color:#e1ffbf;
- box-shadow:0 0 0 1px #18390f,0 0 4px #a7e58d;
+.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable{
+ background:#c48375;border-color:#85483d;box-shadow:0 0 0 1px #362019;
 }
-.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable::before{
- background:#864d49;border-color:#fac4ac;
- box-shadow:0 0 0 1px #582a22;
-}
-.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered::before{
- border-color:#fff2cd;box-shadow:0 0 0 2px #e6b577,0 0 8px #fff0c9;
+.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered,
+.inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible{
+ border-color:#f6dfa9;box-shadow:0 0 0 1px #e0be81,0 0 3px #d0ad78a0;
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible{
  outline:2px solid #ffe0a1;outline-offset:2px;
@@ -1731,6 +1726,58 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch.edge-right .path-milestone-tooltip{
  transform:translateX(-92%);
+}
+
+/* Two compact allocations in one row; wrap only when the actual space runs out. */
+.path-point-controls{
+ display:flex;flex-wrap:wrap;align-items:center;column-gap:17px;row-gap:7px;
+ margin:6px 0 4px;min-width:0;
+}
+.path-point-controls .path-point-group{
+ display:inline-flex;align-items:center;gap:7px;min-width:0;margin:0;
+ font:11px/1.35 Manrope,Arial,sans-serif;color:#d9c29e;
+}
+.path-point-controls .path-point-mastery{color:#b5dba9}
+.path-point-controls .path-point-group input[type=number]{
+ flex:0 0 58px;width:58px;min-width:0;height:28px;box-sizing:border-box;
+ margin:0;padding:3px 5px;border:1px solid #846845;border-radius:3px;
+ background:#17130f;color:#f2d49f;text-align:center;
+ font:12px/1.3 Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums;
+}
+.path-point-controls .path-point-mastery input[type=number]{
+ border-color:#618b57;color:#b4e4a8;
+}
+.path-point-controls .path-point-group input[type=number]:focus-visible{
+ outline:2px solid #e9c68a;outline-offset:2px;
+}
+.path-point-controls .path-point-mastery input[type=number]:focus-visible{
+ outline-color:#8fc583;
+}
+.path-point-controls .path-point-name{
+ position:relative;cursor:help;text-decoration:underline;
+ text-decoration-style:dotted;text-decoration-color:#a48b65;
+ text-underline-offset:3px;outline-offset:3px;
+}
+.path-point-controls .path-point-name:focus-visible{outline:2px solid #c7a77c}
+.path-point-controls .path-point-name::after{
+ content:attr(data-help);display:none;position:absolute;bottom:calc(100% + 8px);left:0;
+ width:max-content;max-width:min(235px,70vw);white-space:normal;
+ background:#1d1511;color:#f0d9b7;border:1px solid #b48a56;border-radius:4px;
+ padding:7px 9px;font:11px/1.45 Manrope,Arial,sans-serif;
+ box-shadow:0 7px 15px #0009;z-index:55;pointer-events:none;
+}
+.path-point-controls .path-point-mastery .path-point-name::after{left:auto;right:0}
+.path-point-controls .path-point-name:hover::after,
+.path-point-controls .path-point-name:focus-visible::after{display:block}
+.inline-mastery-track.path-integrated-track .path-milestone-copy{
+ display:grid;gap:3px;min-width:0;
+}
+.inline-mastery-track.path-integrated-track .path-milestone-cost{
+ color:#d8c7a7;font-variant-numeric:tabular-nums;
+}
+@media(max-width:390px){
+ .path-point-controls{column-gap:11px;row-gap:8px}
+ .path-point-controls .path-point-group{gap:5px}
 }
 
 /* Scale labels remain below the slider: no obstruction to dragging. */
