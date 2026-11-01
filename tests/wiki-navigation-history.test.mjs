@@ -15,6 +15,14 @@ test('hashchange and popstate restore a record after leaving wiki category',()=>
  assert.match(app,/window\.addEventListener\('popstate'/);
  assert.match(app,/activeTab='wiki';\s*if\(same\)wikiRenderSelected\(\);else renderDetails\(\)/);
 });
+test('selected deep links outside the initial page remain visible without expanding the entire list',()=>{
+ const app=get('app.js');
+ assert.match(app,/selectedIndex>=wikiShown/);
+ assert.match(app,/\[results\[selectedIndex\],\.\.\.results\.slice\(0,wikiShown\)\]/);
+ assert.match(app,/browse\.scrollTop=selectedIndex>=wikiShown\?0:previousScroll/);
+ assert.match(app,/aria-current/);
+ assert.match(app,/draw\(present\)/);
+});
 test('repeated wiki record click reuses same list and preserves its scroll position',()=>{
  const app=get('app.js');
  assert.match(app,/const draw=\(detailOnly=false\)=>/);

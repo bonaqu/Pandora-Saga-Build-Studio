@@ -1414,23 +1414,32 @@ function renderWiki(root){
   const knownMaps=wikiIndex.records('map');
   const catalog=wikiIndex.records(type);
   const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id));
-  const visible=results.slice(0,wikiShown);
+  const selectedIndex=wikiSelection.id==null?-1:results.findIndex(([id])=>id===wikiSelection.id);
+  const visible=selectedIndex>=wikiShown?
+   [results[selectedIndex],...results.slice(0,wikiShown)]:results.slice(0,wikiShown);
   if(!detailOnly){
    browse.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
    for(const [id,rec]of visible){
     const row=withIcon(wikiLink(dataName(type,id),type,id),wikiIcon(type,id,rec));
     row.setAttribute('data-wiki-record',String(id));
-    if(wikiSelection.id===id)row.classList.add('selected');
+    if(wikiSelection.id===id){
+     row.classList.add('selected');
+     row.setAttribute('aria-current','page');
+    }
     browse.append(row);
    }
    if(results.length>wikiShown){
     browse.append(h('button',{type:'button',class:'wiki-more',text:(lang==='en'?'Show more ':'Показать ещё ')+Math.min(100,results.length-wikiShown)+' / '+(results.length-wikiShown),
      onclick:()=>{wikiShown+=100;draw()}}));
    }
-   browse.scrollTop=previousScroll;
+   browse.scrollTop=selectedIndex>=wikiShown?0:previousScroll;
   }else{
-   browse.querySelectorAll('[data-wiki-record]').forEach(row=>
-    row.classList.toggle('selected',row.getAttribute('data-wiki-record')===wikiSelection.id));
+   browse.querySelectorAll('[data-wiki-record]').forEach(row=>{
+    const selected=row.getAttribute('data-wiki-record')===wikiSelection.id;
+    row.classList.toggle('selected',selected);
+    if(selected)row.setAttribute('aria-current','page');
+    else row.removeAttribute('aria-current');
+   });
   }
   const id=wikiSelection.id,rec=id==null?null:catalog?.[id];
   if(!rec){detail.append(h('p',{class:'muted',text:!results.length?(lang==='en'?'No matching entries.':'Ничего не найдено.'):(lang==='en'?'Select an entry to view its details and sources.':'Выбери запись для просмотра характеристик и связанных источников.')}));return}
@@ -1698,7 +1707,12 @@ function renderWiki(root){
   }
   if(detailOnly)detail.scrollTop=previousDetailScroll;
  };
- wikiRenderSelected=()=>{if(root.isConnected&&wikiIndex)draw(true)};
+ wikiRenderSelected=()=>{
+  if(!root.isConnected||!wikiIndex)return;
+  const present=[...browse.querySelectorAll('[data-wiki-record]')].some(
+   row=>row.getAttribute('data-wiki-record')===wikiSelection.id);
+  draw(present);
+ };
  browse.append(h('p',{class:'muted',text:'Загружаю записи…'}));
  loadWiki().then(()=>{if(root.isConnected&&activeTab==='wiki')draw()}).catch(e=>{if(root.isConnected)detail.append(h('p',{class:'item-incompatible',text:'Данные вики недоступны: '+e.message}))});
  search.addEventListener('input',()=>{wikiSearch=search.value;wikiShown=100;browse.scrollTop=0;if(wikiIndex)draw()});
