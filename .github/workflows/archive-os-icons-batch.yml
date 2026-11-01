@@ -29,8 +29,8 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: '22'
-      - name: Download up to 180 missing original WebP icons
-        run: node scripts/mirror-os-icons.mjs --limit=180
+      - name: Mirror remaining catalog icons in one verified pass
+        run: node scripts/mirror-os-icons.mjs --limit=1437
       - name: Audit every available icon against catalog
         run: npm run assets:audit
       - name: Commit verified icon files and manifest to this branch only
