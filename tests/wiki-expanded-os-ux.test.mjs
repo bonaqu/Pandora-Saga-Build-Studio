@@ -119,6 +119,16 @@ test('encyclopedia equipment owns catalog filters and coherent grid/list views',
  assert.match(css,/\.wiki-list\.wiki-gear-grid/);
  assert.doesNotMatch(app,/function renderEquipment\(/);
 });
+test('removed equipment catalog has no duplicate CSS components or unused tabs',()=>{
+ const css=read('style.css'),html=read('index.html');
+ for(const old of ['.equipment-catalog-head{','.gear-list.inventory-grid{',
+  '.item-inspector-pin{','.gear-list.soul-catalog{']){
+  assert.ok(!css.includes(old),'obsolete stylesheet rule: '+old);
+ }
+ assert.ok(!html.includes('data-tab="equipment"'));
+ assert.match(css,/\.wiki-equipment-toolbar\{/);
+ assert.match(css,/\.wiki-gear-grid\{/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');
