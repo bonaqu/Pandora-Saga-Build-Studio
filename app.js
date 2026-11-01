@@ -1456,6 +1456,17 @@ function renderWiki(root){
   const type=wikiSelection.type;
   const knownMaps=wikiIndex.records('map');
   const records=wikiIndex.records(type);
+  // Links from monsters, trades and chests must reveal non-equipment rewards too.
+  if(type==='item'&&wikiSelection.id!=null&&records?.[wikiSelection.id]){
+   const selected=records[wikiSelection.id];
+   const permitted=wikiItemType==='all'||(wikiItemType==='equipment'?
+    slotKeys.includes(selected.slot):selected.slot===wikiItemType);
+   if(!permitted){
+    wikiItemType=slotKeys.includes(selected.slot)?'equipment':'all';
+    const picker=controls.querySelector('.wiki-equipment-type');
+    if(picker)picker.value=wikiItemType;
+   }
+  }
   const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id))
    .filter(([,rec])=>type!=='item'||wikiItemType==='all'||
     (wikiItemType==='equipment'?slotKeys.includes(rec.slot):rec.slot===wikiItemType));

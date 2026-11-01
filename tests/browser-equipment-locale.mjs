@@ -50,6 +50,13 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await description.textContent(),
    /Астира\.\n\nЛВК \+1, ОЗ \+30\n\nЗа каждые 2 единицы улучшения:\nАтака \+1%/);
   assert.equal(await description.evaluate(el=>getComputedStyle(el).whiteSpace),'pre-wrap');
+  // A linked potion/material is not equipment, but still needs a visible record.
+  await page.goto(base+'/#wiki/item/50011',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-equipment-type').waitFor({state:'visible'});
+  await page.waitForFunction(()=>document.querySelector('.wiki-equipment-type')?.value==='all'&&
+   document.querySelector('.wiki-list .wiki-link[aria-current="page"]'),
+   null,{timeout:20000});
+  assert.equal(await page.locator('.wiki-equipment-type').inputValue(),'all');
   assert.deepEqual(errors,[]);
   console.log('Chromium encyclopedia equipment RU/EN passed: source names, rings, and links');
  }finally{await context.close()}

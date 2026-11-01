@@ -30,6 +30,12 @@ test('cached encyclopedia avoids duplicate draws and cross-category searches are
  assert.match(app,/browse\.replaceChildren\(\);\s*detail\.replaceChildren/);
  assert.match(app,/if\(activeTab!=='wiki'\|\|wikiSelection\.type!==type\)\{wikiSearch='';wikiShown=100\}/);
 });
+test('deep-linked trade materials bypass an equipment-only filter without breaking the category',()=>{
+ const app=get('app.js');
+ assert.match(app,/if\(type==='item'&&wikiSelection\.id!=null&&records\?\.\[wikiSelection\.id\]\)/);
+ assert.match(app,/wikiItemType=slotKeys\.includes\(selected\.slot\)\?'equipment':'all'/);
+ assert.match(app,/if\(picker\)picker\.value=wikiItemType/);
+});
 test('repeated wiki record click reuses same list and preserves its scroll position',()=>{
  const app=get('app.js');
  assert.match(app,/const draw=\(detailOnly=false\)=>/);
