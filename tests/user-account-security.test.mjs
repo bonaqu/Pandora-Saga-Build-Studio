@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {normalizeUsername,validPassword} from '../worker/account.js';
 test('account names are case-insensitive, unique-looking Latin identifiers',()=>{
  for(const name of ['Alice','abc','player_01','a_b','name123'])
