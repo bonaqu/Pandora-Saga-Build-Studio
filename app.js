@@ -1858,7 +1858,7 @@ function renderWiki(root){
    row=>row.getAttribute('data-wiki-record')===wikiSelection.id);
   draw(present);
  };
- search.addEventListener('input',()=>{wikiSearch=search.value;wikiShown=100;browse.scrollTop=0;if(wikiIndex)draw()});
+ search.addEventListener('input',()=>{wikiSearch=search.value;wikiShown=100;wikiSelection={...wikiSelection,id:null,highlight:null};browse.scrollTop=0;if(wikiIndex)draw()});
  if(wikiIndex)draw();
  else{
   browse.append(h('p',{class:'muted',text:wt('Загружаю записи…','Loading entries…')}));
