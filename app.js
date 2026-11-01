@@ -1374,7 +1374,7 @@ function renderWiki(root){
     .map(([id,ru,en])=>[id,wt(ru,en)])];
   const typeSelect=h('select',{class:'wiki-equipment-type',
    'aria-label':wt('Вид предметов','Item type'),onchange:event=>{
-    wikiItemType=event.target.value;wikiShown=100;if(wikiIndex)draw()
+    wikiItemType=event.target.value;wikiShown=100;wikiSelection={...wikiSelection,id:null,highlight:null};if(wikiIndex)draw()
    }});
   for(const [id,label]of equipmentTypes){
    const option=h('option',{value:id,text:label});
