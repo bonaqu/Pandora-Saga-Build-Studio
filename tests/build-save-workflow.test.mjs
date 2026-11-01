@@ -29,3 +29,14 @@ test('saved build identity survives closing and reopening the browser',()=>{
  assert.match(src,/function newBlankBuild\(\)\{\s*selectActiveBuild\(null\)/);
  assert.match(src,/selectActiveBuild\(null\);state=incoming/);
 });
+
+test('new-build confirmation survives a background library rerender and retains draft input',()=>{
+ const app=read('app.js');
+ assert.match(app,/newBuildPromptOpen=false,newBuildDraftName=null/);
+ assert.match(app,/class:'new-build-choice',hidden:!newBuildPromptOpen/);
+ assert.match(app,/newBuildDraftName=draft.value/);
+ assert.match(app,/newBuildPromptOpen=!newBuildPromptOpen/);
+ assert.match(app,/newBuildPromptOpen=false;newBuildDraftName=null;choice.hidden=true/);
+ assert.match(app,/if\(previous==='builds'&&tab!=='builds'\)/);
+});
+

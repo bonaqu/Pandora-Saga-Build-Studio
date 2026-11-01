@@ -642,6 +642,7 @@ function closeWorkbench(){
  if(backdrop)backdrop.hidden=true;
  document.body.classList.remove('studio-workbench-open');
  const old=workbenchReturnFocus;workbenchReturnFocus=null;
+ newBuildPromptOpen=false;newBuildDraftName=null;
  if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
  // The main character editor has no navigation tab; closing a dock leaves none selected.
  $('nav')?.querySelectorAll('[data-tab]').forEach(button=>button.classList.remove('active'));
@@ -673,6 +674,9 @@ function changeTab(tab){
  if(tab!=='wiki'&&location.hash.startsWith('#wiki/'))
   history.replaceState(history.state,'',location.pathname+location.search);
  const previous=activeTab;
+ if(previous==='builds'&&tab!=='builds'){
+  newBuildPromptOpen=false;newBuildDraftName=null;
+ }
  activeTab=tab;
  document.querySelectorAll('[data-tab]').forEach(btn=>{
   const active=btn.dataset.tab===tab;
@@ -2012,10 +2016,11 @@ function unsavedBuild(){
 }
 function newBlankBuild(){
  selectActiveBuild(null);state=fresh();originActive='race';jobPathKey=null;classTreeTouched=false;
+ newBuildPromptOpen=false;newBuildDraftName=null;
  expandedClassKeys=new Set();restoreLoadedBuildUI();persist();render();renderOriginTabs();
  changeTab('character');saveView();
 }
-let buildSearchQuery='';
+let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
 // The browser secret is effectively a password for this account-free D1 library.
 // Reveal or switch it only after a deliberate user interaction.
 async function connectCloudLibrary(secret,feedback){
@@ -2099,14 +2104,18 @@ function buildLibraryTransfer(){
 function renderBuilds(root){
  const toolbar=h('div',{class:'build-toolbar'});
  const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
- const choice=h('div',{class:'new-build-choice',hidden:true});
- const draft=h('input',{type:'text',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название сохраняемого черновика'});
+ const choice=h('div',{class:'new-build-choice',hidden:!newBuildPromptOpen});
+ const draft=h('input',{type:'text',maxLength:'70',value:newBuildDraftName??(state.name||'Новый герой'),
+  'aria-label':'Название сохраняемого черновика'});
+ draft.addEventListener('input',()=>{newBuildDraftName=draft.value});
  choice.append(h('span',{text:'Текущий персонаж ещё не сохранён.'}),
   h('div',{class:'new-build-choice-actions'},[
    draft,
    h('button',{type:'button',class:'button-action primary',text:'Сохранить и создать',onclick:()=>{if(saveBuild(draft.value))newBlankBuild()}}),
    h('button',{type:'button',class:'button-action',text:'Создать без сохранения',onclick:newBlankBuild}),
-   h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{choice.hidden=true}})
+   h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{
+     newBuildPromptOpen=false;newBuildDraftName=null;choice.hidden=true;
+    }})
   ]));
  toolbar.append(name,
   h('button',{type:'button',class:'button-action primary',
@@ -2119,9 +2128,13 @@ function renderBuilds(root){
    }})
   ]:[]),
   h('button',{type:'button',id:'newBuildButton',class:'button-action',text:'＋ Новый билд',onclick:()=>{
-   if(!unsavedBuild()){newBlankBuild();return}
-   choice.hidden=!choice.hidden;
-   if(!choice.hidden){draft.value=name.value||state.name||'Новый герой';draft.focus()}
+   if(!unsavedBuild()){newBuildPromptOpen=false;newBlankBuild();return}
+   newBuildPromptOpen=!newBuildPromptOpen;
+   choice.hidden=!newBuildPromptOpen;
+   if(newBuildPromptOpen){
+    newBuildDraftName=name.value||state.name||'Новый герой';
+    draft.value=newBuildDraftName;draft.focus();
+   }
   }}),
   h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
