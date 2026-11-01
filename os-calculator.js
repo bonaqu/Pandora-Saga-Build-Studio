@@ -933,6 +933,12 @@ const specialEquipmentRules=Object.freeze({
  EP_HEAL_LIFE_REGENERATOR:Object.freeze({
   ru:'Постепенное уменьшение ОЗ от предмета',
   en:'Gradual HP loss caused by equipment'
+ }),
+ // Verified exact current OS item 11552; a conditional evasion chance,
+ // never an additive bonus to the regular Dodge stat.
+ EP_DESTINE_WARDING:Object.freeze({
+  ru:'Шанс уклониться от физической атаки +3%',
+  en:'Physical attack evasion chance +3%'
  })
 });
 function specialEquipmentPreview({records=[],itemForth=null}={}){
@@ -947,6 +953,9 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
    if(effect.func==='EP_RACE_TOUGH_HEART'&&effect.a!==5)continue;
    if(effect.func==='EP_HEAL_LIFE_REGENERATOR'&&
       !(Number.isFinite(effect.a)&&effect.a<0))continue;
+   // This wording and 3% rate are confirmed only for the OS Dawn Veil.
+   if(effect.func==='EP_DESTINE_WARDING'&&
+      !(Number(record.id)===11552&&effect.a===3&&effect.dir==='TARGET'))continue;
    const labels=specialEquipmentRules[effect.func];
    entries.push({code:effect.func,source:String(record.name||source),
     ru:labels.ru,en:labels.en,
