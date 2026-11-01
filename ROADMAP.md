@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.198.0 (`2026.11.01.198`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.199.0 (`2026.11.01.199`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.199.0 — recover pre-account guest library backups
+
+- Browsers that signed into the old account UI before the 0.197 owner-isolation release could contain the original guest saved-build backup `ps-preaccount-library.v1`. On upgrade, import that existing backup **only into its guest library scope**, never into another user's account or remote D1.
+- Do not overwrite a guest cache already established by a newer release; reject malformed or unexpected backup payloads without destroying either original backup or current saved builds.
+- A logged-in account's browser draft remains independent. After logout the guest library recovers its original snapshots; logging back into the account restores account-specific records.
+- Pure Node tests cover the old backup, existing guest cache, malformed records and preservation of the old backup. No Worker migration or formula changes.
 
 ## Source update 0.198.0 — protect old offline snapshots when saved builds are deleted elsewhere
 

@@ -57,5 +57,22 @@ function syncWithOwner(storage,current){
  if(!validScope(current))return;
  storage.setItem(slot(current),JSON.stringify(snapshot(storage)));
 }
-root.PandoraBuildScope=Object.freeze({owner,transition,sync,MARKER});
+// Releases before 0.197 kept the guest's saved builds in a separate backup when
+// signing into an account. Import it once into the GUEST cache without touching
+// the current account data or issuing network requests.
+function migrateLegacyGuest(storage,guestKey){
+ const guest=owner(null,guestKey);
+ if(!validScope(guest)||storage.getItem(slot(guest))!==null)return false;
+ const old=storage.getItem('ps-preaccount-library.v1');
+ if(!old)return false;
+ try{
+  const rows=JSON.parse(old);
+  if(!Array.isArray(rows)||rows.some(x=>!x||typeof x!=='object'||
+   !/^[a-f0-9]{32}$/.test(x.id)||!x.data||typeof x.data!=='object'))
+   return false;
+  storage.setItem(slot(guest),JSON.stringify([JSON.stringify(rows),'','[]','']));
+  return true;
+ }catch{return false}
+}
+root.PandoraBuildScope=Object.freeze({owner,transition,sync,migrateLegacyGuest,MARKER});
 })(typeof window==='undefined'?globalThis:window);

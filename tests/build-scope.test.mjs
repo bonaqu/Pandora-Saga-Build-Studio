@@ -68,3 +68,30 @@ test('malformed remembered username never crashes the guest scope boundary',()=>
  assert.equal(mod.owner(42,'a'.repeat(64)),guest);
  assert.equal(mod.owner(null,'a'.repeat(64)),guest);
 });
+
+test('pre-0.197 guest backup remains accessible after account sign-out',()=>{
+ const s=storage();put(s,'Alice',45);s.setItem('ps-account-session.v1',
+  JSON.stringify({username:'alice_01'}));
+ const oldGuest=[{id:'9'.repeat(32),name:'Guest saved before accounts',data:{level:55}}];
+ s.setItem('ps-preaccount-library.v1',JSON.stringify(oldGuest));
+ assert.equal(mod.migrateLegacyGuest(s,'a'.repeat(64)),true);
+ assert.equal(mod.migrateLegacyGuest(s,'a'.repeat(64)),false);
+ mod.transition(s,ownerA);
+ mod.transition(s,guest);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].name,'Guest saved before accounts');
+ mod.transition(s,ownerA);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Alice');
+ assert.ok(s.getItem('ps-preaccount-library.v1'),
+  'Never delete old backup without confirmed user recovery');
+});
+test('legacy backup cannot overwrite an existing guest context or import malformed records',()=>{
+ const s=storage();put(s,'Guest',30);mod.transition(s,guest);
+ s.setItem('ps-preaccount-library.v1',JSON.stringify([{id:'1'.repeat(32),
+  data:{level:55}}]));
+ assert.equal(mod.migrateLegacyGuest(s,'a'.repeat(64)),false);
+ mod.transition(s,ownerA);mod.transition(s,guest);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Guest');
+ const broken=storage();broken.setItem('ps-preaccount-library.v1',
+  JSON.stringify([{id:'not an id',data:{}}]));
+ assert.equal(mod.migrateLegacyGuest(broken,'a'.repeat(64)),false);
+});

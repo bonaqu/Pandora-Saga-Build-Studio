@@ -137,6 +137,8 @@ function activateLibraryScope({carry=false,initial=false}={}){
  }
  return changed;
 }
+// Preserve pre-0.197 guest backups when upgrading a browser already signed in.
+window.PandoraBuildScope.migrateLegacyGuest(localStorage,cloudToken());
 // Claim existing pre-upgrade local records for their former owner without losing them.
 activateLibraryScope({initial:true});
 async function cloudLibraryRequest(payload,secret=null){
