@@ -971,40 +971,40 @@ const specialEquipmentRules=Object.freeze({
 // Do not generalize this list to unverified EP_ONHIT records: for example,
 // Vampire Soul's description says 4%, while its source chance is 5%.
 const confirmedOnHitRules=Object.freeze({
- 'item:422':Object.freeze({id:422,func:'EP_ONHIT_SKILL_EXEC',a:500000015,b:9,dir:'TARGET',,
-  sourcePhrase:'При атаке есть 9% шанс сбить противника с ног',sourcePhraseEn:'Attacks have a 9% chance to knock the enemy off their feet'
+ 'item:422':Object.freeze({id:422,func:'EP_ONHIT_SKILL_EXEC',a:500000015,b:9,dir:'TARGET',
+  sourcePhrase:'При атаке есть 9% шанс сбить противника с ног',sourcePhraseEn:'Attacks have a 9% chance to knock the enemy off their feet',
   ru:'При атаке: 9% шанс сбить противника с ног',
   en:'On attack: 9% chance to knock down the target'}),
- 'item:1041':Object.freeze({id:1041,func:'EP_ONHIT_SKILL_EXEC',a:500000002,b:9,dir:'TARGET',,
-  sourcePhrase:'При атаке есть 9% шанс оглушить противника',sourcePhraseEn:'On attack, it has a 9% chance to stun the foe'
+ 'item:1041':Object.freeze({id:1041,func:'EP_ONHIT_SKILL_EXEC',a:500000002,b:9,dir:'TARGET',
+  sourcePhrase:'При атаке есть 9% шанс оглушить противника',sourcePhraseEn:'On attack, it has a 9% chance to stun the foe',
   ru:'При атаке: 9% шанс оглушить противника',
   en:'On attack: 9% chance to stun the target'}),
- 'item:1211':Object.freeze({id:1211,func:'EP_ONHIT_SKILL_EXEC',a:500000015,b:4,dir:'TARGET',,
-  sourcePhrase:'При физической атаке 4% шанс Уронить врага',sourcePhraseEn:'4% Chance to Knock Down on Physical Attack'
+ 'item:1211':Object.freeze({id:1211,func:'EP_ONHIT_SKILL_EXEC',a:500000015,b:4,dir:'TARGET',
+  sourcePhrase:'При физической атаке 4% шанс Уронить врага',sourcePhraseEn:'4% Chance to Knock Down on Physical Attack',
   ru:'При физической атаке: 4% шанс уронить врага',
   en:'On physical attack: 4% chance to knock down the target'}),
- 'item:2802':Object.freeze({id:2802,func:'EP_ONHIT_STUN',a:3,b:4,dir:'TARGET',,
-  sourcePhrase:'При физической атаке 4% шанс Оглушить врага',sourcePhraseEn:'4% Chance to Stun on Physical Attack'
+ 'item:2802':Object.freeze({id:2802,func:'EP_ONHIT_STUN',a:3,b:4,dir:'TARGET',
+  sourcePhrase:'При физической атаке 4% шанс Оглушить врага',sourcePhraseEn:'4% Chance to Stun on Physical Attack',
   ru:'При физической атаке: 4% шанс оглушить врага',
   en:'On physical attack: 4% chance to stun the target'}),
- 'soul:101010':Object.freeze({id:101010,func:'EP_ONHIT_SKILL_EXEC',a:500000002,b:4,dir:'SELF',,
-  sourcePhrase:'4% вероятность оглушить цель при атаке',sourcePhraseEn:'4% chance to inflict Stun with a successful attack'
+ 'soul:101010':Object.freeze({id:101010,func:'EP_ONHIT_SKILL_EXEC',a:500000002,b:4,dir:'SELF',
+  sourcePhrase:'4% вероятность оглушить цель при атаке',sourcePhraseEn:'4% chance to inflict Stun with a successful attack',
   ru:'При атаке: 4% шанс оглушить цель',
   en:'On attack: 4% chance to stun the target'}),
- 'soul:101011':Object.freeze({id:101011,func:'EP_ONHIT_SKILL_EXEC',a:500000003,b:4,dir:'SELF',,
-  sourcePhrase:'4% вероятность ослабить цель при атаке',sourcePhraseEn:'4% chance to inflict Weaken with a successful attack'
+ 'soul:101011':Object.freeze({id:101011,func:'EP_ONHIT_SKILL_EXEC',a:500000003,b:4,dir:'SELF',
+  sourcePhrase:'4% вероятность ослабить цель при атаке',sourcePhraseEn:'4% chance to inflict Weaken with a successful attack',
   ru:'При атаке: 4% шанс ослабить цель',
   en:'On attack: 4% chance to weaken the target'}),
- 'soul:101012':Object.freeze({id:101012,func:'EP_ONHIT_SKILL_EXEC',a:500000001,b:4,dir:'SELF',,
-  sourcePhrase:'4% вероятность усыпить цель при атаке',sourcePhraseEn:'4% chance to inflict Sleep with a successful attack'
+ 'soul:101012':Object.freeze({id:101012,func:'EP_ONHIT_SKILL_EXEC',a:500000001,b:4,dir:'SELF',
+  sourcePhrase:'4% вероятность усыпить цель при атаке',sourcePhraseEn:'4% chance to inflict Sleep with a successful attack',
   ru:'При атаке: 4% шанс усыпить цель',
   en:'On attack: 4% chance to put the target to sleep'}),
- 'soul:101021':Object.freeze({id:101021,func:'EP_ONHIT_SKILL_EXEC',a:500000004,b:4,dir:'SELF',,
-  sourcePhrase:'4% вероятность отравить цель при атаке',sourcePhraseEn:'4% chance to inflict Poison with a successful attack'
+ 'soul:101021':Object.freeze({id:101021,func:'EP_ONHIT_SKILL_EXEC',a:500000004,b:4,dir:'SELF',
+  sourcePhrase:'4% вероятность отравить цель при атаке',sourcePhraseEn:'4% chance to inflict Poison with a successful attack',
   ru:'При атаке: 4% шанс отравить цель',
   en:'On attack: 4% chance to poison the target'}),
- 'soul:101022':Object.freeze({id:101022,func:'EP_ONHIT_SKILL_EXEC',a:500000000,b:5,dir:'SELF',,
-  sourcePhrase:'5% вероятность замедлить цель при атаке',sourcePhraseEn:'5% chance to reduce target\'s Movement Speed with a successful attack'
+ 'soul:101022':Object.freeze({id:101022,func:'EP_ONHIT_SKILL_EXEC',a:500000000,b:5,dir:'SELF',
+  sourcePhrase:'5% вероятность замедлить цель при атаке',sourcePhraseEn:'5% chance to reduce target\'s Movement Speed with a successful attack',
   ru:'При атаке: 5% шанс замедлить цель',
   en:'On attack: 5% chance to slow the target'})
 });
