@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.243.0 (`2026.11.01.243`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.244.0 (`2026.11.01.244`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.244.0 — indexed milestones and logarithmic hover selection
+
+- [x] Group source-backed skill thresholds in one pass, preserving all skills at a shared threshold, unreachable skills and the complete accessible unlock list.
+- [x] Find the nearest skill tick via binary search over sorted cached fractions, retaining the same rail coordinates, native 18px range thumb, 10px hover tolerance and earlier-marker tie behavior.
+- [x] Add close-threshold, multi-width, deterministic tie and grouping regression tests. No modifications to skill formulas, manual named-build saves, accounts, D1 or level-55 planning.
+- [ ] Browser/Pages readiness and production D1 write lifecycle require independent validation; 39 unported and 77 partial Remaked keys remain outstanding.
 
 ## Source update 0.243.0 — remove obsolete named-build autosaver and cache skill hover geometry
 
