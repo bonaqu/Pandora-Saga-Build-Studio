@@ -33,12 +33,12 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await picker.locator('option[value="ring"]').innerText(),'Rings');
   assert.equal((await rows.first().innerText()).trim(),firstEn);
   const wikiSearch=page.locator('.wiki-controls input[type="search"]');
-  await wikiSearch.fill('meteoric ore');
+  await wikiSearch.fill('Kris');
   await page.waitForFunction(()=>
    [...document.querySelectorAll('.wiki-list [data-wiki-record]')]
     .some(node=>node.textContent?.includes('Kris')),{timeout:20000});
   assert.equal(await rows.first().innerText(),'Kris',
-   'English source description finds the true translated item');
+   'English item name finds the true translated item');
   await wikiSearch.fill('');
   await picker.selectOption('ring');
   await rows.first().click();
@@ -50,13 +50,13 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await picker.locator('option[value="ring"]').innerText(),'Кольца');
   await picker.selectOption('equipment');
   assert.equal((await rows.first().innerText()).trim(),firstRu);
-  await page.locator('.wiki-eligibility-filter').selectOption('future');
+  await page.locator('.wiki-eligibility-filter').selectOption('now');
   await page.locator('.wiki-controls input[type="search"]').fill('Корсет для мирины');
   assert.equal(await page.locator('.wiki-list [data-wiki-record]').count(),0,
    'Race-locked Myrine corset must not be compatible with an elf');
   await page.locator('.wiki-eligibility-filter').selectOption('all');
   await page.locator('.wiki-list [data-wiki-record]').first().click();
-  assert.match(await page.locator('.wiki-item-wearers').innerText(),/Мирина.*Кролль/);
+  assert.match(await page.locator('.wiki-item-wearers').innerText(),/Мирина[\s\S]*Кролль/);
   await page.locator('.wiki-controls input[type="search"]').fill('');
   // The reference tooltip in the game separates lore, parameters and upgrade conditions.
   await page.locator('.wiki-controls input[type="search"]').fill('Алые астирские штаны');

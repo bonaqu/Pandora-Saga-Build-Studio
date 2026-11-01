@@ -107,7 +107,7 @@ test('EN encyclopedia uses authoritative NPC/chest/settlement names, and chest d
  assert.match(app,/type==='chest'\?wikiData\.items\?\.\[id\]/);
  assert.match(app,/type==='item'\|\|type==='chest'\?'items'/);
  assert.match(app,/const described=type==='chest'\?wikiData\.items\?\.\[id\]:rec/);
- assert.match(wiki,/index\.set\(id,normalizeSearch\(\[rec\.name/);
+ assert.match(wiki,/const entries=\{\},terms=\{\},aliases=\{\},variants=\{\}/);
 });
 test('encyclopedia equipment owns catalog filters and coherent grid/list views',()=>{
  const html=read('index.html'),app=read('app.js'),css=read('style.css');
@@ -119,6 +119,18 @@ test('encyclopedia equipment owns catalog filters and coherent grid/list views',
  assert.match(app,/wiki-gear-grid/);
  assert.match(css,/\.wiki-list\.wiki-gear-grid/);
  assert.doesNotMatch(app,/function renderEquipment\(/);
+});
+test('every encyclopedia chapter supports the same list/grid switch and clean chest source links',()=>{
+ const app=read('app.js'),css=read('style.css');
+ const fragment=app.slice(app.indexOf('function renderWiki(root)'),app.indexOf('function renderProfile(root)'));
+ const view=fragment.indexOf("const view=h('div',{class:'wiki-equipment-view'");
+ const itemOnly=fragment.indexOf("if(wikiSelection.type==='item')");
+ assert.ok(view>itemOnly);
+ assert.match(fragment,/controls\.append\(view\)/);
+ assert.match(fragment,/browse\.classList\.toggle\('wiki-gear-grid',wikiItemLayout==='grid'\)/);
+ assert.match(fragment,/withIcon\(wikiLink\(dataName\('chest',row\.id\)/);
+ assert.doesNotMatch(fragment,/wt\(' · группа '/);
+ assert.match(css,/\.wiki-list\.wiki-gear-grid/);
 });
 test('removed equipment catalog has no duplicate CSS components or unused tabs',()=>{
  const css=read('style.css'),html=read('index.html');
@@ -137,11 +149,11 @@ test('game encyclopedia explains race/sex restrictions without exposing technica
  assert.match(css,/\.wiki-item-wearers\{/);
  assert.match(hover,/PandoraUIPlanner\?\.outfitWearers\?\.\(record,locale\)/);
 });
-test('equipment chapter filters current versus 55-level class and race compatibility',()=>{
+test('equipment chapter filters current class, race, sex and level without redundant future filter',()=>{
  const app=read('app.js');
  assert.match(app,/wikiItemEligibility='all'/);
  assert.match(app,/class:'wiki-eligibility-filter'/);
- assert.match(app,/Подходит до 55 уровня/);
+ assert.doesNotMatch(app,/Подходит до 55 уровня|Compatible by level 55/);
  assert.match(app,/Можно надеть сейчас/);
  assert.match(app,/const heroCompatible=\(rec,level\)=>/);
  assert.match(app,/PandoraUIPlanner\.raceCompatible\(rec,state\.race,state\.gender\)/);
@@ -157,12 +169,13 @@ test('item and soul sources use one translated renderer and independent paginati
  assert.match(app,/dataName\('map',loc\.id\)/);
  assert.match(app,/No confirmed sources in the current catalog/);
 });
-test('English encyclopedia indexes confirmed descriptions and never reveals raw class codes',()=>{
+test('English encyclopedia indexes official names only and never reveals raw class codes',()=>{
  const app=read('app.js'),english=JSON.parse(read('data/os/strings.en.json'));
  assert.ok(english.classes?.WARRIOR?.n);
  assert.equal(typeof english.branches?.slash,'string');
  assert.match(app,/const searchTerms=\(type,id\)=>/);
- assert.match(app,/translated\?\.d/);
+ assert.match(app,/translated\?\.n/);
+ assert.doesNotMatch(app,/Search by name or description|Поиск по названию или описанию/);
  assert.match(app,/id=>searchTerms\(type,id\)/);
  assert.match(app,/const classLabel=id=>/);
  assert.match(app,/const branchLabel=id=>/);
@@ -184,6 +197,8 @@ test('all-class gear stays compact while restricted classes are readable on dema
  assert.match(app,/h\('details',\{class:'wiki-allowed-classes'\}/);
  assert.equal((app.match(/renderClassEligibility\(Object\.keys\(rec\.classes\)/g)||[]).length,2);
  assert.match(css,/\.wiki-class-all\{/);
+ assert.match(css,/\.wiki-class-tags/);
+ assert.match(app,/class:'wiki-class-tag'/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
