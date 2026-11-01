@@ -57,7 +57,7 @@ export async function runSavedAutosaveSmoke(browser,base){
   assert.equal(online.size,1);
   assert.equal(writes.length,1);
   // Explicitly start a new blank draft without saving it to the library.
-  await page.locator('#newBuildQuick').click();
+  await page.locator('#newBuildButton').click();
   const choice=page.locator('.new-build-choice');
   if(await choice.isVisible())
    await page.getByRole('button',{name:'Создать без сохранения'}).click();
