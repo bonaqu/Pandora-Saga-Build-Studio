@@ -234,7 +234,7 @@ function buffsPage(body,options){
   node.append(info);parent.append(node);
  };
  const opts=(units)=>units.map((n,i)=>[i,i===0?bookText('Выключено'):
-  (document.documentElement.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
+  (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const vitals=section('ОЗ и ОМ');
  select(vitals,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
  select(vitals,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
@@ -338,14 +338,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
   next=bookPages[(index+1)%bookPages.length][0];
  target.setAttribute('role','region');
- target.setAttribute('aria-label',document.documentElement.lang==='en'?
+ target.setAttribute('aria-label',document.documentElement?.lang==='en'?
   'Hero Book. '+bookText(bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
   'Книга героя. '+bookPages[index][1]+'. Страница '+(index+1)+' из 6');
  target.append(make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
    onclick:()=>onPage(prior),'aria-label':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
-   make('span',{text:(document.documentElement.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
+   make('span',{text:(document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
    make('strong',{text:bookPages[index][1]})]),
   make('button',{type:'button',class:'stage-book-arrow',text:'›',
    onclick:()=>onPage(next),'aria-label':'Следующая страница'}),
@@ -405,7 +405,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(page==='effects'){
   if(modifiers?.specialEquipment?.entries?.length){
-   const english=document.documentElement.lang==='en';
+   const english=document.documentElement?.lang==='en';
    const section=make('section',{class:'stage-attribute-row'});
    section.append(make('strong',{text:english?'Special item and Soul effects':
     'Особые эффекты предметов и душ'}));
