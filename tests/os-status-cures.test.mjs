@@ -33,7 +33,7 @@ test('missing or unexpected effects never invent a cure',()=>{
 });
 test('Hero Book keeps cleansing consumables separate and directly linked to the wiki',()=>{
  const book=read('stage-attributes.js'),calculator=read('os-calculator.js');
- assert.match(book,/Снятие состояний · /);
+ assert.match(book,/english\?'Remove status effects':'Снятие состояний'/);
  assert.match(book,/stage-status-cures/);
  assert.match(book,/onItem\(entry\.id\)/);
  assert.match(calculator,/const statusCures=statusCurePreview\(\{items:consumableItems\}\)/);
