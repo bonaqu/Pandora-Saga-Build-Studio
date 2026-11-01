@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.245.0 (`2026.11.01.245`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.246.0 (`2026.11.01.246`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.246.0 — profession-cap-safe skill readiness and complete index reuse
+
+- [x] Fix a real cross-profession legacy-save edge case: points retained beyond the current class cap cannot make a skill appear available when its requirement exceeds this class cap. Skill points/mastery are still retained intact, and unreachable skills remain visible in the unlock list.
+- [x] Reject malformed or zero/missing branch thresholds rather than treating null, blank, zero or negative requirements as fulfilled. Existing OS snapshot verified as 569 skills with positive integer branch requirements; legitimate numeric-string thresholds remain supported.
+- [x] Reuse the already-built skill ID index when initial unlock notches are created, not only when slider values repaint; remove an unused local group subtotal.
+- [x] Add isolated regression tests for old saved points, source integrity, valid skills, missing requirements and prerequisite propagation. No combat arithmetic, D1 writes, account ownership or level 1–55 behavior changed.
+- [ ] Verify PR/full main Chromium and deployment separately; continue OS parity and production D1 lifecycle verification.
 
 ## Source update 0.245.0 — shared skill prerequisite index in Hero Path and skill gallery
 
