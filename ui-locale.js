@@ -85,6 +85,7 @@ const english=Object.freeze({
  'Сохранено в облаке':'Saved to cloud',
  'Сохранено в браузере · облако недоступно':'Saved in browser · cloud unavailable',
  'Билд перезаписан по вашему запросу.':'Build overwritten at your request.',
+ 'Сохранено в браузере. Проверяем запись в облаке…':'Saved in this browser. Checking cloud storage…',
  'Проверяем сохранение билда…':'Checking saved build…',
  'Ссылка на билд создана.':'Build link created.',
  'Ссылка на билд уже создана.':'Build link already exists.',

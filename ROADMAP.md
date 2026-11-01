@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.204.0 (`2026.11.01.204`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.205.0 (`2026.11.01.205`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.205.0 — no false cloud-save success messages
+
+- An explicit saved-build overwrite updates the current browser draft first and requests the cloud PUT. The confirmation toast now accurately reports only **browser persistence and pending cloud verification**, instead of claiming D1 successfully saved before any Worker response.
+- Successful D1 PUT explicitly controls the separate cloud status; HTTP 5xx/network errors remain visibly marked as browser-only until cloud reconciliation. The player never receives an incorrect success receipt.
+- Add RU/EN label and isolated Chromium fake-Worker failure flow: 503 during overwrite, unchanged cloud original, preserved local revision, reload creates an unpublished conflict copy (no automatic retry into the deleted or stale cloud ID).
+- No game formulas, account data, or migration modified.
 
 ## Source update 0.204.0 — prevent false cloud conflict copies from reordered JSON
 

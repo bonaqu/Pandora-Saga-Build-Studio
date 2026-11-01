@@ -2021,7 +2021,8 @@ function renderBuilds(root){
   const overwriteChoice=h('div',{class:'build-overwrite-choice',hidden:true});
   overwriteChoice.append(h('p',{text:'Перезаписать этот сохранённый билд текущими локальными изменениями?'}),
    h('button',{type:'button',class:'button-action primary',text:'Подтвердить перезапись',onclick:()=>{
-    if(saveBuild(state.name,b.id))showStudioToast('Билд перезаписан по вашему запросу.','success');
+    if(saveBuild(state.name,b.id))showStudioToast(window.PandoraUILocale.ui(
+     'Сохранено в браузере. Проверяем запись в облаке…',lang),'warning');
    }}),
    h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{overwriteChoice.hidden=true}}));
   const deleteChoice=h('div',{class:'build-delete-choice',hidden:true});
