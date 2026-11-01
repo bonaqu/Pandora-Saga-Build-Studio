@@ -10,6 +10,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - A stored item counts as an OS unison set root or companion **only** when it has a canonical `item:<numeric id>` source, that ID agrees with the actual catalog record, and enhancement is an integer +0…+10. Unknown, mismatched or corrupted rows cannot activate a complete set.
 - Deduplicate companion IDs while excluding the set root itself, including for future catalog updates. Set activation still uses verified OS min/max companion and root-grade rows, and existing calculations/rounding remain unchanged.
 - Test all three actual OS sets plus malformed root/companion grades, forged source IDs, root-self membership and repeated companions. Preserve state data in existing builds without irreversible cleanup; no D1 or auth changes, permanent 1–55 planning intact.
+- Stabilize the complete browser test: the Hero Path skill-milestone scenario must wait for the full validated D1/local catalog to finish loading, not only the early race grid; continue to test actual branch rendering, tooltips and 0→1→2→0 interactions.
 
 ## Source update 0.225.0 — RU/EN conditional chance verification, actual skill localization and enhancement validation
 
