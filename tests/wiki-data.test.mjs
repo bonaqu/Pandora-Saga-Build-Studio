@@ -12,38 +12,57 @@ test('item sources retain distinct NPC, monster and chest probability semantics'
  assert.equal(w.trades(7)[0].id,4);
  assert.equal(w.locations(20)[0].name,'Field');
 });
-test('searches across names, descriptions, class restrictions and alternate display names',()=>{
+test('searches names only, with RU/EN labels and no raw IDs or descriptions',()=>{
  const data={items:{1:{name:'Крепкий шлем',level:51,desc:'Укреплённый доспех'},2:{name:'Зелье',desc:'Восстанавливает ману'}},
   monsters:{3:{name:'Ёж',level:20}},maps:{8:{name:'Лес',mobs:[3]}},skills:{4:{name:'Удар',classes:{WARRIOR:1}}},
   souls:{5:{name:'Душа удачи',slots:['weapon']}},trades:{npcs:{6:{name:'Кузнец',maps:[8]}},trades:[],mapNames:{}},
   tables:{zoneDrops:[]},chests:{boxes:[]},instances:[]};
  const wiki=ctx.window.PandoraWikiData.build(data);
- assert.equal(wiki.search('item','крепкий 51').length,1);
- assert.equal(wiki.search('item','ману').length,1);
+ assert.equal(wiki.search('item','крепкий шлем').length,1);
+ assert.equal(wiki.search('item','крепкий 51').length,0);
+ assert.equal(wiki.search('item','ману').length,0);
  assert.equal(wiki.search('monster','еж').length,1);
- assert.equal(wiki.search('monster','лес').length,1);
- assert.equal(wiki.search('skill','warrior').length,1);
+ assert.equal(wiki.search('monster','лес').length,0);
+ assert.equal(wiki.search('skill','warrior').length,0);
  assert.equal(wiki.search('item','helmet',id=>id==='1'?'Heavy Helmet':'').length,1);
- assert.equal(wiki.search('item','heals mana',id=>id==='2'?'Potion: heals mana':'').length,1,
-  'English translation text participates in the same token-matching search');
- assert.equal(wiki.search('soul','weapon').length,1);
+ assert.equal(wiki.search('item','heals mana',id=>id==='2'?'Potion':'').length,0);
+ assert.equal(wiki.search('soul','weapon').length,0);
  assert.equal(wiki.search('item','unmatched').length,0);
- assert.equal(wiki.search('item','000001').length,0,'database IDs are not a public search field');
+ assert.equal(wiki.search('item','000001').length,0);
  assert.equal(wiki.residents(8).length,1);
  assert.equal(wiki.records('map')['8'].name,'Лес');
  assert.equal(wiki.records('item')['1'].name,'Крепкий шлем');
  assert.equal(wiki.normalize('ЁЖ'),'еж');
 });
-test('real source English description is searchable even when the Russian name differs',()=>{
+test('English item names are searchable, unlike English description-only words',()=>{
  const items=JSON.parse(fs.readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
  const en=JSON.parse(fs.readFileSync(new URL('../data/os/strings.en.json',import.meta.url),'utf8'));
- assert.match(en.items['1822'].d,/meteoric ore/i);
+ assert.equal(en.items['1822'].n,'Kris');
  const wiki=ctx.window.PandoraWikiData.build({items,instances:[],
   trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
- const matches=wiki.search('item','meteoric ore',id=>en.items?.[id]?.d||'');
- assert.ok(matches.some(([id])=>id==='1822'));
- assert.equal(wiki.search('item','meteoric ore').some(([id])=>id==='1822'),false,
-  'only a sourced translation enables the English-only search');
+ assert.ok(wiki.search('item','kris',id=>en.items?.[id]?.n||'').some(([id])=>id==='1822'));
+ assert.equal(wiki.search('item','meteoric ore',id=>en.items?.[id]?.n||'').length,0);
+});
+test('display dedup keeps source records, collapses exact mobs and script-only skills',()=>{
+ const wiki=ctx.window.PandoraWikiData.build({
+  monsters:{11:{id:11,name:'Волк',level:10,life:100},22:{id:22,name:'Волк',level:10,life:100},
+   33:{id:33,name:'Волк',level:20,life:200}},
+  maps:{5:{name:'Лес',mobs:[11]},6:{name:'Долина',mobs:[22]}},
+  skills:{101:{id:101,name:'Ловушка',branch:'trap',learnable:true,mana:20},
+   102:{id:102,name:'Ловушка',branch:'trap',learnable:false,mana:0},
+   103:{id:103,name:'Сосредоточенность',branch:'slash',learnable:true},
+   104:{id:104,name:'Сосредоточенность',branch:'element',learnable:true}},
+  items:{41:{id:41,name:'Амулет',AC:1},42:{id:42,name:'Амулет',AC:2}},
+  trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
+ assert.equal(wiki.search('monster','волк').length,2);
+ assert.equal(wiki.canonical('monster',22),'11');
+ assert.deepEqual(wiki.locations(11).map(x=>x.name).sort(),['Долина','Лес']);
+ assert.equal(wiki.search('skill','ловушка').length,1);
+ assert.equal(wiki.canonical('skill',102),'101');
+ assert.equal(wiki.search('skill','сосредоточенность').length,2);
+ assert.equal(wiki.search('item','амулет').length,2);
+ assert.ok(wiki.records('monster')['22']);
+ assert.ok(wiki.records('skill')['102']);
 });
 test('materials link back to unique NPC trades, and zones use one location index',()=>{
  const wiki=ctx.window.PandoraWikiData.build({trades:{trades:[
