@@ -8,7 +8,7 @@ const strings={
  profession:['Профессия','Class'],stats:['Характеристики','Stats'],
  appearance:['Образ героя','Hero Appearance'],path:['Путь героя','Hero Path'],
  branchPoints:['Очки ветки','Branch points'],
- exactPoints:['Точно вложено','Allocated'],greenMastery:['Зелёное мастерство','Trained mastery'],
+ exactPoints:['Вложено','Spent'],greenMastery:['Мастерство','Mastery'],
  skillsOnTrack:['Умения на шкале','Skills on track'],
  language:['Язык сайта','Site language'],profileAccess:['Войти или зарегистрироваться','Sign in or register'],
  profilePanel:['Профиль и вход','Profile and sign in'],
