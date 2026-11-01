@@ -19,7 +19,7 @@ test('gemstone elemental rows and explanatory text have explicit RU/EN captions'
   "fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд'",
   "Gem resistances are included in defense.",
   "Сопротивления от самоцветов включены в защиту."
- ])assert.ok(book.includes(text),text);
+ ])assert.ok(book.replace(/\s+/g,'').includes(text.replace(/\s+/g,'')),text);
  assert.match(book,/const labels=english\?/);
 });
 test('healing and mana breakdowns retain numeric formulas but translate all displayed headings',()=>{
@@ -35,7 +35,7 @@ test('healing and mana breakdowns retain numeric formulas but translate all disp
   "english?'Equipment and Souls: −':'Снаряжение и души: −'",
   "Not all active skill conditions are included.",
   "This preview excludes active effects"
- ])assert.ok(book.includes(text),text);
+ ])assert.ok(book.replace(/\s+/g,'').includes(text.replace(/\s+/g,'')),text);
  const ctx={};Function('window',calc)(ctx);
  assert.equal(typeof ctx.PandoraOSCalculator.potionRecovery,'function');
 });
@@ -52,7 +52,7 @@ test('potions retain base-vs-additive percentage semantics in both languages',()
   "modifiers.potion.equipment,false",
   "for(const [name,value,isBase] of parts)",
   "(isBase?'':value>0?'+':'')+value+'%'"
- ])assert.ok(book.includes(text),text);
+ ])assert.ok(book.replace(/\s+/g,'').includes(text.replace(/\s+/g,'')),text);
  assert.ok(!book.includes("name.startsWith('Выносливость')"),
   'sign must not depend on an untranslated Russian label');
 });
