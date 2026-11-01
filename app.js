@@ -1219,6 +1219,7 @@ function heroPathApi(){
   },
   onAllocate:(key,requested,final)=>{
    const model=window.PandoraSkillProgression,current=model.potential(state,key);
+   if(!Number.isInteger(requested)||requested<0)return current;
    const target=requested<=current?Math.max(0,requested):Math.min(Math.max(0,requested),allowedBranch(key));
    if(!model.canAllocate(gameTables?.abilityPoint,state.level,state.points,key,branchCap(key),target))
     return current;
