@@ -264,6 +264,23 @@ test('class-limited skills keep individual numbers in the separate details list'
  assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent==='0 вложено'));
 });
 
+test('requirements above 90 points remain accessible in list without rendering off-track',()=>{
+ const f=fixture('CLERIC','prayer','benevolence');
+ const mk=(id,threshold)=>({id,name:'Skill '+id,branch:'benevolence',
+  classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:threshold}]});
+ const normal=mk(90001,20),future=mk(90002,95);
+ f.api.skillCatalog=[normal,future];
+ f.api.milestones=()=>[{threshold:20,skills:[normal],locked:false},
+  {threshold:95,skills:[future],locked:true}];
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const nodes=walk(f.target);
+ const ticks=nodes.filter(x=>String(x.className).includes('path-unlock-notch'));
+ const list=nodes.filter(x=>String(x.className).includes('path-unlock-skill'));
+ assert.equal(ticks.length,1,'Only 0–90 thresholds are drawn on the rail');
+ assert.equal(ticks[0].attributes['data-milestone-points'],'20');
+ assert.equal(list.length,2,'Future source skills must remain discoverable');
+ assert.equal(list[1].className.includes('unreachable'),true);
+});
 test('skill milestones remain inside the bar and update their reached state after allocating mastery',()=>{
  const css=read('style.css');
  const patch=css.slice(css.lastIndexOf('/* 0.195.0 — independent skill notches'));

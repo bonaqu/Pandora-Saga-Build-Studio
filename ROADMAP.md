@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.214.0 (`2026.11.01.214`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.215.0 (`2026.11.01.215`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.215.0 — readable in-track unlock threshold markers
+
+- Replace full-height ruler ticks on the shared mastery/allocation bar with 8×8-pixel diamond glyphs drawn by CSS. The markers keep exact positions, and their colour indicates whether a skill threshold is achieved or beyond the class cap.
+- Do not add separate image icons or extra buttons on the track. Render only numerical thresholds between 0 and 90 on the rail; future skill requirements exceeding 90 remain in the accessible expanded list. Preserve accessible tabindex, proximity-based hover tooltips, pointer dragging, and numeric input controls.
+- Check by full Node and Chromium desktop/mobile regressions, including generated layout screenshots. No changes to game formulas, stored builds or D1.
 
 ## Source update 0.214.0 — valid branch icon fallback without broken files
 
