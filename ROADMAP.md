@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.185.0 (`2026.11.01.185`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.186.0 (`2026.11.01.186`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.186.0 — reconnect saved libraries and restore language without game data
+
+- Network `online` and tab `visibilitychange` handlers retry reading previously saved D1 builds and pending deletions after loss of connectivity, throttled to one check in 20 seconds. Never auto-create records from a fresh, unpersisted character.
+- Expose a concise user-facing warning in the library's transfer/recovery section: without the secret recovery code stored outside the browser, cookie/site-data wipes make account-less cloud builds inaccessible even though D1 rows remain.
+- Apply primary RU/EN interface strings and the pressed-state language choice immediately even when game catalog fetch fails or is still pending. Keep game data names sourced by item/skill IDs, never fuzzy translation.
+- Confirm with Node and browser regressions. Continue full RU/EN coverage, actual D1 live acceptance, and 39 NOT YET PORTED / 77 PARTIAL Remaked formula keys in future work.
 
 ## Source update 0.185.0 — account-free D1 authority, saved-only autosync, screenshot UX
 

@@ -27,3 +27,13 @@ test('private library refuses access without migration and bearer key',async()=>
  assert.match(read('app.js'),/function queuedDeletes\(/);
  assert.match(read('index.html'),/id="newBuildQuick"/);
 });
+
+test('saved cloud data retries after network recovery with an explicit key warning',()=>{
+ const app=read('app.js');
+ assert.match(app,/window\.addEventListener\('online',resumeCloudLibrary\)/);
+ assert.match(app,/document\.addEventListener\('visibilitychange'/);
+ assert.match(app,/if\(!builds\.length&&!queuedDeletes\(\)\.length\)return/);
+ assert.match(app,/lastCloudReconnect<20000/);
+ assert.match(app,/Сохраните личный код библиотеки до очистки данных браузера/);
+ assert.match(app,/Перенести или восстановить облачные билды/);
+});

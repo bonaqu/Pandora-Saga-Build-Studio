@@ -1561,3 +1561,6 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .inline-mastery-track .path-threshold-tick:nth-child(3n){top:-1px}
 .inline-branch-value{align-items:baseline;gap:8px}
 .stage-picker-head strong{overflow-wrap:anywhere}
+
+/* Clearly visible only within the user's deliberate recovery-code section. */
+.library-key-warning{font-size:12px;line-height:1.55;color:#f0d4a4}

@@ -45,3 +45,9 @@ test('auto cloud saves happen only after an intentional edit and only for existi
  assert.match(helper,/if\(index<0\)return null/);
  assert.match(app,/void putCloudBuild\(entry\)/);
 });
+
+test('locale selection works before async catalog is available',()=>{
+ const app=read('app.js');
+ assert.match(app,/function applyGameLocale\(\)\{\n window\.PandoraUILocale\.apply\(lang\)/);
+ assert.match(app,/button\.setAttribute\('aria-pressed',String\(active\)\)/);
+});

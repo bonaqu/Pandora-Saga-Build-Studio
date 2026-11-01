@@ -1886,11 +1886,12 @@ function buildLibraryTransfer(){
    try{await connectCloudLibrary(input.value,feedback)}
    finally{join.disabled=false}
   }});
- content.append(h('p',{text:'Код открывает доступ к вашим сохранённым билдам. Храните его как пароль и не отправляйте посторонним.'}),
+ content.append(h('p',{class:'library-key-warning',
+  text:'Сохраните личный код библиотеки до очистки данных браузера: без него восстановить ваши облачные билды не получится. Никому не передавайте этот код.'}),
   h('div',{class:'build-transfer-row'},[field,copy]),
-  h('p',{text:'На другом устройстве вставьте код. Существующие сохранения будут объединены, а не удалены.'}),
+  h('p',{text:'На другом устройстве вставьте ранее сохранённый код. Билды загрузятся из облака.'}),
   h('div',{class:'build-transfer-row'},[input,join]),feedback);
- panel.append(h('summary',{text:'Перенести библиотеку на другое устройство'}),content);
+ panel.append(h('summary',{text:'Перенести или восстановить облачные билды'}),content);
  return panel;
 }
 function renderBuilds(root){
@@ -2490,7 +2491,15 @@ async function showCatalogImport(){
 }
 
 function applyGameLocale(){
- if(!catalogSource)return;
+ window.PandoraUILocale.apply(lang);
+ if(!catalogSource){
+  for(const button of document.querySelectorAll('#locale [data-locale]')){
+   const active=button.dataset.locale===lang;
+   button.classList.toggle('chosen',active);
+   button.setAttribute('aria-pressed',String(active));
+  }
+  return;
+ }
  const translate=(original,map)=>{
   if(lang!=='en'||!map)return original;
   return Object.fromEntries(Object.entries(original).map(([id,item])=>{
@@ -2514,7 +2523,6 @@ function applyGameLocale(){
    equipment:translate(catalogSource.items,en?.items),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
- window.PandoraUILocale.apply(lang);
  const label=document.getElementById('locale');
  if(label)for(const button of label.querySelectorAll('[data-locale]')){
   const active=button.dataset.locale===lang;
@@ -2780,6 +2788,18 @@ for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
 }
 render();loadCatalog();loadOverrides();void loadCloudBuilds();
+// Return to a saved library after network loss; an unsaved draft is never uploaded.
+let lastCloudReconnect=0;
+function resumeCloudLibrary(){
+ if(!builds.length&&!queuedDeletes().length)return;
+ if(Date.now()-lastCloudReconnect<20000)return;
+ lastCloudReconnect=Date.now();
+ void loadCloudBuilds();
+}
+window.addEventListener('online',resumeCloudLibrary);
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='visible'&&navigator.onLine)resumeCloudLibrary();
+});
 requestAnimationFrame(syncOriginPanelHeight);
 // Independence: class caps must be usable even when unrelated wiki/skills/D1 data fails.
 fetch('./data/os/classes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
