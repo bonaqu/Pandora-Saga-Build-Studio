@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.209.0 (`2026.11.01.209`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.210.0 (`2026.11.01.210`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.210.0 — proper EN Hero Path status, prerequisites and skill details
+
+- Translate player-facing labels in skill readiness, point/mastery requirements, branch summaries, skill metadata and status banners without changing game data IDs or source-backed translations.
+- Localize the character's skill point budget and workbench chapter names in English; preserve RU wording.
+- Extend Node and Chromium acceptance checks of real skill panels, budget and language switch.
+- Never alter 1–55 planning range, automatic save restrictions, Cloudflare schema or private admin discovery behavior.
 
 ## Source update 0.209.0 — protect one-time recovery codes and label skill scale
 
