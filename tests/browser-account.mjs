@@ -39,6 +39,13 @@ export async function runAccountSmoke(browser,base){
       send({error:'Invalid credentials'},401);
    }
    if(action==='password'){passwd=body.password;return send({ok:true})}
+   if(action==='recover'){
+    if(body.recoveryCode!=='r'.repeat(43)||body.username.toLowerCase()!==username)
+     return send({error:'Invalid recovery code'},401);
+    passwd=body.password;
+    return send({account:{username},token,expires:Date.now()+7200000,
+      recoveryCode:'s'.repeat(43)});
+   }
    return send({error:'Unknown route'},404);
   }
   return route.abort();
@@ -80,6 +87,18 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-user').waitFor({state:'visible'});
   assert.equal(calls.filter(c=>c.action==='register').length,1);
   assert.ok(calls.some(c=>c.action==='login'));
+  const change=page.locator('#accountPanel .account-form input');
+  await change.nth(0).fill('An unusually long phrase for my builds');
+  await change.nth(1).fill('A new long and secure passphrase 2026!');
+  await change.nth(2).fill('Different confirmation phrase 2026!');
+  await page.getByRole('button',{name:'Изменить пароль'}).click();
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),/Пароли не совпадают/);
+  assert.equal(calls.filter(c=>c.action==='password').length,0,
+    'Mismatched password confirmation must not send an API call');
+  await change.nth(2).fill('A new long and secure passphrase 2026!');
+  await page.getByRole('button',{name:'Изменить пароль'}).click();
+  await page.waitForFunction(()=>document.querySelector('.account-feedback')?.textContent.includes('Пароль обновлён'));
+  assert.equal(calls.filter(c=>c.action==='password').length,1);
   // A transient outage must not erase a valid saved session from this browser.
   offlineMe=true;
   await page.reload({waitUntil:'domcontentloaded'});
@@ -94,7 +113,22 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-tabs').waitFor({state:'visible'});
   assert.equal(await page.locator('.account-user').count(),0);
   assert.equal(await page.evaluate(()=>localStorage.getItem('ps-account-session.v1')),null);
+  await page.getByRole('button',{name:'Восстановить'}).click();
+  const recoveryInputs=page.locator('#accountPanel .account-form input');
+  await recoveryInputs.nth(0).fill('testplayer_01');
+  await recoveryInputs.nth(1).fill('Yet another long secret for recovery!');
+  await recoveryInputs.nth(2).fill('A mismatched recovery confirmation!');
+  await recoveryInputs.nth(3).fill('r'.repeat(43));
+  await page.getByRole('button',{name:'Восстановить пароль'}).click();
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),/Пароли не совпадают/);
+  assert.equal(calls.filter(c=>c.action==='recover').length,0,
+    'Recovery code must never be consumed with an unconfirmed new password');
+  await recoveryInputs.nth(2).fill('Yet another long secret for recovery!');
+  await page.getByRole('button',{name:'Восстановить пароль'}).click();
+  await page.locator('.account-recovery input').waitFor({state:'visible'});
+  assert.equal(await page.locator('.account-recovery input').inputValue(),'s'.repeat(43));
+  assert.equal(calls.filter(c=>c.action==='recover').length,1);
   assert.deepEqual(errors,[]);
-  console.log('Chromium account UI passed: registration, login, recovery, transient 503 session retention and confirmed 401 logout');
+  console.log('Chromium account UI passed: registration, password confirmation, recovery rotation, transient 503 retention and 401 logout');
  }finally{await context.close()}
 }

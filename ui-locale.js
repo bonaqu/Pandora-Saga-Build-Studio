@@ -34,6 +34,7 @@ const english=Object.freeze({
  'Сохранённые билды доступны после входа на другом устройстве.':'Saved builds are available after signing in on another device.',
  'Логин и пароль — для доступа к сохранённым облачным билдам.':'Your username and password give access to your saved cloud builds.',
  'Текущий пароль':'Current password','Новый пароль · от 15 символов':'New password · at least 15 characters',
+ 'Повторите новый пароль':'Repeat new password',
  'Изменить пароль':'Change password','Изменяем пароль…':'Updating password…',
  'Пароль обновлён. Другие сеансы завершены.':'Password updated. Other sessions have been signed out.',
  'Выйти':'Sign out','Войти':'Sign in','Регистрация':'Register','Восстановить':'Recover',

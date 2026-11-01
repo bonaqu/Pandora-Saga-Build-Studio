@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.191.0 (`2026.11.01.191`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.192.0 (`2026.11.01.192`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.192.0 — account password confirmation and legacy comparison
+
+- Password change and one-time recovery now request a repeat of the new password, refusing a mismatch **before** calling the Worker. Form fields have explicit accessible names and required/min-length constraints.
+- A mistyped recovery password no longer consumes and rotates the single-use recovery code without a matching confirmation. Existing PBKDF2 server requirements, secret handling and account-free libraries remain unchanged.
+- New Chromium flow checks wrong/correct change confirmation and wrong/correct recovery confirmation, including returning a rotated recovery code. Historic builds without a gender key now compare as the default female rather than reporting a fake gender change.
+- Browser and published D1 account registration are separate acceptance tasks; production migration 0005 is still required before actual account use.
 
 ## Source update 0.191.0 — compare gem settings and opt-in buffs
 

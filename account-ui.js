@@ -22,6 +22,7 @@ function button(text,action,cls=''){
 function field(placeholder,type='text',auto='off',max=128){
  const input=node('input','account-input');
  input.type=type;input.placeholder=tr(placeholder);input.maxLength=max;
+ input.setAttribute('aria-label',tr(placeholder));
  input.autocomplete=auto;return input;
 }
 function info(message){if(errorLine)errorLine.textContent=tr(message)}
@@ -55,13 +56,18 @@ function render(){
  if(session){
   panel.append(node('p','account-user','@'+session.username));
   const old=field('Текущий пароль','password','current-password'),
-    fresh=field('Новый пароль · от 15 символов','password','new-password');
+    fresh=field('Новый пароль · от 15 символов','password','new-password'),
+    confirmFresh=field('Повторите новый пароль','password','new-password');
+  old.required=true;fresh.required=true;confirmFresh.required=true;
+  fresh.minLength=15;confirmFresh.minLength=15;
   const form=node('form','account-form');
-  form.append(old,fresh);
+  form.append(old,fresh,confirmFresh);
   const update=button('Изменить пароль',async()=>{
+   if(fresh.value!==confirmFresh.value){info('Пароли не совпадают.');return}
    update.disabled=true;info('Изменяем пароль…');
    try{await request('password',{currentPassword:old.value,password:fresh.value});
-    old.value='';fresh.value='';info('Пароль обновлён. Другие сеансы завершены.');
+    old.value='';fresh.value='';confirmFresh.value='';
+    info('Пароль обновлён. Другие сеансы завершены.');
    }catch(e){info(e.message)}finally{update.disabled=false}
   },'primary');
   form.append(update);
@@ -84,9 +90,9 @@ function render(){
  pass.minLength=mode==='login'?1:15;pass.required=true;
  form.append(username,pass);
  let confirm=null,recovery=null;
- if(mode==='register'){
+ if(mode==='register'||mode==='recover'){
   confirm=field('Повторите пароль','password','new-password',128);
-  confirm.required=true;form.append(confirm);
+  confirm.required=true;confirm.minLength=15;form.append(confirm);
  }
  if(mode==='recover'){
   recovery=field('Резервный код восстановления','text','off',43);
@@ -97,7 +103,9 @@ function render(){
  submit.type='submit';form.append(submit);
  form.addEventListener('submit',async e=>{
   e.preventDefault();
-  if(mode==='register'&&pass.value!==confirm.value){info('Пароли не совпадают.');return}
+  if((mode==='register'||mode==='recover')&&pass.value!==confirm.value){
+   info('Пароли не совпадают.');return;
+  }
   submit.disabled=true;info('Проверяем…');
   try{
    const current=mode;

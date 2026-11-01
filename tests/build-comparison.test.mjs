@@ -35,6 +35,7 @@ test('unrelated and obsolete gemstone keys are not compared as equipped',()=>{
 });
 test('legacy missing buff fields compare the same as default OFF and zero',()=>{
  assert.deepEqual(compare({gender:0},{gender:0}),[]);
+ assert.deepEqual(compare({}, {gender:0}),[],'legacy unspecified gender means default female');
  assert.deepEqual(compare(original,structuredClone(original)),[]);
 });
 test('English comparison has player-friendly labels and translated honor titles',()=>{

@@ -43,3 +43,12 @@ test('account session verification preserves local identity on temporary failure
  assert.match(source,/httpStatus===401\|\|error\?\.httpStatus===403/);
  assert.match(source,/options\.onLogin\?\.\(\{register:false,bootstrap:true\}\)/);
 });
+
+test('the account UI validates new password confirmation for both password change and recovery',()=>{
+ const source=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+ assert.match(source,/const update=button\('Изменить пароль'/);
+ assert.match(source,/fresh\.value!==confirmFresh\.value/);
+ assert.match(source,/mode==='register'\|\|mode==='recover'/);
+ assert.match(source,/pass\.value!==confirm\.value/);
+ assert.match(source,/input\.setAttribute\('aria-label',tr\(placeholder\)\)/);
+});

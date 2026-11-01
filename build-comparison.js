@@ -47,9 +47,10 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
  const lbl=(ru,en)=>english?en:ru;
  const arrow=(name,x,y)=>rows.push(name+': '+x+' → '+y);
  const fmt=v=>typeof v==='boolean'?lbl(v?'вкл':'выкл',v?'on':'off'):String(v);
- if(a?.gender!==b?.gender)arrow(lbl('Пол персонажа','Character gender'),
-  a?.gender===1?lbl('мужской','male'):lbl('женский','female'),
-  b?.gender===1?lbl('мужской','male'):lbl('женский','female'));
+ const gender=value=>value?.gender===1?1:0;
+ if(gender(a)!==gender(b))arrow(lbl('Пол персонажа','Character gender'),
+  gender(a)===1?lbl('мужской','male'):lbl('женский','female'),
+  gender(b)===1?lbl('мужской','male'):lbl('женский','female'));
  for(let i=0;i<14;i++){
   const before=gemAt(a,i,enchant),after=gemAt(b,i,enchant);
   if(JSON.stringify(before)===JSON.stringify(after))continue;
