@@ -85,26 +85,26 @@ function viewGrowth(target,api){
           locked=make('div',{class:'inline-mastery-locked',
            'aria-label':tr(api,'Предел класса: ','Class limit: ')+cap+tr(api,' из ',' of ')+visualMax+tr(api,'. Красная часть недоступна.','. Red segment is locked.')});
     if(cap>=visualMax)locked.hidden=true;
-    const lockedFraction=Math.max(0,Math.min(1,cap/visualMax));
-    const lockedOffset=21-42*lockedFraction;
-    // Standard CSS calc, no browser-dependent multiplication.
-    locked.style.left='calc('+(lockedFraction*100).toFixed(6)+'% '+
-      (lockedOffset<0?'-':'+')+' '+Math.abs(lockedOffset).toFixed(6)+'px)';
-    const currentNotch=make('span',{class:'path-current-notch','aria-hidden':'true'});
-    // Both the red class limit and the value marker use the same 21px rail
-    // inset as the native 18px range thumb. This avoids drifting at 0 / max.
+    // The active fill, class limit, value marker and native thumb all share
+    // the same 21px rail inset (range inset 12px + 18px thumb / 2).
+    const railInset=21;
     const positionOnRail=(fraction)=>{
-     const offset=21-42*fraction;
+     const offset=railInset*(1-2*fraction);
      return 'calc('+(fraction*100).toFixed(6)+'% '+
       (offset<0?'-':'+')+' '+Math.abs(offset).toFixed(6)+'px)';
     };
+    const widthOnRail=(fraction)=>
+     'calc('+(fraction*100).toFixed(6)+'% - '+(2*railInset*fraction).toFixed(6)+'px)';
+    const lockedFraction=Math.max(0,Math.min(1,cap/visualMax));
+    locked.style.left=positionOnRail(lockedFraction);
+    const currentNotch=make('span',{class:'path-current-notch','aria-hidden':'true'});
     const milestonesOnTrack=[];
     const paint=()=>{
      const invested=M.potential(state,key),mastery=M.trained(state,key);
      const goldFraction=Math.max(0,Math.min(1,invested/visualMax));
      const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
-     gold.style.width='calc('+(goldFraction*100).toFixed(6)+'% - '+(42*goldFraction).toFixed(6)+'px)';
-     green.style.width='calc('+(greenFraction*100).toFixed(6)+'% - '+(42*greenFraction).toFixed(6)+'px)';
+     gold.style.width=widthOnRail(goldFraction);
+     green.style.width=widthOnRail(greenFraction);
      currentNotch.style.left=positionOnRail(goldFraction);
      range.setAttribute('aria-valuetext', invested+tr(api,' вложено, ',' spent, ')+mastery+tr(api,' освоено, предел ',' trained, class limit ')+cap);
      for(const entry of milestonesOnTrack)
