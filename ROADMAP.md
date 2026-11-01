@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.233.0 (`2026.11.01.233`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.234.0 (`2026.11.01.234`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.234.0 — source-gated healing skills and bilingual recovery
+
+- [x] The five historical Remaked healing magnitudes (First Aid, Heal, Healing Aura, Sanctuary, Restoration) keep their previous arithmetic and **do not automatically apply healing**. Learning/availability is now a separate current-OS decision: exact original skill ID, target effect and vector, required mastery, level, character class, real class mastery cap, learnability, prerequisite skill and Sanctuary's nested healing link.
+- [x] Cleric level 50+ uses OS skill IDs 310001002, 310004002 and 310021002 for their respective historical variant previews; pre-50 uses base IDs. Unknown/altered OS catalogs or impossible class skill budgets cannot claim availability; theoretical values remain visible without forcing a rebuild or rewriting saves.
+- [x] Localize healing/periodic recovery spell names and full rows to RU/EN using official indexed skill names (First Aid, Heal, Healing Aura, Sanctuary, Restoration, Regenerate, Mana Restore), with distinct localized requirements and HP/MP units.
+- [x] Add source-tampering, class-cap, numeric-invariance and RU/EN regressions; keep all existing cloud/guest/account/admin and level 1–55 behavior.
+- [ ] Confirm game-client healing packets and all unknown Remaked keys before claiming exact modern OS parity. Browser responsive/keyboard acceptance and live D1 writes still need separate testing.
 
 ## Source update 0.233.0 — validate six Soul-to-creature effects and bilingual result details
 
