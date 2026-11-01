@@ -1,9 +1,18 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.246.0 (`2026.11.01.246`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.247.0 (`2026.11.01.247`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.247.0 — validated milestone source integrity and dead handler cleanup
+
+- [x] Align skill milestone creation with readiness rules: null/blank, zero, boolean, negative, noninteger, array and object requirements cannot form phantom markers; numeric-string positive integer requirements remain compatible.
+- [x] Treat a malformed class cap as zero (fail closed), keeping valid future skill thresholds in the unreachable list rather than falsely available. Reject missing skill-ID records and null entries.
+- [x] Remove two proven unreferenced app functions `branchRow` and `markNode`, leaving the current right-panel skill tree and encyclopedia untouched.
+- [x] Reuse a first-match-preserving ID map in the above-cap skill adapter, eliminating a repeated array scan and retaining all accessible records.
+- [x] Add source and model tests; follow with full Node/Chromium and deployed Pages acceptance separately.
+- [ ] Modern game formula parity and authenticated production D1 write lifecycle are not claimed by these tests.
 
 ## Source update 0.246.0 — profession-cap-safe skill readiness and complete index reuse
 

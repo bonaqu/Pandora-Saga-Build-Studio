@@ -1184,9 +1184,15 @@ function heroPathApi(){
   skillWiki:skill=>wikiLink(lang==='en'?'📜 Full encyclopedia entry':'📜 Полная статья в энциклопедии','skill',String(skill.id)),
   milestones:(skills,key,cap)=>{
    const {milestones,above}=window.PandoraSkillMilestones.forBranch(skills,key,cap);
+   // Keep the first occurrence, as in the old Array.find adapter.
+   const byId=new Map();
+   for(const skill of skills){
+    const id=String(skill.id);
+    if(!byId.has(id))byId.set(id,skill);
+   }
    const locked=new Map();
    for(const row of above){
-    const skill=skills.find(s=>String(s.id)===String(row.id));
+    const skill=byId.get(String(row.id));
     if(!skill)continue;
     const bucket=locked.get(row.threshold)||[];
     if(!bucket.some(x=>String(x.id)===String(skill.id)))bucket.push(skill);
@@ -1289,17 +1295,9 @@ function renderPathPages(){
  }
  if(!grow)renderPathSkills();
 }
-function branchRow(b,full){
- const pts=window.PandoraSkillProgression.potential(state,b.id);
- return h('button',{class:'branch-row',text:pts+' '+b.name+(lang==='en'?' · mastery ':' · мастерство ')+
-  window.PandoraSkillProgression.trained(state,b.id),
-  onclick:()=>{selectedSkillGroup=window.PandoraGameNavigation.branchGroup(b.id)?.id||selectedSkillGroup;
-   inlineBranchId=b.id;heroPathPage='growth';renderBranches();renderPathPages()}});
-}
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
-function markNode(record){const raw=record?.prerequisite_code||'';const known=(state.branch===3 && record?.legacy_entry_index===0)?'Подтверждённую доступность определяет движок':null;return known||raw||'Условие из архивного каталога'}
 function renderDetails(){const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',equipment:'Equipment & Souls',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',equipment:'Снаряжение и души',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,equipment:renderEquipment,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
 let wikiRenderSelected=null,wikiRenderedRoot=null;
