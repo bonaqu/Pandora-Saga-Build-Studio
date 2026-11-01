@@ -1384,20 +1384,21 @@ function renderWiki(root){
   // No imaginary sprites for monsters/locations/NPCs whose OS catalog has none.
   return null;
  };
- const wikiImage=(src,cls)=>{
+ const wikiImage=(src,cls,type='item')=>{
   if(!src)return null;
   const img=h('img',{src,alt:'',loading:'lazy',class:cls});
   const fallback=src.includes('/icons/items/')?src.replace('/icons/items/','/icons/souls/'):
    src.includes('/icons/souls/')?src.replace('/icons/souls/','/icons/items/'):null;
   img.onerror=()=>{if(fallback&&!img.dataset.fallbackTried){
    img.dataset.fallbackTried='1';img.src=fallback;
-  }else img.remove()};
+  }else img.replaceWith(h('span',{class:cls.includes('wiki-list-icon')?
+   'wiki-list-glyph':'wiki-record-glyph','aria-hidden':'true',text:wikiGlyphs[type]||'✦'}))};
   return img;
  };
  const wikiGlyphs={item:'✦',monster:'♞',map:'◈',npc:'♙',chest:'▣',
   instance:'⌂',skill:'✶',soul:'✧'};
  const withIcon=(link,src,type='item')=>{
-  const img=wikiImage(src,'wiki-list-icon');
+  const img=wikiImage(src,'wiki-list-icon',type);
   if(img)link.prepend(img);
   else link.prepend(h('span',{class:'wiki-list-glyph','aria-hidden':'true',
    text:wikiGlyphs[type]||'✦'}));
@@ -1456,7 +1457,7 @@ function renderWiki(root){
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
     h('h3',{text:dataName(type,id)}));
   if(type==='item'||type==='chest'||type==='soul'){
-    const img=wikiImage(wikiIcon(type,id,rec),'wiki-record-icon wiki-item-portrait');
+    const img=wikiImage(wikiIcon(type,id,rec),'wiki-record-icon wiki-item-portrait',type);
     if(img)detail.prepend(img);
   }
   if(rec.desc){const text=lang==='en'?(officialEnglish?.[type==='item'?'items':type==='monster'?'monsters':type==='skill'?'skills':type==='soul'?'souls':'maps']?.[id]?.d||rec.desc):rec.desc;
@@ -1539,13 +1540,11 @@ function renderWiki(root){
      if(names.length)detail.append(h('p',{class:'muted',text:(lang==='en'?'Classes: ':'Классы: ')+names.join(', ')}));
     }
     const icon=skillIcon(rec.branch,id,rec);
-    if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
+    if(icon){const image=wikiImage(icon,'wiki-record-icon',type);detail.prepend(image)}
   }else if(type==='soul'){
-    const slots={weapon:'Оружие',head:'Голова',body:'Броня',arm:'Руки',legs:'Ноги',
-     boots:'Обувь',gloves:'Перчатки',belt:'Пояс',cloak:'Плащ',ring:'Кольцо',
-     necklace:'Ожерелье',shield:'Щит',accessory:'Аксессуар'};
+    const slotLabel=slot=>window.PandoraItemPresentation.slotLabel(slot,lang);
     const traits=h('div',{class:'wiki-soul-traits'});
-    for(const slot of rec.slots||[])traits.append(h('span',{text:slots[slot]||slot}));
+    for(const slot of rec.slots||[])traits.append(h('span',{text:slotLabel(slot)}));
     if(rec.price!=null)traits.append(h('span',{text:'Стоимость: '+Number(rec.price).toLocaleString('ru-RU')}));
     if(traits.childElementCount)detail.append(traits);
     detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));

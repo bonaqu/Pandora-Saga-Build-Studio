@@ -26,8 +26,11 @@ const namesEn={'1H_SWORD':'One-handed sword','2H_SWORD':'Two-handed sword',
 'DECO_BOOTS':'Cosmetic boots','DECO_MANTLE':'Cosmetic cloak'};
 const slotsEn={weapon:'Weapon',shield:'Shield',head:'Helmet',body:'Armor',
  gloves:'Gloves',legs:'Leg armor',feet:'Boots',cloak:'Cloak',
- ring:'Ring',neck:'Amulet',belt:'Belt',ear:'Earring'};
-const slots={weapon:'Оружие',shield:'Щит',head:'Шлем',body:'Нагрудник',gloves:'Перчатки',legs:'Поножи',feet:'Обувь',cloak:'Плащ',ring:'Кольцо',neck:'Амулет',belt:'Пояс',ear:'Серьга'};
+ ring:'Ring',neck:'Amulet',belt:'Belt',ear:'Earring',
+ arm:'Arms',boots:'Boots',necklace:'Necklace',accessory:'Accessory'};
+const slots={weapon:'Оружие',shield:'Щит',head:'Шлем',body:'Нагрудник',gloves:'Перчатки',legs:'Поножи',feet:'Обувь',cloak:'Плащ',ring:'Кольцо',neck:'Амулет',belt:'Пояс',ear:'Серьга',
+ arm:'Руки',boots:'Обувь',necklace:'Ожерелье',accessory:'Аксессуар'};
+function slotLabel(slot,lang='ru'){return (lang==='en'?slotsEn:slots)[slot]||String(slot||'')}
 function kind(record,lang='ru'){
  const source=lang==='en'?namesEn:names;
  const slotSource=lang==='en'?slotsEn:slots;
@@ -56,5 +59,5 @@ function description(s){
   .replace(/(:)[ \t]*(?=[A-ZА-ЯЁ])/g,'$1\n')
   .replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
-root.PandoraItemPresentation=Object.freeze({kind,description,displayName});
+root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,displayName});
 })(typeof window==='undefined'?globalThis:window);

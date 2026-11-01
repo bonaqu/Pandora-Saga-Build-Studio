@@ -70,6 +70,8 @@ test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-
  const app=read('app.js'),css=read('style.css'),book=read('stage-attributes.js');
  assert.match(app,/const wikiGlyphs=/);
  assert.match(app,/class:'wiki-list-glyph'/);
+ assert.match(app,/class:cls.includes\('wiki-list-icon'\)/);
+ assert.match(app,/PandoraItemPresentation.slotLabel\(slot,lang\)/);
  assert.match(app,/class:'wiki-category-symbol'/);
  assert.match(css,/\.wiki-list-glyph/);
  assert.match(book,/PandoraItemPresentation\?\.description\(rec\.desc\)/);

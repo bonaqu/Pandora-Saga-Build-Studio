@@ -1704,3 +1704,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  border:2px double #86663e;background:#211710;color:#debc81;
  font:32px Georgia,serif}
 .stage-attribute-soul{white-space:pre-line;overflow-wrap:anywhere}
+.wiki-record-glyph{float:right;display:grid;place-items:center;
+ width:76px;height:76px;margin:0 0 12px 14px;border:2px double #9d794f;
+ background:#211710;color:#e2bd7b;font:34px Georgia,serif}
+

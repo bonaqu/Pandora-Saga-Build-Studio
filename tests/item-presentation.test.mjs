@@ -9,6 +9,12 @@ test('player sees localized item type instead of raw enum',()=>{
  assert.equal(p.kind({kind:'RING'}),'Кольцо');
  assert.equal(p.kind({kind:'BELT'}),'Пояс');
 });
+test('soul slot labels share one localized source of truth',()=>{
+ assert.equal(p.slotLabel('weapon'),'Оружие');
+ assert.equal(p.slotLabel('weapon','en'),'Weapon');
+ assert.equal(p.slotLabel('necklace'),'Ожерелье');
+ assert.equal(p.slotLabel('necklace','en'),'Necklace');
+});
 test('Golden Astir jacket gains meaningful source-line breaks',()=>{
  const source='Красивая куртка цвета полной луны. Такие любят носить мужчины Астира.ИНТ +1, ОЗ +15, ОМ +10За каждые 2 единицы улучшения:Магическая атака +1%';
  const output=p.description(source);
@@ -42,6 +48,14 @@ test('all bundled item and soul descriptions remain stable under a second format
    const one=p.description(row.desc);
    assert.equal(p.description(one),one,file+' description unstable: '+row.name);
   }
+ }
+});
+test('all English source descriptions are stable when formatted twice',()=>{
+ const en=JSON.parse(readFileSync(new URL('../data/os/strings.en.json',import.meta.url),'utf8'));
+ for(const chapter of ['items','souls'])for(const [id,row] of Object.entries(en[chapter]||{})){
+  if(typeof row.d!=='string')continue;
+  const formatted=p.description(row.d);
+  assert.equal(p.description(formatted),formatted,chapter+' translated description '+id);
  }
 });
 test('source line breaks are not lost',()=>{

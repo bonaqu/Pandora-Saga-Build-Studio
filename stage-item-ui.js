@@ -14,22 +14,26 @@ const el=(tag,attrs={},children=[])=>{
 };
 function summary(record,icon,kind='item'){
  if(!record)return el('p',{class:'muted',text:'Данные о предмете пока не загружены'});
- const presenter=root.PandoraItemPresentation;
+ const presenter=root.PandoraItemPresentation,english=document.documentElement?.lang==='en';
+ const locale=english?'en':'ru',tr=(ru,en)=>english?en:ru;
  const wrap=el('div',{class:'stage-rich-summary'}),head=el('div',{class:'stage-rich-head'});
  const src=icon(record,kind);
  if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));head.append(img)}
- head.append(el('strong',{text:presenter?.displayName(record)||'Без названия',
+ head.append(el('strong',{text:presenter?.displayName(record,tr('Без названия','Unnamed item'),locale)||tr('Без названия','Unnamed item'),
   ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));wrap.append(head);
  // IDs are internal database keys, never player-facing data.
- const rows=kind==='soul'?[['Подходящие слоты',(record.slots||[]).join(', ')]]:
- [['Тип',presenter?.kind(record)||'Предмет'],['Уровень',record.level],
- ['Атака',record.W],['Защита',record.AC],['Гнёзда',record.soulslot],
- ['Скорость',record.atkspeed],['Дальность',record.range]];
+ const rows=kind==='soul'?
+ [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
+   .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
+ [[tr('Тип','Type'),presenter?.kind(record,locale)||tr('Предмет','Item')],
+ [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),record.W],
+ [tr('Защита','Defense'),record.AC],[tr('Гнёзда','Sockets'),record.soulslot],
+ [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  if(root.PandoraStudioAdminActive?.())rows.push(['ID',record.id]);
  const dl=el('dl',{class:'stage-rich-fields'});
  for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){
   const dd=el('dd',{text:String(value)});
-  if(kind==='item'&&key==='Гнёзда')dd.dataset.editKey='itemslots.'+record.id;
+  if(kind==='item'&&key===tr('Гнёзда','Sockets'))dd.dataset.editKey='itemslots.'+record.id;
   dl.append(el('dt',{text:key}),dd);
  }
  if(dl.children.length)wrap.append(dl);

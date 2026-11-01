@@ -64,6 +64,14 @@ test('hover removes native title and uses exactly one custom tooltip, also on fo
  assert.equal(focusTip.isConnected,false);
  assert.equal(button.attrs['aria-describedby'],undefined);
 });
+test('soul slots display localized labels rather than raw internal names',()=>{
+ const {api}=fixture();
+ const node=api.summary({id:101000,name:'Душа стрелка',slots:['weapon','belt'],desc:'Точность +8'},()=>null,'soul');
+ const values=walk(node).filter(n=>n.tag==='dd').map(n=>n.textContent).join(' ');
+ assert.match(values,/Оружие/);
+ assert.match(values,/Пояс/);
+ assert.doesNotMatch(values,/weapon|belt/);
+});
 test('stage rails expose grade and Souls count without title or duplicate labels',()=>{
  const source=read('app.js');
  assert.match(source,/function renderSlotRails\(\)\{[\s\S]*?PandoraStageItemUI\.dismissPreview\(\)/);
