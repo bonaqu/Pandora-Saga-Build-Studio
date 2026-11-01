@@ -56,7 +56,7 @@ test('display dedup keeps source records, collapses exact mobs and script-only s
   trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
  assert.equal(wiki.search('monster','волк').length,2);
  assert.equal(wiki.canonical('monster',22),'11');
- assert.deepEqual(wiki.locations(11).map(x=>x.name).sort(),['Долина','Лес']);
+ assert.equal(wiki.locations(11).map(x=>x.name).sort().join('|'),'Долина|Лес');
  assert.equal(wiki.search('skill','ловушка').length,1);
  assert.equal(wiki.canonical('skill',102),'101');
  assert.equal(wiki.search('skill','сосредоточенность').length,2);
