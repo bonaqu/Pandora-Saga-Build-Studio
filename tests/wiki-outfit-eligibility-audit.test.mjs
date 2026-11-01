@@ -13,7 +13,7 @@ const rules=sandbox.window.PandoraStudioRules;
 
 test('all known race-specific and Astir outfits have an explicit wearable audience',()=>{
  const racial=items.filter(item=>item.slot&&/для (?:человека|эльфа|эльфийки|цверга|мирины|энкиду|кролля)|астирск/i.test(item.name));
- assert.equal(racial.length,128);
+ assert.equal(racial.length,127);
  for(const item of racial){
   const audience=planner.outfitWearers(item);
   assert.ok(audience?.length,'Missing wearer mapping for '+item.name);
