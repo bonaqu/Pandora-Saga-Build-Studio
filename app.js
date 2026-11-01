@@ -1333,6 +1333,7 @@ async function loadWiki(){
 function openWiki(type,id,highlight=null){
  const sameCategory=activeTab==='wiki'&&wikiSelection.type===type&&
   typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
+ if(activeTab!=='wiki'||wikiSelection.type!==type){wikiSearch='';wikiShown=100}
  wikiSelection={type,id:String(id),highlight:highlight==null?null:String(highlight)};
  activeTab='wiki';
  for(const btn of document.querySelectorAll('[data-tab]'))btn.classList.toggle('active',btn.dataset.tab==='wiki');
@@ -1713,10 +1714,16 @@ function renderWiki(root){
    row=>row.getAttribute('data-wiki-record')===wikiSelection.id);
   draw(present);
  };
- browse.append(h('p',{class:'muted',text:'Загружаю записи…'}));
- loadWiki().then(()=>{if(root.isConnected&&activeTab==='wiki')draw()}).catch(e=>{if(root.isConnected)detail.append(h('p',{class:'item-incompatible',text:'Данные вики недоступны: '+e.message}))});
  search.addEventListener('input',()=>{wikiSearch=search.value;wikiShown=100;browse.scrollTop=0;if(wikiIndex)draw()});
  if(wikiIndex)draw();
+ else{
+  browse.append(h('p',{class:'muted',text:wt('Загружаю записи…','Loading entries…')}));
+  loadWiki().then(()=>{if(root.isConnected&&activeTab==='wiki')draw()}).catch(e=>{
+   if(!root.isConnected)return;
+   browse.replaceChildren();
+   detail.replaceChildren(h('p',{class:'item-incompatible',text:wt('Данные вики недоступны: ','Encyclopedia unavailable: ')+e.message}));
+  });
+ }
 }
 
 function renderProfile(root){

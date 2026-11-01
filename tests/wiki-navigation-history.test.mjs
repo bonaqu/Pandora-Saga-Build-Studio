@@ -23,6 +23,13 @@ test('selected deep links outside the initial page remain visible without expand
  assert.match(app,/aria-current/);
  assert.match(app,/draw\(present\)/);
 });
+test('cached encyclopedia avoids duplicate draws and cross-category searches are cleared',()=>{
+ const app=get('app.js');
+ assert.match(app,/if\(wikiIndex\)draw\(\);\s*else\{/);
+ assert.match(app,/loadWiki\(\)\.then/);
+ assert.match(app,/browse\.replaceChildren\(\);\s*detail\.replaceChildren/);
+ assert.match(app,/if\(activeTab!=='wiki'\|\|wikiSelection\.type!==type\)\{wikiSearch='';wikiShown=100\}/);
+});
 test('repeated wiki record click reuses same list and preserves its scroll position',()=>{
  const app=get('app.js');
  assert.match(app,/const draw=\(detailOnly=false\)=>/);
