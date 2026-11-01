@@ -76,3 +76,20 @@ test('growth reads pre-indexed branch data rather than rescanning 569 skills per
  assert.match(source,/const skills=skillsByBranch\.get\(key\)\|\|\[\]/);
  assert.doesNotMatch(source,/const skills=skillCatalog\.filter\(/);
 });
+
+test('all Hero Path class surfaces agree on strict OS class permissions',()=>{
+ const good={id:9,name:'Good',classes:{CLERIC:1},
+  reqs:[{branch:'benevolence',amount:8}],charLevel:1,learnable:true};
+ const fixture=[good,
+  ...[0,false,'false','1',2,null,undefined].map((flag,i)=>({
+   id:10+i,name:'Malformed '+i,
+   classes:flag===undefined?undefined:{CLERIC:flag},
+   reqs:[{branch:'benevolence',amount:8}],charLevel:1,learnable:true
+  }))];
+ const data=index(fixture,'CLERIC');
+ assert.deepEqual(data.get('benevolence'),[good]);
+ assert.match(source,/function allowedForJob\(skill,job\)/);
+ assert.match(source,/if\(!allowedForJob\(skill,job\)\|\|!Array\.isArray\(skill\.reqs\)\)continue/);
+ assert.match(source,/if\(!allowedForJob\(skill,job\)\)/);
+ assert.match(source,/api\.skillCatalog\.filter\(skill=>allowedForJob\(skill,api\.job\)&&/);
+});

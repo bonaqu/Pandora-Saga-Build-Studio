@@ -30,7 +30,7 @@ function indexSkills(skills){
 function indexSkillsByBranch(skills,job){
  const byBranch=new Map();
  for(const skill of skills||[]){
-  if(!skill?.classes?.[job]||!Array.isArray(skill.reqs))continue;
+  if(!allowedForJob(skill,job)||!Array.isArray(skill.reqs))continue;
   const seen=new Set();
   for(const req of skill.reqs){
    const branch=req?.branch;
@@ -42,14 +42,20 @@ function indexSkillsByBranch(skills,job){
  }
  return byBranch;
 }
+// One definition of class entitlement for the branch rail, skill gallery
+// and prerequisite checking.  Invalid truthy strings such as "false" are
+// not authoritative OS permissions and must never leak into unlocked lists.
+function allowedForJob(skill,job){
+ const classes=skill?.classes;
+ return !!classes&&typeof classes==='object'&&!Array.isArray(classes)&&
+  Object.hasOwn(classes,job)&&(classes[job]===1||classes[job]===true);
+}
 function readiness(skill,api,seen=new Set(),skillIndex){
  const byId=skillIndex||indexSkills(api.skillCatalog);
  const problems=[],state=api.state,job=api.job;
  if(seen.has(String(skill.id)))return {learned:false,problems:[tr(api,'Циклическая зависимость навыков','Cyclic skill prerequisite')]};
  const chain=new Set(seen);chain.add(String(skill.id));
- if(!skill.classes||typeof skill.classes!=='object'||Array.isArray(skill.classes)||
-  !Object.hasOwn(skill.classes,job)||
-  (skill.classes[job]!==1&&skill.classes[job]!==true))
+ if(!allowedForJob(skill,job))
   problems.push(tr(api,'Не подходит профессии','Unavailable to this class'));
  if(skill.charLevel!==undefined&&
   (skill.charLevel===null||typeof skill.charLevel==='boolean'||
@@ -363,7 +369,7 @@ function viewSkills(target,details,api){
  if(!api.catalogReady){target.append(make('p',{class:'muted',text:tr(api,'Каталог умений загружается.','Loading skill catalog…')}));return}
  const skillIndex=indexSkills(api.skillCatalog);
  const needle=String(api.query||'').trim().toLocaleLowerCase('ru');
- const rows=api.skillCatalog.filter(skill=>skill.classes?.[api.job]&&
+ const rows=api.skillCatalog.filter(skill=>allowedForJob(skill,api.job)&&
   (String(skill.name||'')+' '+skill.id).toLocaleLowerCase('ru').includes(needle))
   .map(skill=>({skill,gate:readiness(skill,api,new Set(),skillIndex)})).filter(({gate})=>
    api.filter==='all'||(api.filter==='known'?gate.learned:!gate.learned));

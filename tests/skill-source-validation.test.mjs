@@ -101,3 +101,16 @@ test('official source requirements agree on positive safe-integer validation',()
   }
  }
 });
+
+test('shared class predicate agrees between readiness, skill gallery and growth',()=>{
+ const good={...skill(),classes:{CLERIC:1}};
+ assert.equal(verdict(good).learned,true);
+ for(const classes of [{CLERIC:'false'},{CLERIC:2},null,undefined]){
+  const bad={...skill(),classes};
+  const result=verdict(bad);
+  assert.equal(result.learned,false);
+  assert.ok(result.problems.includes('Unavailable to this class'));
+ }
+ assert.equal(source.split('allowedForJob(').length-1,4,
+  'One helper plus growth, readiness and skill gallery call sites');
+});

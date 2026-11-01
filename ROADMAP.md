@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.258.0 (`2026.11.01.258`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.259.0 (`2026.11.01.259`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.259.0 — single source of truth for class permission throughout Hero Path
+
+- [x] Extract one strict class-entitlement predicate shared by growth branch indexing, full skill gallery, and recursive prerequisites. Remove three separate/mismatched checks of job membership, which previously let truthy invalid source flags (e.g. string "false") leak into the gallery despite being blocked in readiness.
+- [x] Preserve approved OS membership values (1/true), stable source order, 28-class coverage, filtered gallery behavior and all actual game data. Corrupted class permissions are rejected consistently and cannot appear as learnable skills or skill markers.
+- [x] Extend existing branch/source test files instead of adding another test file; check invalid permission fixtures, source-level call-site reuse and current catalog parity.
+- [ ] Game mechanics parity, authentic icons, UI responsive refinements, and controlled production D1 write acceptance remain separate.
 
 ## Source update 0.258.0 — source skill gates and marker validation aligned
 
