@@ -229,6 +229,9 @@ function bookText(value){
  const match=Object.entries(bookLineHeads).find(([ru])=>value.startsWith(ru));
  if(!match)return value;
  let tail=value.slice(match[0].length);
+ // Stat captions have numeric values; do not translate a player's or item's
+ // name that merely happens to begin with the same ordinary Russian words.
+ if(match[0]!=='Не действует: '&&!/^[+\-−]?[\d≈—]/.test(tail))return value;
  for(const [ru,en] of Object.entries(bookLineFragments))tail=tail.replaceAll(ru,en);
  return match[1]+tail;
 }
