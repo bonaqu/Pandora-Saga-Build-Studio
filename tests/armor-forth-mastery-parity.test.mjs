@@ -66,3 +66,23 @@ test('the portrait UI displays armor grade and class passive effects, not just r
  assert.match(view,/cm\.accuracy\.passive/);
  assert.match(app,/itemForth:gameItemForth/);
 });
+
+test('original OS description keeps refinement fallback identical in RU and EN',()=>{
+ const en=JSON.parse(read('data/os/strings.en.json')).items['2'],ru=items['2'];
+ assert.match(ru.desc,/За каждые 2 единицы улучшения/);
+ assert.match(en.d,/Per every 2 enhancement levels/);
+ const translated={...ru,name:en.n,desc:en.d,sourceDesc:ru.desc};
+ for(const grade of [0,1,5,7,10]){
+  const original=calc.gatherEffects([['item:2',ru,grade]]);
+  const english=calc.gatherEffects([['item:2',translated,grade]]);
+  assert.deepEqual(english,original,'same fallback for grade '+grade);
+ }
+ const withoutSource=calc.gatherEffects([['item:2',{...ru,desc:en.d},7]]);
+ assert.equal(withoutSource.health.mp,0,'English prose is not parsed as Russian formula');
+ const restored=calc.gatherEffects([['item:2',translated,7]]);
+ assert.equal(restored.health.mp,60);
+ const ruForth=calc.gatherEffects([['item:2',ru,7]],forth);
+ const enForth=calc.gatherEffects([['item:2',translated,7]],forth);
+ assert.deepEqual(enForth,ruForth,'structured OS Forth overrides text in either language');
+ assert.equal(enForth.flat.agi,2,'+7 Forth agility is not double counted');
+});

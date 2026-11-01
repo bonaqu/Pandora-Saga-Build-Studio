@@ -63,3 +63,13 @@ test('administrator entry remains hidden from ordinary players',()=>{
  assert.match(worker,/path==='\/api\/admin\/login'/);
  assert.match(worker,/if\(path\.startsWith\('\/api\/account\/'\)\)/);
 });
+
+test('English equipment labels retain original source text solely for numeric fallback',()=>{
+ const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+ const calc=readFileSync(new URL('../os-calculator.js',import.meta.url),'utf8');
+ assert.match(app,/const translate=\(original,map,keepSourceDesc=false\)=>/);
+ assert.match(app,/keepSourceDesc\?\{sourceDesc:item\.desc\}:\{\}/);
+ assert.match(app,/equipment:translate\(catalogSource\.items,en\?\.items,true\)/);
+ assert.match(app,/souls:translate\(catalogSource\.souls,en\?\.souls\)/);
+ assert.match(calc,/const description=record\?\.sourceDesc\?\?record\?\.desc/);
+});

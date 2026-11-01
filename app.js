@@ -2638,10 +2638,11 @@ function applyGameLocale(){
   }
   return;
  }
- const translate=(original,map)=>{
+ const translate=(original,map,keepSourceDesc=false)=>{
   if(lang!=='en'||!map)return original;
   return Object.fromEntries(Object.entries(original).map(([id,item])=>{
-    const t=map[id];return [id,t?{...item,name:t.n||item.name,desc:t.d??item.desc}:item]
+    const t=map[id];return [id,t?{...item,name:t.n||item.name,
+     desc:t.d??item.desc,...(keepSourceDesc?{sourceDesc:item.desc}:{})}:item]
   }));
  };
  const en=lang==='en'?officialEnglish:null;
@@ -2658,7 +2659,7 @@ function applyGameLocale(){
   }
  }
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
-   equipment:translate(catalogSource.items,en?.items),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
+   equipment:translate(catalogSource.items,en?.items,true),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  const label=document.getElementById('locale');

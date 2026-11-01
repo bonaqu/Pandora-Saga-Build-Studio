@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.226.0 (`2026.11.01.226`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.227.0 (`2026.11.01.227`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.227.0 — locale-invariant enhancement fallback
+
+- Keep the authenticated original Russian OS item description as `sourceDesc` on **translated equipment records only**; display the official translated EN description and name as before. The existing narrow narrative-refinement fallback parses source text rather than language-dependent display prose.
+- Structured OS `itemForth.json` snapshots remain higher priority, with no duplicate additions or new unsupported combat rules. Real Gladius ID 2 (enhancement +0/+1/+5/+7/+10) is compared in RU and EN for both fallback and structured Forth, including +60 MP and official +7 agility once.
+- No user-visible technical commentary, no persisted-build schema migration or D1 write, and permanent 1–55 build planning retained.
+- In cross-account Chromium acceptance, wait until the scoped local library owner marker has switched to the requested account/guest before attempting to save. Keep every no-cross-owner-D1-PUT assertion; the initial race grid alone does not mean account bootstrap is complete.
 
 ## Source update 0.226.0 — source-ID and grade-safe OS equipment sets
 

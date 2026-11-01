@@ -47,7 +47,9 @@ function classBase(classPart,level,attribute,key){
 // Parse only the explicit improvement clauses in the preserved OS item text.
 // These bonuses are absent from the base effects array; unknown prose is ignored.
 function refinementEffects(record,grade){
- if(!record||!Number.isInteger(grade)||grade<1||typeof record.desc!=='string')return [];
+ // Keep numeric fallback stable when a localized item description replaces RU text.
+ const description=record?.sourceDesc??record?.desc;
+ if(!record||!Number.isInteger(grade)||grade<1||typeof description!=='string')return [];
  const result=[],candidates=[
   [/ОЗ\s*([+-])\s*(\d+)\s*(%)?/g,'hp'],
   [/ОМ\s*([+-])\s*(\d+)\s*(%)?/g,'mp'],
@@ -58,10 +60,10 @@ function refinementEffects(record,grade){
   mp:['EP_MAXMANA_CONST','EP_MAXMANA_SCALE'],
   vit:['EP_VITARITY_CONST'],spi:['EP_SPIRITUAL_CONST']};
  const sections=[
-  {match:record.desc.match(/За каждые\s+(\d+)\s+единиц[ыу]\s+улучшения\s*:\s*([\s\S]*?)(?=При улучшении на|За каждые|$)/i),
-   count:g=>Math.floor(g/Number(record.desc.match(/За каждые\s+(\d+)/i)?.[1]||Infinity)),index:2},
-  {match:record.desc.match(/При улучшении на\s*\+(\d+)\s+и выше\s*:\s*([\s\S]*)/i),
-   count:g=>g>=Number(record.desc.match(/При улучшении на\s*\+(\d+)/i)?.[1])?1:0,index:2}
+  {match:description.match(/За каждые\s+(\d+)\s+единиц[ыу]\s+улучшения\s*:\s*([\s\S]*?)(?=При улучшении на|За каждые|$)/i),
+   count:g=>Math.floor(g/Number(description.match(/За каждые\s+(\d+)/i)?.[1]||Infinity)),index:2},
+  {match:description.match(/При улучшении на\s*\+(\d+)\s+и выше\s*:\s*([\s\S]*)/i),
+   count:g=>g>=Number(description.match(/При улучшении на\s*\+(\d+)/i)?.[1])?1:0,index:2}
  ];
  for(const part of sections){
   if(!part.match)continue;
