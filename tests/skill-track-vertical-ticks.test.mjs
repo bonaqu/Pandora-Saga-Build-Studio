@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const css=read('style.css'),ui=read('hero-path.js'),locale=read('ui-locale.js');
 const cssRule=selector=>{
- const start=css.lastIndexOf(selector+'{');
+ const start=css.indexOf(selector+'{');
  assert.ok(start>=0,'Missing CSS rule for '+selector);
  return css.slice(start,css.indexOf('}',start)+1);
 };
@@ -19,9 +19,9 @@ test('unlock thresholds are narrow vertical ticks, never permanent diamonds',()=
  assert.doesNotMatch(tick,/rotate\(45deg\)/);
  assert.match(cssRule('.inline-mastery-track.path-integrated-track .path-unlock-notch.reached'),/background:#a9df8d/);
  assert.match(cssRule('.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable'),/background:#c48375/);
- const hover=cssRule('.inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible');
- assert.match(hover,/box-shadow/);
- assert.doesNotMatch(hover,/width:|height:|0 0 8px/);
+ const hover=css.slice(css.indexOf('.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered,'));
+ assert.match(hover.slice(0,320),/box-shadow/);
+ assert.doesNotMatch(hover.slice(0,320),/width:|height:|0 0 8px/);
 });
 test('source-backed tooltip includes ability name, description, required points and MP cost only when known',()=>{
  for(const fragment of ["text:threshold+tr(api,' очков',' points')",
