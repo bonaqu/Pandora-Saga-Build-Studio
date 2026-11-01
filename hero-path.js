@@ -34,9 +34,22 @@ function readiness(skill,api,seen=new Set(),skillIndex){
  if(Number(skill.charLevel)>state.level)problems.push(tr(api,'Требуется уровень ','Requires level ')+skill.charLevel);
  const required=Array.isArray(skill.reqs)?skill.reqs:[];
  for(const req of required){
-  if(!req||!Number.isInteger(Number(req.amount))){problems.push(tr(api,'Неизвестное условие','Unknown requirement'));continue}
-  const need=Number(req.amount),points=M.potential(state,req.branch),green=M.trained(state,req.branch);
+  const need=Number(req?.amount);
+  if(!req||typeof req.branch!=='string'||!req.branch.trim()||
+   req.amount===null||req.amount===''||typeof req.amount==='boolean'||
+   !Number.isInteger(need)||need<=0){
+   problems.push(tr(api,'Неизвестное условие','Unknown requirement'));continue;
+  }
   const name=api.branchName(req.branch);
+  // Saved investments survive profession changes, but they cannot unlock
+  // requirements that the new profession has no capacity to train.
+  if(typeof api.cap==='function'){
+   const cap=api.cap(req.branch);
+   if(!Number.isInteger(cap)||cap<need)
+    problems.push(name+tr(api,': порог недоступен для профессии (',': class limit cannot meet requirement (')+
+     need+' > '+(Number.isInteger(cap)?cap:'?')+')');
+  }
+  const points=M.potential(state,req.branch),green=M.trained(state,req.branch);
   if(points<need)problems.push(name+tr(api,': вложено ',': spent ')+points+'/'+need);
   if(green<need)problems.push(name+tr(api,': мастерство ',': mastery ')+green+'/'+need);
  }
@@ -73,7 +86,6 @@ function viewGrowth(target,api){
  const skillIndex=indexSkills(skillCatalog);
  for(const group of groups){
   const branchKeys=group.branches.filter(key=>key!=='race');
-  const spent=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
   const wrap=make('section',{class:'game-tree-group'});
   const groupButton=make('button',{type:'button',class:'game-tree-head'+(selectedGroup===group.id?' active':''),
    'aria-expanded':String(selectedGroup===group.id),'data-path-group':group.id,
@@ -191,7 +203,7 @@ function viewGrowth(target,api){
       const at=byThreshold.get(threshold);
       const lockedAt=at.every(mark=>mark.locked);
       const skillsAt=at.flatMap(mark=>mark.skills);
-      const learned=skillsAt.some(skill=>readiness(skill,api).learned);
+      const learned=skillsAt.some(skill=>readiness(skill,api,new Set(),skillIndex).learned);
       const tick=make('span',{class:'path-unlock-notch'+
        (lockedAt?' unreachable':learned?' reached':'')+
        (threshold/visualMax<.26?' edge-left':threshold/visualMax>.74?' edge-right':''),
