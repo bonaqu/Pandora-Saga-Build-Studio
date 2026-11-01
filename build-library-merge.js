@@ -26,8 +26,22 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}
   merged.push(duplicate); // A conflict copy stays local until explicitly saved.
   return id;
  };
+ // JSON object key insertion order is not character progress. D1, browser
+ // migrations and historical imports may serialize identical snapshots
+ // differently. Arrays and actual values must still compare exactly.
+ const equivalent=(a,b)=>{
+  if(a===b)return true;
+  if(a===null||b===null||typeof a!=='object'||typeof b!=='object')return false;
+  if(Array.isArray(a)!==Array.isArray(b))return false;
+  const aKeys=Object.keys(a),bKeys=Object.keys(b);
+  if(aKeys.length!==bKeys.length)return false;
+  for(const key of aKeys){
+   if(!Object.hasOwn(b,key)||!equivalent(a[key],b[key]))return false;
+  }
+  return true;
+ };
  const same=(a,b)=>{
-  try{return a.name===b.name&&JSON.stringify(a.data)===JSON.stringify(b.data)}
+  try{return a.name===b.name&&equivalent(a.data,b.data)}
   catch{return false}
  };
  for(const record of remote){

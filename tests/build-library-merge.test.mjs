@@ -95,3 +95,36 @@ test('user-created offline saved builds still retry while local-only copies neve
  assert.deepEqual(r.outgoing.map(x=>x.id),[C]);
  assert.ok(r.merged.some(x=>x.id===B&&x.localOnly));
 });
+
+test('remote and local key order differences do not manufacture conflict copies',()=>{
+ const local={id:A,name:'Same build',at:250,data:{
+  level:55,job:16,race:1,stats:{str:3,vit:5},equipment:{
+   0:{id:422,name:'Sword',grade:7}
+  },souls:{0:[{id:103013}]}
+ }};
+ const cloud={id:A,name:'Same build',at:190,data:{
+  souls:{0:[{id:103013}]},
+  equipment:{0:{grade:7,name:'Sword',id:422}},
+  stats:{vit:5,str:3},race:1,job:16,level:55
+ }};
+ const r=reconcile({local:[local],remote:[{id:A,entry:cloud}],
+  activeId:A,newId:()=>B});
+ assert.equal(r.copies,0);
+ assert.equal(r.merged.length,1);
+ assert.deepEqual(r.merged[0],cloud);
+ assert.equal(r.activeId,A);
+ assert.deepEqual(r.outgoing,[]);
+});
+test('actual equipment, level or array order changes still preserve distinct editions',()=>{
+ const local=mk(A,100,55),cloud={...mk(A,100,55)};
+ local.data.equipment={0:{id:1}};cloud.data.equipment={0:{id:2}};
+ const r=reconcile({local:[local],remote:[{id:A,entry:cloud}],
+  activeId:A,newId:()=>B});
+ assert.equal(r.copies,1);
+ assert.equal(r.merged.find(x=>x.id===B).data.equipment[0].id,1);
+ const listLocal={...mk(A,100,55),data:{list:[1,2,3]}};
+ const listRemote={...mk(A,100,55),data:{list:[3,2,1]}};
+ const s=reconcile({local:[listLocal],remote:[{id:A,entry:listRemote}],
+  newId:()=>B});
+ assert.equal(s.copies,1);
+});

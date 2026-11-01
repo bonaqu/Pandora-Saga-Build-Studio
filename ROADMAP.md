@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.203.0 (`2026.11.01.203`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.204.0 (`2026.11.01.204`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.204.0 — prevent false cloud conflict copies from reordered JSON
+
+- Compare saved character snapshots by actual nested JSON values, not the original insertion order of object keys. Account, old-build migrations, D1 serialization and browser file imports can rearrange fields while the character itself remains identical.
+- Preserve array order, equipment IDs, stats, character level and all genuinely different saved choices. Cloud D1 remains the primary record for the same ID; conflicting local edits still become unpublished recovery copies.
+- Add functional Node regressions for re-ordered nested stats/equipment/Souls with a 55-level future sword, genuine gear differences and array-order conflicts. This change does not upload any new data or alter manual D1 overwrite consent.
 
 ## Source update 0.203.0 — real Hero Book RU/EN interface translations
 
