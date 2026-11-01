@@ -16,7 +16,7 @@ const api={lang:'en',job:'CLERIC',state:{level:55,points:{benevolence:12},master
 function verdict(s){return check(s,{...api,skillCatalog:[s]})}
 test('honest class eligibility rejects absent, disabled and corrupted class entries',()=>{
  assert.equal(verdict(skill()).learned,true);
- for(const classes of [{CLERIC:0},{CLERIC:false},{CLERIC:'false'},[],null,{WARRIOR:1}]){
+ for(const classes of [{CLERIC:0},{CLERIC:false},{CLERIC:'false'},[],null,undefined,{WARRIOR:1}]){
   const row={...skill(),classes};
   const result=verdict(row);
   assert.equal(result.learned,false,JSON.stringify(classes));
@@ -78,4 +78,26 @@ test('muted locked rail keeps a visible boundary and original pointer behavior',
  assert.match(css,/\.inline-mastery-track \.inline-mastery-locked\{[^}]*pointer-events:none/);
  assert.match(css,/\.inline-mastery-track\.path-integrated-track \.path-unlock-notch\{/);
  assert.match(source,/const visualMax=Math.max\(90,cap,points\)/);
+});
+
+test('readiness rejects arrays, objects, non-decimal text and unsafe numbers in branch requirements',()=>{
+ for(const amount of [[8],{value:8},'1e1','0x10','8.5','Infinity',
+  Number.MAX_SAFE_INTEGER+2,[],true]){
+  const result=verdict({...skill(),reqs:[{branch:'benevolence',amount}]});
+  assert.equal(result.learned,false,'invalid '+String(amount));
+  assert.ok(result.problems.includes('Unknown requirement'));
+ }
+ for(const amount of [8,'8','08','8.0','+8',' 8 ']){
+  assert.equal(verdict({...skill(),reqs:[{branch:'benevolence',amount}]}).learned,true,
+   'valid '+String(amount));
+ }
+});
+
+test('official source requirements agree on positive safe-integer validation',()=>{
+ const catalog=Object.values(JSON.parse(read('data/os/skills.json')));
+ for(const row of catalog){
+  for(const req of row.reqs){
+   assert.ok(Number.isSafeInteger(req.amount)&&req.amount>0,'skill ID '+row.id);
+  }
+ }
 });

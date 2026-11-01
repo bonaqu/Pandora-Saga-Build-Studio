@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.257.0 (`2026.11.01.257`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.258.0 (`2026.11.01.258`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.258.0 — source skill gates and marker validation aligned
+
+- [x] Prevent skill readiness from assuming a missing/invalid class membership list allows learning. A class must be explicitly allowed by the authoritative source record; an empty list stays locked.
+- [x] Apply the same strict positive safe-integer threshold semantics to skill readiness and milestone markers: ignore arrays, objects, booleans, exponent/hex strings, fractions and unsafe values, preserving decimal numeric-text compatibility.
+- [x] Deduplicate over-cap skill notches by source skill ID + threshold, using first record identity; previously repeated requirements were de-duplicated only for reachable marks, not blocked entries.
+- [x] Add direct regression tests and verify against all 569 OS skills; do not change any skill points, character builds, D1 data or formula coefficients.
+- [ ] Continue source-backed combat parity, authentic icons and real D1 account write lifecycle after production/browser gates.
 
 ## Source update 0.257.0 — prevent coerced ghost points from damaged saved builds
 
