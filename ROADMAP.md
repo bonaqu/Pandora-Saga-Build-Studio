@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.254.0 (`2026.11.01.254`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.255.0 (`2026.11.01.255`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.255.0 — shared skill-row snapshot and saved class-switch browser acceptance
+
+- [x] Cache the catalog skill array across growth/skill page renders via a WeakMap keyed by catalog identity. Avoid allocating and extracting all 569 source skills on every layout/hover rerender. RU/EN catalog changes replace the source and receive an independent correct snapshot; no source record is mutated.
+- [x] Add real Chromium reproduction of a Cleric opening an old saved 12-point Slash allocation (class cap 0): still visible 12 / 0 with warning, editable refund to 8 / 0 and persisted after browser reload. Changing profession never silently removes old investments.
+- [x] Extend Node tests for source-order parity, language-switched cache invalidation and shared page consumption. Named-build explicit save, D1 ownership, level-55 planning and skill availability rules untouched.
+- [ ] Verify real gameplay formula parity, account D1 production writes and visual icon mirroring independently.
 
 ## Source update 0.254.0 — no redundant persistence while dragging skill points
 

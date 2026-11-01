@@ -1169,11 +1169,23 @@ function refreshBudgetLabel(){
  }
  root.append(stats);
 }
+// Reusing a stable source snapshot avoids rematerializing 569 skill records
+// for each growth redraw or skill gallery query. Locale changes replace the
+// catalog object, so the WeakMap automatically selects a new translated list.
+const heroSkillRowsCache=new WeakMap();
+function heroSkillRows(source){
+ if(!source||typeof source!=='object')return [];
+ const cached=heroSkillRowsCache.get(source);
+ if(cached)return cached;
+ const rows=Object.values(source);
+ heroSkillRowsCache.set(source,rows);
+ return rows;
+}
 function heroPathApi(){
  const groups=window.PandoraGameNavigation.groups,klass=jobKeys[state.job];
  return {
   state,groups,job:klass,lang,selectedGroup:selectedSkillGroup,expandedBranch:inlineBranchId,
-  skillCatalog:Object.values(catalog.skills||{}),catalogReady:!!catalog.skills,
+  skillCatalog:heroSkillRows(catalog.skills),catalogReady:!!catalog.skills,
   allocationReady:Boolean(gameTables?.abilityPoint&&catalog.classes?.[klass]),
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
   shown:pathSkillShown,onMoreSkills:()=>{pathSkillShown+=24;renderPathSkills()},
