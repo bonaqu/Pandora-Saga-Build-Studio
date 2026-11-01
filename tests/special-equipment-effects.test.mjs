@@ -75,7 +75,7 @@ test('mismatched IDs, values or invalid grade gates never claim Dawn Veil evasio
  for(const row of [fake(11552,10),fake(11553,3),fake(11552,3,'CASTER')])
   assert.equal(calc.specialEquipmentPreview({records:[row]}).entries.length,0);
  const gated={...items['11552'],effects:[{func:'EP_DESTINE_WARDING',
-  dir:'TARGET',a:3,min:5,max:10}]};
+  dir:'TARGET',a:3,b:null,min:5,max:10}]};
  assert.equal(calc.specialEquipmentPreview({records:[['item:11552',gated,4]]}).entries.length,0);
  assert.equal(calc.specialEquipmentPreview({records:[['item:11552',gated,5]]}).entries.length,1);
 });
