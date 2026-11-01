@@ -36,7 +36,7 @@ test('skill markers keep tooltips, use three distinct vertical lanes, and do not
 });
 test('saved builds stay local until the user explicitly overwrites',()=>{
  const app=read('app.js');
- assert.match(app,/function persist\(\)\{try\{localStorage\.setItem/);
+ assert.match(app,/function persist\(\)\{try\{window\.PandoraBuildScope\.setOwned/);
  assert.doesNotMatch(app,/PandoraSavedBuildAutosave\.updatedSaved/);
  assert.match(app,/text:'↻ Перезаписать'/);
  assert.match(app,/saveBuild\(state\.name,b\.id\)/);

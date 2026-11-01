@@ -23,8 +23,8 @@ test('opening imported public build does not overwrite an unrelated saved origin
 test('saved build identity survives closing and reopening the browser',()=>{
  const src=read('app.js');
  assert.match(src,/id=localStorage\.getItem\(ACTIVE_BUILD_KEY\)/);
- assert.match(src,/localStorage\.setItem\(ACTIVE_BUILD_KEY,id\)/);
- assert.match(src,/localStorage\.removeItem\(ACTIVE_BUILD_KEY\)/);
+ assert.match(src,/PandoraBuildScope\.setOwned\(localStorage,libraryScopeId\(\),ACTIVE_BUILD_KEY,id\)/);
+ assert.match(src,/PandoraBuildScope\.setOwned\(localStorage,libraryScopeId\(\),ACTIVE_BUILD_KEY,id\)/);
  assert.match(src,/builds\.some\(b=>b\.id===id\)\?id:null/);
  assert.match(src,/function newBlankBuild\(\)\{\s*selectActiveBuild\(null\)/);
  assert.match(src,/selectActiveBuild\(null\);state=incoming/);
