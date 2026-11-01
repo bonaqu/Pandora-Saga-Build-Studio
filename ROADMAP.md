@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.239.0 (`2026.11.01.239`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.240.0 (`2026.11.01.240`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.240.0 — vertical mastery value marker and shared geometry
+
+- [x] Replace the visible 18px **gold ring** on the actual Hero Path skill/mastery rail with a **4×26px upright bevelled gold notch**, positioned at the selected invested-points value. Mark it decorative (`aria-hidden`), prevent hit interception (`pointer-events:none`), preserve original mouse/touch and 18px native range-thumb interactive hit area in Chromium and Firefox while hiding the round native artwork.
+- [x] Reuse **one 21px rail inset and shared `positionOnRail` / `widthOnRail` functions** for the value notch, spent gold bar, trained green bar and red class limit. This avoids slight but cumulative alignment bugs at 0, 1, maximum, zoomed widths and future cap changes. Keep in-rail unlock markers, 90-point visual span, planning levels 1–55 and unchanged allocation semantics.
+- [x] Remove the obsolete gold-ring thumb decorations instead of piling new specificity on the old circular UI. Preserve accessibility/keyboard focus and forced-color feedback.
+- [x] Assert exact geometry mathematically across five widths and nine values; extend **real Chromium** `0→1→2→0` checks to verify the notch center, width/height, non-intercepting pointer events and keyboard ArrowRight allocation. Do not conflate unit tests with real browser pass.
+- [ ] Continue source-backed combat formula parity, gameplay evaluation of status resistances and end-to-end cloud write acceptance. Avoid broad deletion of legacy CSS without proving it is unused by tested UI paths.
 
 ## Source update 0.239.0 — bilingual defensive resistance and status grid
 
