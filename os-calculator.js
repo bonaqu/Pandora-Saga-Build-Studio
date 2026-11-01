@@ -1287,6 +1287,34 @@ function statusCurePreview({items=null}={}){
  return {rows,verified:false};
 }
 
+// Current OS consumables may trigger a *catalogued* skill when used. Display
+// their direct skill IDs, not invented buff amounts, durations or active effects.
+function consumableSkillPreview({items=null,skills=null}={}){
+ const rows=[];
+ if(!items||typeof items!=='object'||Array.isArray(items)||
+  !skills||typeof skills!=='object'||Array.isArray(skills))return {rows,verified:false};
+ for(const [key,item] of Object.entries(items)){
+  const id=Number(key);
+  if(!Number.isSafeInteger(id)||id<0||item?.id!==id||
+   !['POTION','BALM'].includes(item.kind)||!Array.isArray(item.effects))continue;
+  const triggered=[],seen=new Set();
+  for(const effect of item.effects){
+   if(!['EP_SKILL_EXEC','EP_SKILL_EXEC_BALM'].includes(effect?.func)||
+    effect.dir!=='TARGET'||!Number.isSafeInteger(effect.a)||
+    effect.a<1||seen.has(effect.a))continue;
+   const skill=skills[String(effect.a)];
+   if(!skill||Number(skill.id)!==effect.a||typeof skill.name!=='string'||
+    !skill.name.trim()||!Array.isArray(skill.funcs))continue;
+   triggered.push({id:effect.a,name:skill.name});
+   seen.add(effect.a);
+  }
+  if(triggered.length)rows.push({id,name:String(item.name||id),
+   kind:item.kind,skills:triggered});
+ }
+ rows.sort((a,b)=>a.id-b.id);
+ return {rows,verified:false,source:'Pandora Saga OS consumable EP_SKILL_EXEC / EP_SKILL_EXEC_BALM'};
+}
+
 // Two-second spell recovery previews from Remaked Legacy Calc('LPsec'/'MPsec').
 // The source's InBuff_0 input is SPI (not character level). Use the actual
 // effective SPI after equipment, racial stats, and chosen attribute buffs.
@@ -1575,6 +1603,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   jobKey:combatContext.jobKey,healingPercent:healingSkill.percent
  }):null;
  const statusCures=statusCurePreview({items:consumableItems});
+ const consumableSkills=consumableSkillPreview({
+  items:consumableItems,skills:combatContext.skillCatalog
+ });
  const consumableRecovery=consumableRecoveryPreview({
   items:consumableItems,maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,potionRate:potion?.percent??null,
@@ -1595,7 +1626,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -1603,6 +1634,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

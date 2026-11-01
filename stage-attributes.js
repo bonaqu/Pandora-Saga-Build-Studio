@@ -953,6 +953,30 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    }
    body.append(panel);
   }
+  const consumableSkills=modifiers?.consumableSkills?.rows||[];
+  if(consumableSkills.length){
+   const section=make('details',{class:'stage-attribute-row stage-consumable-skills'});
+   const english=document.documentElement?.lang==='en';
+   section.append(make('summary',{text:(english?
+    'Items that activate skills':'Предметы, активирующие умения')+
+    ' · '+consumableSkills.length}));
+   for(const entry of consumableSkills){
+    const item=itemById(entry.id);
+    const displayName=item?.name||entry.name;
+    const row=make(item?'button':'div',{class:'stage-potion-item',
+     ...(item?{type:'button','aria-label':(english?'Open item: ':
+      'Открыть предмет: ')+displayName,onclick:()=>onItem(entry.id)}:{})});
+    if(item){
+     const src=icon(item);
+     if(src){const picture=make('img',{src,alt:'',loading:'lazy'});
+      picture.onerror=()=>picture.remove();row.append(picture);}
+    }
+    row.append(make('span',{class:'stage-potion-name',text:displayName}),
+     make('strong',{text:entry.skills.map(skill=>skill.name).join(' · ')}));
+    section.append(row);
+   }
+   body.append(section);
+  }
   renderSkillInspector(body,skillModel);
  }
  if(chosen==='recovery'&&modifiers?.healingSkill){
