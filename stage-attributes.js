@@ -757,10 +757,13 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   body.prepend(card);
  }
  if(page==='defense'&&modifiers?.targetResistance?.entries?.length){
+  const english=document.documentElement?.lang==='en';
   const card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Защита от отдельных типов противников'}));
+  card.append(make('strong',{text:english?'Defense by enemy type':
+   'Защита от отдельных типов противников'}));
   for(const effect of modifiers.targetResistance.entries)
-   card.append(make('p',{text:'Урон от '+effect.name+': '+
+   card.append(make('p',{text:(english?'Damage from ':'Урон от ')+
+    (english?effect.nameEn:effect.name)+': '+
     (effect.change>0?'+':'')+effect.change+'% · '+effect.source}));
   body.prepend(card);
  }
