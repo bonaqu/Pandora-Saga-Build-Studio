@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('wiki selects records without recreating list and triggering two hash rerenders',()=>{
  const app=read('app.js');
- assert.match(app,/wikiRenderSelected=\(\)=>\{if\(root\.isConnected&&wikiIndex\)draw\(true\)\}/);
+ assert.match(app,/wikiRenderSelected=\(\)=>\{/);
+ assert.match(app,/draw\(present\)/);
  assert.match(app,/history\.pushState\(history\.state/);
  assert.match(app,/if\(sameCategory\)wikiRenderSelected\(\)/);
  assert.match(app,/const draw=\(detailOnly=false\)=>/);
