@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.251.0 (`2026.11.01.251`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.252.0 (`2026.11.01.252`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.252.0 — verified cleanup of unused mastery picker styling
+
+- [x] Check every top-level JavaScript module loaded by the site and confirm that retired grouped skill picker / choice / dismiss and obsolete four-button inline branch controls are never created.
+- [x] Remove only the now-unreachable rules and obsolete media-query overrides for `path-milestone-picker`, `path-milestone-choice`, `path-milestone-choice-body`, `path-milestone-dismiss` and `inline-branch-controls`. Preserve live skill hover previews, accessible unlock list, vertical current-value tick, and invested/mastery inputs.
+- [x] Add regression checks over the actual HTML script dependency list, asserting no deleted class is still rendered and active selectors remain. Verify real Chromium and deployed Pages separately.
+- [ ] Continue source-based cleanup, image restoration, formula parity, RU/EN coverage and authenticated production D1 acceptance.
 
 ## Source update 0.251.0 — single header locale and concise Hero Path
 

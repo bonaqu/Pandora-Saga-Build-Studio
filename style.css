@@ -277,8 +277,6 @@ a.wiki-link:hover{text-decoration:none}
 .branch-racial-note{padding:10px;color:#c1a681;font-size:11px}
 .inline-branch-editor{margin:1px 5px 8px;padding:9px;background:#110d0af0;border:1px solid #967146}
 .inline-branch-editor input[type=range]{margin:8px 0;display:block;accent-color:#d9a95b}
-.inline-branch-controls{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
-.inline-branch-controls button{padding:5px 0;background:#392618;color:#f2c993;border:1px solid #906b45}
 .inline-branch-editor .muted{display:block;margin-top:5px;font-size:10px}
 .portrait-frame.picking>img#hero,.portrait-frame.picking>.ornament,.portrait-frame.picking>.portrait-bottom{visibility:hidden}
 .stage-picker{position:absolute;z-index:6;inset:0;display:flex;flex-direction:column;gap:8px;padding:12px;background:linear-gradient(145deg,#332316,#110d0b 65%,#281d14);color:#eed3a5}
@@ -723,14 +721,6 @@ a.wiki-link:hover{text-decoration:none}
 .inline-mastery-track{height:94px}
 
 
-/* 2026.10.30.74 — explicit grouped skill picker, always below the track. */
-.path-milestone-picker[hidden]{display:none!important}
-.path-milestone-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin:7px 0;padding:8px;background:#23190f;border:1px solid #85633e;border-radius:5px}
-.path-milestone-picker>strong{grid-column:1/-1;color:#edcb96;font-size:12px}
-.path-milestone-choice{display:flex;align-items:center;gap:7px;min-width:0;text-align:left;padding:7px;color:#ebcda1;background:#34251a;border:1px solid #785737;font-size:11px;border-radius:3px}
-.path-milestone-choice:hover,.path-milestone-choice:focus-visible{border-color:#e8be79;background:#56402a}
-.path-milestone-choice img{width:26px;height:26px;object-fit:contain;flex-shrink:0}
-@media(max-width:460px){.path-milestone-picker{grid-template-columns:1fr}}
 
 /* 2026.10.30.76 — integrated threshold ticks, no detached diamond icons. */
 .inline-mastery-track{height:53px;margin:5px 3px 8px}
@@ -752,15 +742,12 @@ a.wiki-link:hover{text-decoration:none}
  -webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;
 }
 .path-preview-more{display:block;color:#e2b982;margin-top:5px;font-size:10px}
-.path-milestone-picker{max-height:280px;overflow-y:auto;grid-template-columns:1fr 1fr}
-.path-milestone-dismiss{grid-column:1/-1;border:1px solid #6c533d;background:#281c13;color:#ddbb8a;padding:5px}
 .right .branch-row.disabled-branch{padding-block:4px;min-height:31px;opacity:.55}
 .right .branch-row.disabled-branch .count{font-size:11px}
 .right .branch-row.disabled-branch span:empty{display:none}
 .right .inline-branch-editor{padding:7px;margin-bottom:6px}
 .right .path-allocation-input{margin:5px 0}
 @media(max-width:460px){
- .path-milestone-picker{grid-template-columns:1fr}
  .stage-hover-preview.path-skill-preview{max-height:210px}
 }
 
@@ -768,12 +755,7 @@ a.wiki-link:hover{text-decoration:none}
 .right .game-tree-head{min-height:40px;padding:7px 9px;gap:8px}
 .right .game-tree-head strong{min-width:0}
 .right .game-tree-head small{flex:0 0 auto;white-space:nowrap;font-size:10px;line-height:1.2}
-.path-milestone-choice-body{display:flex;min-width:0;flex:1;flex-direction:column;gap:2px}
-.path-milestone-choice-body strong{font:600 12px Manrope,Arial,sans-serif;color:#f6d7a1}
-.path-milestone-choice-body small{font:10px/1.25 Manrope,Arial,sans-serif;color:#c4aa85}
-.path-milestone-choice img{align-self:center;width:30px;height:30px;flex-shrink:0}
 @media(max-width:700px){
- .path-milestone-picker{grid-template-columns:1fr}
  .right .game-tree-head{flex-wrap:wrap}
  .right .game-tree-head small{margin-left:auto}
 }
