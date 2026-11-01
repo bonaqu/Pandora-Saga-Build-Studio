@@ -43,12 +43,13 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
 });
 
 test('skill tick overlay is passive, not a drag-blocking button',()=>{
- assert.match(hero,/const ticks=make\('div',\{class:'inline-branch-milestones'\}\)/);
- assert.match(hero,/const tick=make\('span',\{class:'path-threshold-tick'/);
+ assert.match(hero,/const ticks=make\('div',\{class:'path-integrated-milestones'\}\)/);
+ assert.match(hero,/const tick=make\('span',\{class:'path-unlock-notch'/);
  assert.doesNotMatch(hero,/class:'inline-milestone path-milestone-pin'/);
- assert.match(css,/\.inline-mastery-track \.inline-branch-milestones\{[\s\S]*?pointer-events:none!important/);
- assert.match(css,/\.inline-mastery-track \.path-threshold-tick\{[\s\S]*?pointer-events:auto!important/);
- assert.match(css,/\.inline-mastery-track input\[type=range\]\{[\s\S]*?z-index:7/);
+ const current=css.slice(css.lastIndexOf('/* 0.195.0'));
+ assert.match(current,/\.path-integrated-track \.path-integrated-milestones\{[\s\S]*?pointer-events:none/);
+ assert.match(current,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?pointer-events:none/);
+ assert.match(current,/\.path-integrated-track input\[type=range\]\{[\s\S]*?z-index:12/);
 });
 
 test('both equipment rails share the same sizing at desktop/tablet/mobile breakpoints',()=>{

@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const base=new URL('../',import.meta.url),read=p=>readFileSync(new URL(p,base),'utf8');
 test('mastery, potential and skill icon milestones share a single visual track',()=>{
  const ui=read('hero-path.js'),css=read('style.css');
- assert.match(ui,/class:'inline-mastery-track'/);
+ assert.match(ui,/class:'inline-mastery-track path-integrated-track'/);
  assert.match(ui,/class:'inline-mastery-fill'/);
  assert.match(ui,/class:'inline-mastery-green'/);
  assert.match(ui,/track\.append\(bed,gold,green,locked\)/);
@@ -57,12 +57,12 @@ test('skill-unlock icons use the full 90-point track scale even for low class ca
 
 test('one bar uses standard CSS calc and correctly centered milestone markers',()=>{
  const ui=read('hero-path.js'),css=read('style.css');
- assert.match(ui,/const lockedOffset=12-24\*lockedFraction/);
+ assert.match(ui,/const lockedOffset=21-42\*lockedFraction/);
  assert.doesNotMatch(ui,/calc\(12px \+ \(100% - 24px\) \*/);
  assert.match(ui,/gold\.style\.width='calc\('/);
  assert.match(ui,/green\.style\.width='calc\('/);
  assert.match(ui,/tick\.style\.left=\(threshold\/visualMax\*100\)\.toFixed\(4\)/);
- assert.match(css,/\.inline-mastery-track \.inline-milestone\{transform:translateX\(-50%\)\}/);
+ assert.match(css,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?transform:translateX\(-50%\)/);
 });
 test('skill editor preserves keyboard focus across state re-render',()=>{
  const app=read('app.js'),ui=read('hero-path.js');
@@ -128,13 +128,14 @@ test('branch summary, green mastery and group totals update on input, not only c
   assert.ok(ui.includes(part),part);
 });
 
-test('milestones are compact staggered dots with skill icon/description only on hover',()=>{
+test('milestones are thin notches in one shared bar with skill descriptions on hover',()=>{
  const ui=read('hero-path.js'),app=read('app.js'),css=read('style.css');
- assert.match(ui,/path-threshold-tick/);
+ assert.match(ui,/path-unlock-notch/);
  assert.match(ui,/const thresholds=\[\.\.\.new Set\(marks\.map\(mark=>mark\.threshold\)\)\]/);
  assert.match(ui,/const preview=make\('div',\{class:'path-milestone-tooltip',role:'tooltip'\}\)/);
  assert.match(app,/path-skill-preview-item/);
- assert.match(css,/path-milestone-pin/);
+ assert.match(css,/\.path-integrated-track \.path-unlock-notch\{/);
+ assert.match(ui,/track\.addEventListener\('pointermove'/);
 });
 
 test('right Hero Path and skill list use one page scroll, no nested locked panels',()=>{
