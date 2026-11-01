@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.230.0 (`2026.11.01.230`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.231.0 (`2026.11.01.231`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.231.0 — source-linked on-use consumable skill index
+
+- Add a compact **collapsed** recovery-book catalog for OS consumables explicitly activating linked skills on use via `EP_SKILL_EXEC` and `EP_SKILL_EXEC_BALM`. Current OS snapshot has **38 distinct BALM/POTION items with 49 effect links** (two skills from Life Force Potion, and repeated links on several balms); each named skill is resolved by numeric ID from the current localized RU/EN skill catalog.
+- Make every item row clickable to the existing encyclopedia and reuse its translated item name/icon. Never add those *optional, not consumed* effects to a hero's current buff/HP/MP/combat totals, never claim duration/cooldown if unsupported, never create an active consumable selection or cloud write.
+- Reject records with unsupported type, mismatched item ID, unknown skill, wrong direction or invalid effect identifiers; use actual official OS POTION and BALM records and language tests. Status cures and consumable HP/MP recovery remain independent.
+- Preserve all named/cloud builds, 1–55 planning, admin entry, account scopes and D1 schema.
 
 ## Source update 0.230.0 — original OS battle-map-only cloak bonuses
 
