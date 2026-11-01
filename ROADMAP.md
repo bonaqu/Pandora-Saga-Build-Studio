@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.244.0 (`2026.11.01.244`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.245.0 (`2026.11.01.245`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.245.0 — shared skill prerequisite index in Hero Path and skill gallery
+
+- [x] Replace repeated linear scans for prerequisite IDs with one render-local, first-match-preserving Map shared by nested readiness checks, growth marker state and the visible skill gallery/inspector.
+- [x] Keep original cyclic dependency guard, level, job, mastery, learnability, unknown prerequisites and skill availability semantics; never trust fabricated skill IDs.
+- [x] Add regression tests for valid multi-skill chains, missing links, cyclic links, duplicate IDs and the absence of accidental Array.find scans.
+- [ ] Confirm in Chromium and Pages independently; current OS formula parity and production D1 write lifecycle remain open.
 
 ## Source update 0.244.0 — indexed milestones and logarithmic hover selection
 

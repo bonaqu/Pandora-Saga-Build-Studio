@@ -15,7 +15,18 @@ function make(tag,attr={},children=[]){
  for(const v of children)e.append(typeof v==='string'?document.createTextNode(v):v);
  return e;
 }
-function readiness(skill,api,seen=new Set()){
+// First matching ID wins, matching the original Array.find semantics.
+function indexSkills(skills){
+ const byId=new Map();
+ for(const skill of skills||[]){
+  if(!skill||skill.id===undefined||skill.id===null)continue;
+  const id=String(skill.id);
+  if(!byId.has(id))byId.set(id,skill);
+ }
+ return byId;
+}
+function readiness(skill,api,seen=new Set(),skillIndex){
+ const byId=skillIndex||indexSkills(api.skillCatalog);
  const problems=[],state=api.state,job=api.job;
  if(seen.has(String(skill.id)))return {learned:false,problems:[tr(api,'Циклическая зависимость навыков','Cyclic skill prerequisite')]};
  const chain=new Set(seen);chain.add(String(skill.id));
@@ -30,10 +41,10 @@ function readiness(skill,api,seen=new Set()){
   if(green<need)problems.push(name+tr(api,': мастерство ',': mastery ')+green+'/'+need);
  }
  if(skill.prereq){
-  const previous=api.skillCatalog.find(row=>String(row.id)===String(skill.prereq));
+  const previous=byId.get(String(skill.prereq));
   if(!previous)problems.push(tr(api,'Предыдущее умение не найдено','Required previous skill not found'));
   else{
-   const prerequisite=readiness(previous,api,chain);
+   const prerequisite=readiness(previous,api,chain,byId);
    if(!prerequisite.learned)problems.push(tr(api,'Требуется предыдущее умение «','Requires previous skill “')+previous.name+tr(api,'»','”'));
   }
  }
@@ -59,6 +70,7 @@ function nearestMilestone(marks,fraction){
 function viewGrowth(target,api){
  target.replaceChildren();
  const {state,groups,selectedGroup,expandedBranch,job,skillCatalog,budget}=api,auto=state.masteryAuto!==false;
+ const skillIndex=indexSkills(skillCatalog);
  for(const group of groups){
   const branchKeys=group.branches.filter(key=>key!=='race');
   const spent=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
@@ -124,7 +136,7 @@ function viewGrowth(target,api){
      range.setAttribute('aria-valuetext', invested+tr(api,' вложено, ',' spent, ')+mastery+tr(api,' освоено, предел ',' trained, class limit ')+cap);
      for(const entry of milestonesOnTrack)
       entry.tick.classList.toggle('reached',
-       !entry.locked&&entry.skills.some(skill=>readiness(skill,api).learned));
+       !entry.locked&&entry.skills.some(skill=>readiness(skill,api,new Set(),skillIndex).learned));
     };
     track.append(bed,gold,green,locked);
     track.append(currentNotch);
@@ -239,7 +251,7 @@ function viewGrowth(target,api){
      const list=make('div',{class:'path-unlock-list'});
      for(const mark of [...marks].sort((a,b)=>a.threshold-b.threshold)){
       for(const skill of mark.skills){
-       const gate=readiness(skill,api);
+       const gate=readiness(skill,api,new Set(),skillIndex);
        const button=make('button',{type:'button',class:'path-unlock-skill'+
         (mark.locked?' unreachable':gate.learned?' reached':''),
         'aria-label':(skill.name||tr(api,'Умение','Skill'))+', '+mark.threshold+tr(api,' очков',' points'),
@@ -306,10 +318,11 @@ function viewSkills(target,details,api){
  const previousScroll=target.querySelector?.('.path-skill-grid')?.scrollTop||0;
  target.replaceChildren();details.replaceChildren();details.hidden=true;
  if(!api.catalogReady){target.append(make('p',{class:'muted',text:tr(api,'Каталог умений загружается.','Loading skill catalog…')}));return}
+ const skillIndex=indexSkills(api.skillCatalog);
  const needle=String(api.query||'').trim().toLocaleLowerCase('ru');
  const rows=api.skillCatalog.filter(skill=>skill.classes?.[api.job]&&
   (String(skill.name||'')+' '+skill.id).toLocaleLowerCase('ru').includes(needle))
-  .map(skill=>({skill,gate:readiness(skill,api)})).filter(({gate})=>
+  .map(skill=>({skill,gate:readiness(skill,api,new Set(),skillIndex)})).filter(({gate})=>
    api.filter==='all'||(api.filter==='known'?gate.learned:!gate.learned));
  rows.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
   String(a.skill.name||'').localeCompare(String(b.skill.name||''),'ru'));
@@ -366,7 +379,7 @@ function viewSkills(target,details,api){
    details.append(reqList);
   }
   if(skill.prereq){
-   const before=api.skillCatalog.find(s=>String(s.id)===String(skill.prereq));
+   const before=skillIndex.get(String(skill.prereq));
    details.append(make('p',{class:'path-skill-prereqs',text:tr(api,'Предыдущее умение: ','Previous skill: ')+
      (before?.name||String(skill.prereq))}));
   }
