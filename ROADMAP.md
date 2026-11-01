@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.235.0 (`2026.11.01.235`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.236.0 (`2026.11.01.236`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.236.0 — verified OS periodic healing/recovery source effects
+
+- [x] Match the current OS skill identity and **full** `fv1`/`fv2` vectors, direction, type, class, level, prereq, learnability and branch thresholds for `310002001` Regenerate, `310022001` Restoration and `330005001` Mana Restore. An altered EP, tick interval, magnitude, class or mastery requirement cannot become a legitimate preview.
+- [x] For periodic HP healing, check that the class's true `benevolence` limit permits the skill and that effective mastery is within it; unrelated invalid mastery does **not** remove valid Ascetic-family mana recovery. Level 20 remains required for the latter. No skill is activated automatically and no effects are credited to permanent regen.
+- [x] Preserve original Remaked `LPsec`/`MPsec` formulas and historical warning of uncertain server application. Pass class branch caps from current real character model, not from user-editable allocations.
+- [x] Unit regressions reject corrupted child vectors, incorrect EP or directions, invalid class, impossible thresholds and missing catalog; validate that filtering does not change max HP/MP or base stats.
+- [ ] Actual live OS periodic recovery mechanics, stacking and ultimate health/mana gain still need in-game comparison. Further formula branches, real D1 writes and mobile UI acceptance remain open.
 
 ## Source update 0.235.0 — OS area song chain previews
 
