@@ -17,8 +17,10 @@ test('OS Souls show exact critical vulnerability and Stubborn Heart descriptions
   ['soul:103013',critical,0],['soul:103019',stubborn,0]]});
  assert.deepEqual(r.entries.map(x=>x.code),['EP_ALL_CRITICAL','EP_RACE_TOUGH_HEART']);
  assert.match(r.entries[0].ru,/критические удары/);
- assert.match(r.entries[1].ru,/5% ОЗ/);
- assert.match(r.entries[1].en,/5% HP/);
+ assert.equal(r.entries[1].ru,'«Упрямое сердце»: условное срабатывание');
+ assert.equal(r.entries[1].en,'Stronghearted: conditional trigger');
+ assert.ok(!r.entries[1].en.includes('5%'),'EN original claims a 5% chance at zero LP, not 5% HP');
+ assert.ok(!r.entries[1].ru.includes('5%'),'RU and EN sources disagree on trigger timing');
  assert.ok(r.entries.every(x=>x.verified===false));
 });
 test('cursed staff gradual HP drain is described without invented damage ticks',()=>{
@@ -73,7 +75,44 @@ test('mismatched IDs, values or invalid grade gates never claim Dawn Veil evasio
  for(const row of [fake(11552,10),fake(11553,3),fake(11552,3,'CASTER')])
   assert.equal(calc.specialEquipmentPreview({records:[row]}).entries.length,0);
  const gated={...items['11552'],effects:[{func:'EP_DESTINE_WARDING',
-  dir:'TARGET',a:3,min:5,max:10}]};
+  dir:'TARGET',a:3,b:null,min:5,max:10}]};
  assert.equal(calc.specialEquipmentPreview({records:[['item:11552',gated,4]]}).entries.length,0);
  assert.equal(calc.specialEquipmentPreview({records:[['item:11552',gated,5]]}).entries.length,1);
+});
+
+test('OS RU and EN source records for four non-proc conditions are checked independently',()=>{
+ const english=JSON.parse(read('data/os/strings.en.json'));
+ const cases=[
+  ['soul',103013,critical,'EP_ALL_CRITICAL'],
+  ['soul',103019,stubborn,'EP_RACE_TOUGH_HEART'],
+  ['item',2841,cursed,'EP_HEAL_LIFE_REGENERATOR'],
+  ['item',11552,items['11552'],'EP_DESTINE_WARDING']
+ ];
+ for(const [kind,id,source,code] of cases){
+  const key=kind+':'+id,translated=(kind==='item'?english.items:english.souls)[id];
+  const enRow={...source,name:translated.n,desc:translated.d};
+  for(const row of [source,enRow]){
+   const result=calc.specialEquipmentPreview({records:[[key,row,0]]});
+   assert.deepEqual(result.entries.map(x=>x.code),[code],key+' exact RU/EN');
+   assert.equal(result.entries[0].verified,false);
+   const forgedSource=kind+':'+(id+1);
+   assert.deepEqual(calc.specialEquipmentPreview({records:[[forgedSource,row,0]]}).entries,[],
+    'mismatched identity must never authorize an effect: '+key);
+   assert.deepEqual(calc.specialEquipmentPreview({records:[[key,{...row,desc:'Another effect with the same percent'},0]]}).entries,[],
+    'an unrelated description cannot authorize effect '+key);
+   const changed={...row,effects:row.effects.map(e=>e.func===code?
+    {...e,a:e.a+1}:e)};
+   assert.deepEqual(calc.specialEquipmentPreview({records:[[key,changed,0]]}).entries,[],
+    'changed effect coefficients cannot be described as original '+key);
+  }
+ }
+});
+test('RU and EN Soul of Gnashing disagree on low-HP threshold vs chance at zero LP',()=>{
+ const english=JSON.parse(read('data/os/strings.en.json'));
+ assert.match(stubborn.desc,/при 5% ОЗ/);
+ assert.match(english.souls['103019'].d,/5% chance.*LP reaches 0/i);
+ const preview=calc.specialEquipmentPreview({records:[['soul:103019',stubborn,0]]}).entries[0];
+ assert.ok(!/5%|0 LP|0 ОЗ/.test(preview.ru+' '+preview.en),
+  'neither unverified trigger interpretation should be advertised as proven');
+ assert.equal(Object.hasOwn(preview,'chance'),false);
 });

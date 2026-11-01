@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.227.0 (`2026.11.01.227`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.228.0 (`2026.11.01.228`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.228.0 — exact RU/EN provenance for special equipment/Soul effects
+
+- Tighten nine on-hit and Traveler Boots descriptions to the specific originally published RU/EN trigger phrase, not any arbitrary mention of the same percentage; require exact source ID, effect code/parameters and current grade validity. All source-backed RU/EN examples remain visible.
+- Four unusual Soul/item effects (Unfortunate Soul, Gnashing/Stubborn Heart, Cursed Rod, Dawn Veil) require exact source key, ID, full structured effect parameters and original RU/EN phrasing. Prevent a different item/Soul with a similar effect code or superficially matching chance from inheriting its displayed behavior.
+- Source discrepancy: RU Stubborn Heart description says trigger near 5% HP, while the EN archive says 5% chance when LP reaches 0. The UI now labels the **conditional effect** without inventing a single HP threshold/probability. All incoming-critical text is conservatively limited to physical attacks in the description due to EN source language. No server roll or new combat formula asserted.
+- Regression tests cover all 13 precise proc/special cases across two locales plus tampered sources, grades and conflicting descriptions. Existing builds/D1/auth, manual save and planning 1–55 intact.
 
 ## Source update 0.227.0 — locale-invariant enhancement fallback
 

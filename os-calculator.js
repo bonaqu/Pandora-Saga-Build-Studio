@@ -948,12 +948,12 @@ function attackRangePreview({records=[],itemForth=null}={}){
 // The scanner receives ONLY currently eligible equipped items and Souls from base().
 const specialEquipmentRules=Object.freeze({
  EP_ALL_CRITICAL:Object.freeze({
-  ru:'Все получаемые атаки — критические удары',
-  en:'All incoming attacks are critical hits'
+  ru:'Получаемые физические атаки — критические удары',
+  en:'Incoming physical attacks are critical hits'
  }),
  EP_RACE_TOUGH_HEART:Object.freeze({
-  ru:'«Упрямое сердце»: возможно срабатывание при 5% ОЗ',
-  en:'Stubborn Heart: may trigger at 5% HP'
+  ru:'«Упрямое сердце»: условное срабатывание',
+  en:'Stronghearted: conditional trigger'
  }),
  EP_HEAL_LIFE_REGENERATOR:Object.freeze({
   ru:'Постепенное уменьшение ОЗ от предмета',
@@ -972,30 +972,39 @@ const specialEquipmentRules=Object.freeze({
 // Vampire Soul's description says 4%, while its source chance is 5%.
 const confirmedOnHitRules=Object.freeze({
  'item:422':Object.freeze({id:422,func:'EP_ONHIT_SKILL_EXEC',a:500000015,b:9,dir:'TARGET',
+  sourcePhrase:'При атаке есть 9% шанс сбить противника с ног',sourcePhraseEn:'Attacks have a 9% chance to knock the enemy off their feet',
   ru:'При атаке: 9% шанс сбить противника с ног',
   en:'On attack: 9% chance to knock down the target'}),
  'item:1041':Object.freeze({id:1041,func:'EP_ONHIT_SKILL_EXEC',a:500000002,b:9,dir:'TARGET',
+  sourcePhrase:'При атаке есть 9% шанс оглушить противника',sourcePhraseEn:'On attack, it has a 9% chance to stun the foe',
   ru:'При атаке: 9% шанс оглушить противника',
   en:'On attack: 9% chance to stun the target'}),
  'item:1211':Object.freeze({id:1211,func:'EP_ONHIT_SKILL_EXEC',a:500000015,b:4,dir:'TARGET',
+  sourcePhrase:'При физической атаке 4% шанс Уронить врага',sourcePhraseEn:'4% Chance to Knock Down on Physical Attack',
   ru:'При физической атаке: 4% шанс уронить врага',
   en:'On physical attack: 4% chance to knock down the target'}),
  'item:2802':Object.freeze({id:2802,func:'EP_ONHIT_STUN',a:3,b:4,dir:'TARGET',
+  sourcePhrase:'При физической атаке 4% шанс Оглушить врага',sourcePhraseEn:'4% Chance to Stun on Physical Attack',
   ru:'При физической атаке: 4% шанс оглушить врага',
   en:'On physical attack: 4% chance to stun the target'}),
  'soul:101010':Object.freeze({id:101010,func:'EP_ONHIT_SKILL_EXEC',a:500000002,b:4,dir:'SELF',
+  sourcePhrase:'4% вероятность оглушить цель при атаке',sourcePhraseEn:'4% chance to inflict Stun with a successful attack',
   ru:'При атаке: 4% шанс оглушить цель',
   en:'On attack: 4% chance to stun the target'}),
  'soul:101011':Object.freeze({id:101011,func:'EP_ONHIT_SKILL_EXEC',a:500000003,b:4,dir:'SELF',
+  sourcePhrase:'4% вероятность ослабить цель при атаке',sourcePhraseEn:'4% chance to inflict Weaken with a successful attack',
   ru:'При атаке: 4% шанс ослабить цель',
   en:'On attack: 4% chance to weaken the target'}),
  'soul:101012':Object.freeze({id:101012,func:'EP_ONHIT_SKILL_EXEC',a:500000001,b:4,dir:'SELF',
+  sourcePhrase:'4% вероятность усыпить цель при атаке',sourcePhraseEn:'4% chance to inflict Sleep with a successful attack',
   ru:'При атаке: 4% шанс усыпить цель',
   en:'On attack: 4% chance to put the target to sleep'}),
  'soul:101021':Object.freeze({id:101021,func:'EP_ONHIT_SKILL_EXEC',a:500000004,b:4,dir:'SELF',
+  sourcePhrase:'4% вероятность отравить цель при атаке',sourcePhraseEn:'4% chance to inflict Poison with a successful attack',
   ru:'При атаке: 4% шанс отравить цель',
   en:'On attack: 4% chance to poison the target'}),
  'soul:101022':Object.freeze({id:101022,func:'EP_ONHIT_SKILL_EXEC',a:500000000,b:5,dir:'SELF',
+  sourcePhrase:'5% вероятность замедлить цель при атаке',sourcePhraseEn:'5% chance to reduce target\'s Movement Speed with a successful attack',
   ru:'При атаке: 5% шанс замедлить цель',
   en:'On attack: 5% chance to slow the target'})
 });
@@ -1010,6 +1019,24 @@ const corroboratedProcRules=Object.freeze({
   ru:'При получении физического урона: 8% шанс получить «Порыв»',
   en:'On taking physical damage: 8% chance to trigger Dash'})
 });
+// Fully anchored OS-only descriptions. A matching EP code on another item is
+// not evidence that its gameplay effect or trigger is identical.
+const corroboratedSpecialRules=Object.freeze({
+ 'soul:103013':Object.freeze({id:103013,func:'EP_ALL_CRITICAL',a:0,b:0,dir:'SELF',
+  sourcePhrase:'Все получаемые атаки будут критическими ударами',
+  sourcePhraseEn:'All enemy physical attacks become critical hits'}),
+ 'soul:103019':Object.freeze({id:103019,func:'EP_RACE_TOUGH_HEART',a:5,b:0,dir:'SELF',
+  sourcePhrase:"Вероятность срабатывания умения 'Упрямое сердце' при 5% ОЗ",
+  sourcePhraseEn:'5% chance to activate Stronghearted when LP reaches 0'}),
+ 'item:2841':Object.freeze({id:2841,func:'EP_HEAL_LIFE_REGENERATOR',a:-20,b:5,dir:'TARGET',
+  sourcePhrase:'Постепенное уменьшение ОЗ',sourcePhraseEn:'Gradual HP loss'}),
+ 'item:11552':Object.freeze({id:11552,func:'EP_DESTINE_WARDING',a:3,b:null,dir:'TARGET',
+  sourcePhrase:'Шанс уклониться от физической атаки +3%',
+  sourcePhraseEn:'Physical Attack Evasion Chance +3%'})
+});
+const matchesOriginalDescription=(record,rule)=>typeof record?.desc==='string'&&
+ (record.desc.includes(rule.sourcePhrase)||
+  (rule.sourcePhraseEn&&record.desc.includes(rule.sourcePhraseEn)));
 function specialEquipmentPreview({records=[],itemForth=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
@@ -1024,24 +1051,18 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
    if(proc&&record&&Number(record.id)===proc.id&&
       effect.func===proc.func&&effect.a===proc.a&&effect.b===proc.b&&
       effect.dir===proc.dir&&Number.isInteger(grade)&&grade>=0&&grade<=10&&
-      typeof record.desc==='string'&&
-      (proc.sourcePhrase?
-       (record.desc.includes(proc.sourcePhrase)||
-        (proc.sourcePhraseEn&&record.desc.includes(proc.sourcePhraseEn))):
-       record.desc.includes(String(proc.b)+'%'))){
+      matchesOriginalDescription(record,proc)){
     entries.push({code:effect.func,source:String(record.name||source),
      ru:proc.ru,en:proc.en,verified:false,
      procIdentity:procIdentity(source,effect)});
     continue;
    }
-   if(!Object.hasOwn(specialEquipmentRules,effect.func))continue;
-   // These two descriptions are restricted to their verified OS item data.
-   if(effect.func==='EP_RACE_TOUGH_HEART'&&effect.a!==5)continue;
-   if(effect.func==='EP_HEAL_LIFE_REGENERATOR'&&
-      !(Number.isFinite(effect.a)&&effect.a<0))continue;
-   // This wording and 3% rate are confirmed only for the OS Dawn Veil.
-   if(effect.func==='EP_DESTINE_WARDING'&&
-      !(Number(record.id)===11552&&effect.a===3&&effect.dir==='TARGET'))continue;
+   const precise=Object.hasOwn(corroboratedSpecialRules,String(source))?
+    corroboratedSpecialRules[String(source)]:null;
+   if(!precise||record.id!==precise.id||
+      effect.func!==precise.func||effect.a!==precise.a||
+      effect.b!==precise.b||effect.dir!==precise.dir||
+      !matchesOriginalDescription(record,precise))continue;
    const labels=specialEquipmentRules[effect.func];
    entries.push({code:effect.func,source:String(record.name||source),
     ru:labels.ru,en:labels.en,
