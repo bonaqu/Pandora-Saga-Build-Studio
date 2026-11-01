@@ -76,7 +76,7 @@ function viewGrowth(target,api){
     const label=make('strong',{text:points+' / '+cap});
     note.append(make('span',{text:root.PandoraUILocale?.text('branchPoints',api.lang)||'Очки ветки'}),label);
     const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
-    const track=make('div',{class:'inline-mastery-track','aria-label':'Единая полоса вложенных очков и освоенного мастерства '+api.branchName(key)});
+    const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':'Единая полоса вложенных очков и освоенного мастерства '+api.branchName(key)});
     const visualMax=Math.max(90,cap,points);
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
@@ -84,7 +84,7 @@ function viewGrowth(target,api){
            'aria-label':'Предел класса: '+cap+' из '+visualMax+'. Красная часть недоступна.'});
     if(cap>=visualMax)locked.hidden=true;
     const lockedFraction=Math.max(0,Math.min(1,cap/visualMax));
-    const lockedOffset=12-24*lockedFraction;
+    const lockedOffset=21-42*lockedFraction;
     // Standard CSS calc, no browser-dependent multiplication.
     locked.style.left='calc('+(lockedFraction*100).toFixed(6)+'% '+
       (lockedOffset<0?'-':'+')+' '+Math.abs(lockedOffset).toFixed(6)+'px)';
@@ -93,8 +93,8 @@ function viewGrowth(target,api){
      const invested=M.potential(state,key),mastery=M.trained(state,key);
      const goldFraction=Math.max(0,Math.min(1,invested/visualMax));
      const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
-     gold.style.width='calc('+(goldFraction*100).toFixed(6)+'% - '+(24*goldFraction).toFixed(6)+'px)';
-     green.style.width='calc('+(greenFraction*100).toFixed(6)+'% - '+(24*greenFraction).toFixed(6)+'px)';
+     gold.style.width='calc('+(goldFraction*100).toFixed(6)+'% - '+(42*goldFraction).toFixed(6)+'px)';
+     green.style.width='calc('+(greenFraction*100).toFixed(6)+'% - '+(42*greenFraction).toFixed(6)+'px)';
      range.setAttribute('aria-valuetext', invested+' вложено, '+mastery+' освоено, предел '+cap);
      for(const entry of milestonesOnTrack)
       entry.tick.classList.toggle('reached',
@@ -130,15 +130,16 @@ function viewGrowth(target,api){
     const marks=api.milestones(skills,key,cap);
     let unlockDetails=null;
     if(marks.length){
-     const ticks=make('div',{class:'inline-branch-milestones'});
+     const ticks=make('div',{class:'path-integrated-milestones'});
      const thresholds=[...new Set(marks.map(mark=>mark.threshold))].sort((a,b)=>a-b);
      for(const threshold of thresholds){
       const at=marks.filter(mark=>mark.threshold===threshold);
       const lockedAt=at.every(mark=>mark.locked);
       const skillsAt=at.flatMap(mark=>mark.skills);
       const learned=skillsAt.some(skill=>readiness(skill,api).learned);
-      const tick=make('span',{class:'path-threshold-tick'+
-       (lockedAt?' unreachable':learned?' reached':''),
+      const tick=make('span',{class:'path-unlock-notch'+
+       (lockedAt?' unreachable':learned?' reached':'')+
+       (threshold/visualMax<.26?' edge-left':threshold/visualMax>.74?' edge-right':''),
        'data-milestone-points':String(threshold),tabindex:'0',
        'aria-label':threshold+' очков: '+skillsAt.map(skill=>skill.name).join(', ')});
       tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';
@@ -162,6 +163,31 @@ function viewGrowth(target,api){
       milestonesOnTrack.push({tick,skills:skillsAt,locked:lockedAt});
      }
      track.append(ticks);
+     // Range handles dragging; hover the nearest notch without placing hit targets over the thumb.
+     let hovered=null,dragging=false;
+     const clearHover=()=>{
+      if(hovered)hovered.tick.classList.remove('is-hovered');
+      hovered=null;
+     };
+     track.addEventListener('pointerdown',()=>{dragging=true;clearHover()});
+     track.addEventListener('pointerup',()=>{dragging=false});
+     track.addEventListener('pointercancel',()=>{dragging=false;clearHover()});
+     track.addEventListener('pointerleave',()=>{dragging=false;clearHover()});
+     track.addEventListener('pointermove',event=>{
+      if(dragging||event.pointerType==='touch')return;
+      const rect=range.getBoundingClientRect();
+      const left=rect.left+9,travel=Math.max(1,rect.width-18);
+      const at=milestonesOnTrack.reduce((nearest,mark)=>{
+       const threshold=Number(mark.tick.getAttribute('data-milestone-points'));
+       const distance=Math.abs(event.clientX-(left+threshold/visualMax*travel));
+       return distance<nearest.distance?{mark,distance}:nearest;
+      },{mark:null,distance:Infinity});
+      const next=event.clientY>=rect.top&&event.clientY<=rect.bottom&&
+       at.distance<=10?at.mark:null;
+      if(next===hovered)return;
+      clearHover();
+      if(next){hovered=next;next.tick.classList.add('is-hovered')}
+     });
      // A separate collapsed list provides access to every skill without covering the drag surface.
      unlockDetails=make('details',{class:'path-unlock-details'});
      unlockDetails.append(make('summary',{

@@ -185,7 +185,7 @@ test('real class milestone markers have preview tooltips without blocking the ra
  f.api.milestones=adapter;
  f.api.skillCatalog=Object.values(JSON.parse(read('data/os/skills.json')));
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const ticks=walk(f.target).filter(x=>String(x.className).includes('path-threshold-tick'));
+ const ticks=walk(f.target).filter(x=>String(x.className).includes('path-unlock-notch'));
  assert.ok(ticks.length>0);
  assert.ok(ticks.some(x=>x.attributes['data-milestone-points']==='41'));
  assert.ok(ticks.every(x=>x.tag==='span'));
@@ -212,7 +212,7 @@ test('nearby skill thresholds remain individually inspectable without blocking t
  }));
  f.api.onSkill=skill=>{selected=skill};
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const ticks=walk(f.target).filter(x=>String(x.className).includes('path-threshold-tick'));
+ const ticks=walk(f.target).filter(x=>String(x.className).includes('path-unlock-notch'));
  assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['8','10','42']);
  assert.ok(ticks.every(x=>!x.listeners.click),'preview markers do not intercept range clicks');
  assert.ok(ticks.every(x=>x.attributes.tabindex==='0'),'markers are keyboard focusable');
@@ -252,7 +252,7 @@ test('class-limited skills keep individual numbers in the separate details list'
  let selected=null;
  f.api.onSkill=skill=>selected=skill;
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const ticks=walk(f.target).filter(x=>String(x.className).includes('path-threshold-tick'));
+ const ticks=walk(f.target).filter(x=>String(x.className).includes('path-unlock-notch'));
  assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['8','12']);
  const details=walk(f.target).find(x=>x.className==='path-unlock-details');
  const captions=walk(details).filter(x=>x.tag==='small').map(x=>x.textContent);
@@ -266,17 +266,17 @@ test('class-limited skills keep individual numbers in the separate details list'
 
 test('skill milestones remain inside the bar and update their reached state after allocating mastery',()=>{
  const css=read('style.css');
- const patch=css.slice(css.lastIndexOf('/* 0.193.0 — skill milestones'));
- assert.match(patch,/\.inline-mastery-track \.path-threshold-tick\{[\s\S]*?top:15px/);
- assert.match(patch,/\.inline-mastery-track \.path-threshold-tick::before/);
- assert.match(patch,/\.inline-mastery-track \.path-threshold-tick::after\{content:none!important\}/);
+ const patch=css.slice(css.lastIndexOf('/* 0.195.0 — independent skill notches'));
+ assert.match(patch,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?top:0/);
+ assert.match(patch,/\.path-integrated-track \.path-integrated-milestones\{/);
+ assert.match(patch,/pointer-events:none/);
  const f=fixture('CLERIC','prayer','benevolence');
  const skill={id:9099,name:'Skill at 8',branch:'benevolence',
   classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:8}]};
  f.api.skillCatalog=[skill];
  f.api.milestones=()=>[{threshold:8,skills:[skill],locked:false}];
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
- const tick=walk(f.target).find(x=>String(x.className).includes('path-threshold-tick'));
+ const tick=walk(f.target).find(x=>String(x.className).includes('path-unlock-notch'));
  assert.ok(tick);
  assert.ok(!tick.className.includes('reached'));
  assert.ok(!Object.hasOwn(tick.style,'top'));

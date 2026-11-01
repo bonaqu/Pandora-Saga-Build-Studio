@@ -35,21 +35,23 @@ export async function runAdminEntrySmoke(browser,base){
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
-  await page.locator('#accountPanel .account-form input').first().fill('administrator');
-  await page.locator('#accountPanel .account-form input').nth(1).fill('Correct admin password!');
-  await page.locator('#accountPanel .account-form button[type=submit]').click();
-  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
-   /Для administrator используйте/);
-  assert.equal(calls.filter(p=>p==='/api/account/login').length,0,
-   'Legacy admin must not be routed to player account login');
-  await page.getByRole('button',{name:'Вход администратора'}).click();
+  assert.equal(await page.getByRole('button',{name:'Вход администратора'}).count(),0);
+  assert.equal(await page.locator('.account-admin-entry').count(),0);
+  // Admin UI remains reachable only via documented hidden gestures.
+  await page.keyboard.press('Control+Alt+Shift+P');
   await page.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
+  assert.equal(calls.filter(p=>p==='/api/account/login').length,0);
   await page.locator('input[placeholder="Пароль администратора"]').fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   assert.deepEqual(calls.filter(p=>p==='/api/admin/login'),['/api/admin/login']);
   assert.deepEqual(errors,[]);
-  console.log('Chromium admin entry passed: player accounts offline, legacy administrator login unaffected');
+  const other=await context.newPage();
+  await other.goto(base+'/',{waitUntil:'domcontentloaded'});
+  for(let i=0;i<5;i++)await other.locator('.brand').click();
+  await other.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
+  await other.close();
+  console.log('Chromium hidden admin entry passed: no public button, keyboard and five-logo gestures, independent authentication');
  }finally{await context.close()}
 }
 
@@ -66,27 +68,43 @@ export async function runInlineMilestonesSmoke(browser,base){
   if(await group.getAttribute('aria-expanded')!=='true')await group.click();
   const branch=page.locator('[data-path-branch="benevolence"]');
   if(await branch.getAttribute('aria-expanded')!=='true')await branch.click();
-  const mark=page.locator('.path-threshold-tick').first();
+  const mark=page.locator('.path-unlock-notch').first();
   await mark.waitFor({state:'visible',timeout:20000});
   const result=await page.evaluate(()=>{
-   const mark=document.querySelector('.path-threshold-tick');
-   const bar=mark.closest('.inline-mastery-track');
-   const tickRect=mark.getBoundingClientRect(),barRect=bar.getBoundingClientRect();
+   const marks=[...document.querySelectorAll('.path-integrated-track .path-unlock-notch')];
+   const mark=marks[0],bar=mark.closest('.path-integrated-track');
+   const bed=bar.querySelector('.inline-mastery-bed');
    const range=bar.querySelector('input[type=range]');
-   const css=getComputedStyle(mark);
-   return {markerTop:tickRect.top,markerBottom:tickRect.bottom,
-    barTop:barRect.top,barBottom:barRect.bottom,rangeZ:getComputedStyle(range).zIndex,
-    markerZ:css.zIndex,markerPointer:css.pointerEvents,range:range.getBoundingClientRect().toJSON()};
+   const barRect=bed.getBoundingClientRect();
+   const geom=marks.map(x=>({
+    x:x.getBoundingClientRect().x,top:x.getBoundingClientRect().top,
+    bottom:x.getBoundingClientRect().bottom,height:x.getBoundingClientRect().height,
+    width:x.getBoundingClientRect().width,
+    pointer:getComputedStyle(x).pointerEvents
+   }));
+   return {geom,barTop:barRect.top,barBottom:barRect.bottom,
+    rangeZ:Number(getComputedStyle(range).zIndex),
+    markerZ:Number(getComputedStyle(mark).zIndex),
+    thumbCenterStart:range.getBoundingClientRect().left+9};
   });
-  assert.ok(result.markerTop>=result.barTop&&result.markerBottom<=result.barBottom,
-   'Skill marks must sit inside the same progress bar, not on a detached upper row: '+JSON.stringify(result));
-  assert.equal(result.markerPointer,'auto');
-  await mark.hover({force:true});
+  assert.ok(result.geom.length>=3,'Expected several source-backed unlock thresholds');
+  assert.ok(result.geom.every(x=>x.top>=result.barTop-1&&x.bottom<=result.barBottom+1),
+   'Every skill threshold belongs inside the SAME horizontal bar: '+JSON.stringify(result));
+  assert.ok(result.geom.every(x=>x.width<=4&&x.height<=13&&x.pointer==='none'));
+  assert.ok(result.geom.every((x,i,a)=>i===0||x.x>a[i-1].x),
+   'Thresholds must be ordered left to right, not staggered over rows');
+  assert.ok(result.geom.every(x=>Math.abs(x.top-result.geom[0].top)<=1));
+  assert.ok(result.rangeZ>result.markerZ,'The slider must own pointer events');
+  const points=Number(await mark.getAttribute('data-milestone-points'));
+  const range=page.locator('.path-integrated-track input[type=range]').first();
+  const rect=await range.boundingBox();
+  const travel=rect.width-18;
+  await page.mouse.move(rect.x+9+points/90*travel,rect.y+rect.height/2);
   await mark.locator('.path-milestone-tooltip').waitFor({state:'visible',timeout:4000});
   assert.ok((await mark.locator('.path-milestone-preview').count())>=1);
   await mark.focus();
   await mark.locator('.path-milestone-tooltip').waitFor({state:'visible'});
   assert.deepEqual(errors,[]);
-  console.log('Chromium skill track passed: milestone symbols embedded in bar, hover and keyboard tooltips');
+  console.log('Chromium skill track passed: thin notches share one bar, slider takes input, pointer and keyboard tooltips work');
  }finally{await context.close()}
 }

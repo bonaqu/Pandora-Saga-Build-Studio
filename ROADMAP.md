@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.194.0 (`2026.11.01.194`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.195.0 (`2026.11.01.195`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.195.0 — one clean skill bar, private administrator access, live D1 accounts
+
+- Replace the broken multi-lane pins with a **new element class** that cannot inherit legacy `:nth-child` positioning. Every skill threshold is a thin inline notch occupying the actual bar's 12px height, aligned with the native range thumb's exact travel (21px endpoints). No floating squares, duplicate lanes or pointer interception.
+- Hovering the skill's position on the shared progress slider reveals its complete original icon/name/description; keyboard focusing a notch also reveals the tooltip. All marks stay on the same horizontal Y coordinate. Browser E2E asserts computed element geometry, drag input priority, hover and keyboard tooltips.
+- Remove the administrator login button and hints from the public profile UI entirely. Keep **both original hidden triggers**: 5 logo clicks within 6 seconds and Ctrl+Alt+Shift+P. Legacy administrator login continues at `/api/admin/login` with existing D1 `admins` and `sessions`.
+- **Production D1 account migration verified** from manually dispatched GitHub Actions run [41263185077](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/41263185077) at 2026-11-01 01:57 UTC. Before/after checks confirm existing tables stayed available, 0005 created `user_accounts`, `user_sessions`, `user_registration_limits`, and the live Worker reported `features.accounts=true` with library still enabled. No further migration required. Real user sign-in acceptance remains separate.
+- Updates do not change formulas or the 1–55 planning range.
 
 ## Source update 0.194.0 — one-click, owner-confirmed D1 account migration path
 

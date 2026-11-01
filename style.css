@@ -1664,7 +1664,63 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .inline-mastery-track .path-milestone-tooltip{
  bottom:calc(100% + 5px);z-index:30;width:min(280px,74vw);
 }
-.account-admin-entry{border-top:1px solid #67472c;padding-top:10px;margin-top:10px}
-.account-admin-entry .account-action{width:100%;background:transparent;border:1px solid #81613c;color:#ecc897}
-.account-admin-entry .account-action:hover,
-.account-admin-entry .account-action:focus-visible{border-color:#e8b575;background:#342314}
+
+/* 0.195.0 — independent skill notches. No obsolete three-row milestone selectors apply. */
+.inline-mastery-track.path-integrated-track{
+ height:44px;margin:6px 3px 9px;overflow:visible;
+}
+.inline-mastery-track.path-integrated-track .inline-mastery-bed{
+ left:21px;right:21px;top:16px;height:12px;box-sizing:border-box;
+ background:linear-gradient(#345a73,#1c3748);border:1px solid #a1814d;border-radius:3px;
+}
+.inline-mastery-track.path-integrated-track .inline-mastery-fill,
+.inline-mastery-track.path-integrated-track .inline-mastery-green{
+ left:21px;top:17px;height:10px;max-width:none;border-radius:2px 0 0 2px;
+}
+.inline-mastery-track.path-integrated-track .inline-mastery-locked{
+ top:16px;right:21px;height:12px;box-sizing:border-box;border-radius:0 3px 3px 0;
+}
+.inline-mastery-track.path-integrated-track .inline-mastery-locked::after{content:none!important}
+.inline-mastery-track.path-integrated-track input[type=range]{
+ left:12px;top:7px;width:calc(100% - 24px);height:30px;
+ position:absolute;z-index:12;cursor:ew-resize;
+}
+.inline-mastery-track.path-integrated-track .path-integrated-milestones{
+ position:absolute;left:21px;right:21px;top:16px;height:12px;
+ z-index:10;overflow:visible;pointer-events:none;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch{
+ position:absolute;top:0;width:3px;height:12px;
+ transform:translateX(-50%);margin:0;padding:0;
+ border:0;border-radius:1px;background:#ffdb93;
+ box-shadow:0 0 0 1px #28170bd9;z-index:10;
+ pointer-events:none;opacity:1;cursor:default;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch.reached{
+ background:#d7ffc0;box-shadow:0 0 0 1px #18390f,0 0 4px #bcff8d;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable{
+ background:#fac4ac;box-shadow:0 0 0 1px #582a22;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered{
+ width:5px;box-shadow:0 0 0 2px #ffe5ae,0 0 7px #fff0c9;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible{
+ outline:2px solid #ffe0a1;outline-offset:2px;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch .path-milestone-tooltip{
+ display:none;position:absolute;bottom:calc(100% + 8px);left:50%;
+ transform:translateX(-50%);width:min(275px,74vw);max-height:260px;overflow:auto;
+ padding:9px;background:#1d1511;border:1px solid #ddaf72;border-radius:6px;
+ box-shadow:0 10px 26px #000e;z-index:35;pointer-events:none;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered .path-milestone-tooltip,
+.inline-mastery-track.path-integrated-track .path-unlock-notch:focus .path-milestone-tooltip{
+ display:grid;gap:7px;
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch.edge-left .path-milestone-tooltip{
+ transform:translateX(-8%);
+}
+.inline-mastery-track.path-integrated-track .path-unlock-notch.edge-right .path-milestone-tooltip{
+ transform:translateX(-92%);
+}

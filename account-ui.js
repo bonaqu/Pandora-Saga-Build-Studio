@@ -26,14 +26,6 @@ function field(placeholder,type='text',auto='off',max=128){
  input.autocomplete=auto;return input;
 }
 function info(message){if(errorLine)errorLine.textContent=tr(message)}
-function adminEntry(){
- if(typeof options?.onAdministratorLogin!=='function')return;
- const foot=node('div','account-admin-entry');
- const open=button('Вход администратора',()=>{
-  panel.hidden=true;options.onAdministratorLogin();
- });
- foot.append(open);panel.append(foot);
-}
 async function request(kind,data=null,auth=token()){
  const response=await fetch(options.baseUrl+'/api/account/'+kind,{
   method:data===null?'GET':'POST',
@@ -84,7 +76,7 @@ function render(){
   panel.append(button('Выйти',async()=>{
    try{await request('logout',{},session.token)}catch{}
    clearSession();options.onLogout?.();render();
-  }));panel.append(errorLine);adminEntry();return;
+  }));panel.append(errorLine);return;
  }
  const tabs=node('div','account-tabs');
  tabs.append(button('Войти',()=>{mode='login';render()},mode==='login'?'selected':''),
@@ -114,9 +106,6 @@ function render(){
   if((mode==='register'||mode==='recover')&&pass.value!==confirm.value){
    info('Пароли не совпадают.');return;
   }
-  if(username.value.trim().toLowerCase()==='administrator'){
-   info('Для administrator используйте «Вход администратора» ниже.');return;
-  }
   submit.disabled=true;info('Проверяем…');
   try{
    const current=mode;
@@ -142,14 +131,12 @@ function render(){
     panel.insertBefore(card,errorLine);
     info('Код показан только сейчас. Сохраните его перед закрытием профиля.');
    }
-  }catch(ex){info(ex.httpStatus===503&&/миграция 0005/.test(ex.message)?
-    'Профили игроков пока не активированы. Вход администратора доступен отдельно.':
-    ex.message)}
+  }catch(ex){info(ex.message)}
   finally{submit.disabled=false}
  });
  panel.append(form,errorLine);
  panel.append(node('p','account-small','Без электронной почты и СМС. После регистрации сохраните резервный код.'));
- adminEntry();
+
 }
 async function init(config){
  options=config;

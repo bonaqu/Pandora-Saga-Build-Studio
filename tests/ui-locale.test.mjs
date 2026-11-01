@@ -53,14 +53,13 @@ test('the account UI validates new password confirmation for both password chang
  assert.match(source,/input\.setAttribute\('aria-label',tr\(placeholder\)\)/);
 });
 
-test('administrator login stays separate from player-account D1 migration status',()=>{
+test('administrator entry remains hidden from ordinary players',()=>{
  const account=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
  const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
  const worker=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
- assert.match(account,/onAdministratorLogin/);
- assert.match(account,/Для administrator используйте/);
- assert.match(app,/onAdministratorLogin:\(\)=>showAdmin\(\)/);
- assert.match(worker,/if\(path\.startsWith\('\/api\/account\/'\)\)/);
+ assert.doesNotMatch(account,/adminEntry|onAdministratorLogin|Вход администратора/);
+ assert.match(app,/ownerClicks>=5/);
+ assert.match(app,/event\.ctrlKey&&event\.altKey&&event\.shiftKey&&event\.code==='KeyP'/);
  assert.match(worker,/path==='\/api\/admin\/login'/);
- assert.equal(locale.ui('Вход администратора','en'),'Administrator sign in');
+ assert.match(worker,/if\(path\.startsWith\('\/api\/account\/'\)\)/);
 });
