@@ -39,7 +39,7 @@ jobs:
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A assets/os-icon-manifest.json assets/skills/icons assets/items/icons assets/souls/icons
+          git add -A assets/
           if git diff --cached --quiet; then
             echo "No new validated icons to archive"
             exit 0
