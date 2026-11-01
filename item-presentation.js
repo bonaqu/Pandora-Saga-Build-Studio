@@ -51,7 +51,8 @@ function description(s){
   .replace(new RegExp('([.!?])[ \\t]*(?='+stats+'(?:\\b|\\s|[+-]))','gi'),'$1\n\n')
   .replace(/([.!?])(?=[А-ЯЁ])/g,'$1\n')
   .replace(/([+-]\d+(?:[.,]\d+)?%?)(?=[А-ЯЁ])/g,'$1\n')
-  .replace(new RegExp('([^\\n])('+headers+')','gi'),'$1\n\n$2')
+  .replace(new RegExp('([^\\n])('+headers+')','gi'),'$1\n$2')
+  .replace(new RegExp('\\n('+headers+')','gi'),'\n\n$1')
   .replace(/(:)[ \t]*(?=[А-ЯЁ])/g,'$1\n')
   .replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
