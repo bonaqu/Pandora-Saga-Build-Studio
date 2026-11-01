@@ -61,7 +61,11 @@ export async function runShareLinkSmoke(browser,base){
   });
   assert.equal(await page.locator('#levelOut').textContent(),'55');
   await page.locator('#snapshot').click();
+  await page.getByRole('button',{name:'Сохранить новый билд'}).click();
   await page.locator('.build-card').first().waitFor({state:'visible'});
+  await page.waitForFunction(()=>
+   document.querySelector('.cloud-library-status')?.textContent.includes('Сохранено в облаке'),
+   null,{timeout:15000});
   await page.locator('.build-card').first().getByRole('button',{name:'🔗 Поделиться'}).click();
   const status=page.locator('.build-card').first().locator('.share-result');
   await status.waitFor({state:'visible',timeout:20000});
