@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.242.0 (`2026.11.01.242`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.243.0 (`2026.11.01.243`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.243.0 — remove obsolete named-build autosaver and cache skill hover geometry
+
+- [x] Confirm the deprecated `saved-build-autosave.js` module is not loaded by the current HTML and is not imported/called by `app.js`. Remove this unused old code path (it automatically rewrote named builds and contradicts explicit-save semantics). Keep the existing read-only and user-triggered save operations intact.
+- [x] Replace its obsolete function-level tests with an explicit save contract: `persist()` only updates the owner-scoped draft, the saved-build cloud POST occurs only in `saveBuild()`, and deliberate Save New, Save and Create, and confirmed Overwrite are still the triggers. Preserve levels 1–55 and named-build preservation.
+- [x] Optimize Hero Path threshold hover: normalize each source-backed skill threshold **once at render time**. On mouse movement use `mark.thresholdFraction`, avoiding repeated `getAttribute` and numeric parsing for every marker on every pointer event. Accessible marker attributes, tooltip, exact 18px range geometry and branch maxima unchanged.
+- [x] Regression tests check stale module removal, source contract, hover DOM-read elimination and exact marker coordinate at multiple widths; full browser acceptance verifies real hover plus manual saved-build and guest/account isolation.
+- [ ] Continue measured performance investigation and verified OS formula parity. 39 historical Remaked keys are still unported and 77 partial; live D1 write lifecycle remains separate from read-only release readiness.
 
 ## Source update 0.242.0 — verified account ownership and asynchronous /me protection
 
