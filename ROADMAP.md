@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.232.0 (`2026.11.01.232`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.233.0 (`2026.11.01.233`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.233.0 — validate six Soul-to-creature effects and bilingual result details
+
+- [x] Require a canonical Soul ID/source, exact OS family ID (502, 504, 505, 508, 511, 512), -3 effect, SELF direction, 0–10 enhancement limits, body socket type and the official Russian **or** English source description before showing a creature-specific incoming-damage modifier.
+- [x] Preserve each socket as an independent preview. Do not silently add the six conditional damage effects to permanent armor or claim a known live-server stacking rule.
+- [x] Use OS-localized enemy names in RU/EN Hero Book. Note the catalog mismatch: OS English Soul 103034 says “Unliving” while Russian says “големами”; do **not** silently equate that category to historical Remaked RESInanimate.
+- [x] Translate known numeric composition lines in Attack/Defense/Recovery chapters with a fixed safe whitelist; never perform fuzzy translation of source item descriptions and user-defined character names. Negative tests reject forged source keys, descriptions, grades, wrong family and direction.
+- [ ] Full Remaked combat equivalence, live OS damage packets, remaining formula keys, Cloudflare D1 writes, keyboard/mobile browser acceptance and additional localizations are still open.
 
 ## Source update 0.232.0 — bilingual Hero Book sets and recovery effects
 

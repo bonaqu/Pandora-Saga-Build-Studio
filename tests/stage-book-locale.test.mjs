@@ -55,3 +55,21 @@ test('equipment sets and consumable recovery sections switch to RU/EN without to
  assert.match(code,/text:item\?\.name\|\|entry\.name/);
  assert.match(code,/english\?'Potion effectiveness':'Эффективность зелий'/);
 });
+
+test('compound combat and recovery captions translate only known UI prefixes',()=>{
+ const en=load('en'),ru=load('ru');
+ const input='Базовая атака 80 · Дальность 200 · Скорость 90 · +5';
+ assert.equal(en.bookText(input),'Base attack 80 · Range 200 · Speed 90 · +5');
+ assert.equal(ru.bookText(input),input);
+ assert.equal(en.bookText('ОЗ: 100 (база 85, гильдия +10, лечение +5)'),
+  'HP: 100 (base 85, guild +10, healing +5)');
+ assert.equal(en.bookText('Точность: 120 (база 110, бонусы 10)'),
+  'Accuracy: 120 (base 110, bonuses 10)');
+ assert.equal(en.bookText('Физические состояния: 15'),'Physical conditions: 15');
+ assert.equal(en.bookText('Скорость естественного восстановления'),'Natural recovery speed');
+ assert.equal(en.bookText('Восстановление каждые 2 секунды'),'Recovery every 2 seconds');
+ for(const value of ['Базовая атака драконов','Душа несчастья',
+  'Проклятый посох','Именной предмет: 50%','Мой герой','ОЗ +500']) {
+  assert.equal(en.bookText(value),value,'item/player text must not be fuzzy translated');
+ }
+});
