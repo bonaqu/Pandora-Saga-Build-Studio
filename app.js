@@ -1355,10 +1355,10 @@ function renderWiki(root){
  wikiRenderedRoot=root;
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
- for(const [key,label]of[['item','Предметы'],['monster','Монстры'],['map','Локации'],['npc','NPC-обмен'],['chest','Сундуки'],['instance','Подземелья'],['skill','Навыки'],['soul','Души']]){
-  categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:label,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
+ for(const [key,ru,en]of[['item','Предметы','Items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
+  categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:lang==='en'?en:ru,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
- const search=h('input',{type:'search',value:wikiSearch,placeholder:'Поиск по названию','aria-label':'Поиск по вики'});
+ const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name, ID or description':'Поиск по названию, ID или описанию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии'});
  controls.append(categories,search);
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
@@ -1410,13 +1410,10 @@ function renderWiki(root){
   const knownMaps={...(wikiData.trades?.mapNames||{}),...(wikiData.maps||{})};
   const catalog=type==='item'?wikiData.items:type==='monster'?wikiData.monsters:type==='map'?knownMaps:
     type==='npc'?wikiData.trades?.npcs:type==='skill'?wikiData.skills:type==='soul'?wikiData.souls:type==='instance'?Object.fromEntries((wikiData.instances||[]).map(i=>[i.id,i])):Object.fromEntries((wikiData.chests?.boxes||[]).map(item=>[item.i,item]));
-  const q=wikiSearch.toLocaleLowerCase().trim();
-  const results=Object.entries(catalog||{}).filter(([id,rec])=>
-    !q||id.includes(q)||String(rec.name||'').toLocaleLowerCase().includes(q)||String(dataName(type,id)).toLocaleLowerCase().includes(q)
-  );
+  const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id));
   const visible=results.slice(0,wikiShown);
   if(!detailOnly){
-   browse.append(h('p',{class:'muted',text:'Показано '+visible.length+' из '+results.length+' записей'}));
+   browse.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
    for(const [id,rec]of visible){
     const row=withIcon(wikiLink(dataName(type,id),type,id),wikiIcon(type,id,rec));
     row.setAttribute('data-wiki-record',String(id));
@@ -1424,7 +1421,7 @@ function renderWiki(root){
     browse.append(row);
    }
    if(results.length>wikiShown){
-    browse.append(h('button',{type:'button',class:'wiki-more',text:'Показать ещё '+Math.min(100,results.length-wikiShown)+' / '+(results.length-wikiShown),
+    browse.append(h('button',{type:'button',class:'wiki-more',text:(lang==='en'?'Show more ':'Показать ещё ')+Math.min(100,results.length-wikiShown)+' / '+(results.length-wikiShown),
      onclick:()=>{wikiShown+=100;draw()}}));
    }
    browse.scrollTop=previousScroll;
@@ -1433,7 +1430,7 @@ function renderWiki(root){
     row.classList.toggle('selected',row.getAttribute('data-wiki-record')===wikiSelection.id));
   }
   const id=wikiSelection.id,rec=id==null?null:catalog?.[id];
-  if(!rec){detail.append(h('p',{class:'muted',text:'Выбери запись для просмотра характеристик и связанных источников.'}));return}
+  if(!rec){detail.append(h('p',{class:'muted',text:!results.length?(lang==='en'?'No matching entries.':'Ничего не найдено.'):(lang==='en'?'Select an entry to view its details and sources.':'Выбери запись для просмотра характеристик и связанных источников.')}));return}
   const typeLabel={item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
@@ -1461,11 +1458,27 @@ function renderWiki(root){
      else line.append(wikiLink('Групповой дроп, локация '+dataName('map',row.id)+' (точный шанс предмета неизвестен)','map',row.id,id));
      detail.append(line);
     }
+    const usedIn=wikiIndex.materialUses(id);
+    if(usedIn.length){
+     detail.append(h('h4',{text:(lang==='en'?'Used in NPC trades · ':'Используется в обмене NPC · ')+usedIn.length}));
+     for(const trade of usedIn.slice(0,80)){
+      const entry=h('div',{class:'wiki-entry'});
+      entry.append(itemLink(trade.i,dataName('item',trade.i),id));
+      const npcId=trade.npc?.[0];
+      if(npcId!=null)entry.append(wikiLink(dataName('npc',npcId),'npc',npcId,trade.i));
+      detail.append(entry);
+     }
+    }
   }else if(type==='skill'){
     detail.append(h('p',{class:'muted',text:'Уровень персонажа '+(rec.charLevel??'—')+' · ОМ '+(rec.mana??'—')+' · перезарядка '+(rec.cooldown??'—')+' с'}));
     detail.append(h('h4',{text:'Требования'}));
     if(!rec.reqs?.length)detail.append(h('p',{class:'muted',text:'Ветка требований не указана'}));
     for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:(wikiData.meta?.branchLabels?.[req.branch]||req.branch)+' ≥ '+req.amount}));
+    if(rec.prereq!=null&&wikiData.skills?.[rec.prereq])detail.append(wikiLink((lang==='en'?'Prerequisite: ':'Предыдущее умение: ')+dataName('skill',rec.prereq),'skill',rec.prereq));
+    if(rec.classes&&Object.keys(rec.classes).length){
+     const names=Object.keys(rec.classes).filter(name=>rec.classes[name]);
+     if(names.length)detail.append(h('p',{class:'muted',text:(lang==='en'?'Classes: ':'Классы: ')+names.join(', ')}));
+    }
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){const image=h('img',{src:icon,alt:'',class:'wiki-record-icon'});image.onerror=()=>image.remove();detail.prepend(image)}
   }else if(type==='soul'){
@@ -1602,14 +1615,13 @@ function renderWiki(root){
      detail.append(search,list);
     }
     if(type==='map'){
-     const residents=Object.entries(wikiData.trades?.npcs||{}).filter(([,npc])=>
-      (npc.maps||[]).some(mapId=>String(mapId)===String(id)));
+     const residents=wikiIndex.residents(id);
      if(residents.length){
       detail.append(h('h4',{text:'NPC в локации'}));
       for(const [npcId] of residents)
        detail.append(wikiLink(dataName('npc',npcId),'npc',npcId));
      }
-     const dropZones=(wikiData.tables?.zoneDrops||[]).filter(x=>String(x.map)===String(id));
+     const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
       detail.append(h('h4',{text:'Добыча в локации'}));
       for(const zone of dropZones)for(const group of zone.rows||[]){

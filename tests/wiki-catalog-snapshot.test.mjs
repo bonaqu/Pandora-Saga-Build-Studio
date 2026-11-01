@@ -48,6 +48,16 @@ test('D1 snapshots are atomic and old object-shaped instances become iterable',a
  assert.equal(res.data.instances[0].name,'Dungeon');
  assert.equal(mock.paths.length,loader.keys.length);
 });
+test('a D1 reply without a snapshot identifier cannot silently mix releases',async()=>{
+ const remote=catalog('remote'),local=catalog('bundled'),mock=mockFetch(remote,local);
+ const fallback=await loader.load({api:'https://worker.example',fetcher:async(url,opts)=>{
+  const response=await mock.fetcher(url,opts);
+  if(url.includes('/api/catalog/'))response.headers={get:()=>null};
+  return response;
+ }});
+ assert.equal(fallback.source,'local');
+ assert.equal(fallback.data.items[1].name,'bundled');
+});
 test('one unavailable D1 dataset switches the ENTIRE catalog to local files',async()=>{
  const mock=mockFetch(catalog('online'),catalog('local'),{fail:'souls'});
  const res=await loader.load({api:'https://worker.example',fetcher:mock.fetcher});

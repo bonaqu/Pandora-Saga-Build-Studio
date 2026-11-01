@@ -25,6 +25,6 @@ test('soul detail uses the existing indexed source map and trusted chest/NPC nam
 test('settlement and battlefield maps show real NPC trader residents',()=>{
  const app=get('app.js');
  assert.ok(Object.values(trades.npcs).some(x=>x.maps?.length));
- assert.match(app,/const residents=Object\.entries\(wikiData\.trades\?\.npcs\|\|\{\}\)/);
+ assert.match(app,/const residents=wikiIndex\.residents\(id\)/);
  assert.match(app,/NPC в локации/);
 });

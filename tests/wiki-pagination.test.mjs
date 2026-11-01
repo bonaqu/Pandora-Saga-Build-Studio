@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url),get=p=>readFileSync(new URL(p,root),'utf8');
 test('encyclopedia provides true counts and can progressively load all matches',()=>{
  const code=get('app.js');
- assert.match(code,/const results=Object.entries\(catalog\|\|\{\}\)\.filter/);
+ assert.match(code,/const results=wikiIndex\.search\(type,wikiSearch,id=>dataName\(type,id\)\)/);
  assert.match(code,/const visible=results.slice\(0,wikiShown\)/);
  assert.match(code,/Показано '\+visible.length\+' из '\+results.length/);
  assert.match(code,/wikiShown\+=100;draw\(\)/);

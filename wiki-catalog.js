@@ -51,7 +51,7 @@ async function load({api,fetcher,local='./data/os',timeout=12000}={}){
    }
    return [key,await response.json()];
   }));
-  if(remote&&snapshots.size&&(snapshots.size!==1||missingSnapshot.length))
+  if(remote&&(snapshots.size!==1||missingSnapshot.length))
    throw Error('В ходе загрузки версия опубликованного каталога изменилась');
   return {data:validate(Object.fromEntries(records)),
    source:remote?'d1':'local',snapshot:remote?[...snapshots][0]||null:null};
