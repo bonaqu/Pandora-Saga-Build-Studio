@@ -687,6 +687,21 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     dodge:'Уклонение',rangedDodge:'Уклонение от дальнего боя',
     frontAttack:'Фронтальная атака'
    };
+   const honorEnglishLabels={
+    allAttributes:'All attributes',healingSkills:'Healing skills',
+    attackPercent:'Attack power',fireMagic:'Fire magic',iceMagic:'Ice magic',
+    lightningMagic:'Lightning magic',fire:'Fire',ice:'Ice',lightning:'Lightning',
+    burn:'Burn',freeze:'Freeze',knockdown:'Knockdown',
+    castingResist:'Casting interruption resistance',accuracy:'Accuracy',
+    weaponPhysical:'Physical weapon damage',mountedRelease:'Mounted release',
+    incomingCriticalChance:'Incoming critical chance',
+    incomingCriticalDamage:'Incoming critical damage',
+    light:'Light',dark:'Dark',charm:'Charm',
+    mentalState:'Mental conditions',magic:'Magic',
+    physicalState:'Physical conditions',potionRecovery:'Potion healing',
+    defense:'Defense',incomingPhysical:'Incoming physical damage',
+    dodge:'Evasion',rangedDodge:'Ranged evasion',frontAttack:'Front attack'
+   };
    const percent=new Set(['healingSkills','attackPercent','fireMagic','iceMagic',
     'lightningMagic','burn','freeze','knockdown','castingResist','mountedRelease',
     'incomingCriticalChance','incomingCriticalDamage','potionRecovery',
@@ -696,7 +711,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     'Honor title: '+honor.en:'Титул чести: '+honor.ru}));
    for(const [key,value] of Object.entries(honor.effects)){
     if(key==='allAttributes')continue; // already included in visible six stats
-    card.append(make('p',{text:(labels[key]||key)+': '+(value>0?'+':'')+value+
+    card.append(make('p',{text:(document.documentElement?.lang==='en'?
+     honorEnglishLabels[key]:labels[key]||key)+': '+(value>0?'+':'')+value+
      (percent.has(key)?'%':'')}));
    }
    body.prepend(card);
