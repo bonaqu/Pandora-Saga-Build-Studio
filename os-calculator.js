@@ -1458,7 +1458,32 @@ function consumableRecoveryPreview({items=null,maxHp=null,maxMp=null,potionRate=
  return {rows,healthRows,allRows,verified:false};
 }
 
-function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,skillCatalog=null}={}){
+// Preserve historical LPsec/MPsec formula magnitudes while proving that the
+// corresponding current OS skill is genuine and accessible to this class.
+const periodicSkillProof=Object.freeze({
+ 310002001:{skillType:'ALLY',charLevel:0,required:21,ep:'EP_HEAL_LIFE_REGENERATOR',
+  fv1:[10,10,10,10],fv2:[0,0,0,2]},
+ 310022001:{skillType:'PARTY_ALL',charLevel:0,required:41,ep:'EP_HEAL_LIFE_REGENERATOR',
+  fv1:[20,5,5,5],fv2:[0,0,0,2]},
+ 330005001:{skillType:'ALLY',charLevel:20,required:0,ep:'EP_HEAL_MANA_REGENERATOR',
+  fv1:[0,10,0,0],fv2:[0,0,0,2]}
+});
+const naturalManaJobs=new Set(['ASCETIC','MONK','EXORCIST']);
+function periodicSourceMatches(skill,proof){
+ if(!skill||!proof||skill.learnable!==true||skill.prereq!==null||
+  skill.skillType!==proof.skillType||skill.charLevel!==proof.charLevel||
+  !Array.isArray(skill.reqs)||skill.reqs.length!==(proof.required?1:0)||
+  (proof.required&&(skill.reqs[0]?.branch!=='benevolence'||
+   skill.reqs[0]?.amount!==proof.required))||
+  !Array.isArray(skill.funcs)||skill.funcs.length!==1)return false;
+ const effect=skill.funcs[0];
+ return effect?.ep===proof.ep&&effect?.dir==='TARGET'&&
+  [effect.fv1,effect.fv2].every((vector,i)=>Array.isArray(vector)&&
+   vector.length===4&&vector.every((value,index)=>
+    value===(i===0?proof.fv1:proof.fv2)[index]));
+}
+function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,
+ skillCatalog=null,benevolenceCap=null}={}){
  if(!Number.isInteger(level)||level<1||level>55||
   !Number.isFinite(spi)||spi<0||
   !Number.isInteger(benevolence)||benevolence<0||typeof jobKey!=='string')
@@ -1472,17 +1497,21 @@ function periodicRecoveryPreview({level,spi,benevolence=0,jobKey=null,skillCatal
  ];
  const rows=[];
  for(const candidate of candidates){
-  const skill=skillCatalog?.[String(candidate.id)];
-  if(!skill?.classes?.[jobKey]||!Array.isArray(skill.reqs))continue;
-  const requirementsValid=skill.reqs.every(req=>
-   req?.branch==='benevolence'&&Number.isInteger(req.amount)&&req.amount>=0);
-  const eligible=requirementsValid&&Number.isInteger(skill.charLevel)&&
-   level>=skill.charLevel&&skill.prereq==null&&skill.learnable!==false;
-  const required=skill.reqs.reduce((max,req)=>
-   req?.branch==='benevolence'&&Number.isInteger(req.amount)?
-    Math.max(max,req.amount):max,0);
-  rows.push({...candidate,available:eligible&&benevolence>=required,
-   required,skillLevel:skill.charLevel,verified:false});
+  const proof=periodicSkillProof[candidate.id],skill=skillCatalog?.[String(candidate.id)];
+  // A mutated ID, direction or effect vector is not a verified skill.
+  if(!skill?.classes?.[jobKey]||skill.id!==candidate.id||
+   !periodicSourceMatches(skill,proof))continue;
+  if(candidate.kind==='mp'&&!naturalManaJobs.has(jobKey))continue;
+  const capValid=Number.isInteger(benevolenceCap)&&benevolenceCap>=proof.required;
+  if(candidate.kind==='hp'&&!capValid)continue;
+  const validAllocation=Number.isInteger(benevolenceCap)&&benevolenceCap>=0&&
+   benevolence<=benevolenceCap;
+  // MP regeneration is unrelated to Healing mastery; invalid unrelated
+  // mastery should not block its verified, class-appropriate level-20 skill.
+  const available=level>=proof.charLevel&&(
+   candidate.kind==='mp'||validAllocation&&benevolence>=proof.required);
+  rows.push({...candidate,available,required:proof.required,
+   skillLevel:proof.charLevel,verified:false});
  }
  return {rows,verified:false,source:'Remaked Legacy js/calc.js:1009-1026 (SPI-based LPsec)'};
 }
@@ -1795,7 +1824,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  });
  const periodicRecovery=periodicRecoveryPreview({
   level,spi:stats.spi,benevolence:combatContext.benevolenceMastery??0,
-  jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog
+  jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog,
+  benevolenceCap:classData.branchCaps?.benevolence??null
  });
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records:combinedRecords,itemForth,
   guildArouse:attributeBuffs?.guildArouse??0,
