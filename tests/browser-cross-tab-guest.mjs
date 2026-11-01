@@ -32,25 +32,37 @@ export async function runCrossTabGuestIsolationSmoke(browser,base){
  async function loaded(page){
   await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
  }
- async function save(page,name){
+ async function save(page,name,expectedKey){
   if(!await page.locator('.build-name-input').isVisible())
    await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('.build-name-input').fill(name);
+  // A card may render as soon as the local draft is saved, before the
+  // asynchronous POST reaches the mock Worker. Check the exact owner,
+  // build name AND server response; do not merely sleep or weaken assertions.
+  const persisted=page.waitForResponse(response=>{
+   if(!response.url().startsWith(api+'/api/library')||
+      response.request().method()!=='POST'||!response.ok())return false;
+   const request=response.request();
+   try{return request.headers().authorization==='Bearer '+expectedKey&&
+    request.postDataJSON()?.entry?.name===name}
+   catch{return false}
+  },{timeout:20000});
   await page.getByRole('button',{name:'Сохранить новый билд'}).click();
   await page.locator('.build-card h3').filter({hasText:name}).waitFor({state:'visible'});
+  await persisted;
  }
  try{
   await tabA.goto(base+'/',{waitUntil:'domcontentloaded'});await loaded(tabA);
-  await save(tabA,'Guest A one');
+  await save(tabA,'Guest A one',keyA);
   assert.equal(await tabA.locator('.build-transfer').count(),1,
    'Guest transfer controls remain available to account-free libraries');
   await tabB.goto(base+'/',{waitUntil:'domcontentloaded'});await loaded(tabB);
   await tabB.evaluate(key=>localStorage.setItem('ps-build-library-secret.v1',key),keyB);
   await tabB.reload({waitUntil:'domcontentloaded'});await loaded(tabB);
-  await save(tabB,'Guest B one');
+  await save(tabB,'Guest B one',keyB);
   // Tab A remains on its original account-free library even though tab B
   // wrote a different key to origin-shared localStorage.
-  await save(tabA,'Guest A two');
+  await save(tabA,'Guest A two',keyA);
   const storage=await tabB.evaluate(()=>{
    return {owner:localStorage.getItem('ps-build-owner-scope.v1'),
     names:JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]').map(x=>x.name)};

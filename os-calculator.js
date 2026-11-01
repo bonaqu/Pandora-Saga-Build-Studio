@@ -895,11 +895,17 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
    const distinctRates=[...new Set(textRates)];
    const namedChance=distinctRates.length===1?distinctRates[0]:null;
    const sourceChance=effect.b>=0&&effect.b<=100?effect.b:null;
-   const mismatch=namedChance!==null&&sourceChance!==null&&namedChance!==sourceChance;
+   // The EN catalog sometimes concatenates an adjacent attribute and proc
+   // percentage (e.g. "INT +24% Chance" means INT +2 and a 4% chance).
+   // Exact source/skill/action corroboration takes precedence over the loose
+   // prose number heuristic. Uncorroborated mismatches remain disputed.
+   const corroborated=matchesCorroboratedProc(source,record,effect);
+   const mismatch=!corroborated&&namedChance!==null&&sourceChance!==null&&
+    namedChance!==sourceChance;
    entries.push({trigger,triggerEn:procTriggersEn[effect.func],skillId:isStun?null:effect.a,
     skillName:isStun?'Оглушение':String(skill?.name||'Особый эффект'),
     skillNameEn:isStun?'Stun':String(skill?.name||'Special effect'),
-    chance:namedChance!==null&&!mismatch?sourceChance:null,source:String(record.name||source),
+    chance:corroborated?sourceChance:null,source:String(record.name||source),
     disputedChance:mismatch,code:effect.func,
     procIdentity:procIdentity(source,effect)});
   }
@@ -1037,6 +1043,13 @@ const corroboratedSpecialRules=Object.freeze({
 const matchesOriginalDescription=(record,rule)=>typeof record?.desc==='string'&&
  (record.desc.includes(rule.sourcePhrase)||
   (rule.sourcePhraseEn&&record.desc.includes(rule.sourcePhraseEn)));
+function matchesCorroboratedProc(source,record,effect){
+ const rule=Object.hasOwn(corroboratedProcRules,String(source))?
+  corroboratedProcRules[String(source)]:null;
+ return Boolean(rule&&Number(record?.id)===rule.id&&
+  effect?.func===rule.func&&effect.a===rule.a&&effect.b===rule.b&&
+  effect.dir===rule.dir&&matchesOriginalDescription(record,rule));
+}
 function specialEquipmentPreview({records=[],itemForth=null}={}){
  if(!Array.isArray(records))return null;
  const entries=[];
@@ -1048,10 +1061,7 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
       (Number.isFinite(effect.max)&&grade>effect.max))continue;
    const proc=Object.hasOwn(corroboratedProcRules,String(source))?
     corroboratedProcRules[String(source)]:null;
-   if(proc&&record&&Number(record.id)===proc.id&&
-      effect.func===proc.func&&effect.a===proc.a&&effect.b===proc.b&&
-      effect.dir===proc.dir&&Number.isInteger(grade)&&grade>=0&&grade<=10&&
-      matchesOriginalDescription(record,proc)){
+   if(proc&&matchesCorroboratedProc(source,record,effect)){
     entries.push({code:effect.func,source:String(record.name||source),
      ru:proc.ru,en:proc.en,verified:false,
      procIdentity:procIdentity(source,effect)});

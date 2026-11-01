@@ -182,3 +182,44 @@ test('invalid enhancement grades cannot expose conditional events or experience 
  assert.equal(preview(items[422],422,'item',10).length,1);
  assert.equal(C.experienceBonusPreview({records:[['item:18073',items[18073],10]]}).entries.length,1);
 });
+
+test('generic previews never claim numeric rates based solely on unrelated matching percentages',()=>{
+ const base=items[422],src='item:422';
+ const misleading={...base,desc:'Other unrelated ability has a 9% chance to activate'};
+ const generic=preview(misleading,422,'item')[0];
+ assert.equal(generic.chance,null,'same number is not evidence for a specific on-hit event');
+ assert.equal(generic.disputedChance,false,'not a contradictory number, but still unconfirmed');
+ assert.deepEqual(C.specialEquipmentPreview({records:[[src,misleading,0]]}).entries,[]);
+ const clone={...base,id:777777};
+ assert.equal(preview(clone,777777,'item')[0].chance,null,
+  'different source ID cannot inherit original item corroboration');
+ const changed={...base,effects:base.effects.map(e=>e.func==='EP_ONHIT_SKILL_EXEC'?
+  {...e,a:500000002}:e)};
+ assert.equal(preview(changed,422,'item')[0].chance,null,
+  'changed triggered skill cannot borrow the original 9% rate');
+});
+
+test('two fan triggers with matching 4% text stay visible without unverified event mapping',()=>{
+ const result=preview(items[1091],1091,'item');
+ assert.equal(result.length,2);
+ assert.ok(result.every(e=>e.chance===null));
+ assert.ok(result.every(e=>e.disputedChance===false));
+ assert.ok(result.every(e=>e.skillId>0));
+});
+
+test('all ten source-corroborated procs retain RU and EN chance with exact identity',()=>{
+ const english=JSON.parse(read('data/os/strings.en.json'));
+ for(const [kind,id,rate] of [
+  ['item',422,9],['item',1041,9],['item',1211,4],['item',2802,4],
+  ['item',15082,8],['soul',101010,4],['soul',101011,4],
+  ['soul',101012,4],['soul',101021,4],['soul',101022,5]
+ ]){
+  const orig=(kind==='item'?items:souls)[id];
+  const en=(kind==='item'?english.items:english.souls)[id];
+  const rows=[preview(orig,id,kind)[0],preview({...orig,desc:en.d,name:en.n},id,kind)[0]];
+  for(const event of rows){
+   assert.equal(event.chance,rate,kind+':'+id+' verified RU/EN');
+   assert.equal(event.disputedChance,false);
+  }
+ }
+});
