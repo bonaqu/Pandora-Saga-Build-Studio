@@ -31,11 +31,11 @@ test('soul icon resolution uses canonical item URLs in sockets and wiki',()=>{
  const app=read('app.js');
  const start=app.indexOf('function itemIcon('),end=app.indexOf('\nfunction branchCap',start);
  assert.ok(start>=0&&end>start);
- const factory=Function('override','iconManifest','OS',app.slice(start,end)+'\nreturn itemIcon');
- const normal=factory({},null,'https://pandorasaga-os.com');
+ const factory=Function('override','iconManifest','unavailableIconIds','OS',app.slice(start,end)+'\nreturn itemIcon');
+ const normal=factory({},null,new Set(),'https://pandorasaga-os.com');
  assert.match(normal({id:101000,kind:'SOUL',icon:'I_101000_00'},'souls'),
   /\/icons\/items\/I_101000_00\.webp/);
- const overridden=factory({'visual.soul.101000':'real-custom-image.webp'},null,'https://pandorasaga-os.com');
+ const overridden=factory({'visual.soul.101000':'real-custom-image.webp'},null,new Set(),'https://pandorasaga-os.com');
  assert.equal(overridden({id:101000,kind:'SOUL',icon:'I_101000_00'},'souls'),
   'real-custom-image.webp');
 });
