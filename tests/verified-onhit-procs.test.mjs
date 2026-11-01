@@ -127,7 +127,7 @@ test('all nine detailed on-hit descriptions match exact action phrasing in offic
    e=>['EP_ONHIT_SKILL_EXEC','EP_ONHIT_STUN'].includes(e.func)).b+'% chance to do something else'};
   assert.equal(calc.specialEquipmentPreview({records:[[id,otherChanceDescription,0]]}).entries.length,0,
    'same percent alone must not substantiate this specific proc: '+id);
-  const tampered={...enRecord,desc:translated.d.replace(/chance/i,'opportunity')};
+  const tampered={...enRecord,desc:translated.d.replace(/chance/gi,'opportunity')};
   assert.equal(calc.specialEquipmentPreview({records:[[id,tampered,0]]}).entries.length,0,
    'modified trigger wording cannot be silently accepted: '+id);
  }
