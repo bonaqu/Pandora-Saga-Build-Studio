@@ -1,9 +1,16 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.208.0 (`2026.11.01.208`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.209.0 (`2026.11.01.209`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.209.0 — protect one-time recovery codes and label skill scale
+
+- Keep the server-issued account/recovery secret in transient profile memory only. Accidentally hiding the profile must not irreversibly discard the only visible code; let the owner acknowledge it explicitly. A reload or sign-out clears it, with no password or recovery secret written to persistent browser storage.
+- Show the code before running any account library synchronization so a slow or failed cloud refresh cannot delay access to the one-time credential. Keep a copy button, keyboard-select fallback, and RU/EN strings.
+- Add noninteractive scale labels for 0, profession limit, and 90-point planning endpoint below the current shared slider. Preserve exact unlock notches, tooltips, and draggable slider. Respect reduced-motion preference.
+- Add source and Chromium regressions; do not claim live account acceptance, deployed browser acceptance or formula parity without independent evidence. No D1 schema modification.
 
 ## Source update 0.208.0 — show library recovery key only for the guest who owns it
 

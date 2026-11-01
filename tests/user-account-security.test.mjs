@@ -21,3 +21,13 @@ test('account API is added without reusing or weakening legacy admin secrets',as
  const worker=(await import('../worker/index.js'));
  assert.equal(typeof worker.default.fetch,'function');
 });
+
+test('the one-time recovery code stays only in profile memory until acknowledged',()=>{
+ const source=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+ assert.match(source,/let pendingRecoveryCode=null/);
+ assert.match(source,/pendingRecoveryCode=typeof result\.recoveryCode/);
+ assert.match(source,/if\(pendingRecoveryCode\)\{/);
+ assert.match(source,/pendingRecoveryCode=null;card\.remove\(\)/);
+ assert.match(source,/render\(\);\s*if\(pendingRecoveryCode\)info\(/);
+ assert.doesNotMatch(source,/localStorage\.setItem\([^\n]*recoveryCode/i);
+});

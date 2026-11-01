@@ -3,6 +3,7 @@
 // A tiny account surface. Passwords and recovery codes are never written to storage.
 const KEY='ps-account-session.v1';
 let session=null,options=null,trigger=null,panel=null,mode='login',errorLine=null;
+let pendingRecoveryCode=null;
 try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');
  if(raw&&/^[A-Za-z0-9_-]{43}$/.test(raw.token||'')&&
   Number(raw.expires)>Date.now())session=raw;
@@ -37,10 +38,11 @@ async function request(kind,data=null,auth=token()){
  return result;
 }
 function setSession(result){
+ pendingRecoveryCode=typeof result.recoveryCode==='string'?result.recoveryCode:null;
  session={token:result.token,expires:result.expires,username:result.account.username};
  localStorage.setItem(KEY,JSON.stringify(session));
 }
-function clearSession(){session=null;localStorage.removeItem(KEY)}
+function clearSession(){session=null;pendingRecoveryCode=null;localStorage.removeItem(KEY)}
 function render(){
  if(!panel||!trigger)return;
  panel.replaceChildren();
@@ -55,6 +57,23 @@ function render(){
  errorLine=node('p','account-feedback');errorLine.setAttribute('role','status');
  if(session){
   panel.append(node('p','account-user','@'+session.username));
+  if(pendingRecoveryCode){
+   const code=pendingRecoveryCode;
+   const card=node('div','account-recovery');
+   card.append(node('b','','Сохраните резервный код вне браузера'),
+    node('p','','Без пароля или этого кода вернуть доступ к аккаунту нельзя.'),
+    node('p','','Код доступен до обновления страницы или подтверждения сохранения.'));
+   const input=field('','text','off',43);
+   input.value=code;input.readOnly=true;
+   card.append(input,button('Скопировать код',async()=>{
+    try{await navigator.clipboard.writeText(code);info('Код скопирован')}
+    catch{input.focus();input.select();info('Скопируйте выделенный код')}
+   }));
+   card.append(button('Я сохранил код',()=>{
+    pendingRecoveryCode=null;card.remove();info('Резервный код скрыт.');
+   }));
+   panel.append(card);
+  }
   const old=field('Текущий пароль','password','current-password'),
     fresh=field('Новый пароль · от 15 символов','password','new-password'),
     confirmFresh=field('Повторите новый пароль','password','new-password');
@@ -115,22 +134,9 @@ function render(){
      recoveryCode:recovery.value.trim()}:
     {username:username.value,password:pass.value},null);
    setSession(result);
-   const code=result.recoveryCode;
-   await options.onLogin?.({register:current==='register',bootstrap:false});
    render();
-   if(code){
-    // Recovery code is displayed once and must be explicitly copied by the owner.
-    const card=node('div','account-recovery');
-    card.append(node('b','','Сохраните резервный код вне браузера'),
-     node('p','','Без пароля или этого кода вернуть доступ к аккаунту нельзя.'));
-    const input=field('','text','off',43);input.value=code;input.readOnly=true;
-    card.append(input,button('Скопировать код',async()=>{
-     try{await navigator.clipboard.writeText(code);info('Код скопирован')}
-     catch{input.focus();input.select();info('Скопируйте выделенный код')}
-    }));
-    panel.insertBefore(card,errorLine);
-    info('Код показан только сейчас. Сохраните его перед закрытием профиля.');
-   }
+   if(pendingRecoveryCode)info('Сохраните код: после обновления страницы его нельзя будет повторно показать.');
+   await options.onLogin?.({register:current==='register',bootstrap:false});
   }catch(ex){info(ex.message)}
   finally{submit.disabled=false}
  });
