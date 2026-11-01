@@ -20,8 +20,8 @@ test('unlock thresholds are narrow vertical ticks, never permanent diamonds',()=
  assert.match(cssRule('.inline-mastery-track.path-integrated-track .path-unlock-notch.reached'),/background:#a9df8d/);
  assert.match(cssRule('.inline-mastery-track.path-integrated-track .path-unlock-notch.unreachable'),/background:#c48375/);
  const hover=css.slice(css.indexOf('.inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered,'));
- assert.match(hover.slice(0,320),/box-shadow/);
- assert.doesNotMatch(hover.slice(0,320),/width:|height:|0 0 8px/);
+ assert.match(hover.slice(0,320),/box-shadow:0 0 0 1px #e0be81,0 0 1px #d0ad78a0/);
+ assert.doesNotMatch(hover.slice(0,320),/width:|height:|0 0 [2-9]px/);
 });
 test('source-backed tooltip includes ability name, description, required points and MP cost only when known',()=>{
  for(const fragment of ["text:threshold+tr(api,' очков',' points')",

@@ -1706,7 +1706,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch.is-hovered,
 .inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible{
- border-color:#f6dfa9;box-shadow:0 0 0 1px #e0be81,0 0 2px #d0ad78a0;
+ border-color:#f6dfa9;box-shadow:0 0 0 1px #e0be81,0 0 1px #d0ad78a0;
 }
 .inline-mastery-track.path-integrated-track .path-unlock-notch:focus-visible{
  outline:2px solid #ffe0a1;outline-offset:2px;

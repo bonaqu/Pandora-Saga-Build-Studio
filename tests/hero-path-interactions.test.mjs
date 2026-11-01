@@ -322,3 +322,37 @@ test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch
  assert.match(css,/\.game-tree-group \.branch-row>div>strong\{[\s\S]*?white-space:nowrap/);
  assert.match(css,/\.game-tree-group \.branch-row>\.count\{[\s\S]*?white-space:nowrap/);
 });
+
+test('empty, negative and fractional precise inputs never erase invested points',()=>{
+ const f=fixture('CLERIC','prayer','benevolence');
+ const field=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:potential-number');
+ f.range.value='7';f.range.listeners.input();
+ assert.equal(f.state.points.benevolence,7);
+ for(const raw of ['', '-1','1.5']){
+  field.value=raw;field.listeners.change();
+  assert.equal(f.state.points.benevolence,7,'unchanged after '+JSON.stringify(raw));
+  assert.equal(field.value,'7','invalid numeric entry restored');
+  assert.equal(f.range.value,'7','slider remains in sync');
+ }
+ field.value='5';field.listeners.change();
+ assert.equal(f.state.points.benevolence,5,'valid precise value still works');
+ field.value='0';field.listeners.change();
+ assert.equal(f.state.points.benevolence,0,'explicit zero still refunds');
+});
+
+test('empty or invalid manual mastery restores trained amount instead of resetting it',()=>{
+ const f=fixture('CLERIC','prayer','benevolence');
+ f.state.masteryAuto=false;f.state.points.benevolence=8;f.state.mastery.benevolence=6;
+ let calls=0;
+ f.api.onMastery=()=>{calls++;return false};
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const field=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:mastery-number');
+ for(const raw of ['', '-2','2.5']){
+  field.value=raw;field.listeners.change();
+  assert.equal(field.value,'6','existing green mastery restored');
+ }
+ assert.equal(calls,0,'invalid entries must not reach the mastery mutation');
+ field.value='4';field.listeners.change();
+ assert.equal(calls,1,'valid mastery still invokes the existing API');
+ assert.equal(field.value,'6','rejected changes still restore the current value');
+});
