@@ -59,7 +59,7 @@ function database(){
     }
     throw Error('Unexpected run '+sql);
    }
-  }}},
+  }}}},
   async batch(batch){return Promise.all(batch.map(q=>q.run()))}
  };
  return db;

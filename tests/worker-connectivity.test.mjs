@@ -25,7 +25,7 @@ test('health reports own D1, published catalog and sharing readiness with CORS',
  assert.equal(response.headers.get('access-control-allow-origin'),ORIGIN);
  assert.equal(data.storage,'d1');
  assert.equal(data.status,'ok');
- assert.deepEqual(data.features,{sharing:true,catalog:true,library:true});
+ assert.deepEqual(data.features,{sharing:true,catalog:true,library:true,accounts:false});
 });
 test('health differentiates configured D1 from unpublished catalog',async()=>{
  const response=await worker.fetch(request('/api/health'),{DB:database(false)});

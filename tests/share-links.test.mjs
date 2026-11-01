@@ -61,7 +61,8 @@ test('opening a local named build keeps all old and future fields; shared Astir 
 
 test('health endpoint exposes D1 sharing readiness without claiming feature deployed',()=>{
  const worker=read('worker/index.js');
- assert.match(worker,/features:\{sharing:sharingReady,catalog:catalogPublished,library:found\.has\('private_builds'\)\}/);
+ assert.match(worker,/features:\{sharing:sharingReady,catalog:catalogPublished,library:found\.has\('private_builds'\),/);
+ assert.match(worker,/accounts:\['user_accounts','user_sessions','user_registration_limits'\]/);
  assert.match(worker,/Хранилище коротких ссылок не подготовлено: нужна миграция D1/);
  assert.match(worker,/return no\('Хранилище коротких ссылок не подготовлено: нужна миграция D1',503\)/);
 });

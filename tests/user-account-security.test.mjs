@@ -17,7 +17,7 @@ test('passwords are long passphrases and do not exclude punctuation, Unicode or 
   'pandorasaga12345'])
   assert.equal(validPassword(value,'user'),false,value);
 });
-test('account API is added without reusing or weakening legacy admin secrets',()=>{
+test('account API is added without reusing or weakening legacy admin secrets',async()=>{
  const worker=(await import('../worker/index.js'));
  assert.equal(typeof worker.default.fetch,'function');
 });
