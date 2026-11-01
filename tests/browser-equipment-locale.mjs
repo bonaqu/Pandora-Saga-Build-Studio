@@ -1,4 +1,8 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=path=>JSON.parse(readFileSync(new URL('../'+path,import.meta.url),'utf8'));
+const firstOfficialRu=read('data/os/items.json')['1'].name;
+const firstOfficialEn=read('data/os/strings.en.json').items['1'].n;
 
 // Real Chromium: opening the public Equipment catalog and switching languages
 // must leave the same catalog records and interactions intact.
@@ -20,7 +24,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   const first=page.locator('.equipment-catalog-layout .item-card').first();
   await first.waitFor({state:'visible'});
   const firstName=await first.locator('strong').innerText();
-  assert.ok(firstName.length>0);
+  assert.equal(firstName,firstOfficialRu,'RU item name comes from the original OS catalog');
   // The workbench covers the header: its own switch must remain clickable.
   await page.locator('#dockLocale [data-dock-locale="en"]').click();
   await page.waitForFunction(()=>document.querySelector(
@@ -30,7 +34,8 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await toolbar.locator('select option[value="ring"]').innerText(),'Rings');
   assert.match(await page.locator('.equipment-catalog-head h3').innerText(),/Pandora Saga Equipment/);
   assert.equal(await page.locator('.equipment-catalog-layout .item-card').first()
-   .locator('strong').innerText(),firstName,'Changing UI language must not fabricate item names');
+   .locator('strong').innerText(),firstOfficialEn,
+   'English item name must match its official OS translation by ID');
   assert.match(await page.locator('.equipment-catalog-layout .item-info h3').innerText(),/Item details/);
   await toolbar.locator('select').selectOption('ring');
   const ring=page.locator('.equipment-catalog-layout .item-card').first();
@@ -43,6 +48,9 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await page.locator('#dockLocale [data-dock-locale="ru"]').getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#locale [data-locale="ru"]').getAttribute('aria-pressed'),'true');
   assert.equal(await toolbar.locator('select option[value="ring"]').innerText(),'Кольца');
+  await toolbar.locator('select').selectOption('all');
+  assert.equal(await page.locator('.equipment-catalog-layout .item-card').first()
+   .locator('strong').innerText(),firstOfficialRu,'Switching back restores official RU name');
   assert.match(await page.locator('.equipment-catalog-layout .item-info h3').innerText(),/Сведения о предмете/);
   assert.deepEqual(errors,[]);
   console.log('Chromium equipment RU/EN smoke passed: filters, source records, names and inspector');
