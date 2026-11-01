@@ -124,3 +124,21 @@ test('identical repeated sources deduplicate by occurrence, not a global name se
  const partial=C.deduplicateProcDescriptions(generic,{entries:detailed.entries.slice(0,1)});
  assert.equal(partial.entries.length,1,'only one matching occurrence is suppressed');
 });
+
+test('generic conditional proc previews include accurate English triggers and safe names',()=>{
+ for(const [id,code,enLabel] of [
+  [422,'EP_ONHIT_SKILL_EXEC','On hit'],
+  [2802,'EP_ONHIT_STUN','On physical attack'],
+  [15082,'EP_ONDAMAGE_SKILL_EXEC','On taking damage']
+ ]){
+  const event=preview(items[id],id,'item')[0];
+  assert.equal(event.code,code);
+  assert.equal(event.triggerEn,enLabel);
+ }
+ assert.equal(preview(items[2802],2802,'item')[0].skillNameEn,'Stun');
+ const unknown=C.conditionalProcPreview({records:[['item:unknown',{
+  effects:[{func:'EP_ONHIT_SKILL_EXEC',a:12345,b:3,dir:'TARGET'}]
+ },0]]}).entries[0];
+ assert.equal(unknown.skillNameEn,'Special effect');
+ assert.equal(unknown.chance,null,'an unknown source never gets an invented chance');
+});

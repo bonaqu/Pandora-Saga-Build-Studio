@@ -1,9 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.223.0 (`2026.11.01.223`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.224.0 (`2026.11.01.224`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.224.0 — bilingual equipment proc and experience sections
+
+- In the Hero Book effects chapter, switch headings and structured conditional-proc triggers between RU and EN based on the chosen site language. Add proper English names for the generic Stun and unknown-special-effect fallbacks; when an OS skill has a name, reuse the localized catalog's existing name.
+- Use the already supported official `strings.en.json` ID-based names for skills/items via the existing `app.js` localized catalog. Do not fuzzy-translate user-edited text or invent missing game terms. Experience-bonus title and percent suffix are also bilingual.
+- Retain source-accurate chance corroboration, source-key dedup, all stored builds and account logic, no server-formula additions, and planning levels 1–55.
 
 ## Source update 0.223.0 — lossless multi-proc book and source identity
 

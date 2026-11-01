@@ -404,8 +404,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }body.append(card);
  }
  if(page==='effects'){
+  const english=document.documentElement?.lang==='en';
   if(modifiers?.specialEquipment?.entries?.length){
-   const english=document.documentElement?.lang==='en';
    const section=make('section',{class:'stage-attribute-row'});
    section.append(make('strong',{text:english?'Special item and Soul effects':
     'Особые эффекты предметов и душ'}));
@@ -415,17 +415,19 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   if(modifiers?.experienceBonus?.entries?.length){
    const section=make('section',{class:'stage-attribute-row'});
-   section.append(make('strong',{text:'Бонус к получаемому опыту'}));
+   section.append(make('strong',{text:english?'Experience gain bonus':'Бонус к получаемому опыту'}));
    for(const effect of modifiers.experienceBonus.entries)
     section.append(make('p',{text:effect.source+' · '+
-     (effect.percent>=0?'+':'')+effect.percent+'% опыта'}));
+     (effect.percent>=0?'+':'')+effect.percent+
+     (english?'% experience':'% опыта')}));
    body.prepend(section);
   }
   if(modifiers?.procPreview?.entries?.length){
    const section=make('section',{class:'stage-attribute-row'});
-   section.append(make('strong',{text:'Срабатывания предметов и душ'}));
+   section.append(make('strong',{text:english?'Item and Soul triggers':'Срабатывания предметов и душ'}));
    for(const proc of modifiers.procPreview.entries)
-    section.append(make('p',{text:proc.trigger+': '+proc.skillName+
+    section.append(make('p',{text:(english?(proc.triggerEn||proc.trigger):proc.trigger)+
+     ': '+(english?(proc.skillNameEn||proc.skillName):proc.skillName)+
      (proc.chance===null?'':' · '+proc.chance+'%')+' · '+proc.source}));
    body.prepend(section);
   }
