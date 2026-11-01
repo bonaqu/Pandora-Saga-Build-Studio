@@ -252,8 +252,19 @@ async function loadCloudBuilds(){
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))el[k]=Boolean(v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
 function imageUrl(name){return `assets/${name}.webp`}
 const BRANCH_ICON_PATHS={"slash":"assets/skills/legacy/01-00.png","thrust":"assets/skills/legacy/02-00.png","brush":"assets/skills/legacy/03-00.png","blow":"assets/skills/legacy/04-00.png","defense":"assets/skills/legacy/05-00.png","archery":"assets/skills/legacy/07-00.png","alchemy":"assets/skills/legacy/08-00.png","assassin":"assets/skills/legacy/09-00.png","trap":"assets/skills/legacy/10-00.png","warding":"assets/skills/legacy/11-00.png","benevolence":"assets/skills/legacy/13-00.png","blessing":"assets/skills/legacy/14-00.png","exorcism":"assets/skills/legacy/15-00.png","hymn":"assets/skills/legacy/16-00.png","element":"assets/skills/legacy/18-00.png","embody":"assets/skills/legacy/19-00.png","darkness":"assets/skills/legacy/20-00.png","charm":"assets/skills/legacy/21-00.png","riding":"assets/skills/legacy/24-00.png"};
+let unavailableIconIds=new Set();
 function branchIcon(id){return BRANCH_ICON_PATHS[id]||'assets/ui/icons/skill-unknown.svg'}
-function skillIcon(cat,idx,record=null){const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];if(custom)return custom;if(catalog.live&&record?.iconId){const path=iconManifest?.icons?.skills?.['skill_'+record.iconId];return path||`${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`}return branchIcon(cat)}
+function skillIcon(cat,idx,record=null){
+ const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];
+ if(custom)return custom;
+ if(catalog.live&&record?.iconId){
+  const stem='skill_'+record.iconId,path=iconManifest?.icons?.skills?.[stem];
+  if(path)return path;
+  if(unavailableIconIds.has('skills/'+stem))return null;
+  return `${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`;
+ }
+ return branchIcon(cat);
+}
 function itemIcon(rec,kind='items'){
  const soul=kind==='souls'||rec?.kind==='SOUL';
  const custom=override[(soul?'visual.soul.':'visual.item.')+rec?.id];
@@ -261,8 +272,10 @@ function itemIcon(rec,kind='items'){
  if(!rec?.icon)return null;
  const pathKind=soul?'items':kind;
  const selfHostedSoul=soul?iconManifest?.icons?.souls?.[rec.icon]:null;
- return selfHostedSoul||iconManifest?.icons?.[pathKind]?.[rec.icon]||
-  `${OS}/icons/${pathKind}/${rec.icon}.webp?v=07682901`;
+ const archived=selfHostedSoul||iconManifest?.icons?.[pathKind]?.[rec.icon];
+ if(archived)return archived;
+ if(unavailableIconIds.has(pathKind+'/'+rec.icon))return null;
+ return `${OS}/icons/${pathKind}/${rec.icon}.webp?v=07682901`;
 }
 function branchCap(branch){
  // No invented cap: when a game class is still loading, disable spending until real caps exist.
@@ -1662,8 +1675,9 @@ function renderCharacter(root){
       onclick:()=>{state.racialPassiveId=id;persist();renderOriginPassives();
        renderOriginVitals();if(stageAttributesPage)renderStageAttributes();renderDetails()}});
     const src=skillIcon('race',id,skill);
-    const image=h('img',{src,alt:'',loading:'lazy'});
-    image.onerror=()=>image.replaceWith(h('span',{text:'✦',class:'skill-fallback'}));
+    const image=src?h('img',{src,alt:'',loading:'lazy'}):
+     h('span',{text:'✦',class:'skill-fallback'});
+    if(src)image.onerror=()=>image.replaceWith(h('span',{text:'✦',class:'skill-fallback'}));
     button.append(image,h('strong',{text:skill.name}),h('span',{text:skill.desc||'Описание отсутствует'}),h('small',{text:selected?'✓ Выбрано':'Выбрать'}));
     passivePicker.append(button);
   }
@@ -2871,7 +2885,15 @@ window.addEventListener('hashchange',()=>{
 fetch('./assets/os-icon-manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(data=>{
  const label=$('iconStatus');
  if(data?.icons&&data.count&&Number.isInteger(data.count.present)&&Number.isInteger(data.count.expected)&&data.count.present<=data.count.expected){
-  if(data.count.present>0){iconManifest=data;render()}
+  if(data.count.present>0){
+   iconManifest=data;
+   unavailableIconIds=new Set((Array.isArray(data.missing)?data.missing:[])
+    .filter(entry=>entry&&entry.error==='HTTP 404'&&
+     ['skills','items','souls'].includes(entry.kind)&&
+     /^[a-zA-Z0-9_-]{1,120}$/.test(String(entry.stem||'')))
+    .map(entry=>entry.kind+'/'+entry.stem));
+   render();
+  }
   if(label)label.textContent=data.count.present>0?'Изображения загружены':'Изображения загружаются';
  }else if(label)label.textContent='Используются игровые изображения';
 }).catch(()=>{const label=$('iconStatus');if(label)label.textContent='Некоторые изображения недоступны'});
