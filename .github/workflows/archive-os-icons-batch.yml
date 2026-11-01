@@ -1,0 +1,48 @@
+name: Archive original Pandora Saga OS icons (one-time batch)
+
+on:
+  push:
+    branches:
+      - assets/original-os-icons-batch-0211
+    paths:
+      - .github/workflows/archive-os-icons-batch.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: original-icons-batch-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  archive:
+    if: github.ref == 'refs/heads/assets/original-os-icons-batch-0211'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - name: Checkout exact icon-import branch
+        uses: actions/checkout@v5
+        with:
+          persist-credentials: true
+      - name: Use Node.js 22
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Download up to 180 missing original WebP icons
+        run: node scripts/mirror-os-icons.mjs --limit=180
+      - name: Audit every available icon against catalog
+        run: npm run assets:audit
+      - name: Commit verified icon files and manifest to this branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A assets/os-icon-manifest.json assets/skills/icons assets/items/icons assets/souls/icons
+          if git diff --cached --quiet; then
+            echo "No new validated icons to archive"
+            exit 0
+          fi
+          git commit -m "assets: archive first batch of original OS WebP game icons"
+          git push origin HEAD:assets/original-os-icons-batch-0211
