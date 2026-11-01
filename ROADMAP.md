@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.238.0 (`2026.11.01.238`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.239.0 (`2026.11.01.239`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.239.0 — bilingual defensive resistance and status grid
+
+- [x] Hero Book Defense uses current RU/EN for eight source-backed elemental/magic resistance labels (fire, ice, lightning, poison, charm, light, dark, magic), independently formatted equipment-gem contribution lines, and the known warding passive description.
+- [x] Localize the complete twelve historical status-resistance labels without adding or removing mechanics: burn, stun, freeze, knockdown, knockback, sleep, silence, evil, weakness/curse, disease, madness and block break. Keep original source keys and raw signed values; no invented conversion of resistance indices to hit probability.
+- [x] Translate the remaining physical-damage-change caption and user-facing note on unmodelled server immunities. All equipment, Soul, class and hero values are unchanged, as are saved-build semantics, D1 and account security.
+- [x] New regressions cover every language pair, numeric wiring, gems, passive and original player-defined names.
+- [ ] Further RU/EN attack/defense detail sections, authoritative server state proc resistance formula and full Remaked parity remain open. Hero build planning stays 1–55.
 
 ## Source update 0.238.0 — bilingual Effects gemstones, healing, mana, potion breakdown
 

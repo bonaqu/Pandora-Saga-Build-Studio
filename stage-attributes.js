@@ -920,9 +920,13 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(page==='defense'&&modifiers?.resistances){
   const rs=modifiers.resistances,card=make('section',{class:'stage-attribute-row'});
+  const english=document.documentElement?.lang==='en';
   card.append(make('strong',{text:'Сопротивления'}));
-  const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
-   charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия'};
+  const labels=english?
+   {fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
+    charm:'Charm',light:'Light',dark:'Dark',magic:'Magic'}:
+   {fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
+    charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия'};
   const elements=make('div',{class:'stage-resistance-grid'});
   for(const [key,value] of Object.entries(rs.elements||{})){
    if(!Number.isFinite(value))continue;
@@ -936,16 +940,23 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    const added=Object.entries(rs.gemstones).map(([key,value])=>
     (labels[key]||key)+' '+(value>0?'+':'')+value).join(' · ');
    card.append(make('p',{class:'stage-resistance-gem-summary',text:
-    'От самоцветов: '+added}));
+    (english?'From gems: ':'От самоцветов: ')+added}));
   }
   if(rs.wardingPassive)
-   card.append(make('p',{text:'Устойчивость: +15 к оглушению, заморозке и падению'}));
+   card.append(make('p',{text:english?
+    'Resilience: +15 against stun, freeze and knockdown':
+    'Устойчивость: +15 к оглушению, заморозке и падению'}));
   card.append(make('p',{text:'Физические состояния: '+rs.states.physical}),
    make('p',{text:'Психические состояния: '+rs.states.mental}));
-  const statusNames={burn:'Ожоги',stun:'Оглушение',numb:'Заморозка',
-   tumble:'Падение',knockback:'Отбрасывание',sleep:'Сон',
-   silence:'Немота',evil:'Зло',curse:'Слабость/проклятие',
-   disease:'Болезнь',madness:'Помешательство',blockBreak:'Пробитие блока'};
+  const statusNames=english?
+   {burn:'Burn',stun:'Stun',numb:'Freeze',tumble:'Knockdown',
+    knockback:'Knockback',sleep:'Sleep',silence:'Silence',
+    evil:'Evil',curse:'Weakness / Curse',disease:'Disease',
+    madness:'Madness',blockBreak:'Block break'}:
+   {burn:'Ожоги',stun:'Оглушение',numb:'Заморозка',
+    tumble:'Падение',knockback:'Отбрасывание',sleep:'Сон',
+    silence:'Немота',evil:'Зло',curse:'Слабость/проклятие',
+    disease:'Болезнь',madness:'Помешательство',blockBreak:'Пробитие блока'};
   const resist=Object.entries(rs.status||{}).filter(([,v])=>v!==0);
   if(resist.length){
    card.append(make('strong',{text:'Сопротивления состояниям'}));
@@ -955,7 +966,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   if(rs.mitigation.physical)card.append(make('p',{text:'Получаемый физический урон: '+
    rs.mitigation.physical+'%'}));
-  if(rs.mitigation.physicalFlat)card.append(make('p',{text:'Изменение физического урона: '+
+  if(rs.mitigation.physicalFlat)card.append(make('p',{text:
+   (english?'Physical damage change: ':'Изменение физического урона: ')+
    (rs.mitigation.physicalFlat>0?'+':'')+rs.mitigation.physicalFlat}));
   if(rs.mitigation.magic)card.append(make('p',{text:'Получаемый магический урон: '+
    rs.mitigation.magic+'%'}));
@@ -966,8 +978,9 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    rs.incomingDebuffDurationReduction+'%'}));
   if(rs.damageNegation)card.append(make('p',{text:'Уклонение от физического урона: '+
    (rs.damageNegation>0?'+':'')+rs.damageNegation}));
-  card.append(make('p',{class:'stage-attribute-note',
-   text:'Включены базовые формулы, расовые способности, честь и структурированные сопротивления от вещей/душ, включая требования заточки; другие навыки и серверные иммунитеты ещё не полностью учтены.'}));
+  card.append(make('p',{class:'stage-attribute-note',text:english?
+   'Includes base formulas, racial passives, honor and structured equipment/Soul resistance, including enhancement requirements. Other skills and server immunities are not fully included.':
+   'Включены базовые формулы, расовые способности, честь и структурированные сопротивления от вещей/душ, включая требования заточки; другие навыки и серверные иммунитеты ещё не полностью учтены.'}));
   body.prepend(card);
  }
  if(page==='recovery'&&modifiers?.regeneration){
