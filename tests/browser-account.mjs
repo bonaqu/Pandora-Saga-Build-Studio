@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 export async function runAccountSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev',token='t'.repeat(43);
- let calls=[],username=null,passwd=null,offlineMe=false,expiredMe=false;
+ let calls=[],username=null,passwd=null,offlineMe=false,expiredMe=false,misidentifiedMe=false;
  const context=await browser.newContext({viewport:{width:1280,height:900}});
  await context.route('**/*',async route=>{
   const url=route.request().url();
@@ -31,6 +31,7 @@ export async function runAccountSmoke(browser,base){
    if(action==='me'){
     if(expiredMe)return send({error:'Sign in required'},401);
     if(offlineMe)return send({error:'Cloud temporarily unavailable'},503);
+    if(misidentifiedMe)return send({account:{username:'bob_222'}});
     return send({account:{username}});
    }
    if(action==='login'){
@@ -135,7 +136,18 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-recovery input').waitFor({state:'visible'});
   assert.equal(await page.locator('.account-recovery input').inputValue(),'s'.repeat(43));
   assert.equal(calls.filter(c=>c.action==='recover').length,1);
+  // A valid bearer that unexpectedly resolves to a different owner must not
+  // be allowed to keep that token while attaching the saved-build guest scope.
+  misidentifiedMe=true;
+  const cloudWritesBefore=calls.filter(c=>c.path==='/api/library'&&c.body).length;
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>localStorage.getItem('ps-account-session.v1')===null);
+  await page.locator('#profileTrigger').click();
+  await page.locator('.account-tabs').waitFor({state:'visible'});
+  assert.equal(await page.locator('.account-user').count(),0);
+  assert.equal(calls.filter(c=>c.path==='/api/library'&&c.body).length,cloudWritesBefore,
+   'Mismatched /me identity must not create a new cross-owner saved-build PUT');
   assert.deepEqual(errors,[]);
-  console.log('Chromium account UI passed: registration, password confirmation, recovery rotation, transient 503 retention and 401 logout');
+  console.log('Chromium account UI passed: registration, recovery rotation, transient 503 retention, 401 logout, mismatched 200 identity rejection');
  }finally{await context.close()}
 }
