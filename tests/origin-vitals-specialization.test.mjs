@@ -9,7 +9,7 @@ test('Origin labels show only ОЗ/ОМ, no icons or approximation marks',()=>{
  assert.match(html,/<span>ОЗ<\/span><strong id="originHp">/);
  assert.match(html,/<span>ОМ<\/span><strong id="originMp">/);
  assert.doesNotMatch(html,/♥ ОЗ|✦ ОМ|Выбери облик/);
- assert.match(html,/Раса <span>Выбери расу<\/span>/);
+ assert.match(html,/Раса <span[^>]*>Выбери расу<\/span>/);
  assert.match(css,/\.origin-vital\{[\s\S]*?min-height:66px/);
 });
 test('HP/MP are calculated integers and coverage limitations remain transparent',()=>{

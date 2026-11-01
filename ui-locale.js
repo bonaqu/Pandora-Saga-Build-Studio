@@ -95,7 +95,7 @@ function apply(lang='ru',doc=typeof document==='undefined'?null:document){
  for(const node of doc.querySelectorAll('[data-i18n]'))node.textContent=text(node.dataset.i18n,locale);
  for(const [attribute,dataKey] of [['placeholder','i18nPlaceholder'],['aria-label','i18nAriaLabel'],['title','i18nTitle']])
   for(const node of doc.querySelectorAll('[data-'+dataKey.replace(/[A-Z]/g,letter=>'-'+letter.toLowerCase())+']'))
-   node.setAttribute(attribute,text(node.dataset[dataKey],locale));
+   {if(typeof node.setAttribute==='function'&&node.dataset?.[dataKey])node.setAttribute(attribute,text(node.dataset[dataKey],locale));}
 }
 // Only called for newly rendered saved-build controls; not used on the game catalog.
 function localize(root,lang='ru'){
