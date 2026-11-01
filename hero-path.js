@@ -41,6 +41,21 @@ function readiness(skill,api,seen=new Set()){
  if(Number(skill.reqLevel)>0&&!required.length)problems.push(tr(api,'Дополнительное условие ','Unverified additional requirement ')+skill.reqLevel);
  return {learned:!problems.length,problems};
 }
+// Skill markers are sorted once per render; nearest hover uses binary search.
+function nearestMilestone(marks,fraction){
+ if(!marks.length||!Number.isFinite(fraction))return null;
+ let low=0,high=marks.length;
+ while(low<high){
+  const middle=Math.floor((low+high)/2);
+  if(marks[middle].thresholdFraction<fraction)low=middle+1;
+  else high=middle;
+ }
+ const before=marks[low-1],after=marks[low];
+ if(!before)return after||null;
+ if(!after)return before;
+ // At an exact midpoint choose the earlier threshold, as before.
+ return fraction-before.thresholdFraction<=after.thresholdFraction-fraction?before:after;
+}
 function viewGrowth(target,api){
  target.replaceChildren();
  const {state,groups,selectedGroup,expandedBranch,job,skillCatalog,budget}=api,auto=state.masteryAuto!==false;
@@ -152,10 +167,16 @@ function viewGrowth(target,api){
      const ticks=make('div',{class:'path-integrated-milestones'});
      // A future/unreachable skill can require more than the 90-point track.
      // Keep it in the accessible list below, but never draw its marker off-rail.
-     const thresholds=[...new Set(marks.map(mark=>mark.threshold)
-      .filter(value=>Number.isFinite(value)&&value>=0&&value<=visualMax))].sort((a,b)=>a-b);
-     for(const threshold of thresholds){
-      const at=marks.filter(mark=>mark.threshold===threshold);
+     const byThreshold=new Map();
+     for(const mark of marks){
+      const threshold=mark.threshold;
+      if(!Number.isFinite(threshold)||threshold<0||threshold>visualMax)continue;
+      if(!byThreshold.has(threshold))byThreshold.set(threshold,[]);
+      byThreshold.get(threshold).push(mark);
+     }
+     const orderedThresholds=[...byThreshold.keys()].sort((a,b)=>a-b);
+     for(const threshold of orderedThresholds){
+      const at=byThreshold.get(threshold);
       const lockedAt=at.every(mark=>mark.locked);
       const skillsAt=at.flatMap(mark=>mark.skills);
       const learned=skillsAt.some(skill=>readiness(skill,api).learned);
@@ -203,14 +224,10 @@ function viewGrowth(target,api){
       if(dragging||event.pointerType==='touch')return;
       const rect=range.getBoundingClientRect();
       const left=rect.left+9,travel=Math.max(1,rect.width-18);
-      const at=milestonesOnTrack.reduce((nearest,mark)=>{
-       // Every threshold is immutable for this rendered branch; no need to
-       // repeatedly query and parse DOM attributes on pointer movement.
-       const distance=Math.abs(event.clientX-(left+mark.thresholdFraction*travel));
-       return distance<nearest.distance?{mark,distance}:nearest;
-      },{mark:null,distance:Infinity});
+      const nearest=nearestMilestone(milestonesOnTrack,(event.clientX-left)/travel);
+      const distance=nearest?Math.abs(event.clientX-(left+nearest.thresholdFraction*travel)):Infinity;
       const next=event.clientY>=rect.top&&event.clientY<=rect.bottom&&
-       at.distance<=10?at.mark:null;
+       distance<=10?nearest:null;
       if(next===hovered)return;
       clearHover();
       if(next){hovered=next;next.tick.classList.add('is-hovered')}
