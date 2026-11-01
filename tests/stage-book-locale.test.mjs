@@ -34,3 +34,13 @@ test('Hero Book UI and aria descriptions follow document language on rerender',(
  assert.match(code,/Hero Book\./);
  assert.match(code,/make\('span',\{text:\(document\.documentElement\?\.lang==='en'\?'HERO BOOK'/);
 });
+
+test('equipment effects, item procs and experience preview headings follow RU/EN selection',()=>{
+ assert.match(code,/if\(page==='effects'\)\{\s*const english=document\.documentElement\?\.lang==='en'/);
+ assert.match(code,/english\?'Special item and Soul effects'/);
+ assert.match(code,/english\?'Item and Soul triggers':'Срабатывания предметов и душ'/);
+ assert.match(code,/english\?'Experience gain bonus':'Бонус к получаемому опыту'/);
+ assert.match(code,/english\?\(proc\.triggerEn\|\|proc\.trigger\):proc\.trigger/);
+ assert.match(code,/english\?\(proc\.skillNameEn\|\|proc\.skillName\):proc\.skillName/);
+ assert.match(code,/english\?'% experience':'% опыта'/);
+});

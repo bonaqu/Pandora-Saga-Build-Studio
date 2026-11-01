@@ -855,6 +855,14 @@ const procTriggers=Object.freeze({
  EP_ONDAMAGE_SKILL_EXEC_ATTACKER:'При получении урона',
  EP_ONDAMAGE_ELEM_SKILL_EXEC:'При получении стихийного урона'
 });
+const procTriggersEn=Object.freeze({
+ EP_ONHIT_SKILL_EXEC:'On hit',
+ EP_ONHIT_STUN:'On physical attack',
+ EP_ONHIT_SKILL_EXEC_ATTACKER:'On hit',
+ EP_ONDAMAGE_SKILL_EXEC:'On taking damage',
+ EP_ONDAMAGE_SKILL_EXEC_ATTACKER:'On taking damage',
+ EP_ONDAMAGE_ELEM_SKILL_EXEC:'On taking elemental damage'
+});
 // Identity must include the catalog source AND every relevant proc field.
 // Names are localized/display-only and cannot safely identify distinct items.
 const procIdentity=(source,effect)=>JSON.stringify([
@@ -878,8 +886,9 @@ function conditionalProcPreview({records=[],itemForth=null,skills=null}={}){
    const namedChance=labelChance?Number(labelChance[1].replace(',','.')):null;
    const sourceChance=effect.b>=0&&effect.b<=100?effect.b:null;
    const mismatch=namedChance!==null&&sourceChance!==null&&namedChance!==sourceChance;
-   entries.push({trigger,skillId:isStun?null:effect.a,
+   entries.push({trigger,triggerEn:procTriggersEn[effect.func],skillId:isStun?null:effect.a,
     skillName:isStun?'Оглушение':String(skill?.name||'Особый эффект'),
+    skillNameEn:isStun?'Stun':String(skill?.name||'Special effect'),
     chance:namedChance!==null&&!mismatch?sourceChance:null,source:String(record.name||source),
     disputedChance:mismatch,code:effect.func,
     procIdentity:procIdentity(source,effect)});
