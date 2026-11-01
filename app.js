@@ -48,7 +48,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Нагрудник','♟'],['Перчатки','♧'],['Поножи','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='';
+let state=fresh(),activeTab=['character','equipment','builds','wiki'].includes(bootView.tab)?bootView.tab:'character',catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,filter='',gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,gearShown=60,selectedSocket=0,gearDisplayMode=localStorage.getItem('ps-gear-view')==='list'?'list':'grid',inspectedGearId=null,inspectorPinned=false,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiItemLayout='list';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
 function restoreActiveBuildId(){
@@ -1358,11 +1358,37 @@ function renderWiki(root){
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
  let wikiSourceShown=80,wikiSourceRecord='';
- for(const [key,ru,en]of[['item','Предметы','Items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
+ for(const [key,ru,en]of[['item','Экипировка','Equipment'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:lang==='en'?en:ru,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name or description':'Поиск по названию или описанию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии'});
  controls.append(categories,search);
+ if(wikiSelection.type==='item'){
+  const equipmentTypes=[['equipment',wt('Экипировка','Equipment')],['all',wt('Все предметы','All items')],
+   ...[['weapon','Оружие','Weapons'],['shield','Щиты','Shields'],
+    ['head','Шлемы','Helmets'],['body','Броня','Armor'],
+    ['gloves','Перчатки','Gloves'],['legs','Поножи','Leg armor'],
+    ['feet','Обувь','Boots'],['cloak','Плащи','Cloaks'],
+    ['ring','Кольца','Rings'],['neck','Амулеты','Amulets'],
+    ['belt','Пояса','Belts'],['ear','Серьги','Earrings']]
+    .map(([id,ru,en])=>[id,wt(ru,en)])];
+  const typeSelect=h('select',{class:'wiki-equipment-type',
+   'aria-label':wt('Вид предметов','Item type'),onchange:event=>{
+    wikiItemType=event.target.value;wikiShown=100;if(wikiIndex)draw()
+   }});
+  for(const [id,label]of equipmentTypes){
+   const option=h('option',{value:id,text:label});
+   if(id===wikiItemType)option.selected=true;
+   typeSelect.append(option);
+  }
+  const view=h('div',{class:'wiki-equipment-view',role:'group',
+   'aria-label':wt('Вид каталога','Catalog view')});
+  for(const [id,ru,en]of[['list','☰ Список','☰ List'],['grid','▦ Сетка','▦ Grid']])
+   view.append(h('button',{type:'button',text:wt(ru,en),
+    'aria-pressed':String(wikiItemLayout===id),class:wikiItemLayout===id?'chosen':'',
+    onclick:()=>{wikiItemLayout=id;renderDetails()}}));
+  controls.append(h('div',{class:'wiki-equipment-toolbar'},[typeSelect,view]));
+ }
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
  const dataName=(type,id)=>{
@@ -1427,7 +1453,10 @@ function renderWiki(root){
   const type=wikiSelection.type;
   const knownMaps=wikiIndex.records('map');
   const records=wikiIndex.records(type);
-  const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id));
+  const results=wikiIndex.search(type,wikiSearch,id=>dataName(type,id))
+   .filter(([,rec])=>type!=='item'||wikiItemType==='all'||
+    (wikiItemType==='equipment'?slotKeys.includes(rec.slot):rec.slot===wikiItemType));
+  browse.classList.toggle('wiki-gear-grid',type==='item'&&wikiItemLayout==='grid');
   const selectedIndex=wikiSelection.id==null?-1:results.findIndex(([id])=>id===wikiSelection.id);
   const visible=selectedIndex>=wikiShown?
    [results[selectedIndex],...results.slice(0,wikiShown)]:results.slice(0,wikiShown);

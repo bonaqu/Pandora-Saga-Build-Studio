@@ -17,13 +17,14 @@ test('separate portrait variants permit gender selection; single variant locks i
 test('source-backed human/elf tailored sets exclude wrong sex and race in every slot',()=>{
  const groups={115:'head',125:'body',135:'legs',145:'gloves',155:'feet'};
  for(const [prefix,slot] of Object.entries(groups)){
-  const variants=Number(prefix)===115?[2,12,22,32]:[1,2,11,12,21,22,31,32];
+  const variants=Number(prefix)===115?[2,12,22,32,42,52,62,72]:
+   [1,2,11,12,21,22,31,32,41,42,51,52,61,62,71,72];
   for(const variant of variants){
    const item={id:Number(prefix)*100+variant,slot};
-   const series=Math.trunc(variant/10);
+   const series=Math.trunc(variant/10),target=[0,0,1,1,2,3,4,5][series];
    for(const race of [0,1,2,3,4,5])for(const gender of [0,1])
     assert.equal(ui.raceCompatible(item,race,gender),
-     race===(series>=2?1:0)&&gender===(series%2===0?1:0),
+     race===5||(race===target&&(series>=4||gender===(series%2===0?1:0))),
      'wrong tailored eligibility '+item.id+' / '+race+' / '+gender);
   }
  }
@@ -37,12 +38,14 @@ test('all Astir gloves and boots follow same gender policy as body outfits',()=>
    assert.equal(ui.raceCompatible(male,1,1),true);
    assert.equal(ui.raceCompatible(male,4,0),true);
    assert.equal(ui.raceCompatible(male,3,0),false);
+   assert.equal(ui.raceCompatible(male,5,0),true);
    if(Number(group)!==136){
     const female={id:Number(group)*100+10+n,slot:name};
     assert.equal(ui.raceCompatible(female,1,0),true);
     assert.equal(ui.raceCompatible(female,1,1),false);
     assert.equal(ui.raceCompatible(female,3,0),true);
     assert.equal(ui.raceCompatible(female,4,0),false);
+    assert.equal(ui.raceCompatible(female,5,0),true);
    }
   }
  }

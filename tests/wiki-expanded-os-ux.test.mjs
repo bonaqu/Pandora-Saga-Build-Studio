@@ -108,6 +108,16 @@ test('EN encyclopedia uses authoritative NPC/chest/settlement names, and chest d
  assert.match(app,/const described=type==='chest'\?wikiData\.items\?\.\[id\]:rec/);
  assert.match(wiki,/index\.set\(id,normalizeSearch\(\[rec\.name/);
 });
+test('encyclopedia equipment owns catalog filters and coherent grid/list views',()=>{
+ const html=read('index.html'),app=read('app.js'),css=read('style.css');
+ assert.doesNotMatch(html,/<nav id="nav">[^<]*<button data-tab="equipment"/);
+ assert.doesNotMatch(html,/<nav id="dockTabs"[^>]*>\s*<button[^>]*data-tab="character"/);
+ assert.match(html,/data-tab="wiki" data-i18n="wiki">📜 Энциклопедия/);
+ assert.match(app,/wikiItemType==='equipment'\?slotKeys\.includes\(rec\.slot\)/);
+ assert.match(app,/class:'wiki-equipment-type'/);
+ assert.match(app,/wiki-gear-grid/);
+ assert.match(css,/\.wiki-list\.wiki-gear-grid/);
+});
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
  const stage=read('stage-attributes.js'),html=read('index.html');

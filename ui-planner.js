@@ -43,12 +43,18 @@ function tailoredRestriction(item){
  const part=family(item,tailoredSlots);
  if(!part)return null;
  const variant=part.variant;
- if(part.group===115&&![2,12,22,32].includes(variant))return null;
- if(part.group!==115&&![1,2,11,12,21,22,31,32].includes(variant))return null;
+ if(part.group===115&&variant%10!==2)return null;
+ if(part.group!==115&&variant%10!==1&&variant%10!==2)return null;
  const series=Math.trunc(variant/10);
- return {race:series>=2?1:0,gender:series%2===0?1:0};
+ if(series<0||series>7)return null;
+ // 0/1 = human man/woman, 2/3 = elf man/woman;
+ // 4 = dwarf, 5 = Myrine, 6 = Enkidu, 7 = Kroll.
+ return {race:[0,0,1,1,2,3,4,5][series],
+  gender:series<4?series%2===0?1:0:0};
 }
 function raceCompatible(item,race,gender){
+ // Kroll may wear either gender's gear, including racial outfit variants.
+ if(race===5)return true;
  const tailored=tailoredRestriction(item);
  if(tailored)return race===tailored.race&&gender===tailored.gender;
  if(astirFemale(item))return race===3||race===5||(race===0||race===1)&&gender===0;

@@ -12,6 +12,8 @@ test('exact user interface keys translate to English without rewriting unknown g
  assert.equal(locale.ui('Отмена','ru'),'Отмена');
  assert.equal(locale.ui('Доспех тьмы','en'),'Доспех тьмы');
  assert.equal(locale.text('path','ru'),'Путь героя');
+ assert.equal(locale.text('wiki','ru'),'📜 Энциклопедия');
+ assert.equal(locale.text('wiki','en'),'📜 Encyclopedia');
 });
 test('static locale attributes update without touching user input values',()=>{
  const element={dataset:{i18nPlaceholder:'findSkill',i18nAriaLabel:'profileAccess'},

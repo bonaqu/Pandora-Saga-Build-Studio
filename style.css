@@ -1688,6 +1688,22 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  }
 }
 
+/* Encyclopedia equipment view stays in the same linked item-source catalog. */
+.wiki-equipment-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.wiki-equipment-type{min-width:180px;max-width:100%;background:#18110c;color:#f4d6a3;
+ border:1px solid #947049;padding:8px 10px;border-radius:4px}
+.wiki-equipment-view{display:flex;gap:5px}
+.wiki-equipment-view button{background:#24180e;border:1px solid #795b39;
+ color:#d5b688;padding:8px 11px;cursor:pointer;border-radius:3px}
+.wiki-equipment-view button.chosen{background:#58391f;border-color:#deb572;color:#fff0d2}
+.wiki-list.wiki-gear-grid{display:grid;align-content:start;
+ grid-template-columns:repeat(auto-fill,minmax(136px,1fr));gap:6px}
+.wiki-list.wiki-gear-grid>.muted,.wiki-list.wiki-gear-grid>.wiki-more{grid-column:1/-1}
+.wiki-list.wiki-gear-grid .wiki-link{display:flex;align-items:center;flex-direction:column;
+ justify-content:center;text-align:center;gap:6px;min-height:96px;padding:9px}
+.wiki-list.wiki-gear-grid .wiki-list-icon,.wiki-list.wiki-gear-grid .wiki-list-glyph{
+ width:48px;height:48px;flex-basis:48px}
+@media(max-width:560px){.wiki-list.wiki-gear-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 /* Source-backed art is used when present; neutral category glyphs never impersonate game sprites. */
 .wiki-list-glyph{display:grid;place-items:center;width:34px;height:34px;
  flex:0 0 34px;border:1px solid #775d40;border-radius:4px;

@@ -3,7 +3,7 @@
 // Exact interface-only translations. Never translate player names or game records by resemblance.
 const strings={
  character:['✦ Персонаж','✦ Character'],equipment:['◈ Каталог предметов','◈ Items'],
- builds:['▣ Мои билды','▣ My Builds'],wiki:['📜 Вики','📜 Wiki'],
+ builds:['▣ Мои билды','▣ My Builds'],wiki:['📜 Энциклопедия','📜 Encyclopedia'],
  origin:['Происхождение','Origin'],race:['Раса','Race'],
  profession:['Профессия','Class'],stats:['Характеристики','Stats'],
  appearance:['Образ героя','Hero Appearance'],path:['Путь героя','Hero Path'],
