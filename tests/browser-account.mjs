@@ -53,7 +53,10 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await page.locator('#profileTrigger').getAttribute('aria-label'),'Sign in or register');
   assert.ok(await page.getByRole('button',{name:'Register',exact:true}).isVisible());
   await page.locator('#locale [data-locale="ru"]').click();
-  await page.getByRole('button',{name:'Регистрация'}).click();
+  // Choosing a language outside the account popover intentionally closes it.
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  await page.getByRole('button',{name:'Регистрация',exact:true}).click();
   const inputs=page.locator('#accountPanel .account-form input');
   await inputs.nth(0).fill('TestPlayer_01');
   await inputs.nth(1).fill('An unusually long phrase for my builds');
