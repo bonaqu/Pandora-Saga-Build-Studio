@@ -10,7 +10,8 @@ test('transfer key is revealed on demand, not embedded directly in public librar
  assert.match(src,/navigator\.clipboard\.writeText\(field\.value\)/);
  assert.match(src,/if\(!codeVisible\)/);
  assert.doesNotMatch(src,/copy\.onclick=/);
- assert.match(src,/Перенести библиотеку на другое устройство/);
+ assert.match(src,/Перенести или восстановить облачные билды/);
+ assert.match(src,/Сохраните личный код библиотеки до очистки данных браузера/);
  assert.doesNotMatch(html,/ps-build-library-secret\.v1/);
 });
 test('switch validates remote owner, refuses pending deletions and preserves local data',()=>{
