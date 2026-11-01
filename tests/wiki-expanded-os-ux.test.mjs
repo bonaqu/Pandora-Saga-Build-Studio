@@ -64,7 +64,7 @@ test('wiki item and skill details expose source fields, class names, and progres
  assert.match(app,/wikiIndex\.normalize\(recipeSearch\.value\)/);
  assert.match(app,/moreSources\(found\)/);
  assert.match(app,/moreSources\(usedIn\)/);
- assert.match(app,/\(trade\.mats\|\|\[\]\)\.flatMap/);
+ assert.match(app,/\(trade\.mats\|\|\[\]\)\.map/);
 });
 test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-less locations',()=>{
  const app=read('app.js'),css=read('style.css'),book=read('stage-attributes.js');
