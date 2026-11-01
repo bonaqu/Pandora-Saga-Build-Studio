@@ -1456,6 +1456,17 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-legacy-buff-intro{font-size:10px;color:#bca788;line-height:1.45;margin:8px 0 1px}
 .stage-resistance-gem-summary{font-size:11px;color:#e6c692;margin:7px 0}
 
+/* Compact read-only song previews; no simulated active buff state. */
+.stage-song-skill-list{display:grid;gap:4px;margin:9px 0}
+.stage-song-skill-row{display:grid;gap:4px;min-width:0;padding:9px 10px;
+ background:#241b15;border:1px solid rgba(207,164,106,.17);border-radius:4px}
+.stage-song-skill-row strong{font-size:12px;color:#f7d496}
+.stage-song-skill-row small{font-size:11px;line-height:1.5;color:#dbc5a8}
+.stage-song-skill-row span{font-size:10px;line-height:1.45;overflow-wrap:anywhere}
+.stage-song-skill-ready{color:#bcd9a0}
+.stage-song-skill-locked{color:#d7b793}
+
+
 
 /* Build-library inline actions */
 .build-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}

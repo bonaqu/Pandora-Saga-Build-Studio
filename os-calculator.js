@@ -1500,6 +1500,91 @@ const legacyPhysicalAuras=Object.freeze([
 const legacyMagicAuras=Object.freeze([0,1,2,4,7,10,14,19,25,32,40]);
 const legacyGemElements=Object.freeze(['fire','ice','lightning','poison','light','dark','rainbow']);
 
+// Explicit, source-checked chains for the three current OS hymn toggles.
+// A learnable song invokes an area spell, which in turn applies a distinct
+// recipient effect. These previews never assume that a toggle is enabled.
+const songChains=Object.freeze([
+ {key:'minstrel',id:340001001,middle:340001002,last:340001003,
+  ru:'Песнь поэта',en:"Minstrel's Song",
+  description:'Повышает точность и уклонение игроков в области действия.',
+  descriptionEn:'Raises accuracy and evasion of players in the area.',
+  requirements:{hymn:8},
+  root:[['EP_SKILL_EXEC_COUNT','TARGET',[0,0,0,340001002]],
+   ['EP_MOVESPEED_CONST','CASTER',[0,0,0,0]],
+   ['EP_TOGGLE','CASTER',[0,0,-20,50]],
+   ['EP_STATE_CHANT','CASTER',[0,0,0,0]]],
+  final:[['EP_TOHIT_CONST','TARGET',[13,0,13,4]],
+   ['EP_AVOIDANCE_CONST','TARGET',[13,0,13,4]]]},
+ {key:'peaceful',id:340003001,middle:340003002,last:340003003,
+  ru:'Песнь мира',en:'Peaceful Hymn',
+  description:'Игроки в области действия не получают урон ниже заданного порога.',
+  descriptionEn:'Players in the area take no damage below a set threshold.',
+  requirements:{benevolence:61,hymn:30},
+  root:[['EP_SKILL_EXEC_COUNT','TARGET',[0,0,0,340003002]],
+   ['EP_MOVESPEED_CONST','CASTER',[0,0,225,0]],
+   ['EP_TOGGLE','CASTER',[0,0,-20,50]],
+   ['EP_STATE_CHANT','CASTER',[0,0,0,0]]],
+  final:[['EP_DAMAGE_CLEAR','TARGET',[60,0,30,10]]]},
+ {key:'sage',id:340004001,middle:340004002,last:340004003,
+  ru:'Песнь чар',en:"Sage's Song",
+  description:'Усиливает атакующие заклинания и сокращает перезарядку умений.',
+  descriptionEn:'Strengthens attack spells and shortens skill cooldowns.',
+  requirements:{blessing:71,hymn:30},
+  root:[['EP_SKILL_EXEC_COUNT','TARGET',[0,0,0,340004002]],
+   ['EP_MOVESPEED_CONST','CASTER',[0,0,225,0]],
+   ['EP_TOGGLE','CASTER',[0,0,-20,50]],
+   ['EP_STATE_CHANT','CASTER',[0,0,0,0]]],
+  final:[['EP_SKILL_BENCH_FIN','TARGET',[-28,0,-17,-5]],
+   ['EP_ELEMENT_DAMAGE_SCALE','TARGET',[8,0,8,4]]]}
+]);
+function songFunctionsMatch(funcs,expected){
+ return Array.isArray(funcs)&&funcs.length===expected.length&&
+  expected.every(([ep,dir,values])=>funcs.some(row=>
+   row?.ep===ep&&row?.dir===dir&&
+   Array.isArray(row.fv1)&&row.fv1.length===values.length&&
+   row.fv1.every((value,index)=>value===values[index])));
+}
+function songSourceMatches(catalog,spec){
+ const root=catalog?.[String(spec.id)],
+  middle=catalog?.[String(spec.middle)],last=catalog?.[String(spec.last)];
+ if(!root||root.id!==spec.id||root.skillType!=='TOGGLE'||
+  root.learnable!==true||root.prereq!==null||root.charLevel!==0||
+  !Array.isArray(root.reqs)||root.reqs.length!==Object.keys(spec.requirements).length||
+  !Object.entries(spec.requirements).every(([branch,amount])=>root.reqs.some(req=>
+   req?.branch===branch&&req?.amount===amount))||
+  !songFunctionsMatch(root.funcs,spec.root))return false;
+ if(!middle||middle.id!==spec.middle||middle.skillType!=='SPHERE'||
+  middle.learnable!==false||!Array.isArray(middle.reqs)||middle.reqs.length||
+  !songFunctionsMatch(middle.funcs,[['EP_SKILL_EXEC','TARGET',[0,0,0,spec.last]]]))return false;
+ if(!last||last.id!==spec.last||last.skillType!=='ALLY'||
+  last.learnable!==false||!Array.isArray(last.reqs)||last.reqs.length||
+  !songFunctionsMatch(last.funcs,spec.final))return false;
+ return true;
+}
+function songSkillPreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},branchCaps={}}={}){
+ const rows=[];
+ if(!Number.isInteger(level)||level<1||level>55||!skillCatalog||
+  typeof skillCatalog!=='object'||typeof jobKey!=='string')return {rows,verified:false};
+ for(const spec of songChains){
+  const requirements=Object.entries(spec.requirements).map(([branch,amount])=>({branch,amount}));
+  const capsValid=requirements.every(({branch,amount})=>
+   Number.isInteger(branchCaps?.[branch])&&branchCaps[branch]>=amount);
+  if(!capsValid)continue; // Never offer an impossible song for this class.
+  const root=skillCatalog[String(spec.id)];
+  if(!root?.classes?.[jobKey]||!songSourceMatches(skillCatalog,spec))continue;
+  const masteryValid=requirements.every(({branch})=>
+   Number.isInteger(branchMasteries?.[branch])&&branchMasteries[branch]>=0&&
+   branchMasteries[branch]<=branchCaps[branch]);
+  const available=masteryValid&&requirements.every(({branch,amount})=>
+   branchMasteries[branch]>=amount);
+  rows.push({id:spec.id,key:spec.key,name:spec.ru,nameEn:spec.en,
+   description:spec.description,descriptionEn:spec.descriptionEn,
+   requirements,available,active:false,verified:false});
+ }
+ return {rows,verified:false,condition:'skill must be activated in game'};
+}
+
 // Preserved Remaked Legacy Calc('Velox'...'ToxicAura') branch previews.
 // These are read-only magnitudes: never apply to combat stats merely because
 // the hero's level/mastery is high. The corresponding spell must be selected
@@ -1684,6 +1769,10 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   blessing:combatContext.legacyBuffMasteries?.blessing??0,
   hymn:combatContext.legacyBuffMasteries?.hymn??0,
   alchemy:combatContext.legacyBuffMasteries?.alchemy??0});
+ const songSkills=songSkillPreview({skillCatalog:combatContext.skillCatalog,
+  jobKey:combatContext.jobKey,level,
+  branchMasteries:combatContext.branchMasteries,
+  branchCaps:classData.branchCaps});
  const coverage=effectCoverage({records:combinedRecords,itemForth});
  const recoveryAmount=recoveryAmountPreview({maxHp:hpBase+hpBonus.total,
   maxMp:mpBase+mpBonus.total,stats});
@@ -1718,7 +1807,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
@@ -1727,6 +1816,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

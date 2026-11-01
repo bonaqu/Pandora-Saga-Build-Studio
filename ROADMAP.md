@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-01 · **Latest source release:** 0.234.0 (`2026.11.01.234`), browser and Worker deployment require independent verification  
+**Updated:** 2026-11-01 · **Latest source release:** 0.235.0 (`2026.11.01.235`), browser and Worker deployment require independent verification  
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.235.0 — OS area song chain previews
+
+- [x] Validate complete official source chains for `Minstrel's Song` (340001001 → 340001002 → 340001003), `Peaceful Hymn` (340003001 → 340003002 → 340003003) and `Sage's Song` (340004001 → 340004002 → 340004003). Verify parent/area/recipient skill ID, type, required branch thresholds and every current structured function/vector. A forged/missing link does not earn a confirmed preview.
+- [x] Display only the songs possible for the chosen class mastery caps, distinguishing requirement fulfillment from actual application. Cleric can access Minstrel + Peaceful, Enchanter Minstrel + Sage, Exorcist Minstrel. At actual zero or insufficient mastery display unmet requirements rather than active buffs.
+- [x] Hero Book → Buffs has an optional collapsed RU/EN song index with gameplay effect descriptions. Numeric `EP_DAMAGE_CLEAR` and buff payload parameter arrays are **not** turned into fabricated live damage thresholds or automatic player stat changes. Existing Remaked legacy song previews remain read-only and separate.
+- [x] Unit vectors: valid source sets, invalid class, missing or mutated nested skills, fake requirement or effect fields, cap bounds, both languages, and invariance of HP/MP/attack when a song's learning requirement is met.
+- [ ] Still required: active-song toggling only once modern source application/expiration is verified, server battle parity, remaining historical formula keys and independent mobile/keyboard acceptance.
 
 ## Source update 0.234.0 — source-gated healing skills and bilingual recovery
 
