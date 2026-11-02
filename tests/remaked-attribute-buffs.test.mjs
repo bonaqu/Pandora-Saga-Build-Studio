@@ -49,7 +49,8 @@ test('Origin contains optional nested controls without adding visible top-level 
  for(const id of ['originGuildAll','originHonorTitle','originProelium','originProeliumPotency'])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(html,/<details class="origin-attribute-buffs">/);
- assert.match(source,/attributeBuffs:state\.attributeBuffs\|\|\{\}/);
+ assert.match(source,/attributeBuffs:effectiveGuildBuffs\.attributes/);
+ assert.match(source,/guildPassiveAtLevel\(guildLevel\)/);
  assert.match(source,/safe\.attributeBuffs\.honorCuriosity=rawAttributes\.honorCuriosity===true/);
  assert.match(source,/safe\.attributeBuffs\.proelium=rawAttributes\.proelium===true/);
 });
