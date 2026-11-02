@@ -69,7 +69,7 @@ function build(data){
  // ("Большой сундук (7 дней)", etc.) are not loot containers.
  for(const [id,item] of Object.entries(data.items||{})){
   const label=String(item?.name||'');
-  if(!/^(?:Сундук(?:\\s|$)|Шкатулка(?:\\s|$)|Красный сундук$|Зеленый сундук$|Синий сундук$)/i.test(label))continue;
+  if(!/^(?:Сундук(?:\s|$)|Шкатулка(?:\s|$)|Красный сундук$|Зеленый сундук$|Синий сундук$)/i.test(label))continue;
   if(!Object.hasOwn(chestRecords,id))
    chestRecords[id]={i:Number(id),rolls:[],unlistedContents:true};
  }
