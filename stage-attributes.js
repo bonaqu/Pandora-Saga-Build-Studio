@@ -297,9 +297,24 @@ function buffsPage(body,options){
  const english=document.documentElement?.lang==='en';
  body.append(make('p',{class:'stage-attribute-note',text:
   'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
+ const configured=[...Object.values(buffs),...Object.values(vitalsBuffs)]
+  .filter(value=>value===true||typeof value==='number'&&value>0||
+   typeof value==='string'&&value!==''&&value!=='0').length;
+ const status=make('div',{class:'stage-buff-overview'},[
+  make('span',{text:english?'Configured enhancements':'Выбранные усиления'}),
+  make('strong',{text:String(configured)}),
+  make('small',{text:english?'Saved with this character':'Сохраняются с этим героем'})
+ ]);
+ body.append(status);
  const section=(name)=>{
   const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
-  body.append(node);return node;
+  if(name==='Дополнительно'){
+   const advanced=make('details',{class:'stage-book-buff-optional'},[
+    make('summary',{text:name})
+   ]);
+   advanced.append(node);body.append(advanced);
+  }else body.append(node);
+  return node;
  };
  const select=(parent,name,key,levels,vital=false)=>{
   const field=make('label',{class:'stage-book-field'},[make('span',{text:name})]);
