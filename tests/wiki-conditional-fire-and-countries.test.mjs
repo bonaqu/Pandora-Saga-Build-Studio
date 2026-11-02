@@ -56,25 +56,26 @@ test('color chests have known types but no official reward rates in current ches
   assert.match(data[id].desc,new RegExp(term,'i'));
  }
 });
-test('Astir city NPC zones are not mislabeled as the three sovereign nations',()=>{
+test('nation NPC location IDs stay independent from the four Astir city districts',()=>{
  const source=JSON.parse(file('data/os/trades.json'));
  assert.equal(source.mapNames['1001004'].name,'Центральная площадь');
- assert.equal(source.mapNames['1002001'].name,'Территория Союза');
- assert.equal(source.mapNames['1003001'].name,'Территория Королевства');
- assert.equal(source.mapNames['1004001'].name,'Территория Империи');
- assert.notEqual(source.mapNames['1002001'].name,'Союз северных племен Ванриг');
- assert.notEqual(source.mapNames['1004001'].name,'Лотарская империя');
+ assert.equal(source.mapNames['1002001'].name,'Союз северных племен Ванриг');
+ assert.equal(source.mapNames['1003001'].name,'Королевство Сэнт-Фальстайн');
+ assert.equal(source.mapNames['1004001'].name,'Лотарская империя');
+ assert.deepEqual(Array.from(source.npcs['131'].maps),[1003001]);
+ assert.deepEqual(Array.from(source.npcs['232'].maps),[1004001]);
+ assert.deepEqual(Array.from(source.npcs['331'].maps),[1002001]);
+ const model=file('pandora-studio-astir-locations.js');
  const app=file('pandora-studio-app.js');
- for(const id of ['1002001','1003001','1004001'])assert.ok(app.includes(id));
- assert.match(app,/Культье/);
- assert.match(app,/Астир/);
- assert.match(app,/wiki-chest-opening-fields/);
+ for(const id of ['astir-union','astir-kingdom','astir-empire'])
+  assert.ok(model.includes(id));
  for(const id of ['2001001','2002001','2001002','2003001','2001003','2004001'])
-  assert.ok(app.includes(id),'Missing road or connecting map '+id);
- assert.match(app,/Союз северных племён Ванриг/);
- assert.match(app,/Лотарская империя/);
- assert.match(app,/Королевство Сэнт-Фальстайн/);
+  assert.ok(model.includes(id),'Missing route segment '+id);
+ assert.match(app,/Культье/);
+ assert.match(app,/wiki-chest-opening-fields/);
+ assert.match(app,/Государства/);
 });
+
 test('numeric values align to right and Phoenix help term is dotted',()=>{
  const css=file('pandora-studio-item-owner-editor.css');
  assert.match(css,/\.wiki-owner-effect-value\{margin-left:auto/);
