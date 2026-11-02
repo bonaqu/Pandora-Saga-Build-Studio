@@ -70,7 +70,16 @@ function render(){
  panel.append(sub);
  errorLine=node('p','account-feedback');errorLine.setAttribute('role','status');
  if(session){
-  panel.append(node('p','account-user','@'+session.username));
+  const identity=node('div','account-identity');
+  const avatar=node('span','account-avatar','✦');avatar.setAttribute('aria-hidden','true');
+  const account=node('div','account-identity-meta');
+  account.append(node('small','','УЧЁТНАЯ ЗАПИСЬ'),
+   node('p','account-user','@'+session.username));
+  identity.append(avatar,account);
+  panel.append(identity);
+  const benefits=node('div','account-session-note');
+  benefits.append(node('span','','✓'),node('span','','Облачные билды привязаны к вашему профилю'));
+  panel.append(benefits);
   if(pendingRecoveryCode){
    const code=pendingRecoveryCode;
    const card=node('div','account-recovery');
@@ -88,28 +97,35 @@ function render(){
    }));
    panel.append(card);
   }
-  const old=field('Текущий пароль','password','current-password'),
+  const details=node('details','account-password-details');
+  const summary=node('summary','account-password-toggle','Изменить пароль');
+  details.append(summary);
+   const old=field('Текущий пароль','password','current-password'),
     fresh=field('Новый пароль · от 8 символов','password','new-password'),
     confirmFresh=field('Повторите новый пароль','password','new-password');
   old.required=true;fresh.required=true;confirmFresh.required=true;
   fresh.minLength=8;confirmFresh.minLength=8;
   const form=node('form','account-form');
-  form.append(old,fresh,confirmFresh);
+   form.append(old,fresh,confirmFresh);
   const update=button('Изменить пароль',async()=>{
    if(fresh.value!==confirmFresh.value){info('Пароли не совпадают.');return}
    update.disabled=true;info('Изменяем пароль…');
    try{await request('password',{currentPassword:old.value,password:fresh.value});
     old.value='';fresh.value='';confirmFresh.value='';
+    details.open=false;
     info('Пароль обновлён. Другие сеансы завершены.');
    }catch(e){info(e.message)}finally{update.disabled=false}
   },'primary');
-  form.append(update);
-  form.addEventListener('submit',e=>{e.preventDefault();update.click()});
-  panel.append(form);
-  panel.append(button('Выйти',async()=>{
+   form.append(update);
+   form.addEventListener('submit',e=>{e.preventDefault();update.click()});
+   details.append(form);
+  panel.append(details);
+  const footer=node('div','account-profile-footer');
+  footer.append(button('Выйти из аккаунта',async()=>{
    try{await request('logout',{},session.token)}catch{}
    clearSession();options.onLogout?.();render();
-  }));panel.append(errorLine);return;
+  },'account-signout'));
+  panel.append(footer,errorLine);return;
  }
  const tabs=node('div','account-tabs');
  tabs.append(button('Войти',()=>{mode='login';render()},mode==='login'?'selected':''),
