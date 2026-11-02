@@ -3685,29 +3685,86 @@ async function undoOwnerEdit(){
   finally{editIsSaving=false;refreshOwnerUI()}
 }
 function showOverrideManager(){
-  if(!adminToken)return;
-  const body=h('div',{class:'owner-manager'});
-  body.append(h('p',{class:'muted',text:'Это сохранённые настройки оформления Cloudflare D1. Сброс отдельной записи возвращает исходный текст или изображение из кода сайта. История отмены действует в этой вкладке.'}));
-  const search=ownerPlainTextField({placeholder:'Найти изменённый элемент…',class:'owner-manager-search wiki-owner-search'});
-  const list=h('div',{class:'owner-manager-list'});
-  const draw=()=>{
-    list.replaceChildren();
-    const q=search.value.toLowerCase();
-    const entries=Object.entries(override).filter(([key,value])=>key.toLowerCase().includes(q)||String(value).toLowerCase().includes(q)).sort((a,b)=>a[0].localeCompare(b[0]));
-    if(!entries.length)list.append(h('p',{class:'muted',text:'Нет сохранённых записей по этому запросу.'}));
-    for(const[key,value]of entries){
-      const row=h('div',{class:'owner-manager-row'});
-      row.append(h('div',{},[h('strong',{text:key}),h('p',{text:String(value).slice(0,150)})]),
-        h('button',{type:'button',text:'Вернуть оригинал',onclick:async()=>{
-          if(!confirm('Вернуть оригинальное значение для '+key+'?'))return;
-          const previous=activeOverride(key);
-          try{await apiRequest('/api/admin/reset',{key});ownerEdits.push({key,before:previous,after:null});delete override[key];draw();render();updateAdminHint();}
-          catch(e){alert('Сброс не выполнен: '+e.message)}
-        }}));
-      list.append(row);
-    }
-  };
-  search.addEventListener('input',draw);body.append(search,list);draw();modal('Правки оформления',body);
+ if(!adminToken)return;
+ const body=h('div',{class:'owner-manager'});
+ body.append(h('p',{class:'muted',text:
+  'Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.'}));
+ const search=ownerPlainTextField({placeholder:'Найти предмет, NPC или изменённое поле…',
+  class:'owner-manager-search wiki-owner-search','aria-label':'Поиск среди ручных изменений'});
+ const count=h('p',{class:'owner-manager-summary',role:'status'});
+ const list=h('div',{class:'owner-manager-list'});
+ const draw=()=>{
+  list.replaceChildren();
+  const q=String(search.value||'').trim().toLocaleLowerCase('ru');
+  const entries=Object.entries(override).map(([key,value])=>
+   window.PandoraOwnerChangeReview.inspect(key,value,{
+    base:wikiBaseData,items:wikiBaseData?.items||catalogSource?.items,
+    classes:catalog?.classes}))
+   .filter(record=>!q||[record.key,record.title,...record.changes.flatMap(x=>
+    [x.field,x.before,x.after])].join(' ').toLocaleLowerCase('ru').includes(q))
+   .sort((a,b)=>a.section.localeCompare(b.section,'ru')||a.title.localeCompare(b.title,'ru'));
+  count.textContent='Найдено '+entries.length+' из '+Object.keys(override).length+' ручных изменений';
+  if(!entries.length)list.append(h('p',{class:'muted',
+   text:'Не найдено правок по выбранному запросу.'}));
+  for(const record of entries){
+   const row=h('section',{class:'owner-manager-row owner-review-row'});
+   const head=h('div',{class:'owner-review-heading'},[
+    h('strong',{text:record.title}),
+    h('small',{text:'Изменено полей: '+record.changes.length})
+   ]);
+   const edits=h('div',{class:'owner-review-changes'});
+   for(const entry of record.changes){
+    const change=h('div',{class:'owner-review-change'});
+    change.append(h('strong',{class:'owner-review-field',text:entry.field}),
+     h('div',{class:'owner-review-comparison'},[
+      h('div',{class:'owner-review-before'},[
+       h('small',{text:'Было'}),h('p',{text:entry.before})]),
+      h('div',{class:'owner-review-after'},[
+       h('small',{text:'Стало'}),h('p',{text:entry.after})])
+     ]));
+    edits.append(change);
+   }
+   const actions=h('div',{class:'owner-review-actions'});
+   if(record.target&&record.target.id&&wikiDataOrCatalogHasRecord(record.target)){
+    actions.append(h('button',{type:'button',text:'Открыть в энциклопедии',
+     onclick:()=>{
+      $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
+      openWiki(record.target.type,record.target.id);
+      showWorkbench();
+     }}));
+   }
+   actions.append(h('button',{type:'button',class:'owner-review-reset',
+    text:'Вернуть оригинал',onclick:async()=>{
+     if(!confirm('Вернуть исходные данные для «'+record.title+'»?'))return;
+     const previous=activeOverride(record.key);
+     try{
+      await apiRequest('/api/admin/reset',{key:record.key});
+      ownerEdits.push({key:record.key,before:previous,after:null});
+      delete override[record.key];draw();void refreshOwnerCatalog();refreshOwnerUI();
+     }catch(error){showStudioToast('Не удалось отменить правку: '+error.message,'warning')}
+    }}));
+   row.append(head,edits,actions);list.append(row);
+  }
+ };
+ function wikiDataOrCatalogHasRecord(target){
+  if(target.type==='item'||target.type==='chest')
+   return Boolean(wikiBaseData?.items?.[target.id]||catalogSource?.items?.[target.id]);
+  if(target.type==='monster')return Boolean(wikiBaseData?.monsters?.[target.id]);
+  if(target.type==='skill')return Boolean(wikiBaseData?.skills?.[target.id]);
+  if(target.type==='npc')return Boolean(wikiBaseData?.trades?.npcs?.[target.id]);
+  if(target.type==='soul')return Boolean(wikiBaseData?.souls?.[target.id]);
+  if(target.type==='map')return Boolean(wikiBaseData?.maps?.[target.id]||
+   wikiBaseData?.trades?.mapNames?.[target.id]);
+  if(target.type==='instance')return (wikiBaseData?.instances||[]).some(x=>
+   String(x.id)===String(target.id));
+  return false;
+ }
+ search.addEventListener('input',draw);
+ body.append(search,count,list);
+ draw();
+ modal('Все ручные правки',body);
+ if(!wikiBaseData)void loadWiki().then(()=>{if(body.isConnected)draw()})
+  .catch(()=>{if(body.isConnected)showStudioToast('Исходный каталог временно недоступен','warning')});
 }
 
 function allowedArtwork(value){
