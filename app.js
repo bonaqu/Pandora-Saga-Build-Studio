@@ -2611,9 +2611,9 @@ function sanitizeSharedState(original){
    // Pre-0.86 shared builds had only a boolean Honor switch.
    safe.attributeBuffs.honorCuriosity=rawAttributes.honorCuriosity===true;
   }
-  safe.attributeBuffs.priestEnabled=rawAttributes.priestEnabled===true;
-  safe.attributeBuffs.priestGratia=rawAttributes.priestGratia===true;
-  safe.attributeBuffs.priestLapisMedio=rawAttributes.priestLapisMedio===true;
+  if(rawAttributes.priestEnabled===true)safe.attributeBuffs.priestEnabled=true;
+  if(rawAttributes.priestGratia===true)safe.attributeBuffs.priestGratia=true;
+  if(rawAttributes.priestLapisMedio===true)safe.attributeBuffs.priestLapisMedio=true;
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
   safe.attributeBuffs.potionEffectsEnabled=rawAttributes.potionEffectsEnabled===true;
   // Preserve the historical Jo-Eun rune boolean for old snapshot compatibility.
