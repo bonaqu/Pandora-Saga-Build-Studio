@@ -1,9 +1,11 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.318.0 (`2026.11.02.318`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.319.0 (`2026.11.02.319`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
+
+**0.319.0:** убраны ошибочные маршруты Астира; добавлены 32 NPC-профиля трёх городских районов (исторический справочник и Кларис по игровому скриншоту), интерактивные ссылки и отображение в карточках локаций. Полный современный список NPC не представлен в опубликованном OS JSON; сверка с текущим игровым сервером остаётся открытой.
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
 
