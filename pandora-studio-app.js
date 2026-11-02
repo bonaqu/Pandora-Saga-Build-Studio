@@ -1503,7 +1503,7 @@ function renderWiki(root){
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  guardEncyclopediaSearch(search);
  controls.append(categories,search);
- if(wikiSelection.type==='item'&&wikiItemType!=='utility'){
+ if(wikiSelection.type==='item'&&!['utility','all'].includes(wikiItemType)){
   const equipmentTypes=[['equipment',wt('Экипировка','Equipment')],
     ['elemental',wt('Стихийное оружие','Elemental weapons')],
    ...[['weapon','Оружие','Weapons'],['shield','Щиты','Shields'],
