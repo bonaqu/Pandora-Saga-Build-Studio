@@ -1571,7 +1571,7 @@ function renderWiki(root){
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
   const territoryAlias=type==='map'?({
    '1002001':'территория союза союз Ванриг',
-   '1003001':'территория королевства Вастир Сэнт-Фальстайн',
+   '1003001':'территория королевства Астир Сэнт-Фальстайн',
    '1004001':'территория империи Лотарская империя'
   }[String(id)]||null):null;
   const value=[dataName(type,id),translated?.n,territoryAlias,
@@ -2030,8 +2030,8 @@ function renderWiki(root){
     h('p',{text:wt('Запись территории подтверждена справочником расположения NPC. ',
      'This territory is listed in the source NPC location catalog. ')+
      (String(id)==='1003001'?wt(
-      'В городе Вастир находится мастер сундуков Культье.',
-      'The chest master Cultier is in Vastir.'):'')}));
+      'В Астире, на территории Королевства, находится мастер сундуков Культье.',
+      'Chest master Cultier is located in Astir, in the Kingdom district.'):'')}));
    detail.append(panel);
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
@@ -2262,7 +2262,7 @@ function renderWiki(root){
        const explanation=window.PandoraConditionalItemBonuses.phoenixExplanation(flame);
        const title=h('span',{class:'wiki-owner-effect-name'});
        const term=h('span',{class:'wiki-conditional-term',tabindex:'0',
-        title:explanation,'aria-label':'Пламя феникса. '+explanation,
+        'aria-label':'Пламя феникса. '+explanation,
         text:wt('Пламя феникса','Phoenix Flame')});
        title.append(h('span',{text:wt('Шанс призвать ','Chance to summon ')}),term);
        line.append(title,h('span',{class:'wiki-owner-effect-value'},[
@@ -2923,8 +2923,8 @@ function renderWiki(root){
      const master=h('div',{class:'wiki-chest-opening-field'},[
       h('small',{text:wt('Мастер сундуков','Chest master')}),
       h('strong',{text:wt('Культье','Cultier')}),
-      h('span',{text:wt('Вастир · территория Королевства','Vastir · Kingdom territory')}),
-      wikiLink(dataName('map','1003001'),'map','1003001')
+      h('span',{text:wt('Астир · территория Королевства','Astir · Kingdom territory')}),
+      wikiLink(wt('Территория Королевства','Kingdom territory'),'map','1003001')
      ]);
      info.append(required,master);notice.append(info);
      detail.append(notice);
