@@ -37,6 +37,30 @@ test('real client: first-level elf warrior, actual race/job start, HP149 MP44',(
  assert.equal(calc.halfToEven(44.72),45);
 });
 
+test('real client: elf warrior also reproduces defense, accuracy, evasion, charm and weapon max',()=>{
+ // In-game equipment: Short Sword ID21 W9, Simple Tunic ID12001 AC6,
+ // Pants ID13001 AC5 and Cloth Boots ID15061 AC1.
+ const weapon=items[21];
+ assert.ok(weapon,'Short Sword 21 must be published');
+ assert.equal(weapon.W,9);
+ const records=[item(21),item(12001),item(13001),item(15061)];
+ for(const [source,record] of records)assert.ok(record,source);
+ const actual=calc.base({
+  classData:classes.WARRIOR,
+  raceData:tables.raceInit.ELF,jobData:tables.jobInit.WARRIOR,
+  allocation:zero,level:1,records,
+  potionContext:{racialPassiveId:900020003},
+  combatContext:{weapon,weaponGrade:0,weaponPlus:tables.weaponPlus,
+   jobKey:'WARRIOR'}
+ });
+ assert.equal(actual.combat.attack.known,12,
+  'known upper attack endpoint, original client reports 9–12');
+ assert.equal(actual.combat.defense.known,12);
+ assert.equal(actual.combat.accuracy.known,6);
+ assert.equal(actual.combat.dodge.known,6);
+ assert.equal(actual.resistances.elements.charm,20);
+});
+
 test('real client: crystal ring +1 vitality produces HP155, preserves MP44',()=>{
  const ring=items[19004];
  assert.ok(ring,'OS Ring with Crystal ID 19004 must exist');
