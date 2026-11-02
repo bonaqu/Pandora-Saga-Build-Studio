@@ -11,10 +11,10 @@
 
     const view = h('div', {class:'os-sync'});
     const intro = h('p', {class:'muted',
-      text:'Выбирай изменения OS для нового снимка D1. Действующие Legacy-переводы не перезаписываются. GitHub обновляется отдельно.'});
+      text:'Проверяй обновления игрового каталога и выбирай изменения перед публикацией. Сохранённые переводы не перезаписываются.'});
     const actions = h('div', {class:'os-sync-actions'});
     const live = h('button', {type:'button',class:'button-action primary',
-      text:'Проверить синхронизацию данных с Pandora Saga OS API'});
+      text:'Проверить обновления игрового каталога'});
     const archive = h('button', {type:'button',class:'button-action',text:'Сравнить с архивом проекта'});
     const acceptAll = h('button', {type:'button',class:'button-action',text:'Принять все',disabled:true});
     const declineAll = h('button', {type:'button',class:'button-action',text:'Отклонить все',disabled:true});
@@ -39,6 +39,9 @@
       busy = value;
       live.disabled = value;
       archive.disabled = value;
+      search.disabled = value;
+      for(const control of results.querySelectorAll('button,input[type="checkbox"]'))
+        control.disabled = value;
       refreshActions();
     }
     function refreshActions() {
@@ -55,6 +58,7 @@
     }
     const checked = change => chosen.has(change.id);
     function setChoice(change, value) {
+      if (busy) return;
       if (value) chosen.add(change.id);
       else chosen.delete(change.id);
       refreshActions();
@@ -98,13 +102,15 @@
           h('span',{class:'os-sync-count',text:selected+' / '+group.length+' принято'})
         ]));
         const toolbar = h('div',{class:'os-sync-group-actions'});
-        const take = h('button',{type:'button',class:'button-action',text:'Принять раздел'});
-        const reject = h('button',{type:'button',class:'button-action',text:'Отклонить раздел'});
+        const take = h('button',{type:'button',class:'button-action',text:'Принять раздел',disabled:busy});
+        const reject = h('button',{type:'button',class:'button-action',text:'Отклонить раздел',disabled:busy});
         take.addEventListener('click',()=> {
+          if (busy) return;
           for (const item of group) chosen.add(item.id);
           refreshActions(); render();
         });
         reject.addEventListener('click',()=> {
+          if (busy) return;
           for (const item of group) chosen.delete(item.id);
           refreshActions(); render();
         });
@@ -114,7 +120,7 @@
         const list = h('div',{class:'os-sync-list'});
         for (const change of filtered.slice(0,limit)) {
           const row = h('article',{class:'os-sync-record'});
-          const input = h('input',{type:'checkbox',checked:checked(change),
+          const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
             'aria-label':'Принять изменение '+change.key});
           input.addEventListener('change',()=>setChoice(change,input.checked));
           const indicator = change.kind==='added'?'Добавлено':
@@ -161,6 +167,12 @@
           next[name]=await sourceFile(name,from);
           progress.value=Math.round(45*(index+1)/importer.files.length);
         }
+        // Reject mixed upstream snapshots if the server changes during 17-file retrieval.
+        if(from==='server') {
+          const finalMeta=await sourceFile('meta','server');
+          if(!review.equal(next.meta,finalMeta))
+            throw Error('Игровой каталог обновился во время проверки. Повтори сверку.');
+        }
         const locales=await fetch('./data/localization/legacy-approved.v1.json',{cache:'no-store'});
         if (!locales.ok) throw Error('Утверждённый архив перевода недоступен');
         const approved=await locales.json();
@@ -195,7 +207,9 @@
           : 'Данные совпадают. Публикация не требуется.';
         render();
       }catch(error) {
-        status.textContent='Сверка остановлена. D1 не изменена: '+error.message;
+        status.textContent=error.httpStatus===401
+          ? 'Для сверки требуется повторный вход администратора. D1 не изменена.'
+          : 'Сверка остановлена. D1 не изменена: '+error.message;
         baseline=null;upstream=null;changes=[];
         refreshActions();
       }finally{setBusy(false)}
@@ -263,13 +277,22 @@
         }
         const result=await request('/api/admin/catalog/publish',{
           snapshot,extraCounts:prepared.extraCounts,expectedActive:activeSnapshot});
-        status.textContent='Опубликован проверенный снимок '+result.active+
-          '. Файлы GitHub не затронуты.';
+        // The server has already committed this snapshot: never report a rollback
+        // if a subsequent local UI refresh fails.
+        status.textContent='Данные опубликованы ('+result.active+'). Переводы и GitHub не изменены.';
         chosen.clear();changes=[];baseline=null;upstream=null;
         refreshActions();
-        await afterPublish();
+        try{
+          await afterPublish();
+        }catch(error){
+          status.textContent='Данные опубликованы, но не удалось обновить страницу: '+
+            error.message+'. Обнови страницу вручную.';
+        }
       }catch(error){
-        status.textContent='Публикация не завершена. Активный снимок не переключён: '+error.message;
+        status.textContent=error.httpStatus===401
+          ? 'Сеанс администратора истёк. Выполни вход заново; D1 не переключена.'
+          : 'Не удалось подтвердить публикацию: '+error.message+
+              '. Проверь состояние D1 перед повторной попыткой.';
       }finally{setBusy(false)}
     };
 
@@ -279,7 +302,7 @@
     declineAll.onclick=()=>{chosen.clear();render()};
     search.addEventListener('input',render);
     refreshActions();
-    modal('Каталог Pandora Saga · сверка и обновление D1',view);
+    modal('Игровой каталог · проверка обновлений',view);
   }
 
   root.PandoraOSCatalogWorkbench=Object.freeze({open});
