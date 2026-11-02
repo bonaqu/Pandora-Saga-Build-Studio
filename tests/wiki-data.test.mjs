@@ -115,8 +115,11 @@ test('location chests are indexed separately from storage upgrades and unverifie
  for(const id of ['51038','51040','51042','52000','52001','52011','900001'])
   assert.ok(wiki.search('chest','').some(([key])=>key===id),'Missing chest '+id);
  assert.equal(wiki.search('chest','Мальдии').length,1);
- assert.equal(wiki.records('chest')['52011'].unlistedContents,true);
- assert.equal(wiki.records('chest')['52011'].rolls.length,0);
+ assert.equal(wiki.records('chest')['52011'].unlistedContents,undefined);
+ assert.ok(wiki.records('chest')['52011'].rolls.length>0,
+  'Verified OS NPC chest tables must be displayed instead of unknown contents');
+ assert.ok(chests.npc.some(row=>row.i===52011),
+  'This dungeon/map chest is already published by the OS server');
  assert.equal(wiki.chestPlaces('52011').length,2);
  for(const id of [90057,90058,90059,90060,90061,90062])
   assert.equal(wiki.records('chest')[id],undefined,'Warehouse upgrades are not loot chests');
