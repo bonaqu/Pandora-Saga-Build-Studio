@@ -289,6 +289,50 @@ function wardingStatusPassive({jobKey=null,wardingMastery=0,wardingCap=null,skil
 // Remaked Legacy js/calc.js RES* formulas: only confirmed base terms,
 // chosen Honor, selected racial passive and structured OS equipment effects.
 // Active casts, guild resistances, gem conditions and other buffs are excluded.
+// Only explicitly enabled, source-backed TARGET elemental resistance spells.
+// Learnability applies to the caster, not necessarily this character: ENEMY
+// skills model an incoming status, never a permanent self passive.
+const skillResistanceKeys=Object.freeze({
+ EP_FIRE_RESISTANCE_CONST:'fire',EP_COLD_RESISTANCE_CONST:'ice',
+ EP_LIGHTNING_RESISTANCE_CONST:'lightning',EP_POISON_RESISTANCE_CONST:'poison',
+ EP_CHARM_RESISTANCE_CONST:'charm',EP_HOLY_RESISTANCE_CONST:'light',
+ EP_DARK_RESISTANCE_CONST:'dark',EP_MAGIC_RESISTANCE_CONST:'magic'
+});
+function resistanceSkillChoices(catalog=null){
+ if(!catalog||typeof catalog!=='object')return [];
+ const choices=[];
+ for(const [key,skill] of Object.entries(catalog)){
+  if(!Number.isSafeInteger(skill?.id)||String(skill.id)!==key||
+   skill.learnable!==true||
+   !['ALLY','PARTY_ALL','ENEMY'].includes(skill.skillType)||
+   typeof skill.name!=='string'||!Array.isArray(skill.funcs))continue;
+  const effects={};
+  for(const effect of skill.funcs){
+   const stat=skillResistanceKeys[effect?.ep];
+   if(!stat||effect.dir!=='TARGET'||!Array.isArray(effect.fv1)||
+    effect.fv1.length!==4||!effect.fv1.every(Number.isFinite)||
+    effect.fv1.slice(0,3).some(n=>n!==0)||!Number.isInteger(effect.fv1[3]))
+    continue;
+   effects[stat]=(effects[stat]||0)+effect.fv1[3];
+  }
+  if(!Object.keys(effects).length)continue;
+  choices.push({id:skill.id,name:skill.name,skillType:skill.skillType,
+   incoming:skill.skillType==='ENEMY',effects});
+ }
+ return choices.sort((a,b)=>a.id-b.id);
+}
+function resistanceSkillPreview({skillCatalog=null,selected=[]}={}){
+ const all=resistanceSkillChoices(skillCatalog),chosen=new Set(
+  Array.isArray(selected)?selected.filter(Number.isSafeInteger):[]);
+ const bonuses={},rows=[];
+ for(const choice of all){
+  if(!chosen.has(choice.id))continue;
+  rows.push(choice);
+  for(const [key,value] of Object.entries(choice.effects))
+   bonuses[key]=(bonuses[key]||0)+value;
+ }
+ return {bonuses,rows,verified:false};
+}
 function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=null,
  jobKey=null,wardingMastery=0,wardingCap=null,skillCatalog=null}={}){
  if(!Number.isFinite(stats.vit)||!Number.isFinite(stats.spi)||
@@ -1786,7 +1830,13 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  if(!hpBonus||!mpBonus)return null;
  const potion=potionRecovery({vit:stats.vit,records:combinedRecords,honorTitle:extra.honor.id,
   level,itemForth,...potionContext,runeJoEun:false});
- const resistances=resistancePreview({stats,bonuses:effects.bonuses,
+ const resistanceSkills=resistanceSkillPreview({
+  skillCatalog:combatContext.skillCatalog,selected:attributeBuffs.resistanceSkillIds
+ });
+ const resistanceBonuses={...effects.bonuses};
+ for(const [key,value] of Object.entries(resistanceSkills.bonuses))
+  resistanceBonuses[key]=(resistanceBonuses[key]||0)+value;
+ const resistances=resistancePreview({stats,bonuses:resistanceBonuses,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,
   jobKey:combatContext.jobKey,wardingMastery:combatContext.wardingMastery,
   wardingCap:classData.branchCaps?.warding,skillCatalog:combatContext.skillCatalog});
@@ -1884,7 +1934,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // An unavailable weapon/armor preview must NEVER erase otherwise valid HP/MP.
  if(!resistances||!regeneration)return null;
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
-  hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
+  hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},resistanceSkills,
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
@@ -1894,7 +1944,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
