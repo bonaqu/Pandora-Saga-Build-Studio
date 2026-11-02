@@ -419,6 +419,9 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
+  const npcFilter=page.locator('.wiki-controls input[type="search"]');
+  await npcFilter.click();
+  await npcFilter.fill('Кларис');
   const npcListing=page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"] .wiki-link');
   await npcListing.waitFor({state:'visible',timeout:20000});
   await npcListing.click();
