@@ -2762,7 +2762,7 @@ function renderWiki(root){
       const geo=window.PandoraAstirLocations;
       const selector=h('select',{class:'wiki-inline-select wiki-town-npc-location',
        'aria-label':wt('Расположение NPC','NPC location')});
-      for(const mapId of geo.districtIds.filter(x=>x!=='1001004')){
+      for(const mapId of geo.districtIds){
        const option=h('option',{value:mapId,text:dataName('map',mapId)});
        option.selected=locations.includes(mapId);selector.append(option);
       }

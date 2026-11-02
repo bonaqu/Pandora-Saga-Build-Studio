@@ -75,7 +75,7 @@ function validSpawns(rows){
 }
 // User-curated city-only NPCs and maps use stable non-server IDs.
 // These patches live in the existing D1 overrides table, not in source game data.
-const virtualMapId=x=>/^astir-(?:union|empire|kingdom)$/.test(String(x));
+const virtualMapId=x=>x==='1001004'||/^astir-(?:union|empire|kingdom)$/.test(String(x));
 const virtualNpcId=x=>/^astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}$/.test(String(x));
 const homeFromId=x=>'astir-'+String(x).split('-')[2];
 function validTownPatch(type,key,patch){

@@ -531,7 +531,7 @@ function validTownWikiPatch(text,type,id){
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
  return keys.every(k=>k==='maps'?
    Array.isArray(patch.maps)&&patch.maps.length===1&&
-    townMapKey.test(patch.maps[0]):
+    (townMapKey.test(patch.maps[0])||patch.maps[0]==='1001004'):
    typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')?2000:240)&&
     (!['name','nameEn'].includes(k)||!!patch[k].trim()));
 }

@@ -83,7 +83,8 @@ function build(data){
  }
  const maps=root.PandoraAstirLocations?.mapsFrom?.(data.trades?.mapNames,data.maps)||
   {...(data.trades?.mapNames||{}),...(data.maps||{})};
- Object.assign(maps,data.townMaps||{});
+ for(const [id,patch] of Object.entries(data.townMaps||{}))
+  maps[id]={...(maps[id]||{}),...patch};
  // The actual item level and class-family name identify leveling reward boxes.
  // Source chest rolls exist only for the earlier boxes; later ones remain
  // browsable without synthesizing contents or changing the OS snapshot.
