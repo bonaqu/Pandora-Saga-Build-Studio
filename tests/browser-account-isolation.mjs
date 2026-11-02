@@ -59,7 +59,7 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
    const profile=document.querySelector('#profileTrigger')?.title||'';
    return document.querySelector('#raceGrid')?.children.length>0&&
     localStorage.getItem('ps-build-owner-scope.v1')===owner&&
-    /\\d+ навыков · \\d+ предметов · \\d+ душ/.test(catalog)&&
+    /\d+ навыков · \d+ предметов · \d+ душ/.test(catalog)&&
     (!username||profile.includes(username));
   },{owner:token?'account:'+username:'guest:'+guestToken,
     username:token?username:null},{timeout:30000});
@@ -76,7 +76,7 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   await page.waitForFunction(expected=>
    document.querySelector('#raceGrid')?.children.length>0&&
    localStorage.getItem('ps-build-owner-scope.v1')==='guest:'+expected&&
-   /\\d+ навыков · \\d+ предметов · \\d+ душ/.test(
+   /\d+ навыков · \d+ предметов · \d+ душ/.test(
     document.querySelector('#catalogStatus')?.textContent||''),
    guestToken,{timeout:30000});
   await saveNamed('Guest only');
