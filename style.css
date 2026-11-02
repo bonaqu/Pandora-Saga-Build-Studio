@@ -1106,6 +1106,16 @@ main{padding-top:10px}
 .stage-book-buff-group{display:grid;gap:8px;padding:10px;border:1px solid #88663e;
  background:linear-gradient(140deg,#35251a,#21170f)}
 .stage-book-buff-group>strong{font:600 19px 'Cormorant Garamond',Georgia,serif;color:#f5d49f}
+.stage-buff-overview{display:flex;align-items:center;gap:9px;padding:8px 11px;
+ border:1px solid #8f7045;border-radius:5px;background:linear-gradient(120deg,#4a3422,#251c15)}
+.stage-buff-overview>span{flex:1;min-width:0;color:#d8bd96;font-size:11px}
+.stage-buff-overview strong{font:700 21px Georgia,serif;color:#f4d7a1}
+.stage-buff-overview small{font-size:9px;color:#b8a385}
+.stage-book-buff-optional{border:1px solid #735639;background:#221810}
+.stage-book-buff-optional>summary{cursor:pointer;padding:9px 11px;font:600 16px 'Cormorant Garamond',Georgia,serif;color:#e9ca97}
+.stage-book-buff-optional>summary:hover{background:#3e2b1c}
+.stage-book-buff-optional .stage-book-buff-group{border:0;border-top:1px solid #735639}
+.stage-book-buff-optional .stage-book-buff-group>strong{display:none}
 .stage-book-field{display:grid;gap:5px;font-size:11px;color:#e2c69d}
 .stage-book-field select{display:block;width:100%;min-width:0;padding:8px;
  background:#1c140e;color:#f3d7aa;border:1px solid #86633f;border-radius:3px}
