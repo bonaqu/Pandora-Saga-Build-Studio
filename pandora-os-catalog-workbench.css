@@ -27,3 +27,30 @@
 .os-sync-field-arrow{text-align:center;color:#dcb47b}
 .os-sync-group>.button-action{margin:0 10px 10px}
 @media(max-width:580px){.os-sync-field{grid-template-columns:1fr;gap:3px}.os-sync-field-arrow{text-align:left}.os-sync-record-label{flex-wrap:wrap}.os-sync-kind{margin-left:26px}}
+
+/* Current compare reads as a review dashboard, never as a raw API terminal. */
+.modal:has(.os-sync){width:min(94vw,980px);max-height:94vh;overflow:auto}
+.os-sync-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.os-sync-stat{display:flex;flex-direction:column;gap:6px;padding:12px 14px;
+ border:1px solid #6b5339;border-radius:10px;background:linear-gradient(145deg,#34281e,#211810)}
+.os-sync-stat small{font-size:11px;color:#c8ad84}
+.os-sync-stat strong{font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums;color:#e8cd9a}
+.os-sync-stat.added strong{color:#a8caa0}
+.os-sync-stat.removed strong{color:#db9b8c}
+.os-sync-stat.selected{border-color:#b68f53}
+.os-sync-filters{display:flex;gap:7px;flex-wrap:wrap}
+.os-sync-filter{appearance:none;background:#231a14;color:#d9c4a4;
+ border:1px solid #72583c;border-radius:20px;padding:7px 11px;font:inherit;
+ font-size:12px;cursor:pointer;transition:background .14s,border-color .14s}
+.os-sync-filter:hover:not(:disabled){border-color:#d8b57c;background:#3a2a1b}
+.os-sync-filter.active{background:#594029;border-color:#e4bb77;color:#ffe1b0}
+.os-sync-filter:focus-visible{outline:2px solid #e4bb77;outline-offset:2px}
+.os-sync-filter:disabled{opacity:.5;cursor:wait}
+.os-sync-empty{padding:18px;border:1px dashed #695036;border-radius:7px;color:#c8b08e}
+.os-sync-field{grid-template-columns:minmax(100px,.65fr) minmax(80px,1fr) 14px minmax(80px,1fr)}
+.os-sync-results{max-height:min(53vh,620px)}
+@media(max-width:650px){
+ .os-sync-overview{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .os-sync-stat strong{font-size:19px}
+ .os-sync-field{grid-template-columns:1fr;gap:4px}
+}
