@@ -4581,7 +4581,7 @@ function restoreWikiHash(){
  const navigationType=performance.getEntriesByType?.('navigation')?.[0]?.type;
  if(navigationType==='reload'&&
     (bootView.tab&&bootView.tab!=='wiki'||bootView.tab==='wiki'&&bootView.open===false))return;
- const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})(?:\/([0-9]{1,15}))?$/);
+ const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom))(?:\/([0-9]{1,15}))?$/);
  if(!match)return;
  wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
  activeTab='wiki';
@@ -4591,7 +4591,7 @@ function restoreWikiHash(){
 window.addEventListener('hashchange',()=>{
  if(location.hash.startsWith('#b/')){restoreSharedHash();return}
  if(location.hash.startsWith('#wiki/')){
-  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})(?:\/([0-9]{1,15}))?$/);
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom))(?:\/([0-9]{1,15}))?$/);
   if(match){
    const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
     typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
@@ -4723,7 +4723,7 @@ $('skillBranches').addEventListener('scroll',saveView,{passive:true});
 $('detailContent').addEventListener('scroll',saveView,{passive:true});
 window.addEventListener('popstate',()=>{
  if(location.hash.startsWith('#wiki/')){
-  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15})(?:\/([0-9]{1,15}))?$/);
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom))(?:\/([0-9]{1,15}))?$/);
   if(!match)return;
   const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
    typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
