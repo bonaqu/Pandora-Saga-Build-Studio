@@ -1,0 +1,197 @@
+(function(root){
+'use strict';
+// Owner edits are deliberately separate from the upstream game catalog.
+// Sync updates only the base snapshot, never these approved owner overrides.
+const props=['level','W','PEN','AC','atkspeed','range','soulslot'];
+const names={level:'Уровень',W:'Атака',PEN:'Пробитие',AC:'Защита',
+ atkspeed:'Скорость атаки',range:'Дальность',soulslot:'Гнёзда душ'};
+const effects=[
+ ['EP_MAXLIFE_CONST','ОЗ (единицы)'],['EP_MAXMANA_CONST','ОМ (единицы)'],
+ ['EP_STRENGTH_CONST','Сила'],['EP_VITARITY_CONST','Выносливость'],
+ ['EP_AGILITY_CONST','Ловкость'],['EP_DEXTERITY_CONST','Сноровка'],
+ ['EP_SPIRITUAL_CONST','Дух'],['EP_INTELIGENCE_CONST','Интеллект'],
+ ['EP_ARMORCLASS_CONST','Защита (единицы)'],['EP_TOHIT_CONST','Меткость'],
+ ['EP_CRITICALRATE_CONST','Шанс критического удара'],['EP_DAMAGERATE_CONST','Атака (единицы)'],
+ ['EP_MAXLIFE_SCALE','ОЗ (%)'],['EP_MAXMANA_SCALE','ОМ (%)'],
+ ['EP_FIRE_RESISTANCE_CONST','Сопротивление огню'],
+ ['EP_COLD_RESISTANCE_CONST','Сопротивление холоду'],
+ ['EP_MAGIC_RESISTANCE_CONST','Сопротивление магии'],
+ ['EP_ATTACKINTERVAL_SCALE','Скорость атаки (%)']
+];
+const validId=id=>/^[0-9]{1,15}$/.test(String(id));
+const plain=value=>Boolean(value&&typeof value==='object'&&!Array.isArray(value));
+function ownPatch(overrides,id){
+ if(!validId(id))return {};
+ try{
+  const patch=JSON.parse(overrides?.['itemedit.'+id]||'{}');
+  if(!plain(patch))return {};
+  const selected={};
+  for(const key of props)if(Object.hasOwn(patch,key)&&
+    (patch[key]===null||(Number.isFinite(patch[key])&&patch[key]>=0)))
+    selected[key]=patch[key];
+  if(typeof patch.twoHanded==='boolean')selected.twoHanded=patch.twoHanded;
+  if(plain(patch.classes))selected.classes=Object.fromEntries(
+   Object.entries(patch.classes).filter(([key,value])=>/^[A-Z_]{2,25}$/.test(key)&&value===1));
+  if(Array.isArray(patch.effects)&&patch.effects.length<=32)
+   selected.effects=patch.effects.filter(effect=>plain(effect)&&
+     /^EP_[A-Z0-9_]{2,65}$/.test(effect.func)&&Number.isFinite(effect.a)&&
+     ['TARGET','CASTER'].includes(effect.dir)).map(effect=>({...effect}));
+  if(typeof patch.sourceNote==='string'&&patch.sourceNote.length<=500)
+   selected.sourceNote=patch.sourceNote;
+  return selected;
+ }catch{return {}}
+}
+function applyItems(items,overrides){
+ if(!plain(items))return items;
+ let next=items;
+ for(const [key,value] of Object.entries(overrides||{})){
+  const match=/^(itemedit|item|itemdesc|itemslots)\.([0-9]{1,15})$/.exec(key);
+  if(!match||!items[match[2]])continue;
+  if(next===items)next={...items};
+  const id=match[2],current=next[id]===items[id]?{...items[id]}:next[id];
+  next[id]=current;
+  if(match[1]==='itemedit')Object.assign(current,ownPatch(overrides,id));
+  else if(match[1]==='item'&&typeof value==='string'&&value.trim())current.name=value;
+  else if(match[1]==='itemdesc'&&typeof value==='string'&&value.trim())current.desc=value;
+  else if(match[1]==='itemslots'&&/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(String(value)))
+   current.soulslot=Number(value);
+ }
+ return next;
+}
+function open({id,item,base,overrides,h,modal,jobKeys,className,onSave,onReset}){
+ if(!validId(id)||!item||!base)throw Error('Предмет не найден в игровом каталоге');
+ const previous=ownPatch(overrides,id);
+ const panel=h('div',{class:'owner-item-editor'});
+ const hint=h('p',{class:'muted',text:'Изменения сохраняются отдельно от данных игрового сервера. Неизменённые поля будут обновляться вместе с каталогом.'});
+ const feedback=h('p',{class:'inline-owner-error',role:'status'});
+ panel.append(hint);
+ const sections=h('div',{class:'owner-item-editor-sections'});
+ panel.append(sections);
+ const grid=h('div',{class:'owner-item-fields'});
+ const inputs=new Map();
+ for(const key of props){
+  const field=h('label',{class:'owner-item-field'});
+  field.append(h('span',{text:names[key]}));
+  const value=item[key]??'';
+  const input=h('input',{type:'number',step:key==='atkspeed'?'any':'any',
+   min:'0',max:'100000',value:String(value),'aria-label':names[key],
+   autocomplete:'off'});
+  input.value=value===null?'':String(value);
+  field.append(input);grid.append(field);inputs.set(key,input);
+ }
+ const twoHanded=h('input',{type:'checkbox',checked:item.twoHanded===true});
+ const grip=h('label',{class:'owner-item-check'},[twoHanded,h('span',{text:'Двуручное оружие'})]);
+ const stats=h('section',{class:'owner-item-section'},[
+  h('h3',{text:'Характеристики предмета'}),grid,grip
+ ]);
+ sections.append(stats);
+ const classesPanel=h('section',{class:'owner-item-section'});
+ const classesGrid=h('div',{class:'owner-item-classes'});
+ const allowed=new Set(Object.keys(item.classes||{}).filter(key=>item.classes[key]));
+ const classes=new Map();
+ for(const key of jobKeys){
+  const box=h('input',{type:'checkbox',checked:allowed.has(key)});
+  classes.set(key,box);
+  classesGrid.append(h('label',{class:'owner-item-check'},[box,
+   h('span',{text:className(key)||key})]));
+ }
+ const allButton=h('button',{type:'button',class:'button-action',
+  text:'Выбрать все',onclick:()=>{for(const input of classes.values())input.checked=true}});
+ const clearButton=h('button',{type:'button',class:'button-action',
+  text:'Снять все',onclick:()=>{for(const input of classes.values())input.checked=false}});
+ classesPanel.append(h('h3',{text:'Доступные классы'}),
+  h('div',{class:'owner-item-actions'},[allButton,clearButton]),classesGrid);
+ sections.append(classesPanel);
+ const effectPanel=h('section',{class:'owner-item-section'});
+ const effectList=h('div',{class:'owner-item-effects'});
+ const effectRows=[];
+ const addEffect=(value={func:'EP_MAXLIFE_CONST',a:0,b:null,dir:'TARGET',exclusive:null})=>{
+  const row=h('div',{class:'owner-item-effect'});
+  const select=h('select',{'aria-label':'Тип эффекта'});
+  const codes=[...effects];
+  if(!codes.some(([code])=>code===value.func))
+   codes.push([value.func,value.func+' (из игрового каталога)']);
+  for(const [code,label]of codes){
+   const option=h('option',{value:code,text:label});
+   if(code===value.func)option.selected=true;
+   select.append(option);
+  }
+  const amount=h('input',{type:'number',step:'any',value:String(value.a??0),
+   'aria-label':'Значение эффекта'});
+  const extra=h('input',{type:'number',step:'any',value:value.b==null?'':String(value.b),
+   placeholder:'Доп. параметр','aria-label':'Дополнительный параметр'});
+  const dir=h('select',{'aria-label':'Применяется к'});
+  for(const [code,name]of [['TARGET','К цели'],['CASTER','К владельцу']]){
+   const option=h('option',{value:code,text:name});option.selected=code===value.dir;dir.append(option)
+  }
+  const remove=h('button',{type:'button',class:'button-action',text:'Удалить эффект',
+   onclick:()=>{row.remove();effectRows.splice(effectRows.findIndex(x=>x.row===row),1)}});
+  row.append(select,amount,extra,dir,remove);effectList.append(row);
+  effectRows.push({row,select,amount,extra,dir});
+ };
+ for(const effect of item.effects||[])addEffect(effect);
+ const add=h('button',{type:'button',class:'button-action',text:'+ Добавить эффект',
+  onclick:()=>addEffect()});
+ effectPanel.append(h('h3',{text:'Эффекты предмета'}),effectList,add);
+ sections.append(effectPanel);
+ const sourcePanel=h('section',{class:'owner-item-section'});
+ const sourceNote=h('textarea',{rows:3,'aria-label':'Примечание администратора об источнике',
+  placeholder:'Например, конкретный NPC, обмен или способ получения…'});
+ sourceNote.value=previous.sourceNote??item.sourceNote??'';
+ sourcePanel.append(h('h3',{text:'Дополнительное примечание о получении'}),
+  h('p',{class:'muted',text:'Это пояснение администратора, а не изменение таблиц дропа или обменов NPC.'}),
+  sourceNote);
+ sections.append(sourcePanel);
+ const actions=h('div',{class:'owner-item-actions'});
+ const save=h('button',{type:'button',class:'button-action primary',text:'Сохранить изменения'});
+ const reset=h('button',{type:'button',class:'button-action',text:'Вернуть исходные данные',
+  disabled:!Object.hasOwn(overrides||{},'itemedit.'+id)});
+ const cancel=h('button',{type:'button',class:'button-action',text:'Закрыть'});
+ const close=()=>{const rootNode=document.getElementById('modalRoot');rootNode.hidden=true;rootNode.replaceChildren()};
+ cancel.onclick=close;
+ const busy=value=>{save.disabled=value;reset.disabled=value;cancel.disabled=value};
+ save.onclick=async()=>{
+  const patch={};
+  for(const [key,input]of inputs){
+   const value=input.value.trim()===''?null:Number(input.value);
+   if(value!==null&&(!Number.isFinite(value)||value<0||value>100000)){
+    feedback.textContent='Проверь числовое поле «'+names[key]+'».';input.focus();return;
+   }
+   if(value!==base[key]&&!(value===null&&base[key]==null))patch[key]=value;
+  }
+  if(twoHanded.checked!==(base.twoHanded===true))patch.twoHanded=twoHanded.checked;
+  const selected=Object.fromEntries([...classes].filter(([,input])=>input.checked).map(([key])=>[key,1]));
+  if(JSON.stringify(selected)!==JSON.stringify(base.classes||{}))patch.classes=selected;
+  if(effectRows.length>32){feedback.textContent='Можно указать не более 32 эффектов.';return}
+  const rows=[];
+  for(const entry of effectRows){
+   const a=Number(entry.amount.value),b=entry.extra.value.trim()===''?null:Number(entry.extra.value);
+   if(!Number.isFinite(a)||Math.abs(a)>100000||
+      (b!==null&&(!Number.isFinite(b)||Math.abs(b)>100000))){
+    feedback.textContent='Проверь значение эффекта.';return;
+   }
+   rows.push({func:entry.select.value,dir:entry.dir.value,exclusive:null,a,b});
+  }
+  if(JSON.stringify(rows)!==JSON.stringify(base.effects||[]))patch.effects=rows;
+  const note=sourceNote.value.trim();
+  if(note.length>500){feedback.textContent='Примечание: максимум 500 символов.';return}
+  if(note)patch.sourceNote=note;
+  if(Object.keys(patch).length===0){
+   if(Object.hasOwn(overrides||{},'itemedit.'+id)){
+    busy(true);try{await onReset();close()}catch(e){feedback.textContent=e.message;busy(false)}
+   }else close();
+   return;
+  }
+  busy(true);
+  try{await onSave(patch);close()}
+  catch(e){feedback.textContent=e.message;busy(false)}
+ };
+ reset.onclick=async()=>{
+  if(!confirm('Вернуть исходные характеристики, классы и эффекты для этого предмета?'))return;
+  busy(true);try{await onReset();close()}catch(e){feedback.textContent=e.message;busy(false)}
+ };
+ actions.append(save,reset,cancel);panel.append(actions,feedback);
+ modal('Редактор предмета · '+String(item.name||id),panel);
+}
+root.PandoraStudioItemOwnerEditor=Object.freeze({open,applyItems,ownPatch});
+})(typeof window==='undefined'?globalThis:window);
