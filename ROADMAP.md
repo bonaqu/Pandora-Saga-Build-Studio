@@ -1,11 +1,22 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.305.0 (`2026.11.02.305`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.306.0 (`2026.11.02.306`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.306.0 — server-only GitHub PR and isolated D1 write check
+
+- [x] Add fixed-scope GitHub PR integration guarded by a Cloudflare Secret and the same authenticated admin token; never handle the token in the browser.
+- [x] Read 17 JSON files from a single active D1 snapshot; create only `data/os/*.json` blobs in a new review branch, and require explicit human approval before merge.
+- [x] Reject stale D1/GitHub revisions and avoid a duplicate PR for the same published snapshot.
+- [x] Add a safe one-click admin D1 **write/read/delete** check isolated from `catalog_current` and player accounts.
+- [x] Add Worker and Chromium mocks for authentication, fixed source paths and UI interactions.
+- [ ] Cloudflare Worker must be deployed with optional `GITHUB_CATALOG_TOKEN` for genuine GitHub PR creation; production credentials are unavailable in CI.
+- [ ] Run the real production D1 diagnostic with the owner admin session. Full live active-snapshot switching remains a separate, higher-risk validation.
+- [ ] Confirm full HP/MP, magical enhancement and final defense against independent current game client outputs before changing uncertain formulas.
 
 ## Source update 0.305.0 — safe reviewed game-data update for GitHub
 
