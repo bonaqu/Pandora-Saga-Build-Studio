@@ -3724,8 +3724,11 @@ function editor(el){
   const bar=h('div',{class:'inline-owner-head'});
   bar.append(h('strong',{text:visual?'Сменить изображение':'Изменить текст'}),
     h('button',{type:'button',text:'✕','aria-label':'Закрыть редактор',onclick:closeInlineEditor}));
-  const input=visual?h('input',{type:'text','aria-label':'Путь к изображению',value:original,placeholder:'assets/image.webp'}):slotEdit?h('input',{type:'number',min:'0',max:'32',step:'1',value:original,'aria-label':'Число гнёзд'}):
-    h('textarea',{rows:key.startsWith('skilldesc.')?5:3,'aria-label':'Редактируемый текст'});
+  const input=visual?ownerPlainTextField({class:'owner-plain-path',
+   'aria-label':'Путь к изображению',value:original,placeholder:'assets/image.webp'}):
+   slotEdit?h('input',{type:'number',min:'0',max:'32',step:'1',value:original,'aria-label':'Число гнёзд'}):
+    ownerPlainTextField({multiline:true,rows:key.startsWith('skilldesc.')?5:3,
+   class:'owner-plain-multiline','aria-label':'Редактируемый текст'});
   if(!visual)input.value=original;
   const hint=h('p',{class:'inline-owner-key',text:key});
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
@@ -3782,6 +3785,28 @@ function editor(el){
   input.focus();
 }
 
+// Password managers can ignore autocomplete=off on ordinary inputs.
+ // Plain-text editor fields intentionally do not resemble username/password
+ // controls; use a text node, not a form-associated input.
+ function ownerPlainTextField(attrs={}){
+  const {multiline=false,rows,value='',...rest}=attrs;
+  const el=h(multiline?'div':'span',{
+   ...rest,role:'textbox',contenteditable:'plaintext-only',
+   'aria-multiline':multiline?'true':'false',
+   'data-owner-text-field':'true',spellcheck:'false',
+   autocapitalize:'off',tabindex:'0'});
+  if(rest.placeholder)el.dataset.placeholder=String(rest.placeholder);
+  if(multiline&&rows)el.style.minHeight=Math.max(72,Number(rows)*24)+'px';
+  Object.defineProperty(el,'value',{
+   configurable:false,get(){return el.textContent||''},
+   set(v){el.textContent=String(v??'')}
+  });
+  el.value=value;
+  if(!multiline)el.addEventListener('keydown',e=>{
+   if(e.key==='Enter'){e.preventDefault();el.blur()}
+  });
+  return el;
+ }
 function guardOwnerInput(input){
  input.setAttribute('autocomplete','off');
  input.setAttribute('autocorrect','off');
@@ -3803,17 +3828,19 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  const before=String(initial??''),visibleBefore=node.textContent;
  let finished=false,saving=false;
  const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
-  type==='textarea'?h('textarea',{rows:6,class:'wiki-inline-input','aria-label':'Изменить описание'}):
-  h('input',{type:type==='number'?'number':'text',class:'wiki-inline-input',
-    'aria-label':'Изменить значение',autocomplete:'off',
-    ...(type==='number'?{min:String(min),max:String(max),step:integer?'1':'any'}:{})});
+  type==='textarea'||type==='text'?ownerPlainTextField({
+   multiline:type==='textarea',rows:6,class:'wiki-inline-input wiki-owner-plaintext',
+   'aria-label':type==='textarea'?'Изменить описание':'Изменить значение'}):
+  h('input',{type:'number',class:'wiki-inline-input',
+   'aria-label':'Изменить значение',min:String(min),max:String(max),
+   step:integer?'1':'any'});
  if(type==='select'){
   for(const option of options){
    const el=h('option',{value:option.value,text:option.label});
    el.selected=option.value===before;control.append(el);
   }
  }else control.value=before;
- if(type!=='select')guardOwnerInput(control);
+ if(type==='number')guardOwnerInput(control);
  const restore=()=>{if(node.isConnected){node.replaceChildren(document.createTextNode(visibleBefore));node.classList.remove('wiki-inline-saving')}};
  const save=async()=>{
   if(finished||saving)return;
@@ -3824,15 +3851,20 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
    control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
   }
   if(type!=='number'&&type!=='select'&&(value.length>2000||(!value&&type==='text'))){
-   control.setCustomValidity('Некорректная длина текста');control.reportValidity();control.focus();return;
+   if(control.setCustomValidity){control.setCustomValidity('Некорректная длина текста');control.reportValidity()}
+   else showStudioToast('Некорректная длина текста','warning');
+   control.focus();return;
   }
   if(String(value)===before){finished=true;restore();return}
   saving=true;control.disabled=true;node.classList.add('wiki-inline-saving');
   try{await onCommit(value);finished=true;restore()}
   catch(error){saving=false;control.disabled=false;node.classList.remove('wiki-inline-saving');
-   control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity();control.focus()}
+   if(control.setCustomValidity){
+    control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity()
+   }else showStudioToast('Не сохранено: '+String(error.message||'Ошибка'),'warning');
+   control.focus()}
  };
- control.oninput=()=>control.setCustomValidity('');
+ control.oninput=()=>{if(control.setCustomValidity)control.setCustomValidity('')};
  control.onblur=()=>{if(type==='select'){if(!saving){finished=true;restore()}}else void save()};
  control.onchange=()=>{if(type==='select')void save()};
  control.onkeydown=e=>{
@@ -3840,7 +3872,8 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   else if(e.key==='Enter'&&(type!=='textarea'||e.ctrlKey)){e.preventDefault();void save()}
  };
  node.replaceChildren(control);control.focus();
- if(type==='number'||type==='text')control.select();
+ if(type==='number')control.select();
+ else if(type==='text')window.getSelection()?.selectAllChildren(control);
 }
 async function saveWikiRecordField(type,id,field,value){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
