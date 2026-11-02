@@ -1548,6 +1548,11 @@ function renderWiki(root){
   }
   detail.append(flow);
  };
+ const linkFlow=(links)=>{
+  const flow=h('div',{class:'wiki-entity-flow'});
+  for(const link of links)flow.append(link);
+  return flow;
+ };
  const rewardLabels=lang==='en'?
   {warrior:'Warriors',scout:'Scouts',acolyte:'Acolytes',mage:'Mages'}:
   {warrior:'Воины',scout:'Следопыты',acolyte:'Адепты',mage:'Маги'};
@@ -1837,7 +1842,9 @@ function renderWiki(root){
      detail.append(box);
     }
     detail.append(h('h4',{text:wt('Места появления','Spawn locations')}));
-    for(const loc of wikiIndex.locations(id))detail.append(wikiLink(loc.name,loc.type,loc.id,id));
+    const places=wikiIndex.locations(id);
+    if(places.length)detail.append(linkFlow(places.map(loc=>
+     wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
     detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')}));
     for(const row of wikiIndex.drops(id)){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===row.itemId?' highlighted':'')});
@@ -1850,9 +1857,8 @@ function renderWiki(root){
     }
   }else if(type==='npc'){
     const locations=rec.maps||[];
-    for(const mapId of locations){
-     if(knownMaps[mapId])detail.append(wikiLink('◈ '+dataName('map',mapId),'map',mapId,id));
-    }
+    detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
+     wikiLink('◈ '+dataName('map',mapId),'map',mapId,id))));
     const recipes=wikiIndex.trades(id);
     detail.append(h('h4',{text:wt('Обмен · ','Trades · ')+recipes.length}));
     const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
@@ -1922,8 +1928,8 @@ function renderWiki(root){
      const residents=wikiIndex.residents(id);
      if(residents.length){
       detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')}));
-      for(const [npcId] of residents)
-       detail.append(wikiLink(dataName('npc',npcId),'npc',npcId));
+      detail.append(linkFlow(residents.map(([npcId])=>
+       wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
      }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
@@ -1968,7 +1974,9 @@ function renderWiki(root){
        text:'+'+row.plus}));
       if(row.soul!=null&&row.soul>0)option.append(h('small',{class:'wiki-reward-enhance',
        text:wt('Душ: ','Souls: ')+row.soul}));
-      if(row.p!=null)option.append(h('small',{class:'wiki-reward-percent',
+      if(row.p!=null)option.append(h('small',{class:'wiki-reward-percent'+
+       (row.p===100?' certain':''),
+       title:wt('Вероятность внутри группы','Probability within group'),
        text:row.p+'%'}));
       options.append(option);
      }
