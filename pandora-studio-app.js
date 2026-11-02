@@ -1411,6 +1411,8 @@ async function loadWiki(){
    }catch{/* Damaged overrides must not break the original encyclopedia. */}
   }
   const source={...loaded.data,skills,ownerAcquisitions,
+   trades:window.PandoraStudioTradeOwnerData.apply(
+    loaded.data.trades,loaded.data.items,override),
    items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
   const index=window.PandoraWikiData.build(source);
   wikiData=source;
