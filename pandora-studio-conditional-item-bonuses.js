@@ -61,5 +61,15 @@ const phoenixExplanation=(p)=>{
    if(re.test(name))return element;
   return null;
  };
- root.PandoraConditionalItemBonuses=Object.freeze({parse,phoenixExplanation,elementOf});
+ // The enchantment is active only if the actual slotted weapon is usable,
+ // refined to +7 or above and explicitly fire-enchanted.
+ const activeFor=({record,refinement=0,gem=null,issue=[]}={})=>{
+  if(!record||record.slot!=='weapon'||Array.isArray(issue)&&issue.length||
+   !Number.isInteger(Number(refinement))||Number(refinement)<7||
+   gem?.element!=='fire')return null;
+  return parse(record);
+ };
+ root.PandoraConditionalItemBonuses=Object.freeze({
+  parse,phoenixExplanation,elementOf,activeFor
+ });
 })(typeof window==='undefined'?globalThis:window);
