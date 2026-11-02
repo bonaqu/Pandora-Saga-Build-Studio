@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.310.0 — 2026.11.02.310 · Встроенное редактирование энциклопедии: параметры и классы предметов, источники NPC/монстров и обмены без модальных окон
+
+- Встроенное редактирование энциклопедии: параметры и классы предметов, источники NPC/монстров и обмены без модальных окон
+- Ручные изменения сохраняются отдельно от исходного игрового каталога; авторизация обязательна.
+- Browser acceptance and deployed Pages/Worker state must be verified separately.
+
+
 ## 0.309.0 — 2026.11.02.309 · Visual ownership editing and encyclopedia search isolation
 
 - Racial passive names and encyclopedia item/skill names and descriptions expose explicit, separately clickable editor buttons in the game's theme.
