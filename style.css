@@ -1830,3 +1830,11 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .wiki-chest-location{display:grid;gap:5px;margin:10px 0 13px}
 .wiki-chest-location>small{color:#b9a080;font-size:10px}
 .wiki-chest-location .wiki-entity-flow{margin:0}
+
+.wiki-instance-kind{display:inline-flex;align-items:center;padding:4px 9px;margin:7px 0;
+ font-size:10px;border:1px solid #78613d;border-radius:12px;background:#33251a;color:#e4c59c}
+.wiki-mob-row{display:flex;flex-wrap:wrap;align-items:center;gap:3px 8px;
+ padding:5px 8px;border:1px solid #64492e;border-radius:4px;background:#251a12}
+.wiki-mob-row:hover{border-color:#c59a64}
+.wiki-mob-row .wiki-link{flex:1 1 110px;min-width:0;width:auto}
+.wiki-map-mob-meta{flex:1 1 120px;color:#b8a287;font-size:10px;text-align:right}
