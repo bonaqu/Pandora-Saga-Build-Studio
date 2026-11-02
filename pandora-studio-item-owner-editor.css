@@ -90,3 +90,22 @@
  white-space:pre-wrap;tab-size:4;resize:vertical;box-sizing:border-box}
 .wiki-page h3[data-edit-key]{cursor:text}
 .wiki-page [data-edit-key]:focus-visible{outline:1px dashed var(--gold)}
+
+/* Real item effects live in the existing card, not in a separate modal. */
+.wiki-owner-effects{margin:12px 0;display:grid;gap:7px;min-width:0}
+.wiki-owner-effect{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+ background:rgba(24,28,33,.32);border:1px solid rgba(195,168,108,.16);
+ border-radius:8px;padding:7px 9px;min-width:0}
+.wiki-owner-effect-name{flex:2 1 190px;font-weight:600;min-width:100px}
+.wiki-owner-effect-value{display:inline-flex;align-items:baseline;gap:5px;
+ min-width:55px;flex:0 1 auto}
+.wiki-owner-effect-value small{opacity:.74;font-size:.73rem}
+.wiki-owner-effect-value strong{font-weight:650}
+.wiki-owner-effect .wiki-owner-remove{margin-left:auto}
+.wiki-owner-effect .wiki-inline-input{max-width:105px;min-width:75px}
+.wiki-owner-effect .wiki-inline-select{max-width:260px}
+.wiki-owner-effect-picker{max-width:440px}
+.wiki-owner-effect-picker .wiki-inline-input,.wiki-owner-effect-picker .wiki-inline-select{width:100%}
+@media(max-width:650px){.wiki-owner-effect{align-items:flex-start}
+ .wiki-owner-effect-name{flex-basis:100%}
+ .wiki-owner-effect-value{flex:1 1 110px}}
