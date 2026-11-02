@@ -790,6 +790,11 @@ function renderSlotRails(){
     window.PandoraStageItemUI.attachPreview(button,source,
      (rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'),
      'item',{slot:slotKeys[i],refinement:level,gem:equippedGem,souls:socketed,capacity:cap,tables:gameTables});
+    const activeFire=window.PandoraConditionalItemBonuses?.activeFor?.({
+     record:source,refinement:level,gem:equippedGem,issue});
+    if(activeFire?.phoenix)button.append(h('span',{
+     class:'stage-elemental-proc',text:'✦',
+     'aria-label':'Пламя феникса: +'+activeFire.phoenix.chance+'%'}));
    }
    if(report.excess>0||issue.length)button.append(h('span',{class:'stage-conflict',text:'!',
     'aria-label':issue.length?'Предмет временно недоступен':'Конфликт гнёзд'}));
