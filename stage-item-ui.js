@@ -52,6 +52,14 @@ function dismissPreview(){
  liveTarget?.removeAttribute('aria-describedby');
  livePreview=null;liveTarget=null;
 }
+// Outside clicks, Escape and page navigation dismiss any item preview.
+document.addEventListener('pointerdown',event=>{
+ if(liveTarget&&!liveTarget.contains(event.target))dismissPreview();
+},true);
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape')dismissPreview();
+});
+window.addEventListener('hashchange',dismissPreview);
 function attachPreview(target,record,icon,kind='item'){
  if(!record)return;
  // A custom preview must never coexist with the browser's native title popup.
