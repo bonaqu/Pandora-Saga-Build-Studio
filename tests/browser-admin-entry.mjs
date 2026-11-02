@@ -418,9 +418,19 @@ export async function runInlineMilestonesSmoke(browser,base){
   // RU/EN names and its map relation; no production D1 writes.
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
-  await page.evaluate(()=>{location.hash='#wiki/npc/astir-npc-kingdom-claris'});
+  await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
+  const npcListing=page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"] .wiki-link');
+  await npcListing.waitFor({state:'visible',timeout:20000});
+  await npcListing.click();
   const npcHeading=page.locator('.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]');
-  await npcHeading.waitFor({state:'visible',timeout:20000});
+  try{await npcHeading.waitFor({state:'visible',timeout:8000})}
+  catch{
+   const state=await page.evaluate(()=>({hash:location.hash,
+    title:document.querySelector('.wiki-page h3')?.textContent,
+    owner:Boolean(document.querySelector('#ownerDock')),
+    adminRecords:document.querySelectorAll('[data-owner-record]').length}));
+   throw Error('NPC inline-edit visibility: '+JSON.stringify(state));
+  }
   await npcHeading.dblclick();
   const editor=npcHeading.locator('[data-owner-text-field]');
   await editor.fill('Кларис — проверка D1');
