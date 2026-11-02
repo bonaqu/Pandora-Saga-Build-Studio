@@ -60,6 +60,9 @@ const historic=Object.freeze({
   ['inn','Тани','I-5','Трактир']
  ],
  'astir-empire':[
+  // Confirmed in the player's 2026-11-02 screenshot: chest-selection
+  // dialogue with NPC "Кларис"; mini-map says Territory of the Empire.
+  ['claris','Кларис',null,'Открытие сундуков'],
   ['barnes','Барнс','C-12','Сюжетный персонаж'],
   ['sarah','Сара','D-12','Представитель Империи'],
   ['dorothea','Доротея','E-12','Персонаж заданий'],
@@ -90,7 +93,8 @@ const npcRecords=()=>{
   for(const [slug,name,grid,service] of people){
    const id='astir-npc-'+mapId.slice(6)+'-'+slug;
    result[id]={id,name,grid,service,desc:service,
-    maps:[mapId],virtual:true,source:'historic-astir-wiki'};
+    maps:[mapId],virtual:true,
+    source:slug==='claris'?'game-screenshot':'historic-astir-wiki'};
   }
  }
  return result;
