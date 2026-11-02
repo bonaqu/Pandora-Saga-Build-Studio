@@ -21,6 +21,11 @@
     const exportButton = h('button', {type:'button',class:'button-action',text:'Скачать выбранное для GitHub',disabled:true});
     const publish = h('button', {type:'button',class:'button-action primary',
       text:'Применить выбранные изменения',disabled:true});
+    const testWrite = h('button',{type:'button',class:'button-action',
+      text:'Проверить запись в D1',title:'Безопасная временная запись и удаление',disabled:false});
+    const github = h('button',{type:'button',class:'button-action',
+      text:'Создать PR в GitHub',disabled:true,
+      title:'Создать отдельную ветку с текущими опубликованными игровыми данными'});
     const search = h('input', {type:'search',class:'os-sync-search',
       placeholder:'Найти предмет, навык, ID или раздел…','aria-label':'Поиск изменений'});
     const progress = h('progress', {class:'catalog-import-progress',max:'100',value:'0'});
@@ -28,12 +33,13 @@
     const status = h('p', {class:'muted',role:'status',
       text:'Выбери проверку API или архива. Без твоего подтверждения публикации не будет.'});
     const results = h('div', {class:'os-sync-results'});
-    actions.append(live,archive,acceptAll,declineAll,exportButton,publish);
+    actions.append(live,archive,acceptAll,declineAll,exportButton,publish,github,testWrite);
     view.append(intro,actions,search,progress,summary,status,results);
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
     let expanded = new Set(), full = new Set();
+    let githubReady = false, publishedSnapshot = null;
 
     function setBusy(value) {
       busy = value;
@@ -51,6 +57,8 @@
       declineAll.disabled = busy || !changes.length;
       publish.disabled = !ready;
       exportButton.disabled = !ready;
+      github.disabled = busy || !githubReady || !publishedSnapshot;
+      testWrite.disabled = busy;
       summary.textContent = changes.length
         ? 'Найдено изменений: ' + changes.length + ' · Принято: ' + selected +
           ' · Отклонено: ' + (changes.length - selected)
@@ -280,6 +288,7 @@
         // The server has already committed this snapshot: never report a rollback
         // if a subsequent local UI refresh fails.
         status.textContent='Данные опубликованы ('+result.active+'). Переводы и GitHub не изменены.';
+        publishedSnapshot=result.active;
         chosen.clear();changes=[];baseline=null;upstream=null;
         refreshActions();
         try{
@@ -295,6 +304,61 @@
               '. Проверь состояние D1 перед повторной попыткой.';
       }finally{setBusy(false)}
     };
+
+    // A separate, authenticated server operation. No GitHub token or file
+    // contents ever pass through the browser.
+    testWrite.onclick=async()=>{
+      if(busy)return;
+      if(!confirm('Проверить запись в D1? Будет создана, прочитана и удалена одна временная запись; действующий каталог останется прежним.'))return;
+      setBusy(true);
+      try{
+        const result=await request('/api/admin/catalog/test-write',{});
+        if(result.ok!==true||result.readback!==true||result.cleaned!==true)
+          throw Error('D1 не подтвердила полное удаление тестовой записи');
+        status.textContent='Проверка D1 пройдена: запись, чтение и удаление работают. Игровой каталог не изменён.';
+      }catch(error){
+        status.textContent=error.httpStatus===401
+          ? 'Сеанс администратора завершился. Войди заново.'
+          : 'Проверка записи D1 не пройдена: '+error.message;
+      }finally{setBusy(false)}
+    };
+    github.onclick=async()=>{
+      if(busy||!githubReady||!publishedSnapshot)return;
+      if(!confirm('Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
+        'Он не объединится с основной веткой автоматически.'))return;
+      setBusy(true);
+      try{
+        const active=await request('/api/admin/catalog/status',{});
+        if(active.active!==publishedSnapshot)
+          throw Error('Каталог уже обновлён в другой вкладке. Открой его заново.');
+        const result=await request('/api/admin/catalog/github-pr',{
+          expectedActive:publishedSnapshot});
+        if(result.unchanged){
+          status.textContent='Каталог в GitHub уже совпадает с опубликованным. PR не требуется.';
+        }else if(/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url||'')){
+          status.replaceChildren('Проверенный каталог подготовлен. ',
+            h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
+              text:'Открыть PR #'+result.number}));
+        }else throw Error('Некорректный ответ интеграции GitHub');
+      }catch(error){
+        status.textContent=error.httpStatus===401
+          ? 'Сеанс администратора завершился. Войди заново.'
+          : 'Не удалось создать PR: '+error.message;
+      }finally{setBusy(false)}
+    };
+    // Existing published snapshots can be sent to GitHub even if no new
+    // game data arrived during this particular admin session.
+    Promise.all([
+      request('/api/admin/catalog/github-status',null),
+      request('/api/admin/catalog/status',{})
+    ]).then(([settings,current])=>{
+      githubReady=settings.configured===true;
+      publishedSnapshot=current.active||null;
+      github.title=githubReady
+        ? 'Подготовить PR из опубликованного каталога'
+        : 'Для PR требуется секретный GitHub-токен в настройках Worker';
+      refreshActions();
+    }).catch(()=>{githubReady=false;refreshActions()});
 
     live.onclick=()=>compare('server');
     archive.onclick=()=>compare('archive');

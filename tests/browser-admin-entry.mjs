@@ -15,6 +15,22 @@ export async function runAdminEntrySmoke(browser,base){
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
   const json=(value,status=200)=>route.fulfill({
    status,headers,contentType:'application/json',body:JSON.stringify(value)});
+  if(path==='/api/admin/catalog/test-write'&&method==='POST'){
+    assert.equal(route.request().headers().authorization,'Bearer '+ 'a'.repeat(43));
+    calls.push('d1-write-check');
+    return json({ok:true,readback:true,cleaned:true,activeCatalogUnchanged:true});
+  }
+  if(path==='/api/admin/catalog/github-status'&&method==='GET')
+   return json({configured:true});
+  if(path==='/api/admin/catalog/status'&&method==='POST')
+   return json({active:'ps-browser-snapshot'});
+  if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
+   const data=route.request().postDataJSON();
+   assert.equal(data.expectedActive,'ps-browser-snapshot');
+   assert.equal(route.request().headers().authorization,'Bearer '+ 'a'.repeat(43));
+   calls.push('github-pr');
+   return json({number:246,url:'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/246'});
+  }
   if(path.startsWith('/api/admin/catalog/source/')&&method==='GET'){
    const name=path.slice('/api/admin/catalog/source/'.length,-5);
    assert.equal(route.request().headers().authorization,'Bearer '+ 'a'.repeat(43),
@@ -84,6 +100,22 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
   const dialog=page.getByRole('dialog',{name:/Игровой каталог/});
   await dialog.waitFor({state:'visible'});
+  // A PR is generated from the published D1 snapshot via Worker, not the
+  // browser's downloaded JSON. No GitHub token enters the client.
+  const prButton=dialog.getByRole('button',{name:'Создать PR в GitHub'});
+  await prButton.waitFor({state:'visible'});
+  await page.waitForFunction(()=>!Array.from(document.querySelectorAll('.os-sync-actions button'))
+    .find(button=>button.textContent?.includes('Создать PR в GitHub'))?.disabled);
+  page.once('dialog',dialog=>dialog.accept());
+  await prButton.click();
+  await dialog.getByRole('link',{name:'Открыть PR #246'}).waitFor({state:'visible'});
+  assert.deepEqual(calls.filter(x=>x==='github-pr'),['github-pr']);
+  page.once('dialog',confirmation=>confirmation.accept());
+  await dialog.getByRole('button',{name:'Проверить запись в D1'}).click();
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.os-sync [role=status]'))
+    .some(node=>node.textContent?.includes('Проверка D1 пройдена')));
+  assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
+
   assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Сравнить с архивом проекта'}).click();
   await page.waitForFunction(()=>

@@ -1,5 +1,16 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.306.0 — 2026.11.02.306 · Direct GitHub PR from published catalog; isolated D1 diagnostic
+
+- Authenticated administrator can create a GitHub PR directly from the current published catalog with no browser-held GitHub credentials. Worker accepts one fixed repository and 17 game data paths, creates a separate branch, and never merges automatically.
+- GitHub integration requires optional Cloudflare Secret `GITHUB_CATALOG_TOKEN`, with selected-repository Contents/PR permissions. Disabled safely until configured.
+- Source baseline and active D1 snapshot are both checked again before PR branch creation. Repeated clicks reuse an existing PR for the same snapshot.
+- One-click administrator D1 write/read/delete verification uses a disposable unreferenced catalog entry. It does not modify active data or player accounts.
+- New isolated tests cover authorization, D1 reconstruction, scoped PR creation and temporary data writes.
+- Real external GitHub mutation and live production D1 admin diagnostic need owner-side credentials; tests simulate those operations without secrets.
+
+
+
 ## 0.305.0 — 2026.11.02.305 · Reviewed catalog update safety for GitHub
 
 - Rename the downloaded administrator-approved catalog artifact to `pandora-studio-reviewed-catalog.json`; existing export format remains supported for backward compatibility.

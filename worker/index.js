@@ -1,4 +1,5 @@
 import {accountApi,principal as accountPrincipal} from './pandora-studio-account-api.js';
+import {createCatalogPullRequest,githubCatalogEnabled} from './pandora-studio-github-catalog-pr.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
 // Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.
@@ -62,6 +63,33 @@ async function adminCatalog(request,env,path){
  if(path==='/api/admin/catalog/initialize'){
   for(const sql of SEED_SCHEMA)await env.DB.prepare(sql).run();
   return json({ok:true,created:true});
+ }
+ if(path==='/api/admin/catalog/test-write'){
+  // Validate a real D1 insert/read/delete round-trip using an isolated
+  // never-active snapshot. No change to catalog_current or user accounts.
+  const snapshot='qa-'+crypto.randomUUID().replaceAll('-');
+  const record=JSON.stringify({temporary:true,snapshot,created:Date.now()});
+  let written=false,readback=false,cleaned=false;
+  try{
+   await env.DB.prepare(
+    'INSERT INTO catalog_entries(snapshot,dataset,record_key,name,kind,slot,is_costume_overlay,payload) VALUES(?,?,?,?,?,?,?,?)'
+   ).bind(snapshot,'meta','health','Temporary D1 check','','',0,record).run();
+   written=true;
+   const saved=await env.DB.prepare(
+    'SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset=? AND record_key=?'
+   ).bind(snapshot,'meta','health').first();
+   readback=saved?.payload===record;
+  }finally{
+   if(written){
+    const removed=await env.DB.prepare(
+     'DELETE FROM catalog_entries WHERE snapshot=? AND dataset=?'
+    ).bind(snapshot,'meta').run();
+    cleaned=Number(removed.meta?.changes)===1;
+   }
+  }
+  if(!readback||!cleaned)return no('D1 isolated write/read/cleanup check failed',502);
+  return json({ok:true,readback:true,cleaned:true,
+   activeCatalogUnchanged:true});
  }
  if(path==='/api/admin/catalog/status'){
   const current=await activeCatalog(env);
@@ -286,6 +314,31 @@ async function handle(request,env){const url=new URL(request.url),path=url.pathn
 if(method==='GET'&&/^\/api\/catalog\/(meta|classes|skills|items|souls|monsters|drops|maps|instances|racialPassives|itemForth|unison|trades|tradeMeta|legacyLocale|tables|expertise|chests|stringsEn)\.json$/.test(path))return serveCatalog(env,path.split('/').pop().replace('.json',''));
 // Restricted authenticated data refresh endpoint: fixed source host and 17 known names.
 // A preview does NOT change D1. The owner must explicitly confirm version publication.
+if(path==='/api/admin/catalog/github-status'&&method==='GET'){
+ if(!await auth(request,env))return no('Unauthorized',401);
+ return json({configured:githubCatalogEnabled(env)});
+}
+if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
+ if(!await auth(request,env))return no('Unauthorized',401);
+ if(!githubCatalogEnabled(env))return no('GitHub integration not configured',503);
+ const data=await body(request);
+ if(!data||typeof data.expectedActive!=='string'||
+    !/^[a-z0-9-]{8,64}$/.test(data.expectedActive))
+  return no('Expected published snapshot required',400);
+ const active=await activeCatalog(env);
+ if(!active||active.snapshot!==data.expectedActive)
+  return no('Published snapshot changed. Reload catalog.',409);
+ try{
+  const result=await createCatalogPullRequest(env,active,
+   async()=> (await activeCatalog(env))?.snapshot||null);
+  return json(result);
+ }catch(error){
+  // Never log GitHub secrets or expose arbitrary remote response payloads.
+  return no(String(error.message||'Cannot create GitHub PR').slice(0,210),
+   [409,502,503].includes(error.status)?error.status:502);
+ }
+}
+// Only allowlisted game-data paths can reach the external source.
 if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
  if(!await auth(request,env))return no('Unauthorized',401);
  const file=path.slice('/api/admin/catalog/source/'.length);
