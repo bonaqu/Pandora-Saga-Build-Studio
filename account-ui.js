@@ -71,7 +71,7 @@ function render(){
  errorLine=node('p','account-feedback');errorLine.setAttribute('role','status');
  if(session){
   const identity=node('div','account-identity');
-  const avatar=node('span','account-avatar','✦');avatar.setAttribute('aria-hidden','true');
+  const avatar=node('span','account-avatar');avatar.setAttribute('aria-hidden','true');
   const account=node('div','account-identity-meta');
   account.append(node('small','','УЧЁТНАЯ ЗАПИСЬ'),
    node('p','account-user','@'+session.username));

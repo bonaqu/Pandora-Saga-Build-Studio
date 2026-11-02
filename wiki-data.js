@@ -11,7 +11,7 @@ function build(data){
   const list=[];
   for(const [kind,rows] of [['normal',group.d],['conditional',group.s]])for(const r of rows||[]){
    if(r.i==null)continue;
-   const row={type:'monster',id:String(mobId),itemId:String(r.i),kind,percent:typeof r.p==='number'?r.p:null,condition:r.t||null,quantity:r.n??1};
+   const row={type:'monster',id:String(mobId),itemId:String(r.i),kind,percent:typeof r.p==='number'?r.p:null,condition:r.t||null,quantity:r.n??1,slotAdd:r.slotAdd??0};
    list.push(row);add(r.i,row);
   }
   drops.set(String(mobId),list);

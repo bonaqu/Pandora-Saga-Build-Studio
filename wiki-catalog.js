@@ -112,6 +112,54 @@ async function load({api,fetcher,local='./data/os',timeout=12000}={}){
     });
    }
   }catch{}
+  // Temporary read-only bridge: this deployed D1 snapshot can be older than
+  // the verified GitHub archive. Apply only the audited, source-hash-matched
+  // monster and loot deltas. No arbitrary D1 records are overwritten.
+  const sha=loaded.data.meta?.sha||{};
+  if(sha['monster/monster.csv']==='e1fd89f70113314a'&&
+   sha['monster/monster_dropitem.csv']==='685de58dcd1e1758'&&
+   sha['monster/spdrop_item.csv']==='1ab5e9493f456a2f')try{
+   const base=local.replace(/\/$/,'');
+   const get=async path=>{
+    const response=await fetcher(base+'/'+path+'.json',{cache:'no-cache'});
+    return response?.ok?await response.json():null;
+   };
+   const [meta,monsters,drops]=await Promise.all(['meta','monsters','drops'].map(get));
+   if(meta?.sha?.['monster/monster.csv']==='b99edf06cb49f754'&&
+    meta?.sha?.['monster/monster_dropitem.csv']==='db74bd36aa98c301'&&
+    meta?.sha?.['monster/spdrop_item.csv']==='e2b35f9dad68f0f3'&&monsters&&drops){
+    const changedMonsters=['43601','43602','43603','43641','43642','43643','43644','43645','43646','43650'];
+    const changedDrops=['43106','43650','43730','43731','43732'];
+    let applied=0;
+    for(const id of changedMonsters){
+     const old=loaded.data.monsters?.[id],current=monsters[id];
+     if(!old||!current)continue;
+     // Only the verified live fields are updated: never replace custom
+     // catalog names, positions or unrelated user-maintained metadata.
+     const lantern=id.startsWith('4364');
+     const caravan=['43601','43602','43603'].includes(id);
+     if(lantern&&old.life===30000&&current.life===60000){
+      loaded.data.monsters[id]={...old,life:60000};applied++;
+     }else if(caravan&&old.resists?.magic===30&&current.resists?.magic===15){
+      loaded.data.monsters[id]={...old,resists:current.resists};applied++;
+     }else if(id==='43650'&&old.life===3000000&&current.life===5000000&&
+      old.resists?.physical===20&&current.resists?.physical===10){
+      loaded.data.monsters[id]={...old,life:5000000,resists:current.resists};applied++;
+     }
+    }
+    for(const id of changedDrops){
+     const old=loaded.data.drops?.[id],current=drops[id];
+     if(!old||!current)continue;
+     const outdated=old.d?.find(row=>row.i===11095&&row.slotAdd==null);
+     const patched=current.d?.find(row=>row.i===11095&&row.slotAdd===1);
+     if(outdated&&patched&&JSON.stringify({...outdated,slotAdd:1})===JSON.stringify(patched)){
+      loaded.data.drops[id]={...old,d:old.d.map(row=>row===outdated?{...row,slotAdd:1}:row)};
+      applied++;
+     }
+    }
+    if(applied)loaded.overlay={source:'verified-live-os-archive',records:applied};
+   }
+  }catch{}
   return loaded;
  }
  catch(remoteError){

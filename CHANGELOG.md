@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.291.0 — 2026.11.02.291 · Live OS sync, priest and guild inputs, compact profile and resistances
+
+- Fixed OS source verification: public `/gamedata/*.json` works. Compared 17 datasets by source IDs. Reconciled 10 changed monsters and 5 changed drop entries; live OS added `slotAdd:1` to five drop items but probabilities did not change. Updated source meta hashes.
+- Logged-in profile loses the unexplained decorative star; neutral sign-out button. Monster resistances fit five columns / two rows on desktop, with responsive mobile wrapping.
+- Hero Book adds an external priest profile (SPR/SD, Blessing, Hymn) and optional application of verified Remaked Gratia attack-speed and Lapis Medio defense formulas. Other priest effects are explicitly read-only previews.
+- Guild levels 1–12 automatically configure the currently supported HP/MP and regeneration passives from Remaked; level 0 retains manual buff selection. Guild physical/magic damage reductions and experience unlocks display but are not fabricated into an unsupported combat formula; honor titles retain single selection.
+- In a safe read-only bridge, D1-backed encyclopedia can adopt only audited changed monster/drop fields from checked-in verified source when its D1 source hashes match the known older version. This is not a D1 write or complete data import.
+- Live chest composition remains unchanged in publicly exposed `chests.json`; unavailable location-chest odds are not invented. Planning cap remains 55.
+
+
 ## 0.290.0 — 2026.11.02.290 · Профиль, игровые подсказки, книга героя и перевод заданий
 
 - Компактная авторизованная карточка профиля; смена пароля не показывается до раскрытия соответствующего раздела.

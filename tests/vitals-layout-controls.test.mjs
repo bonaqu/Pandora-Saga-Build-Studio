@@ -18,7 +18,8 @@ test('buffs are book-only while legacy form inputs stay hidden for compatibility
 });
 test('old saved build starts with disabled buffs; controls update without resetting stats',()=>{
  assert.match(app,/vitalsBuffs:\{guildHp:0,guildMp:0,lifeSign:false\}/);
- assert.match(app,/enhancements:state\.vitalsBuffs\|\|\{\}/);
+ assert.match(app,/enhancements:effectiveGuildBuffs\.vitals/);
+ assert.match(app,/guildPassiveAtLevel\(guildLevel\)/);
  const start=app.indexOf('function renderVitalsEnhancements(){');
  const end=app.indexOf('\nfunction budgetSummary(){',start);
  assert.ok(start>0&&end>start);

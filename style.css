@@ -1191,14 +1191,14 @@ main{padding-top:10px}
 /* Compact OS-provided monster parameters and real location-group loot. */
 .wiki-monster-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
  gap:5px;margin:10px 0}
-.wiki-monster-resists{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));
- gap:6px;margin:9px 0 15px}
-.wiki-monster-resist{display:flex;align-items:center;gap:7px;min-width:0;padding:7px 9px;
+.wiki-monster-resists{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));
+ gap:5px;margin:7px 0 12px}
+.wiki-monster-resist{display:flex;align-items:center;gap:5px;min-width:0;padding:5px 6px;
  background:linear-gradient(135deg,#312419,#1b1510);border:1px solid #745636;border-radius:5px}
-.wiki-resist-glyph{flex:0 0 24px;height:24px;display:grid;place-items:center;
+.wiki-resist-glyph{flex:0 0 20px;height:20px;display:grid;place-items:center;
  border-radius:5px;color:#e7c38c;background:#4c3421;font-size:17px}
-.wiki-resist-name{flex:1;min-width:0;font-size:10px;color:#ddc39d}
-.wiki-monster-resist strong{color:#eecf9f;font-size:12px;font-variant-numeric:tabular-nums}
+.wiki-resist-name{flex:1;min-width:0;font-size:9px;color:#ddc39d;overflow-wrap:anywhere}
+.wiki-monster-resist strong{color:#eecf9f;font-size:11px;font-variant-numeric:tabular-nums}
 .wiki-monster-resist.negative{border-color:#a1584e}
 .wiki-monster-resist.negative strong{color:#f2aaa0}
 .wiki-zone-group{display:flex;flex-direction:column;align-items:flex-start;
@@ -1272,7 +1272,7 @@ main{padding-top:10px}
 .stage-attribute-tabs button{transition:background-color .16s,border-color .16s}
 .stage-attribute-tabs button:focus-visible{outline:2px solid #ffe0a8;outline-offset:2px}
 
-/* Current OS book — readable resistance tiles and real potion item navigation. */
+
 .stage-resistance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:10px 0}
 .stage-resistance-tile{display:flex;align-items:center;justify-content:space-between;gap:6px;
  padding:8px 9px;background:linear-gradient(130deg,#31251b,#1d1510);border:1px solid #775736;border-radius:4px}
@@ -1453,7 +1453,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .inline-mastery-track .inline-mastery-green{top:85px}
 .inline-mastery-track .inline-mastery-locked{top:84px}
 .inline-mastery-track input[type=range]{top:74px}
-/* Account button and lightweight login profile in Pandora Saga colors. */
+
 .header-actions{position:relative;align-items:center}
 .profile-trigger{display:grid;place-items:center;min-width:42px;min-height:42px;color:#e7bd83;
  background:linear-gradient(#33241b,#1a120e);border:1px solid #917047;border-radius:4px}
@@ -1484,7 +1484,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .account-identity{display:flex;align-items:center;gap:12px;margin:14px 0 9px;padding:12px;
  border:1px solid #98714a;border-radius:7px;background:linear-gradient(110deg,#513620,#281b12);
  box-shadow:inset 0 1px #c8a06a24}
-.account-avatar{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
+.account-avatar{position:relative;display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
  border-radius:50%;border:1px solid #d9ad69;color:#f5d8a1;
  background:radial-gradient(circle at 35% 30%,#715332,#2e1e12);font:25px Georgia,serif}
 .account-identity-meta{min-width:0;display:grid;gap:3px}
@@ -1846,7 +1846,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  .wiki-source-token,.wiki-requirement-chip,.wiki-chest-chevron{transition:none}
 }
 
-/* Dense encyclopedia relationships: one readable card per product, wrap by width. */
+
 .wiki-recipe-uses{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,285px),1fr));
  gap:8px;margin:9px 0 14px}
 .wiki-recipe-use{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0;
@@ -1890,3 +1890,25 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .wiki-mob-row:hover{border-color:#c59a64}
 .wiki-mob-row .wiki-link{flex:1 1 110px;min-width:0;width:auto}
 .wiki-map-mob-meta{flex:1 1 120px;color:#b8a287;font-size:10px;text-align:right}
+
+
+.account-avatar::before{content:'';position:absolute;width:12px;height:12px;top:8px;left:15px;
+ border-radius:50%;border:2px solid #edcf98}
+.account-avatar::after{content:'';position:absolute;width:24px;height:12px;bottom:8px;left:10px;
+ border:2px solid #edcf98;border-bottom:0;border-radius:15px 15px 0 0}
+.account-signout{color:#c8ad8a;border:1px solid #6a5037;background:#211812}
+.account-signout:hover,.account-signout:focus-visible{color:#ffe0b1;border-color:#ba925d;background:#3b281a}
+@media(max-width:720px){.wiki-monster-resists{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:390px){.wiki-monster-resists{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+.stage-priest-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.stage-priest-fields input{min-width:0;width:100%;border:1px solid #86643e;border-radius:4px;
+ padding:7px;background:#19120e;color:#f1d6a7;font:600 13px Manrope,Arial,sans-serif}
+.stage-priest-fields input:focus-visible{outline:2px solid #e0b878;outline-offset:1px}
+.stage-priest-fields input:disabled{opacity:.45}
+.stage-guild-level-effects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;
+ padding:7px;border:1px solid #8d6941;border-radius:5px;background:#231912}
+.stage-guild-level-effects span{padding:7px;border:1px solid #634b30;border-radius:4px;
+ font-size:10px;line-height:1.4;color:#e8cb9f;background:#37271a}
+@media(max-width:460px){.stage-priest-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
