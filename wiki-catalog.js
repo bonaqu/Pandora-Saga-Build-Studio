@@ -99,7 +99,7 @@ async function load({api,fetcher,local='./data/os',timeout=12000}={}){
   // Only localized copy is borrowed from our checked-in OS archive. Never
   // replace remotely updated instance gameplay fields or changed descriptions.
   try{
-   const response=await fetcher(local.replace(/\\/$/,'')+'/instances.json',{cache:'no-cache'});
+   const response=await fetcher(local.replace(/\/$/,'')+'/instances.json',{cache:'no-cache'});
    if(response?.ok){
     const rows=await response.json();
     const localRows=new Map((Array.isArray(rows)?rows:Object.values(rows))
