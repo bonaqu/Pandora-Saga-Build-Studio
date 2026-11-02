@@ -1898,7 +1898,7 @@ function renderWiki(root){
   const englishDescription=lang==='en'?(officialEnglish?.[
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
-  if(described?.desc||(adminEditing&&adminToken&&lang==='ru')){
+  if(described?.desc||(adminEditing&&adminToken&&lang==='ru'&&type!=='instance')){
    const text=englishDescription||described?.desc||'';
    const missing=!text.trim();
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
@@ -2625,7 +2625,16 @@ function renderWiki(root){
     }));
     const description=type==='instance'&&lang!=='en'?
      (rec.blurbRu||null):rec.blurb;
-    if(description)detail.append(h('p',{class:'wiki-description',text:description}));
+    if(description||(type==='instance'&&adminEditing&&adminToken&&lang==='ru')){
+     const editable=type==='instance'&&adminEditing&&adminToken&&lang==='ru';
+     detail.append(h('p',{
+      class:'wiki-description'+(!description?' wiki-description-placeholder':''),
+      text:description||'Двойной клик — добавить описание',
+      ...(editable?{'data-owner-record':'instance:'+id,
+       'data-owner-field':'blurbRu',
+       ...(!description?{'data-owner-empty':'true'}:{})}:{})
+     }));
+    }
     const mobs=rec.mobs||[];
     if(adminEditing&&adminToken){
      detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
