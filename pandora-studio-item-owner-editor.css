@@ -27,3 +27,16 @@
 .admin-edit[data-edit-key^="item."],.admin-edit[data-edit-key^="itemdesc."],
 .admin-edit[data-edit-key^="skill."]{outline:1px dashed rgba(231,190,119,.55);outline-offset:3px;cursor:text}
 @media(max-width:640px){.owner-item-editor{min-width:0}.owner-item-effect{grid-template-columns:1fr 1fr}.owner-item-effect>select:first-child{grid-column:1/-1}.owner-item-classes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Editor entry points are visible, not hidden behind an undiscoverable double click. */
+.owner-race-passive-row{display:grid;grid-template-columns:minmax(0,1fr) 38px;gap:6px;align-items:stretch}
+.owner-race-passive-row>.origin-passive{min-width:0;width:100%}
+.owner-race-passive-edit{border:1px solid #927146;border-radius:7px;background:#302218;
+ color:#f1d3a0;font:19px Georgia,serif;cursor:pointer;transition:background .15s,border-color .15s}
+.owner-race-passive-edit:hover{background:#5b3f27;border-color:#e5ba76}
+.owner-race-passive-edit:focus-visible,.wiki-owner-pencil:focus-visible,
+.wiki-owner-desc-edit:focus-visible{outline:2px solid #ffd08b;outline-offset:2px}
+.wiki-owner-edit-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.wiki-owner-edit-row>h3{flex:1 1 200px;min-width:0}
+.wiki-owner-pencil{align-self:center;flex:0 0 auto}
+.wiki-owner-desc-edit{margin:3px 0 13px}

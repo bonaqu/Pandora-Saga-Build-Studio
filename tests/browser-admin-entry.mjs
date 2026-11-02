@@ -171,6 +171,7 @@ export async function runAdminEntrySmoke(browser,base){
   await wikiSearch.waitFor({state:'visible'});
   assert.equal(await wikiSearch.getAttribute('autocomplete'),'off');
   assert.equal(await wikiSearch.getAttribute('data-lpignore'),'true');
+  await wikiSearch.click();
   await wikiSearch.fill('Старое название из D1');
   const firstItem=page.locator('[data-wiki-record="1"]');
   await firstItem.waitFor({state:'visible',timeout:20000});

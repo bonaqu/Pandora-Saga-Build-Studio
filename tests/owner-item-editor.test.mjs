@@ -94,3 +94,33 @@ test('all data-edit targets and runtime module loader are present',()=>{
  assert.match(html,/pandora-studio-item-owner-editor\.js\?v=/);
  assert.match(html,/pandora-studio-item-owner-editor\.css\?v=/);
 });
+
+test('single visual item patch may edit name and description without touching source data',async()=>{
+ const source={'1':{id:1,name:'Original item',desc:'Original description',W:8}};
+ const merged=editor.applyItems(source,{
+  'itemedit.1':JSON.stringify({name:'Новый предмет',desc:'Новое описание',W:12}),
+  'item.1':'Old inline name','itemdesc.1':'Old inline description'
+ });
+ assert.equal(merged['1'].name,'Новый предмет');
+ assert.equal(merged['1'].desc,'Новое описание');
+ assert.equal(merged['1'].W,12);
+ assert.equal(source['1'].name,'Original item');
+ const db=mockDb();
+ const ok=await worker.fetch(request('itemedit.1',
+  JSON.stringify({name:'Название',desc:''})),{DB:db});
+ assert.equal(ok.status,200);
+ for(const patch of [{name:''},{name:'a'.repeat(241)},{desc:1},{desc:'a'.repeat(2001)}]){
+  const failure=await worker.fetch(request('itemedit.1',JSON.stringify(patch)),{DB:db});
+  assert.equal(failure.status,400);
+ }
+});
+test('visible owner entry points and read-only-until-focus search guards are present',()=>{
+ const source=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ assert.match(source,/class:'owner-race-passive-edit'/);
+ assert.match(source,/class:'button-action wiki-owner-pencil'/);
+ assert.match(source,/wiki-owner-desc-edit/);
+ assert.match(source,/function guardEncyclopediaSearch/);
+ assert.match(source,/input\.readOnly=true/);
+ assert.match(source,/input\.addEventListener\('focus'/);
+ assert.match(source,/input\.addEventListener\('blur'/);
+});

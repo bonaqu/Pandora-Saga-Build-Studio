@@ -1170,9 +1170,18 @@ function renderOriginPassives(){
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
   else btn.append(h('span',{text:'✦'}));
-  btn.append(h('span',{},[h('b',{text:skill.name,
-    ...(adminEditing&&lang==='ru'?{'data-edit-key':'skill.race.'+id}:{})}),
-    h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);skillHover(btn,skill);
+  const label=h('b',{text:skill.name,
+    ...(adminEditing&&lang==='ru'?{'data-edit-key':'skill.race.'+id}:{})});
+  btn.append(h('span',{},[label,
+    h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));
+  if(adminEditing&&lang==='ru'){
+    const edit=h('button',{type:'button',class:'owner-race-passive-edit',
+      title:'Редактировать название пассивной способности',
+      'aria-label':'Изменить название '+skill.name,text:'✎',
+      onclick:()=>editor(label)});
+    root.append(h('div',{class:'owner-race-passive-row'},[btn,edit]));
+  }else root.append(btn);
+  skillHover(btn,skill);
  }
 }
 let activeSkillPreview=null;
@@ -1423,6 +1432,20 @@ function wikiLink(text,type,id,highlight=null){
   event.preventDefault();openWiki(type,displayId,highlight);
  }});
 }
+function guardEncyclopediaSearch(input){
+ // Some password managers ignore autocomplete="off". Prevent automatic
+ // credential injection until an actual user pointer or keyboard gesture.
+ input.readOnly=true;
+ input.setAttribute('autocomplete','off');
+ input.setAttribute('data-lpignore','true');
+ input.setAttribute('data-1p-ignore','true');
+ input.setAttribute('data-bwignore','true');
+ input.addEventListener('focus',()=>{input.readOnly=false});
+ input.addEventListener('pointerdown',()=>{input.readOnly=false});
+ input.addEventListener('keydown',()=>{input.readOnly=false});
+ input.addEventListener('blur',()=>{input.readOnly=true});
+ return input;
+}
 function renderWiki(root){
  wikiRenderedRoot=root;
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
@@ -1433,6 +1456,7 @@ function renderWiki(root){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:lang==='en'?en:ru,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
+ guardEncyclopediaSearch(search);
  controls.append(categories,search);
  if(wikiSelection.type==='item'){
   const equipmentTypes=[['equipment',wt('Экипировка','Equipment')],['all',wt('Все предметы','All items')],
@@ -1726,10 +1750,19 @@ function renderWiki(root){
    {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
-   detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
-    h('h3',{text:dataName(type,id),...(adminEditing&&lang==='ru'&&
+   const heading=h('h3',{text:dataName(type,id),...(adminEditing&&lang==='ru'&&
      (type==='item'||type==='skill')?{'data-edit-key':type==='item'?
-      'item.'+id:'skill.'+(rec.branch||'race')+'.'+id}:{})}));
+      'item.'+id:'skill.'+(rec.branch||'race')+'.'+id}:{})});
+   detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
+   if(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')){
+     detail.append(h('div',{class:'wiki-owner-edit-row'},[
+       heading,
+       h('button',{type:'button',class:'button-action wiki-owner-pencil',
+        'aria-label':'Изменить название '+dataName(type,id),
+        title:'Изменить название',text:'✎ Название',
+        onclick:()=>editor(heading)})
+     ]));
+   }else detail.append(heading);
    const namesakes=wikiIndex.sameName(type,id);
    if(namesakes.length)detail.append(h('small',{class:'wiki-variant-note',
     text:wt('Есть другие варианты с таким названием','Other entries share this name')}));
@@ -1744,11 +1777,16 @@ function renderWiki(root){
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
   if(described?.desc){
    const text=englishDescription||described.desc;
-   detail.append(h('p',{class:'wiki-description',text:
+   const description=h('p',{class:'wiki-description',text:
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')?
       {'data-edit-key':type==='item'?'itemdesc.'+id:
-        'skilldesc.'+(rec.branch||'race')+'.'+id}:{})}));
+        'skilldesc.'+(rec.branch||'race')+'.'+id}:{})});
+   detail.append(description);
+   if(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')){
+     detail.append(h('button',{type:'button',class:'button-action wiki-owner-desc-edit',
+      text:'✎ Изменить описание',onclick:()=>editor(description)}));
+   }
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=keys=>{
@@ -2008,6 +2046,7 @@ function renderWiki(root){
      }
      counter.textContent=lang==='en'?visible+' of '+cards.length:visible+' из '+cards.length;
     };
+    guardEncyclopediaSearch(recipeSearch);
     recipeSearch.addEventListener('input',filterRecipes);
     detail.append(recipeSearch,counter,recipesBox);filterRecipes();
   }else if(type==='map'||type==='instance'){

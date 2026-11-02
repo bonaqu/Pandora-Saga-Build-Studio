@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.309.0 — 2026.11.02.309 · Visual ownership editing and encyclopedia search isolation
+
+- Racial passive names and encyclopedia item/skill names and descriptions expose explicit, separately clickable editor buttons in the game's theme.
+- The existing structured equipment editor now also changes the item's RU title and description alongside attack/armor, allowed classes and effects. Updates are stored as separate owner overrides and survive base catalog refreshes.
+- Prior inline text overrides remain compatible. Structured item fields use deterministic precedence over older inline edits.
+- The encyclopedia's search inputs are protected against unwanted username autofill before user focus; keyboard and pointer navigation remains supported.
+- Worker validates item title and description sizes; added relevant regression checks. No account changes, data migration or formula changes.
+
+
+
 ## 0.308.0 — 2026.11.02.308 · Graphical catalog comparison for nontechnical administrators
 
 - The authenticated catalog comparison now uses a responsive dashboard with four numeric summaries and six selectable filters for record kinds and owner approval state.
