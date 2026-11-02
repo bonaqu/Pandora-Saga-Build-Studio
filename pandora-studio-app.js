@@ -2099,37 +2099,35 @@ function renderWiki(root){
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
    detail.append(description);
   }
-  if(type==='map'&&['1001004','1002001','1003001','1004001'].includes(String(id))){
-   const city=h('div',{class:'wiki-astir-neighborhoods'});
-   city.append(h('small',{text:wt('Районы города Астир','Astir city districts')}));
-   for(const placeId of ['1001004','1002001','1003001','1004001'])
-    city.append(wikiLink(dataName('map',placeId),'map',placeId));
-   detail.append(city);
-  }
-  if(type==='map'&&['1002001','1003001','1004001'].includes(String(id))){
-   const routes={
-    '1002001':{zones:['2001001','2002001'],
-     state:wt('Союз северных племён Ванриг','Varik Confederation')},
-    '1004001':{zones:['2001003','2004001'],
-     state:wt('Лотарская империя','Latugan Empire')},
-    '1003001':{zones:['2001002','2003001'],
-     state:wt('Королевство Сэнт-Фальстайн','Kingdom of St. Pfelstein')}
-   };
-   const route=routes[String(id)],panel=h('section',{class:'wiki-nation-territory'});
-   panel.append(h('strong',{text:wt('Маршрут из Астира','Route from Astir')}));
-   const steps=h('div',{class:'wiki-location-route'});
-   steps.append(h('span',{text:dataName('map',id)}));
-   for(const zone of route.zones){
-    steps.append(h('span',{class:'wiki-route-arrow',text:'→'}));
-    steps.append(wikiLink(dataName('map',zone),'map',zone));
-   }
-   steps.append(h('span',{class:'wiki-route-arrow',text:'→'}),
-    h('span',{class:'wiki-route-nation',text:route.state}));
-   panel.append(steps);
-   if(String(id)==='1003001')panel.append(h('p',{text:
-    wt('Здесь, на территории Королевства города Астир, находится мастер сундуков Культье.',
-     'Chest master Cultier is here, in the Kingdom district of Astir.')}));
-   detail.append(panel);
+  if(type==='map'){
+   const geo=window.PandoraAstirLocations;
+   const district=geo?.district(id),nation=geo?.country(id);
+   if(district){
+    const city=h('div',{class:'wiki-astir-neighborhoods'});
+    city.append(h('small',{text:wt('Районы города Астир','Astir city districts')}));
+    for(const placeId of geo.districtIds)
+     city.append(wikiLink(dataName('map',placeId),'map',placeId));
+    detail.append(city);
+    const route=geo.route(id);
+    if(route){
+     const panel=h('section',{class:'wiki-nation-territory'});
+     panel.append(h('strong',{text:wt('Маршрут из Астира','Route from Astir')}));
+     const steps=h('div',{class:'wiki-location-route'});
+     steps.append(h('span',{text:dataName('map',id)}));
+     for(const zone of route.roads){
+      steps.append(h('span',{class:'wiki-route-arrow',text:'→'}));
+      steps.append(wikiLink(dataName('map',zone),'map',zone));
+     }
+     steps.append(h('span',{class:'wiki-route-arrow',text:'→'}),
+      wikiLink(dataName('map',route.countryId),'map',route.countryId));
+     panel.append(steps);
+     if(id==='astir-kingdom')panel.append(h('p',{text:
+      wt('Мастер сундуков Культье находится здесь, в районе Королевства города Астир.',
+       'Chest master Cultier is here, in Astir’s Kingdom district.')}));
+     detail.append(panel);
+    }
+   }else if(nation)detail.append(h('span',{class:'wiki-map-kind',
+    text:wt('Государство','Nation')}));
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=(keys,isItem=false)=>{
