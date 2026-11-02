@@ -15,6 +15,11 @@ export async function runAdminEntrySmoke(browser,base){
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
   const json=(value,status=200)=>route.fulfill({
    status,headers,contentType:'application/json',body:JSON.stringify(value)});
+  if(path==='/api/admin/catalog/test-write'&&method==='POST'){
+    assert.equal(route.request().headers().authorization,'Bearer '+ 'a'.repeat(43));
+    calls.push('d1-write-check');
+    return json({ok:true,readback:true,cleaned:true,activeCatalogUnchanged:true});
+  }
   if(path==='/api/admin/catalog/github-status'&&method==='GET')
    return json({configured:true});
   if(path==='/api/admin/catalog/status'&&method==='POST')
@@ -99,11 +104,18 @@ export async function runAdminEntrySmoke(browser,base){
   // browser's downloaded JSON. No GitHub token enters the client.
   const prButton=dialog.getByRole('button',{name:'Создать PR в GitHub'});
   await prButton.waitFor({state:'visible'});
-  await page.waitForFunction(()=>!document.querySelector('.os-sync-actions button:last-child')?.disabled);
+  await page.waitForFunction(()=>!Array.from(document.querySelectorAll('.os-sync-actions button'))
+    .find(button=>button.textContent?.includes('Создать PR в GitHub'))?.disabled);
   page.once('dialog',dialog=>dialog.accept());
   await prButton.click();
   await dialog.getByRole('link',{name:'Открыть PR #246'}).waitFor({state:'visible'});
   assert.deepEqual(calls.filter(x=>x==='github-pr'),['github-pr']);
+  page.once('dialog',confirmation=>confirmation.accept());
+  await dialog.getByRole('button',{name:'Проверить запись в D1'}).click();
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.os-sync [role=status]'))
+    .some(node=>node.textContent?.includes('Проверка D1 пройдена')));
+  assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
+
   assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Сравнить с архивом проекта'}).click();
   await page.waitForFunction(()=>
