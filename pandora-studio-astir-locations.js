@@ -1,10 +1,7 @@
 (function(root){
 'use strict';
-// Geographic model: three nation trade IDs are not the three Astir districts.
-// The public OS /gamedata/trades.json contains trade NPCs, not the full list
-// of town NPCs. City NPCs below are sourced from the historical game wiki
-// (last edited 2012-02-05); they are NOT claimed to be live OS NPC spawns.
-// https://wikiwiki.jp/pandoras/中立領アスティア
+// The original OS trade map IDs denote three sovereign nations. Their NPC
+// assignments are never projected onto similarly named Astir city districts.
 const countries=Object.freeze([
  {id:'1002001',ru:'Союз северных племен Ванриг',en:'Varik Confederation'},
  {id:'1004001',ru:'Лотарская империя',en:'Latugan Empire'},
@@ -16,12 +13,12 @@ const districts=Object.freeze([
  {id:'astir-empire',ru:'Территория Империи',en:'Empire District'},
  {id:'astir-kingdom',ru:'Территория Королевства',en:'Kingdom District'}
 ].map(Object.freeze));
-const nationById=new Map(countries.map(row=>[row.id,row]));
+const countryById=new Map(countries.map(row=>[row.id,row]));
 const districtById=new Map(districts.map(row=>[row.id,row]));
 const countryIds=Object.freeze(countries.map(row=>row.id));
 const districtIds=Object.freeze(districts.map(row=>row.id));
+const country=id=>countryById.get(String(id))||null;
 const district=id=>districtById.get(String(id))||null;
-const country=id=>nationById.get(String(id))||null;
 const localized=(id,language='ru')=>{
  const place=district(id);
  if(place)return (language==='en'?place.en:place.ru)+
@@ -43,65 +40,19 @@ const mapsFrom=(tradeMaps={},worldMaps={})=>{
   name:item.ru,placeType:'astir-district',virtual:item.id!=='1001004'};
  return result;
 };
-// name, map grid, function. Historical game-data wiki, NOT current live OS.
-// Non-server IDs distinguish these NPCs from trade NPCs / D1 edit keys.
-const historic=Object.freeze({
- 'astir-union':[
-  ['olson','Олсон','I-4','Сюжетный персонаж'],
-  ['ronia','Рония','I-5','Гадалка'],
-  ['caruna','Каруна','F-7','Персонаж заданий'],
-  ['fania','Фания','H-7','Персонаж заданий'],
-  ['penelope','Пенелопа','I-4','Персонаж заданий'],
-  ['gharb','Гарб','H-5','Оружейник'],
-  ['scono','Сконо','H-5','Бронник'],
-  ['roon','Лун','H-6','Торговец предметами'],
-  ['slant','Слант','I-5','Обмен экипировки'],
-  ['warehouse','Кладовщик','I-5','Склад'],
-  ['inn','Тани','I-5','Трактир']
- ],
- 'astir-empire':[
-  // Confirmed in the player's 2026-11-02 screenshot: chest-selection
-  // dialogue with NPC "Кларис"; mini-map says Territory of the Empire.
-  ['claris','Кларис',null,'Открытие сундуков'],
-  ['barnes','Барнс','C-12','Сюжетный персонаж'],
-  ['sarah','Сара','D-12','Представитель Империи'],
-  ['dorothea','Доротея','E-12','Персонаж заданий'],
-  ['alma','Алма','E-11','Оружейник'],
-  ['schaeffer','Шеффер','E-11','Бронник'],
-  ['flyos','Флайос','E-12','Торговец предметами'],
-  ['kite','Кайт','E-11','Обмен зелий'],
-  ['mariana','Мариана','D-12','Обмен'],
-  ['warehouse','Кладовщик','D-12','Склад'],
-  ['inn','Фалас','D-12','Трактир']
- ],
- 'astir-kingdom':[
-  ['randall','Рэндалл','N-10','Сюжетный персонаж'],
-  ['grohn','Грон','L-10','Представитель Королевства'],
-  ['cultier','Культье','K-11','Мастер сундуков'],
-  ['koome','Кум','M-11','Торговец предметами'],
-  ['roo','Ру','L-11','Оружейник'],
-  ['palachov','Палачов','L-11','Бронник'],
-  ['nazito','Назит','M-11','Обмен самоцветов'],
-  ['faneh','Фане','L-10','Трактир'],
-  ['hei','Хей','L-10','Трактир'],
-  ['warehouse','Кладовщик','M-11','Склад']
- ]
-});
-const npcRecords=()=>{
- const result={};
- for(const [mapId,people] of Object.entries(historic)){
-  for(const [slug,name,grid,service] of people){
-   const id='astir-npc-'+mapId.slice(6)+'-'+slug;
-   result[id]={id,name,grid,service,desc:service,
-    maps:[mapId],virtual:true,
-    source:slug==='claris'?'game-screenshot':'historic-astir-wiki'};
-  }
- }
- return result;
-};
+// Only the game's screenshots supplied by the player confirm this town NPC.
+// The public OS /gamedata/trades.json covers exchange NPCs, not every town NPC.
+// Do not translate, guess or import names from the old JP fan wiki.
+const confirmedTownNpcs=Object.freeze([
+ Object.freeze({id:'astir-npc-kingdom-claris',name:'Кларис',
+  maps:Object.freeze(['astir-kingdom']),virtual:true,
+  service:'Открытие сундуков',source:'game-screenshot'})
+]);
+const npcRecords=()=>Object.fromEntries(confirmedTownNpcs.map(npc=>[
+ npc.id,{...npc,maps:[...npc.maps]}
+]));
 root.PandoraAstirLocations=Object.freeze({
  countries,districts,countryIds,districtIds,country,district,
- localized,searchAliases,mapsFrom,npcRecords,
- historicSource:'https://wikiwiki.jp/pandoras/中立領アスティア'
+ localized,searchAliases,mapsFrom,npcRecords
 });
 })(typeof window==='undefined'?globalThis:window);

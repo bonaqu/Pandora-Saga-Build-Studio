@@ -50,38 +50,37 @@ test('nation NPCs are not silently moved to same-named districts',()=>{
   'Central Plaza keeps its existing true NPCs');
 });
 
-test('all three Astir districts show real historical NPC entries, not invented roads',()=>{
- for(const [mapId,needed,npc] of [
-  ['astir-union',11,'astir-npc-union-olson'],
-  ['astir-empire',11,'astir-npc-empire-claris'],
-  ['astir-kingdom',10,'astir-npc-kingdom-cultier']]){
-  const residents=wiki.residents(mapId);
-  assert.ok(residents.length>=needed,mapId+' needs NPCs');
-  assert.ok(residents.some(([id])=>id===npc),mapId+' missing '+npc);
-  for(const [id,row] of residents){
-   assert.equal(row.virtual,true);
-   assert.ok(String(id).startsWith('astir-npc-'));
-   assert.deepEqual(Array.from(row.maps),[mapId]);
-  }
- }
- assert.equal(wiki.records('npc')['astir-npc-kingdom-cultier'].grid,'K-11');
- assert.equal(wiki.records('npc')['astir-npc-empire-claris'].service,'Открытие сундуков');
- assert.equal(wiki.records('npc')['astir-npc-empire-claris'].source,'game-screenshot');
+test('only screenshot-verified Claris resides in Astir Kingdom district',()=>{
+ const expectedId='astir-npc-kingdom-claris';
+ assert.deepEqual(Array.from(wiki.residents('astir-union'),([id])=>id),[]);
+ assert.deepEqual(Array.from(wiki.residents('astir-empire'),([id])=>id),[]);
+ assert.deepEqual(Array.from(wiki.residents('astir-kingdom'),([id])=>id),[expectedId]);
+ const npc=wiki.records('npc')[expectedId];
+ assert.equal(npc.name,'Кларис');
+ assert.equal(npc.service,'Открытие сундуков');
+ assert.equal(npc.grid,undefined,'No coordinates were provided for Claris');
+ assert.equal(npc.source,'game-screenshot');
+ assert.deepEqual(Array.from(npc.maps),['astir-kingdom']);
+ assert.equal(npc.virtual,true);
+ const synthetic=Object.keys(wiki.records('npc')).filter(id=>id.startsWith('astir-npc-'));
+ assert.deepEqual(synthetic,[expectedId]);
+ assert.equal(wiki.search('npc','Кларис').some(([id])=>id===expectedId),true);
  assert.equal('route' in geo,false);
- assert.equal(/Маршрут из Астира/.test(read('pandora-studio-app.js')),false);
+ assert.doesNotMatch(read('pandora-studio-app.js'),/Маршрут из Астира/);
 });
 
-test('town NPC profiles are searchable and linked back to correct districts',()=>{
- for(const [id,name,map] of [
-  ['astir-npc-kingdom-cultier','Культье','astir-kingdom'],
-  ['astir-npc-empire-claris','Кларис','astir-empire'],
-  ['astir-npc-union-olson','Олсон','astir-union']]){
-  assert.equal(wiki.records('npc')[id].name,name);
-  assert.equal(wiki.search('npc',name).some(([recordId])=>recordId===id),true);
-  assert.ok(wiki.records('npc')[id].maps.includes(map));
+test('unconfirmed NPC identities are not exposed in current map or chest records',()=>{
+ const app=read('pandora-studio-app.js');
+ const model=read('pandora-studio-astir-locations.js');
+ for(const invalid of ['Культье','Олсон','Барнс','Рэндалл','Кларис','K-11']){
+  if(invalid==='Кларис')continue;
+  assert.ok(!app.includes(invalid),'Unsupported player-facing name '+invalid);
+  assert.ok(!model.includes(invalid),'Unsupported synthetic NPC '+invalid);
  }
+ assert.ok(app.includes("'astir-npc-kingdom-claris'"));
+ assert.ok(app.includes("'astir-kingdom'"));
+ assert.ok(!app.includes("'astir-empire'") || !app.includes("'astir-npc-empire-claris'"));
 });
-
 test('old D1 country labels are corrected in the read-only index, not in NPC records',()=>{
  const legacy=structuredClone(data);
  legacy.mapNames['1002001'].name='Территория Союза';
@@ -93,7 +92,7 @@ test('old D1 country labels are corrected in the read-only index, not in NPC rec
  assert.equal(n.records('map')['1004001'].name,'Лотарская империя');
  assert.equal(legacy.mapNames['1003001'].name,'Территория Королевства');
  assert.ok(n.residents('1003001').some(([id])=>id==='131'));
- assert.ok(n.residents('astir-kingdom').some(([id])=>id==='astir-npc-kingdom-cultier'));
+ assert.ok(n.residents('astir-kingdom').some(([id])=>id==='astir-npc-kingdom-claris'));
  assert.equal(n.residents('astir-kingdom').some(([id])=>id==='131'),false);
 });
 
@@ -106,7 +105,7 @@ test('deep links, labels and search remain distinct in RU and EN',()=>{
  assert.equal(geo.localized('1003001','en'),'Kingdom of St. Pfelstein');
  assert.ok(wiki.search('map','Территория Королевства').some(([id])=>id==='astir-kingdom'));
  assert.ok(wiki.search('map','Королевство Сэнт-Фальстайн').some(([id])=>id==='1003001'));
- assert.ok(app.includes("'astir-npc-kingdom-cultier'"));
+ assert.ok(app.includes("'astir-npc-kingdom-claris'"));
  assert.ok(app.includes("'astir-kingdom'"));
  assert.match(app,/wiki-map-npc/);
  assert.match(app,/const group=geo\?\.district\(id\)\?'city':geo\?\.country\(id\)\?'nation':'other'/);
@@ -114,7 +113,7 @@ test('deep links, labels and search remain distinct in RU and EN',()=>{
 
 test('refresh, back, forward and hashchange all accept stable Astir district map links',()=>{
  const app=read('pandora-studio-app.js');
- const expected=String.raw`([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z]+)`;
+ const expected=String.raw`([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-kingdom-claris)`;
  assert.equal(app.split(expected).length-1,3,
   'All three hash readers must support the exact virtual district IDs');
  for(const id of geo.districtIds.filter(id=>id!=='1001004')){
