@@ -1398,12 +1398,13 @@ function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,sta
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
 function renderDetails(){const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
-let wikiRenderSelected=null,wikiRenderedRoot=null;
+let wikiRenderSelected=null,wikiRenderedRoot=null,wikiBaseData=null;
 async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
   const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
+   wikiBaseData=loaded.data;
   const skills={...loaded.data.skills};
   for(const [key,value] of Object.entries(override)){
    const parsed=/^(skill|skilldesc)\.([a-zA-Z0-9_-]{1,32})\.([0-9]{1,12})$/.exec(key);
@@ -1632,7 +1633,7 @@ function renderWiki(root){
   const previous=container.querySelector('.wiki-owner-item-choice');
   if(previous){previous.remove();return}
   const form=h('div',{class:'wiki-owner-source-picker wiki-owner-item-choice'});
-  const search=h('input',{type:'search',class:'wiki-inline-input',
+  const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
    placeholder:'Название предмета…',autocomplete:'off','aria-label':'Найти предмет'});
   const target=h('select',{class:'wiki-inline-select','aria-label':'Выбери предмет'});
   const feedback=h('small',{class:'inline-owner-error',role:'status'});
@@ -1687,9 +1688,9 @@ function renderWiki(root){
   add.onclick=()=>{
    if(container.querySelector('.wiki-owner-relation-picker'))return;
    const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-relation-picker'});
-   const search=h('input',{type:'search',class:'wiki-inline-input',
+   const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
     placeholder:'Поиск по названию…','aria-label':'Поиск для добавления'});
-   guardOwnerInput(search);
+   
    const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери запись'});
    const feedback=h('small',{class:'inline-owner-error',role:'status'});
    const fill=()=>{
@@ -1822,7 +1823,7 @@ function renderWiki(root){
        h('option',{value:'',text:'Выбери тип получения'}),
        h('option',{value:'monster',text:'Монстр'}),
        h('option',{value:'npc',text:'NPC'})]);
-      const search=h('input',{type:'search',class:'wiki-inline-input',
+      const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
        'aria-label':'Найти NPC или монстра',placeholder:'Поиск по названию…',autocomplete:'off'});
       const target=h('select',{class:'wiki-inline-select',
        'aria-label':'У кого получить',disabled:true});
@@ -2101,7 +2102,9 @@ function renderWiki(root){
      const effectRows=rec.effects||[];
      const effectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items,rec);
       const allEffectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items);
-      const labelFor=code=>allEffectOptions.find(row=>row.value===code)?.label||'Игровой эффект';
+      const labelFor=code=>lang==='ru'?
+       window.PandoraStudioItemOwnerEditor.effectDisplayLabel(code,lang):
+       allEffectOptions.find(row=>row.value===code)?.label||code;
      const update=(index,patch)=>saveWikiItemField(id,'effects',
       effectRows.map((effect,i)=>i===index?{...effect,...patch}:effect));
      const list=h('div',{class:'wiki-owner-effects'});
@@ -2167,9 +2170,9 @@ function renderWiki(root){
       plus.onclick=()=>{
        if(list.querySelector('.wiki-owner-effect-picker'))return;
        const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-effect-picker'});
-       const search=h('input',{type:'search',class:'wiki-inline-input',
+       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
         'aria-label':'Поиск эффекта',placeholder:'Найти игровой эффект…'});
-       guardOwnerInput(search);
+       
        const chooser=h('select',{class:'wiki-inline-select','aria-label':'Выбери эффект'});
        const error=h('small',{class:'inline-owner-error',role:'status'});
        const fill=()=>{
@@ -2364,9 +2367,9 @@ function renderWiki(root){
        const prior=prereqPane.querySelector('.wiki-owner-source-picker');
        if(prior){prior.remove();return}
        const panel=h('div',{class:'wiki-owner-source-picker'});
-       const search=h('input',{type:'search',class:'wiki-inline-input',
+       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
         placeholder:'Поиск предыдущего умения…','aria-label':'Найти умение'});
-       guardOwnerInput(search);
+       
        const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери предыдущее умение'});
        const fill=()=>{
         const q=wikiIndex.normalize(search.value);
@@ -2396,14 +2399,17 @@ function renderWiki(root){
     if(icon){const image=wikiImage(icon,'wiki-record-icon',type);detail.prepend(image)}
   }else if(type==='soul'){
     const slotLabel=slot=>window.PandoraItemPresentation.slotLabel(slot,lang);
-    const traits=h('div',{class:'wiki-soul-traits'});
+    const traits=h('section',{class:'wiki-soul-properties','aria-label':wt('Свойства души','Soul properties')});
+    const slotPane=h('div',{class:'wiki-soul-properties-half'});
+    slotPane.append(h('h4',{text:wt('Куда вставляется','Compatible equipment')}));
+    const slots=h('div',{class:'wiki-soul-slot-list'});
     for(const slot of rec.slots||[]){
      const chip=h('span',{class:'wiki-owner-mat',text:slotLabel(slot)});
      if(adminEditing&&adminToken)chip.append(h('button',{type:'button',
       class:'wiki-owner-remove',text:'×','aria-label':'Убрать слот '+slotLabel(slot),
       onclick:()=>void saveWikiRecordField('soul',id,'slots',rec.slots.filter(x=>x!==slot))
-       .catch(e=>showStudioToast(e.message,'warning'))}));
-     traits.append(chip);
+       .catch(error=>showStudioToast(error.message,'warning'))}));
+     slots.append(chip);
     }
     if(adminEditing&&adminToken){
      const add=h('button',{type:'button',class:'wiki-owner-plus',text:'+ Слот'});
@@ -2415,19 +2421,31 @@ function renderWiki(root){
       for(const slot of choices)select.append(h('option',{value:slot,text:slotLabel(slot)}));
       add.replaceWith(select);
       select.onchange=()=>{if(select.value)void saveWikiRecordField('soul',id,'slots',
-       [...(rec.slots||[]),select.value]).catch(e=>showStudioToast(e.message,'warning'))};
+       [...(rec.slots||[]),select.value]).catch(error=>showStudioToast(error.message,'warning'))};
       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
       select.focus();
      };
-     traits.append(add);
+     slots.append(add);
     }
-    if(rec.price!=null)traits.append(h('div',{class:'wiki-soul-price'},[
-     h('span',{class:'wiki-soul-price-label',text:wt('Стоимость','Cost')}),
-     wikiOwnerNumeric(h('strong',{class:'wiki-soul-price-value',
+    if(!slots.childElementCount)slots.append(h('span',{class:'muted',text:'—'}));
+    slotPane.append(slots);traits.append(slotPane);
+    const pricePane=h('div',{class:'wiki-soul-properties-half wiki-soul-price-pane'});
+    const help=wt(
+     'Фиксированное значение из игрового справочника. Это не рыночная цена между игроками. По имеющимся данным нельзя подтвердить, что именно столько даст торговец при продаже души в лавку.',
+     'Fixed value from the game catalog, not the market price between players. The currently available data does not verify the amount a shopkeeper pays for selling this Soul.');
+    const heading=h('h4',{class:'wiki-soul-price-heading'});
+    heading.append(h('span',{text:wt('Стоимость по справочнику','Catalog price'),
+     class:'wiki-soul-price-label',title:help,tabindex:'0','aria-label':help}));
+    heading.append(h('span',{class:'wiki-soul-price-help',text:'ⓘ',
+     title:help,tabindex:'0','aria-label':help}));
+    pricePane.append(heading);
+    if(rec.price!=null)pricePane.append(wikiOwnerNumeric(
+     h('strong',{class:'wiki-soul-price-value',
       text:Number(rec.price).toLocaleString('ru-RU')}),
-      rec.price,'soul',id,'price',{integer:true})
-    ]));
-    if(traits.childElementCount)detail.append(traits);
+     rec.price,'soul',id,'price',{integer:true}));
+    else pricePane.append(h('span',{class:'muted',text:wt('Не указана','Not provided')}));
+    traits.append(pricePane);
+    detail.append(traits);
     detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:
@@ -2576,7 +2594,7 @@ function renderWiki(root){
     }
     const recipes=wikiIndex.trades(id);
     detail.append(h('h4',{text:wt('Обмен · ','Trades · ')+recipes.length}));
-    const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
+    const recipeSearch=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
      placeholder:wt('Найти предмет или материал…','Find an item or material…'),
      'aria-label':wt('Поиск среди обменов NPC','Search NPC trades')});
     const counter=h('small',{class:'wiki-result-counter'});
@@ -2753,7 +2771,7 @@ function renderWiki(root){
      const levelRange=levels.length?' · ур. '+Math.min(...levels)+
       (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
      detail.append(h('h4',{text:'Монстры · '+mobs.length+levelRange}));
-     const search=h('input',{type:'search',class:'wiki-inline-search',
+     const search=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
        placeholder:wt('Поиск монстра…','Search monsters…'),
        'aria-label':wt('Поиск монстра в подземелье или локации','Search monsters in dungeon or location'),
        name:'monster-roster-filter',autocomplete:'off','data-lpignore':'true',
@@ -2822,8 +2840,16 @@ function renderWiki(root){
      linkFlow(namedPlaces.map(mapId=>wikiLink('◈ '+dataName('map',mapId),'map',mapId,id)))
     ]));
     const groups=rec.rolls||[];
+    const mapChest=rec.key!=null;
+    if(mapChest){
+     const notice=h('section',{class:'wiki-chest-opening',role:'note'});
+     notice.append(h('strong',{text:wt('Сундук локации','Location chest')}),
+      h('span',{text:wt('Для открытия нужен ключ и мастер сундуков.','Requires a key and the chest master.')}));
+     if(wikiData.items?.[rec.key])notice.append(itemLink(rec.key,dataName('item',rec.key),id));
+     detail.append(notice);
+    }
     const changeChest=next=>saveWikiRelationRows('chest',id,next);
-    detail.append(h('h4',{text:wt('Содержимое шкатулки','Chest contents')}));
+    detail.append(h('h4',{text:wt('Содержимое сундука','Chest contents')}));
     if(!groups.length)detail.append(h('p',{class:'muted',text:wt(
      'Состав наград пока не указан в игровом каталоге.',
      'Reward contents are not yet specified in the game catalog.'
@@ -3659,29 +3685,86 @@ async function undoOwnerEdit(){
   finally{editIsSaving=false;refreshOwnerUI()}
 }
 function showOverrideManager(){
-  if(!adminToken)return;
-  const body=h('div',{class:'owner-manager'});
-  body.append(h('p',{class:'muted',text:'Это сохранённые настройки оформления Cloudflare D1. Сброс отдельной записи возвращает исходный текст или изображение из кода сайта. История отмены действует в этой вкладке.'}));
-  const search=h('input',{type:'search',placeholder:'Найти изменённый элемент…',class:'owner-manager-search'});
-  const list=h('div',{class:'owner-manager-list'});
-  const draw=()=>{
-    list.replaceChildren();
-    const q=search.value.toLowerCase();
-    const entries=Object.entries(override).filter(([key,value])=>key.toLowerCase().includes(q)||String(value).toLowerCase().includes(q)).sort((a,b)=>a[0].localeCompare(b[0]));
-    if(!entries.length)list.append(h('p',{class:'muted',text:'Нет сохранённых записей по этому запросу.'}));
-    for(const[key,value]of entries){
-      const row=h('div',{class:'owner-manager-row'});
-      row.append(h('div',{},[h('strong',{text:key}),h('p',{text:String(value).slice(0,150)})]),
-        h('button',{type:'button',text:'Вернуть оригинал',onclick:async()=>{
-          if(!confirm('Вернуть оригинальное значение для '+key+'?'))return;
-          const previous=activeOverride(key);
-          try{await apiRequest('/api/admin/reset',{key});ownerEdits.push({key,before:previous,after:null});delete override[key];draw();render();updateAdminHint();}
-          catch(e){alert('Сброс не выполнен: '+e.message)}
-        }}));
-      list.append(row);
-    }
-  };
-  search.addEventListener('input',draw);body.append(search,list);draw();modal('Правки оформления',body);
+ if(!adminToken)return;
+ const body=h('div',{class:'owner-manager'});
+ body.append(h('p',{class:'muted',text:
+  'Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.'}));
+ const search=ownerPlainTextField({placeholder:'Найти предмет, NPC или изменённое поле…',
+  class:'owner-manager-search wiki-owner-search','aria-label':'Поиск среди ручных изменений'});
+ const count=h('p',{class:'owner-manager-summary',role:'status'});
+ const list=h('div',{class:'owner-manager-list'});
+ const draw=()=>{
+  list.replaceChildren();
+  const q=String(search.value||'').trim().toLocaleLowerCase('ru');
+  const entries=Object.entries(override).map(([key,value])=>
+   window.PandoraOwnerChangeReview.inspect(key,value,{
+    base:wikiBaseData,items:wikiBaseData?.items||catalogSource?.items,
+    classes:catalog?.classes}))
+   .filter(record=>!q||[record.key,record.title,...record.changes.flatMap(x=>
+    [x.field,x.before,x.after])].join(' ').toLocaleLowerCase('ru').includes(q))
+   .sort((a,b)=>a.section.localeCompare(b.section,'ru')||a.title.localeCompare(b.title,'ru'));
+  count.textContent='Найдено '+entries.length+' из '+Object.keys(override).length+' ручных изменений';
+  if(!entries.length)list.append(h('p',{class:'muted',
+   text:'Не найдено правок по выбранному запросу.'}));
+  for(const record of entries){
+   const row=h('section',{class:'owner-manager-row owner-review-row'});
+   const head=h('div',{class:'owner-review-heading'},[
+    h('strong',{text:record.title}),
+    h('small',{text:'Изменено полей: '+record.changes.length})
+   ]);
+   const edits=h('div',{class:'owner-review-changes'});
+   for(const entry of record.changes){
+    const change=h('div',{class:'owner-review-change'});
+    change.append(h('strong',{class:'owner-review-field',text:entry.field}),
+     h('div',{class:'owner-review-comparison'},[
+      h('div',{class:'owner-review-before'},[
+       h('small',{text:'Было'}),h('p',{text:entry.before})]),
+      h('div',{class:'owner-review-after'},[
+       h('small',{text:'Стало'}),h('p',{text:entry.after})])
+     ]));
+    edits.append(change);
+   }
+   const actions=h('div',{class:'owner-review-actions'});
+   if(record.target&&record.target.id&&wikiDataOrCatalogHasRecord(record.target)){
+    actions.append(h('button',{type:'button',text:'Открыть в энциклопедии',
+     onclick:()=>{
+      $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
+      openWiki(record.target.type,record.target.id);
+      showWorkbench();
+     }}));
+   }
+   actions.append(h('button',{type:'button',class:'owner-review-reset',
+    text:'Вернуть оригинал',onclick:async()=>{
+     if(!confirm('Вернуть исходные данные для «'+record.title+'»?'))return;
+     const previous=activeOverride(record.key);
+     try{
+      await apiRequest('/api/admin/reset',{key:record.key});
+      ownerEdits.push({key:record.key,before:previous,after:null});
+      delete override[record.key];draw();void refreshOwnerCatalog();refreshOwnerUI();
+     }catch(error){showStudioToast('Не удалось отменить правку: '+error.message,'warning')}
+    }}));
+   row.append(head,edits,actions);list.append(row);
+  }
+ };
+ function wikiDataOrCatalogHasRecord(target){
+  if(target.type==='item'||target.type==='chest')
+   return Boolean(wikiBaseData?.items?.[target.id]||catalogSource?.items?.[target.id]);
+  if(target.type==='monster')return Boolean(wikiBaseData?.monsters?.[target.id]);
+  if(target.type==='skill')return Boolean(wikiBaseData?.skills?.[target.id]);
+  if(target.type==='npc')return Boolean(wikiBaseData?.trades?.npcs?.[target.id]);
+  if(target.type==='soul')return Boolean(wikiBaseData?.souls?.[target.id]);
+  if(target.type==='map')return Boolean(wikiBaseData?.maps?.[target.id]||
+   wikiBaseData?.trades?.mapNames?.[target.id]);
+  if(target.type==='instance')return (wikiBaseData?.instances||[]).some(x=>
+   String(x.id)===String(target.id));
+  return false;
+ }
+ search.addEventListener('input',draw);
+ body.append(search,count,list);
+ draw();
+ modal('Все ручные правки',body);
+ if(!wikiBaseData)void loadWiki().then(()=>{if(body.isConnected)draw()})
+  .catch(()=>{if(body.isConnected)showStudioToast('Исходный каталог временно недоступен','warning')});
 }
 
 function allowedArtwork(value){
@@ -3698,8 +3781,11 @@ function editor(el){
   const bar=h('div',{class:'inline-owner-head'});
   bar.append(h('strong',{text:visual?'Сменить изображение':'Изменить текст'}),
     h('button',{type:'button',text:'✕','aria-label':'Закрыть редактор',onclick:closeInlineEditor}));
-  const input=visual?h('input',{type:'text','aria-label':'Путь к изображению',value:original,placeholder:'assets/image.webp'}):slotEdit?h('input',{type:'number',min:'0',max:'32',step:'1',value:original,'aria-label':'Число гнёзд'}):
-    h('textarea',{rows:key.startsWith('skilldesc.')?5:3,'aria-label':'Редактируемый текст'});
+  const input=visual?ownerPlainTextField({class:'owner-plain-path',
+   'aria-label':'Путь к изображению',value:original,placeholder:'assets/image.webp'}):
+   slotEdit?h('input',{type:'number',min:'0',max:'32',step:'1',value:original,'aria-label':'Число гнёзд'}):
+    ownerPlainTextField({multiline:true,rows:key.startsWith('skilldesc.')?5:3,
+   class:'owner-plain-multiline','aria-label':'Редактируемый текст'});
   if(!visual)input.value=original;
   const hint=h('p',{class:'inline-owner-key',text:key});
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
@@ -3756,6 +3842,28 @@ function editor(el){
   input.focus();
 }
 
+// Password managers can ignore autocomplete=off on ordinary inputs.
+ // Plain-text editor fields intentionally do not resemble username/password
+ // controls; use a text node, not a form-associated input.
+ function ownerPlainTextField(attrs={}){
+  const {multiline=false,rows,value='',...rest}=attrs;
+  const el=h(multiline?'div':'span',{
+   ...rest,role:'textbox',contenteditable:'plaintext-only',
+   'aria-multiline':multiline?'true':'false',
+   'data-owner-text-field':'true',spellcheck:'false',
+   autocapitalize:'off',tabindex:'0'});
+  if(rest.placeholder)el.dataset.placeholder=String(rest.placeholder);
+  if(multiline&&rows)el.style.minHeight=Math.max(72,Number(rows)*24)+'px';
+  Object.defineProperty(el,'value',{
+   configurable:false,get(){return el.textContent||''},
+   set(v){el.textContent=String(v??'')}
+  });
+  el.value=value;
+  if(!multiline)el.addEventListener('keydown',e=>{
+   if(e.key==='Enter'){e.preventDefault();el.blur()}
+  });
+  return el;
+ }
 function guardOwnerInput(input){
  input.setAttribute('autocomplete','off');
  input.setAttribute('autocorrect','off');
@@ -3777,17 +3885,19 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  const before=String(initial??''),visibleBefore=node.textContent;
  let finished=false,saving=false;
  const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
-  type==='textarea'?h('textarea',{rows:6,class:'wiki-inline-input','aria-label':'Изменить описание'}):
-  h('input',{type:type==='number'?'number':'text',class:'wiki-inline-input',
-    'aria-label':'Изменить значение',autocomplete:'off',
-    ...(type==='number'?{min:String(min),max:String(max),step:integer?'1':'any'}:{})});
+  type==='textarea'||type==='text'?ownerPlainTextField({
+   multiline:type==='textarea',rows:6,class:'wiki-inline-input wiki-owner-plaintext',
+   'aria-label':type==='textarea'?'Изменить описание':'Изменить значение'}):
+  h('input',{type:'number',class:'wiki-inline-input',
+   'aria-label':'Изменить значение',min:String(min),max:String(max),
+   step:integer?'1':'any'});
  if(type==='select'){
   for(const option of options){
    const el=h('option',{value:option.value,text:option.label});
    el.selected=option.value===before;control.append(el);
   }
  }else control.value=before;
- if(type!=='select')guardOwnerInput(control);
+ if(type==='number')guardOwnerInput(control);
  const restore=()=>{if(node.isConnected){node.replaceChildren(document.createTextNode(visibleBefore));node.classList.remove('wiki-inline-saving')}};
  const save=async()=>{
   if(finished||saving)return;
@@ -3798,15 +3908,20 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
    control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
   }
   if(type!=='number'&&type!=='select'&&(value.length>2000||(!value&&type==='text'))){
-   control.setCustomValidity('Некорректная длина текста');control.reportValidity();control.focus();return;
+   if(control.setCustomValidity){control.setCustomValidity('Некорректная длина текста');control.reportValidity()}
+   else showStudioToast('Некорректная длина текста','warning');
+   control.focus();return;
   }
   if(String(value)===before){finished=true;restore();return}
   saving=true;control.disabled=true;node.classList.add('wiki-inline-saving');
   try{await onCommit(value);finished=true;restore()}
   catch(error){saving=false;control.disabled=false;node.classList.remove('wiki-inline-saving');
-   control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity();control.focus()}
+   if(control.setCustomValidity){
+    control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity()
+   }else showStudioToast('Не сохранено: '+String(error.message||'Ошибка'),'warning');
+   control.focus()}
  };
- control.oninput=()=>control.setCustomValidity('');
+ control.oninput=()=>{if(control.setCustomValidity)control.setCustomValidity('')};
  control.onblur=()=>{if(type==='select'){if(!saving){finished=true;restore()}}else void save()};
  control.onchange=()=>{if(type==='select')void save()};
  control.onkeydown=e=>{
@@ -3814,7 +3929,8 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   else if(e.key==='Enter'&&(type!=='textarea'||e.ctrlKey)){e.preventDefault();void save()}
  };
  node.replaceChildren(control);control.focus();
- if(type==='number'||type==='text')control.select();
+ if(type==='number')control.select();
+ else if(type==='text')window.getSelection()?.selectAllChildren(control);
 }
 async function saveWikiRecordField(type,id,field,value){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');

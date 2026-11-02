@@ -113,12 +113,17 @@ function apply(data,overrides){
   if(m){
    const rolls=parse(value);
    if(!own(data.items,m[1])||!validChest(rolls)||!rolls.every(g=>g.every(row=>own(data.items,row.i))))continue;
-   clone();if(next.chests===data.chests)next.chests={...data.chests,boxes:[...data.chests.boxes]};
-   const index=next.chests.boxes.findIndex(x=>String(x.i)===m[1]);
-   const chest={...(index>=0?next.chests.boxes[index]:{i:Number(m[1])}),
+   clone();
+   if(next.chests===data.chests)next.chests={...data.chests};
+   const isNpc=(data.chests?.npc||[]).some(x=>String(x.i)===m[1]);
+   const bucket=isNpc?'npc':'boxes';
+   if(next.chests[bucket]===data.chests[bucket])
+    next.chests[bucket]=[...(data.chests?.[bucket]||[])];
+   const index=next.chests[bucket].findIndex(x=>String(x.i)===m[1]);
+   const chest={...(index>=0?next.chests[bucket][index]:{i:Number(m[1])}),
     rolls:rolls.map(g=>g.map(x=>({...x})))};
-   if(index>=0)next.chests.boxes[index]=chest;
-   else next.chests.boxes.push(chest);
+   if(index>=0)next.chests[bucket][index]=chest;
+   else next.chests[bucket].push(chest);
   }
  }
  // Spawn assignments are keyed by monster, so editing from a map or monster page

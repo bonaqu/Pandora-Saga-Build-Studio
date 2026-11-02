@@ -118,12 +118,15 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await page.locator('.wiki-page h3').innerText(),/Шкатулка охотника/);
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 10/);
   assert.equal(await page.locator('.wiki-chest-group').count(),5);
-  // Item catalog separately includes location loot chests whose opening
-  // chances are not part of this source snapshot.
+  // Location chests have real OS probabilities in the NPC chest dataset,
+  // and must display them just like ordinary inventory boxes.
   await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-page h3').innerText(),/Сундук из Мальдии/);
-  assert.match(await page.locator('.wiki-page').innerText(),/Состав наград пока не указан/);
+  await page.locator('.wiki-chest-reward').first().waitFor({state:'visible'});
+  assert.ok(await page.locator('.wiki-chest-reward').count()>3);
+  assert.ok(await page.locator('.wiki-chest-reward .wiki-reward-percent').count()>3);
+  assert.equal(await page.locator('.wiki-chest-opening').count(),1);
   assert.ok(await page.locator('.wiki-chest-location .wiki-link').count()>=1);
   // Monsters and material exchange relationships occupy compact flow grids.
   await page.goto(base+'/#wiki/monster/21103',{waitUntil:'domcontentloaded'});
