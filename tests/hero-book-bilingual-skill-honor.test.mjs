@@ -43,8 +43,7 @@ test('Russian skill requirements are retained by default and damaged sources do 
 });
 
 test('selected game language is forwarded into the inspector without modifying progression',()=>{
- assert.match(app,/catalog:skillMap,jobKey:cls,level:state.level,innate,lang,/);
- assert.match(app,/branchLabels:catalog.meta\?\.branchLabels\|\|\{\}/);
+ assert.doesNotMatch(app,/PandoraSkillResults\.create\(/);
  assert.match(app,/Requires '\+req.amount\+' '\+branchName\+' mastery/);
  assert.doesNotMatch(app,/Нужно 26 очков мастерства рубящего оружия/);
  assert.match(app,/const reason=unavailableReason\(ability\)/);
@@ -52,17 +51,13 @@ test('selected game language is forwarded into the inspector without modifying p
  assert.match(app,/bookEn\?' movement speed'/);
 });
 
-test('skill browser in both languages uses exact localized descriptions and avoids Russian-only helper labels',()=>{
- assert.match(book,/english\?'Find skill by name':'Поиск навыка по названию'/);
- assert.match(book,/english\?'Search skills…':'Найти навык…'/);
- assert.match(book,/english\?'Basic requirements met':'По базовым условиям доступен'/);
- assert.match(book,/english\?'Requirements not met':'Требования не выполнены'/);
- assert.match(book,/english\?'MP ':'ОМ '/);
- assert.match(book,/english\?' · Cast ':' · Применение '/);
- assert.match(book,/english\?' s · Cooldown ':' с · Откат '/);
- assert.match(book,/english\?'No skills match this search.':'Для текущего поиска навыки не найдены.'/);
- assert.match(book,/english\?'Found '\+filtered.length/);
- assert.match(book,/\.toLocaleLowerCase\(locale\)/);
+test('Book has six localized chapters without repeating Path skill search',()=>{
+ const host={};Function('window','document',book)(host,{documentElement:{lang:'en'}});
+ const view=host.PandoraStageAttributes;
+ assert.deepEqual(view.bookPages.map(x=>x[0]),['summary','attack','defense','buffs','effects','recovery']);
+ assert.equal(view.bookText('Эффекты умений'),'Skill effects');
+ assert.equal(view.bookText('Эффекты зелий'),'Potion effects');
+ assert.doesNotMatch(book,/renderSkillInspector|stage-skill-inspector/);
 });
 
 test('honor dropdown and reward text use approved English names without altering stored honor IDs',()=>{

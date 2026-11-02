@@ -71,7 +71,7 @@ test('book controller forwards source catalog to calculator and exposes same ski
  assert.match(app,/combatSkillCatalog\.activeCombatSkills\(/);
  assert.match(app,/combatSkillCatalog\.combatSkillSource\(skillMap,name\)/);
  assert.match(app,/combatSkillCards\[setting\]=ability/);
- assert.match(app,/availability,combatSkillCards,skillModel/);
+ assert.match(app,/availability,combatSkillCards/);
 });
 class Element{
  constructor(tag){this.tag=tag;this.children=[];this.attributes={};this.listeners={};

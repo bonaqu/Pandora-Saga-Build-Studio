@@ -68,15 +68,15 @@ test('wiki item and skill details expose source fields, class names, and progres
  assert.match(app,/\(trade\.mats\|\|\[\]\)\.map/);
 });
 test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-less locations',()=>{
- const app=read('app.js'),css=read('style.css'),book=read('stage-attributes.js');
+ const app=read('app.js'),css=read('style.css'),book=read('stage-item-ui.js');
  assert.match(app,/const wikiGlyphs=/);
  assert.match(app,/class:'wiki-list-glyph'/);
  assert.match(app,/class:cls.includes\('wiki-list-icon'\)/);
  assert.match(app,/PandoraItemPresentation.slotLabel\(slot,lang\)/);
  assert.match(app,/class:'wiki-category-symbol'/);
  assert.match(css,/\.wiki-list-glyph/);
- assert.match(book,/PandoraItemPresentation\?\.description\(rec\.desc\)/);
- assert.match(book,/PandoraItemPresentation\?\.description\(soul\.desc\)/);
+ assert.match(book,/presenter\?\.description\(record\.desc\)/);
+ assert.match(book,/presenter\?\.description\(soul\.desc\)/);
  assert.match(app,/\['item','chest','soul'\]\.includes\(type\)\?window\.PandoraItemPresentation\.description/);
 });
 test('wiki shows localized game class names and consistent source labels',()=>{

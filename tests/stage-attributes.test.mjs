@@ -13,7 +13,7 @@ test('character portrait can toggle source-backed stats without page scroll',()=
  assert.match(app,/window\.PandoraStageAttributes\.render/);
  assert.match(attrs,/\['attack','Атака'\]/);
  assert.match(attrs,/\['defense','Защита'\]/);
- assert.match(attrs,/\['effects','Эффекты'\]/);
+ assert.match(attrs,/\['effects','Эффекты умений'\]/);
  assert.match(app,/function renderStageAttributes\(/);
 });
 test('Hero Book summary groups source-backed results and navigates to relevant chapters',()=>{
@@ -33,12 +33,12 @@ test('partial combat preview does not imply fully verified combat stats',()=>{
  assert.match(attrs,/Подробнее о точности расчёта/);
  assert.match(attrs,/Известные бонусы снаряжения и душ/);
  assert.match(attrs,/серверных условий/);
- assert.match(attrs,/rec\.effects/);
+ assert.doesNotMatch(attrs,/const effects=Array\.isArray\(rec\.effects\)/);
 });
 test('reloading preserves portrait attribute page independently of build',()=>{
  const app=get('app.js');
  assert.match(app,/attributes:stageAttributesPage/);
- assert.match(app,/stageAttributesPage=\['summary','attack','defense','recovery','effects','buffs'\]/);
+ assert.match(app,/stageAttributesPage=\['summary','attack','defense','buffs','effects','recovery'\]/);
  assert.match(app,/window\.addEventListener\('pagehide',saveView\)/);
  assert.match(app,/sessionStorage\.setItem\(VIEW_KEY/);
 });

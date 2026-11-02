@@ -33,11 +33,9 @@ test('mastery requirement and character level are checked separately',()=>{
  assert.match(a.records.find(x=>x.id==='1001').requirement,/Уровень 10/);
  assert.match(a.records.find(x=>x.id==='1002').requirement,/Ветка slash 7\/8/);
 });
-test('the book uses a collapsed search view without relocating the right workbench',()=>{
- const app=read('app.js'),view=read('stage-attributes.js'),html=read('index.html');
- assert.match(html,/skill-results\.js\?v=/);
- assert.match(view,/renderSkillInspector\(body,skillModel\)/);
- assert.match(view,/stage-skill-inspector/);
- assert.match(view,/Поиск навыка по названию/);
- assert.match(app,/PandoraSkillResults\.create/);
+test('Hero Book does not duplicate Hero Path skill explorer',()=>{
+ const app=read('app.js'),book=read('stage-attributes.js');
+ assert.doesNotMatch(book,/renderSkillInspector|stage-skill-inspector/);
+ assert.doesNotMatch(app,/PandoraSkillResults\.create\(/);
+ assert.match(book,/\['effects','Эффекты умений'\]/);
 });
