@@ -14,7 +14,7 @@ test('reviewed GitHub export importer defaults to dry run with explicit write op
  assert.match(source,/if\(write\)/);
  assert.match(source,/importer\.normalize\(submitted\.datasets,legacy\)/);
  assert.match(source,/pandora-studio-reviewed\.v1/);
- const result=spawnSync(process.execPath,[new URL('scripts/apply-reviewed-os-export.mjs',root).pathname],
+ const result=spawnSync(process.execPath,[new URL('scripts/apply-reviewed-pandora-catalog.mjs',root).pathname],
   {encoding:'utf8'});
  assert.notEqual(result.status,0);
  assert.match(result.stderr,/Usage:/);
