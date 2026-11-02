@@ -6,8 +6,8 @@ const id=x=>Number.isSafeInteger(Number(x))&&Number(x)>0&&/^[1-9][0-9]{0,14}$/.t
 const record=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const fields=Object.freeze({
  monster:['name','desc','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
- map:['name','desc','mobs'],
- npc:['name','desc','maps'],
+ map:['name','nameEn','desc','descEn','mobs'],
+ npc:['name','nameEn','desc','descEn','maps','service','serviceEn','grid'],
  instance:['name','blurb','blurbRu','mobs'],
  skill:['name','desc','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
  soul:['name','desc','price','slots']
@@ -21,8 +21,8 @@ function validPatch(type,patch){
  if(!keys.length||keys.some(k=>!fields[type].includes(k)))return false;
  return keys.every(k=>{
   const v=patch[k];
-  if(['name','desc','blurb','blurbRu'].includes(k))
-   return typeof v==='string'&&v.length<=2000&&(k!=='name'||Boolean(v.trim()));
+  if(['name','nameEn','desc','descEn','blurb','blurbRu','service','serviceEn','grid'].includes(k))
+   return typeof v==='string'&&v.length<=2000&&(!['name','nameEn'].includes(k)||Boolean(v.trim()));
   if(k==='resists')return record(v)&&!Object.keys(v).some(key=>
    !resistKeys.includes(key)||!number(v[key])||Math.abs(v[key])>100);
   if(k==='reqs')return Array.isArray(v)&&v.length<=20&&
@@ -73,13 +73,48 @@ function validSpawns(rows){
   if(set.has(key))return false;set.add(key);return true;
  });
 }
+// User-curated city-only NPCs and maps use stable non-server IDs.
+// These patches live in the existing D1 overrides table, not in source game data.
+const virtualMapId=x=>/^astir-(?:union|empire|kingdom)$/.test(String(x));
+const virtualNpcId=x=>/^astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}$/.test(String(x));
+const homeFromId=x=>'astir-'+String(x).split('-')[2];
+function validTownPatch(type,key,patch){
+ if(!(type==='map'?virtualMapId(key):type==='npc'&&virtualNpcId(key))||
+  !record(patch))return false;
+ const keys=Object.keys(patch);
+ const allowed=type==='map'?['name','nameEn','desc','descEn']:
+  ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
+ if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
+ return keys.every(k=>k==='maps'?
+  Array.isArray(patch.maps)&&patch.maps.length===1&&virtualMapId(patch.maps[0]):
+  typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')?2000:240)&&
+   (!['name','nameEn'].includes(k)||Boolean(patch[k].trim())));
+}
 function parse(value){try{return JSON.parse(value)}catch{return null}}
 function apply(data,overrides){
  let next=data;const clone=()=>{if(next===data)next={...data}};
  const mut=(type)=>{clone();if(next[type]===data[type])next[type]={...data[type]};return next[type]};
  for(const [key,value] of Object.entries(overrides||{})){
   if(typeof value!=='string')continue;
-  let m=/^wikiedit\.(monster|map|npc|instance|skill|soul)\.([0-9]{1,15})$/.exec(key);
+  let m=/^wikiedit\.(map\.astir-(?:union|empire|kingdom)|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})$/.exec(key);
+  if(m){
+   const dot=m[1].indexOf('.'),type=m[1].slice(0,dot),idValue=m[1].slice(dot+1),patch=parse(value);
+   if(!validTownPatch(type,idValue,patch))continue;
+   clone();
+   if(type==='map'){
+    if(!next.townMaps)next.townMaps={};
+    next.townMaps[idValue]={...(next.townMaps[idValue]||{}),...patch,virtual:true};
+   }else{
+    if(!next.townNpcs)next.townNpcs={};
+    const original=root.PandoraAstirLocations?.npcRecords?.()[idValue];
+    const existing=next.townNpcs[idValue]||original;
+    if(!existing&&!patch.name)continue;
+    next.townNpcs[idValue]={...(existing||{id:idValue,name:patch.name,maps:[homeFromId(idValue)],
+     source:'owner',virtual:true}),...patch,virtual:true};
+   }
+   continue;
+  }
+  m=/^wikiedit\.(monster|map|npc|instance|skill|soul)\.([0-9]{1,15})$/.exec(key);
   if(m){
    const [,type,idValue]=m,patch=parse(value);
    if(!validPatch(type,patch))continue;
@@ -96,6 +131,11 @@ function apply(data,overrides){
     clone();if(next.trades===data.trades)next.trades={...data.trades,npcs:{...data.trades.npcs}};
     next.trades.npcs[idValue]={...next.trades.npcs[idValue],...patch};
     continue;
+   }
+   if(type==='map'&&!own(next.maps,idValue)&&own(next.trades?.mapNames,idValue)){
+    clone();
+    if(next.trades===data.trades)next.trades={...data.trades,mapNames:{...data.trades.mapNames}};
+    next.trades.mapNames[idValue]={...next.trades.mapNames[idValue],...patch};continue;
    }
    if(!own(next[collection],idValue))continue;
    const rows=mut(collection);
@@ -154,5 +194,5 @@ function apply(data,overrides){
  }
  return next;
 }
-root.PandoraWikiOwnerData=Object.freeze({apply,validPatch,validDrops,validChest,validSpawns,fields,resistKeys});
+root.PandoraWikiOwnerData=Object.freeze({apply,validPatch,validTownPatch,virtualMapId,virtualNpcId,validDrops,validChest,validSpawns,fields,resistKeys});
 })(typeof window==='undefined'?globalThis:window);
