@@ -1912,6 +1912,9 @@ function renderWiki(root){
     recipeSearch.addEventListener('input',filterRecipes);
     detail.append(recipeSearch,counter,recipesBox);filterRecipes();
   }else if(type==='map'||type==='instance'){
+    if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
+     class:'wiki-instance-kind',text:wt('Сценарий задания','Quest scenario')
+    }));
     if(rec.blurb)detail.append(h('p',{class:'wiki-description',text:rec.blurb}));
     const mobs=rec.mobs||[];
     if(mobs.length){
@@ -1928,8 +1931,13 @@ function renderWiki(root){
       (b.mon?.level??999)||dataName('monster',a.id).localeCompare(dataName('monster',b.id),'ru'))){
       const entry=h('div',{class:'wiki-entry wiki-mob-row'+
        (wikiSelection.highlight===String(mob)?' highlighted':'')});
-      entry.append(wikiLink(dataName('monster',mob)+
-       (mon?.level!=null?' · ур. '+mon.level:''),'monster',mob));
+      entry.append(wikiLink(dataName('monster',mob),'monster',mob));
+      const extra=[];
+      if(mon?.level!=null)extra.push(wt('Ур. ','Lv. ')+mon.level);
+      if(Number.isFinite(mon?.life))extra.push(wt('ОЗ ','HP ')+Number(mon.life).toLocaleString(lang==='en'?'en-US':'ru-RU'));
+      const drops=wikiIndex.drops(mob);
+      if(drops.length)extra.push(wt('Добыча: ','Loot: ')+drops.length);
+      if(extra.length)entry.append(h('small',{class:'wiki-map-mob-meta',text:extra.join(' · ')}));
       list.append(entry);rows.push({entry,name:wikiIndex.normalize(dataName('monster',mob))});
      }
      search.addEventListener('input',()=>{
