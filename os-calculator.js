@@ -819,13 +819,6 @@ function attributeBuffBonus(options={}){
   for(const key of keys)out[key]++;
   trace.push({source:'Remaked Honor=1',amount:1,keys:keys.slice()});
  }
- if(options.proelium===true){
-  const potion=Number(options.proeliumPotency??0);
-  if(!Number.isFinite(potion)||potion<0||potion>100)return null;
-  const extra=Math.floor(potion/10);
-  for(const key of ['str','agi','int'])out[key]+=extra;
-  if(extra)trace.push({source:'Remaked Flag 14_9 / InBuff_1',amount:extra,keys:['str','agi','int']});
- }
  return {flat:out,trace,honor:selected};
 }
 

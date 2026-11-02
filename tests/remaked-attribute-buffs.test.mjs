@@ -24,12 +24,10 @@ test('Remaked Honor=1 adds one to all six, including SPR in executed calc.js',()
   assert.equal(withHonor.stats[k],none.stats[k]+1,k);
  assert.equal(withHonor.mpBase,calc.classBase(classes.CLERIC.mp,45,54,'spi'));
 });
-test('Proelium 14_9 uses floor(InBuff_1/10) for STR AGI INT only',()=>{
+test('legacy Proelium does not affect current OS calculations',()=>{
  const x=make({proelium:true,proeliumPotency:79}),base=make();
- for(const k of ['str','agi','int'])assert.equal(x.stats[k],base.stats[k]+7);
- for(const k of ['vit','dex','spi'])assert.equal(x.stats[k],base.stats[k]);
- assert.equal(x.mp,x.mpBase,'Proelium must not invent MP multiplier');
- assert.equal(make({proelium:false,proeliumPotency:79}).stats.str,base.stats.str);
+ for(const k of Object.keys(zero))assert.equal(x.stats[k],base.stats[k],k);
+ assert.equal(x.mp,base.mp);
 });
 test('item attribute buffs combine with guild and honor before HP/MP calculation',()=>{
  const item={effects:[{func:'EP_VITARITY_CONST',a:4},{func:'EP_SPIRITUAL_CONST',a:3}]};
@@ -42,12 +40,13 @@ test('item attribute buffs combine with guild and honor before HP/MP calculation
 test('guild and potion parameters reject out-of-range values',()=>{
  assert.equal(make({guildAll:7}),null);
  assert.equal(make({guildAll:-1}),null);
- assert.equal(make({proelium:true,proeliumPotency:101}),null);
- assert.equal(make({proelium:true,proeliumPotency:-5}),null);
+ assert.ok(make({proelium:true,proeliumPotency:101}));
+ assert.ok(make({proelium:true,proeliumPotency:-5}));
 });
 test('Origin contains optional nested controls without adding visible top-level clutter',()=>{
- for(const id of ['originGuildAll','originHonorTitle','originProelium','originProeliumPotency'])
+ for(const id of ['originGuildAll','originHonorTitle'])
   assert.match(html,new RegExp('id="'+id+'"'));
+ assert.doesNotMatch(html,/id="originProelium"|id="originProeliumPotency"/);
  assert.match(html,/<details class="origin-attribute-buffs">/);
  assert.match(source,/attributeBuffs:effectiveGuildBuffs\.attributes/);
  assert.match(source,/guildPassiveAtLevel\(guildLevel\)/);

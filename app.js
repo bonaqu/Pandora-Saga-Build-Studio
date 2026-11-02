@@ -433,7 +433,6 @@ function renderVitalsEnhancements(){
  const sign=$('originLifeSign');
  if(sign)sign.checked=state.vitalsBuffs?.lifeSign===true;
  for(const [id,key] of [['originGuildAll','guildAll'],['originGuildArouse','guildArouse'],
-  ['originProeliumPotency','proeliumPotency'],
   ['originGuildLifeRecovery','guildLifeRecovery'],['originGuildManaRecovery','guildManaRecovery'],
   ['originGuildHealing','guildHealing']]){
   const control=$(id);
@@ -447,7 +446,7 @@ function renderVitalsEnhancements(){
    }
   }
  }
- for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','potionEffectsEnabled'],
+ for(const [id,key] of [['originUsePotionEffects','potionEffectsEnabled'],
   ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
   ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
   const control=$(id);
@@ -3337,7 +3336,7 @@ for(const [id,key] of [['originGuildAll','guildAll'],['originGuildArouse','guild
  ['originGuildHealing','guildHealing']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.value));
 }
-for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','potionEffectsEnabled'],
+for(const [id,key] of [['originUsePotionEffects','potionEffectsEnabled'],
  ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
  ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));

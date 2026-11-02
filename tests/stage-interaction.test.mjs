@@ -118,3 +118,22 @@ test('Properties has no duplicate Soul shortcut, reset-gem button, or explanator
  assert.ok(!all.includes('Выбирай здесь — применяется сразу'));
  assert.ok(!all.includes('Таблица OS:'));
 });
+
+test('equipped item hover includes base and refinement defense plus socketed Soul effects',()=>{
+ stage.PandoraItemPresentation=host.PandoraItemPresentation;
+ const rec={id:1201,name:'Золотистые астрийские башмаки',kind:'BOOTS',
+  slot:'feet',level:20,AC:11,soulslot:1,desc:'ИНТ +1'};
+ const soul={id:110,name:'Душа защиты',desc:'Сопротивление слабости +3%'};
+ const tip=stage.PandoraStageItemUI.summary(rec,()=>null,'item',
+  {slot:'feet',refinement:2,capacity:1,souls:[soul]});
+ const all=walk(tip).map(e=>String(e.textContent||'')).join(' ');
+ assert.match(all,/11 \+3/);
+ assert.match(all,/Душа защиты/);
+ assert.match(all,/Сопротивление слабости \+3%/);
+ assert.match(all,/1 \/ 1/);
+ const grade4=stage.PandoraStageItemUI.summary({...rec,AC:13},()=>null,'item',
+  {refinement:4,souls:[]});
+ assert.match(walk(grade4).map(e=>e.textContent).join(' '),/13 \+6/);
+ const picker=stage.PandoraStageItemUI.summary(rec,()=>null);
+ assert.doesNotMatch(walk(picker).map(e=>e.textContent).join(' '),/11 \+3/);
+});

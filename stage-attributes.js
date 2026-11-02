@@ -301,6 +301,7 @@ function buffsPage(body,options){
   (typeof value==='number'&&value>0)||
   (typeof value==='string'&&value!==''&&value!=='0');
  const configured=Object.entries(buffs).filter(([key,value])=>{
+  if(key==='proelium')return false;
   if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
@@ -427,10 +428,6 @@ function buffsPage(body,options){
  }
  select(regen,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
  toggle(regen,'Показывать действие зелий','potionEffectsEnabled');
- const other=section('Дополнительно');
- toggle(other,'Проэлиум','proelium');
- select(other,'Мощность Проэлиума','proeliumPotency',
-  Array.from({length:101},(_,i)=>[i,String(i)]));
  if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
   const details=make('details',{class:'stage-legacy-buff-previews'});
   details.append(make('summary',{text:'Мощность поддерживающих навыков'}));

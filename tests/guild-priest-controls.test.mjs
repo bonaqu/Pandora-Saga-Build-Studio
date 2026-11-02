@@ -140,3 +140,13 @@ test('selected buff summary does not count unavailable priest skills or numeric 
   guildLifeRecovery:2,guildManaRecovery:2}, {guildHp:6,guildMp:6}),3,
   'automatic guild level is one configured choice, not four stale manual ranks');
 });
+
+test('new hero preloads an editable priest and legacy snapshots merge missing values',()=>{
+ const app=source('app.js'),book=source('stage-attributes.js');
+ assert.match(app,/priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30/);
+ assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.raw\.attributeBuffs\}/);
+ assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.draft\.attributeBuffs\}/);
+ assert.match(app,/typeof rawAttributes\.priestEnabled==='boolean'/);
+ assert.match(book,/\['priestSpi','СД жреца','Priest SPR'\]/);
+ assert.match(book,/disabled:buffs\.priestEnabled!==true/);
+});
