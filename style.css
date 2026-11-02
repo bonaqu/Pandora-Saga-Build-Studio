@@ -356,7 +356,6 @@ a.wiki-link:hover{text-decoration:none}
 .stage-attribute-identity{display:flex;gap:8px;align-items:center;color:#f0d09e}
 .stage-attribute-identity img{width:36px;height:36px;object-fit:contain}
 .stage-attribute-warning{font-size:10px;color:#e9b792;border-top:1px solid #9e6946;padding:9px 3px}
-.stage-attribute-soul{padding:6px;border-left:2px solid #b18b55;background:#302010}
 
 /* 2026.10.30.33: eight portrait variants, actual class genealogy and uncropped hero art */
 #siteNotice,.gender-controls,#swapGender,.portrait-bottom,.mini-note,.footer-tech{display:none!important}
@@ -1111,11 +1110,6 @@ main{padding-top:10px}
 .stage-buff-overview>span{flex:1;min-width:0;color:#d8bd96;font-size:11px}
 .stage-buff-overview strong{font:700 21px Georgia,serif;color:#f4d7a1}
 .stage-buff-overview small{font-size:9px;color:#b8a385}
-.stage-book-buff-optional{border:1px solid #735639;background:#221810}
-.stage-book-buff-optional>summary{cursor:pointer;padding:9px 11px;font:600 16px 'Cormorant Garamond',Georgia,serif;color:#e9ca97}
-.stage-book-buff-optional>summary:hover{background:#3e2b1c}
-.stage-book-buff-optional .stage-book-buff-group{border:0;border-top:1px solid #735639}
-.stage-book-buff-optional .stage-book-buff-group>strong{display:none}
 .stage-book-field{display:grid;gap:5px;font-size:11px;color:#e2c69d}
 .stage-book-field select{display:block;width:100%;min-width:0;padding:8px;
  background:#1c140e;color:#f3d7aa;border:1px solid #86633f;border-radius:3px}
@@ -1143,17 +1137,12 @@ main{padding-top:10px}
 .stage-coverage-list p{padding:5px 3px;border-bottom:1px solid #5c422a;
  font-size:10px;line-height:1.35;color:#d2b99b}
 
-/* Expandable, searchable OS skill source inspector inside Effects book chapter. */
-.stage-skill-inspector{border:1px solid #89663f;background:#2d2017;padding:9px;display:grid;gap:8px}
-.stage-skill-inspector summary{cursor:pointer;color:#f2cf96;font-weight:650;font-size:12px}
-.stage-skill-inspector input[type=search]{width:100%;min-width:0;padding:9px;
- border:1px solid #947248;color:#f5deba;background:#1b130e}
-.stage-skill-list{display:grid;gap:8px;max-height:340px;overflow-y:auto;scrollbar-width:thin}
-.stage-skill-card{display:grid;gap:5px;border:1px solid #6d5339;padding:8px;background:#20160f}
-.stage-skill-heading{display:grid;gap:4px}
-.stage-skill-heading strong{color:#f4d19d;font-size:12px}
-.stage-skill-heading span,.stage-skill-card small{color:#cfad82;font-size:10px}
-.stage-skill-card p{font-size:10px;color:#e0c6a1;line-height:1.4}
+.stage-skill-effects{display:grid;gap:7px}
+.stage-skill-effect-row{display:flex;align-items:center;gap:8px;padding:6px 8px;
+ background:#2d2016;border:1px solid #654b30;border-radius:3px;color:#e5c69b;font-size:11px}
+.stage-skill-effect-row img{width:26px;height:26px;object-fit:contain;flex:none}
+.stage-skill-effect-row span{min-width:0;flex:1;overflow-wrap:anywhere}
+.stage-skill-effect-row strong{flex:none;font-variant-numeric:tabular-nums;color:#f8d498;font-size:12px}
 
 /* The book is opened only through the hero portrait. Uniform navigation controls. */
 #legacyBuffControls,#legacyBuffControls[hidden]{display:none!important}
@@ -1717,7 +1706,6 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  width:64px;height:64px;margin:0 0 10px 14px;
  border:2px double #86663e;background:#211710;color:#debc81;
  font:32px Georgia,serif}
-.stage-attribute-soul{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 .wiki-record-glyph{float:right;display:grid;place-items:center;
  width:76px;height:76px;margin:0 0 12px 14px;border:2px double #9d794f;
  background:#211710;color:#e2bd7b;font:34px Georgia,serif}

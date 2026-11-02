@@ -55,7 +55,6 @@ const bookEnglish=Object.freeze({
  'Гильдия: скорость ОМ': "Guild: MP recovery",
  'Гильдейское лечение': "Guild healing",
  'Показывать действие зелий': "Show potion effects",
- 'Дополнительно': "Additional",
  'Проэлиум': "Proelium",
  'Мощность Проэлиума': "Proelium potency",
  'Мощность поддерживающих навыков': "Support skill potency",
@@ -322,12 +321,7 @@ function buffsPage(body,options){
  body.append(status);
  const section=(name)=>{
   const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
-  if(name==='Дополнительно'){
-   const advanced=make('details',{class:'stage-book-buff-optional'},[
-    make('summary',{text:name})
-   ]);
-   advanced.append(node);body.append(advanced);
-  }else body.append(node);
+  body.append(node);
   return node;
  };
  const select=(parent,name,key,levels,vital=false)=>{

@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.298.0 — 2026.11.02.298 · Style skill buffs and remove abandoned UI code
+
+- Skill-effect rows now have compact, aligned game-styled icon, name and numeric-effect columns matching the Hero Book's dark/gold visual language.
+- Remove unused old skill-search CSS, abandoned optional Proelium-section structure, and redundant removed Soul-item card styling. Keep the shared main stylesheet under its size budget.
+- Update focused source assertions for the simplified buff section and new skill-effect rows. No new test runner or external dependencies.
+
+
 ## 0.297.0 — 2026.11.02.297 · Skill-effect songs and exact gear armor notation
 
 - Hero Book song effects now appear in the Skill effects chapter rather than the Buffs configuration chapter. The OS class/mastery checks and never-assume-song-activation policy remain unchanged.
