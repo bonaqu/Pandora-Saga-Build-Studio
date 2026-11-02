@@ -46,7 +46,7 @@ test('priest and guild controls persist and combat applies only manually selecte
  assert.match(app,/guildPassiveAtLevel\(guildLevel\)/);
  assert.match(app,/effectiveGuildBuffs\.vitals/);
  assert.match(app,/effectiveGuildBuffs\.attributes/);
- assert.match(engine,/priestEffects:\s*attributeBuffs\?\.priest/);
+ assert.match(engine,/const priestEffects=priestActive/);
  assert.match(engine,/priestBonus:priestSpeed/);
  assert.match(engine,/priestBonus:priestDefense/);
  assert.match(book,/class:'stage-guild-level-effects'/);
