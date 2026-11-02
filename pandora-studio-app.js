@@ -3024,11 +3024,17 @@ function renderWiki(root){
      if(wikiData.items?.[rec.key])required.append(itemLink(rec.key,dataName('item',rec.key),id));
      else required.append(h('span',{text:wt('Не указан','Not listed')}));
      const master=h('div',{class:'wiki-chest-opening-field'},[
-      h('small',{text:wt('Мастер сундуков','Chest master')}),
-      h('strong',{text:wt('Культье','Cultier')}),
-      h('span',{text:wt('Астир · территория Королевства','Astir · Kingdom territory')}),
-      wikiLink(wt('Территория Королевства · Астир','Kingdom District · Astir'),'map','astir-kingdom')
+      h('small',{text:wt('Мастера сундуков','Chest masters')})
      ]);
+     for(const [name,npcId,districtId] of [
+      [wt('Кларис','Claris'),'astir-npc-empire-claris','astir-empire'],
+      [wt('Культье','Cultier'),'astir-npc-kingdom-cultier','astir-kingdom']
+     ]){
+      const line=h('div',{class:'wiki-chest-master-row'});
+      line.append(wikiLink(name,'npc',npcId),
+       wikiLink(dataName('map',districtId),'map',districtId));
+      master.append(line);
+     }
      info.append(required,master);notice.append(info);
      detail.append(notice);
     }
