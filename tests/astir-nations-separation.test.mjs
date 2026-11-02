@@ -52,9 +52,9 @@ test('nation NPCs are not silently moved to same-named districts',()=>{
 
 test('only screenshot-verified Claris resides in Astir Kingdom district',()=>{
  const expectedId='astir-npc-kingdom-claris';
- assert.deepEqual(wiki.residents('astir-union').map(([id])=>id),[]);
- assert.deepEqual(wiki.residents('astir-empire').map(([id])=>id),[]);
- assert.deepEqual(wiki.residents('astir-kingdom').map(([id])=>id),[expectedId]);
+ assert.deepEqual(Array.from(wiki.residents('astir-union'),([id])=>id),[]);
+ assert.deepEqual(Array.from(wiki.residents('astir-empire'),([id])=>id),[]);
+ assert.deepEqual(Array.from(wiki.residents('astir-kingdom'),([id])=>id),[expectedId]);
  const npc=wiki.records('npc')[expectedId];
  assert.equal(npc.name,'Кларис');
  assert.equal(npc.service,'Открытие сундуков');
