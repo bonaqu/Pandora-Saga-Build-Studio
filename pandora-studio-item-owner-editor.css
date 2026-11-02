@@ -1,4 +1,5 @@
 /* Focused owner controls share Pandora Studio's existing brown/gold theme. */
+.modal:has(.owner-item-editor){width:min(94vw,870px);max-height:92vh;overflow:auto}
 .owner-item-editor{max-height:min(76vh,720px);overflow:auto;min-width:min(100%,650px);padding:0 2px 8px;color:var(--cream)}
 .owner-item-editor .muted{line-height:1.5}
 .owner-item-editor-sections{display:grid;gap:13px}
