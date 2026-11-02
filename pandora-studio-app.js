@@ -1418,7 +1418,8 @@ async function loadWiki(){
     const rows=JSON.parse(value);
     if(Array.isArray(rows))ownerAcquisitions[match[1]]=rows.filter(row=>
      row&&['npc','monster'].includes(row.type)&&
-     typeof row.id==='string'&&/^[1-9][0-9]{0,14}$/.test(row.id)).slice(0,24);
+      typeof row.id==='string'&&/^[1-9][0-9]{0,14}$/.test(row.id)&&
+      (row.p==null||row.type==='monster'&&Number.isFinite(row.p)&&row.p>=0&&row.p<=100)).slice(0,24);
    }catch{/* Damaged overrides must not break the original encyclopedia. */}
   }
   const source={...loaded.data,skills,ownerAcquisitions,
@@ -3927,7 +3928,8 @@ async function saveWikiAcquisitions(itemId,rows){
   !(row.type==='npc'?wikiData.trades?.npcs?.[row.id]:wikiData.monsters?.[row.id])))
   throw Error('Некорректная ссылка на NPC или монстра');
  const normalized=[...new Map(rows.map(row=>[row.type+':'+row.id,
-  {type:row.type,id:String(row.id)}])).values()];
+   {type:row.type,id:String(row.id),
+    ...(row.type==='monster'&&Number.isFinite(row.p)?{p:row.p}:{})}])).values()];
  const key='acquireedit.'+itemId,previous=activeOverride(key);
  if(JSON.stringify(normalized)===JSON.stringify(wikiData.ownerAcquisitions?.[itemId]||[]))return;
  editIsSaving=true;
