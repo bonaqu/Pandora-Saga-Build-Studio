@@ -3,6 +3,8 @@
 ## 0.302.0 — 2026.11.02.302 · Pandora Studio modules named and dependency links audited
 
 - Pandora Studio modules named and dependency links audited
+- 27 root/Worker runtime source files renamed and all 588 tracked references rewritten across 170 files; complete Node/Chromium regression verified on feature branch.
+- Added persistent runtime dependency audit, architecture/operator documentation and explicit metadata approval during selective OS synchronization.
 - Browser acceptance and deployed Pages state must be verified separately.
 
 

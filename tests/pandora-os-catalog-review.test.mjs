@@ -50,7 +50,7 @@ test('per-record approval keeps rejected changes and recomputes D1 counts', () =
 test('accepting every change preserves the whole source and its official metadata', () => {
   const before=snapshot(),after=snapshot();
   after.items['1'].name='Source A';after.meta.sha={'item/item.csv':'new-source'};
-  const accepted=new Set(review.changes('items',before.items,after.items).map(c=>c.id));
+  const accepted=new Set([...review.changes('items',before.items,after.items).map(c=>c.id),review.id('meta','@dataset')]);
   const merged=review.compose(before,after,accepted,files);
   assert.deepEqual(plain(merged.items),plain(after.items));
   assert.deepEqual(plain(merged.meta.sha),plain(after.meta.sha));
@@ -110,4 +110,32 @@ test('real checked-in OS catalog remains importable after a selective item/trans
   assert.equal(selected['strings.en'].items['1'].n,catalog['strings.en'].items['1'].n);
   assert.equal(selected.meta.sha,undefined);
   assert.equal(selected.meta.curated,true);
+});
+
+test('changing upstream level cap or metadata is reviewable without silent application',()=>{
+ const previous=snapshot(),source=snapshot();
+ previous.meta.levelCap=45;source.meta.levelCap=50;
+ source.meta.sha={'item/item.csv':'future-patch'};
+ const differences=review.changes('meta',previous.meta,source.meta);
+ assert.equal(differences.length,1);
+ assert.equal(differences[0].key,'@dataset');
+ const rejected=review.compose(previous,source,new Set(),files);
+ assert.equal(rejected.meta.levelCap,45);
+ assert.equal(rejected.meta.sha,undefined,'server checksums must not be retained on a mixed snapshot');
+ assert.equal(rejected.meta.curated,true);
+ const chosen=review.compose(previous,source,new Set([review.id('meta','@dataset')]),files);
+ assert.equal(chosen.meta.levelCap,50);
+ assert.deepEqual(plain(chosen.meta.sha),plain(source.meta.sha));
+ assert.equal(chosen.meta.curated,undefined);
+});
+
+test('accepting item changes does not silently accept a separate server metadata update',()=>{
+ const previous=snapshot(),source=snapshot();
+ previous.meta.levelCap=45;source.meta.levelCap=50;
+ source.items['1'].name='Updated sword';
+ const allowed=new Set([review.id('items','1')]);
+ const merged=review.compose(previous,source,allowed,files);
+ assert.equal(merged.meta.levelCap,45);
+ assert.equal(merged.items['1'].name,'Updated sword');
+ assert.equal(merged.meta.sha,undefined);
 });

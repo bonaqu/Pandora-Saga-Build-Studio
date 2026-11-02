@@ -79,7 +79,6 @@
       results.replaceChildren();
       const query = search.value.trim().toLocaleLowerCase();
       for (const name of importer.files) {
-        if (name === 'meta') continue;
         const group = changes.filter(row=>row.dataset===name);
         if (!group.length) continue;
         const filtered = query ? group.filter(row=>

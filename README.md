@@ -18,7 +18,7 @@ npm run test:browser
 
 Independent, visual, vintage-inspired Pandora Saga build planner. Static site intended for **GitHub Pages**, secure optional CMS backend on **Cloudflare Workers + D1**.
 
-[**Полный журнал релизов**](CHANGELOG.md) · [Полный аудит формул Remaked](docs/REMAKED_FORMULA_INVENTORY.md) · [Игровые проверки Pandora Saga OS](docs/OS_LIVE_PARITY_CHECKS.md) · [**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
+[**Архитектура и связи модулей**](docs/STUDIO_ARCHITECTURE.md) · [**Полный журнал релизов**](CHANGELOG.md) · [Полный аудит формул Remaked](docs/REMAKED_FORMULA_INVENTORY.md) · [Игровые проверки Pandora Saga OS](docs/OS_LIVE_PARITY_CHECKS.md) · [**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
 
 ## Status
 
