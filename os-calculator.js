@@ -658,7 +658,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  weapon=null,weaponGrade=0,weaponPlus=null,records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
- branchMasteries={}}={}){
+ priestEffects={},branchMasteries={}}={}){
  if(!Number.isInteger(level)||level<1||level>55||
   !['dex','agi','str'].every(key=>Number.isFinite(stats[key])&&stats[key]>=0)||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -717,8 +717,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const directDef=defense.armor+defense.refinement+defense.equipment;
  const activeDef=(actives.raging?Math.ceil(directDef*effect('raging','EP_ARMORCLASS_SCALE')/100):0)+
   (actives.defender?Math.floor(directDef*effect('defender','EP_ARMORCLASS_SCALE')/100):0);
+ const priestDefense=Math.max(0,Number(priestEffects?.lapisMedio)||0);
  const effectiveDefense={...defense,activeBonus:activeDef,
-  known:defense.known+activeDef};
+  priestBonus:priestDefense,known:defense.known+activeDef+priestDefense};
  const atkPct=attack?equipped.attackPercent.map(e=>({
   ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
  const atkExtras=equipped.attackFlat+atkPct.reduce((sum,e)=>sum+e.bonus,0);
@@ -732,9 +733,11 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // Legacy Calc('ATKSPD'): 100 + 2*floor(AGI/10) +
  // 3*floor(AGI/20) + floor(AGI/10); typed as a speed index, not hits/sec.
  const speedBase=100+3*Math.floor(stats.agi/10)+3*Math.floor(stats.agi/20);
+ const priestSpeed=Math.max(0,Number(priestEffects?.gratia)||0);
  const attackSpeed={base:speedBase,equipment:equipped.attackSpeedFlat,
   lunge:actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0,
-  known:speedBase+equipped.attackSpeedFlat+
+  priestBonus:priestSpeed,
+  known:speedBase+equipped.attackSpeedFlat+priestSpeed+
    (actives.lunge?effect('lunge','EP_ATTACKINTERVAL_SCALE'):0),verified:false};
  // Legacy Calc('CastSPD'): 100 + 5*floor(DEX/10), without temporary casts.
  const castingBase=100+5*Math.floor(stats.dex/10);
@@ -1842,7 +1845,12 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog,
   benevolenceCap:classData.branchCaps?.benevolence??null
  });
+ const priestEffects=priestActive?{
+  gratia:attributeBuffs?.priestGratia===true?legacyBuffs.gratia.value:0,
+  lapisMedio:attributeBuffs?.priestLapisMedio===true?legacyBuffs.lapisMedio.value:0
+ }:{};
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records:combinedRecords,itemForth,
+  priestEffects,
   guildArouse:attributeBuffs?.guildArouse??0,
   combatBuffs:attributeBuffs,
   honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,...combatContext});
