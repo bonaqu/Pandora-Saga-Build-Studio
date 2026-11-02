@@ -73,6 +73,6 @@ test('English equipment labels retain original source text solely for numeric fa
  assert.match(app,/keepSourceDesc\?\{sourceDesc:item\.desc\}:\{\}/);
  assert.match(app,/equipment:translate\(itemRecords,en\?\.items,true\)/);
  assert.match(app,/PandoraStudioItemOwnerEditor\.applyItems\(catalogSource\.items,override\)/);
- assert.match(app,/souls:translate\(catalogSource\.souls,en\?\.souls\)/);
+ assert.match(app,/souls:translate\(ownerGameData\.souls,en\?\.souls\)/);
  assert.match(calc,/const description=record\?\.sourceDesc\?\?record\?\.desc/);
 });
