@@ -1,11 +1,21 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.308.0 (`2026.11.02.308`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.309.0 (`2026.11.02.309`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.309.0 — discoverable encyclopedia editing
+
+- [x] Add explicit editor controls beside racial passive skill names, encyclopedia item/skill headings and item/skill descriptions, without relying on undiscoverable double clicks.
+- [x] Add name and description fields to the same structured item editor as stats, effects and available classes; save them in the owner override without mutating imported source JSON.
+- [x] Keep previously edited inline title/description backward compatible, with a deterministic precedence rule for structured edits.
+- [x] Protect encyclopedia and NPC exchange search inputs from automatic username autofill by locking them until focus.
+- [x] Add server-side input validation for bounded owner titles/descriptions.
+- [ ] Build full visual NPC trading and monster/drop acquisition edits, including cross-referenced Wiki source updates and source-safe persistence.
+- [ ] Continue examining all encyclopedia chapter types for owner edit coverage.
 
 ## Source update 0.308.0 — graphical owner sync review
 
