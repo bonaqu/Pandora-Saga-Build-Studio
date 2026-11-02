@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 const root=new URL('../',import.meta.url);
 const source=readFileSync(new URL('scripts/apply-reviewed-os-export.mjs',root),'utf8');
