@@ -34,7 +34,7 @@ test('admin workbench is optional for ordinary players and has explicit selectio
  assert.match(workbench,/Ни одно изменение не принято автоматически/);
  assert.match(workbench,/Принять все/);
  assert.match(workbench,/Отклонить все/);
- assert.match(workbench,/Принять раздел/);
+ assert.match(workbench,/Принять весь раздел/);
  assert.match(workbench,/Скачать выбранное для GitHub/);
  assert.match(workbench,/new Set\(\)/);
  assert.match(html,/pandora-os-catalog-review\.js\?v=/);
@@ -88,4 +88,15 @@ test('local export bridge checks for uncommitted catalog modifications before ap
  assert.match(source,/flag:'wx'/);
  assert.match(source,/installed\.reverse\(\)/);
  assert.match(source,/pandora-os-reviewed\.v1/,'older downloads remain accepted');
+});
+
+test('owner sync dashboard supports kind and approval filters without auto-acceptance',()=>{
+ assert.match(workbench,/\['added','Новые'\]/);
+ assert.match(workbench,/\['changed','Изменённые'\]/);
+ assert.match(workbench,/\['removed','Удалённые'\]/);
+ assert.match(workbench,/\['accepted','Принятые'\]/);
+ assert.match(workbench,/\['declined','Отклонённые'\]/);
+ assert.match(workbench,/\.filter\(matchesFilter\)/);
+ assert.match(workbench,/Принять найденное/);
+ assert.match(workbench,/Ни одно изменение не принято автоматически/);
 });
