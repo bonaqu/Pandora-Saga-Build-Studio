@@ -3028,14 +3028,11 @@ function renderWiki(root){
      const master=h('div',{class:'wiki-chest-opening-field'},[
       h('small',{text:wt('Мастер сундуков','Chest master')})
      ]);
-     for(const [name,npcId,districtId] of [
-      [wt('Кларис','Claris'),'astir-npc-kingdom-claris','astir-kingdom']
-     ]){
-      const line=h('div',{class:'wiki-chest-master-row'});
-      line.append(wikiLink(name,'npc',npcId),
-       wikiLink(dataName('map',districtId),'map',districtId));
-      master.append(line);
-     }
+     const masterNpcId='astir-npc-kingdom-claris';
+     const line=h('div',{class:'wiki-chest-master-row'});
+     line.append(wikiLink(dataName('npc',masterNpcId),'npc',masterNpcId),
+      wikiLink(dataName('map','astir-kingdom'),'map','astir-kingdom'));
+     master.append(line);
      info.append(required,master);notice.append(info);
      detail.append(notice);
     }
