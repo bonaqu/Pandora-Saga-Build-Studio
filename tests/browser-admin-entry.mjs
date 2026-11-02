@@ -176,16 +176,15 @@ export async function runAdminEntrySmoke(browser,base){
   const firstItem=page.locator('[data-wiki-record="1"]');
   await firstItem.waitFor({state:'visible',timeout:20000});
   await firstItem.click();
-  await page.getByRole('button',{name:/Изменить характеристики, классы и эффекты/}).click();
-  const itemDialog=page.getByRole('dialog',{name:/Редактор предмета/});
-  await itemDialog.waitFor({state:'visible'});
-  await itemDialog.getByRole('spinbutton',{name:'Атака',exact:true}).fill('99');
-  await itemDialog.getByRole('button',{name:'Снять все'}).click();
-  await itemDialog.locator('.owner-item-classes input[type=checkbox]').first().check();
-  await itemDialog.getByRole('button',{name:'Сохранить изменения'}).click();
+  const attackLabel=page.locator('.item-fields dt').filter({hasText:'Атака'}).first();
+  const attack=attackLabel.locator('xpath=following-sibling::dd[1]');
+  await attack.dblclick();
+  await attack.getByRole('spinbutton',{name:'Изменить значение'}).fill('99');
+  await attackLabel.click(); // clicking outside autosaves without a separate confirmation
   await page.waitForFunction(()=>Array.from(document.querySelectorAll('.item-fields dd'))
    .some(node=>node.textContent==='99'),null,{timeout:20000});
   assert.deepEqual(calls.filter(x=>x==='owner-item-edit'),['owner-item-edit']);
+  assert.ok(await page.locator('.item-fields dd.wiki-edit-value').count()>0);
   assert.deepEqual(errors,[]);
   const other=await context.newPage();
   await other.goto(base+'/',{waitUntil:'domcontentloaded'});
