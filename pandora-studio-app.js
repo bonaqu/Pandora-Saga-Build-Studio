@@ -1614,6 +1614,39 @@ function renderWiki(root){
  const matchesWords=(text,query)=>wikiIndex.normalize(query).split(' ')
   .filter(Boolean).every(term=>text.includes(term));
 
+ const wikiItemChoice=(container,selectItem)=>{
+  const previous=container.querySelector('.wiki-owner-item-choice');
+  if(previous){previous.remove();return}
+  const form=h('div',{class:'wiki-owner-source-picker wiki-owner-item-choice'});
+  const search=h('input',{type:'search',class:'wiki-inline-input',
+   placeholder:'Название предмета…',autocomplete:'off','aria-label':'Найти предмет'});
+  const target=h('select',{class:'wiki-inline-select','aria-label':'Выбери предмет'});
+  const feedback=h('small',{class:'inline-owner-error',role:'status'});
+  form.append(search,target,feedback);container.append(form);
+  const items=Object.entries(wikiData.items||{});
+  const fill=()=>{
+   const q=wikiIndex.normalize(search.value);
+   const matches=items.filter(([id])=>!q||wikiIndex.normalize(dataName('item',id)).includes(q)).slice(0,80);
+   target.replaceChildren(h('option',{value:'',
+    text:matches.length?'Выбери предмет':'Предметы не найдены'}));
+   for(const [id]of matches)target.append(h('option',{value:id,text:dataName('item',id)}));
+   target.disabled=!matches.length;
+  };
+  search.oninput=fill;
+  target.onchange=async()=>{
+   if(!target.value)return;
+   target.disabled=true;
+   try{await selectItem(Number(target.value))}
+   catch(error){feedback.textContent=error.message;target.disabled=false}
+  };
+  const outside=e=>{
+   if(!form.isConnected||!form.contains(e.target)){
+    document.removeEventListener('pointerdown',outside,true);form.remove();
+   }
+  };
+  document.addEventListener('pointerdown',outside,true);
+  fill();search.focus();
+ };
  const sourceEntry=(row,itemId)=>{
   const line=h('div',{class:'wiki-source-token'+
    (wikiSelection.highlight===String(row.id)?' highlighted':'')});
