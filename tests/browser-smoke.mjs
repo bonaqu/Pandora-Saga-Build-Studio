@@ -103,6 +103,20 @@ async function main(){
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild & honor'));
+ await page.locator('#stageBookPanel [data-book-setting="guildLevel"]').selectOption('10');
+ assert.match(await page.locator('#stageBookPanel .stage-guild-level-effects').innerText(),/12%/);
+ await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').check();
+ for(const [key,value] of [['priestSpi','134'],['priestBlessing','90'],['priestHymn','30']]){
+  const control=page.locator('#stageBookPanel [data-book-setting="'+key+'"]');
+  await control.fill(value);
+  await control.press('Tab');
+ }
+ await page.locator('#stageBookPanel [data-book-setting="priestGratia"]').check();
+ await page.locator('#stageBookPanel [data-book-setting="priestLapisMedio"]').check();
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').inputValue(),'134');
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').inputValue(),'90');
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestHymn"]').inputValue(),'30');
+ assert.ok(await page.locator('#stageBookPanel .stage-legacy-buff-previews').count()>=1);
  await page.locator('#stageAttributes .stage-book-close').click();
  await page.locator('#locale [data-locale="ru"]').click();
 
