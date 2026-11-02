@@ -2241,6 +2241,45 @@ function renderWiki(root){
       }
       entry.append(costs);
      }
+     if(editing){
+      const owner=h('div',{class:'wiki-trade-sellers'});
+      owner.append(h('small',{text:'NPC обмена'}));
+      for(const npcId of trade.npc||[]){
+       const chip=h('span',{class:'wiki-owner-mat'},[
+        wikiLink(dataName('npc',npcId),'npc',npcId,trade.i)]);
+       if(trade.npc.length>1)chip.append(h('button',{type:'button',
+        class:'wiki-owner-remove',text:'×',
+        'aria-label':'Убрать NPC '+dataName('npc',npcId),
+        onclick:()=>void amend({npc:trade.npc.filter(n=>n!==npcId)})
+         .catch(e=>showStudioToast(e.message,'warning'))}));
+       owner.append(chip);
+      }
+      const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+ NPC'});
+      plus.onclick=()=>{
+       if(owner.querySelector('select'))return;
+       const pick=h('select',{class:'wiki-inline-select','aria-label':'Добавить NPC'});
+       pick.append(h('option',{value:'',text:'Выбери NPC'}));
+       for(const [key] of Object.entries(wikiData.trades.npcs||{}))
+        if(!(trade.npc||[]).map(String).includes(key))
+         pick.append(h('option',{value:key,text:dataName('npc',key)}));
+       plus.replaceWith(pick);
+       pick.onchange=()=>{if(pick.value)void amend({npc:[...trade.npc,Number(pick.value)]})
+        .catch(e=>showStudioToast(e.message,'warning'))};
+       pick.onblur=()=>{if(pick.isConnected)pick.replaceWith(plus)};
+       pick.focus();
+      };
+      if(trade.npc.length<24)owner.append(plus);
+      const remove=h('button',{type:'button',class:'wiki-trade-delete',
+       text:'Удалить обмен','aria-label':'Удалить обмен NPC'});
+      remove.onclick=()=>{
+       if(remove.dataset.confirm!=='1'){
+        remove.dataset.confirm='1';remove.textContent='Повторить, чтобы удалить';return;
+       }
+       void saveWikiTradeRecipe(trade,{deleted:true})
+        .catch(e=>showStudioToast(e.message,'warning'));
+      };
+      owner.append(remove);entry.append(owner);
+     }
      const searchText=wikiIndex.normalize([dataName('item',trade.i),
       ...(trade.mats||[]).map(m=>dataName('item',m.i))].join(' '));
      recipesBox.append(entry);cards.push({entry,searchText});
@@ -2256,6 +2295,22 @@ function renderWiki(root){
     guardEncyclopediaSearch(recipeSearch);
     recipeSearch.addEventListener('input',filterRecipes);
     detail.append(recipeSearch,counter,recipesBox);filterRecipes();
+    if(adminEditing&&adminToken){
+     const newTrade=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+      text:'+ Добавить обмен',title:'Создать новый обмен у этого NPC'});
+     newTrade.onclick=()=>wikiItemChoice(detail,i=>{
+      let next=null;
+      for(let attempt=0;attempt<30;attempt++){
+       const number=900000000+crypto.getRandomValues(new Uint32Array(1))[0];
+       if(!(wikiData.trades.trades||[]).some(x=>x.id===number)&&
+        !Object.hasOwn(override,'tradeedit.'+number)){next=number;break}
+      }
+      if(next===null)throw Error('Не удалось создать уникальный номер обмена');
+      return saveWikiTradeRecipe({id:next,i,npc:[Number(id)],mats:[],
+       gold:0,honor:0,exp:0});
+     });
+     detail.append(newTrade);
+    }
   }else if(type==='map'||type==='instance'){
     if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
      class:'wiki-instance-kind',text:wt('Сценарий задания','Quest scenario')
