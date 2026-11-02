@@ -3408,6 +3408,22 @@ async function saveWikiRecordField(type,id,field,value){
   ownerEdits.push({key,before,after});override[key]=after;refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
+async function saveWikiSpawns(monsterId,type,placeId,include){
+ const current=wikiIndex.locations(monsterId).map(x=>({type:x.type,id:String(x.id)}));
+ const wanted=new Map(current.map(x=>[x.type+':'+x.id,x]));
+ const key=type+':'+placeId;
+ if(include)wanted.set(key,{type,id:String(placeId)});else wanted.delete(key);
+ const rows=[...wanted.values()];
+ if(!window.PandoraWikiOwnerData.validSpawns(rows))throw Error('Некорректные места появления');
+ const recordKey='spawnedit.'+monsterId,before=activeOverride(recordKey),after=JSON.stringify(rows);
+ if(before===after)return;
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key:recordKey,value:after});
+  override[recordKey]=after;ownerEdits.push({key:recordKey,before,after});
+  refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
 async function saveWikiRelationRows(kind,id,rows){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
  const key=kind+'edit.'+id,valid=kind==='drop'?
