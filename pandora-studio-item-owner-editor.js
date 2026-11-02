@@ -156,5 +156,18 @@ function applyItems(items,overrides){
  }
  return next;
 }
-root.PandoraStudioItemOwnerEditor=Object.freeze({applyItems,ownPatch,effectOptions});
+// UI short forms follow the Russian Pandora Saga game client. Keep the
+// underlying EP_* identifiers untouched for game math and owner persistence.
+const statAbbreviations=Object.freeze({
+ EP_STRENGTH_CONST:'СИЛ',EP_VITARITY_CONST:'ВЫН',
+ EP_AGILITY_CONST:'ПРВ',EP_DEXTERITY_CONST:'ЛВК',
+ EP_SPIRITUAL_CONST:'СД',EP_INTELIGENCE_CONST:'ИНТ',
+ EP_MAXLIFE_CONST:'ОЗ',EP_MAXMANA_CONST:'ОМ',
+ EP_MAXLIFE_SCALE:'ОЗ (%)',EP_MAXMANA_SCALE:'ОМ (%)'
+});
+function effectDisplayLabel(func,lang='ru'){
+ if(lang!=='ru')return effectLabels.get(func)||func;
+ return statAbbreviations[func]||effectLabels.get(func)||'Игровой эффект';
+}
+root.PandoraStudioItemOwnerEditor=Object.freeze({applyItems,ownPatch,effectOptions,effectDisplayLabel});
 })(typeof window==='undefined'?globalThis:window);
