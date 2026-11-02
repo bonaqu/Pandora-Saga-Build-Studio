@@ -73,7 +73,7 @@ pathScrollRestored=false,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',
 stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,120):'',
 stageGemQuery='',gameTables=null,gameItemForth=null,
-stageAttributesPage=['summary','attack','defense','recovery','effects','buffs'].includes(bootView.attributes)?bootView.attributes:null;
+stageAttributesPage=['summary','attack','defense','buffs','effects','recovery'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 // Current character changes remain a local draft until explicit user save.
 function persist(){try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
@@ -804,12 +804,6 @@ function renderStageAttributes(){
  const cls=jobKeys[state.job],skillMap=catalog.skills||{};
  const jobBase=catalog.classes?.[cls]?.baseClass||cls;
  const innate=gameTables?.jobInit?.[jobBase]?.branches||{};
- const skillModel=window.PandoraSkillResults.create({
-  catalog:skillMap,jobKey:cls,level:state.level,innate,lang,
-  branchLabels:catalog.meta?.branchLabels||{},
-  trained:Object.fromEntries(branches.map(b=>[
-   b.id,window.PandoraSkillProgression.trained(state,b.id)]))
- });
  const shieldCandidate=state.equipment?.[1]&&
   catalog.equipment?.[String(state.equipment[1].id)];
  const equippedShield=shieldCandidate&&!equipmentIssue(shieldCandidate,1).length?
@@ -894,7 +888,7 @@ function renderStageAttributes(){
  window.PandoraStageAttributes.render(root,{
   page:stageAttributesPage,items,modifiers:previewBaseStats(),icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
-  availability,combatSkillCards,skillModel,honorTitles:window.PandoraOSCalculator.honorTitles,
+  availability,combatSkillCards,honorTitles:window.PandoraOSCalculator.honorTitles,
   itemById:id=>catalogSource?.items?.[String(id)]||null,
   onItem:id=>openWiki('item',String(id)),
   onBuff:(key,value)=>setAttributeBuff(key,value),

@@ -9,6 +9,8 @@ const bookEnglish=Object.freeze({
  'Зелья и умения': "Potions & skills",
  'Эффекты': "Effects",
  'Усиления': "Buffs",
+ 'Эффекты умений': 'Skill effects',
+ 'Эффекты зелий': 'Potion effects',
  'Параметры появятся после загрузки игровых данных.': "Stats appear when game data has loaded.",
  'Результаты расчёта': "Calculated results",
  'Выберите раздел, чтобы посмотреть подробности.': "Select a chapter for details.",
@@ -249,8 +251,8 @@ function make(tag,attrs={},children=[]){
 }
 
 const bookPages=Object.freeze([
- ['summary','Итоги'],['attack','Атака'],['defense','Защита'],
- ['recovery','Зелья и умения'],['effects','Эффекты'],['buffs','Усиления']
+ ['summary','Результаты расчёта'],['attack','Атака'],['defense','Защита'],
+ ['buffs','Усиления'],['effects','Эффекты умений'],['recovery','Эффекты зелий']
 ]);
 function summaryPage(body,calc,onPage){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
@@ -263,7 +265,7 @@ function summaryPage(body,calc,onPage){
  ]));
  const c=calc.combat||{};
  const groups=[
-  {title:english?'Vital resources':'Жизнь и мана',page:'recovery',symbol:'✧',rows:[
+  {title:english?'Vital resources':'Жизнь и мана',page:'buffs',symbol:'✧',rows:[
    ['ОЗ',calc.hp,'Здоровье'],['ОМ',calc.mp,'Мана']]},
   {title:english?'Combat attributes':'Боевые параметры',page:'attack',symbol:'⚔',rows:[
    ['Атака',c.attack?.known,'Физическая'],['Защита',c.defense?.known,'С заточкой'],
@@ -491,56 +493,9 @@ function buffsPage(body,options){
 }
 
 // Nonintrusive skill catalog: the user opens this section on demand.
-function renderSkillInspector(body,model){
- if(!model||!model.total)return;
- const english=document.documentElement?.lang==='en';
- const details=make('details',{class:'stage-skill-inspector'});
- details.append(make('summary',{text:english?
-  'Hero skills · '+model.available+' meet basic requirements of '+model.total:
-  'Навыки героя · '+model.available+' по базовым условиям из '+model.total}));
- details.append(make('p',{class:'stage-attribute-note',text:english?
-  'Select a skill in Hero Path to inspect its requirements.':
-  'Выбери навык в Пути героя, чтобы посмотреть требования.'}));
- const search=make('input',{type:'search',
-  'aria-label':english?'Find skill by name':'Поиск навыка по названию',
-  placeholder:english?'Search skills…':'Найти навык…'});
- const list=make('div',{class:'stage-skill-list'});
- const draw=()=>{
-  const locale=english?'en':'ru';
-  const query=String(search.value||'').trim().toLocaleLowerCase(locale);
-  const filtered=model.records.filter(x=>
-   (x.name+' '+x.desc).toLocaleLowerCase(locale).includes(query));
-  list.replaceChildren();
-  for(const skill of filtered.slice(0,16)){
-   const card=make('div',{class:'stage-skill-card'},[
-    make('div',{class:'stage-skill-heading'},[
-     make('strong',{text:skill.name}),
-     make('span',{text:skill.available?
-      (english?'Basic requirements met':'По базовым условиям доступен'):
-      (english?'Requirements not met':'Требования не выполнены')})]),
-    make('p',{text:(english?'MP ':'ОМ ')+(skill.mana??'—')+
-     (english?' · Cast ':' · Применение ')+(skill.cast??'—')+
-     (english?' s · Cooldown ':' с · Откат ')+(skill.cooldown??'—')+
-     (english?' s':' с')}),
-    make('p',{text:skill.available?(english?'Available':'Доступен'):
-     (english?'Not learned':'Не изучен')})
-   ]);
-   if(skill.requirement)card.append(make('small',{text:skill.requirement}));
-   if(skill.desc)card.append(make('p',{text:skill.desc}));
-   list.append(card);
-  }
-  if(filtered.length>16)list.append(make('p',{class:'stage-attribute-note',
-   text:english?'Found '+filtered.length+' entries; refine your search to see more.':
-    'Найдено '+filtered.length+' записей; уточните поиск для остальных.'}));
-  if(!filtered.length)list.append(make('p',{class:'stage-attribute-note',
-   text:english?'No skills match this search.':'Для текущего поиска навыки не найдены.'}));
- };
- search.addEventListener('input',draw);
- details.append(search,list);draw();body.append(details);
-}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
- combatSkillCards={},skillModel=null,itemById=()=>null,onItem=()=>{}}={}){
+ combatSkillCards={},itemById=()=>null,onItem=()=>{}}={}){
  target.replaceChildren();
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
@@ -573,15 +528,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   'data-book-visible':chosen});
  if(chosen==='summary')summaryPage(body,modifiers,onPage);
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,modifiers});
- if(['attack','defense','effects'].includes(chosen)){
-  const intro=chosen==='attack'?'Параметры оружия':
-   chosen==='defense'?'Защита снаряжения':'Бонусы предметов и душ';
+ if(['attack','defense'].includes(chosen)){
+  const intro=chosen==='attack'?'Параметры оружия':'Защита снаряжения';
   body.append(make('p',{class:'stage-attribute-note',text:intro}));
  }
- const selected=['attack','defense','effects'].includes(chosen)?
+ const selected=['attack','defense'].includes(chosen)?
   items.filter(x=>chosen==='attack'?x.record?.slot==='weapon':
-   chosen==='defense'?x.record&&(x.record.AC!=null||x.record.block!=null):x.record):[];
- if(!selected.length&&['attack','defense','effects'].includes(chosen))
+   x.record&&(x.record.AC!=null||x.record.block!=null)):[];
+ if(!selected.length&&['attack','defense'].includes(chosen))
   body.append(make('p',{class:'muted',text:'Нет записей для этой вкладки'}));
  for(const row of selected){
   const rec=row.record,card=make('section',{class:'stage-attribute-row'});
@@ -598,17 +552,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }else if(page==='defense'){
    card.append(make('p',{text:'Базовая защита '+(rec.AC??'—')+' · Блок '+(rec.block??'—')+
     ' · Гнёзда '+(rec.soulslot??'—')+' · +'+row.refinement}));
-  }else{
-   const effects=Array.isArray(rec.effects)?rec.effects:[];
-   if(rec.desc)card.append(make('p',{class:'stage-rich-desc',text:root.PandoraItemPresentation?.description(rec.desc)||rec.desc}));
-   // Raw EP_* codes are database diagnostics, not a useful player-facing description.
-   if(effects.length&&root.PandoraStudioAdminActive?.())card.append(make('p',{class:'stage-attribute-note',text:
-    'Исходные коды эффектов: '+effects.map(e=>e.func+
-     (e.a==null?'':' ('+e.a+(e.b==null?'':', '+e.b)+')')).join('; ')}));
-   if(row.souls.length)for(const soul of row.souls){
-    card.append(make('p',{class:'stage-attribute-soul',text:'✦ '+(root.PandoraItemPresentation?.displayName(soul,'Душа без названия')||'Душа без названия')+
-     ' · '+(root.PandoraItemPresentation?.description(soul.desc)||soul.desc||'Описание души не найдено')}));
-   }
   }body.append(card);
  }
  if(page==='effects'){
@@ -659,7 +602,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
      (proc.chance===null?'':' · '+proc.chance+'%')+' · '+proc.source}));
    body.prepend(section);
   }
-  renderSkillInspector(body,skillModel);
   if(modifiers?.unison?.active?.length){
    const labels=english?{
     EP_MAXMANA_CONST:'Max MP',EP_MAXLIFE_CONST:'Max HP',
@@ -1241,7 +1183,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    }
    body.append(section);
   }
-  renderSkillInspector(body,skillModel);
  }
  if(chosen==='recovery'&&modifiers?.healingSkill){
   const english=document.documentElement?.lang==='en';
