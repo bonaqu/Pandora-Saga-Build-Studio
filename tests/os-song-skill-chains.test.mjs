@@ -105,3 +105,16 @@ test('bilingual song UI stays collapsed and communicates preview-only conditions
  assert.match(calc,/const songSkills=songSkillPreview/);
  assert.match(calc,/regeneration,legacyBuffs,songSkills,otherEquipment/);
 });
+
+test('Hero Book groups song effects with skill effects, not configuration controls',()=>{
+ const book=read('stage-attributes.js');
+ const buffsStart=book.indexOf('function buffsPage(');
+ const songsStart=book.indexOf('function renderSongSkills(');
+ const skillsStart=book.indexOf('function skillEffectsPage(');
+ assert.ok(buffsStart>=0&&songsStart>buffsStart&&skillsStart>songsStart);
+ const buffs=book.slice(buffsStart,songsStart);
+ const skills=book.slice(skillsStart,book.indexOf('function render(target,',skillsStart));
+ assert.doesNotMatch(buffs,/const songRows=|stage-song-skills/);
+ assert.match(skills,/renderSongSkills\(body,modifiers\)/);
+ assert.match(book.slice(songsStart,skillsStart),/stage-song-skills/);
+});

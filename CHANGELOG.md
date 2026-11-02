@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.297.0 — 2026.11.02.297 · Skill-effect songs and exact gear armor notation
+
+- Hero Book song effects now appear in the Skill effects chapter rather than the Buffs configuration chapter. The OS class/mastery checks and never-assume-song-activation policy remain unchanged.
+- Equipped armor hover shows the requested compact base+refinement format, such as 11+3 and 13+6, matching the calculator's existing per-piece refinement rule.
+- Added one focused regression test for the song chapter association and updated item-preview acceptance assertions. This is a source release; live server parity is not implied.
+
+
 ## 0.296.0 — 2026.11.02.296 · Priest defaults, equipped detail and Remaked-style Hero Book
 
 - Fresh heroes now start with an enabled external priest and editable SD 134, Blessing 90, Hymns 30. Saved and shared build values take precedence, including explicit disabled settings; older snapshots inherit missing defaults.

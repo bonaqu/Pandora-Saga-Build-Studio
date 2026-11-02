@@ -31,7 +31,7 @@ function summary(record,icon,kind='item',context=null){
   Number.isInteger(grade)&&grade>=0&&grade<=10&&record.name!=='-'?
   Math.floor(grade*1.5):0;
  const armorDisplay=context&&Number.isFinite(baseArmor)&&armorRefine>0?
-  baseArmor+' +'+armorRefine:record.AC;
+  baseArmor+'+'+armorRefine:record.AC;
  const rows=kind==='soul'?
  [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:

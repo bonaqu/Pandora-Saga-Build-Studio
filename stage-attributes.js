@@ -461,6 +461,13 @@ function buffsPage(body,options){
    'Мощность при применении навыка. Просмотр не включает усиление на персонаже.'}));
   priest.append(details);
  }
+
+ if(modifiers)body.append(make('p',{class:'stage-attribute-note',text:
+  'Сейчас: '+modifiers.hp+' ОЗ, '+modifiers.mp+' ОМ. Усиления сохраняются в билде.'}));
+}
+
+function renderSongSkills(body,modifiers){
+ const english=document.documentElement?.lang==='en';
  const songRows=modifiers?.songSkills?.rows||[];
  if(songRows.length){
   const branchLabels=english?
@@ -488,11 +495,7 @@ function buffsPage(body,options){
     'Эффекты песен действуют после применения в игре. Бонусы не прибавляются к билду автоматически.'}));
   body.append(details);
  }
- if(modifiers)body.append(make('p',{class:'stage-attribute-note',text:
-  'Сейчас: '+modifiers.hp+' ОЗ, '+modifiers.mp+' ОМ. Усиления сохраняются в билде.'}));
 }
-
-// Nonintrusive skill catalog: the user opens this section on demand.
 function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},modifiers=null}={}){
  const en=document.documentElement?.lang==='en';
  const card=make('section',{class:'stage-attribute-row stage-skill-effects'});
@@ -521,6 +524,7 @@ function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},mod
  if(card.children.length===1)card.append(make('p',{class:'stage-attribute-note',text:en?
   'Select active buffs in the Buffs tab.':'Выбери активные усиления на вкладке «Усиления».'}));
  body.prepend(card);
+ renderSongSkills(body,modifiers);
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},

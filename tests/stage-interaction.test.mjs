@@ -127,13 +127,13 @@ test('equipped item hover includes base and refinement defense plus socketed Sou
  const tip=stage.PandoraStageItemUI.summary(rec,()=>null,'item',
   {slot:'feet',refinement:2,capacity:1,souls:[soul]});
  const all=walk(tip).map(e=>String(e.textContent||'')).join(' ');
- assert.match(all,/11 \+3/);
+ assert.match(all,/11\+3/);
  assert.match(all,/Душа защиты/);
  assert.match(all,/Сопротивление слабости \+3%/);
  assert.match(all,/1 \/ 1/);
  const grade4=stage.PandoraStageItemUI.summary({...rec,AC:13},()=>null,'item',
   {refinement:4,souls:[]});
- assert.match(walk(grade4).map(e=>e.textContent).join(' '),/13 \+6/);
+ assert.match(walk(grade4).map(e=>e.textContent).join(' '),/13\+6/);
  const picker=stage.PandoraStageItemUI.summary(rec,()=>null);
- assert.doesNotMatch(walk(picker).map(e=>e.textContent).join(' '),/11 \+3/);
+ assert.doesNotMatch(walk(picker).map(e=>e.textContent).join(' '),/11\+3/);
 });
