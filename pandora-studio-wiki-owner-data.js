@@ -34,11 +34,17 @@ function validDrops(rows){
  if(!record(rows)||Object.keys(rows).some(k=>!['d','s'].includes(k))||
   !own(rows,'d')||!own(rows,'s'))return false;
  return ['d','s'].every(k=>Array.isArray(rows[k])&&rows[k].length<=200&&rows[k].every(r=>
-  record(r)&&id(r.i)&&Object.keys(r).every(p=>['i','p','n','slotAdd','t'].includes(p))&&
+  record(r)&&id(r.i)&&Object.keys(r).every(p=>['i','p','n','slotAdd','t','lo','hi','souls'].includes(p))&&
   (r.p==null||number(r.p)&&r.p>=0&&r.p<=100)&&
   (r.n==null||Number.isInteger(r.n)&&r.n>=1&&r.n<=999999)&&
   (r.slotAdd==null||Number.isInteger(r.slotAdd)&&r.slotAdd>=0&&r.slotAdd<=3)&&
-  (r.t==null||typeof r.t==='string'&&r.t.length<=240)));
+  (r.t==null||typeof r.t==='string'&&r.t.length<=240)&&
+  (r.lo==null||Number.isInteger(r.lo)&&r.lo>=0&&r.lo<=1000)&&
+  (r.hi==null||Number.isInteger(r.hi)&&r.hi>=0&&r.hi<=1000)&&
+  (r.souls==null||Array.isArray(r.souls)&&r.souls.length<=20&&
+   r.souls.every(pair=>Array.isArray(pair)&&pair.length===2&&
+    Number.isSafeInteger(pair[0])&&pair[0]>0&&
+    Number.isFinite(pair[1])&&pair[1]>=0&&pair[1]<=100))));
 }
 function validChest(rolls){
  return Array.isArray(rolls)&&rolls.length<=50&&rolls.every(group=>
