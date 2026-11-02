@@ -1,8 +1,8 @@
 # Pandora Saga Build Studio
 
-## Pandora Saga OS · выборочная синхронизация через админку
+## Обновление игровых данных · управление через админку
 
-Администратор открывает **Каталог D1** → **Проверить синхронизацию данных с Pandora Saga OS API**. Проверяются 17 игровых JSON, целостность источника и версия опубликованной D1. По умолчанию **ни одна запись не принята**: можно выбрать отдельные изменения, раздел или все изменения, отклонить выбор, искать по названию и ID. Обмены NPC, инстансы, игровые формулы, мастерство и сундуки принимаются целиком, чтобы сохранить внутренние связи. Перед публикацией снимок снова проверяется, а Worker атомарно предотвращает перезапись более новой D1.
+Администратор открывает **Каталог D1** → **Проверить обновления игрового каталога**. Проверяются 17 игровых JSON, целостность источника и версия опубликованной D1. По умолчанию **ни одна запись не принята**: можно выбрать отдельные изменения, раздел или все изменения, отклонить выбор, искать по названию и ID. Обмены NPC, инстансы, игровые формулы, мастерство и сундуки принимаются целиком, чтобы сохранить внутренние связи. Перед публикацией снимок снова проверяется, а Worker атомарно предотвращает перезапись более новой D1.
 
 **Уже опубликованные Legacy-переводы D1 сохраняются без изменений** при синхронизации предметов, навыков и других данных OS. Принятие игровых изменений не означает принятие нового файла переводов из GitHub.
 
@@ -20,11 +20,11 @@ npm run test:browser
 
 Independent, visual, vintage-inspired Pandora Saga build planner. Static site intended for **GitHub Pages**, secure optional CMS backend on **Cloudflare Workers + D1**.
 
-[**Архитектура и связи модулей**](docs/STUDIO_ARCHITECTURE.md) · [**Полный журнал релизов**](CHANGELOG.md) · [Полный аудит формул Remaked](docs/REMAKED_FORMULA_INVENTORY.md) · [Игровые проверки Pandora Saga OS](docs/OS_LIVE_PARITY_CHECKS.md) · [**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
+[**Архитектура и связи модулей**](docs/STUDIO_ARCHITECTURE.md) · [**Полный журнал релизов**](CHANGELOG.md) · [Полный аудит формул Remaked](docs/REMAKED_FORMULA_INVENTORY.md) · [Игровые проверки актуального игрового сервера](docs/OS_LIVE_PARITY_CHECKS.md) · [**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
 
 ## Status
 
-**Interactive foundation, not a finished game calculator.** **Permanent planning range 1–55 (new heroes start at level 1), including future patch items.** Three current OS item-set/unison combinations now contribute known effects to final hero stats when their companion gear and root refinements match, with active bonuses visible in the book. The OS server's currently published cap of 45 is informational only and never limits saved builds, gear, attributes, skill progression, or calculator previews. Eight portraits for six races (from user-provided Races.zip), **1,173 original self-hosted WebP images (286 skill, 876 item, 11 Soul; 264 remaining original icon URLs returned HTTP 404)**, 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local build library and short-link sharing interface (requires Worker/D1 deployment), and static client logic. Current official Pandora Saga OS game tables are shipped under `data/os/` (snapshot of 2026-10-30: 28 classes, 569 skills, 1,116 items, 112 Souls). The public workbench first requests a consistent published Cloudflare Worker/D1 catalog and otherwise loads the complete bundled data/os snapshot. Wiki uses the same atomic-source rule. The authenticated admin workflow can compare upstream game data without automatically overwriting published D1. Correctness for current Pandora Saga OS is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
+**Interactive foundation, not a finished game calculator.** **Permanent planning range 1–55 (new heroes start at level 1), including future patch items.** Three current OS item-set/unison combinations now contribute known effects to final hero stats when their companion gear and root refinements match, with active bonuses visible in the book. The OS server's currently published cap of 45 is informational only and never limits saved builds, gear, attributes, skill progression, or calculator previews. Eight portraits for six races (from user-provided Races.zip), **1,173 original self-hosted WebP images (286 skill, 876 item, 11 Soul; 264 remaining original icon URLs returned HTTP 404)**, 28 legacy jobs, 20 skills branches, playable visual UI, 14 equipment slots, local build library and short-link sharing interface (requires Worker/D1 deployment), and static client logic. Current official current game server game tables are shipped under `data/os/` (snapshot of 2026-10-30: 28 classes, 569 skills, 1,116 items, 112 Souls). The public workbench first requests a consistent published Cloudflare Worker/D1 catalog and otherwise loads the complete bundled data/os snapshot. Wiki uses the same atomic-source rule. The authenticated admin workflow can compare upstream game data without automatically overwriting published D1. Correctness for current current game server is **not established**. The frontend does not make up combat formulas. The historical dataset is not a substitute for direct API sync.
 
 ## Publish on GitHub Pages (no user-defined GitHub Actions)
 
@@ -469,7 +469,7 @@ Visual item cards now support hover and keyboard focus preview of directly sourc
 
 ## Next milestones
 
-- Verify live Pandora Saga OS endpoints, cross-origin access, sprite references and all skill identities; maintain the versioned authoritative snapshot (no invented gameplay rules).
+- Verify live current game server endpoints, cross-origin access, sprite references and all skill identities; maintain the versioned authoritative snapshot (no invented gameplay rules).
 - Connect to original engine or verified server formulas before displaying authoritative HP, damage and skill budgets.
 - Add the actual game equipment sprites/icons and compatible item rules, with sources documented. All six race portraits and the original supplied logo are already bundled locally.
 - Move all editable catalog fields to backend with version, approval, rollback and audit log. Existing visual editing intentionally supports only approved interface labels, not game balancing yet.
@@ -491,7 +491,7 @@ Uses original user-provided assets. Unofficial fan project. Pandora Saga name an
 
 ## Визуальные характеристики (2026-10-30)
 
-Шесть характеристик отображаются в виде игровых карточек с полосой, точной настройкой, кнопками +/− и отображением классового предела из актуального набора Pandora Saga OS (`classes[JOB].statCaps`). При смене класса ранее сохранённые очки не удаляются и превышение отображается как конфликт. Сумма — лишь сумма запланированных очков, **не** подтверждённый игровой бюджет. Без каталога OS значения остаются редактируемым планом с явно неподтверждённым пределом. HP/MP и боевые формулы не выдумываются.
+Шесть характеристик отображаются в виде игровых карточек с полосой, точной настройкой, кнопками +/− и отображением классового предела из актуального набора актуального игрового сервера (`classes[JOB].statCaps`). При смене класса ранее сохранённые очки не удаляются и превышение отображается как конфликт. Сумма — лишь сумма запланированных очков, **не** подтверждённый игровой бюджет. Без каталога OS значения остаются редактируемым планом с явно неподтверждённым пределом. HP/MP и боевые формулы не выдумываются.
 
 ## 2026-10-30 — системы гнёзд душ и планируемой заточки
 
@@ -523,7 +523,7 @@ Character detail uses authentic-style tabs for **Персонаж / Умения
 
 ## RU/EN official game catalog (2026-10-30)
 
-Pandora Saga OS has a separate public original `strings.en.json`. It is now saved at `data/os/strings.en.json`, with exact stable IDs for item/skill/monster/soul/class names, descriptions, maps and branches. The RU/EN control switches the **game catalog** without inventing translation mappings or changing build IDs. English entries absent upstream retain their Russian source text. The non-game UI shell is still Russian-first; full UI localization remains tracked separately. English strings load from **our own D1** first or our own checked-in archive before first import — never from the game server at runtime. The manual importer also archives `tables`, `expertise`, `chests`, and approved Legacy language data in isolated namespaces.
+current game server has a separate public original `strings.en.json`. It is now saved at `data/os/strings.en.json`, with exact stable IDs for item/skill/monster/soul/class names, descriptions, maps and branches. The RU/EN control switches the **game catalog** without inventing translation mappings or changing build IDs. English entries absent upstream retain their Russian source text. The non-game UI shell is still Russian-first; full UI localization remains tracked separately. English strings load from **our own D1** first or our own checked-in archive before first import — never from the game server at runtime. The manual importer also archives `tables`, `expertise`, `chests`, and approved Legacy language data in isolated namespaces.
 
 ## 2026-10-30: game-faithful five skill tabs and racial passives
 
@@ -535,7 +535,7 @@ A first wiki tab now navigates item sources, monster drops, maps, NPC exchange r
 
 ## Protected manual source updates (2026-10-30)
 
-**Каталог D1** now offers two read-only comparisons: current Pandora Saga OS via the allowlisted, authenticated Worker proxy, or the checked-in GitHub archive. It compares all 17 source files by stable IDs, previews added/changed/removed keys, validates the full snapshot, then requires an explicit confirmation before a chunked D1 import and atomic pointer switch. A failed compare/import never replaces the previously published catalog. Old snapshot rows are retained, subject to D1 storage limits. The source refresh intentionally does not push upstream changes into GitHub backup files; periodically update the backup separately as part of source provenance maintenance.
+**Каталог D1** now offers two read-only comparisons: current актуального игрового сервера via the allowlisted, authenticated Worker proxy, or the checked-in GitHub archive. It compares all 17 source files by stable IDs, previews added/changed/removed keys, validates the full snapshot, then requires an explicit confirmation before a chunked D1 import and atomic pointer switch. A failed compare/import never replaces the previously published catalog. Old snapshot rows are retained, subject to D1 storage limits. The source refresh intentionally does not push upstream changes into GitHub backup files; periodically update the backup separately as part of source provenance maintenance.
 
 ## Self-hosting original game icons
 

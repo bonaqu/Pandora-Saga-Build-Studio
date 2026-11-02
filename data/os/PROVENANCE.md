@@ -1,4 +1,4 @@
-# Pandora Saga OS — provenance, 30 October 2026
+# Актуальные игровые данные — provenance, 30 October 2026
 
 This repository contains a **fixed, self-hosted source snapshot** of the following 17 published JSON files from `https://pandorasaga-os.com/gamedata/`:
 
