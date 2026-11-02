@@ -1613,7 +1613,9 @@ function renderWiki(root){
     {item:'Предмет без названия',monster:'Монстр без названия',
      map:'Локация',npc:'Персонаж',chest:'Сундук',skill:'Умение без названия',
      soul:'Душа без названия',instance:'Подземелье'};
-   const value=lang==='en'&&en?en:obj?.name||fallback[type]||'Без названия';
+   const npcEnglish=type==='npc'&&obj?.virtual?obj.en:null;
+   const value=lang==='en'&&(en||npcEnglish)?(en||npcEnglish):
+    obj?.name||fallback[type]||'Без названия';
    nameCache.set(key,value);
    return value;
  };
@@ -1629,7 +1631,9 @@ function renderWiki(root){
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
   const territoryAlias=type==='map'?
    window.PandoraAstirLocations?.searchAliases(id):null;
-  const value=[dataName(type,id),translated?.n,territoryAlias,
+  const npcRecord=type==='npc'?wikiIndex.records('npc')?.[id]:null;
+  const npcEnglish=npcRecord?.virtual?npcRecord.en:null;
+  const value=[dataName(type,id),translated?.n,npcEnglish,territoryAlias,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
   searchCache.set(key,value);

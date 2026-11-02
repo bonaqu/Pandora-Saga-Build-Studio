@@ -42,9 +42,10 @@ const mapsFrom=(tradeMaps={},worldMaps={})=>{
 };
 // Only the game's screenshots supplied by the player confirm this town NPC.
 // The public OS /gamedata/trades.json covers exchange NPCs, not every town NPC.
-// Do not translate, guess or import names from the old JP fan wiki.
+// Do not guess or import names from the old JP fan wiki.
+// English spelling "Claris" is confirmed directly by the player.
 const confirmedTownNpcs=Object.freeze([
- Object.freeze({id:'astir-npc-kingdom-claris',name:'Кларис',
+ Object.freeze({id:'astir-npc-kingdom-claris',name:'Кларис',en:'Claris',
   maps:Object.freeze(['astir-kingdom']),virtual:true,
   service:'Открытие сундуков',source:'game-screenshot'})
 ]);

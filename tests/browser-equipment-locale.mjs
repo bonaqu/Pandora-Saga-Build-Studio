@@ -171,6 +171,27 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await page.locator('.wiki-chest-master-row a[href="#wiki/map/astir-empire"]').count(),0);
   assert.equal(await page.locator('.wiki-chest-master-row a[href="#wiki/map/astir-kingdom"]').count(),1);
   assert.equal(await page.locator('.wiki-chest-master-row a[href="#wiki/npc/astir-npc-kingdom-claris"]').count(),1);
+  // Confirmed native English spelling must appear in map, NPC, chest and search.
+  await page.locator('#dockClose').click();
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.goto(base+'/#wiki/map/astir-kingdom',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-map-npc .wiki-link').first().waitFor({state:'visible',timeout:20000});
+  assert.equal((await page.locator('.wiki-map-npc .wiki-link').innerText()).trim(),'♙ Claris');
+  await page.goto(base+'/#wiki/npc/astir-npc-kingdom-claris',{waitUntil:'domcontentloaded'});
+  assert.equal((await page.locator('.wiki-page h3').innerText()).trim(),'Claris');
+  await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
+  assert.match(await page.locator('.wiki-chest-master-row').innerText(),/Claris/);
+  assert.doesNotMatch(await page.locator('.wiki-chest-master-row').innerText(),/Культье/);
+  await page.goto(base+'/#wiki/npc/astir-npc-kingdom-claris',{waitUntil:'domcontentloaded'});
+  const englishSearch=page.locator('.wiki-controls input[type="search"]');
+  await englishSearch.fill('Claris');
+  assert.ok(await page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"]').count()===1);
+  await englishSearch.fill('Кларис');
+  assert.ok(await page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"]').count()===1);
+  await page.locator('#dockClose').click();
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.goto(base+'/#wiki/npc/astir-npc-kingdom-claris',{waitUntil:'domcontentloaded'});
+  assert.equal((await page.locator('.wiki-page h3').innerText()).trim(),'Кларис');
   // Source-backed elemental selection and separate status/skill consumables.
   await page.goto(base+'/#wiki/item/452',{waitUntil:'domcontentloaded'});
   assert.equal(await page.locator('.wiki-elemental-type').count(),0);
