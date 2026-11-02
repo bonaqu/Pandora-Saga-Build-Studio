@@ -3320,6 +3320,117 @@ function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=f
  node.replaceChildren(control);control.focus();
  if(type==='number'||type==='text')control.select();
 }
+async function saveWikiRecordField(type,id,field,value){
+ if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
+ const key='wikiedit.'+type+'.'+id;
+ let current={};
+ try{current=JSON.parse(override[key]||'{}')}catch{}
+ const patch={...current,[field]:value};
+ if(!window.PandoraWikiOwnerData.validPatch(type,patch))
+  throw Error('Некорректное значение поля');
+ const before=activeOverride(key),after=JSON.stringify(patch);
+ if(before===after)return;
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key,value:after});
+  ownerEdits.push({key,before,after});override[key]=after;refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
+async function saveWikiRelationRows(kind,id,rows){
+ if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
+ const key=kind+'edit.'+id,valid=kind==='drop'?
+  window.PandoraWikiOwnerData.validDrops(rows):
+  window.PandoraWikiOwnerData.validChest(rows);
+ if(!valid)throw Error('Проверь список и числа');
+ const before=activeOverride(key),after=JSON.stringify(rows);
+ if(before===after)return;
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key,value:after});
+  ownerEdits.push({key,before,after});override[key]=after;refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
+function wikiOwnerNumeric(node,value,type,id,field,{integer=false,max=1000000000}={}){
+ if(!adminToken||!adminEditing)return node;
+ node.classList.add('wiki-edit-value');
+ node.title='Двойной клик — изменить';
+ node.ondblclick=e=>{
+  e.preventDefault();e.stopPropagation();
+  editWikiValue(node,Number(value),{type:'number',max,integer,
+   onCommit:next=>saveWikiRecordField(type,id,field,next)});
+ };
+ return node;
+}
+function wikiOwnerText(node,type,id,field,{multiline=false}={}){
+ if(!adminToken||!adminEditing||lang!=='ru')return node;
+ node.classList.add('wiki-edit-value');
+ node.title='Двойной клик — изменить';
+ node.ondblclick=e=>{
+  e.preventDefault();e.stopPropagation();
+  editWikiValue(node,String(node.textContent||''),{
+   type:multiline?'textarea':'text',
+   onCommit:next=>saveWikiRecordField(type,id,field,next)});
+ };
+ return node;
+}
+function wikiOwnerEntityList({label,items,existing,kind,onChange,limit=1000}){
+ const container=h('div',{class:'wiki-owner-relations'});
+ if(label)container.append(h('h4',{text:label}));
+ const ids=[...new Set((existing||[]).map(String))];
+ const candidates=kind==='monster'?wikiData.monsters:
+  kind==='npc'?wikiData.trades?.npcs:
+  kind==='map'?wikiIndex.records('map'):
+  kind==='item'?wikiData.items:wikiIndex.records('instance');
+ const holder=h('div',{class:'wiki-entity-flow'});
+ for(const key of ids){
+  const chip=h('span',{class:'wiki-owner-mat'});
+  chip.append(kind==='item'?itemLink(key,dataName(kind,key)):
+   wikiLink(dataName(kind,key),kind,key));
+  if(adminEditing&&adminToken)chip.append(h('button',{type:'button',
+   class:'wiki-owner-remove',text:'×','aria-label':'Удалить связь '+dataName(kind,key),
+   onclick:()=>void onChange(ids.filter(x=>x!==key).map(Number))
+    .catch(err=>showStudioToast(err.message,'warning'))}));
+  holder.append(chip);
+ }
+ container.append(holder);
+ if(adminEditing&&adminToken&&ids.length<limit){
+  const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+   text:'+ Добавить',title:'Добавить связь'});
+  add.onclick=()=>{
+   if(container.querySelector('.wiki-owner-relation-picker'))return;
+   const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-relation-picker'});
+   const search=h('input',{type:'search',class:'wiki-inline-input',
+    placeholder:'Поиск по названию…','aria-label':'Поиск для добавления'});
+   guardOwnerInput(search);
+   const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери запись'});
+   const feedback=h('small',{class:'inline-owner-error',role:'status'});
+   const fill=()=>{
+    const q=wikiIndex.normalize(search.value);
+    const choices=Object.entries(candidates||{}).filter(([key])=>!ids.includes(key)&&
+     (!q||wikiIndex.normalize(dataName(kind,key)).includes(q))).slice(0,90);
+    select.replaceChildren(h('option',{value:'',text:choices.length?'Выбери запись':'Не найдено'}));
+    for(const [key]of choices)select.append(h('option',{value:key,text:dataName(kind,key)}));
+   };
+   panel.append(search,select,feedback);add.after(panel);
+   search.oninput=fill;
+   select.onchange=async()=>{
+    if(!select.value)return;
+    select.disabled=true;
+    try{await onChange([...ids,select.value].map(Number))}
+    catch(e){feedback.textContent=e.message;select.disabled=false}
+   };
+   const outside=e=>{
+    if(!panel.isConnected||(!panel.contains(e.target)&&e.target!==add)){
+     document.removeEventListener('pointerdown',outside,true);panel.remove()
+    }
+   };
+   document.addEventListener('pointerdown',outside,true);
+   fill();search.focus();
+  };
+  container.append(add);
+ }
+ return container;
+}
 async function saveWikiItemField(id,field,value){
  if(!adminEditing||!adminToken||!catalogSource?.items?.[id])throw Error('Редактирование недоступно');
  const base=catalogSource.items[id],key='itemedit.'+id,previous=activeOverride(key);
