@@ -69,8 +69,9 @@ test('nation NPC location IDs stay independent from the four Astir city district
  const app=file('pandora-studio-app.js');
  for(const id of ['astir-union','astir-kingdom','astir-empire'])
   assert.ok(model.includes(id));
- for(const id of ['2001001','2002001','2001002','2003001','2001003','2004001'])
-  assert.ok(model.includes(id),'Missing route segment '+id);
+ for(const name of ['Кларис','Культье','Олсон','Барнс','Рэндалл'])
+  assert.ok(model.includes(name),'Missing named NPC '+name);
+ assert.doesNotMatch(app,/Маршрут из Астира/);
  assert.match(app,/Культье/);
  assert.match(app,/wiki-chest-opening-fields/);
  assert.match(app,/Государства/);
