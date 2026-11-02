@@ -820,12 +820,33 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   +(title.weaponPhysical||0);
  const backAttack=15,frontAttack=title.frontAttack||0;
  const cooldown=Number.isFinite(stats.int)?100-2*Math.floor(stats.int/10)+secondary.cooldown:null;
+ // Remaked Calc('ACC') writes the regular and front accuracy from the
+ // same computed subtotal, plus independent EquipOpt[63] for front. Current
+ // OS data has no verified front-only field mapping, so the explicitly
+ // supported front component equals regular accuracy (not a new buff).
+ const accuracyKnown=accuracy+accuracyBonus+hunterEye+
+  (actives.concentration?effect('concentration','EP_TOHIT_CONST'):0);
+ const frontAccuracy={known:accuracyKnown,positionalBonus:0,verified:false,
+  source:"Remaked Calc('ACC'), Status_62 / Status_63",
+  excluded:['unmapped front-only item and skill effects']};
+ // Remaked Calc('EVARange') has an explicit +3 from Honor 12.
+ // Keep separate from Dodge and Myrine overall avoidance scaling.
+ const rangedEvasion={known:title.rangedDodge||0,honor:title.rangedDodge||0,
+  verified:false,source:"Remaked Calc('EVARange'), Status_67",
+  excluded:['unmapped equipment and status-based ranged evasion']};
+ // Remaked Calc('CastSPD') displays the 100% cast-time index unless
+ // Flag 14_8 is active. That spell is not presently modeled by an
+ // independently verified OS buff, so this is a Legacy baseline only.
+ const castTime={known:100,base:100,verified:false,
+  source:"Remaked Calc('CastSPD'), Status_78",
+  excluded:['legacy Flag 14_8 and current game active cast-time changes']};
  const criticalDamage=100,criticalIncoming=(title.incomingCriticalChance||0)-
   (Number(bonuses.incomingCriticalReduction)||0);
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0);
  return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
   activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
-  guildArouse,guildAtk,attackSpeed,castingSpeed,manaCost,
+  guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
+  frontAccuracy,rangedEvasion,
   weaponPhysical,backAttack,frontAttack,cooldown,
   spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
   skillDelayFinalEquipment,mpRecoveryEquipmentRate,backAttackEquipmentRate,
@@ -833,8 +854,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   accuracy:{base:accuracyBase,equipment:accEquip,passive:hunterEye,
    percentage:accuracyPercent,honor:title.accuracy||0,
    activeBonus:actives.concentration?effect('concentration','EP_TOHIT_CONST'):0,
-   known:accuracy+accuracyBonus+hunterEye+
-    (actives.concentration?effect('concentration','EP_TOHIT_CONST'):0)},
+   known:accuracyKnown},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
    passive:quickStep,honor:title.dodge||0,
    windAssist:supportSkills.windAssist?Math.floor(
