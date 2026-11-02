@@ -21,8 +21,10 @@ test('Astir has separate districts, while NPC locations retain original sovereig
  assert.equal(maps['1004001'].name,'Лотарская империя');
  assert.equal(maps['1003001'].name,'Королевство Сэнт-Фальстайн');
  assert.match(app,/Районы города Астир/);
- assert.match(app,/wikiLink\(dataName\('map',route\.countryId\),'map',route\.countryId\)/);
- assert.match(app,/wikiLink\(wt\('Территория Королевства · Астир'/);
+ assert.match(app,/wiki-map-npcs/);
+ assert.match(app,/wikiLink\(name,'npc',npcId\)/);
+ assert.match(model,/Культье/);
+ assert.match(model,/Кларис/);
 });
 
 test('Soul price and slot remain content-sized without duplicate styles',()=>{

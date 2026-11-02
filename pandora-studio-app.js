@@ -2068,7 +2068,8 @@ function renderWiki(root){
     ['item','chest'].includes(type)?'item.'+id:null;
    const heading=h('h3',{text:dataName(type,id),
     ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{}),
-    ...(adminEditing&&lang==='ru'&&['monster','map','npc','instance','soul'].includes(type)?
+    ...(adminEditing&&lang==='ru'&&!rec.virtual&&
+     ['monster','map','npc','instance','soul'].includes(type)?
       {'data-owner-record':type+':'+id,'data-owner-field':'name'}:{})});
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
    detail.append(heading);
@@ -2093,7 +2094,8 @@ function renderWiki(root){
     missing?'Двойной клик — добавить описание':
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
-    ...(adminEditing&&lang==='ru'&&['monster','map','npc','instance','soul'].includes(type)?
+    ...(adminEditing&&lang==='ru'&&!rec.virtual&&
+     ['monster','map','npc','instance','soul'].includes(type)?
       {'data-owner-record':type+':'+id,
        'data-owner-field':type==='instance'?'blurbRu':'desc',
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
@@ -2108,24 +2110,6 @@ function renderWiki(root){
     for(const placeId of geo.districtIds)
      city.append(wikiLink(dataName('map',placeId),'map',placeId));
     detail.append(city);
-    const route=geo.route(id);
-    if(route){
-     const panel=h('section',{class:'wiki-nation-territory'});
-     panel.append(h('strong',{text:wt('Маршрут из Астира','Route from Astir')}));
-     const steps=h('div',{class:'wiki-location-route'});
-     steps.append(h('span',{text:dataName('map',id)}));
-     for(const zone of route.roads){
-      steps.append(h('span',{class:'wiki-route-arrow',text:'→'}));
-      steps.append(wikiLink(dataName('map',zone),'map',zone));
-     }
-     steps.append(h('span',{class:'wiki-route-arrow',text:'→'}),
-      wikiLink(dataName('map',route.countryId),'map',route.countryId));
-     panel.append(steps);
-     if(id==='astir-kingdom')panel.append(h('p',{text:
-      wt('Мастер сундуков Культье находится здесь, в районе Королевства города Астир.',
-       'Chest master Cultier is here, in Astir’s Kingdom district.')}));
-     detail.append(panel);
-    }
    }else if(nation)detail.append(h('span',{class:'wiki-map-kind',
     text:wt('Государство','Nation')}));
   }
@@ -2747,11 +2731,20 @@ function renderWiki(root){
      }
    }else if(type==='npc'){
     const locations=rec.maps||[];
-    if(adminEditing&&adminToken)detail.append(wikiOwnerEntityList({
+    if(rec.virtual){
+     const fields=h('dl',{class:'item-fields'});
+     if(rec.grid)fields.append(h('dt',{text:wt('На карте','Map grid')}),
+      h('dd',{text:rec.grid}));
+     if(rec.service)fields.append(h('dt',{text:wt('Назначение','Service')}),
+      h('dd',{text:rec.service}));
+     detail.append(fields);
+    }
+    if(adminEditing&&adminToken&&!rec.virtual)detail.append(wikiOwnerEntityList({
      label:wt('Где находится','Where to find'),kind:'map',existing:locations,
      onChange:next=>saveWikiRecordField('npc',id,'maps',next)}));
     else detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
-     wikiLink('◈ '+dataName('map',mapId),'map',mapId,id))));
+     wikiLink('◈ '+dataName('map',mapId),'map',mapId,rec.virtual?null:id))));
+    if(!rec.virtual){
     const ownerStock=wikiIndex.ownerNpcItems(id);
     if(ownerStock.length){
      detail.append(h('h4',{text:wt('Можно получить','Items available')}));
@@ -2901,6 +2894,7 @@ function renderWiki(root){
      });
      detail.append(newTrade);
     }
+    } // Non-server NPCs do not have trade recipes or editable server IDs.
   }else if(type==='map'||type==='instance'){
     if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
      class:'wiki-instance-kind',text:wt('Сценарий задания','Quest scenario')
@@ -2918,7 +2912,8 @@ function renderWiki(root){
      }));
     }
     const mobs=rec.mobs||[];
-     if(type==='map'&&adminEditing&&adminToken&&!Object.hasOwn(wikiData.maps||{},id))
+     if(type==='map'&&adminEditing&&adminToken&&!rec.virtual&&
+      !Object.hasOwn(wikiData.maps||{},id))
       detail.append(h('p',{class:'wiki-owner-map-note',text:
        'Место известно по расположению NPC, но отсутствует в каталоге карт с монстрами. Добавление здесь недоступно.'}));
      if(adminEditing&&adminToken&&(type==='instance'||Object.hasOwn(wikiData.maps||{},id))){
@@ -2964,7 +2959,7 @@ function renderWiki(root){
     }
     if(type==='map'){
       const residents=wikiIndex.residents(id);
-      if(adminEditing&&adminToken){
+      if(adminEditing&&adminToken&&!rec.virtual){
        detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
         kind:'npc',existing:residents.map(([npcId])=>String(npcId)),onChange:async next=>{
          const before=residents.map(([npcId])=>String(npcId)),after=next.map(String);
@@ -2979,8 +2974,20 @@ function renderWiki(root){
          await saveWikiRecordField('npc',npcId,'maps',updated.map(Number));
         }}));
       }else if(residents.length){
-       detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')}));
-       detail.append(linkFlow(residents.map(([npcId])=>
+       detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')+' · '+residents.length}));
+       if(rec.virtual){
+        const list=h('div',{class:'wiki-map-npcs'});
+        for(const [npcId,npc] of residents){
+         const entry=h('div',{class:'wiki-map-npc'});
+         entry.append(wikiLink('♙ '+dataName('npc',npcId),'npc',npcId));
+         const meta=[npc.grid,npc.service].filter(Boolean);
+         if(meta.length)entry.append(h('small',{text:meta.join(' · ')}));
+         list.append(entry);
+        }
+        detail.append(list,h('small',{class:'wiki-astir-npc-source',
+         text:wt('Список из исторического справочника игры. На текущем сервере NPC могут отличаться.',
+          'Historical game reference; NPCs may differ on this server.')}));
+       }else detail.append(linkFlow(residents.map(([npcId])=>
         wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
       }
      const dropZones=wikiIndex.zones(id);
@@ -3017,11 +3024,17 @@ function renderWiki(root){
      if(wikiData.items?.[rec.key])required.append(itemLink(rec.key,dataName('item',rec.key),id));
      else required.append(h('span',{text:wt('Не указан','Not listed')}));
      const master=h('div',{class:'wiki-chest-opening-field'},[
-      h('small',{text:wt('Мастер сундуков','Chest master')}),
-      h('strong',{text:wt('Культье','Cultier')}),
-      h('span',{text:wt('Астир · территория Королевства','Astir · Kingdom territory')}),
-      wikiLink(wt('Территория Королевства · Астир','Kingdom District · Astir'),'map','astir-kingdom')
+      h('small',{text:wt('Мастера сундуков','Chest masters')})
      ]);
+     for(const [name,npcId,districtId] of [
+      [wt('Кларис','Claris'),'astir-npc-empire-claris','astir-empire'],
+      [wt('Культье','Cultier'),'astir-npc-kingdom-cultier','astir-kingdom']
+     ]){
+      const line=h('div',{class:'wiki-chest-master-row'});
+      line.append(wikiLink(name,'npc',npcId),
+       wikiLink(dataName('map',districtId),'map',districtId));
+      master.append(line);
+     }
      info.append(required,master);notice.append(info);
      detail.append(notice);
     }
@@ -4581,7 +4594,7 @@ function restoreWikiHash(){
  const navigationType=performance.getEntriesByType?.('navigation')?.[0]?.type;
  if(navigationType==='reload'&&
     (bootView.tab&&bootView.tab!=='wiki'||bootView.tab==='wiki'&&bootView.open===false))return;
- const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom))(?:\/([0-9]{1,15}))?$/);
+ const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z]+)(?:\/([0-9]{1,15}))?$/);
  if(!match)return;
  wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
  activeTab='wiki';
@@ -4591,7 +4604,7 @@ function restoreWikiHash(){
 window.addEventListener('hashchange',()=>{
  if(location.hash.startsWith('#b/')){restoreSharedHash();return}
  if(location.hash.startsWith('#wiki/')){
-  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom))(?:\/([0-9]{1,15}))?$/);
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z]+)(?:\/([0-9]{1,15}))?$/);
   if(match){
    const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
     typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
@@ -4723,7 +4736,7 @@ $('skillBranches').addEventListener('scroll',saveView,{passive:true});
 $('detailContent').addEventListener('scroll',saveView,{passive:true});
 window.addEventListener('popstate',()=>{
  if(location.hash.startsWith('#wiki/')){
-  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom))(?:\/([0-9]{1,15}))?$/);
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z]+)(?:\/([0-9]{1,15}))?$/);
   if(!match)return;
   const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
    typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
