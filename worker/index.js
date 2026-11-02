@@ -274,7 +274,7 @@ async function libraryApi(request,env){
  return json({ok:true,revision:item.at});
 }
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
-// No runtime calls to the third-party game server. All game data is read from our own D1.
+// Regular player views read D1 or bundled data. Only an authenticated admin may explicitly check the allowlisted external game-data source.
  if(!env.DB)return no('Database not configured',503);
  if(path.startsWith('/api/account/')){
   const rows=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('user_accounts','user_sessions','user_registration_limits')").all();

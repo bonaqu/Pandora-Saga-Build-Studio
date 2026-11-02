@@ -60,3 +60,24 @@ test('Pandora OS sync does not silently update currently published D1 Legacy tra
  assert.match(workbench,/review[.]retainLegacyRows/);
  assert.match(workbench,/normalized[.]entries[.]legacyLocale=legacyRows/);
 });
+
+test('admin sessions are independent from player sessions and expired admin auth is handled',()=>{
+ assert.match(app,/response\.status===401&&token&&token===adminToken/);
+ assert.match(app,/path\.startsWith\('\/api\/admin\/'\)/);
+ assert.match(app,/adminToken='';adminEditing=false/);
+ assert.match(workbench,/error\.httpStatus===401/);
+});
+test('live sync detects changing source revision and cannot misreport published snapshots',()=>{
+ assert.match(workbench,/sourceFile\('meta','server'\)/);
+ assert.match(workbench,/review\.equal\(next\.meta,finalMeta\)/);
+ assert.match(workbench,/await afterPublish\(\)/);
+ assert.match(workbench,/Данные опубликованы, но не удалось обновить страницу/);
+ assert.match(workbench,/if \(busy\) return/);
+});
+
+test('administrator sees neutral game-catalog labels instead of a source host brand',()=>{
+ assert.match(workbench,/Проверить обновления игрового каталога/);
+ assert.match(workbench,/Применить выбранные изменения/);
+ assert.match(app,/text:'Игровой каталог',onclick:showCatalogImport/);
+ assert.doesNotMatch(workbench,/Pandora Saga OS|Pandora Saga Open Server/);
+});

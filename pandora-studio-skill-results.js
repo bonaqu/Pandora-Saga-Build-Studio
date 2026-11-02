@@ -41,7 +41,7 @@ function create({catalog={},jobKey=null,level=1,innate={},trained={},lang='ru',b
  return {records,total:records.length,available:records.filter(x=>x.available).length,
   excluded:['weapon requirements','temporary skill-state conditions',
    'per-target resistance and mitigation','exact damage kernels'],
-  verified:false,source:'Current Pandora Saga OS skills.json'};
+  verified:false,source:'Current current game server skills.json'};
 }
 root.PandoraSkillResults=Object.freeze({create});
 })(typeof window==='undefined'?globalThis:window);

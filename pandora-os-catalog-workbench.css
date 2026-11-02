@@ -1,4 +1,4 @@
-/* Pandora OS catalog review. Controls appear only inside the admin modal. */
+/* current game server catalog review. Controls appear only inside the admin modal. */
 .os-sync{display:grid;gap:12px;min-width:0}
 .os-sync-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
 .os-sync-actions button{white-space:normal;line-height:1.3}

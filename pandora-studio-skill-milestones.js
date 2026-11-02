@@ -1,6 +1,6 @@
 (function(root){
 "use strict";
-// Displays only actual requirement records supplied by Pandora Saga OS.
+// Displays only actual requirement records supplied by current game server.
 // Thresholds exceeding the current class cap are preserved as unreachable, not hidden.
 function forBranch(records,branch,cap){
  const groups=new Map(),above=[],aboveSeen=new Set();

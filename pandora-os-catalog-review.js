@@ -154,6 +154,6 @@
   }
 
   root.PandoraOSCatalogReview = Object.freeze({
-    atomicDatasets, labels, id, changes, compose, retainLegacyRows
+    atomicDatasets, labels, id, changes, compose, retainLegacyRows, equal
   });
 })(typeof window === 'undefined' ? globalThis : window);

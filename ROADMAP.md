@@ -1,11 +1,21 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.303.0 (`2026.11.02.303`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.304.0 (`2026.11.02.304`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.304.0 — safe game-catalog admin refresh and neutral copy
+
+- [x] Neutral game-data wording in administrator UI, source comments and maintained project documentation, without changing actual source hostname, JSON IDs or D1 routing.
+- [x] Read upstream `meta` again after loading all 17 source datasets. Refuse to compare a mixed source revision.
+- [x] On 401 clear **only** the expired administrator login. The separate normal player account and local build drafts stay untouched.
+- [x] Disable per-record and per-group approval during staging. If D1 has already published, a failed follow-up page refresh never claims a rollback.
+- [x] Update the Cloudflare owner guide to the current selective-review interface and maintain a player-facing wording test.
+- [ ] Confirm production authenticated catalog import with a safe isolated write test. Existing read-only green checks do not prove authenticated publishing.
+- [ ] Verify HP/MP, magic refinement and final defense against actual current game-client results before altering uncertain coefficients.
 
 ## Source update 0.303.0 — Preserve published D1 Legacy localization
 
@@ -21,7 +31,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] Keep atomic approvals for trades, instances, formulas, expertise and chests. Recompute curated metadata and English locale counts without claiming official server CSV hashes.
 - [x] Validate whole candidate and reviewed selections before creating D1 staging entries. Apply an atomic expected-active lease when switching the published D1 snapshot.
 - [x] Add reviewed JSON export and a dry-run-first `catalog:review` CLI for separate GitHub source-file updating. No client-side GitHub write credential or D1 migration.
-- [x] Rename catalog-import/diff modules with Pandora OS-specific identity and update the loader, tests, documentation and release keys.
+- [x] Rename catalog-import/diff modules with current game server-specific identity and update the loader, tests, documentation and release keys.
 - [ ] Full real-server OS calculator and magic/defense parity; production Worker deploy, D1 mutation acceptance and GitHub publishing automation remain unverified or not implemented.
 
 ## Source update 0.300.0 — canonical item names, OS forge attack and left-aligned restrictions
@@ -396,7 +406,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 
 ## Source update 0.211.0 — local archive of 1,173 original OS item, skill and Soul images
 
-- Confirmed official Pandora Saga OS original WebP endpoints; imported 286 skills, 876 items, 11 Souls as local assets under `assets/*/icons/`. Each preserved source file passed RIFF/WebP validation, 0 corrupt; archive and manifest live in the Git branch.
+- Confirmed official current game server original WebP endpoints; imported 286 skills, 876 items, 11 Souls as local assets under `assets/*/icons/`. Each preserved source file passed RIFF/WebP validation, 0 corrupt; archive and manifest live in the Git branch.
 - Source inventory 1,437 expected = 1,173 present + 264 HTTP-404 missing (260 skills and 4 items). Missing game images are NOT faked, borrowed or counted as present; retain future recovery task for actual original assets.
 - Source URLs for Souls were wrong in the previous mirror tool. Verified they share `/icons/items/` upstream, while self-hosting copies as `/assets/souls/icons/`. Prefer these in runtime icon resolution.
 - Added strict archive/manifest integrity tests and a regression against reintroducing nonexistent Soul URL paths. Used a one-time isolated asset-import workflow and removed it from the proposed final repository diff.
@@ -1029,7 +1039,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 
 ## Source update 0.83.0 — HP/MP effect parity + responsive portrait separation
 
-- Base HP/MP: use Pandora Saga OS class coefficients and integer-cents truncation per Remaked Modern `current-vitals.js`. Preserve existing class/race/allocated values, inventory and Soul state.
+- Base HP/MP: use current game server class coefficients and integer-cents truncation per Remaked Modern `current-vitals.js`. Preserve existing class/race/allocated values, inventory and Soul state.
 - Item/Soul effect records now apply flat HP/MP and separately floored base-derived percentage HP/MP. Structured Soul grade filters remain in place.
 - Apply explicit OS item refinement descriptions for HP/MP/VIT/SPI per-N level and +N thresholds when unambiguous. No guessed unsupported enhancement or set mechanics.
 - Add optional, independently chosen guild HP and guild MP buffs 0–6 and Life Sign; never infer these buffs from the name of the guild. No data migration or D1 mutation needed; existing saved build stats remain intact.
