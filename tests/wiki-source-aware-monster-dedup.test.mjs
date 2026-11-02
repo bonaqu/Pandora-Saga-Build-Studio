@@ -78,9 +78,11 @@ test('real game encyclopedia hides unreferenced identical monster records withou
  assert.equal(index.search('monster','Гигантский питон').length,1);
  assert.equal(index.canonical('monster','72006'),'11205');
  const lamplighters=index.search('monster','Фонарщик');
- assert.ok(lamplighters.some(([id])=>id==='43641'));
- assert.ok(lamplighters.some(([id])=>id==='43642'),
-  'Distinct source-backed event variants must remain available');
+ assert.equal(lamplighters.length,1,
+  'Identical event phases with the same drop and spawns should show only once');
+ assert.equal(index.canonical('monster','43642'),'43641');
+ assert.equal(index.drops('43641').length,2);
+ assert.equal(index.locations('43641').length,2);
  assert.equal(Object.keys(input.monsters).length,702,
   'Deduplication must never delete original OS game records');
 });
