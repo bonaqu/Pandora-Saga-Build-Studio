@@ -108,6 +108,6 @@ test('item aliases retain separate zone chances and NPC recipes and every materi
   .map(x=>x.groupChance)),[5,30],'Both zone chances must remain visible');
  assert.deepEqual(plain(sources.filter(x=>x.type==='npc')
   .map(x=>x.recipe.id)),[77,78],'Separate NPC trades must remain visible');
- assert.deepEqual(plain(index.materialUses('100').map(x=>x.id)),[77,78]);
- assert.deepEqual(plain(index.materialUses('101').map(x=>x.id)),[77,78]);
+ assert.deepEqual(plain(index.materialUses('100').map(x=>x.id)).sort((a,b)=>a-b),[77,78]);
+ assert.deepEqual(plain(index.materialUses('101').map(x=>x.id)).sort((a,b)=>a-b),[77,78]);
 });
