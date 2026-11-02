@@ -508,7 +508,7 @@ function validWikiChestEdit(text){
    (r.n==null||Number.isInteger(r.n)&&r.n>=1&&r.n<=999999)&&
    (r.p==null||Number.isFinite(r.p)&&r.p>=0&&r.p<=100)&&
    (r.plus==null||Number.isInteger(r.plus)&&r.plus>=0&&r.plus<=20)&&
-   (r.soul==null||Number.isInteger(r.soul)&&r.soul>=0&&r.soul<=3))));
+   (r.soul==null||Number.isInteger(r.soul)&&r.soul>=0&&r.soul<=3)));
 }
 function validAcquisitionOverride(text){
  if(typeof text!=='string'||text.length>1800)return false;
