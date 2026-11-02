@@ -2180,21 +2180,67 @@ function renderWiki(root){
     for(const trade of recipes){
      const entry=h('section',{class:'wiki-trade-card'+
       (wikiSelection.highlight===String(trade.i)?' highlighted':'')});
+     const editing=adminEditing&&Boolean(adminToken);
+     const amend=patch=>saveWikiTradeRecipe({...trade,...patch});
      const output=h('div',{class:'wiki-trade-output'});
      output.append(h('small',{text:wt('Получить','Receive')}),
       itemLink(trade.i,dataName('item',trade.i),id));
+     if(editing)output.append(h('button',{type:'button',class:'wiki-owner-plus',
+      text:'✎','aria-label':'Изменить предмет обмена',
+      onclick:()=>wikiItemChoice(output,i=>amend({i}))}));
      entry.append(output);
-     if(trade.mats?.length){
+     if(trade.mats?.length||editing){
       const mats=h('div',{class:'wiki-recipe-mats'});
       mats.append(h('small',{text:wt('Необходимые материалы','Required materials')}));
-      for(const material of trade.mats)
-       mats.append(itemLink(material.i,dataName('item',material.i)+' ×'+(material.n??1),trade.i));
+      for(const [index,material] of (trade.mats||[]).entries()){
+       const row=h('span',{class:'wiki-owner-mat'});
+       row.append(itemLink(material.i,dataName('item',material.i),trade.i));
+       const quantity=h('span',{class:editing?'wiki-edit-value':'',
+        text:' ×'+(material.n??1),title:editing?'Двойной клик — изменить количество':''});
+       if(editing)quantity.ondblclick=e=>{
+        e.preventDefault();
+        editWikiValue(quantity,material.n,{type:'number',max:999999,integer:true,
+         onCommit:n=>{
+          if(n<1)throw Error('Количество должно быть больше нуля');
+          return amend({mats:trade.mats.map((m,j)=>j===index?{...m,n}:m)});
+         }});
+       };
+       row.append(quantity);
+       if(editing)row.append(h('button',{type:'button',class:'wiki-owner-remove',
+        text:'×','aria-label':'Убрать материал '+dataName('item',material.i),
+        onclick:()=>void amend({mats:trade.mats.filter((_,j)=>j!==index)})
+         .catch(e=>showStudioToast(e.message,'warning'))}));
+       mats.append(row);
+      }
+      if(editing)mats.append(h('button',{type:'button',class:'wiki-owner-plus',
+       text:'+ Материал',onclick:()=>wikiItemChoice(mats,i=>{
+        if((trade.mats||[]).length>=20)throw Error('Можно добавить не более 20 материалов');
+        return amend({mats:[...(trade.mats||[]),{i,n:1}]});
+       })}));
       entry.append(mats);
      }
-     const currencies=[[wt('Золото','Gold'),trade.gold],[wt('Честь','Honor'),trade.honor],[wt('Опыт','Experience'),trade.exp]]
-      .filter(([,value])=>Number(value)>0);
-     if(currencies.length)entry.append(h('div',{class:'wiki-trade-cost',text:
-      currencies.map(([name,value])=>name+': '+Number(value).toLocaleString('ru-RU')).join(' · ')}));
+     const currencies=[[wt('Золото','Gold'),trade.gold,'gold'],
+      [wt('Честь','Honor'),trade.honor,'honor'],[wt('Опыт','Experience'),trade.exp,'exp']]
+      .filter(([,value])=>editing||Number(value)>0);
+     if(currencies.length){
+      const costs=h('div',{class:'wiki-trade-cost'});
+      for(const [name,value,key] of currencies){
+       const chip=h('span',{class:'wiki-trade-currency'});
+       chip.append(h('span',{text:name+': '}));
+       const figure=h('strong',{text:Number(value||0).toLocaleString('ru-RU'),
+        class:editing?'wiki-edit-value':''});
+       if(editing){
+        figure.title='Двойной клик — изменить стоимость';
+        figure.ondblclick=e=>{
+         e.preventDefault();
+         editWikiValue(figure,Number(value||0),{type:'number',integer:true,max:999999999,
+          onCommit:n=>amend({[key]:n})});
+        };
+       }
+       chip.append(figure);costs.append(chip);
+      }
+      entry.append(costs);
+     }
      const searchText=wikiIndex.normalize([dataName('item',trade.i),
       ...(trade.mats||[]).map(m=>dataName('item',m.i))].join(' '));
      recipesBox.append(entry);cards.push({entry,searchText});
