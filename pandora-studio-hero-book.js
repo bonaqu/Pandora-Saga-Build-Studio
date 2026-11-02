@@ -272,14 +272,14 @@ function summaryRows(calc){
    row('АТК сзади','Back ATK',sum(c.backAttack,c.backAttackEquipmentRate),'%'),
    row('МАТК','MATK',c.magicAttack?.known,'%'),
    row('Точность','Accuracy',c.accuracy?.known),
-   row('Точн. спереди','Front accuracy',null),
+   row('Точн. спереди','Front accuracy',c.frontAccuracy?.known),
    row('Шанс крита','Critical chance',c.critical?.known,'%'),
    row('Крит. урон','Critical damage',c.criticalDamage,'%'),
    row('Дальн. АТК ближ. боя','Melee range (base)',calc?.attackRange?.baseMelee),
    row('Дальн. АТК дальн. боя','Ranged range (base)',calc?.attackRange?.baseRanged),
    row('Скор. атаки','Attack speed',c.attackSpeed?.known,'%'),
    row('Скор. каста','Casting speed',c.castingSpeed?.known,'%'),
-   row('Сокрщ. времени каста','Cast time',null,'%'),
+   row('Сокрщ. времени каста','Cast time',c.castTime?.known,'%'),
    row('Откат','Cooldown',c.cooldown,'%'),
    row('Скор. движения','Movement speed',c.movementSpeed?.known,'%'),
    row('Скор. в городе','Town movement speed',c.movementSpeed?.town,'%')]},
@@ -295,7 +295,7 @@ function summaryRows(calc){
     c.criticalIncoming,'%'),
    row('Получ. крит. урон','Incoming critical damage',c.criticalIncomingDamage,'%'),
    row('Укл. ближ. атак','Melee evasion',null,'%'),
-   row('Укл. дальн. атак','Ranged evasion',null,'%'),
+   row('Укл. дальн. атак','Ranged evasion',c.rangedEvasion?.known,'%'),
    row('Укл. от магии','Magic evasion',null,'%')]},
   {ru:'Сопротивления',en:'Resistances',page:'defense',symbol:'✦',rows:[
    row('Сопр. огню','Fire',elements.fire,'%'),
@@ -312,10 +312,10 @@ function summaryRows(calc){
 }
 function summaryPage(body,calc,onPage){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
-  text:'Параметры появятся после загрузки игровых данных.'}));return}
+  text:document.documentElement?.lang==='en'?'Stats appear after game data loads.':'Параметры появятся после загрузки игровых данных.'}));return}
  const english=document.documentElement?.lang==='en';
  body.append(make('div',{class:'stage-result-intro'},[
-  make('strong',{text:'Результаты расчёта'})
+  make('strong',{text:english?'Calculation results':'Результаты расчёта'})
  ]));
  const numberFormat=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:2});
  for(const group of summaryRows(calc)){
@@ -338,6 +338,16 @@ function summaryPage(body,calc,onPage){
    ]));
   }
   section.append(heading,grid);
+  if(group.page==='attack'&&calc?.combat){
+   section.append(make('small',{class:'stage-attribute-note',text:english?
+    'Front accuracy and cast time use Remaked baseline calculations; positional equipment and active casting effects are not fully verified for OS.':
+    'Точность спереди и время каста рассчитаны по базовым правилам Remaked; отдельные позиционные бонусы и активные эффекты OS ещё не полностью проверены.'}));
+  }
+  if(group.ru==='Защита'&&calc?.combat?.rangedEvasion){
+   section.append(make('small',{class:'stage-attribute-note',text:english?
+    'Ranged evasion includes the original Remaked Honor bonus. Other OS conditional bonuses are not yet verified.':
+    'Уклонение от дальних атак включает исторический бонус титула Remaked. Другие условные бонусы OS ещё не подтверждены.'}));
+  }
   if(group.page==='attack'&&calc?.attackRange?.baseOnly)
    section.append(make('small',{class:'stage-attribute-note',text:english?
     'Weapon range shows the OS base value in raw units, without unverified equipment and skill range bonuses.':
