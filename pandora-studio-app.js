@@ -2196,7 +2196,19 @@ function renderWiki(root){
     }
     detail.append(h('h4',{text:wt('Места появления','Spawn locations')}));
     const places=wikiIndex.locations(id);
-    if(places.length)detail.append(linkFlow(places.map(loc=>
+    if(adminEditing&&adminToken){
+     for(const kind of ['map','instance']){
+      const chosen=places.filter(x=>x.type===kind).map(x=>String(x.id));
+      detail.append(wikiOwnerEntityList({label:kind==='map'?'Локации':'Подземелья',
+       kind,existing:chosen,onChange:async next=>{
+        const updated=next.map(String);
+        const added=updated.find(x=>!chosen.includes(x));
+        const removed=chosen.find(x=>!updated.includes(x));
+        if(added)await saveWikiSpawns(id,kind,added,true);
+        else if(removed)await saveWikiSpawns(id,kind,removed,false);
+       }}));
+     }
+    }else if(places.length)detail.append(linkFlow(places.map(loc=>
      wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
     const loot=wikiIndex.drops(id);
     detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')+
@@ -2219,7 +2231,10 @@ function renderWiki(root){
     }
   }else if(type==='npc'){
     const locations=rec.maps||[];
-    detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
+    if(adminEditing&&adminToken)detail.append(wikiOwnerEntityList({
+     label:wt('Где находится','Where to find'),kind:'map',existing:locations,
+     onChange:next=>saveWikiRecordField('npc',id,'maps',next)}));
+    else detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
      wikiLink('◈ '+dataName('map',mapId),'map',mapId,id))));
     const ownerStock=wikiIndex.ownerNpcItems(id);
     if(ownerStock.length){
@@ -2376,6 +2391,16 @@ function renderWiki(root){
      (rec.blurbRu||null):rec.blurb;
     if(description)detail.append(h('p',{class:'wiki-description',text:description}));
     const mobs=rec.mobs||[];
+    if(adminEditing&&adminToken){
+     detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
+      kind:'monster',existing:mobs,onChange:async next=>{
+       const before=mobs.map(String),after=next.map(String);
+       const added=after.find(x=>!before.includes(x));
+       const removed=before.find(x=>!after.includes(x));
+       if(added)await saveWikiSpawns(added,type,id,true);
+       else if(removed)await saveWikiSpawns(removed,type,id,false);
+      }}));
+    }
     if(mobs.length){
      const roster=mobs.map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}));
      const levels=roster.map(row=>row.mon?.level).filter(Number.isFinite);
