@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.02.302",
-  "notes": "Pandora Studio modules named and dependency links audited"
+  "release": "2026.11.02.303",
+  "notes": "OS каталог обновляется без перезаписи текущих Legacy-переводов Cloudflare D1"
 }
