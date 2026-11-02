@@ -396,9 +396,13 @@ function buffsPage(body,options){
   label.append(input);priestFields.append(label);
  }
  priest.append(priestFields);
+ toggle(priest,english?'Gratia · attack speed':'Грация · скорость атаки','priestGratia',
+  false,buffs.priestEnabled===true);
+ toggle(priest,english?'Lapis Medio · armor':'Ляпис Медио · защита','priestLapisMedio',
+  false,buffs.priestEnabled===true);
  priest.append(make('p',{class:'stage-attribute-note',text:english?
-  'Priest values determine the preview of legacy spell strengths. Selectable combat effects are not automatically applied.':
-  'СД, благословение и песнопение жреца влияют на предпросмотр силы его умений. Эффекты не включаются автоматически без выбора соответствующего усиления.'}));
+  'Gratia and Lapis Medio affect attack speed and defense only when selected; other listed priest effects remain informational until their combat formulas are verified.':
+  'Грация и Ляпис Медио влияют на скорость атаки и защиту только при выборе. Остальные эффекты жреца пока показаны для справки до подтверждения боевых формул.'}));
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
