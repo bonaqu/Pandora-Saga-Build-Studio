@@ -28,7 +28,7 @@ export function validPassword(value,username=''){
  if(count<8||count>128||enc.encode(value).length>512)return false;
  // Keep trivial repetitions and obvious keyboard/number sequences blocked even
  // after reducing the minimum length from fifteen characters to eight.
- if(/^(.)\\1{7,}$/u.test(value)||/(?:12345678|87654321|qwertyui|asdfghjk)/i.test(value))return false;
+ if(/^(.)\1{7,}$/u.test(value)||/^(?:1234567890?|87654321|qwertyui|asdfghjk)$/i.test(value))return false;
  const weak=['password123456789','123456789012345','qwertyuiopasdfg',
   'pandorasaga12345','letmein123456789'];
  return !weak.includes(value.toLowerCase())&&value.toLowerCase()!==username.toLowerCase();
