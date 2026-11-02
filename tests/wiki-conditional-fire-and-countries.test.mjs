@@ -64,7 +64,7 @@ test('Union Kingdom and Empire are grounded in NPC location catalog and shown di
  const app=file('pandora-studio-app.js');
  for(const id of ['1002001','1003001','1004001'])assert.ok(app.includes(id));
  assert.match(app,/Культье/);
- assert.match(app,/Вастир/);
+ assert.match(app,/Астир/);
  assert.match(app,/wiki-chest-opening-fields/);
 });
 test('numeric values align to right and Phoenix help term is dotted',()=>{
