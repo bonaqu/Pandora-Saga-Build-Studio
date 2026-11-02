@@ -1,0 +1,65 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import worker from '../worker/index.js';
+
+const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev/api/admin/catalog/source/';
+const origin='https://bonaqu.github.io';
+const adminToken='a'.repeat(43);
+const env={DB:{
+ prepare(statement){
+  assert.match(statement,/sessions WHERE token_hash/);
+  return {bind(){return this},first:async()=>({id:1})};
+ }
+}};
+function request(name,authorized=false){
+ return new Request(endpoint+name+'.json',{
+  method:'GET',headers:{
+   Origin:origin,
+   ...(authorized?{Authorization:'Bearer '+adminToken}:{})
+  }
+ });
+}
+test('anonymous callers cannot request a live game-data source',async()=>{
+ const original=globalThis.fetch;
+ let network=0;
+ globalThis.fetch=async()=>{network++;throw Error('Unauthenticated request leaked')};
+ try{
+  const res=await worker.fetch(request('items'),{DB:{prepare(){throw Error('No DB access before auth')}}});
+  assert.equal(res.status,401);
+  assert.equal(network,0);
+  assert.equal(res.headers.get('access-control-allow-origin'),origin);
+ }finally{globalThis.fetch=original}
+});
+test('authorized game-data proxy uses allowlisted names and never forwards admin credentials',async()=>{
+ const original=globalThis.fetch;
+ let network=0;
+ globalThis.fetch=async (url,options)=>{
+  network++;
+  assert.equal(url,'https://pandorasaga-os.com/gamedata/meta.json');
+  assert.equal(options.redirect,'error');
+  assert.equal(options.headers.accept,'application/json');
+  assert.equal(options.headers.authorization,undefined);
+  return new Response(JSON.stringify({counts:{items:1}}),{
+   status:200,headers:{'content-type':'application/json'}});
+ };
+ try{
+  const ok=await worker.fetch(request('meta',true),env);
+  assert.equal(ok.status,200);
+  assert.deepEqual(await ok.json(),{counts:{items:1}});
+  assert.equal(network,1);
+  const forbidden=await worker.fetch(request('fake',true),env);
+  assert.equal(forbidden.status,404);
+  assert.equal(network,1);
+ }finally{globalThis.fetch=original}
+});
+test('unavailable or invalid upstream responses stop safely without touching D1',async()=>{
+ const original=globalThis.fetch;
+ let called=0;
+ globalThis.fetch=async()=>{called++;return new Response('Forbidden',{status:403})};
+ try{
+  const denied=await worker.fetch(request('skills',true),env);
+  assert.equal(denied.status,502);
+  assert.match((await denied.json()).error,/Source unavailable/);
+  assert.equal(called,1);
+ }finally{globalThis.fetch=original}
+});
