@@ -116,3 +116,30 @@
 .wiki-trade-output{min-width:0}
 .wiki-trade-sellers .wiki-owner-plus{align-self:center;margin:0}
 @media(max-width:650px){.wiki-chest-flat{grid-template-columns:minmax(0,1fr)}}
+
+/* Soul attributes: one game-themed frame with a clean vertical divider. */
+.wiki-soul-properties{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+ margin:13px 0 17px;border:1px solid #947044;border-radius:10px;
+ background:linear-gradient(125deg,#382619,#221913);overflow:hidden}
+.wiki-soul-properties-half{min-width:0;padding:13px 15px;display:flex;flex-direction:column;gap:9px}
+.wiki-soul-properties-half+.wiki-soul-properties-half{
+ border-left:1px solid #755435;background:rgba(13,9,7,.16)}
+.wiki-page .wiki-soul-properties h4{font:600 15px Georgia,serif;color:#e9c08a;margin:0;
+ display:flex;align-items:center;gap:7px}
+.wiki-soul-slot-list{display:flex;gap:7px;align-items:center;flex-wrap:wrap;min-width:0}
+.wiki-soul-slot-list .wiki-owner-mat{margin:0}
+.wiki-soul-price-pane .wiki-soul-price-value{color:#f4d19a;font-size:19px;
+ line-height:1.25;font-weight:700;font-variant-numeric:tabular-nums}
+.wiki-soul-price-heading .wiki-soul-price-label{font-size:inherit;opacity:1}
+.wiki-soul-price-help{border:1px solid #906b42;color:#d7ad71;border-radius:50%;
+ font:12px/19px sans-serif;width:20px;height:20px;text-align:center;cursor:help}
+.wiki-soul-price-heading [tabindex]:focus-visible{outline:2px solid #eed09d;outline-offset:3px}
+.wiki-chest-opening{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+ padding:10px 13px;margin:11px 0;border:1px solid #8a663f;border-radius:9px;
+ background:linear-gradient(115deg,#342315,#1e1712);color:#e8cda6}
+.wiki-chest-opening strong{color:#f3d099}
+@media(max-width:540px){
+ .wiki-soul-properties{grid-template-columns:1fr}
+ .wiki-soul-properties-half+.wiki-soul-properties-half{
+  border-left:0;border-top:1px solid #755435}
+}
