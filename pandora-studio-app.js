@@ -1760,7 +1760,7 @@ function renderWiki(root){
        h('button',{type:'button',class:'button-action wiki-owner-pencil',
         'aria-label':'Изменить название '+dataName(type,id),
         title:'Изменить название',text:'✎ Название',
-        onclick:()=>editor(heading)})
+        onclick:()=>inlineWikiText(heading)})
      ]));
    }else detail.append(heading);
    const namesakes=wikiIndex.sameName(type,id);
@@ -1785,7 +1785,7 @@ function renderWiki(root){
    detail.append(description);
    if(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')){
      detail.append(h('button',{type:'button',class:'button-action wiki-owner-desc-edit',
-      text:'✎ Изменить описание',onclick:()=>editor(description)}));
+      text:'✎ Изменить описание',onclick:()=>inlineWikiText(description)}));
    }
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
@@ -3008,6 +3008,88 @@ function editor(el){
   document.body.append(root);activeInlineEditor=root;
   input.focus();
 }
+
+function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=false,onCommit}={}){
+ if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
+ const before=String(initial??'');
+ let finished=false,saving=false;
+ const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
+  type==='textarea'?h('textarea',{rows:4,class:'wiki-inline-input','aria-label':'Изменить описание'}):
+  h('input',{type:type==='number'?'number':'text',class:'wiki-inline-input',
+    'aria-label':'Изменить значение',autocomplete:'off',
+    ...(type==='number'?{min:'0',max:String(max),step:integer?'1':'any'}:{})});
+ if(type==='select'){
+  for(const option of options){
+   const el=h('option',{value:option.value,text:option.label});
+   el.selected=option.value===before;control.append(el);
+  }
+ }else control.value=before;
+ const restore=()=>{if(node.isConnected){node.replaceChildren(document.createTextNode(before));node.classList.remove('wiki-inline-saving')}};
+ const save=async()=>{
+  if(finished||saving)return;
+  const raw=control.value;
+  const value=type==='number'?(raw.trim()===''?null:Number(raw)):raw.trim();
+  if(type==='number'&&(value===null||!Number.isFinite(value)||value<0||value>max||
+   (integer&&!Number.isInteger(value)))){
+   control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
+  }
+  if(type!=='number'&&type!=='select'&&(value.length>2000||(!value&&type==='text'))){
+   control.setCustomValidity('Некорректная длина текста');control.reportValidity();control.focus();return;
+  }
+  if(String(value)===before){finished=true;restore();return}
+  saving=true;control.disabled=true;node.classList.add('wiki-inline-saving');
+  try{await onCommit(value);finished=true;restore()}
+  catch(error){saving=false;control.disabled=false;node.classList.remove('wiki-inline-saving');
+   control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity();control.focus()}
+ };
+ control.oninput=()=>control.setCustomValidity('');
+ control.onblur=()=>{if(type==='select'){if(!saving){finished=true;restore()}}else void save()};
+ control.onchange=()=>{if(type==='select')void save()};
+ control.onkeydown=e=>{
+  if(e.key==='Escape'){e.preventDefault();finished=true;restore()}
+  else if(e.key==='Enter'&&(type!=='textarea'||e.ctrlKey)){e.preventDefault();void save()}
+ };
+ node.replaceChildren(control);control.focus();
+ if(type==='number'||type==='text')control.select();
+}
+async function saveWikiItemField(id,field,value){
+ if(!adminEditing||!adminToken||!catalogSource?.items?.[id])throw Error('Редактирование недоступно');
+ const base=catalogSource.items[id],key='itemedit.'+id,previous=activeOverride(key);
+ const patch={...window.PandoraStudioItemOwnerEditor.ownPatch(override,id)};
+ if(value===base[field]||(value===null&&base[field]==null))delete patch[field];
+ else patch[field]=value;
+ if(field==='kind'&&/^[12]H_/.test(value))patch.twoHanded=value.startsWith('2H_');
+ const serialized=JSON.stringify(patch);
+ if(serialized===JSON.stringify(window.PandoraStudioItemOwnerEditor.ownPatch(override,id)))return;
+ editIsSaving=true;
+ try{
+  if(!Object.keys(patch).length){
+   if(previous===null)return;
+   await apiRequest('/api/admin/reset',{key});delete override[key];
+   ownerEdits.push({key,before:previous,after:null});
+  }else{
+   await apiRequest('/api/admin/override',{key,value:serialized});
+   override[key]=serialized;ownerEdits.push({key,before:previous,after:serialized});
+  }
+  refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
+function inlineWikiText(el){
+ const key=el?.dataset?.editKey;
+ if(!adminEditing||!adminToken||!key)return;
+ const matched=/^(item|itemdesc)\.([0-9]{1,15})$/.exec(key);
+ const source=matched?wikiData?.items?.[matched[2]]:null;
+ const desc=key.startsWith('itemdesc.')||key.startsWith('skilldesc.');
+ const value=source?String(source[desc?'desc':'name']??''):el.textContent;
+ editWikiValue(el,value,{type:desc?'textarea':'text',onCommit:async next=>{
+  if(matched)return saveWikiItemField(matched[2],desc?'desc':'name',next);
+  if(!next||next.length>(desc?2000:240))throw Error('Некорректная длина текста');
+  const previous=activeOverride(key);
+  await apiRequest('/api/admin/override',{key,value:next});
+  override[key]=next;ownerEdits.push({key,before:previous,after:next});refreshOwnerCatalog();
+ }});
+}
+
 function openWikiItemEditor(id,item){
  if(!adminToken||!adminEditing||!catalogSource?.items?.[id])return;
  const key='itemedit.'+id,base=catalogSource.items[id];
@@ -3214,7 +3296,7 @@ document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const editable=event.target.closest('[data-edit-key]');
  if(!editable||!/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;
- event.preventDefault();event.stopImmediatePropagation();editor(editable);
+ event.preventDefault();event.stopImmediatePropagation();inlineWikiText(editable);
 },true);
 $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView()};
  $('pathSkillsTab').onclick=()=>{heroPathPage='skills';renderPathPages();saveView()};
