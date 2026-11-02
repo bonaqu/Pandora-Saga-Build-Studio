@@ -15,6 +15,14 @@ export async function runAdminEntrySmoke(browser,base){
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
   const json=(value,status=200)=>route.fulfill({
    status,headers,contentType:'application/json',body:JSON.stringify(value)});
+  if(path.startsWith('/api/admin/catalog/source/')&&method==='GET'){
+   const name=path.slice('/api/admin/catalog/source/'.length,-5);
+   assert.equal(route.request().headers().authorization,'Bearer '+ 'a'.repeat(43),
+    'Only a confirmed administrator token may retrieve the live source');
+   calls.push('game-source:'+name);
+   const source=JSON.parse(readFileSync(new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
+   return json(source);
+  }
   if(path==='/api/catalog/legacyLocale.json'){
    const approved=JSON.parse(readFileSync(new URL('../data/localization/legacy-approved.v1.json',import.meta.url),'utf8'));
    const rows={};let i=0;
@@ -98,6 +106,16 @@ export async function runAdminEntrySmoke(browser,base){
   const download=await downloadPromise;
   assert.equal(download.suggestedFilename(),'pandora-os-reviewed-catalog.json');
   assert.match(await dialog.locator('.os-sync [role=status]').last().innerText(),/GitHub не изменён/);
+  // Exercise the authenticated game-data proxy as well as archive preview.
+  await dialog.getByRole('button',{name:'Проверить обновления игрового каталога'}).click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
+    null,{timeout:30000});
+  assert.equal(calls.filter(x=>x==='game-source:meta').length,2,
+    'meta must be fetched twice to detect mixed server revisions');
+  assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,18,
+    'all 17 datasets and one final meta revision check are required');
+  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true,
+    'a fresh live comparison must reject all changes by default');
   assert.deepEqual(errors,[]);
   const other=await context.newPage();
   await other.goto(base+'/',{waitUntil:'domcontentloaded'});
