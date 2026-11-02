@@ -67,12 +67,37 @@ const extraLabels={
  EP_SKILL_EXEC_MAPIN:'Применение навыка при входе на карту',
  EP_TOHIT_SCALE:'Меткость (%)',EP_VOLUME_EXP:'Получаемый опыт'
 };
-function effectOptions(items){
+const wearable=new Set('weapon shield head body gloves legs feet cloak ring neck belt ear'.split(' '));
+const nonEquipmentEffects=new Set([
+ 'EP_ABILITY_RESET','EP_EXPERTISE_RESET','EP_RESTART','EP_RANDOM_BOX',
+ 'EP_BOW_CARRY','EP_RACE_CARRY','EP_RACE_RANGE','EP_RACE_MANA_COSTCUT',
+ 'EP_SKILL_BENCH','EP_SKILL_DELAY','EP_SKILL_EXEC','EP_SKILL_EXEC_BALM',
+ 'EP_SKILL_EXEC_MAPIN','EP_RECOVERY_BURN','EP_RECOVERY_CURSE',
+ 'EP_RECOVERY_DISEASE','EP_RECOVERY_NUMB','EP_RECOVERY_POISON',
+ 'EP_RECOVERY_RAVING','EP_RECOVERY_SILENCE'
+]);
+const effectLabels=new Map([...effects,...Object.entries(extraLabels)]);
+function effectOptions(items,wearableItem=null){
  const chosen=new Set(effects.map(([code])=>code));
  for(const item of Object.values(items||{}))for(const entry of item?.effects||[])
   if(/^EP_[A-Z0-9_]{2,65}$/.test(entry?.func||''))chosen.add(entry.func);
+ // Player equipment has a different effect vocabulary from potions, skill
+ // commands, reset scrolls and loot box activations.
+ if(wearableItem){
+  if(!wearable.has(wearableItem.slot))return [];
+  const observed=new Set();
+  for(const item of Object.values(items||{}))
+   if(wearable.has(item?.slot))
+    for(const entry of item?.effects||[])observed.add(entry.func);
+  for(const code of chosen){
+   if(nonEquipmentEffects.has(code)||/^EP_RECOVERY_/.test(code)||
+    /^EP_SKILL_EXEC(?:_|$)/.test(code)||
+    code==='EP_BOW_RANGE'&&!['BOW','CROSSBOW'].includes(wearableItem.kind)||
+    !effectLabels.has(code)&&!observed.has(code))chosen.delete(code);
+  }
+ }
  return [...chosen].map(func=>({
-  value:func,label:effects.find(row=>row[0]===func)?.[1]||extraLabels[func]||
+  value:func,label:effectLabels.get(func)||
    'Игровой эффект «'+func.replace(/^EP_/,'').toLowerCase().replaceAll('_',' ')+'»'
  })).sort((a,b)=>a.label.localeCompare(b.label,'ru'));
 }
