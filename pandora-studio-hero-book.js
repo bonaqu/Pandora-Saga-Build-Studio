@@ -1095,7 +1095,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    'Включены базовые формулы, расовые способности, честь и структурированные сопротивления от вещей/душ, включая требования заточки; другие навыки и серверные иммунитеты ещё не полностью учтены.'}));
   body.prepend(card);
  }
- if(page==='recovery'&&modifiers?.regeneration){
+ if(page==='summary'&&modifiers?.regeneration){
   const regen=modifiers.regeneration,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Скорость естественного восстановления'}),
    make('p',{text:'ОЗ: '+regen.hp.total+' (база '+regen.hp.base+
@@ -1108,7 +1108,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     text:'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Эффекты экипировки и активных навыков пока не включены.'}));
   body.prepend(card);
  }
- if(page==='recovery'&&modifiers?.recoveryAmount){
+ if(page==='summary'&&modifiers?.recoveryAmount){
   const natural=modifiers.recoveryAmount,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Естественное восстановление (расчётная величина)'}),
    make('p',{text:'ОЗ: '+natural.hp.known+' (максимум ОЗ '+natural.hp.maxContribution+
@@ -1138,11 +1138,11 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
-  const percent=modifiers?.potion?.percent,heal=modifiers?.healingSkill?.percent;
+  const percent=modifiers?.potion?.percent;
   const quick=make('div',{class:'stage-result-grid'});
   for(const [title,value,note] of [
    [english?'Potion effectiveness':'Эффективность зелий',Number.isFinite(percent)?percent+'%':'—',english?'HP recovery':'Восстановление ОЗ'],
-   [english?'Healing effectiveness':'Эффективность лечения',Number.isFinite(heal)?heal+'%':'—',english?'Healing skills':'Лечащие навыки']
+
   ])quick.append(make('div',{class:'stage-result-tile'},[
    make('span',{text:title}),make('strong',{text:value}),make('small',{text:note})]));
   body.prepend(quick);
