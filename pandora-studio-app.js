@@ -1924,7 +1924,8 @@ function renderWiki(root){
     if(wikiItemType!=='all'&&!(wikiItemType==='equipment'?
      slotKeys.includes(rec.slot):rec.slot===wikiItemType))return false;
     return wikiItemEligibility==='all'||
-     heroCompatible(rec,state.level);$1});
+     heroCompatible(rec,state.level);
+   });
   if(type==='map'&&!wikiSearch){
    const territories=new Map([['1002001',0],['1003001',1],['1004001',2]]);
    results.sort((a,b)=>(territories.get(String(a[0]))??100)-
