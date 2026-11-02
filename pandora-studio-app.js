@@ -2743,7 +2743,7 @@ function renderWiki(root){
      label:wt('Где находится','Where to find'),kind:'map',existing:locations,
      onChange:next=>saveWikiRecordField('npc',id,'maps',next)}));
     else detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
-     wikiLink('◈ '+dataName('map',mapId),'map',mapId,id))));
+     wikiLink('◈ '+dataName('map',mapId),'map',mapId,rec.virtual?null:id))));
     if(!rec.virtual){
     const ownerStock=wikiIndex.ownerNpcItems(id);
     if(ownerStock.length){
