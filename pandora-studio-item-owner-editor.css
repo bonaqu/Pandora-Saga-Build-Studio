@@ -40,3 +40,21 @@
 .wiki-owner-edit-row>h3{flex:1 1 200px;min-width:0}
 .wiki-owner-pencil{align-self:center;flex:0 0 auto}
 .wiki-owner-desc-edit{margin:3px 0 13px}
+
+/* Values are edited directly inside the encyclopedia; controls inherit the game theme. */
+.wiki-edit-value{cursor:text;border-bottom:1px dashed rgba(224,180,107,.6);
+ min-width:36px;transition:background .13s;color:var(--cream)}
+.wiki-edit-value:hover{background:rgba(216,162,70,.12)}
+.wiki-inline-input,.wiki-inline-select{font:inherit;color:var(--cream);background:#201710;
+ border:1px solid var(--gold2);border-radius:6px;padding:5px 8px;width:min(100%,230px);
+ min-width:75px;max-width:100%;box-sizing:border-box}
+.wiki-description .wiki-inline-input{width:100%;min-height:95px;resize:vertical}
+.wiki-inline-input:focus,.wiki-inline-select:focus{outline:2px solid var(--gold);outline-offset:1px}
+.wiki-inline-saving{opacity:.65;pointer-events:none}
+.wiki-owner-instruction{display:block;margin:8px 0;color:var(--gold);font-size:.78rem}
+.wiki-help-label{cursor:help;text-decoration:underline dotted rgba(215,173,104,.6);text-underline-offset:3px}
+.wiki-owner-remove,.wiki-owner-plus{display:inline-flex;align-items:center;justify-content:center;
+ margin-left:6px;min-width:22px;height:22px;border:1px solid rgba(223,177,98,.45);
+ border-radius:6px;background:#38271a;color:#f0c78b;cursor:pointer;font:inherit}
+.wiki-owner-remove:hover,.wiki-owner-plus:hover{border-color:#f0c78b;background:#5c3b21}
+.wiki-owner-remove:focus-visible,.wiki-owner-plus:focus-visible{outline:2px solid var(--gold)}
