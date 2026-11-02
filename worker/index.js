@@ -376,7 +376,7 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/runtime-capabilities'&&method==='GET')
- return json({codeRelease:'0.311.0',ownerEditors:[
+ return json({codeRelease:'0.313.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit'],
   githubOwnerExport:true});
 if(path==='/api/health'&&method==='GET'){
