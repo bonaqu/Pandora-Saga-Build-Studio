@@ -1221,6 +1221,9 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    }
    body.append(health);
   }
+ }
+ if(chosen==='effects'){
+  const english=document.documentElement?.lang==='en';
   const cures=modifiers?.statusCures?.rows||[];
   if(cures.length){
    const panel=make('details',{class:'stage-attribute-row stage-status-cures'});
