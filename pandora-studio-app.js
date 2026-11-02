@@ -3202,6 +3202,24 @@ async function saveWikiItemField(id,field,value){
   refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
+async function saveWikiTradeRecipe(recipe,changes=null){
+ if(!adminToken||!adminEditing||!wikiData?.trades)throw Error('Редактор обменов недоступен');
+ const normalized={id:Number(recipe.id),i:Number(recipe.i),
+  npc:(recipe.npc||[]).map(Number),mats:(recipe.mats||[]).map(row=>({i:Number(row.i),n:Number(row.n)})),
+  gold:Number(recipe.gold||0),honor:Number(recipe.honor||0),exp:Number(recipe.exp||0)};
+ const key='tradeedit.'+normalized.id,previous=activeOverride(key);
+ const patch=changes||{recipe:normalized};
+ if(changes===null&&!window.PandoraStudioTradeOwnerData.recipeValid(
+  normalized,wikiData.items,wikiData.trades.npcs))
+  throw Error('Проверь выбранные предметы, NPC и стоимость обмена');
+ const value=JSON.stringify(patch);
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key,value});
+  override[key]=value;ownerEdits.push({key,before:previous,after:value});
+  refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
 async function saveWikiAcquisitions(itemId,rows){
  if(!adminToken||!adminEditing||!wikiData?.items?.[itemId])
   throw Error('Редактирование источников недоступно');
