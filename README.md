@@ -1,5 +1,21 @@
 # Pandora Saga Build Studio
 
+## Pandora Saga OS · выборочная синхронизация через админку
+
+Администратор открывает **Каталог D1** → **Проверить синхронизацию данных с Pandora Saga OS API**. Проверяются 17 игровых JSON, целостность источника и версия опубликованной D1. По умолчанию **ни одна запись не принята**: можно выбрать отдельные изменения, раздел или все изменения, отклонить выбор, искать по названию и ID. Обмены NPC, инстансы, игровые формулы, мастерство и сундуки принимаются целиком, чтобы сохранить внутренние связи. Перед публикацией снимок снова проверяется, а Worker атомарно предотвращает перезапись более новой D1.
+
+**D1 не обновляет файлы GitHub автоматически.** Кнопка «Скачать выбранное для GitHub» создаёт проверяемый JSON-экспорт. Обновить архив в собственном checkout можно только отдельно:
+
+```bash
+npm run catalog:review -- ./pandora-os-reviewed-catalog.json
+npm run catalog:review -- ./pandora-os-reviewed-catalog.json --write
+npm test
+npm run test:browser
+```
+
+Первый вызов — dry run без записи файлов. После `--write` изучи Git diff и тесты, затем создай обычный GitHub-коммит. Браузер не содержит GitHub PAT. Включение новой логики D1 требует отдельного успешного деплоя Worker; сам GitHub Pages deploy этого не делает.
+
+
 Independent, visual, vintage-inspired Pandora Saga build planner. Static site intended for **GitHub Pages**, secure optional CMS backend on **Cloudflare Workers + D1**.
 
 [**Полный журнал релизов**](CHANGELOG.md) · [Полный аудит формул Remaked](docs/REMAKED_FORMULA_INVENTORY.md) · [Игровые проверки Pandora Saga OS](docs/OS_LIVE_PARITY_CHECKS.md) · [**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
@@ -497,7 +513,7 @@ The owner-only **Каталог D1** operation now validates all 12 public OS da
 
 ### 2026-10-30.10 — verified complete import
 
-The checked-in snapshot includes **12 distinct OS datasets** and separately stores approved Legacy RU/EN/JP/TW source terminology. Import normalization was checked against actual source files: **6,418 rows** across 15 D1 namespaces, including **3,275 language records**. Added `tests/catalog-import.test.mjs` for missing data, array-formatted instances and trade metadata, and `catalog-import.js` for source-preserving normalization. Keep Legacy localization keys separate from OS IDs until individually verified. The next site release increments the manifest and cache-busting query strings to deliver this fix.
+The checked-in snapshot includes **12 distinct OS datasets** and separately stores approved Legacy RU/EN/JP/TW source terminology. Import normalization was checked against actual source files: **6,418 rows** across 15 D1 namespaces, including **3,275 language records**. Added `tests/catalog-import.test.mjs` for missing data, array-formatted instances and trade metadata, and `pandora-os-catalog-import.js` for source-preserving normalization. Keep Legacy localization keys separate from OS IDs until individually verified. The next site release increments the manifest and cache-busting query strings to deliver this fix.
 
 ## Vintage character window and profile (2026-10-30)
 
