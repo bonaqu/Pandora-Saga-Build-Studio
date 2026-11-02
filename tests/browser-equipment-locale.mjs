@@ -184,6 +184,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.doesNotMatch(await page.locator('.wiki-chest-master-row').innerText(),/Культье/);
   await page.goto(base+'/#wiki/npc/astir-npc-kingdom-claris',{waitUntil:'domcontentloaded'});
   const englishSearch=page.locator('.wiki-controls input[type="search"]');
+  await englishSearch.click();
   await englishSearch.fill('Claris');
   assert.ok(await page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"]').count()===1);
   await englishSearch.fill('Кларис');
