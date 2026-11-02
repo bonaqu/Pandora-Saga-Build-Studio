@@ -396,7 +396,7 @@ function validItemOwnerPatch(text){
  try{obj=JSON.parse(text)}catch{return false}
  if(!obj||typeof obj!=='object'||Array.isArray(obj))return false;
  const allowed=new Set(['level','W','PEN','AC','atkspeed','range','soulslot',
-  'twoHanded','classes','effects']);
+  'twoHanded','classes','effects','sourceNote']);
  const numbers=new Set(['level','W','PEN','AC','atkspeed','range','soulslot']);
  const plain=x=>Boolean(x&&typeof x==='object'&&!Array.isArray(x));
  const keys=Object.keys(obj);
@@ -409,6 +409,8 @@ function validItemOwnerPatch(text){
   }else if(key==='classes'){
    if(!plain(value)||Object.keys(value).length>28)return false;
    if(Object.entries(value).some(([k,v])=>!/^[A-Z_]{2,25}$/.test(k)||v!==1))return false;
+  }else if(key==='sourceNote'){
+   if(typeof value!=='string'||value.length>500)return false;
   }else if(key==='effects'){
    if(!Array.isArray(value)||value.length>32)return false;
    for(const effect of value){
