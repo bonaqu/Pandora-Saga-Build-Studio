@@ -19,10 +19,14 @@ function summary(record,icon,kind='item',context=null){
  const wrap=el('div',{class:'stage-rich-summary'}),head=el('div',{class:'stage-rich-head'});
  const src=icon(record,kind);
  if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));head.append(img)}
- head.append(el('strong',{text:presenter?.displayName(record,tr('Без названия','Unnamed item'),locale)||tr('Без названия','Unnamed item'),
+ const baseName=presenter?.displayName(record,tr('Без названия','Unnamed item'),locale)||tr('Без названия','Unnamed item');
+ const shownName=kind==='item'&&context?
+  root.PandoraEnchantModel?.equipmentName?.(baseName,context.slot||record.slot,context.refinement,context.gem,locale)||baseName:
+  baseName;
+ head.append(el('strong',{text:shownName,
   ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));
  const grade=Number(context?.refinement)||0;
- if(kind==='item'&&context&&grade>0)head.append(el('span',{class:'stage-gear-grade',text:'+'+grade}));
+
  wrap.append(head);
  // IDs are internal database keys, never player-facing data.
  const baseArmor=Number(record.AC);
@@ -155,7 +159,7 @@ function render(root,api){
  if(!record){root.append(el('p',{class:'muted',text:'Сначала выбери предмет.'}));return}
  const body=el('div',{class:'stage-rich-body'});root.append(body);
  if(mode==='details'){
-  body.append(summary(record,icons));
+  body.append(summary(record,icons,'item',{slot,refinement,gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems)}));
   if(refinable){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
@@ -173,8 +177,9 @@ function render(root,api){
       element:key==='element'?option.id:(choice?.element||'fire')})}));
     box.append(line);return box;
    };
-   body.append(el('h4',{text:'Тип и стихия улучшения'}),
-    group('Тип',model.types,'type'),group('Стихия',model.elements,'element'));
+   body.append(el('h4',{text:slot==='weapon'?'Тип и стихия улучшения':'Стихия улучшения'}));
+   if(slot==='weapon')body.append(group('Тип',model.types,'type'));
+   body.append(group('Стихия',model.elements,'element'));
   }
   // Souls are managed exclusively in the existing dedicated "Души" tab.
  }else if(mode==='souls'){

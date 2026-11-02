@@ -319,7 +319,7 @@ function previewBaseStats(){
   if(!item||equipmentIssue(item,Number(slot)).length)continue;
   const grade=window.PandoraEquipmentPlan.refinementValue(state.refinements,Number(slot),selection);
   records.push(['item:'+item.id,item,grade]);
-  const gem=window.PandoraEnchantModel.normalize(
+  const gem=window.PandoraEnchantModel.normalizeForSlot(item.slot,
    state.gems?.[window.PandoraEquipmentPlan.refinementKey(Number(slot),selection)]);
   if(gem)gemSelections.push({slot:item.slot,itemId:item.id,grade,gem});
   const souls=window.PandoraEquipmentPlan.asSocketArray(state.souls?.[slot]);
@@ -763,11 +763,12 @@ function renderSlotRails(){
    if(item&&plan.canSocket(slotKeys[i],source))button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source){
+    const equippedGem=window.PandoraEnchantModel.normalizeForSlot(slotKeys[i],state.gems?.[plan.refinementKey(i,item)]);
     const socketed=plan.asSocketArray(state.souls?.[i]).slice(0,cap??0)
      .filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||(s.name?s:null)).filter(Boolean);
     window.PandoraStageItemUI.attachPreview(button,source,
      (rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'),
-     'item',{slot:slotKeys[i],refinement:level,souls:socketed,capacity:cap});
+     'item',{slot:slotKeys[i],refinement:level,gem:equippedGem,souls:socketed,capacity:cap});
    }
    if(report.excess>0||issue.length)button.append(h('span',{class:'stage-conflict',text:'!',
     'aria-label':issue.length?'Предмет временно недоступен':'Конфликт гнёзд'}));
@@ -945,7 +946,7 @@ function renderStagePicker(focusSearch=false){
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
    soulQuery:stageSoulQuery,onSoulQuery:value=>{stageSoulQuery=value;saveView()},
-   gems:state.gems?.[plan.refinementKey(selectedSlot,equipped)],
+   gems:window.PandoraEnchantModel.normalizeForSlot(key,state.gems?.[plan.refinementKey(selectedSlot,equipped)]),
    catalog,gameTables,close:()=>closeStagePicker(),
    changeMode:mode=>{
     if(mode==='gems')mode='details';
@@ -975,7 +976,7 @@ function renderStagePicker(focusSearch=false){
     const focusValue=document.activeElement?.getAttribute?.('data-enchant-value');
     state.gems??={};
     const id=plan.refinementKey(selectedSlot,equipped);
-    const choice=window.PandoraEnchantModel.normalize(entry);
+    const choice=window.PandoraEnchantModel.normalizeForSlot(key,entry);
     if(choice)state.gems[id]=choice;else delete state.gems[id];
     stageSlotView='details';persist();renderStagePicker();
     renderOriginVitals();if(stageAttributesPage)renderStageAttributes();
