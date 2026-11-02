@@ -65,7 +65,6 @@ function summary(record,icon,kind='item',context=null){
  if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
   rows.push([tr('Вставлено душ','Socketed Souls'),
    (context.souls?.length||0)+' / '+context.capacity]);
- if(root.PandoraStudioAdminActive?.())rows.push(['ID',record.id]);
  const dl=el('dl',{class:'stage-rich-fields'});
  for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){
   const dd=el('dd',{text:String(value)});
