@@ -2914,7 +2914,7 @@ function editor(el){
     if(editIsSaving)return;
     const value=input.value.trim();
     if(slotEdit?!/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(value):visual?!allowedArtwork(value):(!value||value.length>((key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))){
-      feedback.textContent=visual?'Недопустимый путь: разрешены assets/ и иконки Pandora Saga OS.':'Некорректная длина текста.';return;
+      feedback.textContent=visual?'Недопустимый путь: разрешены assets/ и иконки актуального игрового сервера.':'Некорректная длина текста.';return;
     }
     if(value===previous){closeInlineEditor();return;}
     editIsSaving=true;save.disabled=true;reset.disabled=true;
@@ -2948,7 +2948,7 @@ function editor(el){
 async function showCatalogImport(){
  if(!adminToken)return;
  const workbench=window.PandoraOSCatalogWorkbench;
- if(!workbench)throw Error('Модуль сверки Pandora Saga OS не подключён');
+ if(!workbench)throw Error('Модуль сверки актуального игрового сервера не подключён');
  return workbench.open({
   request:(path,body)=>apiRequest(path,body,adminToken),
   apiBase:API,modal,h,

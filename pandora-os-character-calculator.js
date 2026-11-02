@@ -1,6 +1,6 @@
 (function(root){
 'use strict';
-// Formula source: Pandora Saga OS class coefficients, cross-checked with
+// Formula source: current game server class coefficients, cross-checked with
 // Pandora-Saga-Simulator-remaked/modern/current-vitals.js (Modern 4.25+).
 // Game-client formula coverage is NOT complete without all enhancement/set/skill sources.
 const keys=['vit','str','agi','dex','spi','int'];
@@ -942,7 +942,7 @@ function targetResistancePreview({records=[],itemForth=null}={}){
    raceId:proof.raceId,change:-3,source:String(record.name||source)});
  }
  // No aggregation: duplicate Soul stacking and OS damage packets are unverified.
- return {entries,verified:false,source:'Pandora Saga OS EP_ONDAMAGE_FDS_RACE'};
+ return {entries,verified:false,source:'current game server EP_ONDAMAGE_FDS_RACE'};
 }
 
 // Nine official OS cloak records activate a separate passive only on battle
@@ -1011,7 +1011,7 @@ function battleMapCloakPreview({records=[],skills=null,itemForth=null}={}){
    verified:false});
  }
  return {entries,verified:false,condition:'battle maps only',
-  source:'Pandora Saga OS EP_SKILL_EXEC_MAPIN and catalog skill effects'};
+  source:'current game server EP_SKILL_EXEC_MAPIN and catalog skill effects'};
 }
 
 // Conditional skill procs: report actual OS triggers without assuming a successful hit.
@@ -1241,7 +1241,7 @@ function specialEquipmentPreview({records=[],itemForth=null}={}){
     verified:false});
   }
  }
- return {entries,verified:false,source:'Pandora Saga OS item/Soul descriptions'};
+ return {entries,verified:false,source:'current game server item/Soul descriptions'};
 }
 
 // The hero book already shows a precise verified-description preview for these
@@ -1311,7 +1311,7 @@ function effectCoverage({records=[],itemForth=null}={}){
  return {counts,total:counts.calculated+counts.preview+counts.conditional+
   counts.missing+counts.inactive,sources:sources.size,
   pending:pending.slice(0,25),additionalPending:Math.max(0,pending.length-25),
-  verified:false,source:'Current Pandora Saga OS structured equipment/Soul/Forth effects'};
+  verified:false,source:'Current current game server structured equipment/Soul/Forth effects'};
 }
 // Executed Remaked Legacy Calc('FirstAid'/'Heal'/'HealingAura'/
 // 'Sanctuary'/'Restoration') from js/calc.js Flag[5].
@@ -1466,7 +1466,7 @@ function consumableSkillPreview({items=null,skills=null}={}){
    kind:item.kind,skills:triggered});
  }
  rows.sort((a,b)=>a.id-b.id);
- return {rows,verified:false,source:'Pandora Saga OS consumable EP_SKILL_EXEC / EP_SKILL_EXEC_BALM'};
+ return {rows,verified:false,source:'current game server consumable EP_SKILL_EXEC / EP_SKILL_EXEC_BALM'};
 }
 
 // Two-second spell recovery previews from Remaked Legacy Calc('LPsec'/'MPsec').
@@ -1511,7 +1511,7 @@ function consumableRecoveryPreview({items=null,maxHp=null,maxMp=null,potionRate=
   }
   if(!effects.length)continue;
   const entry={id,name:item.name||'Предмет',hp,mp,
-   effects,source:'Pandora Saga OS item effects',verified:false};
+   effects,source:'current game server item effects',verified:false};
   allRows.push(entry);
   if(effects.some(x=>x.kind==='mp'))rows.push(entry);
   else healthRows.push(entry);
@@ -1940,7 +1940,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
-  rounding:'floor-class-cents',source:'Pandora Saga OS / Modern current-vitals class formula',
+  rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
