@@ -112,7 +112,20 @@ async function adminCatalog(request,env,path){
     }catch(error){return no('Broken serialized dataset '+name,409)}
   }
   const costumes=await env.DB.prepare("SELECT COUNT(*) AS c FROM catalog_entries WHERE snapshot=? AND dataset='items' AND is_costume_overlay=1").bind(data.snapshot).first();
-  await env.DB.prepare('INSERT INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET snapshot=excluded.snapshot,published_at=excluded.published_at,expected_counts=excluded.expected_counts').bind(data.snapshot,Date.now(),JSON.stringify(counts)).run();
+  // Prevent stale admin reviews from overwriting a newer D1 snapshot.
+  // The guarded pointer switch is a single atomic D1 statement.
+  if(Object.hasOwn(data,'expectedActive')){
+   const previous=data.expectedActive;
+   if(previous!==null&&(typeof previous!=='string'||!/^[a-z0-9-]{8,64}$/.test(previous)))return no('Invalid expected snapshot',400);
+   const statement=previous===null?
+    env.DB.prepare('INSERT OR IGNORE INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?)').bind(data.snapshot,Date.now(),JSON.stringify(counts)):
+    env.DB.prepare('UPDATE catalog_current SET snapshot=?,published_at=?,expected_counts=? WHERE id=1 AND snapshot=?').bind(data.snapshot,Date.now(),JSON.stringify(counts),previous);
+   const published=await statement.run();
+   if(Number(published.meta?.changes)!==1)return no('Published catalog changed during review',409);
+  }else{
+   // Preserve explicit publishing for existing clients without an active lease.
+   await env.DB.prepare('INSERT INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET snapshot=excluded.snapshot,published_at=excluded.published_at,expected_counts=excluded.expected_counts').bind(data.snapshot,Date.now(),JSON.stringify(counts)).run();
+  }
   return json({ok:true,active:data.snapshot,counts,costumeItems:costumes.c});
  }
  return no('Unknown catalog operation',404);
