@@ -1094,7 +1094,7 @@ function experienceBonusPreview({records=[],itemForth=null}={}){
 // complete weapon range formulas. Their paired *_CARRY effects are separate
 // server fields and must not silently double the displayed distance bonus.
 const rangeEffectKeys=Object.freeze({EP_RACE_RANGE:'general',EP_BOW_RANGE:'bow'});
-function attackRangePreview({records=[],itemForth=null}={}){
+function attackRangePreview({records=[],itemForth=null,weapon=null}={}){
  if(!Array.isArray(records))return null;
  const totals={general:0,bow:0},entries=[];
  for(const [source,record,grade] of records){
@@ -1108,7 +1108,18 @@ function attackRangePreview({records=[],itemForth=null}={}){
    entries.push({source:String(record.name||source),kind:key,amount:effect.a});
   }
  }
- return {...totals,entries,verified:false};
+ // Official OS items.json weapon.range is a *base* distance in raw game
+ // units. Never add EP_RACE_RANGE or EP_BOW_RANGE here: whether the live
+ // combat engine combines those fields for a given weapon is not verified.
+ // Do not infer a range from a preview bonus or from an unarmed character.
+ const kind=weapon?.kind;
+ const ranged=kind==='BOW'||kind==='CROSSBOW';
+ const validWeapon=weapon?.slot==='weapon'&&
+  Number.isFinite(weapon.range)&&weapon.range>0;
+ return {...totals,entries,
+  baseMelee:validWeapon&&!ranged?weapon.range:null,
+  baseRanged:validWeapon&&ranged?weapon.range:null,
+  baseOnly:validWeapon,verified:false};
 }
 
 // Source-backed conditional properties; no chance, tick rate or damage packet is inferred.
@@ -1873,7 +1884,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   resistances.gemstones={...gemstones.resistance};
  }
  const auraDamage=auraDamagePreview({gemstones,records:combinedRecords,itemForth});
- const attackRange=attackRangePreview({records:combinedRecords,itemForth});
+ const attackRange=attackRangePreview({records:combinedRecords,itemForth,
+  weapon:combatContext.weapon});
  const elementalMagic=elementalMagicPreview({honorTitle:extra.honor.id});
  const mountedRelease=mountedReleasePreview({jobKey:combatContext.jobKey,
   ridingMastery:combatContext.ridingMastery??0,honorTitle:extra.honor.id});
