@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
 const root=new URL('../',import.meta.url);
-const source=readFileSync(new URL('scripts/apply-reviewed-os-export.mjs',root),'utf8');
+const source=readFileSync(new URL('scripts/apply-reviewed-pandora-catalog.mjs',root),'utf8');
 const worker=readFileSync(new URL('worker/index.js',root),'utf8');
 const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
 const html=readFileSync(new URL('index.html',root),'utf8');
@@ -13,7 +13,7 @@ test('reviewed GitHub export importer defaults to dry run with explicit write op
  assert.match(source,/const write=args\.includes\('--write'\)/);
  assert.match(source,/if\(write\)/);
  assert.match(source,/importer\.normalize\(submitted\.datasets,legacy\)/);
- assert.match(source,/pandora-os-reviewed\.v1/);
+ assert.match(source,/pandora-studio-reviewed\.v1/);
  const result=spawnSync(process.execPath,[new URL('scripts/apply-reviewed-os-export.mjs',root).pathname],
   {encoding:'utf8'});
  assert.notEqual(result.status,0);
@@ -80,4 +80,12 @@ test('administrator sees neutral game-catalog labels instead of a source host br
  assert.match(workbench,/Применить выбранные изменения/);
  assert.match(app,/text:'Игровой каталог',onclick:showCatalogImport/);
  assert.doesNotMatch(workbench,/Pandora Saga OS|Pandora Saga Open Server/);
+});
+
+test('local export bridge checks for uncommitted catalog modifications before applying',()=>{
+ assert.match(source,/ensureUnchangedCheckout\(\)/);
+ assert.match(source,/status','--porcelain'/);
+ assert.match(source,/flag:'wx'/);
+ assert.match(source,/installed\.reverse\(\)/);
+ assert.match(source,/pandora-os-reviewed\.v1/,'older downloads remain accepted');
 });
