@@ -22,7 +22,7 @@ test('equipment categories retain game-faithful RU/EN labels',()=>{
 test('equipment is a single encyclopedia chapter with localized filters and source links',()=>{
  assert.ok(app.includes("['item','Экипировка','Equipment']"));
  assert.ok(app.includes("['utility','Предметы эффектов','Effect items']"));
- assert.match(app,/wikiSelection\.type==='item'&&wikiItemType!=='utility'/);
+ assert.match(app,/wikiSelection\.type==='item'&&!\['utility','all'\]\.includes\(wikiItemType\)/);
  for(const phrase of ['Weapons','Earrings','Armor','Rings',
   'How to obtain','Eligible classes','Show more']){
   assert.ok(app.includes(phrase),'missing English wiki label: '+phrase);
