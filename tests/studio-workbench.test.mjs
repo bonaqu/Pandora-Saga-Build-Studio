@@ -5,10 +5,14 @@ const root=new URL('../',import.meta.url);
 const source=p=>readFileSync(new URL(p,root),'utf8');
 test('character portrait, Origin stats, and Hero Path are the core single-screen editor',()=>{
  const html=source('index.html'),app=source('app.js'),css=source('style.css');
- for(const id of ['workspace','originPanelStats','skillBranches','stagePicker','railLeft','railRight','detailPanel','dockClose','dockTabs'])
+ for(const id of ['workspace','originPanelStats','skillBranches','stagePicker','railLeft','railRight','detailPanel','dockClose'])
   assert.match(html,new RegExp('id="'+id+'"'));
  for(const tab of ['builds','wiki'])
-  assert.match(html,new RegExp('role="tab" data-tab="'+tab+'"'));
+  assert.match(html,new RegExp('<nav id="nav">[^<]*<button data-tab="'+tab+'"'));
+ assert.doesNotMatch(html,/id="dockTabs"|class="studio-dock-tabs"/);
+ assert.doesNotMatch(app,/\$\('dockTabs'\)\.addEventListener/);
+ assert.doesNotMatch(css,/\.studio-dock-tabs/);
+ assert.match(css,/\.studio-workbench-open \.top #nav\{display:none\}/);
  assert.doesNotMatch(html,/role="tab" data-tab="(?:character|equipment)"/);
  assert.doesNotMatch(html,/<nav id="nav">[^\n]*data-tab="equipment"/);
  assert.doesNotMatch(html,/<nav id="nav">[^\n]*data-tab="character"/);
