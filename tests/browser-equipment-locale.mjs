@@ -106,9 +106,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.goto(base+'/#wiki/chest/51010',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-level-reward').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 60/);
-  assert.ok(await page.locator('.wiki-chest-reward').count()>3);
-  assert.ok(await page.locator('.wiki-chest-reward .wiki-reward-percent').count()>3);
-  assert.ok(await page.locator('.wiki-chest-opening').count()===1);
+  assert.match(await page.locator('.wiki-page').innerText(),/Состав наград пока не указан/);
   assert.equal(await page.locator('.wiki-chest-group').count(),0);
   // The same-category transition must render actual rewards of the next chest,
   // not the ordinary item record with no chest contents.
@@ -125,7 +123,10 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-page h3').innerText(),/Сундук из Мальдии/);
-  assert.match(await page.locator('.wiki-page').innerText(),/Состав наград пока не указан/);
+  await page.locator('.wiki-chest-reward').first().waitFor({state:'visible'});
+  assert.ok(await page.locator('.wiki-chest-reward').count()>3);
+  assert.ok(await page.locator('.wiki-chest-reward .wiki-reward-percent').count()>3);
+  assert.equal(await page.locator('.wiki-chest-opening').count(),1);
   assert.ok(await page.locator('.wiki-chest-location .wiki-link').count()>=1);
   // Monsters and material exchange relationships occupy compact flow grids.
   await page.goto(base+'/#wiki/monster/21103',{waitUntil:'domcontentloaded'});
