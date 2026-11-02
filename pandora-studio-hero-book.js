@@ -1316,6 +1316,41 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     'Ориентировочное действие умения. Не входит в постоянное восстановление персонажа.'}));
   body.append(details);
  }
+ // Conditional effects are displayed only for a usable equipped weapon
+ // with +7 or higher fire-gem refinement. They are not added to damage totals
+ // without verified server proc mechanics.
+ if(['summary','attack','effects'].includes(chosen)){
+  const active=items.map(row=>({row,
+   bonus:root.PandoraConditionalItemBonuses?.activeFor?.(row)}))
+   .filter(x=>x.bonus&&(x.bonus.phoenix||x.bonus.rows.length));
+  if(active.length){
+   const en=document.documentElement?.lang==='en';
+   const panel=make('section',{class:'stage-attribute-row stage-active-elemental'});
+   panel.append(make('strong',{text:en?
+    'Active conditional weapon effects':'Условные эффекты экипированного оружия'}));
+   for(const {row,bonus} of active){
+    const record=row.record||{},name=record.name||'Оружие';
+    panel.append(make('p',{text:name+' · '+(en?'Fire +':'Огонь +')+
+     row.refinement}));
+    if(bonus.phoenix){
+     const p=bonus.phoenix;
+     panel.append(make('div',{class:'stage-skill-effect-row'},[
+      make('span',{text:en?'Phoenix Flame':'Пламя феникса'}),
+      make('strong',{text:'+'+p.chance+'% · '+p.damage+' + '+
+       p.scale+'% '+(en?'of ':'от ')+p.stat})
+     ]));
+    }
+    if(chosen==='effects'){
+     for(const entry of bonus.rows)
+      panel.append(make('p',{text:entry.name+' +'+entry.value+
+       (entry.unit==='%'?'%':'')}));
+     if(bonus.phoenix)panel.append(make('p',{class:'stage-elemental-explanation',
+      text:root.PandoraConditionalItemBonuses.phoenixExplanation(bonus.phoenix)}));
+    }
+   }
+   body.prepend(panel);
+  }
+ }
  if(['attack','defense'].includes(chosen)&&modifiers?.combat){
   const battle=modifiers.combat;
   const numbers=chosen==='attack'?
