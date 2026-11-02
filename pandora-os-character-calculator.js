@@ -352,7 +352,8 @@ function resistancePreview({stats={},bonuses={},honorTitle=0,racialPassiveId=nul
  const status={},passive=wardingStatusPassive({jobKey,wardingMastery,wardingCap,skillCatalog});
  const honorStatus={burn:honorTitle===3?5:0,numb:honorTitle===4?5:0,
   tumble:honorTitle===5?5:0};
- const dwarfStatus=racialPassiveId===900030001?{stun:10,tumble:10}:{};
+ // OS skill 900030001 (Stronghearted): Stun, Numb/Frozen and Tumble each +10.
+ const dwarfStatus=racialPassiveId===900030001?{stun:10,numb:10,tumble:10}:{};
  for(const key of statusKeys){
   const amount=Number(bonuses[key]??0);
   if(!Number.isFinite(amount))return null;
@@ -840,9 +841,17 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const castTime={known:100,base:100,verified:false,
   source:"Remaked Calc('CastSPD'), Status_78",
   excluded:['legacy Flag 14_8 and current game active cast-time changes']};
- const criticalDamage=100,criticalIncoming=(title.incomingCriticalChance||0)-
-  (Number(bonuses.incomingCriticalReduction)||0);
- const criticalIncomingDamage=100+(title.incomingCriticalDamage||0);
+ // Exact TARGET passive effects from OS skills.json:
+ // Enkidu 900050003: EP_ONHIT_CRITICAL_DAMAGERATE fv1[3]=10.
+ // Dwarf 900030003: EP_CRITICAL_REGIST fv1[3]=5 (incoming crit chance).
+ // Rapin 900060003: EP_CRITICAL_REGIST fv2[3]=10 (incoming crit damage).
+ // These are mutually exclusive racial selections, not always-on race traits.
+ const criticalDamage=100+(racialPassiveId===900050003?10:0);
+ const criticalIncoming=(title.incomingCriticalChance||0)-
+  (Number(bonuses.incomingCriticalReduction)||0)-
+  (racialPassiveId===900030003?5:0);
+ const criticalIncomingDamage=100+(title.incomingCriticalDamage||0)-
+  (racialPassiveId===900060003?10:0);
  return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
   activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
@@ -1894,6 +1903,12 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  if(otherEquipment&&regeneration){
   regeneration.mp.equipment=otherEquipment.manaRecoverySpeed;
   regeneration.mp.total+=otherEquipment.manaRecoverySpeed;
+ }
+ // OS Rapin passive 900060002: EP_HEAL_TIME_SCALE fv1[3]=18.
+ // This is an MP recovery *speed* index, not MP gained per tick.
+ if(regeneration&&potionContext?.racialPassiveId===900060002){
+  regeneration.mp.racial=18;
+  regeneration.mp.total+=18;
  }
  // Armor gemstone resistances have an exact Remaked rule. Apply these to the
  // displayed elemental defense totals once; aura and spell damage stay
