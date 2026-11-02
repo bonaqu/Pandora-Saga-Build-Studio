@@ -1,0 +1,29 @@
+/* Pandora OS catalog review. Controls appear only inside the admin modal. */
+.os-sync{display:grid;gap:12px;min-width:0}
+.os-sync-actions{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+.os-sync-actions button{white-space:normal;line-height:1.3}
+.os-sync-search{width:100%;min-height:38px}
+.os-sync-summary{color:#e8c38c;font-weight:700;font-size:13px}
+.os-sync-results{display:grid;gap:8px;max-height:min(58vh,610px);overflow:auto;padding-right:3px}
+.os-sync-group{border:1px solid #695036;background:#201913;border-radius:6px;overflow:clip}
+.os-sync-group-heading{display:flex;align-items:center;justify-content:space-between;gap:9px;padding:11px 12px;cursor:pointer;color:#f0d39e}
+.os-sync-group-heading strong{font-size:13px}
+.os-sync-count{font-size:11px;color:#d5b98d}
+.os-sync-group-actions{display:flex;flex-wrap:wrap;gap:6px;padding:0 10px 10px}
+.os-sync-list{display:grid;gap:6px;padding:0 10px 10px}
+.os-sync-record{border:1px solid #57432f;border-radius:4px;padding:9px;background:#2a2018}
+.os-sync-record-label{display:flex;gap:9px;align-items:center;cursor:pointer}
+.os-sync-record-label input{accent-color:#cda064;width:17px;height:17px;flex:none}
+.os-sync-record-title{display:grid;gap:2px;min-width:0;flex:1;overflow-wrap:anywhere}
+.os-sync-record-title strong{font-size:12px;color:#f0d7b0}
+.os-sync-record-title small{font-size:10px;color:#bda98a}
+.os-sync-kind{border:1px solid #826447;padding:2px 6px;border-radius:3px;white-space:nowrap;font-size:10px;color:#d5bc99}
+.os-sync-kind.added{border-color:#44795d}
+.os-sync-kind.removed{border-color:#a45e50}
+.os-sync-field-details{margin:7px 0 0 26px;color:#c5ad8d;font-size:11px}
+.os-sync-field-details>summary{cursor:pointer}
+.os-sync-field{display:grid;grid-template-columns:minmax(75px,.6fr) minmax(80px,1fr) 12px minmax(80px,1fr);align-items:start;gap:6px;padding:5px 0;border-top:1px solid #4b3929;overflow-wrap:anywhere}
+.os-sync-field code{color:#dec394;white-space:normal}
+.os-sync-field-arrow{text-align:center;color:#dcb47b}
+.os-sync-group>.button-action{margin:0 10px 10px}
+@media(max-width:580px){.os-sync-field{grid-template-columns:1fr;gap:3px}.os-sync-field-arrow{text-align:left}.os-sync-record-label{flex-wrap:wrap}.os-sync-kind{margin-left:26px}}
