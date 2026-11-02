@@ -1384,7 +1384,13 @@ async function loadWiki(){
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
   const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
-  const source={...loaded.data,
+  const skills={...loaded.data.skills};
+  for(const [key,value] of Object.entries(override)){
+   const parsed=/^(skill|skilldesc)\.([a-zA-Z0-9_-]{1,32})\.([0-9]{1,12})$/.exec(key);
+   if(parsed&&skills[parsed[3]]&&typeof value==='string'&&value.trim())
+    skills[parsed[3]]={...skills[parsed[3]], [parsed[1]==='skill'?'name':'desc']:value};
+  }
+  const source={...loaded.data,skills,
    items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
   const index=window.PandoraWikiData.build(source);
   wikiData=source;
@@ -3030,9 +3036,10 @@ function applyGameLocale(){
   }
  }
  for(const [key,value] of Object.entries(override)){
-  const match=/^skill\.race\.([0-9]{1,12})$/.exec(key);
-  if(match&&localizedSkills[match[1]]&&lang==='ru')
-   localizedSkills[match[1]]={...localizedSkills[match[1]],name:value};
+  const match=/^(skill|skilldesc)\.([a-zA-Z0-9_-]{1,32})\.([0-9]{1,12})$/.exec(key);
+  if(match&&localizedSkills[match[3]]&&lang==='ru'&&value?.trim())
+   localizedSkills[match[3]]={...localizedSkills[match[3]],
+    [match[1]==='skill'?'name':'desc']:value};
  }
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
    equipment:translate(itemRecords,en?.items,true),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
