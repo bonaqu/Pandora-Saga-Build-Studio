@@ -1440,6 +1440,7 @@ function guardEncyclopediaSearch(input){
  input.setAttribute('data-lpignore','true');
  input.setAttribute('data-1p-ignore','true');
  input.setAttribute('data-bwignore','true');
+ input.addEventListener('focus',()=>{input.readOnly=false});
  input.addEventListener('pointerdown',()=>{input.readOnly=false});
  input.addEventListener('keydown',()=>{input.readOnly=false});
  input.addEventListener('blur',()=>{input.readOnly=true});
