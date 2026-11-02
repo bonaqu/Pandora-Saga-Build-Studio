@@ -29,7 +29,8 @@ test('all ID-specific names render in RU while EN remains untouched',()=>{
  assert.match(app,/approvedSkillIdNames=mapping\.skillLabelsById/);
  assert.match(app,/if\(lang==='ru'\)/);
  assert.match(app,/Object\.entries\(approvedSkillIdNames\|\|\{\}\)/);
- assert.match(app,/translate\(catalogSource\.skills,en\?\.skills\)/);
+ assert.match(app,/translate\(ownerGameData\.skills,en\?\.skills\)/);
+  assert.match(app,/PandoraWikiOwnerData\.apply/);
 });
 test('branch-shifted historical skills are explicitly audited, not silently discarded',()=>{
  assert.ok(alignment.distribution.branchShift>=1);
