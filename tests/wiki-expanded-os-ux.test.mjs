@@ -235,7 +235,7 @@ test('encyclopedia reuses shared equipment hover previews, exposes resistance ch
  assert.ok(instances.every(x=>x.blurbRu&&x.blurbRu!==x.blurb));
  assert.match(app,/PandoraStageItemUI\?\.attachPreview\(anchor,resolved/);
  assert.match(app,/PandoraStageItemUI\?\.dismissPreview\(\)/);
- assert.match(ui,/document\.addEventListener\('pointerdown'/);
+ assert.match(ui,/document\.addEventListener\?\.\('pointerdown'/);
  assert.match(app,/class:'wiki-monster-resist'/);
  assert.doesNotMatch(app,/h\('details',\{class:'wiki-monster-resists'/);
  assert.match(app,/rec\.blurbRu\|\|null/);
