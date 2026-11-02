@@ -61,3 +61,27 @@ test('current live OS drop slot variants are preserved as source-specific annota
  assert.match(source('wiki-data.js'),/slotAdd:r\.slotAdd\?\?0/);
  assert.match(source('app.js'),/Гнёзда \+/);
 });
+
+// Prerequisites from current OS skills 320007001 and 320008001.
+test('external priest buffs require correct Blessing mastery and valid numbers',()=>{
+ const engine=source('os-calculator.js'),book=source('stage-attributes.js');
+ const skills=JSON.parse(source('data/os/skills.json'));
+ assert.equal(skills['320007001'].name,'Знак атаки');
+ assert.equal(skills['320008001'].name,'Знак защиты');
+ assert.equal(skills['320007001'].reqs.find(x=>x.branch==='blessing').amount,8);
+ assert.equal(skills['320008001'].reqs.find(x=>x.branch==='blessing').amount,12);
+ assert.match(engine,/priestValid&&priest\.blessing>=8&&attributeBuffs\?\.priestGratia/);
+ assert.match(engine,/priestValid&&priest\.blessing>=12&&attributeBuffs\?\.priestLapisMedio/);
+ assert.match(engine,/Number\.isSafeInteger\(n\)&&n>=0&&n<=500/);
+ assert.match(book,/Number\(buffs\.priestBlessing\)>=8/);
+ assert.match(book,/Number\(buffs\.priestBlessing\)>=12/);
+});
+test('Hero Book buff names use Remaked approved RU identities',()=>{
+ const book=source('stage-attributes.js');
+ for(const name of ['Знак атаки','Знак защиты','Божественная защита',
+  'Священное оружие','Темная аура','Чары усиления','Песнь поэта','Песнь чар'])
+  assert.ok(book.includes(name),'Missing approved Remaked name: '+name);
+ assert.match(book,/'Песнь поэта': "Minstrel's Song"/);
+ assert.match(book,/'Песнь чар': "Sage's Song"/);
+ assert.match(book,/priestSpi','priestBlessing','priestHymn','priestEnabled'/);
+});
