@@ -47,7 +47,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:false,priestSpi:0,priestBlessing:0,priestHymn:0},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
@@ -352,6 +352,16 @@ function previewBaseStats(){
  const legacyBuffMasteries=Object.fromEntries(['blessing','hymn','alchemy']
   .map(branch=>[branch,window.PandoraSkillProgression.groupAdeptness(
    state,[branch],initialBranches)]));
+ const guildLevel=Number(state.attributeBuffs?.guildLevel)||0;
+ const unlocked=window.PandoraOSCalculator.guildPassiveAtLevel(guildLevel);
+ const effectiveGuildBuffs={
+  vitals:guildLevel>0&&unlocked?
+   {...state.vitalsBuffs,guildHp:unlocked.guildHp,guildMp:unlocked.guildMp}:
+   state.vitalsBuffs||{},
+  attributes:guildLevel>0&&unlocked?
+   {...state.attributeBuffs,guildLifeRecovery:unlocked.guildLifeRecovery,
+    guildManaRecovery:unlocked.guildManaRecovery}:state.attributeBuffs||{}
+ };
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
   allocation,level:state.level,records,itemForth:gameItemForth,gemSelections,
@@ -359,11 +369,15 @@ function previewBaseStats(){
   consumableItems:catalogSource?.items||null,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
-  enhancements:state.vitalsBuffs||{},attributeBuffs:state.attributeBuffs||{},
+  enhancements:effectiveGuildBuffs.vitals,attributeBuffs:effectiveGuildBuffs.attributes,
   potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
    jobKey:jobKeys[state.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,wardingMastery,
-   skillCatalog:catalog.skills||{},branchMasteries,...masteries}
+   skillCatalog:catalog.skills||{},branchMasteries,
+   externalPriest:{enabled:state.attributeBuffs?.priestEnabled===true,
+    spi:state.attributeBuffs?.priestSpi||0,
+    blessing:state.attributeBuffs?.priestBlessing||0,
+    hymn:state.attributeBuffs?.priestHymn||0},...masteries}
  });
 }
 function renderPotionPreview(calculated){
@@ -478,10 +492,16 @@ function setAttributeBuff(key,value){
   current.honorTitle=current.honorCuriosity?1:0;
  }else if(['proelium','potionEffectsEnabled','combatLunge','combatWarCry',
   'combatRage','combatDefender','combatWindAssist','combatWindBlessing',
-  'combatConcentration'].includes(key)){
+  'combatConcentration','priestEnabled'].includes(key)){
   current[key]=value===true;
   if(current.combatRage&&key==='combatRage')current.combatDefender=false;
   if(current.combatDefender&&key==='combatDefender')current.combatRage=false;
+ }else if(key==='guildLevel'){
+  const n=Number(value);if(!Number.isInteger(n)||n<0||n>12)return;
+  current.guildLevel=n;
+ }else if(['priestSpi','priestBlessing','priestHymn'].includes(key)){
+  const n=Number(value);if(!Number.isInteger(n)||n<0||n>500)return;
+  current[key]=n;
  }else if(key==='guildArouse'){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>3)return;
   current.guildArouse=n;
@@ -2576,7 +2596,8 @@ function sanitizeSharedState(original){
   const guild=rawAttributes.guildAll,potency=rawAttributes.proeliumPotency;
   if(Number.isInteger(guild)&&guild>=0&&guild<=6)safe.attributeBuffs.guildAll=guild;
   if(Number.isInteger(potency)&&potency>=0&&potency<=100)safe.attributeBuffs.proeliumPotency=potency;
-  for(const [key,limit] of [['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3],['guildArouse',3]]){
+  for(const [key,limit] of [['guildLevel',12],['priestSpi',500],['priestBlessing',500],['priestHymn',500],
+   ['guildLifeRecovery',2],['guildManaRecovery',2],['guildHealing',3],['guildArouse',3]]){
    const level=rawAttributes[key];
    if(Number.isInteger(level)&&level>=0&&level<=limit)safe.attributeBuffs[key]=level;
   }
@@ -2588,6 +2609,7 @@ function sanitizeSharedState(original){
    // Pre-0.86 shared builds had only a boolean Honor switch.
    safe.attributeBuffs.honorCuriosity=rawAttributes.honorCuriosity===true;
   }
+  safe.attributeBuffs.priestEnabled=rawAttributes.priestEnabled===true;
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
   safe.attributeBuffs.potionEffectsEnabled=rawAttributes.potionEffectsEnabled===true;
   // Preserve the historical Jo-Eun rune boolean for old snapshot compatibility.
