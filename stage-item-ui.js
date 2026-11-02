@@ -33,9 +33,15 @@ function summary(record,icon,kind='item',context=null){
  const armorRefine=kind==='item'&&context&&
   ['shield','head','body','gloves','legs','feet'].includes(record.slot)&&
   Number.isInteger(grade)&&grade>=0&&grade<=10&&record.name!=='-'?
-  Math.floor(grade*1.5):0;
+  grade:0;
+ // The game client item window shows base + visible forge grade. The
+ // calculator's separate Remaked defense contribution is intentionally unchanged.
  const armorDisplay=context&&Number.isFinite(baseArmor)&&armorRefine>0?
   baseArmor+'+'+armorRefine:record.AC;
+ const gem=kind==='item'&&context?
+  globalThis.PandoraEnchantModel?.normalizeForSlot?.(context.slot||record.slot,context.gem):null;
+ const gemElement=gem&&globalThis.PandoraEnchantModel?.elements?.find(e=>e.id===gem.element);
+ const gemType=gem&&globalThis.PandoraEnchantModel?.types?.find(e=>e.id===gem.type);
  const rows=kind==='soul'?
  [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
@@ -44,6 +50,12 @@ function summary(record,icon,kind='item',context=null){
  [tr('Защита','Defense'),armorDisplay],[tr('Гнёзда','Sockets'),record.soulslot],
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
+ if(gem&&grade>0){
+  if((context.slot||record.slot)==='weapon'&&gemType)
+   rows.push([tr('Тип самоцвета','Gemstone type'),english?gemType.en:gemType.ru]);
+  if(gemElement)rows.push([tr('Стихия улучшения','Refinement element'),
+   english?gemElement.en:gemElement.ru]);
+ }
  if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
   rows.push([tr('Вставлено душ','Socketed Souls'),
    (context.souls?.length||0)+' / '+context.capacity]);

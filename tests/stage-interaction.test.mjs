@@ -125,15 +125,34 @@ test('equipped item hover includes base and refinement defense plus socketed Sou
   slot:'feet',level:20,AC:11,soulslot:1,desc:'ИНТ +1'};
  const soul={id:110,name:'Душа защиты',desc:'Сопротивление слабости +3%'};
  const tip=stage.PandoraStageItemUI.summary(rec,()=>null,'item',
-  {slot:'feet',refinement:2,capacity:1,souls:[soul]});
+  {slot:'feet',refinement:3,capacity:1,souls:[soul]});
  const all=walk(tip).map(e=>String(e.textContent||'')).join(' ');
  assert.match(all,/11\+3/);
  assert.match(all,/Душа защиты/);
  assert.match(all,/Сопротивление слабости \+3%/);
  assert.match(all,/1 \/ 1/);
  const grade4=stage.PandoraStageItemUI.summary({...rec,AC:13},()=>null,'item',
-  {refinement:4,souls:[]});
+  {refinement:6,souls:[]});
  assert.match(walk(grade4).map(e=>e.textContent).join(' '),/13\+6/);
  const picker=stage.PandoraStageItemUI.summary(rec,()=>null);
  assert.doesNotMatch(walk(picker).map(e=>e.textContent).join(' '),/11\+3/);
+});
+
+test('game-like armor tooltip displays visible grade separately from Remaked calculated defense',()=>{
+ const rec={id:12616,name:'Зеленое астирское платье',slot:'body',
+  kind:'TORSO',AC:31,desc:'ПРВ +2',soulslot:3};
+ const armour=stage.PandoraStageItemUI.summary(rec,()=>null,'item',
+  {slot:'body',refinement:4,gem:{type:'magical',element:'fire'},souls:[]});
+ const txt=walk(armour).map(e=>e.textContent||'').join(' ');
+ assert.match(txt,/Зеленое астирское платье огня \+4/);
+ assert.match(txt,/31\+4/);
+ assert.match(txt,/Стихия улучшения/);
+ assert.doesNotMatch(txt,/Тип самоцвета/);
+ const weapon=stage.PandoraStageItemUI.summary({
+  id:2652,name:'Огненный жезл искр',slot:'weapon',W:36,kind:'WAND'},()=>null,'item',
+  {slot:'weapon',refinement:2,gem:{type:'magical',element:'fire'},souls:[]});
+ const weaponText=walk(weapon).map(e=>e.textContent||'').join(' ');
+ assert.match(weaponText,/Огн\. Огненный жезл искр \+2/);
+ assert.match(weaponText,/Тип самоцвета/);
+ assert.match(weaponText,/Магический/);
 });
