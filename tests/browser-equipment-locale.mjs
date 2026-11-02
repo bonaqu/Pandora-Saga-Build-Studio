@@ -157,6 +157,8 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await page.locator('.wiki-phoenix-explanation').innerText(),/25% от СИЛ/);
   await page.goto(base+'/#wiki/item/1862',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-conditional-term').waitFor({state:'visible',timeout:20000});
+  await page.locator('.wiki-conditional-term').hover();
+  await page.locator('.wiki-phoenix-explanation').waitFor({state:'visible'});
   assert.match(await page.locator('.wiki-phoenix-explanation').innerText(),/25% от ИНТ/);
   await page.goto(base+'/#wiki/item/1652',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-conditional-bonuses').waitFor({state:'visible',timeout:20000});
