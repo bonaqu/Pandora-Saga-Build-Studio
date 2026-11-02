@@ -139,3 +139,24 @@ test('accepting item changes does not silently accept a separate server metadata
  assert.equal(merged.items['1'].name,'Updated sword');
  assert.equal(merged.meta.sha,undefined);
 });
+
+test('published D1 Legacy data is reconstructed and retains exact source records',()=>{
+ const rows=Object.fromEntries(Array.from({length:1001},(_,i)=>[
+  String(i).padStart(6,'0'),
+  {namespace:'game',locale:i?'en':'ru',key:'key'+i,text:'Legacy '+i,
+   source:i?'Archive':'Owner edited'}
+ ]));
+ const restored=review.retainLegacyRows(rows);
+ assert.equal(restored.records.length,1001);
+ assert.equal(restored.records[0].value.source,'Owner edited');
+ assert.equal(restored.locales.game.ru.key0,'Legacy 0');
+ assert.equal(restored.locales.game.en.key1000,'Legacy 1000');
+ rows['000001'].key='__proto__';
+ const safe=review.retainLegacyRows(rows);
+ assert.equal(Object.hasOwn(safe.locales.game.en,'__proto__'),true);
+ assert.equal(safe.locales.game.en.__proto__,'Legacy 1');
+ rows['000001'].key='key1';
+ assert.throws(()=>review.retainLegacyRows({}),/Incomplete/);
+ rows['000001'].key='key0';rows['000001'].locale='ru';
+ assert.throws(()=>review.retainLegacyRows(rows),/duplicate/);
+});

@@ -54,3 +54,9 @@ test('all versioned scripts and styles resolve after descriptive module renames'
  assert.ok(!names.includes('catalog-import.js'));
  assert.ok(!names.includes('catalog-diff.js'));
 });
+
+test('Pandora OS sync does not silently update currently published D1 Legacy translations',()=>{
+ assert.match(workbench,/legacyLocale[.]json/);
+ assert.match(workbench,/review[.]retainLegacyRows/);
+ assert.match(workbench,/normalized[.]entries[.]legacyLocale=legacyRows/);
+});

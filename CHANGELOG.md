@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.303.0 — 2026.11.02.303 · D1 Legacy translation isolation
+
+- Fixed a hidden cross-data overwrite risk: accepting new Pandora Saga OS items, skills or tables must not regenerate the published D1 `legacyLocale` namespace from the local GitHub archive.
+- Read the current D1 locale under the same catalog snapshot lease, reject incomplete/duplicate records and copy exact existing keys, text and provenance into the new snapshot.
+- Extend unit and interactive Chromium admin sync checks; no production D1 write, user-build mutation or speculative combat formulas.
+
+
+
 ## 0.302.0 — 2026.11.02.302 · Pandora Studio modules named and dependency links audited
 
 - Pandora Studio modules named and dependency links audited

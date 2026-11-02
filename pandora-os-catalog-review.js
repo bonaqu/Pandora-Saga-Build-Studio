@@ -131,7 +131,29 @@
     return output;
   }
 
+  function retainLegacyRows(rows) {
+    if (!plain(rows)) throw Error('Published D1 legacy locale is missing');
+    const locales={game:{},ui:{}};
+    for(const namespace of ['game','ui'])
+      for(const locale of ['ru','en','jp','tw']) locales[namespace][locale]=Object.create(null);
+    const records=[];
+    for(const [key,value] of Object.entries(rows)){
+      const {namespace,locale,text,key:label}=value||{};
+      if (!/^[0-9]{6}$/.test(key) || !Object.hasOwn(locales,namespace) ||
+          !Object.hasOwn(locales[namespace],locale) ||
+          typeof label!=='string'||!label.trim() ||
+          typeof text!=='string'||!text.trim() ||
+          Object.hasOwn(locales[namespace][locale],label))
+        throw Error('Invalid or duplicate D1 translation: '+key);
+      locales[namespace][locale][label]=text;
+      records.push({key,value:clone(value)});
+    }
+    if(records.length<1000||records.length>10000)
+      throw Error('Incomplete D1 translations: '+records.length);
+    return {locales,records};
+  }
+
   root.PandoraOSCatalogReview = Object.freeze({
-    atomicDatasets, labels, id, changes, compose
+    atomicDatasets, labels, id, changes, compose, retainLegacyRows
   });
 })(typeof window === 'undefined' ? globalThis : window);

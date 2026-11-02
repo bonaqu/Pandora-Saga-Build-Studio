@@ -1,11 +1,19 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.302.0 (`2026.11.02.302`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.303.0 (`2026.11.02.303`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.303.0 — Preserve published D1 Legacy localization
+
+- [x] Read the currently published D1 `legacyLocale` namespace under the same snapshot ID as other OS data.
+- [x] Validate 1000–10000 locale rows, names and uniqueness; fail closed rather than silently replacing published records with the repository Legacy archive.
+- [x] Stage the exact existing locale keys, text and source metadata alongside the reviewed OS data — only server-game records are changed when selected.
+- [x] Extend Node tests and browser admin mocks to enforce the preservation behavior.
+- [ ] Separate locale-review UI and authenticated live publish test, plus current OS final formulas parity.
 
 ## Source update 0.301.0 — source-safe OS catalog review and branded modules
 
