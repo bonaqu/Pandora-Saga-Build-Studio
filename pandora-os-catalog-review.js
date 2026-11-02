@@ -135,7 +135,7 @@
     if (!plain(rows)) throw Error('Published D1 legacy locale is missing');
     const locales={game:{},ui:{}};
     for(const namespace of ['game','ui'])
-      for(const locale of ['ru','en','jp','tw']) locales[namespace][locale]={};
+      for(const locale of ['ru','en','jp','tw']) locales[namespace][locale]=Object.create(null);
     const records=[];
     for(const [key,value] of Object.entries(rows)){
       const {namespace,locale,text,key:label}=value||{};
