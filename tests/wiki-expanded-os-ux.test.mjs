@@ -198,7 +198,8 @@ test('all-class gear stays compact while restricted classes are readable on dema
  assert.match(app,/class:'wiki-allowed-classes'/);
  assert.doesNotMatch(app,/h\('details',\{class:'wiki-allowed-classes'\}/);
  assert.match(app,/detail\.append\(h\('div',\{class:'wiki-allowed-classes'\}/);
- assert.match(app,/renderClassEligibility\(Object\.keys\(rec\.classes\|\|\{\}\)/);\n assert.match(app,/renderClassEligibility\(Object\.keys\(rec\.classes\)/);
+ assert.match(app,/renderClassEligibility\(Object\.keys\(rec\.classes\|\|\{\}\)/);
+ assert.match(app,/renderClassEligibility\(Object\.keys\(rec\.classes\)/);
  assert.match(css,/\.wiki-class-all\{/);
  assert.match(css,/\.wiki-class-tags/);
  assert.match(app,/class:'wiki-class-tag'/);
