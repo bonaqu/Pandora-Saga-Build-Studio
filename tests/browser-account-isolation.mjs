@@ -52,12 +52,17 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
    else localStorage.removeItem('ps-account-session.v1');
   },{token,username});
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
-  // Account bootstrapping is async. Wait until the actual scoped library has
-  // replaced the previous owner's storage before opening/saving a build.
-  await page.waitForFunction(expected=>
-   localStorage.getItem('ps-build-owner-scope.v1')===expected,
-   token?'account:'+username:'guest:'+guestToken);
+  // Owner scope may become visible before session and catalog readiness;
+  // saving during that gap can lose the intended draft name.
+  await page.waitForFunction(({owner,username})=>{
+   const catalog=document.querySelector('#catalogStatus')?.textContent||'';
+   const profile=document.querySelector('#profileTrigger')?.title||'';
+   return document.querySelector('#raceGrid')?.children.length>0&&
+    localStorage.getItem('ps-build-owner-scope.v1')===owner&&
+    /\\d+ навыков · \\d+ предметов · \\d+ душ/.test(catalog)&&
+    (!username||profile.includes(username));
+  },{owner:token?'account:'+username:'guest:'+guestToken,
+    username:token?username:null},{timeout:30000});
   await openManager();
  }
  async function named(){
@@ -68,7 +73,12 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.evaluate(token=>localStorage.setItem('ps-build-library-secret.v1',token),guestToken);
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0);
+  await page.waitForFunction(expected=>
+   document.querySelector('#raceGrid')?.children.length>0&&
+   localStorage.getItem('ps-build-owner-scope.v1')==='guest:'+expected&&
+   /\\d+ навыков · \\d+ предметов · \\d+ душ/.test(
+    document.querySelector('#catalogStatus')?.textContent||''),
+   guestToken,{timeout:30000});
   await saveNamed('Guest only');
   assert.ok((await named()).includes('Guest only'));
   await setAccount(alice,'alice_01');
