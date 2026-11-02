@@ -89,10 +89,10 @@ function render(){
    panel.append(card);
   }
   const old=field('Текущий пароль','password','current-password'),
-    fresh=field('Новый пароль · от 15 символов','password','new-password'),
+    fresh=field('Новый пароль · от 8 символов','password','new-password'),
     confirmFresh=field('Повторите новый пароль','password','new-password');
   old.required=true;fresh.required=true;confirmFresh.required=true;
-  fresh.minLength=15;confirmFresh.minLength=15;
+  fresh.minLength=8;confirmFresh.minLength=8;
   const form=node('form','account-form');
   form.append(old,fresh,confirmFresh);
   const update=button('Изменить пароль',async()=>{
@@ -118,14 +118,14 @@ function render(){
  panel.append(tabs);
  const form=node('form','account-form'),username=field('Логин (3–20, a-z, 0-9, _)','text','username',20);
  username.minLength=3;username.required=true;username.spellcheck=false;
- const pass=field(mode==='recover'?'Новый пароль · от 15 символов':
-  'Пароль · минимум 15 символов','password',mode==='login'?'current-password':'new-password',128);
- pass.minLength=mode==='login'?1:15;pass.required=true;
+ const pass=field(mode==='recover'?'Новый пароль · от 8 символов':
+  'Пароль · минимум 8 символов','password',mode==='login'?'current-password':'new-password',128);
+ pass.minLength=mode==='login'?1:8;pass.required=true;
  form.append(username,pass);
  let confirm=null,recovery=null;
  if(mode==='register'||mode==='recover'){
   confirm=field('Повторите пароль','password','new-password',128);
-  confirm.required=true;confirm.minLength=15;form.append(confirm);
+  confirm.required=true;confirm.minLength=8;form.append(confirm);
  }
  if(mode==='recover'){
   recovery=field('Резервный код восстановления','text','off',43);
