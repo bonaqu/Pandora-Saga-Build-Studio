@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.293.0 — 2026.11.02.293 · Source-backed alchemy names and cleaner Hero Book
+
+- Corrected the priest Hymns field and the current OS alchemy skills: Яд/Toxify and Усиление яда/Toxic Aura, preserving matching RU/EN source identities.
+- Removed dead pre-Remaked translation aliases and a redundant book locale declaration. Shortened player-facing guild/priest notes without changing the distinction between applied and preview-only bonuses.
+- One parameterized regression test covers eight meaningful external-priest combat cases, including below/at mastery thresholds, disabled buffs and malformed values.
+- Browser deployment and live Worker readiness require independent checks.
+
+
 ## 0.292.0 — 2026.11.02.292 · Remaked RU/EN buffs and priest mastery safety
 
 - Hero Book uses the Remaked-approved Russian skill identities for attack/defense signs, group protection, Holy Weapon, Dark Aura, enchantment and hymns, with their corresponding English client names.

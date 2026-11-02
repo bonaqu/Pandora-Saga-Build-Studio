@@ -57,7 +57,6 @@ const bookEnglish=Object.freeze({
  'Проэлиум': "Proelium",
  'Мощность Проэлиума': "Proelium potency",
  'Мощность поддерживающих навыков': "Support skill potency",
- 'Грация': "Grace",
  'Знак атаки': 'Velox',
  'Знак защиты': 'Lapis Medio',
  'Божественная защита': 'Group Barrier',
@@ -68,21 +67,11 @@ const bookEnglish=Object.freeze({
  'Песнь поэта': "Minstrel's Song",
  'Песнь чар': "Sage's Song",
  'Скорость атаки': "Attack speed",
- 'Ляпис Медио': "Lapis Medio",
- 'Групповой барьер': "Group Barrier",
  'Получаемый физический урон': "Incoming physical damage",
- 'Святое оружие': "Holy Weapon",
  'Усиление': "Enhancement",
- 'Мрачный эффект': "Gloomy Effect",
- 'Усиление чар': "Enchant Enhancement",
- 'Магические чары': "Magic Enchantment",
- 'Песня менестреля': "Minstrel Song",
  'Точность и уклонение': "Accuracy & Evasion",
- 'Песня мудрости': "Song of Wisdom",
  'Усиление магии': "Magic Enhancement",
- 'Отравляющее покрытие': "Poison Coating",
  'Сила эффекта': "Effect power",
- 'Ядовитая аура': "Poison Aura",
  'Мощность при применении навыка. Просмотр не включает усиление на персонаже.': "Potency when casting a skill. This preview does not apply the buff to the hero.",
  'Поиск навыка по названию': "Find skill by name",
  'Найти навык…': "Search skills…",
@@ -392,8 +381,8 @@ function buffsPage(body,options){
   const preview=make('div',{class:'stage-guild-level-effects'});
   for(const line of lines)preview.append(make('span',{text:line}));
   guild.append(preview,make('p',{class:'stage-attribute-note',text:english?
-   'HP, MP and regeneration are calculated. Damage reduction and experience are shown from the Remaked guild table, but are not applied to unsupported combat formulas.':
-   'ОЗ, ОМ и восстановление участвуют в расчёте. Снижение урона и опыт отображаются по таблице Remaked, но не добавляются в неподтверждённые боевые формулы.'}));
+   'HP, MP and recovery bonuses are applied. Other values are shown for reference.':
+   'Учитываются бонусы ОЗ, ОМ и восстановления. Остальные значения — справочные.'}));
  }
  select(guild,'Все характеристики','guildAll',opts([0,1,2,3,4,5,6]));
  select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
@@ -404,7 +393,7 @@ function buffsPage(body,options){
  for(const [key,ru,en] of [
   ['priestSpi','СД жреца','Priest SPR'],
   ['priestBlessing','Благословение','Blessing mastery'],
-  ['priestHymn','Песнопение','Hymn mastery']
+  ['priestHymn','Песнопения','Hymn mastery']
  ]){
   const label=make('label',{class:'stage-book-field'},[
    make('span',{text:english?en:ru})]);
@@ -421,8 +410,8 @@ function buffsPage(body,options){
  toggle(priest,english?'Lapis Medio · defense · Blessing 12':'Знак защиты · защита · Благословение 12','priestLapisMedio',
   false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=12);
  priest.append(make('p',{class:'stage-attribute-note',text:english?
-  'Velox and Lapis Medio affect attack speed and defense only when selected; other priest effects are informational.':
-  'Знак атаки и Знак защиты влияют на скорость атаки и защиту только при выборе. Остальные эффекты показаны для справки.'}));
+  'Only selected attack and defense signs affect the build. Other skill values are shown for reference.':
+  'На билд влияют только выбранные знаки атаки и защиты. Остальные значения — справочные.'}));
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
@@ -453,15 +442,15 @@ function buffsPage(body,options){
    ['enchantMagic','Чары усиления (аура)','Усиление','+'],
    ['minstrelSong','Песнь поэта','Точность и уклонение','+'],
    ['sageSong','Песнь чар','Усиление магии','+'],
-   ['toxify','Отравляющее покрытие','Сила эффекта','+'],
-   ['toxicAura','Ядовитая аура','Сила эффекта','+']
+   ['toxify','Яд','Сила эффекта','+','Toxify'],
+   ['toxicAura','Усиление яда','Сила эффекта','+','Toxic Aura']
   ];
   const rows=make('div',{class:'stage-legacy-buff-grid'});
-  for(const [id,label,kind,prefix] of entries){
+  for(const [id,label,kind,prefix,labelEn] of entries){
    const effect=modifiers.legacyBuffs[id];
    if(!effect||!Number.isFinite(effect.value))continue;
    const row=make('div',{class:'stage-legacy-buff-row'});
-   row.append(make('span',{text:label}),make('strong',{text:
+   row.append(make('span',{text:english&&labelEn?labelEn:label}),make('strong',{text:
     prefix+effect.value}));
    row.setAttribute('title',kind);
    rows.append(row);
@@ -473,7 +462,6 @@ function buffsPage(body,options){
  }
  const songRows=modifiers?.songSkills?.rows||[];
  if(songRows.length){
-  const english=document.documentElement?.lang==='en';
   const branchLabels=english?
    {benevolence:'Healing',hymn:'Hymns',blessing:'Blessing'}:
    {benevolence:'Исцеление',hymn:'Гимны',blessing:'Благословение'};
