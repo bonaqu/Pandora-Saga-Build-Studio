@@ -129,7 +129,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.ok(await page.locator('.wiki-chest-location .wiki-link').count()>=1);
   assert.match(await page.locator('.wiki-chest-opening').innerText(),/Культье/);
   assert.match(await page.locator('.wiki-chest-opening').innerText(),/Астир/);
-  assert.ok(await page.locator('.wiki-chest-opening .wiki-link[href="#wiki/map/1003001"]').count()>=1);
+  assert.ok(await page.locator('.wiki-chest-opening .wiki-link[href="#wiki/map/astir-kingdom"]').count()>=1);
   // Source has category labels for colored boxes, but no item or chance table.
   for(const [box,category] of [[51038,'Оружие и доспехи'],[51040,'Аксессуары'],[51042,'Души']]){
    await page.goto(base+'/#wiki/chest/'+box,{waitUntil:'domcontentloaded'});
@@ -137,16 +137,36 @@ export async function runEquipmentLocaleSmoke(browser,base){
    assert.match(await page.locator('.wiki-chest-unverified').innerText(),new RegExp(category));
    assert.equal(await page.locator('.wiki-chest-reward').count(),0);
   }
-  // Actual NPC map region records: three realm territories are pinned and searchable.
+  // The Kingdom is a nation with its own NPCs; Astir Kingdom district is
+  // a separate map whose roads lead to the nation.
   await page.goto(base+'/#wiki/map/1003001',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-page h3').innerText(),/Королевство Сэнт-Фальстайн/);
+  assert.match(await page.locator('.wiki-map-kind').innerText(),/Государство/);
+  assert.equal(await page.locator('.wiki-astir-neighborhoods').count(),0);
+  assert.equal(await page.locator('.wiki-nation-territory').count(),0);
+  assert.ok(await page.locator('.wiki-page .wiki-link[href^="#wiki/npc/"]').count()>=1,
+   'Kingdom keeps its real NPCs');
+  await page.goto(base+'/#wiki/map/astir-kingdom',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-nation-territory').waitFor({state:'visible',timeout:20000});
-  assert.match(await page.locator('.wiki-nation-territory').innerText(),/Королевства/);
   assert.match(await page.locator('.wiki-page h3').innerText(),/Территория Королевства · Астир/);
   assert.match(await page.locator('.wiki-nation-territory').innerText(),/Восточная дорога Ветров/);
-  assert.ok(await page.locator('.wiki-location-list-heading').count()>=2);
+  assert.ok(await page.locator('.wiki-nation-territory .wiki-link[href="#wiki/map/1003001"]').count()===1,
+   'Route terminates in the actual Kingdom, not another district');
+  assert.equal(await page.locator('.wiki-location-list-heading').count(),3);
   const districts=page.locator('.wiki-astir-neighborhoods .wiki-link');
   assert.equal(await districts.count(),4);
   assert.match(await districts.nth(0).innerText(),/Центральная площадь/);
+  for(const [district,nation,name] of [
+   ['astir-union','1002001','Союз северных племен Ванриг'],
+   ['astir-empire','1004001','Лотарская империя']]){
+   await page.goto(base+'/#wiki/map/'+district,{waitUntil:'domcontentloaded'});
+   await page.locator('.wiki-nation-territory .wiki-link[href="#wiki/map/'+nation+'"]')
+    .waitFor({state:'visible'});
+   await page.goto(base+'/#wiki/map/'+nation,{waitUntil:'domcontentloaded'});
+   assert.match(await page.locator('.wiki-page h3').innerText(),new RegExp(name));
+   assert.equal(await page.locator('.wiki-astir-neighborhoods').count(),0);
+  }
   // Source-backed elemental selection and separate status/skill consumables.
   await page.goto(base+'/#wiki/item/452',{waitUntil:'domcontentloaded'});
   assert.equal(await page.locator('.wiki-elemental-type').count(),0);

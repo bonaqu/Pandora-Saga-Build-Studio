@@ -212,6 +212,9 @@
 .wiki-chest-unverified p{margin:7px 0 0;color:#c6b397;font-size:.82rem}
 .wiki-location-list-heading{font:600 14px Georgia,serif;color:#e9c189;
  margin:12px 6px 6px;border-bottom:1px solid rgba(196,143,72,.4);padding-bottom:6px}
+.wiki-map-kind{display:inline-flex;align-items:center;margin:8px 0 4px;
+ padding:4px 9px;border:1px solid #95724b;border-radius:5px;
+ color:#e4bd80;background:#322216;font:600 11px Manrope,Arial,sans-serif}
 .wiki-nation-territory{margin:11px 0;padding:11px 14px;border:1px solid #846643;
  border-radius:9px;background:linear-gradient(105deg,#362618,#241c16)}
 .wiki-nation-territory strong{color:#f0c990;font-size:.92rem}

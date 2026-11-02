@@ -12,7 +12,7 @@
 | Боевые расчёты | `pandora-os-character-calculator.js`, `pandora-studio-enchantment.js` | Только подтверждённые коэффициенты и отдельные предварительные значения |
 | Умения | `pandora-studio-hero-path.js`, `pandora-studio-skill-progression.js`, `pandora-studio-skill-milestones.js`, `pandora-studio-skill-results.js` | Навигация, очки освоения и требования |
 | Экипировка | `pandora-studio-equipment-ui.js`, `pandora-studio-equipment-plan.js`, `pandora-studio-equipment-rules.js`, `pandora-studio-item-presentation.js` | Совместимость, слот, свойства, заточка, души |
-| Энциклопедия | `pandora-studio-encyclopedia-data.js`, `pandora-studio-encyclopedia-catalog.js` | Поиск по сохранённому или опубликованному снимку |
+| Энциклопедия | `pandora-studio-encyclopedia-data.js`, `pandora-studio-encyclopedia-catalog.js`, `pandora-studio-astir-locations.js` | Поиск по сохранённому или опубликованному снимку |
 | Библиотека | `pandora-studio-build-scope.js`, `pandora-studio-build-comparison.js`, `pandora-studio-build-library-merge.js` | Изоляция, сравнение и разрешение конфликтов билдов |
 | Аккаунты | `pandora-studio-account-ui.js`, `worker/pandora-studio-account-api.js` | UI логина и серверная авторизация, без секретов в браузере |
 | Локализация | `pandora-studio-ui-locale.js`, `data/localization/`, `data/os/strings.en.json` | Только RU/EN UI и подтверждённые названия OS; Legacy отдельно |
@@ -20,6 +20,14 @@
 | Синхронизация каталога | `pandora-os-catalog-import.js`, `pandora-os-catalog-diff.js`, `pandora-os-catalog-review.js`, `pandora-os-catalog-workbench.js` | Валидация, различия, решения администратора; запись только через Worker |
 
 Cloudflare Worker остаётся в `worker/index.js` по требованиям точки входа Wrangler. `package.json`, `index.html` и `site-version.json` — инфраструктурные имена и не переименовываются. Дублирующих compatibility-алиасов для старых JS/CSS путей нет.
+
+## Географическая модель: город Астир и три независимых государства
+
+Государственные ID из `trades.mapNames` — `1002001` (Союз северных племен Ванриг), `1003001` (Королевство Сэнт-Фальстайн), `1004001` (Лотарская империя) — обозначают сами государства. NPC с `maps` этих ID находятся в государствах. **Нельзя** переименовывать эти записи в территории города Астир или переносить/копировать NPC к городским районам.
+
+В городе Астир существуют Центральная площадь (`1001004`, исходный ID) и три самостоятельных района (`astir-union`, `astir-empire`, `astir-kingdom`). У последних нет подтверждённых числовых OS-ID, поэтому это **виртуальные записи только энциклопедии**, не новая серверная карта или D1-публикация. `pandora-studio-astir-locations.js` — единственный источник имён и маршрутов между районом → дорогами → государством. NPC не назначаются виртуальным локациям автоматически. Культье размещён в районе Королевства *города* Астир, не в Королевстве Сэнт-Фальстайн.
+
+Даже если активный D1 ещё содержит старые ошибочные значения `trades.mapNames`, визуальный индекс исправляет только названия государственных записей, не меняя исходных данных, привязок NPC, обменов и снапшотов. Проверки `tests/astir-nations-separation.test.mjs` и Chromium закрывают регрессии прямых ссылок и географических связей.
 
 ## Жизненный цикл обновления игрового каталога
 

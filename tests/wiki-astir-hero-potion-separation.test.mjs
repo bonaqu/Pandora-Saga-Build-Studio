@@ -9,17 +9,20 @@ const ctx={window:{}};
 vm.runInNewContext(read('pandora-studio-conditional-item-bonuses.js'),ctx);
 const cond=ctx.window.PandoraConditionalItemBonuses;
 
-test('Astir is the one city with four named districts and Cultier in Kingdom district',()=>{
- const app=read('pandora-studio-app.js');
- assert.match(app,/Астир · территория Королевства/);
+test('Astir has separate districts, while NPC locations retain original sovereign country IDs',()=>{
+ const app=read('pandora-studio-app.js'),model=read('pandora-studio-astir-locations.js');
  assert.match(app,/Культье/);
  assert.doesNotMatch(app,/Вастир/);
- for(const id of ['1001004','1002001','1003001','1004001']){
+ for(const id of ['1001004','1002001','1003001','1004001'])
   assert.ok(maps[id]);
-  assert.match(app,new RegExp(id));
- }
+ for(const id of ['astir-union','astir-empire','astir-kingdom'])
+  assert.ok(model.includes(id));
+ assert.equal(maps['1002001'].name,'Союз северных племен Ванриг');
+ assert.equal(maps['1004001'].name,'Лотарская империя');
+ assert.equal(maps['1003001'].name,'Королевство Сэнт-Фальстайн');
  assert.match(app,/Районы города Астир/);
- assert.match(app,/Территория Королевства · Астир/);
+ assert.match(app,/wikiLink\(dataName\('map',route\.countryId\),'map',route\.countryId\)/);
+ assert.match(app,/wikiLink\(wt\('Территория Королевства · Астир'/);
 });
 
 test('Soul price and slot remain content-sized without duplicate styles',()=>{
