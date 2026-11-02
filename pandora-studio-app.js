@@ -1609,7 +1609,7 @@ function renderWiki(root){
   if(nameCache.has(key))return nameCache.get(key);
   const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):
    type==='chest'?wikiData.items?.[id]:wikiIndex.records(type)?.[id];
-  const en=(type==='npc'&&obj?.nameEn)||
+  const en=(type==='map'&&obj?.nameEn)||(type==='npc'&&obj?.nameEn)||
    (type==='npc'&&obj?.virtual?obj.en:null)||
    (type==='map'?(officialEnglish?.maps?.[id]?.n||
    officialEnglish?.tradeMaps?.[id]?.n):officialEnglish?.[
@@ -4023,10 +4023,13 @@ function showOverrideManager(){
    return Boolean(wikiBaseData?.items?.[target.id]||catalogSource?.items?.[target.id]);
   if(target.type==='monster')return Boolean(wikiBaseData?.monsters?.[target.id]);
   if(target.type==='skill')return Boolean(wikiBaseData?.skills?.[target.id]);
-  if(target.type==='npc')return Boolean(wikiBaseData?.trades?.npcs?.[target.id]);
+  if(target.type==='npc')return Boolean(wikiBaseData?.trades?.npcs?.[target.id]||
+   window.PandoraAstirLocations?.npcRecords?.()[target.id]||
+   wikiData?.townNpcs?.[target.id]);
   if(target.type==='soul')return Boolean(wikiBaseData?.souls?.[target.id]);
   if(target.type==='map')return Boolean(wikiBaseData?.maps?.[target.id]||
-   wikiBaseData?.trades?.mapNames?.[target.id]);
+   wikiBaseData?.trades?.mapNames?.[target.id]||
+   window.PandoraAstirLocations?.district(target.id));
   if(target.type==='instance')return (wikiBaseData?.instances||[]).some(x=>
    String(x.id)===String(target.id));
   return false;
