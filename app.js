@@ -3019,10 +3019,6 @@ $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView
  $('pathSkillStatus').onchange=e=>{pathSkillFilter=e.target.value;pathSkillShown=24;renderPathSkills()};
  $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;
-$('dockTabs').addEventListener('click',event=>{
- const button=event.target.closest('[data-tab]');
- if(button)changeTab(button.dataset.tab);
-});
 $('stageQuickbar')?.addEventListener('click',event=>{
  const target=event.target.closest('[data-stage-tab]');
  if(target)changeTab(target.dataset.stageTab);
