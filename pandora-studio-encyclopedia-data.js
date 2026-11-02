@@ -25,7 +25,10 @@ function build(data){
  for(const recipe of data.trades?.trades||[])
   for(const id of new Set((recipe.mats||[]).filter(x=>x.i!=null).map(x=>String(x.i))))
    append(materialTrades,id,recipe);
- for(const [id,npc] of Object.entries(data.trades?.npcs||{}))
+ // Historical town NPCs are separate, read-only encyclopedia records. They
+ // never enter the server's trade NPC collection or D1 publication.
+ const astirNpcs=root.PandoraAstirLocations?.npcRecords?.()||{};
+ for(const [id,npc] of Object.entries({...data.trades?.npcs,...astirNpcs}))
   for(const mapId of new Set((npc.maps||[]).map(String)))
    append(npcLocations,mapId,[id,npc]);
  for(const zone of data.tables?.zoneDrops||[])append(zoneLocations,zone.map,zone);
@@ -123,7 +126,8 @@ function build(data){
   if(found.length)chestLocation.set(id,found.map(([key])=>key));
  }
  const chapters={
-  item:data.items||{},monster:data.monsters||{},map:maps,npc:data.trades?.npcs||{},
+  item:data.items||{},monster:data.monsters||{},map:maps,
+  npc:{...(data.trades?.npcs||{}),...astirNpcs},
   chest:chestRecords,
   instance:Object.fromEntries((data.instances||[]).map(x=>[String(x.id),x])),
   skill:data.skills||{},soul:data.souls||{}
