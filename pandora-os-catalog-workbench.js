@@ -11,7 +11,7 @@
 
     const view = h('div', {class:'os-sync'});
     const intro = h('p', {class:'muted',
-      text:'Проверка не меняет данные. Выбирай, что принять в новый снимок D1. Исходные файлы GitHub обновляются отдельно.'});
+      text:'Выбирай изменения OS для нового снимка D1. Действующие Legacy-переводы не перезаписываются. GitHub обновляется отдельно.'});
     const actions = h('div', {class:'os-sync-actions'});
     const live = h('button', {type:'button',class:'button-action primary',
       text:'Проверить синхронизацию данных с Pandora Saga OS API'});
@@ -31,7 +31,7 @@
     actions.append(live,archive,acceptAll,declineAll,exportButton,publish);
     view.append(intro,actions,search,progress,summary,status,results);
 
-    let baseline = null, upstream = null, legacy = null, mode = null;
+    let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
     let expanded = new Set(), full = new Set();
 
@@ -150,7 +150,7 @@
 
     async function compare(from) {
       setBusy(true);
-      baseline=null;upstream=null;legacy=null;activeSnapshot=null;
+      baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();
       results.replaceChildren();summary.textContent='';
       progress.value=0;
@@ -177,11 +177,18 @@
           old[name]=await response.json();
           progress.value=45+Math.round(55*(index+1)/importer.files.length);
         }
+        const localeResponse=await fetch(apiBase+'/api/catalog/legacyLocale.json',
+          {cache:'no-store',signal:AbortSignal.timeout(15000)});
+        if (!localeResponse.ok) throw Error('Не получен текущий перевод D1');
+        const localeSnapshot=localeResponse.headers.get('x-ps-catalog-snapshot');
+        if (!localeSnapshot) throw Error('Нет версии локализации D1');
+        versions.add(localeSnapshot);
         if (versions.size!==1) throw Error('D1 изменилась во время проверки — повтори сверку');
-        importer.normalize(old,approved); // Do not merge against broken D1.
+        const retained=review.retainLegacyRows(await localeResponse.json());
+        importer.normalize(old,retained.locales); // Validate D1 itself, not the local backup.
         const findings=importer.files.flatMap(name=>
           review.changes(name,old[name],next[name]));
-        baseline=old;upstream=next;legacy=approved;mode=from;
+        baseline=old;upstream=next;legacy=retained.locales;legacyRows=retained.records;mode=from;
         activeSnapshot=[...versions][0];changes=findings;
         status.textContent=findings.length
           ? 'Сверка завершена. Ни одно изменение не принято автоматически.'
@@ -199,6 +206,9 @@
       const combined=review.compose(baseline,upstream,chosen,importer.files);
       // Full structural and count validation is required after selective merging.
       const normalized=importer.normalize(combined,legacy);
+      if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
+        throw Error('Published D1 translation count changed during review');
+      normalized.entries.legacyLocale=legacyRows; // Preserve exact IDs, payloads and source attribution.
       return {combined,normalized};
     }
 

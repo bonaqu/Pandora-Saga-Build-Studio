@@ -15,6 +15,20 @@ export async function runAdminEntrySmoke(browser,base){
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
   const json=(value,status=200)=>route.fulfill({
    status,headers,contentType:'application/json',body:JSON.stringify(value)});
+  if(path==='/api/catalog/legacyLocale.json'){
+   const approved=JSON.parse(readFileSync(new URL('../data/localization/legacy-approved.v1.json',import.meta.url),'utf8'));
+   const rows={};let i=0;
+   for(const namespace of ['game','ui'])for(const locale of ['ru','en','jp','tw']){
+    for(const [key,text] of Object.entries(approved[namespace]?.[locale]||{})){
+     if(typeof text!=='string'||!text.trim())continue;
+     rows[String(i++).padStart(6,'0')]={namespace,locale,key,text,source:'Legacy approved terminology'};
+    }
+   }
+   return route.fulfill({status:200,headers:{
+    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot',
+    'x-ps-catalog-snapshot':'ps-browser-snapshot'},
+    contentType:'application/json',body:JSON.stringify(rows)});
+  }
   if(path.startsWith('/api/catalog/')&&path.endsWith('.json')){
    const key=path.split('/').pop().slice(0,-5);
    const name=key==='stringsEn'?'strings.en':key;
