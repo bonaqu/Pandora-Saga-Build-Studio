@@ -82,7 +82,8 @@ test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-
 test('wiki shows localized game class names and consistent source labels',()=>{
  const app=read('pandora-studio-app.js');
  assert.match(app,/PandoraItemPresentation\.kind\(rec,lang\)/);
- assert.match(app,/for\(const key of keys\)/);\n assert.match(app,/const name=classLabel\(key\)/);
+ assert.match(app,/for\(const key of keys\)/);
+ assert.match(app,/const name=classLabel\(key\)/);
  assert.match(app,/const monsterStats=/);
  assert.match(app,/Monster resistances|Resistances/);
  assert.match(app,/const currencies=\[\[wt\('Золото','Gold'\)/);
