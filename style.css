@@ -1454,6 +1454,31 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .account-recovery{display:grid;gap:8px;padding:11px;margin:10px 0;border:1px solid #bd945c;
  background:#251b12;font-size:11px}
 .account-recovery p{color:#dec29d}
+.account-identity{display:flex;align-items:center;gap:12px;margin:14px 0 9px;padding:12px;
+ border:1px solid #98714a;border-radius:7px;background:linear-gradient(110deg,#513620,#281b12);
+ box-shadow:inset 0 1px #c8a06a24}
+.account-avatar{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
+ border-radius:50%;border:1px solid #d9ad69;color:#f5d8a1;
+ background:radial-gradient(circle at 35% 30%,#715332,#2e1e12);font:25px Georgia,serif}
+.account-identity-meta{min-width:0;display:grid;gap:3px}
+.account-identity-meta small{color:#cfaf83;font-size:9px;letter-spacing:1.3px;font-weight:700}
+.account-identity .account-user{display:block;max-width:100%;overflow-wrap:anywhere;
+ border:0;background:none;padding:0;color:#ffdc9b;font-size:20px}
+.account-session-note{display:flex;gap:9px;align-items:center;margin:0 0 12px;padding:7px 10px;
+ border-radius:4px;background:#233020a8;color:#c7ddaf;font-size:10px}
+.account-session-note>span:first-child{color:#abd586;font-weight:800}
+.account-password-details{border-top:1px solid #755436;border-bottom:1px solid #755436;margin:10px 0}
+.account-password-toggle{list-style:none;display:flex;justify-content:space-between;align-items:center;
+ gap:8px;cursor:pointer;padding:12px 5px;color:#e8c695;font-size:12px;font-weight:600}
+.account-password-toggle::-webkit-details-marker{display:none}
+.account-password-toggle:after{content:'⌄';color:#d9ad76;font-size:17px;transition:transform .16s}
+.account-password-details[open] .account-password-toggle:after{transform:rotate(180deg)}
+.account-password-toggle:hover{color:#ffe4b2}
+.account-password-toggle:focus-visible{outline:2px solid #f2c387;outline-offset:1px}
+.account-password-details .account-form{margin:3px 0 14px;padding:0 2px}
+.account-profile-footer{display:flex;justify-content:flex-end;padding:7px 0 0}
+.account-signout{background:#2b1d18;border-color:#815140;color:#e2b3a6}
+.account-signout:hover{background:#4c2b24;border-color:#c0816c}
 @media(max-width:790px){.account-panel{right:0;top:calc(100% + 6px)}}
 
 /* 0.193.0 — skill milestones belong INSIDE the interactive progress line.
