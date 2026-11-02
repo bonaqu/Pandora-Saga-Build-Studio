@@ -2145,8 +2145,35 @@ function renderWiki(root){
   }else if(type==='soul'){
     const slotLabel=slot=>window.PandoraItemPresentation.slotLabel(slot,lang);
     const traits=h('div',{class:'wiki-soul-traits'});
-    for(const slot of rec.slots||[])traits.append(h('span',{text:slotLabel(slot)}));
-    if(rec.price!=null)traits.append(h('span',{text:wt('Стоимость: ','Cost: ')+Number(rec.price).toLocaleString(lang==='en'?'en-US':'ru-RU')}));
+    for(const slot of rec.slots||[]){
+     const chip=h('span',{class:'wiki-owner-mat',text:slotLabel(slot)});
+     if(adminEditing&&adminToken)chip.append(h('button',{type:'button',
+      class:'wiki-owner-remove',text:'×','aria-label':'Убрать слот '+slotLabel(slot),
+      onclick:()=>void saveWikiRecordField('soul',id,'slots',rec.slots.filter(x=>x!==slot))
+       .catch(e=>showStudioToast(e.message,'warning'))}));
+     traits.append(chip);
+    }
+    if(adminEditing&&adminToken){
+     const add=h('button',{type:'button',class:'wiki-owner-plus',text:'+ Слот'});
+     add.onclick=()=>{
+      const choices=['weapon','shield','head','body','gloves','legs','feet',
+       'cloak','ring','neck','belt','ear','accessory'].filter(x=>!(rec.slots||[]).includes(x));
+      const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери слот'});
+      select.append(h('option',{value:'',text:'Выбери слот'}));
+      for(const slot of choices)select.append(h('option',{value:slot,text:slotLabel(slot)}));
+      add.replaceWith(select);
+      select.onchange=()=>{if(select.value)void saveWikiRecordField('soul',id,'slots',
+       [...(rec.slots||[]),select.value]).catch(e=>showStudioToast(e.message,'warning'))};
+      select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+      select.focus();
+     };
+     traits.append(add);
+    }
+    if(rec.price!=null)traits.append(h('span',{},[
+     h('span',{text:wt('Стоимость: ','Cost: ')}),
+     wikiOwnerNumeric(h('strong',{text:Number(rec.price).toLocaleString('ru-RU')}),
+      rec.price,'soul',id,'price',{integer:true})
+    ]));
     if(traits.childElementCount)detail.append(traits);
     detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));
     const found=wikiIndex.sources(id);
