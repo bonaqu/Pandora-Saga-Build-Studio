@@ -1919,7 +1919,9 @@ function renderWiki(root){
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=(keys,isItem=false)=>{
-   const manage=isItem&&adminEditing&&adminToken;
+   const manage=adminEditing&&adminToken&&(isItem||type==='skill');
+   const saveClasses=next=>isItem?saveWikiItemField(id,'classes',next):
+    saveWikiRecordField('skill',id,'classes',next);
    if(!keys.length&&!manage)return;
    const all=jobKeys.every(id=>keys.includes(id));
    if(all&&!manage){
@@ -1937,7 +1939,7 @@ function renderWiki(root){
     ]);
     if(manage)chip.append(h('button',{type:'button',class:'wiki-owner-remove',
      text:'×','aria-label':'Убрать класс '+name,
-     onclick:()=>void saveWikiItemField(id,'classes',Object.fromEntries(keys.filter(x=>x!==key).map(x=>[x,1])))
+     onclick:()=>void saveClasses(Object.fromEntries(keys.filter(x=>x!==key).map(x=>[x,1])))
      .catch(error=>showStudioToast(error.message,'warning'))}));
     tags.append(chip);
    }
@@ -1950,7 +1952,7 @@ function renderWiki(root){
      for(const key of jobKeys.filter(x=>!keys.includes(x)))
       select.append(h('option',{value:key,text:classLabel(key)||key}));
      plus.replaceWith(select);
-     select.onchange=()=>{if(select.value)void saveWikiItemField(id,'classes',
+     select.onchange=()=>{if(select.value)void saveClasses(
       Object.fromEntries([...keys,select.value].map(x=>[x,1])))
       .catch(error=>showStudioToast(error.message,'warning'))};
      select.onblur=()=>{if(select.isConnected)select.replaceWith(plus)};
@@ -2311,7 +2313,7 @@ function renderWiki(root){
      detail.append(prerequisite);
     }
     if(rec.classes&&Object.keys(rec.classes).length)
-     renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]));
+     renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]),false);
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){const image=wikiImage(icon,'wiki-record-icon',type);detail.prepend(image)}
   }else if(type==='soul'){
