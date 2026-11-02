@@ -1536,6 +1536,7 @@ function renderWiki(root){
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
  const nameCache=new Map();
+  let lastWikiIndex=null;
  const dataName=(type,id)=>{
   const key=type+':'+String(id);
   if(nameCache.has(key))return nameCache.get(key);
@@ -1665,7 +1666,7 @@ function renderWiki(root){
  const ids=[...new Set((existing||[]).map(String))];
  const candidates=kind==='monster'?wikiData.monsters:
   kind==='npc'?wikiData.trades?.npcs:
-  kind==='map'?wikiIndex.records('map'):
+  kind==='map'?wikiData.maps:
   kind==='item'?wikiData.items:wikiIndex.records('instance');
  const holder=h('div',{class:'wiki-entity-flow'});
  for(const key of ids){
@@ -1795,7 +1796,10 @@ function renderWiki(root){
  };
 
  const draw=(detailOnly=false)=>{
-  const previousScroll=browse.scrollTop,previousDetailScroll=detail.scrollTop;
+   if(lastWikiIndex!==wikiIndex){
+    nameCache.clear();searchCache.clear();lastWikiIndex=wikiIndex;
+   }
+   const previousScroll=browse.scrollTop,previousDetailScroll=detail.scrollTop;
   window.PandoraStageItemUI?.dismissPreview();
   const sourceKey=wikiSelection.type+':'+String(wikiSelection.id??'');
   if(wikiSourceRecord!==sourceKey){
@@ -2337,9 +2341,10 @@ function renderWiki(root){
      };
      traits.append(add);
     }
-    if(rec.price!=null)traits.append(h('span',{},[
-     h('span',{text:wt('Стоимость: ','Cost: ')}),
-     wikiOwnerNumeric(h('strong',{text:Number(rec.price).toLocaleString('ru-RU')}),
+    if(rec.price!=null)traits.append(h('div',{class:'wiki-soul-price'},[
+     h('span',{class:'wiki-soul-price-label',text:wt('Стоимость','Cost')}),
+     wikiOwnerNumeric(h('strong',{class:'wiki-soul-price-value',
+      text:Number(rec.price).toLocaleString('ru-RU')}),
       rec.price,'soul',id,'price',{integer:true})
     ]));
     if(traits.childElementCount)detail.append(traits);
@@ -2646,8 +2651,11 @@ function renderWiki(root){
      }));
     }
     const mobs=rec.mobs||[];
-    if(adminEditing&&adminToken){
-     detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
+     if(type==='map'&&adminEditing&&adminToken&&!Object.hasOwn(wikiData.maps||{},id))
+      detail.append(h('p',{class:'wiki-owner-map-note',text:
+       'Место известно по расположению NPC, но отсутствует в каталоге карт с монстрами. Добавление здесь недоступно.'}));
+     if(adminEditing&&adminToken&&(type==='instance'||Object.hasOwn(wikiData.maps||{},id))){
+      detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
        const before=mobs.map(String),after=next.map(String);
        const added=after.find(x=>!before.includes(x));
@@ -3745,6 +3753,11 @@ async function saveWikiRecordField(type,id,field,value){
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveWikiSpawns(monsterId,type,placeId,include){
+ if(type==='map'&&!Object.hasOwn(wikiData?.maps||{},String(placeId)))
+  throw Error('Нельзя разместить монстра: карта отсутствует в игровом каталоге.');
+ if(type==='instance'&&!(wikiData?.instances||[]).some(x=>String(x.id)===String(placeId)))
+  throw Error('Подземелье отсутствует в игровом каталоге.');
+ if(!wikiData?.monsters?.[monsterId])throw Error('Монстр не найден в каталоге.');
  const current=wikiIndex.locations(monsterId).map(x=>({type:x.type,id:String(x.id)}));
  const wanted=new Map(current.map(x=>[x.type+':'+x.id,x]));
  const key=type+':'+placeId;
