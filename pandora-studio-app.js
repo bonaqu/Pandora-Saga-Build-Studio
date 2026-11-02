@@ -2746,11 +2746,30 @@ function renderWiki(root){
     const locations=rec.maps||[];
     if(rec.virtual){
      const fields=h('dl',{class:'item-fields'});
-     if(rec.grid)fields.append(h('dt',{text:wt('На карте','Map grid')}),
-      h('dd',{text:rec.grid}));
-     if(rec.service)fields.append(h('dt',{text:wt('Назначение','Service')}),
-      h('dd',{text:rec.service}));
+     const makeField=(label,field,value)=>{
+      const dd=h('dd',{text:value||wt('Двойной клик — добавить','Double-click to add'),
+       ...(adminEditing&&adminToken?{'data-owner-record':'npc:'+id,
+        'data-owner-field':field,
+        ...(!value?{'data-owner-empty':'true'}:{})}:{})});
+      fields.append(h('dt',{text:label}),dd);
+     };
+     makeField(wt('Назначение','Service'),lang==='en'?'serviceEn':'service',
+      (lang==='en'?rec.serviceEn||rec.service:rec.service)||'');
+     if(rec.grid||adminEditing&&adminToken)
+      makeField(wt('Координаты','Coordinates'),'grid',rec.grid||'');
      detail.append(fields);
+     if(adminEditing&&adminToken){
+      const geo=window.PandoraAstirLocations;
+      const selector=h('select',{class:'wiki-inline-select wiki-town-npc-location',
+       'aria-label':wt('Расположение NPC','NPC location')});
+      for(const mapId of geo.districtIds.filter(x=>x!=='1001004')){
+       const option=h('option',{value:mapId,text:dataName('map',mapId)});
+       option.selected=locations.includes(mapId);selector.append(option);
+      }
+      selector.onchange=()=>void saveWikiRecordField('npc',id,'maps',[selector.value]);
+      detail.append(h('div',{class:'wiki-owner-town-location'},[
+       h('small',{text:wt('Изменить местонахождение','Change location')}),selector]));
+     }
     }
     if(adminEditing&&adminToken&&!rec.virtual)detail.append(wikiOwnerEntityList({
      label:wt('Где находится','Where to find'),kind:'map',existing:locations,
@@ -3004,6 +3023,45 @@ function renderWiki(root){
        detail.append(h('p',{class:'muted',
         text:wt('Подтверждённых сведений о NPC пока нет.',
          'No verified NPC data available yet.')}));
+      }
+      if(rec.virtual&&adminEditing&&adminToken){
+       const add=h('button',{type:'button',class:'wiki-owner-plus',
+        text:wt('+ Добавить NPC','+ Add NPC')});
+       add.onclick=()=>{
+        const controls=h('div',{class:'wiki-town-npc-create'});
+        const field=(label,max=240)=>{
+         const input=ownerPlainTextField({class:'wiki-inline-input',
+          'aria-label':label,placeholder:label});
+         input.setAttribute('data-max',String(max));
+         const row=h('label',{},[h('small',{text:label}),input]);controls.append(row);return input;
+        };
+        const ru=field('Имя NPC · RU'),en=field('NPC name · EN'),
+         role=field(wt('Назначение','Service'));
+        const error=h('small',{class:'inline-owner-error',role:'status'});
+        const save=h('button',{type:'button',class:'wiki-owner-plus',
+         text:wt('Сохранить NPC','Save NPC')});
+        save.onclick=async()=>{
+         const name=ru.value.trim(),english=en.value.trim(),service=role.value.trim();
+         if(!name||name.length>240||english.length>240||service.length>240){
+          error.textContent='Укажи корректное имя NPC';return;
+         }
+         const city=String(id).slice(6);
+         let index=1,identifier;
+         do{
+          identifier='astir-npc-'+city+'-custom-'+index++;
+         }while(wikiIndex.records('npc')[identifier]||
+          Object.hasOwn(override,'wikiedit.npc.'+identifier));
+         const patch={name,maps:[String(id)]};
+         if(english)patch.nameEn=english;
+         if(service)patch.service=service;
+         save.disabled=true;
+         try{await saveWikiRecordPatch('npc',identifier,patch)}
+         catch(e){error.textContent=String(e.message||e);save.disabled=false}
+        };
+        controls.append(error,save);
+        add.replaceWith(controls);
+       };
+       detail.append(add);
       }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
@@ -4152,10 +4210,6 @@ async function saveWikiRecordPatch(type,id,updates){
  let current={};
  try{current=JSON.parse(override[key]||'{}')}catch{}
  const patch={...current,...updates};
- if(Object.hasOwn(updates,'resists.')){
-  const name=updates['resists.'];
-  delete patch['resists.'];
- }
  if(!/^[0-9]+$/.test(String(id))){
   if(!window.PandoraWikiOwnerData.validTownPatch(type,id,patch))
    throw Error('Некорректное значение специального справочника');
