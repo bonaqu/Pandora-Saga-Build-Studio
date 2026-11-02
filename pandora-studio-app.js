@@ -1641,6 +1641,16 @@ function renderWiki(root){
   }else if(row.type==='zone'){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
   }
+  if(row.manual&&adminEditing&&adminToken){
+   const remove=h('button',{type:'button',class:'wiki-owner-remove',
+    text:'×','aria-label':'Удалить источник '+dataName(row.type,row.id),
+    title:'Убрать источник получения'});
+   remove.onclick=()=>void saveWikiAcquisitions(itemId,
+    (wikiData.ownerAcquisitions?.[itemId]||[]).filter(x=>
+     !(x.type===row.type&&String(x.id)===String(row.id))))
+    .catch(error=>showStudioToast(error.message,'warning'));
+   line.append(remove);
+  }
   return line;
  };
  const appendSourceFlow=(found,itemId)=>{
@@ -1914,6 +1924,65 @@ function renderWiki(root){
      wt('Подтверждённые источники в доступном каталоге не найдены.','No confirmed sources in the current catalog.')}));
     if(found.length)appendSourceFlow(found,id);
     moreSources(found);
+    if(adminEditing&&adminToken){
+     const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+      text:'+ Добавить источник',title:'Связать предмет с NPC или монстром'});
+     add.onclick=()=>{
+      if(detail.querySelector('.wiki-owner-source-picker'))return;
+      const panel=h('div',{class:'wiki-owner-source-picker'});
+      const kind=h('select',{class:'wiki-inline-select','aria-label':'Тип получения'},[
+       h('option',{value:'',text:'Выбери тип получения'}),
+       h('option',{value:'monster',text:'Монстр'}),
+       h('option',{value:'npc',text:'NPC'})]);
+      const search=h('input',{type:'search',class:'wiki-inline-input',
+       'aria-label':'Найти NPC или монстра',placeholder:'Поиск по названию…',autocomplete:'off'});
+      const target=h('select',{class:'wiki-inline-select',
+       'aria-label':'У кого получить',disabled:true});
+      const feedback=h('small',{class:'inline-owner-error',role:'status'});
+      const label=(text,control)=>h('label',{class:'wiki-owner-source-field'},[
+       h('span',{text}),control]);
+      panel.append(label('Тип получения',kind),label('Найди по имени',search),
+       label('У кого получить',target),feedback);
+      add.after(panel);
+      const refresh=()=>{
+       const entries=kind.value==='monster'?Object.entries(wikiData.monsters||{}):
+        kind.value==='npc'?Object.entries(wikiData.trades?.npcs||{}):[];
+       const q=wikiIndex.normalize(search.value);
+       const filtered=entries.filter(([key])=>!q||
+        wikiIndex.normalize(dataName(kind.value,key)).includes(q)).slice(0,90);
+       target.replaceChildren(h('option',{value:'',
+        text:filtered.length?'Выбери персонажа':'Ничего не найдено'}));
+       for(const [key,obj] of filtered){
+        const suffix=kind.value==='monster'&&Number.isFinite(obj.level)?
+         ' · ур. '+obj.level:'';
+        target.append(h('option',{value:key,text:dataName(kind.value,key)+suffix}));
+       }
+       target.disabled=!kind.value||!filtered.length;
+      };
+      kind.onchange=()=>{search.value='';feedback.textContent='';refresh();search.focus()};
+      search.oninput=refresh;
+      target.onchange=async()=>{
+       if(!target.value||!kind.value)return;
+       const selected={type:kind.value,id:String(target.value)};
+       const existing=wikiIndex.sources(id).some(row=>row.type===selected.type&&
+        String(row.id)===selected.id);
+       if(existing){feedback.textContent='Этот источник уже указан.';return}
+       const earlier=wikiData.ownerAcquisitions?.[id]||[];
+       if(earlier.length>=24){feedback.textContent='Достигнут предел: 24 источника.';return}
+       target.disabled=true;
+       try{await saveWikiAcquisitions(id,[...earlier,selected])}
+       catch(error){target.disabled=false;feedback.textContent=error.message}
+      };
+      const outside=event=>{
+       if(!panel.isConnected||(!panel.contains(event.target)&&event.target!==add)){
+        document.removeEventListener('pointerdown',outside,true);panel.remove();
+       }
+      };
+      document.addEventListener('pointerdown',outside,true);
+      refresh();kind.focus();
+     };
+     detail.append(add);
+    }
     const usedIn=wikiIndex.materialUses(id);
     if(usedIn.length){
      detail.append(h('h4',{text:(lang==='en'?'Used in NPC trades · ':'Используется в обмене NPC · ')+usedIn.length}));
@@ -2060,6 +2129,12 @@ function renderWiki(root){
     const locations=rec.maps||[];
     detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
      wikiLink('◈ '+dataName('map',mapId),'map',mapId,id))));
+    const ownerStock=wikiIndex.ownerNpcItems(id);
+    if(ownerStock.length){
+     detail.append(h('h4',{text:wt('Можно получить','Items available')}));
+     detail.append(linkFlow(ownerStock.map(row=>
+      itemLink(row.itemId,dataName('item',row.itemId),id))));
+    }
     const recipes=wikiIndex.trades(id);
     detail.append(h('h4',{text:wt('Обмен · ','Trades · ')+recipes.length}));
     const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
