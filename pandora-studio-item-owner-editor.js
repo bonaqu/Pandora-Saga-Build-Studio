@@ -34,7 +34,7 @@ function ownPatch(overrides,id){
    Object.entries(patch.classes).filter(([key,value])=>/^[A-Z_]{2,25}$/.test(key)&&value===1));
   if(Array.isArray(patch.effects)&&patch.effects.length<=32)
    selected.effects=patch.effects.filter(effect=>plain(effect)&&
-     /^EP_[A-Z0-9_]{2,65}$/.test(effect.func)&&Number.isFinite(effect.a)&&
+     /^EP_[A-Z0-9_]{2,65}$/.test(effect.func)&&(effect.a===null||Number.isFinite(effect.a))&&
      ['TARGET','CASTER'].includes(effect.dir)).map(effect=>({...effect}));
   if(typeof patch.sourceNote==='string'&&patch.sourceNote.length<=500)
    selected.sourceNote=patch.sourceNote;
@@ -116,7 +116,7 @@ function open({id,item,base,overrides,h,modal,jobKeys,className,onSave,onReset})
    if(code===value.func)option.selected=true;
    select.append(option);
   }
-  const amount=h('input',{type:'number',step:'any',value:String(value.a??0),
+  const amount=h('input',{type:'number',step:'any',value:value.a===null?'':String(value.a??0),
    'aria-label':'Значение эффекта'});
   const extra=h('input',{type:'number',step:'any',value:value.b==null?'':String(value.b),
    placeholder:'Доп. параметр','aria-label':'Дополнительный параметр'});
@@ -165,8 +165,8 @@ function open({id,item,base,overrides,h,modal,jobKeys,className,onSave,onReset})
   if(effectRows.length>32){feedback.textContent='Можно указать не более 32 эффектов.';return}
   const rows=[];
   for(const entry of effectRows){
-   const a=Number(entry.amount.value),b=entry.extra.value.trim()===''?null:Number(entry.extra.value);
-   if(!Number.isFinite(a)||Math.abs(a)>100000||
+   const a=entry.amount.value.trim()===''?null:Number(entry.amount.value),b=entry.extra.value.trim()===''?null:Number(entry.extra.value);
+   if((a!==null&&(!Number.isFinite(a)||Math.abs(a)>100000))||
       (b!==null&&(!Number.isFinite(b)||Math.abs(b)>100000))){
     feedback.textContent='Проверь значение эффекта.';return;
    }

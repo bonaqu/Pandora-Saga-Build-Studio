@@ -418,7 +418,7 @@ function validItemOwnerPatch(text){
       !/^EP_[A-Z0-9_]{2,65}$/.test(effect.func)||
       !['TARGET','CASTER'].includes(effect.dir)||
       effect.exclusive!==null||
-      !Number.isFinite(effect.a)||Math.abs(effect.a)>100000||
+      !(effect.a===null||(Number.isFinite(effect.a)&&Math.abs(effect.a)<=100000))||
       !(effect.b===null||(Number.isFinite(effect.b)&&Math.abs(effect.b)<=100000)))return false;
    }
   }
