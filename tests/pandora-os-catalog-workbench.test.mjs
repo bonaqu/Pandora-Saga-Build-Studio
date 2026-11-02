@@ -40,3 +40,17 @@ test('admin workbench is optional for ordinary players and has explicit selectio
  assert.match(html,/pandora-os-catalog-review\.js\?v=/);
  assert.match(html,/pandora-os-catalog-workbench\.js\?v=/);
 });
+
+test('all versioned scripts and styles resolve after descriptive module renames',()=>{
+ const names=[...html.matchAll(/(?:src|href)="([^"]+\.(?:js|css))\?v=([^"]+)"/g)]
+   .map(match=>match[1]);
+ assert.equal(new Set(names).size,names.length,'runtime assets must not be duplicated');
+ for(const file of names)assert.equal(existsSync(new URL(file,root)),true,file);
+ assert.ok(names.indexOf('pandora-os-catalog-import.js')<
+   names.indexOf('pandora-os-catalog-workbench.js'));
+ assert.ok(names.indexOf('pandora-os-catalog-review.js')<
+   names.indexOf('pandora-os-catalog-workbench.js'));
+ assert.ok(names.indexOf('pandora-os-catalog-workbench.js')<names.indexOf('app.js'));
+ assert.ok(!names.includes('catalog-import.js'));
+ assert.ok(!names.includes('catalog-diff.js'));
+});

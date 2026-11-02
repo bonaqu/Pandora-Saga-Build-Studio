@@ -90,3 +90,24 @@ test('unreviewed sources or mismatched English locale cannot be staged',()=>{
   const corrupt=snapshot();corrupt['strings.en'].locale='ru';
   assert.throws(()=>review.compose(before,corrupt,new Set(),files),/Invalid English locale/);
 });
+
+test('real checked-in OS catalog remains importable after a selective item/translation review',()=>{
+  const read=name=>JSON.parse(readFileSync(new URL('data/os/'+name+'.json',root),'utf8'));
+  const catalog=Object.fromEntries(files.map(name=>[name,read(name)]));
+  const legacy=JSON.parse(readFileSync(new URL('data/localization/legacy-approved.v1.json',root),'utf8'));
+  const importerCtx={window:{}};
+  vm.runInNewContext(readFileSync(new URL('pandora-os-catalog-import.js',root),'utf8'),importerCtx);
+  const normalize=importerCtx.window.PandoraCatalogImport.normalize;
+  assert.equal(normalize(catalog,legacy).datasets.length,19);
+  const proposed=plain(catalog);
+  proposed.items['1'].name+=' · reviewed';
+  proposed['strings.en'].items['1'].n+=' · rejected';
+  const decision=new Set([review.id('items','1')]);
+  const selected=review.compose(catalog,proposed,decision,files);
+  const ready=normalize(selected,legacy);
+  assert.equal(ready.counts.items,Object.keys(catalog.items).length);
+  assert.match(selected.items['1'].name,/reviewed/);
+  assert.equal(selected['strings.en'].items['1'].n,catalog['strings.en'].items['1'].n);
+  assert.equal(selected.meta.sha,undefined);
+  assert.equal(selected.meta.curated,true);
+});
