@@ -106,7 +106,8 @@ test('deep links, labels and search remain distinct in RU and EN',()=>{
  assert.equal(geo.localized('1003001','en'),'Kingdom of St. Pfelstein');
  assert.ok(wiki.search('map','Территория Королевства').some(([id])=>id==='astir-kingdom'));
  assert.ok(wiki.search('map','Королевство Сэнт-Фальстайн').some(([id])=>id==='1003001'));
- assert.ok(app.includes("'map','astir-kingdom'"));
+ assert.ok(app.includes("'astir-npc-kingdom-cultier'"));
+ assert.ok(app.includes("'astir-kingdom'"));
  assert.match(app,/wiki-map-npc/);
  assert.match(app,/const group=geo\?\.district\(id\)\?'city':geo\?\.country\(id\)\?'nation':'other'/);
 });
