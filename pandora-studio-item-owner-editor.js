@@ -7,7 +7,7 @@ const allowedKinds=new Set('1H_SWORD 2H_SWORD 1H_AXE 2H_AXE 1H_BLUNT_WEAPON 2H_B
 const effects=[
  ['EP_MAXLIFE_CONST','ОЗ (единицы)'],['EP_MAXMANA_CONST','ОМ (единицы)'],
  ['EP_STRENGTH_CONST','Сила'],['EP_VITARITY_CONST','Выносливость'],
- ['EP_AGILITY_CONST','Ловкость'],['EP_DEXTERITY_CONST','Сноровка'],
+ ['EP_AGILITY_CONST','Проворство'],['EP_DEXTERITY_CONST','Ловкость'],
  ['EP_SPIRITUAL_CONST','Дух'],['EP_INTELIGENCE_CONST','Интеллект'],
  ['EP_ARMORCLASS_CONST','Защита (единицы)'],['EP_TOHIT_CONST','Меткость'],
  ['EP_CRITICALRATE_CONST','Шанс критического удара'],['EP_DAMAGERATE_CONST','Атака (единицы)'],
