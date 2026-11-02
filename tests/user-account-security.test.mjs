@@ -33,6 +33,17 @@ test('account API is added without reusing or weakening legacy admin secrets',as
  assert.equal(typeof worker.default.fetch,'function');
 });
 
+test('signed-in profile keeps password editor closed until requested',()=>{
+ const ui=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ assert.match(ui,/node\('details','account-password-details'\)/);
+ assert.match(ui,/node\('summary','account-password-toggle'/);
+ assert.match(ui,/details\.append\(form\)/);
+ assert.match(ui,/details\.open=false/);
+ assert.match(ui,/class='account-identity'|node\('div','account-identity'\)/);
+ assert.match(css,/\.account-session-note/);
+ assert.match(css,/\.account-password-details/);
+});
 test('the one-time recovery code stays only in profile memory until acknowledged',()=>{
  const source=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
  assert.match(source,/let pendingRecoveryCode=null/);
