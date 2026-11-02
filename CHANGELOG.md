@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.292.0 — 2026.11.02.292 · Remaked RU/EN buffs and priest mastery safety
+
+- Hero Book uses the Remaked-approved Russian skill identities for attack/defense signs, group protection, Holy Weapon, Dark Aura, enchantment and hymns, with their corresponding English client names.
+- External priest's attack speed and defense signs require Blessing mastery 8 and 12, respectively, matching current OS skill records; disabled selections do not affect the calculation.
+- Invalid external priest values from older or damaged local saves cannot grant combat bonuses or crash the preview; the enhancement counter excludes mastery input fields and inactive selections.
+- Added regression assertions for source-backed prerequisites and official names. Deployed browser/Worker state requires independent verification.
+
+
 ## 0.291.0 — 2026.11.02.291 · Live OS sync, priest and guild inputs, compact profile and resistances
 
 - Fixed OS source verification: public `/gamedata/*.json` works. Compared 17 datasets by source IDs. Reconciled 10 changed monsters and 5 changed drop entries; live OS added `slotAdd:1` to five drop items but probabilities did not change. Updated source meta hashes.
