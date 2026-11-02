@@ -48,7 +48,7 @@ function build(data){
    seen.add(fingerprint);
    if(row.type==='monster'&&Object.hasOwn(data.monsters||{},row.id)){
     const entry={type:'monster',id:row.id,itemId,kind:'manual',manual:true,
-     percent:null,condition:null,quantity:1,slotAdd:0};
+     percent:typeof row.p==='number'?row.p:null,condition:null,quantity:1,slotAdd:0};
     append(drops,row.id,entry);add(itemId,entry);
     append(manualMonsterSources,row.id,itemId);
    }else if(row.type==='npc'&&Object.hasOwn(data.trades?.npcs||{},row.id)){
