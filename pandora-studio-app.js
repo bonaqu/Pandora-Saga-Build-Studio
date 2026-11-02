@@ -2014,12 +2014,13 @@ function renderWiki(root){
     detail.append(dl);
     if((rec.effects?.length||0)>0||(adminEditing&&adminToken)){
      const effectRows=rec.effects||[];
-     const effectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items);
-     const labelFor=code=>effectOptions.find(row=>row.value===code)?.label||'Игровой эффект';
+     const effectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items,rec);
+      const allEffectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items);
+      const labelFor=code=>allEffectOptions.find(row=>row.value===code)?.label||'Игровой эффект';
      const update=(index,patch)=>saveWikiItemField(id,'effects',
       effectRows.map((effect,i)=>i===index?{...effect,...patch}:effect));
      const list=h('div',{class:'wiki-owner-effects'});
-     list.append(h('h4',{text:wt('Эффекты предмета','Item effects')}));
+     list.append(h('h4',{text:wt('Бонусы предмета','Item bonuses')}));
      for(const [index,effect] of effectRows.entries()){
       const row=h('div',{class:'wiki-owner-effect'});
       const effectName=h('span',{class:'wiki-owner-effect-name',text:labelFor(effect.func),
@@ -2029,17 +2030,21 @@ function renderWiki(root){
        effectName.ondblclick=e=>{
         e.preventDefault();e.stopPropagation();
         editWikiValue(effectName,effect.func,{
-         type:'select',options:effectOptions,
+         type:'select',options:effectOptions.some(row=>row.value===effect.func)?
+           effectOptions:[...effectOptions,{value:effect.func,label:labelFor(effect.func)}],
          onCommit:next=>update(index,{func:next})});
        };
       }
       row.append(effectName);
-      for(const [key,label] of [['a','Значение'],['b','Доп. параметр']]){
-       const initial=effect[key];
-       if(initial==null&&key==='b'&&!adminEditing)continue;
-       const value=h('span',{class:'wiki-owner-effect-value'});
-       value.append(h('small',{text:label}));
-       const number=h('strong',{text:initial==null?'—':String(initial)});
+      for(const [key,label] of [['a','Бонус'],['b','Доп. параметр']]){
+        const initial=effect[key];
+        if(key==='b'&&!adminEditing)continue;
+        if(initial==null&&!adminEditing)continue;
+        const value=h('span',{class:'wiki-owner-effect-value'});
+        if(adminEditing&&adminToken&&key==='b')value.append(h('small',{text:label}));
+        const signed=/^EP_(?:MAXLIFE|MAXMANA|STRENGTH|VITARITY|AGILITY|DEXTERITY|SPIRITUAL|INTELIGENCE|ARMORCLASS|TOHIT|CRITICALRATE|DAMAGERATE|FIRE_RESISTANCE|COLD_RESISTANCE|MAGIC_RESISTANCE|ATTACKINTERVAL|DARK_RESISTANCE|HOLY_RESISTANCE|POISON_RESISTANCE|MOVESPEED|AVOIDANCE|DESTINE_WARDING|ELEMENT_DAMAGE|VOLUME_EXP)/.test(effect.func);
+        const formatted=initial==null?'—':signed&&Number(initial)>0?'+'+initial:String(initial);
+        const number=h('strong',{text:formatted});
        if(adminEditing&&adminToken){
         number.classList.add('wiki-edit-value');
         number.title='Двойной клик — изменить число';
@@ -3895,7 +3900,7 @@ function syncLocaleControls(){
   button.setAttribute('aria-pressed',String(active));
  }
 }
-function applyGameLocale(){
+function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.apply(lang);
  window.PandoraAccountUI?.refresh?.();
  syncLocaleControls();
@@ -3932,7 +3937,7 @@ function applyGameLocale(){
    equipment:translate(itemRecords,en?.items,true),souls:translate(ownerGameData.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
- render();
+ if(redraw)render();
 }
 async function loadCatalog(){
  const names=['meta','classes','skills','items','souls','racialPassives','unison'];
@@ -4001,10 +4006,21 @@ async function loadCatalog(){
  $('catalogStatus').textContent=`${live.meta.counts.skills} навыков · ${live.meta.counts.items} предметов · ${live.meta.counts.souls} душ · ${sourceLabel}`;
  applyGameLocale();persist();
 }
-function refreshOwnerCatalog(){
+let ownerWikiRefreshId=0;
+async function refreshOwnerCatalog(){
+ const generation=++ownerWikiRefreshId;
  wikiIndex=null;wikiData=null;wikiPending=null;
- if(catalogSource)applyGameLocale();
- else render();
+ if(catalogSource)applyGameLocale({redraw:false});
+ if(activeTab==='wiki'&&wikiRenderedRoot?.isConnected){
+  try{
+   await loadWiki();
+   if(generation===ownerWikiRefreshId&&activeTab==='wiki'&&wikiRenderedRoot?.isConnected)
+    wikiRenderSelected?.();
+  }catch(error){
+   if(generation===ownerWikiRefreshId)
+    showStudioToast('Не удалось обновить запись: '+error.message,'warning');
+  }
+ }else render();
  updateAdminHint();
 }
 async function loadOverrides(){try{
