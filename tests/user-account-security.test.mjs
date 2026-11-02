@@ -10,13 +10,23 @@ test('account names are case-insensitive, unique-looking Latin identifiers',()=>
   assert.equal(normalizeUsername(name),null,name);
  assert.equal(normalizeUsername('Player_01'),'player_01');
 });
-test('passwords are long passphrases and do not exclude punctuation, Unicode or spaces',()=>{
+test('account passwords accept eight or more characters while rejecting obvious weak secrets',()=>{
  for(const value of ['My very long phrase with spaces','сложный пароль для моих билдов',
-   'Long password 🔥🧩 with emoji!','abcDEF0123456789+=/\\@"'])
+   'Long password 🔥🧩 with emoji!','abcDEF0123456789+=/\\@"','Cloud8!?','Длинна8?'])
   assert.equal(validPassword(value,'user'),true,value);
- for(const value of ['123456789','password123456789','a'.repeat(129),'a'.repeat(14),
-  'pandorasaga12345'])
+ for(const value of ['12345678','123456789','password123456789','a'.repeat(129),'a'.repeat(14),
+  'pandorasaga12345','qwertyui','short7!'])
   assert.equal(validPassword(value,'user'),false,value);
+});
+test('register, recovery and password change all use the same minimum of eight',()=>{
+ const frontend=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+ const backend=readFileSync(new URL('../worker/account.js',import.meta.url),'utf8');
+ assert.doesNotMatch(frontend,/от 15 символов|минимум 15 символов|minLength=15/);
+ assert.match(frontend,/pass\.minLength=mode==='login'\?1:8/);
+ assert.match(frontend,/fresh\.minLength=8;confirmFresh\.minLength=8/);
+ assert.match(frontend,/confirm\.required=true;confirm\.minLength=8/);
+ assert.match(backend,/if\(count<8\|\|count>128/);
+ assert.match(backend,/8–128 characters/);
 });
 test('account API is added without reusing or weakening legacy admin secrets',async()=>{
  const worker=(await import('../worker/index.js'));

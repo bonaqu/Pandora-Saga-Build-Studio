@@ -103,6 +103,38 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 60/);
   assert.match(await page.locator('.wiki-page').innerText(),/Состав наград пока не указан/);
   assert.equal(await page.locator('.wiki-chest-group').count(),0);
+  // The same-category transition must render actual rewards of the next chest,
+  // not the ordinary item record with no chest contents.
+  await page.goto(base+'/#wiki/chest/51003',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-chest-group').first().waitFor({state:'visible',timeout:20000});
+  await page.locator('.wiki-chest-group').nth(4).locator('summary').click();
+  await page.locator('.wiki-chest-group').nth(4).locator('.wiki-chest-reward .wiki-link').first().click();
+  await page.waitForFunction(()=>location.hash.startsWith('#wiki/chest/51004'));
+  assert.match(await page.locator('.wiki-page h3').innerText(),/Шкатулка охотника/);
+  assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 10/);
+  assert.equal(await page.locator('.wiki-chest-group').count(),5);
+  // Item catalog separately includes location loot chests whose opening
+  // chances are not part of this source snapshot.
+  await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-page h3').innerText(),/Сундук из Мальдии/);
+  assert.match(await page.locator('.wiki-page').innerText(),/Состав наград пока не указан/);
+  assert.ok(await page.locator('.wiki-chest-location .wiki-link').count()>=1);
+  // Monsters and material exchange relationships occupy compact flow grids.
+  await page.goto(base+'/#wiki/monster/21103',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-loot-chip').first().waitFor({state:'visible',timeout:20000});
+  assert.ok(await page.locator('.wiki-loot-chip').count()>=1);
+  await page.goto(base+'/#wiki/item/1',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-recipe-use').first().waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.wiki-recipe-use').count(),3);
+  assert.ok(await page.locator('.wiki-recipe-npcs .wiki-link').count()>=1);
+  // The server follows the same 8-character contract; the browser must not
+  // impose the previous 15-character minimum.
+  await page.locator('#dockClose').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('.account-tabs button').filter({hasText:'Регистрация'}).click();
+  assert.equal(await page.locator('.account-form input[type="password"]').first()
+   .getAttribute('minlength'),'8');
   assert.deepEqual(errors,[]);
   console.log('Chromium encyclopedia equipment RU/EN passed: source names, rings, and links');
  }finally{await context.close()}

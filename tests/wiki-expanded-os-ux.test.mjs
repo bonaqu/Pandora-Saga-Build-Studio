@@ -196,7 +196,8 @@ test('all-class gear stays compact while restricted classes are readable on dema
  assert.match(app,/jobKeys\.every\(id=>keys\.includes\(id\)\)/);
  assert.match(app,/class:'wiki-class-all'/);
  assert.match(app,/class:'wiki-allowed-classes'/);
- assert.match(app,/h\('details',\{class:'wiki-allowed-classes'\}/);
+ assert.doesNotMatch(app,/h\('details',\{class:'wiki-allowed-classes'\}/);
+ assert.match(app,/detail\.append\(h\('div',\{class:'wiki-allowed-classes'\}/);
  assert.equal((app.match(/renderClassEligibility\(Object\.keys\(rec\.classes\)/g)||[]).length,2);
  assert.match(css,/\.wiki-class-all\{/);
  assert.match(css,/\.wiki-class-tags/);
@@ -215,6 +216,17 @@ test('skill requirements and chest reward groups use interactive game-style UI',
  assert.match(css,/\.wiki-chest-group-summary/);
  assert.match(css,/\.wiki-source-flow/);
  assert.doesNotMatch(app,/p==null\?'':' · '\+row\.p\+'% внутри группы'/);
+});
+test('monster loot and item-to-NPC relationships use compact accessible cards',()=>{
+ const app=read('app.js'),css=read('style.css');
+ assert.match(app,/class:'wiki-loot-flow'/);
+ assert.match(app,/class:'wiki-loot-chip'/);
+ assert.match(app,/class:'wiki-recipe-uses'/);
+ assert.match(app,/class:'wiki-recipe-use'/);
+ assert.match(app,/const hasChest=Boolean\(wikiIndex\?\.records\('chest'\)\?\.\[id\]\)/);
+ assert.match(app,/const dest=hasChest\?'chest':hasSoul\?'soul':'item'/);
+ assert.match(css,/\.wiki-loot-flow/);
+ assert.match(css,/\.wiki-recipe-uses/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');

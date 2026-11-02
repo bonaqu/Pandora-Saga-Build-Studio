@@ -25,7 +25,10 @@ export function normalizeUsername(value){
 export function validPassword(value,username=''){
  if(typeof value!=='string')return false;
  const count=[...value].length;
- if(count<15||count>128||enc.encode(value).length>512)return false;
+ if(count<8||count>128||enc.encode(value).length>512)return false;
+ // Keep trivial repetitions and obvious keyboard/number sequences blocked even
+ // after reducing the minimum length from fifteen characters to eight.
+ if(/^(.)\1{7,}$/u.test(value)||/^(?:12345678(?:90?)?|87654321|qwertyui|asdfghjk)$/i.test(value))return false;
  const weak=['password123456789','123456789012345','qwertyuiopasdfg',
   'pandorasaga12345','letmein123456789'];
  return !weak.includes(value.toLowerCase())&&value.toLowerCase()!==username.toLowerCase();
@@ -99,7 +102,7 @@ export async function accountApi(request,env,path,{ip='unknown',throttle,recordF
   if(await throttle(env,ip))return error('Too many requests. Try later.',429);
   const username=normalizeUsername(data.username);
   if(!username||!validPassword(data.password,username))
-   return error('Use a 3–20 character Latin username and a password of 15–128 characters',400);
+   return error('Use a 3–20 character Latin username and a password of 8–128 characters',400);
   const limit=await db.prepare(
    'INSERT INTO user_registration_limits(ip_hash,day,created) VALUES(?,?,1) ON CONFLICT(ip_hash,day) DO UPDATE SET created=created+1 WHERE created<5'
   ).bind(await sha(ip),Math.floor(Date.now()/86400000)).run();
