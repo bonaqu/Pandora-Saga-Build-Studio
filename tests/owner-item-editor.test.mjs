@@ -124,3 +124,30 @@ test('visible owner entry points and read-only-until-focus search guards are pre
  assert.match(source,/input\.addEventListener\('focus'/);
  assert.match(source,/input\.addEventListener\('blur'/);
 });
+
+test('inline owner kind is strictly validated and source item stays immutable',async()=>{
+ const base={'17':{id:17,name:'Палаш',kind:'1H_SWORD',soulslot:0}};
+ const updated=editor.applyItems(base,{'itemedit.17':JSON.stringify({kind:'2H_SWORD',twoHanded:true,soulslot:3})});
+ assert.equal(updated['17'].kind,'2H_SWORD');
+ assert.equal(updated['17'].twoHanded,true);
+ assert.equal(updated['17'].soulslot,3);
+ assert.equal(base['17'].kind,'1H_SWORD');
+ const env={DB:mockDb()};
+ for(const value of [{kind:'2H_SWORD'},{soulslot:3},{soulslot:0}]){
+  assert.equal((await worker.fetch(request('itemedit.17',JSON.stringify(value)),env)).status,200);
+ }
+ for(const value of [{kind:'MY_CUSTOM_KIND'},{soulslot:4},{soulslot:1.5},{soulslot:-1}]){
+  assert.equal((await worker.fetch(request('itemedit.17',JSON.stringify(value)),env)).status,400);
+ }
+});
+test('visible encyclopedia values use in-place controls, no save-confirm buttons',()=>{
+ const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ assert.match(app,/function editWikiValue/);
+ assert.match(app,/function saveWikiItemField/);
+ assert.match(app,/dd\.ondblclick=/);
+ assert.match(app,/control\.onblur=/);
+ assert.match(app,/wiki-owner-remove/);
+ assert.match(app,/wiki-owner-plus/);
+ assert.match(app,/inlineWikiText\(editable\)/);
+ assert.match(app,/PandoraItemPresentation\.kindOptions/);
+});
