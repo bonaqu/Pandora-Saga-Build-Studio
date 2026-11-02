@@ -79,3 +79,32 @@ test('skill resistance records are classified: active casts are not silently ass
  assert.equal(base.elements.magic,0,
   'a known skill is not an always-on hero buff until it was cast');
 });
+
+test('all six OS TARGET elemental resistance skills require explicit selection, preserve negative elements',()=>{
+ const skills=JSON.parse(read('data/os/skills.json'));
+ const choices=calc.resistanceSkillChoices(skills);
+ assert.deepEqual(choices.map(row=>row.id),[
+  330004001,410003001,410015001,410025001,430054001,440005501
+ ]);
+ assert.deepEqual(calc.resistanceSkillPreview({skillCatalog:skills,selected:[]}).bonuses,{});
+ const active=calc.resistanceSkillPreview({skillCatalog:skills,
+  selected:[330004001,410003001,430054001,330004001]});
+ assert.deepEqual(active.bonuses,{magic:25,fire:50,ice:-25,lightning:-25,
+  charm:-50,poison:25,dark:25});
+ const z={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
+ const classes=JSON.parse(read('data/os/classes.json'));
+ const make=selected=>calc.base({classData:classes.WARRIOR,
+  raceData:{vit:56,str:45,agi:30,dex:40,spi:56,int:10},
+  jobData:z,allocation:z,level:45,
+  attributeBuffs:{resistanceSkillIds:selected},
+  combatContext:{jobKey:'WARRIOR',skillCatalog:skills}});
+ const none=make([]),full=make([330004001,410003001,430054001]);
+ for(const [key,delta] of Object.entries(active.bonuses))
+  assert.equal(full.resistances.elements[key]-none.resistances.elements[key],delta,key);
+ assert.equal(full.resistanceSkills.rows.length,3);
+ assert.equal(make([900000000]).resistances.elements.fire,none.resistances.elements.fire);
+ const forged={...skills,410003001:{...skills['410003001'],
+  funcs:skills['410003001'].funcs.map(f=>({...f,fv1:[0,0,0,999]}))}};
+ assert.equal(calc.resistanceSkillChoices(forged).some(x=>x.id===410003001),true,
+  'live catalog vectors are not hardcoded into the resistance model');
+});

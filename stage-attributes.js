@@ -291,7 +291,7 @@ function summaryPage(body,calc,onPage){
 }
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
-  availability={},combatSkillCards={},modifiers}=options;
+  availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers}=options;
  const english=document.documentElement?.lang==='en';
  body.append(make('p',{class:'stage-attribute-note',text:
   'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
@@ -300,8 +300,10 @@ function buffsPage(body,options){
  const selected=value=>value===true||
   (typeof value==='number'&&value>0)||
   (typeof value==='string'&&value!==''&&value!=='0');
+ const selectedResistanceSkills=Array.isArray(buffs.resistanceSkillIds)?
+  buffs.resistanceSkillIds.filter(id=>resistanceSkillChoices.some(s=>s.id===id)).length:0;
  const configured=Object.entries(buffs).filter(([key,value])=>{
-  if(key==='proelium')return false;
+  if(key==='proelium'||key==='resistanceSkillIds')return false;
   if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
@@ -312,7 +314,7 @@ function buffsPage(body,options){
    return false;
   return selected(value);
  }).length+Object.entries(vitalsBuffs).filter(([key,value])=>
-  !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length;
+  !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length+selectedResistanceSkills;
  const status=make('div',{class:'stage-buff-overview'},[
   make('span',{text:english?'Configured enhancements':'Выбранные усиления'}),
   make('strong',{text:String(configured)}),
@@ -420,6 +422,33 @@ function buffsPage(body,options){
   ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра'],
   ['combatConcentration','Сосредоточенность']])
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
+ if(resistanceSkillChoices.length){
+  const group=make('details',{class:'stage-legacy-buff-previews stage-resistance-skill-controls'});
+  group.append(make('summary',{text:english?
+   'Elemental resistance skills':'Усиления сопротивлений стихиям'}));
+  group.append(make('p',{class:'stage-attribute-note',text:english?
+   'Select only effects currently affecting this hero, including incoming enemy spells.':
+   'Отмечай только эффекты, которые реально действуют на героя, включая наложенные вражеские умения.'}));
+  const ru={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
+   charm:'Чары',light:'Свет',dark:'Тьма',magic:'Магия'};
+  const en={fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
+   charm:'Charm',light:'Light',dark:'Dark',magic:'Magic'};
+  for(const skill of resistanceSkillChoices){
+   const selected=Array.isArray(buffs.resistanceSkillIds)&&buffs.resistanceSkillIds.includes(skill.id);
+   const effect=Object.entries(skill.effects).map(([type,value])=>
+    (english?(en[type]||type):(ru[type]||type))+' '+(value>0?'+':'')+value).join(' · ');
+   const row=make('label',{class:'stage-book-check stage-resistance-skill-row'});
+   row.append(make('input',{type:'checkbox','data-book-setting':'resistSkill:'+skill.id,
+    checked:selected,onchange:event=>onBuff('resistSkill:'+skill.id,event.target.checked)}));
+   row.append(make('span',{class:'stage-combat-buff-copy'},[
+    make('strong',{text:english?skill.nameEn:skill.name}),
+    make('small',{text:(skill.incoming?(english?'Incoming skill · ':'Вражеский навык · '):
+     (english?'Support skill · ':'Поддерживающий навык · '))+effect})
+   ]));
+   group.append(row);
+  }
+  skills.append(group);
+ }
  const regen=section('Восстановление');
  if(!guildLevel){
   select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
@@ -494,7 +523,7 @@ function renderSongSkills(body,modifiers){
   body.append(details);
  }
 }
-function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},modifiers=null}={}){
+function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers=null}={}){
  const en=document.documentElement?.lang==='en';
  const card=make('section',{class:'stage-attribute-row stage-skill-effects'});
  card.append(make('strong',{text:en?'Applied skill effects':'Применённые эффекты умений'}));
@@ -530,12 +559,21 @@ function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},mod
    make('strong',{text:'+'+value+' '+(en?'STR / AGI / INT':'СИЛ / ПРВ / ИНТ')})
   ]));
  }
+ for(const skill of modifiers?.resistanceSkills?.rows||[]){
+  const source=resistanceSkillChoices.find(entry=>entry.id===skill.id);
+  const selectedName=en?(source?.nameEn||skill.name):skill.name;
+  const summary=Object.entries(skill.effects).map(([key,value])=>
+   key+' '+(value>0?'+':'')+value).join(' · ');
+  card.append(make('div',{class:'stage-skill-effect-row'},[
+   make('span',{text:selectedName}),make('strong',{text:summary})
+  ]));
+ }
  body.prepend(card);
  renderSongSkills(body,modifiers);
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
- combatSkillCards={},itemById=()=>null,onItem=()=>{}}={}){
+ combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{}}={}){
  target.replaceChildren();
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
@@ -567,8 +605,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
  if(chosen==='summary')summaryPage(body,modifiers,onPage);
- if(chosen==='effects')skillEffectsPage(body,{buffs,availability,combatSkillCards,modifiers});
- if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,modifiers});
+ if(chosen==='effects')skillEffectsPage(body,{buffs,availability,combatSkillCards,resistanceSkillChoices,modifiers});
+ if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers});
  if(['attack','defense'].includes(chosen)){
   const intro=chosen==='attack'?'Параметры оружия':'Защита снаряжения';
   body.append(make('p',{class:'stage-attribute-note',text:intro}));
