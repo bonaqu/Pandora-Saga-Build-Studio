@@ -98,7 +98,8 @@ async function load({api,fetcher,local='./data/os',timeout=12000}={}){
   const loaded=await batch(true);
   // Only localized copy is borrowed from our checked-in OS archive. Never
   // replace remotely updated instance gameplay fields or changed descriptions.
-  try{
+  // Skip the extra request when this catalog has no descriptions to translate.
+  if(loaded.data.instances.some(row=>row.blurb&&!row.blurbRu))try{
    const response=await fetcher(local.replace(/\/$/,'')+'/instances.json',{cache:'no-cache'});
    if(response?.ok){
     const rows=await response.json();
