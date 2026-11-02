@@ -9,6 +9,20 @@ test('gemstone type and seven original elements appear in selector',()=>{
  assert.match(get('stage-item-ui.js'),/Тип и стихия улучшения/);
  assert.match(get('stage-item-ui.js'),/Стихия/);
 });
+test('all OS weaponPlus coefficients determine the preview attack bonus',()=>{
+ const ctx={};Function('window',get('enchant-model.js'))(ctx);
+ const model=ctx.PandoraEnchantModel;
+ const plus=JSON.parse(get('data/os/tables.json')).weaponPlus;
+ for(let grade=1;grade<=10;grade++){
+  const tier=plus[String(grade)],expected=Math.floor(53*tier.ratio/100)+tier.flat;
+  const preview=model.weaponPreview(53,grade,plus);
+  assert.equal(preview.increment,expected);
+  assert.equal(preview.total,53+expected);
+  assert.equal(preview.verified,false);
+ }
+ assert.equal(model.weaponPreview(53,4,plus).increment,12);
+ assert.equal(model.weaponPreview(53,4,null),null);
+});
 test('gem choices are normalized and saved as part of builds',()=>{
  const s=get('app.js');
  assert.match(s,/PandoraEnchantModel.normalizeForSlot\(key,entry\)/);

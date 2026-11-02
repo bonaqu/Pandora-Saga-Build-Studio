@@ -144,7 +144,7 @@ test('game-like armor tooltip displays visible grade separately from Remaked cal
  const armour=stage.PandoraStageItemUI.summary(rec,()=>null,'item',
   {slot:'body',refinement:4,gem:{type:'magical',element:'fire'},souls:[]});
  const txt=walk(armour).map(e=>e.textContent||'').join(' ');
- assert.match(txt,/Зеленое астирское платье огня \+4/);
+ assert.match(txt,/Зеленое астирское платье \+4/);
  assert.match(txt,/31\+4/);
  assert.match(txt,/Стихия улучшения/);
  assert.doesNotMatch(txt,/Тип самоцвета/);
@@ -152,7 +152,23 @@ test('game-like armor tooltip displays visible grade separately from Remaked cal
   id:2652,name:'Огненный жезл искр',slot:'weapon',W:36,kind:'WAND'},()=>null,'item',
   {slot:'weapon',refinement:2,gem:{type:'magical',element:'fire'},souls:[]});
  const weaponText=walk(weapon).map(e=>e.textContent||'').join(' ');
- assert.match(weaponText,/Огн\. Огненный жезл искр \+2/);
+ assert.match(weaponText,/Огненный жезл искр \+2/);
  assert.match(weaponText,/Тип самоцвета/);
  assert.match(weaponText,/Магический/);
+});
+
+test('physical gemstone attack tooltip uses OS weaponPlus, not the visible grade itself',()=>{
+ const base={id:100,name:'Клинок',slot:'weapon',kind:'1H_SWORD',W:53};
+ const tables={weaponPlus:{1:{ratio:2,flat:2},4:{ratio:8,flat:8}}};
+ const result=(grade,gem,t)=>walk(stage.PandoraStageItemUI.summary(base,()=>null,'item',
+  {slot:'weapon',refinement:grade,gem,tables:t})).map(e=>String(e.textContent||'')).join(' ');
+ const physical=result(4,{type:'physical',element:'ice'},tables);
+ assert.match(physical,/Клинок \+4/);
+ assert.match(physical,/53\+12/);
+ assert.match(physical,/Стихия улучшения/);
+ assert.doesNotMatch(physical,/Лед\. Клинок|Клинок льда/);
+ assert.match(result(1,{type:'physical',element:'fire'},tables),/53\+3/);
+ assert.doesNotMatch(result(4,{type:'magical',element:'ice'},tables),/53\+12/);
+ assert.doesNotMatch(result(4,{type:'physical',element:'ice'},null),/53\+12/);
+ assert.doesNotMatch(result(0,{type:'physical',element:'ice'},tables),/53\+/);
 });

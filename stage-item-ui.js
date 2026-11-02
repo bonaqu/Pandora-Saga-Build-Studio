@@ -42,11 +42,17 @@ function summary(record,icon,kind='item',context=null){
   globalThis.PandoraEnchantModel?.normalizeForSlot?.(context.slot||record.slot,context.gem):null;
  const gemElement=gem&&globalThis.PandoraEnchantModel?.elements?.find(e=>e.id===gem.element);
  const gemType=gem&&globalThis.PandoraEnchantModel?.types?.find(e=>e.id===gem.type);
+ // Physical gemstone weapon damage comes from the current OS weaponPlus table.
+ const attackPlus=kind==='item'&&context&&
+  (context.slot||record.slot)==='weapon'&&gem?.type==='physical'&&grade>0?
+  globalThis.PandoraEnchantModel?.weaponPreview?.(record.W,grade,context.tables?.weaponPlus):null;
+ const attackDisplay=attackPlus&&attackPlus.increment>0?
+  attackPlus.base+'+'+attackPlus.increment:record.W;
  const rows=kind==='soul'?
  [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
  [[tr('Тип','Type'),presenter?.kind(record,locale)||tr('Предмет','Item')],
- [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),record.W],
+ [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),attackDisplay],
  [tr('Защита','Defense'),armorDisplay],[tr('Гнёзда','Sockets'),record.soulslot],
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
@@ -171,7 +177,7 @@ function render(root,api){
  if(!record){root.append(el('p',{class:'muted',text:'Сначала выбери предмет.'}));return}
  const body=el('div',{class:'stage-rich-body'});root.append(body);
  if(mode==='details'){
-  body.append(summary(record,icons,'item',{slot,refinement,gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems)}));
+  body.append(summary(record,icons,'item',{slot,refinement,gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),tables:gameTables}));
   if(refinable){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,

@@ -3,7 +3,7 @@
 .stage-item-tooltip .stage-gear-grade{margin-left:auto;flex:none;border:1px solid #b38a50;background:#45301b;border-radius:3px;padding:1px 5px;font:700 11px Manrope,Arial,sans-serif;color:#ffd893}
 .stage-item-tooltip .stage-gear-wearers{padding:7px 0 5px;border-top:1px solid #574129}
 .stage-item-tooltip .stage-gear-wearers-label{display:block;color:#bc9b71;font-size:10px;margin-bottom:5px}
-.stage-item-tooltip .stage-gear-wearer-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+.stage-item-tooltip .stage-gear-wearer-chips{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px}
 .stage-item-tooltip .stage-gear-wearer{padding:2px 6px;border:1px solid #705036;background:#2f2319;border-radius:3px;color:#ecc68c;font:600 10px/1.4 Manrope,Arial,sans-serif}
 .stage-item-tooltip .stage-gear-souls{margin-top:8px;border-top:1px solid #654a2e;padding-top:8px;display:grid;gap:6px}
 .stage-item-tooltip .stage-gear-souls>strong{font-size:11px;color:#f1ce98}

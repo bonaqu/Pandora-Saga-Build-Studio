@@ -1,9 +1,17 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.299.0 (`2026.11.02.299`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.300.0 (`2026.11.02.300`)
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.300.0 — canonical item names, OS forge attack and left-aligned restrictions
+
+- [x] Show the localized source name plus grade only; elemental choices remain in separate tooltip fields.
+- [x] Physical gemstone weapon tooltips show source W plus the numeric improvement from the OS weaponPlus table; they do not confuse the grade with increased attack. The equipped hover and editor use the same table.
+- [x] Align race and gender eligibility chips to the left. Extend existing tests, without proliferating separate test runners.
+- [x] Keep Remaked defense rounding, Blessing 90 -> Encouragement +9, 1–55 planning and D1 account data untouched.
+- [ ] Final server parity of HP/MP, magic gem coefficients and forge/defense rounding requires a verified live OS calculator or real game-client measurement.
 
 ## Source update 0.260.0 — safe source skill level parsing and no synthetic zeroes
 

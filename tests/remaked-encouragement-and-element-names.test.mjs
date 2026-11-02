@@ -33,21 +33,21 @@ test('Ободрение / Battle Prayer applies Remaked Blessing mastery to STR
  assert.equal(skills[320012001].name,'Ободрение');
  assert.deepEqual(skills[320012001].reqs,[{branch:'blessing',amount:61}]);
 });
-test('gem type is selectable only for weapons; exact game-like elemental suffixes match reference screenshots',()=>{
+test('gem type is slot-specific; canonical source item names stay unmodified by aura',()=>{
  const w={};Function('window',read('enchant-model.js'))(w);
  const model=w.PandoraEnchantModel;
  const c=(type,element)=>({type,element});
  const cases=[
   ['Зеленое астирское платье','body',4,c('physical','fire'),
-   'Зеленое астирское платье огня +4'],
+   'Зеленое астирское платье +4'],
   ['Лунные одежды','body',3,c('magical','dark'),
-   'Лунные одежды тьмы +3'],
+   'Лунные одежды +3'],
   ['Жилет для энкиду','body',3,c('physical','lightning'),
-   'Жилет для энкиду молний +3'],
+   'Жилет для энкиду +3'],
   ['Метеоритный нож','weapon',5,c('physical','fire'),
-   'Огн. Метеоритный нож +5'],
+   'Метеоритный нож +5'],
   ['Огненный жезл искр','weapon',2,c('magical','fire'),
-   'Огн. Огненный жезл искр +2']
+   'Огненный жезл искр +2']
  ];
  for(const [name,slot,grade,gem,expected] of cases)
   assert.equal(model.equipmentName(name,slot,grade,gem),expected);

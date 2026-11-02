@@ -14,29 +14,10 @@ function normalizeForSlot(slot,value){
  if(!gem)return null;
  return slot==='weapon'?gem:armourSlots.has(slot)?{...gem,type:'physical'}:null;
 }
-const inflections=Object.freeze({
- fire:['Огн.','огня','Fire','of fire'],
- ice:['Лед.','льда','Ice','of ice'],
- lightning:['Молн.','молний','Lightning','of lightning'],
- poison:['Ядов.','яда','Poison','of poison'],
- light:['Свят.','света','Light','of light'],
- dark:['Темн.','тьмы','Dark','of darkness']
-});
+// Keep canonical localized item names; the chosen element lives in the tooltip field.
 function equipmentName(name,slot,grade,selection,locale='ru'){
  const base=String(name||'').trim(),rank=Number(grade);
- if(!base||!Number.isInteger(rank)||rank<=0||rank>10)return base;
- const gem=normalizeForSlot(slot,selection),forms=gem&&inflections[gem.element];
- let result=base;
- if(forms){
-  if(slot==='weapon'){
-   const prefix=locale==='en'?forms[2]:forms[0];
-   if(!result.toLowerCase().startsWith(prefix.toLowerCase()+' '))result=prefix+' '+result;
-  }else if(armourSlots.has(slot)){
-   const suffix=locale==='en'?forms[3]:forms[1];
-   if(!result.toLowerCase().endsWith(' '+suffix.toLowerCase()))result+=' '+suffix;
-  }
- }
- return result+' +'+rank;
+ return base&&Number.isInteger(rank)&&rank>0&&rank<=10?base+' +'+rank:base;
 }
 function label(v){const choice=normalize(v);if(!choice)return 'не выбраны';
 return types.find(x=>x.id===choice.type).ru+' · '+elements.find(x=>x.id===choice.element).ru}

@@ -778,7 +778,7 @@ function renderSlotRails(){
      .filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||(s.name?s:null)).filter(Boolean);
     window.PandoraStageItemUI.attachPreview(button,source,
      (rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'),
-     'item',{slot:slotKeys[i],refinement:level,gem:equippedGem,souls:socketed,capacity:cap});
+     'item',{slot:slotKeys[i],refinement:level,gem:equippedGem,souls:socketed,capacity:cap,tables:gameTables});
    }
    if(report.excess>0||issue.length)button.append(h('span',{class:'stage-conflict',text:'!',
     'aria-label':issue.length?'Предмет временно недоступен':'Конфликт гнёзд'}));

@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.300.0 — 2026.11.02.300 · Clean item names, physical attack forge notation and left-aligned eligibility
+
+- Remove synthesized elemental prefixes/suffixes in equipment names. The canonical RU/EN item name retains its +grade; the chosen element appears in its own field.
+- For a physically refined weapon, show the OS weaponPlus-derived Attack base+increment, e.g. W 53 at +4 shows 53+12, not 53+4. Magical gems and missing tables do not fabricate a physical attack bonus.
+- Race/gender suitability chips now align from the left. Hover and editor share weaponPlus data; tests verify all 10 weapon tiers and both gem types.
+- Do not alter Remaked defense rounding, HP/MP, Encouragement at Blessing 90 (+9), saved builds, level-55 planning or D1. Full live OS calculator parity remains unconfirmed.
+
 ## 0.299.0 — 2026.11.02.299 · Faithful Remaked buffs, elemental refinement and OS resistance audit
 
 - Restore **Ободрение / Battle Prayer** (OS skill 320012001) to Hero Book priest enhancements. Selectable and tracked as an effect, with the preserved Remaked blessing-based +STR/+AGI/+INT computation, source identity and mastery 61 validation. Existing priest settings (SD 134 / Blessing 90 / Hymns 30) remain editable.

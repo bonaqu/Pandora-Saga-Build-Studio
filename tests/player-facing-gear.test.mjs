@@ -82,6 +82,10 @@ test('stage rails expose grade and Souls count without title or duplicate labels
  assert.match(css,/\.equipment-rail \.stage-sockets\{[\s\S]*?bottom:1px/);
  assert.match(css,/\.equipment-rail \.stage-enhance\{[\s\S]*?top:1px/);
 });
+test('eligibility chips start at the left of item tooltip',()=>{
+ assert.match(read('stage-item-tooltip.css'),
+  /\.stage-item-tooltip \.stage-gear-wearer-chips\{[^}]*justify-content:flex-start/);
+});
 test('public item searches do not advertise or search raw database IDs',()=>{
  const app=read('app.js'),picker=read('stage-item-ui.js');
  assert.doesNotMatch(app,/Search by name, ID/);
