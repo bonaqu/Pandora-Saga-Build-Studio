@@ -162,17 +162,43 @@ function build(data){
    else signatures.set(signature,pair[0]);
   }
   if(monsterTwins){
-   // Stat-identical orphan records are display aliases; preserve numeric OS
-   // IDs. Source-backed event variants remain separate when both have evidence.
+   // A monster's numeric ID is not its encyclopedia identity. Group records
+   // only when every stat and name matches, and their recorded drop tables match.
+   // Different loot tables must remain separate; location links are unioned.
    const evidence=id=>(drops.get(id)?.length||0)+(mobLocations.get(id)?.length||0)+
     Number(zoneMonsterIds.has(id));
+   const richest=ids=>ids.slice().sort((a,b)=>
+    evidence(b)-evidence(a)||Number(a)-Number(b))[0];
    for(const ids of monsterTwins.values()){
     if(ids.length<2)continue;
-    const sourced=ids.filter(id=>evidence(id)>0);
-    const primary=(sourced.length?sourced:ids)
-     .slice().sort((a,b)=>evidence(b)-evidence(a)||Number(a)-Number(b))[0];
-    for(const id of ids)
-     if(id!==primary&&!sourced.includes(id))hidden.set(id,primary);
+    const withLoot=ids.filter(id=>(drops.get(id)?.length||0)>0);
+    if(!withLoot.length){
+     const primary=richest(ids);
+     for(const id of ids)if(id!==primary)hidden.set(id,primary);
+     continue;
+    }
+    const byLoot=new Map();
+    for(const id of withLoot){
+     // Manually added acquisitions are sources too: a distinct owner-edit
+     // must not disappear when the underlying game drop table happens to match.
+     const signature=JSON.stringify([data.drops?.[id]||null,
+      manualMonsterSources.get(id)||[]]);
+     const matches=byLoot.get(signature)||[];
+     matches.push(id);byLoot.set(signature,matches);
+    }
+    const active=[...byLoot.values()].map(group=>{
+     const primary=richest(group);
+     for(const id of group)if(id!==primary)hidden.set(id,primary);
+     return primary;
+    });
+    const primary=richest(active);
+    for(const id of ids){
+     if((drops.get(id)?.length||0)>0)continue;
+     // A separate map-only or zone-only creature with no loot is ambiguous
+     // when other exact-stat variants DO have loot: preserve that identity.
+     if(evidence(id)>0)continue;
+     hidden.set(id,primary);
+    }
    }
   }
   if(type==='skill')for(const group of nameGroups.values()){
