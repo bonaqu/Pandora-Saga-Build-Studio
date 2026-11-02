@@ -166,6 +166,28 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-page h3').innerText(),/Кларис/);
+  // Player-confirmed native English name must be used consistently in every
+  // encyclopedia surface, including NPC profile, district roster and chests.
+  await page.locator('#dockClose').click();
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.goto(base+'/#wiki/npc/astir-npc-kingdom-claris',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.wiki-page h3').innerText(),'Claris');
+  const enSearch=page.locator('.wiki-controls input[type="search"]');
+  await enSearch.click();
+  await enSearch.fill('Claris');
+  assert.equal(await page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"]').count(),1);
+  await page.goto(base+'/#wiki/map/astir-kingdom',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-map-npc').first().waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-map-npc').innerText(),/Claris/);
+  await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-chest-opening').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-chest-opening').innerText(),/Claris/);
+  await page.locator('#dockClose').click();
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-chest-opening').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-chest-opening').innerText(),/Кларис/);
   await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
   assert.equal(await page.locator('.wiki-chest-master-row').count(),1);
   assert.equal(await page.locator('.wiki-chest-master-row a[href="#wiki/map/astir-empire"]').count(),0);

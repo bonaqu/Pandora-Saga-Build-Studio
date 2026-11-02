@@ -44,7 +44,7 @@ const mapsFrom=(tradeMaps={},worldMaps={})=>{
 // The public OS /gamedata/trades.json covers exchange NPCs, not every town NPC.
 // Do not translate, guess or import names from the old JP fan wiki.
 const confirmedTownNpcs=Object.freeze([
- Object.freeze({id:'astir-npc-kingdom-claris',name:'Кларис',
+ Object.freeze({id:'astir-npc-kingdom-claris',name:'Кларис',en:'Claris',
   maps:Object.freeze(['astir-kingdom']),virtual:true,
   service:'Открытие сундуков',source:'game-screenshot'})
 ]);
