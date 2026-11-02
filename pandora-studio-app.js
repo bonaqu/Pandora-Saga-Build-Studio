@@ -1692,7 +1692,8 @@ function renderWiki(root){
   const flow=h('div',{class:'wiki-source-flow'});
   // The source index is kept complete; exact repeats need not occupy the UI.
   const seen=new Set();
-  for(const row of found.slice(0,wikiSourceShown)){
+  const ordered=adminEditing&&adminToken?[...found].sort((a,b)=>Number(Boolean(b.manual))-Number(Boolean(a.manual))):found;
+  for(const row of ordered.slice(0,wikiSourceShown)){
    const key=[row.type,row.id,row.kind,row.percent,row.condition,row.roll].join(':');
    if(seen.has(key))continue;
    seen.add(key);
@@ -1864,7 +1865,8 @@ function renderWiki(root){
     ]);
     if(manage)chip.append(h('button',{type:'button',class:'wiki-owner-remove',
      text:'×','aria-label':'Убрать класс '+name,
-     onclick:()=>saveWikiItemField(id,'classes',Object.fromEntries(keys.filter(x=>x!==key).map(x=>[x,1])))}));
+     onclick:()=>void saveWikiItemField(id,'classes',Object.fromEntries(keys.filter(x=>x!==key).map(x=>[x,1])))
+     .catch(error=>showStudioToast(error.message,'warning'))}));
     tags.append(chip);
    }
    if(manage&&keys.length<jobKeys.length){
@@ -1877,7 +1879,8 @@ function renderWiki(root){
       select.append(h('option',{value:key,text:classLabel(key)||key}));
      plus.replaceWith(select);
      select.onchange=()=>{if(select.value)void saveWikiItemField(id,'classes',
-      Object.fromEntries([...keys,select.value].map(x=>[x,1])))};
+      Object.fromEntries([...keys,select.value].map(x=>[x,1])))
+      .catch(error=>showStudioToast(error.message,'warning'))};
      select.onblur=()=>{if(select.isConnected)select.replaceWith(plus)};
      select.focus();
     };
