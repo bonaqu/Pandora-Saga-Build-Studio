@@ -240,3 +240,52 @@
 .wiki-nation-territory strong{color:#f0c990;font-size:.92rem}
 .wiki-nation-territory p{margin:6px 0 0;color:#d7c19d;font-size:.82rem}
 @media(max-width:550px){.wiki-chest-opening-fields{grid-template-columns:1fr}}
+
+/* The Soul insert slot and catalog price share a small, content-sized chip.
+   Keep the encyclopedia's other game-card blocks as the visual reference. */
+.wiki-page .wiki-soul-properties{
+ display:inline-grid;grid-template-columns:max-content max-content;
+ align-items:stretch;vertical-align:top;width:fit-content;max-width:100%;
+ margin:8px 0 12px;border-color:rgba(186,138,74,.55);
+ border-radius:8px;background:linear-gradient(120deg,#322318,#241a14)}
+.wiki-page .wiki-soul-properties-half{
+ display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;
+ gap:7px;min-height:0;min-width:0;padding:7px 10px}
+.wiki-page .wiki-soul-properties-half+.wiki-soul-properties-half{
+ border-left:1px solid rgba(171,121,68,.5)}
+.wiki-page .wiki-soul-properties h4{
+ margin:0;font:600 12px/1.3 inherit;color:#d5ac76}
+.wiki-page .wiki-soul-slot-list{gap:5px;flex-wrap:wrap}
+.wiki-page .wiki-soul-slot-list .wiki-owner-mat{
+ margin:0;padding:3px 7px;font-size:12px}
+.wiki-page .wiki-soul-price-pane .wiki-soul-price-value{
+ font-size:15px;line-height:1.25;white-space:nowrap}
+.wiki-page .wiki-soul-price-help{
+ width:16px;height:16px;font:11px/14px sans-serif;flex:none}
+.wiki-page .wiki-soul-price-heading .wiki-soul-price-label{
+ font-size:12px;line-height:1.25}
+@media(max-width:580px){
+ .wiki-page .wiki-soul-properties{
+  display:inline-flex;flex-wrap:wrap;max-width:100%;align-items:center}
+ .wiki-page .wiki-soul-properties-half+.wiki-soul-properties-half{
+  border-top:0;border-left:1px solid rgba(171,121,68,.5)}
+}
+@media(max-width:370px){
+ .wiki-page .wiki-soul-properties-half+.wiki-soul-properties-half{
+  border-left:0;border-top:1px solid rgba(171,121,68,.5)}
+}
+.wiki-astir-neighborhoods{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+ margin:8px 0;padding:9px 11px;border:1px solid rgba(159,115,63,.46);
+ border-radius:8px;background:rgba(47,32,20,.65)}
+.wiki-astir-neighborhoods small{color:#ccaa80;flex-basis:100%;font-size:11px}
+.wiki-astir-neighborhoods .wiki-link{border:1px solid rgba(176,136,74,.33);
+ padding:4px 7px;border-radius:5px}
+.wiki-astir-neighborhoods .wiki-link:hover{border-color:#e5c389}
+.wiki-elemental-type{min-width:130px;max-width:220px}
+.stage-elemental-proc{position:absolute;inset:auto 3px 3px auto;
+ display:grid;place-items:center;font-size:11px;min-width:18px;
+ height:18px;border-radius:50%;color:#f3c884;background:#49301e;
+ border:1px solid #b98043;pointer-events:none}
+.stage-active-elemental{border-color:rgba(181,114,46,.48);
+ background:linear-gradient(125deg,rgba(73,41,21,.42),rgba(27,20,16,.62))}
+.stage-elemental-explanation{color:#d8b98b;font-size:.81rem}
