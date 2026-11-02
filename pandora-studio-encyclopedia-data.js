@@ -266,13 +266,13 @@ function build(data){
  };
  return Object.freeze({
   sources:id=>uniqueRows(related('item',id).flatMap(key=>sources.get(key)||[]),
-   row=>[row.type,row.id,row.kind,row.roll,row.percent,row.condition,
-    row.quantity,row.chestKind,row.mobId].join(':')),
-  drops:allDrops,
+   row=>JSON.stringify(row)),
+   drops:allDrops,
   trades:id=>(npcTrades.get(String(id))||[]).slice(),
    ownerNpcItems:id=>(ownerNpcItems.get(String(id))||[]).slice(),
    locations:allLocations,canonical,related,sameName,
-  materialUses:id=>(materialTrades.get(String(id))||[]).slice(),
+  materialUses:id=>uniqueRows(related('item',id).flatMap(key=>materialTrades.get(key)||[]),
+   row=>JSON.stringify(row)),
   residents:id=>(npcLocations.get(String(id))||[]).slice(),
   zones:id=>(zoneLocations.get(String(id))||[]).slice(),
   records:type=>chapters[type]||{},rewardChest:id=>rewardChests.get(String(id))||null,
