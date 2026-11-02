@@ -1,5 +1,5 @@
 import {accountApi,principal as accountPrincipal} from './pandora-studio-account-api.js';
-import {createCatalogPullRequest,githubCatalogEnabled} from './pandora-studio-github-catalog-pr.js';
+import {createCatalogPullRequest,githubCatalogEnabled,previewOwnerOverrides,createOwnerOverridesPullRequest} from './pandora-studio-github-catalog-pr.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
 // Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.
@@ -15,7 +15,7 @@ function same(a,b){a=String(a||'');b=String(b||'');let d=a.length^b.length;for(l
 function json(body,status=200,headers={}){return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}})}
 function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Expose-Headers':'X-PS-Catalog-Snapshot','Vary':'Origin'}:{}}
 function no(message,status=400){return json({error:message},status)}
-async function body(request){try{if(Number(request.headers.get('content-length')||0)>8192)throw Error('Request too large');return await request.json()}catch{return null}}
+async function body(request,limit=8192){try{if(Number(request.headers.get('content-length')||0)>limit)throw Error('Request too large');return await request.json()}catch{return null}}
 async function auth(request,env){const header=request.headers.get('authorization')||'';if(!header.startsWith('Bearer '))return false;const token=header.slice(7);if(!/^[A-Za-z0-9_-]{40,60}$/.test(token))return false;const hash=await sha(token),now=Date.now();const row=await env.DB.prepare('SELECT id FROM sessions WHERE token_hash=? AND expires>?').bind(hash,now).first();return !!row}
 async function throttle(env,ip){const key=await sha(ip);const now=Date.now();const result=await env.DB.prepare('SELECT attempts,reset_at FROM login_attempts WHERE ip_hash=?').bind(key).first();return result&&result.reset_at>now&&result.attempts>=5}
 async function recordFailed(env,ip){const key=await sha(ip),now=Date.now();await env.DB.prepare(`INSERT INTO login_attempts (ip_hash,attempts,reset_at) VALUES (?,1,?) ON CONFLICT(ip_hash) DO UPDATE SET attempts=CASE WHEN reset_at<? THEN 1 ELSE attempts+1 END,reset_at=CASE WHEN reset_at<? THEN excluded.reset_at ELSE reset_at END`).bind(key,now+900000,now,now).run()}
@@ -338,6 +338,22 @@ if(path==='/api/admin/catalog/github-pr'&&method==='POST'){
    [409,502,503].includes(error.status)?error.status:502);
  }
 }
+if(path==='/api/admin/catalog/owner-review'&&method==='GET'){
+ if(!await auth(request,env))return no('Unauthorized',401);
+ try{return json(await previewOwnerOverrides(env))}
+ catch(error){return no(String(error.message||'Cannot review owner edits').slice(0,190),
+  error.status===409?409:502)}
+}
+if(path==='/api/admin/catalog/owner-pr'&&method==='POST'){
+ if(!await auth(request,env))return no('Unauthorized',401);
+ const data=await body(request);
+ if(!data||typeof data.expectedFingerprint!=='string'||
+  !/^[a-f0-9]{16}$/.test(data.expectedFingerprint))
+  return no('Reviewed fingerprint required',400);
+ try{return json(await createOwnerOverridesPullRequest(env,data.expectedFingerprint))}
+ catch(error){return no(String(error.message||'Cannot export owner edits').slice(0,190),
+  [409,502,503].includes(error.status)?error.status:502)}
+}
 // Only allowlisted game-data paths can reach the external source.
 if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
  if(!await auth(request,env))return no('Unauthorized',401);
@@ -545,7 +561,7 @@ function validAcquisitionOverride(text){
 }
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
- const data=await body(request);const key=data?.key,value=data?.value;
+ const data=await body(request,32768);const key=data?.key,value=data?.value;
  if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}|dropedit\.[0-9]{1,15}|chestedit\.[0-9]{1,15}|spawnedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:key.startsWith('wikiedit.')?8000:key.startsWith('spawnedit.')?6000:(key.startsWith('dropedit.')||key.startsWith('chestedit.'))?24000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
  if(key.startsWith('itemedit.')&&!validItemOwnerPatch(value))return no('Invalid structured item edit',400);
  if(key.startsWith('acquireedit.')&&!validAcquisitionOverride(value))return no('Invalid acquisition relations',400);
