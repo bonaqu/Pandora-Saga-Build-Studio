@@ -315,7 +315,7 @@ function summaryPage(body,calc,onPage){
   text:document.documentElement?.lang==='en'?'Stats appear after game data loads.':'Параметры появятся после загрузки игровых данных.'}));return}
  const english=document.documentElement?.lang==='en';
  body.append(make('div',{class:'stage-result-intro'},[
-  make('strong',{text:english?'Calculation results':'Результаты расчёта'})
+  make('strong',{text:english?'Calculated results':'Результаты расчёта'})
  ]));
  const numberFormat=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:2});
  for(const group of summaryRows(calc)){
