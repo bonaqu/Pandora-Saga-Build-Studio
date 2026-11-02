@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 
-const source=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
 const match=source.match(/const BRANCH_ICON_PATHS=(\{[^\n]+\});/);
 assert.ok(match,'Expected explicit branch-icon table');
 const paths=JSON.parse(match[1]);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
 const classes=JSON.parse(read('data/os/classes.json'));
 const stats={vit:50,str:30,agi:50,dex:40,spi:60,int:45};
@@ -65,7 +65,7 @@ test('real equipment secondary effects propagate to casting, cooldown and defens
  assert.equal(plus.mp,base.mp);
 });
 test('book exposes all connected secondary stats without raw EP codes',()=>{
- const source=read('stage-attributes.js');
+ const source=read('pandora-studio-hero-book.js');
  for(const label of ['Скорость заклинаний:','Аурный урон от снаряжения',
   'Получаемый физический урон:','Изменение длительности дебаффов:',
   'Отражение ближнего физического урона:','снаряжение '])

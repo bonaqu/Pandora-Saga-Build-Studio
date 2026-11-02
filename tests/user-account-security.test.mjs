@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {normalizeUsername,validPassword} from '../worker/account.js';
+import {normalizeUsername,validPassword} from '../worker/pandora-studio-account-api.js';
 test('account names are case-insensitive, unique-looking Latin identifiers',()=>{
  for(const name of ['Alice','abc','player_01','a_b','name123'])
   assert.ok(normalizeUsername(name));
@@ -19,8 +19,8 @@ test('account passwords accept eight or more characters while rejecting obvious 
   assert.equal(validPassword(value,'user'),false,value);
 });
 test('register, recovery and password change all use the same minimum of eight',()=>{
- const frontend=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
- const backend=readFileSync(new URL('../worker/account.js',import.meta.url),'utf8');
+ const frontend=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
+ const backend=readFileSync(new URL('../worker/pandora-studio-account-api.js',import.meta.url),'utf8');
  assert.doesNotMatch(frontend,/от 15 символов|минимум 15 символов|minLength=15/);
  assert.match(frontend,/pass\.minLength=mode==='login'\?1:8/);
  assert.match(frontend,/fresh\.minLength=8;confirmFresh\.minLength=8/);
@@ -34,8 +34,8 @@ test('account API is added without reusing or weakening legacy admin secrets',as
 });
 
 test('signed-in profile keeps password editor closed until requested',()=>{
- const ui=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
- const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+ const ui=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
+ const css=readFileSync(new URL('../pandora-studio-theme.css',import.meta.url),'utf8');
  assert.match(ui,/node\('details','account-password-details'\)/);
  assert.match(ui,/node\('summary','account-password-toggle'/);
  assert.match(ui,/details\.append\(form\)/);
@@ -45,7 +45,7 @@ test('signed-in profile keeps password editor closed until requested',()=>{
  assert.match(css,/\.account-password-details/);
 });
 test('the one-time recovery code stays only in profile memory until acknowledged',()=>{
- const source=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+ const source=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
  assert.match(source,/let pendingRecoveryCode=null/);
  assert.match(source,/typeof result\.recoveryCode==='string'&&TOKEN\.test\(result\.recoveryCode\)/);
  assert.match(source,/pendingRecoveryCode=recovery;/);

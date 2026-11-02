@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const window={};Function('window',read('os-calculator.js'))(window);
+const window={};Function('window',read('pandora-os-character-calculator.js'))(window);
 const preview=window.PandoraOSCalculator.healingSpellsPreview;
 const skills=JSON.parse(read('data/os/skills.json'));
 const classes=JSON.parse(read('data/os/classes.json'));
@@ -37,7 +37,7 @@ test('unlearned skills retain theoretical numbers but are marked unavailable',()
  assert.ok(p.rows.every(x=>x.available===false));
 });
 test('existing book receives computed skill values, not duplicate stat formulas',()=>{
- const a=read('app.js'),ui=read('stage-attributes.js');
+ const a=read('pandora-studio-app.js'),ui=read('pandora-studio-hero-book.js');
  assert.match(a,/benevolenceMastery=window\.PandoraSkillProgression\.groupAdeptness/);
  assert.match(ui,/modifiers\.healingSpells/);
  assert.match(ui,/row\.scaledBySkill/);
@@ -87,7 +87,7 @@ test('forged skill identity, effect, target, class or prerequisites cannot autho
  }
 });
 test('base() supplies class cap and OS catalog; no automatic use or HP inflation',()=>{
- const s=read('os-calculator.js'),stage=read('stage-attributes.js');
+ const s=read('pandora-os-character-calculator.js'),stage=read('pandora-studio-hero-book.js');
  assert.match(s,/benevolenceCap:classData\.branchCaps\?\.benevolence/);
  assert.match(s,/skillCatalog:combatContext\.skillCatalog/);
  assert.match(stage,/row\.nameEn\|\|row\.name/);

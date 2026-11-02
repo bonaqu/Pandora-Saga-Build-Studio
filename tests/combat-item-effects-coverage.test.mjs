@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const runtime={};Function('window',read('os-calculator.js'))(runtime);
+const runtime={};Function('window',read('pandora-os-character-calculator.js'))(runtime);
 const calc=runtime.PandoraOSCalculator,items=JSON.parse(read('data/os/items.json'));
 const stats={vit:30,str:50,agi:60,dex:35,spi:25,int:50};
 test('MATK source exclusions use canonical OS item ID regardless of localized name',()=>{

@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
-const locale=readFileSync(new URL('../ui-locale.js',import.meta.url),'utf8');
+const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+const locale=readFileSync(new URL('../pandora-studio-ui-locale.js',import.meta.url),'utf8');
 test('overwrite confirmation reports browser persistence, never unconfirmed cloud success',()=>{
  const start=app.indexOf('const overwriteChoice=');
  const end=app.indexOf('const deleteChoice=',start);

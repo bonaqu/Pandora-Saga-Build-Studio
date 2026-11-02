@@ -6,8 +6,8 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const items=Object.values(JSON.parse(read('data/os/items.json')));
 const sandbox={window:{}};
-vm.runInNewContext(read('ui-planner.js'),sandbox);
-vm.runInNewContext(read('rules.js'),sandbox);
+vm.runInNewContext(read('pandora-studio-ui-planner.js'),sandbox);
+vm.runInNewContext(read('pandora-studio-equipment-rules.js'),sandbox);
 const planner=sandbox.window.PandoraUIPlanner;
 const rules=sandbox.window.PandoraStudioRules;
 

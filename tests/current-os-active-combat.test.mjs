@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const code=readFileSync(new URL('../os-calculator.js',import.meta.url),'utf8'),win={};
+const code=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8'),win={};
 Function('window',code)(win);
 const calc=win.PandoraOSCalculator;
 const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};

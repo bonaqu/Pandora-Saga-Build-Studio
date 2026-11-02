@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('hero book uses game-focused labels rather than debug disclaimers',()=>{
- const book=read('stage-attributes.js');
+ const book=read('pandora-studio-hero-book.js');
  assert.doesNotMatch(book,/Магическая атака \(частичный показатель\)/);
  assert.doesNotMatch(book,/Частичный показатель: /);
  assert.doesNotMatch(book,/не включено в частичный итог: порядок округления OS не проверен/);
@@ -14,7 +14,7 @@ test('hero book uses game-focused labels rather than debug disclaimers',()=>{
  assert.match(book,/отдельный эффект/);
 });
 test('player-facing icon state does not expose local archive counters',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.doesNotMatch(app,/Локальные иконки OS: /);
  assert.doesNotMatch(app,/локальный архив пока не импортирован/);
  assert.match(app,/Изображения загружены/);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const C=scope.PandoraOSCalculator,items=JSON.parse(read('data/os/items.json')),
  souls=JSON.parse(read('data/os/souls.json')),skills=JSON.parse(read('data/os/skills.json'));
 const preview=(record,id,kind='soul',grade=0)=>C.conditionalProcPreview({
@@ -38,7 +38,7 @@ test('Soul grade gates and unknown skill names are safe',()=>{
  assert.equal(unknown.verified,false);
 });
 test('Proc preview is not applied as deterministic attack bonus',()=>{
- const src=read('os-calculator.js'),book=read('stage-attributes.js');
+ const src=read('pandora-os-character-calculator.js'),book=read('pandora-studio-hero-book.js');
  assert.match(src,/const rawProcPreview=conditionalProcPreview\(/);
  assert.match(src,/const procPreview=deduplicateProcDescriptions\(rawProcPreview,specialEquipment\)/);
  assert.match(src,/resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration/);

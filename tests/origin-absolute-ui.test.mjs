@@ -3,12 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const lib={};
-Function('window',read('attribute-progression.js'))(lib);
+Function('window',read('pandora-studio-attribute-progression.js'))(lib);
 const model=lib.PandoraAttributeProgression;
 const tables=JSON.parse(read('data/os/tables.json'));
 const names=['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'];
 const labels=['vit','str','agi','dex','spi','int'].map((code,i)=>({code,name:names[i],short:code}));
-const app=read('app.js');
+const app=read('pandora-studio-app.js');
 const code=app.slice(app.indexOf('function renderOriginStats(){'),app.indexOf('\nfunction renderOriginPassives(){'));
 assert.ok(code.startsWith('function renderOriginStats(){'),'origin renderer must exist');
 class Element{
@@ -77,7 +77,7 @@ test('level 1 budget prevents spending even if a large absolute value is entered
  assert.equal(f.state.stats['Сноровка'],0);
 });
 test('Soul and enhancement changes rerender visible base/effective stats',()=>{
- const source=read('app.js');
+ const source=read('pandora-studio-app.js');
  assert.match(source,/updateGrade:n=>[\s\S]*?renderOriginStats\(\);renderOriginVitals\(\)/);
  assert.match(source,/assignSoul:entry=>[\s\S]*?renderOriginStats\(\);renderOriginVitals\(\)/);
 });

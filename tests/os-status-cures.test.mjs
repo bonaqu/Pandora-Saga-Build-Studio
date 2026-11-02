@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const calc=host.PandoraOSCalculator;
 const items=JSON.parse(read('data/os/items.json'));
 const cures=calc.statusCurePreview({items});
@@ -32,7 +32,7 @@ test('missing or unexpected effects never invent a cure',()=>{
  assert.deepEqual(calc.statusCurePreview({items:duplicate}).rows[0].conditions,['Яд']);
 });
 test('Hero Book keeps cleansing consumables separate and directly linked to the wiki',()=>{
- const book=read('stage-attributes.js'),calculator=read('os-calculator.js');
+ const book=read('pandora-studio-hero-book.js'),calculator=read('pandora-os-character-calculator.js');
  assert.match(book,/english\?'Remove status effects':'Снятие состояний'/);
  assert.match(book,/stage-status-cures/);
  assert.match(book,/onItem\(entry\.id\)/);

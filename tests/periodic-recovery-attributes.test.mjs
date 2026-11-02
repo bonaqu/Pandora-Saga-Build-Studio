@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=name=>JSON.parse(readFileSync(new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
-const source=readFileSync(new URL('../os-calculator.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
 const host={};Function('window',source)(host);
 const calc=host.PandoraOSCalculator;
 const classes=read('classes'),skills=read('skills');

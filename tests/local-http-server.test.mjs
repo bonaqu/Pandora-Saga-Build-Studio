@@ -22,7 +22,7 @@ test('browser smoke server delivers the real HTML and JS inside its own root',as
   assert.equal(index.status,200);
   assert.match(index.headers.get('content-type'),/text\/html/);
   assert.match(await index.text(),/id="hero"/);
-  const code=await fetch('http://127.0.0.1:'+port+'/app.js');
+  const code=await fetch('http://127.0.0.1:'+port+'/pandora-studio-app.js');
   assert.equal(code.status,200);
   assert.match(code.headers.get('content-type'),/javascript/);
   assert.match(await code.text(),/function render\(\)/);

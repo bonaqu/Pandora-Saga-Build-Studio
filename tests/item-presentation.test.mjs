@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const sandbox={window:{}};
-vm.runInNewContext(readFileSync(new URL('../item-presentation.js',import.meta.url),'utf8'),sandbox);
+vm.runInNewContext(readFileSync(new URL('../pandora-studio-item-presentation.js',import.meta.url),'utf8'),sandbox);
 const p=sandbox.window.PandoraItemPresentation;
 test('player sees localized item type instead of raw enum',()=>{
  assert.equal(p.kind({kind:'RING'}),'Кольцо');

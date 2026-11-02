@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const code=readFileSync(new URL('../stage-attributes.js',import.meta.url),'utf8');
+const code=readFileSync(new URL('../pandora-studio-hero-book.js',import.meta.url),'utf8');
 function load(lang){
  const doc={documentElement:{lang}};
  const root={};

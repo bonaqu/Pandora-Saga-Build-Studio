@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const src=readFileSync(new URL('../stage-attributes.js',import.meta.url),'utf8');
-const calc=readFileSync(new URL('../os-calculator.js',import.meta.url),'utf8');
+const src=readFileSync(new URL('../pandora-studio-hero-book.js',import.meta.url),'utf8');
+const calc=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
 const begin=src.indexOf("if(page==='defense'&&modifiers?.resistances){");
 const end=src.indexOf("if(page==='recovery'&&modifiers?.regeneration){",begin);
 const body=src.slice(begin,end);

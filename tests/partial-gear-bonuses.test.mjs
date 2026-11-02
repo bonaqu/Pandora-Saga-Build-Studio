@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url),s=p=>readFileSync(new URL(p,root),'utf8');
-const scope={};Function('window',s('os-calculator.js'))(scope);
+const scope={};Function('window',s('pandora-os-character-calculator.js'))(scope);
 test('resistance and accuracy stats map to source effect codes',()=>{
  const summary=scope.PandoraOSCalculator.gatherEffects([
   ['weapon',{effects:[{func:'EP_FIRE_RESISTANCE_CONST',a:10},{func:'EP_TOHIT_CONST',a:7},
@@ -16,7 +16,7 @@ test('resistance and accuracy stats map to source effect codes',()=>{
  assert.equal(summary.trace.length,4);
 });
 test('stage renderer labels source bonuses rather than pretending to know final stats',()=>{
- const view=s('stage-attributes.js');
+ const view=s('pandora-studio-hero-book.js');
  assert.match(view,/Известные бонусы снаряжения и душ/);
  assert.doesNotMatch(view,/частичный расчёт/);
 });

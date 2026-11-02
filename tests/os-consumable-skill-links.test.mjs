@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const C=scope.PandoraOSCalculator,
  items=JSON.parse(read('data/os/items.json')),
  skills=JSON.parse(read('data/os/skills.json')),
@@ -65,7 +65,7 @@ test('consumable skill links are separate from permanent HP/MP',()=>{
  assert.equal(withCatalog.consumableSkills.rows.length,38);
 });
 test('Hero Book lists optional on-use skills as a collapsed bilingual encyclopedia section',()=>{
- const stage=read('stage-attributes.js'),src=read('os-calculator.js');
+ const stage=read('pandora-studio-hero-book.js'),src=read('pandora-os-character-calculator.js');
  assert.match(stage,/Предметы, активирующие умения/);
  assert.match(stage,/Items that activate skills/);
  assert.match(stage,/make\('details',\{class:'stage-attribute-row stage-consumable-skills'\}\)/);

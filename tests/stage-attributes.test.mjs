@@ -4,11 +4,11 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url),get=p=>readFileSync(new URL(p,root),'utf8');
 
 test('character portrait can toggle source-backed stats without page scroll',()=>{
- const app=get('app.js'),html=get('index.html'),attrs=get('stage-attributes.js');
+ const app=get('pandora-studio-app.js'),html=get('index.html'),attrs=get('pandora-studio-hero-book.js');
  assert.match(html,/id="stageAttributes"/);
  assert.doesNotMatch(html,/id="stageAttributeToggle"/);
  assert.match(html,/id="hero"[^>]*role="button"/);
- assert.match(html,/stage-attributes\.js\?v=/);
+ assert.match(html,/pandora-studio-hero-book\.js\?v=/);
  assert.match(app,/function renderStageAttributes\(/);
  assert.match(app,/window\.PandoraStageAttributes\.render/);
  assert.match(attrs,/\['attack','Атака'\]/);
@@ -17,7 +17,7 @@ test('character portrait can toggle source-backed stats without page scroll',()=
  assert.match(app,/function renderStageAttributes\(/);
 });
 test('Hero Book summary groups source-backed results and navigates to relevant chapters',()=>{
- const attrs=get('stage-attributes.js'),css=get('style.css');
+ const attrs=get('pandora-studio-hero-book.js'),css=get('pandora-studio-theme.css');
  assert.match(attrs,/function summaryPage\(body,calc,onPage\)/);
  assert.match(attrs,/class:'stage-result-section'/);
  assert.match(attrs,/class:'stage-result-section-head'/);
@@ -30,14 +30,14 @@ test('Hero Book summary groups source-backed results and navigates to relevant c
  assert.match(css,/\.stage-skill-effect-row/);
 });
 test('partial combat preview does not imply fully verified combat stats',()=>{
- const attrs=get('stage-attributes.js');
+ const attrs=get('pandora-studio-hero-book.js');
  assert.match(attrs,/Подробнее о точности расчёта/);
  assert.match(attrs,/Известные бонусы снаряжения и душ/);
  assert.match(attrs,/серверных условий/);
  assert.doesNotMatch(attrs,/const effects=Array\.isArray\(rec\.effects\)/);
 });
 test('reloading preserves portrait attribute page independently of build',()=>{
- const app=get('app.js');
+ const app=get('pandora-studio-app.js');
  assert.match(app,/attributes:stageAttributesPage/);
  assert.match(app,/stageAttributesPage=\['summary','attack','defense','buffs','effects','recovery'\]/);
  assert.match(app,/window\.addEventListener\('pagehide',saveView\)/);

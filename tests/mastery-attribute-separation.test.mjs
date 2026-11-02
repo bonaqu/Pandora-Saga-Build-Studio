@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('Origin stat purchases never use equipment, Souls or trained ability values',()=>{
- const app=read('app.js'),calculator=read('os-calculator.js');
+ const app=read('pandora-studio-app.js'),calculator=read('pandora-os-character-calculator.js');
  assert.match(app,/added:STATS\.map\(key=>Number\(state\.stats\[key\]\|\|0\)\)/);
  assert.match(app,/supplementalFlat:prayerSpirit\?/);
  assert.match(app,/const key=ORIGIN_STAT_LABELS\[row\.i\]\.code,effective=estimate\?\.stats\?\.\[key\]/);
@@ -12,7 +12,7 @@ test('Origin stat purchases never use equipment, Souls or trained ability values
  assert.match(calculator,/basic\[key\]=race\+job\+spent/);
 });
 test('class cap and spend are tracked independently of green progress',()=>{
- const app=read('app.js'),m=read('skill-progression.js');
+ const app=read('pandora-studio-app.js'),m=read('pandora-studio-skill-progression.js');
  assert.match(app,/PandoraSkillProgression\.spending\(gameTables\?\.abilityPoint/);
  assert.match(app,/onAllocate:\(key,requested,final\)=>/);
  assert.match(m,/if\(amount<=current\)return true/);
@@ -21,7 +21,7 @@ test('class cap and spend are tracked independently of green progress',()=>{
 
 
 test('Origin keeps calculations correct but removes the noisy breakdown row',()=>{
- const app=read('app.js'),css=read('style.css');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.doesNotMatch(app,/class:'origin-stat-breakdown'/);
  assert.doesNotMatch(app,/entry\.breakdown\.textContent/);
  assert.doesNotMatch(app,/origin-stat-guide/);

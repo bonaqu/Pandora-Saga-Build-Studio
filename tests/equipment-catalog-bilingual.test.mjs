@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const host={};
-Function('window',read('item-presentation.js'))(host);
-const presenter=host.PandoraItemPresentation,app=read('app.js'),html=read('index.html');
+Function('window',read('pandora-studio-item-presentation.js'))(host);
+const presenter=host.PandoraItemPresentation,app=read('pandora-studio-app.js'),html=read('index.html');
 
 test('equipment categories retain game-faithful RU/EN labels',()=>{
  for(const [kind,ru,en] of [['RING','Кольцо','Ring'],

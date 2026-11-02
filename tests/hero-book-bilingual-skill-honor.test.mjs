@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const skillSrc=read('skill-results.js'),book=read('stage-attributes.js'),app=read('app.js');
+const skillSrc=read('pandora-studio-skill-results.js'),book=read('pandora-studio-hero-book.js'),app=read('pandora-studio-app.js');
 const skillCtx={};Function('window',skillSrc)(skillCtx);
 const create=skillCtx.PandoraSkillResults.create;
 const source={
@@ -61,7 +61,7 @@ test('Book has six localized chapters without repeating Path skill search',()=>{
 });
 
 test('honor dropdown and reward text use approved English names without altering stored honor IDs',()=>{
- const root={};Function('window',read('os-calculator.js'))(root);
+ const root={};Function('window',read('pandora-os-character-calculator.js'))(root);
  assert.deepEqual(root.PandoraOSCalculator.honorTitles.map(x=>x.id),
   Array.from({length:14},(_,i)=>i));
  assert.equal(root.PandoraOSCalculator.honorTitles[1].en,'Curiosity to strength');

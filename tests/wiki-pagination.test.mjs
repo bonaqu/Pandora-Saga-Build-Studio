@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url),get=p=>readFileSync(new URL(p,root),'utf8');
 test('encyclopedia provides true counts and can progressively load all matches',()=>{
- const code=get('app.js');
+ const code=get('pandora-studio-app.js');
  assert.match(code,/const results=wikiIndex\.search\(type,wikiSearch,id=>searchTerms\(type,id\)\)/);
  assert.match(code,/const visible=selectedIndex>=wikiShown/);
  assert.match(code,/results\.slice\(0,wikiShown\)/);
@@ -12,7 +12,7 @@ test('encyclopedia provides true counts and can progressively load all matches',
  assert.match(code,/browse\.scrollTop=selectedIndex>=wikiShown\?0:previousScroll/);
 });
 test('search and category changes reset pagination without dropping entries',()=>{
- const code=get('app.js');
+ const code=get('pandora-studio-app.js');
  assert.match(code,/wikiSearch=search.value;wikiShown=100/);
  assert.match(code,/wikiSearch='';wikiShown=100;renderDetails\(\)/);
 });

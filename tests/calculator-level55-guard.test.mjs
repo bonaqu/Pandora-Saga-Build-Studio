@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const cls=JSON.parse(read('data/os/classes.json'));
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const zero={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
 const build=level=>scope.PandoraOSCalculator.base({
  classData:cls.CLERIC,

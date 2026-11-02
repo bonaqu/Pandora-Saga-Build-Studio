@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const css=read('style.css'),ui=read('hero-path.js'),locale=read('ui-locale.js');
+const css=read('pandora-studio-theme.css'),ui=read('pandora-studio-hero-path.js'),locale=read('pandora-studio-ui-locale.js');
 const cssRule=selector=>{
  const start=css.indexOf(selector+'{');
  assert.ok(start>=0,'Missing CSS rule for '+selector);

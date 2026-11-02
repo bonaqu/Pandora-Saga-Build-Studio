@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const ctx={};Function('window',get('os-calculator.js'))(ctx);
-const calc=ctx.PandoraOSCalculator,source=get('app.js'),html=get('index.html');
+const ctx={};Function('window',get('pandora-os-character-calculator.js'))(ctx);
+const calc=ctx.PandoraOSCalculator,source=get('pandora-studio-app.js'),html=get('index.html');
 const classes=JSON.parse(get('data/os/classes.json'));
 const zero={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
 const make=(attributeBuffs={},records=[])=>calc.base({

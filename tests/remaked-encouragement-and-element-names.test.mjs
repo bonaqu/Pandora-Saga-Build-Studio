@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const calc=host.PandoraOSCalculator;
 const skills=JSON.parse(read('data/os/skills.json'));
 const z={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
@@ -34,7 +34,7 @@ test('Ободрение / Battle Prayer applies Remaked Blessing mastery to STR
  assert.deepEqual(skills[320012001].reqs,[{branch:'blessing',amount:61}]);
 });
 test('gem type is slot-specific; canonical source item names stay unmodified by aura',()=>{
- const w={};Function('window',read('enchant-model.js'))(w);
+ const w={};Function('window',read('pandora-studio-enchantment.js'))(w);
  const model=w.PandoraEnchantModel;
  const c=(type,element)=>({type,element});
  const cases=[
@@ -62,7 +62,7 @@ test('gem type is slot-specific; canonical source item names stay unmodified by 
   'Жилет для энкиду молний +3');
  assert.equal(model.equipmentName('Метеоритный нож','weapon',0,c('physical','fire')),
   'Метеоритный нож');
- const ui=read('stage-item-ui.js');
+ const ui=read('pandora-studio-equipment-ui.js');
  assert.match(ui,/slot==='weapon'\)body.append\(group\('Тип'/);
  assert.match(ui,/group\('Стихия'/);
 });

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
-const css=read('style.css'),html=read('index.html');
+const css=read('pandora-studio-theme.css'),html=read('index.html');
 const abandoned=['path-milestone-picker','path-milestone-choice','path-milestone-dismiss',
  'path-milestone-choice-body','inline-branch-controls'];
 test('old grouped skill-picker CSS is unreachable and removed, without deleting current tree UI',()=>{
@@ -18,5 +18,5 @@ test('old grouped skill-picker CSS is unreachable and removed, without deleting 
   assert.ok(css.includes(active),'Current UI style '+active+' must remain');
  }
  const release=JSON.parse(read('package.json')).pandoraRelease;
- assert.ok(html.includes('hero-path.js?v='+release),'Hero Path must use current release cache key');
+ assert.ok(html.includes('pandora-studio-hero-path.js?v='+release),'Hero Path must use current release cache key');
 });

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const src=readFileSync(new URL('../os-calculator.js',import.meta.url),'utf8');
+const src=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
 const ctx={};Function('window',src)(ctx);
 const titles=ctx.PandoraOSCalculator.honorTitles;
 const approved=["Сила познания","Золотое сердце","Том огня","Том льда","Том грозы","Бешенство","Мастер наездника","Тайна стража","Том тьмы","Том света","Сила воли","Невероятная ловкость","Мастер боя"];

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 const scope={};scope.window=scope;
-vm.runInNewContext(readFileSync(new URL('../build-scope.js',import.meta.url),'utf8'),scope);
+vm.runInNewContext(readFileSync(new URL('../pandora-studio-build-scope.js',import.meta.url),'utf8'),scope);
 const mod=scope.PandoraBuildScope;
 const ownerA=mod.owner('alice_01','a'.repeat(64));
 const ownerB=mod.owner('bob_222','a'.repeat(64));

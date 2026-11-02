@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const source=read('updates.js');
+const source=read('pandora-studio-update-manager.js');
 function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/'){
  let banner=null,check=null,normalized=null,navigated=null,saved=0;
  const document={
@@ -59,5 +59,5 @@ test('release manifest and rendered HTML have the same version',()=>{
  const metadata=JSON.parse(read('package.json'));
  assert.equal(html.match(/name="ps-studio-release" content="([^"]+)"/)?.[1],manifest.release);
  assert.equal(metadata.pandoraRelease,manifest.release);
- assert.equal(html.match(/style\.css\?v=([^"]+)"/)?.[1],manifest.release);
+ assert.equal(html.match(/pandora-studio-theme\.css\?v=([^"]+)"/)?.[1],manifest.release);
 });

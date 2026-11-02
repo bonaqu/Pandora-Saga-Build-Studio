@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const source=readFileSync(new URL('../hero-path.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
 const indexStart=source.indexOf('function indexSkills(');
 const readinessStart=source.indexOf('function readiness(');
 const end=source.indexOf('function nearestMilestone(',readinessStart);

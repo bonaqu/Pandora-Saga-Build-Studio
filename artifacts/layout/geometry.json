@@ -1,0 +1,237 @@
+[
+  {
+    "screen": "1366x768",
+    "viewport": 1366,
+    "fullWidth": 1366,
+    "workspace": {
+      "x": 27.3125,
+      "y": 85,
+      "width": 1311.375,
+      "height": 840.890625,
+      "right": 1338.6875,
+      "bottom": 925.890625
+    },
+    "stage": {
+      "x": 321.3125,
+      "y": 85,
+      "width": 723.375,
+      "height": 581,
+      "right": 1044.6875,
+      "bottom": 666
+    },
+    "portrait": {
+      "x": 433,
+      "y": 160,
+      "width": 500,
+      "height": 440,
+      "right": 933,
+      "bottom": 600
+    },
+    "left": {
+      "x": 27.3125,
+      "y": 85,
+      "width": 280,
+      "height": 581,
+      "right": 307.3125,
+      "bottom": 666
+    },
+    "right": {
+      "x": 1058.6875,
+      "y": 85,
+      "width": 280,
+      "height": 840.890625,
+      "right": 1338.6875,
+      "bottom": 925.890625
+    },
+    "heroCursor": "default",
+    "heroImage": "contain"
+  },
+  {
+    "screen": "1920x1080",
+    "viewport": 1920,
+    "fullWidth": 1920,
+    "workspace": {
+      "x": 40,
+      "y": 85,
+      "width": 1840,
+      "height": 837.890625,
+      "right": 1880,
+      "bottom": 922.890625
+    },
+    "stage": {
+      "x": 353,
+      "y": 85,
+      "width": 1084,
+      "height": 706,
+      "right": 1437,
+      "bottom": 791
+    },
+    "portrait": {
+      "x": 625,
+      "y": 160,
+      "width": 540,
+      "height": 565,
+      "right": 1165,
+      "bottom": 725
+    },
+    "left": {
+      "x": 40,
+      "y": 85,
+      "width": 300,
+      "height": 706,
+      "right": 340,
+      "bottom": 791
+    },
+    "right": {
+      "x": 1450,
+      "y": 85,
+      "width": 430,
+      "height": 837.890625,
+      "right": 1880,
+      "bottom": 922.890625
+    },
+    "heroCursor": "default",
+    "heroImage": "contain"
+  },
+  {
+    "screen": "2560x1440",
+    "viewport": 2560,
+    "fullWidth": 2560,
+    "workspace": {
+      "x": 360,
+      "y": 85,
+      "width": 1840,
+      "height": 837.890625,
+      "right": 2200,
+      "bottom": 922.890625
+    },
+    "stage": {
+      "x": 673,
+      "y": 85,
+      "width": 1084,
+      "height": 706,
+      "right": 1757,
+      "bottom": 791
+    },
+    "portrait": {
+      "x": 945,
+      "y": 160,
+      "width": 540,
+      "height": 565,
+      "right": 1485,
+      "bottom": 725
+    },
+    "left": {
+      "x": 360,
+      "y": 85,
+      "width": 300,
+      "height": 706,
+      "right": 660,
+      "bottom": 791
+    },
+    "right": {
+      "x": 1770,
+      "y": 85,
+      "width": 430,
+      "height": 837.890625,
+      "right": 2200,
+      "bottom": 922.890625
+    },
+    "heroCursor": "default",
+    "heroImage": "contain"
+  },
+  {
+    "screen": "3840x2160",
+    "viewport": 3840,
+    "fullWidth": 3840,
+    "workspace": {
+      "x": 1000,
+      "y": 85,
+      "width": 1840,
+      "height": 837.890625,
+      "right": 2840,
+      "bottom": 922.890625
+    },
+    "stage": {
+      "x": 1313,
+      "y": 85,
+      "width": 1084,
+      "height": 706,
+      "right": 2397,
+      "bottom": 791
+    },
+    "portrait": {
+      "x": 1585,
+      "y": 160,
+      "width": 540,
+      "height": 565,
+      "right": 2125,
+      "bottom": 725
+    },
+    "left": {
+      "x": 1000,
+      "y": 85,
+      "width": 300,
+      "height": 706,
+      "right": 1300,
+      "bottom": 791
+    },
+    "right": {
+      "x": 2410,
+      "y": 85,
+      "width": 430,
+      "height": 837.890625,
+      "right": 2840,
+      "bottom": 922.890625
+    },
+    "heroCursor": "default",
+    "heroImage": "contain"
+  },
+  {
+    "screen": "390x844",
+    "viewport": 390,
+    "fullWidth": 390,
+    "workspace": {
+      "x": 8,
+      "y": 152.5,
+      "width": 374,
+      "height": 1977.671875,
+      "right": 382,
+      "bottom": 2130.171875
+    },
+    "stage": {
+      "x": 8,
+      "y": 694.671875,
+      "width": 374,
+      "height": 571,
+      "right": 382,
+      "bottom": 1265.671875
+    },
+    "portrait": {
+      "x": 80.4375,
+      "y": 769.671875,
+      "width": 229.125,
+      "height": 390,
+      "right": 309.5625,
+      "bottom": 1159.671875
+    },
+    "left": {
+      "x": 8,
+      "y": 152.5,
+      "width": 374,
+      "height": 521.171875,
+      "right": 382,
+      "bottom": 673.671875
+    },
+    "right": {
+      "x": 8,
+      "y": 1286.671875,
+      "width": 374,
+      "height": 843.5,
+      "right": 382,
+      "bottom": 2130.171875
+    },
+    "heroCursor": "default",
+    "heroImage": "contain"
+  }
+]

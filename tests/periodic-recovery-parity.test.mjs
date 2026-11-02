@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const calc=scope.PandoraOSCalculator;
 const catalog=JSON.parse(read('data/os/skills.json'));
 const classes=JSON.parse(read('data/os/classes.json'));
@@ -59,7 +59,7 @@ test('future levels, required mastery and invalid data fail closed',()=>{
  assert.equal(preview(45,41,'CLERIC',NaN),null);
 });
 test('preview is linked to character model and player-only book, not applied as passive regen',()=>{
- const src=read('os-calculator.js'),ui=read('stage-attributes.js');
+ const src=read('pandora-os-character-calculator.js'),ui=read('pandora-studio-hero-book.js');
  assert.match(src,/const periodicRecovery=periodicRecoveryPreview/);
  assert.match(src,/level,spi:stats.spi,benevolence:combatContext.benevolenceMastery/);
  assert.match(src,/healingSpells,periodicRecovery,consumableRecovery/);

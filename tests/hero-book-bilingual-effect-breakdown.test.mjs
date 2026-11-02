@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
-const book=read('stage-attributes.js'),calc=read('os-calculator.js');
+const book=read('pandora-studio-hero-book.js'),calc=read('pandora-os-character-calculator.js');
 function load(lang){
  const root={};Function('window','document',book)(root,{documentElement:{lang}});
  return root.PandoraStageAttributes;

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const src=readFileSync(new URL('../os-calculator.js',import.meta.url),'utf8');
+const src=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
 const api={};Function('window',src)(api);
 test('OS banker rounding handles ties, fractions and negatives',()=>{
  const f=api.PandoraOSCalculator.halfToEven;

@@ -1,6 +1,6 @@
 # Pandora Saga Remaked — полная матрица ветвей расчёта
 
-Источники: [`js/calc.js` (Remaked)](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/bonaqu_projects/js/calc.js), исходная ветка `bonaqu_projects`, SHA дерева `3b79ddba89244b7afa038a87325214feaad6f431`; [Build Studio `os-calculator.js`](../os-calculator.js), [книга героя](../stage-attributes.js).
+Источники: [`js/calc.js` (Remaked)](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/bonaqu_projects/js/calc.js), исходная ветка `bonaqu_projects`, SHA дерева `3b79ddba89244b7afa038a87325214feaad6f431`; [Build Studio `pandora-os-character-calculator.js`](../pandora-os-character-calculator.js), [книга героя](../pandora-studio-hero-book.js).
 
 Всего исходных операторов `case`: **178**; уникальных имён: **143**. Дубликаты — разные ветви или групповые случаи старого интерфейса, поэтому они сохранены в колонке строк.
 

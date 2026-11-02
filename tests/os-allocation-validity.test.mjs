@@ -2,9 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const app=read('app.js'),tables=JSON.parse(read('data/os/tables.json'));
+const app=read('pandora-studio-app.js'),tables=JSON.parse(read('data/os/tables.json'));
 const items=Object.values(JSON.parse(read('data/os/items.json')));
-const host={};Function('window',read('attribute-progression.js'))(host);
+const host={};Function('window',read('pandora-studio-attribute-progression.js'))(host);
 const levels=host.PandoraAttributeProgression;
 test('planned level 50 and 55 retain original Remaked attribute budgets',()=>{
  assert.equal(tables.levelCap,45,'server metadata is not planner cap');

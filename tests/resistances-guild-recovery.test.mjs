@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const ctx={};Function('window',read('os-calculator.js'))(ctx);
+const ctx={};Function('window',read('pandora-os-character-calculator.js'))(ctx);
 const calc=ctx.PandoraOSCalculator;
 const zero={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
 const classes=JSON.parse(read('data/os/classes.json'));
@@ -65,7 +65,7 @@ test('invalid guild indices cannot create fake recovery or contaminate shared bu
  assert.equal(make({guildManaRecovery:-1}),null);
  assert.equal(make({guildHealing:4}),null);
  assert.equal(make({guildHealing:'2'}),null);
- const app=read('app.js'),html=read('index.html');
+ const app=read('pandora-studio-app.js'),html=read('index.html');
  for(const name of ['guildLifeRecovery','guildManaRecovery','guildHealing']){
   assert.ok(app.includes("safe.attributeBuffs[key]=level"));
   assert.ok(app.includes("'"+name+"'"));
@@ -74,7 +74,7 @@ test('invalid guild indices cannot create fake recovery or contaminate shared bu
  assert.match(app,/Number.isInteger\(level\)&&level>=0&&level<=limit/);
 });
 test('technical methodology remains admin-only, without cluttering the player book',()=>{
- const stage=read('stage-attributes.js');
+ const stage=read('pandora-studio-hero-book.js');
  assert.match(stage,/не количество ОЗ\/ОМ за тик/);
  assert.match(stage,/const isAdmin=root\.PandoraStudioAdminActive\?\.\(\)===true/);
  assert.match(stage,/if\(isAdmin&&details\.children\.length>1\)body\.append\(details\)/);

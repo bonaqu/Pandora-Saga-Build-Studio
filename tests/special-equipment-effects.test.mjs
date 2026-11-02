@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const host={};
-Function('window',read('os-calculator.js'))(host);
+Function('window',read('pandora-os-character-calculator.js'))(host);
 const calc=host.PandoraOSCalculator;
 const souls=JSON.parse(read('data/os/souls.json'));
 const items=JSON.parse(read('data/os/items.json'));
@@ -44,12 +44,12 @@ test('inactive, unrelated and contradictory effect records do not add special ef
  assert.equal(calc.specialEquipmentPreview({records:[]}).entries.length,0);
 });
 test('the hero book shows special equipment effects without raw EP identifiers',()=>{
- const source=read('stage-attributes.js');
+ const source=read('pandora-studio-hero-book.js');
  assert.match(source,/modifiers\?\.specialEquipment\?\.entries/);
  assert.match(source,/Особые эффекты предметов и душ/);
  assert.match(source,/Special item and Soul effects/);
- assert.match(read('os-calculator.js'),/const specialEquipment=specialEquipmentPreview/);
- assert.match(read('os-calculator.js'),/experienceBonus,battleMapCloaks,specialEquipment,regeneration/);
+ assert.match(read('pandora-os-character-calculator.js'),/const specialEquipment=specialEquipmentPreview/);
+ assert.match(read('pandora-os-character-calculator.js'),/experienceBonus,battleMapCloaks,specialEquipment,regeneration/);
 });
 
 test('the official Dawn Veil physical-evasion chance remains a conditional, source-backed preview',()=>{

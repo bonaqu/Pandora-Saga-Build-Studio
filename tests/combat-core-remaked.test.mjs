@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const ctx={};Function('window',read('os-calculator.js'))(ctx);
+const ctx={};Function('window',read('pandora-os-character-calculator.js'))(ctx);
 const calc=ctx.PandoraOSCalculator;
 const tables=JSON.parse(read('data/os/tables.json'));
 const data=JSON.parse(read('data/os/items.json'));
@@ -65,7 +65,7 @@ test('base character calculator gets combat context without applying its bonuses
  assert.equal(b.hp,b.hpBase+b.vitalsBonus.hp.total);
 });
 test('old combat-stage expectations are updated without loosening release version guard',()=>{
- const app=read('app.js'),stage=read('stage-attributes.js'),check=read('tests/stage-attributes.test.mjs');
+ const app=read('pandora-studio-app.js'),stage=read('pandora-studio-hero-book.js'),check=read('tests/stage-attributes.test.mjs');
  assert.match(app,/combatContext:\{weapon,weaponGrade,weaponPlus:gameTables\?\.weaponPlus,/);
  assert.match(stage,/modifiers\?\.combat/);
  assert.match(stage,/Подробнее о точности расчёта/);

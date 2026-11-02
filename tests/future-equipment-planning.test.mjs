@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const host={};
-Function('window',read('rules.js'))(host);
-Function('window',read('ui-planner.js'))(host);
+Function('window',read('pandora-studio-equipment-rules.js'))(host);
+Function('window',read('pandora-studio-ui-planner.js'))(host);
 const items=JSON.parse(read('data/os/items.json'));
 const P=host.PandoraUIPlanner,R=host.PandoraStudioRules;
 test('at level 1, planning picker includes eligible future 53 sword but not level-56 item',()=>{
@@ -23,7 +23,7 @@ test('future selection is distinct from actual equipment eligibility and persist
  const future=items[422];
  assert.equal(R.equipment(future,{slot:'weapon',job:'WARRIOR',level:45}).allowed,false);
  assert.equal(R.equipment(future,{slot:'weapon',job:'WARRIOR',level:53}).allowed,true);
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/PandoraUIPlanner\.planningEquippable/);
  assert.match(app,/future=Number\(rec\.level\)>state\.level/);
  assert.match(app,/Будет доступен с /);

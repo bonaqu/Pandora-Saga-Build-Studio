@@ -3,7 +3,7 @@ import assert from'node:assert/strict';
 import vm from'node:vm';
 import fs from'node:fs';
 const ctx={window:{}};
-vm.runInNewContext(fs.readFileSync(new URL('../skill-milestones.js',import.meta.url),'utf8'),ctx);
+vm.runInNewContext(fs.readFileSync(new URL('../pandora-studio-skill-milestones.js',import.meta.url),'utf8'),ctx);
 const f=ctx.window.PandoraSkillMilestones.forBranch;
 test('multiple skills at one branch threshold group together',()=>{
  const r=f([{id:1,reqs:[{branch:'slash',amount:8}]},{id:2,reqs:[{branch:'slash',amount:8}]}],'slash',90);

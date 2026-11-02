@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {accountApi,principal} from '../worker/account.js';
+import {accountApi,principal} from '../worker/pandora-studio-account-api.js';
 import {createHash} from 'node:crypto';
 const URL='https://ps-build-studio-cloud.bonaqu.workers.dev/api/account/';
 const secret='b'.repeat(64),pw='correct horse battery 2026!';

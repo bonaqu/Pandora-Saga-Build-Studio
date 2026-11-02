@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const root={};
-Function('window',read('os-calculator.js'))(root);
+Function('window',read('pandora-os-character-calculator.js'))(root);
 const calc=root.PandoraOSCalculator;
 const skills=JSON.parse(read('data/os/skills.json'));
 const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};
@@ -66,7 +66,7 @@ test('missing or corrupted published skill data fails closed without invented bo
  assert.equal(preview('KNIGHT',{combatWarCry:true}).activeSkills.warCry,false);
 });
 test('book controller forwards source catalog to calculator and exposes same skill access',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/skillCatalog:catalog\.skills/);
  assert.match(app,/combatSkillCatalog\.activeCombatSkills\(/);
  assert.match(app,/combatSkillCatalog\.combatSkillSource\(skillMap,name\)/);
@@ -85,7 +85,7 @@ class Element{
 const document={createElement:t=>new Element(t),
  createTextNode:t=>Object.assign(new Element('#text'),{textContent:t})};
 const stage={};
-Function('window','document',read('stage-attributes.js'))(stage,document);
+Function('window','document',read('pandora-studio-hero-book.js'))(stage,document);
 const walk=x=>[x,...(x.children||[]).flatMap(walk)];
 test('book uses real skill art, tooltip, bonus summary and disallows stale saved buffs',()=>{
  const target=new Element('root'),updates=[];

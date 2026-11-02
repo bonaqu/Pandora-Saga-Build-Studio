@@ -11,7 +11,7 @@ test('owner edits have server-side authorization, whitelist and socket validatio
  assert.match(worker,/Invalid socket count \(0-32\)/);
 });
 test('item fields are editable only through owner modal, not direct DOM write',()=>{
- const ui=get('stage-item-ui.js'),app=get('app.js');
+ const ui=get('pandora-studio-equipment-ui.js'),app=get('pandora-studio-app.js');
  assert.match(ui,/'data-edit-key':'item\.'/);
  assert.match(ui,/itemdesc\.'/);
  assert.match(ui,/itemslots\.'/);

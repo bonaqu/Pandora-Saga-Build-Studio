@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host={};
-Function('window',read('os-calculator.js'))(host);
+Function('window',read('pandora-os-character-calculator.js'))(host);
 const progress={};
-Function('window',read('skill-progression.js'))(progress);
+Function('window',read('pandora-studio-skill-progression.js'))(progress);
 const calc=host.PandoraOSCalculator;
 const skills=JSON.parse(read('data/os/skills.json'));
 const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};
@@ -13,7 +13,7 @@ const combat=(jobKey,selected,catalog=skills,branchMasteries={})=>calc.combatPre
  stats,level:55,jobKey,combatBuffs:selected,skillCatalog:catalog,branchMasteries
 });
 test('frontend passes every known green mastery branch instead of Slash only',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/function trainedBranchMasteries\(innate=\{\}\)/);
  assert.match(app,/groupAdeptness\(state,\[id\],innate\)/);
  assert.match(app,/const branchMasteries=trainedBranchMasteries\(initialBranches\)/);

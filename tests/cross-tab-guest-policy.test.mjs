@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
 test('a second guest tab cannot redirect cloud requests, link sharing or registration legacy key',()=>{
  assert.match(app,/let tabGuestSecret=cloudToken\(\),tabOwnerScope=null/);
  assert.match(app,/PandoraAccountUI\?\.token\(\)\|\|tabGuestSecret/);

@@ -13,7 +13,7 @@ test('strict icon audit reports incomplete archive',()=>{
 });
 
 test('Soul icon renderer uses physically archived original Soul WebP first',()=>{
- const app=src('app.js');
+ const app=src('pandora-studio-app.js');
  assert.match(app,/const selfHostedSoul=soul\?iconManifest\?\.icons\?\.souls\?\.\[rec\.icon\]:null/);
  assert.match(app,/const archived=selfHostedSoul\|\|iconManifest/);
 });

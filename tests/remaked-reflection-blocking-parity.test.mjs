@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const c={};Function('window',read('os-calculator.js'))(c);
+const c={};Function('window',read('pandora-os-character-calculator.js'))(c);
 const C=c.PandoraOSCalculator;
 const items=JSON.parse(read('data/os/items.json')),souls=JSON.parse(read('data/os/souls.json'));
 const classes=JSON.parse(read('data/os/classes.json'));
@@ -33,7 +33,7 @@ test('reflect and block resistance are independent of HP and core armor',()=>{
  assert.equal(after.combat.defense.known,before.combat.defense.known);
 });
 test('book displays blocking resistance and melee reflection',()=>{
- const book=read('stage-attributes.js');
+ const book=read('pandora-studio-hero-book.js');
  assert.match(book,/blockBreak:'Пробитие блока'/);
  assert.match(book,/Отражение ближнего физического урона/);
 });

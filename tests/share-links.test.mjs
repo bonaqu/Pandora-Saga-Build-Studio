@@ -17,7 +17,7 @@ test('share links use random short immutable IDs and public endpoints',()=>{
  assert.match(migration,/CREATE TABLE IF NOT EXISTS shared_build_limits/);
 });
 test('sharing never replaces an existing build without explicit choice',()=>{
- const src=read('app.js');
+ const src=read('pandora-studio-app.js');
  assert.match(src,/function openSharedSnapshot\(/);
  assert.match(src,/Сохранить текущий и открыть/);
  assert.match(src,/Открыть без сохранения/);
@@ -27,7 +27,7 @@ test('sharing never replaces an existing build without explicit choice',()=>{
  assert.match(src,/window\.addEventListener\('hashchange'/);
 });
 test('share links display alongside saved builds with an inline copy fallback',()=>{
- const src=read('app.js'),css=read('style.css');
+ const src=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(src,/class:'build-share-slot'/);
  assert.match(src,/createShared\(b,shareSlot\)/);
  assert.match(src,/if\(host\.isConnected\)host\.replaceChildren\(message\)/);
@@ -36,7 +36,7 @@ test('share links display alongside saved builds with an inline copy fallback',(
  assert.match(css,/\.build-share-slot/);
 });
 test('library maintains an offline cache and D1 sync without JSON import/export',()=>{
- const src=read('app.js'),html=read('index.html');
+ const src=read('pandora-studio-app.js'),html=read('index.html');
  assert.match(src,/ps-build-library\.v1/);
  assert.match(src,/persistBuilds\(\)/);
  assert.match(src,/function loadCloudBuilds\(/);
@@ -45,14 +45,14 @@ test('library maintains an offline cache and D1 sync without JSON import/export'
  assert.match(html,/data-tab="builds"/);
 });
 test('skill and stat editing remain in one screen',()=>{
- const app=read('app.js'),html=read('index.html');
+ const app=read('pandora-studio-app.js'),html=read('index.html');
  assert.doesNotMatch(html,/data-tab="(?:skills|stats)"/);
  assert.match(app,/PandoraHeroPath\.viewGrowth/);
  assert.match(html,/data-origin-tab="stats"/);
 });
 
 test('opening a local named build keeps all old and future fields; shared Astir builds keep displaced legwear',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/const draft=structuredClone\(latest\.data\),base=fresh\(\)/);
  assert.match(app,/state=\{\.\.\.base,\.\.\.draft,/);
  assert.match(app,/const previousLegwear=item\(original\.displacedLegwear\)/);
@@ -68,13 +68,13 @@ test('health endpoint exposes D1 sharing readiness without claiming feature depl
 });
 
 test('shared racial passive IDs retain original OS values above one million',()=>{
- const s=read('app.js');
+ const s=read('pandora-studio-app.js');
  assert.match(s,/Number\.isSafeInteger\(original\.racialPassiveId\)/);
  assert.match(s,/original\.racialPassiveId<10000000000/);
 });
 
 test('public share preserves separate blue Potential and green Adeptness',()=>{
- const s=read('app.js');
+ const s=read('pandora-studio-app.js');
  assert.match(s,/safe\.masteryAuto=original\.masteryAuto!==false/);
  assert.match(s,/safe\.mastery\[key\]=Math\.min\(level,window\.PandoraSkillProgression\.potential\(safe,key\)\)/);
  assert.match(s,/Мастерство '\+branch\.name/);

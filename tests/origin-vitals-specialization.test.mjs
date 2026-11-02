@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const html=read('index.html'),app=read('app.js'),css=read('style.css');
+const html=read('index.html'),app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
 const classes=JSON.parse(read('data/os/classes.json'));
 
 test('Origin labels show only ОЗ/ОМ, no icons or approximation marks',()=>{
@@ -34,7 +34,7 @@ test('HP/MP are calculated integers and coverage limitations remain transparent'
  assert.equal(nodes.originHp.textContent,'—');
  assert.equal(nodes.originMp.textContent,'—');
  assert.doesNotMatch(code,/['"]≈['"]|≈\+/);
- const calculator=read('os-calculator.js');
+ const calculator=read('pandora-os-character-calculator.js');
  assert.match(calculator,/verified:false/,'server-game parity is not established');
 });
 

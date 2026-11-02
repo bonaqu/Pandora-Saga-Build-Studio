@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {existsSync,readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const app=read('app.js'),page=read('index.html');
+const app=read('pandora-studio-app.js'),page=read('index.html');
 
 test('the retired saved-build auto-overwrite module cannot run in production',()=>{
  assert.equal(existsSync(new URL('../saved-build-autosave.js',import.meta.url)),false);

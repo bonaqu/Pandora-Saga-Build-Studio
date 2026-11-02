@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const items=JSON.parse(read('data/os/items.json')),calc=scope.PandoraOSCalculator;
 
 test('actual OS mana potions recover fixed source MP and 15% of maximum MP',()=>{
@@ -43,8 +43,8 @@ test('incomplete catalog and invalid maxima never invent recovery',()=>{
  assert.deepEqual(calc.consumableRecoveryPreview({items:{},maxHp:100,maxMp:100}).rows,[]);
 });
 test('model passes actual OS items and displays clickable items in the hero book',()=>{
- assert.match(read('app.js'),/consumableItems:catalogSource\?\.items/);
- assert.match(read('os-calculator.js'),/const consumableRecovery=consumableRecoveryPreview/);
- assert.match(read('stage-attributes.js'),/Предметы восстановления ОМ/);
- assert.match(read('stage-attributes.js'),/entry\.mp\+\(english\?' MP':' ОМ'\)/);
+ assert.match(read('pandora-studio-app.js'),/consumableItems:catalogSource\?\.items/);
+ assert.match(read('pandora-os-character-calculator.js'),/const consumableRecovery=consumableRecoveryPreview/);
+ assert.match(read('pandora-studio-hero-book.js'),/Предметы восстановления ОМ/);
+ assert.match(read('pandora-studio-hero-book.js'),/entry\.mp\+\(english\?' MP':' ОМ'\)/);
 });

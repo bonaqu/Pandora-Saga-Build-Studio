@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
 const skills=JSON.parse(read('data/os/skills.json'));
 const tables=JSON.parse(read('data/os/tables.json'));
@@ -13,7 +13,7 @@ const combat=(weapon,combatLunge=true)=>C.combatPreview({
 });
 test('level 55 remains available for future planning regardless of live OS level 45',()=>{
  assert.equal(tables.levelCap,45,'server metadata stays authentic');
- const html=read('index.html'),app=read('app.js');
+ const html=read('index.html'),app=read('pandora-studio-app.js');
  assert.match(html,/id="level"[^>]*max="55"[^>]*value="1"/);
  assert.match(html,/Уровень героя<\/span> <strong id="levelOut">1/);
  assert.match(app,/function fresh\(\)\{return\{race:1,gender:0,job:16,level:1,/);
@@ -43,7 +43,7 @@ test('OS Lunge weapon restrictions forbid bows and crossbows without losing vali
  assert.equal(combat({kind:'1H_SWORD',W:48},false).activeSkills.lunge,false);
 });
 test('the book and calculator ask the same source weapon eligibility question',()=>{
- const app=read('app.js'),calc=read('os-calculator.js'),book=read('stage-attributes.js');
+ const app=read('pandora-studio-app.js'),calc=read('pandora-os-character-calculator.js'),book=read('pandora-studio-hero-book.js');
  assert.match(app,/hasShield:equippedShield\?\.slot==='shield',skillCatalog:skillMap/);
  assert.match(app,/weapon:equippedWeapon/);
  assert.match(app,/!ability\.weaponUse\.includes\(equippedWeapon\?\.kind\?\?'BARE_HAND'\)/);
@@ -51,7 +51,7 @@ test('the book and calculator ask the same source weapon eligibility question',(
  assert.match(book,/Недоступно для героя/);
 });
 test('incoming critical damage uses defensive metric; outgoing damage stays under Attack',()=>{
- const book=read('stage-attributes.js');
+ const book=read('pandora-studio-hero-book.js');
  assert.match(book,/\['Входящий крит\. урон',battle\.criticalIncomingDamage/);
  assert.match(book,/Исходящий критический урон: /);
  assert.ok(!book.includes("['Критический урон',battle.criticalDamage"));

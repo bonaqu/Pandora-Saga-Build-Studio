@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const c={};Function('window',read('os-calculator.js'))(c);
+const c={};Function('window',read('pandora-os-character-calculator.js'))(c);
 const calc=c.PandoraOSCalculator;
 const pick=(slot,grade,type,element)=>({slot,grade,gem:{type,element},itemId:21});
 test('Legacy physical weapon gemstone uses exact archived +7 aura values',()=>{
@@ -35,7 +35,7 @@ test('rainbow and unsupported stored legacy gem combinations remain uncounted',(
  assert.equal(v.uncertain.length,1);
 });
 test('integration reads existing saved gem choices and shows separate breakdown',()=>{
- const source=read('app.js'),book=read('stage-attributes.js');
+ const source=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  assert.match(source,/PandoraEnchantModel\.normalize\(/);
  assert.match(source,/gemSelections\.push\(/);
  assert.match(source,/itemForth:gameItemForth,gemSelections/);

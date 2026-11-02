@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const sandbox={window:{}};
-vm.runInNewContext(readFileSync(new URL('../rules.js',import.meta.url),'utf8'),sandbox);
+vm.runInNewContext(readFileSync(new URL('../pandora-studio-equipment-rules.js',import.meta.url),'utf8'),sandbox);
 const r=sandbox.window.PandoraStudioRules;
 test('known class and branch requirements',()=>{const s={classes:{CLERIC:1},charLevel:20,reqs:[{branch:'brush',amount:8}]};
 assert.equal(r.readiness(s,{job:'CLERIC',level:50,points:{brush:7}}).status,'locked');

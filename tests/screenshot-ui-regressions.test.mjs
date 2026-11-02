@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('two explicit RU/EN buttons keep the selected language accessible',()=>{
- const index=read('index.html'),app=read('app.js'),ui=read('ui-locale.js');
+ const index=read('index.html'),app=read('pandora-studio-app.js'),ui=read('pandora-studio-ui-locale.js');
  assert.match(index,/id="locale" class="locale-switch"/);
  assert.match(index,/data-locale="ru" aria-pressed="true"/);
  assert.match(index,/data-locale="en" aria-pressed="false"/);
@@ -21,13 +21,13 @@ test('two explicit RU/EN buttons keep the selected language accessible',()=>{
  assert.deepEqual(nodes.map(n=>n.textContent),['Образ героя','Путь героя']);
 });
 test('item dialog header shows localized slot type, not duplicated item name',()=>{
- const source=read('stage-item-ui.js'),app=read('app.js');
+ const source=read('pandora-studio-equipment-ui.js'),app=read('pandora-studio-app.js');
  assert.match(source,/api\.slotLabel\|\|'Слот: '\+slot/);
  assert.match(app,/\['Оружие','Щит','Шлем','Броня','Перчатки','Штаны','Обувь','Плащ'/);
  assert.match(app,/\['Weapon','Shield','Helmet','Armor','Gloves','Pants'/);
 });
 test('skill markers keep tooltips in one shared bar and never block the slider',()=>{
- const css=read('style.css'),hero=read('hero-path.js');
+ const css=read('pandora-studio-theme.css'),hero=read('pandora-studio-hero-path.js');
  assert.match(css,/\.path-integrated-track \.path-unlock-notch\{/);
  assert.match(css,/\.path-integrated-track \.path-unlock-notch\{[^}]*pointer-events:none/);
  assert.match(css,/\.path-integrated-track \.path-current-notch\{/);
@@ -36,7 +36,7 @@ test('skill markers keep tooltips in one shared bar and never block the slider',
  assert.match(hero,/track\.append\(range\);paint\(\)/);
 });
 test('saved builds stay local until the user explicitly overwrites',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/function persist\(\)\{try\{window\.PandoraBuildScope\.setOwned/);
  assert.doesNotMatch(app,/PandoraSavedBuildAutosave\.updatedSaved/);
  assert.match(app,/text:'↻ Перезаписать'/);
@@ -45,13 +45,13 @@ test('saved builds stay local until the user explicitly overwrites',()=>{
  assert.match(app,/\$\('snapshot'\)\.onclick=\(\)=>\{changeTab\('builds'\)\}/);
 });
 test('locale selection works before async catalog is available',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/function applyGameLocale\(\)\{\n window\.PandoraUILocale\.apply\(lang\)/);
  assert.match(app,/button\.setAttribute\('aria-pressed',String\(active\)\)/);
 });
 
 test('saved build overwrite confirms inside a visible card, not a native dialog',()=>{
- const app=read('app.js'),css=read('style.css');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/class:'build-overwrite-choice',hidden:true/);
  assert.match(app,/text:'Подтвердить перезапись'/);
  assert.doesNotMatch(app,/if\(!confirm\('Перезаписать сохранённый билд/);

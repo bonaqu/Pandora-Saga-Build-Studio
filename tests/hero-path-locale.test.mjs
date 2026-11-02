@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const source=readFileSync(new URL('../hero-path.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
 function check(lang){
  const root={PandoraSkillProgression:{potential:()=>0,trained:()=>0}};
  Function('window','document',source)(root,{});
@@ -24,7 +24,7 @@ test('Hero Path skill availability messages are translated by interface language
   assert.ok(ru.problems.includes(label),label);
 });
 test('skill detail fields and workspace labels translate without rewriting game data',()=>{
- const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  assert.ok(source.includes("tr(api,'Уровень персонажа','Character level')"));
  assert.ok(source.includes("tr(api,'Требования по веткам','Branch requirements')"));
  assert.ok(source.includes("'Show more ('"));

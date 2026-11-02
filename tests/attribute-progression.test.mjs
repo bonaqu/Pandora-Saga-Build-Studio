@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const src=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',src('attribute-progression.js'))(scope);
+const scope={};Function('window',src('pandora-studio-attribute-progression.js'))(scope);
 const m=scope.PandoraAttributeProgression,os=JSON.parse(src('data/os/tables.json'));
 const parity=[{"race":"HUMAN","klass":"WARRIOR","values":[7,8,4,6,4,5]},{"race":"HUMAN","klass":"SCOUT","values":[5,7,6,7,4,5]},{"race":"HUMAN","klass":"ACOLYTE","values":[5,7,4,5,6,7]},{"race":"HUMAN","klass":"MAGE","values":[4,6,4,6,6,8]},{"race":"ELF","klass":"WARRIOR","values":[5,6,5,5,6,7]},{"race":"ELF","klass":"SCOUT","values":[3,5,7,6,6,7]},{"race":"ELF","klass":"ACOLYTE","values":[3,5,5,4,8,9]},{"race":"ELF","klass":"MAGE","values":[2,4,5,5,8,10]},{"race":"DWARF","klass":"WARRIOR","values":[8,10,4,7,2,3]},{"race":"DWARF","klass":"SCOUT","values":[6,9,6,8,2,3]},{"race":"DWARF","klass":"ACOLYTE","values":[6,9,4,6,4,5]},{"race":"DWARF","klass":"MAGE","values":[5,8,4,7,4,6]},{"race":"MYLIN","klass":"WARRIOR","values":[7,8,8,7,2,2]},{"race":"MYLIN","klass":"SCOUT","values":[5,7,10,8,2,2]},{"race":"MYLIN","klass":"ACOLYTE","values":[5,7,8,6,4,4]},{"race":"MYLIN","klass":"MAGE","values":[4,6,8,7,4,5]},{"race":"ENKIDU","klass":"WARRIOR","values":[10,9,3,5,5,2]},{"race":"ENKIDU","klass":"SCOUT","values":[8,8,5,6,5,2]},{"race":"ENKIDU","klass":"ACOLYTE","values":[8,8,3,4,7,4]},{"race":"ENKIDU","klass":"MAGE","values":[7,7,3,5,7,5]},{"race":"RAPIN","klass":"WARRIOR","values":[5,4,5,6,8,6]},{"race":"RAPIN","klass":"SCOUT","values":[3,3,7,7,8,6]},{"race":"RAPIN","klass":"ACOLYTE","values":[3,3,5,5,10,8]},{"race":"RAPIN","klass":"MAGE","values":[2,2,5,6,10,9]}];
 test('all 24 preserved Remaked initial combinations equal OS',()=>{
@@ -69,7 +69,7 @@ test('existing saved added-only stats round-trip without implicit migration',()=
 });
 test('flat equipment ability bonuses can exceed 99 without increasing invested points',()=>{
  const calcScope={};
- Function('window',src('os-calculator.js'))(calcScope);
+ Function('window',src('pandora-os-character-calculator.js'))(calcScope);
  const calc=calcScope.PandoraOSCalculator;
  const s=m.snapshot({tables:os,race:'RAPIN',klass:'SCOUT',level:55,
   added:[0,0,0,92,0,0]});

@@ -25,7 +25,7 @@ test('only confirmed five resistance abbreviations override current OS spelling'
  for(const id of ids)assert.match(alignment.skillLabelsById[id],/^Сопр\./);
 });
 test('all ID-specific names render in RU while EN remains untouched',()=>{
- const app=get('app.js');
+ const app=get('pandora-studio-app.js');
  assert.match(app,/approvedSkillIdNames=mapping\.skillLabelsById/);
  assert.match(app,/if\(lang==='ru'\)/);
  assert.match(app,/Object\.entries\(approvedSkillIdNames\|\|\{\}\)/);

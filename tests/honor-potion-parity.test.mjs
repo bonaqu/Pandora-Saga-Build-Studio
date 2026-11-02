@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const root={};Function('window',read('os-calculator.js'))(root);
+const root={};Function('window',read('pandora-os-character-calculator.js'))(root);
 const calc=root.PandoraOSCalculator;
 const classes=JSON.parse(read('data/os/classes.json'));
 const souls=JSON.parse(read('data/os/souls.json'));
@@ -61,7 +61,7 @@ test('honor invalid input is rejected, never coerced from remote strings',()=>{
  assert.equal(fixture({honorTitle:-1}),null);
 });
 test('UI exposes exclusive title and potion preview, no old Honor checkbox',()=>{
- const html=read('index.html'),app=read('app.js');
+ const html=read('index.html'),app=read('pandora-studio-app.js');
  assert.match(html,/id="originHonorTitle"/);
  assert.match(html,/id="originPotionRecovery"/);
  assert.doesNotMatch(html,/id="originRuneJoEun"/);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
-const source=readFileSync(new URL('../ui-locale.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../pandora-studio-ui-locale.js',import.meta.url),'utf8');
 const scope={};scope.window=scope;runInNewContext(source,scope);
 const locale=scope.PandoraUILocale;
 test('exact user interface keys translate to English without rewriting unknown game names',()=>{
@@ -40,14 +40,14 @@ test('locale markers never replace the dynamic racial passive selection element'
 });
 
 test('account session verification preserves local identity on temporary failures',()=>{
- const source=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+ const source=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
  assert.match(source,/error\.httpStatus=response\.status/);
  assert.match(source,/httpStatus===401\|\|error\?\.httpStatus===403/);
  assert.match(source,/options\.onLogin\?\.\(\{register:false,bootstrap:true\}\)/);
 });
 
 test('the account UI validates new password confirmation for both password change and recovery',()=>{
- const source=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+ const source=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
  assert.match(source,/const update=button\('Изменить пароль'/);
  assert.match(source,/fresh\.value!==confirmFresh\.value/);
  assert.match(source,/mode==='register'\|\|mode==='recover'/);
@@ -56,8 +56,8 @@ test('the account UI validates new password confirmation for both password chang
 });
 
 test('administrator entry remains hidden from ordinary players',()=>{
- const account=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
- const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+ const account=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  const worker=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
  assert.doesNotMatch(account,/adminEntry|onAdministratorLogin|Вход администратора/);
  assert.match(app,/ownerClicks>=5/);
@@ -67,8 +67,8 @@ test('administrator entry remains hidden from ordinary players',()=>{
 });
 
 test('English equipment labels retain original source text solely for numeric fallback',()=>{
- const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
- const calc=readFileSync(new URL('../os-calculator.js',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const calc=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
  assert.match(app,/const translate=\(original,map,keepSourceDesc=false\)=>/);
  assert.match(app,/keepSourceDesc\?\{sourceDesc:item\.desc\}:\{\}/);
  assert.match(app,/equipment:translate\(catalogSource\.items,en\?\.items,true\)/);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const html=read('index.html'),app=read('app.js'),stage=read('stage-attributes.js'),css=read('style.css');
+const html=read('index.html'),app=read('pandora-studio-app.js'),stage=read('pandora-studio-hero-book.js'),css=read('pandora-studio-theme.css');
 test('original portrait and rails stay intact with dedicated book controls',()=>{
  assert.match(html,/id="hero"[^>]*role="button"[^>]*tabindex="0"/);
  for(const id of ['stageAttributes','railLeft','railRight'])

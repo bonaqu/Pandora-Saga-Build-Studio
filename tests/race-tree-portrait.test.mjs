@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url),get=p=>readFileSync(new URL(p,root),'utf8');
 test('portrait carousel presents eight independent race-appearance options',()=>{
- const app=get('app.js');
+ const app=get('pandora-studio-app.js');
  assert.match(app,/const portraitOptions=\[/);
  const matches=app.match(/\{"race":[0-5],"gender":[01]\}/g)||[];
  assert.equal(matches.length,8);
@@ -12,7 +12,7 @@ test('portrait carousel presents eight independent race-appearance options',()=>
  assert.match(app,/chosen=state\.race===i&&/);
 });
 test('class tree reads real OS parent relations',()=>{
- const app=get('app.js'),classes=JSON.parse(get('data/os/classes.json'));
+ const app=get('pandora-studio-app.js'),classes=JSON.parse(get('data/os/classes.json'));
  assert.match(app,/catalog\.classes\?\.\[key\]\?\.parent/);
  assert.match(app,/function renderJobs\(/);assert.match(app,/class-wizard-choice/);
  assert.match(app,/jobPathKey=parentOf\(jobPathKey\)/);
@@ -21,7 +21,7 @@ test('class tree reads real OS parent relations',()=>{
  assert.equal(Object.keys(classes).length,28);
 });
 test('portrait art fits entire picture and technical labels are hidden',()=>{
- const css=get('style.css'),html=get('index.html');
+ const css=get('pandora-studio-theme.css'),html=get('index.html');
  assert.match(css,/object-fit:contain!important/);
  assert.match(css,/#siteNotice,\.gender-controls,#swapGender,\.portrait-bottom,\.mini-note/);
  assert.doesNotMatch(html,/Портреты из пользовательского архива Races\.zip/);

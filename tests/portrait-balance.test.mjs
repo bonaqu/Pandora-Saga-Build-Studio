@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const css=readFileSync(new URL('../style.css',import.meta.url),'utf8');
+const css=readFileSync(new URL('../pandora-studio-theme.css',import.meta.url),'utf8');
 const override=css.slice(css.indexOf('/* 2026.10.30.49: restore the accepted wide Hero Path'));
 test('large desktops preserve the accepted 430px Hero Path',()=>{
  assert.ok(override.startsWith('/* 2026.10.30.49: restore'));

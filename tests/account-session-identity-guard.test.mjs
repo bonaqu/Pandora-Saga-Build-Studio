@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
 
-const original=readFileSync(new URL('../account-ui.js',import.meta.url),'utf8');
+const original=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
 const script=original.replace(
  'root.PandoraAccountUI=Object.freeze(',
  'root.__accountTest=Object.freeze({setSession,clearSession});root.PandoraAccountUI=Object.freeze(');

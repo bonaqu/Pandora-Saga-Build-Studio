@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const base=new URL('../',import.meta.url),read=p=>readFileSync(new URL(p,base),'utf8');
-const origin={};Function('window',read('origin-model.js'))(origin);
+const origin={};Function('window',read('pandora-studio-origin-model.js'))(origin);
 test('old saved tab selections migrate without losing character data',()=>{
  const {tab,tabs}=origin.PandoraOriginModel;
  assert.deepEqual(tabs,['race','class','stats']);
@@ -33,7 +33,7 @@ test('stat values obey current class cap and reject invalid values',()=>{
  assert.equal(allowedStat(5.5,99),false);
 });
 test('compact labels map to original saved keys, preserving legacy builds',()=>{
- const code=read('app.js'),html=read('index.html');
+ const code=read('pandora-studio-app.js'),html=read('index.html');
  for(const short of ['ВЫН','СИЛ','ПРВ','ЛВК','СД','ИНТ'])
   assert.match(code,new RegExp("short:'"+short+"'"));
  assert.match(code,/ORIGIN_STAT_LABELS\.forEach\(\(info,i\)=>/);

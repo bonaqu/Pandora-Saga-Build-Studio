@@ -10,7 +10,7 @@ test('collapsed player controls expose optional OS skill actives with exact rate
  assert.match(html,/Бастион · −20% атаки, \+40% защиты/);
 });
 test('shared builds safely validate and persist combat choices',()=>{
- const app=get('app.js');
+ const app=get('pandora-studio-app.js');
  assert.match(app,/rawAttributes\[key\]===true/);
  assert.match(app,/safe\.attributeBuffs\.combatDefender=false/);
  assert.match(app,/\['guildArouse',3\]/);
@@ -18,7 +18,7 @@ test('shared builds safely validate and persist combat choices',()=>{
  assert.match(app,/current\.combatDefender/);
 });
 test('attack and defense views show contribution of chosen skills',()=>{
- const stage=get('stage-attributes.js');
+ const stage=get('pandora-studio-hero-book.js');
  assert.match(stage,/cm\.attack\?\.activeBonus/);
  assert.match(stage,/df\.activeBonus/);
  assert.match(stage,/cm\.activeSkills\?\.lunge/);
