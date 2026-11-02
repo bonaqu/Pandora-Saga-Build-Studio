@@ -19,6 +19,65 @@ const effects=[
  ['EP_MAGIC_RESISTANCE_CONST','Сопротивление магии'],
  ['EP_ATTACKINTERVAL_SCALE','Скорость атаки (%)']
 ];
+const extraLabels={
+ EP_ABILITY_RESET:'Сброс способностей',EP_ATTACK_BACKATK_RATE:'Атака со спины',
+ EP_AURADAMAGE_CONST:'Урон ауры',EP_AVOIDANCE_CONST:'Уклонение',
+ EP_BADEFFECT_TIME_SCALE:'Длительность отрицательных эффектов',
+ EP_BLOCK_BREAK_RESIST:'Защита от пробития блока',EP_BOW_CARRY:'Переносимый вес для лука',
+ EP_BOW_RANGE:'Дальность лука',EP_CASTINGCANCEL_RESISTANCE_CONST:'Устойчивость к прерыванию заклинаний',
+ EP_CAST_HEAL_LIFE_SCALE:'Сила лечения',EP_CHARM_RESISTANCE_CONST:'Сопротивление чарам',
+ EP_DAMAGERATE_SCALE:'Сила атаки (%)',EP_DARK_RESISTANCE_CONST:'Сопротивление тьме',
+ EP_DESTINED_POISON:'Наложение отравления',EP_DESTINE_WARDING:'Защитный показатель',
+ EP_ELEMENT_DAMAGE_SCALE:'Урон стихией (%)',EP_EXPERTISE_RESET:'Сброс мастерства',
+ EP_HEAL_LIFE:'Восстановление ОЗ',EP_HEAL_LIFE_RATE:'Восстановление ОЗ (%)',
+ EP_HEAL_LIFE_REGENERATOR:'Регенерация ОЗ',EP_HEAL_MANA:'Восстановление ОМ',
+ EP_HEAL_MANA_RATE:'Восстановление ОМ (%)',
+ EP_HOLY_RESISTANCE_CONST:'Сопротивление свету',
+ EP_IMMUNE_BURN:'Невосприимчивость к ожогу',
+ EP_IMMUNE_CURSE:'Невосприимчивость к проклятию',
+ EP_IMMUNE_DISEASE:'Невосприимчивость к болезни',
+ EP_IMMUNE_EVIL:'Защита от злых чар',
+ EP_IMMUNE_KNOCKBACK:'Невосприимчивость к отбрасыванию',
+ EP_IMMUNE_NUMB:'Невосприимчивость к онемению',
+ EP_IMMUNE_RAVING:'Невосприимчивость к помешательству',
+ EP_IMMUNE_SILENCE:'Невосприимчивость к молчанию',
+ EP_IMMUNE_SLEEP:'Невосприимчивость ко сну',
+ EP_IMMUNE_SPI_TYPE:'Невосприимчивость (дух)',
+ EP_IMMUNE_STUN:'Невосприимчивость к оглушению',
+ EP_IMMUNE_TUMBLE:'Невосприимчивость к падению',
+ EP_IMMUNE_VIT_TYPE:'Невосприимчивость (выносливость)',
+ EP_MOVESPEED_SCALE:'Скорость передвижения (%)',
+ EP_ONDAMAGE_ELEM_SKILL_EXEC:'Стихийное умение при получении урона',
+ EP_ONDAMAGE_FIN_DAMAGE_SCALE:'Получаемый конечный урон (%)',
+ EP_ONDAMAGE_SKILL_EXEC:'Умение при получении урона',
+ EP_ONDAMAGE_SKILL_EXEC_ATTACKER:'Умение атакующему при получении урона',
+ EP_ONHIT_SKILL_EXEC:'Умение при попадании',
+ EP_ONHIT_SKILL_EXEC_ATTACKER:'Умение атакующему при попадании',
+ EP_ONHIT_STUN:'Оглушение при попадании',
+ EP_POISON_RESISTANCE_CONST:'Сопротивление яду',
+ EP_RACE_CARRY:'Расовая грузоподъёмность',
+ EP_RACE_MANA_COSTCUT:'Расовое снижение затрат ОМ',
+ EP_RACE_RANGE:'Расовая дальность',
+ EP_RANDOM_BOX:'Открытие случайного сундука',
+ EP_RECOVERY_BURN:'Снятие ожога',EP_RECOVERY_CURSE:'Снятие проклятия',
+ EP_RECOVERY_DISEASE:'Снятие болезни',EP_RECOVERY_NUMB:'Снятие онемения',
+ EP_RECOVERY_POISON:'Снятие отравления',EP_RECOVERY_RAVING:'Снятие помешательства',
+ EP_RECOVERY_SILENCE:'Снятие молчания',
+ EP_RESTART:'Перезапуск',EP_RESTMAP_MOVESPEED_SCALE:'Скорость передвижения в безопасной зоне (%)',
+ EP_SKILL_BENCH:'Подготовка навыка',EP_SKILL_DELAY:'Задержка навыка',
+ EP_SKILL_EXEC:'Применение навыка',EP_SKILL_EXEC_BALM:'Применение лечебного средства',
+ EP_SKILL_EXEC_MAPIN:'Применение навыка при входе на карту',
+ EP_TOHIT_SCALE:'Меткость (%)',EP_VOLUME_EXP:'Получаемый опыт'
+};
+function effectOptions(items){
+ const chosen=new Set(effects.map(([code])=>code));
+ for(const item of Object.values(items||{}))for(const entry of item?.effects||[])
+  if(/^EP_[A-Z0-9_]{2,65}$/.test(entry?.func||''))chosen.add(entry.func);
+ return [...chosen].map(func=>({
+  value:func,label:effects.find(row=>row[0]===func)?.[1]||extraLabels[func]||
+   'Игровой эффект «'+func.replace(/^EP_/,'').toLowerCase().replaceAll('_',' ')+'»'
+ })).sort((a,b)=>a.label.localeCompare(b.label,'ru'));
+}
 const validId=id=>/^[0-9]{1,15}$/.test(String(id));
 const plain=value=>Boolean(value&&typeof value==='object'&&!Array.isArray(value));
 function ownPatch(overrides,id){
@@ -229,5 +288,5 @@ function open({id,item,base,overrides,h,modal,jobKeys,className,onSave,onReset})
  actions.append(save,reset,cancel);panel.append(actions,feedback);
  modal('Редактор предмета · '+String(item.name||id),panel);
 }
-root.PandoraStudioItemOwnerEditor=Object.freeze({open,applyItems,ownPatch});
+root.PandoraStudioItemOwnerEditor=Object.freeze({open,applyItems,ownPatch,effectOptions});
 })(typeof window==='undefined'?globalThis:window);
