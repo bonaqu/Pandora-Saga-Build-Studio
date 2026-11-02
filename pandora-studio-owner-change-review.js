@@ -2,7 +2,9 @@
 'use strict';
 // Read-only descriptions of owner overrides; never change the stored D1 values.
 const labels={
- name:'Название',desc:'Описание',blurb:'Описание',blurbRu:'Описание',
+ name:'Название',nameEn:'Название EN',desc:'Описание',descEn:'Описание EN',
+ service:'Назначение',serviceEn:'Назначение EN',grid:'Координаты',
+ blurb:'Описание',blurbRu:'Описание',
  level:'Уровень',W:'Атака',PEN:'Пробитие',AC:'Защита',
  atkspeed:'Скорость атаки',range:'Дальность',soulslot:'Гнёзда душ',
  twoHanded:'Двуручное',kind:'Тип предмета',classes:'Доступные классы',
@@ -74,10 +76,13 @@ function inspect(key,stored,{base=null,items=null,classes=null}={}){
    {[type==='itemdesc'?'desc':type==='itemslots'?'soulslot':'name']:stored};
  }else if(type==='wikiedit'){
   const sub=parts[1];target={type:sub,id};
-  source=sub==='npc'?raw.trades?.npcs?.[id]:
+  source=sub==='npc'?(raw.trades?.npcs?.[id]||raw.townNpcs?.[id]||
+    root.PandoraAstirLocations?.npcRecords?.()[id]):
    sub==='instance'?(raw.instances||[]).find(x=>String(x.id)===id):
-   raw[({soul:'souls',skill:'skills',map:'maps',monster:'monsters'})[sub]]?.[id];
-  name=lookup(sub,id);
+   sub==='map'?(raw.maps?.[id]||raw.townMaps?.[id]||
+    raw.trades?.mapNames?.[id]||root.PandoraAstirLocations?.district(id)):
+   raw[({soul:'souls',skill:'skills',monster:'monsters'})[sub]]?.[id];
+  name=source?.name||lookup(sub,id);
   section=({soul:'Душа',skill:'Навык',npc:'NPC',monster:'Монстр',
    map:'Локация',instance:'Подземелье'})[sub]||'Энциклопедия';
   patch=toObject(stored);

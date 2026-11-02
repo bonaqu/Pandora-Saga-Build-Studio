@@ -118,7 +118,7 @@ test('deep links, labels and search remain distinct in RU and EN',()=>{
 
 test('refresh, back, forward and hashchange all accept stable Astir district map links',()=>{
  const app=read('pandora-studio-app.js');
- const expected=String.raw`([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-kingdom-claris)`;
+ const expected=String.raw`([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})`;
  assert.equal(app.split(expected).length-1,3,
   'All three hash readers must support the exact virtual district IDs');
  for(const id of geo.districtIds.filter(id=>id!=='1001004')){

@@ -1410,8 +1410,13 @@ async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
-  const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
+  // Owner edits rebuild from the already validated snapshot: no redundant
+  // round-trip of all 11 D1 datasets for each double-click edit.
+  if(!wikiBaseData){
+   const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
    wikiBaseData=loaded.data;
+  }
+  const loaded={data:wikiBaseData};
   const skills={...loaded.data.skills};
   for(const [key,value] of Object.entries(override)){
    const parsed=/^(skill|skilldesc)\.([a-zA-Z0-9_-]{1,32})\.([0-9]{1,12})$/.exec(key);
@@ -1595,19 +1600,27 @@ function renderWiki(root){
   let lastWikiIndex=null;
  const dataName=(type,id)=>{
   if(type==='map'){
-   const name=window.PandoraAstirLocations?.localized(id,lang);
-   if(name)return name;
+   const geo=window.PandoraAstirLocations;
+   const place=geo?.district(id)||geo?.country(id);
+   if(place){
+    const edited=wikiIndex.records('map')?.[id];
+    const localized=lang==='en'?(edited?.nameEn||place.en):
+     (edited?.name||place.ru);
+    return localized+(geo.district(id)?
+     (lang==='en'?' · Astir':' · Астир'):'');
+   }
   }
   const key=type+':'+String(id);
   if(nameCache.has(key))return nameCache.get(key);
   const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):
    type==='chest'?wikiData.items?.[id]:wikiIndex.records(type)?.[id];
-  const en=type==='npc'&&obj?.virtual?obj.en:
-   type==='map'?(officialEnglish?.maps?.[id]?.n||
+  const en=(type==='map'&&obj?.nameEn)||(type==='npc'&&obj?.nameEn)||
+   (type==='npc'&&obj?.virtual?obj.en:null)||
+   (type==='map'?(officialEnglish?.maps?.[id]?.n||
    officialEnglish?.tradeMaps?.[id]?.n):officialEnglish?.[
    type==='item'||type==='chest'?'items':type==='npc'?'tradeNpcs':
    type==='monster'?'monsters':type==='instance'?'instances':
-   type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n;
+   type==='skill'?'skills':type==='soul'?'souls':'']?.[id]?.n);
   const fallback=lang==='en'?
     {item:'Unnamed item',monster:'Unnamed monster',map:'Location',npc:'NPC',
      chest:'Chest',skill:'Unnamed skill',soul:'Unnamed soul',instance:'Dungeon'}:
@@ -1630,8 +1643,8 @@ function renderWiki(root){
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
   const territoryAlias=type==='map'?
    window.PandoraAstirLocations?.searchAliases(id):null;
-  const verifiedNpcAlias=type==='npc'?
-   wikiIndex.records('npc')?.[id]?.en:null;
+  const npc=type==='npc'?wikiIndex.records('npc')?.[id]:null;
+  const verifiedNpcAlias=npc?[npc.en,npc.nameEn,npc.name].filter(Boolean).join(' '):null;
   const value=[dataName(type,id),translated?.n,verifiedNpcAlias,territoryAlias,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
@@ -2071,9 +2084,10 @@ function renderWiki(root){
     ['item','chest'].includes(type)?'item.'+id:null;
    const heading=h('h3',{text:dataName(type,id),
     ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{}),
-    ...(adminEditing&&lang==='ru'&&!rec.virtual&&
+    ...(adminEditing&&(lang==='ru'||['npc','map'].includes(type))&&
      ['monster','map','npc','instance','soul'].includes(type)?
-      {'data-owner-record':type+':'+id,'data-owner-field':'name'}:{})});
+      {'data-owner-record':type+':'+id,
+       'data-owner-field':lang==='en'?'nameEn':'name'}:{})});
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
    detail.append(heading);
    const namesakes=wikiIndex.sameName(type,id);
@@ -2085,22 +2099,23 @@ function renderWiki(root){
     if(img)detail.prepend(img);
   }
   const described=type==='chest'?wikiData.items?.[id]:rec;
-  const englishDescription=lang==='en'?(officialEnglish?.[
+  const englishDescription=lang==='en'?(rec?.descEn||officialEnglish?.[
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
-  if(described?.desc||(adminEditing&&adminToken&&lang==='ru'&&type!=='instance')){
+  if(described?.desc||(lang==='en'&&described?.descEn)||
+   (adminEditing&&adminToken&&(lang==='ru'||['npc','map'].includes(type))&&type!=='instance')){
    const text=englishDescription||described?.desc||'';
    const missing=!text.trim();
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'itemdesc.'+id:null;
    const description=h('p',{class:'wiki-description'+(missing?' wiki-description-placeholder':''),text:
-    missing?'Двойной клик — добавить описание':
+    missing?wt('Двойной клик — добавить описание','Double-click to add description'):
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
-    ...(adminEditing&&lang==='ru'&&!rec.virtual&&
+    ...(adminEditing&&(lang==='ru'||['npc','map'].includes(type))&&
      ['monster','map','npc','instance','soul'].includes(type)?
       {'data-owner-record':type+':'+id,
-       'data-owner-field':type==='instance'?'blurbRu':'desc',
+       'data-owner-field':lang==='en'?'descEn':type==='instance'?'blurbRu':'desc',
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
    detail.append(description);
   }
@@ -2736,11 +2751,30 @@ function renderWiki(root){
     const locations=rec.maps||[];
     if(rec.virtual){
      const fields=h('dl',{class:'item-fields'});
-     if(rec.grid)fields.append(h('dt',{text:wt('На карте','Map grid')}),
-      h('dd',{text:rec.grid}));
-     if(rec.service)fields.append(h('dt',{text:wt('Назначение','Service')}),
-      h('dd',{text:rec.service}));
+     const makeField=(label,field,value)=>{
+      const dd=h('dd',{text:value||wt('Двойной клик — добавить','Double-click to add'),
+       ...(adminEditing&&adminToken?{'data-owner-record':'npc:'+id,
+        'data-owner-field':field,
+        ...(!value?{'data-owner-empty':'true'}:{})}:{})});
+      fields.append(h('dt',{text:label}),dd);
+     };
+     makeField(wt('Назначение','Service'),lang==='en'?'serviceEn':'service',
+      (lang==='en'?rec.serviceEn||rec.service:rec.service)||'');
+     if(rec.grid||adminEditing&&adminToken)
+      makeField(wt('Координаты','Coordinates'),'grid',rec.grid||'');
      detail.append(fields);
+     if(adminEditing&&adminToken){
+      const geo=window.PandoraAstirLocations;
+      const selector=h('select',{class:'wiki-inline-select wiki-town-npc-location',
+       'aria-label':wt('Расположение NPC','NPC location')});
+      for(const mapId of geo.districtIds){
+       const option=h('option',{value:mapId,text:dataName('map',mapId)});
+       option.selected=locations.includes(mapId);selector.append(option);
+      }
+      selector.onchange=()=>void saveWikiRecordField('npc',id,'maps',[selector.value]);
+      detail.append(h('div',{class:'wiki-owner-town-location'},[
+       h('small',{text:wt('Изменить местонахождение','Change location')}),selector]));
+     }
     }
     if(adminEditing&&adminToken&&!rec.virtual)detail.append(wikiOwnerEntityList({
      label:wt('Где находится','Where to find'),kind:'map',existing:locations,
@@ -2994,6 +3028,45 @@ function renderWiki(root){
        detail.append(h('p',{class:'muted',
         text:wt('Подтверждённых сведений о NPC пока нет.',
          'No verified NPC data available yet.')}));
+      }
+      if(rec.virtual&&adminEditing&&adminToken){
+       const add=h('button',{type:'button',class:'wiki-owner-plus',
+        text:wt('+ Добавить NPC','+ Add NPC')});
+       add.onclick=()=>{
+        const controls=h('div',{class:'wiki-town-npc-create'});
+        const field=(label,max=240)=>{
+         const input=ownerPlainTextField({class:'wiki-inline-input',
+          'aria-label':label,placeholder:label});
+         input.setAttribute('data-max',String(max));
+         const row=h('label',{},[h('small',{text:label}),input]);controls.append(row);return input;
+        };
+        const ru=field('Имя NPC · RU'),en=field('NPC name · EN'),
+         role=field(wt('Назначение','Service'));
+        const error=h('small',{class:'inline-owner-error',role:'status'});
+        const save=h('button',{type:'button',class:'wiki-owner-plus',
+         text:wt('Сохранить NPC','Save NPC')});
+        save.onclick=async()=>{
+         const name=ru.value.trim(),english=en.value.trim(),service=role.value.trim();
+         if(!name||name.length>240||english.length>240||service.length>240){
+          error.textContent='Укажи корректное имя NPC';return;
+         }
+         const city=String(id).slice(6);
+         let index=1,identifier;
+         do{
+          identifier='astir-npc-'+city+'-custom-'+index++;
+         }while(wikiIndex.records('npc')[identifier]||
+          Object.hasOwn(override,'wikiedit.npc.'+identifier));
+         const patch={name,maps:[String(id)]};
+         if(english)patch.nameEn=english;
+         if(service)patch.service=service;
+         save.disabled=true;
+         try{await saveWikiRecordPatch('npc',identifier,patch)}
+         catch(e){error.textContent=String(e.message||e);save.disabled=false}
+        };
+        controls.append(error,save);
+        add.replaceWith(controls);
+       };
+       detail.append(add);
       }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
@@ -3955,10 +4028,13 @@ function showOverrideManager(){
    return Boolean(wikiBaseData?.items?.[target.id]||catalogSource?.items?.[target.id]);
   if(target.type==='monster')return Boolean(wikiBaseData?.monsters?.[target.id]);
   if(target.type==='skill')return Boolean(wikiBaseData?.skills?.[target.id]);
-  if(target.type==='npc')return Boolean(wikiBaseData?.trades?.npcs?.[target.id]);
+  if(target.type==='npc')return Boolean(wikiBaseData?.trades?.npcs?.[target.id]||
+   window.PandoraAstirLocations?.npcRecords?.()[target.id]||
+   wikiData?.townNpcs?.[target.id]);
   if(target.type==='soul')return Boolean(wikiBaseData?.souls?.[target.id]);
   if(target.type==='map')return Boolean(wikiBaseData?.maps?.[target.id]||
-   wikiBaseData?.trades?.mapNames?.[target.id]);
+   wikiBaseData?.trades?.mapNames?.[target.id]||
+   window.PandoraAstirLocations?.district(target.id));
   if(target.type==='instance')return (wikiBaseData?.instances||[]).some(x=>
    String(x.id)===String(target.id));
   return false;
@@ -4136,25 +4212,32 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  if(type==='number')control.select();
  else if(type==='text')window.getSelection()?.selectAllChildren(control);
 }
-async function saveWikiRecordField(type,id,field,value){
+async function saveWikiRecordPatch(type,id,updates){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
  const key='wikiedit.'+type+'.'+id;
  let current={};
  try{current=JSON.parse(override[key]||'{}')}catch{}
- const patch={...current};
- if(field.startsWith('resists.')){
-  const name=field.slice(8);
-  patch.resists={...(wikiData?.monsters?.[id]?.resists||{}),...current.resists,[name]:value};
- }else patch[field]=value;
- if(!window.PandoraWikiOwnerData.validPatch(type,patch))
+ const patch={...current,...updates};
+ if(!/^[0-9]+$/.test(String(id))){
+  if(!window.PandoraWikiOwnerData.validTownPatch(type,id,patch))
+   throw Error('Некорректное значение специального справочника');
+ }else if(!window.PandoraWikiOwnerData.validPatch(type,patch))
   throw Error('Некорректное значение поля');
  const before=activeOverride(key),after=JSON.stringify(patch);
  if(before===after)return;
  editIsSaving=true;
  try{
   await apiRequest('/api/admin/override',{key,value:after});
-  ownerEdits.push({key,before,after});override[key]=after;refreshOwnerCatalog();
+  ownerEdits.push({key,before,after});override[key]=after;
+  await refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
+}
+async function saveWikiRecordField(type,id,field,value){
+ const patch=field.startsWith('resists.')?
+  {resists:{...(wikiData?.monsters?.[id]?.resists||{}),
+   ...JSON.parse(override['wikiedit.'+type+'.'+id]||'{}').resists,
+   [field.slice(8)]:value}}:{[field]:value};
+ return saveWikiRecordPatch(type,id,patch);
 }
 async function saveWikiSpawns(monsterId,type,placeId,include){
  if(type==='map'&&!Object.hasOwn(wikiData?.maps||{},String(placeId)))
@@ -4203,15 +4286,14 @@ function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000
  return node;
 }
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
- if(!adminToken||!adminEditing||lang!=='ru')return node;
+ if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map'].includes(type)))return node;
  node.classList.add('wiki-edit-value');
- node.title='Двойной клик — изменить';
- node.ondblclick=e=>{
-  e.preventDefault();e.stopPropagation();
-  editWikiValue(node,node.dataset.ownerEmpty==='true'?'':String(node.textContent||''),{
-   type:multiline?'textarea':'text',
-   onCommit:next=>saveWikiRecordField(type,id,field,next)});
- };
+ // The delegated dblclick is the user's actual first gesture. Starting an
+ // ondblclick listener here would silently require a SECOND double-click.
+ editWikiValue(node,node.dataset.ownerEmpty==='true'?'':String(node.textContent||''),{
+  type:multiline?'textarea':'text',
+  onCommit:next=>type==='item'||type==='chest'?
+   saveWikiItemField(id,field,next):saveWikiRecordField(type,id,field,next)});
  return node;
 }
 async function saveWikiItemField(id,field,value){
@@ -4330,7 +4412,7 @@ async function showCatalogImport(){
  return workbench.open({
   request:(path,body)=>apiRequest(path,body,adminToken),
   apiBase:API,modal,h,
-  afterPublish:async()=>{wikiIndex=null;wikiData=null;await loadCatalog()}
+  afterPublish:async()=>{wikiBaseData=null;wikiIndex=null;wikiData=null;await loadCatalog()}
  });
 }
 
@@ -4521,7 +4603,8 @@ document.addEventListener('dblclick',event=>{
  if(owner&&owner.dataset.ownerField){
   const [type,id]=owner.dataset.ownerRecord.split(':');
   event.preventDefault();event.stopImmediatePropagation();
-  wikiOwnerText(owner,type,id,owner.dataset.ownerField,{multiline:owner.dataset.ownerField!=='name'});
+  wikiOwnerText(owner,type,id,owner.dataset.ownerField,
+   {multiline:!['name','nameEn'].includes(owner.dataset.ownerField)});
   return;
  }
  const editable=event.target.closest('[data-edit-key]');
@@ -4595,7 +4678,7 @@ function restoreWikiHash(){
  const navigationType=performance.getEntriesByType?.('navigation')?.[0]?.type;
  if(navigationType==='reload'&&
     (bootView.tab&&bootView.tab!=='wiki'||bootView.tab==='wiki'&&bootView.open===false))return;
- const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-kingdom-claris)(?:\/([0-9]{1,15}))?$/);
+ const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})(?:\/([0-9]{1,15}))?$/);
  if(!match)return;
  wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
  activeTab='wiki';
@@ -4605,7 +4688,7 @@ function restoreWikiHash(){
 window.addEventListener('hashchange',()=>{
  if(location.hash.startsWith('#b/')){restoreSharedHash();return}
  if(location.hash.startsWith('#wiki/')){
-  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-kingdom-claris)(?:\/([0-9]{1,15}))?$/);
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})(?:\/([0-9]{1,15}))?$/);
   if(match){
    const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
     typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
@@ -4737,7 +4820,7 @@ $('skillBranches').addEventListener('scroll',saveView,{passive:true});
 $('detailContent').addEventListener('scroll',saveView,{passive:true});
 window.addEventListener('popstate',()=>{
  if(location.hash.startsWith('#wiki/')){
-  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-kingdom-claris)(?:\/([0-9]{1,15}))?$/);
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})(?:\/([0-9]{1,15}))?$/);
   if(!match)return;
   const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
    typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;

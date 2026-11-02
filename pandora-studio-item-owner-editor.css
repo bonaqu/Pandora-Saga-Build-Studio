@@ -291,3 +291,11 @@
 .wiki-page .wiki-map-npc small{font-size:11px;color:var(--text-muted,#bba992);line-height:1.4}
 .wiki-page .wiki-chest-master-row{display:flex;flex-wrap:wrap;gap:7px 12px;align-items:center;margin-top:4px}
 .wiki-page .wiki-chest-master-row .wiki-link:last-child{font-size:11px;opacity:.85}
+
+/* Administrator inline creation of manually sourced, non-server Astir NPCs. */
+.wiki-page .wiki-town-npc-create{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:8px;align-items:end;margin:10px 0;padding:12px;border:1px solid rgba(181,143,95,.35);border-radius:7px;background:rgba(29,23,19,.5)}
+.wiki-page .wiki-town-npc-create label{display:grid;gap:5px;min-width:0}
+.wiki-page .wiki-town-npc-create .wiki-inline-input{width:100%;min-height:30px}
+.wiki-page .wiki-town-npc-create .inline-owner-error{grid-column:1/-1}
+.wiki-page .wiki-owner-town-location{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:7px 0 13px}
+.wiki-page .wiki-owner-town-location select{min-width:180px;max-width:100%;min-height:30px}

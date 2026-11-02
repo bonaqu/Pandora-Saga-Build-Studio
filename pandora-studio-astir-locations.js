@@ -34,10 +34,15 @@ const searchAliases=id=>{
 };
 const mapsFrom=(tradeMaps={},worldMaps={})=>{
  const result={...(tradeMaps||{}),...(worldMaps||{})};
- for(const item of countries)result[item.id]={...(result[item.id]||{}),
-  name:item.ru,placeType:'nation'};
- for(const item of districts)result[item.id]={...(result[item.id]||{}),
-  name:item.ru,placeType:'astir-district',virtual:item.id!=='1001004'};
+ for(const item of countries){
+  const row=result[item.id]||{};
+  result[item.id]={...row,name:row.ownerLabel?row.name:item.ru,placeType:'nation'};
+ }
+ for(const item of districts){
+  const row=result[item.id]||{};
+  result[item.id]={...row,name:row.ownerLabel?row.name:item.ru,
+   placeType:'astir-district',virtual:item.id!=='1001004'};
+ }
  return result;
 };
 // Only the game's screenshots supplied by the player confirm this town NPC.

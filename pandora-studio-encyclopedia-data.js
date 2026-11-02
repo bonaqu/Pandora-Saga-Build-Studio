@@ -25,9 +25,10 @@ function build(data){
  for(const recipe of data.trades?.trades||[])
   for(const id of new Set((recipe.mats||[]).filter(x=>x.i!=null).map(x=>String(x.i))))
    append(materialTrades,id,recipe);
- // Historical town NPCs are separate, read-only encyclopedia records. They
- // never enter the server's trade NPC collection or D1 publication.
- const astirNpcs=root.PandoraAstirLocations?.npcRecords?.()||{};
+ // City NPCs have separate identities and optional administrator D1 overlays.
+ // Never change server trade NPC keys or publish synthetic IDs to OS datasets.
+ const astirNpcs={...(root.PandoraAstirLocations?.npcRecords?.()||{}),
+  ...(data.townNpcs||{})};
  for(const [id,npc] of Object.entries({...data.trades?.npcs,...astirNpcs}))
   for(const mapId of new Set((npc.maps||[]).map(String)))
    append(npcLocations,mapId,[id,npc]);
@@ -82,6 +83,8 @@ function build(data){
  }
  const maps=root.PandoraAstirLocations?.mapsFrom?.(data.trades?.mapNames,data.maps)||
   {...(data.trades?.mapNames||{}),...(data.maps||{})};
+ for(const [id,patch] of Object.entries(data.townMaps||{}))
+  maps[id]={...(maps[id]||{}),...patch};
  // The actual item level and class-family name identify leveling reward boxes.
  // Source chest rolls exist only for the earlier boxes; later ones remain
  // browsable without synthesizing contents or changing the OS snapshot.
