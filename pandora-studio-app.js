@@ -3840,67 +3840,6 @@ function inlineWikiText(el){
  }});
 }
 
-function openWikiItemEditor(id,item){
- if(!adminToken||!adminEditing||!catalogSource?.items?.[id])return;
- const key='itemedit.'+id,base=catalogSource.items[id];
- const save=async patch=>{
-  const previous=activeOverride(key);
-  const earlier=window.PandoraStudioItemOwnerEditor.ownPatch(override,id);
-  if(earlier.kind&&!Object.hasOwn(patch,'kind'))patch.kind=earlier.kind;
-  const value=JSON.stringify(patch);
-  await apiRequest('/api/admin/override',{key,value});
-  ownerEdits.push({key,before:previous,after:value});
-  override[key]=value;refreshOwnerCatalog();
- };
- const reset=async()=>{
-  const previous=activeOverride(key);
-  if(previous===null)return;
-  await apiRequest('/api/admin/reset',{key});
-  ownerEdits.push({key,before:previous,after:null});
-  delete override[key];refreshOwnerCatalog();
- };
- window.PandoraStudioItemOwnerEditor.open({
-  id,item,base,overrides:override,h,modal,jobKeys,
-  className:key=>catalog.classes?.[key]?.name||key,
-  onSave:save,onReset:reset
- });
-}
-async function showOwnerGitHubExport(){
- if(!adminToken)return;
- try{
-  const info=await apiRequest('/api/admin/catalog/owner-review');
-  if(!info.configured){showStudioToast('GitHub-токен пока недоступен Worker.','warning');return}
-  const panel=h('div',{class:'owner-github-review'});
-  panel.append(h('p',{text:'Подготовить PR ручных изменений энциклопедии: '+info.count+' записей?'}),
-   h('p',{class:'muted',text:'Это экспорт в публичный GitHub. Проверь названия, описания и примечания перед объединением. Пароли и аккаунты не экспортируются. Исходный игровой каталог не изменяется.'}));
-  const feedback=h('p',{class:'inline-owner-error',role:'status'});
-  const go=h('button',{type:'button',class:'button-action primary',text:'Создать PR в GitHub',disabled:!info.count});
-  go.onclick=async()=>{
-   go.disabled=true;
-   try{
-    const result=await apiRequest('/api/admin/catalog/owner-pr',{
-     expectedFingerprint:info.fingerprint});
-    if(result.url&&/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url)){
-     feedback.replaceChildren(h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
-      text:'Открыть PR для проверки'}));
-    }else feedback.textContent=result.unchanged?
-     'Изменений относительно GitHub нет.':'PR создан, но адрес не указан.';
-   }catch(error){feedback.textContent=error.message;go.disabled=false}
-  };
-  panel.append(go,feedback);modal('Синхронизация энциклопедии с GitHub',panel);
- }catch(error){showStudioToast('Не удалось подготовить экспорт: '+error.message,'warning')}
-}
-async function showCatalogImport(){
- if(!adminToken)return;
- const workbench=window.PandoraOSCatalogWorkbench;
- if(!workbench)throw Error('Модуль сверки актуального игрового сервера не подключён');
- return workbench.open({
-  request:(path,body)=>apiRequest(path,body,adminToken),
-  apiBase:API,modal,h,
-  afterPublish:async()=>{wikiIndex=null;wikiData=null;await loadCatalog()}
- });
-}
-
 function syncLocaleControls(){
  for(const button of document.querySelectorAll('#locale [data-locale]')){
   const active=button.dataset.locale===lang;
