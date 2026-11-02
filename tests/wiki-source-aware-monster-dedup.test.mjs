@@ -86,3 +86,28 @@ test('real game encyclopedia hides unreferenced identical monster records withou
  assert.equal(Object.keys(input.monsters).length,702,
   'Deduplication must never delete original OS game records');
 });
+
+test('item aliases retain separate zone chances and NPC recipes and every material use',()=>{
+ const input=fixture();
+ const same={name:'Зелье мастерства',kind:'POTION',level:12};
+ input.items={100:{...same,id:100},101:{...same,id:101},
+  900:{id:900,name:'Награда'}};
+ input.trades={npcs:{7:{name:'Торговец',maps:[]}},mapNames:{},trades:[
+  {id:77,i:100,npc:[7],mats:[{i:101,n:1}]},
+  {id:78,i:101,npc:[7],mats:[{i:100,n:2}]}
+ ]};
+ input.tables.zoneDrops=[{map:200,rows:[
+  {mob:10,base:5,perMember:1,items:[{i:100}]},
+  {mob:10,base:30,perMember:2,items:[{i:101}]}
+ ]}];
+ const index=build(input);
+ assert.equal(index.search('item','Зелье мастерства').length,1);
+ assert.equal(index.canonical('item','101'),'100');
+ const sources=index.sources('100');
+ assert.deepEqual(plain(sources.filter(x=>x.type==='zone')
+  .map(x=>x.groupChance)),[5,30],'Both zone chances must remain visible');
+ assert.deepEqual(plain(sources.filter(x=>x.type==='npc')
+  .map(x=>x.recipe.id)),[77,78],'Separate NPC trades must remain visible');
+ assert.deepEqual(plain(index.materialUses('100').map(x=>x.id)),[77,78]);
+ assert.deepEqual(plain(index.materialUses('101').map(x=>x.id)),[77,78]);
+});
