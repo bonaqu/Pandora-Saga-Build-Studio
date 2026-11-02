@@ -25,7 +25,7 @@ test('Astir is the one city with four named districts and Cultier in Kingdom dis
 test('Soul price and slot remain content-sized without duplicate styles',()=>{
  const css=read('pandora-studio-item-owner-editor.css');
  const count=(css.match(/\.wiki-page \.wiki-soul-properties\{/g)||[]).length;
- assert.equal(count,1);
+ assert.equal(count,2); // Desktop rule plus intended narrow-screen override.
  assert.match(css,/display:inline-grid;grid-template-columns:max-content max-content/);
  assert.match(css,/width:fit-content;max-width:100%/);
 });
