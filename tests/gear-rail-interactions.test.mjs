@@ -51,11 +51,14 @@ function fixture(issue=()=>[]){
  const render=Function('window','state','$','slots','slotKeys','h','slotVisual',
   'equippedRecord','equipmentIssue','itemIcon','itemName','selectedSlot','stageSlotPickerOpen',
   'selectedSocket','gearMode','stageSlotQuery','stageSoulQuery','stageSlotShown',
-  'stageSlotView','renderStagePicker',source+'\nreturn renderSlotRails;')(
+  'stageSlotView','renderStagePicker','catalog',source+'\nreturn renderSlotRails;')(
   window,state,$,slots,slotKeys,h,i=>h('span',{class:'slot-glyph',text:slots[i][1]}),
   i=>records[i]||null,issue,()=>null,
   r=>window.PandoraItemPresentation.displayName(r),0,false,0,'equipment','','',48,
-  'choose',()=>{}
+  'choose',()=>{},{souls:{
+   '41':{id:41,name:'Душа меткости',desc:'Точность +2'},
+   '42':{id:42,name:'Душа стойкости',desc:'Защита +1'}
+  }}
  );
  render();
  return{left,right,attached,get dismissed(){return dismiss}};
