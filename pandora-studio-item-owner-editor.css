@@ -58,3 +58,13 @@
  border-radius:6px;background:#38271a;color:#f0c78b;cursor:pointer;font:inherit}
 .wiki-owner-remove:hover,.wiki-owner-plus:hover{border-color:#f0c78b;background:#5c3b21}
 .wiki-owner-remove:focus-visible,.wiki-owner-plus:focus-visible{outline:2px solid var(--gold)}
+
+.wiki-add-source{display:inline-flex;width:auto;margin:7px 0 13px;padding:7px 11px;height:auto;
+ font-size:.86rem;gap:6px}
+.wiki-owner-source-picker{display:grid;gap:10px;max-width:430px;padding:12px;
+ border-radius:10px;background:rgba(23,16,12,.94);border:1px solid var(--line);margin:8px 0 14px}
+.wiki-owner-source-field{display:flex;flex-direction:column;gap:5px;color:var(--cream);
+ font-size:.85rem;min-width:0}
+.wiki-owner-source-field .wiki-inline-select,.wiki-owner-source-field .wiki-inline-input{
+ width:100%;max-width:none}
+.wiki-source-token .wiki-owner-remove{margin-left:auto;flex:none}
