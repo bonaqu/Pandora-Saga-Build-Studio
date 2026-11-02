@@ -1905,6 +1905,8 @@ function renderWiki(root){
       if(row.percent!=null)entry.append(h('small',{class:'wiki-loot-chance',text:row.percent+'%'}));
       if(row.kind==='conditional')entry.append(h('small',{class:'wiki-loot-conditional',
        text:wt('Особый','Conditional')}));
+      if(row.slotAdd>0)entry.append(h('small',{class:'wiki-loot-sockets',
+       text:wt('Гнёзда +','Sockets +')+row.slotAdd}));
       flow.append(entry);
      }
      detail.append(flow);
