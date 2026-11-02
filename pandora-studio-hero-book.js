@@ -275,8 +275,8 @@ function summaryRows(calc){
    row('Точн. спереди','Front accuracy',null),
    row('Шанс крита','Critical chance',c.critical?.known,'%'),
    row('Крит. урон','Critical damage',c.criticalDamage,'%'),
-   row('Дальн. АТК ближ. боя','Melee range',null),
-   row('Дальн. АТК дальн. боя','Ranged range',null),
+   row('Дальн. АТК ближ. боя','Melee range (base)',calc?.attackRange?.baseMelee),
+   row('Дальн. АТК дальн. боя','Ranged range (base)',calc?.attackRange?.baseRanged),
    row('Скор. атаки','Attack speed',c.attackSpeed?.known,'%'),
    row('Скор. каста','Casting speed',c.castingSpeed?.known,'%'),
    row('Сокрщ. времени каста','Cast time',null,'%'),
@@ -337,7 +337,12 @@ function summaryPage(body,calc,onPage){
     make('strong',{text:value})
    ]));
   }
-  section.append(heading,grid);body.append(section);
+  section.append(heading,grid);
+  if(group.page==='attack'&&calc?.attackRange?.baseOnly)
+   section.append(make('small',{class:'stage-attribute-note',text:english?
+    'Weapon range shows the OS base value in raw units, without unverified equipment and skill range bonuses.':
+    'Дальность оружия показана как базовое значение OS в исходных единицах, без неподтверждённых бонусов экипировки и навыков.'}));
+  body.append(section);
  }
 }
 function buffsPage(body,options){
@@ -920,6 +925,17 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    make('p',{text:'Раскрытие характеристик верхом: '+riding.known+'%'}),
    make('p',{text:'Профессия '+riding.jobBase+'% · мастерство +'+riding.mastery+
     '% · титул +'+riding.honor+'%'}));
+  body.prepend(card);
+ }
+ if(page==='attack'&&modifiers?.attackRange?.baseOnly){
+  const range=modifiers.attackRange,english=document.documentElement?.lang==='en';
+  const base=range.baseRanged??range.baseMelee;
+  const card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:english?'Base weapon range':'Базовая дальность оружия'}),
+   make('p',{text:(english?'Raw game units: ':'Исходные игровые единицы: ')+base}),
+   make('p',{class:'stage-attribute-note',text:english?
+    'The game publishes this base distance. Equipment bonuses and mounted/skill modifiers have not been added.':
+    'Это базовая дистанция из игрового каталога. Бонусы вещей, верховой езды и навыков не суммировались.'}));
   body.prepend(card);
  }
  if(page==='attack'&&modifiers?.attackRange?.entries?.length){
