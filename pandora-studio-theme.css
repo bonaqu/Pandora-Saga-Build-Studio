@@ -54,7 +54,7 @@
 @media(max-width:570px){.owner-dock{left:8px;right:8px;bottom:8px;justify-content:center}.owner-dock-title{width:100%;text-align:center}.owner-manager-row{align-items:flex-start;flex-direction:column}}
 
 
-/* Stat allocation sourced from Pandora Saga OS class.statCaps (no fabricated combat math). */
+/* Stat allocation sourced from current game server class.statCaps (no fabricated combat math). */
 .stat-editor-overview{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;background:linear-gradient(110deg,#1c1915,#332319);border:1px solid #80613d;margin-bottom:12px;padding:16px}
 .stat-editor-overview h3{font-size:25px}.stat-total{text-align:center;min-width:130px;padding:8px 16px;border:1px solid #9d784a;background:#110f0e}
 .stat-total strong{display:block;font:700 30px Georgia;color:#edc88c}.stat-total span{color:#ac987e;font-size:10px}
