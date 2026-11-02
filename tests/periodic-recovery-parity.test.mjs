@@ -64,7 +64,7 @@ test('preview is linked to character model and player-only book, not applied as 
  assert.match(src,/level,spi:stats.spi,benevolence:combatContext.benevolenceMastery/);
  assert.match(src,/healingSpells,periodicRecovery,consumableRecovery/);
  assert.match(src,/const statusCures=statusCurePreview/);
- assert.match(ui,/if\(chosen==='recovery'&&modifiers\?\.periodicRecovery\?\.rows\?\.length\)/);
+ assert.match(ui,/if\(chosen==='effects'&&modifiers\?\.periodicRecovery\?\.rows\?\.length\)/);
  assert.match(ui,/Ориентировочное действие умения/);
 });
 

@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.296.0 — 2026.11.02.296 · Priest defaults, equipped detail and Remaked-style Hero Book
+
+- Fresh heroes now start with an enabled external priest and editable SD 134, Blessing 90, Hymns 30. Saved and shared build values take precedence, including explicit disabled settings; older snapshots inherit missing defaults.
+- Current OS items, skills and English names did not confirm the historical Proelium effect. Hide its controls and exclude it from active stat calculations while retaining previous saved keys for compatibility.
+- Hovering an equipped item now shows its actual socketed Souls and their descriptions, per-item base armor plus refinement, refinement rank and clearer race/gender restrictions, rather than only the generic item catalog record.
+- Hero Book has six Remaked-style chapters: Results, Attack, Defense, Buffs, Skill effects, Potion effects. Remove redundant equipped-item cards and the all-skills inspector; move skill recovery previews and selected active-skill summaries into Skill effects, and potion effectiveness into Potion effects.
+- Split tooltip styling into a dedicated stylesheet to retain the main CSS size budget, and add or adjust source and browser regressions without introducing redundant test runners.
+- Automated checks do not prove every modern Pandora OS server calculation; level planning remains 1 through 55.
+
+
 ## 0.295.0 — 2026.11.02.295 · Show only effectively available priest buffs
 
 - The Hero Book active-buff counter excludes selected but unavailable priest skills when Blessing rank is below their source requirement (8 for Velox, 12 for Lapis Medio).
