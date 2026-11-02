@@ -73,10 +73,10 @@ export async function runAdminEntrySmoke(browser,base){
   assert.deepEqual(calls.filter(p=>p==='/api/admin/login'),['/api/admin/login']);
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
   // All catalog requests are mocked; no production Worker or D1 is mutated.
-  await page.locator('#ownerDock').getByRole('button',{name:'Каталог D1'}).click();
-  const dialog=page.getByRole('dialog',{name:/Каталог Pandora Saga/});
+  await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
+  const dialog=page.getByRole('dialog',{name:/Игровой каталог/});
   await dialog.waitFor({state:'visible'});
-  assert.equal(await dialog.getByRole('button',{name:'Опубликовать выбранное в D1'}).isDisabled(),true);
+  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Сравнить с архивом проекта'}).click();
   await page.waitForFunction(()=>
    document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
@@ -87,11 +87,11 @@ export async function runAdminEntrySmoke(browser,base){
   const decision=dialog.locator('.os-sync-record input[type=checkbox]');
   await decision.waitFor({state:'visible'});
   assert.equal(await decision.isChecked(),false,'Changes must be declined by default');
-  assert.equal(await dialog.getByRole('button',{name:'Опубликовать выбранное в D1'}).isDisabled(),true);
+  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
   await decision.check();
-  assert.equal(await dialog.getByRole('button',{name:'Опубликовать выбранное в D1'}).isEnabled(),true);
+  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isEnabled(),true);
   await dialog.getByRole('button',{name:'Отклонить все'}).click();
-  assert.equal(await dialog.getByRole('button',{name:'Опубликовать выбранное в D1'}).isDisabled(),true);
+  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Принять все'}).click();
   const downloadPromise=page.waitForEvent('download');
   await dialog.getByRole('button',{name:'Скачать выбранное для GitHub'}).click();

@@ -20,7 +20,7 @@
     const declineAll = h('button', {type:'button',class:'button-action',text:'Отклонить все',disabled:true});
     const exportButton = h('button', {type:'button',class:'button-action',text:'Скачать выбранное для GitHub',disabled:true});
     const publish = h('button', {type:'button',class:'button-action primary',
-      text:'Опубликовать выбранное в D1',disabled:true});
+      text:'Применить выбранные изменения',disabled:true});
     const search = h('input', {type:'search',class:'os-sync-search',
       placeholder:'Найти предмет, навык, ID или раздел…','aria-label':'Поиск изменений'});
     const progress = h('progress', {class:'catalog-import-progress',max:'100',value:'0'});
@@ -247,7 +247,7 @@
       const added=changes.filter(x=>checked(x)&&x.kind==='added').length;
       const changed=changes.filter(x=>checked(x)&&x.kind==='changed').length;
       const removed=changes.filter(x=>checked(x)&&x.kind==='removed').length;
-      if (!confirm('Опубликовать только выбранные изменения в Cloudflare D1?\n'+
+      if (!confirm('Применить только выбранные изменения игрового каталога?\n'+
         'Новых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+
         '.\nПредыдущий опубликованный снимок останется доступен в D1.'))return;
       setBusy(true);
