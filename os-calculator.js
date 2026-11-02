@@ -1812,10 +1812,16 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   ridingMastery:combatContext.ridingMastery??0,honorTitle:extra.honor.id});
  const priest=combatContext.externalPriest;
  const priestActive=priest?.enabled===true;
- const legacyBuffs=legacyBuffPreview({spi:priestActive?priest.spi:stats.spi,
-  blessing:priestActive?priest.blessing:combatContext.legacyBuffMasteries?.blessing??0,
-  hymn:priestActive?priest.hymn:combatContext.legacyBuffMasteries?.hymn??0,
-  alchemy:combatContext.legacyBuffMasteries?.alchemy??0});
+ // External priest stats can come from an older or corrupted local build.
+ // Only valid nonnegative integers may supply combat buffs.
+ const priestValid=priestActive&&[priest.spi,priest.blessing,priest.hymn]
+  .every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500);
+ const legacyBuffs=legacyBuffPreview({
+  spi:priestValid?priest.spi:stats.spi,
+  blessing:priestValid?priest.blessing:combatContext.legacyBuffMasteries?.blessing??0,
+  hymn:priestValid?priest.hymn:combatContext.legacyBuffMasteries?.hymn??0,
+  alchemy:combatContext.legacyBuffMasteries?.alchemy??0
+ })||legacyBuffPreview({spi:0});
  const songSkills=songSkillPreview({skillCatalog:combatContext.skillCatalog,
   jobKey:combatContext.jobKey,level,
   branchMasteries:combatContext.branchMasteries,
@@ -1845,9 +1851,13 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   jobKey:combatContext.jobKey,skillCatalog:combatContext.skillCatalog,
   benevolenceCap:classData.branchCaps?.benevolence??null
  });
+ // OS skill 320007001 requires Blessing 8; 320008001 requires Blessing 12.
+ // A previously selected checkbox must not bypass these requirements.
  const priestEffects=priestActive?{
-  gratia:attributeBuffs?.priestGratia===true?legacyBuffs.gratia.value:0,
-  lapisMedio:attributeBuffs?.priestLapisMedio===true?legacyBuffs.lapisMedio.value:0
+  gratia:priestValid&&priest.blessing>=8&&attributeBuffs?.priestGratia===true?
+   legacyBuffs.gratia.value:0,
+  lapisMedio:priestValid&&priest.blessing>=12&&attributeBuffs?.priestLapisMedio===true?
+   legacyBuffs.lapisMedio.value:0
  }:{};
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records:combinedRecords,itemForth,
   priestEffects,
