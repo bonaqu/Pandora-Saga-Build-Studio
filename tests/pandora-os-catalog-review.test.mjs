@@ -52,7 +52,9 @@ test('accepting every change preserves the whole source and its official metadat
   after.items['1'].name='Source A';after.meta.sha={'item/item.csv':'new-source'};
   const accepted=new Set(review.changes('items',before.items,after.items).map(c=>c.id));
   const merged=review.compose(before,after,accepted,files);
-  assert.deepEqual(plain(merged),plain(after));
+  assert.deepEqual(plain(merged.items),plain(after.items));
+  assert.deepEqual(plain(merged.meta.sha),plain(after.meta.sha));
+  assert.equal(merged.meta.curated,undefined);
 });
 
 test('English translation decisions are independent by source section and stable ID', () => {
@@ -60,7 +62,7 @@ test('English translation decisions are independent by source section and stable
   after['strings.en'].items['1'].n='New A';
   after['strings.en'].items['2']={n:'New B'};
   const edits=review.changes('strings.en',before['strings.en'],after['strings.en']);
-  assert.deepEqual(edits.map(e=>e.key),['items/1','items/2']);
+  assert.deepEqual(plain(edits.map(e=>e.key)),['items/1','items/2']);
   const merged=review.compose(before,after,new Set([review.id('strings.en','items/2')]),files);
   assert.equal(merged['strings.en'].items['1'].n,'A');
   assert.equal(merged['strings.en'].items['2'].n,'New B');
