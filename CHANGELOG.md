@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.299.0 — 2026.11.02.299 · Faithful Remaked buffs, elemental refinement and OS resistance audit
+
+- Restore **Ободрение / Battle Prayer** (OS skill 320012001) to Hero Book priest enhancements. Selectable and tracked as an effect, with the preserved Remaked blessing-based +STR/+AGI/+INT computation, source identity and mastery 61 validation. Existing priest settings (SD 134 / Blessing 90 / Hymns 30) remain editable.
+- Equipped gear names now include the selected elemental word and refinement grade like the supplied game screenshots. Physical/magical gem type is selectable only for weapons; armor and shield choose only an element. Old saved armor type values normalize without changing their elemental effect.
+- Item hover shows the client-style base+grade notation (e.g. 31+4 for +4 armor); the separate total-defense calculator retains Remaked floor(grade*1.5) contribution until verified against live OS behavior.
+- Audit structured elemental and status resistances across the entire checked-in OS item and Soul catalogs at **all 11 refinement grades** and official Forth snapshots. Only effectively socketed and equipped effects participate.
+- Add six source-backed, explicitly opt-in resistance skill effects with RU/EN labels (including incoming enemy resistance debuffs and negative values), plus a selected-skill breakdown. Spell effects are never treated as permanent without activation.
+- Existing Node.js and Chromium workflows reused. Some conditional skills, server-side damage interactions, and modern OS effects still require verification; no D1 mutation.
+
+
 ## 0.298.0 — 2026.11.02.298 · Style skill buffs and remove abandoned UI code
 
 - Skill-effect rows now have compact, aligned game-styled icon, name and numeric-effect columns matching the Hero Book's dark/gold visual language.
