@@ -68,3 +68,16 @@
 .wiki-owner-source-field .wiki-inline-select,.wiki-owner-source-field .wiki-inline-input{
  width:100%;max-width:none}
 .wiki-source-token .wiki-owner-remove{margin-left:auto;flex:none}
+
+.wiki-owner-mat{display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap;
+ margin:3px 5px 3px 0}
+.wiki-trade-sellers{display:flex;gap:7px;align-items:center;flex-wrap:wrap;
+ margin-top:12px;border-top:1px solid var(--line);padding-top:9px}
+.wiki-trade-sellers>small{width:100%;color:var(--gold)}
+.wiki-trade-currency{display:inline-flex;gap:3px;align-items:center;margin-right:11px}
+.wiki-trade-currency .wiki-inline-input{width:115px}
+.wiki-trade-delete{border:1px solid rgba(230,143,121,.38);
+ border-radius:7px;background:#33201e;color:#efb0a8;padding:5px 8px;
+ cursor:pointer;font:inherit;font-size:.78rem;margin-left:auto}
+.wiki-trade-delete:hover{border-color:#eea298}
+.wiki-owner-mat .wiki-edit-value{padding:1px 4px}
