@@ -117,7 +117,7 @@ test('single visual item patch may edit name and description without touching so
 test('visible owner entry points and read-only-until-focus search guards are present',()=>{
  const source=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
  assert.match(source,/class:'owner-race-passive-edit'/);
- assert.match(source,/class:'wiki-owner-pencil'/);
+ assert.match(source,/class:'button-action wiki-owner-pencil'/);
  assert.match(source,/wiki-owner-desc-edit/);
  assert.match(source,/function guardEncyclopediaSearch/);
  assert.match(source,/input\.readOnly=true/);
