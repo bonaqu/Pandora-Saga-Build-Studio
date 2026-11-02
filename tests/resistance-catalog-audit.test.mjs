@@ -8,6 +8,7 @@ const datasets=[
  ['item',JSON.parse(read('data/os/items.json'))],
  ['soul',JSON.parse(read('data/os/souls.json'))]
 ];
+const itemForth=JSON.parse(read('data/os/itemForth.json'));
 const direct=Object.freeze({
  EP_FIRE_RESISTANCE_CONST:'fire',EP_COLD_RESISTANCE_CONST:'ice',
  EP_LIGHTNING_RESISTANCE_CONST:'lightning',EP_POISON_RESISTANCE_CONST:'poison',
@@ -20,13 +21,15 @@ const direct=Object.freeze({
  EP_IMMUNE_CURSE:'curse',EP_IMMUNE_EVIL:'evil',
  EP_IMMUNE_DISEASE:'disease',EP_IMMUNE_RAVING:'madness'
 });
-test('every static OS item/Soul elemental and status resistance effect obeys signed value and improvement gates',()=>{
- let inspected=0,recordCount=0;
+test('entire OS item/Soul/Forth resistance catalog covers every improvement rank 0–10',()=>{
+ let inspected=0,recordCount=0,forthChecks=0;
  for(const [kind,objects] of datasets)for(const [id,item] of Object.entries(objects)){
   recordCount++;
-  const relevant=(item.effects||[]).filter(e=>Object.hasOwn(direct,e.func));
-  if(!relevant.length)continue;
-  for(const grade of [0,3,7,8,10]){
+  for(let grade=0;grade<=10;grade++){
+   const upgraded=kind==='item'?itemForth[id]?.[String(grade)]:null;
+   const included=[...(item.effects||[]),...(Array.isArray(upgraded)?upgraded:[])];
+   const relevant=included.filter(e=>Object.hasOwn(direct,e.func));
+   if(Array.isArray(upgraded))forthChecks+=upgraded.length;
    const expected={};
    for(const effect of relevant){
     if((Number.isFinite(effect.min)&&grade<effect.min)||
@@ -34,7 +37,7 @@ test('every static OS item/Soul elemental and status resistance effect obeys sig
     expected[direct[effect.func]]=(expected[direct[effect.func]]||0)+effect.a;
     inspected++;
    }
-   const actual=calc.gatherEffects([[kind+':'+id,item,grade]]).bonuses;
+   const actual=calc.gatherEffects([[kind+':'+id,item,grade]],itemForth).bonuses;
    for(const [key,value] of Object.entries(expected))
     assert.equal(actual[key],value,kind+' '+id+' +'+grade+' '+key);
    for(const key of new Set(Object.values(direct)))
@@ -43,7 +46,8 @@ test('every static OS item/Soul elemental and status resistance effect obeys sig
   }
  }
  assert.ok(recordCount>1200,'all actual OS equipment and Soul entries were inspected');
- assert.ok(inspected>500,'all static resistance effect occurrences were exercised');
+ assert.ok(inspected>1000,'all static resistance effect occurrences were exercised');
+ assert.ok(forthChecks>100,'official OS grade-level Forth rows were included');
 });
 test('equipment, Souls and a physical armor gemstone accumulate signed resistance exactly once',()=>{
  const items=datasets[0][1],souls=datasets[1][1];
