@@ -229,6 +229,64 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForFunction(n=>document.querySelectorAll('.wiki-trade-card').length===n+1,
    tradeCount,{timeout:20000});
 
+  // Mocked D1 bridge: owner edits the real city NPC profile, including
+  // RU/EN names and its map relation; no production D1 writes.
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
+  const npcFilter=page.locator('.wiki-controls input[type="search"]');
+  await npcFilter.click();
+  await npcFilter.fill('Кларис');
+  const npcListing=page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"] .wiki-link');
+  try{await npcListing.waitFor({state:'visible',timeout:5000})}
+  catch{
+   const state=await page.evaluate(()=>({
+    hash:location.hash,
+    search:document.querySelector('.wiki-controls input[type="search"]')?.value,
+    chapter:document.querySelector('.wiki-categories .chosen')?.textContent,
+    rows:document.querySelectorAll('.wiki-list [data-wiki-record]').length,
+    owner:Boolean(document.querySelector('#ownerDock')),
+    detail:document.querySelector('.wiki-page')?.textContent?.slice(0,160)
+   }));
+   throw Error('NPC listing diagnostic: '+JSON.stringify(state));
+  }
+  await npcListing.click();
+  const npcHeading=page.locator('.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]');
+  try{await npcHeading.waitFor({state:'visible',timeout:8000})}
+  catch{
+   const state=await page.evaluate(()=>({hash:location.hash,
+    title:document.querySelector('.wiki-page h3')?.textContent,
+    owner:Boolean(document.querySelector('#ownerDock')),
+    adminRecords:document.querySelectorAll('[data-owner-record]').length}));
+   throw Error('NPC inline-edit visibility: '+JSON.stringify(state));
+  }
+  await npcHeading.dblclick();
+  const editor=npcHeading.locator('[data-owner-text-field]');
+  await editor.fill('Кларис — проверка D1');
+  await editor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]'
+  )?.textContent==='Кларис — проверка D1',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).name,
+   'Кларис — проверка D1');
+  await page.locator('.wiki-page .wiki-town-npc-location').selectOption('astir-union');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-page .wiki-town-npc-location')?.value==='astir-union',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).maps,
+   ['astir-union']);
+  await page.locator('#locale [data-locale="en"]').click();
+  const enHeading=page.locator('.wiki-page h3[data-owner-field="nameEn"]');
+  await enHeading.waitFor({state:'visible',timeout:15000});
+  await enHeading.dblclick();
+  const enEditor=enHeading.locator('[data-owner-text-field]');
+  await enEditor.fill('Claris Test');
+  await enEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-page h3[data-owner-field="nameEn"]')?.textContent==='Claris Test',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).nameEn,
+   'Claris Test');
+  console.log('Chromium admin town NPC D1 passed: inline RU/EN edits and relocation');
   assert.deepEqual(calls.filter(x=>x==='owner-acquire-edit'),['owner-acquire-edit']);
   assert.deepEqual(calls.filter(x=>x==='owner-trade-edit'),['owner-trade-edit']);
   assert.deepEqual(errors,[]);
@@ -414,64 +472,6 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.locator('.path-skill-card').first().click();
   await page.locator('#pathSkillDetails').waitFor({state:'visible'});
   assert.match(await page.locator('#pathSkillDetails').innerText(),/Character level/);
-  // Mocked D1 bridge: owner edits the real city NPC profile, including
-  // RU/EN names and its map relation; no production D1 writes.
-  await page.locator('#locale [data-locale="ru"]').click();
-  await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
-  const npcFilter=page.locator('.wiki-controls input[type="search"]');
-  await npcFilter.click();
-  await npcFilter.fill('Кларис');
-  const npcListing=page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"] .wiki-link');
-  try{await npcListing.waitFor({state:'visible',timeout:5000})}
-  catch{
-   const state=await page.evaluate(()=>({
-    hash:location.hash,
-    search:document.querySelector('.wiki-controls input[type="search"]')?.value,
-    chapter:document.querySelector('.wiki-categories .chosen')?.textContent,
-    rows:document.querySelectorAll('.wiki-list [data-wiki-record]').length,
-    owner:Boolean(document.querySelector('#ownerDock')),
-    detail:document.querySelector('.wiki-page')?.textContent?.slice(0,160)
-   }));
-   throw Error('NPC listing diagnostic: '+JSON.stringify(state));
-  }
-  await npcListing.click();
-  const npcHeading=page.locator('.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]');
-  try{await npcHeading.waitFor({state:'visible',timeout:8000})}
-  catch{
-   const state=await page.evaluate(()=>({hash:location.hash,
-    title:document.querySelector('.wiki-page h3')?.textContent,
-    owner:Boolean(document.querySelector('#ownerDock')),
-    adminRecords:document.querySelectorAll('[data-owner-record]').length}));
-   throw Error('NPC inline-edit visibility: '+JSON.stringify(state));
-  }
-  await npcHeading.dblclick();
-  const editor=npcHeading.locator('[data-owner-text-field]');
-  await editor.fill('Кларис — проверка D1');
-  await editor.press('Tab');
-  await page.waitForFunction(()=>document.querySelector(
-   '.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]'
-  )?.textContent==='Кларис — проверка D1',null,{timeout:15000});
-  assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).name,
-   'Кларис — проверка D1');
-  await page.locator('.wiki-page .wiki-town-npc-location').selectOption('astir-union');
-  await page.waitForFunction(()=>document.querySelector(
-   '.wiki-page .wiki-town-npc-location')?.value==='astir-union',null,{timeout:15000});
-  assert.deepEqual(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).maps,
-   ['astir-union']);
-  await page.locator('#locale [data-locale="en"]').click();
-  const enHeading=page.locator('.wiki-page h3[data-owner-field="nameEn"]');
-  await enHeading.waitFor({state:'visible',timeout:15000});
-  await enHeading.dblclick();
-  const enEditor=enHeading.locator('[data-owner-text-field]');
-  await enEditor.fill('Claris Test');
-  await enEditor.press('Tab');
-  await page.waitForFunction(()=>document.querySelector(
-   '.wiki-page h3[data-owner-field="nameEn"]')?.textContent==='Claris Test',
-   null,{timeout:15000});
-  assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).nameEn,
-   'Claris Test');
-  console.log('Chromium admin town NPC D1 passed: inline RU/EN edits and relocation');
   assert.deepEqual(errors,[]);
   console.log('Chromium skill track passed: thin notches share one bar, slider takes input, pointer and keyboard tooltips work');
  }finally{await context.close()}
