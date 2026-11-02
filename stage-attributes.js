@@ -304,6 +304,8 @@ function buffsPage(body,options){
   if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
    'honorCuriosity','proeliumPotency'].includes(key))return false;
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
+  if(key==='priestGratia'&&!(Number(buffs.priestBlessing)>=8))return false;
+  if(key==='priestLapisMedio'&&!(Number(buffs.priestBlessing)>=12))return false;
   if(guildSelected&&['guildLifeRecovery','guildManaRecovery'].includes(key))
    return false;
   return selected(value);

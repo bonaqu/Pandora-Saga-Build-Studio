@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.295.0 — 2026.11.02.295 · Show only effectively available priest buffs
+
+- The Hero Book active-buff counter excludes selected but unavailable priest skills when Blessing rank is below their source requirement (8 for Velox, 12 for Lapis Medio).
+- Existing selections remain stored and can become effective again when the required mastery is restored.
+- Add a direct, parameterized test of the exact counter expression for enabled/disabled priest, threshold ranks and automatic guild overrides. No extra test runner.
+
+
 ## 0.294.0 — 2026.11.02.294 · Sync guild effects across Origin and Hero Book
 
 - Both Origin and Hero Book show identical level-derived guild HP/MP and regeneration ranks when guild auto-passives are selected; manual Origin selectors are visibly disabled with localized explanation instead of showing misleading stale ranks.

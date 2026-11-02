@@ -121,3 +121,22 @@ test('alchemy skill preview labels are current Remaked/OS RU-EN identities',()=>
  assert.match(book,/\['toxicAura','Усиление яда','Сила эффекта','\+','Toxic Aura'\]/);
  assert.match(book,/'priestHymn','Песнопения'/);
 });
+
+// Test the actual UI counter expression without a browser harness.
+test('selected buff summary does not count unavailable priest skills or numeric inputs',()=>{
+ const code=source('stage-attributes.js');
+ const from=code.indexOf(' const guildSelected=Number(buffs.guildLevel)>0;');
+ const to=code.indexOf(' const status=make(',from);
+ assert.ok(from>=0&&to>from,'counter is a self-contained expression');
+ const count=Function('buffs','vitalsBuffs',
+  code.slice(from,to)+'\nreturn configured;');
+ const priest={priestEnabled:true,priestSpi:134,priestBlessing:7,
+  priestHymn:30,priestGratia:true,priestLapisMedio:true};
+ assert.equal(count(priest,{}),0,'mastery fields and locked buffs are not selections');
+ assert.equal(count({...priest,priestBlessing:8},{}),1,'Velox unlocks at 8');
+ assert.equal(count({...priest,priestBlessing:12},{}),2,'Lapis unlocks at 12');
+ assert.equal(count({...priest,priestEnabled:false},{}),0,'disabled priest yields zero');
+ assert.equal(count({...priest,priestBlessing:12,guildLevel:10,
+  guildLifeRecovery:2,guildManaRecovery:2}, {guildHp:6,guildMp:6}),3,
+  'automatic guild level is one configured choice, not four stale manual ranks');
+});
