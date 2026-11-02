@@ -58,6 +58,15 @@ const bookEnglish=Object.freeze({
  'Мощность Проэлиума': "Proelium potency",
  'Мощность поддерживающих навыков': "Support skill potency",
  'Грация': "Grace",
+ 'Знак атаки': 'Velox',
+ 'Знак защиты': 'Lapis Medio',
+ 'Божественная защита': 'Group Barrier',
+ 'Священное оружие': 'Holy Weapon',
+ 'Темная аура': 'Dark Aura',
+ 'Чары усиления (магическая атака)': 'Enchant Enhancement (magic attack)',
+ 'Чары усиления (аура)': 'Enchant Enhancement (aura)',
+ 'Песнь поэта': "Minstrel's Song",
+ 'Песнь чар': "Sage's Song",
  'Скорость атаки': "Attack speed",
  'Ляпис Медио': "Lapis Medio",
  'Групповой барьер': "Group Barrier",
@@ -297,9 +306,20 @@ function buffsPage(body,options){
  const english=document.documentElement?.lang==='en';
  body.append(make('p',{class:'stage-attribute-note',text:
   'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
- const configured=[...Object.values(buffs),...Object.values(vitalsBuffs)]
-  .filter(value=>value===true||typeof value==='number'&&value>0||
-   typeof value==='string'&&value!==''&&value!=='0').length;
+ // Count selected effects, never mastery input numbers or a disabled priest.
+ const guildSelected=Number(buffs.guildLevel)>0;
+ const selected=value=>value===true||
+  (typeof value==='number'&&value>0)||
+  (typeof value==='string'&&value!==''&&value!=='0');
+ const configured=Object.entries(buffs).filter(([key,value])=>{
+  if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
+   'honorCuriosity','proeliumPotency'].includes(key))return false;
+  if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
+  if(guildSelected&&['guildLifeRecovery','guildManaRecovery'].includes(key))
+   return false;
+  return selected(value);
+ }).length+Object.entries(vitalsBuffs).filter(([key,value])=>
+  !(guildSelected&&['guildHp','guildMp'].includes(key))&&selected(value)).length;
  const status=make('div',{class:'stage-buff-overview'},[
   make('span',{text:english?'Configured enhancements':'Выбранные усиления'}),
   make('strong',{text:String(configured)}),
@@ -396,13 +416,13 @@ function buffsPage(body,options){
   label.append(input);priestFields.append(label);
  }
  priest.append(priestFields);
- toggle(priest,english?'Gratia · attack speed':'Грация · скорость атаки','priestGratia',
+ toggle(priest,english?'Velox · attack speed':'Знак атаки · скорость атаки','priestGratia',
   false,buffs.priestEnabled===true);
- toggle(priest,english?'Lapis Medio · armor':'Ляпис Медио · защита','priestLapisMedio',
+ toggle(priest,english?'Lapis Medio · defense':'Знак защиты · защита','priestLapisMedio',
   false,buffs.priestEnabled===true);
  priest.append(make('p',{class:'stage-attribute-note',text:english?
-  'Gratia and Lapis Medio affect attack speed and defense only when selected; other listed priest effects remain informational until their combat formulas are verified.':
-  'Грация и Ляпис Медио влияют на скорость атаки и защиту только при выборе. Остальные эффекты жреца пока показаны для справки до подтверждения боевых формул.'}));
+  'Velox and Lapis Medio affect attack speed and defense only when selected; other priest effects are informational.':
+  'Знак атаки и Знак защиты влияют на скорость атаки и защиту только при выборе. Остальные эффекты показаны для справки.'}));
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
@@ -424,15 +444,15 @@ function buffsPage(body,options){
   const details=make('details',{class:'stage-legacy-buff-previews'});
   details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
   const entries=[
-   ['gratia','Грация','Скорость атаки','+'],
-   ['lapisMedio','Ляпис Медио','Защита','+'],
-   ['groupBarrier','Групповой барьер','Получаемый физический урон',''],
-   ['holyWeapon','Святое оружие','Усиление','+'],
-   ['gloomyEffect','Мрачный эффект','Усиление','+'],
-   ['enchantEnhance','Усиление чар','Усиление','+'],
-   ['enchantMagic','Магические чары','Усиление','+'],
-   ['minstrelSong','Песня менестреля','Точность и уклонение','+'],
-   ['sageSong','Песня мудрости','Усиление магии','+'],
+   ['gratia','Знак атаки','Скорость атаки','+'],
+   ['lapisMedio','Знак защиты','Защита','+'],
+   ['groupBarrier','Божественная защита','Получаемый физический урон',''],
+   ['holyWeapon','Священное оружие','Усиление','+'],
+   ['gloomyEffect','Темная аура','Усиление','+'],
+   ['enchantEnhance','Чары усиления (магическая атака)','Усиление','+'],
+   ['enchantMagic','Чары усиления (аура)','Усиление','+'],
+   ['minstrelSong','Песнь поэта','Точность и уклонение','+'],
+   ['sageSong','Песнь чар','Усиление магии','+'],
    ['toxify','Отравляющее покрытие','Сила эффекта','+'],
    ['toxicAura','Ядовитая аура','Сила эффекта','+']
   ];
