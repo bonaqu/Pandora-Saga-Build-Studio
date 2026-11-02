@@ -1173,16 +1173,24 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   body.prepend(card);
  }
  if(page==='summary'&&modifiers?.regeneration){
-  const regen=modifiers.regeneration,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Скорость естественного восстановления'}),
-   make('p',{text:'ОЗ: '+regen.hp.total+' (база '+regen.hp.base+
-    ', гильдия +'+regen.hp.guild+', лечение +'+regen.hp.healing+')'}),
-   make('p',{text:'ОМ: '+regen.mp.total+' (база '+regen.mp.base+
-    ', гильдия +'+regen.mp.guild+', лечение +'+regen.mp.healing+
-    (regen.mp.equipment?', снаряжение '+(regen.mp.equipment>0?'+':'')+
-     regen.mp.equipment:'')+')'}),
+  const regen=modifiers.regeneration,english=document.documentElement?.lang==='en';
+  const card=make('section',{class:'stage-attribute-row'});
+  const bonus=(value,label)=>value?(', '+label+(value>0?'+':'')+value):'';
+  card.append(make('strong',{text:english?'Natural recovery speed':'Скорость естественного восстановления'}),
+   make('p',{text:(english?'HP: ':'ОЗ: ')+regen.hp.total+
+    (english?' (base ':' (база ')+regen.hp.base+
+    (english?', guild +':', гильдия +')+regen.hp.guild+
+    (english?', healing +':', лечение +')+regen.hp.healing+')'}),
+   make('p',{text:(english?'MP: ':'ОМ: ')+regen.mp.total+
+    (english?' (base ':' (база ')+regen.mp.base+
+    (english?', guild +':', гильдия +')+regen.mp.guild+
+    (english?', healing +':', лечение +')+regen.mp.healing+
+    bonus(regen.mp.equipment,english?'equipment ':'снаряжение ')+
+    bonus(regen.mp.racial,english?'racial passive ':'расовая способность ')+')'}),
    make('p',{class:'stage-attribute-note',
-    text:'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Эффекты экипировки и активных навыков пока не включены.'}));
+    text:english?
+     'Remaked-based speed indices, not HP/MP per tick. Supported equipment and racial effects are included; unverified active effects are excluded.':
+     'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Подтверждённые бонусы экипировки и расовые способности учтены; непроверенные активные эффекты не включены.'}));
   body.prepend(card);
  }
  if(page==='summary'&&modifiers?.recoveryAmount){
