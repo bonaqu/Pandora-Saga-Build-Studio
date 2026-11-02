@@ -1898,16 +1898,19 @@ function renderWiki(root){
   const englishDescription=lang==='en'?(officialEnglish?.[
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
-  if(described?.desc){
-   const text=englishDescription||described.desc;
+  if(described?.desc||(adminEditing&&adminToken&&lang==='ru')){
+   const text=englishDescription||described?.desc||'';
+   const missing=!text.trim();
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'itemdesc.'+id:null;
-   const description=h('p',{class:'wiki-description',text:
+   const description=h('p',{class:'wiki-description'+(missing?' wiki-description-placeholder':''),text:
+    missing?'Двойной клик — добавить описание':
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
     ...(adminEditing&&lang==='ru'&&['monster','map','npc','instance','soul'].includes(type)?
       {'data-owner-record':type+':'+id,
-       'data-owner-field':type==='instance'?'blurbRu':'desc'}:{})});
+       'data-owner-field':type==='instance'?'blurbRu':'desc',
+       ...(missing?{'data-owner-empty':'true'}:{})}:{})});
    detail.append(description);
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
@@ -3752,7 +3755,7 @@ function wikiOwnerText(node,type,id,field,{multiline=false}={}){
  node.title='Двойной клик — изменить';
  node.ondblclick=e=>{
   e.preventDefault();e.stopPropagation();
-  editWikiValue(node,String(node.textContent||''),{
+  editWikiValue(node,node.dataset.ownerEmpty==='true'?'':String(node.textContent||''),{
    type:multiline?'textarea':'text',
    onCommit:next=>saveWikiRecordField(type,id,field,next)});
  };
