@@ -94,7 +94,25 @@ async function load({api,fetcher,local='./data/os',timeout=12000}={}){
   return {data:validate(Object.fromEntries(records)),
    source:remote?'d1':'local',snapshot:remote?[...snapshots][0]||null:null};
  }
- try{return await batch(true)}
+ try{
+  const loaded=await batch(true);
+  // Only localized copy is borrowed from our checked-in OS archive. Never
+  // replace remotely updated instance gameplay fields or changed descriptions.
+  try{
+   const response=await fetcher(local.replace(/\\/$/,'')+'/instances.json',{cache:'no-cache'});
+   if(response?.ok){
+    const rows=await response.json();
+    const localRows=new Map((Array.isArray(rows)?rows:Object.values(rows))
+     .map(row=>[String(row.id),row]));
+    loaded.data.instances=loaded.data.instances.map(instance=>{
+     const translated=localRows.get(String(instance.id));
+     return !instance.blurbRu&&translated?.blurbRu&&translated.blurb===instance.blurb?
+      {...instance,blurbRu:translated.blurbRu}:instance;
+    });
+   }
+  }catch{}
+  return loaded;
+ }
  catch(remoteError){
   try{return await batch(false)}
   catch(localError){throw Error('Не удалось загрузить согласованный игровой каталог',{
