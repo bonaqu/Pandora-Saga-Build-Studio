@@ -1870,7 +1870,9 @@ function renderWiki(root){
    const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'item.'+id:null;
    const heading=h('h3',{text:dataName(type,id),
-    ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{})});
+    ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{}),
+    ...(adminEditing&&lang==='ru'&&['monster','map','npc','instance','soul'].includes(type)?
+      {'data-owner-record':type+':'+id,'data-owner-field':'name'}:{})});
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
    detail.append(heading);
    const namesakes=wikiIndex.sameName(type,id);
@@ -1891,7 +1893,10 @@ function renderWiki(root){
     ['item','chest'].includes(type)?'itemdesc.'+id:null;
    const description=h('p',{class:'wiki-description',text:
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
-    ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{})});
+    ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
+    ...(adminEditing&&lang==='ru'&&['monster','map','npc','instance','soul'].includes(type)?
+      {'data-owner-record':type+':'+id,
+       'data-owner-field':type==='instance'?'blurbRu':'desc'}:{})});
    detail.append(description);
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
@@ -3722,6 +3727,13 @@ $('hero').addEventListener('keydown',event=>{
 };document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
+ const owner=event.target.closest('[data-owner-record]');
+ if(owner&&owner.dataset.ownerField){
+  const [type,id]=owner.dataset.ownerRecord.split(':');
+  event.preventDefault();event.stopImmediatePropagation();
+  wikiOwnerText(owner,type,id,owner.dataset.ownerField,{multiline:owner.dataset.ownerField!=='name'});
+  return;
+ }
  const editable=event.target.closest('[data-edit-key]');
  if(!editable||!/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;
  event.preventDefault();event.stopImmediatePropagation();inlineWikiText(editable);
