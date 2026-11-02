@@ -68,9 +68,14 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'attack');
  await page.locator('#stageAttributes [data-book-page="attack"]').press('ArrowRight');
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'defense');
- await page.locator('#stageAttributes [data-book-page="recovery"]').click();
- await page.locator('#stageAttributes .stage-periodic-recovery').waitFor({state:'visible',timeout:20000});
- await page.locator('#stageAttributes .stage-periodic-recovery summary').click();
+  await page.locator('#stageAttributes [data-book-page="effects"]').click();
+  await page.locator('#stageAttributes .stage-periodic-recovery').waitFor({state:'visible',timeout:20000});
+  await page.locator('#stageAttributes .stage-periodic-recovery summary').click();
+  const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
+  assert.match(recovery,/Регенерация/);
+  assert.match(recovery,/Восстановление/);
+  assert.match(recovery,/Ориентировочное действие умения/);
+  await page.locator('#stageAttributes [data-book-page="recovery"]').click();
  await page.locator('#stageAttributes .stage-mana-consumables').waitFor({state:'visible',timeout:20000});
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/Легкое восстанавливающее зелье/);
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/ОМ/);
@@ -86,10 +91,6 @@ async function main(){
  assert.match(await statusCures.innerText(),/Панацея/);
  assert.match(await statusCures.innerText(),/Противоядие/);
  assert.match(await statusCures.innerText(),/Заморозка/);
- const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
- assert.match(recovery,/Регенерация/);
- assert.match(recovery,/Восстановление/);
- assert.match(recovery,/Ориентировочное действие умения/);
  await page.locator('#stageAttributes .stage-book-close').click();
  assert.equal(await page.locator('#stageAttributes').isHidden(),true);
 
@@ -99,7 +100,7 @@ async function main(){
  await page.locator('#hero').click();
  await page.locator('#stageAttributes [data-book-page="summary"]').waitFor({state:'visible'});
  assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Calculated results'),true);
- assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potions & skills');
+ assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild & honor'));
