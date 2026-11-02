@@ -168,3 +168,23 @@ test('owner acquisition endpoints reject malformed, duplicate, or unauthorized r
  assert.equal((await worker.fetch(request(key,'[]','override','bad'),env)).status,401);
  assert.equal((await worker.fetch(request(key,null,'reset'),env)).status,200);
 });
+
+test('NPC trade writes require valid relations and authenticated admin',async()=>{
+ const env={DB:mockDb()},key='tradeedit.900000001';
+ const recipe={id:900000001,i:11,npc:[7],mats:[{i:10,n:4}],
+  gold:25,honor:0,exp:0};
+ const value=JSON.stringify({recipe});
+ assert.equal((await worker.fetch(request(key,value),env)).status,200);
+ for(const wrong of [
+  {recipe:{...recipe,npc:[]}},{recipe:{...recipe,i:0}},
+  {recipe:{...recipe,mats:[{i:10,n:-1}]}},
+  {recipe:{...recipe,npc:[7,7]}},{recipe:{...recipe,id:5}},
+  {recipe:{...recipe,gold:1.3}},
+  {recipe:{...recipe,password:'sneaky'}},
+  {deleted:true,other:'extra'}
+ ]){
+  assert.equal((await worker.fetch(request(key,JSON.stringify(wrong)),env)).status,400);
+ }
+ assert.equal((await worker.fetch(request(key,value,'override','bad'),env)).status,401);
+ assert.equal((await worker.fetch(request(key,JSON.stringify({deleted:true})),env)).status,200);
+});
