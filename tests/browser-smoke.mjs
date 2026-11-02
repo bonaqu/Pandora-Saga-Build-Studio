@@ -84,6 +84,10 @@ async function main(){
  await hpOnly.locator('summary').click();
  assert.equal(await hpOnly.locator('.stage-potion-item').count(),12);
  assert.match(await hpOnly.innerText(),/Легкое исцеляющее зелье/);
+ assert.equal(await page.locator('#stageAttributes .stage-status-cures').count(),0,
+  'Only HP/MP potions belong on the potions page');
+ assert.equal(await page.locator('#stageAttributes .stage-consumable-skills').count(),0);
+ await page.locator('#stageAttributes [data-book-page="effects"]').click();
  const statusCures=page.locator('#stageAttributes .stage-status-cures');
  await statusCures.waitFor({state:'visible',timeout:20000});
  await statusCures.locator('summary').click();
@@ -91,6 +95,8 @@ async function main(){
  assert.match(await statusCures.innerText(),/Панацея/);
  assert.match(await statusCures.innerText(),/Противоядие/);
  assert.match(await statusCures.innerText(),/Заморозка/);
+ assert.ok(await page.locator('#stageAttributes .stage-consumable-skills').count()>0,
+  'Skill activation items now belong to effects, not healing potions');
  await page.locator('#stageAttributes .stage-book-close').click();
  assert.equal(await page.locator('#stageAttributes').isHidden(),true);
 
