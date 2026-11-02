@@ -31,7 +31,7 @@ const extraLabels={
  EP_HEAL_LIFE_REGENERATOR:'Регенерация ОЗ',EP_HEAL_MANA:'Восстановление ОМ',
  EP_HEAL_MANA_RATE:'Восстановление ОМ (%)',
  EP_HOLY_RESISTANCE_CONST:'Сопротивление свету',
- EP_IMMUNE_BURN:'Невосприимчивость к ожогу',
+ EP_IMMUNE_BURN:'Сопротивляемость ожогам',
  EP_IMMUNE_CURSE:'Невосприимчивость к проклятию',
  EP_IMMUNE_DISEASE:'Невосприимчивость к болезни',
  EP_IMMUNE_EVIL:'Защита от злых чар',
