@@ -564,7 +564,9 @@ function validAcquisitionOverride(text){
  const seen=new Set();
  return rows.every(row=>{
   if(!row||typeof row!=='object'||Array.isArray(row)||
-   Object.keys(row).length!==2||!['type','id'].every(k=>Object.hasOwn(row,k))||
+   Object.keys(row).some(k=>!['type','id','p'].includes(k))||
+   !['type','id'].every(k=>Object.hasOwn(row,k))||
+   (row.p!=null&&(!Number.isFinite(row.p)||row.p<0||row.p>100||row.type!=='monster'))||
    !['monster','npc'].includes(row.type)||
    typeof row.id!=='string'||!/^[1-9][0-9]{0,14}$/.test(row.id))return false;
   const key=row.type+':'+row.id;
