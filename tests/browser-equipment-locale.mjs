@@ -129,7 +129,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await page.locator('.wiki-chest-opening').count(),1);
   assert.ok(await page.locator('.wiki-chest-location .wiki-link').count()>=1);
   assert.match(await page.locator('.wiki-chest-opening').innerText(),/Культье/);
-  assert.match(await page.locator('.wiki-chest-opening').innerText(),/Вастир/);
+  assert.match(await page.locator('.wiki-chest-opening').innerText(),/Астир/);
   assert.ok(await page.locator('.wiki-chest-opening .wiki-link[href="#wiki/map/1003001"]').count()>=1);
   // Source has category labels for colored boxes, but no item or chance table.
   for(const [box,category] of [[51038,'Оружие и доспехи'],[51040,'Аксессуары'],[51042,'Души']]){
@@ -142,8 +142,30 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.goto(base+'/#wiki/map/1003001',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-nation-territory').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-nation-territory').innerText(),/Королевства/);
-  assert.match(await page.locator('.wiki-page h3').innerText(),/Сэнт-Фальстайн/);
+  assert.match(await page.locator('.wiki-page h3').innerText(),/Территория Королевства · Астир/);
   assert.ok(await page.locator('.wiki-location-list-heading').count()>=2);
+  const districts=page.locator('.wiki-astir-neighborhoods .wiki-link');
+  assert.equal(await districts.count(),4);
+  assert.match(await districts.nth(0).innerText(),/Центральная площадь/);
+  // Source-backed elemental selection and separate status/skill consumables.
+  await page.goto(base+'/#wiki/item/452',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-equipment-type').selectOption('elemental');
+  await page.locator('.wiki-elemental-type').waitFor({state:'visible',timeout:20000});
+  await page.locator('.wiki-elemental-type').selectOption('fire');
+  assert.ok(await page.locator('.wiki-list .wiki-link')
+   .filter({hasText:'Огненный меч пылающей души'}).count()>=1);
+  await page.locator('.wiki-categories [data-wiki-chapter="utility"]').click();
+  assert.equal(await page.locator('.wiki-equipment-type').inputValue(),'utility');
+  assert.ok(await page.locator('.wiki-list .wiki-link')
+   .filter({hasText:'Снежный корень'}).count()>=1);
+  assert.equal(await page.locator('.wiki-list .wiki-link')
+   .filter({hasText:'Огненный меч пылающей души'}).count(),0);
+  await page.goto(base+'/#wiki/soul/101000',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-soul-properties').waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.wiki-soul-properties').evaluate(el=>
+   getComputedStyle(el).display),'inline-grid');
+  assert.ok(await page.locator('.wiki-soul-properties').evaluate(el=>
+   el.getBoundingClientRect().width<el.closest('.wiki-page').getBoundingClientRect().width));
   // Conditional fire-gem effects come from verified per-weapon description,
   // not unconditional stat effects. The tooltip must explain STR vs INT.
   await page.goto(base+'/#wiki/item/452',{waitUntil:'domcontentloaded'});
@@ -152,6 +174,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await page.locator('.wiki-conditional-bonuses').innerText(),/\+5%/);
   assert.match(await page.locator('.wiki-owner-effects').innerText(),/Сопротивляемость ожогам[\s\S]*\+5%/);
   assert.equal(await page.locator('.wiki-owner-effect-value').first().evaluate(el=>getComputedStyle(el).textAlign),'right');
+  assert.equal(await page.locator('.wiki-conditional-term').first().getAttribute('title'),null);
   await page.locator('.wiki-conditional-term').hover();
   await page.locator('.wiki-phoenix-explanation').waitFor({state:'visible'});
   assert.match(await page.locator('.wiki-phoenix-explanation').innerText(),/25% от СИЛ/);
