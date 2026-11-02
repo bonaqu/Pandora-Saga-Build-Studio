@@ -1614,6 +1614,19 @@ function songSkillPreview({skillCatalog=null,jobKey=null,level=1,
  return {rows,verified:false,condition:'skill must be activated in game'};
 }
 
+// Guild level unlock order from Remaked localization/guild-skills.v1.json,
+// not inferred from the player's character level. This models the passive
+// effects that the existing OS calculator knows how to apply. Physical/magic
+// damage reduction and EXP are exposed separately, not added to unknown math.
+function guildPassiveAtLevel(level=0){
+ if(!Number.isInteger(level)||level<0||level>12)return null;
+ const hp=[0,0,1,1,2,2,3,3,4,4,5,5,5][level];
+ const regen=[0,0,0,0,1,1,1,1,2,2,2,2,2][level];
+ const reduction=level>=10?6:level>=6?3:0;
+ const exp=[0,2,2,3,3,4,4,5,5,6,6,6,6][level];
+ return Object.freeze({level,guildHp:hp,guildMp:hp,guildLifeRecovery:regen,
+  guildManaRecovery:regen,physicalReduction:reduction,magicReduction:reduction,experience:exp});
+}
 // Preserved Remaked Legacy Calc('Velox'...'ToxicAura') branch previews.
 // These are read-only magnitudes: never apply to combat stats merely because
 // the hero's level/mastery is high. The corresponding spell must be selected
@@ -1794,9 +1807,11 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const elementalMagic=elementalMagicPreview({honorTitle:extra.honor.id});
  const mountedRelease=mountedReleasePreview({jobKey:combatContext.jobKey,
   ridingMastery:combatContext.ridingMastery??0,honorTitle:extra.honor.id});
- const legacyBuffs=legacyBuffPreview({spi:stats.spi,
-  blessing:combatContext.legacyBuffMasteries?.blessing??0,
-  hymn:combatContext.legacyBuffMasteries?.hymn??0,
+ const priest=combatContext.externalPriest;
+ const priestActive=priest?.enabled===true;
+ const legacyBuffs=legacyBuffPreview({spi:priestActive?priest.spi:stats.spi,
+  blessing:priestActive?priest.blessing:combatContext.legacyBuffMasteries?.blessing??0,
+  hymn:priestActive?priest.hymn:combatContext.legacyBuffMasteries?.hymn??0,
   alchemy:combatContext.legacyBuffMasteries?.alchemy??0});
  const songSkills=songSkillPreview({skillCatalog:combatContext.skillCatalog,
   jobKey:combatContext.jobKey,level,
@@ -1844,7 +1859,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({
+root.PandoraOSCalculator=Object.freeze({guildPassiveAtLevel,
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
