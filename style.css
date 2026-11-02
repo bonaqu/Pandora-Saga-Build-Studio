@@ -1170,10 +1170,16 @@ main{padding-top:10px}
 /* Compact OS-provided monster parameters and real location-group loot. */
 .wiki-monster-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
  gap:5px;margin:10px 0}
-.wiki-monster-resists{display:flex;flex-wrap:wrap;gap:6px;
- padding:8px;background:#24180f;border:1px solid #755537}
-.wiki-monster-resists summary{width:100%;cursor:pointer;color:#e9c997;font-size:12px}
-.wiki-monster-resists span{font-size:10px;color:#cbb08b;padding:5px}
+.wiki-monster-resists{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));
+ gap:6px;margin:9px 0 15px}
+.wiki-monster-resist{display:flex;align-items:center;gap:7px;min-width:0;padding:7px 9px;
+ background:linear-gradient(135deg,#312419,#1b1510);border:1px solid #745636;border-radius:5px}
+.wiki-resist-glyph{flex:0 0 24px;height:24px;display:grid;place-items:center;
+ border-radius:5px;color:#e7c38c;background:#4c3421;font-size:17px}
+.wiki-resist-name{flex:1;min-width:0;font-size:10px;color:#ddc39d}
+.wiki-monster-resist strong{color:#eecf9f;font-size:12px;font-variant-numeric:tabular-nums}
+.wiki-monster-resist.negative{border-color:#a1584e}
+.wiki-monster-resist.negative strong{color:#f2aaa0}
 .wiki-zone-group{display:flex;flex-direction:column;align-items:flex-start;
  padding:10px;border:1px solid #745538;margin:8px 0;background:#21170f}
 .wiki-zone-group small{color:#bba281;font-size:10px}
