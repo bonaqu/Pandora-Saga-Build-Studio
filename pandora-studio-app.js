@@ -1986,7 +1986,8 @@ function renderWiki(root){
   // Links from monsters, trades and chests must reveal non-equipment rewards too.
   if(type==='item'&&wikiSelection.id!=null&&records?.[wikiSelection.id]){
    const selected=records[wikiSelection.id];
-   const permitted=isVisibleItem(selected,wikiItemType);
+   const permitted=isVisibleItem(selected,wikiItemType)&&
+    !(wikiItemType==='all'&&slotKeys.includes(selected.slot));
    if(!permitted){
     const was=wikiItemType;
     wikiItemType=isUtilityItem(selected)?'utility':
