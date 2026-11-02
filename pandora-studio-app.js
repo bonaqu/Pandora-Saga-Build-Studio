@@ -1170,7 +1170,9 @@ function renderOriginPassives(){
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
   else btn.append(h('span',{text:'✦'}));
-  btn.append(h('span',{},[h('b',{text:skill.name}),h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);skillHover(btn,skill);
+  btn.append(h('span',{},[h('b',{text:skill.name,
+    ...(adminEditing&&lang==='ru'?{'data-edit-key':'skill.race.'+id}:{})}),
+    h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);skillHover(btn,skill);
  }
 }
 let activeSkillPreview=null;
@@ -1382,8 +1384,10 @@ async function loadWiki(){
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
   const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
-  const index=window.PandoraWikiData.build(loaded.data);
-  wikiData=loaded.data;
+  const source={...loaded.data,
+   items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
+  const index=window.PandoraWikiData.build(source);
+  wikiData=source;
   wikiIndex=index;
   if(wikiSelection.id!=null)wikiSelection.id=index.canonical(wikiSelection.type,wikiSelection.id);
   return index;
@@ -1422,7 +1426,7 @@ function renderWiki(root){
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:lang==='en'?en:ru,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
- const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии'});
+ const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  controls.append(categories,search);
  if(wikiSelection.type==='item'){
   const equipmentTypes=[['equipment',wt('Экипировка','Equipment')],['all',wt('Все предметы','All items')],
@@ -1717,7 +1721,9 @@ function renderWiki(root){
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
-    h('h3',{text:dataName(type,id)}));
+    h('h3',{text:dataName(type,id),...(adminEditing&&lang==='ru'&&
+     (type==='item'||type==='skill')?{'data-edit-key':type==='item'?
+      'item.'+id:'skill.'+(rec.branch||'race')+'.'+id}:{})}));
    const namesakes=wikiIndex.sameName(type,id);
    if(namesakes.length)detail.append(h('small',{class:'wiki-variant-note',
     text:wt('Есть другие варианты с таким названием','Other entries share this name')}));
@@ -1733,7 +1739,10 @@ function renderWiki(root){
   if(described?.desc){
    const text=englishDescription||described.desc;
    detail.append(h('p',{class:'wiki-description',text:
-    ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text}));
+    ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
+    ...(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')?
+      {'data-edit-key':type==='item'?'itemdesc.'+id:
+        'skilldesc.'+(rec.branch||'race')+'.'+id}:{})}));
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=keys=>{
@@ -1770,6 +1779,15 @@ function renderWiki(root){
     }}));
   };
   if(type==='item'){
+    if(adminEditing&&adminToken){
+      detail.append(h('button',{type:'button',class:'button-action owner-wiki-edit',
+       text:'✎ Изменить характеристики, классы и эффекты',
+       onclick:()=>openWikiItemEditor(id,rec)}));
+    }
+    if(rec.sourceNote)detail.append(h('section',{class:'wiki-owner-note'},[
+      h('strong',{text:'Комментарий администратора об источнике'}),
+      h('p',{text:rec.sourceNote})
+    ]));
     const dl=h('dl',{class:'item-fields'});
     const itemFields=[
      [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang)],
