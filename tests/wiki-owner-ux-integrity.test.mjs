@@ -30,6 +30,14 @@ test('equipment editors exclude non-equipment actions and bow range from melee i
  assert.equal(itemEditor.effectOptions(items,items[3]).length,0);
 });
 
+test('game-stat names follow the verified Spata and Gladius catalogue descriptions',()=>{
+ const choices=itemEditor.effectOptions({1:{slot:'weapon',kind:'1H_SWORD'}});
+ const names=new Map(choices.map(x=>[x.value,x.label]));
+ assert.equal(names.get('EP_AGILITY_CONST'),'Проворство');
+ assert.equal(names.get('EP_DEXTERITY_CONST'),'Ловкость');
+ assert.equal(names.get('EP_STRENGTH_CONST'),'Сила');
+});
+
 test('skill requirements, prerequisite and classes survive immutable owner overlay',()=>{
  const original={skills:{77:{id:77,reqs:[],prereq:null,classes:{}}},
   maps:{},monsters:{},instances:[],souls:{},trades:{npcs:{}},items:{},drops:{},chests:{boxes:[]}};
