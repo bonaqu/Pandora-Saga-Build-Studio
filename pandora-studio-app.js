@@ -1825,26 +1825,47 @@ function renderWiki(root){
   if(type==='item'){
     if(adminEditing&&adminToken){
       detail.append(h('button',{type:'button',class:'button-action owner-wiki-edit',
-       text:'✎ Изменить характеристики, классы и эффекты',
+       text:'✎ Дополнительные эффекты',
        onclick:()=>openWikiItemEditor(id,rec)}));
     }
+    if(adminEditing&&adminToken)detail.append(h('small',{class:'wiki-owner-instruction',text:'Двойной клик по значению — изменить; выход из поля — сохранить.'}));
     if(rec.sourceNote)detail.append(h('section',{class:'wiki-owner-note'},[
       h('strong',{text:'Комментарий администратора об источнике'}),
       h('p',{text:rec.sourceNote})
     ]));
     const dl=h('dl',{class:'item-fields'});
     const itemFields=[
-     [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang)],
-     [wt('Уровень','Level'),rec.level],
-     [wt('Атака','Attack'),rec.W],
-     [wt('Пробитие','Penetration'),rec.PEN],
-     [wt('Защита','Defense'),rec.AC],
-     [wt('Скорость атаки','Attack speed'),rec.atkspeed],
-     [wt('Дальность','Range'),rec.range],
-     [wt('Гнёзда душ','Soul sockets'),rec.soulslot]
+     [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang),'kind'],
+     [wt('Уровень','Level'),rec.level,'level'],
+     [wt('Атака','Attack'),rec.W,'W'],
+     [wt('Пробитие','Penetration'),rec.PEN,'PEN'],
+     [wt('Защита','Defense'),rec.AC,'AC'],
+     [wt('Скорость атаки','Attack speed'),rec.atkspeed,'atkspeed'],
+     [wt('Дальность','Range'),rec.range,'range'],
+     [wt('Гнёзда душ','Soul sockets'),rec.soulslot,'soulslot']
     ];
-    for(const [label,value]of itemFields)if(value!=null)
-     dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
+    const hints={kind:'Игровая категория предмета',level:'Уровень предмета',W:'Показатель атаки оружия',PEN:'Показатель пробития оружия',AC:'Защита предмета',atkspeed:'Скорость атаки',range:'Дальность действия',soulslot:'Гнёзда душ: от 0 до 3'};
+    for(const [label,value,key]of itemFields)if(value!=null){
+     const dt=h('dt',{text:label,title:hints[key],class:'wiki-help-label'});
+     const dd=h('dd',{text:String(value),class:adminEditing&&adminToken?'wiki-edit-value':''});
+     if(adminEditing&&adminToken){
+      dd.title=wt('Двойной клик для изменения','Double-click to edit');
+      dd.ondblclick=e=>{
+       e.preventDefault();e.stopPropagation();
+       if(key==='kind'){
+        const options=window.PandoraItemPresentation.kindOptions(lang);
+        const present=new Set(Object.values(wikiData.items||{}).filter(x=>x?.slot===rec.slot).map(x=>x.kind));
+        if(rec.slot==='weapon')
+         for(const value of ['1H_SWORD','2H_SWORD','1H_AXE','2H_AXE','1H_BLUNT_WEAPON','2H_BLUNT_WEAPON','POLE_ARM','LANCE','BOW','CROSSBOW','WAND','STAFF'])present.add(value);
+        present.add(rec.kind);
+        editWikiValue(dd,rec.kind,{type:'select',options:options.filter(x=>present.has(x.value)),
+         onCommit:next=>saveWikiItemField(id,'kind',next)});
+       }else editWikiValue(dd,value,{type:'number',max:key==='soulslot'?3:100000,
+        integer:key==='soulslot',onCommit:next=>saveWikiItemField(id,key,next)});
+      };
+     }
+     dl.append(dt,dd);
+    }
     if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
      h('dd',{text:wt('Двуручное','Two-handed')}));
     detail.append(dl);
