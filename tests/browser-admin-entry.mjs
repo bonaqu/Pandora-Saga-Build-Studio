@@ -132,6 +132,11 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForFunction(()=>
    document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
    null,{timeout:30000});
+  await dialog.getByRole('button',{name:/Новые · 0/}).click();
+  assert.equal(await dialog.locator('.os-sync-record').count(),0,'No added records');
+  await dialog.getByRole('button',{name:/Изменённые · 1/}).click();
+  assert.equal(await dialog.locator('.os-sync-record').count(),1,'Only changed records');
+  await dialog.getByRole('button',{name:/Все · 1/}).click();
   const groups=dialog.locator('.os-sync-group');
   assert.equal(await groups.count(),1,'Exactly one intentionally changed D1 item');
   await groups.locator('summary.os-sync-group-heading').click();
