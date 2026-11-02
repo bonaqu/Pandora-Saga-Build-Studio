@@ -2331,18 +2331,48 @@ function renderWiki(root){
      reqs.append(add);
     }
     if(reqs.childElementCount)detail.append(reqs);
+    const prereqPane=h('div',{class:'wiki-prerequisite'});
+    prereqPane.append(h('small',{text:wt('Предыдущее умение','Prerequisite skill')}));
     if(rec.prereq!=null&&wikiData.skills?.[rec.prereq]){
      const prereq=wikiIndex.canonical('skill',rec.prereq);
      const link=wikiLink(dataName('skill',prereq),'skill',prereq);
-     const icon=wikiIcon('skill',prereq,wikiData.skills[prereq]);
-     const prerequisite=h('div',{class:'wiki-prerequisite'},[
-      h('small',{text:wt('Предыдущее умение','Prerequisite skill')}),
-      withIcon(link,icon,'skill')
-     ]);
-     detail.append(prerequisite);
+     prereqPane.append(withIcon(link,wikiIcon('skill',prereq,wikiData.skills[prereq]),'skill'));
     }
-    if(rec.classes&&Object.keys(rec.classes).length)
-     renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]),false);
+    if(adminEditing&&adminToken){
+     const add=h('button',{type:'button',class:'wiki-owner-plus',
+      text:rec.prereq==null?'+ Выбрать умение':'✎ Изменить',
+      onclick:()=>{
+       const prior=prereqPane.querySelector('.wiki-owner-source-picker');
+       if(prior){prior.remove();return}
+       const panel=h('div',{class:'wiki-owner-source-picker'});
+       const search=h('input',{type:'search',class:'wiki-inline-input',
+        placeholder:'Поиск предыдущего умения…','aria-label':'Найти умение'});
+       guardOwnerInput(search);
+       const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери предыдущее умение'});
+       const fill=()=>{
+        const q=wikiIndex.normalize(search.value);
+        const matches=Object.entries(wikiData.skills||{}).filter(([skillId])=>
+         String(skillId)!==String(id)&&(!q||
+          wikiIndex.normalize(dataName('skill',skillId)).includes(q))).slice(0,90);
+        select.replaceChildren(h('option',{value:'',text:'Выбери умение'}));
+        for(const [skillId] of matches)
+         select.append(h('option',{value:skillId,text:dataName('skill',skillId)}));
+       };
+       search.oninput=fill;
+       select.onchange=()=>{if(select.value)void saveWikiRecordField('skill',id,'prereq',
+        Number(select.value)).catch(error=>showStudioToast(error.message,'warning'))};
+       panel.append(search,select,
+        h('button',{type:'button',class:'wiki-owner-cancel',text:'Отмена',onclick:()=>panel.remove()}));
+       add.after(panel);fill();search.focus();
+      }});
+     prereqPane.append(add);
+     if(rec.prereq!=null)prereqPane.append(h('button',{type:'button',class:'wiki-owner-remove',
+      text:'×','aria-label':'Убрать предыдущее умение',
+      onclick:()=>void saveWikiRecordField('skill',id,'prereq',null)
+       .catch(error=>showStudioToast(error.message,'warning'))}));
+    }
+    if(prereqPane.childElementCount>1)detail.append(prereqPane);
+    renderClassEligibility(Object.keys(rec.classes||{}).filter(key=>rec.classes[key]),false);
     const icon=skillIcon(rec.branch,id,rec);
     if(icon){const image=wikiImage(icon,'wiki-record-icon',type);detail.prepend(image)}
   }else if(type==='soul'){
