@@ -2567,11 +2567,13 @@ function renderWiki(root){
      const editing=adminEditing&&Boolean(adminToken);
      const amend=patch=>saveWikiTradeRecipe({...trade,...patch});
      const output=h('div',{class:'wiki-trade-output'});
-     output.append(h('small',{text:wt('Получить','Receive')}),
-      itemLink(trade.i,dataName('item',trade.i),id));
-     if(editing)output.append(h('button',{type:'button',class:'wiki-owner-plus',
-      text:'✎','aria-label':'Изменить предмет обмена',
-      onclick:()=>wikiItemChoice(output,i=>amend({i}))}));
+      output.append(h('small',{text:wt('Получить','Receive')}));
+      const product=h('span',{class:'wiki-trade-product-inline'});
+      product.append(itemLink(trade.i,dataName('item',trade.i),id));
+      if(editing)product.append(h('button',{type:'button',class:'wiki-owner-plus',
+       text:'✎','aria-label':'Изменить предмет обмена',
+       onclick:()=>wikiItemChoice(output,i=>amend({i}))}));
+      output.append(product);
      entry.append(output);
      if(trade.mats?.length||editing){
       const mats=h('div',{class:'wiki-recipe-mats'});
@@ -3253,9 +3255,9 @@ function renderBuilds(root){
    h('button',{type:'button',class:'button-action',text:'Отмена',
     onclick:()=>{openChoice.hidden=true}}));
   const overwriteChoice=h('div',{class:'build-overwrite-choice',hidden:true});
-  overwriteChoice.append(h('p',{text:'Перезаписать этот сохранённый билд текущими локальными изменениями?'}),
+   overwriteChoice.append(h('p',{text:'Перезаписать сохранённый билд «'+b.name+'» текущим персонажем? Предыдущую версию этого билда восстановить будет нельзя.'}),
    h('button',{type:'button',class:'button-action primary',text:'Подтвердить перезапись',onclick:()=>{
-    if(saveBuild(state.name,b.id))showStudioToast(window.PandoraUILocale.ui(
+    if(saveBuild(activeBuildId===b.id?state.name:b.name,b.id))showStudioToast(window.PandoraUILocale.ui(
      'Сохранено в браузере. Проверяем запись в облаке…',lang),'warning');
    }}),
    h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{overwriteChoice.hidden=true}}));
@@ -3286,12 +3288,12 @@ function renderBuilds(root){
     if(!unsavedBuild()){openSavedBuild(b);return}
     openChoice.hidden=!openChoice.hidden;
    }}),
-   ...(activeBuildId===b.id?[h('button',{class:'button-action primary',
-    text:'↻ Перезаписать',onclick:()=>{
+   ...[h('button',{class:'button-action primary',
+     text:activeBuildId===b.id?'↻ Перезаписать':'↻ Сохранить в этот билд',onclick:()=>{
      overwriteChoice.hidden=!overwriteChoice.hidden;
      if(!overwriteChoice.hidden)overwriteChoice.querySelector('button')?.focus({preventScroll:true});
-    }})]:[]),
-   h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared(b,shareSlot)}),
+    }})],
+    h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared(b,shareSlot)}),
    h('button',{class:'button-action',text:'Удалить',onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}}));
   box.append(openChoice);
   box.append(deleteChoice);
@@ -3330,8 +3332,7 @@ function saveBuild(name=state.name||'Новый герой',overwriteId=null){
  if(typeof name!=='string'||!name.trim())return false;
  const cleanName=name.trim().slice(0,70),previousName=state.name;
  const previousBuilds=builds.slice(),previousActive=activeBuildId;
- const existingIndex=overwriteId&&overwriteId===activeBuildId?
-  builds.findIndex(b=>b.id===overwriteId):-1;
+ const existingIndex=overwriteId?builds.findIndex(b=>b.id===overwriteId):-1;
  const id=existingIndex>=0?builds[existingIndex].id:newId();
  state.name=cleanName;
  const entry={id,name:cleanName,data:structuredClone(state),
