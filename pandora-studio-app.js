@@ -2282,24 +2282,53 @@ function renderWiki(root){
     if(!rec.reqs?.length&&rec.prereq==null)detail.append(h('p',{class:'muted',
      text:wt('Требования веток не указаны.','No branch requirements listed.')}));
     const reqs=h('div',{class:'wiki-requirements',role:'list'});
-    for(const req of rec.reqs||[]){
+    for(const [index,req] of (rec.reqs||[]).entries()){
      if(!req||!Number.isFinite(Number(req.amount)))continue;
      const current=Math.max(0,Number(state.points?.[req.branch])||0);
-     const required=Math.max(0,Number(req.amount));
-     const ready=current>=required;
+     const required=Math.max(0,Number(req.amount)),ready=current>=required;
      const chip=h('div',{class:'wiki-requirement-chip'+(ready?' fulfilled':''),
-      role:'listitem','aria-label':branchLabel(req.branch)+': '+current+'/'+required},[
-      h('span',{class:'wiki-requirement-symbol','aria-hidden':'true',text:ready?'✦':'◇'}),
+      role:'listitem','aria-label':branchLabel(req.branch)+': '+current+'/'+required});
+     const target=h('small',{text:wt('Вложено ','Invested ')+current+' / '+required});
+     chip.append(h('span',{class:'wiki-requirement-symbol','aria-hidden':'true',text:ready?'✦':'◇'}),
       h('div',{class:'wiki-requirement-copy'},[
-       h('strong',{text:branchLabel(req.branch)}),
-       h('small',{text:wt('Вложено ','Invested ')+current+' / '+required}),
+       h('strong',{text:branchLabel(req.branch)}),target,
        h('span',{class:'wiki-requirement-track','aria-hidden':'true'},[
         h('span',{class:'wiki-requirement-progress',
          style:'width:'+Math.min(100,required>0?current/required*100:100)+'%'})
        ])
-      ])
-     ]);
+      ]));
+     if(adminEditing&&adminToken){
+      target.classList.add('wiki-edit-value');
+      target.title='Двойной клик — изменить требование ветки';
+      target.ondblclick=e=>{
+       e.preventDefault();e.stopPropagation();
+       editWikiValue(target,required,{type:'number',min:0,max:1000,integer:true,
+        onCommit:amount=>saveWikiRecordField('skill',id,'reqs',
+         rec.reqs.map((x,i)=>i===index?{...x,amount}:x))});
+      };
+      chip.append(h('button',{type:'button',class:'wiki-owner-remove',text:'×',
+       'aria-label':'Удалить требование '+branchLabel(req.branch),
+       onclick:()=>void saveWikiRecordField('skill',id,'reqs',
+        rec.reqs.filter((_,i)=>i!==index)).catch(e=>showStudioToast(e.message,'warning'))}));
+     }
      reqs.append(chip);
+    }
+    if(adminEditing&&adminToken&&(rec.reqs||[]).length<20){
+     const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+      text:'+ Требование ветки',onclick:()=>{
+       if(reqs.querySelector('.wiki-inline-select'))return;
+       const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери ветку'});
+       select.append(h('option',{value:'',text:'Выбери ветку'}));
+       for(const branch of branches.filter(x=>!(rec.reqs||[]).some(req=>req.branch===x.id)))
+        select.append(h('option',{value:branch.id,text:branchLabel(branch.id)}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiRecordField('skill',id,'reqs',
+        [...(rec.reqs||[]),{branch:select.value,amount:1}])
+        .catch(e=>showStudioToast(e.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      }});
+     reqs.append(add);
     }
     if(reqs.childElementCount)detail.append(reqs);
     if(rec.prereq!=null&&wikiData.skills?.[rec.prereq]){
