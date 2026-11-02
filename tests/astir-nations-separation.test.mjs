@@ -90,3 +90,14 @@ test('deep links, labels and search remain distinct in RU and EN',()=>{
  assert.match(app,/wikiLink\(dataName\('map',route.countryId\),'map',route.countryId\)/);
  assert.match(app,/const group=geo\?\.district\(id\)\?'city':geo\?\.country\(id\)\?'nation':'other'/);
 });
+
+test('refresh, back, forward and hashchange all accept stable Astir district map links',()=>{
+ const app=read('pandora-studio-app.js');
+ const expected=String.raw`([0-9]{1,15}|astir-(?:union|empire|kingdom))`;
+ assert.equal(app.split(expected).length-1,3,
+  'All three hash readers must support the exact virtual district IDs');
+ for(const id of geo.districtIds.filter(id=>id!=='1001004')){
+  assert.ok(expected.includes('astir-'));
+  assert.ok(wiki.records('map')[id]);
+ }
+});
