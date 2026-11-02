@@ -1414,8 +1414,9 @@ async function loadWiki(){
    trades:window.PandoraStudioTradeOwnerData.apply(
     loaded.data.trades,loaded.data.items,override),
    items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
-  const index=window.PandoraWikiData.build(source);
-  wikiData=source;
+  const resolved=window.PandoraWikiOwnerData.apply(source,override);
+  const index=window.PandoraWikiData.build(resolved);
+  wikiData=resolved;
   wikiIndex=index;
   if(wikiSelection.id!=null)wikiSelection.id=index.canonical(wikiSelection.type,wikiSelection.id);
   return index;
@@ -3461,7 +3462,8 @@ function applyGameLocale(){
  const meta={...catalogSource.meta};
  if(en?.branches)meta.branchLabels={...meta.branchLabels,...en.branches};
  // Verified ID-based Remaked names only; never fuzzy-translate at runtime.
- const localizedSkills=translate(catalogSource.skills,en?.skills);
+ const ownerGameData=window.PandoraWikiOwnerData.apply({skills:catalogSource.skills,souls:catalogSource.souls},override);
+ const localizedSkills=translate(ownerGameData.skills,en?.skills);
  if(lang==='ru'){
   for(const [id,name] of Object.entries(approvedSkillIdNames||{})){
    if(localizedSkills[id])localizedSkills[id]={...localizedSkills[id],name};
@@ -3477,7 +3479,7 @@ function applyGameLocale(){
     [match[1]==='skill'?'name':'desc']:value};
  }
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
-   equipment:translate(itemRecords,en?.items,true),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
+   equipment:translate(itemRecords,en?.items,true),souls:translate(ownerGameData.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  render();
