@@ -135,7 +135,8 @@ function apply(data,overrides){
    if(type==='map'&&!own(next.maps,idValue)&&own(next.trades?.mapNames,idValue)){
     clone();
     if(next.trades===data.trades)next.trades={...data.trades,mapNames:{...data.trades.mapNames}};
-    next.trades.mapNames[idValue]={...next.trades.mapNames[idValue],...patch};continue;
+    next.trades.mapNames[idValue]={...next.trades.mapNames[idValue],...patch,
+     ...('name' in patch?{ownerLabel:true}:{})};continue;
    }
    if(!own(next[collection],idValue))continue;
    const rows=mut(collection);

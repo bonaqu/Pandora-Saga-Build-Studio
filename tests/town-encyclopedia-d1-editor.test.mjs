@@ -134,3 +134,17 @@ test('owner interface offers in-place bilingual editing, NPC creation and editab
  assert.match(exportSource,/npc\\\.astir-npc/);
  assert.ok(geo.district('astir-kingdom'));
 });
+
+test('nation and central-plaza owner names stay editable without confusing town districts',()=>{
+ const b=base();
+ const patched=owner.apply(b,{
+  'wikiedit.map.1001004':JSON.stringify({name:'Главная площадь Астира',nameEn:'Astir Plaza'}),
+  'wikiedit.map.1003001':JSON.stringify({name:'Новое название государства'})
+ });
+ const index=wikiData.build(patched);
+ assert.equal(index.records('map')['1001004'].name,'Главная площадь Астира');
+ assert.equal(index.records('map')['1001004'].nameEn,'Astir Plaza');
+ assert.equal(index.records('map')['1003001'].name,'Новое название государства');
+ assert.equal(index.records('map')['astir-kingdom'].name,'Территория Королевства');
+ assert.equal(b.trades.mapNames[1003001].name,'Королевство Сэнт-Фальстайн');
+});
