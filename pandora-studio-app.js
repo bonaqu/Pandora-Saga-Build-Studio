@@ -1633,7 +1633,7 @@ function renderWiki(root){
   const previous=container.querySelector('.wiki-owner-item-choice');
   if(previous){previous.remove();return}
   const form=h('div',{class:'wiki-owner-source-picker wiki-owner-item-choice'});
-  const search=h('input',{type:'search',class:'wiki-inline-input',
+  const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
    placeholder:'Название предмета…',autocomplete:'off','aria-label':'Найти предмет'});
   const target=h('select',{class:'wiki-inline-select','aria-label':'Выбери предмет'});
   const feedback=h('small',{class:'inline-owner-error',role:'status'});
@@ -1688,9 +1688,9 @@ function renderWiki(root){
   add.onclick=()=>{
    if(container.querySelector('.wiki-owner-relation-picker'))return;
    const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-relation-picker'});
-   const search=h('input',{type:'search',class:'wiki-inline-input',
+   const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
     placeholder:'Поиск по названию…','aria-label':'Поиск для добавления'});
-   guardOwnerInput(search);
+   
    const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери запись'});
    const feedback=h('small',{class:'inline-owner-error',role:'status'});
    const fill=()=>{
@@ -1823,7 +1823,7 @@ function renderWiki(root){
        h('option',{value:'',text:'Выбери тип получения'}),
        h('option',{value:'monster',text:'Монстр'}),
        h('option',{value:'npc',text:'NPC'})]);
-      const search=h('input',{type:'search',class:'wiki-inline-input',
+      const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
        'aria-label':'Найти NPC или монстра',placeholder:'Поиск по названию…',autocomplete:'off'});
       const target=h('select',{class:'wiki-inline-select',
        'aria-label':'У кого получить',disabled:true});
@@ -2170,9 +2170,9 @@ function renderWiki(root){
       plus.onclick=()=>{
        if(list.querySelector('.wiki-owner-effect-picker'))return;
        const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-effect-picker'});
-       const search=h('input',{type:'search',class:'wiki-inline-input',
+       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
         'aria-label':'Поиск эффекта',placeholder:'Найти игровой эффект…'});
-       guardOwnerInput(search);
+       
        const chooser=h('select',{class:'wiki-inline-select','aria-label':'Выбери эффект'});
        const error=h('small',{class:'inline-owner-error',role:'status'});
        const fill=()=>{
@@ -2367,9 +2367,9 @@ function renderWiki(root){
        const prior=prereqPane.querySelector('.wiki-owner-source-picker');
        if(prior){prior.remove();return}
        const panel=h('div',{class:'wiki-owner-source-picker'});
-       const search=h('input',{type:'search',class:'wiki-inline-input',
+       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
         placeholder:'Поиск предыдущего умения…','aria-label':'Найти умение'});
-       guardOwnerInput(search);
+       
        const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери предыдущее умение'});
        const fill=()=>{
         const q=wikiIndex.normalize(search.value);
@@ -2594,7 +2594,7 @@ function renderWiki(root){
     }
     const recipes=wikiIndex.trades(id);
     detail.append(h('h4',{text:wt('Обмен · ','Trades · ')+recipes.length}));
-    const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
+    const recipeSearch=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
      placeholder:wt('Найти предмет или материал…','Find an item or material…'),
      'aria-label':wt('Поиск среди обменов NPC','Search NPC trades')});
     const counter=h('small',{class:'wiki-result-counter'});
@@ -2771,7 +2771,7 @@ function renderWiki(root){
      const levelRange=levels.length?' · ур. '+Math.min(...levels)+
       (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
      detail.append(h('h4',{text:'Монстры · '+mobs.length+levelRange}));
-     const search=h('input',{type:'search',class:'wiki-inline-search',
+     const search=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
        placeholder:wt('Поиск монстра…','Search monsters…'),
        'aria-label':wt('Поиск монстра в подземелье или локации','Search monsters in dungeon or location'),
        name:'monster-roster-filter',autocomplete:'off','data-lpignore':'true',
@@ -3688,7 +3688,7 @@ function showOverrideManager(){
   if(!adminToken)return;
   const body=h('div',{class:'owner-manager'});
   body.append(h('p',{class:'muted',text:'Это сохранённые настройки оформления Cloudflare D1. Сброс отдельной записи возвращает исходный текст или изображение из кода сайта. История отмены действует в этой вкладке.'}));
-  const search=h('input',{type:'search',placeholder:'Найти изменённый элемент…',class:'owner-manager-search'});
+  const search=ownerPlainTextField({placeholder:'Найти изменённый элемент…',class:'owner-manager-search wiki-owner-search'});
   const list=h('div',{class:'owner-manager-list'});
   const draw=()=>{
     list.replaceChildren();
