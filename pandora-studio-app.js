@@ -1633,9 +1633,10 @@ function renderWiki(root){
    type==='skill'?'skills':type==='soul'?'souls':null;
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
   const territoryAlias=type==='map'?({
-   '1002001':'территория союза союз Ванриг',
-   '1003001':'территория королевства Астир Сэнт-Фальстайн',
-   '1004001':'территория империи Лотарская империя'
+   '1001004':'центральная площадь город Астир',
+   '1002001':'территория союза город Астир',
+   '1003001':'территория королевства город Астир',
+   '1004001':'территория империи город Астир'
   }[String(id)]||null):null;
   const value=[dataName(type,id),translated?.n,territoryAlias,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
@@ -2010,7 +2011,7 @@ function renderWiki(root){
      heroCompatible(rec,state.level);
    });
   if(type==='map'&&!wikiSearch){
-   const territories=new Map([['1002001',0],['1003001',1],['1004001',2]]);
+   const territories=new Map([['1001004',0],['1002001',1],['1004001',2],['1003001',3]]);
    results.sort((a,b)=>(territories.get(String(a[0]))??100)-
     (territories.get(String(b[0]))??100));
   }
@@ -2029,10 +2030,10 @@ function renderWiki(root){
    let territoryTitleShown=false,otherMapsTitleShown=false;
    for(const [id,rec]of visible){
     if(type==='map'&&!wikiSearch){
-     const territory=['1002001','1003001','1004001'].includes(String(id));
+     const territory=['1001004','1002001','1003001','1004001'].includes(String(id));
      if(territory&&!territoryTitleShown){
       browse.append(h('h4',{class:'wiki-location-list-heading',
-       text:wt('Территории держав','Nation territories')}));
+       text:wt('Город Астир · четыре района','Astir city · four districts')}));
       territoryTitleShown=true;
      }else if(!territory&&!otherMapsTitleShown){
       browse.append(h('h4',{class:'wiki-location-list-heading',
@@ -2111,17 +2112,28 @@ function renderWiki(root){
    detail.append(city);
   }
   if(type==='map'&&['1002001','1003001','1004001'].includes(String(id))){
-   const nation=String(id)==='1002001'?
-    wt('Территория Союза','Union territory'):
-    String(id)==='1003001'?wt('Территория Королевства','Kingdom territory'):
-    wt('Территория Империи','Empire territory');
-   const panel=h('section',{class:'wiki-nation-territory'});
-   panel.append(h('strong',{text:nation}),
-    h('p',{text:wt('Запись территории подтверждена справочником расположения NPC. ',
-     'This territory is listed in the source NPC location catalog. ')+
-     (String(id)==='1003001'?wt(
-      'На территории Королевства города Астир находится мастер сундуков Культье.',
-      'Chest master Cultier is located in Astir, in the Kingdom district.'):'')}));
+   const routes={
+    '1002001':{zones:['2001001','2002001'],
+     state:wt('Союз северных племён Ванриг','Varik Confederation')},
+    '1004001':{zones:['2001003','2004001'],
+     state:wt('Лотарская империя','Latugan Empire')},
+    '1003001':{zones:['2001002','2003001'],
+     state:wt('Королевство Сэнт-Фальстайн','Kingdom of St. Pfelstein')}
+   };
+   const route=routes[String(id)],panel=h('section',{class:'wiki-nation-territory'});
+   panel.append(h('strong',{text:wt('Маршрут из Астира','Route from Astir')}));
+   const steps=h('div',{class:'wiki-location-route'});
+   steps.append(h('span',{text:dataName('map',id)}));
+   for(const zone of route.zones){
+    steps.append(h('span',{class:'wiki-route-arrow',text:'→'}));
+    steps.append(wikiLink(dataName('map',zone),'map',zone));
+   }
+   steps.append(h('span',{class:'wiki-route-arrow',text:'→'}),
+    h('span',{class:'wiki-route-nation',text:route.state}));
+   panel.append(steps);
+   if(String(id)==='1003001')panel.append(h('p',{text:
+    wt('Здесь, на территории Королевства города Астир, находится мастер сундуков Культье.',
+     'Chest master Cultier is here, in the Kingdom district of Astir.')}));
    detail.append(panel);
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
@@ -2594,7 +2606,7 @@ function renderWiki(root){
      'Фиксированное значение из игрового справочника. Это не рыночная цена между игроками. По имеющимся данным нельзя подтвердить, что именно столько даст торговец при продаже души в лавку.',
      'Fixed value from the game catalog, not the market price between players. The currently available data does not verify the amount a shopkeeper pays for selling this Soul.');
     const heading=h('h4',{class:'wiki-soul-price-heading'});
-    heading.append(h('span',{text:wt('Стоимость по справочнику','Catalog price'),
+    heading.append(h('span',{text:wt('Стоимость','Price'),
      class:'wiki-soul-price-label',title:help,tabindex:'0','aria-label':help}));
     heading.append(h('span',{class:'wiki-soul-price-help',text:'ⓘ',
      title:help,tabindex:'0','aria-label':help}));
@@ -2669,6 +2681,7 @@ function renderWiki(root){
      }
     }else if(places.length)detail.append(linkFlow(places.map(loc=>
      wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
+    else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
     const ownDrop=wikiData.drops?.[id]||{d:[],s:[]};
     const dropRows=()=>({
      d:(ownDrop.d||[]).map(x=>({...x})),
@@ -2725,7 +2738,7 @@ function renderWiki(root){
       flow.append(entry);
      }
      detail.append(flow);
-    }
+    }else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
     if(adminEditing&&adminToken){
       const actions=h('div',{class:'wiki-owner-drop-actions'});
       for(const [group,label] of [['d','+ Обычная добыча'],['s','+ Особая добыча']]){
