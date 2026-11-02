@@ -3,6 +3,7 @@
 // Owner edits are deliberately separate from the upstream game catalog.
 // Sync updates only the base snapshot, never these approved owner overrides.
 const props=['level','W','PEN','AC','atkspeed','range','soulslot'];
+const allowedKinds=new Set('1H_SWORD 2H_SWORD 1H_AXE 2H_AXE 1H_BLUNT_WEAPON 2H_BLUNT_WEAPON POLE_ARM LANCE 1H_TRUMP_WEAPON 2H_TRUMP_WEAPON BOW CROSSBOW WAND STAFF HELMET TORSO CUISSES GLOVES BOOTS FOOT_SHIELD HORSE_SHIELD MANTLE RING AMULET BELT EARRING BRIDLE SADDLE STALL POTION TOY ETC RUNEGEM ARROW BOLT EGGMAKE_KIT MASTER_TALKEGG TALKEGG RECIPE BALM SOUL DECO_HELMET DECO_TORSO DECO_CUISSES DECO_GLOVES DECO_BOOTS DECO_MANTLE'.split(' '));
 const names={level:'Уровень',W:'Атака',PEN:'Пробитие',AC:'Защита',
  atkspeed:'Скорость атаки',range:'Дальность',soulslot:'Гнёзда душ'};
 const effects=[
@@ -33,6 +34,7 @@ function ownPatch(overrides,id){
    selected.name=patch.name;
   if(typeof patch.desc==='string'&&patch.desc.length<=2000)
    selected.desc=patch.desc;
+  if(typeof patch.kind==='string'&&allowedKinds.has(patch.kind))selected.kind=patch.kind;
   if(typeof patch.twoHanded==='boolean')selected.twoHanded=patch.twoHanded;
   if(plain(patch.classes))selected.classes=Object.fromEntries(
    Object.entries(patch.classes).filter(([key,value])=>/^[A-Z_]{2,25}$/.test(key)&&value===1));
@@ -187,7 +189,8 @@ function open({id,item,base,overrides,h,modal,jobKeys,className,onSave,onReset})
   if(proposedDescription!==String(base.desc??''))patch.desc=proposedDescription;
   for(const [key,input]of inputs){
    const value=input.value.trim()===''?null:Number(input.value);
-   if(value!==null&&(!Number.isFinite(value)||value<0||value>100000)){
+   if(value!==null&&(!Number.isFinite(value)||value<0||value>(key==='soulslot'?3:100000)||
+     (key==='soulslot'&&!Number.isInteger(value)))){
     feedback.textContent='Проверь числовое поле «'+names[key]+'».';input.focus();return;
    }
    if(value!==base[key]&&!(value===null&&base[key]==null))patch[key]=value;
