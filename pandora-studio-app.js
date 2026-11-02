@@ -3368,7 +3368,7 @@ async function apiRequest(path,body,token=adminToken) {
  }
  return data;
 }
-function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
+function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Синхронизировать ручные правки с GitHub',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
  const user=h('input',{value:'administrator',readOnly:true}),password=h('input',{type:'password',placeholder:'Пароль администратора',autocomplete:'current-password'}),setup=h('input',{type:'password',placeholder:'Одноразовый секрет первичной настройки (если ещё нет пароля)'}),feedback=h('div',{class:'error'}),go=h('button',{class:'button-action primary',text:'Войти'});go.onclick=async()=>{feedback.textContent='';try{if(!password.value||password.value.length<12)throw Error('Нужен пароль от 12 символов');const data=await apiRequest(setup.value?'/api/admin/setup':'/api/admin/login',setup.value?{username:'administrator',password:password.value,setupToken:setup.value}:{username:'administrator',password:password.value},'');adminToken=data.token;adminEditing=true;$('modalRoot').hidden=true;render();updateAdminHint()}catch(e){feedback.textContent=e.message}};body.append(h('label',{text:'Логин'}),user,h('label',{text:'Пароль'}),password,h('label',{text:'Первичная настройка (заполняется только один раз)'}),setup,go,feedback,h('p',{class:'muted',text:'Первичная настройка требует секрет ADMIN_SETUP_TOKEN, созданный владельцем в настройках Worker. Это защищает имя administrator от захвата посторонними.'}));const checkApi=h('button',{type:'button',class:'button-action',text:'Проверить Cloudflare API',onclick:async()=>{feedback.textContent='Проверяю сервер…';try{const result=await apiRequest('/api/health',null,'');feedback.textContent=result.status==='ok'?'Worker отвечает, D1 подключена.':'Ответ сервера: '+JSON.stringify(result)}catch(e){feedback.textContent=e.message}}});body.append(checkApi);modal('Служебный вход',body)}
 function updateAdminHint(){
  const indicator=$('authState');
@@ -3402,6 +3402,7 @@ function refreshOwnerUI(){
     h('button',{type:'button',text:'↶ Отменить','data-owner-undo':'',disabled:!ownerEdits.length,onclick:undoOwnerEdit}),
     h('button',{type:'button',text:'Все правки',onclick:showOverrideManager}),
     h('button',{type:'button',text:'Игровой каталог',onclick:showCatalogImport}),
+    h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport}),
     h('button',{type:'button',text:'Завершить',onclick:()=>{adminEditing=false;closeInlineEditor();render();updateAdminHint()}}));
   document.body.append(root);
 }
@@ -3753,6 +3754,31 @@ function openWikiItemEditor(id,item){
   className:key=>catalog.classes?.[key]?.name||key,
   onSave:save,onReset:reset
  });
+}
+async function showOwnerGitHubExport(){
+ if(!adminToken)return;
+ try{
+  const info=await apiRequest('/api/admin/catalog/owner-review');
+  if(!info.configured){showStudioToast('GitHub-токен пока недоступен Worker.','warning');return}
+  const panel=h('div',{class:'owner-github-review'});
+  panel.append(h('p',{text:'Подготовить PR ручных изменений энциклопедии: '+info.count+' записей?'}),
+   h('p',{class:'muted',text:'Это экспорт в публичный GitHub. Проверь названия, описания и примечания перед объединением. Пароли и аккаунты не экспортируются. Исходный игровой каталог не изменяется.'}));
+  const feedback=h('p',{class:'inline-owner-error',role:'status'});
+  const go=h('button',{type:'button',class:'button-action primary',text:'Создать PR в GitHub',disabled:!info.count});
+  go.onclick=async()=>{
+   go.disabled=true;
+   try{
+    const result=await apiRequest('/api/admin/catalog/owner-pr',{
+     expectedFingerprint:info.fingerprint});
+    if(result.url&&/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url)){
+     feedback.replaceChildren(h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
+      text:'Открыть PR для проверки'}));
+    }else feedback.textContent=result.unchanged?
+     'Изменений относительно GitHub нет.':'PR создан, но адрес не указан.';
+   }catch(error){feedback.textContent=error.message;go.disabled=false}
+  };
+  panel.append(go,feedback);modal('Синхронизация энциклопедии с GitHub',panel);
+ }catch(error){showStudioToast('Не удалось подготовить экспорт: '+error.message,'warning')}
 }
 async function showCatalogImport(){
  if(!adminToken)return;
