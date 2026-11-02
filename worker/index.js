@@ -65,32 +65,31 @@ async function adminCatalog(request,env,path){
   return json({ok:true,created:true});
  }
  if(path==='/api/admin/catalog/test-write'){
-  // Real D1 write/read/delete acceptance: never uses catalog_current and
-  // therefore cannot change the published game catalog or player accounts.
+  // Validate a real D1 insert/read/delete round-trip using an isolated
+  // never-active snapshot. No change to catalog_current or user accounts.
   const snapshot='qa-'+crypto.randomUUID().replaceAll('-');
   const record=JSON.stringify({temporary:true,snapshot,created:Date.now()});
-  let written=false;
+  let written=false,readback=false,cleaned=false;
   try{
    await env.DB.prepare(
     'INSERT INTO catalog_entries(snapshot,dataset,record_key,name,kind,slot,is_costume_overlay,payload) VALUES(?,?,?,?,?,?,?,?)'
-   ).bind(snapshot,'meta','health','Temporary D1 test','','',0,record).run();
+   ).bind(snapshot,'meta','health','Temporary D1 check','','',0,record).run();
    written=true;
-   const readback=await env.DB.prepare(
+   const saved=await env.DB.prepare(
     'SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset=? AND record_key=?'
    ).bind(snapshot,'meta','health').first();
-   if(readback?.payload!==record)return no('D1 test readback did not match',502);
-   return json({ok:true,readback:true,cleanup:'scheduled'});
+   readback=saved?.payload===record;
   }finally{
    if(written){
-    try{
-     await env.DB.prepare('DELETE FROM catalog_entries WHERE snapshot=? AND dataset=?')
-      .bind(snapshot,'meta').run();
-    }catch(error){
-     // Leave a clear server-side log for manual orphan-row cleanup.
-     console.error('Disposable D1 write check cleanup failed',snapshot,error);
-    }
+    const removed=await env.DB.prepare(
+     'DELETE FROM catalog_entries WHERE snapshot=? AND dataset=?'
+    ).bind(snapshot,'meta').run();
+    cleaned=Number(removed.meta?.changes)===1;
    }
   }
+  if(!readback||!cleaned)return no('D1 isolated write/read/cleanup check failed',502);
+  return json({ok:true,readback:true,cleaned:true,
+   activeCatalogUnchanged:true});
  }
  if(path==='/api/admin/catalog/status'){
   const current=await activeCatalog(env);
