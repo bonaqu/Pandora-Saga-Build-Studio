@@ -1410,8 +1410,13 @@ async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
-  const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
+  // Owner edits rebuild from the already validated snapshot: no redundant
+  // round-trip of all 11 D1 datasets for each double-click edit.
+  if(!wikiBaseData){
+   const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
    wikiBaseData=loaded.data;
+  }
+  const loaded={data:wikiBaseData};
   const skills={...loaded.data.skills};
   for(const [key,value] of Object.entries(override)){
    const parsed=/^(skill|skilldesc)\.([a-zA-Z0-9_-]{1,32})\.([0-9]{1,12})$/.exec(key);
@@ -4408,7 +4413,7 @@ async function showCatalogImport(){
  return workbench.open({
   request:(path,body)=>apiRequest(path,body,adminToken),
   apiBase:API,modal,h,
-  afterPublish:async()=>{wikiIndex=null;wikiData=null;await loadCatalog()}
+  afterPublish:async()=>{wikiBaseData=null;wikiIndex=null;wikiData=null;await loadCatalog()}
  });
 }
 
