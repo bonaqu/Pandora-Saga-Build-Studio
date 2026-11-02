@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const items=JSON.parse(read('data/os/items.json'));
 test('real OS beginner cape contributes +5% earned EXP only when equipped',()=>{
  const cape=items[18073];assert.equal(cape.name,'Плащ новичка');
@@ -21,7 +21,7 @@ test('EXP grade gate respects future refinement requirements without inventing a
  assert.equal(scope.PandoraOSCalculator.experienceBonusPreview({records:records(11)}).entries.length,0);
 });
 test('experience is shown as a separate Hero Book effect rather than added to damage',()=>{
- const app=read('os-calculator.js'),stage=read('stage-attributes.js');
+ const app=read('pandora-os-character-calculator.js'),stage=read('pandora-studio-hero-book.js');
  assert.match(app,/experienceBonus=experienceBonusPreview\(\{records:combinedRecords,itemForth\}\)/);
  assert.match(app,/procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration/);
  assert.match(stage,/Бонус к получаемому опыту/);

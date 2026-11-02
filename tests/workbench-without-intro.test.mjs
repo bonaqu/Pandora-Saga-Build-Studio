@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const html=read('index.html'),app=read('app.js'),css=read('style.css');
+const html=read('index.html'),app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
 test('no visible introduction and character editor immediately follows site notice',()=>{
  assert.doesNotMatch(html,/<section\s+class="intro"/);
  assert.doesNotMatch(html,/АРХИВ ГЕРОЕВ|Создай свою легенду|Выбери расу, профессию, снаряжение/);

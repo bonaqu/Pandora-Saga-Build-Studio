@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('transfer key is revealed on demand, not embedded directly in public library HTML',()=>{
- const src=read('app.js'),html=read('index.html');
+ const src=read('pandora-studio-app.js'),html=read('index.html');
  assert.match(src,/function buildLibraryTransfer\(\)/);
  assert.match(src,/value:'',class:'build-transfer-key'/);
  assert.match(src,/field\.value=tabGuestSecret/);
@@ -15,7 +15,7 @@ test('transfer key is revealed on demand, not embedded directly in public librar
  assert.doesNotMatch(html,/ps-build-library-secret\.v1/);
 });
 test('switch validates remote owner, refuses pending deletions and preserves local data',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/if\(queuedDeletes\(\)\.length\)/);
  assert.match(app,/await cloudLibraryRequest\(null,trimmed\)/);
  assert.match(app,/if\(!response\.records\.some\(record=>!record\.deleted&&record\.entry\)\)/);

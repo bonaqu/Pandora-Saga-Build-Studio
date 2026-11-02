@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const calc=host.PandoraOSCalculator;
 test('OS stun, tumble, burn and other condition resistances read structured item effects',()=>{
  const item={effects:[{func:'EP_IMMUNE_STUN',a:15},
@@ -35,7 +35,7 @@ test('incoming critical resistance uses negative modifier, not increased critica
  assert.equal(result.criticalIncoming,-10);
 });
 test('book labels player-friendly status effects rather than exposing raw EP_* codes',()=>{
- const book=read('stage-attributes.js');
+ const book=read('pandora-studio-hero-book.js');
  assert.match(book,/Сопротивления состояниям/);
  assert.match(book,/rs\.status/);
  assert.match(book,/Заморозка/);

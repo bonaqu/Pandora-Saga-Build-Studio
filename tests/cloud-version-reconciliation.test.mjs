@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',read('build-library-merge.js'))(scope);
+const scope={};Function('window',read('pandora-studio-build-library-merge.js'))(scope);
 const merge=scope.PandoraBuildLibraryMerge.reconcile;
 const A='a'.repeat(32),B='b'.repeat(32);
 test('D1 remains authoritative and a conflicting offline edit becomes a browser-only copy',()=>{
@@ -17,13 +17,13 @@ test('D1 remains authoritative and a conflicting offline edit becomes a browser-
   activeId:B,newId:()=>A});
  assert.deepEqual(repeated.outgoing,[]);
  assert.equal(result.activeId,B);
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/const reconciled=window\.PandoraBuildLibraryMerge\.reconcile/);
  assert.match(app,/if\(libraryChangeId!==generation\)break/);
  assert.match(app,/await putCloudBuild\(entry\)/);
 });
 test('monotonic timestamps and atomic SQLite compare prevent late or same-timestamp clobbers',()=>{
- const app=read('app.js'),worker=read('worker/index.js');
+ const app=read('pandora-studio-app.js'),worker=read('worker/index.js');
  assert.match(app,/Math\.max\(Date\.now\(\),\(existingIndex>=0\?Number\(builds\[existingIndex\]\.at\)\|\|0:0\)\+1\)/);
  assert.match(worker,/private_builds\.deleted_at IS NULL AND \(CAST\(json_extract/);
  assert.match(worker,/private_builds\.payload=excluded\.payload/);

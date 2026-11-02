@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const ctx={};Function('window',read('os-calculator.js'))(ctx);
+const ctx={};Function('window',read('pandora-os-character-calculator.js'))(ctx);
 const calc=ctx.PandoraOSCalculator;
 const sets=JSON.parse(read('data/os/unison.json'));
 const items=JSON.parse(read('data/os/items.json'));
@@ -70,7 +70,7 @@ test('Gold armor fall protection unlocks with four companions and root grade +7'
  assert.equal(effect.effects.length,0,'do not fabricate an immunity percentage from zero-valued EP');
 });
 test('OS catalog atomic snapshot includes unison and the book shows active set effects',()=>{
- const app=read('app.js'),book=read('stage-attributes.js');
+ const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  assert.match(app,/\['meta','classes','skills','items','souls','racialPassives','unison'\]/);
  assert.match(app,/unisonCatalog:catalogSource\?\.unison/);
  assert.match(book,/Активные комплекты/);

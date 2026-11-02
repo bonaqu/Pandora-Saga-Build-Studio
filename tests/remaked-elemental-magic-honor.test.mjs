@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const w={};Function('window',read('os-calculator.js'))(w);
+const w={};Function('window',read('pandora-os-character-calculator.js'))(w);
 const C=w.PandoraOSCalculator;
 const classes=JSON.parse(read('data/os/classes.json'));
 const zeros={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
@@ -29,7 +29,7 @@ test('a planned level-55 hero exposes magic honor without changing attack spells
  assert.equal(honor.level,undefined);
 });
 test('book keeps physical weapon damage separate and renders elemental honor bonuses',()=>{
- const view=read('stage-attributes.js');
+ const view=read('pandora-studio-hero-book.js');
  assert.match(view,/Усиление стихийной магии/);
  assert.match(view,/modifiers\.elementalMagic/);
  assert.match(view,/labels\[element\]/);

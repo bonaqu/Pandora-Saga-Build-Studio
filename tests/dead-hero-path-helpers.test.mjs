@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const app=read('app.js'),milestones=read('skill-milestones.js');
+const app=read('pandora-studio-app.js'),milestones=read('pandora-studio-skill-milestones.js');
 
 test('retired branch-row and archival mark helpers are unreachable and removed',()=>{
  assert.doesNotMatch(app,/\bfunction branchRow\(/);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const sources=Object.fromEntries(['hero-path.js','skill-progression.js','game-navigation.js','app.js'].map(p=>[p,read(p)]));
+const sources=Object.fromEntries(['pandora-studio-hero-path.js','pandora-studio-skill-progression.js','pandora-studio-navigation.js','pandora-studio-app.js'].map(p=>[p,read(p)]));
 const classes=JSON.parse(read('data/os/classes.json')),tables=JSON.parse(read('data/os/tables.json'));
 class BrowserElement {
  constructor(tag){
@@ -40,8 +40,8 @@ class BrowserElement {
 const doc={createElement:tag=>new BrowserElement(tag),createTextNode:text=>({tag:'#text',textContent:text})};
 const walk=node=>[node,...(node.children||[]).flatMap(x=>x.tag==='#text'?[x]:walk(x))];
 const root={};
-for(const path of ['skill-progression.js','game-navigation.js'])Function('window',sources[path])(root);
-Function('window','document',sources['hero-path.js'])(root,doc);
+for(const path of ['pandora-studio-skill-progression.js','pandora-studio-navigation.js'])Function('window',sources[path])(root);
+Function('window','document',sources['pandora-studio-hero-path.js'])(root,doc);
 const points=root.PandoraSkillProgression;
 function fixture(job='CLERIC',section='prayer',branch='benevolence'){
  const state={level:45,points:{},masteryAuto:true,mastery:{}};
@@ -87,7 +87,7 @@ test('zero class-cap cannot be spent',()=>{
  assert.ok(range);assert.equal(range.disabled,true);assert.equal(budget().remaining,103);
 });
 test('actual app category handler collapses and reopens on repeated click',()=>{
- const match=sources['app.js'].match(/onGroup:(key=>\{[\s\S]*?\n  \}),\n  onExpand:/);
+ const match=sources['pandora-studio-app.js'].match(/onGroup:(key=>\{[\s\S]*?\n  \}),\n  onExpand:/);
  assert.ok(match,'handler not found');
  const run='let selectedSkillGroup="prayer",inlineBranchId="benevolence",pathGroupTouched=false;'+
   'const branchCap=k=>k==="benevolence"?90:0,renderBranches=()=>{},saveView=()=>{};'+
@@ -102,7 +102,7 @@ test('actual app category handler collapses and reopens on repeated click',()=>{
  assert.equal(x.read().inlineBranchId,'');
 });
 test('HTML boolean attributes in app factory use actual property semantics',()=>{
- const app=sources['app.js'],begin=app.indexOf('function h('),end=app.indexOf('\nfunction imageUrl',begin);
+ const app=sources['pandora-studio-app.js'],begin=app.indexOf('function h('),end=app.indexOf('\nfunction imageUrl',begin);
  assert.ok(begin>=0&&end>begin);
  const h=Function('document',app.slice(begin,end)+'\nreturn h;')(doc);
  const enabled=h('button',{disabled:false,text:'Enabled'});
@@ -123,12 +123,12 @@ test('automatic category selection prioritizes real class branch caps over arbit
  assert.equal(classGroup('MAGE'),'magic');
  assert.equal(classGroup('WARRIOR'),'melee');
  assert.equal(classGroup('PREDATOR'),'tactics');
- assert.match(sources['app.js'],/const ranked=groups\.map\(group=>/);
- assert.match(sources['app.js'],/selectedSkillGroup=ranked\[0\]\.id/);
+ assert.match(sources['pandora-studio-app.js'],/const ranked=groups\.map\(group=>/);
+ assert.match(sources['pandora-studio-app.js'],/selectedSkillGroup=ranked\[0\]\.id/);
 });
 
 test('real class change handler preserves all invested points and resets only navigation',()=>{
- const source=sources['app.js'];
+ const source=sources['pandora-studio-app.js'];
  const match=source.match(/function selectJob\(index\)\{[\s\S]*?\n\}\nfunction renderJobs/);
  assert.ok(match,'selectJob implementation is missing');
  const body=match[0].replace(/\nfunction renderJobs$/,'');
@@ -152,8 +152,8 @@ test('real class change handler preserves all invested points and resets only na
 test('OS skills above class cap stay visible as locked milestone data',()=>{
  const catalog=Object.values(JSON.parse(read('data/os/skills.json')));
  const library={};
- Function('window',read('skill-milestones.js'))(library);
- const source=sources['app.js'];
+ Function('window',read('pandora-studio-skill-milestones.js'))(library);
+ const source=sources['pandora-studio-app.js'];
  const m=source.match(/milestones:(\(skills,key,cap\)=>\{[\s\S]*?\n  \}),\n  onGroup:/);
  assert.ok(m,'Hero Path milestone adapter missing');
  const adapter=Function('window','return ('+m[1]+')')({PandoraSkillMilestones:library.PandoraSkillMilestones});
@@ -169,15 +169,15 @@ test('OS skills above class cap stay visible as locked milestone data',()=>{
 });
 
 test('closing a group clears child expansion and reopening leaves all branches folded',()=>{
- const app=sources['app.js'];
+ const app=sources['pandora-studio-app.js'];
  assert.match(app,/inlineBranchId='';\s*renderBranches\(\)/);
  assert.match(app,/bootView\.groupTouched&&bootView\.expandedBranch===''/);
  assert.match(app,/if\(selected&&\(inlineBranchId===null/);
 });
 
 test('real class milestone markers have preview tooltips without blocking the range',()=>{
- Function('window',read('skill-milestones.js'))(root);
- const app=sources['app.js'];
+ Function('window',read('pandora-studio-skill-milestones.js'))(root);
+ const app=sources['pandora-studio-app.js'];
  const m=app.match(/milestones:(\(skills,key,cap\)=>\{[\s\S]*?\n  \}),\n  onGroup:/);
  assert.ok(m);
  const adapter=Function('window','return ('+m[1]+')')({PandoraSkillMilestones:root.PandoraSkillMilestones});
@@ -282,7 +282,7 @@ test('requirements above 90 points remain accessible in list without rendering o
  assert.equal(list[1].className.includes('unreachable'),true);
 });
 test('skill milestones remain inside the bar and update their reached state after allocating mastery',()=>{
- const css=read('style.css');
+ const css=read('pandora-studio-theme.css');
  const patch=css.slice(css.lastIndexOf('/* 0.195.0 — independent skill notches'));
  assert.match(patch,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?top:0/);
  assert.match(patch,/\.path-integrated-track \.path-integrated-milestones\{/);
@@ -318,7 +318,7 @@ test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch
   assert.equal(counter.textContent,n+' / 90','correct invested count at '+n);
   assert.equal(mastery.value,String(n),'mastery value still updates at '+n);
  }
- const css=read('style.css');
+ const css=read('pandora-studio-theme.css');
  assert.match(css,/\.game-tree-group \.branch-row>div>strong\{[\s\S]*?white-space:nowrap/);
  assert.match(css,/\.game-tree-group \.branch-row>\.count\{[\s\S]*?white-space:nowrap/);
 });

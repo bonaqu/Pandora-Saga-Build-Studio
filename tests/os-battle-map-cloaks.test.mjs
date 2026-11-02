@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const C=scope.PandoraOSCalculator,items=JSON.parse(read('data/os/items.json')),
  skills=JSON.parse(read('data/os/skills.json')),
  english=JSON.parse(read('data/os/strings.en.json')),
@@ -63,7 +63,7 @@ test('wrong cloak ID, source key, skill, value, description, slot or grade fails
  assert.deepEqual(preview(base,18024,{...skills,500000046:noMapChange}),[]);
 });
 test('hero book displays player-friendly bilingual map-limited section, not EP codes',()=>{
- const view=read('stage-attributes.js'),calc=read('os-calculator.js');
+ const view=read('pandora-studio-hero-book.js'),calc=read('pandora-os-character-calculator.js');
  assert.match(view,/Бонусы плаща на военных картах/);
  assert.match(view,/Battle-map-only cloak bonuses/);
  assert.match(view,/modifiers\?\.battleMapCloaks\?\.entries/);

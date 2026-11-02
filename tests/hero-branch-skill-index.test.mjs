@@ -2,13 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const source=read('hero-path.js');
+const source=read('pandora-studio-hero-path.js');
 const from=source.indexOf('function indexSkillsByBranch('),to=source.indexOf('function readiness(',from);
 assert.ok(from>=0&&to>from);
 const index=new Function(source.slice(from,to)+'\nreturn indexSkillsByBranch;')();
 const skills=Object.values(JSON.parse(read('data/os/skills.json')));
 const classes=JSON.parse(read('data/os/classes.json'));
-const nav={};Function('window',read('game-navigation.js'))(nav);
+const nav={};Function('window',read('pandora-studio-navigation.js'))(nav);
 const branchIds=[...new Set(nav.PandoraGameNavigation.groups.flatMap(group=>group.branches).filter(k=>k!=='race'))];
 
 test('one-pass indexed branch skills exactly match old filter across every official class',()=>{

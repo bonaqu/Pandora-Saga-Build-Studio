@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const css=read('style.css'),path=read('hero-path.js');
+const css=read('pandora-studio-theme.css'),path=read('pandora-studio-hero-path.js');
 const legacy=['inline-branch-milestones','inline-milestone','path-threshold-tick',
  'path-milestone-pin','path-milestone-core'];
 

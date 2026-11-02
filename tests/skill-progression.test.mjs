@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const models={};
-for(const path of ['skill-progression.js','attribute-progression.js','os-calculator.js'])
+for(const path of ['pandora-studio-skill-progression.js','pandora-studio-attribute-progression.js','pandora-os-character-calculator.js'])
  Function('window',source(path))(models);
 const S=models.PandoraSkillProgression,A=models.PandoraAttributeProgression,
  OS=models.PandoraOSCalculator,tables=JSON.parse(source('data/os/tables.json'));
@@ -72,7 +72,7 @@ test('skill gallery greys 45-potential/42-green threshold until training complet
  const scope={PandoraSkillProgression:S};
  const doc={createElement:tag=>({tag,children:[],append(){},setAttribute(){},addEventListener(){}}),
  createTextNode:text=>({textContent:text})};
- Function('window','document',source('hero-path.js'))(scope,doc);
+ Function('window','document',source('pandora-studio-hero-path.js'))(scope,doc);
  const base={id:11,name:'Секущий',classes:{WARRIOR:1},charLevel:1,
   reqs:[{branch:'slash',amount:45}]};
  const upgrade={id:12,name:'Следующий',classes:{WARRIOR:1},charLevel:1,

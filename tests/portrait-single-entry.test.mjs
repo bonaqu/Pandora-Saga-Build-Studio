@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const src=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('hero itself opens book; no competing buttons or pointer hand',()=>{
- const html=src('index.html'),app=src('app.js'),css=src('style.css');
+ const html=src('index.html'),app=src('pandora-studio-app.js'),css=src('pandora-studio-theme.css');
  assert.match(html,/id="hero"[^>]*role="button"/);
  for(const id of ['portraitBookOpen','stageAttributeToggle','stageBuffToggle'])
   assert.doesNotMatch(html,new RegExp('id="'+id+'"'));
@@ -20,13 +20,13 @@ test('origin stats have only values, and all legacy boost control input nodes ar
   assert.match(html,new RegExp('id="'+key+'"'));
 });
 test('book navigation prev/next/close shares one exact CSS box',()=>{
- const css=src('style.css');
+ const css=src('pandora-studio-theme.css');
  assert.match(css,/\.stage-book-arrow,\s*\.stage-attribute-head \.stage-book-close/);
  assert.match(css,/height:36px!important/);
  assert.match(css,/width:36px!important/);
 });
 test('no technical effect counts under the book summary',()=>{
- const stage=src('stage-attributes.js');
+ const stage=src('pandora-studio-hero-book.js');
  assert.doesNotMatch(stage,/Учтено структурированных эффектов предметов и душ/);
  assert.doesNotMatch(stage,/Окончательный урон на игровом сервере ещё не моделируется/);
 });

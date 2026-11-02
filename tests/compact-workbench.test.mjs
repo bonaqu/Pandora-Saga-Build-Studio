@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const html=read('index.html'),app=read('app.js'),css=read('style.css'),hero=read('hero-path.js');
+const html=read('index.html'),app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css'),hero=read('pandora-studio-hero-path.js');
 
 test('unused hero HUD, dummy name and experience disappear from the actual page',()=>{
  assert.doesNotMatch(html,/id="psHud"/);

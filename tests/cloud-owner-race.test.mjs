@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
 function extract(start,end){
  const a=app.indexOf(start),b=app.indexOf(end,a);
  assert.ok(a>0&&b>a,'Function boundary missing: '+start);

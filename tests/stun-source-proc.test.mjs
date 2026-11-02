@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const items=JSON.parse(read('data/os/items.json'));
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const calc=scope.PandoraOSCalculator;
 
 test('Iron Staff source EP_ONHIT_STUN reports physical-hit 4% stun, not an imaginary skill ID',()=>{
@@ -30,5 +30,5 @@ test('stun stays a proc entry, not a flat status bonus',()=>{
  const staff=items['2802'],stats=calc.gatherEffects([['item:2802',staff,0]]);
  assert.equal(stats.bonuses.stun,undefined);
  assert.equal(calc.conditionalProcPreview({records:[]}).entries.length,0);
- assert.match(read('stage-attributes.js'),/Срабатывания предметов и душ/);
+ assert.match(read('pandora-studio-hero-book.js'),/Срабатывания предметов и душ/);
 });

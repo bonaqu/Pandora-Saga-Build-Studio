@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import '../ui-planner.js';
+import '../pandora-studio-ui-planner.js';
 
 const ui=globalThis.PandoraUIPlanner;
 test('separate portrait variants permit gender selection; single variant locks it',()=>{

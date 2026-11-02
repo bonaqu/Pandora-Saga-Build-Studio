@@ -20,7 +20,7 @@ test('every live OS soul shares a source-backed item sprite identity',()=>{
 });
 
 test('wiki resolves chests by item ID and soul portraits through item icon catalog',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/type==='chest'\?wikiData\.items\?\.\[id\]/);
  assert.match(app,/itemIcon\(wikiData\.items\?\.\[id\]\|\|row,'items'\)/);
  assert.match(app,/type==='item'\|\|type==='chest'\|\|type==='soul'/);
@@ -28,7 +28,7 @@ test('wiki resolves chests by item ID and soul portraits through item icon catal
 });
 
 test('soul icon resolution uses canonical item URLs in sockets and wiki',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  const start=app.indexOf('function itemIcon('),end=app.indexOf('\nfunction branchCap',start);
  assert.ok(start>=0&&end>start);
  const factory=Function('override','iconManifest','unavailableIconIds','OS',app.slice(start,end)+'\nreturn itemIcon');
@@ -41,7 +41,7 @@ test('soul icon resolution uses canonical item URLs in sockets and wiki',()=>{
 });
 
 test('NPC recipes, monster details and locations are searchable game data',()=>{
- const app=read('app.js'),styles=read('style.css');
+ const app=read('pandora-studio-app.js'),styles=read('pandora-studio-theme.css');
  assert.match(app,/const filterRecipes=/);
  assert.match(app,/wiki-trade-cost/);
  assert.match(app,/wiki-map-monsters/);
@@ -50,7 +50,7 @@ test('NPC recipes, monster details and locations are searchable game data',()=>{
 });
 
 test('wiki item and skill details expose source fields, class names, and progressive source lists',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/rec\.PEN/);
  assert.match(app,/rec\.atkspeed/);
  assert.match(app,/rec\.twoHanded===true/);
@@ -68,7 +68,7 @@ test('wiki item and skill details expose source fields, class names, and progres
  assert.match(app,/\(trade\.mats\|\|\[\]\)\.map/);
 });
 test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-less locations',()=>{
- const app=read('app.js'),css=read('style.css'),book=read('stage-item-ui.js');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css'),book=read('pandora-studio-equipment-ui.js');
  assert.match(app,/const wikiGlyphs=/);
  assert.match(app,/class:'wiki-list-glyph'/);
  assert.match(app,/class:cls.includes\('wiki-list-icon'\)/);
@@ -80,7 +80,7 @@ test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-
  assert.match(app,/\['item','chest','soul'\]\.includes\(type\)\?window\.PandoraItemPresentation\.description/);
 });
 test('wiki shows localized game class names and consistent source labels',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/PandoraItemPresentation\.kind\(rec,lang\)/);
  assert.match(app,/keys\.map\(classLabel\)\.filter\(Boolean\)/);
  assert.match(app,/const monsterStats=/);
@@ -90,7 +90,7 @@ test('wiki shows localized game class names and consistent source labels',()=>{
  assert.match(app,/if\(fromD1&&\(snapshots\.size!==1\|\|unknown\.length\)\)/);
 });
 test('encyclopedia CSS has one canonical image size, descriptions and monster grid',()=>{
- const css=read('style.css');
+ const css=read('pandora-studio-theme.css');
  for(const selector of [/^\.wiki-list-icon\s*\{/gm,/^\.wiki-monster-stats\s*\{/gm,
   /^\.wiki-description\s*\{/gm]){
   assert.equal([...css.matchAll(selector)].length,1,'Duplicate encyclopedia CSS selector');
@@ -99,7 +99,7 @@ test('encyclopedia CSS has one canonical image size, descriptions and monster gr
  assert.match(css,/\.wiki-description\{white-space:pre-wrap;overflow-wrap:anywhere/);
 });
 test('EN encyclopedia uses authoritative NPC/chest/settlement names, and chest descriptions from item source',()=>{
- const app=read('app.js'),wiki=read('wiki-data.js'),en=JSON.parse(read('data/os/strings.en.json'));
+ const app=read('pandora-studio-app.js'),wiki=read('pandora-studio-encyclopedia-data.js'),en=JSON.parse(read('data/os/strings.en.json'));
  assert.ok(en.tradeNpcs?.['53']?.n);
  assert.ok(en.tradeMaps?.['1001004']?.n);
  assert.ok(en.items?.['51003']?.d);
@@ -110,7 +110,7 @@ test('EN encyclopedia uses authoritative NPC/chest/settlement names, and chest d
  assert.match(wiki,/const entries=\{\},terms=\{\},aliases=\{\},variants=\{\}/);
 });
 test('encyclopedia equipment owns catalog filters and coherent grid/list views',()=>{
- const html=read('index.html'),app=read('app.js'),css=read('style.css');
+ const html=read('index.html'),app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.doesNotMatch(html,/<nav id="nav">[^<]*<button data-tab="equipment"/);
  assert.doesNotMatch(html,/<nav id="dockTabs"[^>]*>\s*<button[^>]*data-tab="character"/);
  assert.match(html,/data-tab="wiki" data-i18n="wiki">📜 Энциклопедия/);
@@ -121,7 +121,7 @@ test('encyclopedia equipment owns catalog filters and coherent grid/list views',
  assert.doesNotMatch(app,/function renderEquipment\(/);
 });
 test('every encyclopedia chapter supports the same list/grid switch and clean chest source links',()=>{
- const app=read('app.js'),css=read('style.css');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  const fragment=app.slice(app.indexOf('function renderWiki(root)'),app.indexOf('function renderProfile(root)'));
  const view=fragment.indexOf("const view=h('div',{class:'wiki-equipment-view'");
  const itemOnly=fragment.indexOf("if(wikiSelection.type==='item')");
@@ -133,7 +133,7 @@ test('every encyclopedia chapter supports the same list/grid switch and clean ch
  assert.match(css,/\.wiki-list\.wiki-gear-grid/);
 });
 test('removed equipment catalog has no duplicate CSS components or unused tabs',()=>{
- const css=read('style.css'),html=read('index.html');
+ const css=read('pandora-studio-theme.css'),html=read('index.html');
  for(const old of ['.equipment-catalog-head{','.gear-list.inventory-grid{',
   '.item-inspector-pin{','.gear-list.soul-catalog{']){
   assert.ok(!css.includes(old),'obsolete stylesheet rule: '+old);
@@ -143,14 +143,14 @@ test('removed equipment catalog has no duplicate CSS components or unused tabs',
  assert.match(css,/\.wiki-gear-grid\{/);
 });
 test('game encyclopedia explains race/sex restrictions without exposing technical IDs',()=>{
- const app=read('app.js'),css=read('style.css'),hover=read('stage-item-ui.js');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css'),hover=read('pandora-studio-equipment-ui.js');
  assert.match(app,/PandoraUIPlanner\.outfitWearers\(rec,lang\)/);
  assert.match(app,/class:'wiki-item-wearers'/);
  assert.match(css,/\.wiki-item-wearers\{/);
  assert.match(hover,/PandoraUIPlanner\?\.outfitWearers\?\.\(record,locale\)/);
 });
 test('equipment chapter filters current class, race, sex and level without redundant future filter',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/wikiItemEligibility='all'/);
  assert.match(app,/class:'wiki-eligibility-filter'/);
  assert.doesNotMatch(app,/Подходит до 55 уровня|Compatible by level 55/);
@@ -160,7 +160,7 @@ test('equipment chapter filters current class, race, sex and level without redun
  assert.match(app,/nameCache\.set\(key,value\)/);
 });
 test('item and soul sources use one translated renderer and independent pagination counters',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/const sourceEntry=\(row,itemId\)=>/);
  assert.equal((app.match(/appendSourceFlow\(found,id\)/g)||[]).length,2);
  assert.match(app,/class:'wiki-source-flow'/);
@@ -172,7 +172,7 @@ test('item and soul sources use one translated renderer and independent paginati
  assert.match(app,/No confirmed sources in the current catalog/);
 });
 test('English encyclopedia indexes official names only and never reveals raw class codes',()=>{
- const app=read('app.js'),english=JSON.parse(read('data/os/strings.en.json'));
+ const app=read('pandora-studio-app.js'),english=JSON.parse(read('data/os/strings.en.json'));
  assert.ok(english.classes?.WARRIOR?.n);
  assert.equal(typeof english.branches?.slash,'string');
  assert.match(app,/const searchTerms=\(type,id\)=>/);
@@ -184,14 +184,14 @@ test('English encyclopedia indexes official names only and never reveals raw cla
  assert.doesNotMatch(app,/names\.join\(', '\)/);
 });
 test('nested trade and map searches use the same order-independent token matching',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/const matchesWords=\(text,query\)=>/);
  assert.match(app,/matchesWords\(card\.searchText,recipeSearch\.value\)/);
  assert.match(app,/matchesWords\(row\.name,search\.value\)/);
  assert.doesNotMatch(app,/card\.searchText\.includes\(query\)/);
 });
 test('all-class gear stays compact while restricted classes are readable on demand',()=>{
- const app=read('app.js'),css=read('style.css');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/const renderClassEligibility=keys=>/);
  assert.match(app,/jobKeys\.every\(id=>keys\.includes\(id\)\)/);
  assert.match(app,/class:'wiki-class-all'/);
@@ -204,7 +204,7 @@ test('all-class gear stays compact while restricted classes are readable on dema
  assert.match(app,/class:'wiki-class-tag'/);
 });
 test('skill requirements and chest reward groups use interactive game-style UI',()=>{
- const app=read('app.js'),css=read('style.css');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/class:'wiki-requirement-chip'/);
  assert.match(app,/class:'wiki-requirement-track'/);
  assert.match(app,/class:'wiki-prerequisite'/);
@@ -218,7 +218,7 @@ test('skill requirements and chest reward groups use interactive game-style UI',
  assert.doesNotMatch(app,/p==null\?'':' · '\+row\.p\+'% внутри группы'/);
 });
 test('monster loot and item-to-NPC relationships use compact accessible cards',()=>{
- const app=read('app.js'),css=read('style.css');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/class:'wiki-loot-flow'/);
  assert.match(app,/class:'wiki-loot-chip'/);
  assert.match(app,/class:'wiki-recipe-uses'/);
@@ -229,7 +229,7 @@ test('monster loot and item-to-NPC relationships use compact accessible cards',(
  assert.match(css,/\.wiki-recipe-uses/);
 });
 test('encyclopedia reuses shared equipment hover previews, exposes resistance chips and RU instance descriptions',()=>{
- const app=read('app.js'),ui=read('stage-item-ui.js'),css=read('style.css');
+ const app=read('pandora-studio-app.js'),ui=read('pandora-studio-equipment-ui.js'),css=read('pandora-studio-theme.css');
  const instances=JSON.parse(read('data/os/instances.json'));
  assert.equal(instances.length,6);
  assert.ok(instances.every(x=>x.blurbRu&&x.blurbRu!==x.blurb));
@@ -242,8 +242,8 @@ test('encyclopedia reuses shared equipment hover previews, exposes resistance ch
  assert.match(css,/\.wiki-resist-glyph/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
- const calc=read('os-calculator.js'),app=read('app.js');
- const stage=read('stage-attributes.js'),html=read('index.html');
+ const calc=read('pandora-os-character-calculator.js'),app=read('pandora-studio-app.js');
+ const stage=read('pandora-studio-hero-book.js'),html=read('index.html');
  assert.doesNotMatch(html,/originRuneJoEun|Руна «Чо Ын»/);
  assert.doesNotMatch(stage,/runeJoEun|Чо Ын/);
  assert.doesNotMatch(app,/originRuneJoEun/);
@@ -252,7 +252,7 @@ test('absent OS rune has no player-facing setting or live calculation contributi
 });
 
 test('skills expose hover preview, and book uses branded checkboxes and source-backed potions',()=>{
- const path=read('hero-path.js'),book=read('stage-attributes.js'),css=read('style.css');
+ const path=read('pandora-studio-hero-path.js'),book=read('pandora-studio-hero-book.js'),css=read('pandora-studio-theme.css');
  assert.match(path,/path-milestone-tooltip/);
  assert.match(path,/path-milestone-preview/);
  assert.match(path,/tabindex:'0'/);

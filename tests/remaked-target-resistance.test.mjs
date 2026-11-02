@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const C=scope.PandoraOSCalculator;
 const souls=JSON.parse(read('data/os/souls.json'));
 const en=JSON.parse(read('data/os/strings.en.json'));
@@ -57,7 +57,7 @@ test('two valid sockets remain separate previews; no invented stacking',()=>{
 });
 
 test('bilingual Book labels keep separate creature damage from global defense',()=>{
- const code=read('os-calculator.js'),book=read('stage-attributes.js');
+ const code=read('pandora-os-character-calculator.js'),book=read('pandora-studio-hero-book.js');
  assert.match(code,/const targetResistance=targetResistancePreview\(/);
  assert.match(code,/resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration/);
  assert.match(book,/english\?'Defense by enemy type'/);

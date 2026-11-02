@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const C=scope.PandoraOSCalculator;
 const skills=JSON.parse(read('data/os/skills.json'));
 const en=JSON.parse(read('data/os/strings.en.json'));
@@ -94,7 +94,7 @@ test('song preview never adds a toggle-only effect to ordinary HP/MP/combat stat
  assert.deepEqual(ready.combat.attack,none.combat.attack);
 });
 test('bilingual song UI stays collapsed and communicates preview-only conditions',()=>{
- const stage=read('stage-attributes.js'),style=read('style.css'),calc=read('os-calculator.js');
+ const stage=read('pandora-studio-hero-book.js'),style=read('pandora-studio-theme.css'),calc=read('pandora-os-character-calculator.js');
  assert.match(stage,/make\('details',\{class:'stage-legacy-buff-previews stage-song-skills'\}\)/);
  assert.match(stage,/english\?entry.nameEn:entry.name/);
  assert.match(stage,/english\?entry.descriptionEn:entry.description/);
@@ -107,7 +107,7 @@ test('bilingual song UI stays collapsed and communicates preview-only conditions
 });
 
 test('Hero Book groups song effects with skill effects, not configuration controls',()=>{
- const book=read('stage-attributes.js');
+ const book=read('pandora-studio-hero-book.js');
  const buffsStart=book.indexOf('function buffsPage(');
  const songsStart=book.indexOf('function renderSongSkills(');
  const skillsStart=book.indexOf('function skillEffectsPage(');

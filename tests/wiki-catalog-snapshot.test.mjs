@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import worker from '../worker/index.js';
 
-const source=readFileSync(new URL('../wiki-catalog.js',import.meta.url),'utf8');
+const source=readFileSync(new URL('../pandora-studio-encyclopedia-catalog.js',import.meta.url),'utf8');
 const host={};
 Function('window',source)(host);
 const loader=host.PandoraWikiCatalog;

@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
-const html=read('index.html'),js=read('app.js'),css=read('style.css');
-const hero=read('hero-path.js');
+const html=read('index.html'),js=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
+const hero=read('pandora-studio-hero-path.js');
 
 test('only the site header owns language selection; modal duplicates are gone',()=>{
  assert.match(html,/id="locale" class="locale-switch"/);

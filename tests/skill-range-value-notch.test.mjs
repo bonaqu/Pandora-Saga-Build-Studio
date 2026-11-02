@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const js=read('hero-path.js'),css=read('style.css');
+const js=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
 const start=js.indexOf('    const railInset=21;');
 const end=js.indexOf('    const lockedFraction=',start);
 assert.ok(start>=0&&end>start,'Shared rail coordinate helpers must exist');

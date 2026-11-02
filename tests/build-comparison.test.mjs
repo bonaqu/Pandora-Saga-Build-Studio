@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const root={};
-Function('window',readFileSync(new URL('../build-comparison.js',import.meta.url),'utf8'))(root);
-Function('window',readFileSync(new URL('../enchant-model.js',import.meta.url),'utf8'))(root);
+Function('window',readFileSync(new URL('../pandora-studio-build-comparison.js',import.meta.url),'utf8'))(root);
+Function('window',readFileSync(new URL('../pandora-studio-enchantment.js',import.meta.url),'utf8'))(root);
 const compare=(a,b,lang='ru')=>root.PandoraBuildComparison.describe(a,b,{
  lang,slotLabels:['Оружие','Щит'],enchant:root.PandoraEnchantModel,
  honorTitles:[{ru:'Нет титула',en:'None'},{ru:'Сила познания',en:'Curiosity'}]
@@ -50,8 +50,8 @@ test('English comparison has player-friendly labels and translated honor titles'
 });
 test('the comparison helper is loaded before the main app and included in saved build comparison',()=>{
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
- const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
- assert.ok(html.indexOf('build-comparison.js?v=')<html.indexOf('src="app.js?v='));
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ assert.ok(html.indexOf('pandora-studio-build-comparison.js?v=')<html.indexOf('src="pandora-studio-app.js?v='));
  assert.match(app,/PandoraBuildComparison\.describe\(a,b/);
 });
 
@@ -68,7 +68,7 @@ test('saved gear and Soul identities use OS names instead of falsely saying empt
  assert.equal(name({id:'not-an-id',name:'Old custom gear'},equipment),'Old custom gear');
 });
 test('main build diff now compares race and resolves equipment/Soul names from the source catalogs',()=>{
- const code=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+ const code=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  const from=code.indexOf('function compareSnapshots(a,b){');
  const to=code.indexOf('function restoreLoadedBuildUI(){',from);
  assert.ok(from>0&&to>from);

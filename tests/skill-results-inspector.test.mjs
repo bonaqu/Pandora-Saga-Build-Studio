@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const target={};Function('window',read('skill-results.js'))(target);
+const target={};Function('window',read('pandora-studio-skill-results.js'))(target);
 const create=target.PandoraSkillResults.create;
 const cls={WARRIOR:1};
 const mock={
@@ -34,7 +34,7 @@ test('mastery requirement and character level are checked separately',()=>{
  assert.match(a.records.find(x=>x.id==='1002').requirement,/Ветка slash 7\/8/);
 });
 test('Hero Book does not duplicate Hero Path skill explorer',()=>{
- const app=read('app.js'),book=read('stage-attributes.js');
+ const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  assert.doesNotMatch(book,/renderSkillInspector|stage-skill-inspector/);
  assert.doesNotMatch(app,/PandoraSkillResults\.create\(/);
  assert.match(book,/\['effects','Эффекты умений'\]/);

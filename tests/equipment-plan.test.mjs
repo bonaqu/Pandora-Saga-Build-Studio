@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
 const ctx={window:{}};
-vm.runInNewContext(readFileSync(new URL('../equipment-plan.js',import.meta.url),'utf8'),ctx);
+vm.runInNewContext(readFileSync(new URL('../pandora-studio-equipment-plan.js',import.meta.url),'utf8'),ctx);
 const p=ctx.window.PandoraEquipmentPlan;
 test('old one-soul build remains readable',()=>assert.equal(p.asSocketArray({id:101}).length,1));
 test('actual 0,1,2,3 socket counts are respected',()=>{for(const n of [0,1,2,3])assert.equal(p.socketCapacity({soulslot:n}),n)});

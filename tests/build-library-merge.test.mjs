@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const host={};
-Function('window',readFileSync(new URL('../build-library-merge.js',import.meta.url),'utf8'))(host);
+Function('window',readFileSync(new URL('../pandora-studio-build-library-merge.js',import.meta.url),'utf8'))(host);
 const reconcile=host.PandoraBuildLibraryMerge.reconcile;
 const A='a'.repeat(32),B='b'.repeat(32),C='c'.repeat(32),D='d'.repeat(32);
 const mk=(id,at,level,name='Hero')=>({id,name,at,data:{race:1,job:16,level}});

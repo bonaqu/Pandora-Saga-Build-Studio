@@ -5,7 +5,7 @@ import {spawnSync} from 'node:child_process';
 const root=new URL('../',import.meta.url);
 const source=readFileSync(new URL('scripts/apply-reviewed-os-export.mjs',root),'utf8');
 const worker=readFileSync(new URL('worker/index.js',root),'utf8');
-const app=readFileSync(new URL('app.js',root),'utf8');
+const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
 const html=readFileSync(new URL('index.html',root),'utf8');
 const workbench=readFileSync(new URL('pandora-os-catalog-workbench.js',root),'utf8');
 
@@ -50,7 +50,7 @@ test('all versioned scripts and styles resolve after descriptive module renames'
    names.indexOf('pandora-os-catalog-workbench.js'));
  assert.ok(names.indexOf('pandora-os-catalog-review.js')<
    names.indexOf('pandora-os-catalog-workbench.js'));
- assert.ok(names.indexOf('pandora-os-catalog-workbench.js')<names.indexOf('app.js'));
+ assert.ok(names.indexOf('pandora-os-catalog-workbench.js')<names.indexOf('pandora-studio-app.js'));
  assert.ok(!names.includes('catalog-import.js'));
  assert.ok(!names.includes('catalog-diff.js'));
 });

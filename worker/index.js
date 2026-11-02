@@ -1,4 +1,4 @@
-import {accountApi,principal as accountPrincipal} from './account.js';
+import {accountApi,principal as accountPrincipal} from './pandora-studio-account-api.js';
 // Cloudflare Worker backend for Pandora Saga Build Studio.
 // Passwords and session hashes are NEVER stored in the Pages repository.
 // Native PBKDF2 in Cloudflare Workers supports at most 100,000 iterations.

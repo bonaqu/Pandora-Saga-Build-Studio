@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const root={};Function('window',read('os-calculator.js'))(root);
+const root={};Function('window',read('pandora-os-character-calculator.js'))(root);
 const calc=root.PandoraOSCalculator,skills=JSON.parse(read('data/os/skills.json'));
 const stats={vit:56,spi:56},sample={burn:7,stun:3,numb:2,tumble:1};
 const value=(other={})=>calc.resistancePreview({stats,bonuses:sample,...other});
@@ -45,7 +45,7 @@ test('duplicated CASTER row does not double Numb and corrupt skill row fails clo
  assert.equal(calc.wardingStatusPassive(input).numb,15);
 });
 test('UI book labels resistance effects as combined sources, not only gear',()=>{
- const source=read('stage-attributes.js'),editor=read('app.js');
+ const source=read('pandora-studio-hero-book.js'),editor=read('pandora-studio-app.js');
  assert.match(source,/Сопротивления состояниям/);
  assert.match(source,/Устойчивость: \+15/);
  assert.match(editor,/const wardingMastery=window.PandoraSkillProgression.groupAdeptness/);

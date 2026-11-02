@@ -110,7 +110,7 @@ npx wrangler deploy
 
 ## Личные аккаунты пользователей — миграция 0005 (релиз 0.187.0)
 
-Личный кабинет без платных SMS/почты основан на таблицах **user_accounts**, **user_sessions**, **user_registration_limits**. Сначала применить `worker/migrations/0005_user_accounts.sql` к той же рабочей D1, где находятся `private_builds` и `shared_build_sources`, затем убедиться, что Worker публикует свежий `worker/index.js` и `worker/account.js`. Для существующего Wrangler-проекта из папки `worker`:
+Личный кабинет без платных SMS/почты основан на таблицах **user_accounts**, **user_sessions**, **user_registration_limits**. Сначала применить `worker/migrations/0005_user_accounts.sql` к той же рабочей D1, где находятся `private_builds` и `shared_build_sources`, затем убедиться, что Worker публикует свежий `worker/index.js` и `worker/pandora-studio-account-api.js`. Для существующего Wrangler-проекта из папки `worker`:
 
 ```sh
 npx wrangler d1 migrations apply ps-build-studio-db --remote

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const app=read('app.js');
+const app=read('pandora-studio-app.js');
 const start=app.indexOf('function renderSlotRails(){');
 const end=app.indexOf('\nfunction renderStageAttributes(){',start);
 assert.ok(start>0&&end>start);
@@ -22,9 +22,9 @@ const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak',
  'ring','ring','neck','belt','ear','ear'];
 function fixture(issue=()=>[]){
  const window={};
- Function('window',read('equipment-plan.js'))(window);
- Function('window',read('item-presentation.js'))(window);
- Function('window',read('enchant-model.js'))(window);
+ Function('window',read('pandora-studio-equipment-plan.js'))(window);
+ Function('window',read('pandora-studio-item-presentation.js'))(window);
+ Function('window',read('pandora-studio-enchantment.js'))(window);
  let dismiss=0,attached=0;
  window.PandoraStageItemUI={
   dismissPreview:()=>dismiss++,

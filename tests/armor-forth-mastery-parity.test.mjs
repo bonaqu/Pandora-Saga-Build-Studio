@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const win={};Function('window',read('os-calculator.js'))(win);Function('window',read('skill-progression.js'))(win);
+const win={};Function('window',read('pandora-os-character-calculator.js'))(win);Function('window',read('pandora-studio-skill-progression.js'))(win);
 const calc=win.PandoraOSCalculator,progress=win.PandoraSkillProgression;
 const forth=JSON.parse(read('data/os/itemForth.json')),items=JSON.parse(read('data/os/items.json'));
 const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};
@@ -59,7 +59,7 @@ test('critical Honor, back attack and INT cooldown remain independent',()=>{
 });
 
 test('the portrait UI displays armor grade and class passive effects, not just raw W/AC',()=>{
- const view=read('stage-attributes.js'),app=read('app.js');
+ const view=read('pandora-studio-hero-book.js'),app=read('pandora-studio-app.js');
  assert.match(view,/df\.refinement/);
  assert.match(view,/cm\.magicAttack/);
  assert.match(view,/cm\.weaponPhysical/);

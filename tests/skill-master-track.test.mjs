@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const base=new URL('../',import.meta.url),read=p=>readFileSync(new URL(p,base),'utf8');
 test('mastery, potential and skill icon milestones share a single visual track',()=>{
- const ui=read('hero-path.js'),css=read('style.css');
+ const ui=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
  assert.match(ui,/class:'inline-mastery-track path-integrated-track'/);
  assert.match(ui,/class:'inline-mastery-fill'/);
  assert.match(ui,/class:'inline-mastery-green'/);
@@ -12,7 +12,7 @@ test('mastery, potential and skill icon milestones share a single visual track',
  assert.match(css,/\.inline-mastery-track \.inline-mastery-green/);
 });
 test('right side exposes free/spent/total budget and immediate branch allocation',()=>{
- const html=read('index.html'),app=read('app.js'),ui=read('hero-path.js');
+ const html=read('index.html'),app=read('pandora-studio-app.js'),ui=read('pandora-studio-hero-path.js');
  assert.match(html,/id="budgetState"/);
  for(const text of ['Свободно','Вложено','Всего'])assert.ok(app.includes(text));
  assert.match(ui,/onAllocate\(key,requested,final\)/);
@@ -22,7 +22,7 @@ test('right side exposes free/spent/total budget and immediate branch allocation
  assert.match(ui,/!api\.onMastery\(key,requested\)/);
 });
 test('path has gallery with available/grey skill cards and both pages',()=>{
- const html=read('index.html'),ui=read('hero-path.js');
+ const html=read('index.html'),ui=read('pandora-studio-hero-path.js');
  assert.match(html,/id="pathSkillsPage"/);
  assert.match(html,/id="pathAutoMastery"/);
  assert.match(html,/id="pathSkillGallery"/);
@@ -32,7 +32,7 @@ test('path has gallery with available/grey skill cards and both pages',()=>{
 });
 
 test('blue, amber, green are the SAME track rather than a second green bar',()=>{
- const css=read('style.css'),ui=read('hero-path.js');
+ const css=read('pandora-studio-theme.css'),ui=read('pandora-studio-hero-path.js');
  assert.match(css,/\.inline-mastery-track \.inline-mastery-green\{[^}]*top:76px;height:6px/);
  assert.match(css,/\.inline-mastery-fill\{[^}]*top:76px;height:6px/);
  assert.doesNotMatch(css,/\.inline-mastery-track \.inline-mastery-green\{[^}]*top:88px/);
@@ -41,7 +41,7 @@ test('blue, amber, green are the SAME track rather than a second green bar',()=>
 });
 
 test('one class-capped 90-point skill bar shows an unavailable red segment',()=>{
- const ui=read('hero-path.js'),css=read('style.css'),html=read('index.html'),app=read('app.js');
+ const ui=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css'),html=read('index.html'),app=read('pandora-studio-app.js');
  assert.match(ui,/const visualMax=Math\.max\(90,cap,points\)/);
  assert.match(ui,/class:'inline-mastery-locked'/);
  assert.match(ui,/track\.append\(bed,gold,green,locked\)/);
@@ -52,13 +52,13 @@ test('one class-capped 90-point skill bar shows an unavailable red segment',()=>
 });
 
 test('skill-unlock icons use the full 90-point track scale even for low class caps',()=>{
- const ui=read('hero-path.js');
+ const ui=read('pandora-studio-hero-path.js');
  assert.match(ui,/threshold\/visualMax\*100/);
  assert.doesNotMatch(ui,/button\.style\.left='clamp\(0px, '\+mark\.percent/);
 });
 
 test('one bar uses standard CSS calc and correctly centered milestone markers',()=>{
- const ui=read('hero-path.js'),css=read('style.css');
+ const ui=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
  assert.match(ui,/const railInset=21/);
  assert.match(ui,/locked\.style\.left=positionOnRail\(lockedFraction\)/);
  assert.doesNotMatch(ui,/calc\(12px \+ \(100% - 24px\) \*/);
@@ -68,7 +68,7 @@ test('one bar uses standard CSS calc and correctly centered milestone markers',(
  assert.match(css,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?transform:translateX\(-50%\)/);
 });
 test('skill editor preserves keyboard focus across state re-render',()=>{
- const app=read('app.js'),ui=read('hero-path.js');
+ const app=read('pandora-studio-app.js'),ui=read('pandora-studio-hero-path.js');
  for(const key of ['potential-range','potential-number','mastery-number'])
   assert.ok(ui.includes(':'+key),key);
  assert.match(app,/document\.activeElement\?\.getAttribute\?\.\('data-branch-control'\)/);
@@ -76,7 +76,7 @@ test('skill editor preserves keyboard focus across state re-render',()=>{
 });
 
 test('skill details include source-backed mana, cast, cooldown and exact branch requirements',()=>{
- const ui=read('hero-path.js'),app=read('app.js');
+ const ui=read('pandora-studio-hero-path.js'),app=read('pandora-studio-app.js');
  for(const field of ['skill.mana','skill.cast','skill.cooldown','skill.range',
   'skill.element','skill.powerStat'])
   assert.ok(ui.includes(field),field);
@@ -88,7 +88,7 @@ test('skill details include source-backed mana, cast, cooldown and exact branch 
 });
 
 test('bug regression: range must not receive disabled="false" as a HTML boolean attribute',()=>{
- const hero=read('hero-path.js'),app=read('app.js');
+ const hero=read('pandora-studio-hero-path.js'),app=read('pandora-studio-app.js');
  assert.match(hero,/e\[key\]=Boolean\(val\)/);
  // Non-boolean attributes must still be set normally.
  assert.match(hero,/else if\(val!==undefined&&val!==null\)e\.setAttribute\(key,String\(val\)\)/);
@@ -97,7 +97,7 @@ test('bug regression: range must not receive disabled="false" as a HTML boolean 
  assert.match(app,/allocationReady:Boolean\(gameTables\?\.abilityPoint&&catalog\.classes\?\.\[klass\]\)/);
 });
 test('group headers are toggleable and can be completely collapsed',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/const collapse=selectedSkillGroup===key/);
  assert.match(app,/selectedSkillGroup=collapse\?null:key/);
  assert.match(app,/const selected=groups\.find\(g=>g\.id===selectedSkillGroup\)\|\|null/);
@@ -106,7 +106,7 @@ test('group headers are toggleable and can be completely collapsed',()=>{
 });
 
 test('new job selects a usable group without deleting previous invested points',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/function selectJob\(index\)/);
  assert.match(app,/selectedSkillGroup=null;inlineBranchId=null/);
  assert.match(app,/pathGroupTouched=false;selectedSkill=null/);
@@ -116,7 +116,7 @@ test('new job selects a usable group without deleting previous invested points',
  assert.match(app,/\.sort\(\(a,b\)=>b\.total-a\.total\)/);
 });
 test('red locked region shows OS skills beyond the class skill cap',()=>{
- const app=read('app.js'),ui=read('hero-path.js'),css=read('style.css');
+ const app=read('pandora-studio-app.js'),ui=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
  assert.match(app,/const \{milestones,above\}=window\.PandoraSkillMilestones\.forBranch/);
  assert.match(app,/locked:true/);
  assert.match(ui,/mark\.locked\?' unreachable'/);
@@ -124,7 +124,7 @@ test('red locked region shows OS skills beyond the class skill cap',()=>{
  assert.match(css,/path-unlock-notch\.unreachable/);
 });
 test('branch count, green mastery and group totals update on input, without a new header row',()=>{
- const ui=read('hero-path.js');
+ const ui=read('pandora-studio-hero-path.js');
  for(const part of ['groupCount.textContent=groupSummary()',
   "branchCount.textContent=cap>0||target>0?target+' / '+cap:'—'",
   'input.value=String(M.trained(state,key))'])
@@ -132,7 +132,7 @@ test('branch count, green mastery and group totals update on input, without a ne
 });
 
 test('milestones are bounded vertical ticks in one shared bar with hover descriptions',()=>{
- const ui=read('hero-path.js'),app=read('app.js'),css=read('style.css');
+ const ui=read('pandora-studio-hero-path.js'),app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(ui,/path-unlock-notch/);
  assert.match(ui,/const byThreshold=new Map\(\)/);
  assert.match(ui,/if\(!Number\.isFinite\(threshold\)\|\|threshold<0\|\|threshold>visualMax\)continue/);
@@ -143,7 +143,7 @@ test('milestones are bounded vertical ticks in one shared bar with hover descrip
 });
 
 test('right Hero Path and skill list use one page scroll, no nested locked panels',()=>{
- const css=read('style.css');
+ const css=read('pandora-studio-theme.css');
  assert.match(css,/\.workspace>\.right\{max-height:none!important;height:auto;overflow:visible!important\}/);
  assert.match(css,/\.right \.branch-list\{max-height:none!important;height:auto;overflow:visible!important/);
  assert.match(css,/\.right \.path-skill-grid\{max-height:none;overflow:visible\}/);

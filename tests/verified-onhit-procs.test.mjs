@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const calc=host.PandoraOSCalculator;
 const items=JSON.parse(read('data/os/items.json'));
 const souls=JSON.parse(read('data/os/souls.json'));
@@ -65,7 +65,7 @@ test('conflicting or unsupported proc chance sources are never presented as veri
  ])assert.deepEqual(calc.specialEquipmentPreview({records:[[source,record,0]]}).entries,[]);
 });
 test('on-hit previews use existing user-facing special effect UI, not physical combat totals',()=>{
- const ui=read('stage-attributes.js'),source=read('os-calculator.js');
+ const ui=read('pandora-studio-hero-book.js'),source=read('pandora-os-character-calculator.js');
  assert.match(ui,/modifiers\?\.specialEquipment\?\.entries/);
  assert.match(source,/confirmedOnHitRules/);
  assert.match(source,/entries\.push\(\{code:effect\.func,source:String\(record\.name\|\|source\)/);

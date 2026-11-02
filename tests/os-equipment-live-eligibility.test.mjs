@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const host={};
-Function('window',read('rules.js'))(host);
-Function('window',read('ui-planner.js'))(host);
-Function('window',read('equipment-plan.js'))(host);
+Function('window',read('pandora-studio-equipment-rules.js'))(host);
+Function('window',read('pandora-studio-ui-planner.js'))(host);
+Function('window',read('pandora-studio-equipment-plan.js'))(host);
 const items=JSON.parse(read('data/os/items.json'));
 const eligible=(item,slot,job,level,race=1,gender=0)=>
  host.PandoraStudioRules.equipment(item,{slot,job,level}).allowed&&
@@ -20,12 +20,12 @@ test('saved equipment still exists but its source restrictions control whether e
  assert.equal(eligible(hat,'head','WARRIOR',37),false);
  assert.equal(eligible(hat,'head','WARRIOR',38),true);
  assert.equal(hat.effects.find(e=>e.func==='EP_MAXLIFE_CONST').a,50);
- const original=read('app.js');
+ const original=read('pandora-studio-app.js');
  assert.match(original,/if\(!item\|\|equipmentIssue\(item,Number\(slot\)\)\.length\)continue/);
  assert.match(original,/const weapon=selectedWeapon&&!equipmentIssue\(selectedWeapon,0\)\.length\?selectedWeapon:null/);
  assert.match(original,/issue:equipmentIssue\(rec,Number\(slot\)\)/);
  assert.match(original,/issue\.length\?' unavailable':'/);
- assert.match(read('stage-attributes.js'),/Не действует: /);
+ assert.match(read('pandora-studio-hero-book.js'),/Не действует: /);
 });
 test('Astir race/gender restrictions survive stale saved loadout without discarding items',()=>{
  const dress=items[12611];
@@ -35,7 +35,7 @@ test('Astir race/gender restrictions survive stale saved loadout without discard
  assert.equal(host.PandoraUIPlanner.raceCompatible(dress,1,0),true);
 });
 test('hero book and calculator share every trained mastery and only eligible weapon/shield',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.equal(app.split('trainedBranchMasteries(').length>=3,true);
  assert.match(app,/const branchMasteries=trainedBranchMasteries\(innate\)/);
  assert.match(app,/skillCatalog:skillMap,jobKey:cls,level:state\.level,branchMasteries/);
@@ -58,7 +58,7 @@ test('authentic OS two-handed swords suppress shield while retaining future buil
  assert.equal(eligible(future,'weapon','WARRIOR',45),false);
  assert.equal(eligible(future,'weapon','WARRIOR',55),true,
   'Planning still reaches items above the current live server cap 45');
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/if\(slot===1&&item\.slot==='shield'\)/);
  assert.match(app,/PandoraEquipmentPlan\.occupiesOffhand\(weapon,Boolean\(usable\)\)/);
  assert.match(app,/Двуручное оружие занимает обе руки/);

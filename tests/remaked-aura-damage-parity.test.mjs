@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',read('os-calculator.js'))(scope);
+const scope={};Function('window',read('pandora-os-character-calculator.js'))(scope);
 const calc=scope.PandoraOSCalculator;
 const catalog=JSON.parse(read('data/os/items.json'));
 const classes=JSON.parse(read('data/os/classes.json'));
@@ -52,7 +52,7 @@ test('full level-55 character applies earring to aura preview but not HP or weap
  assert.equal(decorated.combat.attack.known,plain.combat.attack.known);
 });
 test('book shows final elemental aura while keeping gem base and magic distinct',()=>{
- const source=read('stage-attributes.js');
+ const source=read('pandora-studio-hero-book.js');
  assert.match(source,/Основа ауры оружия/);
  assert.match(source,/modifiers\?\.auraDamage\?\.elements/);
  assert.match(source,/Итог ауры/);

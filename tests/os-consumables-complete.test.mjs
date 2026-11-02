@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator,items=JSON.parse(read('data/os/items.json'));
 test('all 20 current healing potions are discovered; dual HP/MP counts once',()=>{
  const p=C.consumableRecoveryPreview({items,maxHp:1000,maxMp:1000});
@@ -43,7 +43,7 @@ test('status cures support newly published conditions and reject duplicates',()=
  assert.deepEqual(extended.rows.at(-1).conditions,['Ожоги']);
 });
 test('health-only items are collapsed and link to the existing encyclopedia',()=>{
- const book=read('stage-attributes.js');
+ const book=read('pandora-studio-hero-book.js');
  assert.match(book,/stage-health-consumables/);
  assert.match(book,/Предметы восстановления ОЗ/);
  assert.match(book,/onItem\(entry\.id\)/);

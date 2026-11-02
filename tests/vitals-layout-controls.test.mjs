@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const html=read('index.html'),css=read('style.css'),app=read('app.js');
+const html=read('index.html'),css=read('pandora-studio-theme.css'),app=read('pandora-studio-app.js');
 test('buffs are book-only while legacy form inputs stay hidden for compatibility',()=>{
  assert.match(html,/id="legacyBuffControls" hidden inert/);
  const origin=html.slice(html.indexOf('id="originPanelStats"'),html.indexOf('id="originPanelStats"')+1700);

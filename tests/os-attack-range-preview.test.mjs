@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator,items=JSON.parse(read('data/os/items.json'));
 const item=id=>['item:'+id,items[id],0];
 test('real OS attack and bow range additions are distinguished without pair double-counting',()=>{
@@ -31,7 +31,7 @@ test('source grade limits and invalid effect numbers cannot inflate attack reach
  assert.equal(invalid.entries.length,0);
 });
 test('book presents honest equipment bonuses only on the attack page',()=>{
- const book=read('stage-attributes.js'),calc=read('os-calculator.js');
+ const book=read('pandora-studio-hero-book.js'),calc=read('pandora-os-character-calculator.js');
  assert.match(book,/page==='attack'&&modifiers\?\.attackRange\?\.entries\?\.length/);
  assert.match(book,/Бонусы дальности от снаряжения/);
  assert.match(book,/Дальность атаки: /);

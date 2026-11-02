@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.02.301",
-  "notes": "Выборочная сверка OS, безопасная публикация D1, отдельный экспорт GitHub и именованные модули Pandora OS"
+  "release": "2026.11.02.302",
+  "notes": "Pandora Studio modules named and dependency links audited"
 }

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const text=readFileSync(new URL('../os-calculator.js',import.meta.url),'utf8');
+const text=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
 const ctx={};Function('window',text)(ctx);
 const calc=ctx.PandoraOSCalculator,stats={vit:25,str:35,agi:70,dex:35,spi:20,int:40};
 test('Remaked base attack and cast speed use discrete AGI and DEX steps',()=>{
@@ -44,8 +44,8 @@ test('partial context without INT retains other valid combat metrics',()=>{
  assert.equal(out.attackSpeed.base,130);
 });
 test('vitals and character effect views receive mana speed preview',()=>{
- const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
- const stage=readFileSync(new URL('../stage-attributes.js',import.meta.url),'utf8');
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const stage=readFileSync(new URL('../pandora-studio-hero-book.js',import.meta.url),'utf8');
  assert.match(app,/combatContext:/);
  assert.match(stage,/cm\.attackSpeed/);
  assert.match(stage,/combat\?\.manaCost/);

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('large libraries can be filtered by character name, profession and level',()=>{
- const src=read('app.js'),css=read('style.css');
+ const src=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(src,/let buildSearchQuery=''/);
  assert.match(src,/builds\.length>5\?h\('input',\{type:'search'/);
  assert.match(src,/searchText:\[b\.name,races\[b\.data\?\.race\]\?\.\[0\],jobs\[b\.data\?\.job\]/);

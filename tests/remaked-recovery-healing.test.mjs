@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const scope={};Function('window',get('os-calculator.js'))(scope);
+const scope={};Function('window',get('pandora-os-character-calculator.js'))(scope);
 const calc=scope.PandoraOSCalculator;
 test('Legacy standing HP/MP amount uses max vitals and attributes separately',()=>{
  const result=calc.recoveryAmountPreview({maxHp:3500,maxMp:1250,
@@ -44,7 +44,7 @@ test('MP recovery speed and final skill delay Soul codes are separate from recov
  assert.equal(regular.mp.known,65);
 });
 test('stage includes distinct skill healing, standing recovery and external regen rate',()=>{
- const stage=get('stage-attributes.js');
+ const stage=get('pandora-studio-hero-book.js');
  assert.match(stage,/modifiers\?\.healingSkill/);
  assert.match(stage,/modifiers\?\.recoveryAmount/);
  assert.match(stage,/mpRecoveryEquipmentRate/);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const ctx={};Function('window',read('os-calculator.js'))(ctx);
+const ctx={};Function('window',read('pandora-os-character-calculator.js'))(ctx);
 const C=ctx.PandoraOSCalculator;
 const gear=JSON.parse(read('data/os/items.json'));
 const cloak=gear['18073'];
@@ -25,7 +25,7 @@ test('Remaked city speed includes the current ordinary movement and separate tow
  assert.equal(cm.movementSpeed.town,120);
 });
 test('book shows city speed without inflating base movement label',()=>{
- const book=read('stage-attributes.js');
+ const book=read('pandora-studio-hero-book.js');
  assert.match(book,/Скорость в городе: /);
  assert.match(book,/cm\.movementSpeed\.town/);
  assert.match(book,/cm\.movementSpeed\.townEquipment/);

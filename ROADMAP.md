@@ -1,13 +1,15 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.301.0 (`2026.11.02.301`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.302.0 (`2026.11.02.302`)
+
+Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
 
 ## Source update 0.301.0 — source-safe OS catalog review and branded modules
 
-- [x] Extract administrator OS catalog UI from app.js into `pandora-os-catalog-workbench.js` and dedicated CSS; enable searchable, record-level accept/reject and dataset-level decisions, with default-deny.
+- [x] Extract administrator OS catalog UI from pandora-studio-app.js into `pandora-os-catalog-workbench.js` and dedicated CSS; enable searchable, record-level accept/reject and dataset-level decisions, with default-deny.
 - [x] Keep atomic approvals for trades, instances, formulas, expertise and chests. Recompute curated metadata and English locale counts without claiming official server CSV hashes.
 - [x] Validate whole candidate and reviewed selections before creating D1 staging entries. Apply an atomic expected-active lease when switching the published D1 snapshot.
 - [x] Add reviewed JSON export and a dry-run-first `catalog:review` CLI for separate GitHub source-file updating. No client-side GitHub write credential or D1 migration.
@@ -155,7 +157,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 
 ## Source update 0.243.0 — remove obsolete named-build autosaver and cache skill hover geometry
 
-- [x] Confirm the deprecated `saved-build-autosave.js` module is not loaded by the current HTML and is not imported/called by `app.js`. Remove this unused old code path (it automatically rewrote named builds and contradicts explicit-save semantics). Keep the existing read-only and user-triggered save operations intact.
+- [x] Confirm the deprecated `saved-build-autosave.js` module is not loaded by the current HTML and is not imported/called by `pandora-studio-app.js`. Remove this unused old code path (it automatically rewrote named builds and contradicts explicit-save semantics). Keep the existing read-only and user-triggered save operations intact.
 - [x] Replace its obsolete function-level tests with an explicit save contract: `persist()` only updates the owner-scoped draft, the saved-build cloud POST occurs only in `saveBuild()`, and deliberate Save New, Save and Create, and confirmed Overwrite are still the triggers. Preserve levels 1–55 and named-build preservation.
 - [x] Optimize Hero Path threshold hover: normalize each source-backed skill threshold **once at render time**. On mouse movement use `mark.thresholdFraction`, avoiding repeated `getAttribute` and numeric parsing for every marker on every pointer event. Accessible marker attributes, tooltip, exact 18px range geometry and branch maxima unchanged.
 - [x] Regression tests check stale module removal, source contract, hover DOM-read elimination and exact marker coordinate at multiple widths; full browser acceptance verifies real hover plus manual saved-build and guest/account isolation.
@@ -167,7 +169,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] An authenticated `/api/account/me` 200 reply must have a **canonical valid username matching the stored session owner**; an unexpected identity or missing owner is treated as a failed identity validation, not silently replaced. An owner mismatch invokes existing session logout/guest transition while preserving the owner's saved library cache.
 - [x] Protect asynchronous initialization from stale `/me` responses: capture bootstrap token and refuse to change/clear a newer session on late 200 or 401. Transient 503/network errors continue to retain the valid original session.
 - [x] New sandboxed client-model tests for malformed sessions, mismatch, outage and late response; true Chromium acceptance injects an HTTP 200 different owner and verifies no cross-owner D1 PUT.
-- [x] Remove never-read static `branchNames` array from `app.js`: current canonical localized path navigation/catalog already owns branch IDs and labels.
+- [x] Remove never-read static `branchNames` array from `pandora-studio-app.js`: current canonical localized path navigation/catalog already owns branch IDs and labels.
 - [ ] Keep full D1 authenticated live write lifecycle and server numeric formula parity open. Level planning remains 1–55; named-build explicit overwrite, account recovery and data remain unchanged.
 
 ## Source update 0.241.0 — remove dead milestone CSS, harden cross-tab acceptance
@@ -300,7 +302,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 ## Source update 0.224.0 — bilingual equipment proc and experience sections
 
 - In the Hero Book effects chapter, switch headings and structured conditional-proc triggers between RU and EN based on the chosen site language. Add proper English names for the generic Stun and unknown-special-effect fallbacks; when an OS skill has a name, reuse the localized catalog's existing name.
-- Use the already supported official `strings.en.json` ID-based names for skills/items via the existing `app.js` localized catalog. Do not fuzzy-translate user-edited text or invent missing game terms. Experience-bonus title and percent suffix are also bilingual.
+- Use the already supported official `strings.en.json` ID-based names for skills/items via the existing `pandora-studio-app.js` localized catalog. Do not fuzzy-translate user-edited text or invent missing game terms. Experience-bonus title and percent suffix are also bilingual.
 - Retain source-accurate chance corroboration, source-key dedup, all stored builds and account logic, no server-formula additions, and planning levels 1–55.
 
 ## Source update 0.223.0 — lossless multi-proc book and source identity

@@ -3,9 +3,9 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const ctx={};
-Function('window',read('os-calculator.js'))(ctx);
-Function('window',read('skill-progression.js'))(ctx);
-Function('window',read('game-navigation.js'))(ctx);
+Function('window',read('pandora-os-character-calculator.js'))(ctx);
+Function('window',read('pandora-studio-skill-progression.js'))(ctx);
+Function('window',read('pandora-studio-navigation.js'))(ctx);
 const calc=ctx.PandoraOSCalculator,progress=ctx.PandoraSkillProgression,nav=ctx.PandoraGameNavigation;
 const passives=JSON.parse(read('data/os/racialPassives.json'));
 const skills=JSON.parse(read('data/os/skills.json'));
@@ -69,13 +69,13 @@ test('exact Remaked approved RU labels are mapped to 18 current OS racial skill 
  keys.forEach((key,i)=>passives[key].skills.forEach((id,j)=>
   assert.equal(nav.approvedRacialSkillNames[id],approved['racial_skill.'+i+'.'+j])));
  assert.equal(nav.approvedRacialSkillNames[900040001],'Охотничье чутьё');
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/potionContext:\{racialPassiveId:state\.racialPassiveId,jobKey:jobKeys\[state\.job\],meleeMastery\}/);
  assert.match(app,/groupAdeptness\(/);
  assert.match(app,/localizedSkills\[id\]=\{\.\.\.localizedSkills\[id\],name\}/);
 });
 test('racial passive is applied to both Origin and character profile selections immediately',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/state\.racialPassiveId=selected\?null:id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
  assert.match(app,/state\.racialPassiveId=id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
 });
@@ -91,7 +91,7 @@ test('legacy class innate trained Adeptness is added exactly once before thresho
  assert.equal(pot({meleeMastery:18}).mastery,10);
  const priest=progress.legacyPrayerSpirit('PRIEST',state,tables.jobInit.ACOLYTE.branches);
  assert.equal(priest,2,'innate prayer 15 yields +2 SPI at no invested prayer points');
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/const initialBranches=gameTables\?\.jobInit\?\.\[baseClass\]\?\.branches\|\|\{\}/);
  assert.match(app,/groupAdeptness\(/);
 });

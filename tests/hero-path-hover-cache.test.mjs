@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const path=readFileSync(new URL('../hero-path.js',import.meta.url),'utf8');
+const path=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
 
 test('skill hover thresholds are cached once per rendered marker, not read from the DOM on pointermove',()=>{
  assert.match(path,/milestonesOnTrack\.push\(\{tick,skills:skillsAt,locked:lockedAt,/);

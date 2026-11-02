@@ -5,7 +5,7 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const maps=JSON.parse(read('data/os/maps.json')),
  trades=JSON.parse(read('data/os/trades.json')),
  tables=JSON.parse(read('data/os/tables.json'));
-const app=read('app.js');
+const app=read('pandora-studio-app.js');
 test('wiki location list includes named NPC settlements even when mob map table omits them',()=>{
  const names=Object.keys(trades.mapNames||{});
  assert.ok(names.length>=10);

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const app=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
 const begin=app.indexOf('function skillIcon('),end=app.indexOf('function branchCap(',begin);
 assert.ok(begin>=0&&end>begin,'icon resolver source must exist');
 const source=app.slice(begin,end);

@@ -5,10 +5,10 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url);
 const load=p=>readFileSync(new URL(p,root),'utf8');
 const host={};
-Function('window',load('equipment-plan.js'))(host);
-Function('window',load('enchant-model.js'))(host);
+Function('window',load('pandora-studio-equipment-plan.js'))(host);
+Function('window',load('pandora-studio-enchantment.js'))(host);
 globalThis.PandoraEquipmentPlan=host.PandoraEquipmentPlan;
-Function('window',load('item-presentation.js'))(host);
+Function('window',load('pandora-studio-item-presentation.js'))(host);
 globalThis.PandoraItemPresentation=host.PandoraItemPresentation;
 globalThis.PandoraEnchantModel=host.PandoraEnchantModel;
 
@@ -23,7 +23,7 @@ class FakeElement{
 }
 const document={createElement:t=>new FakeElement(t),createTextNode:t=>({tag:'#text',textContent:t}),body:new FakeElement('body')};
 const stage={};
-Function('window','document',load('stage-item-ui.js'))(stage,document);
+Function('window','document',load('pandora-studio-equipment-ui.js'))(stage,document);
 const walk=node=>[node,...(node.children||[]).flatMap(walk)];
 const byText=(node,text)=>walk(node).find(x=>x.tag==='button'&&x.textContent===text);
 

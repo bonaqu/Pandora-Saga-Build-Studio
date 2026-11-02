@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const root={};Function('window',get('os-calculator.js'))(root);
+const root={};Function('window',get('pandora-os-character-calculator.js'))(root);
 const calc=root.PandoraOSCalculator;
 test('separate calculated, informational and conditional effect classifications',()=>{
  const item={id:777,name:'Меч',effects:[
@@ -41,7 +41,7 @@ test('on-hit skill execution remains conditional instead of guaranteed damage',(
  assert.equal(c.counts.calculated,0);
 });
 test('the Summary chapter stays clean, detailed coverage lives only in Effects',()=>{
- const view=get('stage-attributes.js');
+ const view=get('pandora-studio-hero-book.js');
  assert.match(view,/modifiers\?\.coverage\?\.total/);
  assert.match(view,/Условные проки/);
  assert.match(view,/\['attack','defense','effects'\]\.includes\(chosen\)/);

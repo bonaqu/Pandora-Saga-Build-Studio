@@ -23,8 +23,8 @@ function fixture(admin=false){
   body:new Element('body'),documentElement:{clientWidth:1024}};
  document.body.isConnected=true;
  const window={innerHeight:768,PandoraStudioAdminActive:()=>admin};
- Function('window',read('item-presentation.js'))(window);
- Function('window','document',read('stage-item-ui.js'))(window,document);
+ Function('window',read('pandora-studio-item-presentation.js'))(window);
+ Function('window','document',read('pandora-studio-equipment-ui.js'))(window,document);
  return {window,document,api:window.PandoraStageItemUI};
 }
 const ring={id:19022,name:'Кольцо метели',kind:'RING',level:20,AC:0,soulslot:0,
@@ -73,28 +73,28 @@ test('soul slots display localized labels rather than raw internal names',()=>{
  assert.doesNotMatch(values,/weapon|belt/);
 });
 test('stage rails expose grade and Souls count without title or duplicate labels',()=>{
- const source=read('app.js');
+ const source=read('pandora-studio-app.js');
  assert.match(source,/function renderSlotRails\(\)\{[\s\S]*?PandoraStageItemUI\.dismissPreview\(\)/);
  assert.doesNotMatch(source,/'aria-label':tooltip,title:tooltip/);
  assert.match(source,/class:'stage-sockets'/);
  assert.match(source,/class:'stage-enhance'/);
- const css=read('style.css');
+ const css=read('pandora-studio-theme.css');
  assert.match(css,/\.equipment-rail \.stage-sockets\{[\s\S]*?bottom:1px/);
  assert.match(css,/\.equipment-rail \.stage-enhance\{[\s\S]*?top:1px/);
 });
 test('eligibility chips start at the left of item tooltip',()=>{
- assert.match(read('stage-item-tooltip.css'),
+ assert.match(read('pandora-studio-equipment-tooltip.css'),
   /\.stage-item-tooltip \.stage-gear-wearer-chips\{[^}]*justify-content:flex-start/);
 });
 test('public item searches do not advertise or search raw database IDs',()=>{
- const app=read('app.js'),picker=read('stage-item-ui.js');
+ const app=read('pandora-studio-app.js'),picker=read('pandora-studio-equipment-ui.js');
  assert.doesNotMatch(app,/Search by name, ID/);
  assert.doesNotMatch(app,/Поиск по названию, ID/);
  assert.doesNotMatch(app,/itemName\(rec\)\+' '\+rec\.id/);
  assert.doesNotMatch(picker,/String\(rec\.name\|\|''\)\+' '\+rec\.id/);
 });
 test('player item encyclopedia does not display IDs or duplicate native hover titles',()=>{
- const source=read('app.js');
+ const source=read('pandora-studio-app.js');
  assert.doesNotMatch(source,/['"]ID ['"]\s*\+rec\.id/);
  assert.doesNotMatch(source,/text:type\+' · '\+id/);
  assert.doesNotMatch(source,/class:'item-card',type:'button',title:/);

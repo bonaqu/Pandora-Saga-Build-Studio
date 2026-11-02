@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('saving an opened build reuses ID instead of duplicating it',()=>{
- const source=read('app.js');
+ const source=read('pandora-studio-app.js');
  assert.match(source,/const existingIndex=overwriteId&&overwriteId===activeBuildId/);
  assert.match(source,/const id=existingIndex>=0\?builds\[existingIndex\]\.id:newId\(\)/);
  assert.match(source,/if\(existingIndex>=0\)builds\.splice\(existingIndex,1\)/);
@@ -13,15 +13,15 @@ test('saving an opened build reuses ID instead of duplicating it',()=>{
  assert.match(source,/text:'↻ Обновить библиотеку'/);
 });
 test('opening imported public build does not overwrite an unrelated saved original',()=>{
- const source=read('app.js');
+ const source=read('pandora-studio-app.js');
  assert.match(source,/selectActiveBuild\(null\);state=incoming/);
  assert.match(source,/if\(activeBuildId===b\.id\)selectActiveBuild\(null\)/);
  assert.match(source,/if\(reconciled\.activeId!==activeBuildId\)selectActiveBuild\(reconciled\.activeId\)/);
- assert.match(read('build-library-merge.js'),/if\(selected&&!merged\.some\(x=>x\.id===selected\)\)selected=null/);
+ assert.match(read('pandora-studio-build-library-merge.js'),/if\(selected&&!merged\.some\(x=>x\.id===selected\)\)selected=null/);
 });
 
 test('saved build identity survives closing and reopening the browser',()=>{
- const src=read('app.js');
+ const src=read('pandora-studio-app.js');
  assert.match(src,/id=localStorage\.getItem\(ACTIVE_BUILD_KEY\)/);
  assert.match(src,/PandoraBuildScope\.setOwned\(localStorage,libraryScopeId\(\),ACTIVE_BUILD_KEY,id\)/);
  assert.match(src,/PandoraBuildScope\.setOwned\(localStorage,libraryScopeId\(\),ACTIVE_BUILD_KEY,id\)/);
@@ -31,7 +31,7 @@ test('saved build identity survives closing and reopening the browser',()=>{
 });
 
 test('new-build confirmation survives a background library rerender and retains draft input',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/newBuildPromptOpen=false,newBuildDraftName=null/);
  assert.match(app,/class:'new-build-choice',hidden:!newBuildPromptOpen/);
  assert.match(app,/newBuildDraftName=draft.value/);

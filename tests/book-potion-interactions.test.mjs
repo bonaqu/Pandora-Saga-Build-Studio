@@ -17,8 +17,8 @@ class Element {
 const document={createElement:tag=>new Element(tag),
  createTextNode:text=>Object.assign(new Element('#text'),{textContent:text})};
 const root={};
-Function('window',read('os-calculator.js'))(root);
-Function('window','document',read('stage-attributes.js'))(root,document);
+Function('window',read('pandora-os-character-calculator.js'))(root);
+Function('window','document',read('pandora-studio-hero-book.js'))(root,document);
 const render=root.PandoraStageAttributes.render;
 const walk=node=>[node,...(node.children||[]).flatMap(walk)];
 test('Recovery book shows real item icons and opens the chosen potion in wiki',()=>{

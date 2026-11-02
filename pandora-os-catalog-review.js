@@ -3,9 +3,9 @@
 
   // A review changes records, never live D1 rows. The active snapshot stays
   // untouched until the separate authenticated publish transaction succeeds.
-  const atomicDatasets = new Set(['instances', 'trades', 'tables', 'expertise', 'chests']);
+  const atomicDatasets = new Set(['meta', 'instances', 'trades', 'tables', 'expertise', 'chests']);
   const labels = Object.freeze({
-    classes: 'Классы', skills: 'Умения', items: 'Предметы',
+    meta: 'Версия и параметры сервера', classes: 'Классы', skills: 'Умения', items: 'Предметы',
     souls: 'Души', monsters: 'Монстры', drops: 'Добыча',
     maps: 'Карты', instances: 'Подземелья', racialPassives: 'Расовые способности',
     itemForth: 'Усиления предметов', unison: 'Комплекты',
@@ -43,7 +43,6 @@
   }
 
   function changes(dataset, previous, current) {
-    if (dataset === 'meta') return [];
     const oldRecords = entries(dataset, previous);
     const newRecords = entries(dataset, current);
     const result = [];
@@ -104,12 +103,16 @@
         if (accepted.has(change.id)) putRecord(output, change);
       }
     }
-    // Official CSV hashes describe a WHOLE OS export, not a curated mixture.
-    // Never falsely claim server parity for partially accepted updates.
-    const identicalToSource = sourceFiles.filter(name => name !== 'meta')
+    // Server metadata may change independently of equipment or skills.
+    // Never auto-apply its cap/version/hash without the owner's selection.
+    const acceptMeta = accepted.has(id('meta', '@dataset'));
+    const sameDataAsSource = sourceFiles.filter(name => name !== 'meta')
       .every(name => equal(output[name], current[name]));
-    output.meta = clone(identicalToSource ? current.meta : previous.meta);
+    const sameMetaAsSource = acceptMeta || equal(previous.meta, current.meta);
+    const identicalToSource = sameDataAsSource && sameMetaAsSource;
+    output.meta = clone(acceptMeta ? current.meta : previous.meta);
     if (!identicalToSource) {
+      // CSV hashes only attest a complete matching upstream snapshot.
       delete output.meta.sha;
       output.meta.curated = true;
     }

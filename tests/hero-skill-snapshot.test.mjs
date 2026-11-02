@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const app=read('app.js');
+const app=read('pandora-studio-app.js');
 const begin=app.indexOf('const heroSkillRowsCache=new WeakMap()');
 const end=app.indexOf('function heroPathApi()',begin);
 assert.ok(begin>0&&end>begin,'Must cache source record array across rerenders');

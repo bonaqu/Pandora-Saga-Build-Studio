@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const source=read('hero-path.js'),css=read('style.css');
+const source=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
 const host={PandoraSkillProgression:{
  potential:(state,key)=>state.points?.[key]||0,
  trained:(state,key)=>state.mastery?.[key]||0

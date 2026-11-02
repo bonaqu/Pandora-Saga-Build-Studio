@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
-const ctx={};Function('window',read('os-calculator.js'))(ctx);
+const ctx={};Function('window',read('pandora-os-character-calculator.js'))(ctx);
 const calc=ctx.PandoraOSCalculator;
 test('all twelve support skill effect previews reproduce Remaked Calc formulas',()=>{
  const v=calc.legacyBuffPreview({spi:70,blessing:50,hymn:40,alchemy:60});
@@ -72,7 +72,7 @@ test('physical weapon gemstone aura never increases flat weapon ATK or armor',()
  assert.equal(withWeaponGem.combat.defense.known,plain.combat.defense.known);
 });
 test('read-only buff figures are available in the book but cannot switch effects on',()=>{
- const app=read('app.js'),stage=read('stage-attributes.js');
+ const app=read('pandora-studio-app.js'),stage=read('pandora-studio-hero-book.js');
  assert.match(app,/legacyBuffMasteries=Object\.fromEntries/);
  assert.match(app,/\['blessing','hymn','alchemy'\]/);
  assert.match(stage,/stage-legacy-buff-previews/);

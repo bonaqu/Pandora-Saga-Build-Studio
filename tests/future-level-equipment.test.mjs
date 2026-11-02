@@ -5,8 +5,8 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const items=JSON.parse(read('data/os/items.json'));
 const scope={};
-Function('window',read('rules.js'))(scope);
-Function('window',read('ui-planner.js'))(scope);
+Function('window',read('pandora-studio-equipment-rules.js'))(scope);
+Function('window',read('pandora-studio-ui-planner.js'))(scope);
 const rules=scope.PandoraStudioRules,planner=scope.PandoraUIPlanner;
 
 test('all ten future planning levels 46–55 retain source-defined gear records',()=>{
@@ -33,7 +33,7 @@ test('future items remain locked at 45 but fully selectable at their true level'
 });
 
 test('a new blank build starts at level 1 while maximum planning remains 55',()=>{
- const app=read('app.js'),html=read('index.html');
+ const app=read('pandora-studio-app.js'),html=read('index.html');
  assert.match(app,/function fresh\(\)\{return\{[^\n]*level:1/);
  assert.match(html,/id="level" type="range" min="1" max="55" value="1"/);
  assert.doesNotMatch(html,/id="level"[^>]+max="45"/);

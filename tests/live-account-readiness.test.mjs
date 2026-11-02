@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../scripts/check-live-connections.mjs',import.meta.url),'utf8');
-const worker=readFileSync(new URL('../worker/account.js',import.meta.url),'utf8');
+const worker=readFileSync(new URL('../worker/pandora-studio-account-api.js',import.meta.url),'utf8');
 test('production readiness requires accounts after verified 0005 and never attempts registration',()=>{
  assert.match(source,/check\(payload\?\.features\?\.accounts===true,'D1 player accounts'/);
  assert.match(source,/\/api\/account\/me/);

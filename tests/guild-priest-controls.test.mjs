@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const source=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 const host={};
-Function('window',source('os-calculator.js'))(host);
+Function('window',source('pandora-os-character-calculator.js'))(host);
 const calc=host.PandoraOSCalculator;
 
 test('guild-level automatic passives match Remaked level unlock tables',()=>{
@@ -37,7 +37,7 @@ test('external priest SD 134, blessing 90, hymn 30 use verified original numeric
 });
 
 test('priest and guild controls persist and combat applies only manually selected supported buffs',()=>{
- const app=source('app.js'),book=source('stage-attributes.js'),engine=source('os-calculator.js');
+ const app=source('pandora-studio-app.js'),book=source('pandora-studio-hero-book.js'),engine=source('pandora-os-character-calculator.js');
  for(const key of ['priestSpi','priestBlessing','priestHymn','guildLevel','priestEnabled',
   'priestGratia','priestLapisMedio']){
   assert.ok(app.includes(key),'Missing stored setting '+key);
@@ -58,13 +58,13 @@ test('current live OS drop slot variants are preserved as source-specific annota
  for(const id of ['43106','43650','43730','43731','43732']){
   assert.equal(drops[id].d.find(x=>x.i===11095)?.slotAdd,1);
  }
- assert.match(source('wiki-data.js'),/slotAdd:r\.slotAdd\?\?0/);
- assert.match(source('app.js'),/Гнёзда \+/);
+ assert.match(source('pandora-studio-encyclopedia-data.js'),/slotAdd:r\.slotAdd\?\?0/);
+ assert.match(source('pandora-studio-app.js'),/Гнёзда \+/);
 });
 
 // Prerequisites from current OS skills 320007001 and 320008001.
 test('external priest buffs require correct Blessing mastery and valid numbers',()=>{
- const engine=source('os-calculator.js'),book=source('stage-attributes.js');
+ const engine=source('pandora-os-character-calculator.js'),book=source('pandora-studio-hero-book.js');
  const skills=JSON.parse(source('data/os/skills.json'));
  assert.equal(skills['320007001'].name,'Знак атаки');
  assert.equal(skills['320008001'].name,'Знак защиты');
@@ -77,7 +77,7 @@ test('external priest buffs require correct Blessing mastery and valid numbers',
  assert.match(book,/Number\(buffs\.priestBlessing\)>=12/);
 });
 test('Hero Book buff names use Remaked approved RU identities',()=>{
- const book=source('stage-attributes.js');
+ const book=source('pandora-studio-hero-book.js');
  for(const name of ['Знак атаки','Знак защиты','Божественная защита',
   'Священное оружие','Темная аура','Чары усиления','Песнь поэта','Песнь чар'])
   assert.ok(book.includes(name),'Missing approved Remaked name: '+name);
@@ -114,7 +114,7 @@ test('external priest speed/defense reflect selected skills and actual Blessing 
  }
 });
 test('alchemy skill preview labels are current Remaked/OS RU-EN identities',()=>{
- const book=source('stage-attributes.js'),skills=JSON.parse(source('data/os/skills.json'));
+ const book=source('pandora-studio-hero-book.js'),skills=JSON.parse(source('data/os/skills.json'));
  assert.equal(skills['220001001'].name,'Яд');
  assert.equal(skills['220001002'].name,'Усиление яда');
  assert.match(book,/\['toxify','Яд','Сила эффекта','\+','Toxify'\]/);
@@ -124,7 +124,7 @@ test('alchemy skill preview labels are current Remaked/OS RU-EN identities',()=>
 
 // Test the actual UI counter expression without a browser harness.
 test('selected buff summary does not count unavailable priest skills or numeric inputs',()=>{
- const code=source('stage-attributes.js');
+ const code=source('pandora-studio-hero-book.js');
  const from=code.indexOf(' const guildSelected=Number(buffs.guildLevel)>0;');
  const to=code.indexOf(' const status=make(',from);
  assert.ok(from>=0&&to>from,'counter is a self-contained expression');
@@ -142,7 +142,7 @@ test('selected buff summary does not count unavailable priest skills or numeric 
 });
 
 test('new hero preloads an editable priest and legacy snapshots merge missing values',()=>{
- const app=source('app.js'),book=source('stage-attributes.js');
+ const app=source('pandora-studio-app.js'),book=source('pandora-studio-hero-book.js');
  assert.match(app,/priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30/);
  assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.raw\.attributeBuffs\}/);
  assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.draft\.attributeBuffs\}/);

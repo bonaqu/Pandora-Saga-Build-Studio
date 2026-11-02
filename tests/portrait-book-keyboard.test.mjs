@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const get=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const app=get('app.js'),view=get('stage-attributes.js');
+const app=get('pandora-studio-app.js'),view=get('pandora-studio-hero-book.js');
 test('ArrowLeft/ArrowRight navigation and Escape remain within the portrait',()=>{
  assert.match(app,/\$\('stageAttributes'\)\?\.addEventListener\('keydown'/);
  assert.match(app,/event\.key==='ArrowRight'/);

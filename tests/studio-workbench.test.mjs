@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url);
 const source=p=>readFileSync(new URL(p,root),'utf8');
 test('character portrait, Origin stats, and Hero Path are the core single-screen editor',()=>{
- const html=source('index.html'),app=source('app.js'),css=source('style.css');
+ const html=source('index.html'),app=source('pandora-studio-app.js'),css=source('pandora-studio-theme.css');
  for(const id of ['workspace','originPanelStats','skillBranches','stagePicker','railLeft','railRight','detailPanel','dockClose'])
   assert.match(html,new RegExp('id="'+id+'"'));
  const navStart=html.indexOf('<nav id="nav">');
@@ -21,7 +21,7 @@ test('character portrait, Origin stats, and Hero Path are the core single-screen
  assert.doesNotMatch(html,/data-tab="(?:skills|stats)"/);
  assert.doesNotMatch(html,/id="stageQuickbar"/);
  assert.match(app,/function renderBranches\(/);
- assert.match(source('hero-path.js'),/path-skill-card/);
+ assert.match(source('pandora-studio-hero-path.js'),/path-skill-card/);
  assert.match(app,/function showWorkbench\(/);
  assert.match(app,/function closeWorkbench\(/);
  assert.match(css,/\.detail\.is-open\s*\{/);
@@ -38,7 +38,7 @@ test('release identifiers match every loaded client asset',()=>{
 });
 
 test('character workshop no longer exposes duplicate skills/stat point editors',()=>{
- const app=source('app.js'),html=source('index.html');
+ const app=source('pandora-studio-app.js'),html=source('index.html');
  assert.match(app,/const selection=\[\["character","Персонаж"\],\["profile","Профиль"\]\]/);
  assert.doesNotMatch(app,/if\(characterPanelTab==="skills"\)renderSkills\(body\)/);
  assert.doesNotMatch(app,/if\(characterPanelTab==="stats"\)renderStats\(body\)/);

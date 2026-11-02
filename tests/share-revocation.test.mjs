@@ -110,7 +110,7 @@ test('share creation checks owner and rejects anonymous, invented and library sn
  assert.equal((await call(DB,'/api/shared/aaaaaaaaaaa')).status,404);
 });
 test('revocation toast and link creation remain inline; server has no destructive share migration',()=>{
- const app=read('app.js'),css=read('style.css'),sql=read('worker/migrations/0003_shares.sql');
+ const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css'),sql=read('worker/migrations/0003_shares.sql');
  assert.match(app,/function showStudioToast\(/);
  assert.match(app,/error\.httpStatus===410/);
  assert.match(app,/setTimeout\(close,8500\)/);

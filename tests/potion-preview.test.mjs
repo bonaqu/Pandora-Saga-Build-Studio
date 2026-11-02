@@ -2,8 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const ctx={};Function('window',read('os-calculator.js'))(ctx);
-const calc=ctx.PandoraOSCalculator,app=read('app.js'),html=read('index.html');
+const ctx={};Function('window',read('pandora-os-character-calculator.js'))(ctx);
+const calc=ctx.PandoraOSCalculator,app=read('pandora-studio-app.js'),html=read('index.html');
 test('Modern Remaked 4.23 has 14 original potion formulas and 10 verified item identities',()=>{
  const rows=calc.potionPreview({enabled:false});
  assert.equal(rows.length,14);

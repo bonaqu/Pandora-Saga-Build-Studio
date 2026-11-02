@@ -15,7 +15,7 @@ test('multiple real soul IDs have confirmed sources in current OS datasets',()=>
  assert.ok(Object.keys(souls).filter(id=>ids.has(id)).length>=70);
 });
 test('soul detail uses the existing indexed source map and trusted chest/NPC names',()=>{
- const app=get('app.js');
+ const app=get('pandora-studio-app.js');
  assert.match(app,/Где получить душу/);
  assert.match(app,/const found=wikiIndex\.sources\(id\)/);
  assert.match(app,/type==='item'\?\(wikiData\.items\?\.\[id\]\|\|wikiData\.souls\?\.\[id\]\)/);
@@ -24,7 +24,7 @@ test('soul detail uses the existing indexed source map and trusted chest/NPC nam
  assert.match(app,/wikiIcon\('chest',row\.id\)/);
 });
 test('settlement and battlefield maps show real NPC trader residents',()=>{
- const app=get('app.js');
+ const app=get('pandora-studio-app.js');
  assert.ok(Object.values(trades.npcs).some(x=>x.maps?.length));
  assert.match(app,/const residents=wikiIndex\.residents\(id\)/);
  assert.match(app,/NPC в локации/);

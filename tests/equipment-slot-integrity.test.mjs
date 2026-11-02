@@ -4,13 +4,13 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const items=JSON.parse(read('data/os/items.json'));
 const host={};
-Function('window',read('rules.js'))(host);
-Function('window',read('ui-planner.js'))(host);
-Function('window',read('equipment-plan.js'))(host);
+Function('window',read('pandora-studio-equipment-rules.js'))(host);
+Function('window',read('pandora-studio-ui-planner.js'))(host);
+Function('window',read('pandora-studio-equipment-plan.js'))(host);
 const slots=['weapon','shield','head','body','gloves','legs','feet','cloak',
  'ring','ring','neck','belt','ear','ear'];
 function dynamicIssue(state){
- const source=read('app.js');
+ const source=read('pandora-studio-app.js');
  const from=source.indexOf('function equipmentIssue(');
  const to=source.indexOf('\nfunction trainedBranchMasteries(',from);
  assert.ok(from>=0&&to>from);
@@ -47,7 +47,7 @@ test('an incompatible saved elf costume cannot contribute effects to stats',()=>
    'incompatible costume should be blocked: '+id);
 });
 test('stats, soul and gem aggregators ignore corrupted slots while local data stays intact',()=>{
- const app=read('app.js');
+ const app=read('pandora-studio-app.js');
  assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\)\)\.length\)continue/);
  assert.match(app,/PandoraEquipmentPlan\.matchesEquipmentSlot\(Number\(slot\),/);
  assert.match(app,/records\.push\(\['item:'\+item\.id,item,grade\]\)/);

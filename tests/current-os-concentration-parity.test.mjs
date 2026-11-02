@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const host={};Function('window',read('os-calculator.js'))(host);
+const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const C=host.PandoraOSCalculator;
 const skills=JSON.parse(read('data/os/skills.json'));
 const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};
@@ -39,7 +39,7 @@ test('catalog EP changes follow source while missing mastery and missing record 
  assert.equal(sample(26,true,lost).activeSkills.concentration,false);
 });
 test('book gates Concentration by the same trained slash skill and saves it in links',()=>{
- const app=read('app.js'),book=read('stage-attributes.js');
+ const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  assert.match(app,/function trainedBranchMasteries\(innate=\{\}\)/);
  assert.match(app,/const branchMasteries=trainedBranchMasteries\(innate\)/);
  assert.match(app,/combatConcentration:'concentration'/);

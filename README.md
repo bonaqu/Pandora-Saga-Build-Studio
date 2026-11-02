@@ -18,7 +18,7 @@ npm run test:browser
 
 Independent, visual, vintage-inspired Pandora Saga build planner. Static site intended for **GitHub Pages**, secure optional CMS backend on **Cloudflare Workers + D1**.
 
-[**Полный журнал релизов**](CHANGELOG.md) · [Полный аудит формул Remaked](docs/REMAKED_FORMULA_INVENTORY.md) · [Игровые проверки Pandora Saga OS](docs/OS_LIVE_PARITY_CHECKS.md) · [**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
+[**Архитектура и связи модулей**](docs/STUDIO_ARCHITECTURE.md) · [**Полный журнал релизов**](CHANGELOG.md) · [Полный аудит формул Remaked](docs/REMAKED_FORMULA_INVENTORY.md) · [Игровые проверки Pandora Saga OS](docs/OS_LIVE_PARITY_CHECKS.md) · [**Development roadmap and verification matrix**](ROADMAP.md) · [Full combat parity epic](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5)
 
 ## Status
 
@@ -26,7 +26,7 @@ Independent, visual, vintage-inspired Pandora Saga build planner. Static site in
 
 ## Publish on GitHub Pages (no user-defined GitHub Actions)
 
-1. Repository: `bonaqu/Pandora-Saga-Build-Studio`. The root of the `bonaqu_projects` branch contains `index.html`, `style.css`, `app.js`, `assets`, and `.nojekyll`.
+1. Repository: `bonaqu/Pandora-Saga-Build-Studio`. The root of the `bonaqu_projects` branch contains `index.html`, `pandora-studio-theme.css`, `pandora-studio-app.js`, `assets`, and `.nojekyll`.
 2. **Settings → Pages → Build and deployment → Source: Deploy from a branch → Branch: bonaqu_projects → /(root) → Save**.
 3. Open `https://bonaqu.github.io/Pandora-Saga-Build-Studio/` after GitHub reports Pages publication.
 
@@ -335,7 +335,7 @@ First successful login: owner-only entry → `administrator` → new password (m
 
 ## 2026-10-30 — выпуск 2026.10.30.38: исправление критических регрессий экипировки и навигации
 
-- Исправлен `root.PandoraEnchantModel` внутри `stage-item-ui.js`: `root` был HTML-элементом, поэтому модульный выбор и свойства предмета падали с TypeError. Теперь используется реальный глобальный модуль, и карточка не должна зависеть от совпадения имён.
+- Исправлен `root.PandoraEnchantModel` внутри `pandora-studio-equipment-ui.js`: `root` был HTML-элементом, поэтому модульный выбор и свойства предмета падали с TypeError. Теперь используется реальный глобальный модуль, и карточка не должна зависеть от совпадения имён.
 - Заточка **только** оружия, щита, шлема, нагрудника, перчаток, поножей и обуви. Плащ, кольца, серьги, амулет и пояс не показывают несуществующие кнопки улучшения. Обработчики повторно проверяют тип слота.
 - Перерисовка уровня улучшения сохраняет внутреннюю прокрутку текущей страницы предмета, а переключение вкладок работает отдельно.
 - Устранена причина открытия энциклопедии после F5: переход в другой раздел удаляет устаревший `#wiki/...` из URL и повторное восстановление вики проверяет выбранную вкладку.
@@ -357,7 +357,7 @@ First successful login: owner-only entry → `administrator` → new password (m
 
 ## 2026-10-30 — выпуск 2026.10.30.35: расчёт базовых ОЗ/ОМ по OS
 
-- Новый независимый модуль `os-calculator.js` рассчитывает предварительную базу ОЗ/ОМ по коэффициентам `classes.json`, `tables.json → raceInit, jobInit`, уровню и вручную распределённым параметрам. Пример формулы: `round(hp.base + level × hp.lv + (race.vit + job.vit + allocation.vit) × hp.vit)`.
+- Новый независимый модуль `pandora-os-character-calculator.js` рассчитывает предварительную базу ОЗ/ОМ по коэффициентам `classes.json`, `tables.json → raceInit, jobInit`, уровню и вручную распределённым параметрам. Пример формулы: `round(hp.base + level × hp.lv + (race.vit + job.vit + allocation.vit) × hp.vit)`.
 - В компактном HUD и редакторе характеристик теперь показывается **приближённый базовый** результат, когда таблицы доступны. Он обновляется при смене расы, профессии, уровня и распределения параметров.
 - **Это не полная итоговая характеристика:** экипировка, души, сетовые эффекты, гильдия, группа, честь, баффы и порядок игрового округления требуют проверки соответствия текущему серверу. Неподтверждённые расчёты не применяются как боевые значения.
 - Исправлены тесты на восемь самостоятельных портретов и восстановление выбранного образа после импорта, вместо прежней проверки шести рас.
@@ -446,7 +446,7 @@ First successful login: owner-only entry → `administrator` → new password (m
 - Расовая пассивная способность выбирается в «Происхождении», используя официальные ID и сведения из каталога; при смене расы прежний выбор очищается.
 - Выбор пола блокируется **только при отсутствии отдельного варианта портрета** в репозитории. Это техническое правило интерфейса, а не утверждение о лоре или физиологии расы.
 - В «Пути героя» справа доступны прямое изменение очков ветки и отображение текущего классового лимита; иконки веток убраны, иконки навыков сохранены.
-- Добавлены чистые проверки `ui-planner.js` и локальные регрессионные тесты `tests/ui-planner.test.mjs`.
+- Добавлены чистые проверки `pandora-studio-ui-planner.js` и локальные регрессионные тесты `tests/ui-planner.test.mjs`.
 - Публикацию каталога в D1, серверную авторизацию и Worker этот релиз не изменяет. Перенос оставшихся оригинальных игровых иконок и полный визуальный E2E-аудит остаются в плане.
 
 ## 2026-10-30 — интерактивность и достоверность
@@ -454,7 +454,7 @@ First successful login: owner-only entry → `administrator` → new password (m
 - Иконки выбранных предметов теперь отображаются прямо в слотах героя.
 - Требования изучения из OS `skills.json` показываются как выполненные, невыполненные или непроверенные; интерфейс не утверждает, что навык уже изучен.
 - Из карточки навыка можно перейти к недостающей ветке. Добавлены быстрые кнопки изменения очков, точный ввод, поиск и фильтр доступных навыков.
-- Проверка совместимости предметов с классом, уровнем и слотом перенесена в независимый `rules.js` (без расчёта игрового урона).
+- Проверка совместимости предметов с классом, уровнем и слотом перенесена в независимый `pandora-studio-equipment-rules.js` (без расчёта игрового урона).
 - Изменения внесены только в статические файлы; секреты и серверные учетные записи не затронуты.
 
 ## Inline artwork editor (server deployment required)
@@ -479,9 +479,9 @@ Uses original user-provided assets. Unofficial fan project. Pandora Saga name an
 
 ## Обновления без Ctrl+F5 (2026-10-30)
 
-Сайт проверяет `site-version.json` примерно раз в минуту и при возвращении на вкладку. При новой версии показывает уведомление. Обновление применяется автоматически **только через 2 минуты бездействия**, если нет открытых форм, ввода и админ-сессии; кнопка «Обновить» позволяет применить его вручную. Перед переходом повторно сохраняются текущий персонаж и библиотека в `localStorage`. Страница получает новую версию HTML, а CSS/JS имеют идентификатор релиза в URL, чтобы старый кеш не мешал. Незавершённые правки в модальном окне не сбрасываются автоматически. После первого развёртывания механизма понадобится один обычный вход или обновление страницы, поскольку старые экземпляры сайта ещё не знают о `updates.js`.
+Сайт проверяет `site-version.json` примерно раз в минуту и при возвращении на вкладку. При новой версии показывает уведомление. Обновление применяется автоматически **только через 2 минуты бездействия**, если нет открытых форм, ввода и админ-сессии; кнопка «Обновить» позволяет применить его вручную. Перед переходом повторно сохраняются текущий персонаж и библиотека в `localStorage`. Страница получает новую версию HTML, а CSS/JS имеют идентификатор релиза в URL, чтобы старый кеш не мешал. Незавершённые правки в модальном окне не сбрасываются автоматически. После первого развёртывания механизма понадобится один обычный вход или обновление страницы, поскольку старые экземпляры сайта ещё не знают о `pandora-studio-update-manager.js`.
 
-**Обязательное правило для дальнейших фронтенд-релизов:** обновить `site-version.json` и идентификаторы `?v=` для `app.js`, `rules.js`, `style.css`, `updates.js`, а также `<meta name="ps-studio-release">` в `index.html`. Сам по себе новый коммит GitHub не обновляет этот JSON. Серверные исправления `worker/` публикуются отдельно через Cloudflare Builds.
+**Обязательное правило для дальнейших фронтенд-релизов:** обновить `site-version.json` и идентификаторы `?v=` для `pandora-studio-app.js`, `pandora-studio-equipment-rules.js`, `pandora-studio-theme.css`, `pandora-studio-update-manager.js`, а также `<meta name="ps-studio-release">` в `index.html`. Сам по себе новый коммит GitHub не обновляет этот JSON. Серверные исправления `worker/` публикуются отдельно через Cloudflare Builds.
 
 ## Админка: визуальное редактирование и отмена (2026-10-30)
 
