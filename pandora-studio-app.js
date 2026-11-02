@@ -1569,7 +1569,12 @@ function renderWiki(root){
    type==='monster'?'monsters':type==='instance'?'instances':
    type==='skill'?'skills':type==='soul'?'souls':null;
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
-  const value=[dataName(type,id),translated?.n,
+  const territoryAlias=type==='map'?({
+   '1002001':'территория союза союз Ванриг',
+   '1003001':'территория королевства Вастир Сэнт-Фальстайн',
+   '1004001':'территория империи Лотарская империя'
+  }[String(id)]||null):null;
+  const value=[dataName(type,id),translated?.n,territoryAlias,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
   searchCache.set(key,value);
@@ -1919,8 +1924,12 @@ function renderWiki(root){
     if(wikiItemType!=='all'&&!(wikiItemType==='equipment'?
      slotKeys.includes(rec.slot):rec.slot===wikiItemType))return false;
     return wikiItemEligibility==='all'||
-     heroCompatible(rec,state.level);
-   });
+     heroCompatible(rec,state.level);$1});
+  if(type==='map'&&!wikiSearch){
+   const territories=new Map([['1002001',0],['1003001',1],['1004001',2]]);
+   results.sort((a,b)=>(territories.get(String(a[0]))??100)-
+    (territories.get(String(b[0]))??100));
+  }
   // A source link outside the current search must clear that search, otherwise
   // the linked record opens in details but never appears in the browse list.
   if(wikiSearch&&wikiSelection.id!=null&&records?.[wikiSelection.id]&&
@@ -1933,7 +1942,20 @@ function renderWiki(root){
    [results[selectedIndex],...results.slice(0,wikiShown)]:results.slice(0,wikiShown);
   if(!detailOnly){
    browse.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
+   let territoryTitleShown=false,otherMapsTitleShown=false;
    for(const [id,rec]of visible){
+    if(type==='map'&&!wikiSearch){
+     const territory=['1002001','1003001','1004001'].includes(String(id));
+     if(territory&&!territoryTitleShown){
+      browse.append(h('h4',{class:'wiki-location-list-heading',
+       text:wt('Территории держав','Nation territories')}));
+      territoryTitleShown=true;
+     }else if(!territory&&!otherMapsTitleShown){
+      browse.append(h('h4',{class:'wiki-location-list-heading',
+       text:wt('Другие локации','Other locations')}));
+      otherMapsTitleShown=true;
+     }
+    }
     const row=withIcon(wikiLink(dataName(type,id),type,id),wikiIcon(type,id,rec),type);
     row.setAttribute('data-wiki-record',String(id));
     if(wikiSelection.id===id){
@@ -1996,6 +2018,20 @@ function renderWiki(root){
        'data-owner-field':type==='instance'?'blurbRu':'desc',
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
    detail.append(description);
+  }
+  if(type==='map'&&['1002001','1003001','1004001'].includes(String(id))){
+   const nation=String(id)==='1002001'?
+    wt('Территория Союза','Union territory'):
+    String(id)==='1003001'?wt('Территория Королевства','Kingdom territory'):
+    wt('Территория Империи','Empire territory');
+   const panel=h('section',{class:'wiki-nation-territory'});
+   panel.append(h('strong',{text:nation}),
+    h('p',{text:wt('Запись территории подтверждена справочником расположения NPC. ',
+     'This territory is listed in the source NPC location catalog. ')+
+     (String(id)==='1003001'?wt(
+      'В городе Вастир находится мастер сундуков Культье.',
+      'The chest master Cultier is in Vastir.'):'')}));
+   detail.append(panel);
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=(keys,isItem=false)=>{
