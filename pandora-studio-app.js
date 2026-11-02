@@ -2134,8 +2134,9 @@ function renderWiki(root){
      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
       text:'+ Добавить источник',title:'Связать предмет с NPC или монстром'});
      add.onclick=()=>{
-      if(detail.querySelector('.wiki-owner-source-picker'))return;
-      const panel=h('div',{class:'wiki-owner-source-picker'});
+      const previous=detail.querySelector('.wiki-owner-acquisition-picker');
+       if(previous){previous.remove();return}
+       const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-acquisition-picker'});
       const kind=h('select',{class:'wiki-inline-select','aria-label':'Тип получения'},[
        h('option',{value:'',text:'Выбери тип получения'}),
        h('option',{value:'monster',text:'Монстр'}),
@@ -2148,7 +2149,8 @@ function renderWiki(root){
       const label=(text,control)=>h('label',{class:'wiki-owner-source-field'},[
        h('span',{text}),control]);
       panel.append(label('Тип получения',kind),label('Найди по имени',search),
-       label('У кого получить',target),feedback);
+        label('У кого получить',target),feedback,
+        h('button',{type:'button',class:'wiki-owner-cancel',text:'Отмена',onclick:()=>panel.remove()}));
       add.after(panel);
       const refresh=()=>{
        const entries=kind.value==='monster'?Object.entries(wikiData.monsters||{}):
@@ -2237,7 +2239,8 @@ function renderWiki(root){
       pick.append(h('option',{value:'',text:'Выбери NPC'}));
       for(const [npcId] of Object.entries(wikiData.trades.npcs||{}))
        pick.append(h('option',{value:npcId,text:dataName('npc',npcId)}));
-      panel.append(pick);plus.after(panel);
+      panel.append(pick,h('button',{type:'button',class:'wiki-owner-cancel',
+        text:'Отмена',onclick:()=>panel.remove()}));plus.after(panel);
       pick.onchange=()=>{
        if(!pick.value)return;
        const npcId=Number(pick.value);
@@ -2460,17 +2463,19 @@ function renderWiki(root){
      detail.append(flow);
     }
     if(adminEditing&&adminToken){
-     for(const [group,label] of [['d','+ Обычная добыча'],['s','+ Особая добыча']]){
-      detail.append(h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-       text:label,onclick:()=>wikiItemChoice(detail,i=>{
-        const next=dropRows();
-        if(next[group].length>=200)throw Error('Превышен лимит записей добычи');
-        next[group].push({i,n:1,p:null});
-        return saveWikiRelationRows('drop',id,next);
-       })}));
+      const actions=h('div',{class:'wiki-owner-drop-actions'});
+      for(const [group,label] of [['d','+ Обычная добыча'],['s','+ Особая добыча']]){
+       actions.append(h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+        text:label,onclick:()=>wikiItemChoice(actions,i=>{
+         const next=dropRows();
+         if(next[group].length>=200)throw Error('Превышен лимит записей добычи');
+         next[group].push({i,n:1,p:null});
+         return saveWikiRelationRows('drop',id,next);
+        })}));
+      }
+      detail.append(actions);
      }
-    }
-  }else if(type==='npc'){
+   }else if(type==='npc'){
     const locations=rec.maps||[];
     if(adminEditing&&adminToken)detail.append(wikiOwnerEntityList({
      label:wt('Где находится','Where to find'),kind:'map',existing:locations,
@@ -2658,8 +2663,11 @@ function renderWiki(root){
       (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
      detail.append(h('h4',{text:'Монстры · '+mobs.length+levelRange}));
      const search=h('input',{type:'search',class:'wiki-inline-search',
-      placeholder:wt('Поиск монстра…','Search monsters…'),
-      'aria-label':wt('Поиск монстра в локации','Search monsters in this location')});
+       placeholder:wt('Поиск монстра…','Search monsters…'),
+       'aria-label':wt('Поиск монстра в подземелье или локации','Search monsters in dungeon or location'),
+       name:'monster-roster-filter',autocomplete:'off','data-lpignore':'true',
+       'data-1p-ignore':'true','data-bwignore':'true'});
+      guardEncyclopediaSearch(search);
      const list=h('div',{class:'wiki-map-monsters'}),rows=[];
      for(const {id:mob,mon} of roster.sort((a,b)=>(a.mon?.level??999)-
       (b.mon?.level??999)||dataName('monster',a.id).localeCompare(dataName('monster',b.id),'ru'))){
@@ -2680,12 +2688,26 @@ function renderWiki(root){
      detail.append(search,list);
     }
     if(type==='map'){
-     const residents=wikiIndex.residents(id);
-     if(residents.length){
-      detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')}));
-      detail.append(linkFlow(residents.map(([npcId])=>
-       wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
-     }
+      const residents=wikiIndex.residents(id);
+      if(adminEditing&&adminToken){
+       detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
+        kind:'npc',existing:residents.map(([npcId])=>String(npcId)),onChange:async next=>{
+         const before=residents.map(([npcId])=>String(npcId)),after=next.map(String);
+         const added=after.find(n=>!before.includes(n));
+         const removed=before.find(n=>!after.includes(n));
+         const npcId=added||removed;
+         if(!npcId)return;
+         const current=wikiData.trades?.npcs?.[npcId];
+         if(!current)throw Error('NPC не найден в каталоге');
+         const maps=(current.maps||[]).map(String);
+         const updated=added?[...new Set([...maps,String(id)])]:maps.filter(x=>x!==String(id));
+         await saveWikiRecordField('npc',npcId,'maps',updated.map(Number));
+        }}));
+      }else if(residents.length){
+       detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')}));
+       detail.append(linkFlow(residents.map(([npcId])=>
+        wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
+      }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
       detail.append(h('h4',{text:wt('Добыча в локации','Location loot')}));
