@@ -4288,13 +4288,12 @@ function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
  if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map'].includes(type)))return node;
  node.classList.add('wiki-edit-value');
- node.title='Двойной клик — изменить';
- node.ondblclick=e=>{
-  e.preventDefault();e.stopPropagation();
-  editWikiValue(node,node.dataset.ownerEmpty==='true'?'':String(node.textContent||''),{
-   type:multiline?'textarea':'text',
-   onCommit:next=>saveWikiRecordField(type,id,field,next)});
- };
+ // The delegated dblclick is the user's actual first gesture. Starting an
+ // ondblclick listener here would silently require a SECOND double-click.
+ editWikiValue(node,node.dataset.ownerEmpty==='true'?'':String(node.textContent||''),{
+  type:multiline?'textarea':'text',
+  onCommit:next=>type==='item'||type==='chest'?
+   saveWikiItemField(id,field,next):saveWikiRecordField(type,id,field,next)});
  return node;
 }
 async function saveWikiItemField(id,field,value){
