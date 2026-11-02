@@ -1731,7 +1731,7 @@ function renderWiki(root){
   };
   if(row.type==='monster'){
    line.append(link((glyph.monster+' '+dataName('monster',row.id)),'monster',row.id,'wiki-source-primary'));
-   if(row.percent!=null)line.append(h('small',{class:'wiki-source-chance',
+   if(row.percent!=null&&!(row.manual&&adminEditing&&adminToken))line.append(h('small',{class:'wiki-source-chance',
     text:row.percent+'%'}));
    if(row.kind==='conditional')line.append(h('small',{class:'wiki-source-meta',
     text:wt('Особый дроп','Conditional')}));
@@ -1750,6 +1750,20 @@ function renderWiki(root){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
   }
   if(row.manual&&adminEditing&&adminToken){
+   if(row.type==='monster'){
+    const chance=h('small',{class:'wiki-source-chance wiki-edit-value',
+     text:row.percent==null?'Шанс не указан':row.percent+'%',
+     title:'Двойной клик — изменить шанс выпадения'});
+    chance.ondblclick=e=>{
+     e.preventDefault();e.stopPropagation();
+     editWikiValue(chance,row.percent??0,{type:'number',min:0,max:100,
+      onCommit:p=>saveWikiAcquisitions(itemId,
+       (wikiData.ownerAcquisitions?.[itemId]||[]).map(source=>
+        source.type===row.type&&String(source.id)===String(row.id)?
+         {...source,p}:source))});
+    };
+    line.append(chance);
+   }
    const remove=h('button',{type:'button',class:'wiki-owner-remove',
     text:'×','aria-label':'Удалить источник '+dataName(row.type,row.id),
     title:'Убрать источник получения'});
@@ -3925,6 +3939,7 @@ async function saveWikiAcquisitions(itemId,rows){
   throw Error('Редактирование источников недоступно');
  if(!Array.isArray(rows)||rows.length>24||rows.some(row=>
   !['npc','monster'].includes(row.type)||!/^[1-9][0-9]{0,14}$/.test(String(row.id))||
+  (row.p!=null&&(!Number.isFinite(row.p)||row.p<0||row.p>100||row.type!=='monster'))||
   !(row.type==='npc'?wikiData.trades?.npcs?.[row.id]:wikiData.monsters?.[row.id])))
   throw Error('Некорректная ссылка на NPC или монстра');
  const normalized=[...new Map(rows.map(row=>[row.type+':'+row.id,
