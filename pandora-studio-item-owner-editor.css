@@ -81,3 +81,12 @@
  cursor:pointer;font:inherit;font-size:.78rem;margin-left:auto}
 .wiki-trade-delete:hover{border-color:#eea298}
 .wiki-owner-mat .wiki-edit-value{padding:1px 4px}
+
+/* Only the label's actual text carries the help tooltip and hover affordance. */
+.wiki-help-label{cursor:default;text-decoration:none}
+.wiki-help-word{cursor:help;text-decoration:underline dotted rgba(215,173,104,.6);text-underline-offset:3px}
+.wiki-description[data-edit-key]{cursor:text;outline-offset:3px}
+.wiki-description .wiki-inline-input{display:block;width:100%;max-width:none;min-height:145px;line-height:1.55;
+ white-space:pre-wrap;tab-size:4;resize:vertical;box-sizing:border-box}
+.wiki-page h3[data-edit-key]{cursor:text}
+.wiki-page [data-edit-key]:focus-visible{outline:1px dashed var(--gold)}
