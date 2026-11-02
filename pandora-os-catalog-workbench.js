@@ -21,6 +21,8 @@
     const exportButton = h('button', {type:'button',class:'button-action',text:'Скачать выбранное для GitHub',disabled:true});
     const publish = h('button', {type:'button',class:'button-action primary',
       text:'Применить выбранные изменения',disabled:true});
+    const testWrite = h('button',{type:'button',class:'button-action',
+      text:'Проверить запись в D1',title:'Безопасная временная запись и удаление',disabled:false});
     const github = h('button',{type:'button',class:'button-action',
       text:'Создать PR в GitHub',disabled:true,
       title:'Создать отдельную ветку с текущими опубликованными игровыми данными'});
@@ -31,7 +33,7 @@
     const status = h('p', {class:'muted',role:'status',
       text:'Выбери проверку API или архива. Без твоего подтверждения публикации не будет.'});
     const results = h('div', {class:'os-sync-results'});
-    actions.append(live,archive,acceptAll,declineAll,exportButton,publish,github);
+    actions.append(live,archive,acceptAll,declineAll,exportButton,publish,github,testWrite);
     view.append(intro,actions,search,progress,summary,status,results);
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
@@ -56,6 +58,7 @@
       publish.disabled = !ready;
       exportButton.disabled = !ready;
       github.disabled = busy || !githubReady || !publishedSnapshot;
+      testWrite.disabled = busy;
       summary.textContent = changes.length
         ? 'Найдено изменений: ' + changes.length + ' · Принято: ' + selected +
           ' · Отклонено: ' + (changes.length - selected)
@@ -304,6 +307,21 @@
 
     // A separate, authenticated server operation. No GitHub token or file
     // contents ever pass through the browser.
+    testWrite.onclick=async()=>{
+      if(busy)return;
+      if(!confirm('Проверить запись в D1? Будет создана, прочитана и удалена одна временная запись; действующий каталог останется прежним.'))return;
+      setBusy(true);
+      try{
+        const result=await request('/api/admin/catalog/test-write',{});
+        if(result.ok!==true||result.readback!==true||result.cleaned!==true)
+          throw Error('D1 не подтвердила полное удаление тестовой записи');
+        status.textContent='Проверка D1 пройдена: запись, чтение и удаление работают. Игровой каталог не изменён.';
+      }catch(error){
+        status.textContent=error.httpStatus===401
+          ? 'Сеанс администратора завершился. Войди заново.'
+          : 'Проверка записи D1 не пройдена: '+error.message;
+      }finally{setBusy(false)}
+    };
     github.onclick=async()=>{
       if(busy||!githubReady||!publishedSnapshot)return;
       if(!confirm('Создать отдельный GitHub PR из текущего опубликованного игрового каталога?\n'+
