@@ -64,8 +64,34 @@ function build(data){
   rewardChests.set(id,{level:item.level,family:rewardFamilies[match[1].toLowerCase()]});
  }
  const chestRecords=Object.fromEntries((data.chests?.boxes||[]).map(box=>[String(box.i),box]));
+ // All actual item-catalog containers belong to the encyclopedia, even if
+ // this OS snapshot has no opening probabilities for them. Storage upgrades
+ // ("Большой сундук (7 дней)", etc.) are not loot containers.
+ for(const [id,item] of Object.entries(data.items||{})){
+  const label=String(item?.name||'');
+  if(!/^(?:Сундук(?:\\s|$)|Шкатулка(?:\\s|$)|Красный сундук$|Зеленый сундук$|Синий сундук$)/i.test(label))continue;
+  if(!Object.hasOwn(chestRecords,id))
+   chestRecords[id]={i:Number(id),rolls:[],unlistedContents:true};
+ }
  for(const id of rewardChests.keys())if(!Object.hasOwn(chestRecords,id))
   chestRecords[id]={i:Number(id),rolls:[],unlistedContents:true};
+ // Only explicit source names are linked to named map entries: this is not a
+ // claim about drop locations, NPC service availability or opening odds.
+ const locationChestNames={
+  52001:'Восточная дорога Ветров',52002:'Северная дорога Ветров',
+  52003:'Западная дорога Ветров',52004:'Долина Нельштадт',
+  52005:'Долина Монтори',52006:'Подножье Горды',
+  52007:'Лейбгольдские теснины',52008:'Пустыня Химурарту',
+  52009:'Север великой Тамбринской пустыни',
+  52011:'Покинутые земли Мальдии'
+ };
+ const chestLocation=new Map();
+ for(const [id,name] of Object.entries(locationChestNames)){
+  const found=Object.entries(data.maps||{}).filter(([,map])=>
+   normalizeSearch(map.name).includes(normalizeSearch(name))||
+   normalizeSearch(name).includes(normalizeSearch(map.name)));
+  if(found.length)chestLocation.set(id,found.map(([key])=>key));
+ }
  const chapters={
   item:data.items||{},monster:data.monsters||{},map:maps,npc:data.trades?.npcs||{},
   chest:chestRecords,
@@ -160,6 +186,7 @@ function build(data){
   residents:id=>(npcLocations.get(String(id))||[]).slice(),
   zones:id=>(zoneLocations.get(String(id))||[]).slice(),
   records:type=>chapters[type]||{},rewardChest:id=>rewardChests.get(String(id))||null,
+  chestPlaces:id=>(chestLocation.get(String(id))||[]).slice(),
   search,normalize:normalizeSearch,sourceCount:sources.size
  });
 }
