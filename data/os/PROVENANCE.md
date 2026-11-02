@@ -8,5 +8,5 @@ This repository contains a **fixed, self-hosted source snapshot** of the followi
 - EN names and descriptions come from `strings.en.json` with source IDs, not from guessed translations. It includes, among others, 1,115 item names, 553 skills, 666 monsters, 112 souls and 28 classes.
 - The user-owned, previously approved Legacy translations are independently preserved in `data/localization/legacy-approved.v1.json` and are **not** automatically assigned to modern OS IDs.
 - Original source counts are validated before transfer to Cloudflare D1. Publishing a new snapshot requires a complete authenticated import; missing translations retain RU text.
-- **No runtime synchronization** with the game server is used for JSON data. Until the first D1 publication, GitHub Pages serves this local snapshot as a contingency. Game icon URLs still require a separate self-hosting migration (Issue #2).
+- Regular player views use published D1 data or the bundled archive; they do not fetch the external source during character calculations. An authenticated administrator may explicitly compare upstream data and publish an approved snapshot. Game icon URLs are handled separately (Issue #2).
 - These source snapshots may be outdated if the live server changes. Do not treat unverified combat calculations or unavailable drop sources as confirmed.
