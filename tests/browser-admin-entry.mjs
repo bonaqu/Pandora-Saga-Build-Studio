@@ -67,6 +67,15 @@ export async function runAdminEntrySmoke(browser,base){
   if(path==='/api/admin/override'&&method==='POST'){
    const data=route.request().postDataJSON();
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
+   if(data.key.startsWith('acquireedit.')){
+    assert.ok(JSON.parse(data.value).some(row=>row.type==='npc'));
+    calls.push('owner-acquire-edit');
+   }
+   if(data.key.startsWith('tradeedit.')){
+    const rec=JSON.parse(data.value).recipe;
+    assert.ok(rec&&rec.npc.length&&rec.i>0);
+    calls.push('owner-trade-edit');
+   }
    if(data.key.startsWith('itemedit.')){
     assert.match(data.key,/^itemedit\.[0-9]+$/);
     const patch=JSON.parse(data.value);
@@ -185,6 +194,24 @@ export async function runAdminEntrySmoke(browser,base){
    .some(node=>node.textContent==='99'),null,{timeout:20000});
   assert.deepEqual(calls.filter(x=>x==='owner-item-edit'),['owner-item-edit']);
   assert.ok(await page.locator('.item-fields dd.wiki-edit-value').count()>0);
+  await page.getByRole('button',{name:/Добавить источник/}).click();
+  await page.getByRole('combobox',{name:'Тип получения'}).selectOption('npc');
+  const sourceTarget=page.getByRole('combobox',{name:'У кого получить'});
+  assert.ok(await sourceTarget.locator('option').count()>1);
+  await sourceTarget.selectOption({index:1});
+  const newSource=page.locator('.wiki-source-token:has(.wiki-owner-remove) a[href^="#wiki/npc/"]').first();
+  await newSource.waitFor({state:'visible',timeout:20000});
+  await newSource.click();
+  const createTrade=page.getByRole('button',{name:/Добавить обмен/});
+  await createTrade.waitFor({state:'visible'});
+  const tradeCount=await page.locator('.wiki-trade-card').count();
+  await createTrade.click();
+  await page.getByRole('combobox',{name:'Выбери предмет'}).selectOption({index:1});
+  await page.waitForFunction(n=>document.querySelectorAll('.wiki-trade-card').length===n+1,
+   tradeCount,{timeout:20000});
+
+  assert.deepEqual(calls.filter(x=>x==='owner-acquire-edit'),['owner-acquire-edit']);
+  assert.deepEqual(calls.filter(x=>x==='owner-trade-edit'),['owner-trade-edit']);
   assert.deepEqual(errors,[]);
   const other=await context.newPage();
   await other.goto(base+'/',{waitUntil:'domcontentloaded'});
