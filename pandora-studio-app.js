@@ -1728,7 +1728,8 @@ function renderWiki(root){
  const ids=[...new Set((existing||[]).map(String))];
  const candidates=kind==='monster'?wikiData.monsters:
   kind==='npc'?wikiData.trades?.npcs:
-  kind==='map'?wikiData.maps:
+  kind==='map'?Object.fromEntries(Object.entries(wikiIndex.records('map'))
+   .filter(([id])=>/^\d+$/.test(id))):
   kind==='item'?wikiData.items:wikiIndex.records('instance');
  const holder=h('div',{class:'wiki-entity-flow'});
  for(const key of ids){
@@ -2021,18 +2022,18 @@ function renderWiki(root){
    [results[selectedIndex],...results.slice(0,wikiShown)]:results.slice(0,wikiShown);
   if(!detailOnly){
    browse.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
-   let territoryTitleShown=false,otherMapsTitleShown=false;
+   let lastPlaceGroup=null;
    for(const [id,rec]of visible){
     if(type==='map'&&!wikiSearch){
-     const territory=['1001004','1002001','1003001','1004001'].includes(String(id));
-     if(territory&&!territoryTitleShown){
-      browse.append(h('h4',{class:'wiki-location-list-heading',
-       text:wt('Город Астир · четыре района','Astir city · four districts')}));
-      territoryTitleShown=true;
-     }else if(!territory&&!otherMapsTitleShown){
-      browse.append(h('h4',{class:'wiki-location-list-heading',
-       text:wt('Другие локации','Other locations')}));
-      otherMapsTitleShown=true;
+     const geo=window.PandoraAstirLocations;
+     const group=geo?.district(id)?'city':geo?.country(id)?'nation':'other';
+     if(group!==lastPlaceGroup){
+      browse.append(h('h4',{class:'wiki-location-list-heading',text:{
+       city:wt('Город Астир · районы','Astir city · districts'),
+       nation:wt('Государства','Nations'),
+       other:wt('Другие локации','Other locations')
+      }[group]}));
+      lastPlaceGroup=group;
      }
     }
     const row=withIcon(wikiLink(dataName(type,id),type,id),wikiIcon(type,id,rec),type);
@@ -3021,7 +3022,7 @@ function renderWiki(root){
       h('small',{text:wt('Мастер сундуков','Chest master')}),
       h('strong',{text:wt('Культье','Cultier')}),
       h('span',{text:wt('Астир · территория Королевства','Astir · Kingdom territory')}),
-      wikiLink(wt('Территория Королевства','Kingdom territory'),'map','1003001')
+      wikiLink(wt('Территория Королевства · Астир','Kingdom District · Astir'),'map','astir-kingdom')
      ]);
      info.append(required,master);notice.append(info);
      detail.append(notice);
