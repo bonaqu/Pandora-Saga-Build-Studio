@@ -2167,8 +2167,11 @@ function renderWiki(root){
         if(initial==null&&!adminEditing)continue;
         const value=h('span',{class:'wiki-owner-effect-value'});
         if(adminEditing&&adminToken&&key==='b')value.append(h('small',{text:label}));
-        const signed=/^EP_(?:MAXLIFE|MAXMANA|STRENGTH|VITARITY|AGILITY|DEXTERITY|SPIRITUAL|INTELIGENCE|ARMORCLASS|TOHIT|CRITICALRATE|DAMAGERATE|FIRE_RESISTANCE|COLD_RESISTANCE|MAGIC_RESISTANCE|ATTACKINTERVAL|DARK_RESISTANCE|HOLY_RESISTANCE|POISON_RESISTANCE|MOVESPEED|AVOIDANCE|DESTINE_WARDING|ELEMENT_DAMAGE|VOLUME_EXP)/.test(effect.func);
-        const formatted=initial==null?'—':signed&&Number(initial)>0?'+'+initial:String(initial);
+        const signed=/^EP_(?:MAXLIFE|MAXMANA|STRENGTH|VITARITY|AGILITY|DEXTERITY|SPIRITUAL|INTELIGENCE|ARMORCLASS|TOHIT|CRITICALRATE|DAMAGERATE|FIRE_RESISTANCE|COLD_RESISTANCE|MAGIC_RESISTANCE|ATTACKINTERVAL|DARK_RESISTANCE|HOLY_RESISTANCE|POISON_RESISTANCE|MOVESPEED|AVOIDANCE|DESTINE_WARDING|ELEMENT_DAMAGE|VOLUME_EXP|IMMUNE_BURN|IMMUNE_VIT_TYPE|SKILL_BENCH)/.test(effect.func);
+        const percentage=key==='a'&&(/_SCALE$/.test(effect.func)||
+         ['EP_IMMUNE_BURN','EP_IMMUNE_VIT_TYPE','EP_SKILL_BENCH'].includes(effect.func));
+        const formatted=initial==null?'—':
+         (signed&&Number(initial)>0?'+'+initial:String(initial))+(percentage?'%':'');
         const number=h('strong',{text:formatted});
        if(adminEditing&&adminToken){
         number.classList.add('wiki-edit-value');
