@@ -48,7 +48,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
+let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
 function restoreActiveBuildId(){
@@ -1503,11 +1503,9 @@ function renderWiki(root){
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  guardEncyclopediaSearch(search);
  controls.append(categories,search);
- if(wikiSelection.type==='item'){
+ if(wikiSelection.type==='item'&&!['utility','all'].includes(wikiItemType)){
   const equipmentTypes=[['equipment',wt('Экипировка','Equipment')],
     ['elemental',wt('Стихийное оружие','Elemental weapons')],
-    ['utility',wt('Предметы эффектов','Effect items')],
-    ['all',wt('Все предметы','All items')],
    ...[['weapon','Оружие','Weapons'],['shield','Щиты','Shields'],
     ['head','Шлемы','Helmets'],['body','Броня','Armor'],
     ['gloves','Перчатки','Gloves'],['legs','Поножи','Leg armor'],
@@ -1558,6 +1556,21 @@ function renderWiki(root){
    toolbar.append(picker);
   }
   controls.append(toolbar);
+ }
+ if(wikiSelection.type==='item'&&wikiItemType==='utility'){
+  const filter=h('select',{class:'wiki-effect-type',
+   'aria-label':wt('Тип предметов эффектов','Effect item category'),
+   onchange:event=>{wikiEffectFilter=event.target.value;
+    wikiSelection={...wikiSelection,id:null,highlight:null};wikiShown=100;draw()}});
+  for(const [id,ru,en] of [
+   ['all','Все предметы эффектов','All effect items'],
+   ['buff','Дают положительные эффекты','Apply positive effects'],
+   ['cure','Снимают негативные эффекты','Remove negative effects']]){
+   const option=h('option',{value:id,text:wt(ru,en)});
+   if(wikiEffectFilter===id)option.selected=true;
+   filter.append(option);
+  }
+  controls.append(h('div',{class:'wiki-effect-toolbar'},[filter]));
  }
  const view=h('div',{class:'wiki-equipment-view',role:'group',
   'aria-label':wt('Вид Энциклопедии','Encyclopedia view')});
@@ -1620,9 +1633,10 @@ function renderWiki(root){
    type==='skill'?'skills':type==='soul'?'souls':null;
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
   const territoryAlias=type==='map'?({
-   '1002001':'территория союза союз Ванриг',
-   '1003001':'территория королевства Астир Сэнт-Фальстайн',
-   '1004001':'территория империи Лотарская империя'
+   '1001004':'центральная площадь город Астир',
+   '1002001':'территория союза город Астир',
+   '1003001':'территория королевства город Астир',
+   '1004001':'территория империи город Астир'
   }[String(id)]||null):null;
   const value=[dataName(type,id),translated?.n,territoryAlias,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
@@ -1951,21 +1965,35 @@ function renderWiki(root){
    window.PandoraStudioRules.equipment(rec,{
     job:jobKeys[state.job],slot:rec.slot,level
    }).allowed&&window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender);
-  const isUtilityItem=item=>item?.slot==null&&Boolean(item?.effects?.some(effect=>
-   /^EP_RECOVERY_/.test(effect.func||'')||/^EP_SKILL_EXEC(?:_|$)/.test(effect.func||'')));
+  const utilityCategories=item=>{
+   if(item?.slot!=null)return [];
+   const codes=(item?.effects||[]).map(effect=>String(effect?.func||''));
+   const categories=[];
+   if(codes.some(code=>/^EP_RECOVERY_/.test(code)))categories.push('cure');
+   if(codes.some(code=>/^EP_SKILL_EXEC(?:_|$)/.test(code)))categories.push('buff');
+   return categories;
+  };
+  const isUtilityItem=item=>utilityCategories(item).length>0;
   const isVisibleItem=(item,kind)=>kind==='all'?true:
    kind==='equipment'?slotKeys.includes(item.slot):
    kind==='elemental'?item.slot==='weapon'&&
     Boolean(window.PandoraConditionalItemBonuses?.elementOf?.(item))&&
     (wikiElementFilter==='all'||
      window.PandoraConditionalItemBonuses.elementOf(item)===wikiElementFilter):
-   kind==='utility'?isUtilityItem(item):item.slot===kind;
+   kind==='utility'?isUtilityItem(item)&&
+    (wikiEffectFilter==='all'||utilityCategories(item).includes(wikiEffectFilter)):
+    item.slot===kind;
   // Links from monsters, trades and chests must reveal non-equipment rewards too.
   if(type==='item'&&wikiSelection.id!=null&&records?.[wikiSelection.id]){
    const selected=records[wikiSelection.id];
-   const permitted=isVisibleItem(selected,wikiItemType);
+   const permitted=isVisibleItem(selected,wikiItemType)&&
+    !(wikiItemType==='all'&&slotKeys.includes(selected.slot));
    if(!permitted){
-    wikiItemType=slotKeys.includes(selected.slot)?'equipment':'all';
+    const was=wikiItemType;
+    wikiItemType=isUtilityItem(selected)?'utility':
+     slotKeys.includes(selected.slot)?'equipment':'all';
+    if(wikiItemType==='utility')wikiEffectFilter='all';
+    if(was!==wikiItemType){renderDetails();return}
     const picker=controls.querySelector('.wiki-equipment-type');
     if(picker)picker.value=wikiItemType;
    }
@@ -1984,7 +2012,7 @@ function renderWiki(root){
      heroCompatible(rec,state.level);
    });
   if(type==='map'&&!wikiSearch){
-   const territories=new Map([['1002001',0],['1003001',1],['1004001',2]]);
+   const territories=new Map([['1001004',0],['1002001',1],['1004001',2],['1003001',3]]);
    results.sort((a,b)=>(territories.get(String(a[0]))??100)-
     (territories.get(String(b[0]))??100));
   }
@@ -2003,10 +2031,10 @@ function renderWiki(root){
    let territoryTitleShown=false,otherMapsTitleShown=false;
    for(const [id,rec]of visible){
     if(type==='map'&&!wikiSearch){
-     const territory=['1002001','1003001','1004001'].includes(String(id));
+     const territory=['1001004','1002001','1003001','1004001'].includes(String(id));
      if(territory&&!territoryTitleShown){
       browse.append(h('h4',{class:'wiki-location-list-heading',
-       text:wt('Территории держав','Nation territories')}));
+       text:wt('Город Астир · четыре района','Astir city · four districts')}));
       territoryTitleShown=true;
      }else if(!territory&&!otherMapsTitleShown){
       browse.append(h('h4',{class:'wiki-location-list-heading',
@@ -2085,17 +2113,28 @@ function renderWiki(root){
    detail.append(city);
   }
   if(type==='map'&&['1002001','1003001','1004001'].includes(String(id))){
-   const nation=String(id)==='1002001'?
-    wt('Территория Союза','Union territory'):
-    String(id)==='1003001'?wt('Территория Королевства','Kingdom territory'):
-    wt('Территория Империи','Empire territory');
-   const panel=h('section',{class:'wiki-nation-territory'});
-   panel.append(h('strong',{text:nation}),
-    h('p',{text:wt('Запись территории подтверждена справочником расположения NPC. ',
-     'This territory is listed in the source NPC location catalog. ')+
-     (String(id)==='1003001'?wt(
-      'На территории Королевства города Астир находится мастер сундуков Культье.',
-      'Chest master Cultier is located in Astir, in the Kingdom district.'):'')}));
+   const routes={
+    '1002001':{zones:['2001001','2002001'],
+     state:wt('Союз северных племён Ванриг','Varik Confederation')},
+    '1004001':{zones:['2001003','2004001'],
+     state:wt('Лотарская империя','Latugan Empire')},
+    '1003001':{zones:['2001002','2003001'],
+     state:wt('Королевство Сэнт-Фальстайн','Kingdom of St. Pfelstein')}
+   };
+   const route=routes[String(id)],panel=h('section',{class:'wiki-nation-territory'});
+   panel.append(h('strong',{text:wt('Маршрут из Астира','Route from Astir')}));
+   const steps=h('div',{class:'wiki-location-route'});
+   steps.append(h('span',{text:dataName('map',id)}));
+   for(const zone of route.zones){
+    steps.append(h('span',{class:'wiki-route-arrow',text:'→'}));
+    steps.append(wikiLink(dataName('map',zone),'map',zone));
+   }
+   steps.append(h('span',{class:'wiki-route-arrow',text:'→'}),
+    h('span',{class:'wiki-route-nation',text:route.state}));
+   panel.append(steps);
+   if(String(id)==='1003001')panel.append(h('p',{text:
+    wt('Здесь, на территории Королевства города Астир, находится мастер сундуков Культье.',
+     'Chest master Cultier is here, in the Kingdom district of Astir.')}));
    detail.append(panel);
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
@@ -2568,7 +2607,7 @@ function renderWiki(root){
      'Фиксированное значение из игрового справочника. Это не рыночная цена между игроками. По имеющимся данным нельзя подтвердить, что именно столько даст торговец при продаже души в лавку.',
      'Fixed value from the game catalog, not the market price between players. The currently available data does not verify the amount a shopkeeper pays for selling this Soul.');
     const heading=h('h4',{class:'wiki-soul-price-heading'});
-    heading.append(h('span',{text:wt('Стоимость по справочнику','Catalog price'),
+    heading.append(h('span',{text:wt('Стоимость','Price'),
      class:'wiki-soul-price-label',title:help,tabindex:'0','aria-label':help}));
     heading.append(h('span',{class:'wiki-soul-price-help',text:'ⓘ',
      title:help,tabindex:'0','aria-label':help}));
@@ -2643,6 +2682,7 @@ function renderWiki(root){
      }
     }else if(places.length)detail.append(linkFlow(places.map(loc=>
      wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
+    else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
     const ownDrop=wikiData.drops?.[id]||{d:[],s:[]};
     const dropRows=()=>({
      d:(ownDrop.d||[]).map(x=>({...x})),
@@ -2699,7 +2739,7 @@ function renderWiki(root){
       flow.append(entry);
      }
      detail.append(flow);
-    }
+    }else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
     if(adminEditing&&adminToken){
       const actions=h('div',{class:'wiki-owner-drop-actions'});
       for(const [group,label] of [['d','+ Обычная добыча'],['s','+ Особая добыча']]){

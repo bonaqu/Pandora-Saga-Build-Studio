@@ -44,22 +44,37 @@ const phoenixExplanation=(p)=>{
  return start+(p.growth?
   ` Каждое следующее улучшение добавляет ${p.growth.damage} урона и ${p.growth.scale}% от ${p.growth.stat}, сокращая откат на ${p.growth.cooldown} секунду.`:'');
 };
-// Classification is derived only from explicit game item names/descriptions.
- // Adding future elemental collections does not require editing tab labels.
- const elementalRoots=Object.freeze([
- ['fire',/огненн|огне(вой|вая|вое|вые)|flame|fiery|\bfire\b/i],
- ['ice',/ледян|ледов|льдян|морозн|ice|frost/i],
- ['dark',/\bтьм[ыае]\b|темн[а-я]*|dark|shadow/i],
- ['light',/светл[а-я]*|сияющ[а-я]*|holy|light/i],
- ['lightning',/молни[а-я]*|грозов[а-я]*|lightning|thunder/i],
- ['poison',/ядовит[а-я]*|ядов[а-я]*|poison/i]
- ]);
+// A weapon's elemental name or ordinary gemstone compatibility DOES NOT
+ // prove it belongs to the NPC/event/shop elemental collection. In particular,
+ // the regular Ice Sword and Frost Wand are monster drops, not collection gear.
+ // The current OS snapshot identifies this fire series by a shared original
+ // forging description AND its level-7 fire-enhancement bonus. Other series
+ // require verified origin metadata; names alone never qualify.
+ const elementalKinds=Object.freeze(['fire','ice','lightning','poison','light','dark']);
  const elementOf=item=>{
   if(!item||item.slot!=='weapon')return null;
-  const name=String(item.name||'');
-  for(const [element,re] of elementalRoots)
-   if(re.test(name))return element;
+  if(elementalKinds.includes(item.elementalWeapon)&&
+   item.elementalOriginVerified===true)return item.elementalWeapon;
+  const desc=String(item.desc||'');
+  if(/рожд[её]нн?[а-я]* в очистительном пламени/i.test(desc)&&
+   /Закалка самоцветом огня[\s\S]{0,70}\+7/i.test(desc))return 'fire';
   return null;
+ };
+ // Catalog Phoenix numbers are BASE values at +7. Subsequent upgrades add
+ // explicitly described flat damage/stat scaling and shorten the cooldown.
+ // No target resistance or undocumented damage rounding is assumed.
+ const phoenixDamage=(p,refinement,stats={})=>{
+  if(!p||!Number.isInteger(Number(refinement))||refinement<7)return null;
+  const key=p.stat==='СИЛ'?'str':p.stat==='ИНТ'?'int':null;
+  const attribute=key==null?NaN:Number(stats?.[key]);
+  if(!Number.isFinite(attribute)||attribute<0)return null;
+  const upgrades=Math.max(0,Number(refinement)-7),growth=p.growth||null;
+  const flat=p.damage+upgrades*(growth?.damage||0);
+  const scale=p.scale+upgrades*(growth?.scale||0);
+  const cooldown=Math.max(0,p.cooldown-upgrades*(growth?.cooldown||0));
+  const chance=p.chance*(upgrades+1);
+  return {flat,scale,attribute,stat:p.stat,damage:flat+attribute*scale/100,
+   chance,cooldown,refinement:Number(refinement)};
  };
  // The enchantment is active only if the actual slotted weapon is usable,
  // refined to +7 or above and explicitly fire-enchanted.
@@ -70,6 +85,6 @@ const phoenixExplanation=(p)=>{
   return parse(record);
  };
  root.PandoraConditionalItemBonuses=Object.freeze({
-  parse,phoenixExplanation,elementOf,activeFor
+  parse,phoenixExplanation,elementOf,activeFor,phoenixDamage
  });
 })(typeof window==='undefined'?globalThis:window);
