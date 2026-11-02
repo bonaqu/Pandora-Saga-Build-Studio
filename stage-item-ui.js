@@ -12,7 +12,7 @@ const el=(tag,attrs={},children=[])=>{
  for(const child of children)e.append(typeof child==='string'?document.createTextNode(child):child);
  return e;
 };
-function summary(record,icon,kind='item'){
+function summary(record,icon,kind='item',context=null){
  if(!record)return el('p',{class:'muted',text:'Данные о предмете пока не загружены'});
  const presenter=root.PandoraItemPresentation,english=document.documentElement?.lang==='en';
  const locale=english?'en':'ru',tr=(ru,en)=>english?en:ru;
@@ -20,17 +20,29 @@ function summary(record,icon,kind='item'){
  const src=icon(record,kind);
  if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));head.append(img)}
  head.append(el('strong',{text:presenter?.displayName(record,tr('Без названия','Unnamed item'),locale)||tr('Без названия','Unnamed item'),
-  ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));wrap.append(head);
+  ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));
+ const grade=Number(context?.refinement)||0;
+ if(kind==='item'&&context&&grade>0)head.append(el('span',{class:'stage-gear-grade',text:'+'+grade}));
+ wrap.append(head);
  // IDs are internal database keys, never player-facing data.
+ const baseArmor=Number(record.AC);
+ const armorRefine=kind==='item'&&context&&
+  ['shield','head','body','gloves','legs','feet'].includes(record.slot)&&
+  Number.isInteger(grade)&&grade>=0&&grade<=10&&record.name!=='-'?
+  Math.floor(grade*1.5):0;
+ const armorDisplay=context&&Number.isFinite(baseArmor)&&armorRefine>0?
+  baseArmor+' +'+armorRefine:record.AC;
  const rows=kind==='soul'?
  [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
  [[tr('Тип','Type'),presenter?.kind(record,locale)||tr('Предмет','Item')],
  [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),record.W],
- [tr('Защита','Defense'),record.AC],[tr('Гнёзда','Sockets'),record.soulslot],
+ [tr('Защита','Defense'),armorDisplay],[tr('Гнёзда','Sockets'),record.soulslot],
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
- if(wearers?.length)rows.push([tr('Подходит','Wearable by'),wearers.join(' · ')]);
+ if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
+  rows.push([tr('Вставлено душ','Socketed Souls'),
+   (context.souls?.length||0)+' / '+context.capacity]);
  if(root.PandoraStudioAdminActive?.())rows.push(['ID',record.id]);
  const dl=el('dl',{class:'stage-rich-fields'});
  for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){
@@ -39,10 +51,32 @@ function summary(record,icon,kind='item'){
   dl.append(el('dt',{text:key}),dd);
  }
  if(dl.children.length)wrap.append(dl);
+ if(wearers?.length){
+  const fit=el('div',{class:'stage-gear-wearers'},[
+   el('span',{class:'stage-gear-wearers-label',text:tr('Подходит','Wearable by')})
+  ]);
+  const chips=el('div',{class:'stage-gear-wearer-chips'});
+  for(const wearer of wearers)chips.append(el('span',{class:'stage-gear-wearer',text:wearer}));
+  fit.append(chips);wrap.append(fit);
+ }
  if(record.desc){const desc=el('p',{class:'stage-rich-desc',
   text:presenter?.description(record.desc)||record.desc});
   if(kind==='item')desc.dataset.editKey='itemdesc.'+record.id;
   wrap.append(desc);
+ }
+ if(kind==='item'&&Array.isArray(context?.souls)&&context.souls.length){
+  const group=el('div',{class:'stage-gear-souls'});
+  group.append(el('strong',{text:tr('Вставленные души','Socketed Souls')}));
+  for(const soul of context.souls){
+   const row=el('div',{class:'stage-gear-soul'});
+   const src=icon(soul,'soul');
+   if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.remove();row.append(img)}
+   const info=el('div',{class:'stage-gear-soul-info'});
+   info.append(el('b',{text:presenter?.displayName(soul,tr('Душа','Soul'),locale)||tr('Душа','Soul')}));
+   if(soul.desc)info.append(el('small',{text:presenter?.description(soul.desc)||soul.desc}));
+   row.append(info);group.append(row);
+  }
+  wrap.append(group);
  }
  return wrap;
 }
@@ -60,7 +94,7 @@ document.addEventListener?.('keydown',event=>{
  if(event.key==='Escape')dismissPreview();
 });
 root.addEventListener?.('hashchange',dismissPreview);
-function attachPreview(target,record,icon,kind='item'){
+function attachPreview(target,record,icon,kind='item',context=null){
  if(!record)return;
  // A custom preview must never coexist with the browser's native title popup.
  target.removeAttribute('title');
@@ -75,13 +109,13 @@ function attachPreview(target,record,icon,kind='item'){
   if(tip?.isConnected)return;
   dismissPreview();remove();
   tip=el('aside',{id:'stage-gear-tooltip',class:'stage-hover-preview stage-item-tooltip',
-   role:'tooltip'},[summary(record,icon,kind)]);
+   role:'tooltip'},[summary(record,icon,kind,context)]);
   livePreview=tip;liveTarget=target;
   document.body.append(tip);
   target.setAttribute('aria-describedby',tip.id);
   const box=target.getBoundingClientRect(),vw=document.documentElement.clientWidth,
    vh=window.innerHeight||innerHeight;
-  tip.style.maxWidth=Math.max(180,Math.min(340,vw-16))+'px';
+  tip.style.maxWidth=Math.max(180,Math.min(380,vw-16))+'px';
   tip.style.maxHeight=Math.max(110,vh-16)+'px';
   const w=tip.getBoundingClientRect().width,h=tip.getBoundingClientRect().height;
   // Prefer the side of the slot with enough space. Avoid covering the hovered icon.

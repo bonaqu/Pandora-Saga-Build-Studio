@@ -1912,3 +1912,18 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-guild-level-effects span{padding:7px;border:1px solid #634b30;border-radius:4px;
  font-size:10px;line-height:1.4;color:#e8cb9f;background:#37271a}
 @media(max-width:460px){.stage-priest-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Equipped tooltip: compact requirements, per-piece armor, socketed Soul effects. */
+.stage-item-tooltip .stage-rich-head{gap:7px;align-items:center}
+.stage-item-tooltip .stage-gear-grade{margin-left:auto;flex:none;border:1px solid #b38a50;background:#45301b;border-radius:3px;padding:1px 5px;font:700 11px Manrope,Arial,sans-serif;color:#ffd893}
+.stage-item-tooltip .stage-gear-wearers{padding:7px 0 5px;border-top:1px solid #574129}
+.stage-item-tooltip .stage-gear-wearers-label{display:block;color:#bc9b71;font-size:10px;margin-bottom:5px}
+.stage-item-tooltip .stage-gear-wearer-chips{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:4px}
+.stage-item-tooltip .stage-gear-wearer{padding:2px 6px;border:1px solid #705036;background:#2f2319;border-radius:3px;color:#ecc68c;font:600 10px/1.4 Manrope,Arial,sans-serif}
+.stage-item-tooltip .stage-gear-souls{margin-top:8px;border-top:1px solid #654a2e;padding-top:8px;display:grid;gap:6px}
+.stage-item-tooltip .stage-gear-souls>strong{font-size:11px;color:#f1ce98}
+.stage-item-tooltip .stage-gear-soul{display:flex;align-items:flex-start;gap:7px;padding:6px;background:#1a130e;border:1px solid #5b412b;border-radius:3px}
+.stage-item-tooltip .stage-gear-soul>img{height:28px;width:28px;object-fit:contain;flex:none}
+.stage-item-tooltip .stage-gear-soul-info{min-width:0;display:grid;gap:2px}
+.stage-item-tooltip .stage-gear-soul-info>b{font-size:11px;color:#eac790}
+.stage-item-tooltip .stage-gear-soul-info>small{font-size:10px;line-height:1.45;color:#d5bea2;white-space:pre-line;overflow-wrap:anywhere}

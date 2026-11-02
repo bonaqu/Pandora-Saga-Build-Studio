@@ -47,9 +47,9 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:false,priestSpi:0,priestBlessing:0,priestHymn:0,priestGratia:false,priestLapisMedio:false},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
-try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
+try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
 function restoreActiveBuildId(){
  let id=null;
@@ -114,7 +114,7 @@ function restoreScopedDraft({initial=false}={}){
    {...base,...raw,points:{...base.points,...raw.points},
     stats:{...base.stats,...raw.stats},equipment:{...base.equipment,...raw.equipment},
     souls:{...base.souls,...raw.souls},refinements:{...base.refinements,...raw.refinements},
-    gems:{...base.gems,...raw.gems},profile:{...base.profile,...raw.profile}}:base;
+    gems:{...base.gems,...raw.gems},attributeBuffs:{...base.attributeBuffs,...raw.attributeBuffs},profile:{...base.profile,...raw.profile}}:base;
  }catch{state=fresh()}
  try{
   const rows=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]');
@@ -763,7 +763,13 @@ function renderSlotRails(){
    button.append(slotVisual(i),h('small',{text:item?itemName(item):slots[i][0]}));
    if(item&&plan.canSocket(slotKeys[i],source))button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
-   if(source)window.PandoraStageItemUI.attachPreview(button,source,(rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'));
+   if(source){
+    const socketed=plan.asSocketArray(state.souls?.[i]).slice(0,cap??0)
+     .filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||(s.name?s:null)).filter(Boolean);
+    window.PandoraStageItemUI.attachPreview(button,source,
+     (rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'),
+     'item',{slot:slotKeys[i],refinement:level,souls:socketed,capacity:cap});
+   }
    if(report.excess>0||issue.length)button.append(h('span',{class:'stage-conflict',text:'!',
     'aria-label':issue.length?'Предмет временно недоступен':'Конфликт гнёзд'}));
    container.append(button);
@@ -2300,6 +2306,7 @@ function openSavedBuild(b){
      souls:{...base.souls,...draft.souls},
      refinements:{...base.refinements,...draft.refinements},
      gems:{...base.gems,...draft.gems},
+     attributeBuffs:{...base.attributeBuffs,...draft.attributeBuffs},
      profile:{...base.profile,...draft.profile}};
     restoreLoadedBuildUI();persist();render();changeTab('character');
 
@@ -2631,7 +2638,7 @@ function sanitizeSharedState(original){
    // Pre-0.86 shared builds had only a boolean Honor switch.
    safe.attributeBuffs.honorCuriosity=rawAttributes.honorCuriosity===true;
   }
-  if(rawAttributes.priestEnabled===true)safe.attributeBuffs.priestEnabled=true;
+  if(typeof rawAttributes.priestEnabled==='boolean')safe.attributeBuffs.priestEnabled=rawAttributes.priestEnabled;
   if(rawAttributes.priestGratia===true)safe.attributeBuffs.priestGratia=true;
   if(rawAttributes.priestLapisMedio===true)safe.attributeBuffs.priestLapisMedio=true;
   safe.attributeBuffs.proelium=rawAttributes.proelium===true;
