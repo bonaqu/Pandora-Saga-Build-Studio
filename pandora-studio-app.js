@@ -1807,19 +1807,12 @@ function renderWiki(root){
    {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
-   const heading=h('h3',{text:dataName(type,id),...(adminEditing&&lang==='ru'&&
-     (type==='item'||type==='skill')?{'data-edit-key':type==='item'?
-      'item.'+id:'skill.'+(rec.branch||'race')+'.'+id}:{})});
+   const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
+    ['item','chest'].includes(type)?'item.'+id:null;
+   const heading=h('h3',{text:dataName(type,id),
+    ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{})});
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
-   if(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')){
-     detail.append(h('div',{class:'wiki-owner-edit-row'},[
-       heading,
-       h('button',{type:'button',class:'button-action wiki-owner-pencil',
-        'aria-label':'Изменить название '+dataName(type,id),
-        title:'Изменить название',text:'✎ Название',
-        onclick:()=>inlineWikiText(heading)})
-     ]));
-   }else detail.append(heading);
+   detail.append(heading);
    const namesakes=wikiIndex.sameName(type,id);
    if(namesakes.length)detail.append(h('small',{class:'wiki-variant-note',
     text:wt('Есть другие варианты с таким названием','Other entries share this name')}));
@@ -1834,16 +1827,12 @@ function renderWiki(root){
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
   if(described?.desc){
    const text=englishDescription||described.desc;
+   const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
+    ['item','chest'].includes(type)?'itemdesc.'+id:null;
    const description=h('p',{class:'wiki-description',text:
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
-    ...(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')?
-      {'data-edit-key':type==='item'?'itemdesc.'+id:
-        'skilldesc.'+(rec.branch||'race')+'.'+id}:{})});
+    ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{})});
    detail.append(description);
-   if(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')){
-     detail.append(h('button',{type:'button',class:'button-action wiki-owner-desc-edit',
-      text:'✎ Изменить описание',onclick:()=>inlineWikiText(description)}));
-   }
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=(keys,isItem=false)=>{
@@ -1902,11 +1891,6 @@ function renderWiki(root){
     }}));
   };
   if(type==='item'){
-    if(adminEditing&&adminToken){
-      detail.append(h('button',{type:'button',class:'button-action owner-wiki-edit',
-       text:'✎ Дополнительные эффекты',
-       onclick:()=>openWikiItemEditor(id,rec)}));
-    }
     if(adminEditing&&adminToken)detail.append(h('small',{class:'wiki-owner-instruction',text:'Двойной клик по значению — изменить; выход из поля — сохранить.'}));
     if(rec.sourceNote)detail.append(h('section',{class:'wiki-owner-note'},[
       h('strong',{text:'Комментарий администратора об источнике'}),
@@ -1925,7 +1909,8 @@ function renderWiki(root){
     ];
     const hints={kind:'Игровая категория предмета',level:'Уровень предмета',W:'Показатель атаки оружия',PEN:'Показатель пробития оружия',AC:'Защита предмета',atkspeed:'Скорость атаки',range:'Дальность действия',soulslot:'Гнёзда душ: от 0 до 3'};
     for(const [label,value,key]of itemFields)if(value!=null){
-     const dt=h('dt',{text:label,title:hints[key],class:'wiki-help-label'});
+     const dt=h('dt',{class:'wiki-help-label'},[
+      h('span',{text:label,title:hints[key]||label,class:'wiki-help-word'})]);
      const dd=h('dd',{text:String(value),class:adminEditing&&adminToken?'wiki-edit-value':''});
      if(adminEditing&&adminToken){
       dd.title=wt('Двойной клик для изменения','Double-click to edit');
@@ -1989,7 +1974,7 @@ function renderWiki(root){
        const filtered=entries.filter(([key])=>!q||
         wikiIndex.normalize(dataName(kind.value,key)).includes(q)).slice(0,90);
        target.replaceChildren(h('option',{value:'',
-        text:filtered.length?'Выбери персонажа':'Ничего не найдено'}));
+        text:filtered.length?(kind.value==='monster'?'Выбери монстра':'Выбери персонажа'):'Ничего не найдено'}));
        for(const [key,obj] of filtered){
         const suffix=kind.value==='monster'&&Number.isFinite(obj.level)?
          ' · ур. '+obj.level:'';
@@ -3274,12 +3259,28 @@ function editor(el){
   input.focus();
 }
 
+function guardOwnerInput(input){
+ input.setAttribute('autocomplete','off');
+ input.setAttribute('autocorrect','off');
+ input.setAttribute('autocapitalize','off');
+ input.setAttribute('spellcheck','false');
+ input.setAttribute('data-lpignore','true');
+ input.setAttribute('data-1p-ignore','true');
+ input.setAttribute('data-bwignore','true');
+ input.setAttribute('data-form-type','other');
+ input.setAttribute('data-owner-editor','true');
+ input.readOnly=true;
+ input.addEventListener('pointerdown',()=>{input.readOnly=false},{once:true});
+ input.addEventListener('keydown',()=>{input.readOnly=false},{once:true});
+ input.addEventListener('focus',()=>{input.readOnly=false},{once:true});
+ return input;
+}
 function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=false,onCommit}={}){
  if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
  const before=String(initial??''),visibleBefore=node.textContent;
  let finished=false,saving=false;
  const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
-  type==='textarea'?h('textarea',{rows:4,class:'wiki-inline-input','aria-label':'Изменить описание'}):
+  type==='textarea'?h('textarea',{rows:6,class:'wiki-inline-input','aria-label':'Изменить описание'}):
   h('input',{type:type==='number'?'number':'text',class:'wiki-inline-input',
     'aria-label':'Изменить значение',autocomplete:'off',
     ...(type==='number'?{min:'0',max:String(max),step:integer?'1':'any'}:{})});
@@ -3289,6 +3290,7 @@ function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=f
    el.selected=option.value===before;control.append(el);
   }
  }else control.value=before;
+ if(type!=='select')guardOwnerInput(control);
  const restore=()=>{if(node.isConnected){node.replaceChildren(document.createTextNode(visibleBefore));node.classList.remove('wiki-inline-saving')}};
  const save=async()=>{
   if(finished||saving)return;
@@ -3388,7 +3390,8 @@ function inlineWikiText(el){
  const matched=/^(item|itemdesc)\.([0-9]{1,15})$/.exec(key);
  const source=matched?wikiData?.items?.[matched[2]]:null;
  const desc=key.startsWith('itemdesc.')||key.startsWith('skilldesc.');
- const value=source?String(source[desc?'desc':'name']??''):el.textContent;
+ const raw=source?String(source[desc?'desc':'name']??''):el.textContent;
+ const value=desc?window.PandoraItemPresentation.description(raw):raw;
  editWikiValue(el,value,{type:desc?'textarea':'text',onCommit:async next=>{
   if(matched)return saveWikiItemField(matched[2],desc?'desc':'name',next);
   if(!next||next.length>(desc?2000:240))throw Error('Некорректная длина текста');
