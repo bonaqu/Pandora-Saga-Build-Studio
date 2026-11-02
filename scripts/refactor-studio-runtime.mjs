@@ -62,9 +62,9 @@ function refactor(){
    content=content.replace(regex,()=>{replacements++;return to;});
    // Many old regression tests check filenames using JavaScript regexp literals:
    // /stage-item-ui\\.js\\?v=/; their escaped dots are references too.
-   const escapedFrom=from.replaceAll('.','\\\\.');
-   const escapedTo=to.replaceAll('.','\\\\.');
-   const escapedPattern=new RegExp('(?<![A-Za-z0-9-])'+escapedFrom.replaceAll('\\\\','\\\\\\\\'),'g');
+   const escapedFrom=from.replaceAll('.', String.fromCharCode(92)+'.');
+   const escapedTo=to.replaceAll('.', String.fromCharCode(92)+'.');
+   const escapedPattern=new RegExp('(?<![A-Za-z0-9-])'+escapedFrom.replaceAll(String.fromCharCode(92),String.fromCharCode(92,92)),'g');
    content=content.replace(escapedPattern,()=>{replacements++;return escapedTo;});
   }
   if(path==='worker/index.js'){
