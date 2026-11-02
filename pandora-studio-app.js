@@ -2081,6 +2081,23 @@ function renderWiki(root){
       const product=itemLink(trade.i,dataName('item',trade.i),id);
       product.classList.add('wiki-recipe-result');
       entry.append(product);
+      if(adminEditing&&adminToken){
+       const materialIndex=(trade.mats||[]).findIndex(row=>String(row.i)===String(id));
+       if(materialIndex>=0){
+        const current=trade.mats[materialIndex];
+        const quantity=h('span',{class:'wiki-edit-value',text:' ×'+(current.n??1),
+         title:'Двойной клик — изменить количество материала'});
+        quantity.ondblclick=e=>{e.preventDefault();editWikiValue(quantity,current.n??1,
+         {type:'number',min:1,max:999999,integer:true,onCommit:n=>
+          saveWikiTradeRecipe({...trade,mats:trade.mats.map((x,i)=>
+           i===materialIndex?{...x,n}:x)})})};
+        entry.append(quantity,h('button',{type:'button',class:'wiki-owner-remove',
+         text:'×','aria-label':'Исключить материал из обмена NPC',
+         onclick:()=>void saveWikiTradeRecipe({...trade,
+          mats:trade.mats.filter((_,i)=>i!==materialIndex)})
+          .catch(err=>showStudioToast(err.message,'warning'))}));
+       }
+      }
       const npcs=[...new Set((trade.npc||[]).map(String))].slice(0,5);
       if(npcs.length){
        const places=h('div',{class:'wiki-recipe-npcs'});
@@ -2091,6 +2108,36 @@ function renderWiki(root){
      }
      detail.append(recipes);
      moreSources(usedIn,'usage');
+    }
+    if(adminEditing&&adminToken){
+     const plus=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+      text:'+ Обмен NPC с этим материалом'});
+     plus.onclick=()=>{
+      if(detail.querySelector('.wiki-owner-trade-npc'))return;
+      const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-trade-npc'});
+      const pick=h('select',{class:'wiki-inline-select','aria-label':'Выбери NPC для обмена'});
+      pick.append(h('option',{value:'',text:'Выбери NPC'}));
+      for(const [npcId] of Object.entries(wikiData.trades.npcs||{}))
+       pick.append(h('option',{value:npcId,text:dataName('npc',npcId)}));
+      panel.append(pick);plus.after(panel);
+      pick.onchange=()=>{
+       if(!pick.value)return;
+       const npcId=Number(pick.value);
+       wikiItemChoice(panel,async rewardId=>{
+        let unique=null;
+        for(let n=0;n<30;n++){
+         const candidate=900000000+crypto.getRandomValues(new Uint32Array(1))[0];
+         if(!(wikiData.trades.trades||[]).some(x=>x.id===candidate)&&
+          !Object.hasOwn(override,'tradeedit.'+candidate)){unique=candidate;break}
+        }
+        if(unique===null)throw Error('Не удалось назначить уникальный номер');
+        await saveWikiTradeRecipe({id:unique,i:rewardId,npc:[npcId],
+         mats:[{i:Number(id),n:1}],gold:0,honor:0,exp:0});
+       });
+      };
+      pick.focus();
+     };
+     detail.append(plus);
     }
   }else if(type==='skill'){
     const skillFields=[
