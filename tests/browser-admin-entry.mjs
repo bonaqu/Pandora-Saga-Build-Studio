@@ -3,7 +3,8 @@ import {readFileSync} from 'node:fs';
 
 export async function runAdminEntrySmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const calls=[],context=await browser.newContext({viewport:{width:1280,height:860}});
+ const calls=[],townOverrides=new Map(),
+  context=await browser.newContext({viewport:{width:1280,height:860}});
  await context.route('**/*',async route=>{
   const url=route.request().url();
   if(url.startsWith(base+'/'))return route.continue();
@@ -66,6 +67,7 @@ export async function runAdminEntrySmoke(browser,base){
   }
   if(path==='/api/admin/override'&&method==='POST'){
    const data=route.request().postDataJSON();
+   townOverrides.set(data.key,data.value);
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
    if(data.key.startsWith('acquireedit.')){
     assert.ok(JSON.parse(data.value).some(row=>row.type==='npc'));
@@ -86,7 +88,7 @@ export async function runAdminEntrySmoke(browser,base){
    return json({ok:true,key:data.key,value:data.value});
   }
   if(path==='/api/library')return json({records:[]});
-  if(path==='/api/overrides')return json({values:{}});
+  if(path==='/api/overrides')return json({values:Object.fromEntries(townOverrides)});
   if(path.startsWith('/api/account/')){
    calls.push(path);
    return json({error:'Аккаунты ещё не активированы в D1: требуется миграция 0005'},503);
@@ -412,6 +414,40 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.locator('.path-skill-card').first().click();
   await page.locator('#pathSkillDetails').waitFor({state:'visible'});
   assert.match(await page.locator('#pathSkillDetails').innerText(),/Character level/);
+  // Mocked D1 bridge: owner edits the real city NPC profile, including
+  // RU/EN names and its map relation; no production D1 writes.
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.evaluate(()=>{location.hash='#wiki/npc/astir-npc-kingdom-claris'});
+  const npcHeading=page.locator('.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]');
+  await npcHeading.waitFor({state:'visible',timeout:20000});
+  await npcHeading.dblclick();
+  const editor=npcHeading.locator('[data-owner-text-field]');
+  await editor.fill('Кларис — проверка D1');
+  await editor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]'
+  )?.textContent==='Кларис — проверка D1',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).name,
+   'Кларис — проверка D1');
+  await page.locator('.wiki-page .wiki-town-npc-location').selectOption('astir-union');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-page .wiki-town-npc-location')?.value==='astir-union',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).maps,
+   ['astir-union']);
+  await page.locator('#locale [data-locale="en"]').click();
+  const enHeading=page.locator('.wiki-page h3[data-owner-field="nameEn"]');
+  await enHeading.waitFor({state:'visible',timeout:15000});
+  await enHeading.dblclick();
+  const enEditor=enHeading.locator('[data-owner-text-field]');
+  await enEditor.fill('Claris Test');
+  await enEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-page h3[data-owner-field="nameEn"]')?.textContent==='Claris Test',
+   null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).nameEn,
+   'Claris Test');
+  console.log('Chromium admin town NPC D1 passed: inline RU/EN edits and relocation');
   assert.deepEqual(errors,[]);
   console.log('Chromium skill track passed: thin notches share one bar, slider takes input, pointer and keyboard tooltips work');
  }finally{await context.close()}
