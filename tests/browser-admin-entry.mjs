@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 
 export async function runAdminEntrySmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
@@ -14,6 +15,17 @@ export async function runAdminEntrySmoke(browser,base){
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
   const json=(value,status=200)=>route.fulfill({
    status,headers,contentType:'application/json',body:JSON.stringify(value)});
+  if(path.startsWith('/api/catalog/')&&path.endsWith('.json')){
+   const key=path.split('/').pop().slice(0,-5);
+   const name=key==='stringsEn'?'strings.en':key;
+   const content=JSON.parse(readFileSync(new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
+   // One item differs in D1; the OS archive is the authoritative local test source.
+   if(name==='items')content['1'].name='Старое название из D1';
+   return route.fulfill({status:200,headers:{
+    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot',
+    'x-ps-catalog-snapshot':'ps-browser-snapshot'},
+    contentType:'application/json',body:JSON.stringify(content)});
+  }
   if(path==='/api/library')return json({records:[]});
   if(path==='/api/overrides')return json({values:{}});
   if(path.startsWith('/api/account/')){
@@ -45,6 +57,33 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   assert.deepEqual(calls.filter(p=>p==='/api/admin/login'),['/api/admin/login']);
+  // Reuse the existing authenticated admin smoke to check the real OS workbench.
+  // All catalog requests are mocked; no production Worker or D1 is mutated.
+  await page.locator('#ownerDock').getByRole('button',{name:'Каталог D1'}).click();
+  const dialog=page.getByRole('dialog',{name:/Каталог Pandora Saga/});
+  await dialog.waitFor({state:'visible'});
+  assert.equal(await dialog.getByRole('button',{name:'Опубликовать выбранное в D1'}).isDisabled(),true);
+  await dialog.getByRole('button',{name:'Сравнить с архивом проекта'}).click();
+  await page.waitForFunction(()=>
+   document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
+   null,{timeout:30000});
+  const groups=dialog.locator('.os-sync-group');
+  assert.equal(await groups.count(),1,'Exactly one intentionally changed D1 item');
+  await groups.locator('summary.os-sync-group-heading').click();
+  const decision=dialog.locator('.os-sync-record input[type=checkbox]');
+  await decision.waitFor({state:'visible'});
+  assert.equal(await decision.isChecked(),false,'Changes must be declined by default');
+  assert.equal(await dialog.getByRole('button',{name:'Опубликовать выбранное в D1'}).isDisabled(),true);
+  await decision.check();
+  assert.equal(await dialog.getByRole('button',{name:'Опубликовать выбранное в D1'}).isEnabled(),true);
+  await dialog.getByRole('button',{name:'Отклонить все'}).click();
+  assert.equal(await dialog.getByRole('button',{name:'Опубликовать выбранное в D1'}).isDisabled(),true);
+  await dialog.getByRole('button',{name:'Принять все'}).click();
+  const downloadPromise=page.waitForEvent('download');
+  await dialog.getByRole('button',{name:'Скачать выбранное для GitHub'}).click();
+  const download=await downloadPromise;
+  assert.equal(download.suggestedFilename(),'pandora-os-reviewed-catalog.json');
+  assert.match(await dialog.locator('.os-sync [role=status]').last().innerText(),/GitHub не изменён/);
   assert.deepEqual(errors,[]);
   const other=await context.newPage();
   await other.goto(base+'/',{waitUntil:'domcontentloaded'});
