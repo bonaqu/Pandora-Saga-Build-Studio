@@ -36,5 +36,40 @@ test('book presents honest equipment bonuses only on the attack page',()=>{
  assert.match(book,/Бонусы дальности от снаряжения/);
  assert.match(book,/Дальность атаки: /);
  assert.match(book,/Дальность стрельбы: /);
- assert.match(calc,/const attackRange=attackRangePreview\(\{records:combinedRecords,itemForth\}\)/);
+ assert.match(calc,/const attackRange=attackRangePreview\(\{records:combinedRecords,itemForth,/);
+});
+
+test('official base distance is typed by equipped weapon, without multiplying speculative gear bonuses',()=>{
+ const melee={slot:'weapon',kind:'SWORD',range:115};
+ const bow={slot:'weapon',kind:'BOW',range:1750};
+ const crossbow={slot:'weapon',kind:'CROSSBOW',range:2050};
+ const bonuses=[['item:range',{effects:[
+  {func:'EP_RACE_RANGE',a:50},{func:'EP_BOW_RANGE',a:150},
+  {func:'EP_RACE_CARRY',a:50},{func:'EP_BOW_CARRY',a:150}
+ ]},0]];
+ const sword=C.attackRangePreview({records:bonuses,weapon:melee});
+ assert.deepEqual([sword.baseMelee,sword.baseRanged,sword.general,sword.bow],
+  [115,null,50,150]);
+ const arrow=C.attackRangePreview({records:bonuses,weapon:bow});
+ assert.deepEqual([arrow.baseMelee,arrow.baseRanged,arrow.general,arrow.bow],
+  [null,1750,50,150]);
+ assert.deepEqual([C.attackRangePreview({weapon:crossbow}).baseRanged,
+  C.attackRangePreview({weapon:{slot:'shield',kind:'BOW',range:1750}}).baseRanged],
+  [2050,null]);
+ assert.equal(C.attackRangePreview({records:bonuses}).baseOnly,false);
+ assert.equal(C.attackRangePreview({weapon:{slot:'weapon',kind:'BOW',range:0}}).baseOnly,false);
+});
+test('base() passes eligible weapon source range to the 43-result book but never adds range bonuses',()=>{
+ const book=read('pandora-studio-hero-book.js');
+ const classes=JSON.parse(read('data/os/classes.json')),tables=JSON.parse(read('data/os/tables.json'));
+ const zero={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
+ const weapon={id:999,slot:'weapon',kind:'BOW',range:1800,W:10};
+ const out=C.base({classData:classes.ARCHER,raceData:tables.raceInit.ELF,
+  jobData:tables.jobInit.SCOUT,allocation:zero,level:20,
+  combatContext:{weapon}});
+ assert.equal(out.attackRange.baseRanged,1800);
+ assert.equal(out.attackRange.baseMelee,null);
+ assert.equal(out.attackRange.baseOnly,true);
+ assert.match(book,/calc\?\.attackRange\?\.baseRanged/);
+ assert.match(book,/базовое значение OS в исходных единицах/);
 });
