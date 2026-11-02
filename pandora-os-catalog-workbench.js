@@ -29,23 +29,45 @@
     const search = h('input', {type:'search',class:'os-sync-search',
       placeholder:'Найти предмет, навык, ID или раздел…','aria-label':'Поиск изменений'});
     const progress = h('progress', {class:'catalog-import-progress',max:'100',value:'0'});
+    const filters=h('div',{class:'os-sync-filters',role:'group','aria-label':'Фильтр изменений'});
+    const overview=h('div',{class:'os-sync-overview'});
     const summary = h('div', {class:'os-sync-summary',role:'status'});
     const status = h('p', {class:'muted',role:'status',
       text:'Выбери проверку API или архива. Без твоего подтверждения публикации не будет.'});
     const results = h('div', {class:'os-sync-results'});
     actions.append(live,archive,acceptAll,declineAll,exportButton,publish,github,testWrite);
-    view.append(intro,actions,search,progress,summary,status,results);
+    view.append(intro,actions,search,filters,overview,progress,summary,status,results);
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
-    let expanded = new Set(), full = new Set();
+    let expanded = new Set(), full = new Set(), filterKind='all';
     let githubReady = false, publishedSnapshot = null;
 
+    const filterChoices=[
+      ['all','Все'],['added','Новые'],['changed','Изменённые'],
+      ['removed','Удалённые'],['accepted','Принятые'],['declined','Отклонённые']
+    ];
+    const filterButtons=new Map();
+    for(const [id,label]of filterChoices){
+      const button=h('button',{type:'button',class:'os-sync-filter',
+       'aria-pressed':String(id===filterKind),text:label});
+      button.onclick=()=>{
+        if(busy)return;
+        filterKind=id;render();
+      };
+      filters.append(button);filterButtons.set(id,button);
+    }
+    function matchesFilter(change){
+      if(filterKind==='accepted')return chosen.has(change.id);
+      if(filterKind==='declined')return !chosen.has(change.id);
+      return filterKind==='all'||change.kind===filterKind;
+    }
     function setBusy(value) {
       busy = value;
       live.disabled = value;
       archive.disabled = value;
       search.disabled = value;
+      for(const button of filterButtons.values())button.disabled=value;
       for(const control of results.querySelectorAll('button,input[type="checkbox"]'))
         control.disabled = value;
       refreshActions();
@@ -59,6 +81,34 @@
       exportButton.disabled = !ready;
       github.disabled = busy || !githubReady || !publishedSnapshot;
       testWrite.disabled = busy;
+      const byKind={
+        all:changes.length,added:changes.filter(row=>row.kind==='added').length,
+        changed:changes.filter(row=>row.kind==='changed').length,
+        removed:changes.filter(row=>row.kind==='removed').length,
+        accepted:selected,declined:changes.length-selected
+      };
+      for(const [id,label]of filterChoices){
+        const button=filterButtons.get(id);
+        button.textContent=label+' · '+byKind[id];
+        button.classList.toggle('active',id===filterKind);
+        button.setAttribute('aria-pressed',String(id===filterKind));
+      }
+      const stat=(label,value,kind)=>h('div',{class:'os-sync-stat '+kind},[
+        h('small',{text:label}),h('strong',{text:String(value)})
+      ]);
+      overview.replaceChildren(
+       stat('Добавлено',byKind.added,'added'),
+       stat('Изменено',byKind.changed,'changed'),
+       stat('Удалено',byKind.removed,'removed'),
+       stat('К публикации',selected,'selected')
+      );
+      for(const panel of results.querySelectorAll('.os-sync-group')){
+        const name=panel.getAttribute('data-game-dataset');
+        const count=changes.filter(row=>row.dataset===name&&chosen.has(row.id)).length;
+        const total=changes.filter(row=>row.dataset===name).length;
+        const label=panel.querySelector('.os-sync-count');
+        if(label)label.textContent=count+' / '+total+' принято';
+      }
       summary.textContent = changes.length
         ? 'Найдено изменений: ' + changes.length + ' · Принято: ' + selected +
           ' · Отклонено: ' + (changes.length - selected)
@@ -69,16 +119,20 @@
       if (busy) return;
       if (value) chosen.add(change.id);
       else chosen.delete(change.id);
-      refreshActions();
+      if(filterKind==='accepted'||filterKind==='declined')render();
+      else refreshActions();
     }
 
     function fieldPreview(change) {
       const details = h('details', {class:'os-sync-field-details'});
       details.append(h('summary', {text:'Что изменилось'}));
       const fields = difference.changedFields(change.before,change.after);
+      const fieldsRu={name:'Название',desc:'Описание',W:'Атака',PEN:'Пробитие',
+        AC:'Защита',level:'Уровень',classes:'Доступные классы',
+        effects:'Эффекты',soulslot:'Гнёзда душ',meta:'Параметры каталога'};
       for (const field of fields) {
         details.append(h('div',{class:'os-sync-field'},[
-          h('code',{text:field.field}),
+          h('code',{text:fieldsRu[field.field]||field.field}),
           h('span',{text:field.before}),
           h('span',{class:'os-sync-field-arrow',text:'→'}),
           h('span',{text:field.after})
@@ -93,12 +147,12 @@
       for (const name of importer.files) {
         const group = changes.filter(row=>row.dataset===name);
         if (!group.length) continue;
-        const filtered = query ? group.filter(row=>
+        const filtered = (query ? group.filter(row=>
           (review.labels[name]||name).toLocaleLowerCase().includes(query) ||
           row.key.toLocaleLowerCase().includes(query) ||
-          row.title.toLocaleLowerCase().includes(query)) : group;
+          row.title.toLocaleLowerCase().includes(query)) : group).filter(matchesFilter);
         if (!filtered.length) continue;
-        const panel = h('details',{class:'os-sync-group'});
+        const panel = h('details',{class:'os-sync-group','data-game-dataset':name});
         panel.open = expanded.has(name) || Boolean(query);
         panel.addEventListener('toggle',()=> {
           if (panel.open) expanded.add(name);
@@ -110,8 +164,8 @@
           h('span',{class:'os-sync-count',text:selected+' / '+group.length+' принято'})
         ]));
         const toolbar = h('div',{class:'os-sync-group-actions'});
-        const take = h('button',{type:'button',class:'button-action',text:'Принять раздел',disabled:busy});
-        const reject = h('button',{type:'button',class:'button-action',text:'Отклонить раздел',disabled:busy});
+        const take = h('button',{type:'button',class:'button-action',text:'Принять весь раздел',disabled:busy});
+        const reject = h('button',{type:'button',class:'button-action',text:'Отклонить весь раздел',disabled:busy});
         take.addEventListener('click',()=> {
           if (busy) return;
           for (const item of group) chosen.add(item.id);
@@ -122,7 +176,15 @@
           for (const item of group) chosen.delete(item.id);
           refreshActions(); render();
         });
+        const takeVisible=h('button',{type:'button',class:'button-action',
+          text:'Принять найденное · '+filtered.length,disabled:busy});
+        takeVisible.onclick=()=>{
+          if(busy)return;
+          for(const item of filtered)chosen.add(item.id);
+          render();
+        };
         toolbar.append(take,reject);
+        if(query||filterKind!=='all')toolbar.append(takeVisible);
         panel.append(toolbar);
         const limit = full.has(name)||query?filtered.length:Math.min(40,filtered.length);
         const list = h('div',{class:'os-sync-list'});
@@ -152,6 +214,7 @@
         }
         results.append(panel);
       }
+      if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',text:'По этому фильтру изменений нет. Измени запрос или выбери «Все».'}));
       refreshActions();
     }
 
@@ -165,7 +228,7 @@
     async function compare(from) {
       setBusy(true);
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
-      changes=[];chosen=new Set();expanded=new Set();full=new Set();
+      changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
       results.replaceChildren();summary.textContent='';
       progress.value=0;
       try {
