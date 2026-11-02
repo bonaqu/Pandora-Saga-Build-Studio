@@ -29,6 +29,10 @@ function ownPatch(overrides,id){
   for(const key of props)if(Object.hasOwn(patch,key)&&
     (patch[key]===null||(Number.isFinite(patch[key])&&patch[key]>=0)))
     selected[key]=patch[key];
+  if(typeof patch.name==='string'&&patch.name.trim()&&patch.name.length<=240)
+   selected.name=patch.name;
+  if(typeof patch.desc==='string'&&patch.desc.trim()&&patch.desc.length<=2000)
+   selected.desc=patch.desc;
   if(typeof patch.twoHanded==='boolean')selected.twoHanded=patch.twoHanded;
   if(plain(patch.classes))selected.classes=Object.fromEntries(
    Object.entries(patch.classes).filter(([key,value])=>/^[A-Z_]{2,25}$/.test(key)&&value===1));
@@ -50,11 +54,21 @@ function applyItems(items,overrides){
   if(next===items)next={...items};
   const id=match[2],current=next[id]===items[id]?{...items[id]}:next[id];
   next[id]=current;
-  if(match[1]==='itemedit')Object.assign(current,ownPatch(overrides,id));
-  else if(match[1]==='item'&&typeof value==='string'&&value.trim())current.name=value;
+  if(match[1]==='itemedit')continue;
+  if(match[1]==='item'&&typeof value==='string'&&value.trim())current.name=value;
   else if(match[1]==='itemdesc'&&typeof value==='string'&&value.trim())current.desc=value;
   else if(match[1]==='itemslots'&&/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(String(value)))
    current.soulslot=Number(value);
+ }
+ // Structured editing takes priority over previous inline text overrides,
+ // regardless of the order in which Cloudflare returns override keys.
+ for(const key of Object.keys(overrides||{})){
+  const match=/^itemedit\.([0-9]{1,15})$/.exec(key);
+  if(!match||!items[match[1]])continue;
+  if(next===items)next={...items};
+  const row=next[match[1]]===items[match[1]]?{...items[match[1]]}:next[match[1]];
+  Object.assign(row,ownPatch(overrides,match[1]));
+  next[match[1]]=row;
  }
  return next;
 }
@@ -85,6 +99,16 @@ function open({id,item,base,overrides,h,modal,jobKeys,className,onSave,onReset})
   h('h3',{text:'Характеристики предмета'}),grid,grip
  ]);
  sections.append(stats);
+ const identity=h('section',{class:'owner-item-section'});
+ const name=h('input',{type:'text',maxlength:'240',autocomplete:'off',
+  'aria-label':'Название предмета',value:String(item.name??'')});
+ const desc=h('textarea',{rows:5,maxlength:'2000',autocomplete:'off',
+  'aria-label':'Описание предмета'});
+ desc.value=String(item.desc??'');
+ identity.append(h('h3',{text:'Название и описание'}),
+  h('label',{class:'owner-item-field'},[h('span',{text:'Название'}),name]),
+  h('label',{class:'owner-item-field'},[h('span',{text:'Описание'}),desc]));
+ sections.prepend(identity);
  const classesPanel=h('section',{class:'owner-item-section'});
  const classesGrid=h('div',{class:'owner-item-classes'});
  const allowed=new Set(Object.keys(item.classes||{}).filter(key=>item.classes[key]));
@@ -152,6 +176,15 @@ function open({id,item,base,overrides,h,modal,jobKeys,className,onSave,onReset})
  const busy=value=>{save.disabled=value;reset.disabled=value;cancel.disabled=value};
  save.onclick=async()=>{
   const patch={};
+  const proposedName=name.value.trim(),proposedDescription=desc.value.trim();
+  if(!proposedName||proposedName.length>240){
+   feedback.textContent='Название должно содержать от 1 до 240 символов.';name.focus();return;
+  }
+  if(!proposedDescription||proposedDescription.length>2000){
+   feedback.textContent='Описание должно содержать от 1 до 2000 символов.';desc.focus();return;
+  }
+  if(proposedName!==String(base.name??''))patch.name=proposedName;
+  if(proposedDescription!==String(base.desc??''))patch.desc=proposedDescription;
   for(const [key,input]of inputs){
    const value=input.value.trim()===''?null:Number(input.value);
    if(value!==null&&(!Number.isFinite(value)||value<0||value>100000)){
