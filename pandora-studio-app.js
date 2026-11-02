@@ -1595,13 +1595,8 @@ function renderWiki(root){
   let lastWikiIndex=null;
  const dataName=(type,id)=>{
   if(type==='map'){
-   const cityPlaces={
-    '1001004':wt('Центральная площадь · Астир','Central Plaza · Astir'),
-    '1002001':wt('Территория Союза · Астир','Union District · Astir'),
-    '1003001':wt('Территория Королевства · Астир','Kingdom District · Astir'),
-    '1004001':wt('Территория Империи · Астир','Empire District · Astir')
-   };
-   if(cityPlaces[String(id)])return cityPlaces[String(id)];
+   const name=window.PandoraAstirLocations?.localized(id,lang);
+   if(name)return name;
   }
   const key=type+':'+String(id);
   if(nameCache.has(key))return nameCache.get(key);
@@ -1632,12 +1627,8 @@ function renderWiki(root){
    type==='monster'?'monsters':type==='instance'?'instances':
    type==='skill'?'skills':type==='soul'?'souls':null;
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
-  const territoryAlias=type==='map'?({
-   '1001004':'центральная площадь город Астир',
-   '1002001':'территория союза город Астир',
-   '1003001':'территория королевства город Астир',
-   '1004001':'территория империи город Астир'
-  }[String(id)]||null):null;
+  const territoryAlias=type==='map'?
+   window.PandoraAstirLocations?.searchAliases(id):null;
   const value=[dataName(type,id),translated?.n,territoryAlias,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
@@ -2012,9 +2003,11 @@ function renderWiki(root){
      heroCompatible(rec,state.level);
    });
   if(type==='map'&&!wikiSearch){
-   const territories=new Map([['1001004',0],['1002001',1],['1004001',2],['1003001',3]]);
-   results.sort((a,b)=>(territories.get(String(a[0]))??100)-
-    (territories.get(String(b[0]))??100));
+   const geo=window.PandoraAstirLocations;
+   const rank=new Map([...(geo?.districtIds||[]),...(geo?.countryIds||[])]
+    .map((id,index)=>[id,index]));
+   results.sort((a,b)=>(rank.get(String(a[0]))??100)-
+    (rank.get(String(b[0]))??100));
   }
   // A source link outside the current search must clear that search, otherwise
   // the linked record opens in details but never appears in the browse list.
