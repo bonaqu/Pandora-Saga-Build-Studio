@@ -1602,7 +1602,8 @@ function renderWiki(root){
   if(nameCache.has(key))return nameCache.get(key);
   const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):
    type==='chest'?wikiData.items?.[id]:wikiIndex.records(type)?.[id];
-  const en=type==='map'?(officialEnglish?.maps?.[id]?.n||
+  const en=type==='npc'&&obj?.virtual?obj.en:
+   type==='map'?(officialEnglish?.maps?.[id]?.n||
    officialEnglish?.tradeMaps?.[id]?.n):officialEnglish?.[
    type==='item'||type==='chest'?'items':type==='npc'?'tradeNpcs':
    type==='monster'?'monsters':type==='instance'?'instances':
@@ -1629,7 +1630,9 @@ function renderWiki(root){
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
   const territoryAlias=type==='map'?
    window.PandoraAstirLocations?.searchAliases(id):null;
-  const value=[dataName(type,id),translated?.n,territoryAlias,
+  const verifiedNpcAlias=type==='npc'?
+   wikiIndex.records('npc')?.[id]?.en:null;
+  const value=[dataName(type,id),translated?.n,verifiedNpcAlias,territoryAlias,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
   searchCache.set(key,value);
