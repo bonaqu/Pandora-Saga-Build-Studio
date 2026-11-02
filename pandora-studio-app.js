@@ -2862,7 +2862,7 @@ async function undoOwnerEdit(){
   try{
     if(last.before===null){await apiRequest('/api/admin/reset',{key:last.key});delete override[last.key];}
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
-    ownerEdits.pop();closeInlineEditor();render();updateAdminHint();
+    ownerEdits.pop();closeInlineEditor();refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
 }
@@ -2939,7 +2939,7 @@ function editor(el){
     try{
       await apiRequest('/api/admin/override',{key,value});
       ownerEdits.push({key,before:previous,after:value});override[key]=value;
-      closeInlineEditor();render();updateAdminHint();
+      closeInlineEditor();refreshOwnerCatalog();
     }catch(e){feedback.textContent=e.message}
     finally{editIsSaving=false;save.disabled=false;reset.disabled=false;refreshOwnerUI()}
   };
@@ -2949,7 +2949,7 @@ function editor(el){
     try{
       await apiRequest('/api/admin/reset',{key});
       ownerEdits.push({key,before:previous,after:null});delete override[key];
-      closeInlineEditor();render();updateAdminHint();
+      closeInlineEditor();refreshOwnerCatalog();
     }catch(e){feedback.textContent=e.message}
     finally{editIsSaving=false;reset.disabled=false;save.disabled=false;refreshOwnerUI()}
   };
@@ -2962,6 +2962,28 @@ function editor(el){
   root.style.top=Math.min(Math.max(12,rect.bottom+8),Math.max(12,window.innerHeight-350))+'px';
   document.body.append(root);activeInlineEditor=root;
   input.focus();
+}
+function openWikiItemEditor(id,item){
+ if(!adminToken||!adminEditing||!catalogSource?.items?.[id])return;
+ const key='itemedit.'+id,base=catalogSource.items[id];
+ const save=async patch=>{
+  const previous=activeOverride(key),value=JSON.stringify(patch);
+  await apiRequest('/api/admin/override',{key,value});
+  ownerEdits.push({key,before:previous,after:value});
+  override[key]=value;refreshOwnerCatalog();
+ };
+ const reset=async()=>{
+  const previous=activeOverride(key);
+  if(previous===null)return;
+  await apiRequest('/api/admin/reset',{key});
+  ownerEdits.push({key,before:previous,after:null});
+  delete override[key];refreshOwnerCatalog();
+ };
+ window.PandoraStudioItemOwnerEditor.open({
+  id,item,base,overrides:override,h,modal,jobKeys,
+  className:key=>catalog.classes?.[key]?.name||key,
+  onSave:save,onReset:reset
+ });
 }
 async function showCatalogImport(){
  if(!adminToken)return;
@@ -2994,6 +3016,7 @@ function applyGameLocale(){
   }));
  };
  const en=lang==='en'?officialEnglish:null;
+ const itemRecords=window.PandoraStudioItemOwnerEditor.applyItems(catalogSource.items,override);
  const meta={...catalogSource.meta};
  if(en?.branches)meta.branchLabels={...meta.branchLabels,...en.branches};
  // Verified ID-based Remaked names only; never fuzzy-translate at runtime.
@@ -3006,8 +3029,13 @@ function applyGameLocale(){
    if(localizedSkills[id])localizedSkills[id]={...localizedSkills[id],name};
   }
  }
+ for(const [key,value] of Object.entries(override)){
+  const match=/^skill\.race\.([0-9]{1,12})$/.exec(key);
+  if(match&&localizedSkills[match[1]]&&lang==='ru')
+   localizedSkills[match[1]]={...localizedSkills[match[1]],name:value};
+ }
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
-   equipment:translate(catalogSource.items,en?.items,true),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
+   equipment:translate(itemRecords,en?.items,true),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  render();
@@ -3079,7 +3107,17 @@ async function loadCatalog(){
  $('catalogStatus').textContent=`${live.meta.counts.skills} навыков · ${live.meta.counts.items} предметов · ${live.meta.counts.souls} душ · ${sourceLabel}`;
  applyGameLocale();persist();
 }
-async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
+function refreshOwnerCatalog(){
+ wikiIndex=null;wikiData=null;wikiPending=null;
+ if(catalogSource)applyGameLocale();
+ else render();
+ updateAdminHint();
+}
+async function loadOverrides(){try{
+ const response=await apiRequest('/api/overrides',null,'');
+ override=response.values||{};
+ refreshOwnerCatalog();
+}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
 $('originTabs').onclick=event=>{
  const button=event.target.closest('[data-origin-tab]');
  if(!button)return;
@@ -3125,11 +3163,11 @@ $('hero').addEventListener('keydown',event=>{
  if(lang==='en'&&!officialEnglish)
   showStudioToast('Не все игровые описания доступны на английском.','warning');
  applyGameLocale();
-};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const editable=event.target.closest('[data-edit-key]');
- if(!editable||!/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;
+ if(!editable||!/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;
  event.preventDefault();event.stopImmediatePropagation();editor(editable);
 },true);
 $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView()};
