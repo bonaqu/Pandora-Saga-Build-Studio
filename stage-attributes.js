@@ -416,10 +416,10 @@ function buffsPage(body,options){
   label.append(input);priestFields.append(label);
  }
  priest.append(priestFields);
- toggle(priest,english?'Velox · attack speed':'Знак атаки · скорость атаки','priestGratia',
-  false,buffs.priestEnabled===true);
- toggle(priest,english?'Lapis Medio · defense':'Знак защиты · защита','priestLapisMedio',
-  false,buffs.priestEnabled===true);
+ toggle(priest,english?'Velox · attack speed · Blessing 8':'Знак атаки · скорость атаки · Благословение 8','priestGratia',
+  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=8);
+ toggle(priest,english?'Lapis Medio · defense · Blessing 12':'Знак защиты · защита · Благословение 12','priestLapisMedio',
+  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=12);
  priest.append(make('p',{class:'stage-attribute-note',text:english?
   'Velox and Lapis Medio affect attack speed and defense only when selected; other priest effects are informational.':
   'Знак атаки и Знак защиты влияют на скорость атаки и защиту только при выборе. Остальные эффекты показаны для справки.'}));
