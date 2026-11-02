@@ -46,6 +46,19 @@ try{
   response.status+' / anonymous request rejected without credentials');
 }catch(e){check(false,'Player-account authentication endpoint',e.message)}
 try{
+ // The new PR bridge is protected even when its optional GitHub Secret is
+ // unset. Anonymous GET must return 401 once the updated Worker is deployed.
+ // 404 means Pages was updated but the Cloudflare Worker wasn't yet.
+ const {response}=await read(worker+'/api/admin/catalog/github-status',{cors:true});
+ const deployed=response.status===401&&
+  response.headers.get('access-control-allow-origin')===origin;
+ console.log((deployed?'OK  ':'WARN')+' GitHub PR Worker capability — '+
+  (deployed?'admin-auth gate deployed':'Cloudflare Worker update still unconfirmed')+
+  ' / HTTP '+response.status);
+}catch(error){
+ console.log('WARN GitHub PR Worker capability — '+error.message);
+}
+try{
  const {response}=await read(worker+'/api/health',{method:'OPTIONS',cors:true});
  check(response.status===204&&response.headers.get('access-control-allow-origin')===origin,
   'Worker OPTIONS preflight');
