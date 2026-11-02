@@ -80,6 +80,7 @@ export async function runAdminEntrySmoke(browser,base){
     assert.match(data.key,/^itemedit\.[0-9]+$/);
     const patch=JSON.parse(data.value);
     assert.equal(patch.W,99);
+    if(Array.isArray(patch.effects))calls.push('owner-effect-edit');
     calls.push('owner-item-edit');
    }
    return json({ok:true,key:data.key,value:data.value});
