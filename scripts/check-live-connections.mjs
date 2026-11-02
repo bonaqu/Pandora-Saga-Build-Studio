@@ -62,12 +62,13 @@ try{
  // Read-only version check: this endpoint exists only in the new Worker release.
  const {response,payload}=await read(worker+'/api/runtime-capabilities',{cors:true});
  const capabilities=['itemedit','tradeedit','acquireedit','wikiedit',
-  'dropedit','chestedit','spawnedit'];
- const deployed=response.ok&&payload?.codeRelease==='0.311.0'&&
+  'dropedit','chestedit','spawnedit','virtual-town-wiki','bilingual-wiki'];
+ const release=/^0\.(\d+)\.0$/.exec(String(payload?.codeRelease||''));
+ const deployed=response.ok&&Number(release?.[1]||0)>=322&&
   payload?.githubOwnerExport===true&&
   capabilities.every(k=>payload.ownerEditors?.includes(k));
  console.log((deployed?'OK  ':'WARN')+' Worker runtime capability marker — '+
-  (deployed?'0.311.0 + 7 owner editor APIs':'current Cloudflare Worker release is not yet verified')+
+  (deployed?'0.322.0+ with 9 owner editor capabilities':'required current Cloudflare Worker capability set not verified')+
   ' / HTTP '+response.status+' / reported '+(payload?.codeRelease||'unavailable'));
 }catch(error){
  console.log('WARN Worker runtime capability marker — '+error.message);

@@ -252,40 +252,91 @@ const bookPages=Object.freeze([
  ['summary','Результаты расчёта'],['attack','Атака'],['defense','Защита'],
  ['buffs','Усиления'],['effects','Эффекты умений'],['recovery','Эффекты зелий']
 ]);
+// Keep the source-backed Hero Book results in one ordered matrix.
+// A missing calculator branch stays unknown (—), never a fabricated zero.
+function summaryRows(calc){
+ const c=calc?.combat||{},r=calc?.resistances||{},elements=r.elements||{};
+ const num=value=>Number.isFinite(value)?value:null;
+ const sum=(left,right)=>Number.isFinite(left)&&Number.isFinite(right)?
+  left+right:null;
+ const row=(ru,en,value,unit='')=>({ru,en,value:num(value),unit});
+ return [
+  {ru:'Жизнь и восстановление',en:'Vitals and recovery',page:'buffs',symbol:'✧',rows:[
+   row('ОЗ','HP',calc?.hp),row('ОМ','MP',calc?.mp),
+   row('Леч. зельями','Potion healing',calc?.potion?.percent,'%'),
+   row('Леч. умениями','Skill healing',calc?.healingSkill?.percent,'%'),
+   row('Расход ОМ','MP cost',c.manaCost?.remaining,'%')]},
+  {ru:'Атака',en:'Attack',page:'attack',symbol:'⚔',rows:[
+   row('АТК','ATK',c.attack?.known),
+   row('АТК спереди','Front ATK',c.frontAttack,'%'),
+   row('АТК сзади','Back ATK',sum(c.backAttack,c.backAttackEquipmentRate),'%'),
+   row('МАТК','MATK',c.magicAttack?.known,'%'),
+   row('Точность','Accuracy',c.accuracy?.known),
+   row('Точн. спереди','Front accuracy',null),
+   row('Шанс крита','Critical chance',c.critical?.known,'%'),
+   row('Крит. урон','Critical damage',c.criticalDamage,'%'),
+   row('Дальн. АТК ближ. боя','Melee range',null),
+   row('Дальн. АТК дальн. боя','Ranged range',null),
+   row('Скор. атаки','Attack speed',c.attackSpeed?.known,'%'),
+   row('Скор. каста','Casting speed',c.castingSpeed?.known,'%'),
+   row('Сокрщ. времени каста','Cast time',null,'%'),
+   row('Откат','Cooldown',c.cooldown,'%'),
+   row('Скор. движения','Movement speed',c.movementSpeed?.known,'%'),
+   row('Скор. в городе','Town movement speed',c.movementSpeed?.town,'%')]},
+  {ru:'Защита',en:'Defense',page:'defense',symbol:'◇',rows:[
+   row('Защита','Defense',c.defense?.known),
+   row('Сопр. АТК спереди','Front ATK resistance',null,'%'),
+   row('Сопр. АТК сзади','Back ATK resistance',null,'%'),
+   row('Сопр. физ (ед.)','Physical mitigation (flat)',r.mitigation?.physicalFlat),
+   row('Сопр. физ (%)','Physical damage change',r.mitigation?.physical,'%'),
+   row('Сопр. маг. урону','Magic damage change',r.mitigation?.magic,'%'),
+   row('Уклонение','Evasion',c.dodge?.known),
+   row('Сопр. криту','Critical resistance',
+    c.criticalIncoming,'%'),
+   row('Получ. крит. урон','Incoming critical damage',c.criticalIncomingDamage,'%'),
+   row('Укл. ближ. атак','Melee evasion',null,'%'),
+   row('Укл. дальн. атак','Ranged evasion',null,'%'),
+   row('Укл. от магии','Magic evasion',null,'%')]},
+  {ru:'Сопротивления',en:'Resistances',page:'defense',symbol:'✦',rows:[
+   row('Сопр. огню','Fire',elements.fire,'%'),
+   row('Сопр. льду','Ice',elements.ice,'%'),
+   row('Сопр. молниям','Lightning',elements.lightning,'%'),
+   row('Сопр. яду','Poison',elements.poison,'%'),
+   row('Сопр. чарам','Charm',elements.charm,'%'),
+   row('Сопр. свету','Light',elements.light,'%'),
+   row('Сопр. тьме','Dark',elements.dark,'%'),
+   row('Сопр. аном. тел.','Physical conditions',r.states?.physical,'%'),
+   row('Сопр. аном. дух.','Mental conditions',r.states?.mental,'%'),
+   row('Сопр. магии','Magic',elements.magic,'%')]}
+ ];
+}
 function summaryPage(body,calc,onPage){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
   text:'Параметры появятся после загрузки игровых данных.'}));return}
  const english=document.documentElement?.lang==='en';
  body.append(make('div',{class:'stage-result-intro'},[
-  make('strong',{text:'Результаты расчёта'}),
-  make('p',{text:english?'Select any group to inspect its contributing equipment and effects.':
-   'Выбери группу, чтобы посмотреть связанные предметы, умения и эффекты.'})
+  make('strong',{text:'Результаты расчёта'})
  ]));
- const c=calc.combat||{};
- const groups=[
-  {title:english?'Vital resources':'Жизнь и мана',page:'buffs',symbol:'✧',rows:[
-   ['ОЗ',calc.hp,'Здоровье'],['ОМ',calc.mp,'Мана']]},
-  {title:english?'Combat attributes':'Боевые параметры',page:'attack',symbol:'⚔',rows:[
-   ['Атака',c.attack?.known,'Физическая'],['Защита',c.defense?.known,'С заточкой'],
-   ['Маг. атака',c.magicAttack?.known==null?null:c.magicAttack.known+'%','Коэффициент'],
-   ['Точность',c.accuracy?.known,'Попадание'],['Уклонение',c.dodge?.known,'Защита'],
-   ['Крит. шанс',c.critical?.known,'Вероятность']]},
-  {title:english?'Recovery effects':'Восстановление',page:'recovery',symbol:'✦',rows:[
-   ['Зелья',calc.potion?.percent==null?null:calc.potion.percent+'%','Эффект'],
-   ['Лечение',calc.healingSkill?.percent==null?null:calc.healingSkill.percent+'%','Эффект навыков']]}
- ];
- for(const group of groups){
+ const numberFormat=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:2});
+ for(const group of summaryRows(calc)){
   const section=make('section',{class:'stage-result-section'});
+  const title=english?group.en:group.ru;
   const heading=make('button',{type:'button',class:'stage-result-section-head',
-   'aria-label':english?'Open '+group.title:'Открыть: '+group.title,
+   'aria-label':english?'Open '+title:'Открыть: '+title,
    onclick:()=>onPage(group.page)},[
    make('span',{class:'stage-result-symbol','aria-hidden':'true',text:group.symbol}),
-   make('strong',{text:group.title}),
+   make('strong',{text:title}),
    make('span',{class:'stage-result-open','aria-hidden':'true',text:'›'})
   ]);
   const grid=make('div',{class:'stage-result-grid'});
-  for(const [label,value,note] of group.rows)grid.append(make('div',{class:'stage-result-tile'},[
-   make('span',{text:label}),make('strong',{text:value??'—'}),make('small',{text:note})]));
+  for(const result of group.rows){
+   const value=Number.isFinite(result.value)?
+    numberFormat.format(result.value)+result.unit:'—';
+   grid.append(make('div',{class:'stage-result-tile'},[
+    make('span',{text:english?result.en:result.ru}),
+    make('strong',{text:value})
+   ]));
+  }
   section.append(heading,grid);body.append(section);
  }
 }
@@ -1400,5 +1451,5 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText});
+root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows});
 })(typeof window==='undefined'?globalThis:window);
