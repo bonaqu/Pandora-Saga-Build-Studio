@@ -49,10 +49,10 @@
 .wiki-trade-sellers>small{width:100%;color:var(--gold)}
 .wiki-trade-currency{display:inline-flex;gap:3px;align-items:center;margin-right:11px}
 .wiki-trade-currency .wiki-inline-input{width:115px}
-.wiki-trade-delete{border:1px solid rgba(230,143,121,.38);
- border-radius:7px;background:#33201e;color:#efb0a8;padding:5px 8px;
+.wiki-trade-delete{border:1px solid rgba(181,135,81,.65);
+ border-radius:7px;background:#3a2c1e;color:#f1cb94;padding:6px 10px;
  cursor:pointer;font:inherit;font-size:.78rem;margin-left:auto}
-.wiki-trade-delete:hover{border-color:#eea298}
+.wiki-trade-delete:hover{border-color:#f3d39b;background:#4b3320}
 .wiki-owner-mat .wiki-edit-value{padding:1px 4px}
 
 /* Only the label's actual text carries the help tooltip and hover affordance. */
@@ -82,3 +82,23 @@
 @media(max-width:650px){.wiki-owner-effect{align-items:flex-start}
  .wiki-owner-effect-name{flex-basis:100%}
  .wiki-owner-effect-value{flex:1 1 110px}}
+
+/* Soul cost is a separate flex unit; do not inherit the nested span chip style. */
+.wiki-page .wiki-soul-traits{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin:10px 0}
+.wiki-page .wiki-soul-traits>.wiki-owner-mat{margin:0;padding:5px 10px}
+.wiki-soul-price{display:inline-flex;align-items:baseline;gap:9px;min-width:0;
+ margin:2px 0;padding:7px 11px;border:1px solid #8c6b43;border-radius:8px;
+ background:linear-gradient(115deg,#3b291a,#251b16);color:#f2d5a6}
+.wiki-soul-price-label{font-size:.8rem;opacity:.83}
+.wiki-soul-price-value{font-size:1rem;white-space:nowrap;font-variant-numeric:tabular-nums}
+.wiki-page .wiki-soul-traits .wiki-soul-price span{padding:0;border:0;background:none;border-radius:0;font-size:inherit}
+.wiki-owner-map-note{margin:8px 0;padding:9px 12px;border-left:2px solid #d2a160;
+ background:rgba(193,149,75,.09);color:#e3c7a1;border-radius:5px;font-size:.82rem}
+.wiki-owner-drop-actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:8px 0 13px}
+.wiki-owner-drop-actions>.wiki-add-source{margin:0}
+.wiki-owner-cancel{justify-self:start;border:1px solid #866c48;border-radius:6px;
+ padding:5px 12px;background:#35291f;color:#e5c59a;font:inherit;cursor:pointer}
+.wiki-owner-cancel:hover{background:#483522;border-color:#c6a174}
+.wiki-owner-effect-value>strong{font-variant-numeric:tabular-nums;color:#efce9b}
+.wiki-owner-effect-name{color:#ebd2a7}
+.wiki-chest-options>.wiki-owner-plus{min-height:38px;height:auto;width:100%;margin:0}
