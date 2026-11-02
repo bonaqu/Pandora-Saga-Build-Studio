@@ -24,6 +24,7 @@ function fixture(issue=()=>[]){
  const window={};
  Function('window',read('equipment-plan.js'))(window);
  Function('window',read('item-presentation.js'))(window);
+ Function('window',read('enchant-model.js'))(window);
  let dismiss=0,attached=0;
  window.PandoraStageItemUI={
   dismissPreview:()=>dismiss++,

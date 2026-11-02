@@ -11,8 +11,8 @@ test('gemstone type and seven original elements appear in selector',()=>{
 });
 test('gem choices are normalized and saved as part of builds',()=>{
  const s=get('app.js');
- assert.match(s,/PandoraEnchantModel.normalize\(entry\)/);
- assert.match(s,/PandoraEnchantModel.normalize\(value\)/);
+ assert.match(s,/PandoraEnchantModel.normalizeForSlot\(key,entry\)/);
+ assert.match(s,/PandoraEnchantModel.normalizeForSlot\(item.slot,/);
 });
 test('weapon bonus preview is explicitly not marked verified',()=>{
  const s=get('enchant-model.js');

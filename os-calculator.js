@@ -1664,6 +1664,7 @@ function legacyBuffPreview({spi,blessing=0,hymn=0,alchemy=0}={}){
  return {
   gratia:{value:5+Math.floor(gratiaStep*1.9),nextSpi:next(gratiaStep,6)},
   lapisMedio:{value:5+lapisSpirit+lapisBlessing,nextSpi:next(lapisSpirit,3)},
+  encouragement:{value:Math.floor(blessing/10)},
   groupBarrier:{value:-(10+Math.floor(blessing/5))},
   holyWeapon:{value:holyStep,nextSpi:next(holyStep,6)},
   gloomyEffect:{value:gloomStep,nextSpi:next(gloomStep,8)},

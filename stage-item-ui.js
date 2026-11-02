@@ -21,7 +21,7 @@ function summary(record,icon,kind='item',context=null){
  if(src){const img=el('img',{src,alt:''});img.onerror=()=>img.replaceWith(el('span',{text:'✦'}));head.append(img)}
  const baseName=presenter?.displayName(record,tr('Без названия','Unnamed item'),locale)||tr('Без названия','Unnamed item');
  const shownName=kind==='item'&&context?
-  root.PandoraEnchantModel?.equipmentName?.(baseName,context.slot||record.slot,context.refinement,context.gem,locale)||baseName:
+  globalThis.PandoraEnchantModel?.equipmentName?.(baseName,context.slot||record.slot,context.refinement,context.gem,locale)||baseName:
   baseName;
  head.append(el('strong',{text:shownName,
   ...(kind==='item'?{'data-edit-key':'item.'+record.id}:{})}));
