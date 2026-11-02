@@ -24,6 +24,9 @@ test('Hero Book summary groups source-backed results and navigates to relevant c
  assert.match(attrs,/onclick:\(\)=>onPage\(group\.page\)/);
  assert.match(attrs,/summaryPage\(body,modifiers,onPage\)/);
  assert.match(css,/\.stage-result-section-head/);
+ assert.match(attrs,/class:'stage-buff-overview'/);
+ assert.match(attrs,/class:'stage-book-buff-optional'/);
+ assert.match(css,/\.stage-book-buff-optional/);
 });
 test('partial combat preview does not imply fully verified combat stats',()=>{
  const attrs=get('stage-attributes.js');
