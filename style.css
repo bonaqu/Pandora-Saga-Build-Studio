@@ -289,14 +289,8 @@ a.wiki-link:hover{text-decoration:none}
  .studio-dock-close{font-size:11px;padding:8px}
 }
 @media(prefers-reduced-motion:reduce){.studio-backdrop,.detail.is-open{animation:none;transition:none}}
-/* 2026.10.30.27: keyboard-accessible tabs inside the persistent workbench */
-.studio-dock-tabs{display:flex;gap:4px;overflow-x:auto;flex-shrink:0;margin:0 0 12px;padding:1px 2px 7px;scrollbar-width:thin;scrollbar-color:#856342 #22170f}
-.studio-dock-tabs button{flex:1;min-width:100px;white-space:nowrap;padding:9px 8px;color:#cfb48a;background:#241a13;border:1px solid #705437;font:600 11px Manrope,Arial,sans-serif}
-.studio-dock-tabs button:hover,.studio-dock-tabs button.active{border-color:#e6b976;color:#ffddb0;background:linear-gradient(#623e27,#342116)}
-.studio-dock-tabs button:focus-visible{outline-offset:-3px}
 .detail.is-open>.detail-title{margin-bottom:8px}
-@media(max-width:790px){.studio-dock-tabs button{min-width:95px;padding:9px 5px}.studio-dock-tabs{margin-bottom:7px}}
-
+.studio-workbench-open .top #nav{display:none}
 /* 2026.10.30.28 — status and focus */
 #iconStatus{color:#d3b484;min-width:170px}
 @media(max-width:900px){footer{flex-wrap:wrap;align-items:center;justify-content:flex-start}}
@@ -1193,8 +1187,6 @@ main{padding-top:10px}
 .stage-methodology:not([open])>p{display:none}
 
 /* Souls expose already-indexed sources; NPC locations list real residents. */
-.wiki-soul-source{display:grid;gap:3px}
-.wiki-soul-source .wiki-link{width:max-content;max-width:100%}
 
 /* v0.113: Game encyclopedia controls and keyboard-friendly skill milestones. */
 .wiki-trade-list{display:grid;gap:9px;margin-top:9px}
@@ -1706,3 +1698,98 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  .wiki-class-tag:hover,.wiki-wearer-tag:hover{transform:none}
 }
 
+
+.wiki-entity-flow{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 13px}
+.wiki-page .wiki-entity-flow .wiki-link{display:inline-flex;align-items:center;
+ width:auto;max-width:100%;margin:0;padding:7px 10px;min-height:32px;
+ border:1px solid #76563b;border-radius:5px;background:linear-gradient(130deg,#332418,#1e1610);
+ color:#e8c99a;font-size:11px;transition:border-color .16s}
+.wiki-page .wiki-entity-flow .wiki-link:hover{border-color:#dbb47a;background:#4c3423}
+.wiki-reward-percent.certain{color:#afd19c}
+.wiki-source-flow{display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;margin:9px 0 14px}
+.wiki-source-token{display:inline-flex;flex-wrap:wrap;align-items:center;gap:5px;
+ max-width:100%;min-width:0;padding:5px 7px;border:1px solid #725235;border-radius:5px;
+ background:linear-gradient(140deg,#35251a,#201813);box-shadow:inset 0 1px #ad8a5130;
+ transition:border-color .16s,background .16s}
+.wiki-source-token:hover{border-color:#d4a46c;background:#46301e}
+.wiki-page .wiki-source-token .wiki-link{display:inline-flex;align-items:center;gap:5px;
+ min-height:24px;width:auto;max-width:100%;padding:2px 4px;margin:0;border:0;
+ background:transparent;text-align:left;box-shadow:none;font-size:11px;line-height:1.35}
+.wiki-page .wiki-source-token .wiki-link:hover{color:#ffdeac;text-decoration:underline;text-underline-offset:3px}
+.wiki-source-token .wiki-list-icon{width:25px;height:25px;flex:0 0 25px}
+.wiki-source-token .wiki-source-locations{display:inline-flex;align-items:center;flex-wrap:wrap;
+ gap:2px;padding-left:6px;border-left:1px solid #745637}
+.wiki-page .wiki-source-token .wiki-source-location{font-size:10px;color:#bcad92}
+.wiki-source-chance{padding:2px 5px;border-radius:3px;background:#24371f;
+ color:#b6d4a1;font-size:10px}
+.wiki-source-meta{font-size:10px;color:#c8a277}
+.wiki-source-token.highlighted{border-color:#edc587;box-shadow:0 0 0 1px #b47d41}
+.wiki-level-reward{display:flex;align-items:center;gap:10px;margin:10px 0 14px;
+ padding:11px 13px;border:1px solid #9f7946;border-left:3px solid #dfb574;
+ background:linear-gradient(120deg,#44301d,#211911);border-radius:5px}
+.wiki-level-reward-mark{display:grid;place-items:center;flex:0 0 42px;
+ width:42px;height:42px;border:1px solid #b58b4e;border-radius:7px;
+ background:#261a10;color:#f2d5a1;font:24px Georgia,serif}
+.wiki-level-reward-details{display:flex;flex-wrap:wrap;align-items:baseline;column-gap:12px;row-gap:3px}
+.wiki-level-reward-details small{flex-basis:100%;color:#cab18d;font-size:11px}
+.wiki-level-reward-details strong{font:600 22px Georgia,serif;color:#f7d296}
+.wiki-level-reward-details span{font-size:11px;color:#e5cc9e}
+.wiki-requirements{display:flex;flex-wrap:wrap;gap:8px;margin:9px 0}
+.wiki-requirement-chip{display:flex;align-items:center;gap:9px;min-width:152px;
+ max-width:100%;padding:9px 11px;border:1px solid #765236;border-radius:6px;
+ background:linear-gradient(145deg,#37241a,#211912);transition:border-color .16s}
+.wiki-requirement-chip.fulfilled{border-color:#83915c;background:linear-gradient(145deg,#263220,#1d241a)}
+.wiki-requirement-symbol{display:grid;place-items:center;width:30px;height:30px;flex:0 0 30px;
+ border:1px solid #876542;border-radius:50%;color:#d8af79;font-size:17px}
+.wiki-requirement-chip.fulfilled .wiki-requirement-symbol{border-color:#93a66c;color:#bad597}
+.wiki-requirement-copy{min-width:0;flex:1}
+.wiki-requirement-copy strong{display:block;font-size:11px;color:#efcf9f}
+.wiki-requirement-copy small{display:block;font-size:10px;color:#bfa88d}
+.wiki-requirement-track{display:block;width:100%;height:3px;margin-top:6px;
+ border-radius:3px;background:#5c4938;overflow:hidden}
+.wiki-requirement-progress{display:block;height:100%;background:#cbaa6c}
+.wiki-requirement-chip.fulfilled .wiki-requirement-progress{background:#9fc183}
+.wiki-prerequisite{display:inline-flex;flex-direction:column;gap:3px;max-width:100%;
+ border:1px solid #665136;background:#231a13;padding:8px 10px;border-radius:5px;margin:8px 0}
+.wiki-prerequisite>small{color:#bfa482;font-size:10px}
+.wiki-page .wiki-prerequisite .wiki-link{display:inline-flex;gap:7px;
+ width:auto;margin:0;padding:4px;background:transparent;border:0}
+.wiki-prerequisite .wiki-list-icon{width:30px;height:30px;flex:0 0 30px}
+.wiki-chest-groups{display:grid;gap:9px;margin:10px 0 16px}
+.wiki-chest-group{min-width:0;border:1px solid #785638;background:linear-gradient(145deg,#2c2118,#1b1511);
+ border-radius:6px;overflow:hidden}
+.wiki-chest-group[open]{border-color:#b18b57}
+.wiki-chest-group-summary{display:flex;align-items:center;gap:10px;cursor:pointer;
+ padding:9px 12px;list-style:none;color:#ead1a7}
+.wiki-chest-group-summary::-webkit-details-marker{display:none}
+.wiki-chest-group-summary:hover{background:#4b322052}
+.wiki-chest-group-summary:focus-visible{outline:2px solid #f0c485;outline-offset:-3px}
+.wiki-chest-group-mark{display:grid;place-items:center;flex:0 0 28px;height:28px;
+ border:1px solid #9a7546;border-radius:5px;background:#3a291a;color:#edc68a;font:17px Georgia,serif}
+.wiki-chest-group-name{font:600 16px Georgia,serif}
+.wiki-chest-group-summary small{margin-left:auto;font-size:10px;color:#bfaa8a}
+.wiki-chest-chevron{transition:transform .16s;color:#c49b65;font-size:16px}
+.wiki-chest-group[open] .wiki-chest-chevron{transform:rotate(180deg)}
+.wiki-chest-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+ gap:7px;padding:11px;border-top:1px solid #674b30}
+.wiki-chest-reward{display:flex;align-items:center;gap:6px;min-width:0;
+ padding:6px 8px;background:#241a12;border:1px solid #645033;border-radius:5px}
+.wiki-chest-reward:hover{border-color:#bb925e}
+.wiki-chest-reward.highlighted{border-color:#f2cc8b;box-shadow:inset 0 0 0 1px #c99b56}
+.wiki-page .wiki-chest-reward .wiki-link{display:flex;align-items:center;gap:7px;
+ flex:1;min-width:0;max-width:100%;width:auto;padding:0;margin:0;
+ border:0;background:transparent;overflow-wrap:anywhere;font-size:11px}
+.wiki-chest-reward .wiki-list-icon{width:29px;height:29px;flex:0 0 29px}
+.wiki-reward-quantity,.wiki-reward-enhance,.wiki-reward-percent{flex-shrink:0;font-size:10px}
+.wiki-reward-quantity{color:#f5d6a2;font-weight:700}
+.wiki-reward-enhance{color:#b3cb9d}
+.wiki-reward-percent{color:#c0ac90}
+@media(max-width:680px){
+ .wiki-chest-options{grid-template-columns:minmax(0,1fr)}
+ .wiki-source-flow{gap:5px}
+ .wiki-source-token{width:100%}
+ .wiki-requirement-chip{flex:1 1 150px}
+}
+@media(prefers-reduced-motion:reduce){
+ .wiki-source-token,.wiki-requirement-chip,.wiki-chest-chevron{transition:none}
+}

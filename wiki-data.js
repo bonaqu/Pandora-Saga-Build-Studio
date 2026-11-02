@@ -50,9 +50,25 @@ function build(data){
   for(const mob of row.mobs||[])addLocation(mob,location);
  }
  const maps={...(data.trades?.mapNames||{}),...(data.maps||{})};
+ // The actual item level and class-family name identify leveling reward boxes.
+ // Source chest rolls exist only for the earlier boxes; later ones remain
+ // browsable without synthesizing contents or changing the OS snapshot.
+ const rewardChests=new Map();
+ const rewardFamilies={
+  'воинов':'warrior','следопытов':'scout','адептов':'acolyte','магов':'mage'
+ };
+ for(const [id,item] of Object.entries(data.items||{})){
+  if(item?.kind!=='TOY'||!Number.isSafeInteger(item.level))continue;
+  const match=String(item.name||'').match(/^Шкатулка .+ для (воинов|следопытов|адептов|магов)$/i);
+  if(!match)continue;
+  rewardChests.set(id,{level:item.level,family:rewardFamilies[match[1].toLowerCase()]});
+ }
+ const chestRecords=Object.fromEntries((data.chests?.boxes||[]).map(box=>[String(box.i),box]));
+ for(const id of rewardChests.keys())if(!Object.hasOwn(chestRecords,id))
+  chestRecords[id]={i:Number(id),rolls:[],unlistedContents:true};
  const chapters={
   item:data.items||{},monster:data.monsters||{},map:maps,npc:data.trades?.npcs||{},
-  chest:Object.fromEntries((data.chests?.boxes||[]).map(x=>[String(x.i),x])),
+  chest:chestRecords,
   instance:Object.fromEntries((data.instances||[]).map(x=>[String(x.id),x])),
   skill:data.skills||{},soul:data.souls||{}
  };
@@ -143,7 +159,8 @@ function build(data){
   materialUses:id=>(materialTrades.get(String(id))||[]).slice(),
   residents:id=>(npcLocations.get(String(id))||[]).slice(),
   zones:id=>(zoneLocations.get(String(id))||[]).slice(),
-  records:type=>chapters[type]||{},search,normalize:normalizeSearch,sourceCount:sources.size
+  records:type=>chapters[type]||{},rewardChest:id=>rewardChests.get(String(id))||null,
+  search,normalize:normalizeSearch,sourceCount:sources.size
  });
 }
 root.PandoraWikiData=Object.freeze({build});

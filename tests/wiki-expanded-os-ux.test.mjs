@@ -91,8 +91,8 @@ test('wiki shows localized game class names and consistent source labels',()=>{
 });
 test('encyclopedia CSS has one canonical image size, descriptions and monster grid',()=>{
  const css=read('style.css');
- for(const selector of [/\.wiki-list-icon\s*\{/g,/\.wiki-monster-stats\s*\{/g,
-  /\.wiki-description\s*\{/g]){
+ for(const selector of [/^\.wiki-list-icon\s*\{/gm,/^\.wiki-monster-stats\s*\{/gm,
+  /^\.wiki-description\s*\{/gm]){
   assert.equal([...css.matchAll(selector)].length,1,'Duplicate encyclopedia CSS selector');
  }
  assert.match(css,/\.wiki-list-icon\{width:34px/);
@@ -128,7 +128,7 @@ test('every encyclopedia chapter supports the same list/grid switch and clean ch
  assert.ok(view>itemOnly);
  assert.match(fragment,/controls\.append\(view\)/);
  assert.match(fragment,/browse\.classList\.toggle\('wiki-gear-grid',wikiItemLayout==='grid'\)/);
- assert.match(fragment,/withIcon\(wikiLink\(dataName\('chest',row\.id\)/);
+ assert.match(fragment,/link\(dataName\('chest',row\.id\),'chest'/);
  assert.doesNotMatch(fragment,/wt\(' · группа '/);
  assert.match(css,/\.wiki-list\.wiki-gear-grid/);
 });
@@ -162,7 +162,9 @@ test('equipment chapter filters current class, race, sex and level without redun
 test('item and soul sources use one translated renderer and independent pagination counters',()=>{
  const app=read('app.js');
  assert.match(app,/const sourceEntry=\(row,itemId\)=>/);
- assert.equal((app.match(/detail\.append\(sourceEntry\(row,id\)\)/g)||[]).length,2);
+ assert.equal((app.match(/appendSourceFlow\(found,id\)/g)||[]).length,2);
+ assert.match(app,/class:'wiki-source-flow'/);
+ assert.match(app,/class:'wiki-source-token'/);
  assert.match(app,/const shown=group==='usage'\?wikiUsageShown:wikiSourceShown/);
  assert.match(app,/if\(group==='usage'\)wikiUsageShown\+=80/);
  assert.match(app,/for\(const trade of usedIn\.slice\(0,wikiUsageShown\)\)/);
@@ -199,6 +201,20 @@ test('all-class gear stays compact while restricted classes are readable on dema
  assert.match(css,/\.wiki-class-all\{/);
  assert.match(css,/\.wiki-class-tags/);
  assert.match(app,/class:'wiki-class-tag'/);
+});
+test('skill requirements and chest reward groups use interactive game-style UI',()=>{
+ const app=read('app.js'),css=read('style.css');
+ assert.match(app,/class:'wiki-requirement-chip'/);
+ assert.match(app,/class:'wiki-requirement-track'/);
+ assert.match(app,/class:'wiki-prerequisite'/);
+ assert.match(app,/class:'wiki-chest-group'/);
+ assert.match(app,/class:'wiki-chest-options'/);
+ assert.match(app,/class:'wiki-level-reward'/);
+ assert.match(app,/wikiIndex\.rewardChest\(id\)/);
+ assert.match(css,/\.wiki-requirement-chip/);
+ assert.match(css,/\.wiki-chest-group-summary/);
+ assert.match(css,/\.wiki-source-flow/);
+ assert.doesNotMatch(app,/p==null\?'':' · '\+row\.p\+'% внутри группы'/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');

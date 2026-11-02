@@ -19,7 +19,8 @@ test('soul detail uses the existing indexed source map and trusted chest/NPC nam
  assert.match(app,/Где получить душу/);
  assert.match(app,/const found=wikiIndex\.sources\(id\)/);
  assert.match(app,/type==='item'\?\(wikiData\.items\?\.\[id\]\|\|wikiData\.souls\?\.\[id\]\)/);
- assert.match(app,/Дроп локации/);
+ assert.match(app,/const appendSourceFlow=/);
+ assert.match(app,/wiki-source-locations/);
  assert.match(app,/wikiIcon\('chest',row\.id\)/);
 });
 test('settlement and battlefield maps show real NPC trader residents',()=>{

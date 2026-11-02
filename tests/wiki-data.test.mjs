@@ -86,6 +86,26 @@ test('materials link back to unique NPC trades, and zones use one location index
  assert.equal(wiki.zones(3).length,1);
  assert.equal(wiki.sources(11)[0].groupChance,10);
 });
+test('all eight original level-reward series entries remain distinct and future chests are browsable',()=>{
+ const items=JSON.parse(fs.readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+ const boxes=JSON.parse(fs.readFileSync(new URL('../data/os/chests.json',import.meta.url),'utf8'));
+ const wiki=ctx.window.PandoraWikiData.build({items,chests:boxes,
+  trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
+ assert.equal(boxes.boxes.length,32,'Original OS loot tables are unchanged');
+ assert.equal(wiki.search('chest','').length,36);
+ assert.equal(wiki.rewardChest(51003).level,5);
+ assert.equal(wiki.rewardChest(51005).family,'warrior');
+ assert.equal(wiki.rewardChest(51018).family,'scout');
+ assert.equal(wiki.rewardChest(51026).family,'acolyte');
+ assert.equal(wiki.rewardChest(51034).family,'mage');
+ for(const id of [51010,51018,51026,51034]){
+  assert.equal(wiki.rewardChest(id).level,60);
+  assert.equal(wiki.records('chest')[id].rolls.length,0);
+  assert.equal(wiki.records('chest')[id].unlistedContents,true);
+  assert.ok(wiki.search('item','').some(([key])=>key===String(id)));
+ }
+ assert.equal(wiki.rewardChest(80106),null);
+});
 test('group rewards do not claim per-item probability',()=>{
  const w=ctx.window.PandoraWikiData.build({tables:{zoneDrops:[{map:8,rows:[{base:10,items:[{i:1},{i:2}]}]}]}});
  assert.equal(w.sources(1)[0].percent,undefined);

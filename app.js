@@ -1504,31 +1504,72 @@ function renderWiki(root){
  };
  const matchesWords=(text,query)=>wikiIndex.normalize(query).split(' ')
   .filter(Boolean).every(term=>text.includes(term));
+
  const sourceEntry=(row,itemId)=>{
-  const line=h('div',{class:'wiki-entry'+
-   (wikiSelection.type==='soul'?' wiki-soul-source':'')+
+  const line=h('div',{class:'wiki-source-token'+
    (wikiSelection.highlight===String(row.id)?' highlighted':'')});
+  const glyph={monster:'♞',npc:'♙',chest:'▣',zone:'◈'};
+  const link=(name,type,id,cls='')=>{
+   const anchor=wikiLink(name,type,id,itemId);
+   if(cls)anchor.classList.add(cls);
+   return anchor;
+  };
   if(row.type==='monster'){
-   line.append(wikiLink(wt('Монстр: ','Monster: ')+dataName('monster',row.id)+
-    (row.percent==null?'':' · '+row.percent+wt('% по таблице','% listed'))+
-    (row.kind==='conditional'?wt(' · особый дроп',' · conditional drop'):''),
-    'monster',row.id,itemId));
-   for(const loc of wikiIndex.locations(row.id).slice(0,3))
-    if(loc.type==='map')line.append(wikiLink('◈ '+dataName('map',loc.id),
-     'map',loc.id,row.id));
+   line.append(link((glyph.monster+' '+dataName('monster',row.id)),'monster',row.id,'wiki-source-primary'));
+   if(row.percent!=null)line.append(h('small',{class:'wiki-source-chance',
+    text:row.percent+'%'}));
+   if(row.kind==='conditional')line.append(h('small',{class:'wiki-source-meta',
+    text:wt('Особый дроп','Conditional')}));
+   const locations=wikiIndex.locations(row.id).filter(loc=>loc.type==='map').slice(0,2);
+   if(locations.length){
+    const area=h('span',{class:'wiki-source-locations'});
+    for(const loc of locations)area.append(link('◈ '+dataName('map',loc.id),'map',loc.id,'wiki-source-location'));
+    line.append(area);
+   }
   }else if(row.type==='npc'){
-   line.append(wikiLink(wt('Обмен у ','Trade with ')+dataName('npc',row.id),
-    'npc',row.id,itemId));
+   line.append(link('♙ '+dataName('npc',row.id),'npc',row.id,'wiki-source-primary'));
   }else if(row.type==='chest'){
-   line.append(withIcon(wikiLink(dataName('chest',row.id),
-    'chest',row.id,itemId),wikiIcon('chest',row.id),'chest'));
+   const chest=link(dataName('chest',row.id),'chest',row.id,'wiki-source-primary');
+   line.append(withIcon(chest,wikiIcon('chest',row.id),'chest'));
   }else if(row.type==='zone'){
-   line.append(wikiLink(wt('Дроп локации: ','Location loot: ')+
-    dataName('map',row.id)+wt(' · точный шанс предмета не указан',
-     ' · individual probability unknown'),'map',row.id,itemId));
+   line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
   }
   return line;
  };
+ const appendSourceFlow=(found,itemId)=>{
+  const flow=h('div',{class:'wiki-source-flow'});
+  // The source index is kept complete; exact repeats need not occupy the UI.
+  const seen=new Set();
+  for(const row of found.slice(0,wikiSourceShown)){
+   const key=[row.type,row.id,row.kind,row.percent,row.condition,row.roll].join(':');
+   if(seen.has(key))continue;
+   seen.add(key);
+   flow.append(sourceEntry(row,itemId));
+  }
+  detail.append(flow);
+ };
+ const linkFlow=(links)=>{
+  const flow=h('div',{class:'wiki-entity-flow'});
+  for(const link of links)flow.append(link);
+  return flow;
+ };
+ const rewardLabels=lang==='en'?
+  {warrior:'Warriors',scout:'Scouts',acolyte:'Acolytes',mage:'Mages'}:
+  {warrior:'Воины',scout:'Следопыты',acolyte:'Адепты',mage:'Маги'};
+ const appendRewardChestInfo=(itemId)=>{
+  const reward=wikiIndex.rewardChest(itemId);
+  if(!reward)return false;
+  detail.append(h('div',{class:'wiki-level-reward'},[
+   h('span',{class:'wiki-level-reward-mark','aria-hidden':'true',text:'✦'}),
+   h('div',{class:'wiki-level-reward-details'},[
+    h('small',{text:wt('Награда за достижение уровня','Reward for reaching level')}),
+    h('strong',{text:wt('Уровень ','Level ')+reward.level}),
+    h('span',{text:wt('Для направления: ','Class family: ')+(rewardLabels[reward.family]||reward.family)})
+   ])
+  ]));
+  return true;
+ };
+
  const draw=(detailOnly=false)=>{
   const previousScroll=browse.scrollTop,previousDetailScroll=detail.scrollTop;
   const sourceKey=wikiSelection.type+':'+String(wikiSelection.id??'');
@@ -1631,6 +1672,7 @@ function renderWiki(root){
    detail.append(h('p',{class:'wiki-description',text:
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text}));
   }
+  if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=keys=>{
    const labels=keys.map(classLabel).filter(Boolean);
    if(!labels.length)return;
@@ -1686,7 +1728,7 @@ function renderWiki(root){
     if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
      h('dd',{text:wt('Двуручное','Two-handed')}));
     detail.append(dl);
-    if(rec.classes&&Object.keys(rec.classes).length)
+    if(!wikiIndex.rewardChest(id)&&rec.classes&&Object.keys(rec.classes).length)
      renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]));
     const wearers=window.PandoraUIPlanner.outfitWearers(rec,lang);
     if(wearers?.length)detail.append(h('div',{class:'wiki-item-wearers'},[
@@ -1696,9 +1738,10 @@ function renderWiki(root){
     ]));
     detail.append(h('h4',{text:wt('Где получить','How to obtain')}));
     const found=wikiIndex.sources(id);
-    if(!found.length)detail.append(h('p',{class:'muted',text:wt('Подтверждённые источники в доступном каталоге не найдены.','No confirmed sources in the current catalog.')}));
-    for(const row of found.slice(0,wikiSourceShown))
-     detail.append(sourceEntry(row,id));
+    if(!found.length)detail.append(h('p',{class:'muted',text:wikiIndex.rewardChest(id)?
+     wt('Награда за достижение уровня указана выше.','The level reward is shown above.'):
+     wt('Подтверждённые источники в доступном каталоге не найдены.','No confirmed sources in the current catalog.')}));
+    if(found.length)appendSourceFlow(found,id);
     moreSources(found);
     const usedIn=wikiIndex.materialUses(id);
     if(usedIn.length){
@@ -1724,9 +1767,39 @@ function renderWiki(root){
     for(const [label,value] of skillFields)if(value!=null)
      dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
     detail.append(dl,h('h4',{text:wt('Требования','Requirements')}));
-    if(!rec.reqs?.length)detail.append(h('p',{class:'muted',text:wt('Ветка требований не указана','No branch requirement listed')}));
-    for(const req of rec.reqs||[])detail.append(h('p',{class:'wiki-entry',text:branchLabel(req.branch)+' ≥ '+req.amount}));
-    if(rec.prereq!=null&&wikiData.skills?.[rec.prereq])detail.append(wikiLink((lang==='en'?'Prerequisite: ':'Предыдущее умение: ')+dataName('skill',rec.prereq),'skill',rec.prereq));
+    if(!rec.reqs?.length&&rec.prereq==null)detail.append(h('p',{class:'muted',
+     text:wt('Требования веток не указаны.','No branch requirements listed.')}));
+    const reqs=h('div',{class:'wiki-requirements',role:'list'});
+    for(const req of rec.reqs||[]){
+     if(!req||!Number.isFinite(Number(req.amount)))continue;
+     const current=Math.max(0,Number(state.points?.[req.branch])||0);
+     const required=Math.max(0,Number(req.amount));
+     const ready=current>=required;
+     const chip=h('div',{class:'wiki-requirement-chip'+(ready?' fulfilled':''),
+      role:'listitem','aria-label':branchLabel(req.branch)+': '+current+'/'+required},[
+      h('span',{class:'wiki-requirement-symbol','aria-hidden':'true',text:ready?'✦':'◇'}),
+      h('div',{class:'wiki-requirement-copy'},[
+       h('strong',{text:branchLabel(req.branch)}),
+       h('small',{text:wt('Вложено ','Invested ')+current+' / '+required}),
+       h('span',{class:'wiki-requirement-track','aria-hidden':'true'},[
+        h('span',{class:'wiki-requirement-progress',
+         style:'width:'+Math.min(100,required>0?current/required*100:100)+'%'})
+       ])
+      ])
+     ]);
+     reqs.append(chip);
+    }
+    if(reqs.childElementCount)detail.append(reqs);
+    if(rec.prereq!=null&&wikiData.skills?.[rec.prereq]){
+     const prereq=wikiIndex.canonical('skill',rec.prereq);
+     const link=wikiLink(dataName('skill',prereq),'skill',prereq);
+     const icon=wikiIcon('skill',prereq,wikiData.skills[prereq]);
+     const prerequisite=h('div',{class:'wiki-prerequisite'},[
+      h('small',{text:wt('Предыдущее умение','Prerequisite skill')}),
+      withIcon(link,icon,'skill')
+     ]);
+     detail.append(prerequisite);
+    }
     if(rec.classes&&Object.keys(rec.classes).length)
      renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]));
     const icon=skillIcon(rec.branch,id,rec);
@@ -1741,8 +1814,7 @@ function renderWiki(root){
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:
      wt('Источник получения в доступном каталоге не указан.','No source listed in the current catalog.')}));
-    for(const row of found.slice(0,wikiSourceShown))
-     detail.append(sourceEntry(row,id));
+    if(found.length)appendSourceFlow(found,id);
     moreSources(found);
   }else if(type==='monster'){
     const monsterStats=[[wt('Уровень','Level'),rec.level],[wt('ОЗ','HP'),rec.life],
@@ -1770,7 +1842,9 @@ function renderWiki(root){
      detail.append(box);
     }
     detail.append(h('h4',{text:wt('Места появления','Spawn locations')}));
-    for(const loc of wikiIndex.locations(id))detail.append(wikiLink(loc.name,loc.type,loc.id,id));
+    const places=wikiIndex.locations(id);
+    if(places.length)detail.append(linkFlow(places.map(loc=>
+     wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
     detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')}));
     for(const row of wikiIndex.drops(id)){
      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===row.itemId?' highlighted':'')});
@@ -1783,9 +1857,8 @@ function renderWiki(root){
     }
   }else if(type==='npc'){
     const locations=rec.maps||[];
-    for(const mapId of locations){
-     if(knownMaps[mapId])detail.append(wikiLink('◈ '+dataName('map',mapId),'map',mapId,id));
-    }
+    detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
+     wikiLink('◈ '+dataName('map',mapId),'map',mapId,id))));
     const recipes=wikiIndex.trades(id);
     detail.append(h('h4',{text:wt('Обмен · ','Trades · ')+recipes.length}));
     const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
@@ -1855,8 +1928,8 @@ function renderWiki(root){
      const residents=wikiIndex.residents(id);
      if(residents.length){
       detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')}));
-      for(const [npcId] of residents)
-       detail.append(wikiLink(dataName('npc',npcId),'npc',npcId));
+      detail.append(linkFlow(residents.map(([npcId])=>
+       wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
      }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
@@ -1875,16 +1948,43 @@ function renderWiki(root){
      }
     }
   }else{
-    detail.append(h('h4',{text:wt('Содержимое сундука по группам','Chest contents by groups')}));
-    for(const [i,group]of(rec.rolls||[]).entries()){
-     detail.append(h('p',{class:'muted',text:wt('Группа ','Group ')+(i+1)}));
+    const groups=rec.rolls||[];
+    detail.append(h('h4',{text:wt('Содержимое шкатулки','Chest contents')}));
+    if(!groups.length)detail.append(h('p',{class:'muted',text:wt(
+     'Состав наград пока не указан в игровом каталоге.',
+     'Reward contents are not yet specified in the game catalog.'
+    )}));
+    const gallery=h('div',{class:'wiki-chest-groups'});
+    for(const [i,group]of groups.entries()){
+     const heading=h('summary',{class:'wiki-chest-group-summary'},[
+      h('span',{class:'wiki-chest-group-mark','aria-hidden':'true',text:String(i+1)}),
+      h('span',{class:'wiki-chest-group-name',text:wt('Группа ','Group ')+(i+1)}),
+      h('small',{text:group.length===1?wt('1 предмет','1 item'):
+       group.length+' '+wt('вариантов','options')}),
+      h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
+     ]);
+     const options=h('div',{class:'wiki-chest-options'});
      for(const row of group){
-      const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===String(row.i)?' highlighted':'')});
-      entry.append(itemLink(row.i,dataName('item',row.i)+
-       (row.n&&row.n!==1?' ×'+row.n:'')+
-       (row.p==null?'':' · '+row.p+'% внутри группы'),id));detail.append(entry);
+      const option=h('div',{class:'wiki-chest-reward'+
+       (wikiSelection.highlight===String(row.i)?' highlighted':'')});
+      option.append(itemLink(row.i,dataName('item',row.i),id));
+      if(row.n!=null&&row.n!==1)option.append(h('span',{class:'wiki-reward-quantity',
+       text:'×'+row.n}));
+      if(row.plus!=null&&row.plus>0)option.append(h('small',{class:'wiki-reward-enhance',
+       text:'+'+row.plus}));
+      if(row.soul!=null&&row.soul>0)option.append(h('small',{class:'wiki-reward-enhance',
+       text:wt('Душ: ','Souls: ')+row.soul}));
+      if(row.p!=null)option.append(h('small',{class:'wiki-reward-percent'+
+       (row.p===100?' certain':''),
+       title:wt('Вероятность внутри группы','Probability within group'),
+       text:row.p+'%'}));
+      options.append(option);
      }
+     const section=h('details',{class:'wiki-chest-group'},[heading,options]);
+     section.open=i===0;
+     gallery.append(section);
     }
+    detail.append(gallery);
   }
   if(detailOnly)detail.scrollTop=previousDetailScroll;
  };
@@ -3019,10 +3119,6 @@ $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView
  $('pathSkillStatus').onchange=e=>{pathSkillFilter=e.target.value;pathSkillShown=24;renderPathSkills()};
  $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;
-$('dockTabs').addEventListener('click',event=>{
- const button=event.target.closest('[data-tab]');
- if(button)changeTab(button.dataset.tab);
-});
 $('stageQuickbar')?.addEventListener('click',event=>{
  const target=event.target.closest('[data-stage-tab]');
  if(target)changeTab(target.dataset.stageTab);

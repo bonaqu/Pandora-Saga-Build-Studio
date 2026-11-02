@@ -24,7 +24,11 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await picker.inputValue(),'equipment');
   assert.equal((await rows.first().innerText()).trim(),firstRu);
   assert.equal(await page.locator('#dockLocale').count(),0);
+  assert.equal(await page.locator('#dockTabs').count(),0);
+  assert.equal(await page.locator('#nav [data-tab="wiki"]').isHidden(),true,
+   'Main navigation belongs only to the main editor, not the encyclopedia');
   await page.locator('#dockClose').click();
+  assert.equal(await page.locator('#nav [data-tab="wiki"]').isVisible(),true);
   assert.equal(await page.locator('#nav [data-tab="wiki"].active').count(),0);
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
@@ -73,6 +77,32 @@ export async function runEquipmentLocaleSmoke(browser,base){
    document.querySelector('.wiki-list .wiki-link[aria-current="page"]'),
    null,{timeout:20000});
   assert.equal(await page.locator('.wiki-equipment-type').inputValue(),'all');
+  // Source-backed clickable chips navigate to the actual monster.
+  await page.goto(base+'/#wiki/soul/101000',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-source-flow .wiki-source-primary').first()
+   .waitFor({state:'visible',timeout:20000});
+  assert.ok(await page.locator('.wiki-source-token').count()>=2);
+  await page.locator('.wiki-source-flow .wiki-source-primary').first().click();
+  await page.waitForFunction(()=>location.hash.startsWith('#wiki/monster/'));
+  assert.match(await page.locator('.wiki-page h3').innerText(),/Крысолак|./);
+  // Skill requirements show current investment without pretending the
+  // entire ability is unlocked by one branch threshold.
+  await page.goto(base+'/#wiki/skill/100054001',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-requirement-chip').first().waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-requirement-copy').innerText(),/Вложено/);
+  // Group rows are compact and independently expandable.
+  await page.goto(base+'/#wiki/chest/51003',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-chest-group').first().waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.wiki-chest-group').count(),5);
+  await page.locator('.wiki-chest-group').nth(1).locator('summary').click();
+  assert.equal(await page.locator('.wiki-chest-group').nth(1).getAttribute('open'),'');
+  assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 5/);
+  // Level-60 boxes exist even without an invented loot table.
+  await page.goto(base+'/#wiki/chest/51010',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-level-reward').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 60/);
+  assert.match(await page.locator('.wiki-page').innerText(),/Состав наград пока не указан/);
+  assert.equal(await page.locator('.wiki-chest-group').count(),0);
   assert.deepEqual(errors,[]);
   console.log('Chromium encyclopedia equipment RU/EN passed: source names, rings, and links');
  }finally{await context.close()}
