@@ -151,3 +151,20 @@ test('visible encyclopedia values use in-place controls, no save-confirm buttons
  assert.match(app,/inlineWikiText\(editable\)/);
  assert.match(app,/PandoraItemPresentation\.kindOptions/);
 });
+
+test('owner acquisition endpoints reject malformed, duplicate, or unauthorized relations',async()=>{
+ const env={DB:mockDb()},key='acquireedit.101';
+ for(const rows of [
+  [{type:'monster',id:'20'}],[{type:'npc',id:'7'}],
+  [{type:'monster',id:'20'},{type:'npc',id:'7'}]]){
+  assert.equal((await worker.fetch(request(key,JSON.stringify(rows)),env)).status,200);
+ }
+ for(const rows of [
+  [{type:'monster',id:'0'}],[{type:'zone',id:'20'}],
+  [{type:'npc',id:'7',untrusted:true}],[{type:'npc',id:'7'},{type:'npc',id:'7'}],
+  [{type:'monster',id:5}],Array(25).fill({type:'npc',id:'7'})]){
+  assert.equal((await worker.fetch(request(key,JSON.stringify(rows)),env)).status,400);
+ }
+ assert.equal((await worker.fetch(request(key,'[]','override','bad'),env)).status,401);
+ assert.equal((await worker.fetch(request(key,null,'reset'),env)).status,200);
+});
