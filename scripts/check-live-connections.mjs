@@ -63,7 +63,7 @@ try{
  const {response,payload}=await read(worker+'/api/runtime-capabilities',{cors:true});
  const capabilities=['itemedit','tradeedit','acquireedit','wikiedit',
   'dropedit','chestedit','spawnedit','virtual-town-wiki','bilingual-wiki'];
- const release=/^0\\.(\\d+)\\.0$/.exec(String(payload?.codeRelease||''));
+ const release=/^0\.(\d+)\.0$/.exec(String(payload?.codeRelease||''));
  const deployed=response.ok&&Number(release?.[1]||0)>=322&&
   payload?.githubOwnerExport===true&&
   capabilities.every(k=>payload.ownerEditors?.includes(k));
