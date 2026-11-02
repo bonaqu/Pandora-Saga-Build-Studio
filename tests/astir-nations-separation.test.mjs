@@ -57,6 +57,7 @@ test('only screenshot-verified Claris resides in Astir Kingdom district',()=>{
  assert.deepEqual(Array.from(wiki.residents('astir-kingdom'),([id])=>id),[expectedId]);
  const npc=wiki.records('npc')[expectedId];
  assert.equal(npc.name,'Кларис');
+ assert.equal(npc.en,'Claris');
  assert.equal(npc.service,'Открытие сундуков');
  assert.equal(npc.grid,undefined,'No coordinates were provided for Claris');
  assert.equal(npc.source,'game-screenshot');
@@ -65,6 +66,8 @@ test('only screenshot-verified Claris resides in Astir Kingdom district',()=>{
  const synthetic=Object.keys(wiki.records('npc')).filter(id=>id.startsWith('astir-npc-'));
  assert.deepEqual(synthetic,[expectedId]);
  assert.equal(wiki.search('npc','Кларис').some(([id])=>id===expectedId),true);
+ assert.equal(wiki.search('npc','Claris',id=>wiki.records('npc')[id]?.en)
+  .some(([id])=>id===expectedId),true);
  assert.equal('route' in geo,false);
  assert.doesNotMatch(read('pandora-studio-app.js'),/Маршрут из Астира/);
 });
@@ -78,6 +81,8 @@ test('unconfirmed NPC identities are not exposed in current map or chest records
   assert.ok(!model.includes(invalid),'Unsupported synthetic NPC '+invalid);
  }
  assert.ok(app.includes("'astir-npc-kingdom-claris'"));
+ assert.match(app,/type==='npc'&&obj\?\.virtual\?obj\.en/);
+ assert.match(app,/verifiedNpcAlias/);
  assert.ok(app.includes("'astir-kingdom'"));
  assert.ok(!app.includes("'astir-empire'") || !app.includes("'astir-npc-empire-claris'"));
 });
