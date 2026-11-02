@@ -33,7 +33,9 @@ test('cached encyclopedia avoids duplicate draws and cross-category searches are
 test('deep-linked trade materials bypass an equipment-only filter without breaking the category',()=>{
  const app=get('pandora-studio-app.js');
  assert.match(app,/if\(type==='item'&&wikiSelection\.id!=null&&records\?\.\[wikiSelection\.id\]\)/);
- assert.match(app,/wikiItemType=slotKeys\.includes\(selected\.slot\)\?'equipment':'all'/);
+ assert.match(app,/wikiItemType=isUtilityItem\(selected\)\?'utility':/);
+ assert.match(app,/slotKeys\.includes\(selected\.slot\)\?'equipment':'all'/);
+ assert.match(app,/if\(was!==wikiItemType\)\{renderDetails\(\);return\}/);
  assert.match(app,/if\(picker\)picker\.value=wikiItemType/);
 });
 test('cross-linked encyclopedia entries clear a stale search instead of disappearing',()=>{
