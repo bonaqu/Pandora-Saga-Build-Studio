@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const src=readFileSync(new URL('../pandora-studio-hero-book.js',import.meta.url),'utf8');
 const calc=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
 const begin=src.indexOf("if(page==='defense'&&modifiers?.resistances){");
-const end=src.indexOf("if(page==='recovery'&&modifiers?.regeneration){",begin);
+const end=src.indexOf("if(page==='summary'&&modifiers?.regeneration){",begin);
 const body=src.slice(begin,end);
 const compact=s=>s.replace(/\s+/g,'');
 test('defensive gem grid has every current element and a true bilingual legend',()=>{

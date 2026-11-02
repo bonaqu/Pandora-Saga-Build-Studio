@@ -1095,7 +1095,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    'Включены базовые формулы, расовые способности, честь и структурированные сопротивления от вещей/душ, включая требования заточки; другие навыки и серверные иммунитеты ещё не полностью учтены.'}));
   body.prepend(card);
  }
- if(page==='recovery'&&modifiers?.regeneration){
+ if(page==='summary'&&modifiers?.regeneration){
   const regen=modifiers.regeneration,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Скорость естественного восстановления'}),
    make('p',{text:'ОЗ: '+regen.hp.total+' (база '+regen.hp.base+
@@ -1108,7 +1108,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     text:'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Эффекты экипировки и активных навыков пока не включены.'}));
   body.prepend(card);
  }
- if(page==='recovery'&&modifiers?.recoveryAmount){
+ if(page==='summary'&&modifiers?.recoveryAmount){
   const natural=modifiers.recoveryAmount,card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Естественное восстановление (расчётная величина)'}),
    make('p',{text:'ОЗ: '+natural.hp.known+' (максимум ОЗ '+natural.hp.maxContribution+
@@ -1138,11 +1138,11 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
-  const percent=modifiers?.potion?.percent,heal=modifiers?.healingSkill?.percent;
+  const percent=modifiers?.potion?.percent;
   const quick=make('div',{class:'stage-result-grid'});
   for(const [title,value,note] of [
    [english?'Potion effectiveness':'Эффективность зелий',Number.isFinite(percent)?percent+'%':'—',english?'HP recovery':'Восстановление ОЗ'],
-   [english?'Healing effectiveness':'Эффективность лечения',Number.isFinite(heal)?heal+'%':'—',english?'Healing skills':'Лечащие навыки']
+
   ])quick.append(make('div',{class:'stage-result-tile'},[
    make('span',{text:title}),make('strong',{text:value}),make('small',{text:note})]));
   body.prepend(quick);
@@ -1221,6 +1221,9 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    }
    body.append(health);
   }
+ }
+ if(chosen==='effects'){
+  const english=document.documentElement?.lang==='en';
   const cures=modifiers?.statusCures?.rows||[];
   if(cures.length){
    const panel=make('details',{class:'stage-attribute-row stage-status-cures'});
@@ -1312,6 +1315,41 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     'Estimated skill effect. Not included in the hero’s permanent recovery.':
     'Ориентировочное действие умения. Не входит в постоянное восстановление персонажа.'}));
   body.append(details);
+ }
+ // Conditional effects are displayed only for a usable equipped weapon
+ // with +7 or higher fire-gem refinement. They are not added to damage totals
+ // without verified server proc mechanics.
+ if(['summary','attack','effects'].includes(chosen)){
+  const active=items.map(row=>({row,
+   bonus:root.PandoraConditionalItemBonuses?.activeFor?.(row)}))
+   .filter(x=>x.bonus&&(x.bonus.phoenix||x.bonus.rows.length));
+  if(active.length){
+   const en=document.documentElement?.lang==='en';
+   const panel=make('section',{class:'stage-attribute-row stage-active-elemental'});
+   panel.append(make('strong',{text:en?
+    'Active conditional weapon effects':'Условные эффекты экипированного оружия'}));
+   for(const {row,bonus} of active){
+    const record=row.record||{},name=record.name||'Оружие';
+    panel.append(make('p',{text:name+' · '+(en?'Fire +':'Огонь +')+
+     row.refinement}));
+    if(bonus.phoenix){
+     const p=bonus.phoenix;
+     panel.append(make('div',{class:'stage-skill-effect-row'},[
+      make('span',{text:en?'Phoenix Flame':'Пламя феникса'}),
+      make('strong',{text:'+'+p.chance+'% · '+p.damage+' + '+
+       p.scale+'% '+(en?'of ':'от ')+p.stat})
+     ]));
+    }
+    if(chosen==='effects'){
+     for(const entry of bonus.rows)
+      panel.append(make('p',{text:entry.name+' +'+entry.value+
+       (entry.unit==='%'?'%':'')}));
+     if(bonus.phoenix)panel.append(make('p',{class:'stage-elemental-explanation',
+      text:root.PandoraConditionalItemBonuses.phoenixExplanation(bonus.phoenix)}));
+    }
+   }
+   body.prepend(panel);
+  }
  }
  if(['attack','defense'].includes(chosen)&&modifiers?.combat){
   const battle=modifiers.combat;

@@ -44,5 +44,32 @@ const phoenixExplanation=(p)=>{
  return start+(p.growth?
   ` Каждое следующее улучшение добавляет ${p.growth.damage} урона и ${p.growth.scale}% от ${p.growth.stat}, сокращая откат на ${p.growth.cooldown} секунду.`:'');
 };
-root.PandoraConditionalItemBonuses=Object.freeze({parse,phoenixExplanation});
+// Classification is derived only from explicit game item names/descriptions.
+ // Adding future elemental collections does not require editing tab labels.
+ const elementalRoots=Object.freeze([
+ ['fire',/огненн|огне(вой|вая|вое|вые)|flame|fiery|\bfire\b/i],
+ ['ice',/ледян|ледов|льдян|морозн|ice|frost/i],
+ ['dark',/\bтьм[ыае]\b|темн[а-я]*|dark|shadow/i],
+ ['light',/светл[а-я]*|сияющ[а-я]*|holy|light/i],
+ ['lightning',/молни[а-я]*|грозов[а-я]*|lightning|thunder/i],
+ ['poison',/ядовит[а-я]*|ядов[а-я]*|poison/i]
+ ]);
+ const elementOf=item=>{
+  if(!item||item.slot!=='weapon')return null;
+  const name=String(item.name||'');
+  for(const [element,re] of elementalRoots)
+   if(re.test(name))return element;
+  return null;
+ };
+ // The enchantment is active only if the actual slotted weapon is usable,
+ // refined to +7 or above and explicitly fire-enchanted.
+ const activeFor=({record,refinement=0,gem=null,issue=[]}={})=>{
+  if(!record||record.slot!=='weapon'||Array.isArray(issue)&&issue.length||
+   !Number.isInteger(Number(refinement))||Number(refinement)<7||
+   gem?.element!=='fire')return null;
+  return parse(record);
+ };
+ root.PandoraConditionalItemBonuses=Object.freeze({
+  parse,phoenixExplanation,elementOf,activeFor
+ });
 })(typeof window==='undefined'?globalThis:window);

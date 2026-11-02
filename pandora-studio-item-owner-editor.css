@@ -67,7 +67,7 @@
 /* Real item effects live in the existing card, not in a separate modal. */
 .wiki-owner-effects{margin:12px 0;display:grid;gap:7px;min-width:0}
 .wiki-owner-effect{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
- background:rgba(24,28,33,.32);border:1px solid rgba(195,168,108,.16);
+ background:linear-gradient(115deg,rgba(59,40,26,.82),rgba(34,25,19,.88));border:1px solid rgba(180,132,73,.36);
  border-radius:8px;padding:7px 9px;min-width:0}
 .wiki-owner-effect-name{flex:2 1 190px;font-weight:600;min-width:100px}
 .wiki-owner-effect-value{display:inline-flex;align-items:baseline;gap:5px;
@@ -117,33 +117,10 @@
 .wiki-trade-sellers .wiki-owner-plus{align-self:center;margin:0}
 @media(max-width:650px){.wiki-chest-flat{grid-template-columns:minmax(0,1fr)}}
 
-/* Soul attributes: one game-themed frame with a clean vertical divider. */
-.wiki-soul-properties{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
- margin:13px 0 17px;border:1px solid #947044;border-radius:10px;
- background:linear-gradient(125deg,#382619,#221913);overflow:hidden}
-.wiki-soul-properties-half{min-width:0;padding:13px 15px;display:flex;flex-direction:column;gap:9px}
-.wiki-soul-properties-half+.wiki-soul-properties-half{
- border-left:1px solid #755435;background:rgba(13,9,7,.16)}
-.wiki-page .wiki-soul-properties h4{font:600 15px Georgia,serif;color:#e9c08a;margin:0;
- display:flex;align-items:center;gap:7px}
-.wiki-soul-slot-list{display:flex;gap:7px;align-items:center;flex-wrap:wrap;min-width:0}
-.wiki-soul-slot-list .wiki-owner-mat{margin:0}
-.wiki-soul-price-pane .wiki-soul-price-value{color:#f4d19a;font-size:19px;
- line-height:1.25;font-weight:700;font-variant-numeric:tabular-nums}
-.wiki-soul-price-heading .wiki-soul-price-label{font-size:inherit;opacity:1}
-.wiki-soul-price-help{border:1px solid #906b42;color:#d7ad71;border-radius:50%;
- font:12px/19px sans-serif;width:20px;height:20px;text-align:center;cursor:help}
-.wiki-soul-price-heading [tabindex]:focus-visible{outline:2px solid #eed09d;outline-offset:3px}
 .wiki-chest-opening{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
  padding:10px 13px;margin:11px 0;border:1px solid #8a663f;border-radius:9px;
  background:linear-gradient(115deg,#342315,#1e1712);color:#e8cda6}
 .wiki-chest-opening strong{color:#f3d099}
-@media(max-width:540px){
- .wiki-soul-properties{grid-template-columns:1fr}
- .wiki-soul-properties-half+.wiki-soul-properties-half{
-  border-left:0;border-top:1px solid #755435}
-}
-
 /* In-place plain-text controls avoid credential-manager inference on HTML inputs. */
 .wiki-owner-search[data-owner-text-field],
 .wiki-owner-plaintext[data-owner-text-field],
@@ -240,3 +217,52 @@
 .wiki-nation-territory strong{color:#f0c990;font-size:.92rem}
 .wiki-nation-territory p{margin:6px 0 0;color:#d7c19d;font-size:.82rem}
 @media(max-width:550px){.wiki-chest-opening-fields{grid-template-columns:1fr}}
+
+/* The Soul insert slot and catalog price share a small, content-sized chip.
+   Keep the encyclopedia's other game-card blocks as the visual reference. */
+.wiki-page .wiki-soul-properties{
+ display:inline-grid;grid-template-columns:max-content max-content;
+ align-items:stretch;vertical-align:top;width:fit-content;max-width:100%;
+ margin:8px 0 12px;border-color:rgba(186,138,74,.55);
+ border-radius:8px;background:linear-gradient(120deg,#322318,#241a14)}
+.wiki-page .wiki-soul-properties-half{
+ display:flex;flex-direction:row;align-items:center;flex-wrap:wrap;
+ gap:7px;min-height:0;min-width:0;padding:7px 10px}
+.wiki-page .wiki-soul-properties-half+.wiki-soul-properties-half{
+ border-left:1px solid rgba(171,121,68,.5)}
+.wiki-page .wiki-soul-properties h4{
+ margin:0;font-size:12px;font-weight:600;line-height:1.3;color:#d5ac76}
+.wiki-page .wiki-soul-slot-list{gap:5px;flex-wrap:wrap}
+.wiki-page .wiki-soul-slot-list .wiki-owner-mat{
+ margin:0;padding:3px 7px;font-size:12px}
+.wiki-page .wiki-soul-price-pane .wiki-soul-price-value{
+ font-size:15px;line-height:1.25;white-space:nowrap}
+.wiki-page .wiki-soul-price-help{
+ width:16px;height:16px;font:11px/14px sans-serif;flex:none}
+.wiki-page .wiki-soul-price-heading .wiki-soul-price-label{
+ font-size:12px;line-height:1.25}
+@media(max-width:580px){
+ .wiki-page .wiki-soul-properties{
+  display:inline-flex;flex-wrap:wrap;max-width:100%;align-items:center}
+ .wiki-page .wiki-soul-properties-half+.wiki-soul-properties-half{
+  border-top:0;border-left:1px solid rgba(171,121,68,.5)}
+}
+@media(max-width:370px){
+ .wiki-page .wiki-soul-properties-half+.wiki-soul-properties-half{
+  border-left:0;border-top:1px solid rgba(171,121,68,.5)}
+}
+.wiki-astir-neighborhoods{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+ margin:8px 0;padding:9px 11px;border:1px solid rgba(159,115,63,.46);
+ border-radius:8px;background:rgba(47,32,20,.65)}
+.wiki-astir-neighborhoods small{color:#ccaa80;flex-basis:100%;font-size:11px}
+.wiki-astir-neighborhoods .wiki-link{border:1px solid rgba(176,136,74,.33);
+ padding:4px 7px;border-radius:5px}
+.wiki-astir-neighborhoods .wiki-link:hover{border-color:#e5c389}
+.wiki-elemental-type{min-width:130px;max-width:220px}
+.stage-elemental-proc{position:absolute;inset:auto 3px 3px auto;
+ display:grid;place-items:center;font-size:11px;min-width:18px;
+ height:18px;border-radius:50%;color:#f3c884;background:#49301e;
+ border:1px solid #b98043;pointer-events:none}
+.stage-active-elemental{border-color:rgba(181,114,46,.48);
+ background:linear-gradient(125deg,rgba(73,41,21,.42),rgba(27,20,16,.62))}
+.stage-elemental-explanation{color:#d8b98b;font-size:.81rem}
