@@ -1272,7 +1272,7 @@ main{padding-top:10px}
 .stage-attribute-tabs button{transition:background-color .16s,border-color .16s}
 .stage-attribute-tabs button:focus-visible{outline:2px solid #ffe0a8;outline-offset:2px}
 
-/* Current OS book — readable resistance tiles and real potion item navigation. */
+
 .stage-resistance-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;margin:10px 0}
 .stage-resistance-tile{display:flex;align-items:center;justify-content:space-between;gap:6px;
  padding:8px 9px;background:linear-gradient(130deg,#31251b,#1d1510);border:1px solid #775736;border-radius:4px}
@@ -1453,7 +1453,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .inline-mastery-track .inline-mastery-green{top:85px}
 .inline-mastery-track .inline-mastery-locked{top:84px}
 .inline-mastery-track input[type=range]{top:74px}
-/* Account button and lightweight login profile in Pandora Saga colors. */
+
 .header-actions{position:relative;align-items:center}
 .profile-trigger{display:grid;place-items:center;min-width:42px;min-height:42px;color:#e7bd83;
  background:linear-gradient(#33241b,#1a120e);border:1px solid #917047;border-radius:4px}
@@ -1846,7 +1846,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  .wiki-source-token,.wiki-requirement-chip,.wiki-chest-chevron{transition:none}
 }
 
-/* Dense encyclopedia relationships: one readable card per product, wrap by width. */
+
 .wiki-recipe-uses{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,285px),1fr));
  gap:8px;margin:9px 0 14px}
 .wiki-recipe-use{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;min-width:0;
@@ -1891,7 +1891,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .wiki-mob-row .wiki-link{flex:1 1 110px;min-width:0;width:auto}
 .wiki-map-mob-meta{flex:1 1 120px;color:#b8a287;font-size:10px;text-align:right}
 
-/* Neutral sign-out control and visual avatar, with no decorative star. */
+
 .account-avatar::before{content:'';position:absolute;width:12px;height:12px;top:8px;left:15px;
  border-radius:50%;border:2px solid #edcf98}
 .account-avatar::after{content:'';position:absolute;width:24px;height:12px;bottom:8px;left:10px;
@@ -1901,7 +1901,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 @media(max-width:720px){.wiki-monster-resists{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:390px){.wiki-monster-resists{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* Priest and guild buff configuration sits inside the existing Hero Book. */
+
 .stage-priest-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
 .stage-priest-fields input{min-width:0;width:100%;border:1px solid #86643e;border-radius:4px;
  padding:7px;background:#19120e;color:#f1d6a7;font:600 13px Manrope,Arial,sans-serif}
