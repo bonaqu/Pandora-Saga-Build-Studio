@@ -1399,7 +1399,20 @@ async function loadWiki(){
    if(parsed&&skills[parsed[3]]&&typeof value==='string'&&value.trim())
     skills[parsed[3]]={...skills[parsed[3]], [parsed[1]==='skill'?'name':'desc']:value};
   }
-  const source={...loaded.data,skills,
+  const ownerAcquisitions={};
+  for(const [key,value] of Object.entries(override)){
+   const match=/^acquireedit\.([0-9]{1,15})$/.exec(key);
+   if(!match||!loaded.data.items?.[match[1]]||typeof value!=='string')continue;
+   try{
+    const rows=JSON.parse(value);
+    if(Array.isArray(rows))ownerAcquisitions[match[1]]=rows.filter(row=>
+     row&&['npc','monster'].includes(row.type)&&
+     typeof row.id==='string'&&/^[1-9][0-9]{0,14}$/.test(row.id)).slice(0,24);
+   }catch{/* Damaged overrides must not break the original encyclopedia. */}
+  }
+  const source={...loaded.data,skills,ownerAcquisitions,
+   trades:window.PandoraStudioTradeOwnerData.apply(
+    loaded.data.trades,loaded.data.items,override),
    items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
   const index=window.PandoraWikiData.build(source);
   wikiData=source;
@@ -1601,6 +1614,39 @@ function renderWiki(root){
  const matchesWords=(text,query)=>wikiIndex.normalize(query).split(' ')
   .filter(Boolean).every(term=>text.includes(term));
 
+ const wikiItemChoice=(container,selectItem)=>{
+  const previous=container.querySelector('.wiki-owner-item-choice');
+  if(previous){previous.remove();return}
+  const form=h('div',{class:'wiki-owner-source-picker wiki-owner-item-choice'});
+  const search=h('input',{type:'search',class:'wiki-inline-input',
+   placeholder:'Название предмета…',autocomplete:'off','aria-label':'Найти предмет'});
+  const target=h('select',{class:'wiki-inline-select','aria-label':'Выбери предмет'});
+  const feedback=h('small',{class:'inline-owner-error',role:'status'});
+  form.append(search,target,feedback);container.append(form);
+  const items=Object.entries(wikiData.items||{});
+  const fill=()=>{
+   const q=wikiIndex.normalize(search.value);
+   const matches=items.filter(([id])=>!q||wikiIndex.normalize(dataName('item',id)).includes(q)).slice(0,80);
+   target.replaceChildren(h('option',{value:'',
+    text:matches.length?'Выбери предмет':'Предметы не найдены'}));
+   for(const [id]of matches)target.append(h('option',{value:id,text:dataName('item',id)}));
+   target.disabled=!matches.length;
+  };
+  search.oninput=fill;
+  target.onchange=async()=>{
+   if(!target.value)return;
+   target.disabled=true;
+   try{await selectItem(Number(target.value))}
+   catch(error){feedback.textContent=error.message;target.disabled=false}
+  };
+  const outside=e=>{
+   if(!form.isConnected||!form.contains(e.target)){
+    document.removeEventListener('pointerdown',outside,true);form.remove();
+   }
+  };
+  document.addEventListener('pointerdown',outside,true);
+  fill();search.focus();
+ };
  const sourceEntry=(row,itemId)=>{
   const line=h('div',{class:'wiki-source-token'+
    (wikiSelection.highlight===String(row.id)?' highlighted':'')});
@@ -1630,13 +1676,24 @@ function renderWiki(root){
   }else if(row.type==='zone'){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
   }
+  if(row.manual&&adminEditing&&adminToken){
+   const remove=h('button',{type:'button',class:'wiki-owner-remove',
+    text:'×','aria-label':'Удалить источник '+dataName(row.type,row.id),
+    title:'Убрать источник получения'});
+   remove.onclick=()=>void saveWikiAcquisitions(itemId,
+    (wikiData.ownerAcquisitions?.[itemId]||[]).filter(x=>
+     !(x.type===row.type&&String(x.id)===String(row.id))))
+    .catch(error=>showStudioToast(error.message,'warning'));
+   line.append(remove);
+  }
   return line;
  };
  const appendSourceFlow=(found,itemId)=>{
   const flow=h('div',{class:'wiki-source-flow'});
   // The source index is kept complete; exact repeats need not occupy the UI.
   const seen=new Set();
-  for(const row of found.slice(0,wikiSourceShown)){
+  const ordered=adminEditing&&adminToken?[...found].sort((a,b)=>Number(Boolean(b.manual))-Number(Boolean(a.manual))):found;
+  for(const row of ordered.slice(0,wikiSourceShown)){
    const key=[row.type,row.id,row.kind,row.percent,row.condition,row.roll].join(':');
    if(seen.has(key))continue;
    seen.add(key);
@@ -1760,7 +1817,7 @@ function renderWiki(root){
        h('button',{type:'button',class:'button-action wiki-owner-pencil',
         'aria-label':'Изменить название '+dataName(type,id),
         title:'Изменить название',text:'✎ Название',
-        onclick:()=>editor(heading)})
+        onclick:()=>inlineWikiText(heading)})
      ]));
    }else detail.append(heading);
    const namesakes=wikiIndex.sameName(type,id);
@@ -1785,15 +1842,15 @@ function renderWiki(root){
    detail.append(description);
    if(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')){
      detail.append(h('button',{type:'button',class:'button-action wiki-owner-desc-edit',
-      text:'✎ Изменить описание',onclick:()=>editor(description)}));
+      text:'✎ Изменить описание',onclick:()=>inlineWikiText(description)}));
    }
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
-  const renderClassEligibility=keys=>{
-   const labels=keys.map(classLabel).filter(Boolean);
-   if(!labels.length)return;
+  const renderClassEligibility=(keys,isItem=false)=>{
+   const manage=isItem&&adminEditing&&adminToken;
+   if(!keys.length&&!manage)return;
    const all=jobKeys.every(id=>keys.includes(id));
-   if(all){
+   if(all&&!manage){
     detail.append(h('p',{class:'wiki-class-all',text:'✦ '+wt('Все классы','All classes')}));
     return;
    }
@@ -1801,11 +1858,33 @@ function renderWiki(root){
    for(const key of keys){
     const name=classLabel(key);
     if(!name)continue;
-    tags.append(h('span',{class:'wiki-class-tag'+(key===jobKeys[state.job]?' is-hero-class':''),
+    const chip=h('span',{class:'wiki-class-tag'+(key===jobKeys[state.job]?' is-hero-class':''),
      role:'listitem',title:name},[
-     h('span',{class:'wiki-class-sigil','aria-hidden':'true',text:'✦'}),
-     h('span',{text:name})
-    ]));
+      h('span',{class:'wiki-class-sigil','aria-hidden':'true',text:'✦'}),
+      h('span',{text:name})
+    ]);
+    if(manage)chip.append(h('button',{type:'button',class:'wiki-owner-remove',
+     text:'×','aria-label':'Убрать класс '+name,
+     onclick:()=>void saveWikiItemField(id,'classes',Object.fromEntries(keys.filter(x=>x!==key).map(x=>[x,1])))
+     .catch(error=>showStudioToast(error.message,'warning'))}));
+    tags.append(chip);
+   }
+   if(manage&&keys.length<jobKeys.length){
+    const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+',
+     'aria-label':'Добавить доступный класс'});
+    plus.onclick=()=>{
+     const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери класс'});
+     select.append(h('option',{value:'',text:'Выбери класс'}));
+     for(const key of jobKeys.filter(x=>!keys.includes(x)))
+      select.append(h('option',{value:key,text:classLabel(key)||key}));
+     plus.replaceWith(select);
+     select.onchange=()=>{if(select.value)void saveWikiItemField(id,'classes',
+      Object.fromEntries([...keys,select.value].map(x=>[x,1])))
+      .catch(error=>showStudioToast(error.message,'warning'))};
+     select.onblur=()=>{if(select.isConnected)select.replaceWith(plus)};
+     select.focus();
+    };
+    tags.append(plus);
    }
    detail.append(h('div',{class:'wiki-allowed-classes'},[
     h('h4',{text:wt('Доступные классы','Eligible classes')}),tags
@@ -1825,31 +1904,51 @@ function renderWiki(root){
   if(type==='item'){
     if(adminEditing&&adminToken){
       detail.append(h('button',{type:'button',class:'button-action owner-wiki-edit',
-       text:'✎ Изменить характеристики, классы и эффекты',
+       text:'✎ Дополнительные эффекты',
        onclick:()=>openWikiItemEditor(id,rec)}));
     }
+    if(adminEditing&&adminToken)detail.append(h('small',{class:'wiki-owner-instruction',text:'Двойной клик по значению — изменить; выход из поля — сохранить.'}));
     if(rec.sourceNote)detail.append(h('section',{class:'wiki-owner-note'},[
       h('strong',{text:'Комментарий администратора об источнике'}),
       h('p',{text:rec.sourceNote})
     ]));
     const dl=h('dl',{class:'item-fields'});
     const itemFields=[
-     [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang)],
-     [wt('Уровень','Level'),rec.level],
-     [wt('Атака','Attack'),rec.W],
-     [wt('Пробитие','Penetration'),rec.PEN],
-     [wt('Защита','Defense'),rec.AC],
-     [wt('Скорость атаки','Attack speed'),rec.atkspeed],
-     [wt('Дальность','Range'),rec.range],
-     [wt('Гнёзда душ','Soul sockets'),rec.soulslot]
+     [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang),'kind'],
+     [wt('Уровень','Level'),rec.level,'level'],
+     [wt('Атака','Attack'),rec.W,'W'],
+     [wt('Пробитие','Penetration'),rec.PEN,'PEN'],
+     [wt('Защита','Defense'),rec.AC,'AC'],
+     [wt('Скорость атаки','Attack speed'),rec.atkspeed,'atkspeed'],
+     [wt('Дальность','Range'),rec.range,'range'],
+     [wt('Гнёзда душ','Soul sockets'),rec.soulslot,'soulslot']
     ];
-    for(const [label,value]of itemFields)if(value!=null)
-     dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
+    const hints={kind:'Игровая категория предмета',level:'Уровень предмета',W:'Показатель атаки оружия',PEN:'Показатель пробития оружия',AC:'Защита предмета',atkspeed:'Скорость атаки',range:'Дальность действия',soulslot:'Гнёзда душ: от 0 до 3'};
+    for(const [label,value,key]of itemFields)if(value!=null){
+     const dt=h('dt',{text:label,title:hints[key],class:'wiki-help-label'});
+     const dd=h('dd',{text:String(value),class:adminEditing&&adminToken?'wiki-edit-value':''});
+     if(adminEditing&&adminToken){
+      dd.title=wt('Двойной клик для изменения','Double-click to edit');
+      dd.ondblclick=e=>{
+       e.preventDefault();e.stopPropagation();
+       if(key==='kind'){
+        const options=window.PandoraItemPresentation.kindOptions(lang);
+        const present=new Set(Object.values(wikiData.items||{}).filter(x=>x?.slot===rec.slot).map(x=>x.kind));
+        if(rec.slot==='weapon')
+         for(const value of ['1H_SWORD','2H_SWORD','1H_AXE','2H_AXE','1H_BLUNT_WEAPON','2H_BLUNT_WEAPON','POLE_ARM','LANCE','BOW','CROSSBOW','WAND','STAFF'])present.add(value);
+        present.add(rec.kind);
+        editWikiValue(dd,rec.kind,{type:'select',options:options.filter(x=>present.has(x.value)),
+         onCommit:next=>saveWikiItemField(id,'kind',next)});
+       }else editWikiValue(dd,value,{type:'number',max:key==='soulslot'?3:100000,
+        integer:key==='soulslot',onCommit:next=>saveWikiItemField(id,key,next)});
+      };
+     }
+     dl.append(dt,dd);
+    }
     if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
      h('dd',{text:wt('Двуручное','Two-handed')}));
     detail.append(dl);
-    if(!wikiIndex.rewardChest(id)&&rec.classes&&Object.keys(rec.classes).length)
-     renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]));
+    if(!wikiIndex.rewardChest(id))renderClassEligibility(Object.keys(rec.classes||{}).filter(key=>rec.classes[key]),true);
     const wearers=window.PandoraUIPlanner.outfitWearers(rec,lang);
     if(wearers?.length)detail.append(h('div',{class:'wiki-item-wearers'},[
      h('small',{text:wt('Для персонажей','Wearable by')}),
@@ -1863,6 +1962,65 @@ function renderWiki(root){
      wt('Подтверждённые источники в доступном каталоге не найдены.','No confirmed sources in the current catalog.')}));
     if(found.length)appendSourceFlow(found,id);
     moreSources(found);
+    if(adminEditing&&adminToken){
+     const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+      text:'+ Добавить источник',title:'Связать предмет с NPC или монстром'});
+     add.onclick=()=>{
+      if(detail.querySelector('.wiki-owner-source-picker'))return;
+      const panel=h('div',{class:'wiki-owner-source-picker'});
+      const kind=h('select',{class:'wiki-inline-select','aria-label':'Тип получения'},[
+       h('option',{value:'',text:'Выбери тип получения'}),
+       h('option',{value:'monster',text:'Монстр'}),
+       h('option',{value:'npc',text:'NPC'})]);
+      const search=h('input',{type:'search',class:'wiki-inline-input',
+       'aria-label':'Найти NPC или монстра',placeholder:'Поиск по названию…',autocomplete:'off'});
+      const target=h('select',{class:'wiki-inline-select',
+       'aria-label':'У кого получить',disabled:true});
+      const feedback=h('small',{class:'inline-owner-error',role:'status'});
+      const label=(text,control)=>h('label',{class:'wiki-owner-source-field'},[
+       h('span',{text}),control]);
+      panel.append(label('Тип получения',kind),label('Найди по имени',search),
+       label('У кого получить',target),feedback);
+      add.after(panel);
+      const refresh=()=>{
+       const entries=kind.value==='monster'?Object.entries(wikiData.monsters||{}):
+        kind.value==='npc'?Object.entries(wikiData.trades?.npcs||{}):[];
+       const q=wikiIndex.normalize(search.value);
+       const filtered=entries.filter(([key])=>!q||
+        wikiIndex.normalize(dataName(kind.value,key)).includes(q)).slice(0,90);
+       target.replaceChildren(h('option',{value:'',
+        text:filtered.length?'Выбери персонажа':'Ничего не найдено'}));
+       for(const [key,obj] of filtered){
+        const suffix=kind.value==='monster'&&Number.isFinite(obj.level)?
+         ' · ур. '+obj.level:'';
+        target.append(h('option',{value:key,text:dataName(kind.value,key)+suffix}));
+       }
+       target.disabled=!kind.value||!filtered.length;
+      };
+      kind.onchange=()=>{search.value='';feedback.textContent='';refresh();search.focus()};
+      search.oninput=refresh;
+      target.onchange=async()=>{
+       if(!target.value||!kind.value)return;
+       const selected={type:kind.value,id:String(target.value)};
+       const existing=wikiIndex.sources(id).some(row=>row.type===selected.type&&
+        String(row.id)===selected.id);
+       if(existing){feedback.textContent='Этот источник уже указан.';return}
+       const earlier=wikiData.ownerAcquisitions?.[id]||[];
+       if(earlier.length>=24){feedback.textContent='Достигнут предел: 24 источника.';return}
+       target.disabled=true;
+       try{await saveWikiAcquisitions(id,[...earlier,selected])}
+       catch(error){target.disabled=false;feedback.textContent=error.message}
+      };
+      const outside=event=>{
+       if(!panel.isConnected||(!panel.contains(event.target)&&event.target!==add)){
+        document.removeEventListener('pointerdown',outside,true);panel.remove();
+       }
+      };
+      document.addEventListener('pointerdown',outside,true);
+      refresh();kind.focus();
+     };
+     detail.append(add);
+    }
     const usedIn=wikiIndex.materialUses(id);
     if(usedIn.length){
      detail.append(h('h4',{text:(lang==='en'?'Used in NPC trades · ':'Используется в обмене NPC · ')+usedIn.length}));
@@ -2009,6 +2167,12 @@ function renderWiki(root){
     const locations=rec.maps||[];
     detail.append(linkFlow(locations.filter(mapId=>knownMaps[mapId]).map(mapId=>
      wikiLink('◈ '+dataName('map',mapId),'map',mapId,id))));
+    const ownerStock=wikiIndex.ownerNpcItems(id);
+    if(ownerStock.length){
+     detail.append(h('h4',{text:wt('Можно получить','Items available')}));
+     detail.append(linkFlow(ownerStock.map(row=>
+      itemLink(row.itemId,dataName('item',row.itemId),id))));
+    }
     const recipes=wikiIndex.trades(id);
     detail.append(h('h4',{text:wt('Обмен · ','Trades · ')+recipes.length}));
     const recipeSearch=h('input',{type:'search',class:'wiki-inline-search',
@@ -2019,21 +2183,106 @@ function renderWiki(root){
     for(const trade of recipes){
      const entry=h('section',{class:'wiki-trade-card'+
       (wikiSelection.highlight===String(trade.i)?' highlighted':'')});
+     const editing=adminEditing&&Boolean(adminToken);
+     const amend=patch=>saveWikiTradeRecipe({...trade,...patch});
      const output=h('div',{class:'wiki-trade-output'});
      output.append(h('small',{text:wt('Получить','Receive')}),
       itemLink(trade.i,dataName('item',trade.i),id));
+     if(editing)output.append(h('button',{type:'button',class:'wiki-owner-plus',
+      text:'✎','aria-label':'Изменить предмет обмена',
+      onclick:()=>wikiItemChoice(output,i=>amend({i}))}));
      entry.append(output);
-     if(trade.mats?.length){
+     if(trade.mats?.length||editing){
       const mats=h('div',{class:'wiki-recipe-mats'});
       mats.append(h('small',{text:wt('Необходимые материалы','Required materials')}));
-      for(const material of trade.mats)
-       mats.append(itemLink(material.i,dataName('item',material.i)+' ×'+(material.n??1),trade.i));
+      for(const [index,material] of (trade.mats||[]).entries()){
+       const row=h('span',{class:'wiki-owner-mat'});
+       row.append(itemLink(material.i,dataName('item',material.i),trade.i));
+       const quantity=h('span',{class:editing?'wiki-edit-value':'',
+        text:' ×'+(material.n??1),title:editing?'Двойной клик — изменить количество':''});
+       if(editing)quantity.ondblclick=e=>{
+        e.preventDefault();
+        editWikiValue(quantity,material.n,{type:'number',max:999999,integer:true,
+         onCommit:n=>{
+          if(n<1)throw Error('Количество должно быть больше нуля');
+          return amend({mats:trade.mats.map((m,j)=>j===index?{...m,n}:m)});
+         }});
+       };
+       row.append(quantity);
+       if(editing)row.append(h('button',{type:'button',class:'wiki-owner-remove',
+        text:'×','aria-label':'Убрать материал '+dataName('item',material.i),
+        onclick:()=>void amend({mats:trade.mats.filter((_,j)=>j!==index)})
+         .catch(e=>showStudioToast(e.message,'warning'))}));
+       mats.append(row);
+      }
+      if(editing)mats.append(h('button',{type:'button',class:'wiki-owner-plus',
+       text:'+ Материал',onclick:()=>wikiItemChoice(mats,i=>{
+        if((trade.mats||[]).length>=20)throw Error('Можно добавить не более 20 материалов');
+        return amend({mats:[...(trade.mats||[]),{i,n:1}]});
+       })}));
       entry.append(mats);
      }
-     const currencies=[[wt('Золото','Gold'),trade.gold],[wt('Честь','Honor'),trade.honor],[wt('Опыт','Experience'),trade.exp]]
-      .filter(([,value])=>Number(value)>0);
-     if(currencies.length)entry.append(h('div',{class:'wiki-trade-cost',text:
-      currencies.map(([name,value])=>name+': '+Number(value).toLocaleString('ru-RU')).join(' · ')}));
+     const currencies=[[wt('Золото','Gold'),trade.gold,'gold'],
+      [wt('Честь','Honor'),trade.honor,'honor'],[wt('Опыт','Experience'),trade.exp,'exp']]
+      .filter(([,value])=>editing||Number(value)>0);
+     if(currencies.length){
+      const costs=h('div',{class:'wiki-trade-cost'});
+      for(const [name,value,key] of currencies){
+       const chip=h('span',{class:'wiki-trade-currency'});
+       chip.append(h('span',{text:name+': '}));
+       const figure=h('strong',{text:Number(value||0).toLocaleString('ru-RU'),
+        class:editing?'wiki-edit-value':''});
+       if(editing){
+        figure.title='Двойной клик — изменить стоимость';
+        figure.ondblclick=e=>{
+         e.preventDefault();
+         editWikiValue(figure,Number(value||0),{type:'number',integer:true,max:999999999,
+          onCommit:n=>amend({[key]:n})});
+        };
+       }
+       chip.append(figure);costs.append(chip);
+      }
+      entry.append(costs);
+     }
+     if(editing){
+      const owner=h('div',{class:'wiki-trade-sellers'});
+      owner.append(h('small',{text:'NPC обмена'}));
+      for(const npcId of trade.npc||[]){
+       const chip=h('span',{class:'wiki-owner-mat'},[
+        wikiLink(dataName('npc',npcId),'npc',npcId,trade.i)]);
+       if(trade.npc.length>1)chip.append(h('button',{type:'button',
+        class:'wiki-owner-remove',text:'×',
+        'aria-label':'Убрать NPC '+dataName('npc',npcId),
+        onclick:()=>void amend({npc:trade.npc.filter(n=>n!==npcId)})
+         .catch(e=>showStudioToast(e.message,'warning'))}));
+       owner.append(chip);
+      }
+      const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+ NPC'});
+      plus.onclick=()=>{
+       if(owner.querySelector('select'))return;
+       const pick=h('select',{class:'wiki-inline-select','aria-label':'Добавить NPC'});
+       pick.append(h('option',{value:'',text:'Выбери NPC'}));
+       for(const [key] of Object.entries(wikiData.trades.npcs||{}))
+        if(!(trade.npc||[]).map(String).includes(key))
+         pick.append(h('option',{value:key,text:dataName('npc',key)}));
+       plus.replaceWith(pick);
+       pick.onchange=()=>{if(pick.value)void amend({npc:[...trade.npc,Number(pick.value)]})
+        .catch(e=>showStudioToast(e.message,'warning'))};
+       pick.onblur=()=>{if(pick.isConnected)pick.replaceWith(plus)};
+       pick.focus();
+      };
+      if(trade.npc.length<24)owner.append(plus);
+      const remove=h('button',{type:'button',class:'wiki-trade-delete',
+       text:'Удалить обмен','aria-label':'Удалить обмен NPC'});
+      remove.onclick=()=>{
+       if(remove.dataset.confirm!=='1'){
+        remove.dataset.confirm='1';remove.textContent='Повторить, чтобы удалить';return;
+       }
+       void saveWikiTradeRecipe(trade,{deleted:true})
+        .catch(e=>showStudioToast(e.message,'warning'));
+      };
+      owner.append(remove);entry.append(owner);
+     }
      const searchText=wikiIndex.normalize([dataName('item',trade.i),
       ...(trade.mats||[]).map(m=>dataName('item',m.i))].join(' '));
      recipesBox.append(entry);cards.push({entry,searchText});
@@ -2049,6 +2298,22 @@ function renderWiki(root){
     guardEncyclopediaSearch(recipeSearch);
     recipeSearch.addEventListener('input',filterRecipes);
     detail.append(recipeSearch,counter,recipesBox);filterRecipes();
+    if(adminEditing&&adminToken){
+     const newTrade=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+      text:'+ Добавить обмен',title:'Создать новый обмен у этого NPC'});
+     newTrade.onclick=()=>wikiItemChoice(detail,i=>{
+      let next=null;
+      for(let attempt=0;attempt<30;attempt++){
+       const number=900000000+crypto.getRandomValues(new Uint32Array(1))[0];
+       if(!(wikiData.trades.trades||[]).some(x=>x.id===number)&&
+        !Object.hasOwn(override,'tradeedit.'+number)){next=number;break}
+      }
+      if(next===null)throw Error('Не удалось создать уникальный номер обмена');
+      return saveWikiTradeRecipe({id:next,i,npc:[Number(id)],mats:[],
+       gold:0,honor:0,exp:0});
+     });
+     detail.append(newTrade);
+    }
   }else if(type==='map'||type==='instance'){
     if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
      class:'wiki-instance-kind',text:wt('Сценарий задания','Quest scenario')
@@ -3008,11 +3273,139 @@ function editor(el){
   document.body.append(root);activeInlineEditor=root;
   input.focus();
 }
+
+function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=false,onCommit}={}){
+ if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
+ const before=String(initial??''),visibleBefore=node.textContent;
+ let finished=false,saving=false;
+ const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
+  type==='textarea'?h('textarea',{rows:4,class:'wiki-inline-input','aria-label':'Изменить описание'}):
+  h('input',{type:type==='number'?'number':'text',class:'wiki-inline-input',
+    'aria-label':'Изменить значение',autocomplete:'off',
+    ...(type==='number'?{min:'0',max:String(max),step:integer?'1':'any'}:{})});
+ if(type==='select'){
+  for(const option of options){
+   const el=h('option',{value:option.value,text:option.label});
+   el.selected=option.value===before;control.append(el);
+  }
+ }else control.value=before;
+ const restore=()=>{if(node.isConnected){node.replaceChildren(document.createTextNode(visibleBefore));node.classList.remove('wiki-inline-saving')}};
+ const save=async()=>{
+  if(finished||saving)return;
+  const raw=control.value;
+  const value=type==='number'?(raw.trim()===''?null:Number(raw)):raw.trim();
+  if(type==='number'&&(value===null||!Number.isFinite(value)||value<0||value>max||
+   (integer&&!Number.isInteger(value)))){
+   control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
+  }
+  if(type!=='number'&&type!=='select'&&(value.length>2000||(!value&&type==='text'))){
+   control.setCustomValidity('Некорректная длина текста');control.reportValidity();control.focus();return;
+  }
+  if(String(value)===before){finished=true;restore();return}
+  saving=true;control.disabled=true;node.classList.add('wiki-inline-saving');
+  try{await onCommit(value);finished=true;restore()}
+  catch(error){saving=false;control.disabled=false;node.classList.remove('wiki-inline-saving');
+   control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity();control.focus()}
+ };
+ control.oninput=()=>control.setCustomValidity('');
+ control.onblur=()=>{if(type==='select'){if(!saving){finished=true;restore()}}else void save()};
+ control.onchange=()=>{if(type==='select')void save()};
+ control.onkeydown=e=>{
+  if(e.key==='Escape'){e.preventDefault();finished=true;restore()}
+  else if(e.key==='Enter'&&(type!=='textarea'||e.ctrlKey)){e.preventDefault();void save()}
+ };
+ node.replaceChildren(control);control.focus();
+ if(type==='number'||type==='text')control.select();
+}
+async function saveWikiItemField(id,field,value){
+ if(!adminEditing||!adminToken||!catalogSource?.items?.[id])throw Error('Редактирование недоступно');
+ const base=catalogSource.items[id],key='itemedit.'+id,previous=activeOverride(key);
+ const patch={...window.PandoraStudioItemOwnerEditor.ownPatch(override,id)};
+ if(value===base[field]||(value===null&&base[field]==null))delete patch[field];
+ else patch[field]=value;
+ if(field==='kind'&&/^[12]H_/.test(value))patch.twoHanded=value.startsWith('2H_');
+ const serialized=JSON.stringify(patch);
+ if(serialized===JSON.stringify(window.PandoraStudioItemOwnerEditor.ownPatch(override,id)))return;
+ editIsSaving=true;
+ try{
+  if(!Object.keys(patch).length){
+   if(previous===null)return;
+   await apiRequest('/api/admin/reset',{key});delete override[key];
+   ownerEdits.push({key,before:previous,after:null});
+  }else{
+   await apiRequest('/api/admin/override',{key,value:serialized});
+   override[key]=serialized;ownerEdits.push({key,before:previous,after:serialized});
+  }
+  refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
+async function saveWikiTradeRecipe(recipe,changes=null){
+ if(!adminToken||!adminEditing||!wikiData?.trades)throw Error('Редактор обменов недоступен');
+ const normalized={id:Number(recipe.id),i:Number(recipe.i),
+  npc:(recipe.npc||[]).map(Number),mats:(recipe.mats||[]).map(row=>({i:Number(row.i),n:Number(row.n)})),
+  gold:Number(recipe.gold||0),honor:Number(recipe.honor||0),exp:Number(recipe.exp||0)};
+ const key='tradeedit.'+normalized.id,previous=activeOverride(key);
+ const patch=changes||{recipe:normalized};
+ if(changes===null&&!window.PandoraStudioTradeOwnerData.recipeValid(
+  normalized,wikiData.items,wikiData.trades.npcs))
+  throw Error('Проверь выбранные предметы, NPC и стоимость обмена');
+ const value=JSON.stringify(patch);
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key,value});
+  override[key]=value;ownerEdits.push({key,before:previous,after:value});
+  refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
+async function saveWikiAcquisitions(itemId,rows){
+ if(!adminToken||!adminEditing||!wikiData?.items?.[itemId])
+  throw Error('Редактирование источников недоступно');
+ if(!Array.isArray(rows)||rows.length>24||rows.some(row=>
+  !['npc','monster'].includes(row.type)||!/^[1-9][0-9]{0,14}$/.test(String(row.id))||
+  !(row.type==='npc'?wikiData.trades?.npcs?.[row.id]:wikiData.monsters?.[row.id])))
+  throw Error('Некорректная ссылка на NPC или монстра');
+ const normalized=[...new Map(rows.map(row=>[row.type+':'+row.id,
+  {type:row.type,id:String(row.id)}])).values()];
+ const key='acquireedit.'+itemId,previous=activeOverride(key);
+ if(JSON.stringify(normalized)===JSON.stringify(wikiData.ownerAcquisitions?.[itemId]||[]))return;
+ editIsSaving=true;
+ try{
+  if(!normalized.length){
+   if(previous===null)return;
+   await apiRequest('/api/admin/reset',{key});delete override[key];
+   ownerEdits.push({key,before:previous,after:null});
+  }else{
+   const value=JSON.stringify(normalized);
+   await apiRequest('/api/admin/override',{key,value});
+   override[key]=value;ownerEdits.push({key,before:previous,after:value});
+  }
+  refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
+function inlineWikiText(el){
+ const key=el?.dataset?.editKey;
+ if(!adminEditing||!adminToken||!key)return;
+ const matched=/^(item|itemdesc)\.([0-9]{1,15})$/.exec(key);
+ const source=matched?wikiData?.items?.[matched[2]]:null;
+ const desc=key.startsWith('itemdesc.')||key.startsWith('skilldesc.');
+ const value=source?String(source[desc?'desc':'name']??''):el.textContent;
+ editWikiValue(el,value,{type:desc?'textarea':'text',onCommit:async next=>{
+  if(matched)return saveWikiItemField(matched[2],desc?'desc':'name',next);
+  if(!next||next.length>(desc?2000:240))throw Error('Некорректная длина текста');
+  const previous=activeOverride(key);
+  await apiRequest('/api/admin/override',{key,value:next});
+  override[key]=next;ownerEdits.push({key,before:previous,after:next});refreshOwnerCatalog();
+ }});
+}
+
 function openWikiItemEditor(id,item){
  if(!adminToken||!adminEditing||!catalogSource?.items?.[id])return;
  const key='itemedit.'+id,base=catalogSource.items[id];
  const save=async patch=>{
-  const previous=activeOverride(key),value=JSON.stringify(patch);
+  const previous=activeOverride(key);
+  const earlier=window.PandoraStudioItemOwnerEditor.ownPatch(override,id);
+  if(earlier.kind&&!Object.hasOwn(patch,'kind'))patch.kind=earlier.kind;
+  const value=JSON.stringify(patch);
   await apiRequest('/api/admin/override',{key,value});
   ownerEdits.push({key,before:previous,after:value});
   override[key]=value;refreshOwnerCatalog();
@@ -3214,7 +3607,7 @@ document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const editable=event.target.closest('[data-edit-key]');
  if(!editable||!/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;
- event.preventDefault();event.stopImmediatePropagation();editor(editable);
+ event.preventDefault();event.stopImmediatePropagation();inlineWikiText(editable);
 },true);
 $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView()};
  $('pathSkillsTab').onclick=()=>{heroPathPage='skills';renderPathPages();saveView()};

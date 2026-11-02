@@ -65,5 +65,6 @@ function description(s){
   .replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
 
-root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,displayName});
+root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,displayName,
+ kindOptions:(lang='ru')=>Object.entries(lang==='en'?namesEn:names).map(([value,label])=>({value,label}))});
 })(typeof window==='undefined'?globalThis:window);

@@ -124,3 +124,67 @@ test('visible owner entry points and read-only-until-focus search guards are pre
  assert.match(source,/input\.addEventListener\('focus'/);
  assert.match(source,/input\.addEventListener\('blur'/);
 });
+
+test('inline owner kind is strictly validated and source item stays immutable',async()=>{
+ const base={'17':{id:17,name:'Палаш',kind:'1H_SWORD',soulslot:0}};
+ const updated=editor.applyItems(base,{'itemedit.17':JSON.stringify({kind:'2H_SWORD',twoHanded:true,soulslot:3})});
+ assert.equal(updated['17'].kind,'2H_SWORD');
+ assert.equal(updated['17'].twoHanded,true);
+ assert.equal(updated['17'].soulslot,3);
+ assert.equal(base['17'].kind,'1H_SWORD');
+ const env={DB:mockDb()};
+ for(const value of [{kind:'2H_SWORD'},{soulslot:3},{soulslot:0}]){
+  assert.equal((await worker.fetch(request('itemedit.17',JSON.stringify(value)),env)).status,200);
+ }
+ for(const value of [{kind:'MY_CUSTOM_KIND'},{soulslot:4},{soulslot:1.5},{soulslot:-1}]){
+  assert.equal((await worker.fetch(request('itemedit.17',JSON.stringify(value)),env)).status,400);
+ }
+});
+test('visible encyclopedia values use in-place controls, no save-confirm buttons',()=>{
+ const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ assert.match(app,/function editWikiValue/);
+ assert.match(app,/function saveWikiItemField/);
+ assert.match(app,/dd\.ondblclick=/);
+ assert.match(app,/control\.onblur=/);
+ assert.match(app,/wiki-owner-remove/);
+ assert.match(app,/wiki-owner-plus/);
+ assert.match(app,/inlineWikiText\(editable\)/);
+ assert.match(app,/PandoraItemPresentation\.kindOptions/);
+});
+
+test('owner acquisition endpoints reject malformed, duplicate, or unauthorized relations',async()=>{
+ const env={DB:mockDb()},key='acquireedit.101';
+ for(const rows of [
+  [{type:'monster',id:'20'}],[{type:'npc',id:'7'}],
+  [{type:'monster',id:'20'},{type:'npc',id:'7'}]]){
+  assert.equal((await worker.fetch(request(key,JSON.stringify(rows)),env)).status,200);
+ }
+ for(const rows of [
+  [{type:'monster',id:'0'}],[{type:'zone',id:'20'}],
+  [{type:'npc',id:'7',untrusted:true}],[{type:'npc',id:'7'},{type:'npc',id:'7'}],
+  [{type:'monster',id:5}],Array(25).fill({type:'npc',id:'7'})]){
+  assert.equal((await worker.fetch(request(key,JSON.stringify(rows)),env)).status,400);
+ }
+ assert.equal((await worker.fetch(request(key,'[]','override','bad'),env)).status,401);
+ assert.equal((await worker.fetch(request(key,null,'reset'),env)).status,200);
+});
+
+test('NPC trade writes require valid relations and authenticated admin',async()=>{
+ const env={DB:mockDb()},key='tradeedit.900000001';
+ const recipe={id:900000001,i:11,npc:[7],mats:[{i:10,n:4}],
+  gold:25,honor:0,exp:0};
+ const value=JSON.stringify({recipe});
+ assert.equal((await worker.fetch(request(key,value),env)).status,200);
+ for(const wrong of [
+  {recipe:{...recipe,npc:[]}},{recipe:{...recipe,i:0}},
+  {recipe:{...recipe,mats:[{i:10,n:-1}]}},
+  {recipe:{...recipe,npc:[7,7]}},{recipe:{...recipe,id:5}},
+  {recipe:{...recipe,gold:1.3}},
+  {recipe:{...recipe,password:'sneaky'}},
+  {deleted:true,other:'extra'}
+ ]){
+  assert.equal((await worker.fetch(request(key,JSON.stringify(wrong)),env)).status,400);
+ }
+ assert.equal((await worker.fetch(request(key,value,'override','bad'),env)).status,401);
+ assert.equal((await worker.fetch(request(key,JSON.stringify({deleted:true})),env)).status,200);
+});

@@ -127,3 +127,19 @@ test('group rewards do not claim per-item probability',()=>{
  assert.equal(w.sources(1)[0].percent,undefined);
  assert.equal(w.sources(1)[0].groupChance,10);
 });
+
+test('owner acquisition relations extend both item and monster/NPC indexes without modifying OS data',()=>{
+ const source={items:{101:{id:101,name:'Оружие'}},
+  monsters:{20:{name:'Кабан',level:10}},drops:{20:{d:[{i:55,p:5}]}},
+  trades:{npcs:{7:{name:'Торговец'}},trades:[],mapNames:{}},
+  ownerAcquisitions:{101:[{type:'monster',id:'20'},{type:'npc',id:'7'},
+   {type:'monster',id:'9999'},{type:'npc',id:'7'}]}};
+ const wiki=ctx.window.PandoraWikiData.build(source);
+ assert.equal(wiki.sources(101).length,2);
+ assert.equal(wiki.sources(101)[0].type,'monster');
+ assert.equal(wiki.sources(101)[1].type,'npc');
+ assert.ok(wiki.drops(20).some(x=>x.itemId==='101'&&x.manual&&x.percent===null));
+ assert.equal(wiki.ownerNpcItems(7)[0].itemId,'101');
+ assert.equal(source.drops[20].d.length,1);
+ assert.equal(wiki.sources(55)[0].percent,5);
+});

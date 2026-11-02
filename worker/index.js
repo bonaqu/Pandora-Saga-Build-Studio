@@ -396,18 +396,22 @@ function validItemOwnerPatch(text){
  try{obj=JSON.parse(text)}catch{return false}
  if(!obj||typeof obj!=='object'||Array.isArray(obj))return false;
  const allowed=new Set(['level','W','PEN','AC','atkspeed','range','soulslot',
-  'name','desc','twoHanded','classes','effects','sourceNote']);
+  'name','desc','kind','twoHanded','classes','effects','sourceNote']);
  const numbers=new Set(['level','W','PEN','AC','atkspeed','range','soulslot']);
  const plain=x=>Boolean(x&&typeof x==='object'&&!Array.isArray(x));
  const keys=Object.keys(obj);
  if(!keys.length||keys.some(k=>!allowed.has(k)))return false;
  for(const [key,value] of Object.entries(obj)){
   if(numbers.has(key)){
-   if(value!==null&&(!Number.isFinite(value)||value<0||value>100000))return false;
+   if(value!==null&&(!Number.isFinite(value)||value<0||value>(key==='soulslot'?3:100000)||
+     (key==='soulslot'&&!Number.isInteger(value))))return false;
   }else if(key==='name'){
    if(typeof value!=='string'||!value.trim()||value.length>240)return false;
   }else if(key==='desc'){
    if(typeof value!=='string'||value.length>2000)return false;
+  }else if(key==='kind'){
+   const kinds=new Set('1H_SWORD 2H_SWORD 1H_AXE 2H_AXE 1H_BLUNT_WEAPON 2H_BLUNT_WEAPON POLE_ARM LANCE 1H_TRUMP_WEAPON 2H_TRUMP_WEAPON BOW CROSSBOW WAND STAFF HELMET TORSO CUISSES GLOVES BOOTS FOOT_SHIELD HORSE_SHIELD MANTLE RING AMULET BELT EARRING BRIDLE SADDLE STALL POTION TOY ETC RUNEGEM ARROW BOLT EGGMAKE_KIT MASTER_TALKEGG TALKEGG RECIPE BALM SOUL DECO_HELMET DECO_TORSO DECO_CUISSES DECO_GLOVES DECO_BOOTS DECO_MANTLE'.split(' '));
+   if(!kinds.has(value))return false;
   }else if(key==='twoHanded'){
    if(typeof value!=='boolean')return false;
   }else if(key==='classes'){
@@ -429,11 +433,48 @@ function validItemOwnerPatch(text){
  }
  return true;
 }
+function validTradeOwnerPatch(text,tradeId){
+ if(typeof text!=='string'||text.length>6000)return false;
+ let patch;try{patch=JSON.parse(text)}catch{return false}
+ if(!patch||typeof patch!=='object'||Array.isArray(patch))return false;
+ if(Object.keys(patch).length===1&&patch.deleted===true)return true;
+ if(Object.keys(patch).length!==1||!patch.recipe||typeof patch.recipe!=='object'||
+  Array.isArray(patch.recipe))return false;
+ const rec=patch.recipe;
+ if(Object.keys(rec).some(k=>!['id','i','npc','mats','gold','honor','exp'].includes(k)))return false;
+ const positive=n=>Number.isSafeInteger(n)&&n>0;
+ const capped=(n,max=999999999)=>Number.isSafeInteger(n)&&n>=0&&n<=max;
+ if(!positive(rec.id)||String(rec.id)!==tradeId||!positive(rec.i))return false;
+ if(!Array.isArray(rec.npc)||!rec.npc.length||rec.npc.length>24||
+  rec.npc.some(n=>!positive(n))||new Set(rec.npc).size!==rec.npc.length)return false;
+ if(!Array.isArray(rec.mats)||rec.mats.length>20||
+  rec.mats.some(row=>!row||typeof row!=='object'||Array.isArray(row)||
+   Object.keys(row).some(k=>!['i','n'].includes(k))||
+   !positive(row.i)||!capped(row.n,999999)||row.n===0))return false;
+ return ['gold','honor','exp'].every(key=>capped(rec[key]));
+}
+function validAcquisitionOverride(text){
+ if(typeof text!=='string'||text.length>1800)return false;
+ let rows;try{rows=JSON.parse(text)}catch{return false}
+ if(!Array.isArray(rows)||rows.length>24)return false;
+ const seen=new Set();
+ return rows.every(row=>{
+  if(!row||typeof row!=='object'||Array.isArray(row)||
+   Object.keys(row).length!==2||!['type','id'].every(k=>Object.hasOwn(row,k))||
+   !['monster','npc'].includes(row.type)||
+   typeof row.id!=='string'||!/^[1-9][0-9]{0,14}$/.test(row.id))return false;
+  const key=row.type+':'+row.id;
+  if(seen.has(key))return false;
+  seen.add(key);return true;
+ });
+}
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request);const key=data?.key,value=data?.value;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
  if(key.startsWith('itemedit.')&&!validItemOwnerPatch(value))return no('Invalid structured item edit',400);
+ if(key.startsWith('acquireedit.')&&!validAcquisitionOverride(value))return no('Invalid acquisition relations',400);
+ if(key.startsWith('tradeedit.')&&!validTradeOwnerPatch(value,key.slice(10)))return no('Invalid NPC trade relations',400);
  if(key.startsWith('visual.')&&!/^(?:assets\/[A-Za-z0-9_.-]+\.(?:png|webp|jpe?g)|https:\/\/pandorasaga-os\.com\/icons\/(?:items|souls|skills)\/[A-Za-z0-9_-]+\.webp(?:\?v=[0-9]{1,12})?)$/.test(value.trim()))return no('Unapproved image source',400);
  if(key.startsWith('itemslots.')&&!/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(value.trim()))return no('Invalid socket count (0-32)',400);
  await env.DB.prepare(`INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`).bind(key,value.trim(),Date.now()).run();return json({ok:true,key,value:value.trim()})
@@ -441,7 +482,7 @@ if(path==='/api/admin/override'&&method==='POST'){
 if(path==='/api/admin/reset'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request),key=data?.key;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
  const result=await env.DB.prepare('DELETE FROM overrides WHERE key=?').bind(key).run();
  return json({ok:true,key,deleted:(result.meta?.changes||0)>0});
 }

@@ -40,3 +40,44 @@
 .wiki-owner-edit-row>h3{flex:1 1 200px;min-width:0}
 .wiki-owner-pencil{align-self:center;flex:0 0 auto}
 .wiki-owner-desc-edit{margin:3px 0 13px}
+
+/* Values are edited directly inside the encyclopedia; controls inherit the game theme. */
+.wiki-edit-value{cursor:text;border-bottom:1px dashed rgba(224,180,107,.6);
+ min-width:36px;transition:background .13s;color:var(--cream)}
+.wiki-edit-value:hover{background:rgba(216,162,70,.12)}
+.wiki-inline-input,.wiki-inline-select{font:inherit;color:var(--cream);background:#201710;
+ border:1px solid var(--gold2);border-radius:6px;padding:5px 8px;width:min(100%,230px);
+ min-width:75px;max-width:100%;box-sizing:border-box}
+.wiki-description .wiki-inline-input{width:100%;min-height:95px;resize:vertical}
+.wiki-inline-input:focus,.wiki-inline-select:focus{outline:2px solid var(--gold);outline-offset:1px}
+.wiki-inline-saving{opacity:.65;pointer-events:none}
+.wiki-owner-instruction{display:block;margin:8px 0;color:var(--gold);font-size:.78rem}
+.wiki-help-label{cursor:help;text-decoration:underline dotted rgba(215,173,104,.6);text-underline-offset:3px}
+.wiki-owner-remove,.wiki-owner-plus{display:inline-flex;align-items:center;justify-content:center;
+ margin-left:6px;min-width:22px;height:22px;border:1px solid rgba(223,177,98,.45);
+ border-radius:6px;background:#38271a;color:#f0c78b;cursor:pointer;font:inherit}
+.wiki-owner-remove:hover,.wiki-owner-plus:hover{border-color:#f0c78b;background:#5c3b21}
+.wiki-owner-remove:focus-visible,.wiki-owner-plus:focus-visible{outline:2px solid var(--gold)}
+
+.wiki-add-source{display:inline-flex;width:auto;margin:7px 0 13px;padding:7px 11px;height:auto;
+ font-size:.86rem;gap:6px}
+.wiki-owner-source-picker{display:grid;gap:10px;max-width:430px;padding:12px;
+ border-radius:10px;background:rgba(23,16,12,.94);border:1px solid var(--line);margin:8px 0 14px}
+.wiki-owner-source-field{display:flex;flex-direction:column;gap:5px;color:var(--cream);
+ font-size:.85rem;min-width:0}
+.wiki-owner-source-field .wiki-inline-select,.wiki-owner-source-field .wiki-inline-input{
+ width:100%;max-width:none}
+.wiki-source-token .wiki-owner-remove{margin-left:auto;flex:none}
+
+.wiki-owner-mat{display:inline-flex;gap:5px;align-items:center;flex-wrap:wrap;
+ margin:3px 5px 3px 0}
+.wiki-trade-sellers{display:flex;gap:7px;align-items:center;flex-wrap:wrap;
+ margin-top:12px;border-top:1px solid var(--line);padding-top:9px}
+.wiki-trade-sellers>small{width:100%;color:var(--gold)}
+.wiki-trade-currency{display:inline-flex;gap:3px;align-items:center;margin-right:11px}
+.wiki-trade-currency .wiki-inline-input{width:115px}
+.wiki-trade-delete{border:1px solid rgba(230,143,121,.38);
+ border-radius:7px;background:#33201e;color:#efb0a8;padding:5px 8px;
+ cursor:pointer;font:inherit;font-size:.78rem;margin-left:auto}
+.wiki-trade-delete:hover{border-color:#eea298}
+.wiki-owner-mat .wiki-edit-value{padding:1px 4px}

@@ -27,6 +27,6 @@ test('drops and NPC exchange rewards include actual item icon and linked ingredi
  const app=read('pandora-studio-app.js');
  assert.match(app,/const itemLink=\(id,label,highlight=null\)=>/);
  assert.match(app,/itemLink\(trade\.i/);
- assert.match(app,/mats\.append\(itemLink\(material\.i/);
+ assert.match(app,/row\.append\(itemLink\(material\.i/);
  assert.match(app,/option\.append\(itemLink\(row\.i/);
 });

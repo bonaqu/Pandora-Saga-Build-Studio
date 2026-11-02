@@ -82,7 +82,8 @@ test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-
 test('wiki shows localized game class names and consistent source labels',()=>{
  const app=read('pandora-studio-app.js');
  assert.match(app,/PandoraItemPresentation\.kind\(rec,lang\)/);
- assert.match(app,/keys\.map\(classLabel\)\.filter\(Boolean\)/);
+ assert.match(app,/for\(const key of keys\)/);
+ assert.match(app,/const name=classLabel\(key\)/);
  assert.match(app,/const monsterStats=/);
  assert.match(app,/Monster resistances|Resistances/);
  assert.match(app,/const currencies=\[\[wt\('Золото','Gold'\)/);
@@ -192,13 +193,14 @@ test('nested trade and map searches use the same order-independent token matchin
 });
 test('all-class gear stays compact while restricted classes are readable on demand',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
- assert.match(app,/const renderClassEligibility=keys=>/);
+ assert.match(app,/const renderClassEligibility=\(keys,isItem=false\)=>/);
  assert.match(app,/jobKeys\.every\(id=>keys\.includes\(id\)\)/);
  assert.match(app,/class:'wiki-class-all'/);
  assert.match(app,/class:'wiki-allowed-classes'/);
  assert.doesNotMatch(app,/h\('details',\{class:'wiki-allowed-classes'\}/);
  assert.match(app,/detail\.append\(h\('div',\{class:'wiki-allowed-classes'\}/);
- assert.equal((app.match(/renderClassEligibility\(Object\.keys\(rec\.classes\)/g)||[]).length,2);
+ assert.match(app,/renderClassEligibility\(Object\.keys\(rec\.classes\|\|\{\}\)/);
+ assert.match(app,/renderClassEligibility\(Object\.keys\(rec\.classes\)/);
  assert.match(css,/\.wiki-class-all\{/);
  assert.match(css,/\.wiki-class-tags/);
  assert.match(app,/class:'wiki-class-tag'/);
