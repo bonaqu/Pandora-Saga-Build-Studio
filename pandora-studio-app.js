@@ -3125,6 +3125,31 @@ async function saveWikiItemField(id,field,value){
   refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
+async function saveWikiAcquisitions(itemId,rows){
+ if(!adminToken||!adminEditing||!wikiData?.items?.[itemId])
+  throw Error('Редактирование источников недоступно');
+ if(!Array.isArray(rows)||rows.length>24||rows.some(row=>
+  !['npc','monster'].includes(row.type)||!/^[1-9][0-9]{0,14}$/.test(String(row.id))||
+  !(row.type==='npc'?wikiData.trades?.npcs?.[row.id]:wikiData.monsters?.[row.id])))
+  throw Error('Некорректная ссылка на NPC или монстра');
+ const normalized=[...new Map(rows.map(row=>[row.type+':'+row.id,
+  {type:row.type,id:String(row.id)}])).values()];
+ const key='acquireedit.'+itemId,previous=activeOverride(key);
+ if(JSON.stringify(normalized)===JSON.stringify(wikiData.ownerAcquisitions?.[itemId]||[]))return;
+ editIsSaving=true;
+ try{
+  if(!normalized.length){
+   if(previous===null)return;
+   await apiRequest('/api/admin/reset',{key});delete override[key];
+   ownerEdits.push({key,before:previous,after:null});
+  }else{
+   const value=JSON.stringify(normalized);
+   await apiRequest('/api/admin/override',{key,value});
+   override[key]=value;ownerEdits.push({key,before:previous,after:value});
+  }
+  refreshOwnerCatalog();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
 function inlineWikiText(el){
  const key=el?.dataset?.editKey;
  if(!adminEditing||!adminToken||!key)return;
