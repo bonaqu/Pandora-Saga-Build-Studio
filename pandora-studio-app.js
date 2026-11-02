@@ -1170,7 +1170,9 @@ function renderOriginPassives(){
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
   else btn.append(h('span',{text:'✦'}));
-  btn.append(h('span',{},[h('b',{text:skill.name}),h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);skillHover(btn,skill);
+  btn.append(h('span',{},[h('b',{text:skill.name,
+    ...(adminEditing&&lang==='ru'?{'data-edit-key':'skill.race.'+id}:{})}),
+    h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));root.append(btn);skillHover(btn,skill);
  }
 }
 let activeSkillPreview=null;
@@ -1382,8 +1384,16 @@ async function loadWiki(){
  if(wikiPending)return wikiPending;
  wikiPending=(async()=>{
   const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
-  const index=window.PandoraWikiData.build(loaded.data);
-  wikiData=loaded.data;
+  const skills={...loaded.data.skills};
+  for(const [key,value] of Object.entries(override)){
+   const parsed=/^(skill|skilldesc)\.([a-zA-Z0-9_-]{1,32})\.([0-9]{1,12})$/.exec(key);
+   if(parsed&&skills[parsed[3]]&&typeof value==='string'&&value.trim())
+    skills[parsed[3]]={...skills[parsed[3]], [parsed[1]==='skill'?'name':'desc']:value};
+  }
+  const source={...loaded.data,skills,
+   items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
+  const index=window.PandoraWikiData.build(source);
+  wikiData=source;
   wikiIndex=index;
   if(wikiSelection.id!=null)wikiSelection.id=index.canonical(wikiSelection.type,wikiSelection.id);
   return index;
@@ -1422,7 +1432,7 @@ function renderWiki(root){
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{class:wikiSelection.type===key?'chosen':'',text:lang==='en'?en:ru,onclick:()=>{wikiSelection={type:key,id:null,highlight:null};wikiSearch='';wikiShown=100;renderDetails()}}));
  }
- const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии'});
+ const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  controls.append(categories,search);
  if(wikiSelection.type==='item'){
   const equipmentTypes=[['equipment',wt('Экипировка','Equipment')],['all',wt('Все предметы','All items')],
@@ -1717,7 +1727,9 @@ function renderWiki(root){
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}),
-    h('h3',{text:dataName(type,id)}));
+    h('h3',{text:dataName(type,id),...(adminEditing&&lang==='ru'&&
+     (type==='item'||type==='skill')?{'data-edit-key':type==='item'?
+      'item.'+id:'skill.'+(rec.branch||'race')+'.'+id}:{})}));
    const namesakes=wikiIndex.sameName(type,id);
    if(namesakes.length)detail.append(h('small',{class:'wiki-variant-note',
     text:wt('Есть другие варианты с таким названием','Other entries share this name')}));
@@ -1733,7 +1745,10 @@ function renderWiki(root){
   if(described?.desc){
    const text=englishDescription||described.desc;
    detail.append(h('p',{class:'wiki-description',text:
-    ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text}));
+    ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
+    ...(adminEditing&&lang==='ru'&&(type==='item'||type==='skill')?
+      {'data-edit-key':type==='item'?'itemdesc.'+id:
+        'skilldesc.'+(rec.branch||'race')+'.'+id}:{})}));
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=keys=>{
@@ -1770,6 +1785,15 @@ function renderWiki(root){
     }}));
   };
   if(type==='item'){
+    if(adminEditing&&adminToken){
+      detail.append(h('button',{type:'button',class:'button-action owner-wiki-edit',
+       text:'✎ Изменить характеристики, классы и эффекты',
+       onclick:()=>openWikiItemEditor(id,rec)}));
+    }
+    if(rec.sourceNote)detail.append(h('section',{class:'wiki-owner-note'},[
+      h('strong',{text:'Комментарий администратора об источнике'}),
+      h('p',{text:rec.sourceNote})
+    ]));
     const dl=h('dl',{class:'item-fields'});
     const itemFields=[
      [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang)],
@@ -2844,7 +2868,7 @@ async function undoOwnerEdit(){
   try{
     if(last.before===null){await apiRequest('/api/admin/reset',{key:last.key});delete override[last.key];}
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
-    ownerEdits.pop();closeInlineEditor();render();updateAdminHint();
+    ownerEdits.pop();closeInlineEditor();refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
 }
@@ -2921,7 +2945,7 @@ function editor(el){
     try{
       await apiRequest('/api/admin/override',{key,value});
       ownerEdits.push({key,before:previous,after:value});override[key]=value;
-      closeInlineEditor();render();updateAdminHint();
+      closeInlineEditor();refreshOwnerCatalog();
     }catch(e){feedback.textContent=e.message}
     finally{editIsSaving=false;save.disabled=false;reset.disabled=false;refreshOwnerUI()}
   };
@@ -2931,7 +2955,7 @@ function editor(el){
     try{
       await apiRequest('/api/admin/reset',{key});
       ownerEdits.push({key,before:previous,after:null});delete override[key];
-      closeInlineEditor();render();updateAdminHint();
+      closeInlineEditor();refreshOwnerCatalog();
     }catch(e){feedback.textContent=e.message}
     finally{editIsSaving=false;reset.disabled=false;save.disabled=false;refreshOwnerUI()}
   };
@@ -2944,6 +2968,28 @@ function editor(el){
   root.style.top=Math.min(Math.max(12,rect.bottom+8),Math.max(12,window.innerHeight-350))+'px';
   document.body.append(root);activeInlineEditor=root;
   input.focus();
+}
+function openWikiItemEditor(id,item){
+ if(!adminToken||!adminEditing||!catalogSource?.items?.[id])return;
+ const key='itemedit.'+id,base=catalogSource.items[id];
+ const save=async patch=>{
+  const previous=activeOverride(key),value=JSON.stringify(patch);
+  await apiRequest('/api/admin/override',{key,value});
+  ownerEdits.push({key,before:previous,after:value});
+  override[key]=value;refreshOwnerCatalog();
+ };
+ const reset=async()=>{
+  const previous=activeOverride(key);
+  if(previous===null)return;
+  await apiRequest('/api/admin/reset',{key});
+  ownerEdits.push({key,before:previous,after:null});
+  delete override[key];refreshOwnerCatalog();
+ };
+ window.PandoraStudioItemOwnerEditor.open({
+  id,item,base,overrides:override,h,modal,jobKeys,
+  className:key=>catalog.classes?.[key]?.name||key,
+  onSave:save,onReset:reset
+ });
 }
 async function showCatalogImport(){
  if(!adminToken)return;
@@ -2976,6 +3022,7 @@ function applyGameLocale(){
   }));
  };
  const en=lang==='en'?officialEnglish:null;
+ const itemRecords=window.PandoraStudioItemOwnerEditor.applyItems(catalogSource.items,override);
  const meta={...catalogSource.meta};
  if(en?.branches)meta.branchLabels={...meta.branchLabels,...en.branches};
  // Verified ID-based Remaked names only; never fuzzy-translate at runtime.
@@ -2988,8 +3035,14 @@ function applyGameLocale(){
    if(localizedSkills[id])localizedSkills[id]={...localizedSkills[id],name};
   }
  }
+ for(const [key,value] of Object.entries(override)){
+  const match=/^(skill|skilldesc)\.([a-zA-Z0-9_-]{1,32})\.([0-9]{1,12})$/.exec(key);
+  if(match&&localizedSkills[match[3]]&&lang==='ru'&&value?.trim())
+   localizedSkills[match[3]]={...localizedSkills[match[3]],
+    [match[1]==='skill'?'name':'desc']:value};
+ }
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
-   equipment:translate(catalogSource.items,en?.items,true),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
+   equipment:translate(itemRecords,en?.items,true),souls:translate(catalogSource.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  render();
@@ -3061,7 +3114,17 @@ async function loadCatalog(){
  $('catalogStatus').textContent=`${live.meta.counts.skills} навыков · ${live.meta.counts.items} предметов · ${live.meta.counts.souls} душ · ${sourceLabel}`;
  applyGameLocale();persist();
 }
-async function loadOverrides(){try{const response=await apiRequest('/api/overrides',null,'');override=response.values||{};render();updateAdminHint()}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
+function refreshOwnerCatalog(){
+ wikiIndex=null;wikiData=null;wikiPending=null;
+ if(catalogSource)applyGameLocale();
+ else render();
+ updateAdminHint();
+}
+async function loadOverrides(){try{
+ const response=await apiRequest('/api/overrides',null,'');
+ override=response.values||{};
+ refreshOwnerCatalog();
+}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
 $('originTabs').onclick=event=>{
  const button=event.target.closest('[data-origin-tab]');
  if(!button)return;
@@ -3107,11 +3170,11 @@ $('hero').addEventListener('keydown',event=>{
  if(lang==='en'&&!officialEnglish)
   showStudioToast('Не все игровые описания доступны на английском.','warning');
  applyGameLocale();
-};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const editable=event.target.closest('[data-edit-key]');
- if(!editable||!/^(?:item|itemdesc|itemslots)\./.test(editable.dataset.editKey))return;
+ if(!editable||!/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;
  event.preventDefault();event.stopImmediatePropagation();editor(editable);
 },true);
 $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView()};

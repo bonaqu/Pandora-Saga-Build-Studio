@@ -24,12 +24,13 @@ const required=[
  ['pandora-os-catalog-diff.js','pandora-os-catalog-workbench.js'],
  ['pandora-os-catalog-review.js','pandora-os-catalog-workbench.js'],
  ['pandora-os-catalog-workbench.js','pandora-studio-app.js'],
+ ['pandora-studio-item-owner-editor.js','pandora-studio-app.js'],
  ['pandora-studio-app.js','pandora-studio-update-manager.js']
 ];
 for(const [a,b] of required)if(scripts.indexOf(a)<0||scripts.indexOf(b)<0||
  scripts.indexOf(a)>=scripts.indexOf(b))errors.push('Bad module load order: '+a+' -> '+b);
 for(const path of ['pandora-studio-theme.css','pandora-studio-equipment-tooltip.css',
- 'pandora-os-catalog-workbench.css'])if(!styles.includes(path))errors.push('Missing CSS: '+path);
+ 'pandora-os-catalog-workbench.css','pandora-studio-item-owner-editor.css'])if(!styles.includes(path))errors.push('Missing CSS: '+path);
 const meta=html.match(/<meta name="ps-studio-release" content="([^"]+)"/)?.[1];
 for(const match of html.matchAll(/(?:src|href)="([^"]+\.(?:js|css)\?v=([^"]+))"/g))
  if(match[2]!==meta)errors.push('Asset cache version differs: '+match[1]);

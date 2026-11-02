@@ -71,7 +71,8 @@ test('English equipment labels retain original source text solely for numeric fa
  const calc=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
  assert.match(app,/const translate=\(original,map,keepSourceDesc=false\)=>/);
  assert.match(app,/keepSourceDesc\?\{sourceDesc:item\.desc\}:\{\}/);
- assert.match(app,/equipment:translate\(catalogSource\.items,en\?\.items,true\)/);
+ assert.match(app,/equipment:translate\(itemRecords,en\?\.items,true\)/);
+ assert.match(app,/PandoraStudioItemOwnerEditor\.applyItems\(catalogSource\.items,override\)/);
  assert.match(app,/souls:translate\(catalogSource\.souls,en\?\.souls\)/);
  assert.match(calc,/const description=record\?\.sourceDesc\?\?record\?\.desc/);
 });

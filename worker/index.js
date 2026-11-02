@@ -388,10 +388,48 @@ if(path==='/api/admin/login'&&method==='POST'){
  await clearFailed(env,ip);return json(await session(env))
 }
 if(path==='/api/admin/logout'&&method==='POST'){const token=(request.headers.get('authorization')||'').replace(/^Bearer /,'');if(token)await env.DB.prepare('DELETE FROM sessions WHERE token_hash=?').bind(await sha(token)).run();return json({ok:true})}
+// Persistent owner overrides remain separate from the synchronized game catalog.
+// Only listed item fields can be changed; no arbitrary serialized objects.
+function validItemOwnerPatch(text){
+ if(typeof text!=='string'||text.length>12000)return false;
+ let obj;
+ try{obj=JSON.parse(text)}catch{return false}
+ if(!obj||typeof obj!=='object'||Array.isArray(obj))return false;
+ const allowed=new Set(['level','W','PEN','AC','atkspeed','range','soulslot',
+  'twoHanded','classes','effects','sourceNote']);
+ const numbers=new Set(['level','W','PEN','AC','atkspeed','range','soulslot']);
+ const plain=x=>Boolean(x&&typeof x==='object'&&!Array.isArray(x));
+ const keys=Object.keys(obj);
+ if(!keys.length||keys.some(k=>!allowed.has(k)))return false;
+ for(const [key,value] of Object.entries(obj)){
+  if(numbers.has(key)){
+   if(value!==null&&(!Number.isFinite(value)||value<0||value>100000))return false;
+  }else if(key==='twoHanded'){
+   if(typeof value!=='boolean')return false;
+  }else if(key==='classes'){
+   if(!plain(value)||Object.keys(value).length>28)return false;
+   if(Object.entries(value).some(([k,v])=>!/^[A-Z_]{2,25}$/.test(k)||v!==1))return false;
+  }else if(key==='sourceNote'){
+   if(typeof value!=='string'||value.length>500)return false;
+  }else if(key==='effects'){
+   if(!Array.isArray(value)||value.length>32)return false;
+   for(const effect of value){
+    if(!plain(effect)||Object.keys(effect).some(k=>!['func','dir','exclusive','a','b'].includes(k))||
+      !/^EP_[A-Z0-9_]{2,65}$/.test(effect.func)||
+      !['TARGET','CASTER'].includes(effect.dir)||
+      effect.exclusive!==null||
+      !(effect.a===null||(Number.isFinite(effect.a)&&Math.abs(effect.a)<=100000))||
+      !(effect.b===null||(Number.isFinite(effect.b)&&Math.abs(effect.b)<=100000)))return false;
+   }
+  }
+ }
+ return true;
+}
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request);const key=data?.key,value=data?.value;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>((key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
+ if(key.startsWith('itemedit.')&&!validItemOwnerPatch(value))return no('Invalid structured item edit',400);
  if(key.startsWith('visual.')&&!/^(?:assets\/[A-Za-z0-9_.-]+\.(?:png|webp|jpe?g)|https:\/\/pandorasaga-os\.com\/icons\/(?:items|souls|skills)\/[A-Za-z0-9_-]+\.webp(?:\?v=[0-9]{1,12})?)$/.test(value.trim()))return no('Unapproved image source',400);
  if(key.startsWith('itemslots.')&&!/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(value.trim()))return no('Invalid socket count (0-32)',400);
  await env.DB.prepare(`INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`).bind(key,value.trim(),Date.now()).run();return json({ok:true,key,value:value.trim()})
@@ -399,7 +437,7 @@ if(path==='/api/admin/override'&&method==='POST'){
 if(path==='/api/admin/reset'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request),key=data?.key;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
  const result=await env.DB.prepare('DELETE FROM overrides WHERE key=?').bind(key).run();
  return json({ok:true,key,deleted:(result.meta?.changes||0)>0});
 }

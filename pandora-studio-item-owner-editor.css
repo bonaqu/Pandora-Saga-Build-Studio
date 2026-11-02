@@ -1,0 +1,29 @@
+/* Focused owner controls share Pandora Studio's existing brown/gold theme. */
+.modal:has(.owner-item-editor){width:min(94vw,870px);max-height:92vh;overflow:auto}
+.owner-item-editor{max-height:min(76vh,720px);overflow:auto;min-width:min(100%,650px);padding:0 2px 8px;color:var(--cream)}
+.owner-item-editor .muted{line-height:1.5}
+.owner-item-editor-sections{display:grid;gap:13px}
+.owner-item-section{border:1px solid var(--line);border-radius:12px;padding:14px;background:rgba(14,12,10,.22)}
+.owner-item-section>h3{margin:0 0 13px;color:var(--gold);font-size:1rem}
+.owner-item-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px}
+.owner-item-field{display:flex;flex-direction:column;gap:5px;font-size:.84rem;color:var(--cream)}
+.owner-item-editor input:not([type=checkbox]),.owner-item-editor select,.owner-item-editor textarea{
+ width:100%;border:1px solid var(--line);background:#1a1511;color:var(--cream);
+ padding:9px;border-radius:8px;min-width:0;font:inherit}
+.owner-item-editor input:focus-visible,.owner-item-editor select:focus-visible,
+.owner-item-editor textarea:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.owner-item-editor textarea{resize:vertical;min-height:70px}
+.owner-item-classes{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:8px;max-height:210px;overflow:auto;padding:4px 0}
+.owner-item-check{display:flex;align-items:center;gap:8px;font-size:.84rem;cursor:pointer}
+.owner-item-check input{accent-color:var(--gold);flex:0 0 auto}
+.owner-item-actions{display:flex;gap:9px;flex-wrap:wrap;margin:10px 0}
+.owner-item-effects{display:grid;gap:9px}
+.owner-item-effect{display:grid;grid-template-columns:minmax(150px,2fr) minmax(65px,.7fr) minmax(70px,.8fr) minmax(115px,1fr);gap:7px;align-items:center;padding:9px;border:1px solid rgba(231,190,119,.18);border-radius:9px}
+.owner-item-effect>button{grid-column:1/-1;justify-self:start}
+.owner-wiki-edit{margin:12px 0;display:inline-flex}
+.wiki-owner-note{margin:12px 0;padding:10px 13px;border-left:3px solid var(--gold2);background:rgba(201,153,69,.08);border-radius:7px}
+.wiki-owner-note>strong{font-size:.86rem;color:var(--gold)}
+.wiki-owner-note>p{margin:5px 0 0;white-space:pre-wrap}
+.admin-edit[data-edit-key^="item."],.admin-edit[data-edit-key^="itemdesc."],
+.admin-edit[data-edit-key^="skill."]{outline:1px dashed rgba(231,190,119,.55);outline-offset:3px;cursor:text}
+@media(max-width:640px){.owner-item-editor{min-width:0}.owner-item-effect{grid-template-columns:1fr 1fr}.owner-item-effect>select:first-child{grid-column:1/-1}.owner-item-classes{grid-template-columns:repeat(2,minmax(0,1fr))}}

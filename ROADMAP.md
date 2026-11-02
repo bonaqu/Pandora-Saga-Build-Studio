@@ -1,11 +1,23 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.306.0 (`2026.11.02.306`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.307.0 (`2026.11.02.307`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.307.0 — usable item editor, trustworthy data overlay, current owner setup
+
+- [x] Replace obsolete first-run Cloudflare guide with steps for the **existing** D1 and Worker, limited GitHub token and Cloudflare Secret.
+- [x] Give administrators an encyclopedia item editor for level, physical/defense stats, sockets, two-handed flag, permitted classes and structured effects; allow independent field resets.
+- [x] Preserve changes outside the server-synced catalog in D1 owner override rows, not by changing the canonical `data/os/*.json` snapshot.
+- [x] Apply owner item overrides to hero equipment and encyclopedia calculations; reload the encyclopedia index after changes.
+- [x] Enable double-click name/description edits in RU encyclopedia and racial passives; validate requests on the Worker.
+- [x] Exclude the encyclopedia search field from common password-manager autofill hints.
+- [ ] Interactive source relations (monster loot, NPC trade recipes, quest/drop chances) require an explicit relational editor, reversible transactions and independent integrity validation; current owner note is not a replacement.
+- [ ] Further wiki sections (NPC, monsters, maps, chests, souls) need individual structured editors and bilingual edit flows.
+- [ ] Verify active Cloudflare Worker deployment and authenticated production admin writes with the owner; no real credentials embedded.
 
 ## Source update 0.306.0 — server-only GitHub PR and isolated D1 write check
 

@@ -64,6 +64,17 @@ export async function runAdminEntrySmoke(browser,base){
     'x-ps-catalog-snapshot':'ps-browser-snapshot'},
     contentType:'application/json',body:JSON.stringify(content)});
   }
+  if(path==='/api/admin/override'&&method==='POST'){
+   const data=route.request().postDataJSON();
+   assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
+   if(data.key.startsWith('itemedit.')){
+    assert.match(data.key,/^itemedit\.[0-9]+$/);
+    const patch=JSON.parse(data.value);
+    assert.equal(patch.W,99);
+    calls.push('owner-item-edit');
+   }
+   return json({ok:true,key:data.key,value:data.value});
+  }
   if(path==='/api/library')return json({records:[]});
   if(path==='/api/overrides')return json({values:{}});
   if(path.startsWith('/api/account/')){
@@ -148,6 +159,27 @@ export async function runAdminEntrySmoke(browser,base){
     'all 17 datasets and one final meta revision check are required');
   assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true,
     'a fresh live comparison must reject all changes by default');
+  // Open an actual encyclopedia equipment page while admin editing is on.
+  await dialog.getByRole('button',{name:/Закрыть/}).click();
+  await page.locator('#nav [data-tab="wiki"]').click();
+  const wikiSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await wikiSearch.waitFor({state:'visible'});
+  assert.equal(await wikiSearch.getAttribute('autocomplete'),'off');
+  assert.equal(await wikiSearch.getAttribute('data-lpignore'),'true');
+  await wikiSearch.fill('Старое название из D1');
+  const firstItem=page.locator('[data-wiki-record="1"]');
+  await firstItem.waitFor({state:'visible',timeout:20000});
+  await firstItem.click();
+  await page.getByRole('button',{name:/Изменить характеристики, классы и эффекты/}).click();
+  const itemDialog=page.getByRole('dialog',{name:/Редактор предмета/});
+  await itemDialog.waitFor({state:'visible'});
+  await itemDialog.getByRole('spinbutton',{name:'Атака',exact:true}).fill('99');
+  await itemDialog.getByRole('button',{name:'Снять все'}).click();
+  await itemDialog.locator('.owner-item-classes input[type=checkbox]').first().check();
+  await itemDialog.getByRole('button',{name:'Сохранить изменения'}).click();
+  await page.waitForFunction(()=>Array.from(document.querySelectorAll('.item-fields dd'))
+   .some(node=>node.textContent==='99'),null,{timeout:20000});
+  assert.deepEqual(calls.filter(x=>x==='owner-item-edit'),['owner-item-edit']);
   assert.deepEqual(errors,[]);
   const other=await context.newPage();
   await other.goto(base+'/',{waitUntil:'domcontentloaded'});
