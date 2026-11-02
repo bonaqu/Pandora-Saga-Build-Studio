@@ -453,6 +453,63 @@ function validTradeOwnerPatch(text,tradeId){
    !positive(row.i)||!capped(row.n,999999)||row.n===0))return false;
  return ['gold','honor','exp'].every(key=>capped(rec[key]));
 }
+function validWikiOwnerPatch(text,type){
+ if(typeof text!=='string'||text.length>8000)return false;
+ let data;try{data=JSON.parse(text)}catch{return false}
+ if(!data||typeof data!=='object'||Array.isArray(data))return false;
+ const fields={
+  monster:['name','desc','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
+  map:['name','desc','mobs'],npc:['name','desc','maps'],
+  instance:['name','blurb','blurbRu','mobs'],
+  skill:['name','desc','charLevel','mana','cast','cooldown','range'],
+  soul:['name','desc','price','slots']
+ };
+ const keys=Object.keys(data),allowed=fields[type]||[];
+ if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
+ const validId=value=>Number.isSafeInteger(Number(value))&&Number(value)>0&&
+  /^[1-9][0-9]{0,14}$/.test(String(value));
+ const checkIds=value=>Array.isArray(value)&&value.length<=1000&&
+  new Set(value.map(String)).size===value.length&&value.every(validId);
+ return keys.every(key=>{
+  const v=data[key];
+  if(['name','desc','blurb','blurbRu'].includes(key))
+   return typeof v==='string'&&v.length<=2000&&(key!=='name'||!!v.trim());
+  if(key==='resists')return v&&typeof v==='object'&&!Array.isArray(v)&&
+   Object.entries(v).every(([name,n])=>['physical','fire','cold','lightning','poison',
+    'charm','magic','holy','dark'].includes(name)&&Number.isFinite(n)&&Math.abs(n)<=100);
+  if(key==='maps'||key==='mobs')return checkIds(v);
+  if(key==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&
+   v.every(x=>['weapon','shield','head','body','gloves','legs','feet','cloak',
+    'ring','neck','belt','ear','accessory'].includes(x));
+  return Number.isFinite(v)&&v>=0&&v<=1000000000;
+ });
+}
+function validWikiDropEdit(text){
+ if(typeof text!=='string'||text.length>24000)return false;
+ let data;try{data=JSON.parse(text)}catch{return false}
+ if(!data||typeof data!=='object'||Array.isArray(data)||
+  Object.keys(data).some(k=>!['d','s'].includes(k)))return false;
+ return ['d','s'].every(k=>Array.isArray(data[k])&&data[k].length<=200&&
+  data[k].every(r=>r&&typeof r==='object'&&!Array.isArray(r)&&
+   Number.isSafeInteger(r.i)&&r.i>0&&
+   Object.keys(r).every(p=>['i','p','n','slotAdd','t'].includes(p))&&
+   (r.p==null||Number.isFinite(r.p)&&r.p>=0&&r.p<=100)&&
+   (r.n==null||Number.isInteger(r.n)&&r.n>=1&&r.n<=999999)&&
+   (r.slotAdd==null||Number.isInteger(r.slotAdd)&&r.slotAdd>=0&&r.slotAdd<=3)&&
+   (r.t==null||typeof r.t==='string'&&r.t.length<=240)));
+}
+function validWikiChestEdit(text){
+ if(typeof text!=='string'||text.length>24000)return false;
+ let data;try{data=JSON.parse(text)}catch{return false}
+ return Array.isArray(data)&&data.length<=50&&data.every(group=>
+  Array.isArray(group)&&group.length<=100&&group.every(r=>
+   r&&typeof r==='object'&&!Array.isArray(r)&&Number.isSafeInteger(r.i)&&r.i>0&&
+   Object.keys(r).every(k=>['i','n','p','plus','soul'].includes(k))&&
+   (r.n==null||Number.isInteger(r.n)&&r.n>=1&&r.n<=999999)&&
+   (r.p==null||Number.isFinite(r.p)&&r.p>=0&&r.p<=100)&&
+   (r.plus==null||Number.isInteger(r.plus)&&r.plus>=0&&r.plus<=20)&&
+   (r.soul==null||Number.isInteger(r.soul)&&r.soul>=0&&r.soul<=3))));
+}
 function validAcquisitionOverride(text){
  if(typeof text!=='string'||text.length>1800)return false;
  let rows;try{rows=JSON.parse(text)}catch{return false}
@@ -471,10 +528,13 @@ function validAcquisitionOverride(text){
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request);const key=data?.key,value=data?.value;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}|dropedit\.[0-9]{1,15}|chestedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:key.startsWith('wikiedit.')?8000:(key.startsWith('dropedit.')||key.startsWith('chestedit.'))?24000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
  if(key.startsWith('itemedit.')&&!validItemOwnerPatch(value))return no('Invalid structured item edit',400);
  if(key.startsWith('acquireedit.')&&!validAcquisitionOverride(value))return no('Invalid acquisition relations',400);
  if(key.startsWith('tradeedit.')&&!validTradeOwnerPatch(value,key.slice(10)))return no('Invalid NPC trade relations',400);
+ if(key.startsWith('wikiedit.')&&!validWikiOwnerPatch(value,key.split('.')[1]))return no('Invalid encyclopedia record edit',400);
+ if(key.startsWith('dropedit.')&&!validWikiDropEdit(value))return no('Invalid monster drop rows',400);
+ if(key.startsWith('chestedit.')&&!validWikiChestEdit(value))return no('Invalid chest contents',400);
  if(key.startsWith('visual.')&&!/^(?:assets\/[A-Za-z0-9_.-]+\.(?:png|webp|jpe?g)|https:\/\/pandorasaga-os\.com\/icons\/(?:items|souls|skills)\/[A-Za-z0-9_-]+\.webp(?:\?v=[0-9]{1,12})?)$/.test(value.trim()))return no('Unapproved image source',400);
  if(key.startsWith('itemslots.')&&!/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(value.trim()))return no('Invalid socket count (0-32)',400);
  await env.DB.prepare(`INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`).bind(key,value.trim(),Date.now()).run();return json({ok:true,key,value:value.trim()})
@@ -482,7 +542,7 @@ if(path==='/api/admin/override'&&method==='POST'){
 if(path==='/api/admin/reset'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request),key=data?.key;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}|dropedit\.[0-9]{1,15}|chestedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
  const result=await env.DB.prepare('DELETE FROM overrides WHERE key=?').bind(key).run();
  return json({ok:true,key,deleted:(result.meta?.changes||0)>0});
 }
