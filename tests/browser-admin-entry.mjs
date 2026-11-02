@@ -231,8 +231,8 @@ export async function runAdminEntrySmoke(browser,base){
 
   // Mocked D1 bridge: owner edits the real city NPC profile, including
   // RU/EN names and its map relation; no production D1 writes.
-  await page.locator('#locale [data-locale="ru"]').click();
-  await page.locator('#nav [data-tab="wiki"]').click();
+  // The owner workbench is already open. Its backdrop intentionally blocks
+  // top-level locale/navigation clicks until the panel is closed.
   await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
   const npcFilter=page.locator('.wiki-controls input[type="search"]');
   await npcFilter.click();
@@ -274,7 +274,9 @@ export async function runAdminEntrySmoke(browser,base){
    '.wiki-page .wiki-town-npc-location')?.value==='astir-union',null,{timeout:15000});
   assert.deepEqual(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).maps,
    ['astir-union']);
+  await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   const enHeading=page.locator('.wiki-page h3[data-owner-field="nameEn"]');
   await enHeading.waitFor({state:'visible',timeout:15000});
   await enHeading.dblclick();
