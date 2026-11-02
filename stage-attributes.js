@@ -254,27 +254,42 @@ const bookPages=Object.freeze([
  ['summary','Итоги'],['attack','Атака'],['defense','Защита'],
  ['recovery','Зелья и умения'],['effects','Эффекты'],['buffs','Усиления']
 ]);
-function summaryPage(body,calc){
- if(!calc){body.append(make('p',{class:'stage-attribute-note',text:'Параметры появятся после загрузки игровых данных.'}));return}
+function summaryPage(body,calc,onPage){
+ if(!calc){body.append(make('p',{class:'stage-attribute-note',
+  text:'Параметры появятся после загрузки игровых данных.'}));return}
+ const english=document.documentElement?.lang==='en';
  body.append(make('div',{class:'stage-result-intro'},[
   make('strong',{text:'Результаты расчёта'}),
-  make('p',{text:'Выберите раздел, чтобы посмотреть подробности.'})
+  make('p',{text:english?'Select any group to inspect its contributing equipment and effects.':
+   'Выбери группу, чтобы посмотреть связанные предметы, умения и эффекты.'})
  ]));
  const c=calc.combat||{};
- const rows=[
-  ['ОЗ',calc.hp,'Здоровье'],['ОМ',calc.mp,'Мана'],
-  ['Атака',c.attack?.known,'Физическая'],['Защита',c.defense?.known,'С заточкой'],
-  ['Маг. атака',c.magicAttack?.known==null?null:c.magicAttack.known+'%','Коэффициент'],
-  ['Точность',c.accuracy?.known,'Попадание'],['Уклонение',c.dodge?.known,'Защита'],
-  ['Крит. шанс',c.critical?.known,'Вероятность'],
-  ['Зелья',calc.potion?.percent==null?null:calc.potion.percent+'%','Эффект'],
-  ['Лечение',calc.healingSkill?.percent==null?null:calc.healingSkill.percent+'%','Эффект навыков']
+ const groups=[
+  {title:english?'Vital resources':'Жизнь и мана',page:'recovery',symbol:'✧',rows:[
+   ['ОЗ',calc.hp,'Здоровье'],['ОМ',calc.mp,'Мана']]},
+  {title:english?'Combat attributes':'Боевые параметры',page:'attack',symbol:'⚔',rows:[
+   ['Атака',c.attack?.known,'Физическая'],['Защита',c.defense?.known,'С заточкой'],
+   ['Маг. атака',c.magicAttack?.known==null?null:c.magicAttack.known+'%','Коэффициент'],
+   ['Точность',c.accuracy?.known,'Попадание'],['Уклонение',c.dodge?.known,'Защита'],
+   ['Крит. шанс',c.critical?.known,'Вероятность']]},
+  {title:english?'Recovery effects':'Восстановление',page:'recovery',symbol:'✦',rows:[
+   ['Зелья',calc.potion?.percent==null?null:calc.potion.percent+'%','Эффект'],
+   ['Лечение',calc.healingSkill?.percent==null?null:calc.healingSkill.percent+'%','Эффект навыков']]}
  ];
- const grid=make('div',{class:'stage-result-grid'});
- for(const [label,value,note] of rows)grid.append(make('div',{class:'stage-result-tile'},[
-  make('span',{text:label}),make('strong',{text:value??'—'}),make('small',{text:note})]));
- body.append(grid);
-
+ for(const group of groups){
+  const section=make('section',{class:'stage-result-section'});
+  const heading=make('button',{type:'button',class:'stage-result-section-head',
+   'aria-label':english?'Open '+group.title:'Открыть: '+group.title,
+   onclick:()=>onPage(group.page)},[
+   make('span',{class:'stage-result-symbol','aria-hidden':'true',text:group.symbol}),
+   make('strong',{text:group.title}),
+   make('span',{class:'stage-result-open','aria-hidden':'true',text:'›'})
+  ]);
+  const grid=make('div',{class:'stage-result-grid'});
+  for(const [label,value,note] of group.rows)grid.append(make('div',{class:'stage-result-tile'},[
+   make('span',{text:label}),make('strong',{text:value??'—'}),make('small',{text:note})]));
+  section.append(heading,grid);body.append(section);
+ }
 }
 function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
@@ -282,9 +297,24 @@ function buffsPage(body,options){
  const english=document.documentElement?.lang==='en';
  body.append(make('p',{class:'stage-attribute-note',text:
   'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
+ const configured=[...Object.values(buffs),...Object.values(vitalsBuffs)]
+  .filter(value=>value===true||typeof value==='number'&&value>0||
+   typeof value==='string'&&value!==''&&value!=='0').length;
+ const status=make('div',{class:'stage-buff-overview'},[
+  make('span',{text:english?'Configured enhancements':'Выбранные усиления'}),
+  make('strong',{text:String(configured)}),
+  make('small',{text:english?'Saved with this character':'Сохраняются с этим героем'})
+ ]);
+ body.append(status);
  const section=(name)=>{
   const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
-  body.append(node);return node;
+  if(name==='Дополнительно'){
+   const advanced=make('details',{class:'stage-book-buff-optional'},[
+    make('summary',{text:name})
+   ]);
+   advanced.append(node);body.append(advanced);
+  }else body.append(node);
+  return node;
  };
  const select=(parent,name,key,levels,vital=false)=>{
   const field=make('label',{class:'stage-book-field'},[make('span',{text:name})]);
@@ -482,7 +512,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  const body=make('div',{class:'stage-attribute-scroll stage-book-page',
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
- if(chosen==='summary')summaryPage(body,modifiers);
+ if(chosen==='summary')summaryPage(body,modifiers,onPage);
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,modifiers});
  if(['attack','defense','effects'].includes(chosen)){
   const intro=chosen==='attack'?'Параметры оружия':

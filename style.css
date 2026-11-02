@@ -1085,6 +1085,17 @@ main{padding-top:10px}
  background:linear-gradient(140deg,#48301de9,#2b2019)}
 .stage-result-intro strong{font:600 20px 'Cormorant Garamond',Georgia,serif;color:#f2d3a2}
 .stage-result-intro p{margin-top:5px;font-size:11px;line-height:1.45;color:#c7b394}
+.stage-result-section{display:grid;gap:6px}
+.stage-result-section-head{display:flex;align-items:center;gap:8px;text-align:left;width:100%;
+ border:1px solid #815d39;border-radius:4px;background:linear-gradient(120deg,#47301f,#251a12);
+ color:#e8ca99;padding:8px;cursor:pointer;transition:border-color .15s,background .15s}
+.stage-result-section-head:hover,.stage-result-section-head:focus-visible{
+ border-color:#dbb176;background:linear-gradient(120deg,#634128,#322116)}
+.stage-result-section-head:focus-visible{outline:2px solid #f4cc8d;outline-offset:1px}
+.stage-result-section-head strong{flex:1;font:600 15px 'Cormorant Garamond',Georgia,serif}
+.stage-result-symbol{display:grid;place-items:center;width:25px;height:25px;flex:0 0 25px;
+ border:1px solid #a17d4e;border-radius:4px;background:#2e2219;color:#e8c286}
+.stage-result-open{font:21px Georgia,serif;color:#e7ba7f}
 .stage-result-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
 .stage-result-tile{border:1px solid #85623c;background:linear-gradient(#35261b,#201710);
  min-width:0;padding:9px 10px;display:grid;gap:2px}
@@ -1095,6 +1106,16 @@ main{padding-top:10px}
 .stage-book-buff-group{display:grid;gap:8px;padding:10px;border:1px solid #88663e;
  background:linear-gradient(140deg,#35251a,#21170f)}
 .stage-book-buff-group>strong{font:600 19px 'Cormorant Garamond',Georgia,serif;color:#f5d49f}
+.stage-buff-overview{display:flex;align-items:center;gap:9px;padding:8px 11px;
+ border:1px solid #8f7045;border-radius:5px;background:linear-gradient(120deg,#4a3422,#251c15)}
+.stage-buff-overview>span{flex:1;min-width:0;color:#d8bd96;font-size:11px}
+.stage-buff-overview strong{font:700 21px Georgia,serif;color:#f4d7a1}
+.stage-buff-overview small{font-size:9px;color:#b8a385}
+.stage-book-buff-optional{border:1px solid #735639;background:#221810}
+.stage-book-buff-optional>summary{cursor:pointer;padding:9px 11px;font:600 16px 'Cormorant Garamond',Georgia,serif;color:#e9ca97}
+.stage-book-buff-optional>summary:hover{background:#3e2b1c}
+.stage-book-buff-optional .stage-book-buff-group{border:0;border-top:1px solid #735639}
+.stage-book-buff-optional .stage-book-buff-group>strong{display:none}
 .stage-book-field{display:grid;gap:5px;font-size:11px;color:#e2c69d}
 .stage-book-field select{display:block;width:100%;min-width:0;padding:8px;
  background:#1c140e;color:#f3d7aa;border:1px solid #86633f;border-radius:3px}
@@ -1170,10 +1191,16 @@ main{padding-top:10px}
 /* Compact OS-provided monster parameters and real location-group loot. */
 .wiki-monster-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
  gap:5px;margin:10px 0}
-.wiki-monster-resists{display:flex;flex-wrap:wrap;gap:6px;
- padding:8px;background:#24180f;border:1px solid #755537}
-.wiki-monster-resists summary{width:100%;cursor:pointer;color:#e9c997;font-size:12px}
-.wiki-monster-resists span{font-size:10px;color:#cbb08b;padding:5px}
+.wiki-monster-resists{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));
+ gap:6px;margin:9px 0 15px}
+.wiki-monster-resist{display:flex;align-items:center;gap:7px;min-width:0;padding:7px 9px;
+ background:linear-gradient(135deg,#312419,#1b1510);border:1px solid #745636;border-radius:5px}
+.wiki-resist-glyph{flex:0 0 24px;height:24px;display:grid;place-items:center;
+ border-radius:5px;color:#e7c38c;background:#4c3421;font-size:17px}
+.wiki-resist-name{flex:1;min-width:0;font-size:10px;color:#ddc39d}
+.wiki-monster-resist strong{color:#eecf9f;font-size:12px;font-variant-numeric:tabular-nums}
+.wiki-monster-resist.negative{border-color:#a1584e}
+.wiki-monster-resist.negative strong{color:#f2aaa0}
 .wiki-zone-group{display:flex;flex-direction:column;align-items:flex-start;
  padding:10px;border:1px solid #745538;margin:8px 0;background:#21170f}
 .wiki-zone-group small{color:#bba281;font-size:10px}
@@ -1454,6 +1481,31 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .account-recovery{display:grid;gap:8px;padding:11px;margin:10px 0;border:1px solid #bd945c;
  background:#251b12;font-size:11px}
 .account-recovery p{color:#dec29d}
+.account-identity{display:flex;align-items:center;gap:12px;margin:14px 0 9px;padding:12px;
+ border:1px solid #98714a;border-radius:7px;background:linear-gradient(110deg,#513620,#281b12);
+ box-shadow:inset 0 1px #c8a06a24}
+.account-avatar{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;
+ border-radius:50%;border:1px solid #d9ad69;color:#f5d8a1;
+ background:radial-gradient(circle at 35% 30%,#715332,#2e1e12);font:25px Georgia,serif}
+.account-identity-meta{min-width:0;display:grid;gap:3px}
+.account-identity-meta small{color:#cfaf83;font-size:9px;letter-spacing:1.3px;font-weight:700}
+.account-identity .account-user{display:block;max-width:100%;overflow-wrap:anywhere;
+ border:0;background:none;padding:0;color:#ffdc9b;font-size:20px}
+.account-session-note{display:flex;gap:9px;align-items:center;margin:0 0 12px;padding:7px 10px;
+ border-radius:4px;background:#233020a8;color:#c7ddaf;font-size:10px}
+.account-session-note>span:first-child{color:#abd586;font-weight:800}
+.account-password-details{border-top:1px solid #755436;border-bottom:1px solid #755436;margin:10px 0}
+.account-password-toggle{list-style:none;display:flex;justify-content:space-between;align-items:center;
+ gap:8px;cursor:pointer;padding:12px 5px;color:#e8c695;font-size:12px;font-weight:600}
+.account-password-toggle::-webkit-details-marker{display:none}
+.account-password-toggle:after{content:'⌄';color:#d9ad76;font-size:17px;transition:transform .16s}
+.account-password-details[open] .account-password-toggle:after{transform:rotate(180deg)}
+.account-password-toggle:hover{color:#ffe4b2}
+.account-password-toggle:focus-visible{outline:2px solid #f2c387;outline-offset:1px}
+.account-password-details .account-form{margin:3px 0 14px;padding:0 2px}
+.account-profile-footer{display:flex;justify-content:flex-end;padding:7px 0 0}
+.account-signout{background:#2b1d18;border-color:#815140;color:#e2b3a6}
+.account-signout:hover{background:#4c2b24;border-color:#c0816c}
 @media(max-width:790px){.account-panel{right:0;top:calc(100% + 6px)}}
 
 /* 0.193.0 — skill milestones belong INSIDE the interactive progress line.

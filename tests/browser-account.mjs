@@ -86,7 +86,7 @@ export async function runAccountSmoke(browser,base){
   await page.locator('#profileTrigger').click();
   await page.locator('.account-user').waitFor({state:'visible'});
   assert.equal((await page.locator('.account-user').innerText()).trim(),'@testplayer_01');
-  await page.getByRole('button',{name:'Выйти'}).click();
+  await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
   await page.getByRole('button',{name:'Войти',exact:true}).first().click();
   const login=page.locator('#accountPanel .account-form input');
   await login.nth(0).fill('testplayer_01');
@@ -95,6 +95,9 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-user').waitFor({state:'visible'});
   assert.equal(calls.filter(c=>c.action==='register').length,1);
   assert.ok(calls.some(c=>c.action==='login'));
+  assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
+  assert.equal(await page.locator('.account-password-details input').first().isVisible(),false);
+  await page.locator('.account-password-toggle').click();
   const change=page.locator('#accountPanel .account-form input');
   await change.nth(0).fill('An unusually long phrase for my builds');
   await change.nth(1).fill('A new long and secure passphrase 2026!');
@@ -107,6 +110,7 @@ export async function runAccountSmoke(browser,base){
   await page.getByRole('button',{name:'Изменить пароль'}).click();
   await page.waitForFunction(()=>document.querySelector('.account-feedback')?.textContent.includes('Пароль обновлён'));
   assert.equal(calls.filter(c=>c.action==='password').length,1);
+  assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
   // A transient outage must not erase a valid saved session from this browser.
   offlineMe=true;
   await page.reload({waitUntil:'domcontentloaded'});

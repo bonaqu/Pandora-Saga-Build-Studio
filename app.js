@@ -1501,8 +1501,16 @@ function renderWiki(root){
   const hasSoul=Boolean(wikiData.souls?.[id]);
   const dest=hasChest?'chest':hasSoul?'soul':'item';
   const record=hasSoul?wikiData.souls?.[id]:wikiData.items?.[id];
-  return withIcon(wikiLink(label,dest,id,highlight),
+  const anchor=withIcon(wikiLink(label,dest,id,highlight),
    wikiIcon(dest,id,record),dest);
+  if(record){
+   const en=officialEnglish?.[hasSoul?'souls':'items']?.[id];
+   const resolved=lang==='en'?{...record,name:en?.n||record.name,
+    desc:en?.d||record.desc}:record;
+   window.PandoraStageItemUI?.attachPreview(anchor,resolved,
+    row=>wikiIcon(dest,id,row),hasSoul?'soul':'item');
+  }
+  return anchor;
  };
  const matchesWords=(text,query)=>wikiIndex.normalize(query).split(' ')
   .filter(Boolean).every(term=>text.includes(term));
@@ -1574,6 +1582,7 @@ function renderWiki(root){
 
  const draw=(detailOnly=false)=>{
   const previousScroll=browse.scrollTop,previousDetailScroll=detail.scrollTop;
+  window.PandoraStageItemUI?.dismissPreview();
   const sourceKey=wikiSelection.type+':'+String(wikiSelection.id??'');
   if(wikiSourceRecord!==sourceKey){
    wikiSourceShown=80;wikiUsageShown=80;wikiSourceRecord=sourceKey;
@@ -1837,15 +1846,27 @@ function renderWiki(root){
      const names=lang==='en'?{physical:'Physical',fire:'Fire',cold:'Ice',
       lightning:'Lightning',poison:'Poison',charm:'Charm',magic:'Magic',
       holy:'Holy',dark:'Dark'}:
-      {physical:'Физическая',fire:'Огонь',cold:'Лёд',
+      {physical:'Физическое',fire:'Огонь',cold:'Лёд',
        lightning:'Молния',poison:'Яд',charm:'Чары',
        magic:'Магия',holy:'Свет',dark:'Тьма'};
-     const box=h('details',{class:'wiki-monster-resists'},[
-      h('summary',{text:wt('Сопротивления монстра','Monster resistances')})
-     ]);
-     for(const [key,value] of Object.entries(rec.resists))
-      box.append(h('span',{text:(names[key]||key)+': '+value}));
-     detail.append(box);
+     const symbols={physical:'⚔',fire:'♨',cold:'❄',lightning:'ϟ',poison:'☣',
+      charm:'✧',magic:'✦',holy:'☼',dark:'☾'};
+     const entries=Object.entries(rec.resists).filter(([,value])=>
+      Number.isFinite(Number(value)));
+     if(entries.length){
+      detail.append(h('h4',{text:wt('Сопротивления','Resistances')}));
+      const grid=h('div',{class:'wiki-monster-resists',role:'list'});
+      for(const [key,value]of entries){
+       const numeric=Number(value);
+       grid.append(h('div',{class:'wiki-monster-resist'+(numeric<0?' negative':''),
+        role:'listitem'},[
+        h('span',{class:'wiki-resist-glyph','aria-hidden':'true',text:symbols[key]||'✧'}),
+        h('span',{class:'wiki-resist-name',text:names[key]||key}),
+        h('strong',{text:String(numeric)})
+       ]));
+      }
+      detail.append(grid);
+     }
     }
     detail.append(h('h4',{text:wt('Места появления','Spawn locations')}));
     const places=wikiIndex.locations(id);
@@ -1915,7 +1936,9 @@ function renderWiki(root){
     if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
      class:'wiki-instance-kind',text:wt('Сценарий задания','Quest scenario')
     }));
-    if(rec.blurb)detail.append(h('p',{class:'wiki-description',text:rec.blurb}));
+    const description=type==='instance'&&lang!=='en'?
+     (rec.blurbRu||null):rec.blurb;
+    if(description)detail.append(h('p',{class:'wiki-description',text:description}));
     const mobs=rec.mobs||[];
     if(mobs.length){
      const roster=mobs.map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}));

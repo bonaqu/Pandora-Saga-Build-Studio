@@ -124,6 +124,19 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.goto(base+'/#wiki/monster/21103',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-loot-chip').first().waitFor({state:'visible',timeout:20000});
   assert.ok(await page.locator('.wiki-loot-chip').count()>=1);
+  assert.equal(await page.locator('.wiki-monster-resist').count(),9,
+   'Monster resistances must be visible, not collapsed');
+  const lootLink=page.locator('.wiki-loot-chip .wiki-link').first();
+  await lootLink.hover();
+  await page.locator('.stage-hover-preview.stage-item-tooltip').waitFor({state:'visible'});
+  assert.ok((await page.locator('.stage-hover-preview.stage-item-tooltip').innerText()).length>5);
+  await page.locator('.wiki-page h3').click();
+  assert.equal(await page.locator('.stage-hover-preview.stage-item-tooltip').count(),0);
+  // Quest instances have original English source text and a checked-in RU
+  // translation, even when the D1 snapshot predates the translated field.
+  await page.goto(base+'/#wiki/instance/20030040',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page .wiki-description').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-page .wiki-description').innerText(),/беглеца/);
   await page.goto(base+'/#wiki/item/1',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-recipe-use').first().waitFor({state:'visible',timeout:20000});
   assert.equal(await page.locator('.wiki-recipe-use').count(),3);

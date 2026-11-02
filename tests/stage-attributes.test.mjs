@@ -16,6 +16,18 @@ test('character portrait can toggle source-backed stats without page scroll',()=
  assert.match(attrs,/\['effects','Эффекты'\]/);
  assert.match(app,/function renderStageAttributes\(/);
 });
+test('Hero Book summary groups source-backed results and navigates to relevant chapters',()=>{
+ const attrs=get('stage-attributes.js'),css=get('style.css');
+ assert.match(attrs,/function summaryPage\(body,calc,onPage\)/);
+ assert.match(attrs,/class:'stage-result-section'/);
+ assert.match(attrs,/class:'stage-result-section-head'/);
+ assert.match(attrs,/onclick:\(\)=>onPage\(group\.page\)/);
+ assert.match(attrs,/summaryPage\(body,modifiers,onPage\)/);
+ assert.match(css,/\.stage-result-section-head/);
+ assert.match(attrs,/class:'stage-buff-overview'/);
+ assert.match(attrs,/class:'stage-book-buff-optional'/);
+ assert.match(css,/\.stage-book-buff-optional/);
+});
 test('partial combat preview does not imply fully verified combat stats',()=>{
  const attrs=get('stage-attributes.js');
  assert.match(attrs,/Подробнее о точности расчёта/);

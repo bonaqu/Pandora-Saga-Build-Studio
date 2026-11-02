@@ -25,5 +25,6 @@ test('monster encyclopedia exposes existing OS level HP AC and resistances',()=>
  assert.match(app,/class:'wiki-monster-stats'/);
  assert.match(app,/rec\.magicProtection/);
  assert.match(app,/rec\.resists/);
- assert.match(app,/Сопротивления монстра/);
+ assert.match(app,/Сопротивления/);
+ assert.match(app,/class:'wiki-monster-resist'/);
 });

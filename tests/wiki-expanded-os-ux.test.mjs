@@ -84,7 +84,7 @@ test('wiki shows localized game class names and consistent source labels',()=>{
  assert.match(app,/PandoraItemPresentation\.kind\(rec,lang\)/);
  assert.match(app,/keys\.map\(classLabel\)\.filter\(Boolean\)/);
  assert.match(app,/const monsterStats=/);
- assert.match(app,/Monster resistances/);
+ assert.match(app,/Monster resistances|Resistances/);
  assert.match(app,/const currencies=\[\[wt\('Золото','Gold'\)/);
  assert.doesNotMatch(app,/id\.replaceAll\('_',' '\)/);
  assert.match(app,/if\(fromD1&&\(snapshots\.size!==1\|\|unknown\.length\)\)/);
@@ -227,6 +227,19 @@ test('monster loot and item-to-NPC relationships use compact accessible cards',(
  assert.match(app,/const dest=hasChest\?'chest':hasSoul\?'soul':'item'/);
  assert.match(css,/\.wiki-loot-flow/);
  assert.match(css,/\.wiki-recipe-uses/);
+});
+test('encyclopedia reuses shared equipment hover previews, exposes resistance chips and RU instance descriptions',()=>{
+ const app=read('app.js'),ui=read('stage-item-ui.js'),css=read('style.css');
+ const instances=JSON.parse(read('data/os/instances.json'));
+ assert.equal(instances.length,6);
+ assert.ok(instances.every(x=>x.blurbRu&&x.blurbRu!==x.blurb));
+ assert.match(app,/PandoraStageItemUI\?\.attachPreview\(anchor,resolved/);
+ assert.match(app,/PandoraStageItemUI\?\.dismissPreview\(\)/);
+ assert.match(ui,/document\.addEventListener\?\.\('pointerdown'/);
+ assert.match(app,/class:'wiki-monster-resist'/);
+ assert.doesNotMatch(app,/h\('details',\{class:'wiki-monster-resists'/);
+ assert.match(app,/rec\.blurbRu\|\|null/);
+ assert.match(css,/\.wiki-resist-glyph/);
 });
 test('absent OS rune has no player-facing setting or live calculation contribution',()=>{
  const calc=read('os-calculator.js'),app=read('app.js');
