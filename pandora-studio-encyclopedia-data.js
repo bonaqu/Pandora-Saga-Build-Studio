@@ -138,10 +138,13 @@ function build(data){
 
  // Preserve all original records for game formulas, links and source relations.
  // Suppress only exact display copies and script-only variants of active skills.
- const entries={},terms={},aliases={},variants={};
+ const entries={},terms={},aliases={},variants={},byName={};
+ const zoneMonsterIds=new Set();
+ for(const zone of data.tables?.zoneDrops||[])for(const group of zone.rows||[])
+  if(group.mob!=null)zoneMonsterIds.add(String(group.mob));
  for(const [type,records] of Object.entries(chapters)){
   const all=Object.entries(records),hidden=new Map(),signatures=new Map();
-  const nameGroups=new Map();
+  const nameGroups=new Map(),monsterTwins=type==='monster'?new Map():null;
   const label=([id,rec])=>type==='chest'?(data.items?.[id]?.name||rec.name):rec.name;
   for(const pair of all){
    const name=normalizeSearch(label(pair));
@@ -151,12 +154,26 @@ function build(data){
    const content=Object.fromEntries(Object.entries(pair[1])
     .filter(([key])=>key!=='id'&&key!=='iconId')
     .sort(([a],[b])=>a.localeCompare(b)));
-   // Monsters with the same stats but different loot tables may be distinct
-   // in-world variants. Do not merge those sources automatically.
-   const loot=type==='monster'?{source:data.drops?.[pair[0]]||null,extra:manualMonsterSources.get(pair[0])||[]}:null;
-   const signature=name+'|'+JSON.stringify(content)+'|'+JSON.stringify(loot);
-   if(signatures.has(signature))hidden.set(pair[0],signatures.get(signature));
+   const signature=name+'|'+JSON.stringify(content);
+   if(monsterTwins){
+    const twins=monsterTwins.get(signature)||[];
+    twins.push(pair[0]);monsterTwins.set(signature,twins);
+   }else if(signatures.has(signature))hidden.set(pair[0],signatures.get(signature));
    else signatures.set(signature,pair[0]);
+  }
+  if(monsterTwins){
+   // Stat-identical orphan records are display aliases; preserve numeric OS
+   // IDs. Source-backed event variants remain separate when both have evidence.
+   const evidence=id=>(drops.get(id)?.length||0)+(mobLocations.get(id)?.length||0)+
+    Number(zoneMonsterIds.has(id));
+   for(const ids of monsterTwins.values()){
+    if(ids.length<2)continue;
+    const sourced=ids.filter(id=>evidence(id)>0);
+    const primary=(sourced.length?sourced:ids)
+     .slice().sort((a,b)=>evidence(b)-evidence(a)||Number(a)-Number(b))[0];
+    for(const id of ids)
+     if(id!==primary&&!sourced.includes(id))hidden.set(id,primary);
+   }
   }
   if(type==='skill')for(const group of nameGroups.values()){
    const branches=new Map();
@@ -186,6 +203,13 @@ function build(data){
   }
   variants[type]=groups;
   entries[type]=all.filter(([id])=>canonical(id)===id);
+  const names=new Map();
+  for(const [id,rec] of entries[type]){
+   const labelKey=normalizeSearch(label([id,rec]));
+   const row=names.get(labelKey)||[];
+   row.push([id,rec]);names.set(labelKey,row);
+  }
+  byName[type]=names;
   terms[type]=new Map(all.map(([id,rec])=>[
    id,normalizeSearch([label([id,rec]),type==='soul'?data.items?.[id]?.name:null]
     .filter(Boolean).join(' '))
@@ -197,9 +221,8 @@ function build(data){
   const records=chapters[type]||{},entry=records[String(id)];
   const name=normalizeSearch(type==='chest'?data.items?.[id]?.name:entry?.name);
   if(!name)return [];
-  return (entries[type]||[]).filter(([key,rec])=>
-   key!==canonical(type,id)&&normalizeSearch(
-    type==='chest'?data.items?.[key]?.name:rec.name)===name);
+  return (byName[type]?.get(name)||[]).filter(([key])=>
+   key!==canonical(type,id));
  };
  const uniqueRows=(rows,key)=>[...new Map(rows.map(row=>[key(row),row])).values()];
  const allLocations=id=>uniqueRows(related('monster',id).flatMap(key=>mobLocations.get(key)||[]),
@@ -216,7 +239,9 @@ function build(data){
   });
  };
  return Object.freeze({
-  sources:id=>(sources.get(String(id))||[]).slice(),
+  sources:id=>uniqueRows(related('item',id).flatMap(key=>sources.get(key)||[]),
+   row=>[row.type,row.id,row.kind,row.roll,row.percent,row.condition,
+    row.quantity,row.chestKind,row.mobId].join(':')),
   drops:allDrops,
   trades:id=>(npcTrades.get(String(id))||[]).slice(),
    ownerNpcItems:id=>(ownerNpcItems.get(String(id))||[]).slice(),
