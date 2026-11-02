@@ -38,7 +38,7 @@ function validDrops(rows){
   (r.p==null||number(r.p)&&r.p>=0&&r.p<=100)&&
   (r.n==null||Number.isInteger(r.n)&&r.n>=1&&r.n<=999999)&&
   (r.slotAdd==null||Number.isInteger(r.slotAdd)&&r.slotAdd>=0&&r.slotAdd<=3)&&
-  (r.t==null||typeof r.t==='string'&&r.t.length<=240))));
+  (r.t==null||typeof r.t==='string'&&r.t.length<=240)));
 }
 function validChest(rolls){
  return Array.isArray(rolls)&&rolls.length<=50&&rolls.every(group=>
@@ -47,7 +47,7 @@ function validChest(rolls){
    (row.p==null||number(row.p)&&row.p>=0&&row.p<=100)&&
    (row.n==null||Number.isInteger(row.n)&&row.n>=1&&row.n<=999999)&&
    (row.plus==null||Number.isInteger(row.plus)&&row.plus>=0&&row.plus<=20)&&
-   (row.soul==null||Number.isInteger(row.soul)&&row.soul>=0&&row.soul<=3))));
+   (row.soul==null||Number.isInteger(row.soul)&&row.soul>=0&&row.soul<=3)));
 }
 function parse(value){try{return JSON.parse(value)}catch{return null}}
 function apply(data,overrides){
