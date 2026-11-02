@@ -1900,3 +1900,15 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .account-signout:hover,.account-signout:focus-visible{color:#ffe0b1;border-color:#ba925d;background:#3b281a}
 @media(max-width:720px){.wiki-monster-resists{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:390px){.wiki-monster-resists{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* Priest and guild buff configuration sits inside the existing Hero Book. */
+.stage-priest-fields{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.stage-priest-fields input{min-width:0;width:100%;border:1px solid #86643e;border-radius:4px;
+ padding:7px;background:#19120e;color:#f1d6a7;font:600 13px Manrope,Arial,sans-serif}
+.stage-priest-fields input:focus-visible{outline:2px solid #e0b878;outline-offset:1px}
+.stage-priest-fields input:disabled{opacity:.45}
+.stage-guild-level-effects{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;
+ padding:7px;border:1px solid #8d6941;border-radius:5px;background:#231912}
+.stage-guild-level-effects span{padding:7px;border:1px solid #634b30;border-radius:4px;
+ font-size:10px;line-height:1.4;color:#e8cb9f;background:#37271a}
+@media(max-width:460px){.stage-priest-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
