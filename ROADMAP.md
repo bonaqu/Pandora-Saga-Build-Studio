@@ -1,11 +1,21 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.303.0 (`2026.11.02.303`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.304.0 (`2026.11.02.304`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.304.0 — safe game-catalog admin refresh and neutral copy
+
+- [x] Neutral game-data wording in administrator UI, source comments and maintained project documentation, without changing actual source hostname, JSON IDs or D1 routing.
+- [x] Read upstream `meta` again after loading all 17 source datasets. Refuse to compare a mixed source revision.
+- [x] On 401 clear **only** the expired administrator login. The separate normal player account and local build drafts stay untouched.
+- [x] Disable per-record and per-group approval during staging. If D1 has already published, a failed follow-up page refresh never claims a rollback.
+- [x] Update the Cloudflare owner guide to the current selective-review interface and maintain a player-facing wording test.
+- [ ] Confirm production authenticated catalog import with a safe isolated write test. Existing read-only green checks do not prove authenticated publishing.
+- [ ] Verify HP/MP, magic refinement and final defense against actual current game-client results before altering uncertain coefficients.
 
 ## Source update 0.303.0 — Preserve published D1 Legacy localization
 

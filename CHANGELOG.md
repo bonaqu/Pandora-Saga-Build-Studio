@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.304.0 — 2026.11.02.304 · Safe game-catalog review and neutral project copy
+
+- Removed direct source-server branding from maintained documentation and runtime copy. All technical game-data URLs, stable IDs and D1 datasets remain unchanged.
+- Simplified admin controls to **Игровой каталог → Проверить обновления игрового каталога → Применить выбранные изменения**.
+- Reject mixed remote revisions by rechecking metadata after 17 source downloads. Authorised source proxy is covered by new allowlist/credential tests.
+- Administrator 401 cannot sign out an independent player account. Decisions are locked during publishing. A successful D1 publication is never misreported as rolled back if UI reload fails.
+- Replaced an obsolete Cloudflare import procedure with the actual interactive selective-review instructions. No production database writes were performed.
+
+
+
 ## 0.303.0 — 2026.11.02.303 · D1 Legacy translation isolation
 
 - Fixed a hidden cross-data overwrite risk: accepting new current game server items, skills or tables must not regenerate the published D1 `legacyLocale` namespace from the local GitHub archive.
