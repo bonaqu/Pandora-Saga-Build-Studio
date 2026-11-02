@@ -59,6 +59,20 @@ try{
  console.log('WARN GitHub PR Worker capability — '+error.message);
 }
 try{
+ // Read-only version check: this endpoint exists only in the new Worker release.
+ const {response,payload}=await read(worker+'/api/runtime-capabilities',{cors:true});
+ const capabilities=['itemedit','tradeedit','acquireedit','wikiedit',
+  'dropedit','chestedit','spawnedit'];
+ const deployed=response.ok&&payload?.codeRelease==='0.311.0'&&
+  payload?.githubOwnerExport===true&&
+  capabilities.every(k=>payload.ownerEditors?.includes(k));
+ console.log((deployed?'OK  ':'WARN')+' Worker runtime capability marker — '+
+  (deployed?'0.311.0 + 7 owner editor APIs':'current Cloudflare Worker release is not yet verified')+
+  ' / HTTP '+response.status+' / reported '+(payload?.codeRelease||'unavailable'));
+}catch(error){
+ console.log('WARN Worker runtime capability marker — '+error.message);
+}
+try{
  const {response}=await read(worker+'/api/health',{method:'OPTIONS',cors:true});
  check(response.status===204&&response.headers.get('access-control-allow-origin')===origin,
   'Worker OPTIONS preflight');
