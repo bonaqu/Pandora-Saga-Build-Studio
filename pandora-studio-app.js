@@ -2210,17 +2210,55 @@ function renderWiki(root){
      }
     }else if(places.length)detail.append(linkFlow(places.map(loc=>
      wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
-    const loot=wikiIndex.drops(id);
+    const ownDrop=wikiData.drops?.[id]||{d:[],s:[]};
+    const dropRows=()=>({
+     d:(ownDrop.d||[]).map(x=>({...x})),
+     s:(ownDrop.s||[]).map(x=>({...x}))
+    });
+    const loot=adminEditing&&adminToken?[
+     ...dropRows().d.map((x,ix)=>({
+      itemId:String(x.i),quantity:x.n??1,percent:x.p??null,kind:'normal',
+      slotAdd:x.slotAdd||0,group:'d',sourceIndex:ix})),
+     ...dropRows().s.map((x,ix)=>({
+      itemId:String(x.i),quantity:x.n??1,percent:x.p??null,kind:'conditional',
+      slotAdd:x.slotAdd||0,group:'s',sourceIndex:ix}))
+    ]:wikiIndex.drops(id);
     detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')+
      (loot.length?' · '+loot.length:'')}));
     if(loot.length){
      const flow=h('div',{class:'wiki-loot-flow'});
      for(const row of loot){
+      const update=(field,value)=>{
+       const all=dropRows(),current=all[row.group]?.[row.sourceIndex];
+       if(!current)throw Error('Запись добычи не найдена');
+       all[row.group][row.sourceIndex]={...current,[field]:value};
+       return saveWikiRelationRows('drop',id,all);
+      };
       const entry=h('div',{class:'wiki-loot-chip'+
        (wikiSelection.highlight===row.itemId?' highlighted':'')});
       entry.append(itemLink(row.itemId,dataName('item',row.itemId),id));
-      if(row.quantity>1)entry.append(h('small',{class:'wiki-loot-quantity',text:'×'+row.quantity}));
-      if(row.percent!=null)entry.append(h('small',{class:'wiki-loot-chance',text:row.percent+'%'}));
+      if(adminEditing&&adminToken){
+       const quantity=h('small',{class:'wiki-loot-quantity wiki-edit-value',
+        text:'×'+row.quantity,title:'Двойной клик — изменить количество'});
+       quantity.ondblclick=e=>{e.preventDefault();editWikiValue(quantity,row.quantity,
+        {type:'number',integer:true,min:1,max:999999,
+         onCommit:n=>update('n',n)})};
+       entry.append(quantity);
+      }else if(row.quantity>1)entry.append(h('small',{class:'wiki-loot-quantity',text:'×'+row.quantity}));
+      if(adminEditing&&adminToken){
+       const chance=h('small',{class:'wiki-loot-chance wiki-edit-value',
+        text:row.percent==null?'Шанс не указан':row.percent+'%',
+        title:'Двойной клик — указать шанс выпадения'});
+       chance.ondblclick=e=>{e.preventDefault();editWikiValue(chance,row.percent??0,
+        {type:'number',min:0,max:100,
+         onCommit:n=>update('p',n)})};
+       entry.append(chance);
+       entry.append(h('button',{type:'button',class:'wiki-owner-remove',
+        text:'×','aria-label':'Удалить добычу '+dataName('item',row.itemId),
+        onclick:()=>void saveWikiRelationRows('drop',id,{
+         ...dropRows(),[row.group]:dropRows()[row.group].filter((_,ix)=>ix!==row.sourceIndex)})
+         .catch(e=>showStudioToast(e.message,'warning'))}));
+      }else if(row.percent!=null)entry.append(h('small',{class:'wiki-loot-chance',text:row.percent+'%'}));
       if(row.kind==='conditional')entry.append(h('small',{class:'wiki-loot-conditional',
        text:wt('Особый','Conditional')}));
       if(row.slotAdd>0)entry.append(h('small',{class:'wiki-loot-sockets',
@@ -2228,6 +2266,17 @@ function renderWiki(root){
       flow.append(entry);
      }
      detail.append(flow);
+    }
+    if(adminEditing&&adminToken){
+     for(const [group,label] of [['d','+ Обычная добыча'],['s','+ Особая добыча']]){
+      detail.append(h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+       text:label,onclick:()=>wikiItemChoice(detail,i=>{
+        const next=dropRows();
+        if(next[group].length>=200)throw Error('Превышен лимит записей добычи');
+        next[group].push({i,n:1,p:null});
+        return saveWikiRelationRows('drop',id,next);
+       })}));
+     }
     }
   }else if(type==='npc'){
     const locations=rec.maps||[];
