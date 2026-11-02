@@ -72,7 +72,7 @@ test('Soul attributes share a single 2-column frame and show cautious price cont
  assert.match(app,/class:'wiki-soul-properties'/);
  assert.match(app,/class:'wiki-soul-properties-half wiki-soul-price-pane'/);
  assert.match(app,/Это не рыночная цена между игроками/);
- assert.match(css,/grid-template-columns:minmax\(0,1fr\) minmax\(0,1fr\)/);
+ assert.match(css,/grid-template-columns:max-content max-content/);
 });
 test('admin text and search editors use contenteditable, not username inputs',()=>{
  const app=file('pandora-studio-app.js');
