@@ -375,6 +375,10 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 }
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
+if(path==='/api/runtime-capabilities'&&method==='GET')
+ return json({codeRelease:'0.311.0',ownerEditors:[
+  'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit'],
+  githubOwnerExport:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
