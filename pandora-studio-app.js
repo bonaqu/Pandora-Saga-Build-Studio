@@ -2508,6 +2508,7 @@ function renderWiki(root){
      linkFlow(namedPlaces.map(mapId=>wikiLink('◈ '+dataName('map',mapId),'map',mapId,id)))
     ]));
     const groups=rec.rolls||[];
+    const changeChest=next=>saveWikiRelationRows('chest',id,next);
     detail.append(h('h4',{text:wt('Содержимое шкатулки','Chest contents')}));
     if(!groups.length)detail.append(h('p',{class:'muted',text:wt(
      'Состав наград пока не указан в игровом каталоге.',
@@ -2523,27 +2524,64 @@ function renderWiki(root){
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
      const options=h('div',{class:'wiki-chest-options'});
-     for(const row of group){
+     for(const [rowIndex,row] of group.entries()){
       const option=h('div',{class:'wiki-chest-reward'+
        (wikiSelection.highlight===String(row.i)?' highlighted':'')});
       option.append(itemLink(row.i,dataName('item',row.i),id));
-      if(row.n!=null&&row.n!==1)option.append(h('span',{class:'wiki-reward-quantity',
+      if(adminEditing&&adminToken){
+       const quantity=h('span',{class:'wiki-reward-quantity wiki-edit-value',
+        text:'×'+(row.n??1),title:'Двойной клик — изменить количество'});
+       quantity.ondblclick=e=>{e.preventDefault();
+        editWikiValue(quantity,row.n??1,{type:'number',min:1,max:999999,integer:true,
+         onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
+          g.map((r,ri)=>ri===rowIndex?{...r,n}:r)))});
+       };
+       option.append(quantity);
+      }else if(row.n!=null&&row.n!==1)option.append(h('span',{class:'wiki-reward-quantity',
        text:'×'+row.n}));
       if(row.plus!=null&&row.plus>0)option.append(h('small',{class:'wiki-reward-enhance',
        text:'+'+row.plus}));
       if(row.soul!=null&&row.soul>0)option.append(h('small',{class:'wiki-reward-enhance',
        text:wt('Душ: ','Souls: ')+row.soul}));
-      if(row.p!=null)option.append(h('small',{class:'wiki-reward-percent'+
-       (row.p===100?' certain':''),
-       title:wt('Вероятность внутри группы','Probability within group'),
+      if(adminEditing&&adminToken){
+       const chance=h('small',{class:'wiki-reward-percent wiki-edit-value',
+        title:'Двойной клик — изменить вероятность внутри группы',
+        text:row.p==null?'Шанс не указан':row.p+'%'});
+       chance.ondblclick=e=>{e.preventDefault();
+        editWikiValue(chance,row.p??0,{type:'number',min:0,max:100,
+         onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
+          g.map((r,ri)=>ri===rowIndex?{...r,p:n}:r)))});
+       };
+       option.append(chance);
+       option.append(h('button',{type:'button',class:'wiki-owner-remove',
+        text:'×','aria-label':'Удалить предмет из сундука',
+        onclick:()=>void changeChest(groups.map((g,gi)=>gi!==i?g:
+         g.filter((_,ri)=>ri!==rowIndex)))
+         .catch(e=>showStudioToast(e.message,'warning'))}));
+      }else if(row.p!=null)option.append(h('small',{class:'wiki-reward-percent'+
+       (row.p===100?' certain':''),title:wt('Вероятность внутри группы','Probability within group'),
        text:row.p+'%'}));
       options.append(option);
+     }
+     if(adminEditing&&adminToken){
+      options.append(h('button',{type:'button',class:'wiki-owner-plus',
+       text:'+ Предмет',onclick:()=>wikiItemChoice(options,itemId=>
+        changeChest(groups.map((g,gi)=>gi!==i?g:[...g,{i:itemId,n:1,p:null}])))}));
+      options.append(h('button',{type:'button',class:'wiki-trade-delete',
+       text:'Удалить группу',onclick:()=>void changeChest(groups.filter((_,gi)=>gi!==i))
+        .catch(e=>showStudioToast(e.message,'warning'))}));
      }
      const section=h('details',{class:'wiki-chest-group'},[heading,options]);
      section.open=i===0;
      gallery.append(section);
     }
     detail.append(gallery);
+    if(adminEditing&&adminToken)detail.append(h('button',{type:'button',
+     class:'wiki-owner-plus wiki-add-source',text:'+ Группа наград',
+     onclick:()=>wikiItemChoice(detail,itemId=>{
+      if(groups.length>=50)throw Error('Достигнут предел групп');
+      return changeChest([...groups,[{i:itemId,n:1,p:null}]]);
+     })}));
   }
   if(detailOnly)detail.scrollTop=previousDetailScroll;
  };
