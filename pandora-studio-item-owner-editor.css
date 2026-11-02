@@ -282,3 +282,13 @@
 .stage-active-elemental{border-color:rgba(181,114,46,.48);
  background:linear-gradient(125deg,rgba(73,41,21,.42),rgba(27,20,16,.62))}
 .stage-elemental-explanation{color:#d8b98b;font-size:.81rem}
+
+
+/* Historical district NPC registry: compact, accessible and native-looking. */
+.wiki-page .wiki-map-npcs{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:7px;margin:9px 0}
+.wiki-page .wiki-map-npc{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-width:0;padding:9px 11px;border:1px solid rgba(180,142,94,.29);background:rgba(31,24,20,.42);border-radius:6px}
+.wiki-page .wiki-map-npc .wiki-link{font-size:13px;font-weight:600}
+.wiki-page .wiki-map-npc small{font-size:11px;color:var(--text-muted,#bba992);line-height:1.4}
+.wiki-page .wiki-astir-npc-source{display:block;margin:6px 0 10px;color:var(--text-muted,#bba992);font-size:11px;line-height:1.45}
+.wiki-page .wiki-chest-master-row{display:flex;flex-wrap:wrap;gap:7px 12px;align-items:center;margin-top:4px}
+.wiki-page .wiki-chest-master-row .wiki-link:last-child{font-size:11px;opacity:.85}
