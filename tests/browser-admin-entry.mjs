@@ -237,7 +237,7 @@ export async function runAdminEntrySmoke(browser,base){
   const npcFilter=page.locator('.wiki-controls input[type="search"]');
   await npcFilter.click();
   await npcFilter.fill('Кларис');
-  const npcListing=page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"] .wiki-link');
+  const npcListing=page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"]');
   try{await npcListing.waitFor({state:'visible',timeout:5000})}
   catch{
    const state=await page.evaluate(()=>({
