@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.305.0 — 2026.11.02.305 · Reviewed catalog update safety for GitHub
+
+- Rename the downloaded administrator-approved catalog artifact to `pandora-studio-reviewed-catalog.json`; existing export format remains supported for backward compatibility.
+- Name the import bridge `apply-reviewed-pandora-catalog.mjs`, retaining the stable `npm run catalog:review` command.
+- Before `--write`, detect uncommitted changes under `data/os/` and stop rather than silently overwriting a developer's source edits.
+- Prepare all changes to temporary same-directory files, then commit replacements and restore already replaced originals if an ordinary filesystem error occurs. Dry run still never modifies data.
+- No Cloudflare database writes or player-account changes.
+
+
+
 ## 0.304.0 — 2026.11.02.304 · Safe game-catalog review and neutral project copy
 
 - Removed direct source-server branding from maintained documentation and runtime copy. All technical game-data URLs, stable IDs and D1 datasets remain unchanged.

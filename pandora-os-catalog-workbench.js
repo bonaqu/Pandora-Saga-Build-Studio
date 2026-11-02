@@ -229,12 +229,12 @@
     exportButton.onclick=()=>{
       try {
         const {combined}=prepare();
-        const packageData={format:'pandora-os-reviewed.v1',
+        const packageData={format:'pandora-studio-reviewed.v1',
           expectedActive:activeSnapshot,source:mode,datasets:combined};
         const blob=new Blob([JSON.stringify(packageData,null,2)],{type:'application/json'});
         const url=URL.createObjectURL(blob);
         const anchor=document.createElement('a');
-        anchor.href=url;anchor.download='pandora-os-reviewed-catalog.json';
+        anchor.href=url;anchor.download='pandora-studio-reviewed-catalog.json';
         document.body.append(anchor);anchor.click();anchor.remove();
         URL.revokeObjectURL(url);
         status.textContent='Выбранный снимок скачан. GitHub не изменён.';

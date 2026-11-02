@@ -1,11 +1,20 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.304.0 (`2026.11.02.304`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.305.0 (`2026.11.02.305`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.305.0 — safe reviewed game-data update for GitHub
+
+- [x] The administrator export is named for Pandora Studio rather than an upstream host; older downloaded files remain importable through the compatibility format.
+- [x] Rename the local catalog utility to `scripts/apply-reviewed-pandora-catalog.mjs` and keep `npm run catalog:review` unchanged.
+- [x] Refuse `--write` if tracked or untracked game-data changes exist, so an older export cannot silently overwrite local work.
+- [x] Stage all JSON replacements to unique temporary files first; restore already renamed files on ordinary errors.
+- [x] Continue to verify the 17 source datasets before touching files and never write to D1 from this tool.
+- [ ] Direct secure GitHub PR publishing from the website and real-game formula parity remain separate tasks.
 
 ## Source update 0.304.0 — safe game-catalog admin refresh and neutral copy
 

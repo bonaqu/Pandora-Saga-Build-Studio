@@ -9,8 +9,8 @@
 **D1 не обновляет файлы GitHub автоматически.** Кнопка «Скачать выбранное для GitHub» создаёт проверяемый JSON-экспорт. Обновить архив в собственном checkout можно только отдельно:
 
 ```bash
-npm run catalog:review -- ./pandora-os-reviewed-catalog.json
-npm run catalog:review -- ./pandora-os-reviewed-catalog.json --write
+npm run catalog:review -- ./pandora-studio-reviewed-catalog.json
+npm run catalog:review -- ./pandora-studio-reviewed-catalog.json --write
 npm test
 npm run test:browser
 ```

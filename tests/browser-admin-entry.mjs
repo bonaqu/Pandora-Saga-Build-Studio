@@ -104,7 +104,7 @@ export async function runAdminEntrySmoke(browser,base){
   const downloadPromise=page.waitForEvent('download');
   await dialog.getByRole('button',{name:'Скачать выбранное для GitHub'}).click();
   const download=await downloadPromise;
-  assert.equal(download.suggestedFilename(),'pandora-os-reviewed-catalog.json');
+  assert.equal(download.suggestedFilename(),'pandora-studio-reviewed-catalog.json');
   assert.match(await dialog.locator('.os-sync [role=status]').last().innerText(),/GitHub не изменён/);
   // Exercise the authenticated game-data proxy as well as archive preview.
   await dialog.getByRole('button',{name:'Проверить обновления игрового каталога'}).click();
