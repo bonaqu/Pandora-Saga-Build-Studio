@@ -127,7 +127,8 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.ok(await page.locator('.wiki-chest-reward .wiki-reward-percent').count()>3);
   assert.equal(await page.locator('.wiki-chest-opening').count(),1);
   assert.ok(await page.locator('.wiki-chest-location .wiki-link').count()>=1);
-  assert.match(await page.locator('.wiki-chest-opening').innerText(),/Культье/);
+  assert.match(await page.locator('.wiki-chest-opening').innerText(),/Кларис/);
+  assert.doesNotMatch(await page.locator('.wiki-chest-opening').innerText(),/Культье/);
   assert.match(await page.locator('.wiki-chest-opening').innerText(),/Астир/);
   assert.ok(await page.locator('.wiki-chest-opening .wiki-link[href="#wiki/map/astir-kingdom"]').count()>=1);
   // Source has category labels for colored boxes, but no item or chance table.
@@ -137,44 +138,39 @@ export async function runEquipmentLocaleSmoke(browser,base){
    assert.match(await page.locator('.wiki-chest-unverified').innerText(),new RegExp(category));
    assert.equal(await page.locator('.wiki-chest-reward').count(),0);
   }
-  // Independent country NPCs must never be moved into Astir city districts.
+  // Country NPCs remain in country records, not in similarly named Astir districts.
   await page.goto(base+'/#wiki/map/1003001',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-page h3').innerText(),/Королевство Сэнт-Фальстайн/);
   assert.match(await page.locator('.wiki-map-kind').innerText(),/Государство/);
   assert.equal(await page.locator('.wiki-map-npcs').count(),0);
-  assert.equal(await page.locator('.wiki-nation-territory').count(),0);
   assert.ok(await page.locator('.wiki-page .wiki-link[href^="#wiki/npc/"]').count()>=1);
-  const districts=page.locator('.wiki-astir-neighborhoods .wiki-link');
-  for(const [district,nation,name,npc,minimum] of [
-   ['astir-kingdom','1003001','Королевство Сэнт-Фальстайн','Культье',10],
-   ['astir-union','1002001','Союз северных племен Ванриг','Олсон',11],
-   ['astir-empire','1004001','Лотарская империя','Кларис',11]]){
+  for(const district of ['astir-union','astir-empire']){
    await page.goto(base+'/#wiki/map/'+district,{waitUntil:'domcontentloaded'});
-   await page.locator('.wiki-map-npcs .wiki-link').first().waitFor({state:'visible',timeout:20000});
-   assert.ok(await page.locator('.wiki-map-npc').count()>=minimum);
-   assert.equal(await page.locator('.wiki-nation-territory').count(),0);
-   assert.equal(await page.locator('.wiki-astir-neighborhoods .wiki-link').count(),4);
-   assert.ok(await page.locator('.wiki-map-npc .wiki-link')
-    .filter({hasText:npc}).count()===1);
-   assert.equal(await page.locator('.wiki-location-list-heading').count(),3);
-   await page.goto(base+'/#wiki/map/'+nation,{waitUntil:'domcontentloaded'});
-   assert.match(await page.locator('.wiki-page h3').innerText(),new RegExp(name));
-   assert.equal(await page.locator('.wiki-map-npcs').count(),0);
+   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
+   assert.equal(await page.locator('.wiki-map-npc').count(),0);
+   assert.match(await page.locator('.wiki-page').innerText(),/Подтверждённых сведений о NPC пока нет/);
   }
   await page.goto(base+'/#wiki/map/astir-kingdom',{waitUntil:'domcontentloaded'});
-  await page.locator('.wiki-map-npcs .wiki-link').filter({hasText:'Культье'}).click();
-  await page.waitForFunction(()=>location.hash==='#wiki/npc/astir-npc-kingdom-cultier');
-  assert.match(await page.locator('.wiki-page h3').innerText(),/Культье/);
-  assert.match(await page.locator('.wiki-page .item-fields').innerText(),/K-11/);
+  await page.locator('.wiki-map-npcs .wiki-link').first().waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.wiki-map-npc').count(),1);
+  assert.match(await page.locator('.wiki-map-npc').innerText(),/Кларис/);
+  assert.equal(await page.locator('.wiki-astir-neighborhoods .wiki-link').count(),4);
+  assert.equal(await page.locator('.wiki-nation-territory').count(),0);
+  await page.locator('.wiki-map-npc .wiki-link').click();
+  await page.waitForFunction(()=>location.hash==='#wiki/npc/astir-npc-kingdom-claris');
+  assert.match(await page.locator('.wiki-page h3').innerText(),/Кларис/);
+  assert.match(await page.locator('.wiki-page .item-fields').innerText(),/Открытие сундуков/);
+  assert.equal(await page.locator('.wiki-page .item-fields').innerText().then(s=>s.includes('K-11')),false);
   assert.ok(await page.locator('.wiki-page a[href="#wiki/map/astir-kingdom"]').count()>=1);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
-  assert.match(await page.locator('.wiki-page h3').innerText(),/Культье/);
+  assert.match(await page.locator('.wiki-page h3').innerText(),/Кларис/);
   await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
-  assert.equal(await page.locator('.wiki-chest-master-row').count(),2);
-  assert.ok(await page.locator('.wiki-chest-master-row a[href="#wiki/map/astir-empire"]').count()===1);
-  assert.ok(await page.locator('.wiki-chest-master-row a[href="#wiki/map/astir-kingdom"]').count()===1);
+  assert.equal(await page.locator('.wiki-chest-master-row').count(),1);
+  assert.equal(await page.locator('.wiki-chest-master-row a[href="#wiki/map/astir-empire"]').count(),0);
+  assert.equal(await page.locator('.wiki-chest-master-row a[href="#wiki/map/astir-kingdom"]').count(),1);
+  assert.equal(await page.locator('.wiki-chest-master-row a[href="#wiki/npc/astir-npc-kingdom-claris"]').count(),1);
   // Source-backed elemental selection and separate status/skill consumables.
   await page.goto(base+'/#wiki/item/452',{waitUntil:'domcontentloaded'});
   assert.equal(await page.locator('.wiki-elemental-type').count(),0);

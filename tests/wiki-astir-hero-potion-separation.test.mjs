@@ -11,7 +11,8 @@ const cond=ctx.window.PandoraConditionalItemBonuses;
 
 test('Astir has separate districts, while NPC locations retain original sovereign country IDs',()=>{
  const app=read('pandora-studio-app.js'),model=read('pandora-studio-astir-locations.js');
- assert.match(app,/Культье/);
+ assert.match(app,/Кларис/);
+ assert.doesNotMatch(app,/Культье/);
  assert.doesNotMatch(app,/Вастир/);
  for(const id of ['1001004','1002001','1003001','1004001'])
   assert.ok(maps[id]);
@@ -23,7 +24,7 @@ test('Astir has separate districts, while NPC locations retain original sovereig
  assert.match(app,/Районы города Астир/);
  assert.match(app,/wiki-map-npcs/);
  assert.match(app,/wikiLink\(name,'npc',npcId\)/);
- assert.match(model,/Культье/);
+ assert.doesNotMatch(model,/Культье/);
  assert.match(model,/Кларис/);
 });
 
