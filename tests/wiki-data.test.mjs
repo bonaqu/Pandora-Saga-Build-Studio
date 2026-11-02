@@ -92,7 +92,7 @@ test('all eight original level-reward series entries remain distinct and future 
  const wiki=ctx.window.PandoraWikiData.build({items,chests:boxes,
   trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
  assert.equal(boxes.boxes.length,32,'Original OS loot tables are unchanged');
- assert.equal(wiki.search('chest','').length,36);
+ assert.equal(wiki.search('chest','').length,52);
  assert.equal(wiki.rewardChest(51003).level,5);
  assert.equal(wiki.rewardChest(51005).family,'warrior');
  assert.equal(wiki.rewardChest(51018).family,'scout');
@@ -105,6 +105,22 @@ test('all eight original level-reward series entries remain distinct and future 
   assert.ok(wiki.search('item','').some(([key])=>key===String(id)));
  }
  assert.equal(wiki.rewardChest(80106),null);
+});
+test('location chests are indexed separately from storage upgrades and unverified loot',()=>{
+ const items=JSON.parse(fs.readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+ const maps=JSON.parse(fs.readFileSync(new URL('../data/os/maps.json',import.meta.url),'utf8'));
+ const chests=JSON.parse(fs.readFileSync(new URL('../data/os/chests.json',import.meta.url),'utf8'));
+ const wiki=ctx.window.PandoraWikiData.build({items,maps,chests,
+  trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
+ for(const id of ['51038','51040','51042','52000','52001','52011','900001'])
+  assert.ok(wiki.search('chest','').some(([key])=>key===id),'Missing chest '+id);
+ assert.equal(wiki.search('chest','Мальдии').length,1);
+ assert.equal(wiki.records('chest')['52011'].unlistedContents,true);
+ assert.equal(wiki.records('chest')['52011'].rolls.length,0);
+ assert.equal(wiki.chestPlaces('52011').length,2);
+ for(const id of [90057,90058,90059,90060,90061,90062])
+  assert.equal(wiki.records('chest')[id],undefined,'Warehouse upgrades are not loot chests');
+ assert.equal(chests.boxes.length,32,'Do not fabricate chest tables in OS data');
 });
 test('group rewards do not claim per-item probability',()=>{
  const w=ctx.window.PandoraWikiData.build({tables:{zoneDrops:[{map:8,rows:[{base:10,items:[{i:1},{i:2}]}]}]}});
