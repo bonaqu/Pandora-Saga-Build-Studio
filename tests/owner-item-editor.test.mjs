@@ -87,7 +87,8 @@ test('structured item overrides require authenticated requests and strict allowe
 test('all data-edit targets and runtime module loader are present',()=>{
  const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
  const html=readFileSync(new URL('index.html',root),'utf8');
- assert.match(app,/function openWikiItemEditor/);
+ assert.doesNotMatch(app,/function openWikiItemEditor/);
+ assert.match(app,/const effectOptions=window\.PandoraStudioItemOwnerEditor\.effectOptions/);
  assert.match(app,/PandoraStudioItemOwnerEditor\.applyItems/);
  assert.match(app,/data-lpignore/);
  assert.match(app,/data-edit-key.*item/);
@@ -125,6 +126,21 @@ test('visible owner entry points and read-only-until-focus search guards are pre
  assert.match(source,/input\.readOnly=true/);
  assert.match(source,/input\.addEventListener\('focus'/);
  assert.match(source,/input\.addEventListener\('blur'/);
+});
+
+test('in-page editor exposes every live item effect and no dead modal entry',()=>{
+ const items=JSON.parse(readFileSync(new URL('data/os/items.json',root),'utf8'));
+ const choices=editor.effectOptions(items);
+ const used=new Set(Object.values(items).flatMap(item=>(item.effects||[]).map(x=>x.func)));
+ assert.ok(used.size>=75,'verified source effects should not shrink silently');
+ for(const code of used)assert.ok(choices.some(option=>option.value===code),code);
+ assert.equal(new Set(choices.map(x=>x.value)).size,choices.length);
+ assert.ok(choices.every(x=>x.label&&typeof x.label==='string'));
+ const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ assert.match(app,/class:'wiki-owner-effects'/);
+ assert.match(app,/saveWikiItemField\(id,'effects'/);
+ assert.doesNotMatch(app,/openWikiItemEditor/);
+ assert.doesNotMatch(app,/Дополнительные эффекты'/);
 });
 
 test('inline owner kind is strictly validated and source item stays immutable',async()=>{
