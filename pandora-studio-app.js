@@ -3051,7 +3051,7 @@ function editor(el){
 
 function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=false,onCommit}={}){
  if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
- const before=String(initial??'');
+ const before=String(initial??''),visibleBefore=node.textContent;
  let finished=false,saving=false;
  const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
   type==='textarea'?h('textarea',{rows:4,class:'wiki-inline-input','aria-label':'Изменить описание'}):
@@ -3064,7 +3064,7 @@ function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=f
    el.selected=option.value===before;control.append(el);
   }
  }else control.value=before;
- const restore=()=>{if(node.isConnected){node.replaceChildren(document.createTextNode(before));node.classList.remove('wiki-inline-saving')}};
+ const restore=()=>{if(node.isConnected){node.replaceChildren(document.createTextNode(visibleBefore));node.classList.remove('wiki-inline-saving')}};
  const save=async()=>{
   if(finished||saving)return;
   const raw=control.value;
@@ -3134,7 +3134,10 @@ function openWikiItemEditor(id,item){
  if(!adminToken||!adminEditing||!catalogSource?.items?.[id])return;
  const key='itemedit.'+id,base=catalogSource.items[id];
  const save=async patch=>{
-  const previous=activeOverride(key),value=JSON.stringify(patch);
+  const previous=activeOverride(key);
+  const earlier=window.PandoraStudioItemOwnerEditor.ownPatch(override,id);
+  if(earlier.kind&&!Object.hasOwn(patch,'kind'))patch.kind=earlier.kind;
+  const value=JSON.stringify(patch);
   await apiRequest('/api/admin/override',{key,value});
   ownerEdits.push({key,before:previous,after:value});
   override[key]=value;refreshOwnerCatalog();
