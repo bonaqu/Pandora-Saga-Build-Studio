@@ -1497,10 +1497,12 @@ function renderWiki(root){
   return link;
  };
  const itemLink=(id,label,highlight=null)=>{
-  const hasSoul=Boolean(wikiData.souls?.[id]),kind=hasSoul?'soul':'item';
+  const hasChest=Boolean(wikiIndex?.records('chest')?.[id]);
+  const hasSoul=Boolean(wikiData.souls?.[id]);
+  const dest=hasChest?'chest':hasSoul?'soul':'item';
   const record=hasSoul?wikiData.souls?.[id]:wikiData.items?.[id];
-  const dest=record?kind:'item';
-  return withIcon(wikiLink(label,dest,id,highlight),record?wikiIcon(kind,id,record):null,dest);
+  return withIcon(wikiLink(label,dest,id,highlight),
+   wikiIcon(dest,id,record),dest);
  };
  const matchesWords=(text,query)=>wikiIndex.normalize(query).split(' ')
   .filter(Boolean).every(term=>text.includes(term));
@@ -1691,13 +1693,8 @@ function renderWiki(root){
      h('span',{text:name})
     ]));
    }
-   if(labels.length<=6){
-    detail.append(h('div',{class:'wiki-allowed-classes'},[
-     h('h4',{text:wt('Доступные классы','Eligible classes')}),tags
-    ]));
-   }else detail.append(h('details',{class:'wiki-allowed-classes'},[
-    h('summary',{text:wt('Доступные классы · ','Eligible classes · ')+labels.length}),
-    tags
+   detail.append(h('div',{class:'wiki-allowed-classes'},[
+    h('h4',{text:wt('Доступные классы','Eligible classes')}),tags
    ]));
   };
   const moreSources=(rows,group='sources')=>{
@@ -1746,13 +1743,22 @@ function renderWiki(root){
     const usedIn=wikiIndex.materialUses(id);
     if(usedIn.length){
      detail.append(h('h4',{text:(lang==='en'?'Used in NPC trades · ':'Используется в обмене NPC · ')+usedIn.length}));
+     const recipes=h('div',{class:'wiki-recipe-uses'});
      for(const trade of usedIn.slice(0,wikiUsageShown)){
-      const entry=h('div',{class:'wiki-entry'});
-      entry.append(itemLink(trade.i,dataName('item',trade.i),id));
-      for(const npcId of (trade.npc||[]).slice(0,5))
-       entry.append(wikiLink(dataName('npc',npcId),'npc',npcId,trade.i));
-      detail.append(entry);
+      const entry=h('div',{class:'wiki-recipe-use'+
+       (wikiSelection.highlight===String(trade.i)?' highlighted':'')});
+      const product=itemLink(trade.i,dataName('item',trade.i),id);
+      product.classList.add('wiki-recipe-result');
+      entry.append(product);
+      const npcs=[...new Set((trade.npc||[]).map(String))].slice(0,5);
+      if(npcs.length){
+       const places=h('div',{class:'wiki-recipe-npcs'});
+       for(const npcId of npcs)places.append(wikiLink('♙ '+dataName('npc',npcId),'npc',npcId,trade.i));
+       entry.append(places);
+      }
+      recipes.append(entry);
      }
+     detail.append(recipes);
      moreSources(usedIn,'usage');
     }
   }else if(type==='skill'){
@@ -1845,15 +1851,22 @@ function renderWiki(root){
     const places=wikiIndex.locations(id);
     if(places.length)detail.append(linkFlow(places.map(loc=>
      wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
-    detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')}));
-    for(const row of wikiIndex.drops(id)){
-     const entry=h('div',{class:'wiki-entry'+(wikiSelection.highlight===row.itemId?' highlighted':'')});
-     const linked=itemLink(row.itemId,dataName('item',row.itemId)+
-      (row.quantity>1?' ×'+row.quantity:'')+
-      (row.percent==null?'':' · '+row.percent+'%')+
-      (row.kind==='conditional'?' · особый дроп':''),id);
-     entry.append(linked);
-     detail.append(entry);
+    const loot=wikiIndex.drops(id);
+    detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')+
+     (loot.length?' · '+loot.length:'')}));
+    if(loot.length){
+     const flow=h('div',{class:'wiki-loot-flow'});
+     for(const row of loot){
+      const entry=h('div',{class:'wiki-loot-chip'+
+       (wikiSelection.highlight===row.itemId?' highlighted':'')});
+      entry.append(itemLink(row.itemId,dataName('item',row.itemId),id));
+      if(row.quantity>1)entry.append(h('small',{class:'wiki-loot-quantity',text:'×'+row.quantity}));
+      if(row.percent!=null)entry.append(h('small',{class:'wiki-loot-chance',text:row.percent+'%'}));
+      if(row.kind==='conditional')entry.append(h('small',{class:'wiki-loot-conditional',
+       text:wt('Особый','Conditional')}));
+      flow.append(entry);
+     }
+     detail.append(flow);
     }
   }else if(type==='npc'){
     const locations=rec.maps||[];
@@ -1948,6 +1961,11 @@ function renderWiki(root){
      }
     }
   }else{
+    const namedPlaces=wikiIndex.chestPlaces(id);
+    if(namedPlaces.length)detail.append(h('div',{class:'wiki-chest-location'},[
+     h('small',{text:wt('Связанная местность по названию сундука','Place named in the chest title')}),
+     linkFlow(namedPlaces.map(mapId=>wikiLink('◈ '+dataName('map',mapId),'map',mapId,id)))
+    ]));
     const groups=rec.rolls||[];
     detail.append(h('h4',{text:wt('Содержимое шкатулки','Chest contents')}));
     if(!groups.length)detail.append(h('p',{class:'muted',text:wt(
