@@ -106,7 +106,9 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.goto(base+'/#wiki/chest/51010',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-level-reward').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 60/);
-  assert.match(await page.locator('.wiki-page').innerText(),/Состав наград пока не указан/);
+  assert.ok(await page.locator('.wiki-chest-reward').count()>3);
+  assert.ok(await page.locator('.wiki-chest-reward .wiki-reward-percent').count()>3);
+  assert.ok(await page.locator('.wiki-chest-opening').count()===1);
   assert.equal(await page.locator('.wiki-chest-group').count(),0);
   // The same-category transition must render actual rewards of the next chest,
   // not the ordinary item record with no chest contents.
@@ -118,8 +120,8 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await page.locator('.wiki-page h3').innerText(),/Шкатулка охотника/);
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 10/);
   assert.equal(await page.locator('.wiki-chest-group').count(),5);
-  // Item catalog separately includes location loot chests whose opening
-  // chances are not part of this source snapshot.
+  // Location chests have real OS probabilities in the NPC chest dataset,
+  // and must display them just like ordinary inventory boxes.
   await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-page h3').innerText(),/Сундук из Мальдии/);
