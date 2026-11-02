@@ -1789,11 +1789,11 @@ function renderWiki(root){
    }
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
-  const renderClassEligibility=keys=>{
-   const labels=keys.map(classLabel).filter(Boolean);
-   if(!labels.length)return;
+  const renderClassEligibility=(keys,isItem=false)=>{
+   const manage=isItem&&adminEditing&&adminToken;
+   if(!keys.length&&!manage)return;
    const all=jobKeys.every(id=>keys.includes(id));
-   if(all){
+   if(all&&!manage){
     detail.append(h('p',{class:'wiki-class-all',text:'✦ '+wt('Все классы','All classes')}));
     return;
    }
@@ -1801,11 +1801,31 @@ function renderWiki(root){
    for(const key of keys){
     const name=classLabel(key);
     if(!name)continue;
-    tags.append(h('span',{class:'wiki-class-tag'+(key===jobKeys[state.job]?' is-hero-class':''),
+    const chip=h('span',{class:'wiki-class-tag'+(key===jobKeys[state.job]?' is-hero-class':''),
      role:'listitem',title:name},[
-     h('span',{class:'wiki-class-sigil','aria-hidden':'true',text:'✦'}),
-     h('span',{text:name})
-    ]));
+      h('span',{class:'wiki-class-sigil','aria-hidden':'true',text:'✦'}),
+      h('span',{text:name})
+    ]);
+    if(manage)chip.append(h('button',{type:'button',class:'wiki-owner-remove',
+     text:'×','aria-label':'Убрать класс '+name,
+     onclick:()=>saveWikiItemField(id,'classes',Object.fromEntries(keys.filter(x=>x!==key).map(x=>[x,1])))}));
+    tags.append(chip);
+   }
+   if(manage&&keys.length<jobKeys.length){
+    const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+',
+     'aria-label':'Добавить доступный класс'});
+    plus.onclick=()=>{
+     const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери класс'});
+     select.append(h('option',{value:'',text:'Выбери класс'}));
+     for(const key of jobKeys.filter(x=>!keys.includes(x)))
+      select.append(h('option',{value:key,text:classLabel(key)||key}));
+     plus.replaceWith(select);
+     select.onchange=()=>{if(select.value)void saveWikiItemField(id,'classes',
+      Object.fromEntries([...keys,select.value].map(x=>[x,1])))};
+     select.onblur=()=>{if(select.isConnected)select.replaceWith(plus)};
+     select.focus();
+    };
+    tags.append(plus);
    }
    detail.append(h('div',{class:'wiki-allowed-classes'},[
     h('h4',{text:wt('Доступные классы','Eligible classes')}),tags
@@ -1869,8 +1889,7 @@ function renderWiki(root){
     if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
      h('dd',{text:wt('Двуручное','Two-handed')}));
     detail.append(dl);
-    if(!wikiIndex.rewardChest(id)&&rec.classes&&Object.keys(rec.classes).length)
-     renderClassEligibility(Object.keys(rec.classes).filter(id=>rec.classes[id]));
+    if(!wikiIndex.rewardChest(id))renderClassEligibility(Object.keys(rec.classes||{}).filter(key=>rec.classes[key]),true);
     const wearers=window.PandoraUIPlanner.outfitWearers(rec,lang);
     if(wearers?.length)detail.append(h('div',{class:'wiki-item-wearers'},[
      h('small',{text:wt('Для персонажей','Wearable by')}),
