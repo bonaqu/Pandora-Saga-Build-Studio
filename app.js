@@ -1980,7 +1980,9 @@ function renderWiki(root){
        text:row.p+'%'}));
       options.append(option);
      }
-     gallery.append(h('details',{class:'wiki-chest-group',open:i===0},[heading,options]));
+     const section=h('details',{class:'wiki-chest-group'},[heading,options]);
+     section.open=i===0;
+     gallery.append(section);
     }
     detail.append(gallery);
   }
