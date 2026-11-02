@@ -29,9 +29,15 @@ function build(data){
   for(const mapId of new Set((npc.maps||[]).map(String)))
    append(npcLocations,mapId,[id,npc]);
  for(const zone of data.tables?.zoneDrops||[])append(zoneLocations,zone.map,zone);
- for(const chest of data.chests?.boxes||[])for(const [i,group] of (chest.rolls||[]).entries())for(const row of group){
-  if(row.i!=null)add(row.i,{type:'chest',id:String(chest.i),roll:i+1,percent:typeof row.p==='number'?row.p:null,quantity:row.n??1});
- }
+ // Both player-opened boxes and map chests exchanged at a chest master
+ // are authoritative reward sources; preserve each roll and chance.
+ for(const chest of [...(data.chests?.boxes||[]),...(data.chests?.npc||[])])
+  for(const [i,group] of (chest.rolls||[]).entries())
+   for(const row of group){
+    if(row.i!=null)add(row.i,{type:'chest',id:String(chest.i),roll:i+1,
+     percent:typeof row.p==='number'?row.p:null,quantity:row.n??1,
+     chestKind:chest.key!=null?'npc':'box'});
+   }
  for(const zone of data.tables?.zoneDrops||[])for(const group of zone.rows||[])for(const row of group.items||[]){
   if(row.i!=null)add(row.i,{type:'zone',id:String(zone.map),mobId:group.mob?String(group.mob):null,groupChance:group.base??null,perMember:group.perMember??null,groupSize:group.items.length});
  }
@@ -85,7 +91,8 @@ function build(data){
   if(!match)continue;
   rewardChests.set(id,{level:item.level,family:rewardFamilies[match[1].toLowerCase()]});
  }
- const chestRecords=Object.fromEntries((data.chests?.boxes||[]).map(box=>[String(box.i),box]));
+ const chestRecords=Object.fromEntries(
+  [...(data.chests?.boxes||[]),...(data.chests?.npc||[])].map(box=>[String(box.i),box]));
  // All actual item-catalog containers belong to the encyclopedia, even if
  // this OS snapshot has no opening probabilities for them. Storage upgrades
  // ("Большой сундук (7 дней)", etc.) are not loot containers.
