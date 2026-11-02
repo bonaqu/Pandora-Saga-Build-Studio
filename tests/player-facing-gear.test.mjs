@@ -37,10 +37,10 @@ test('player summary uses item attributes and original description without datab
  assert.ok(!labels.includes('ID'));assert.ok(!values.includes('19022'));
  assert.ok(walk(node).some(n=>String(n.textContent).includes('СИЛ -1')));
 });
-test('only authenticated owner sees database ID in inspection details',()=>{
+test('admin inspection also keeps internal database IDs hidden',()=>{
  const {api}=fixture(true),node=api.summary(ring,()=>null);
- assert.ok(walk(node).some(n=>n.tag==='dt'&&n.textContent==='ID'));
- assert.ok(walk(node).some(n=>n.tag==='dd'&&n.textContent==='19022'));
+ assert.ok(!walk(node).some(n=>n.tag==='dt'&&n.textContent==='ID'));
+ assert.ok(!walk(node).some(n=>n.tag==='dd'&&n.textContent==='19022'));
 });
 test('hover removes native title and uses exactly one custom tooltip, also on focus',()=>{
  const {api,document}=fixture(),button=new Element('button');
