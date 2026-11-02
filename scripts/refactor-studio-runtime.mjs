@@ -58,8 +58,18 @@ function refactor(){
     !extensions.has(extname(path)))continue;
   const url=new URL(path,root),original=readFileSync(url,'utf8');
   let content=original;
-  for(const {regex,to} of refPatterns){
+  for(const {regex,from,to} of refPatterns){
    content=content.replace(regex,()=>{replacements++;return to;});
+   // Many old regression tests check filenames using JavaScript regexp literals:
+   // /stage-item-ui\\.js\\?v=/; their escaped dots are references too.
+   const escapedFrom=from.replaceAll('.','\\\\.');
+   const escapedTo=to.replaceAll('.','\\\\.');
+   const escapedPattern=new RegExp('(?<![A-Za-z0-9-])'+escapedFrom.replaceAll('\\\\','\\\\\\\\'),'g');
+   content=content.replace(escapedPattern,()=>{replacements++;return escapedTo;});
+  }
+  if(path==='worker/index.js'){
+   content=content.replace("import {accountApi,principal as accountPrincipal} from './account.js';",
+     "import {accountApi,principal as accountPrincipal} from './pandora-studio-account-api.js';");
   }
   if(content!==original){writeFileSync(url,content);updated++;}
  }
