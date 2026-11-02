@@ -102,3 +102,17 @@
 .wiki-owner-effect-value>strong{font-variant-numeric:tabular-nums;color:#efce9b}
 .wiki-owner-effect-name{color:#ebd2a7}
 .wiki-chest-options>.wiki-owner-plus{min-height:38px;height:auto;width:100%;margin:0}
+
+/* The game displays chest contents as one collection; keep independent roll
+   groups in data so existing guaranteed/conditional chances stay intact. */
+.wiki-chest-flat{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:8px}
+.wiki-chest-flat>.wiki-chest-group,.wiki-chest-flat>.wiki-chest-group>.wiki-chest-options{display:contents}
+.wiki-chest-flat .wiki-chest-group-summary{display:none}
+.wiki-chest-flat .wiki-chest-options>.wiki-owner-plus,
+.wiki-chest-flat .wiki-chest-options>.wiki-trade-delete{display:none}
+.wiki-chest-flat .wiki-chest-reward{min-height:45px;box-sizing:border-box}
+.wiki-trade-product-inline{display:inline-flex;align-items:center;gap:6px;min-width:0;max-width:100%}
+.wiki-trade-product-inline .wiki-owner-plus{margin:0;flex:none;min-width:28px;height:28px}
+.wiki-trade-output{min-width:0}
+.wiki-trade-sellers .wiki-owner-plus{align-self:center;margin:0}
+@media(max-width:650px){.wiki-chest-flat{grid-template-columns:minmax(0,1fr)}}
