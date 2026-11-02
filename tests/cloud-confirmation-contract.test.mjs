@@ -8,7 +8,7 @@ test('overwrite confirmation reports browser persistence, never unconfirmed clou
  const end=app.indexOf('const deleteChoice=',start);
  assert.ok(start>0&&end>start);
  const part=app.slice(start,end);
- assert.match(part,/saveBuild\(state\.name,b\.id\)/);
+ assert.match(part,/saveBuild\(activeBuildId===b\.id\?state\.name:b\.name,b\.id\)/);
  assert.match(part,/Сохранено в браузере\. Проверяем запись в облаке/);
  assert.doesNotMatch(part,/Билд перезаписан по вашему запросу/);
  assert.doesNotMatch(part,/'success'/);

@@ -376,7 +376,7 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/runtime-capabilities'&&method==='GET')
- return json({codeRelease:'0.311.0',ownerEditors:[
+ return json({codeRelease:'0.313.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit'],
   githubOwnerExport:true});
 if(path==='/api/health'&&method==='GET'){
@@ -481,7 +481,7 @@ function validWikiOwnerPatch(text,type){
   monster:['name','desc','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
   map:['name','desc','mobs'],npc:['name','desc','maps'],
   instance:['name','blurb','blurbRu','mobs'],
-  skill:['name','desc','charLevel','mana','cast','cooldown','range'],
+  skill:['name','desc','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
   soul:['name','desc','price','slots']
  };
  const keys=Object.keys(data),allowed=fields[type]||[];
@@ -497,6 +497,15 @@ function validWikiOwnerPatch(text,type){
   if(key==='resists')return v&&typeof v==='object'&&!Array.isArray(v)&&
    Object.entries(v).every(([name,n])=>['physical','fire','cold','lightning','poison',
     'charm','magic','holy','dark'].includes(name)&&Number.isFinite(n)&&Math.abs(n)<=100);
+  if(key==='reqs')return Array.isArray(v)&&v.length<=20&&
+   new Set(v.map(x=>x?.branch)).size===v.length&&v.every(x=>
+    x&&typeof x==='object'&&!Array.isArray(x)&&Object.keys(x).length===2&&
+    /^[a-z][a-z0-9_-]{0,31}$/.test(x.branch)&&
+    Number.isInteger(x.amount)&&x.amount>=0&&x.amount<=1000);
+  if(key==='prereq')return v===null||validId(v);
+  if(key==='classes')return v&&typeof v==='object'&&!Array.isArray(v)&&
+   Object.keys(v).length<=28&&Object.entries(v).every(([k,n])=>
+    /^[A-Z_]{2,25}$/.test(k)&&n===1);
   if(key==='maps'||key==='mobs')return checkIds(v);
   if(key==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&
    v.every(x=>['weapon','shield','head','body','gloves','legs','feet','cloak',
@@ -555,7 +564,9 @@ function validAcquisitionOverride(text){
  const seen=new Set();
  return rows.every(row=>{
   if(!row||typeof row!=='object'||Array.isArray(row)||
-   Object.keys(row).length!==2||!['type','id'].every(k=>Object.hasOwn(row,k))||
+   Object.keys(row).some(k=>!['type','id','p'].includes(k))||
+   !['type','id'].every(k=>Object.hasOwn(row,k))||
+   (row.p!=null&&(!Number.isFinite(row.p)||row.p<0||row.p>100||row.type!=='monster'))||
    !['monster','npc'].includes(row.type)||
    typeof row.id!=='string'||!/^[1-9][0-9]{0,14}$/.test(row.id))return false;
   const key=row.type+':'+row.id;

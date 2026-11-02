@@ -95,11 +95,11 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.goto(base+'/#wiki/skill/100054001',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-requirement-chip').first().waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-requirement-copy').innerText(),/Вложено/);
-  // Group rows are compact and independently expandable.
+  // Chest contents are shown as one visible list; original roll boundaries remain in the data.
   await page.goto(base+'/#wiki/chest/51003',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-chest-group').first().waitFor({state:'visible',timeout:20000});
   assert.equal(await page.locator('.wiki-chest-group').count(),5);
-  await page.locator('.wiki-chest-group').nth(1).locator('summary').click();
+  assert.equal(await page.locator('.wiki-chest-group-summary:visible').count(),0);
   assert.equal(await page.locator('.wiki-chest-group').nth(1).getAttribute('open'),'');
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 5/);
   // Level-60 boxes exist even without an invented loot table.
@@ -112,7 +112,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   // not the ordinary item record with no chest contents.
   await page.goto(base+'/#wiki/chest/51003',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-chest-group').first().waitFor({state:'visible',timeout:20000});
-  await page.locator('.wiki-chest-group').nth(4).locator('summary').click();
+  assert.equal(await page.locator('.wiki-chest-group-summary:visible').count(),0);
   await page.locator('.wiki-chest-group').nth(4).locator('.wiki-chest-reward .wiki-link').first().click();
   await page.waitForFunction(()=>location.hash.startsWith('#wiki/chest/51004'));
   assert.match(await page.locator('.wiki-page h3').innerText(),/Шкатулка охотника/);

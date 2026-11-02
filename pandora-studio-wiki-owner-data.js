@@ -9,7 +9,7 @@ const fields=Object.freeze({
  map:['name','desc','mobs'],
  npc:['name','desc','maps'],
  instance:['name','blurb','blurbRu','mobs'],
- skill:['name','desc','charLevel','mana','cast','cooldown','range'],
+ skill:['name','desc','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
  soul:['name','desc','price','slots']
 });
 const resistKeys=['physical','fire','cold','lightning','poison','charm','magic','holy','dark'];
@@ -25,7 +25,15 @@ function validPatch(type,patch){
    return typeof v==='string'&&v.length<=2000&&(k!=='name'||Boolean(v.trim()));
   if(k==='resists')return record(v)&&!Object.keys(v).some(key=>
    !resistKeys.includes(key)||!number(v[key])||Math.abs(v[key])>100);
-  if(k==='mobs'||k==='maps')return checkList(v,1000);
+  if(k==='reqs')return Array.isArray(v)&&v.length<=20&&
+    new Set(v.map(x=>x?.branch)).size===v.length&&v.every(x=>
+     record(x)&&Object.keys(x).length===2&&
+     /^[a-z][a-z0-9_-]{0,31}$/.test(x.branch)&&
+     Number.isInteger(x.amount)&&x.amount>=0&&x.amount<=1000);
+   if(k==='prereq')return v===null||id(v);
+   if(k==='classes')return record(v)&&Object.keys(v).length<=28&&
+    Object.entries(v).every(([key,n])=>/^[A-Z_]{2,25}$/.test(key)&&n===1);
+   if(k==='mobs'||k==='maps')return checkList(v,1000);
   if(k==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&v.every(x=>slots.includes(x));
   return number(v)&&v>=0;
  });

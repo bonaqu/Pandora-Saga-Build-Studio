@@ -24,14 +24,14 @@ test('ordinary autosave writes only the owner-scoped character draft, never name
 test('named builds are written only after explicit player save/overwrite intent',()=>{
  assert.match(app,/onclick:\(\)=>saveBuild\(name\.value\)/);
  assert.match(app,/text:'Подтвердить перезапись'/);
- assert.match(app,/if\(saveBuild\(state\.name,b\.id\)\)/);
+ assert.match(app,/if\(saveBuild\(activeBuildId===b\.id\?state\.name:b\.name,b\.id\)\)/);
  assert.match(app,/text:'Сохранить и создать'/);
  assert.match(app,/if\(saveBuild\(draft\.value\)\)newBlankBuild\(\)/);
  const start=app.indexOf("function saveBuild(name=state.name||'Новый герой',overwriteId=null){");
  const end=app.indexOf('function sanitizeSharedState(',start);
  assert.ok(start>0&&end>start);
  const actual=app.slice(start,end);
- assert.match(actual,/const existingIndex=overwriteId&&overwriteId===activeBuildId\?/);
+ assert.match(actual,/const existingIndex=overwriteId\?builds\.findIndex\(b=>b\.id===overwriteId\):-1/);
  assert.match(actual,/const id=existingIndex>=0\?builds\[existingIndex\]\.id:newId\(\)/);
  assert.match(actual,/window\.PandoraBuildScope\.setOwned\(localStorage,libraryScopeId\(\)/);
  assert.match(actual,/void putCloudBuild\(entry\)/);

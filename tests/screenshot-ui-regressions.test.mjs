@@ -39,14 +39,14 @@ test('saved builds stay local until the user explicitly overwrites',()=>{
  const app=read('pandora-studio-app.js');
  assert.match(app,/function persist\(\)\{try\{window\.PandoraBuildScope\.setOwned/);
  assert.doesNotMatch(app,/PandoraSavedBuildAutosave\.updatedSaved/);
- assert.match(app,/text:'↻ Перезаписать'/);
- assert.match(app,/saveBuild\(state\.name,b\.id\)/);
+ assert.match(app,/text:activeBuildId===b\.id\?'↻ Перезаписать':'↻ Сохранить в этот билд'/);
+ assert.match(app,/saveBuild\(activeBuildId===b\.id\?state\.name:b\.name,b\.id\)/);
  assert.match(app,/function saveBuild\(name=state\.name\|\|'Новый герой',overwriteId=null\)/);
  assert.match(app,/\$\('snapshot'\)\.onclick=\(\)=>\{changeTab\('builds'\)\}/);
 });
 test('locale selection works before async catalog is available',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/function applyGameLocale\(\)\{\n window\.PandoraUILocale\.apply\(lang\)/);
+ assert.match(app,/function applyGameLocale\(\{redraw=true\}=\{\}\)\{\n window\.PandoraUILocale\.apply\(lang\)/);
  assert.match(app,/button\.setAttribute\('aria-pressed',String\(active\)\)/);
 });
 
