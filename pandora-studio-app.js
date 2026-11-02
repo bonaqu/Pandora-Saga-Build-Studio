@@ -2094,15 +2094,16 @@ function renderWiki(root){
     }
   }else if(type==='skill'){
     const skillFields=[
-     [wt('Уровень героя','Hero level'),rec.charLevel],
-     [wt('Затраты ОМ','MP cost'),rec.mana],
-     [wt('Подготовка, с','Cast, sec'),rec.cast],
-     [wt('Перезарядка, с','Cooldown, sec'),rec.cooldown],
-     [wt('Дальность','Range'),rec.range]
+     [wt('Уровень героя','Hero level'),rec.charLevel,'charLevel'],
+     [wt('Затраты ОМ','MP cost'),rec.mana,'mana'],
+     [wt('Подготовка, с','Cast, sec'),rec.cast,'cast'],
+     [wt('Перезарядка, с','Cooldown, sec'),rec.cooldown,'cooldown'],
+     [wt('Дальность','Range'),rec.range,'range']
     ];
     const dl=h('dl',{class:'item-fields'});
-    for(const [label,value] of skillFields)if(value!=null)
-     dl.append(h('dt',{text:label}),h('dd',{text:String(value)}));
+    for(const [label,value,key] of skillFields)if(value!=null)
+     dl.append(h('dt',{text:label}),wikiOwnerNumeric(h('dd',{text:String(value)}),
+      value,'skill',id,key,{integer:key==='charLevel'}));
     detail.append(dl,h('h4',{text:wt('Требования','Requirements')}));
     if(!rec.reqs?.length&&rec.prereq==null)detail.append(h('p',{class:'muted',
      text:wt('Требования веток не указаны.','No branch requirements listed.')}));
@@ -2154,16 +2155,18 @@ function renderWiki(root){
     if(found.length)appendSourceFlow(found,id);
     moreSources(found);
   }else if(type==='monster'){
-    const monsterStats=[[wt('Уровень','Level'),rec.level],[wt('ОЗ','HP'),rec.life],
-     [wt('Защита','Defense'),rec.ac],[wt('Маг. защита','Magic defense'),rec.magicProtection],
-     [wt('Защитный показатель','Warding'),rec.warding],[wt('Сила','Strength'),rec.str],
-     [wt('Выносливость','Vitality'),rec.vit],[wt('Ловкость','Agility'),rec.agi],
-     [wt('Проворство','Dexterity'),rec.dex],[wt('Дух','Spirit'),rec.spi],
-     [wt('Интеллект','Intelligence'),rec.int]];
+    const monsterStats=[[wt('Уровень','Level'),rec.level,'level'],[wt('ОЗ','HP'),rec.life,'life'],
+     [wt('Защита','Defense'),rec.ac,'ac'],[wt('Маг. защита','Magic defense'),rec.magicProtection,'magicProtection'],
+     [wt('Защитный показатель','Warding'),rec.warding,'warding'],[wt('Сила','Strength'),rec.str,'str'],
+     [wt('Выносливость','Vitality'),rec.vit,'vit'],[wt('Ловкость','Agility'),rec.agi,'agi'],
+     [wt('Проворство','Dexterity'),rec.dex,'dex'],[wt('Дух','Spirit'),rec.spi,'spi'],
+     [wt('Интеллект','Intelligence'),rec.int,'int']];
     detail.append(h('div',{class:'wiki-monster-stats'},
-     monsterStats.filter(([,value])=>Number.isFinite(value)).map(([label,value])=>
+     monsterStats.filter(([,value])=>Number.isFinite(value)).map(([label,value,key])=>
       h('div',{class:'wiki-monster-stat'},[
-       h('small',{text:label}),h('strong',{text:Number(value).toLocaleString('ru-RU')})]))));
+       h('small',{text:label}),wikiOwnerNumeric(
+        h('strong',{text:Number(value).toLocaleString('ru-RU')}),
+        value,'monster',id,key,{integer:true})]))));
     if(rec.resists&&Object.keys(rec.resists).length){
      const names=lang==='en'?{physical:'Physical',fire:'Fire',cold:'Ice',
       lightning:'Lightning',poison:'Poison',charm:'Charm',magic:'Magic',
@@ -2184,7 +2187,8 @@ function renderWiki(root){
         role:'listitem'},[
         h('span',{class:'wiki-resist-glyph','aria-hidden':'true',text:symbols[key]||'✧'}),
         h('span',{class:'wiki-resist-name',text:names[key]||key}),
-        h('strong',{text:String(numeric)})
+        wikiOwnerNumeric(h('strong',{text:String(numeric)}),numeric,
+         'monster',id,'resists.'+key,{min:-100,max:100})
        ]));
       }
       detail.append(grid);
@@ -3340,7 +3344,7 @@ function guardOwnerInput(input){
  input.addEventListener('focus',()=>{input.readOnly=false},{once:true});
  return input;
 }
-function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=false,onCommit}={}){
+function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit}={}){
  if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
  const before=String(initial??''),visibleBefore=node.textContent;
  let finished=false,saving=false;
@@ -3348,7 +3352,7 @@ function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=f
   type==='textarea'?h('textarea',{rows:6,class:'wiki-inline-input','aria-label':'Изменить описание'}):
   h('input',{type:type==='number'?'number':'text',class:'wiki-inline-input',
     'aria-label':'Изменить значение',autocomplete:'off',
-    ...(type==='number'?{min:'0',max:String(max),step:integer?'1':'any'}:{})});
+    ...(type==='number'?{min:String(min),max:String(max),step:integer?'1':'any'}:{})});
  if(type==='select'){
   for(const option of options){
    const el=h('option',{value:option.value,text:option.label});
@@ -3361,7 +3365,7 @@ function editWikiValue(node,initial,{type='text',options=[],max=100000,integer=f
   if(finished||saving)return;
   const raw=control.value;
   const value=type==='number'?(raw.trim()===''?null:Number(raw)):raw.trim();
-  if(type==='number'&&(value===null||!Number.isFinite(value)||value<0||value>max||
+  if(type==='number'&&(value===null||!Number.isFinite(value)||value<min||value>max||
    (integer&&!Number.isInteger(value)))){
    control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
   }
@@ -3389,7 +3393,11 @@ async function saveWikiRecordField(type,id,field,value){
  const key='wikiedit.'+type+'.'+id;
  let current={};
  try{current=JSON.parse(override[key]||'{}')}catch{}
- const patch={...current,[field]:value};
+ const patch={...current};
+ if(field.startsWith('resists.')){
+  const name=field.slice(8);
+  patch.resists={...(wikiData?.monsters?.[id]?.resists||{}),...current.resists,[name]:value};
+ }else patch[field]=value;
  if(!window.PandoraWikiOwnerData.validPatch(type,patch))
   throw Error('Некорректное значение поля');
  const before=activeOverride(key),after=JSON.stringify(patch);
@@ -3414,13 +3422,13 @@ async function saveWikiRelationRows(kind,id,rows){
   ownerEdits.push({key,before,after});override[key]=after;refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
-function wikiOwnerNumeric(node,value,type,id,field,{integer=false,max=1000000000}={}){
+function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000000000}={}){
  if(!adminToken||!adminEditing)return node;
  node.classList.add('wiki-edit-value');
  node.title='Двойной клик — изменить';
  node.ondblclick=e=>{
   e.preventDefault();e.stopPropagation();
-  editWikiValue(node,Number(value),{type:'number',max,integer,
+  editWikiValue(node,Number(value),{type:'number',min,max,integer,
    onCommit:next=>saveWikiRecordField(type,id,field,next)});
  };
  return node;
