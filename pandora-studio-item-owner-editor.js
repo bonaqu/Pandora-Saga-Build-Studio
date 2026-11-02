@@ -31,7 +31,7 @@ const extraLabels={
  EP_HEAL_LIFE_REGENERATOR:'Регенерация ОЗ',EP_HEAL_MANA:'Восстановление ОМ',
  EP_HEAL_MANA_RATE:'Восстановление ОМ (%)',
  EP_HOLY_RESISTANCE_CONST:'Сопротивление свету',
- EP_IMMUNE_BURN:'Невосприимчивость к ожогу',
+ EP_IMMUNE_BURN:'Сопротивляемость ожогам',
  EP_IMMUNE_CURSE:'Невосприимчивость к проклятию',
  EP_IMMUNE_DISEASE:'Невосприимчивость к болезни',
  EP_IMMUNE_EVIL:'Защита от злых чар',
@@ -62,7 +62,7 @@ const extraLabels={
  EP_RECOVERY_POISON:'Снятие отравления',EP_RECOVERY_RAVING:'Снятие помешательства',
  EP_RECOVERY_SILENCE:'Снятие молчания',
  EP_RESTART:'Перезапуск',EP_RESTMAP_MOVESPEED_SCALE:'Скорость передвижения в безопасной зоне (%)',
- EP_SKILL_BENCH:'Подготовка навыка',EP_SKILL_DELAY:'Задержка навыка',
+ EP_SKILL_BENCH:'Время перезарядки умений',EP_SKILL_DELAY:'Время применения умений',
  EP_SKILL_EXEC:'Применение навыка',EP_SKILL_EXEC_BALM:'Применение лечебного средства',
  EP_SKILL_EXEC_MAPIN:'Применение навыка при входе на карту',
  EP_TOHIT_SCALE:'Меткость (%)',EP_VOLUME_EXP:'Получаемый опыт'
@@ -71,7 +71,7 @@ const wearable=new Set('weapon shield head body gloves legs feet cloak ring neck
 const nonEquipmentEffects=new Set([
  'EP_ABILITY_RESET','EP_EXPERTISE_RESET','EP_RESTART','EP_RANDOM_BOX',
  'EP_BOW_CARRY','EP_RACE_CARRY','EP_RACE_RANGE','EP_RACE_MANA_COSTCUT',
- 'EP_SKILL_BENCH','EP_SKILL_DELAY','EP_SKILL_EXEC','EP_SKILL_EXEC_BALM',
+ 'EP_SKILL_EXEC','EP_SKILL_EXEC_BALM',
  'EP_SKILL_EXEC_MAPIN','EP_RECOVERY_BURN','EP_RECOVERY_CURSE',
  'EP_RECOVERY_DISEASE','EP_RECOVERY_NUMB','EP_RECOVERY_POISON',
  'EP_RECOVERY_RAVING','EP_RECOVERY_SILENCE'

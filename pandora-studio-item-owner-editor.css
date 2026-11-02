@@ -185,3 +185,58 @@
 .owner-review-actions button:hover{border-color:#e4ba7e;background:#4e3621}
 .owner-review-actions .owner-review-reset{background:#352319;color:#d9b99e}
 @media(max-width:480px){.owner-review-comparison{grid-template-columns:1fr}}
+
+/* Stat amount occupies the actual right edge of the attribute row. */
+.wiki-owner-effect:not(.wiki-owner-effect-picker){
+ display:flex;align-items:center;flex-wrap:wrap;column-gap:10px}
+.wiki-owner-effect-name{flex:1 1 180px;min-width:0}
+.wiki-owner-effect-value{margin-left:auto;display:inline-flex;align-items:center;
+ justify-content:flex-end;text-align:right;flex:0 0 auto;min-width:78px}
+.wiki-owner-effect-value>strong{display:inline-block;text-align:right;min-width:0;
+ font-variant-numeric:tabular-nums;white-space:nowrap}
+.wiki-owner-effect .wiki-owner-remove{margin-left:0}
+.wiki-owner-effect-value .wiki-inline-input{max-width:105px;text-align:right}
+@media(max-width:650px){
+ .wiki-owner-effect-name{flex:1 1 150px}
+ .wiki-owner-effect-value{flex:0 0 auto;min-width:74px;margin-left:auto}
+}
+.wiki-conditional-bonuses{display:grid;gap:7px;margin:11px 0 0;
+ padding-top:12px;border-top:1px solid rgba(224,172,104,.25)}
+.wiki-conditional-bonuses>h4{color:#e8c489;font:600 16px Georgia,serif;
+ margin:0 0 1px}
+.wiki-conditional-condition{color:#cda974;font-size:.8rem;margin:0 0 4px;
+ line-height:1.45}
+.wiki-conditional-row{background:linear-gradient(110deg,rgba(101,62,25,.22),rgba(42,28,16,.34));
+ border-color:rgba(207,151,70,.32)}
+.wiki-conditional-row .wiki-owner-effect-value>strong{color:#ffd998}
+.wiki-conditional-term{text-decoration-line:underline;text-decoration-style:dotted;
+ text-decoration-thickness:2px;text-underline-offset:4px;text-decoration-color:#d6ad6f;
+ cursor:help;color:#f6d69d}
+.wiki-conditional-term:focus-visible{outline:2px solid #edc27c;outline-offset:3px}
+.wiki-phoenix-explanation{margin:-2px 0 9px;padding:8px 11px;border:1px solid #80603b;
+ background:rgba(30,22,15,.85);border-radius:7px;line-height:1.5;
+ font-size:.81rem;color:#e8d2ae;display:none}
+.wiki-conditional-row:has(.wiki-conditional-term:hover)+.wiki-phoenix-explanation,
+.wiki-conditional-row:has(.wiki-conditional-term:focus-visible)+.wiki-phoenix-explanation{
+ display:block}
+.wiki-chest-opening{display:block}
+.wiki-chest-opening>strong{display:block;margin-bottom:10px}
+.wiki-chest-opening-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:12px}
+.wiki-chest-opening-field{display:flex;flex-direction:column;align-items:flex-start;
+ gap:5px;min-width:0;padding:9px 11px;border:1px solid rgba(184,137,76,.35);
+ border-radius:7px;background:rgba(20,15,11,.32)}
+.wiki-chest-opening-field small{color:#c5a376;font-size:.75rem}
+.wiki-chest-opening-field strong{font-size:.95rem}
+.wiki-chest-opening-field .wiki-link{max-width:100%}
+.wiki-chest-unverified{border:1px solid #836541;border-radius:9px;
+ background:#2b2119;padding:11px 13px;margin:9px 0;color:#e4cb9e}
+.wiki-chest-unverified>strong{color:#edc689}
+.wiki-chest-unverified p{margin:7px 0 0;color:#c6b397;font-size:.82rem}
+.wiki-location-list-heading{font:600 14px Georgia,serif;color:#e9c189;
+ margin:12px 6px 6px;border-bottom:1px solid rgba(196,143,72,.4);padding-bottom:6px}
+.wiki-nation-territory{margin:11px 0;padding:11px 14px;border:1px solid #846643;
+ border-radius:9px;background:linear-gradient(105deg,#362618,#241c16)}
+.wiki-nation-territory strong{color:#f0c990;font-size:.92rem}
+.wiki-nation-territory p{margin:6px 0 0;color:#d7c19d;font-size:.82rem}
+@media(max-width:550px){.wiki-chest-opening-fields{grid-template-columns:1fr}}

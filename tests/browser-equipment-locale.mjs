@@ -128,6 +128,41 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.ok(await page.locator('.wiki-chest-reward .wiki-reward-percent').count()>3);
   assert.equal(await page.locator('.wiki-chest-opening').count(),1);
   assert.ok(await page.locator('.wiki-chest-location .wiki-link').count()>=1);
+  assert.match(await page.locator('.wiki-chest-opening').innerText(),/Культье/);
+  assert.match(await page.locator('.wiki-chest-opening').innerText(),/Вастир/);
+  assert.ok(await page.locator('.wiki-chest-opening .wiki-link[href="#wiki/map/1003001"]').count()>=1);
+  // Source has category labels for colored boxes, but no item or chance table.
+  for(const [box,category] of [[51038,'Оружие и доспехи'],[51040,'Аксессуары'],[51042,'Души']]){
+   await page.goto(base+'/#wiki/chest/'+box,{waitUntil:'domcontentloaded'});
+   await page.locator('.wiki-chest-unverified').waitFor({state:'visible',timeout:20000});
+   assert.match(await page.locator('.wiki-chest-unverified').innerText(),new RegExp(category));
+   assert.equal(await page.locator('.wiki-chest-reward').count(),0);
+  }
+  // Actual NPC map region records: three realm territories are pinned and searchable.
+  await page.goto(base+'/#wiki/map/1003001',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-nation-territory').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-nation-territory').innerText(),/Королевства/);
+  assert.match(await page.locator('.wiki-page h3').innerText(),/Сэнт-Фальстайн/);
+  assert.ok(await page.locator('.wiki-location-list-heading').count()>=2);
+  // Conditional fire-gem effects come from verified per-weapon description,
+  // not unconditional stat effects. The tooltip must explain STR vs INT.
+  await page.goto(base+'/#wiki/item/452',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-conditional-term').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-conditional-bonuses').innerText(),/\+7/);
+  assert.match(await page.locator('.wiki-conditional-bonuses').innerText(),/\+5%/);
+  assert.match(await page.locator('.wiki-owner-effects').innerText(),/Сопротивляемость ожогам[\s\S]*\+5%/);
+  assert.equal(await page.locator('.wiki-owner-effect-value').first().evaluate(el=>getComputedStyle(el).textAlign),'right');
+  await page.locator('.wiki-conditional-term').hover();
+  await page.locator('.wiki-phoenix-explanation').waitFor({state:'visible'});
+  assert.match(await page.locator('.wiki-phoenix-explanation').innerText(),/25% от СИЛ/);
+  await page.goto(base+'/#wiki/item/1862',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-conditional-term').waitFor({state:'visible',timeout:20000});
+  await page.locator('.wiki-conditional-term').hover();
+  await page.locator('.wiki-phoenix-explanation').waitFor({state:'visible'});
+  assert.match(await page.locator('.wiki-phoenix-explanation').innerText(),/25% от ИНТ/);
+  await page.goto(base+'/#wiki/item/1652',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-conditional-bonuses').waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.wiki-conditional-term').count(),0);
   // Monsters and material exchange relationships occupy compact flow grids.
   await page.goto(base+'/#wiki/monster/21103',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-loot-chip').first().waitFor({state:'visible',timeout:20000});

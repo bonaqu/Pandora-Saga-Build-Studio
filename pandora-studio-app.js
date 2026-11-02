@@ -1569,7 +1569,12 @@ function renderWiki(root){
    type==='monster'?'monsters':type==='instance'?'instances':
    type==='skill'?'skills':type==='soul'?'souls':null;
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
-  const value=[dataName(type,id),translated?.n,
+  const territoryAlias=type==='map'?({
+   '1002001':'территория союза союз Ванриг',
+   '1003001':'территория королевства Вастир Сэнт-Фальстайн',
+   '1004001':'территория империи Лотарская империя'
+  }[String(id)]||null):null;
+  const value=[dataName(type,id),translated?.n,territoryAlias,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
   searchCache.set(key,value);
@@ -1921,6 +1926,11 @@ function renderWiki(root){
     return wikiItemEligibility==='all'||
      heroCompatible(rec,state.level);
    });
+  if(type==='map'&&!wikiSearch){
+   const territories=new Map([['1002001',0],['1003001',1],['1004001',2]]);
+   results.sort((a,b)=>(territories.get(String(a[0]))??100)-
+    (territories.get(String(b[0]))??100));
+  }
   // A source link outside the current search must clear that search, otherwise
   // the linked record opens in details but never appears in the browse list.
   if(wikiSearch&&wikiSelection.id!=null&&records?.[wikiSelection.id]&&
@@ -1933,7 +1943,20 @@ function renderWiki(root){
    [results[selectedIndex],...results.slice(0,wikiShown)]:results.slice(0,wikiShown);
   if(!detailOnly){
    browse.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
+   let territoryTitleShown=false,otherMapsTitleShown=false;
    for(const [id,rec]of visible){
+    if(type==='map'&&!wikiSearch){
+     const territory=['1002001','1003001','1004001'].includes(String(id));
+     if(territory&&!territoryTitleShown){
+      browse.append(h('h4',{class:'wiki-location-list-heading',
+       text:wt('Территории держав','Nation territories')}));
+      territoryTitleShown=true;
+     }else if(!territory&&!otherMapsTitleShown){
+      browse.append(h('h4',{class:'wiki-location-list-heading',
+       text:wt('Другие локации','Other locations')}));
+      otherMapsTitleShown=true;
+     }
+    }
     const row=withIcon(wikiLink(dataName(type,id),type,id),wikiIcon(type,id,rec),type);
     row.setAttribute('data-wiki-record',String(id));
     if(wikiSelection.id===id){
@@ -1996,6 +2019,20 @@ function renderWiki(root){
        'data-owner-field':type==='instance'?'blurbRu':'desc',
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
    detail.append(description);
+  }
+  if(type==='map'&&['1002001','1003001','1004001'].includes(String(id))){
+   const nation=String(id)==='1002001'?
+    wt('Территория Союза','Union territory'):
+    String(id)==='1003001'?wt('Территория Королевства','Kingdom territory'):
+    wt('Территория Империи','Empire territory');
+   const panel=h('section',{class:'wiki-nation-territory'});
+   panel.append(h('strong',{text:nation}),
+    h('p',{text:wt('Запись территории подтверждена справочником расположения NPC. ',
+     'This territory is listed in the source NPC location catalog. ')+
+     (String(id)==='1003001'?wt(
+      'В городе Вастир находится мастер сундуков Культье.',
+      'The chest master Cultier is in Vastir.'):'')}));
+   detail.append(panel);
   }
   if(type==='item'||type==='chest')appendRewardChestInfo(id);
   const renderClassEligibility=(keys,isItem=false)=>{
@@ -2130,8 +2167,11 @@ function renderWiki(root){
         if(initial==null&&!adminEditing)continue;
         const value=h('span',{class:'wiki-owner-effect-value'});
         if(adminEditing&&adminToken&&key==='b')value.append(h('small',{text:label}));
-        const signed=/^EP_(?:MAXLIFE|MAXMANA|STRENGTH|VITARITY|AGILITY|DEXTERITY|SPIRITUAL|INTELIGENCE|ARMORCLASS|TOHIT|CRITICALRATE|DAMAGERATE|FIRE_RESISTANCE|COLD_RESISTANCE|MAGIC_RESISTANCE|ATTACKINTERVAL|DARK_RESISTANCE|HOLY_RESISTANCE|POISON_RESISTANCE|MOVESPEED|AVOIDANCE|DESTINE_WARDING|ELEMENT_DAMAGE|VOLUME_EXP)/.test(effect.func);
-        const formatted=initial==null?'—':signed&&Number(initial)>0?'+'+initial:String(initial);
+        const signed=/^EP_(?:MAXLIFE|MAXMANA|STRENGTH|VITARITY|AGILITY|DEXTERITY|SPIRITUAL|INTELIGENCE|ARMORCLASS|TOHIT|CRITICALRATE|DAMAGERATE|FIRE_RESISTANCE|COLD_RESISTANCE|MAGIC_RESISTANCE|ATTACKINTERVAL|DARK_RESISTANCE|HOLY_RESISTANCE|POISON_RESISTANCE|MOVESPEED|AVOIDANCE|DESTINE_WARDING|ELEMENT_DAMAGE|VOLUME_EXP|IMMUNE_BURN|IMMUNE_VIT_TYPE|SKILL_BENCH)/.test(effect.func);
+        const percentage=key==='a'&&(/_SCALE$/.test(effect.func)||
+         ['EP_IMMUNE_BURN','EP_IMMUNE_VIT_TYPE','EP_SKILL_BENCH','EP_SKILL_DELAY'].includes(effect.func));
+        const formatted=initial==null?'—':
+         (signed&&Number(initial)>0?'+'+initial:String(initial))+(percentage?'%':'');
         const number=h('strong',{text:formatted});
        if(adminEditing&&adminToken){
         number.classList.add('wiki-edit-value');
@@ -2201,6 +2241,36 @@ function renderWiki(root){
        fill();search.focus();
       };
       list.append(plus);
+     }
+     const conditional=window.PandoraConditionalItemBonuses?.parse?.(rec);
+     if(conditional&&(conditional.rows.length||conditional.phoenix)){
+      const section=h('section',{class:'wiki-conditional-bonuses'});
+      section.append(h('h4',{text:wt('Бонусы заточки','Enhancement bonuses')}),
+       h('p',{class:'wiki-conditional-condition',text:
+        wt(conditional.condition,'Fire-gem enhancement from +7, per enhancement level')}));
+      for(const bonus of conditional.rows){
+       const line=h('div',{class:'wiki-owner-effect wiki-conditional-row'});
+       line.append(h('span',{class:'wiki-owner-effect-name',text:bonus.name}),
+        h('span',{class:'wiki-owner-effect-value'},[
+         h('strong',{text:'+'+bonus.value+(bonus.unit==='%'?'%':'')})
+        ]));
+       section.append(line);
+      }
+      if(conditional.phoenix){
+       const flame=conditional.phoenix;
+       const line=h('div',{class:'wiki-owner-effect wiki-conditional-row'});
+       const explanation=window.PandoraConditionalItemBonuses.phoenixExplanation(flame);
+       const title=h('span',{class:'wiki-owner-effect-name'});
+       const term=h('span',{class:'wiki-conditional-term',tabindex:'0',
+        title:explanation,'aria-label':'Пламя феникса. '+explanation,
+        text:wt('Пламя феникса','Phoenix Flame')});
+       title.append(h('span',{text:wt('Шанс призвать ','Chance to summon ')}),term);
+       line.append(title,h('span',{class:'wiki-owner-effect-value'},[
+        h('strong',{text:'+'+flame.chance+'%'})]));
+       const tip=h('div',{class:'wiki-phoenix-explanation',role:'note',
+        text:explanation});section.append(line,tip);
+      }
+      list.append(section);
      }
      detail.append(list);
     }
@@ -2843,17 +2913,41 @@ function renderWiki(root){
     const mapChest=rec.key!=null;
     if(mapChest){
      const notice=h('section',{class:'wiki-chest-opening',role:'note'});
-     notice.append(h('strong',{text:wt('Сундук локации','Location chest')}),
-      h('span',{text:wt('Для открытия нужен ключ и мастер сундуков.','Requires a key and the chest master.')}));
-     if(wikiData.items?.[rec.key])notice.append(itemLink(rec.key,dataName('item',rec.key),id));
+     notice.append(h('strong',{text:wt('Как открыть сундук','How to open this chest')}));
+     const info=h('div',{class:'wiki-chest-opening-fields'});
+     const required=h('div',{class:'wiki-chest-opening-field'},[
+      h('small',{text:wt('Необходимый ключ','Required key')})
+     ]);
+     if(wikiData.items?.[rec.key])required.append(itemLink(rec.key,dataName('item',rec.key),id));
+     else required.append(h('span',{text:wt('Не указан','Not listed')}));
+     const master=h('div',{class:'wiki-chest-opening-field'},[
+      h('small',{text:wt('Мастер сундуков','Chest master')}),
+      h('strong',{text:wt('Культье','Cultier')}),
+      h('span',{text:wt('Вастир · территория Королевства','Vastir · Kingdom territory')}),
+      wikiLink(dataName('map','1003001'),'map','1003001')
+     ]);
+     info.append(required,master);notice.append(info);
      detail.append(notice);
     }
     const changeChest=next=>saveWikiRelationRows('chest',id,next);
     detail.append(h('h4',{text:wt('Содержимое сундука','Chest contents')}));
-    if(!groups.length)detail.append(h('p',{class:'muted',text:wt(
-     'Состав наград пока не указан в игровом каталоге.',
-     'Reward contents are not yet specified in the game catalog.'
-    )}));
+    if(!groups.length){
+     const colored={
+      '51038':wt('Оружие и доспехи','Weapons and armor'),
+      '51040':wt('Аксессуары','Accessories'),
+      '51042':wt('Души','Souls')
+     };
+     const category=colored[String(id)];
+     if(category)detail.append(h('div',{class:'wiki-chest-unverified'},[
+      h('strong',{text:wt('Указанная категория наград: ','Listed reward category: ')+category}),
+      h('p',{text:wt('Точный список предметов и шансы открытия пока не опубликованы в доступной таблице игрового сервера. Это не означает, что сундук пустой.',
+       'The accessible server data does not publish the exact items or opening probabilities. This does not mean the chest is empty.')})
+     ]));
+     else detail.append(h('p',{class:'muted',text:wt(
+      'Состав наград пока не указан в игровом каталоге.',
+      'Reward contents are not yet specified in the game catalog.'
+     )}));
+    }
     const gallery=h('div',{class:'wiki-chest-groups wiki-chest-flat'});
     for(const [i,group]of groups.entries()){
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
