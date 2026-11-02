@@ -2806,7 +2806,7 @@ function renderWiki(root){
      'Состав наград пока не указан в игровом каталоге.',
      'Reward contents are not yet specified in the game catalog.'
     )}));
-    const gallery=h('div',{class:'wiki-chest-groups'});
+    const gallery=h('div',{class:'wiki-chest-groups wiki-chest-flat'});
     for(const [i,group]of groups.entries()){
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
       h('span',{class:'wiki-chest-group-mark','aria-hidden':'true',text:String(i+1)}),
@@ -2864,15 +2864,17 @@ function renderWiki(root){
         .catch(e=>showStudioToast(e.message,'warning'))}));
      }
      const section=h('details',{class:'wiki-chest-group'},[heading,options]);
-     section.open=i===0;
+     section.open=true;
      gallery.append(section);
     }
     detail.append(gallery);
     if(adminEditing&&adminToken)detail.append(h('button',{type:'button',
-     class:'wiki-owner-plus wiki-add-source',text:'+ Группа наград',
+     class:'wiki-owner-plus wiki-add-source',text:'+ Предмет',
      onclick:()=>wikiItemChoice(detail,itemId=>{
-      if(groups.length>=50)throw Error('Достигнут предел групп');
-      return changeChest([...groups,[{i:itemId,n:1,p:null}]]);
+      const row={i:itemId,n:1,p:null};
+       if(!groups.length)return changeChest([[row]]);
+       if(groups[0].length>=100)throw Error('Первый розыгрыш заполнен');
+       return changeChest(groups.map((group,index)=>index===0?[...group,row]:group));
      })}));
   }
   if(detailOnly)detail.scrollTop=previousDetailScroll;
