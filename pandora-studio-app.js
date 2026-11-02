@@ -821,6 +821,8 @@ function renderStageAttributes(){
   const rec=itemWithOverrides(catalog.equipment?.[String(entry.id)]);
   return {record:rec,issue:equipmentIssue(rec,Number(slot)),
    refinement:plan.refinementValue(state.refinements,Number(slot),entry),
+    gem:window.PandoraEnchantModel.normalizeForSlot(rec.slot,
+     state.gems?.[plan.refinementKey(Number(slot),entry)]),
     souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
  });
  const cls=jobKeys[state.job],skillMap=catalog.skills||{};
@@ -1574,6 +1576,15 @@ function renderWiki(root){
  const nameCache=new Map();
   let lastWikiIndex=null;
  const dataName=(type,id)=>{
+  if(type==='map'){
+   const cityPlaces={
+    '1001004':wt('Центральная площадь · Астир','Central Plaza · Astir'),
+    '1002001':wt('Территория Союза · Астир','Union District · Astir'),
+    '1003001':wt('Территория Королевства · Астир','Kingdom District · Astir'),
+    '1004001':wt('Территория Империи · Астир','Empire District · Astir')
+   };
+   if(cityPlaces[String(id)])return cityPlaces[String(id)];
+  }
   const key=type+':'+String(id);
   if(nameCache.has(key))return nameCache.get(key);
   const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):
@@ -2061,6 +2072,13 @@ function renderWiki(root){
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
    detail.append(description);
   }
+  if(type==='map'&&['1001004','1002001','1003001','1004001'].includes(String(id))){
+   const city=h('div',{class:'wiki-astir-neighborhoods'});
+   city.append(h('small',{text:wt('Районы города Астир','Astir city districts')}));
+   for(const placeId of ['1001004','1002001','1003001','1004001'])
+    city.append(wikiLink(dataName('map',placeId),'map',placeId));
+   detail.append(city);
+  }
   if(type==='map'&&['1002001','1003001','1004001'].includes(String(id))){
    const nation=String(id)==='1002001'?
     wt('Территория Союза','Union territory'):
@@ -2071,7 +2089,7 @@ function renderWiki(root){
     h('p',{text:wt('Запись территории подтверждена справочником расположения NPC. ',
      'This territory is listed in the source NPC location catalog. ')+
      (String(id)==='1003001'?wt(
-      'В Астире, на территории Королевства, находится мастер сундуков Культье.',
+      'На территории Королевства города Астир находится мастер сундуков Культье.',
       'Chest master Cultier is located in Astir, in the Kingdom district.'):'')}));
    detail.append(panel);
   }
