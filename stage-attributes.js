@@ -345,14 +345,60 @@ function buffsPage(body,options){
  };
  const opts=(units)=>units.map((n,i)=>[i,i===0?bookText('Выключено'):
   (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
+ const guildLevel=Number(buffs.guildLevel)||0;
+ const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
  const vitals=section('ОЗ и ОМ');
- select(vitals,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
- select(vitals,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+ if(!guildLevel){
+  select(vitals,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+  select(vitals,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+ }else vitals.append(make('p',{class:'stage-attribute-note',text:english?
+  'HP and MP guild passives follow the selected guild level.':'Бонусы ОЗ и ОМ автоматически определяются уровнем гильдии.'}));
  toggle(vitals,'Знак жизни','lifeSign',true);
  const guild=section('Гильдия и честь');
+ select(guild,english?'Guild level':'Уровень гильдии','guildLevel',
+  Array.from({length:13},(_,i)=>[i,i===0?
+   (english?'Manual guild buffs':'Ручной выбор усилений'):
+   (english?'Guild level ':'Гильдия · уровень ')+i]));
+ if(guildLevel&&guildPreview){
+  const rate=[0,2,4,6,9,12,15][guildPreview.guildHp]||0;
+  const lines=[
+   (english?'HP and MP ':'ОЗ и ОМ ')+rate+'%',
+   (english?'HP/MP recovery ':'Восстановление ОЗ/ОМ ')+
+    ([0,5,8][guildPreview.guildLifeRecovery]||0)+'%',
+   (english?'Incoming physical/magical damage −':'Получаемый физический/магический урон −')+
+    guildPreview.physicalReduction+'%',
+   (english?'Monster experience +':'Опыт с монстров +')+guildPreview.experience+'%'
+  ];
+  const preview=make('div',{class:'stage-guild-level-effects'});
+  for(const line of lines)preview.append(make('span',{text:line}));
+  guild.append(preview,make('p',{class:'stage-attribute-note',text:english?
+   'HP, MP and regeneration are calculated. Damage reduction and experience are shown from the Remaked guild table, but are not applied to unsupported combat formulas.':
+   'ОЗ, ОМ и восстановление участвуют в расчёте. Снижение урона и опыт отображаются по таблице Remaked, но не добавляются в неподтверждённые боевые формулы.'}));
+ }
  select(guild,'Все характеристики','guildAll',opts([0,1,2,3,4,5,6]));
  select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
  select(guild,'Титул чести','honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]));
+ const priest=section(english?'Priest buffs':'Усиления жреца');
+ toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
+ const priestFields=make('div',{class:'stage-priest-fields'});
+ for(const [key,ru,en] of [
+  ['priestSpi','СД жреца','Priest SPR'],
+  ['priestBlessing','Благословение','Blessing mastery'],
+  ['priestHymn','Песнопение','Hymn mastery']
+ ]){
+  const label=make('label',{class:'stage-book-field'},[
+   make('span',{text:english?en:ru})]);
+  const input=make('input',{type:'number',min:0,max:500,step:1,
+   value:String(buffs[key]||0),'data-book-setting':key,
+   'aria-label':english?en:ru,
+   disabled:buffs.priestEnabled!==true,
+   onchange:event=>onBuff(key,event.target.value)});
+  label.append(input);priestFields.append(label);
+ }
+ priest.append(priestFields);
+ priest.append(make('p',{class:'stage-attribute-note',text:english?
+  'Priest values determine the preview of legacy spell strengths. Selectable combat effects are not automatically applied.':
+  'СД, благословение и песнопение жреца влияют на предпросмотр силы его умений. Эффекты не включаются автоматически без выбора соответствующего усиления.'}));
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
@@ -360,15 +406,17 @@ function buffsPage(body,options){
   ['combatConcentration','Сосредоточенность']])
   toggle(skills,label,key,false,availability[key]===true,combatSkillCards[key]);
  const regen=section('Восстановление');
- select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
- select(regen,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
+ if(!guildLevel){
+  select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
+  select(regen,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
+ }
  select(regen,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
  toggle(regen,'Показывать действие зелий','potionEffectsEnabled');
  const other=section('Дополнительно');
  toggle(other,'Проэлиум','proelium');
  select(other,'Мощность Проэлиума','proeliumPotency',
   Array.from({length:101},(_,i)=>[i,String(i)]));
- if(modifiers?.legacyBuffs){
+ if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
   const details=make('details',{class:'stage-legacy-buff-previews'});
   details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
   const entries=[
@@ -397,7 +445,7 @@ function buffsPage(body,options){
   details.append(rows);
   details.append(make('p',{class:'stage-legacy-buff-intro',text:
    'Мощность при применении навыка. Просмотр не включает усиление на персонаже.'}));
-  body.append(details);
+  priest.append(details);
  }
  const songRows=modifiers?.songSkills?.rows||[];
  if(songRows.length){
