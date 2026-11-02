@@ -56,16 +56,24 @@ test('color chests have known types but no official reward rates in current ches
   assert.match(data[id].desc,new RegExp(term,'i'));
  }
 });
-test('Union Kingdom and Empire are grounded in NPC location catalog and shown directly',()=>{
+test('Astir city NPC zones are not mislabeled as the three sovereign nations',()=>{
  const source=JSON.parse(file('data/os/trades.json'));
- assert.match(source.mapNames['1002001'].name,/Союз/);
- assert.match(source.mapNames['1003001'].name,/Королевство/);
- assert.match(source.mapNames['1004001'].name,/империя/i);
+ assert.equal(source.mapNames['1001004'].name,'Центральная площадь');
+ assert.equal(source.mapNames['1002001'].name,'Территория Союза');
+ assert.equal(source.mapNames['1003001'].name,'Территория Королевства');
+ assert.equal(source.mapNames['1004001'].name,'Территория Империи');
+ assert.notEqual(source.mapNames['1002001'].name,'Союз северных племен Ванриг');
+ assert.notEqual(source.mapNames['1004001'].name,'Лотарская империя');
  const app=file('pandora-studio-app.js');
  for(const id of ['1002001','1003001','1004001'])assert.ok(app.includes(id));
  assert.match(app,/Культье/);
  assert.match(app,/Астир/);
  assert.match(app,/wiki-chest-opening-fields/);
+ for(const id of ['2001001','2002001','2001002','2003001','2001003','2004001'])
+  assert.ok(app.includes(id),'Missing road or connecting map '+id);
+ assert.match(app,/Союз северных племён Ванриг/);
+ assert.match(app,/Лотарская империя/);
+ assert.match(app,/Королевство Сэнт-Фальстайн/);
 });
 test('numeric values align to right and Phoenix help term is dotted',()=>{
  const css=file('pandora-studio-item-owner-editor.css');
@@ -73,3 +81,4 @@ test('numeric values align to right and Phoenix help term is dotted',()=>{
  assert.match(css,/justify-content:flex-end;text-align:right/);
  assert.match(css,/\.wiki-conditional-term\{text-decoration-line:underline/);
 });
+
