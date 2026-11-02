@@ -2009,6 +2009,105 @@ function renderWiki(root){
     if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
      h('dd',{text:wt('Двуручное','Two-handed')}));
     detail.append(dl);
+    if((rec.effects?.length||0)>0||(adminEditing&&adminToken)){
+     const effectRows=rec.effects||[];
+     const effectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items);
+     const labelFor=code=>effectOptions.find(row=>row.value===code)?.label||'Игровой эффект';
+     const update=(index,patch)=>saveWikiItemField(id,'effects',
+      effectRows.map((effect,i)=>i===index?{...effect,...patch}:effect));
+     const list=h('div',{class:'wiki-owner-effects'});
+     list.append(h('h4',{text:wt('Эффекты предмета','Item effects')}));
+     for(const [index,effect] of effectRows.entries()){
+      const row=h('div',{class:'wiki-owner-effect'});
+      const effectName=h('span',{class:'wiki-owner-effect-name',text:labelFor(effect.func),
+       title:adminEditing&&adminToken?'Двойной клик — выбрать другой эффект':''});
+      if(adminEditing&&adminToken){
+       effectName.classList.add('wiki-edit-value');
+       effectName.ondblclick=e=>{
+        e.preventDefault();e.stopPropagation();
+        editWikiValue(effectName,effect.func,{
+         type:'select',options:effectOptions,
+         onCommit:next=>update(index,{func:next})});
+       };
+      }
+      row.append(effectName);
+      for(const [key,label] of [['a','Значение'],['b','Доп. параметр']]){
+       const initial=effect[key];
+       if(initial==null&&key==='b'&&!adminEditing)continue;
+       const value=h('span',{class:'wiki-owner-effect-value'});
+       value.append(h('small',{text:label}));
+       const number=h('strong',{text:initial==null?'—':String(initial)});
+       if(adminEditing&&adminToken){
+        number.classList.add('wiki-edit-value');
+        number.title='Двойной клик — изменить число';
+        number.ondblclick=e=>{
+         e.preventDefault();e.stopPropagation();
+         editWikiValue(number,initial??0,{type:'number',min:-100000,max:100000,
+          onCommit:n=>update(index,{[key]:n})});
+        };
+       }
+       value.append(number);row.append(value);
+      }
+      if(adminEditing&&adminToken){
+       const dir=h('span',{class:'wiki-owner-effect-value'});
+       dir.append(h('small',{text:'Применение'}));
+       const indicator=h('strong',{class:'wiki-edit-value',
+        text:effect.dir==='CASTER'?'К применяющему':'К цели',
+        title:'Двойной клик — выбрать применение'});
+       indicator.ondblclick=e=>{
+        e.preventDefault();e.stopPropagation();
+        editWikiValue(indicator,effect.dir,{type:'select',options:[
+         {value:'TARGET',label:'К цели'},
+         {value:'CASTER',label:'К применяющему'}],
+         onCommit:next=>update(index,{dir:next})});
+       };
+       dir.append(indicator);row.append(dir);
+       row.append(h('button',{type:'button',class:'wiki-owner-remove',
+        text:'×','aria-label':'Удалить эффект '+labelFor(effect.func),
+        onclick:()=>void saveWikiItemField(id,'effects',
+         effectRows.filter((_,i)=>i!==index)).catch(e=>showStudioToast(e.message,'warning'))}));
+      }
+      list.append(row);
+     }
+     if(adminEditing&&adminToken){
+      const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+ Добавить эффект'});
+      plus.onclick=()=>{
+       if(list.querySelector('.wiki-owner-effect-picker'))return;
+       const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-effect-picker'});
+       const search=h('input',{type:'search',class:'wiki-inline-input',
+        'aria-label':'Поиск эффекта',placeholder:'Найти игровой эффект…'});
+       guardOwnerInput(search);
+       const chooser=h('select',{class:'wiki-inline-select','aria-label':'Выбери эффект'});
+       const error=h('small',{class:'inline-owner-error',role:'status'});
+       const fill=()=>{
+        const q=wikiIndex.normalize(search.value);
+        const matches=effectOptions.filter(row=>!q||
+         wikiIndex.normalize(row.label+' '+row.value).includes(q));
+        chooser.replaceChildren(h('option',{value:'',text:matches.length?'Выбери эффект':'Эффекты не найдены'}));
+        for(const row of matches)chooser.append(h('option',{value:row.value,text:row.label}));
+       };
+       search.oninput=fill;
+       chooser.onchange=async()=>{
+        if(!chooser.value)return;
+        if(effectRows.length>=32){error.textContent='Можно добавить не более 32 эффектов';return}
+        chooser.disabled=true;
+        try{await saveWikiItemField(id,'effects',[
+         ...effectRows,{func:chooser.value,dir:'TARGET',exclusive:null,a:0,b:null}])}
+        catch(e){error.textContent=e.message;chooser.disabled=false}
+       };
+       panel.append(search,chooser,error);plus.after(panel);
+       const outside=e=>{
+        if(!panel.isConnected||(!panel.contains(e.target)&&e.target!==plus)){
+         document.removeEventListener('pointerdown',outside,true);panel.remove();
+        }
+       };
+       document.addEventListener('pointerdown',outside,true);
+       fill();search.focus();
+      };
+      list.append(plus);
+     }
+     detail.append(list);
+    }
     if(!wikiIndex.rewardChest(id))renderClassEligibility(Object.keys(rec.classes||{}).filter(key=>rec.classes[key]),true);
     const wearers=window.PandoraUIPlanner.outfitWearers(rec,lang);
     if(wearers?.length)detail.append(h('div',{class:'wiki-item-wearers'},[
