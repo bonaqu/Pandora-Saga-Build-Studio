@@ -1399,7 +1399,18 @@ async function loadWiki(){
    if(parsed&&skills[parsed[3]]&&typeof value==='string'&&value.trim())
     skills[parsed[3]]={...skills[parsed[3]], [parsed[1]==='skill'?'name':'desc']:value};
   }
-  const source={...loaded.data,skills,
+  const ownerAcquisitions={};
+  for(const [key,value] of Object.entries(override)){
+   const match=/^acquireedit\.([0-9]{1,15})$/.exec(key);
+   if(!match||!loaded.data.items?.[match[1]]||typeof value!=='string')continue;
+   try{
+    const rows=JSON.parse(value);
+    if(Array.isArray(rows))ownerAcquisitions[match[1]]=rows.filter(row=>
+     row&&['npc','monster'].includes(row.type)&&
+     typeof row.id==='string'&&/^[1-9][0-9]{0,14}$/.test(row.id)).slice(0,24);
+   }catch{/* Damaged overrides must not break the original encyclopedia. */}
+  }
+  const source={...loaded.data,skills,ownerAcquisitions,
    items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
   const index=window.PandoraWikiData.build(source);
   wikiData=source;
