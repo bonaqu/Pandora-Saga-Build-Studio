@@ -805,7 +805,24 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   excluded:['active combat skills','class offensive passives','other conditional Souls and sets',
    'mounted penalties','current OS percent-bonus rounding']};
 }
-function attributeBuffBonus(options={}){
+// Remaked Skill[0][14][9] = Ободрение / Battle Prayer, NOT a potion.
+function encouragementBonus(options={},context={}){
+ const priest=context.externalPriest,skill=context.skillCatalog?.['320012001'];
+ if(options.priestEnabled!==true||options.priestEncouragement!==true||
+  priest?.enabled!==true||![priest.spi,priest.blessing,priest.hymn].every(n=>
+   Number.isSafeInteger(n)&&n>=0&&n<=500)||priest.blessing<61||
+  skill?.id!==320012001||skill.name!=='Ободрение'||
+  skill.skillType!=='ALLY'||skill.learnable!==true||
+  !Array.isArray(skill.reqs)||skill.reqs.length!==1||
+  skill.reqs[0].branch!=='blessing'||skill.reqs[0].amount!==61||
+  !Array.isArray(skill.funcs)||skill.funcs.length!==3)return 0;
+ const expected=['EP_STRENGTH_CONST','EP_AGILITY_CONST','EP_INTELIGENCE_CONST'];
+ if(!expected.every(ep=>skill.funcs.some(f=>f.ep===ep&&f.dir==='TARGET'&&
+  JSON.stringify(f.fv1)==='[0,0,10,0]')))return 0;
+ // The historical Remaked formula uses priest Blessing, not the hero's stat.
+ return Math.floor(priest.blessing/10);
+}
+function attributeBuffBonus(options={},context={}){
  const out=Object.fromEntries(keys.map(k=>[k,0])),trace=[];
  const selected=selectedHonor(options);
  if(!selected)return null;
@@ -814,6 +831,12 @@ function attributeBuffBonus(options={}){
  if(guild){
   for(const key of keys)out[key]+=guild;
   trace.push({source:'Remaked SelBuffClan_9',amount:guild,keys:keys.slice()});
+ }
+ const encouragement=encouragementBonus(options,context);
+ if(encouragement){
+  for(const key of ['str','agi','int'])out[key]+=encouragement;
+  trace.push({source:'Ободрение / Remaked Skill[0][14][9]',
+   amount:encouragement,keys:['str','agi','int']});
  }
  if(selected.id===1){
   for(const key of keys)out[key]++;
@@ -1667,7 +1690,7 @@ function gemstonePreview(loadouts=[]){
    !['physical','magical'].includes(gem.type)||
    !legacyGemElements.includes(gem.element))continue;
   if(!grade)continue;
-  const item={slot,grade,itemId:entry.itemId,type:gem.type,element:gem.element,
+  const item={slot,grade,itemId:entry.itemId,type:slot==='weapon'?gem.type:'physical',element:gem.element,
    name:names[gem.element],aura:0,magic:0,resistance:{},statusChance:0};
   if(gem.element==='rainbow'){
    uncertain.push({itemId:entry.itemId,slot,reason:'Особый радужный самоцвет зависит от списка уникального оружия'});
@@ -1746,7 +1769,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  if(!classData||!raceData||!jobData||!Number.isInteger(level)||level<1||level>55)return null;
  const unison=unisonPreview({records,catalog:unisonCatalog});
  const combinedRecords=[...records,...unison.supplemental];
- const effects=gatherEffects(combinedRecords,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs);
+ const effects=gatherEffects(combinedRecords,itemForth),basic={},stats={},extra=attributeBuffBonus(attributeBuffs,{externalPriest:combatContext.externalPriest,skillCatalog:combatContext.skillCatalog});
  if(!extra)return null;
  for(const key of keys){
   const race=Number(raceData[key]),job=Number(jobData[key]),spent=Number(allocation?.[key]||0);
@@ -1870,7 +1893,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({encouragementBonus,guildPassiveAtLevel,
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });

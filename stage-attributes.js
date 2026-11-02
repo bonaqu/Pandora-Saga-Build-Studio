@@ -55,11 +55,10 @@ const bookEnglish=Object.freeze({
  'Гильдия: скорость ОМ': "Guild: MP recovery",
  'Гильдейское лечение': "Guild healing",
  'Показывать действие зелий': "Show potion effects",
- 'Проэлиум': "Proelium",
- 'Мощность Проэлиума': "Proelium potency",
  'Мощность поддерживающих навыков': "Support skill potency",
  'Знак атаки': 'Velox',
  'Знак защиты': 'Lapis Medio',
+ 'Ободрение': 'Battle Prayer',
  'Божественная защита': 'Group Barrier',
  'Священное оружие': 'Holy Weapon',
  'Темная аура': 'Dark Aura',
@@ -308,6 +307,7 @@ function buffsPage(body,options){
   if(key.startsWith('priest')&&buffs.priestEnabled!==true)return false;
   if(key==='priestGratia'&&!(Number(buffs.priestBlessing)>=8))return false;
   if(key==='priestLapisMedio'&&!(Number(buffs.priestBlessing)>=12))return false;
+  if(key==='priestEncouragement'&&!(Number(buffs.priestBlessing)>=61))return false;
   if(guildSelected&&['guildLifeRecovery','guildManaRecovery'].includes(key))
    return false;
   return selected(value);
@@ -408,9 +408,12 @@ function buffsPage(body,options){
   false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=8);
  toggle(priest,english?'Lapis Medio · defense · Blessing 12':'Знак защиты · защита · Благословение 12','priestLapisMedio',
   false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=12);
+ toggle(priest,english?'Battle Prayer · STR, AGI, INT · Blessing 61':
+  'Ободрение · СИЛ, ПРВ, ИНТ · Благословение 61','priestEncouragement',
+  false,buffs.priestEnabled===true&&Number(buffs.priestBlessing)>=61);
  priest.append(make('p',{class:'stage-attribute-note',text:english?
-  'Only selected attack and defense signs affect the build. Other skill values are shown for reference.':
-  'На билд влияют только выбранные знаки атаки и защиты. Остальные значения — справочные.'}));
+  'Selected attack and defense signs and Battle Prayer affect the build; other values are previews.':
+  'На билд влияют выбранные знаки атаки и защиты, а также Ободрение. Остальное — предварительный просмотр.'}));
  const skills=section('Боевые умения');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
@@ -430,6 +433,7 @@ function buffsPage(body,options){
   const entries=[
    ['gratia','Знак атаки','Скорость атаки','+'],
    ['lapisMedio','Знак защиты','Защита','+'],
+   ['encouragement','Ободрение','СИЛ, ПРВ, ИНТ','+','Battle Prayer'],
    ['groupBarrier','Божественная защита','Получаемый физический урон',''],
    ['holyWeapon','Священное оружие','Усиление','+'],
    ['gloomyEffect','Темная аура','Усиление','+'],
@@ -517,6 +521,15 @@ function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},mod
  }
  if(card.children.length===1)card.append(make('p',{class:'stage-attribute-note',text:en?
   'Select active buffs in the Buffs tab.':'Выбери активные усиления на вкладке «Усиления».'}));
+ if(buffs.priestEnabled===true&&buffs.priestEncouragement===true&&
+  Number(buffs.priestBlessing)>=61){
+  const value=modifiers?.attributeBuffs?.trace?.find(x=>
+   x.source==='Ободрение / Remaked Skill[0][14][9]')?.amount;
+  if(Number.isFinite(value)&&value>0)card.append(make('div',{class:'stage-skill-effect-row'},[
+   make('span',{text:en?'Battle Prayer':'Ободрение'}),
+   make('strong',{text:'+'+value+' '+(en?'STR / AGI / INT':'СИЛ / ПРВ / ИНТ')})
+  ]));
+ }
  body.prepend(card);
  renderSongSkills(body,modifiers);
 }
