@@ -35,6 +35,28 @@ function build(data){
  for(const zone of data.tables?.zoneDrops||[])for(const group of zone.rows||[])for(const row of group.items||[]){
   if(row.i!=null)add(row.i,{type:'zone',id:String(zone.map),mobId:group.mob?String(group.mob):null,groupChance:group.base??null,perMember:group.perMember??null,groupSize:group.items.length});
  }
+ const ownerNpcItems=new Map(),manualMonsterSources=new Map();
+ // Administrator sources extend the encyclopedia graph without altering OS drop tables.
+ for(const [itemId,entries] of Object.entries(data.ownerAcquisitions||{})){
+  if(!Object.hasOwn(data.items||{},itemId)||!Array.isArray(entries))continue;
+  const seen=new Set();
+  for(const row of entries.slice(0,24)){
+   if(!row||typeof row!=='object'||!['monster','npc'].includes(row.type)||
+    typeof row.id!=='string'||!/^[1-9][0-9]{0,14}$/.test(row.id))continue;
+   const fingerprint=row.type+':'+row.id;
+   if(seen.has(fingerprint))continue;
+   seen.add(fingerprint);
+   if(row.type==='monster'&&Object.hasOwn(data.monsters||{},row.id)){
+    const entry={type:'monster',id:row.id,itemId,kind:'manual',manual:true,
+     percent:null,condition:null,quantity:1,slotAdd:0};
+    append(drops,row.id,entry);add(itemId,entry);
+    append(manualMonsterSources,row.id,itemId);
+   }else if(row.type==='npc'&&Object.hasOwn(data.trades?.npcs||{},row.id)){
+    const entry={type:'npc',id:row.id,itemId,manual:true};
+    add(itemId,entry);append(ownerNpcItems,row.id,{itemId});
+   }
+  }
+ }
  const mobLocations=new Map();
  const addLocation=(mob,entry)=>{
   const id=String(mob),rows=mobLocations.get(id)||[];
@@ -116,7 +138,7 @@ function build(data){
     .sort(([a],[b])=>a.localeCompare(b)));
    // Monsters with the same stats but different loot tables may be distinct
    // in-world variants. Do not merge those sources automatically.
-   const loot=type==='monster'?data.drops?.[pair[0]]||null:null;
+   const loot=type==='monster'?{source:data.drops?.[pair[0]]||null,extra:manualMonsterSources.get(pair[0])||[]}:null;
    const signature=name+'|'+JSON.stringify(content)+'|'+JSON.stringify(loot);
    if(signatures.has(signature))hidden.set(pair[0],signatures.get(signature));
    else signatures.set(signature,pair[0]);
@@ -181,7 +203,9 @@ function build(data){
  return Object.freeze({
   sources:id=>(sources.get(String(id))||[]).slice(),
   drops:allDrops,
-  trades:id=>(npcTrades.get(String(id))||[]).slice(),locations:allLocations,canonical,related,sameName,
+  trades:id=>(npcTrades.get(String(id))||[]).slice(),
+   ownerNpcItems:id=>(ownerNpcItems.get(String(id))||[]).slice(),
+   locations:allLocations,canonical,related,sameName,
   materialUses:id=>(materialTrades.get(String(id))||[]).slice(),
   residents:id=>(npcLocations.get(String(id))||[]).slice(),
   zones:id=>(zoneLocations.get(String(id))||[]).slice(),
