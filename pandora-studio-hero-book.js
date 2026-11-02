@@ -1334,11 +1334,26 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
      row.refinement}));
     if(bonus.phoenix){
      const p=bonus.phoenix;
+     const result=root.PandoraConditionalItemBonuses.phoenixDamage(
+      p,row.refinement,modifiers?.stats);
+     const number=value=>Number(value).toLocaleString(en?'en-US':'ru-RU',
+      {maximumFractionDigits:2});
      panel.append(make('div',{class:'stage-skill-effect-row'},[
-      make('span',{text:en?'Phoenix Flame':'Пламя феникса'}),
-      make('strong',{text:'+'+p.chance+'% · '+p.damage+' + '+
-       p.scale+'% '+(en?'of ':'от ')+p.stat})
+      make('span',{text:en?'Phoenix Flame · calculated damage':'Пламя феникса · расчётный урон'}),
+      make('strong',{text:result?number(result.damage):'—'})
      ]));
+     if(result){
+      panel.append(make('p',{class:'stage-elemental-explanation',text:
+       number(result.flat)+' + '+number(result.scale)+'% × '+
+       result.stat+' ('+number(result.attribute)+') = '+
+       number(result.damage)}));
+      panel.append(make('p',{class:'stage-elemental-explanation',text:en?
+       'Trigger chance: '+number(result.chance)+'% · Cooldown: '+number(result.cooldown)+' s':
+       'Шанс срабатывания: '+number(result.chance)+'% · Откат: '+number(result.cooldown)+' сек.'}));
+      panel.append(make('small',{class:'stage-attribute-note',text:en?
+       'Calculated effect before target resistances; actual server rounding and mitigation may differ.':
+       'Урон до сопротивлений цели. Серверное округление и снижение урона не учтены.'}));
+     }
     }
     if(chosen==='effects'){
      for(const entry of bonus.rows)
