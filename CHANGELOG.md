@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.294.0 — 2026.11.02.294 · Sync guild effects across Origin and Hero Book
+
+- Both Origin and Hero Book show identical level-derived guild HP/MP and regeneration ranks when guild auto-passives are selected; manual Origin selectors are visibly disabled with localized explanation instead of showing misleading stale ranks.
+- Manual guild selections are preserved and restored when changing the guild level back to zero; change handlers reject conflicting writes while automatic guild ranks are active.
+- Add one in-memory UI regression test for synchronized display, disabled selectors, blocked conflicting changes and restoration of manual values; no extra browser runner.
+- Player planner still supports level 1–55. Browser and Worker acceptance require separate CI verification.
+
+
 ## 0.293.0 — 2026.11.02.293 · Source-backed alchemy names and cleaner Hero Book
 
 - Corrected the priest Hymns field and the current OS alchemy skills: Яд/Toxify and Усиление яда/Toxic Aura, preserving matching RU/EN source identities.

@@ -416,9 +416,19 @@ function renderOriginVitals(){
 }
 
 function renderVitalsEnhancements(){
+ const guildLevel=Number(state.attributeBuffs?.guildLevel)||0;
+ const guildAuto=guildLevel>0?
+  window.PandoraOSCalculator?.guildPassiveAtLevel?.(guildLevel):null;
+ const guildNotice=guildAuto?(lang==='en'?
+  'Controlled by guild level in the Hero Book':
+  'Управляется уровнем гильдии в Книге героя'):'';
  for(const [id,key] of [['originGuildHp','guildHp'],['originGuildMp','guildMp']]){
   const select=$(id);
-  if(select)select.value=String(state.vitalsBuffs?.[key]||0);
+  if(select){
+   select.value=String(guildAuto?.[key]??state.vitalsBuffs?.[key]??0);
+   select.disabled=Boolean(guildAuto);
+   select.title=guildNotice;
+  }
  }
  const sign=$('originLifeSign');
  if(sign)sign.checked=state.vitalsBuffs?.lifeSign===true;
@@ -427,7 +437,15 @@ function renderVitalsEnhancements(){
   ['originGuildLifeRecovery','guildLifeRecovery'],['originGuildManaRecovery','guildManaRecovery'],
   ['originGuildHealing','guildHealing']]){
   const control=$(id);
-  if(control)control.value=String(state.attributeBuffs?.[key]||0);
+  if(control){
+   const autoRecovery=Boolean(guildAuto)&&
+    (key==='guildLifeRecovery'||key==='guildManaRecovery');
+   control.value=String(autoRecovery?guildAuto[key]:state.attributeBuffs?.[key]??0);
+   if(autoRecovery||key==='guildLifeRecovery'||key==='guildManaRecovery'){
+    control.disabled=autoRecovery;
+    control.title=autoRecovery?guildNotice:'';
+   }
+  }
  }
  for(const [id,key] of [['originProelium','proelium'],['originUsePotionEffects','potionEffectsEnabled'],
   ['originCombatLunge','combatLunge'],['originCombatWarCry','combatWarCry'],
@@ -469,6 +487,7 @@ function renderVitalsEnhancements(){
 }
 function setVitalsEnhancement(key,value){
  if(!['guildHp','guildMp','lifeSign'].includes(key))return;
+ if(key!=='lifeSign'&&Number(state.attributeBuffs?.guildLevel)>0)return;
  const current={guildHp:0,guildMp:0,lifeSign:false,...state.vitalsBuffs};
  if(key==='lifeSign')current[key]=value===true;
  else{
@@ -512,6 +531,7 @@ function setAttributeBuff(key,value){
   const n=Number(value);if(!Number.isInteger(n)||n<0||n>100)return;
   current.proeliumPotency=n;
  }else if(['guildLifeRecovery','guildManaRecovery','guildHealing'].includes(key)){
+  if(key!=='guildHealing'&&Number(current.guildLevel)>0)return;
   const n=Number(value),limit=key==='guildHealing'?3:2;
   if(!Number.isInteger(n)||n<0||n>limit)return;
   current[key]=n;

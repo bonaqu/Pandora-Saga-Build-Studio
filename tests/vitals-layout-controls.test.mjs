@@ -69,3 +69,45 @@ test('runtime hooks update linked HP/MP and rune changes without a full page res
  assert.doesNotMatch(html,/id="originRuneJoEun"/);
  assert.match(app,/state\.vitalsBuffs=current;persist\(\);renderOriginVitals\(\);renderVitalsEnhancements\(\)/);
 });
+
+test('guild-level automatic ranks stay synchronized between Origin and Hero Book',()=>{
+ const start=app.indexOf('function renderVitalsEnhancements(){');
+ const end=app.indexOf('\nfunction budgetSummary(){',start);
+ const body=app.slice(start,end);
+ const state={vitalsBuffs:{guildHp:6,guildMp:5,lifeSign:false},
+  attributeBuffs:{guildLevel:10,guildLifeRecovery:1,guildManaRecovery:0}};
+ const dom=Object.fromEntries(['originGuildHp','originGuildMp',
+  'originGuildLifeRecovery','originGuildManaRecovery'].map(key=>
+   [key,{value:'',disabled:false,title:''}]));
+ const factory=Function('state','$','persist','previewBaseStats','renderOriginVitals',
+  'window','renderStageAttributes','stageAttributesPage','renderPotionPreview',
+  'lang','renderOriginStats',body+
+  '\nreturn {renderVitalsEnhancements,setVitalsEnhancement,setAttributeBuff};');
+ let saves=0;
+ const auto={guildHp:5,guildMp:5,guildLifeRecovery:2,guildManaRecovery:2};
+ const ui=factory(state,key=>dom[key]||null,()=>saves++,
+  ()=>({hp:100,mp:100}),()=>{},
+  {PandoraOSCalculator:{guildPassiveAtLevel:level=>level===10?auto:null,honorTitles:[]}},
+  ()=>{},null,()=>{},'ru',()=>{});
+ ui.renderVitalsEnhancements();
+ for(const [key,rank] of [['originGuildHp',5],['originGuildMp',5],
+  ['originGuildLifeRecovery',2],['originGuildManaRecovery',2]]){
+  assert.equal(dom[key].value,String(rank),key+' effective value');
+  assert.equal(dom[key].disabled,true,key+' locked when auto');
+  assert.match(dom[key].title,/уровнем гильдии/);
+ }
+ ui.setVitalsEnhancement('guildHp','1');
+ ui.setAttributeBuff('guildLifeRecovery','0');
+ assert.equal(saves,0,'automatic bonus changes must not be saved as manual settings');
+ assert.equal(state.vitalsBuffs.guildHp,6,'preserve manual HP choice for later');
+ assert.equal(state.attributeBuffs.guildLifeRecovery,1,'preserve manual recovery choice');
+ state.attributeBuffs.guildLevel=0;
+ ui.renderVitalsEnhancements();
+ for(const key of ['originGuildHp','originGuildMp',
+  'originGuildLifeRecovery','originGuildManaRecovery']){
+  assert.equal(dom[key].disabled,false,key+' enabled again');
+  assert.equal(dom[key].title,'',key+' tooltip cleared');
+ }
+ assert.equal(dom.originGuildHp.value,'6');
+ assert.equal(dom.originGuildLifeRecovery.value,'1');
+});
