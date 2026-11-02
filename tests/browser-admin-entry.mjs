@@ -423,7 +423,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await npcFilter.click();
   await npcFilter.fill('Кларис');
   const npcListing=page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"] .wiki-link');
-  await npcListing.waitFor({state:'visible',timeout:20000});
+  try{await npcListing.waitFor({state:'visible',timeout:5000})}catch{throw Error('NPC debug '+JSON.stringify(await page.evaluate(()=>({hash:location.hash,search:document.querySelector('.wiki-controls input[type=search]')?.value,tab:document.querySelector('.wiki-categories .chosen')?.textContent,rows:document.querySelectorAll('.wiki-list [data-wiki-record]').length,owner:!!document.querySelector('#ownerDock'),detail:document.querySelector('.wiki-page')?.textContent?.slice(0,120)})))))}
   await npcListing.click();
   const npcHeading=page.locator('.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]');
   try{await npcHeading.waitFor({state:'visible',timeout:8000})}
