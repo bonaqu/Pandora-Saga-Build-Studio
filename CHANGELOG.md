@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.308.0 — 2026.11.02.308 · Graphical catalog comparison for nontechnical administrators
+
+- The authenticated catalog comparison now uses a responsive dashboard with four numeric summaries and six selectable filters for record kinds and owner approval state.
+- Clearly distinguish **accept entire section** from **accept only the visible/filter-matched records**, preventing accidental acceptance of unrelated hidden changes.
+- Make source fields such as name, description, attack, penetration, defense, class access and effects readable in the before/after preview.
+- Keep default-deny selection, immutable source checks and explicit separate D1/GitHub writes.
+- Expanded interactive browser checks for filters, zero-results and safe approval actions.
+
+
+
 ## 0.307.0 — 2026.11.02.307 · Owner equipment editor and existing-project Cloudflare instructions
 
 - Replace first-install D1 migration/setup instructions with a precise existing-Worker guide for adding a fine-grained GitHub token as Cloudflare Secret. No D1 recreation.
