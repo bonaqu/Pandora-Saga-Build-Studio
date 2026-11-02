@@ -1699,6 +1699,13 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 }
 
 
+.wiki-entity-flow{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 13px}
+.wiki-page .wiki-entity-flow .wiki-link{display:inline-flex;align-items:center;
+ width:auto;max-width:100%;margin:0;padding:7px 10px;min-height:32px;
+ border:1px solid #76563b;border-radius:5px;background:linear-gradient(130deg,#332418,#1e1610);
+ color:#e8c99a;font-size:11px;transition:border-color .16s}
+.wiki-page .wiki-entity-flow .wiki-link:hover{border-color:#dbb47a;background:#4c3423}
+.wiki-reward-percent.certain{color:#afd19c}
 /* Shared encyclopedia components: compact game-style clickable sources. */
 .wiki-source-flow{display:flex;flex-wrap:wrap;align-items:flex-start;gap:7px;margin:9px 0 14px}
 .wiki-source-token{display:inline-flex;flex-wrap:wrap;align-items:center;gap:5px;
