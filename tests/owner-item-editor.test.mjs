@@ -66,7 +66,7 @@ test('structured item overrides require authenticated requests and strict allowe
  assert.equal(db.values.has('itemedit.1'),true);
  const invalid=[
   {unknown:1},
-  {classes:{'__proto__':1}},
+  {classes:Object.fromEntries([['__proto__',1]])},
   {effects:[{func:'javascript:alert(1)',dir:'TARGET',exclusive:null,a:1,b:null}]},
   {effects:[{func:'EP_MAXLIFE_CONST',dir:'TARGET',exclusive:null,a:'100',b:null}]},
   {sourceNote:'a'.repeat(501)},

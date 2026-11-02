@@ -1,5 +1,16 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.307.0 — 2026.11.02.307 · Owner equipment editor and existing-project Cloudflare instructions
+
+- Replace first-install D1 migration/setup instructions with a precise existing-Worker guide for adding a fine-grained GitHub token as Cloudflare Secret. No D1 recreation.
+- Add visual owner item editing in encyclopedia: numerical attributes, allowed classes, effect rows and a separately labeled acquisition note. Save only changed fields to independent D1 owner overrides; none overwrite source snapshots during future sync.
+- Enable RU item/skill name and description double-click, including race passive titles; synchronize owner changes in hero calculations and encyclopedia.
+- Distinguish an administrator-provided acquisition note from actual loot or NPC trade data. Source graphs and exchange recipes are not yet modified by the new editor.
+- Prevent password-manager autofill targeting the encyclopedia search using explicit search field identity and ignore hints.
+- Add server-side structured payload validation, XSS-safe DOM form, undo compatibility and regression tests.
+
+
+
 ## 0.306.0 — 2026.11.02.306 · Direct GitHub PR from published catalog; isolated D1 diagnostic
 
 - Authenticated administrator can create a GitHub PR directly from the current published catalog with no browser-held GitHub credentials. Worker accepts one fixed repository and 17 game data paths, creates a separate branch, and never merges automatically.
