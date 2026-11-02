@@ -201,7 +201,10 @@ export async function runAdminEntrySmoke(browser,base){
   const oldEffects=await effectEditor.locator('.wiki-owner-effect').count();
   await effectEditor.getByRole('button',{name:'Добавить эффект'}).click();
   const effectList=page.getByRole('combobox',{name:'Выбери эффект'});
-  assert.ok(await effectList.locator('option').count()>70);
+  assert.ok(await effectList.locator('option').count()>10);
+  assert.equal(await effectList.locator('option[value="EP_RANDOM_BOX"]').count(),0);
+  assert.equal(await effectList.locator('option[value="EP_BOW_RANGE"]').count(),0);
+  assert.ok(await effectList.locator('option[value="EP_STRENGTH_CONST"]').count()>0);
   await effectList.selectOption({index:1});
   await page.waitForFunction(count=>
    document.querySelectorAll('.wiki-owner-effects .wiki-owner-effect').length===count+1,
