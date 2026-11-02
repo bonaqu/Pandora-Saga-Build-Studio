@@ -77,11 +77,10 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await description.evaluate(el=>getComputedStyle(el).whiteSpace),'pre-wrap');
   // A linked potion/material is not equipment, but still needs a visible record.
   await page.goto(base+'/#wiki/item/50011',{waitUntil:'domcontentloaded'});
-  await page.locator('.wiki-equipment-type').waitFor({state:'visible'});
-  await page.waitForFunction(()=>document.querySelector('.wiki-equipment-type')?.value==='all'&&
-   document.querySelector('.wiki-list .wiki-link[aria-current="page"]'),
+  await page.waitForFunction(()=>document.querySelector('.wiki-list .wiki-link[aria-current="page"]'),
    null,{timeout:20000});
-  assert.equal(await page.locator('.wiki-equipment-type').inputValue(),'all');
+  assert.equal(await page.locator('.wiki-equipment-type').count(),0,
+   'Unslotted material is accessible via source link without pretending it is equipment');
   // Source-backed clickable chips navigate to the actual monster.
   await page.goto(base+'/#wiki/soul/101000',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-source-flow .wiki-source-primary').first()
@@ -143,19 +142,26 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.locator('.wiki-nation-territory').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-nation-territory').innerText(),/Королевства/);
   assert.match(await page.locator('.wiki-page h3').innerText(),/Территория Королевства · Астир/);
+  assert.match(await page.locator('.wiki-nation-territory').innerText(),/Восточная дорога Ветров/);
   assert.ok(await page.locator('.wiki-location-list-heading').count()>=2);
   const districts=page.locator('.wiki-astir-neighborhoods .wiki-link');
   assert.equal(await districts.count(),4);
   assert.match(await districts.nth(0).innerText(),/Центральная площадь/);
   // Source-backed elemental selection and separate status/skill consumables.
   await page.goto(base+'/#wiki/item/452',{waitUntil:'domcontentloaded'});
+  assert.equal(await page.locator('.wiki-elemental-type').count(),0);
   await page.locator('.wiki-equipment-type').selectOption('elemental');
   await page.locator('.wiki-elemental-type').waitFor({state:'visible',timeout:20000});
   await page.locator('.wiki-elemental-type').selectOption('fire');
   assert.ok(await page.locator('.wiki-list .wiki-link')
    .filter({hasText:'Огненный меч пылающей души'}).count()>=1);
   await page.locator('.wiki-categories [data-wiki-chapter="utility"]').click();
-  assert.equal(await page.locator('.wiki-equipment-type').inputValue(),'utility');
+  assert.equal(await page.locator('.wiki-equipment-type').count(),0);
+  assert.equal(await page.locator('.wiki-effect-type').inputValue(),'all');
+  assert.equal(await page.locator('.wiki-elemental-type').count(),0);
+  await page.locator('.wiki-effect-type').selectOption('buff');
+  assert.equal(await page.locator('.wiki-list .wiki-link').filter({hasText:'Снежный корень'}).count(),0);
+  await page.locator('.wiki-effect-type').selectOption('cure');
   assert.ok(await page.locator('.wiki-list .wiki-link')
    .filter({hasText:'Снежный корень'}).count()>=1);
   assert.equal(await page.locator('.wiki-list .wiki-link')
