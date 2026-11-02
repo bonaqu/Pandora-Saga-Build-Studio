@@ -174,6 +174,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
   assert.equal(await page.locator('.wiki-page h3').innerText(),'Claris');
   const enSearch=page.locator('.wiki-controls input[type="search"]');
+  await enSearch.click();
   await enSearch.fill('Claris');
   assert.equal(await page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"]').count(),1);
   await page.goto(base+'/#wiki/map/astir-kingdom',{waitUntil:'domcontentloaded'});
