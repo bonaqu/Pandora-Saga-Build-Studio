@@ -195,6 +195,19 @@ export async function runAdminEntrySmoke(browser,base){
    .some(node=>node.textContent==='99'),null,{timeout:20000});
   assert.deepEqual(calls.filter(x=>x==='owner-item-edit'),['owner-item-edit']);
   assert.ok(await page.locator('.item-fields dd.wiki-edit-value').count()>0);
+  assert.equal(await page.getByRole('button',{name:'Дополнительные эффекты'}).count(),0);
+  const effectEditor=page.locator('.wiki-owner-effects');
+  await effectEditor.waitFor({state:'visible'});
+  const oldEffects=await effectEditor.locator('.wiki-owner-effect').count();
+  await effectEditor.getByRole('button',{name:'Добавить эффект'}).click();
+  const effectList=page.getByRole('combobox',{name:'Выбери эффект'});
+  assert.ok(await effectList.locator('option').count()>70);
+  await effectList.selectOption({index:1});
+  await page.waitForFunction(count=>
+   document.querySelectorAll('.wiki-owner-effects .wiki-owner-effect').length===count+1,
+   oldEffects,{timeout:20000});
+  assert.ok(calls.includes('owner-effect-edit'));
+
   await page.getByRole('button',{name:/Добавить источник/}).click();
   await page.getByRole('combobox',{name:'Тип получения'}).selectOption('npc');
   const sourceTarget=page.getByRole('combobox',{name:'У кого получить'});
