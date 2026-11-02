@@ -31,7 +31,7 @@ function ownPatch(overrides,id){
     selected[key]=patch[key];
   if(typeof patch.name==='string'&&patch.name.trim()&&patch.name.length<=240)
    selected.name=patch.name;
-  if(typeof patch.desc==='string'&&patch.desc.trim()&&patch.desc.length<=2000)
+  if(typeof patch.desc==='string'&&patch.desc.length<=2000)
    selected.desc=patch.desc;
   if(typeof patch.twoHanded==='boolean')selected.twoHanded=patch.twoHanded;
   if(plain(patch.classes))selected.classes=Object.fromEntries(
@@ -180,8 +180,8 @@ function open({id,item,base,overrides,h,modal,jobKeys,className,onSave,onReset})
   if(!proposedName||proposedName.length>240){
    feedback.textContent='Название должно содержать от 1 до 240 символов.';name.focus();return;
   }
-  if(!proposedDescription||proposedDescription.length>2000){
-   feedback.textContent='Описание должно содержать от 1 до 2000 символов.';desc.focus();return;
+  if(proposedDescription.length>2000){
+   feedback.textContent='Описание должно содержать не более 2000 символов.';desc.focus();return;
   }
   if(proposedName!==String(base.name??''))patch.name=proposedName;
   if(proposedDescription!==String(base.desc??''))patch.desc=proposedDescription;
