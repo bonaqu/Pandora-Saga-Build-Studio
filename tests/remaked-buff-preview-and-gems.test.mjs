@@ -4,15 +4,16 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const ctx={};Function('window',read('os-calculator.js'))(ctx);
 const calc=ctx.PandoraOSCalculator;
-test('all eleven support skill effect previews reproduce Remaked Calc formulas',()=>{
+test('all twelve support skill effect previews reproduce Remaked Calc formulas',()=>{
  const v=calc.legacyBuffPreview({spi:70,blessing:50,hymn:40,alchemy:60});
  assert.deepEqual(Object.keys(v),[
-  'gratia','lapisMedio','groupBarrier','holyWeapon','gloomyEffect',
+  'gratia','lapisMedio','encouragement','groupBarrier','holyWeapon','gloomyEffect',
   'enchantEnhance','enchantMagic','minstrelSong','sageSong','toxify','toxicAura'
  ]);
  assert.equal(v.gratia.value,12);
  assert.equal(v.gratia.nextSpi,84);
  assert.equal(v.lapisMedio.value,9);
+ assert.equal(v.encouragement.value,5);
  assert.equal(v.groupBarrier.value,-20);
  assert.equal(v.holyWeapon.value,4);
  assert.equal(v.gloomyEffect.value,5);
