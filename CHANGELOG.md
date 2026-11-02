@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.301.0 — 2026.11.02.301 · Pandora OS admin review and safe source refresh
+
+- Admin can review every detected game-record change, choose individual changes or full sections, search by source ID/name and approve nothing by default. Interdependent formula, trade and instance structures are accepted as atomic groups.
+- A dedicated OS workbench module and stylesheet replace the large inline admin editor workflow. Source utilities now have descriptive Pandora OS file names; loader and test references are updated.
+- Curated versions recompute source/translation counts and do not inherit misleading official CSV hashes. New D1 publish requests use a server-side atomic expected-active lease to reject stale admin decisions.
+- The review can be downloaded as a GitHub-ready JSON snapshot, then applied to checked-in OS source files through a validated, dry-run-first CLI. GitHub and Cloudflare are never silently cross-written.
+- Official game formula verification, Worker production deployment and authenticated D1 lifecycle acceptance remain separately tracked. No automatic changes to player builds, 1–55 planning or Encouragement +9.
+
+
+
 ## 0.300.0 — 2026.11.02.300 · Clean item names, physical attack forge notation and left-aligned eligibility
 
 - Remove synthesized elemental prefixes/suffixes in equipment names. The canonical RU/EN item name retains its +grade; the chosen element appears in its own field.

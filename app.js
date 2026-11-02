@@ -2940,114 +2940,13 @@ function editor(el){
 }
 async function showCatalogImport(){
  if(!adminToken)return;
- const view=h('div',{class:'catalog-updater'}),status=h('p',{class:'muted',role:'status',text:'Новая версия не будет опубликована без предварительной сверки и твоего подтверждения.'});
- const progress=h('progress',{max:'100',value:'0',class:'catalog-import-progress'});
- const actions=h('div',{class:'catalog-update-actions'});
- const check=h('button',{class:'button-action primary',text:'Сверить с Pandora Saga OS'});
- const archive=h('button',{class:'button-action',text:'Сверить с архивом GitHub'});
- const apply=h('button',{class:'button-action primary',text:'Опубликовать проверенный снимок D1',disabled:true});
- actions.append(check,archive,apply);
- const report=h('div',{class:'catalog-update-report'});
- view.append(h('p',{class:'muted',text:'Обновления загружаются только по команде администратора. 17 наборов RU/EN будут сравнены по идентификаторам с активной D1. Добавленные, изменённые и удалённые записи проверяются до публикации.'}),actions,progress,status,report);
- let proposed=null,summary=null,provenance=null;
- const setBusy=flag=>{check.disabled=flag;archive.disabled=flag;apply.disabled=flag||!proposed};
- const getFile=async(name,mode)=>{
-  if(mode==='server')return apiRequest('/api/admin/catalog/source/'+name+'.json',null,adminToken);
-  const r=await fetch('./data/os/'+name+'.json',{cache:'no-cache'});
-  if(!r.ok)throw Error('Архив '+name+' HTTP '+r.status);
-  return r.json();
- };
- async function preview(mode){
-  proposed=null;summary=null;apply.disabled=true;report.replaceChildren();setBusy(true);
-  try{
-   const api=window.PandoraCatalogImport,diff=window.PandoraCatalogDiff;
-   if(!api||!diff)throw Error('Модуль сравнения не подключён');
-   const upstream={};
-   for(const [i,name]of api.files.entries()){
-    status.textContent='Проверяю '+name+' ('+(i+1)+'/'+api.files.length+')';
-    upstream[name]=await getFile(name,mode);
-    progress.value=String(Math.round((i+1)/api.files.length*50));
-   }
-   const localeResponse=await fetch('./data/localization/legacy-approved.v1.json',{cache:'no-cache'});
-   if(!localeResponse.ok)throw Error('Локальный утверждённый перевод Legacy недоступен');
-   const legacy=await localeResponse.json();
-   const ready=api.normalize(upstream,legacy);
-   const comparisons=[];
-   for(const [i,name]of api.files.entries()){
-    let active;
-    try{
-     const currentName=name==='strings.en'?'stringsEn':name;
-     const response=await fetch(API+'/api/catalog/'+currentName+'.json',{cache:'no-cache',signal:AbortSignal.timeout(12000)});
-     if(!response.ok)throw Error('D1 '+name+': HTTP '+response.status);
-     active=await response.json();
-    }catch(error){throw Error('Невозможно сверить '+name+' с опубликованной D1: '+error.message)}
-    comparisons.push(diff.diff(name,active,upstream[name]));
-    progress.value=String(50+Math.round((i+1)/api.files.length*50));
-   }
-   const total=comparisons.reduce((n,r)=>n+r.total,0);
-   report.append(h('h3',{text:total?'Предварительный отчёт: '+total+' изменений':'Изменений не обнаружено'}));
-   for(const row of comparisons){
-    const line=h('div',{class:'catalog-diff-row'});
-    line.append(h('strong',{text:row.dataset}),h('span',{text:'+'+row.added.length+' новых · ~'+row.changed.length+' изменено · −'+row.removed.length+' удалено'}));
-    const ids=[...row.added.slice(0,3).map(x=>'+'+x),...row.changed.slice(0,3).map(x=>'~'+x),...row.removed.slice(0,3).map(x=>'−'+x)];
-    if(ids.length)line.append(h('small',{text:ids.join(' · ')+(row.total>ids.length?' · ещё '+(row.total-ids.length):'')}));
-    if(row.examples?.length){
-      const details=h('details',{class:'catalog-diff-details'});
-      details.append(h('summary',{text:'Посмотреть конкретные изменения ('+Math.min(row.examples.length,row.total)+' из '+row.total+')'}));
-      for(const entry of row.examples){
-        const record=h('div',{class:'catalog-diff-record'});
-        record.append(h('strong',{text:(entry.kind==='added'?'＋ ':entry.kind==='removed'?'− ':'~ ')+entry.key}));
-        for(const field of entry.fields.slice(0,12)){
-          const item=h('div',{class:'catalog-diff-field'});
-          item.append(h('code',{text:field.field}),h('span',{text:field.before+' → '+field.after}));
-          record.append(item);
-        }
-        details.append(record);
-      }
-      line.append(details);
-    }
-    report.append(line);
-   }
-   proposed=ready;summary=comparisons;provenance=mode;
-   apply.disabled=false;
-   status.textContent='Проверка завершена ('+ready.datasets.length+' групп D1, '+Object.values(ready.counts).reduce((a,b)=>a+b,0)+' записей). Проверь изменения и подтверди публикацию.';
-  }catch(e){status.textContent='Сверка остановлена без изменений в D1: '+e.message;proposed=null;console.error('Catalog preview',e)}
-  finally{setBusy(false)}
- }
- check.onclick=()=>preview('server');
- archive.onclick=()=>preview('archive');
- apply.onclick=async()=>{
-  if(!proposed||!summary||!provenance)return;
-  const added=summary.reduce((n,x)=>n+x.added.length,0),changed=summary.reduce((n,x)=>n+x.changed.length,0),removed=summary.reduce((n,x)=>n+x.removed.length,0);
-  if(!confirm('Опубликовать снимок ('+provenance+') в Cloudflare D1?\\nНовых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+'.\\nСуществующая опубликованная версия останется в истории снимков.'))return;
-  setBusy(true);apply.disabled=true;
-  try{
-   await apiRequest('/api/admin/catalog/initialize',{});
-   const id='ps-'+crypto.randomUUID().replaceAll('-');
-   let done=0;const total=Object.values(proposed.counts).reduce((n,x)=>n+x,0);
-   for(const name of proposed.datasets){
-    const rows=proposed.entries[name];
-    for(let offset=0;offset<rows.length;){
-     const batch=[];let size=0;
-     while(offset<rows.length&&batch.length<30){
-      const row=rows[offset],bytes=JSON.stringify(row).length;
-      if(bytes>12000)throw Error('Слишком большая запись '+name+'/'+row.key);
-      if(batch.length&&size+bytes>42000)break;
-      batch.push(row);size+=bytes;offset++;
-     }
-     await apiRequest('/api/admin/catalog/batch',{snapshot:id,dataset:name,records:batch});
-     done+=batch.length;progress.value=String(Math.round(done/total*100));
-     status.textContent='Сохраняю '+name+': '+done+'/'+total;
-    }
-   }
-   const result=await apiRequest('/api/admin/catalog/publish',{snapshot:id,extraCounts:proposed.extraCounts});
-   status.textContent='D1 обновлена, активен снимок '+result.active+'. Сохранено '+done+' записей.';
-   proposed=null;apply.disabled=true;
-   wikiIndex=null;wikiData=null;await loadCatalog();
-  }catch(e){status.textContent='Публикация прервана. Предыдущий активный снимок сохранён: '+e.message;console.error('D1 publish',e)}
-  finally{setBusy(false)}
- };
- modal('Каталог Pandora Saga · сравнение и обновление D1',view);
+ const workbench=window.PandoraOSCatalogWorkbench;
+ if(!workbench)throw Error('Модуль сверки Pandora Saga OS не подключён');
+ return workbench.open({
+  request:(path,body)=>apiRequest(path,body,adminToken),
+  apiBase:API,modal,h,
+  afterPublish:async()=>{wikiIndex=null;wikiData=null;await loadCatalog()}
+ });
 }
 
 function syncLocaleControls(){

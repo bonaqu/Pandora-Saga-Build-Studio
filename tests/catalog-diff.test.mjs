@@ -3,7 +3,7 @@ import assert from'node:assert/strict';
 import vm from'node:vm';
 import fs from'node:fs';
 const context={window:{}};
-vm.runInNewContext(fs.readFileSync(new URL('../catalog-diff.js',import.meta.url),'utf8'),context);
+vm.runInNewContext(fs.readFileSync(new URL('../pandora-os-catalog-diff.js',import.meta.url),'utf8'),context);
 const {diff,changedFields}=context.window.PandoraCatalogDiff;
 test('field-level preview shows confirmed old and new game values',()=>{
  const r=diff('skills',{1001:{name:'Test',mana:20}},{1001:{name:'Test',mana:30}});

@@ -1,9 +1,18 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-02 · **Latest source release:** 0.300.0 (`2026.11.02.300`)
+**Updated:** 2026-11-02 · **Latest source release:** 0.301.0 (`2026.11.02.301`)
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.301.0 — source-safe OS catalog review and branded modules
+
+- [x] Extract administrator OS catalog UI from app.js into `pandora-os-catalog-workbench.js` and dedicated CSS; enable searchable, record-level accept/reject and dataset-level decisions, with default-deny.
+- [x] Keep atomic approvals for trades, instances, formulas, expertise and chests. Recompute curated metadata and English locale counts without claiming official server CSV hashes.
+- [x] Validate whole candidate and reviewed selections before creating D1 staging entries. Apply an atomic expected-active lease when switching the published D1 snapshot.
+- [x] Add reviewed JSON export and a dry-run-first `catalog:review` CLI for separate GitHub source-file updating. No client-side GitHub write credential or D1 migration.
+- [x] Rename catalog-import/diff modules with Pandora OS-specific identity and update the loader, tests, documentation and release keys.
+- [ ] Full real-server OS calculator and magic/defense parity; production Worker deploy, D1 mutation acceptance and GitHub publishing automation remain unverified or not implemented.
 
 ## Source update 0.300.0 — canonical item names, OS forge attack and left-aligned restrictions
 

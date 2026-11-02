@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
 const sandbox={window:{}};
-vm.runInNewContext(readFileSync(new URL('../catalog-import.js',import.meta.url),'utf8'),sandbox);
+vm.runInNewContext(readFileSync(new URL('../pandora-os-catalog-import.js',import.meta.url),'utf8'),sandbox);
 const rules=sandbox.window.PandoraCatalogImport;
 function fixture(){
  const snapshot={meta:{counts:{},localeCounts:{en:{items:1,skills:1,monsters:1,souls:1,classes:1}}}};

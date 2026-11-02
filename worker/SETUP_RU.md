@@ -126,3 +126,8 @@ npx wrangler deploy
 Тестировать живые аккаунты следует после миграции с отдельно созданным тестовым логином; не использовать настоящий личный пароль в issue, логе или чате. Успех локальных тестов или публикации GitHub Pages — не подтверждение, что удалённый Worker/D1 уже обновлены.
 
 Источники правил: [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html), [Cloudflare Workers Web Crypto](https://developers.cloudflare.com/workers/runtime-apis/web-crypto/).
+
+
+## Ручная выборочная сверка Pandora Saga OS (0.301.0)
+
+После публикации обновлённого Worker в Cloudflare войди администратором, открой **Каталог D1** и начни сверку с API OS. Выбери записи и опубликуй только подтверждённые изменения. Новая публикация в D1 не создаётся без выбора; запрос отклоняется, если активный снимок изменился во время проверки. Экспорт GitHub скачивается отдельно и применяется локально только через `npm run catalog:review -- FILE [--write]`. Никаких секретов GitHub/Cloudflare в браузере вводить не нужно.
