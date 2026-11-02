@@ -49,6 +49,16 @@ function validChest(rolls){
    (row.plus==null||Number.isInteger(row.plus)&&row.plus>=0&&row.plus<=20)&&
    (row.soul==null||Number.isInteger(row.soul)&&row.soul>=0&&row.soul<=3)));
 }
+function validSpawns(rows){
+ if(!Array.isArray(rows)||rows.length>120)return false;
+ const set=new Set();
+ return rows.every(row=>{
+  if(!record(row)||Object.keys(row).length!==2||!own(row,'type')||!own(row,'id')||
+   !['map','instance'].includes(row.type)||!id(row.id))return false;
+  const key=row.type+':'+row.id;
+  if(set.has(key))return false;set.add(key);return true;
+ });
+}
 function parse(value){try{return JSON.parse(value)}catch{return null}}
 function apply(data,overrides){
  let next=data;const clone=()=>{if(next===data)next={...data}};
@@ -97,7 +107,33 @@ function apply(data,overrides){
    else next.chests.boxes.push(chest);
   }
  }
+ // Spawn assignments are keyed by monster, so editing from a map or monster page
+ // updates one authoritative relation and all reverse indexes together.
+ for(const [key,text] of Object.entries(overrides||{})){
+  const match=/^spawnedit\.([0-9]{1,15})$/.exec(key);
+  if(!match||!own(data.monsters,match[1]))continue;
+  const rows=parse(text);
+  if(!validSpawns(rows)||!rows.every(x=>x.type==='map'?
+   own(data.maps,x.id):(data.instances||[]).some(i=>String(i.id)===String(x.id))))continue;
+  const mob=Number(match[1]),wanted=new Set(rows.map(x=>x.type+':'+x.id));
+  for(const [mapId,source] of Object.entries(data.maps||{})){
+   const original=(next.maps?.[mapId]?.mobs||source.mobs||[]).map(Number);
+   const was=original.includes(mob),want=wanted.has('map:'+mapId);
+   if(was===want)continue;
+   const maps=mut('maps');
+   maps[mapId]={...maps[mapId],mobs:want?[...original,mob]:original.filter(n=>n!==mob)};
+  }
+  for(const original of data.instances||[]){
+   const entry=(next.instances||[]).find(x=>String(x.id)===String(original.id))||original;
+   const listed=(entry.mobs||[]).map(Number),was=listed.includes(mob),
+    want=wanted.has('instance:'+original.id);
+   if(was===want)continue;
+   clone();if(next.instances===data.instances)next.instances=[...data.instances];
+   const index=next.instances.findIndex(x=>String(x.id)===String(original.id));
+   if(index>=0)next.instances[index]={...entry,mobs:want?[...listed,mob]:listed.filter(n=>n!==mob)};
+  }
+ }
  return next;
 }
-root.PandoraWikiOwnerData=Object.freeze({apply,validPatch,validDrops,validChest,fields,resistKeys});
+root.PandoraWikiOwnerData=Object.freeze({apply,validPatch,validDrops,validChest,validSpawns,fields,resistKeys});
 })(typeof window==='undefined'?globalThis:window);
