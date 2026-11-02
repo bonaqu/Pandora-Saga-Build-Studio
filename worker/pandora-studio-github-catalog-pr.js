@@ -115,3 +115,67 @@ export async function createCatalogPullRequest(env,active,activeSnapshot){
   throw fault('Unexpected GitHub pull request URL');
  return {url:pull.html_url,number:pull.number,reused:false};
 }
+
+const OWNER_PATH='data/admin/encyclopedia-overrides.json';
+const ownerKey=/^(?:itemedit|item|itemdesc|itemslots|acquireedit|tradeedit|chestedit|dropedit|spawnedit)\.[0-9]{1,15}$|^wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}$|^(?:skill|skilldesc)\.[A-Za-z0-9_-]{1,32}\.[0-9]{1,12}$|^soul\.[A-Za-z0-9_.-]{1,70}$/;
+async function ownerPayload(env){
+ const rows=(await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all()).results||[];
+ const selected=rows.filter(row=>ownerKey.test(row.key)&&typeof row.value==='string');
+ if(selected.length>3000)throw fault('Too many administrator edits to export',409);
+ const content=JSON.stringify({schema:1,source:'Cloudflare D1 owner overrides',
+  overrides:Object.fromEntries(selected.map(row=>[row.key,row.value]))},null,2)+'\n';
+ if(content.length>450000)throw fault('Owner overrides export exceeds safe size',409);
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(content));
+ const fingerprint=[...new Uint8Array(digest)].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,16);
+ return {count:selected.length,content,fingerprint};
+}
+export async function previewOwnerOverrides(env){
+ const {count,fingerprint}=await ownerPayload(env);
+ return {count,fingerprint,configured:githubCatalogEnabled(env)};
+}
+export async function createOwnerOverridesPullRequest(env,expectedFingerprint){
+ if(!githubCatalogEnabled(env))throw fault('GitHub PR integration not configured',503);
+ if(typeof expectedFingerprint!=='string'||!/^[a-f0-9]{16}$/.test(expectedFingerprint))
+  throw fault('Owner review fingerprint required',409);
+ const source=await ownerPayload(env);
+ if(source.fingerprint!==expectedFingerprint)
+  throw fault('Admin edits changed. Review them again before GitHub sync.',409);
+ if(!source.count)throw fault('No encyclopedia edits to export',409);
+ const branch='catalog/owner-'+source.fingerprint;
+ const existing=await gh(env,'/git/ref/heads/'+branch,{optional:true});
+ if(existing){
+  const pulls=await gh(env,'/pulls?state=open&head=bonaqu%3A'+encodeURIComponent(branch));
+  if(Array.isArray(pulls)&&pulls.length)
+   return {url:pulls[0].html_url,number:pulls[0].number,reused:true};
+  throw fault('Owner export branch exists without an open PR. Review it on GitHub.',409);
+ }
+ const base=await gh(env,'/git/ref/heads/'+BASE),baseSha=base?.object?.sha;
+ if(!/^[a-f0-9]{40}$/.test(baseSha||''))throw fault('Invalid base commit');
+ const commit=await gh(env,'/git/commits/'+baseSha),treeSha=commit?.tree?.sha;
+ const blob=await gh(env,'/git/blobs',{method:'POST',
+  body:{content:source.content,encoding:'utf-8'}});
+ if(!/^[a-f0-9]{40}$/.test(blob?.sha||''))throw fault('GitHub owner blob upload failed');
+ const tree=await gh(env,'/git/trees',{method:'POST',body:{base_tree:treeSha,tree:[
+  {path:OWNER_PATH,mode:'100644',type:'blob',sha:blob.sha}]}});
+ if(tree.sha===treeSha)return {unchanged:true,count:source.count};
+ const after=await ownerPayload(env);
+ if(after.fingerprint!==source.fingerprint)throw fault('Admin edits changed during export',409);
+ const fresh=await gh(env,'/git/ref/heads/'+BASE);
+ if(fresh?.object?.sha!==baseSha)throw fault('GitHub base changed. Retry.',409);
+ const next=await gh(env,'/git/commits',{method:'POST',body:{
+  message:'catalog: reviewed owner encyclopedia overrides '+source.fingerprint,
+  tree:tree.sha,parents:[baseSha]}});
+ await gh(env,'/git/refs',{method:'POST',body:{ref:'refs/heads/'+branch,sha:next.sha}});
+ const pull=await gh(env,'/pulls',{method:'POST',body:{
+  title:'catalog: review encyclopedia owner changes ('+source.count+')',
+  head:branch,base:BASE,
+  body:'Administrator-reviewed encyclopedia overrides from production D1.\n\n'+
+   'The original game catalog JSON files are not replaced.\n'+
+   'Review all editable descriptions and notes before merging because PRs are public.\n'+
+   'This is a versioned export, NOT an automatic restore to D1.\n'+
+   'No account, login, password, session or Cloudflare secrets are exported.'
+ }});
+ if(!/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(pull?.html_url||''))
+  throw fault('Unexpected PR URL');
+ return {url:pull.html_url,number:pull.number,reused:false,count:source.count};
+}
