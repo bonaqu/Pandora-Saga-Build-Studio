@@ -493,6 +493,35 @@ function buffsPage(body,options){
 }
 
 // Nonintrusive skill catalog: the user opens this section on demand.
+function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},modifiers=null}={}){
+ const en=document.documentElement?.lang==='en';
+ const card=make('section',{class:'stage-attribute-row stage-skill-effects'});
+ card.append(make('strong',{text:en?'Applied skill effects':'Применённые эффекты умений'}));
+ for(const key of ['combatLunge','combatWarCry','combatRage','combatDefender',
+  'combatWindAssist','combatWindBlessing','combatConcentration']){
+  if(buffs[key]!==true||availability[key]!==true)continue;
+  const skill=combatSkillCards[key];if(!skill)continue;
+  const row=make('div',{class:'stage-skill-effect-row'});
+  if(skill.icon){const img=make('img',{src:skill.icon,alt:'',loading:'lazy'});
+   img.onerror=()=>img.remove();row.append(img)}
+  row.append(make('span',{text:skill.name}),
+   make('strong',{text:skill.summary||(en?'Active':'Активно')}));
+  card.append(row);
+ }
+ if(buffs.priestEnabled===true)for(const [key,mastery,name,enName,amount] of [
+  ['priestGratia',8,'Знак атаки','Velox',modifiers?.combat?.attackSpeed?.priestBonus],
+  ['priestLapisMedio',12,'Знак защиты','Lapis Medio',modifiers?.combat?.defense?.priestBonus]
+ ]){
+  if(buffs[key]!==true||Number(buffs.priestBlessing)<mastery||
+   !Number.isFinite(amount)||amount<=0)continue;
+  card.append(make('div',{class:'stage-skill-effect-row'},[
+   make('span',{text:en?enName:name}),make('strong',{text:'+'+amount})
+  ]));
+ }
+ if(card.children.length===1)card.append(make('p',{class:'stage-attribute-note',text:en?
+  'Select active buffs in the Buffs tab.':'Выбери активные усиления на вкладке «Усиления».'}));
+ body.prepend(card);
+}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},itemById=()=>null,onItem=()=>{}}={}){
@@ -527,6 +556,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
  if(chosen==='summary')summaryPage(body,modifiers,onPage);
+ if(chosen==='effects')skillEffectsPage(body,{buffs,availability,combatSkillCards,modifiers});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,modifiers});
  if(['attack','defense'].includes(chosen)){
   const intro=chosen==='attack'?'Параметры оружия':'Защита снаряжения';
@@ -758,7 +788,10 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    }
    body.prepend(card);
   }
-  if(modifiers?.potion){
+
+ }
+ if(chosen==='recovery'&&modifiers?.potion){
+  const english=document.documentElement?.lang==='en';
    const potion=make('section',{class:'stage-attribute-row'});
    potion.append(make('strong',{text:english?'Potion effects':'Действие зелий'}),
     make('p',{text:(english?'Effectiveness: ':'Эффективность: ')+
@@ -780,7 +813,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    }
    body.prepend(potion);
   }
- }
  if(page==='attack'&&modifiers?.mountedRelease){
   const riding=modifiers.mountedRelease;
   const card=make('section',{class:'stage-attribute-row'});
@@ -1184,7 +1216,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    body.append(section);
   }
  }
- if(chosen==='recovery'&&modifiers?.healingSkill){
+ if(chosen==='effects'&&modifiers?.healingSkill){
   const english=document.documentElement?.lang==='en';
   const spells=modifiers.healingSpells,heal=modifiers.healingSkill;
   const card=make('section',{class:'stage-attribute-row stage-healing-spells'});
@@ -1208,7 +1240,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
   body.prepend(card);
  }
- if(chosen==='recovery'&&modifiers?.periodicRecovery?.rows?.length){
+ if(chosen==='effects'&&modifiers?.periodicRecovery?.rows?.length){
   const english=document.documentElement?.lang==='en';
   const skillNamesEn={310002001:'Regenerate',310022001:'Restoration',330005001:'Mana Restore'};
   const details=make('details',{class:'stage-attribute-row stage-periodic-recovery'});
