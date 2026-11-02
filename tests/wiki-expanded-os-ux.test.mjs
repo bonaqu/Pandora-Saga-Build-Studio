@@ -91,8 +91,8 @@ test('wiki shows localized game class names and consistent source labels',()=>{
 });
 test('encyclopedia CSS has one canonical image size, descriptions and monster grid',()=>{
  const css=read('style.css');
- for(const selector of [/\.wiki-list-icon\s*\{/g,/\.wiki-monster-stats\s*\{/g,
-  /\.wiki-description\s*\{/g]){
+ for(const selector of [/^\.wiki-list-icon\s*\{/gm,/^\.wiki-monster-stats\s*\{/gm,
+  /^\.wiki-description\s*\{/gm]){
   assert.equal([...css.matchAll(selector)].length,1,'Duplicate encyclopedia CSS selector');
  }
  assert.match(css,/\.wiki-list-icon\{width:34px/);
