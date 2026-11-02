@@ -1951,7 +1951,7 @@ function renderWiki(root){
    window.PandoraStudioRules.equipment(rec,{
     job:jobKeys[state.job],slot:rec.slot,level
    }).allowed&&window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender);
-  const isUtilityItem=item=>Boolean(item?.effects?.some(effect=>
+  const isUtilityItem=item=>item?.slot==null&&Boolean(item?.effects?.some(effect=>
    /^EP_RECOVERY_/.test(effect.func||'')||/^EP_SKILL_EXEC(?:_|$)/.test(effect.func||'')));
   const isVisibleItem=(item,kind)=>kind==='all'?true:
    kind==='equipment'?slotKeys.includes(item.slot):
