@@ -57,7 +57,7 @@ const phoenixExplanation=(p)=>{
    item.elementalOriginVerified===true)return item.elementalWeapon;
   const desc=String(item.desc||'');
   if(/рожд[её]нн?[а-я]* в очистительном пламени/i.test(desc)&&
-   /Закалка самоцветом огня[\\s\\S]{0,70}\\+7/i.test(desc))return 'fire';
+   /Закалка самоцветом огня[\s\S]{0,70}\+7/i.test(desc))return 'fire';
   return null;
  };
  // Catalog Phoenix numbers are BASE values at +7. Subsequent upgrades add
