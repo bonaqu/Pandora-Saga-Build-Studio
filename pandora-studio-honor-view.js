@@ -28,6 +28,17 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   });
   return target;
  };
+ const editableListText=(target,value,key,items,index,field)=>{
+  if(!editable)return target;
+  target.classList.add('wiki-honor-editable');target.setAttribute('tabindex','0');
+  const start=()=>editText(target,value,false,next=>saveList(key,
+   items.map((entry,i)=>i===index?{...entry,[field]:next}:entry)));
+  target.addEventListener('dblclick',start);
+  target.addEventListener('keydown',event=>{
+   if(event.key==='Enter'){event.preventDefault();start()}
+  });
+  return target;
+ };
  const paragraph=(sectionNode,value,key,field)=>
   sectionNode.append(editableText(node('p','wiki-honor-copy',value),
    value,key,field,true));
@@ -94,7 +105,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     ...(editable?[[en?'nameRu':'nameEn',tr('Вторая локаль','Other language')]]:[])
    ]){
     const text=item[field];
-    names.append(editableText(node('span','',text),text,key,field,false));
+    names.append(editableListText(node('span','',text),text,key,items,index,field));
    }
    row.append(names);
    if(isZone&&item.mapId){
