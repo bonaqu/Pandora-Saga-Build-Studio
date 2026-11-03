@@ -37,6 +37,19 @@ const racePassiveIds=(racialPassives,raceIndex)=>{
  const key=raceKeys[raceIndex];const row=racialPassives?.[key];
  return Array.isArray(row?.skills)?row.skills:[];
 };
-const selectionValid=(racialPassives,raceIndex,skillId)=>racePassiveIds(racialPassives,raceIndex).some(id=>String(id)===String(skillId));
-root.PandoraGameNavigation=Object.freeze({groups,all,raceKeys,branchGroup,racePassiveIds,selectionValid,approvedRacialSkillNames});
+// One canonical selection, tied to the *current* race's published list.
+ // Ignore obsolete/imported IDs from a different race, unknown catalog
+ // entries and noncanonical input. The game formula layer always sees a
+ // validated numeric skill ID, never a user-provided string.
+const canonicalRacialPassiveId=(racialPassives,raceIndex,skillId)=>{
+ if(skillId===null||skillId===undefined)return null;
+ const found=racePassiveIds(racialPassives,raceIndex)
+  .find(id=>String(id)===String(skillId));
+ const numeric=Number(found);
+ return found!==undefined&&Number.isSafeInteger(numeric)&&numeric>0?numeric:null;
+};
+const selectionValid=(racialPassives,raceIndex,skillId)=>
+ canonicalRacialPassiveId(racialPassives,raceIndex,skillId)!==null;
+root.PandoraGameNavigation=Object.freeze({groups,all,raceKeys,branchGroup,racePassiveIds,
+ canonicalRacialPassiveId,selectionValid,approvedRacialSkillNames});
 })(typeof window==="undefined"?globalThis:window);
