@@ -48,7 +48,7 @@ test('an incompatible saved elf costume cannot contribute effects to stats',()=>
 });
 test('stats, soul and gem aggregators ignore corrupted slots while local data stays intact',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\)\)\.length\)continue/);
+ assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\),snap\)\.length\)continue/);
  assert.match(app,/PandoraEquipmentPlan\.matchesEquipmentSlot\(Number\(slot\),/);
  assert.match(app,/records\.push\(\['item:'\+item\.id,item,grade\]\)/);
  assert.match(app,/if\(soul&&window\.PandoraEquipmentPlan\.validSoul/);
