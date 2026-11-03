@@ -73,7 +73,7 @@ test('book translation entries are cached without changing RU/EN output or user-
  const doc={documentElement:{lang:'en'}},root={};
  Function('window','document',source)(root,doc);
  const tr=root.PandoraStageAttributes.bookText;
- assert.equal(tr('Скорость естественного восстановления'),'Natural recovery speed');
+ assert.equal(tr('Скорость естественного восстановления'),'Passive recovery speed');
  assert.equal(tr('Точность: +12'),'Accuracy: +12');
  assert.equal(tr('ОЗ: Меч игрока'),'ОЗ: Меч игрока',
   'do not translate player/item names with coincidental stat prefix');
