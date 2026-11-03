@@ -1518,6 +1518,40 @@ function renderWiki(root){
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  guardEncyclopediaSearch(search);
  controls.append(categories,search);
+ if(adminEditing&&adminToken&&wikiSelection.type==='map'){
+  const create=h('button',{type:'button',class:'wiki-owner-plus wiki-map-create',
+   text:wt('+ Создать локацию','+ Create location')});
+  create.onclick=()=>{
+   if(controls.querySelector('.wiki-map-create-form'))return;
+   const form=h('div',{class:'wiki-map-create-form wiki-owner-source-picker'});
+   const ru=ownerPlainTextField({class:'wiki-inline-input',
+    placeholder:'Название · RU','aria-label':'Название локации на русском'});
+   const en=ownerPlainTextField({class:'wiki-inline-input',
+    placeholder:'Name · EN','aria-label':'Location name in English'});
+   const error=h('small',{class:'inline-owner-error',role:'status'});
+   const submit=h('button',{type:'button',class:'wiki-owner-plus',
+    text:wt('Создать','Create'),onclick:async()=>{
+     const name=ru.value.trim(),nameEn=en.value.trim();
+     if(!name||!nameEn||name.length>240||nameEn.length>240){
+      error.textContent=wt('Укажи названия RU и EN','Enter both RU and EN names');return;
+     }
+     const random=[...crypto.getRandomValues(new Uint8Array(8))]
+      .map(x=>x.toString(16).padStart(2,'0')).join('');
+     const id='custom-'+random;
+     submit.disabled=true;
+     try{
+      await saveWikiRecordPatch('map',id,{name,nameEn,desc:'',descEn:'',
+       mobs:[],npcs:[],loot:[],tags:[],
+       sections:['monsters','npcs','loot','tags','custom'],extraSections:[]});
+      openWiki('map',id);
+     }catch(err){error.textContent=String(err.message||err);submit.disabled=false}
+    }});
+   const cancel=h('button',{type:'button',class:'wiki-owner-remove',
+    text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+   form.append(ru,en,submit,cancel,error);create.after(form);ru.focus();
+  };
+  controls.append(create);
+ }
  if(wikiSelection.type==='item'&&!['utility','all'].includes(wikiItemType)){
   const equipmentTypes=[['equipment',wt('Экипировка','Equipment')],
     ['elemental',wt('Стихийное оружие','Elemental weapons')],
@@ -2969,6 +3003,72 @@ function renderWiki(root){
     }
     } // Non-server NPCs do not have trade recipes or editable server IDs.
   }else if(type==='map'||type==='instance'){
+    const mapSections=type==='map'&&Array.isArray(rec.sections)?rec.sections:null;
+    const showMapSection=key=>type!=='map'||!mapSections||mapSections.includes(key);
+    const ownerMap=type==='map'&&adminEditing&&Boolean(adminToken)&&
+     Object.hasOwn(wikiData.maps||{},String(id));
+    if(type==='map'){
+     const tags=Array.isArray(rec.tags)?rec.tags:[];
+     if(showMapSection('tags')&&(tags.length||ownerMap)){
+      const tagSection=h('section',{class:'wiki-map-section wiki-map-tag-section'});
+      tagSection.append(h('h4',{text:wt('Теги локации','Location tags')}));
+      const chips=h('div',{class:'wiki-map-tags'});
+      for(const [i,tag]of tags.entries()){
+       const chip=h('span',{class:'wiki-map-kind wiki-map-tag',text:lang==='en'?tag.en:tag.ru});
+       if(ownerMap)chip.append(h('button',{type:'button',class:'wiki-owner-remove',
+        text:'×','aria-label':wt('Удалить тег','Remove tag')+' '+tag.ru,
+        onclick:()=>void saveWikiRecordField('map',id,'tags',tags.filter((_,n)=>n!==i))
+         .catch(e=>showStudioToast(e.message,'warning'))}));
+       chips.append(chip);
+      }
+      tagSection.append(chips);
+      if(ownerMap){
+       const add=h('button',{type:'button',class:'wiki-owner-plus',
+        text:wt('+ Тег','+ Tag')});
+       add.onclick=()=>{
+        if(tagSection.querySelector('.wiki-map-tag-form'))return;
+        const form=h('div',{class:'wiki-map-tag-form wiki-owner-source-picker'});
+        const ru=ownerPlainTextField({class:'wiki-inline-input',
+         placeholder:'Тег · RU','aria-label':'Тег на русском'});
+        const en=ownerPlainTextField({class:'wiki-inline-input',
+         placeholder:'Tag · EN','aria-label':'Tag in English'});
+        const message=h('small',{class:'inline-owner-error'});
+        const submit=h('button',{type:'button',class:'wiki-owner-plus',
+         text:wt('Добавить','Add'),onclick:async()=>{
+          const tag={ru:ru.value.trim(),en:en.value.trim()};
+          if(!tag.ru||!tag.en||tag.ru.length>70||tag.en.length>70){
+           message.textContent=wt('Введи RU и EN','Enter RU and EN');return}
+          try{await saveWikiRecordField('map',id,'tags',[...tags,tag])}
+          catch(e){message.textContent=e.message}
+         }});
+        form.append(ru,en,submit,h('button',{type:'button',class:'wiki-owner-remove',
+         text:wt('Отмена','Cancel'),onclick:()=>form.remove()}),message);
+        add.after(form);ru.focus();
+       };
+       tagSection.append(add);
+      }
+      detail.append(tagSection);
+     }
+     if(ownerMap){
+      const sectionDefs=[
+       ['monsters',wt('Монстры','Monsters')],['npcs','NPC'],
+       ['loot',wt('Добыча','Loot')],['tags',wt('Теги','Tags')],
+       ['custom',wt('Свои разделы','Custom sections')]];
+      const enabled=Array.isArray(rec.sections)?rec.sections:sectionDefs.map(x=>x[0]);
+      const manage=h('div',{class:'wiki-map-section-controls'});
+      manage.append(h('small',{text:wt('Разделы локации','Location sections')}));
+      const buttons=h('div',{class:'wiki-map-section-switches'});
+      for(const [key,label]of sectionDefs){
+       const on=enabled.includes(key);
+       buttons.append(h('button',{type:'button',class:on?'chosen':'',
+        'aria-pressed':String(on),text:(on?'✓ ':'+ ')+label,
+        onclick:()=>void saveWikiRecordField('map',id,'sections',
+         on?enabled.filter(x=>x!==key):[...enabled,key])
+         .catch(e=>showStudioToast(e.message,'warning'))}));
+      }
+      manage.append(buttons);detail.append(manage);
+     }
+    }
     if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
      class:'wiki-instance-kind',text:wt('Сценарий задания','Quest scenario')
     }));
@@ -2989,10 +3089,10 @@ function renderWiki(root){
       !Object.hasOwn(wikiData.maps||{},id))
       detail.append(h('p',{class:'wiki-owner-map-note',text:
        'Место известно по расположению NPC, но отсутствует в каталоге карт с монстрами. Добавление здесь недоступно.'}));
-     if(adminEditing&&adminToken&&(type==='instance'||Object.hasOwn(wikiData.maps||{},id))){
+     if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||Object.hasOwn(wikiData.maps||{},id))){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
-       if(type==='map'&&rec.historic){
+       if(type==='map'&&rec.virtual&&Object.hasOwn(wikiData.maps||{},id)){
         await saveWikiRecordField('map',id,'mobs',next.map(Number));return;
        }
        const before=mobs.map(String),after=next.map(String);
