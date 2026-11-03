@@ -578,56 +578,63 @@ function renderSongSkills(body,modifiers){
   body.append(details);
  }
 }
-function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers=null}={}){
+// Mirrors Remaked SkillView: individual skill outcomes, never the selected
+// buff toggles or the 43 main result values.
+function skillEffectsPage(body,{modifiers=null}={}){
  const en=document.documentElement?.lang==='en';
- const card=make('section',{class:'stage-attribute-row stage-skill-effects'});
- card.append(make('strong',{text:en?'Applied skill effects':'Применённые эффекты умений'}));
- for(const key of ['combatLunge','combatWarCry','combatRage','combatDefender',
-  'combatWindAssist','combatWindBlessing','combatConcentration']){
-  if(buffs[key]!==true||availability[key]!==true)continue;
-  const skill=combatSkillCards[key];if(!skill)continue;
-  const row=make('div',{class:'stage-skill-effect-row'});
-  if(skill.icon){const img=make('img',{src:skill.icon,alt:'',loading:'lazy'});
-   img.onerror=()=>img.remove();row.append(img)}
-  row.append(make('span',{text:skill.name}),
-   make('strong',{text:skill.summary||(en?'Active':'Активно')}));
-  card.append(row);
+ const spells=modifiers?.healingSpells?.rows||[];
+ if(spells.length){
+  const group=make('section',{class:'stage-attribute-row stage-healing-spells'});
+  group.append(make('strong',{text:en?'Healing skills':'Лечащие умения'}));
+  for(const row of spells){
+   if(!row||!Number.isFinite(row.amount))continue;
+   const amount=String(row.amount)+(row.scaledBySkill?
+    (en?' HP':' ОЗ'):(en?' / period':' / период'));
+   const available=row.available===true;
+   group.append(make('div',{class:'stage-heal-row'+
+    (available?'':' stage-book-unavailable')},[
+    make('span',{text:en?(row.nameEn||row.name):row.name}),
+    make('strong',{text:amount}),
+    make('small',{text:available?(en?'Available':'Доступно'):
+     (en?'Preview · '+(row.requiresEn||row.requires||'Requirements not met'):
+      'Предпросмотр · '+(row.requires||'Требования не выполнены'))})
+   ]));
+  }
+  group.append(make('p',{class:'stage-attribute-note',text:en?
+   'Skill previews based on Remaked; live OS requirements and damage packets can differ.':
+   'Просмотр отдельных умений по Remaked; игровые условия OS и расчёт урона могут отличаться.'}));
+  body.append(group);
  }
- if(buffs.priestEnabled===true)for(const [key,mastery,name,enName,amount] of [
-  ['priestGratia',8,'Знак атаки','Velox',modifiers?.combat?.attackSpeed?.priestBonus],
-  ['priestLapisMedio',12,'Знак защиты','Lapis Medio',modifiers?.combat?.defense?.priestBonus]
- ]){
-  if(buffs[key]!==true||Number(buffs.priestBlessing)<mastery||
-   !Number.isFinite(amount)||amount<=0)continue;
-  card.append(make('div',{class:'stage-skill-effect-row'},[
-   make('span',{text:en?enName:name}),make('strong',{text:'+'+amount})
-  ]));
+ const periodic=modifiers?.periodicRecovery?.rows||[];
+ if(periodic.length){
+  const skillNamesEn={310002001:'Regenerate',310022001:'Restoration',330005001:'Mana Restore'};
+  const details=make('details',{class:'stage-attribute-row stage-periodic-recovery'});
+  details.append(make('summary',{text:en?'Recovery every 2 seconds':
+   'Восстановление каждые 2 секунды'}));
+  for(const entry of periodic){
+   if(!Number.isFinite(entry?.amount))continue;
+   details.append(make('div',{class:'stage-periodic-row'},[
+    make('span',{text:en?(skillNamesEn[entry.id]||entry.name):entry.name}),
+    make('strong',{text:'≈ '+entry.amount+' '+(entry.kind==='hp'?
+     (en?'HP':'ОЗ'):(en?'MP':'ОМ'))}),
+    make('small',{text:entry.available?(en?'Available when using the skill':
+     'Доступно при использовании умения'):
+     entry.required>0?(en?'Requires healing mastery '+entry.required:
+      'Для изучения нужно мастерство '+entry.required):
+      (en?'Not yet available':'Пока недоступно')})
+   ]));
+  }
+  details.append(make('p',{class:'stage-periodic-hint',text:en?
+   'Estimated action of the skill, not permanent natural recovery.':
+   'Ориентировочное действие навыка, не постоянное восстановление героя.'}));
+  body.append(details);
  }
- if(card.children.length===1)card.append(make('p',{class:'stage-attribute-note',text:en?
-  'Select active buffs in the Buffs tab.':'Выбери активные усиления на вкладке «Усиления».'}));
- if(buffs.priestEnabled===true&&buffs.priestEncouragement===true&&
-  Number(buffs.priestBlessing)>=61){
-  const value=modifiers?.attributeBuffs?.trace?.find(x=>
-   x.source==='Ободрение / Remaked Skill[0][14][9]')?.amount;
-  if(Number.isFinite(value)&&value>0)card.append(make('div',{class:'stage-skill-effect-row'},[
-   make('span',{text:en?'Battle Prayer':'Ободрение'}),
-   make('strong',{text:'+'+value+' '+(en?'STR / AGI / INT':'СИЛ / ПРВ / ИНТ')})
-  ]));
- }
- for(const skill of modifiers?.resistanceSkills?.rows||[]){
-  const source=resistanceSkillChoices.find(entry=>entry.id===skill.id);
-  const selectedName=en?(source?.nameEn||skill.name):skill.name;
-  const summary=Object.entries(skill.effects).map(([key,value])=>
-   key+' '+(value>0?'+':'')+value).join(' · ');
-  card.append(make('div',{class:'stage-skill-effect-row'},[
-   make('span',{text:selectedName}),make('strong',{text:summary})
-  ]));
- }
- body.prepend(card);
  renderSongSkills(body,modifiers);
+ if(!spells.length&&!periodic.length&&!(modifiers?.songSkills?.rows||[]).length)
+  body.append(make('p',{class:'stage-attribute-note',text:en?
+   'Calculated skill effects appear here when game records and requirements are available.':
+   'Здесь появятся эффекты навыков, для которых доступны игровые данные и расчёт.'}));
 }
-
-
 function independentEffectRows(calc){
  const rows=[],add=(ru,en,value,unit='')=>{
   if(Number.isFinite(value)&&value!==0)rows.push({ru,en,value,unit});
