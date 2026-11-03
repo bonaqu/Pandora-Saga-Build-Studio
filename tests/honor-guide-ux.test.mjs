@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import worker from '../worker/index.js';
+import {previewOwnerOverrides} from '../worker/pandora-studio-github-catalog-pr.js';
 const read=x=>readFileSync(new URL('../'+x,import.meta.url),'utf8');
 const host={};
 Function('window',read('pandora-studio-honor-guide.js'))(host);
@@ -141,6 +142,35 @@ test('authenticated D1 Worker saves and resets Honor copy, lists and historical 
   const response=await invoke('/api/admin/override',{key,value:JSON.stringify(object)});
   assert.equal(response.status,400,key+' '+await response.text());
  }
+});
+test('Worker advertises installed guide editing API without exposing admin edits',async()=>{
+ const response=await worker.fetch(new Request(
+  'https://ps-build-studio-cloud.bonaqu.workers.dev/api/runtime-capabilities'),{});
+ assert.equal(response.status,200);
+ const info=await response.json();
+ assert.equal(info.codeRelease,'0.343.0');
+ for(const capability of ['guideedit','honor-lists','historical-map-wiki'])
+  assert.ok(info.ownerEditors.includes(capability),capability);
+});
+test('owner export includes reviewed Honor/Book text and historical map overrides',async()=>{
+ const rows=[
+  ['guideedit.book.summary.0',JSON.stringify({ru:'ОЗ'})],
+  ['guideedit.honor.overview',JSON.stringify({currentRu:'Вся честь'})],
+  ['guideedit.honor.zones',JSON.stringify([{id:'a',nameRu:'A',nameEn:'B'}])],
+  ['guideedit.honor.wars',JSON.stringify([{id:'b',nameRu:'B',nameEn:'C'}])],
+  ['guideedit.honor.rank.7',JSON.stringify({benefitRu:'Луна'})],
+  ['wikiedit.map.el-beht',JSON.stringify({name:'Эль Ведд'})],
+  ['wikiedit.map.astir-underground',JSON.stringify({name:'Руины'})],
+  ['guideedit.honor.rank.12',JSON.stringify({benefitRu:'Unknown'})],
+  ['wikiedit.map.fake-map',JSON.stringify({name:'Unknown'})],
+  ['user.password','Never export secrets']
+ ].map(([key,value])=>({key,value}));
+ const result=await previewOwnerOverrides({DB:{prepare(sql){
+  assert.match(sql,/FROM overrides ORDER BY key/);
+  return {all:async()=>({results:rows})};
+ }}});
+ assert.equal(result.count,7,'Only approved copy and maps may enter owner review');
+ assert.match(result.fingerprint,/^[a-f0-9]{16}$/);
 });
 test('Book, encyclopedia, Worker, scripts and styles are connected',()=>{
  const html=read('index.html'),worker=read('worker/index.js'),
