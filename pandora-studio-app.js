@@ -3010,7 +3010,7 @@ function renderWiki(root){
     const mapSections=type==='map'&&Array.isArray(rec.sections)?rec.sections:null;
     const showMapSection=key=>type!=='map'||!mapSections||mapSections.includes(key);
     const ownerMap=type==='map'&&adminEditing&&Boolean(adminToken)&&
-     Object.hasOwn(wikiData.maps||{},String(id));
+     Boolean(wikiIndex.records('map')?.[String(id)]);
     if(type==='map'){
      const tags=Array.isArray(rec.tags)?rec.tags:[];
      if(showMapSection('tags')&&(tags.length||ownerMap)){
@@ -3103,10 +3103,10 @@ function renderWiki(root){
       !Object.hasOwn(wikiData.maps||{},id))
       detail.append(h('p',{class:'wiki-owner-map-note',text:
        'Место известно по расположению NPC, но отсутствует в каталоге карт с монстрами. Добавление здесь недоступно.'}));
-     if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||Object.hasOwn(wikiData.maps||{},id))){
+     if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||ownerMap)){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
-       if(type==='map'&&rec.virtual&&Object.hasOwn(wikiData.maps||{},id)){
+       if(type==='map'&&(rec.virtual||!Object.hasOwn(wikiData.maps||{},id))){
         await saveWikiRecordField('map',id,'mobs',next.map(Number));return;
        }
        const before=mobs.map(String),after=next.map(String);
@@ -3176,7 +3176,7 @@ function renderWiki(root){
     }
     if(type==='map'&&showMapSection('npcs')){
       const residents=wikiIndex.residents(id);
-      if(ownerMap&&rec.virtual){
+      if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
        detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
         kind:'npc',existing:rec.npcs||[],limit:120,
         onChange:next=>saveWikiRecordField('map',id,'npcs',next.map(Number))}));
