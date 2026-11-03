@@ -12,11 +12,11 @@ test('three actual Remaked Honor titles increase only their corresponding status
  assert.equal(ice.status.numb,7);assert.equal(ice.status.burn,7);
  assert.equal(lightning.status.tumble,6);assert.equal(lightning.status.stun,3);
 });
-test('current OS Dwarf Heart passive gives stun and tumble +10, not all ailments',()=>{
+test('current OS Dwarf Heart passive gives stun, tumble and numb +10, not all ailments',()=>{
  const dwarf=value({racialPassiveId:900030001});
  assert.equal(dwarf.status.stun,13);
  assert.equal(dwarf.status.tumble,11);
- assert.equal(dwarf.status.numb,2);
+ assert.equal(dwarf.status.numb,12);
 });
 test('current OS Warding 26 passive contributes +15 to three target conditions exactly once',()=>{
  const input={jobKey:'SNIPER',wardingMastery:26,wardingCap:90,skillCatalog:skills};
@@ -24,7 +24,7 @@ test('current OS Warding 26 passive contributes +15 to three target conditions e
  assert.deepEqual(passive,{stun:15,numb:15,tumble:15});
  const activated=value({...input,honorTitle:4,racialPassiveId:900030001});
  assert.equal(activated.status.stun,28);
- assert.equal(activated.status.numb,22);
+ assert.equal(activated.status.numb,32);
  assert.equal(activated.status.tumble,26);
  assert.deepEqual(activated.wardingPassive,passive);
  for(const mastery of [0,25,-1])assert.equal(calc.wardingStatusPassive({...input,wardingMastery:mastery}),null);
