@@ -41,8 +41,10 @@ function causesPoison(skill){
 }
 function grantsPositiveEffect(skill){
  return skill?.funcs?.some(row=>row?.dir==='TARGET'&&
-  POSITIVE_SKILL_EFFECTS.has(row.ep)&&Array.isArray(row.fv1)&&
-  row.fv1.some(v=>typeof v==='number'&&Number.isFinite(v)&&v>0))===true;
+  POSITIVE_SKILL_EFFECTS.has(row.ep)&&(
+   ['EP_HEAL_LIFE_REGENERATOR','EP_HEAL_MANA_REGENERATOR'].includes(row.ep)||
+   Array.isArray(row.fv1)&&
+    row.fv1.some(v=>typeof v==='number'&&Number.isFinite(v)&&v>0)))===true;
 }
 // One item can heal and cure simultaneously. Unknown effect/skill codes stay
 // discoverable for review, rather than being silently dropped or guessed.
