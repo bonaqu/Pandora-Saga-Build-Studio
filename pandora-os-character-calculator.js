@@ -699,6 +699,39 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
  const concentration=permitted('concentration','combatConcentration',new Set(),0);
  return {warCry,raging,defender,lunge,concentration};
 }
+// Three source-backed current OS racial weapon passives. They expose the
+// independent flat and rate channels of EP_SKILL_EQUIP_DAMAGERATE, but DO NOT
+// add a guessed number into final ATK (stage/rounding not game-client-proven).
+// Weapon categorisation is a source-property comparison, not a statement
+// about all mounted, magical or skill-specific combat restrictions.
+const racialWeaponRules=Object.freeze({
+ 900010001:Object.freeze({kind:'oneHanded',ru:'Бойцовский дух',en:'Fighting spirit'}),
+ 900030002:Object.freeze({kind:'axeBlunt',ru:'Дух цверга',en:'Dwarven spirit'}),
+ 900050002:Object.freeze({kind:'twoHanded',ru:'Сильные руки',en:'Strong arms'})
+});
+const axeBluntKinds=new Set(['1H_AXE','2H_AXE','1H_BLUNT_WEAPON','2H_BLUNT_WEAPON']);
+function racialWeaponPreview({racialPassiveId=null,skillCatalog=null,weapon=null}={}){
+ const rule=racialWeaponRules[racialPassiveId];
+ if(!rule||!skillCatalog||typeof skillCatalog!=='object')return null;
+ const skill=skillCatalog[String(racialPassiveId)];
+ if(skill?.id!==Number(racialPassiveId)||skill.skillType!=='PASSIVE'||
+  !Array.isArray(skill.funcs))return null;
+ const matches=skill.funcs.filter(row=>row.ep==='EP_SKILL_EQUIP_DAMAGERATE'&&
+  row.dir==='TARGET');
+ if(matches.length!==1)return null;
+ const effect=matches[0],flat=effect.fv1?.[3],percent=effect.fv2?.[3];
+ if(!Number.isFinite(flat)||!Number.isFinite(percent)||flat<0||percent<0)return null;
+ const validWeapon=weapon?.slot==='weapon'&&typeof weapon.kind==='string'&&
+  typeof weapon.twoHanded==='boolean';
+ const matchesCategory=!validWeapon?null:rule.kind==='oneHanded'?
+  weapon.twoHanded===false:rule.kind==='twoHanded'?
+  weapon.twoHanded===true:axeBluntKinds.has(weapon.kind);
+ return {id:skill.id,ru:rule.ru,en:rule.en,kind:rule.kind,
+  flat,percent,weaponKind:validWeapon?weapon.kind:null,
+  matchesCategory,verified:false,source:'current OS skills.json',
+  excluded:['server attack-stage rounding','mounted restrictions',
+   'magic and skill damage interactions','weapon class-specific exceptions']};
+}
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
  weapon=null,weaponGrade=0,weaponPlus=null,records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
@@ -734,6 +767,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // unknown, so do not fold them into the Legacy flat accuracy/dodge subtotal.
  const racialRate={accuracy:racialPassiveId===900040002?10:0,
   dodge:racialPassiveId===900040003?5:0};
+ const racialWeapon=racialWeaponPreview({racialPassiveId,skillCatalog,weapon});
  const attack=weaponAttackPreview({str:stats.str,weapon,grade:weaponGrade,
   weaponPlus,honorTitle});
  const defense=defensePreview({records,honorTitle,itemForth});
@@ -853,6 +887,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0)-
   (racialPassiveId===900060003?10:0);
  return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
+  racialWeapon,
   activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
   frontAccuracy,rangedEvasion,
@@ -2033,7 +2068,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
+ base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

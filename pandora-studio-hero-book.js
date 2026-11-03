@@ -1004,6 +1004,29 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     cm.dodge.base+', бонусы '+(cm.dodge.known-cm.dodge.base)+')'}),
    make('p',{text:'Критический шанс: '+cm.critical.known}),
    make('p',{text:'Исходящий критический урон: '+cm.criticalDamage+'%'}));
+  if(cm.racialWeapon){
+   const racial=cm.racialWeapon,english=document.documentElement?.lang==='en';
+   const amounts=(racial.flat?('+'+racial.flat+(english?' flat and ':' ед. и ')):'')+
+    '+'+racial.percent+'%';
+   const category=english?
+    {oneHanded:'one-handed weapons',axeBlunt:'axes and blunt weapons',
+     twoHanded:'two-handed weapons'}:
+    {oneHanded:'одноручное оружие',axeBlunt:'топоры и булавы',
+     twoHanded:'двуручное оружие'};
+   const eligibility=racial.matchesCategory===null?
+    (english?'No weapon equipped for category comparison.':'Нет оружия для проверки категории.'):
+    racial.matchesCategory?
+     (english?'Equipped weapon matches the stated category.':
+      'Надетое оружие соответствует указанной категории.'):
+     (english?'Equipped weapon does not match the stated category.':
+      'Надетое оружие не соответствует указанной категории.');
+   card.append(make('p',{text:(english?racial.en:racial.ru)+': '+amounts+
+    ' ('+category[racial.kind]+')'}),
+    make('p',{text:eligibility}),
+    make('p',{class:'stage-attribute-note',text:english?
+     'Source skill values only: not added to final ATK. Actual combat stacking, rounding, mounted and special weapon restrictions are not verified.':
+     'Это исходные числа навыка, не прибавленные к итоговой АТК. Порядок суммирования в бою, округление и особые ограничения оружия ещё не подтверждены.'}));
+  }
   if(cm.attack?.flatEquipment||cm.attack?.percentEquipment?.length){
    const flat=cm.attack.flatEquipment,percent=cm.attack.percentEquipment.reduce((sum,e)=>sum+e.bonus,0);
    card.append(make('p',{text:'Прямые бонусы атаки от вещей и душ: '+
