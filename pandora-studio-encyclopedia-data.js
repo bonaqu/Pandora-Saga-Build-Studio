@@ -21,8 +21,31 @@ function removesNegativeStatus(skill){
 function cosmeticTransformation(skill){
  return skill?.funcs?.some(row=>row.ep==='EP_CNG_RACE_VIEW'&&row.dir==='TARGET')===true;
 }
-// One item can heal and cure simultaneously. Do not confuse HP/MP recovery
-// with a lasting buff, a crafting material or an arbitrary equipment bonus.
+// A source skill effect must actually express an improvement. Never label an
+// unresolved skill or a future poison skill as a positive buff just because
+// its item uses EP_SKILL_EXEC.
+const POSITIVE_SKILL_EFFECTS=new Set([
+ 'EP_HEAL_LIFE_REGENERATOR','EP_HEAL_MANA_REGENERATOR',
+ 'EP_VOLUME_PVPGAME_POINT','EP_SKILL_DELAY_FIN',
+ 'EP_DAMAGERATE_CONST','EP_DAMAGERATE_SCALE',
+ 'EP_AVOIDANCE_CONST','EP_AVOIDANCE_SCALE','EP_MOVESPEED_SCALE',
+ 'EP_TOHIT_CONST','EP_TOHIT_SCALE','EP_MAXLIFE_CONST',
+ 'EP_MAXLIFE_SCALE','EP_MAGIC_RESISTANCE_CONST',
+ 'EP_DEATHPENALTY_RECOVERY','EP_VOLUME_EXPERT'
+]);
+const POISONING_EFFECTS=new Set([
+ 'EP_CAUSE_POISON','EP_DESTINED_POISON','EP_ONHIT_POISON'
+]);
+function causesPoison(skill){
+ return skill?.funcs?.some(row=>POISONING_EFFECTS.has(row.ep))===true;
+}
+function grantsPositiveEffect(skill){
+ return skill?.funcs?.some(row=>row?.dir==='TARGET'&&
+  POSITIVE_SKILL_EFFECTS.has(row.ep)&&Array.isArray(row.fv1)&&
+  row.fv1.some(v=>typeof v==='number'&&Number.isFinite(v)&&v>0))===true;
+}
+// One item can heal and cure simultaneously. Unknown effect/skill codes stay
+// discoverable for review, rather than being silently dropped or guessed.
 function utilityCategories(item,skills=null){
  if(item?.slot!=null||!Array.isArray(item?.effects))return [];
  const categories=[],effects=item.effects;
@@ -32,34 +55,62 @@ function utilityCategories(item,skills=null){
  const directCure=target.some(e=>typeof e.func==='string'&&
   e.func.startsWith('EP_RECOVERY_'));
  const indirectCure=triggered.some(e=>removesNegativeStatus(executedSkill(e,skills)));
- if(directCure||indirectCure)categories.push('cure');
- if(heal||triggered.some(e=>{
-  const skill=executedSkill(e,skills);
-  return !removesNegativeStatus(skill)&&!cosmeticTransformation(skill);
- }))categories.push('buff');
- if(heal)categories.push('recovery');
- if(item.kind==='POTION'&&target.some(e=>e.func==='EP_DESTINED_POISON'))
-  categories.push('harmful');
- if(effects.some(e=>OTHER_USE_EFFECTS.has(e?.func)&&
+ const harmful=target.some(e=>e.func==='EP_DESTINED_POISON'||
+  e.func==='EP_CAUSE_POISON')||
+  triggered.some(e=>causesPoison(executedSkill(e,skills)));
+ const positive=triggered.some(e=>grantsPositiveEffect(executedSkill(e,skills)));
+ const other=effects.some(e=>OTHER_USE_EFFECTS.has(e?.func)&&
   ['CASTER','TARGET'].includes(e.dir))||
-  triggered.some(e=>cosmeticTransformation(executedSkill(e,skills))))
-  categories.push('other');
+  triggered.some(e=>cosmeticTransformation(executedSkill(e,skills)));
+ const unexplained=effects.some(e=>{
+  if(!e||typeof e.func!=='string')return true;
+  if(/^EP_ONHIT_|^EP_ONDAMAGE_/.test(e.func)||e.func==='EP_RANDOM_BOX')
+   return false; // Equipment procs or loot containers, not on-use statuses
+  if(OTHER_USE_EFFECTS.has(e.func)&&['CASTER','TARGET'].includes(e.dir))
+   return false;
+  if(e.dir!=='TARGET')return false;
+  if(RECOVERY_EFFECTS.has(e.func)||e.func.startsWith('EP_RECOVERY_')||
+   e.func==='EP_DESTINED_POISON'||e.func==='EP_CAUSE_POISON')return false;
+  if(/^EP_SKILL_EXEC(?:_|$)/.test(e.func)){
+   const skill=executedSkill(e,skills);
+   return !skill||!(removesNegativeStatus(skill)||cosmeticTransformation(skill)||
+    causesPoison(skill)||grantsPositiveEffect(skill));
+  }
+  return true;
+ });
+ if(directCure||indirectCure)categories.push('cure');
+ if(heal||positive)categories.push('buff');
+ if(heal)categories.push('recovery');
+ if(harmful)categories.push('harmful');
+ if(other)categories.push('other');
+ if(unexplained)categories.push('review');
  return categories;
 }
-// Ingredient and output links are derived from the real EP_CONSUME_ITEM and
-// EP_ADDITION_ITEM skills; no recipes or crafting quantities are invented.
+// Ingredient and output links come only from the actual item IDs/quantities
+// in EP_CONSUME_ITEM and EP_ADDITION_ITEM. Missing quantity is not assumed 1.
 function itemSkillRelations(id,skills=null){
  const key=Number(id),rows=[];
  if(!Number.isSafeInteger(key)||key<1||!skills||
   typeof skills!=='object'||Array.isArray(skills))return rows;
  for(const [skillId,skill]of Object.entries(skills)){
   if(!skill||!Array.isArray(skill.funcs))continue;
-  const take=type=>[...new Set(skill.funcs.filter(effect=>
-   effect?.ep===type&&Number.isSafeInteger(effect.fv1?.[3])&&
-   effect.fv1[3]>0).map(effect=>effect.fv1[3]))];
-  const consumes=take('EP_CONSUME_ITEM'),produces=take('EP_ADDITION_ITEM');
-  if(!consumes.includes(key)&&!produces.includes(key))continue;
-  rows.push({id:skillId,name:skill.name||skillId,consumes,produces});
+  const take=type=>{
+   const ids=[],quantity={};
+   for(const effect of skill.funcs){
+    const itemId=effect?.fv1?.[3];
+    if(effect?.ep!==type||!Number.isSafeInteger(itemId)||itemId<1)continue;
+    if(!ids.includes(itemId))ids.push(itemId);
+    const count=effect.fv2?.[3];
+    if(Number.isSafeInteger(count)&&count>0)
+     quantity[itemId]=(quantity[itemId]||0)+count;
+   }
+   return {ids,quantity};
+  };
+  const consume=take('EP_CONSUME_ITEM'),produce=take('EP_ADDITION_ITEM');
+  if(!consume.ids.includes(key)&&!produce.ids.includes(key))continue;
+  rows.push({id:skillId,name:skill.name||skillId,
+   consumes:consume.ids,produces:produce.ids,
+   consumedQuantities:consume.quantity,producedQuantities:produce.quantity});
  }
  return rows.sort((a,b)=>Number(a.id)-Number(b.id));
 }

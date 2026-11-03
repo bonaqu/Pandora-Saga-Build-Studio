@@ -1689,7 +1689,8 @@ function renderWiki(root){
    ['recovery','Восстанавливают ОЗ/ОМ','Restore HP/MP'],
    ['cure','Снимают негативные эффекты','Remove negative effects'],
    ['harmful','Дают отрицательные эффекты','Apply negative effects'],
-   ['other','Прочие активируемые предметы','Other usable items']]){
+   ['other','Прочие активируемые предметы','Other usable items'],
+   ['review','Требуют проверки','Needs verification']]){
    const option=h('option',{value:id,text:wt(ru,en)});
    if(wikiEffectFilter===id)option.selected=true;
    filter.append(option);
@@ -2365,17 +2366,28 @@ function renderWiki(root){
      text:wt('Очищение снимает один отрицательный эффект с цели. Конкретное состояние определяется игрой, это не универсальное снятие всех эффектов сразу.',
       'Purification removes one negative effect from the target. The game selects the affected status; it does not remove every debuff at once.')}));
    if(kinds.includes('harmful')){
+    const eatenPoison=effects.some(effect=>effect.func==='EP_DESTINED_POISON'&&
+     effect.dir==='TARGET');
     detail.append(h('p',{class:'wiki-description wiki-harmful-consumable-note',
-     text:wt('При употреблении накладывает на персонажа состояние «Яд»: отравление периодически наносит урон. Время действия, величина и интервал урона не установлены по данным OS. Число 50 в параметре предмета не подтверждено как шанс или урон.',
-      'Consuming this item applies Poison to the character, dealing periodic damage. OS data do not establish the duration, damage per tick or interval. The item parameter 50 is not a verified chance or damage value.')}));
+     text:eatenPoison?
+      wt('При употреблении накладывает на персонажа состояние «Яд»: отравление периодически наносит урон. Время действия, величина и интервал урона не установлены по данным OS. Число 50 в параметре предмета не подтверждено как шанс или урон.',
+       'Consuming this item applies Poison to the character, dealing periodic damage. OS data do not establish the duration, damage per tick or interval. The item parameter 50 is not a verified chance or damage value.'):
+      wt('В исходных эффектах обнаружено применение яда. Конкретная цель, длительность и урон зависят от механики вызываемого умения и пока не проверены.',
+       'Source effects indicate Poison. Target, duration and damage depend on the activated game skill and are not yet verified.')}));
+    const poisonStatus=wikiData.skills?.['500000004'];
     const poisonHit=wikiData.skills?.['430052001'];
-    if(poisonHit?.funcs?.some(effect=>effect.ep==='EP_CAUSE_POISON')){
+    if(poisonStatus?.learnable===false&&
+     poisonStatus.funcs?.some(effect=>effect.ep==='EP_CAUSE_POISON')&&
+     poisonHit?.funcs?.some(effect=>effect.ep==='EP_CAUSE_POISON')){
      const compare=h('div',{class:'wiki-effect-usage'});
-     compare.append(h('small',{text:wt('Связанное отрицательное состояние:',
-      'Related negative status:')}),
+     compare.append(h('small',{text:wt('Записи игры, связанные с отравлением:',
+      'Game records associated with poisoning:')}),
+      wikiLink(dataName('skill','500000004'),'skill','500000004'),
+      h('span',{text:wt('(неизучаемая техническая запись «Яд»)',
+       '(non-learnable technical Poison skill)')}),
       wikiLink(dataName('skill','430052001'),'skill','430052001'),
-      h('span',{text:wt('Также накладывает яд, но код применения отличается; одинаковая сила или длительность не подтверждена.',
-       'Also applies Poison using a different effect code; equal strength or duration is not verified.')}));
+      h('span',{text:wt('В обоих умениях есть EP_CAUSE_POISON; предмет использует EP_DESTINED_POISON. Тождественность реализации, сила и длительность не доказаны.',
+       'Both skills use EP_CAUSE_POISON, while the items use EP_DESTINED_POISON. Equivalent implementation, potency and duration are unverified.')}));
      detail.append(compare);
     }
     const antidotes=Object.entries(wikiData.items||{}).filter(([,item])=>
@@ -2389,6 +2401,11 @@ function renderWiki(root){
      detail.append(clean);
     }
    }
+   if(kinds.includes('review')){
+    detail.append(h('p',{class:'wiki-description wiki-effect-review-note',
+     text:wt('Код эффекта или вызываемое умение пока не подтверждены каталогом. Предмет оставлен доступным для проверки, но не отнесён к усилениям или лечению без доказательств.',
+      'The effect code or triggered skill is not verified by the catalogue. The item remains visible for review and is not assumed to be a buff or cure.')}));
+   }
    const relations=window.PandoraWikiData.itemSkillRelations(id,wikiData.skills);
    if(relations.length){
     const usage=h('div',{class:'wiki-effect-usage'});
@@ -2401,20 +2418,32 @@ function renderWiki(root){
      if(created&&relation.consumes.length){
       line.append(h('small',{text:wt('Материалы:','Ingredients:')}));
       for(const itemId of relation.consumes)
-       if(wikiData.items?.[String(itemId)])line.append(wikiLink(
-        dataName('item',String(itemId)),'item',String(itemId)));
+       if(wikiData.items?.[String(itemId)]){
+        line.append(wikiLink(dataName('item',String(itemId)),'item',String(itemId)));
+        const qty=relation.consumedQuantities?.[itemId];
+        if(Number.isSafeInteger(qty)&&qty>0)line.append(h('small',{
+         class:'wiki-effect-quantity',text:'×'+qty}));
+       }
      }
      if(!created&&relation.produces.length){
       line.append(h('small',{text:wt('Результат:','Produces:')}));
       for(const itemId of relation.produces)
-       if(wikiData.items?.[String(itemId)])line.append(wikiLink(
-        dataName('item',String(itemId)),'item',String(itemId)));
+       if(wikiData.items?.[String(itemId)]){
+        line.append(wikiLink(dataName('item',String(itemId)),'item',String(itemId)));
+        const qty=relation.producedQuantities?.[itemId];
+        if(Number.isSafeInteger(qty)&&qty>0)line.append(h('small',{
+         class:'wiki-effect-quantity',text:'×'+qty}));
+       }
      }
      if(!created&&relation.consumes.length>1){
       line.append(h('small',{text:wt('Другие материалы:','Other ingredients:')}));
       for(const itemId of relation.consumes)
-       if(itemId!==Number(id)&&wikiData.items?.[String(itemId)])line.append(wikiLink(
-        dataName('item',String(itemId)),'item',String(itemId)));
+       if(itemId!==Number(id)&&wikiData.items?.[String(itemId)]){
+        line.append(wikiLink(dataName('item',String(itemId)),'item',String(itemId)));
+        const qty=relation.consumedQuantities?.[itemId];
+        if(Number.isSafeInteger(qty)&&qty>0)line.append(h('small',{
+         class:'wiki-effect-quantity',text:'×'+qty}));
+       }
      }
      usage.append(line);
     }
