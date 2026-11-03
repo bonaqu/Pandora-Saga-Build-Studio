@@ -207,3 +207,32 @@ test('NPC trade writes require valid relations and authenticated admin',async()=
  assert.equal((await worker.fetch(request(key,value,'override','bad'),env)).status,401);
  assert.equal((await worker.fetch(request(key,JSON.stringify({deleted:true})),env)).status,200);
 });
+
+test('bilingual item and chest editor stores English copy as separate D1 overrides',async()=>{
+ const base={'50001':{id:50001,name:'Легкое исцеляющее зелье',
+  desc:'Исцеляет ОЗ',W:null}};
+ const patch={nameEn:'Painkiller (custom)',descEn:'Edited English description'};
+ const merged=editor.applyItems(base,{'itemedit.50001':JSON.stringify(patch)});
+ assert.equal(merged['50001'].name,base['50001'].name);
+ assert.equal(merged['50001'].desc,base['50001'].desc);
+ assert.equal(merged['50001'].nameEn,patch.nameEn);
+ assert.equal(merged['50001'].descEn,patch.descEn);
+ assert.equal(base['50001'].nameEn,undefined,'source game data stays immutable');
+ const db=mockDb(),env={DB:db};
+ const res=await worker.fetch(request('itemedit.50001',JSON.stringify(patch)),env);
+ assert.equal(res.status,200);
+ assert.deepEqual(JSON.parse(db.values.get('itemedit.50001')),patch);
+ assert.equal((await worker.fetch(request('itemedit.50001',JSON.stringify(patch),
+  'override','bad'),env)).status,401);
+ for(const wrong of [{nameEn:''},{nameEn:'x'.repeat(241)},
+  {nameEn:5},{descEn:5},{descEn:'x'.repeat(2001)}]){
+  const response=await worker.fetch(request('itemedit.50001',JSON.stringify(wrong)),env);
+  assert.equal(response.status,400,JSON.stringify(wrong).slice(0,60));
+ }
+ const source=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ assert.match(source,/'data-owner-record':'item:'\+id,'data-owner-field':'nameEn'/);
+ assert.match(source,/'data-owner-record':'item:'\+id,'data-owner-field':'descEn'/);
+ assert.match(source,/record\.nameEn\|\|en\?\.n\|\|record\.name/);
+ assert.match(source,/record\.descEn\?\?en\?\.d\?\?record\.desc/);
+ assert.match(source,/field==='nameEn'\?\(base\.nameEn\|\|officialEnglish\?\.items/);
+});
