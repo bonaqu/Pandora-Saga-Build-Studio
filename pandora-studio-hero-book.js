@@ -315,31 +315,31 @@ function summaryRows(calc){
  ];
 }
 
-function summaryPage(body,calc,onPage){
+function summaryPage(body,calc){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
-  text:document.documentElement?.lang==='en'?'Stats appear after game data loads.':'Параметры появятся после загрузки игровых данных.'}));return}
- const english=document.documentElement?.lang==='en';
+  text:document.documentElement?.lang==='en'?
+   'Stats appear after game data loads.':
+   'Параметры появятся после загрузки игровых данных.'}));return}
+ const en=document.documentElement?.lang==='en';
  body.append(make('div',{class:'stage-result-intro'},[
-  make('strong',{text:english?'Calculated results':'Результаты расчёта'})
+  make('strong',{text:en?'Calculated results':'Результаты расчёта'})
  ]));
- const numberFormat=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:2});
+ const format=new Intl.NumberFormat(en?'en-US':'ru-RU',{maximumFractionDigits:2});
  for(const group of summaryRows(calc)){
-  const section=make('section',{class:'stage-result-section'});
-  const title=english?group.en:group.ru;
-  const heading=make('button',{type:'button',class:'stage-result-section-head',
-   'aria-label':english?'Open '+title:'Открыть: '+title,
-   onclick:()=>onPage(group.page)},[
+  const section=make('section',{class:'stage-result-section',
+   'data-result-group':group.page});
+  // Modern Set.Status has its own matrix; this is not a shortcut to
+  // Attack/Defense, which display different Set.ATK/Set.RES fields.
+  const heading=make('div',{class:'stage-result-section-head'},[
    make('span',{class:'stage-result-symbol','aria-hidden':'true',text:group.symbol}),
-   make('strong',{text:title}),
-   make('span',{class:'stage-result-open','aria-hidden':'true',text:'›'})
+   make('strong',{text:en?group.en:group.ru})
   ]);
   const grid=make('div',{class:'stage-result-grid'});
   for(const result of group.rows){
-   const value=Number.isFinite(result.value)?
-    numberFormat.format(result.value)+result.unit:'—';
+   const text=Number.isFinite(result.value)?format.format(result.value)+result.unit:'—';
    grid.append(make('div',{class:'stage-result-tile'},[
-    make('span',{text:english?result.en:result.ru}),
-    make('strong',{text:value})
+    make('span',{text:en?result.en:result.ru}),
+    make('strong',{text})
    ]));
   }
   section.append(heading,grid);
@@ -546,8 +546,6 @@ function buffsPage(body,options){
   priest.append(details);
  }
 
- if(modifiers)body.append(make('p',{class:'stage-attribute-note',text:
-  'Сейчас: '+modifiers.hp+' ОЗ, '+modifiers.mp+' ОМ. Усиления сохраняются в билде.'}));
 }
 
 function renderSongSkills(body,modifiers){
