@@ -63,7 +63,7 @@ test('virtual patch validation rejects unknown fields, IDs and forged NPC relati
   ['npc','astir-npc-kingdom-claris',{maps:['astir-imperial']}],
   ['npc','astir-npc-kingdom-claris',{maps:['astir-union','astir-empire']}],
   ['npc','astir-npc-kingdom-claris',{nameEn:''}],
-  ['map','astir-kingdom',{mobs:[1]}],
+  ['map','astir-kingdom',{mobs:[0]}],
   ['npc','astir-npc-kingdom-../evil',{name:'A'}],
   ['npc','astir-npc-kingdom-claris',{__protoPolluted:true}]
  ])assert.equal(owner.validTownPatch(type,id,patch),false,String(id)+' / '+JSON.stringify(patch));
