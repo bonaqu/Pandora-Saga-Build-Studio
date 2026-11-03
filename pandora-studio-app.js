@@ -2461,6 +2461,26 @@ function renderWiki(root){
     if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
      h('dd',{text:wt('Двуручное','Two-handed')}));
     detail.append(dl);
+    if(adminEditing&&adminToken){
+     const missing=itemFields.filter(([,value,key])=>value==null&&key!=='kind');
+     if(missing.length){
+      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-item-add-field',
+       text:wt('+ Параметр предмета','+ Item field')});
+      add.onclick=()=>{
+       const select=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить параметр предмета','Add item field')});
+       select.append(h('option',{value:'',text:wt('Выбери параметр','Select field')}));
+       for(const [label,,key] of missing)
+        select.append(h('option',{value:key,text:label}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiItemField(id,
+        select.value,0).catch(e=>showStudioToast(e.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      };
+      detail.append(add);
+     }
+    }
     if((rec.effects?.length||0)>0||(adminEditing&&adminToken)){
      const effectRows=rec.effects||[];
      const effectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items,rec);
