@@ -12,7 +12,8 @@ test('temporary encyclopedia picker listeners are cleaned on view change and det
  assert.match(wiki,/const cleanupOutsidePickers=\(\)=>\{/);
  assert.match(wiki,/for\(const onOutside of outsidePickers\)/);
  assert.match(wiki,/outsidePickers\.delete\(onOutside\)/);
- assert.match(wiki,/wikiOutsideCleanup=cleanupOutsidePickers/);
+ assert.match(wiki,/wikiOutsideCleanup=\(\)=>\{/);
+ assert.match(wiki,/cleanupOutsidePickers\(\);\s*if\(wikiSearchTimer!==null\)clearTimeout\(wikiSearchTimer\)/);
  assert.match(wiki,/cleanupOutsidePickers\(\);\s*detail\.replaceChildren\(\)/);
  assert.match(wiki,/registerOutsidePicker\(form\)/);
  assert.match(wiki,/registerOutsidePicker\(panel,add\)/);
