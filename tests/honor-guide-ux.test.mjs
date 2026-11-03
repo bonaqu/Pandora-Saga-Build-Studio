@@ -85,7 +85,7 @@ test('Owner historical maps D1 patches do not alter game source records',()=>{
  assert.equal(edited.maps['el-beht'].name,'Новая локация');
  assert.deepEqual(edited.maps['el-beht'].mobs,[21231,21232]);
  assert.equal(base.maps['el-beht'].name,'Эль Ведд');
- assert.equal(owners.validTownPatch('map','astir-union',{mobs:[21231]}),false);
+ assert.equal(owners.validTownPatch('map','astir-union',{mobs:[21231]}),true);
  assert.equal(owners.validTownPatch('map','el-beht',{mobs:[21231,21231]}),false);
 });
 test('authenticated D1 Worker saves and resets Honor copy, lists and historical maps',async()=>{
@@ -149,7 +149,7 @@ test('Worker advertises installed guide editing API without exposing admin edits
   'https://ps-build-studio-cloud.bonaqu.workers.dev/api/runtime-capabilities'),{DB:{}});
  assert.equal(response.status,200);
  const info=await response.json();
- assert.equal(info.codeRelease,'0.343.0');
+ assert.equal(info.codeRelease,'0.344.0');
  for(const capability of ['guideedit','honor-lists','historical-map-wiki'])
   assert.ok(info.ownerEditors.includes(capability),capability);
 });
@@ -178,7 +178,7 @@ test('Book, encyclopedia, Worker, scripts and styles are connected',()=>{
   css=read('pandora-studio-honor.css'),hint=read('pandora-studio-honor-guide.js');
  for(const file of ['pandora-studio-honor-guide.js','pandora-studio-guide-tooltips.js',
   'pandora-studio-historic-maps.js','pandora-studio-honor-view.js'])
-  assert.ok(html.includes(file+'?v=2026.11.03.343'),file);
+  assert.ok(html.includes(file+'?v=2026.11.03.344'),file);
  assert.match(book,/function guideLabel/);
  assert.match(book,/Пассивное восстановление/);
  assert.match(book,/Passive recovery/);

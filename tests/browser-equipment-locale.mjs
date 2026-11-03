@@ -143,7 +143,8 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-page h3').innerText(),/Королевство Сэнт-Фальстайн/);
   assert.match(await page.locator('.wiki-map-kind').innerText(),/Государство/);
-  assert.equal(await page.locator('.wiki-map-npcs').count(),0);
+  assert.ok(await page.locator('.wiki-map-npcs .wiki-map-npc').count()>=1,
+   'Country NPCs now share native location cards instead of a one-off link flow');
   assert.ok(await page.locator('.wiki-page .wiki-link[href^="#wiki/npc/"]').count()>=1);
   for(const district of ['astir-union','astir-empire']){
    await page.goto(base+'/#wiki/map/'+district,{waitUntil:'domcontentloaded'});

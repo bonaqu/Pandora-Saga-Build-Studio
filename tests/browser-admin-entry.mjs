@@ -298,6 +298,42 @@ export async function runAdminEntrySmoke(browser,base){
    null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).nameEn,
    'Claris Test');
+  // Create an entirely new D1 location, then edit its sections and tags in place.
+  await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
+  await page.locator('.wiki-map-create').waitFor({state:'visible'});
+  await page.locator('.wiki-map-create').click();
+  await page.locator('.wiki-map-create-form [aria-label="Название локации на русском"]')
+   .fill('Тестовая локация');
+  await page.locator('.wiki-map-create-form [aria-label="Location name in English"]')
+   .fill('Smoke location');
+  await page.locator('.wiki-map-create-form .wiki-owner-plus').click();
+  await page.locator('.wiki-page h3').filter({hasText:'Smoke location'})
+   .waitFor({state:'visible',timeout:20000});
+  const customMapKeys=[...townOverrides.keys()].filter(x=>/^wikiedit\.map\.custom-/.test(x));
+  assert.equal(customMapKeys.length,1,'New location is saved to a dedicated D1 override');
+  const customMap=JSON.parse(townOverrides.get(customMapKeys[0]));
+  assert.equal(customMap.name,'Тестовая локация');
+  assert.equal(customMap.nameEn,'Smoke location');
+  assert.ok(await page.locator('.wiki-map-section-switches button').count()>=4);
+  await page.locator('.wiki-map-tag-section .wiki-owner-plus').click();
+  await page.locator('.wiki-map-tag-form [aria-label="Тег на русском"]').fill('Государство');
+  await page.locator('.wiki-map-tag-form [aria-label="Tag in English"]').fill('Nation');
+  await page.locator('.wiki-map-tag-form .wiki-owner-plus').click();
+  await page.locator('.wiki-map-tag-label').filter({hasText:'Nation'})
+   .waitFor({state:'visible',timeout:20000});
+  assert.deepEqual(JSON.parse(townOverrides.get(customMapKeys[0])).tags,
+   [{ru:'Государство',en:'Nation'}]);
+  await page.locator('.wiki-map-add-section').click();
+  await page.locator('.wiki-map-custom-form [aria-label="Название раздела RU"]')
+   .fill('История');
+  await page.locator('.wiki-map-custom-form [aria-label="Section title EN"]')
+   .fill('History');
+  await page.locator('.wiki-map-custom-form .wiki-owner-plus').click();
+  await page.locator('.wiki-map-extra-section').filter({hasText:'History'})
+   .waitFor({state:'visible',timeout:20000});
+  assert.equal(JSON.parse(townOverrides.get(customMapKeys[0])).extraSections[0].titleEn,
+   'History');
+  console.log('Chromium owner location created and edited through D1: RU/EN, tags, sections');
   console.log('Chromium admin town NPC D1 passed: inline RU/EN edits and relocation');
   assert.deepEqual(calls.filter(x=>x==='owner-acquire-edit'),['owner-acquire-edit']);
   assert.deepEqual(calls.filter(x=>x==='owner-trade-edit'),['owner-trade-edit']);

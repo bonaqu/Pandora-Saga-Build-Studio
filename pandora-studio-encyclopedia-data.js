@@ -48,6 +48,21 @@ function build(data){
  for(const [id,npc] of Object.entries({...data.trades?.npcs,...astirNpcs}))
   for(const mapId of new Set((npc.maps||[]).map(String)))
    append(npcLocations,mapId,[id,npc]);
+ // Explicit, administrator-curated NPC references are indexed like ordinary
+ // residents but never modify the NPC's original OS spawn/placement record.
+ for(const [mapId,map] of Object.entries(data.maps||{})){
+  // Owner-curated loot links remain independent of the game's random drop tables.
+  for(const itemId of map.loot||[])
+   if(Object.hasOwn(data.items||{},String(itemId)))
+    add(itemId,{type:'owner-map',id:mapId,curated:true});
+  for(const npcId of map.npcs||[]){
+   const npc=(data.trades?.npcs||{})[String(npcId)];
+   if(!npc)continue;
+   const listed=npcLocations.get(String(mapId))||[];
+   if(!listed.some(([id])=>String(id)===String(npcId)))
+    append(npcLocations,mapId,[String(npcId),npc]);
+  }
+ }
  for(const zone of data.tables?.zoneDrops||[])append(zoneLocations,zone.map,zone);
  // Both player-opened boxes and map chests exchanged at a chest master
  // are authoritative reward sources; preserve each roll and chance.
@@ -101,6 +116,24 @@ function build(data){
   {...(data.trades?.mapNames||{}),...(data.maps||{})};
  for(const [id,patch] of Object.entries(data.townMaps||{}))
   maps[id]={...(maps[id]||{}),...patch};
+ // Metadata-only OS places and Astir districts share the same curated map
+ // relation graph. Never mutate imported monster spawn or loot tables.
+ for(const [mapId,map]of Object.entries(maps)){
+  if(Object.hasOwn(data.maps||{},String(mapId)))continue;
+  const place={type:'map',id:String(mapId),name:map.name};
+  for(const mob of map.mobs||[])if(Object.hasOwn(data.monsters||{},String(mob)))
+   addLocation(mob,place);
+  for(const npcId of map.npcs||[]){
+   const npc=(data.trades?.npcs||{})[String(npcId)];
+   if(!npc)continue;
+   const listed=npcLocations.get(String(mapId))||[];
+   if(!listed.some(([id])=>String(id)===String(npcId)))
+    append(npcLocations,mapId,[String(npcId),npc]);
+  }
+  for(const itemId of map.loot||[])
+   if(Object.hasOwn(data.items||{},String(itemId)))
+    add(itemId,{type:'owner-map',id:mapId,curated:true});
+ }
  // The actual item level and class-family name identify leveling reward boxes.
  // Source chest rolls exist only for the earlier boxes; later ones remain
  // browsable without synthesizing contents or changing the OS snapshot.

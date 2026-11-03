@@ -63,7 +63,7 @@ test('virtual patch validation rejects unknown fields, IDs and forged NPC relati
   ['npc','astir-npc-kingdom-claris',{maps:['astir-imperial']}],
   ['npc','astir-npc-kingdom-claris',{maps:['astir-union','astir-empire']}],
   ['npc','astir-npc-kingdom-claris',{nameEn:''}],
-  ['map','astir-kingdom',{mobs:[1]}],
+  ['map','astir-kingdom',{mobs:[0]}],
   ['npc','astir-npc-kingdom-../evil',{name:'A'}],
   ['npc','astir-npc-kingdom-claris',{__protoPolluted:true}]
  ])assert.equal(owner.validTownPatch(type,id,patch),false,String(id)+' / '+JSON.stringify(patch));
@@ -109,7 +109,7 @@ test('authenticated Worker saves and resets bounded town wiki patches in D1',asy
   ['wikiedit.npc.astir-npc-kingdom-claris',{nameEn:''}],
   ['wikiedit.npc.astir-npc-kingdom-claris',{maps:['astir-kingdom','astir-union']}],
   ['wikiedit.npc.astir-npc-kingdom-claris',{service:'A'.repeat(241)}],
-  ['wikiedit.map.astir-kingdom',{mobs:[100]}],
+  ['wikiedit.map.astir-kingdom',{mobs:[0]}],
   ['wikiedit.npc.astir-npc-kingdom-claris/../../admin',{name:'X'}]
  ])assert.equal((await send(key,patch)).status,400,key);
  const r=await worker.fetch(new Request(
