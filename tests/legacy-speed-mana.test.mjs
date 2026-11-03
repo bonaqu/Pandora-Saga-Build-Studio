@@ -47,6 +47,6 @@ test('vitals and character effect views receive mana speed preview',()=>{
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  const stage=readFileSync(new URL('../pandora-studio-hero-book.js',import.meta.url),'utf8');
  assert.match(app,/combatContext:/);
- assert.match(stage,/battle\.attackSpeed\?\.known/);
+ assert.match(stage,/row\('Скор\. атаки','Attack speed',c.attackSpeed\?\.known/);
  assert.match(stage,/c\.manaCost\?\.remaining/);
 });

@@ -97,8 +97,8 @@ test('full Hero Book pipeline keeps fire magic refinement separate from generic 
 
 test('book labels selected fire effect as a conditional source preview, never a fabricated completed ATK',()=>{
  const source=read('pandora-studio-hero-book.js');
- assert.match(source,/modifiers\?\.elementalRefinement\?\.entries\?\.length/);
- assert.match(source,/Стихийное усиление оружия/);
- assert.match(source,/Пламени феникса не подтверждены/);
- assert.match(source,/not added to general MATK or Honor/);
+ assert.match(source,/calc\.elementalRefinement\?\.entries/);
+ assert.match(source,/Кинжал огня зноя/);
+ assert.match(source,/const alreadyShown=/);
+ assert.match(source,/never sum them/);
 });

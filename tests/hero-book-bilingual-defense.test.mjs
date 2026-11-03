@@ -1,61 +1,43 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const src=readFileSync(new URL('../pandora-studio-hero-book.js',import.meta.url),'utf8');
-const calc=readFileSync(new URL('../pandora-os-character-calculator.js',import.meta.url),'utf8');
-const begin=src.indexOf("if(page==='defense'&&modifiers?.resistances){");
-const end=src.indexOf("if(page==='summary'&&modifiers?.regeneration){",begin);
-const body=src.slice(begin,end);
-const compact=s=>s.replace(/\s+/g,'');
-test('defensive gem grid has every current element and a true bilingual legend',()=>{
- assert.ok(begin>=0&&end>begin);
- for(const [ru,en] of [
-  ['Огонь','Fire'],['Лёд','Ice'],['Молния','Lightning'],
-  ['Яд','Poison'],['Очарование','Charm'],
-  ['Свет','Light'],['Тьма','Dark'],['Магия','Magic']
- ]){
-  assert.ok(body.includes("'"+ru+"'"),ru);
-  assert.ok(body.includes("'"+en+"'"),en);
- }
- assert.ok(compact(body).includes(compact("const labels=english?")));
- assert.ok(body.includes("english?'From gems: ':'От самоцветов: '"));
- assert.match(body,/\(labels\[key\]\|\|key\)/);
- assert.match(body,/value<0\?' negative':'/);
+const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
+const source=read('pandora-studio-hero-book.js'),calculator=read('pandora-os-character-calculator.js');
+const load=lang=>{const host={};Function('window','document',source)(host,
+ {documentElement:{lang}});return host.PandoraStageAttributes};
+test('global elemental resistance has one bilingual home: the 43 results',()=>{
+ const summary=load('ru').summaryRows({resistances:{elements:{
+  fire:0,ice:20,lightning:3,poison:-5,charm:4,light:7,dark:8,magic:9
+ }}}).flatMap(x=>x.rows);
+ for(const name of ['Сопр. огню','Сопр. льду','Сопр. молниям','Сопр. яду',
+  'Сопр. чарам','Сопр. свету','Сопр. тьме','Сопр. магии'])
+  assert.ok(summary.some(row=>row.ru===name),name);
+ assert.equal(summary.find(x=>x.ru==='Сопр. огню').value,0);
+ assert.equal(summary.find(x=>x.ru==='Сопр. яду').value,-5);
+ const defense=load('ru').defenseChapterGroups({resistances:{elements:{fire:12}}});
+ assert.ok(!defense.some(x=>x.rows.some(row=>row.key==='resistElement:fire')));
 });
-test('all source-backed status resistance labels are localized without replacing IDs',()=>{
- const names={
-  burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
-  numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
-  knockback:['Отбрасывание','Knockback'],sleep:['Сон','Sleep'],
-  silence:['Немота','Silence'],evil:['Зло','Evil'],
-  curse:['Слабость/проклятие','Weakness / Curse'],
-  disease:['Болезнь','Disease'],madness:['Помешательство','Madness'],
-  blockBreak:['Пробитие блока','Block break']
- };
- for(const [key,labels] of Object.entries(names))
-  for(const name of labels)assert.ok(
-   body.includes(key+":'"+name+"'"),key+': '+name);
- assert.match(body,/Object.entries\(rs.status\|\|\{\}\)/);
- assert.match(body,/const statusNames=english\?/);
- assert.ok(body.includes("english?'Physical damage change: ':'Изменение физического урона: '"));
- assert.ok(body.includes("english?'From gems: ':'От самоцветов: '"));
+test('all current individual state resistances have distinct bilingual defense labels',()=>{
+ const states=['burn','stun','numb','tumble','knockback','sleep',
+  'silence','evil','curse','disease','madness','blockBreak'];
+ const status=Object.fromEntries(states.map((key,i)=>[key,i+1]));
+ const ru=load('ru').defenseChapterGroups({resistances:{status}});
+ const en=load('en').defenseChapterGroups({resistances:{status}});
+ const rows=group=>group.flatMap(x=>x.rows);
+ assert.equal(rows(ru).length,12);
+ assert.deepEqual(rows(ru).map(row=>row.key),states.map(k=>'resistStatus:'+k));
+ assert.deepEqual(rows(ru).map(row=>row.value),states.map((_,i)=>i+1));
+ assert.ok(rows(ru).some(x=>x.ru==='Пробитие блока'));
+ assert.ok(rows(en).some(x=>x.en==='Block break'));
+ assert.ok(!rows(en).some(x=>x.en===x.ru));
 });
-test('no resistances or hero statistics are fabricated or changed by locale',()=>{
- for(const fragment of [
-  'rs.wardingPassive','rs.states.physical','rs.states.mental',
-  'rs.mitigation.physical','rs.mitigation.physicalFlat',
-  'rs.mitigation.magic','rs.physicalReflection',
-  'rs.incomingDebuffDurationReduction','rs.damageNegation',
-  'Other skills and server immunities are not fully included.'
- ])assert.ok(body.includes(fragment),fragment);
- const root={};Function('window',calc)(root);
- const make=lang=>{
-  const target={};Function('window','document',src)(target,{documentElement:{lang}});
-  return target.PandoraStageAttributes.bookText;
- };
- for(const name of ['Имя героя 2','Душа несчастья','Слабость/проклятие особое']) {
-  assert.equal(make('en')(name),name);
-  assert.equal(make('ru')(name),name);
+test('locale translation never mutates unknown player names or fabricates statuses',()=>{
+ const en=load('en'),ru=load('ru');
+ for(const name of ['Имя героя 2','Душа несчастья','Слабость/проклятие особое']){
+  assert.equal(en.bookText(name),name);
+  assert.equal(ru.bookText(name),name);
  }
- assert.ok(root.PandoraOSCalculator.resistancePreview);
+ assert.deepEqual(en.defenseChapterGroups({resistances:{status:{}}}),[]);
+ const root={};Function('window',calculator)(root);
+ assert.equal(typeof root.PandoraOSCalculator.resistancePreview,'function');
 });

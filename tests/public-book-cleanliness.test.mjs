@@ -4,10 +4,9 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('debugger-only formula disclaimers are not placed in ordinary player book',()=>{
  const book=read('pandora-studio-hero-book.js'),app=read('pandora-studio-app.js');
- assert.match(book,/const isAdmin=root\.PandoraStudioAdminActive\?\.\(\)===true/);
- assert.match(book,/if\(isAdmin\)details\.append\(node\)/);
- assert.match(book,/else node\.remove\(\)/);
- assert.match(book,/if\(isAdmin&&details\.children\.length>1\)body\.append\(details\)/);
+ assert.doesNotMatch(book,/stage-methodology|stage-combat-formulas|stage-vital-formulas/);
+ assert.match(book,/function summaryPage\(body,calc\)/);
+ assert.match(book,/function attackPage\(body,calc/);
  assert.doesNotMatch(app,/Расчёт по известным формулам, без некоторых эффектов/);
  assert.doesNotMatch(book,/'Частично'\]/);
 });

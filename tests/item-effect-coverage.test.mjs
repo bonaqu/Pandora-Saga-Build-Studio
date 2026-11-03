@@ -42,8 +42,7 @@ test('on-hit skill execution remains conditional instead of guaranteed damage',(
 });
 test('the Summary chapter stays clean, detailed coverage lives only in Effects',()=>{
  const view=get('pandora-studio-hero-book.js');
- assert.match(view,/modifiers\?\.coverage\?\.total/);
- assert.match(view,/Условные проки/);
- assert.match(view,/chosen==='effects'/);
- assert.match(view,/Что осталось вне итоговых чисел/);
+ assert.match(get('pandora-os-character-calculator.js'),/const coverage=effectCoverage/);
+ assert.match(view,/function summaryPage\(body,calc\)/);
+ assert.doesNotMatch(view,/modifiers\?\.coverage\?\.total|Что осталось вне итоговых чисел/);
 });

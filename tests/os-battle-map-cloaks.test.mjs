@@ -64,9 +64,9 @@ test('wrong cloak ID, source key, skill, value, description, slot or grade fails
 });
 test('hero book displays player-friendly bilingual map-limited section, not EP codes',()=>{
  const view=read('pandora-studio-hero-book.js'),calc=read('pandora-os-character-calculator.js');
- assert.match(view,/Бонусы плаща на военных картах/);
- assert.match(view,/Battle-map-only cloak bonuses/);
- assert.match(view,/modifiers\?\.battleMapCloaks\?\.entries/);
+ assert.match(view,/Эффекты плащей на военных картах/);
+ assert.match(view,/Battle-map cloak effects/);
+ assert.match(view,/calc\?\.battleMapCloaks\?\.entries/);
  assert.match(calc,/const battleMapCloaks=battleMapCloakPreview/);
  assert.match(calc,/experienceBonus,battleMapCloaks,specialEquipment/);
 });
