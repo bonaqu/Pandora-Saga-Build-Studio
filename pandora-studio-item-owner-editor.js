@@ -161,7 +161,21 @@ const englishEffectLabels=Object.freeze({
  EP_SKILL_EXEC_BALM:"Activates consumable skill",
  EP_SKILL_EXEC_MAPIN:"Skill on map entry",
  EP_TOHIT_SCALE:"Accuracy (%)",
- EP_VOLUME_EXP:"Experience gained"
+ EP_VOLUME_EXP:"Experience gained",
+ EP_ONDAMAGE_ELEM_SCALE:"Magic resistance (%)",
+ EP_BUFF_TOHIT_SCALE:"Debuff rate",
+ EP_BADEFFECT_TIME_CAST_SCALE:"G debuff",
+ EP_AURADAMAGE_SCALE:"Aura damage (%)",
+ EP_CRITICAL_REGIST:"Critical resistance",
+ EP_SKILL_EQUIP_DAMAGERATE:"MaxATK",
+ EP_HEAL_TIME_SCALE:"MP recovery speed",
+ EP_LIGHTNING_RESISTANCE_CONST:"Lightning resistance",
+ EP_SPECIAL_WARDING_TYPE2:"DP damage",
+ EP_SKILL_DELAY_FIN:"Casting speed (final)",
+ EP_ONDAMAGE_REFLECTION:"Damage reflection",
+ EP_ARMORCLASS_SCALE:"Defense (%)",
+ EP_MASTERY_POTION:"Potion effectiveness",
+ EP_ONDAMAGE_FIN_DAMAGE_CONST:"Physical damage resistance"
 });
 const skillReferenceEffects=new Set([
  'EP_SKILL_EXEC','EP_SKILL_EXEC_BALM','EP_SKILL_EXEC_MAPIN',
