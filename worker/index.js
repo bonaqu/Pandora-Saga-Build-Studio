@@ -549,7 +549,7 @@ function validWikiOwnerPatch(text,type){
   if(key==='classes')return v&&typeof v==='object'&&!Array.isArray(v)&&
    Object.keys(v).length<=28&&Object.entries(v).every(([k,n])=>
     /^[A-Z_]{2,25}$/.test(k)&&n===1);
-  if(key==='mobs')return type==='map'?validMonsterRefs(v,1000):checkIds(v);
+  if(key==='mobs')return ['map','instance'].includes(type)?validMonsterRefs(v,1000):checkIds(v);
   if(key==='maps')return checkIds(v);
   if(type==='monster'&&key==='loot')return checkIds(v);
   if(type==='map'&&mapExtraNames.includes(key))return validMapExtra(key,v);
