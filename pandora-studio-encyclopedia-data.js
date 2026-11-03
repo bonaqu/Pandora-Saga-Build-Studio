@@ -76,6 +76,17 @@ function build(data){
  for(const zone of data.tables?.zoneDrops||[])for(const group of zone.rows||[])for(const row of group.items||[]){
   if(row.i!=null)add(row.i,{type:'zone',id:String(zone.map),mobId:group.mob?String(group.mob):null,groupChance:group.base??null,perMember:group.perMember??null,groupSize:group.items.length});
  }
+ // Owner-created monster loot is a curated source relation, not an OS
+ // probability table; never infer or display a drop chance for these items.
+ for(const [monsterId,monster] of Object.entries(data.monsters||{})){
+  if(!monster.ownerCreated||!Array.isArray(monster.loot))continue;
+  for(const itemId of monster.loot){
+   if(!Object.hasOwn(data.items||{},String(itemId)))continue;
+   const entry={type:'owner-monster',id:monsterId,itemId:String(itemId),
+    kind:'curated',curated:true,quantity:1,percent:null};
+   append(drops,monsterId,entry);add(itemId,entry);
+  }
+ }
  const ownerNpcItems=new Map(),manualMonsterSources=new Map();
  // Administrator sources extend the encyclopedia graph without altering OS drop tables.
  for(const [itemId,entries] of Object.entries(data.ownerAcquisitions||{})){
