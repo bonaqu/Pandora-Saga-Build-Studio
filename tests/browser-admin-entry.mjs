@@ -269,9 +269,19 @@ export async function runAdminEntrySmoke(browser,base){
   )?.textContent==='Кларис — проверка D1',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).name,
    'Кларис — проверка D1');
+  // This value changes before the async owner POST finishes. Observe the
+  // actual isolated mock write instead of racing the optimistic select UI.
+  const savedLocation=page.waitForResponse(response=>{
+   if(!response.url().endsWith('/api/admin/override')||
+      response.request().method()!=='POST')return false;
+   try{
+    const data=response.request().postDataJSON();
+    return data.key==='wikiedit.npc.astir-npc-kingdom-claris'&&
+     JSON.parse(data.value).maps?.includes('astir-union');
+   }catch{return false}
+  },{timeout:15000});
   await page.locator('.wiki-page .wiki-town-npc-location').selectOption('astir-union');
-  await page.waitForFunction(()=>document.querySelector(
-   '.wiki-page .wiki-town-npc-location')?.value==='astir-union',null,{timeout:15000});
+  await savedLocation;
   assert.deepEqual(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).maps,
    ['astir-union']);
   await page.locator('#dockClose').click();
