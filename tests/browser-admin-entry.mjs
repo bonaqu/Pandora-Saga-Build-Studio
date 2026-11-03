@@ -333,6 +333,44 @@ export async function runAdminEntrySmoke(browser,base){
    .waitFor({state:'visible',timeout:20000});
   assert.equal(JSON.parse(townOverrides.get(customMapKeys[0])).extraSections[0].titleEn,
    'History');
+  // The owner's verified El Beht roster is editable without inventing OS
+  // numeric IDs. Create an owner monster from an unmatched report and link it.
+  await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
+  const futureFilter=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await futureFilter.click();
+  await futureFilter.fill('Эль Ведд');
+  await page.locator('.wiki-list [data-wiki-record="el-beht"]')
+   .waitFor({state:'visible',timeout:20000});
+  await page.locator('.wiki-list [data-wiki-record="el-beht"]').click();
+  const elBeht=page.locator('.wiki-page');
+  await elBeht.locator('.wiki-map-monsters .wiki-mob-row').first()
+   .waitFor({state:'visible',timeout:20000});
+  assert.equal(await elBeht.locator('.wiki-map-monsters .wiki-mob-row').count(),22);
+  assert.equal(await elBeht.locator('.wiki-historic-notice,.wiki-historic-tag').count(),0);
+  const soldier=elBeht.locator('.wiki-mob-row')
+   .filter({hasText:'Кровавый ящер-солдат'}).first();
+  await soldier.getByRole('button',{name:/Create card|Создать карточку/}).click();
+  const form=soldier.locator('.wiki-owner-monster-form');
+  await form.waitFor({state:'visible',timeout:10000});
+  await form.locator('[aria-label="Monster name EN"]').fill('Blood Lizard Soldier');
+  const savedRoster=page.waitForResponse(response=>{
+   if(!response.url().endsWith('/api/admin/override'))return false;
+   try{return response.request().postDataJSON().key==='wikiedit.map.el-beht'}
+   catch{return false}
+  },{timeout:20000});
+  await form.getByRole('button',{name:/Save monster|Сохранить монстра/}).click();
+  await savedRoster;
+  const ownerMonsterKeys=[...townOverrides.keys()].filter(x=>/^wikiedit\.monster\.owner-monster-/.test(x));
+  assert.equal(ownerMonsterKeys.length,1,'Owner created monster has a dedicated D1 key');
+  assert.equal(JSON.parse(townOverrides.get(ownerMonsterKeys[0])).level,47);
+  const createdId=ownerMonsterKeys[0].slice('wikiedit.monster.'.length);
+  const storedFuture=JSON.parse(townOverrides.get('wikiedit.map.el-beht'));
+  assert.equal(storedFuture.roster.find(x=>x.name==='Кровавый ящер-солдат').monsterId,createdId);
+  assert.ok(storedFuture.mobs.includes(createdId));
+  await elBeht.locator('.wiki-map-monsters .wiki-link[href="#wiki/monster/'+createdId+'"]')
+   .waitFor({state:'visible',timeout:20000});
+  assert.equal(await elBeht.locator('.wiki-map-monsters .wiki-mob-row').count(),22);
+  console.log('Chromium future-map roster D1 passed: owner monster creation and cross-link');
   console.log('Chromium owner location created and edited through D1: RU/EN, tags, sections');
   console.log('Chromium admin town NPC D1 passed: inline RU/EN edits and relocation');
   assert.deepEqual(calls.filter(x=>x==='owner-acquire-edit'),['owner-acquire-edit']);
