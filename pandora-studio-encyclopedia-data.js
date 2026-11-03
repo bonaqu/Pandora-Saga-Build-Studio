@@ -48,6 +48,17 @@ function build(data){
  for(const [id,npc] of Object.entries({...data.trades?.npcs,...astirNpcs}))
   for(const mapId of new Set((npc.maps||[]).map(String)))
    append(npcLocations,mapId,[id,npc]);
+ // Explicit, administrator-curated NPC references are indexed like ordinary
+ // residents but never modify the NPC's original OS spawn/placement record.
+ for(const [mapId,map] of Object.entries(data.maps||{})){
+  for(const npcId of map.npcs||[]){
+   const npc=(data.trades?.npcs||{})[String(npcId)];
+   if(!npc)continue;
+   const listed=npcLocations.get(String(mapId))||[];
+   if(!listed.some(([id])=>String(id)===String(npcId)))
+    append(npcLocations,mapId,[String(npcId),npc]);
+  }
+ }
  for(const zone of data.tables?.zoneDrops||[])append(zoneLocations,zone.map,zone);
  // Both player-opened boxes and map chests exchanged at a chest master
  // are authoritative reward sources; preserve each roll and chance.
