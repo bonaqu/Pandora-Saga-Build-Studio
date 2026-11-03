@@ -56,8 +56,8 @@ test('book controls are built from both actual skill records and saved choices',
  assert.match(app,/rawAttributes\[key\]===true/);
  assert.match(book,/\['combatWindAssist','Помощь ветра'\]/);
  assert.match(book,/\['combatWindBlessing','Благословение ветра'\]/);
- assert.match(book,/battle\.dodge\?\.known/);
- assert.match(book,/battle\.movementSpeed\?\.known/);
+ assert.match(book,/row\('Уклонение','Evasion',c.dodge\?\.known\)/);
+ assert.match(book,/c.movementSpeed\?\.known/);
 });
 
 test('Wind skill source fails closed for unseen prerequisites and non-learnable skills',()=>{

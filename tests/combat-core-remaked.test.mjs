@@ -67,8 +67,8 @@ test('base character calculator gets combat context without applying its bonuses
 test('old combat-stage expectations are updated without loosening release version guard',()=>{
  const app=read('pandora-studio-app.js'),stage=read('pandora-studio-hero-book.js'),check=read('tests/stage-attributes.test.mjs');
  assert.match(app,/combatContext:\{weapon,weaponGrade,weaponPlus:gameTables\?\.weaponPlus,/);
- assert.match(stage,/modifiers\?\.combat/);
- assert.match(stage,/Подробнее о точности расчёта/);
+ assert.match(stage,/const c=calc\?\.combat/);
+ assert.doesNotMatch(stage,/stage-combat-quick/);
  assert.match(check,/assert\.equal\(v,pkg\.pandoraRelease\)/);
 });
 test('armor preview sums only equipped item AC and gated EP_ARMORCLASS_CONST once',()=>{
