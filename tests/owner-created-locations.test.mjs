@@ -17,7 +17,7 @@ const extras=[
 ];
 const patch={name:'Новая PvP-локация',nameEn:'New PvP location',
  desc:'Описание локации',descEn:'Location description',
- mobs:[21231],npcs:[131],loot:[100],
+ notesRu:'Заметка',notesEn:'Note',mobs:[21231],npcs:[131],loot:[100],
  tags:[{ru:'Государство',en:'Nation'}],
  sections:['monsters','npcs','loot','tags','custom'],extraSections:extras};
 test('owner map allows typed bilingual sections, tags and source links; rejects bad data',()=>{
@@ -29,6 +29,7 @@ test('owner map allows typed bilingual sections, tags and source links; rejects 
   {...patch,loot:[100,100]},
   {...patch,npcs:['javascript:alert(1)']},
   {...patch,tags:[{ru:'Государство'}]},
+  {...patch,notesEn:42},
   {...patch,sections:['monsters','monsters']},
   {...patch,extraSections:[{...extras[0],kind:'javascript'}]},
   {...patch,extraSections:[{...extras[0],entries:[21231,21231]}]},
@@ -50,6 +51,7 @@ test('custom D1 map uses the same canonical location record and NPC reverse inde
  assert.equal(next.maps[customId].nameEn,patch.nameEn);
  assert.equal(next.maps[customId].ownerCreated,true);
  assert.deepEqual(next.maps[customId].tags,patch.tags);
+ assert.equal(next.maps[customId].notesEn,'Note');
  assert.equal(JSON.stringify(base),copy,'The canonical imported OS dataset must not change');
  const graph=index.build(next);
  assert.ok(graph.records('map')[customId]);
@@ -109,6 +111,7 @@ test('Hero Book preserves mounted scrolling pane and keeps Honor controls compac
  assert.match(hero,/stage-honor-term/);
  assert.match(app,/wiki-map-create-form/);
  assert.match(app,/wiki-map-section-switches/);
+ assert.match(app,/wiki-map-notes/);
  assert.match(app,/wiki-map-extra-section/);
  assert.match(honor,/wiki-honor-nav-link/);
  assert.match(honor,/wiki-honor-rank-filters/);
