@@ -394,3 +394,17 @@ body:has(.modal-root:not([hidden])) #ownerDock{pointer-events:none}
  .owner-workflow-guide{width:100%}
  .owner-dock-actions button{flex:1 1 calc(50% - 6px)}
  .owner-dock-actions .owner-dock-primary{flex:1 1 100%}}
+
+/* Do not hide the encyclopedia's navigable item list under the floating
+   admin pane. Place controls on the right while the wiki workbench is open. */
+body.studio-workbench-open #ownerDock.owner-dock{
+ left:auto;right:12px;bottom:12px;width:min(298px,calc(100vw - 24px));
+ max-height:min(54vh,440px);padding:10px 11px;gap:6px}
+body.studio-workbench-open #ownerDock .owner-dock-actions button{
+ font-size:10px;min-height:29px;padding:5px 7px}
+body.studio-workbench-open #ownerDock .owner-dock-head .owner-dock-title{font-size:17px}
+@media(max-width:670px){
+ body.studio-workbench-open #ownerDock.owner-dock{
+ right:5px;left:auto;bottom:5px;width:min(240px,calc(100vw - 10px));
+ max-height:35vh;padding:7px}
+}
