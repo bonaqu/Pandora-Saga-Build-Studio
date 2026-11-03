@@ -80,8 +80,8 @@ test('comparison renders within saved builds instead of a modal, with familiar s
  assert.match(app,/renderBuildComparison\(comparisonSlot/);
  assert.match(app,/PandoraBuildComparison\.matrixRows\(a\.data,b\.data/);
  assert.match(app,/summaryRows\(calcA\)/);
- assert.match(app,/previewBaseStats\(a\.data\)/);
- assert.match(app,/previewBaseStats\(b\.data\)/);
+ assert.match(app,/PandoraBuildComparison\.calculatePair\(/);
+ assert.match(app,/a\.data,b\.data,previewBaseStats/);
  assert.match(app,/data-compare-row/);
  assert.match(app,/data-compare-select/);
  assert.match(app,/data-compare-differences/);
