@@ -63,8 +63,10 @@ test('elemental tab classifies only actual weapon names, not unrelated items',()
  assert.match(app,/wiki-elemental-type/);
  assert.match(app,/wikiElementFilter/);
  assert.match(app,/Предметы эффектов/);
- assert.match(app,/EP_RECOVERY_/);
- assert.match(app,/EP_SKILL_EXEC/);
+ const taxonomy=read('pandora-studio-encyclopedia-data.js');
+ assert.match(taxonomy,/EP_RECOVERY_/);
+ assert.match(taxonomy,/EP_SKILL_EXEC/);
+ assert.match(taxonomy,/EP_DESTINED_POISON/);
  assert.match(app,/wikiEffectFilter/);
  assert.match(app,/wiki-effect-type/);
  assert.match(app,/utilityCategories/);

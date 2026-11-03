@@ -70,6 +70,7 @@ const extraLabels={
 const wearable=new Set('weapon shield head body gloves legs feet cloak ring neck belt ear'.split(' '));
 const nonEquipmentEffects=new Set([
  'EP_ABILITY_RESET','EP_EXPERTISE_RESET','EP_RESTART','EP_RANDOM_BOX',
+ 'EP_DESTINED_POISON',
  'EP_BOW_CARRY','EP_RACE_CARRY','EP_RACE_RANGE','EP_RACE_MANA_COSTCUT',
  'EP_SKILL_EXEC','EP_SKILL_EXEC_BALM',
  'EP_SKILL_EXEC_MAPIN','EP_RECOVERY_BURN','EP_RECOVERY_CURSE',

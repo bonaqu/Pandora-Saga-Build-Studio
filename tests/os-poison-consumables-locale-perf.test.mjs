@@ -55,14 +55,10 @@ test('full character returns hazardous consumables without adding their poison p
  assert.equal(withCatalog.consumableRecovery.allRows.some(x=>x.id===50022||x.id===50056),false);
 });
 
-test('Hero Book shows poisonous consumables on effects page only, with encyclopedia navigation',()=>{
+test('Hero Book never lists poisonous consumables or a poisonous-items chapter',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/if\(chosen==='effects'\)/);
- assert.match(book,/modifiers\?\.harmfulConsumables\?\.rows/);
- assert.match(book,/stage-poison-consumables/);
- assert.match(book,/onItem\(entry\.id\)/);
- assert.match(book,/Числовое поле сервера НЕ подтверждает величину урона/);
- assert.match(book,/NOT a proven damage amount, duration or chance/);
+ assert.doesNotMatch(book,/harmfulConsumables|stage-poison-consumables|Ядовитые расходники|Poisonous consumables/);
+ assert.match(book,/modifiers\?\.statusCures/);
 });
 
 test('book translation entries are cached without changing RU/EN output or user-owned names',()=>{
