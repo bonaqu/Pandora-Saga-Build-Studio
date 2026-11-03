@@ -1,79 +1,106 @@
 #!/usr/bin/env node
-// One-time asset mirror. Run on a computer with Node 20+ and internet access.
-// Never runs on the website and does not need GitHub Actions or Cloudflare secrets.
+// Offline-first import of original Pandora Saga OS icons. Never manufacture
+// lookalike textures, silently reclassify a 404, or overwrite a real WebP.
 import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {safeIconStem,isWebP,originalIconUrl} from './icon-utils.mjs';
 const root=join(dirname(fileURLToPath(import.meta.url)),'..');
-const dry=process.argv.includes('--dry-run'),retries=2,concurrency=8;
+const dry=process.argv.includes('--dry-run');
+const retry404=process.argv.includes('--retry-404');
+const retries=2,concurrency=8;
 const limitArg=process.argv.find(x=>x.startsWith('--limit='));
 const limit=limitArg?Number(limitArg.slice(8)):Infinity;
 if(limitArg&&(!Number.isInteger(limit)||limit<1))throw Error('--limit must be a positive integer');
-
-const json=async file=>JSON.parse(await readFile(join(root,'data/os',file+'.json'),'utf8'));
-const [skills,items,souls]=await Promise.all(['skills','items','souls'].map(json));
-const list=[];
-for(const r of Object.values(skills))if(r.iconId)list.push({kind:'skills',stem:'skill_'+safeIconStem(r.iconId)});
-for(const r of Object.values(items))if(r.icon)list.push({kind:'items',stem:safeIconStem(r.icon)});
-for(const r of Object.values(souls))if(r.icon)list.push({kind:'souls',stem:safeIconStem(r.icon)});
-const unique=[...new Map(list.map(v=>[v.kind+'/'+v.stem,v])).values()];
-const manifest={source:'Pandora Saga OS, one-time archive',createdAt:new Date().toISOString(),icons:{skills:{},items:{},souls:{}},missing:[]};
-let done=0,fail=0,index=0;
-const valid=isWebP;
-const missing=async row=>{
- const file=join(root,'assets',row.kind,'icons',row.stem+'.webp');
- try{return !valid(await readFile(file))}catch{return true}
-};
-// A --limit run starts at the next *missing* icon, not the first N icons repeatedly.
-const pending=[];
+const readCatalog=async name=>JSON.parse(await readFile(join(root,'data/os',name+'.json'),'utf8'));
+const [skills,items,souls]=await Promise.all(['skills','items','souls'].map(readCatalog));
+const rows=[];
+for(const entry of Object.values(skills))
+ if(entry.iconId)rows.push({kind:'skills',stem:'skill_'+safeIconStem(entry.iconId)});
+for(const entry of Object.values(items))
+ if(entry.icon)rows.push({kind:'items',stem:safeIconStem(entry.icon)});
+for(const entry of Object.values(souls))
+ if(entry.icon)rows.push({kind:'souls',stem:safeIconStem(entry.icon)});
+const unique=[...new Map(rows.map(row=>[row.kind+'/'+row.stem,row])).values()];
+const key=row=>row.kind+'/'+row.stem;
+const fileOf=row=>'assets/'+row.kind+'/icons/'+row.stem+'.webp';
+const manifestPath=join(root,'assets','os-icon-manifest.json');
+let prior=null;
+try{prior=JSON.parse(await readFile(manifestPath,'utf8'))}
+catch(error){if(error.code!=='ENOENT')throw error}
+const known404=new Set((Array.isArray(prior?.missing)?prior.missing:[])
+ .filter(row=>row?.error==='HTTP 404'&&['skills','items','souls'].includes(row.kind)&&
+  /^[A-Za-z0-9_-]{1,120}$/.test(row.stem))
+ .map(key));
+const available=new Map(),pending=[],failures=new Map();
+let skippedKnown404=0;
 for(const row of unique){
- if(Number.isFinite(limit)){
-  if(await missing(row))pending.push(row);
-  if(pending.length>=limit)break;
- }else pending.push(row);
-}
-async function one(row){
- const file='assets/'+row.kind+'/icons/'+row.stem+'.webp';
- const path=join(root,file);
+ const path=fileOf(row);
  try{
-  try{const old=await readFile(path);if(valid(old)){manifest.icons[row.kind][row.stem]=file;done++;return}}catch{}
-  if(dry)return; // Planning never marks missing files as downloaded.
-  const url=originalIconUrl(row.kind,row.stem);
-  let last;
-  for(let n=0;n<=retries;n++){
-   try{
-    const c=new AbortController(),timer=setTimeout(()=>c.abort(),14000);
-    let response;
-    try{response=await fetch(url,{signal:c.signal,redirect:'error'})}
-    finally{clearTimeout(timer)}
-    if(!response.ok)throw Error('HTTP '+response.status);
-    const bytes=new Uint8Array(await response.arrayBuffer());
-    if(!valid(bytes))throw Error('Not a valid WebP image');
-    await mkdir(dirname(path),{recursive:true});
-    const temp=path+'.partial';await writeFile(temp,bytes);await rename(temp,path);
-    manifest.icons[row.kind][row.stem]=file;done++;return;
-   }catch(e){last=e;if(n<retries)await new Promise(resolve=>setTimeout(resolve,400*(n+1)))}
+  const bytes=await readFile(join(root,path));
+  if(isWebP(bytes)){available.set(key(row),path);continue}
+ }catch(error){if(error.code!=='ENOENT')throw error}
+ if(known404.has(key(row))&&!retry404){skippedKnown404++;continue}
+ if(pending.length<limit)pending.push(row);
+}
+let index=0,downloaded=0;
+async function download(row){
+ let failure=null;
+ for(let attempt=0;attempt<=retries;attempt++){
+  try{
+   const controller=new AbortController();
+   const timeout=setTimeout(()=>controller.abort(),14000);
+   let response;
+   try{response=await fetch(originalIconUrl(row.kind,row.stem),{
+    signal:controller.signal,redirect:'error'
+   })}finally{clearTimeout(timeout)}
+   if(!response.ok){
+    // A known 404 is not transient. Do not send three identical 404 requests.
+    if(response.status===404){failures.set(key(row),'HTTP 404');return}
+    throw Error('HTTP '+response.status);
+   }
+   const bytes=new Uint8Array(await response.arrayBuffer());
+   if(!isWebP(bytes))throw Error('Not a valid WebP image');
+   const path=fileOf(row),destination=join(root,path);
+   await mkdir(dirname(destination),{recursive:true});
+   const temporary=destination+'.partial';
+   await writeFile(temporary,bytes);await rename(temporary,destination);
+   available.set(key(row),path);downloaded++;return;
+  }catch(error){
+   failure=String(error.message||error);
+   if(attempt<retries)await new Promise(resolve=>setTimeout(resolve,400*(attempt+1)));
   }
-  throw last;
- }catch(e){fail++;manifest.missing.push({kind:row.kind,stem:row.stem,error:String(e.message||e)})}
+ }
+ failures.set(key(row),failure||'Failed to download');
 }
-async function worker(){while(index<pending.length){const i=index++;await one(pending[i]);if((i+1)%100===0)console.log(i+1,'/',pending.length,'processed')}}
+async function worker(){
+ while(index<pending.length){
+  const current=index++;
+  if(!dry)await download(pending[current]);
+  if(!dry&&(current+1)%100===0)console.log(current+1,'/',pending.length,'processed');
+ }
+}
 await Promise.all(Array.from({length:concurrency},worker));
-// Count all already-present asset files, even across staged --limit runs.
+// Reconstruct the complete manifest from disk after the batch. Every previous
+// verified 404 survives partial --limit runs unless its original was recovered.
+const manifest={source:'Pandora Saga OS, one-time archive',createdAt:new Date().toISOString(),
+ icons:{skills:{},items:{},souls:{}},missing:[]};
 for(const row of unique){
- const key=row.kind+'/'+row.stem;
- if(manifest.icons[row.kind][row.stem])continue;
- const file='assets/'+row.kind+'/icons/'+row.stem+'.webp';
- try{if(valid(await readFile(join(root,file))))manifest.icons[row.kind][row.stem]=file}
- catch{}
+ const id=key(row),path=fileOf(row);
+ if(!available.has(id)){
+  try{if(isWebP(await readFile(join(root,path))))available.set(id,path)}
+  catch(error){if(error.code!=='ENOENT')throw error}
+ }
+ if(available.has(id))manifest.icons[row.kind][row.stem]=path;
+ else manifest.missing.push({kind:row.kind,stem:row.stem,error:
+  failures.get(id)||(known404.has(id)?'HTTP 404':'Not attempted')});
 }
-manifest.count={
- expected:unique.length,
- present:Object.values(manifest.icons).reduce((n,v)=>n+Object.keys(v).length,0),
- missing:unique.length-Object.values(manifest.icons).reduce((n,v)=>n+Object.keys(v).length,0),
- processed:dry?0:pending.length, planned:pending.length
-};
-if(!dry){await mkdir(join(root,'assets'),{recursive:true});await writeFile(join(root,'assets','os-icon-manifest.json'),JSON.stringify(manifest,null,2)+'\n')}
-console.log(JSON.stringify({dryRun:dry,...manifest.count}));
-if(fail&&!Number.isFinite(limit))process.exitCode=1;
+manifest.count={expected:unique.length,present:available.size,
+ missing:manifest.missing.length,processed:dry?0:pending.length,planned:pending.length};
+if(!dry){
+ await mkdir(join(root,'assets'),{recursive:true});
+ await writeFile(manifestPath,JSON.stringify(manifest,null,2)+'\n');
+}
+console.log(JSON.stringify({dryRun:dry,retry404,skippedKnown404,downloaded,
+ ...manifest.count}));
+if(failures.size&&!Number.isFinite(limit))process.exitCode=1;
