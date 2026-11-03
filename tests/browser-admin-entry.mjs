@@ -127,7 +127,12 @@ export async function runAdminEntrySmoke(browser,base){
   const ownerPanel=page.locator('#ownerDock');
   assert.match(await ownerPanel.innerText(),/Cloudflare D1/);
   assert.match(await ownerPanel.innerText(),/сохранение автоматически|сохранение автоматическое/);
-  assert.ok(await ownerPanel.locator('.owner-workflow-guide[open]').count()===1);
+  assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),0,
+   'The floating dock must start compact and not cover editable wiki rows');
+  await ownerPanel.locator('.owner-workflow-guide>summary').click();
+  assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),1);
+  assert.match(await ownerPanel.locator('.owner-workflow-glossary').innerText(),/Игровой каталог/);
+  await ownerPanel.locator('.owner-workflow-guide>summary').click();
   assert.match(await ownerPanel.innerText(),/PR правок/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
