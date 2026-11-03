@@ -35,7 +35,7 @@
 .owner-dock button:disabled,.inline-owner-editor button:disabled{opacity:.4;cursor:not-allowed}
 .inline-owner-editor{position:fixed;z-index:160;max-height:calc(100vh - 24px);overflow:auto;background:linear-gradient(150deg,#33231a,#17120e);border:2px double #d3a25c;padding:14px;box-shadow:0 16px 55px #000e;color:#f0d8ae}
 .inline-owner-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font:700 22px 'Cormorant Garamond',serif}
-.inline-owner-key{color:#bca37e;font-size:10px;overflow-wrap:anywhere;padding:5px 0 10px}
+
 .inline-owner-editor input,.inline-owner-editor textarea{width:100%;background:#130e0a;border:1px solid #86643b;padding:9px;color:#f6dbb1;resize:vertical}
 .inline-owner-editor .inline-owner-preview{display:block;max-width:100%;height:115px;object-fit:contain;margin:4px auto 12px;border:1px solid #795939;background:#0d0a08}
 .inline-owner-gallery{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));max-height:108px;overflow:auto;gap:4px;margin-bottom:10px}

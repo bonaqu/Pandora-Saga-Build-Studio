@@ -216,8 +216,12 @@ function ownPatch(overrides,id){
     selected[key]=patch[key];
   if(typeof patch.name==='string'&&patch.name.trim()&&patch.name.length<=240)
    selected.name=patch.name;
+  if(typeof patch.nameEn==='string'&&patch.nameEn.trim()&&patch.nameEn.length<=240)
+   selected.nameEn=patch.nameEn;
   if(typeof patch.desc==='string'&&patch.desc.length<=2000)
    selected.desc=patch.desc;
+  if(typeof patch.descEn==='string'&&patch.descEn.length<=2000)
+   selected.descEn=patch.descEn;
   if(typeof patch.kind==='string'&&allowedKinds.has(patch.kind))selected.kind=patch.kind;
   if(typeof patch.twoHanded==='boolean')selected.twoHanded=patch.twoHanded;
   if(plain(patch.classes))selected.classes=Object.fromEntries(

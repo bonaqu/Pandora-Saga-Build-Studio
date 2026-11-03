@@ -1416,7 +1416,8 @@ function renderPathPages(){
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
-function renderDetails(){const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
+let wikiOutsideCleanup=null;
+function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
 let wikiRenderSelected=null,wikiRenderedRoot=null,wikiBaseData=null;
 async function loadWiki(){
@@ -1504,6 +1505,25 @@ function renderWiki(root){
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
+ const outsidePickers=new Set();
+ const cleanupOutsidePickers=()=>{
+  for(const onOutside of outsidePickers)
+   document.removeEventListener('pointerdown',onOutside,true);
+  outsidePickers.clear();
+ };
+ const registerOutsidePicker=(panel,trigger=null)=>{
+  const onOutside=event=>{
+   if(!panel.isConnected||(!panel.contains(event.target)&&event.target!==trigger)){
+    document.removeEventListener('pointerdown',onOutside,true);
+    outsidePickers.delete(onOutside);
+    panel.remove();
+   }
+  };
+  outsidePickers.add(onOutside);
+  document.addEventListener('pointerdown',onOutside,true);
+ };
+ wikiOutsideCleanup=cleanupOutsidePickers;
+ let wikiResultsCache=null;
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['honor','Очки чести','Honor points'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{
@@ -1757,7 +1777,7 @@ function renderWiki(root){
   if(nameCache.has(key))return nameCache.get(key);
   const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):
    type==='chest'?wikiData.items?.[id]:wikiIndex.records(type)?.[id];
-  const en=(obj?.nameEn&&['map','npc','monster','skill','soul','instance'].includes(type)?obj.nameEn:null)||
+  const en=(obj?.nameEn&&['item','chest','map','npc','monster','skill','soul','instance'].includes(type)?obj.nameEn:null)||
    (type==='npc'&&obj?.virtual?obj.en:null)||
    (type==='map'?(officialEnglish?.maps?.[id]?.n||
    officialEnglish?.tradeMaps?.[id]?.n):officialEnglish?.[
@@ -1839,8 +1859,8 @@ function renderWiki(root){
    wikiIcon(dest,id,record),dest);
   if(record){
    const en=officialEnglish?.[hasSoul?'souls':'items']?.[id];
-   const resolved=lang==='en'?{...record,name:en?.n||record.name,
-    desc:en?.d||record.desc}:record;
+   const resolved=lang==='en'?{...record,name:record.nameEn||en?.n||record.name,
+    desc:record.descEn??en?.d??record.desc}:record;
    window.PandoraStageItemUI?.attachPreview(anchor,resolved,
     row=>wikiIcon(dest,id,row),hasSoul?'soul':'item');
   }
@@ -1874,12 +1894,7 @@ function renderWiki(root){
    try{await selectItem(Number(target.value))}
    catch(error){feedback.textContent=error.message;target.disabled=false}
   };
-  const outside=e=>{
-   if(!form.isConnected||!form.contains(e.target)){
-    document.removeEventListener('pointerdown',outside,true);form.remove();
-   }
-  };
-  document.addEventListener('pointerdown',outside,true);
+  registerOutsidePicker(form);
   fill();search.focus();
  };
  function wikiOwnerEntityList({label,items,existing,kind,onChange,limit=1000}){
@@ -1929,12 +1944,7 @@ function renderWiki(root){
     try{await onChange([...ids,select.value].map(idValue))}
     catch(e){feedback.textContent=e.message;select.disabled=false}
    };
-   const outside=e=>{
-    if(!panel.isConnected||(!panel.contains(e.target)&&e.target!==add)){
-     document.removeEventListener('pointerdown',outside,true);panel.remove()
-    }
-   };
-   document.addEventListener('pointerdown',outside,true);
+   registerOutsidePicker(panel,add);
    fill();search.focus();
   };
   container.append(add);
@@ -2092,12 +2102,7 @@ function renderWiki(root){
        try{await saveWikiAcquisitions(id,[...earlier,selected])}
        catch(error){target.disabled=false;feedback.textContent=error.message}
       };
-      const outside=event=>{
-       if(!panel.isConnected||(!panel.contains(event.target)&&event.target!==add)){
-        document.removeEventListener('pointerdown',outside,true);panel.remove();
-       }
-      };
-      document.addEventListener('pointerdown',outside,true);
+      registerOutsidePicker(panel,add);
       refresh();kind.focus();
      };
      detail.append(add);
@@ -2115,6 +2120,7 @@ function renderWiki(root){
    wikiSourceShown=80;wikiUsageShown=80;wikiSourceRecord=sourceKey;
   }
   if(!detailOnly)browse.replaceChildren();
+  cleanupOutsidePickers();
   detail.replaceChildren();
   const type=wikiSelection.type;
   const knownMaps=wikiIndex.records('map');
@@ -2157,19 +2163,30 @@ function renderWiki(root){
     if(picker)picker.value='all';
    }
   }
-  const results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id))
-   .filter(([,rec])=>{
-    if(type!=='item')return true;
-    if(!isVisibleItem(rec,wikiItemType))return false;
-    return ['all','elemental','utility'].includes(wikiItemType)||wikiItemEligibility==='all'||
-     heroCompatible(rec,state.level);
-   });
-  if(type==='map'&&!wikiSearch){
-   const geo=window.PandoraAstirLocations;
-   const rank=new Map([...(geo?.districtIds||[]),...(geo?.countryIds||[])]
-    .map((id,index)=>[id,index]));
-   results.sort((a,b)=>(rank.get(String(a[0]))??100)-
-    (rank.get(String(b[0]))??100));
+  const resultKey=JSON.stringify([type,wikiSearch,wikiItemType,wikiEffectFilter,
+   wikiElementFilter,wikiItemEligibility,state.level,state.job,state.race,
+   state.gender,lang]);
+  let results=wikiResultsCache?.index===wikiIndex&&
+   wikiResultsCache.equipment===catalog.equipment&&
+   wikiResultsCache.english===officialEnglish&&
+   wikiResultsCache.key===resultKey?wikiResultsCache.rows:null;
+  if(!results){
+   results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id))
+    .filter(([,rec])=>{
+     if(type!=='item')return true;
+     if(!isVisibleItem(rec,wikiItemType))return false;
+     return ['all','elemental','utility'].includes(wikiItemType)||wikiItemEligibility==='all'||
+      heroCompatible(rec,state.level);
+    });
+   if(type==='map'&&!wikiSearch){
+    const geo=window.PandoraAstirLocations;
+    const rank=new Map([...(geo?.districtIds||[]),...(geo?.countryIds||[])]
+     .map((id,index)=>[id,index]));
+    results.sort((a,b)=>(rank.get(String(a[0]))??100)-
+     (rank.get(String(b[0]))??100));
+   }
+   wikiResultsCache={index:wikiIndex,equipment:catalog.equipment,
+    english:officialEnglish,key:resultKey,rows:results};
   }
   // A source link outside the current search must clear that search, otherwise
   // the linked record opens in details but never appears in the browse list.
@@ -2229,6 +2246,8 @@ function renderWiki(root){
     ['item','chest'].includes(type)?'item.'+id:null;
    const heading=h('h3',{text:dataName(type,id),
     ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{}),
+    ...(adminEditing&&lang==='en'&&['item','chest'].includes(type)?
+     {'data-owner-record':'item:'+id,'data-owner-field':'nameEn'}:{}),
     ...(adminEditing&&(lang==='ru'||['npc','map','monster','soul','instance'].includes(type))&&
      ['monster','map','npc','instance','soul'].includes(type)||
      adminEditing&&lang==='en'&&type==='skill'?
@@ -2240,7 +2259,7 @@ function renderWiki(root){
     detail.append(h('p',{class:'wiki-owner-instruction',
      text:wt('✎ Подчёркнутые значения: двойной клик или F2 — изменить. При выходе из поля — автосохранение в Cloudflare D1.',
       '✎ Highlighted values: double-click or F2 to edit. Leaving the field saves automatically to Cloudflare D1.')}));
-    if(['map','monster','npc','skill','soul','instance'].includes(type))
+    if(['item','chest','map','monster','npc','skill','soul','instance'].includes(type))
      heading.tabIndex=0;
     if(['map','monster'].includes(type)&&
      (type==='map'&&window.PandoraWikiOwnerData.customMapId(id)||
@@ -2329,14 +2348,14 @@ function renderWiki(root){
     if(img)detail.prepend(img);
   }
   const described=type==='chest'?wikiData.items?.[id]:rec;
-  const englishDescription=lang==='en'?(rec?.descEn||officialEnglish?.[
+  const englishDescription=lang==='en'?(described?.descEn||rec?.descEn||officialEnglish?.[
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
   const rawDescription=englishDescription||described?.desc||'';
   const missingDescription=!rawDescription.trim()||
    /^Недоступно\s*\(не загружено\)$/i.test(rawDescription.trim());
   if(!missingDescription||
-   (adminEditing&&adminToken&&(lang==='ru'||['npc','map','monster','soul','skill'].includes(type))&&type!=='instance')){
+   (adminEditing&&adminToken&&(lang==='ru'||['item','chest','npc','map','monster','soul','skill'].includes(type))&&type!=='instance')){
    const text=rawDescription;
    const missing=missingDescription;
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
@@ -2345,6 +2364,9 @@ function renderWiki(root){
     missing?wt('Двойной клик — добавить описание','Double-click to add description'):
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
+    ...(adminEditing&&lang==='en'&&['item','chest'].includes(type)?
+     {'data-owner-record':'item:'+id,'data-owner-field':'descEn',
+      ...(missing?{'data-owner-empty':'true'}:{})}:{}),
     ...(adminEditing&&(lang==='ru'||['npc','map','monster','soul','instance'].includes(type))&&
      ['monster','map','npc','instance','soul'].includes(type)||
      adminEditing&&lang==='en'&&type==='skill'?
@@ -2696,12 +2718,7 @@ function renderWiki(root){
         catch(e){error.textContent=e.message;chooser.disabled=false}
        };
        panel.append(search,chooser,error);plus.after(panel);
-       const outside=e=>{
-        if(!panel.isConnected||(!panel.contains(e.target)&&e.target!==plus)){
-         document.removeEventListener('pointerdown',outside,true);panel.remove();
-        }
-       };
-       document.addEventListener('pointerdown',outside,true);
+       registerOutsidePicker(panel,plus);
        fill();search.focus();
       };
       list.append(plus);
@@ -5175,9 +5192,8 @@ function editor(el){
     ownerPlainTextField({multiline:true,rows:key.startsWith('skilldesc.')?5:3,
    class:'owner-plain-multiline','aria-label':'Редактируемый текст'});
   if(!visual)input.value=original;
-  const hint=h('p',{class:'inline-owner-key',text:key});
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
-  root.append(bar,hint);
+  root.append(bar);
   if(visual){
     const preview=h('img',{class:'inline-owner-preview',src:original,alt:'Предпросмотр'});
     input.addEventListener('input',()=>{if(allowedArtwork(input.value.trim()))preview.src=input.value.trim()});
@@ -5429,7 +5445,7 @@ function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000
  return node;
 }
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
- if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map','monster','skill','soul','instance'].includes(type)))return node;
+ if(!adminToken||!adminEditing||(lang!=='ru'&&!['item','chest','npc','map','monster','skill','soul','instance'].includes(type)))return node;
  node.classList.add('wiki-edit-value');
  // The delegated dblclick is the user's actual first gesture. Starting an
  // ondblclick listener here would silently require a SECOND double-click.
@@ -5442,8 +5458,10 @@ function wikiOwnerText(node,type,id,field,{multiline=false}={}){
 async function saveWikiItemField(id,field,value){
  if(!adminEditing||!adminToken||!catalogSource?.items?.[id])throw Error('Редактирование недоступно');
  const base=catalogSource.items[id],key='itemedit.'+id,previous=activeOverride(key);
+ const baseValue=field==='nameEn'?(base.nameEn||officialEnglish?.items?.[id]?.n||base.name):
+  field==='descEn'?(base.descEn??officialEnglish?.items?.[id]?.d??base.desc):base[field];
  const patch={...window.PandoraStudioItemOwnerEditor.ownPatch(override,id)};
- if(value===base[field]||(value===null&&base[field]==null))delete patch[field];
+ if(value===baseValue||(value===null&&baseValue==null))delete patch[field];
  else patch[field]=value;
  if(field==='kind'&&/^[12]H_/.test(value))patch.twoHanded=value.startsWith('2H_');
  const serialized=JSON.stringify(patch);
