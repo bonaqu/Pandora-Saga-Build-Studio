@@ -493,7 +493,8 @@ function buffsPage(body,options){
  select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
  const honor=section(english?'Honor':'Честь','honor');
  const honorTerm=make('span',{class:'stage-honor-term',text:english?'passive skill':'пассивное умение'});
- honor.firstChild.append(' · ',honorTerm);
+ const honorHeading=honor.firstChild||honor.children?.[0];
+ if(honorHeading)honorHeading.append(' · ',honorTerm);
  guideLabel(honorTerm,'buffs.honor',english?'passive skill':'пассивное умение',
   'passive skill',options);
  select(honor,english?'Honor passive skill':'Пассивное умение за честь',
