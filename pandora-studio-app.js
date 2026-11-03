@@ -1518,6 +1518,74 @@ function renderWiki(root){
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  guardEncyclopediaSearch(search);
  controls.append(categories,search);
+ // Add owner-authored monster cards without asserting a nonexistent OS numeric ID.
+ // Future-map reports can be linked to existing OR newly created encyclopedia cards.
+ const ownerMonsterIds=()=>new Set(Object.keys(wikiIndex?.records('monster')||{}));
+ const mapRoster=rec=>rec.roster||rec.reportedSpawns||[];
+ const persistRosterLink=async(mapId,entryId,monsterId)=>{
+  const rec=wikiIndex.records('map')?.[String(mapId)];
+  if(!rec)throw Error(wt('Локация не найдена','Location not found'));
+  const previous=mapRoster(rec);
+  if(!previous.some(row=>row.id===entryId))
+   throw Error(wt('Строка монстра не найдена','Monster entry not found'));
+  if(monsterId!=null&&!wikiIndex.records('monster')?.[String(monsterId)])
+   throw Error(wt('Карточка монстра отсутствует','Monster card not found'));
+  const next=previous.map(row=>row.id===entryId?{...row,monsterId}:row);
+  const referencedBefore=new Set(previous.map(row=>String(row.monsterId)).filter(x=>x!=='null'));
+  const extra=(rec.mobs||[]).filter(x=>!referencedBefore.has(String(x)));
+  const mobs=[...new Map([...extra,...next.map(row=>row.monsterId).filter(x=>x!=null)]
+   .map(x=>[String(x),x])).values()];
+  await saveWikiRecordPatch('map',mapId,{roster:next,mobs});
+ };
+ const createOwnerMonster=(button,{mapId=null,spawnId=null,name='',level=1}={})=>{
+  if(!adminEditing||!adminToken)return;
+  const parent=button.parentElement;
+  if(parent?.querySelector('.wiki-owner-monster-form'))return;
+  const form=h('div',{class:'wiki-owner-source-picker wiki-owner-monster-form'});
+  const ru=ownerPlainTextField({class:'wiki-inline-input',value:name,
+   'aria-label':wt('Название монстра RU','Monster name RU'),placeholder:'Название RU'});
+  const en=ownerPlainTextField({class:'wiki-inline-input',
+   'aria-label':wt('Название монстра EN','Monster name EN'),placeholder:'Name EN'});
+  const lvl=h('input',{type:'number',min:'1',max:'255',step:'1',
+   value:String(level),'aria-label':wt('Уровень монстра','Monster level'),
+   class:'wiki-inline-input wiki-owner-monster-level'});
+  const error=h('small',{class:'inline-owner-error',role:'status'});
+  const submit=h('button',{type:'button',class:'wiki-owner-plus',
+   text:wt('Сохранить монстра','Save monster'),onclick:async()=>{
+    const label=ru.value.trim(),english=en.value.trim(),num=Number(lvl.value);
+    if(!label||!english||label.length>240||english.length>240||
+      !Number.isInteger(num)||num<1||num>255){
+     error.textContent=wt('Нужны названия RU/EN и уровень 1–255',
+      'Both names and a level 1–255 are required');return;
+    }
+    let monsterId=null;
+    for(let attempt=0;attempt<8;attempt++){
+     const candidate='owner-monster-'+[...crypto.getRandomValues(new Uint8Array(8))]
+      .map(x=>x.toString(16).padStart(2,'0')).join('');
+     if(!ownerMonsterIds().has(candidate)&&
+       !Object.hasOwn(override,'wikiedit.monster.'+candidate)){
+      monsterId=candidate;break;
+     }
+    }
+    if(!monsterId){error.textContent=wt('Не удалось создать уникальный ID','No unique ID available');return}
+    submit.disabled=true;
+    try{
+     await saveWikiRecordPatch('monster',monsterId,{
+      name:label,nameEn:english,desc:'',descEn:'',level:num});
+     if(mapId&&spawnId)await persistRosterLink(mapId,spawnId,monsterId);
+     openWiki(mapId?'map':'monster',mapId||monsterId);
+    }catch(e){error.textContent=String(e.message||e);submit.disabled=false}
+   }});
+  const cancel=h('button',{type:'button',class:'wiki-owner-remove',
+   text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+  form.append(ru,en,lvl,submit,cancel,error);button.after(form);ru.focus();
+ };
+ if(adminEditing&&adminToken&&wikiSelection.type==='monster'){
+  const newMonster=h('button',{type:'button',class:'wiki-owner-plus wiki-monster-create',
+   text:wt('+ Создать монстра','+ Create monster')});
+  newMonster.onclick=()=>createOwnerMonster(newMonster);
+  controls.append(newMonster);
+ }
  if(adminEditing&&adminToken&&wikiSelection.type==='map'){
   const create=h('button',{type:'button',class:'wiki-owner-plus wiki-map-create',
    text:wt('+ Создать локацию','+ Create location')});
