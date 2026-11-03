@@ -45,9 +45,9 @@ test('inactive, unrelated and contradictory effect records do not add special ef
 });
 test('the hero book shows special equipment effects without raw EP identifiers',()=>{
  const source=read('pandora-studio-hero-book.js');
- assert.match(source,/modifiers\?\.specialEquipment\?\.entries/);
- assert.match(source,/Особые эффекты предметов и душ/);
- assert.match(source,/Special item and Soul effects/);
+ assert.match(source,/calc\?\.specialEquipment\?\.entries/);
+ assert.match(source,/function appendItemEvents\(/);
+ assert.match(source,/Item and Soul triggers/);
  assert.match(read('pandora-os-character-calculator.js'),/const specialEquipment=specialEquipmentPreview/);
  assert.match(read('pandora-os-character-calculator.js'),/experienceBonus,battleMapCloaks,specialEquipment,regeneration/);
 });

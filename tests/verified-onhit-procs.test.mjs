@@ -66,7 +66,7 @@ test('conflicting or unsupported proc chance sources are never presented as veri
 });
 test('on-hit previews use existing user-facing special effect UI, not physical combat totals',()=>{
  const ui=read('pandora-studio-hero-book.js'),source=read('pandora-os-character-calculator.js');
- assert.match(ui,/modifiers\?\.specialEquipment\?\.entries/);
+ assert.match(ui,/calc\?\.specialEquipment\?\.entries/);
  assert.match(source,/confirmedOnHitRules/);
  assert.match(source,/entries\.push\(\{code:effect\.func,source:String\(record\.name\|\|source\)/);
  assert.match(source,/verified:false/);

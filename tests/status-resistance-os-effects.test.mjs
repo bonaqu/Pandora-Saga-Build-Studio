@@ -36,8 +36,8 @@ test('incoming critical resistance uses negative modifier, not increased critica
 });
 test('book labels player-friendly status effects rather than exposing raw EP_* codes',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/Сопротивления состояниям/);
- assert.match(book,/rs\.status/);
+ assert.match(book,/Сопротивления отдельным состояниям/);
+ assert.match(book,/calc\.resistances\?\.status/);
  assert.match(book,/Заморозка/);
  assert.match(book,/Пробитие блока/);
 });
