@@ -291,49 +291,49 @@ function branchCap(branch){
  // No invented cap: when a game class is still loading, disable spending until real caps exist.
  return window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0;
 }
-function equipmentIssue(item,slot){
+function equipmentIssue(item,slot,snap=state){
  if(!item)return ['Предмет отсутствует в каталоге'];
  if(!window.PandoraEquipmentPlan.matchesEquipmentSlot(slot,item,slotKeys))
   return ['Предмет не подходит этому слоту'];
  const rules=window.PandoraStudioRules.equipment(item,{
-  slot:slotKeys[slot],job:jobKeys[state.job],level:state.level
+  slot:slotKeys[slot],job:jobKeys[snap.job],level:snap.level
  });
  const missing=[...rules.missing];
- if(!window.PandoraUIPlanner.raceCompatible(item,state.race,state.gender))
+ if(!window.PandoraUIPlanner.raceCompatible(item,snap.race,snap.gender))
   missing.push('Не подходит происхождению героя');
  if(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_'))
   missing.push('Это декоративный предмет');
  if(slot===1&&item.slot==='shield'){
-  const source=state.equipment?.[0];
+  const source=snap.equipment?.[0];
   const weapon=source&&catalog.equipment?.[String(source.id)];
   const usable=weapon&&window.PandoraStudioRules.equipment(weapon,{
-   slot:'weapon',job:jobKeys[state.job],level:state.level
-  }).allowed&&window.PandoraUIPlanner.raceCompatible(weapon,state.race,state.gender)&&
+   slot:'weapon',job:jobKeys[snap.job],level:snap.level
+  }).allowed&&window.PandoraUIPlanner.raceCompatible(weapon,snap.race,snap.gender)&&
    weapon.isCostumeOverlay!==true&&!String(weapon.kind||'').startsWith('DECO_');
   if(window.PandoraEquipmentPlan.occupiesOffhand(weapon,Boolean(usable)))
    missing.push('Двуручное оружие занимает обе руки');
  }
  return missing;
 }
-function trainedBranchMasteries(innate={}){
+function trainedBranchMasteries(innate={},snap=state){
  return Object.fromEntries(branches.map(({id})=>[
-  id,window.PandoraSkillProgression.groupAdeptness(state,[id],innate)
+  id,window.PandoraSkillProgression.groupAdeptness(snap,[id],innate)
  ]));
 }
-function previewBaseStats(){
- const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
- const baseClass=clazz?.baseClass||jobKeys[state.job];
- const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(state.stats[STATS[i]]||0)]));
+function previewBaseStats(snap=state){
+ const clazz=catalog.classes?.[jobKeys[snap.job]],raceKey=window.PandoraGameNavigation.raceKeys[snap.race];
+ const baseClass=clazz?.baseClass||jobKeys[snap.job];
+ const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(snap.stats[STATS[i]]||0)]));
  const records=[],gemSelections=[];
- for(const [slot,selection] of Object.entries(state.equipment||{})){
+ for(const [slot,selection] of Object.entries(snap.equipment||{})){
   const item=selection&&catalog.equipment?.[String(selection.id)];
-  if(!item||equipmentIssue(item,Number(slot)).length)continue;
-  const grade=window.PandoraEquipmentPlan.refinementValue(state.refinements,Number(slot),selection);
+  if(!item||equipmentIssue(item,Number(slot),snap).length)continue;
+  const grade=window.PandoraEquipmentPlan.refinementValue(snap.refinements,Number(slot),selection);
   records.push(['item:'+item.id,item,grade]);
   const gem=window.PandoraEnchantModel.normalizeForSlot(item.slot,
-   state.gems?.[window.PandoraEquipmentPlan.refinementKey(Number(slot),selection)]);
+   snap.gems?.[window.PandoraEquipmentPlan.refinementKey(Number(slot),selection)]);
   if(gem)gemSelections.push({slot:item.slot,itemId:item.id,grade,gem});
-  const souls=window.PandoraEquipmentPlan.asSocketArray(state.souls?.[slot]);
+  const souls=window.PandoraEquipmentPlan.asSocketArray(snap.souls?.[slot]);
   const capacity=window.PandoraEquipmentPlan.socketCapacity(item);
   for(let i=0;i<(window.PandoraEquipmentPlan.supportsSoulSlot(slotKeys[Number(slot)])?(capacity??0):0);i++){
    const soul=souls[i]&&catalog.souls?.[String(souls[i].id)];
@@ -342,40 +342,40 @@ function previewBaseStats(){
   }
  }
  const initialBranches=gameTables?.jobInit?.[baseClass]?.branches||{};
- const weaponSelection=state.equipment?.[0];
+ const weaponSelection=snap.equipment?.[0];
  const selectedWeapon=weaponSelection&&catalog.equipment?.[String(weaponSelection.id)]||null;
- const weapon=selectedWeapon&&!equipmentIssue(selectedWeapon,0).length?selectedWeapon:null;
+ const weapon=selectedWeapon&&!equipmentIssue(selectedWeapon,0,snap).length?selectedWeapon:null;
  const weaponGrade=weaponSelection&&weapon?
-  window.PandoraEquipmentPlan.refinementValue(state.refinements,0,weaponSelection):0;
+  window.PandoraEquipmentPlan.refinementValue(snap.refinements,0,weaponSelection):0;
  const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(
-  jobKeys[state.job],state,initialBranches);
+  jobKeys[snap.job],snap,initialBranches);
  // Remaked Status.Skill[0][0] + [1]: innate branch green mastery
  // PLUS additionally trained green; exclude blue Potential from this sum.
- const masteries=window.PandoraSkillProgression.combatMasteries(state,initialBranches);
+ const masteries=window.PandoraSkillProgression.combatMasteries(snap,initialBranches);
  // Pass every trained branch to the OS skill gates; future catalog skills
  // may require more than the original Slash mastery.
- const branchMasteries=trainedBranchMasteries(initialBranches);
- const ridingMastery=window.PandoraSkillProgression.groupAdeptness(state,['riding'],initialBranches);
- const wardingMastery=window.PandoraSkillProgression.groupAdeptness(state,['warding'],initialBranches);
+ const branchMasteries=trainedBranchMasteries(initialBranches,snap);
+ const ridingMastery=window.PandoraSkillProgression.groupAdeptness(snap,['riding'],initialBranches);
+ const wardingMastery=window.PandoraSkillProgression.groupAdeptness(snap,['warding'],initialBranches);
  const meleeMastery=masteries.melee;
  const benevolenceMastery=window.PandoraSkillProgression.groupAdeptness(
-  state,['benevolence'],initialBranches);
+  snap,['benevolence'],initialBranches);
  const legacyBuffMasteries=Object.fromEntries(['blessing','hymn','alchemy']
   .map(branch=>[branch,window.PandoraSkillProgression.groupAdeptness(
-   state,[branch],initialBranches)]));
- const guildLevel=Number(state.attributeBuffs?.guildLevel)||0;
+   snap,[branch],initialBranches)]));
+ const guildLevel=Number(snap.attributeBuffs?.guildLevel)||0;
  const unlocked=window.PandoraOSCalculator.guildPassiveAtLevel(guildLevel);
  const effectiveGuildBuffs={
   vitals:guildLevel>0&&unlocked?
-   {...state.vitalsBuffs,guildHp:unlocked.guildHp,guildMp:unlocked.guildMp}:
-   state.vitalsBuffs||{},
+   {...snap.vitalsBuffs,guildHp:unlocked.guildHp,guildMp:unlocked.guildMp}:
+   snap.vitalsBuffs||{},
   attributes:guildLevel>0&&unlocked?
-   {...state.attributeBuffs,guildLifeRecovery:unlocked.guildLifeRecovery,
-    guildManaRecovery:unlocked.guildManaRecovery}:state.attributeBuffs||{}
+   {...snap.attributeBuffs,guildLifeRecovery:unlocked.guildLifeRecovery,
+    guildManaRecovery:unlocked.guildManaRecovery}:snap.attributeBuffs||{}
  };
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
-  allocation,level:state.level,records,itemForth:gameItemForth,gemSelections,
+  allocation,level:snap.level,records,itemForth:gameItemForth,gemSelections,
   unisonCatalog:catalogSource?.unison||null,
   consumableItems:catalogSource?.items||null,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
@@ -385,15 +385,15 @@ function previewBaseStats(){
   // Normalize numeric-string legacy IDs through the same canonical owner list
   // used by the racial selection UI before *any* calculation runs.
   potionContext:{racialPassiveId:window.PandoraGameNavigation.canonicalRacialPassiveId(
-   catalog.racialPassives,state.race,state.racialPassiveId),
-   jobKey:jobKeys[state.job],meleeMastery},
+   catalog.racialPassives,snap.race,snap.racialPassiveId),
+   jobKey:jobKeys[snap.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
-   jobKey:jobKeys[state.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,wardingMastery,
+   jobKey:jobKeys[snap.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,wardingMastery,
    skillCatalog:catalog.skills||{},branchMasteries,
-   externalPriest:{enabled:state.attributeBuffs?.priestEnabled===true,
-    spi:state.attributeBuffs?.priestSpi||0,
-    blessing:state.attributeBuffs?.priestBlessing||0,
-    hymn:state.attributeBuffs?.priestHymn||0},...masteries}
+   externalPriest:{enabled:snap.attributeBuffs?.priestEnabled===true,
+    spi:snap.attributeBuffs?.priestSpi||0,
+    blessing:snap.attributeBuffs?.priestBlessing||0,
+    hymn:snap.attributeBuffs?.priestHymn||0},...masteries}
  });
 }
 function renderPotionPreview(calculated){
