@@ -718,8 +718,7 @@ function attackChapterGroups(calc){
   'Debuff application chance',combat.secondary?.debuffSuccess,'%');
  put(3,'racialAccuracy','Подавление гнева · эффект точности',
   'Anger Suppression · accuracy effect',combat.racialRate?.accuracy,'%');
- put(3,'racialDodge','Интуиция · эффект уклонения',
-  'Intuition · evasion effect',combat.racialRate?.dodge,'%');
+
  return groups.filter(g=>g.rows.length);
 }
 function defenseChapterGroups(calc){
@@ -737,12 +736,12 @@ function defenseChapterGroups(calc){
   if(row)groups[g].rows.push(row);
  };
  const a=calc.recoveryAmount,r=calc.regeneration;
- put(0,'hpRecoveryAmount','Восстановление ОЗ','HP recovery amount',a?.hp?.known);
- put(0,'mpRecoveryAmount','Восстановление ОМ','MP recovery amount',a?.mp?.known);
+ put(0,'hpRecoveryAmount','Восстановление ОЗ','HP recovery amount',a?.hp?.known,'',true);
+ put(0,'mpRecoveryAmount','Восстановление ОМ','MP recovery amount',a?.mp?.known,'',true);
  put(0,'hpRecoverySpeed','Скорость восстановления ОЗ',
-  'HP recovery speed',r?.hp?.total);
+  'HP recovery speed',r?.hp?.total,'',true);
  put(0,'mpRecoverySpeed','Скорость восстановления ОМ',
-  'MP recovery speed',r?.mp?.total);
+  'MP recovery speed',r?.mp?.total,'',true);
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
@@ -756,6 +755,8 @@ function defenseChapterGroups(calc){
   put(1,'resistStatus:'+key,statuses[key][0],statuses[key][1],value,'%',true);
  }
  const res=calc.resistances||{};
+ put(2,'racialDodge','Интуиция · эффект уклонения',
+  'Intuition · evasion effect',calc.combat?.racialRate?.dodge,'%');
  put(2,'reflection','Отражение физического урона',
   'Physical damage reflection',res.physicalReflection,'%');
  put(2,'incomingDebuffDuration','Изменение длительности входящих ослаблений',
