@@ -66,15 +66,19 @@ async function main(){
  assert.equal(await page.locator('#stageAttributes [data-book-page]').count(),6);
  await page.locator('#stageAttributes [data-book-page="attack"]').click();
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'attack');
- assert.equal(await page.locator('#stageBookPanel .stage-vital-formulas, #stageBookPanel .stage-combat-formulas').count(),0,
-  'No optional formula/explanation accordions in the player Hero Book');
- const attackResults=page.locator('#stageBookPanel .stage-combat-quick .stage-result-tile');
- assert.ok(await attackResults.count()>=8,'Attack chapter must keep compact final stat values');
- assert.match(await page.locator('#stageBookPanel .stage-combat-quick').innerText(),/Скорость атаки/);
- assert.doesNotMatch(await page.locator('#stageBookPanel').innerText(),/Показать расчёт по составляющим|Прямые бонусы атаки от вещей и душ/);
+ assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),0,
+  'Attack chapter must not repeat any of the 43 calculated results');
+ assert.equal(await page.locator('#stageBookPanel [data-chapter-stat="weaponPhysical"]').count(),1,
+  'Independent weapon damage belongs to Set.ATK, not total ATK');
+ assert.equal(await page.locator('#stageBookPanel .stage-combat-quick').count(),0);
+ assert.equal(await page.locator('#stageBookPanel .stage-active-elemental').count(),0,
+  'Conditional weapon procs appear only if such a weapon is equipped');
  await page.locator('#stageAttributes [data-book-page="attack"]').press('ArrowRight');
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'defense');
-  await page.locator('#stageAttributes [data-book-page="effects"]').click();
+  assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),0,
+  'Defense chapter must not repeat calculated DEF or evasion');
+ assert.equal(await page.locator('#stageBookPanel [data-chapter-stat="hpRecoveryAmount"]').count(),1);
+ await page.locator('#stageAttributes [data-book-page="effects"]').click();
   await page.locator('#stageAttributes .stage-periodic-recovery').waitFor({state:'visible',timeout:20000});
   await page.locator('#stageAttributes .stage-periodic-recovery summary').click();
   const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
@@ -90,19 +94,18 @@ async function main(){
  await hpOnly.locator('summary').click();
  assert.equal(await hpOnly.locator('.stage-potion-item').count(),12);
  assert.match(await hpOnly.innerText(),/Легкое исцеляющее зелье/);
- assert.equal(await page.locator('#stageAttributes .stage-status-cures').count(),0,
-  'Only HP/MP potions belong on the potions page');
- assert.equal(await page.locator('#stageAttributes .stage-consumable-skills').count(),0);
- await page.locator('#stageAttributes [data-book-page="effects"]').click();
  const statusCures=page.locator('#stageAttributes .stage-status-cures');
  await statusCures.waitFor({state:'visible',timeout:20000});
  await statusCures.locator('summary').click();
  assert.equal(await statusCures.locator('.stage-potion-item').count(),9);
  assert.match(await statusCures.innerText(),/Панацея/);
  assert.match(await statusCures.innerText(),/Противоядие/);
- assert.match(await statusCures.innerText(),/Заморозка/);
- assert.ok(await page.locator('#stageAttributes .stage-consumable-skills').count()>0,
-  'Skill activation items now belong to effects, not healing potions');
+ assert.ok(await page.locator('#stageAttributes .stage-consumable-skills').count()>0);
+ assert.equal(await page.locator('#stageAttributes .stage-result-tile').count(),0,
+  'Potion effects do not repeat potion-effectiveness total');
+ await page.locator('#stageAttributes [data-book-page="effects"]').click();
+ assert.equal(await page.locator('#stageBookPanel .stage-status-cures').count(),0);
+ assert.equal(await page.locator('#stageBookPanel .stage-consumable-skills').count(),0);
  await page.locator('#stageAttributes .stage-book-close').click();
  assert.equal(await page.locator('#stageAttributes').isHidden(),true);
 
@@ -112,6 +115,8 @@ async function main(){
  await page.locator('#hero').click();
  await page.locator('#stageAttributes [data-book-page="summary"]').waitFor({state:'visible'});
  assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Calculated results'),true);
+ assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),43);
+ assert.equal(await page.locator('#stageBookPanel .stage-result-section-head button').count(),0);
  assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
