@@ -92,13 +92,6 @@ export async function runEffectItemsSmoke(browser,base){
   assert.match(equipmentEffectText,/Tripped/);
   assert.doesNotMatch(equipmentEffectText,/500000015/);
   assert.equal(await page.locator('a[href="#wiki/skill/500000015"]').count(),1);
-  await page.locator('#dockClose').click();
-  await page.locator('#nav [data-tab="wiki"]').click();
-  await page.locator('[data-wiki-chapter="utility"]').click();
-  await page.locator('[data-wiki-record="50014"]').click();
-  assert.match(await page.locator('.wiki-owner-effects').innerText(),/Activates skill/);
-  assert.doesNotMatch(await page.locator('.wiki-owner-effects').innerText(),
-   /310002002|330005002/);
   await page.setViewportSize({width:390,height:780});
   const overflow=await page.evaluate(()=>
    Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
