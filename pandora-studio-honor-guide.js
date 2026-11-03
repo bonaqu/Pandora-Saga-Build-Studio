@@ -103,8 +103,8 @@ const intro=Object.freeze({
  currentEn:'Since October 23, 2026 on OS: “Honor” is spendable; “Total Honor” tracks lifetime earned Honor for ranks and leaderboards. Both can decrease on death.',
  ranksRu:'12 рангов. Обычные ранги требуют «Вся честь» и игровое золото. Высшие места определяются результатами прошлого месяца и действуют один месяц.',
  ranksEn:'12 ranks. Ordinary ranks require Total Honor and gold. Monthly top rankings use the previous month and last one month.',
- cloaksRu:'Награды по нации: Империя — Вечный плащ; Союз — Великолепный плащ; Королевство — Священный плащ (победителя, монарха или императора).',
- cloaksEn:'Nation rewards: Empire — Eternal, Confederation — Magnificent, Kingdom — Sacred cloaks (Victor, Monarch or Emperor tier).'
+ cloaksRu:'Топ-15 · Победитель: Империя — Вечный плащ победителя; Союз — Великолепный плащ победителя; Королевство — Священный плащ победителя.\nТоп-5 · Монарх: Империя — Вечный плащ монарха; Союз — Великолепный плащ монарха; Королевство — Священный плащ монарха.\nТоп-1 · Император: Империя — Вечный плащ императора; Союз — Великолепный плащ императора; Королевство — Священный плащ императора.',
+ cloaksEn:'Top 15 · Victor: Empire — Eternal Victor Cloak; Union — Magnificent Victor Cloak; Kingdom — Sacred Victor Cloak.\nTop 5 · Monarch: Empire — Eternal Monarch Cloak; Union — Magnificent Monarch Cloak; Kingdom — Sacred Monarch Cloak.\nTop 1 · Emperor: Empire — Eternal Emperor Cloak; Union — Magnificent Emperor Cloak; Kingdom — Sacred Emperor Cloak.'
 });
 const cleanPatch=(patch,allowed,max=600)=>{
  if(!patch||typeof patch!=='object'||Array.isArray(patch))return null;
