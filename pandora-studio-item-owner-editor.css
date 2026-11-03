@@ -411,7 +411,10 @@ body.studio-workbench-open #ownerDock .owner-dock-head .owner-dock-title{font-si
 
 /* The live encyclopedia occupies the workbench; move the editor controls to
    the upper edge so NPC creation/actions near the bottom remain clickable. */
-body.studio-workbench-open #ownerDock{top:76px;bottom:auto;max-height:min(53vh,470px)}
+body.studio-workbench-open #ownerDock{top:auto;bottom:12px;left:auto;right:12px;
+ max-height:min(43vh,430px)}
+body.studio-workbench-open #ownerDock.owner-dock-collapsed{width:min(255px,calc(100vw - 24px));
+ max-height:170px;}
 .owner-dock-head [data-owner-collapse]{margin-left:auto;padding:5px 8px;
  min-height:28px;font:600 10px Manrope,Arial,sans-serif;white-space:nowrap}
 .owner-dock-collapsed{width:min(270px,calc(100vw - 24px));gap:5px}
