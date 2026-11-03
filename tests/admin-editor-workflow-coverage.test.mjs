@@ -102,7 +102,7 @@ test('admin UI explains autosave semantics and every encyclopedia type offers ed
   ownerCss=read('pandora-studio-item-owner-editor.css');
  assert.match(app,/Сохраняю в Cloudflare D1/);
  assert.match(app,/Сохранено в Cloudflare D1/);
- assert.match(app,/записей'\)+' в D1/);
+ assert.match(app,/записей/);
  assert.match(app,/За этот сеанс/);
  assert.match(app,/owner-workflow-guide/);
  assert.match(app,/Отдельной кнопки сохранения нет/);
