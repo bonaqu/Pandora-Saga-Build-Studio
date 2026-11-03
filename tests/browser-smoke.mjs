@@ -109,7 +109,8 @@ async function main(){
  const statusCures=page.locator('#stageAttributes .stage-status-cures');
  await statusCures.waitFor({state:'visible',timeout:20000});
  await statusCures.locator('summary').click();
- assert.equal(await statusCures.locator('.stage-potion-item').count(),9);
+ assert.equal(await statusCures.locator('.stage-potion-item').count(),10);
+  assert.match(await statusCures.innerText(),/Чудесное зелье/);
  assert.match(await statusCures.innerText(),/Панацея/);
  assert.match(await statusCures.innerText(),/Противоядие/);
  assert.ok(await page.locator('#stageAttributes .stage-consumable-skills').count()>0);
