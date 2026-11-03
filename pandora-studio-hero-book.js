@@ -699,6 +699,18 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     ' · Гнёзда '+(rec.soulslot??'—')+' · +'+row.refinement}));
   }body.append(card);
  }
+ if(page==='effects'&&modifiers?.racialEffects?.survival){
+  const survival=modifiers.racialEffects.survival;
+  const english=document.documentElement?.lang==='en';
+  const card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:english?'Dwarven racial survival':'Расовая стойкость дворфа'}),
+   make('p',{text:(english?'Stronghearted: ':'Упрямое сердце: ')+
+    survival.chance+(english?'% chance in the source skill':'% шанс по данным навыка')}),
+   make('p',{class:'stage-attribute-note',text:english?
+    'A conditional effect, not permanent HP, armor or guaranteed survival. The live combat trigger has not been independently verified.':
+    'Это условный эффект, не постоянные ОЗ, броня или гарантированное спасение. Точный триггер в игровом бою отдельно не подтверждён.'}));
+  body.prepend(card);
+ }
  if(page==='effects'){
   const english=document.documentElement?.lang==='en';
   if(modifiers?.battleMapCloaks?.entries?.length){
@@ -946,6 +958,17 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    make('p',{class:'stage-attribute-note',text:english?
     'The game publishes this base distance. Equipment bonuses and mounted/skill modifiers have not been added.':
     'Это базовая дистанция из игрового каталога. Бонусы вещей, верховой езды и навыков не суммировались.'}));
+  body.prepend(card);
+ }
+ if(page==='attack'&&modifiers?.attackRange?.racialGeneral){
+  const range=modifiers.attackRange,english=document.documentElement?.lang==='en';
+  const card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:english?'Elven racial range bonus':'Расовая дальность эльфа'}),
+   make('p',{text:(english?'Sharpsight: +':'Зоркость: +')+range.racialGeneral+
+    (english?' range units':' единиц дальности')}),
+   make('p',{class:'stage-attribute-note',text:english?
+    'Skill 900020002 publishes matching RANGE and CARRY values; this is one passive bonus, not their sum. The server\'s final weapon-range stacking is not yet verified.':
+    'Навык 900020002 содержит одинаковые RANGE и CARRY: это один расовый бонус, а не их сумма. Итоговый порядок расчёта дальности оружия сервером ещё не подтверждён.'}));
   body.prepend(card);
  }
  if(page==='attack'&&modifiers?.attackRange?.entries?.length){

@@ -1119,11 +1119,44 @@ function experienceBonusPreview({records=[],itemForth=null}={}){
  return {entries,verified:false};
 }
 
+// Only selected, source-identical OS racial passives. The live skill catalog
+// is required: if an effect changes, do not silently keep a stale constant.
+// An EP_RACE_CARRY pair is metadata, never an extra range bonus. Conditional
+// survivability is a skill-source preview, never guaranteed HP or block.
+function racialUtilityPreview({racialPassiveId=null,skillCatalog=null}={}){
+ if(!skillCatalog||typeof skillCatalog!=='object')return null;
+ const rule=racialPassiveId===900020002?
+  {id:900020002,eps:['EP_RACE_RANGE','EP_RACE_CARRY']}:racialPassiveId===900030001?
+  {id:900030001,eps:['EP_RACE_TOUGH_HEART']}:null;
+ if(!rule)return null;
+ const skill=skillCatalog[String(rule.id)];
+ if(skill?.id!==rule.id||skill.skillType!=='PASSIVE'||
+  !Array.isArray(skill.funcs))return null;
+ const values={};
+ for(const ep of rule.eps){
+  const matches=skill.funcs.filter(f=>f.ep===ep&&f.dir==='TARGET');
+  if(matches.length!==1||!Array.isArray(matches[0].fv1)||
+   matches[0].fv1.length<4||!Number.isFinite(matches[0].fv1[3])||
+   matches[0].fv1[3]<0)return null;
+  values[ep]=matches[0].fv1[3];
+ }
+ if(rule.id===900020002){
+  // Both fields are separately emitted by OS. They describe the same
+  // selected passive, not two independent additions to shooting distance.
+  if(values.EP_RACE_RANGE!==values.EP_RACE_CARRY)return null;
+  return {id:rule.id,range:{general:values.EP_RACE_RANGE,
+   carry:values.EP_RACE_CARRY},survival:null,verified:false};
+ }
+ return {id:rule.id,range:null,
+  survival:{chance:values.EP_RACE_TOUGH_HEART,
+   trigger:'conditional survival',verified:false},verified:false};
+}
+
 // These two OS effects are explicit additions to attack/bow range, not
 // complete weapon range formulas. Their paired *_CARRY effects are separate
 // server fields and must not silently double the displayed distance bonus.
 const rangeEffectKeys=Object.freeze({EP_RACE_RANGE:'general',EP_BOW_RANGE:'bow'});
-function attackRangePreview({records=[],itemForth=null,weapon=null}={}){
+function attackRangePreview({records=[],itemForth=null,weapon=null,racialEffects=null}={}){
  if(!Array.isArray(records))return null;
  const totals={general:0,bow:0},entries=[];
  for(const [source,record,grade] of records){
@@ -1146,6 +1179,10 @@ function attackRangePreview({records=[],itemForth=null,weapon=null}={}){
  const validWeapon=weapon?.slot==='weapon'&&
   Number.isFinite(weapon.range)&&weapon.range>0;
  return {...totals,entries,
+  // Keep source-backed race bonus separate from equipment totals and from
+  // weapon.range: the final combat-engine stage is not yet verified.
+  racialGeneral:racialEffects?.range?.general??0,
+  racialCarry:racialEffects?.range?.carry??0,
   baseMelee:validWeapon&&!ranged?weapon.range:null,
   baseRanged:validWeapon&&ranged?weapon.range:null,
   baseOnly:validWeapon,verified:false};
@@ -1919,8 +1956,12 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   resistances.gemstones={...gemstones.resistance};
  }
  const auraDamage=auraDamagePreview({gemstones,records:combinedRecords,itemForth});
+ const racialEffects=racialUtilityPreview({
+  racialPassiveId:potionContext?.racialPassiveId,
+  skillCatalog:combatContext.skillCatalog
+ });
  const attackRange=attackRangePreview({records:combinedRecords,itemForth,
-  weapon:combatContext.weapon});
+  weapon:combatContext.weapon,racialEffects});
  const elementalMagic=elementalMagicPreview({honorTitle:extra.honor.id});
  const mountedRelease=mountedReleasePreview({jobKey:combatContext.jobKey,
   ridingMastery:combatContext.ridingMastery??0,honorTitle:extra.honor.id});
@@ -1985,7 +2026,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,elementalMagic,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -1993,6 +2034,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
