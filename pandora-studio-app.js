@@ -5192,7 +5192,6 @@ function editor(el){
     ownerPlainTextField({multiline:true,rows:key.startsWith('skilldesc.')?5:3,
    class:'owner-plain-multiline','aria-label':'Редактируемый текст'});
   if(!visual)input.value=original;
-  const hint=h('p',{class:'inline-owner-key',text:key});
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
   root.append(bar,hint);
   if(visual){
