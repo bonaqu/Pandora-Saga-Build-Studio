@@ -358,7 +358,7 @@ function summaryPage(body,calc,options={}){
   make('strong',{text:en?'Calculated results':'Результаты расчёта'})
  ]));
  const format=new Intl.NumberFormat(en?'en-US':'ru-RU',{maximumFractionDigits:2});
- let summaryIndex=0;
+ let summaryIndex=0,summaryGroupIndex=0;
  for(const group of summaryRows(calc)){
   const section=make('section',{class:'stage-result-section',
    'data-result-group':group.page});
@@ -368,7 +368,7 @@ function summaryPage(body,calc,options={}){
    make('span',{class:'stage-result-symbol','aria-hidden':'true',text:group.symbol}),
    make('strong',{text:en?group.en:group.ru})
   ]);
-  guideLabel(heading.lastChild,'summary.group.'+group.page,group.ru,group.en,options);
+  guideLabel(heading.lastChild,'summary.group.'+summaryGroupIndex++,group.ru,group.en,options);
   const grid=make('div',{class:'stage-result-grid'});
   for(const result of group.rows){
    const text=Number.isFinite(result.value)?format.format(result.value)+result.unit:'—';
@@ -418,8 +418,8 @@ function buffsPage(body,options){
  let sectionIndex=0;
  const section=(name,stableId=null)=>{
   const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
-  guideLabel(node.firstChild,'buffs.section.'+(stableId||sectionIndex++),
-   name,name,options,name,name);
+  guideLabel(node.firstChild,stableId==='guild'?'buffs.guild':
+   'buffs.section.'+(stableId||sectionIndex++),name,name,options,name,name);
   body.append(node);
   return node;
  };
@@ -836,7 +836,8 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
   for(const row of group.rows){
    const entry=make('div',{class:'stage-chapter-entry','data-chapter-stat':row.key},[
     make('span',{text:english?row.en:row.ru}),
-    make('strong',{text:number.format(row.value)+row.unit})
+    make('strong',{text:number.format(row.value)+
+     (row.unit===' инд.'?(english?' idx':' инд.'):row.unit)})
    ]);
    guideLabel(entry.firstChild,(options.page||'attack')+'.'+row.key,
     row.ru,row.en,options);
