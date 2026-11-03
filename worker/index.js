@@ -531,9 +531,9 @@ function validWikiOwnerPatch(text,type){
   monster:['name','nameEn','desc','descEn','loot','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
   map:['name','nameEn','desc','descEn','notesRu','notesEn','mobs',...mapExtraNames],
   npc:['name','nameEn','desc','descEn','maps','service','serviceEn','grid'],
-  instance:['name','blurb','blurbRu','mobs'],
-  skill:['name','desc','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
-  soul:['name','desc','price','slots']
+  instance:['name','nameEn','blurb','blurbRu','mobs'],
+  skill:['name','nameEn','desc','descEn','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
+  soul:['name','nameEn','desc','descEn','price','slots']
  };
  const keys=Object.keys(data),allowed=fields[type]||[];
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
