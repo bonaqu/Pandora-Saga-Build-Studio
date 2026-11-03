@@ -30,7 +30,7 @@ test('a planned level-55 hero exposes magic honor without changing attack spells
 });
 test('book keeps physical weapon damage separate and renders elemental honor bonuses',()=>{
  const view=read('pandora-studio-hero-book.js');
- assert.match(view,/Усиление стихийной магии/);
- assert.match(view,/modifiers\.elementalMagic/);
- assert.match(view,/labels\[element\]/);
+ assert.match(view,/Стихийная магия/);
+ assert.match(view,/calc\.elementalMagic/);
+ assert.match(view,/elementTerms\[key\]/);
 });

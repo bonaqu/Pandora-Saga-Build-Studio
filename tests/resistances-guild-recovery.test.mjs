@@ -75,9 +75,9 @@ test('invalid guild indices cannot create fake recovery or contaminate shared bu
 });
 test('technical methodology remains admin-only, without cluttering the player book',()=>{
  const stage=read('pandora-studio-hero-book.js');
- assert.match(stage,/regen\.hp\?\.total/);
- assert.match(stage,/const isAdmin=root\.PandoraStudioAdminActive\?\.\(\)===true/);
- assert.match(stage,/if\(isAdmin&&details\.children\.length>1\)body\.append\(details\)/);
- assert.match(stage,/modifiers\?\.regeneration/);
- assert.match(stage,/modifiers\?\.resistances/);
+ assert.match(stage,/r\?\.hp\?\.total/);
+ assert.doesNotMatch(stage,/stage-methodology/);
+ assert.match(stage,/function defenseChapterGroups\(calc\)/);
+ assert.match(stage,/const a=calc\.recoveryAmount,r=calc\.regeneration/);
+ assert.match(stage,/calc\.resistances\?\.status/);
 });

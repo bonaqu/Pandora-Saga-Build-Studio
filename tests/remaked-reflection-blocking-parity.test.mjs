@@ -34,6 +34,6 @@ test('reflect and block resistance are independent of HP and core armor',()=>{
 });
 test('book displays blocking resistance and melee reflection',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/blockBreak:'Пробитие блока'/);
- assert.match(book,/Отражение ближнего физического урона/);
+ assert.match(book,/blockBreak:\['Пробитие блока','Block break'\]/);
+ assert.match(book,/Отражение физического урона/);
 });

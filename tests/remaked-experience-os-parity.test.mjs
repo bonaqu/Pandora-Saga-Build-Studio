@@ -24,6 +24,6 @@ test('experience is shown as a separate Hero Book effect rather than added to da
  const app=read('pandora-os-character-calculator.js'),stage=read('pandora-studio-hero-book.js');
  assert.match(app,/experienceBonus=experienceBonusPreview\(\{records:combinedRecords,itemForth\}\)/);
  assert.match(app,/procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration/);
- assert.match(stage,/Бонус к получаемому опыту/);
- assert.match(stage,/modifiers\?\.experienceBonus\?\.entries\?\.length/);
+ assert.match(stage,/Бонусы к опыту/);
+ assert.match(stage,/calc\?\.experienceBonus\?\.entries/);
 });
