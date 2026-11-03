@@ -145,7 +145,7 @@ test('authenticated D1 Worker saves and resets Honor copy, lists and historical 
 });
 test('Worker advertises installed guide editing API without exposing admin edits',async()=>{
  const response=await worker.fetch(new Request(
-  'https://ps-build-studio-cloud.bonaqu.workers.dev/api/runtime-capabilities'),{});
+  'https://ps-build-studio-cloud.bonaqu.workers.dev/api/runtime-capabilities'),{DB:{}});
  assert.equal(response.status,200);
  const info=await response.json();
  assert.equal(info.codeRelease,'0.343.0');
