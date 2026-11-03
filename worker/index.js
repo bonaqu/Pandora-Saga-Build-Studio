@@ -502,7 +502,7 @@ function validWikiOwnerPatch(text,type){
  if(!data||typeof data!=='object'||Array.isArray(data))return false;
  const fields={
   monster:['name','desc','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
-  map:['name','nameEn','desc','descEn','mobs',...mapExtraNames],
+  map:['name','nameEn','desc','descEn','notesRu','notesEn','mobs',...mapExtraNames],
   npc:['name','nameEn','desc','descEn','maps','service','serviceEn','grid'],
   instance:['name','blurb','blurbRu','mobs'],
   skill:['name','desc','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
@@ -516,7 +516,7 @@ function validWikiOwnerPatch(text,type){
   new Set(value.map(String)).size===value.length&&value.every(validId);
  return keys.every(key=>{
   const v=data[key];
-  if(['name','nameEn','desc','descEn','blurb','blurbRu','service','serviceEn','grid'].includes(key))
+  if(['name','nameEn','desc','descEn','blurb','blurbRu','service','serviceEn','grid','notesRu','notesEn'].includes(key))
    return typeof v==='string'&&v.length<=2000&&
     (!['name','nameEn'].includes(key)||!!v.trim());
   if(key==='resists')return v&&typeof v==='object'&&!Array.isArray(v)&&
@@ -549,7 +549,7 @@ function validTownWikiPatch(text,type,id){
  let patch;try{patch=JSON.parse(text)}catch{return false}
  if(!patch||typeof patch!=='object'||Array.isArray(patch))return false;
  const ownerMap=['el-beht','astir-underground'].includes(id)||id.startsWith('custom-');
- const allowed=type==='map'?['name','nameEn','desc','descEn',...mapExtraNames,'mobs']:
+ const allowed=type==='map'?['name','nameEn','desc','descEn','notesRu','notesEn',...mapExtraNames,'mobs']:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  const keys=Object.keys(patch);
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
@@ -561,7 +561,7 @@ function validTownWikiPatch(text,type,id){
    k==='mobs'?Array.isArray(patch.mobs)&&patch.mobs.length<=120&&
     new Set(patch.mobs).size===patch.mobs.length&&patch.mobs.every(
      n=>Number.isSafeInteger(n)&&n>0):
-   typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')?2000:240)&&
+   typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')||k.startsWith('notes')?2000:240)&&
     (!['name','nameEn'].includes(k)||!!patch[k].trim()));
 }
 // Server gate for admin-owned Hero Book / Honor prose and repeatable lists.
