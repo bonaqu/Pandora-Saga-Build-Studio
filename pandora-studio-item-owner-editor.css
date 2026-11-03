@@ -436,3 +436,8 @@ body.studio-workbench-open #ownerDock.owner-dock-collapsed{width:min(255px,calc(
 .wiki-effect-usage-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:100%}
 .wiki-effect-usage .wiki-link{overflow-wrap:anywhere}
 .wiki-effect-cure-note{border-left:3px solid #a0b99c;padding-left:10px}
+
+/* Verification notes stay distinct from confirmed effects and recipe quantities. */
+.wiki-effect-review-note{border-left:3px solid #bd9c64;padding-left:10px}
+.wiki-effect-quantity{font-variant-numeric:tabular-nums;white-space:nowrap;
+ color:#e6c79b;font-size:11px;letter-spacing:.02em}

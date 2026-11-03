@@ -28,7 +28,7 @@ test('catalogue classification follows verified effect codes, not the item name 
  assert.deepEqual(classify(future),['harmful']);
  assert.deepEqual(classify({...future,name:'Ядовитый корень',effects:[]}),[]);
  assert.deepEqual(classify({...future,slot:'weapon'}),[]);
- assert.deepEqual(classify({...future,kind:'ETC'}),[]);
+ assert.deepEqual(classify({...future,kind:'ETC'}),['harmful']);
  assert.deepEqual(classify({...future,effects:[{func:'EP_DESTINED_POISON',dir:'CASTER',a:50}]}),[]);
  assert.deepEqual(classify({...future,effects:[{func:'EP_ONHIT_STUN',dir:'TARGET',a:50}]}),[]);
  assert.deepEqual(classify({...future,effects:[{func:'EP_DESTINED_POISON',dir:'TARGET',a:50},
@@ -53,7 +53,7 @@ test('encyclopedia exposes localized negative effects filter and a truthful on-u
 
 
 test('all source-backed reusable effect items are categorized without duplicate UI records',()=>{
- const result={buff:[],cure:[],harmful:[],recovery:[],other:[]};
+ const result={buff:[],cure:[],harmful:[],recovery:[],other:[],review:[]};
  for(const [id,item]of Object.entries(items))
   for(const category of classify(item))result[category].push(Number(id));
  assert.equal(result.harmful.length,2);
@@ -64,6 +64,7 @@ test('all source-backed reusable effect items are categorized without duplicate 
  assert.equal(result.recovery.length,20);
  assert.equal(result.buff.length,56,'36 skill buffs and 20 healing items');
  assert.equal(result.other.length,5,'Cosmetic cake, two teleports and two reset scrolls');
+ assert.deepEqual(result.review,[],'Current OS source effects are all resolved');
  assert.deepEqual(classify(items[50066]),['other']);
  assert.deepEqual(classify(items[90021]),['other']);
  assert.deepEqual(classify(items[50023]),['cure','buff','recovery']);
@@ -118,4 +119,61 @@ test('effects and related wiki links remain bilingual and distinct from loot box
  assert.match(app,/EP_CAUSE_POISON/);
  assert.match(app,/EP_RECOVERY_POISON/);
  assert.match(app,/EP_REMOVE_BAD_EFFECT/);
+});
+
+test('unverified future skills are not silently treated as positive buffs',()=>{
+ const make=a=>({kind:'POTION',slot:null,effects:[{
+  dir:'TARGET',func:'EP_SKILL_EXEC',a}]});
+ assert.deepEqual(root.PandoraWikiData.utilityCategories(make(99990003),skills),['review']);
+ const future={
+  '99990003':{id:99990003,name:'Future poison ability',
+   funcs:[{dir:'TARGET',ep:'EP_CAUSE_POISON',fv1:[0,0,0,100]}]},
+  '99990004':{id:99990004,name:'Future mystery',
+   funcs:[{dir:'TARGET',ep:'EP_UNKNOWN_GAME_EFFECT',fv1:[0,0,0,100]}]},
+  '99990005':{id:99990005,name:'Future positive',
+   funcs:[{dir:'TARGET',ep:'EP_MAXLIFE_CONST',fv1:[0,0,0,250]}]},
+  '99990006':{id:99990006,name:'Negative value',
+   funcs:[{dir:'TARGET',ep:'EP_MAXLIFE_CONST',fv1:[0,0,0,-250]}]}
+ };
+ assert.deepEqual(root.PandoraWikiData.utilityCategories(make(99990003),future),['harmful']);
+ assert.deepEqual(root.PandoraWikiData.utilityCategories(make(99990004),future),['review']);
+ assert.deepEqual(root.PandoraWikiData.utilityCategories(make(99990005),future),['buff']);
+ assert.deepEqual(root.PandoraWikiData.utilityCategories(make(99990006),future),['review']);
+ assert.deepEqual(root.PandoraWikiData.utilityCategories({
+  kind:'ETC',effects:[{dir:'TARGET',func:'EP_WHATEVER',a:4}]},future),['review']);
+ assert.deepEqual(root.PandoraWikiData.utilityCategories({
+  kind:'TOY',effects:[{dir:'TARGET',func:'EP_RANDOM_BOX'}]},future),[]);
+});
+test('all current on-use source effects are accounted for or belong to loot containers',()=>{
+ const effects=Object.entries(items).filter(([,item])=>item.slot==null&&
+  Array.isArray(item.effects)&&item.effects.length);
+ const classified=effects.filter(([,item])=>classify(item).length);
+ const containers=effects.filter(([,item])=>!classify(item).length);
+ assert.equal(effects.length,107);
+ assert.equal(classified.length,71);
+ assert.equal(containers.length,36);
+ for(const [id,item]of containers)
+  assert.deepEqual(item.effects.map(e=>e.func),['EP_RANDOM_BOX'],
+   id+' must really be a loot container, not an overlooked potion');
+});
+test('game has a separate non-learnable Poison skill besides weapon coating and Infect',()=>{
+ const poison=skills['500000004'],strike=skills['430052001'];
+ assert.equal(poison.name,'Яд');
+ assert.equal(poison.learnable,false);
+ assert.ok(poison.funcs.some(f=>f.ep==='EP_CAUSE_POISON'));
+ assert.ok(strike.funcs.some(f=>f.ep==='EP_CAUSE_POISON'));
+ assert.ok(items[50022].effects.some(f=>f.func==='EP_DESTINED_POISON'));
+ assert.ok(items[50056].effects.some(f=>f.func==='EP_DESTINED_POISON'));
+ assert.notEqual(poison.id,skills['220001001'].id,'the weapon-coating Яд is a different skill');
+});
+test('source-based recipes preserve quantities and every venom consuming skill',()=>{
+ const links=root.PandoraWikiData.itemSkillRelations(50022,skills);
+ const craft=links.find(link=>link.id==='220002001');
+ assert.deepEqual(craft.consumedQuantities,{'50022':1,'65011':1});
+ assert.deepEqual(craft.producedQuantities,{'50056':1});
+ const venom=root.PandoraWikiData.itemSkillRelations(50056,skills);
+ assert.deepEqual(venom.filter(link=>link.consumes.includes(50056)).map(x=>x.id),
+  ['220001001','220001003','220006001']);
+ for(const link of venom.filter(link=>link.consumes.includes(50056)))
+  assert.equal(link.consumedQuantities['50056'],1);
 });

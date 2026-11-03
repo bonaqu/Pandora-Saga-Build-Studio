@@ -36,6 +36,11 @@ export async function runEffectItemsSmoke(browser,base){
   const poisonDetails=(await page.locator('.wiki-effect-usage').allInnerTexts()).join(' ');
   assert.match(poisonDetails,/Создание яда/);
   assert.match(poisonDetails,/Яд/);
+  assert.match(poisonDetails,/Скороговорка/);
+  assert.match(poisonDetails,/техническая запись «Яд»/);
+  assert.match(poisonDetails,/×1/);
+  assert.equal(await page.locator('a[href="#wiki/skill/500000004"]').count(),1,
+   'Technical Poison skill must open as a separate verified wiki record');
   await selectGroup('cure');
   assert.equal(await page.locator('[data-wiki-record]').count(),10);
   for(const id of ['50016','50057','50065'])
@@ -59,10 +64,14 @@ export async function runEffectItemsSmoke(browser,base){
    assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),1,id);
   // The detail panel is a modal and intentionally blocks the header.
   // Close it through the real UI before switching the site language.
+  await selectGroup('review');
+  assert.equal(await page.locator('[data-wiki-record]').count(),0);
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-effect-type').waitFor({state:'visible'});
+  assert.equal(await page.locator('.wiki-effect-type option:checked').innerText(),'Needs verification');
+  await page.locator('.wiki-effect-type').selectOption('other');
   assert.equal(await page.locator('.wiki-effect-type option:checked').innerText(),'Other usable items');
   await page.locator('.wiki-effect-type').selectOption('harmful');
   assert.equal(await page.locator('[data-wiki-record]').count(),2);
