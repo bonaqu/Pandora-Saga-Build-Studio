@@ -315,62 +315,6 @@ function summaryRows(calc){
  ];
 }
 
-function vitalFormulaRows(calc){
- const rows=[];
- for(const [key,ru,en] of [['hp','ОЗ','HP'],['mp','ОМ','MP']]){
-  const formula=calc?.vitalFormulas?.[key],bonus=calc?.vitalsBonus?.[key];
-  if(!formula||!bonus||!Array.isArray(bonus.percentParts))continue;
-  if(![formula.constant,formula.levelRate,formula.attributeRate,formula.level,
-   formula.attribute,formula.rawCents,formula.base,bonus.flat,bonus.guildRate,
-   bonus.guild,bonus.lifeSign,bonus.total,calc?.[key],calc?.[key+'Base']]
-   .every(Number.isFinite))continue;
-  if(!bonus.percentParts.every(row=>Number.isFinite(row?.rate)&&
-   Number.isFinite(row?.amount)))continue;
-  const parts=[
-   {ru:'Плоские бонусы',en:'Flat bonuses',amount:bonus.flat},
-   ...bonus.percentParts.map((part,i)=>({
-    ru:'Процентный бонус '+(i+1)+' ('+part.rate+'%)',
-    en:'Percentage bonus '+(i+1)+' ('+part.rate+'%)',amount:part.amount
-   })),
-   {ru:'Гильдия ('+bonus.guildRate+'%)',
-    en:'Guild ('+bonus.guildRate+'%)',amount:bonus.guild},
-   ...(key==='hp'?[{ru:'Знак жизни',en:'Sign of Life',amount:bonus.lifeSign}]:[])
-  ];
-  const sum=parts.reduce((acc,part)=>acc+part.amount,0);
-  if(Math.floor(formula.rawCents/100)!==formula.base||
-   formula.base!==calc[key+'Base']||sum!==bonus.total||
-   formula.base+bonus.total!==calc[key])continue;
-  rows.push({key,ru,en,formula,parts,total:calc[key],bonus:bonus.total});
- }
- return rows;
-}
-function appendVitalFormulas(section,calc,english){
- const rows=vitalFormulaRows(calc);
- if(!rows.length)return;
- const fmt=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:2});
- const signed=value=>(value>0?'+':'')+fmt.format(value);
- const details=make('details',{class:'stage-attribute-row stage-vital-formulas'});
- details.append(make('summary',{text:english?
-  'How HP and MP are calculated':'Как рассчитываются ОЗ и ОМ'}));
- for(const entry of rows){
-  const f=entry.formula,name=english?entry.en:entry.ru;
-  details.append(make('strong',{text:name}));
-  details.append(make('p',{text:(english?'Class base: floor(':'База класса: ⌊')+
-   fmt.format(f.constant)+' + '+f.level+' × '+fmt.format(f.levelRate)+
-   ' + '+f.attribute+' × '+fmt.format(f.attributeRate)+
-   (english?') = ':'⌋ = ')+fmt.format(f.base)}));
-  for(const part of entry.parts){
-   if(part.amount===0)continue;
-   details.append(make('p',{text:(english?part.en:part.ru)+': '+signed(part.amount)}));
-  }
-  details.append(make('p',{text:name+': '+fmt.format(f.base)+' '+
-   signed(entry.bonus)+' = '+fmt.format(entry.total)}));
- }
- details.append(make('small',{class:'stage-attribute-note',text:english?
-  'Class coefficients use integer hundredths. Each percentage bonus is rounded down independently. These are calculated build values, not proof of complete live-server parity.':
-  'Коэффициенты класса считаются в сотых. Каждый процентный бонус округляется вниз отдельно. Это расчёт билда, а не доказательство полной идентичности живому серверу.'}));
- section.append(details);
-}
 function summaryPage(body,calc,onPage){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
   text:document.documentElement?.lang==='en'?'Stats appear after game data loads.':'Параметры появятся после загрузки игровых данных.'}));return}
@@ -399,21 +343,6 @@ function summaryPage(body,calc,onPage){
    ]));
   }
   section.append(heading,grid);
-  if(group.ru==='Жизнь и восстановление')appendVitalFormulas(section,calc,english);
-  if(group.page==='attack'&&calc?.combat){
-   section.append(make('small',{class:'stage-attribute-note',text:english?
-    'Front accuracy and cast time use Remaked baseline calculations; positional equipment and active casting effects are not fully verified for OS.':
-    'Точность спереди и время каста рассчитаны по базовым правилам Remaked; отдельные позиционные бонусы и активные эффекты OS ещё не полностью проверены.'}));
-  }
-  if(group.ru==='Защита'&&calc?.combat?.rangedEvasion){
-   section.append(make('small',{class:'stage-attribute-note',text:english?
-    'Ranged evasion includes the original Remaked Honor bonus. Other OS conditional bonuses are not yet verified.':
-    'Уклонение от дальних атак включает исторический бонус титула Remaked. Другие условные бонусы OS ещё не подтверждены.'}));
-  }
-  if(group.page==='attack'&&calc?.attackRange?.baseOnly)
-   section.append(make('small',{class:'stage-attribute-note',text:english?
-    'Weapon range shows the OS base value in raw units, without unverified equipment and skill range bonuses.':
-    'Дальность оружия показана как базовое значение OS в исходных единицах, без неподтверждённых бонусов экипировки и навыков.'}));
   body.append(section);
  }
 }
@@ -700,105 +629,6 @@ function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},res
  renderSongSkills(body,modifiers);
 }
 
-function combatFormulaRows(calc,page){
- const c=calc?.combat;
- if(!c||!['attack','defense'].includes(page))return [];
- const results=[],p=(ru,en,value)=>({ru,en,value});
- const add=(ru,en,total,parts,round='exact')=>{
-  if(!Number.isFinite(total)||!Array.isArray(parts)||
-   parts.some(entry=>!Number.isFinite(entry?.value)))return;
-  const sum=parts.reduce((value,part)=>value+part.value,0);
-  if(Math.abs((round==='ceil'?Math.ceil(sum):sum)-total)>1e-8)return;
-  results.push({ru,en,total,parts,round});
- };
- if(page==='attack'){
-  const a=c.attack;
-  if(a&&Array.isArray(a.percentEquipment)){
-   const base=Number.isFinite(a.raw)?a.raw:
-    a.unarmed===true&&Number.isFinite(a.physical)?a.physical+1:null;
-   add('Физическая атака','Physical attack',a.known,[
-    p('Атака от силы и оружия','Strength and weapon',base),
-    p('Титул чести','Honor title',a.honor),
-    p('Плоские эффекты','Flat effects',a.flatEquipment),
-    ...a.percentEquipment.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
-     'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
-    p('Боевые навыки','Combat skills',a.activeBonus),
-    p('Гильдия','Guild',a.guildBonus)],'ceil');
-  }
-  const acc=c.accuracy;
-  if(acc&&Array.isArray(acc.percentage))add('Точность','Accuracy',acc.known,[
-   p('Уровень и ЛВК','Level and DEX',acc.base),
-   p('Экипировка','Equipment',acc.equipment),
-   ...acc.percentage.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
-    'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
-   p('Титул чести','Honor title',acc.honor),
-   p('Пассивное умение','Passive skill',acc.passive),
-   p('Активное умение','Active skill',acc.activeBonus)]);
-  const crit=c.critical;
-  if(crit)add('Шанс критического удара','Critical chance',crit.known,[
-   p('База','Base',crit.base),p('Экипировка','Equipment',crit.equipment),
-   p('Расовая способность','Racial passive',crit.racial)]);
-  const speed=c.attackSpeed;
-  if(speed)add('Скорость атаки','Attack speed',speed.known,[
-   p('База','Base',speed.base),p('Экипировка','Equipment',speed.equipment),
-   p('Рывок','Lunge',speed.lunge),
-   p('Усиление жреца','Priest buff',speed.priestBonus)]);
-  const mana=c.manaCost;
-  if(mana)add('Индекс расхода ОМ','MP cost index',mana.remaining,[
-   p('Исходный расход','Original cost',100),
-   p('Снижение от ИНТ','INT reduction',-mana.intReduction),
-   p('Расовая способность','Racial passive',-mana.racial),
-   p('Экипировка','Equipment',-mana.equipment)]);
-  const cast=c.castingSpeed;
-  if(cast)add('Скорость применения навыков','Casting speed',cast.known,[
-   p('База','Base',cast.base),
-   p('Экипировка','Equipment',cast.equipment)]);
-  const move=c.movementSpeed;
-  if(move)add('Скорость перемещения','Movement speed',move.known,[
-   p('База','Base',move.base),p('Экипировка','Equipment',move.equipment),
-   p('Активные навыки','Active skills',move.active)]);
- }else{
-  const d=c.defense;
-  if(d&&Array.isArray(d.percentParts))add('Защита','Defense',d.known,[
-   p('Броня','Armor',d.armor),p('Плоские эффекты','Flat effects',d.equipment),
-   p('Заточка','Refinement',d.refinement),
-   ...d.percentParts.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
-    'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
-   p('Титул чести','Honor title',d.honor),
-   p('Боевые навыки','Combat skills',d.activeBonus),
-   p('Усиление жреца','Priest buff',d.priestBonus)]);
-  const dodge=c.dodge;
-  if(dodge)add('Уклонение','Evasion',dodge.known,[
-   p('Уровень + ПРВ + ступень ПРВ','Level + AGI + AGI step',dodge.base),
-   p('Экипировка','Equipment',dodge.equipment),
-   p('Титул чести','Honor title',dodge.honor),
-   p('Пассивные навыки','Passive skills',dodge.passive),
-   p('Помощь ветра','Wind Assist',dodge.windAssist)]);
- }
- return results;
-}
-function appendCombatFormulas(body,calc,page,english){
- const rows=combatFormulaRows(calc,page);if(!rows.length)return;
- const details=make('details',{class:'stage-attribute-row stage-combat-formulas'});
- details.append(make('summary',{text:english?
-  'Show calculation breakdown':'Показать расчёт по составляющим'}));
- const format=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:4});
- for(const entry of rows){
-  details.append(make('strong',{text:english?entry.en:entry.ru}));
-  const terms=entry.parts.map((part,i)=>
-   (i===0?(part.value<0?'−':''):(part.value<0?' − ':' + '))+
-    format.format(Math.abs(part.value))).join('');
-  details.append(make('p',{text:(entry.round==='ceil'?'⌈'+terms+'⌉':terms)+
-   ' = '+format.format(entry.total)}));
-  for(const part of entry.parts)if(part.value!==0)
-   details.append(make('small',{class:'stage-formula-source',text:
-    (english?part.en:part.ru)+': '+format.format(part.value)}));
- }
- details.append(make('p',{class:'stage-attribute-note',text:english?
-  'This explains the calculated preview, not complete live-server combat. Conditional effects and unverified stacking are not included.':
-  'Это расшифровка расчётных величин, а не полная модель боя на игровом сервере. Непроверенные условные эффекты не учтены.'}));
- body.prepend(details);
-}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{}}={}){
@@ -835,8 +665,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  if(chosen==='summary')summaryPage(body,modifiers,onPage);
  if(chosen==='effects')skillEffectsPage(body,{buffs,availability,combatSkillCards,resistanceSkillChoices,modifiers});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers});
- if(['attack','defense'].includes(chosen)&&modifiers?.combat)
-  appendCombatFormulas(body,modifiers,chosen,document.documentElement?.lang==='en');
  if(['attack','defense'].includes(chosen)){
   const intro=chosen==='attack'?'Параметры оружия':'Защита снаряжения';
   body.append(make('p',{class:'stage-attribute-note',text:intro}));
@@ -1710,5 +1538,5 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,vitalFormulaRows,combatFormulaRows});
+root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows});
 })(typeof window==='undefined'?globalThis:window);
