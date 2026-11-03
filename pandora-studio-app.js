@@ -1679,6 +1679,9 @@ function renderWiki(root){
   controls.append(toolbar);
  }
  if(wikiSelection.type==='item'&&wikiItemType==='utility'){
+  const hasReviewItems=Object.values(wikiIndex?.records('item')||{}).some(item=>
+   window.PandoraWikiData.utilityCategories(item,wikiData?.skills).includes('review'));
+  if(wikiEffectFilter==='review'&&!hasReviewItems)wikiEffectFilter='all';
   const filter=h('select',{class:'wiki-effect-type',
    'aria-label':wt('Тип предметов эффектов','Effect item category'),
    onchange:event=>{wikiEffectFilter=event.target.value;
@@ -1690,7 +1693,8 @@ function renderWiki(root){
    ['cure','Снимают негативные эффекты','Remove negative effects'],
    ['harmful','Дают отрицательные эффекты','Apply negative effects'],
    ['other','Прочие активируемые предметы','Other usable items'],
-   ['review','Требуют проверки','Needs verification']]){
+   ['review','Прочие эффекты','Other effects']]){
+   if(id==='review'&&!hasReviewItems)continue;
    const option=h('option',{value:id,text:wt(ru,en)});
    if(wikiEffectFilter===id)option.selected=true;
    filter.append(option);
@@ -2328,10 +2332,13 @@ function renderWiki(root){
   const englishDescription=lang==='en'?(rec?.descEn||officialEnglish?.[
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
-  if(described?.desc||(lang==='en'&&described?.descEn)||
+  const rawDescription=englishDescription||described?.desc||'';
+  const missingDescription=!rawDescription.trim()||
+   /^Недоступно\s*\(не загружено\)$/i.test(rawDescription.trim());
+  if(!missingDescription||
    (adminEditing&&adminToken&&(lang==='ru'||['npc','map','monster','soul','skill'].includes(type))&&type!=='instance')){
-   const text=englishDescription||described?.desc||'';
-   const missing=!text.trim();
+   const text=rawDescription;
+   const missing=missingDescription;
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'itemdesc.'+id:null;
    const description=h('p',{class:'wiki-description'+(missing?' wiki-description-placeholder':''),text:
