@@ -125,3 +125,8 @@
  .wiki-honor-rank{padding:9px}
  .stage-guide-popup{max-width:min(235px,80vw)}}
 @media(prefers-reduced-motion:reduce){.wiki-honor-jump{scroll-behavior:auto}}
+
+/* The Honor chooser is one compact select; help belongs to its header term. */
+.stage-book-choice-only{margin-top:1px}
+.stage-honor-term{font:600 13px/1.2 Manrope,Arial,sans-serif;color:#d8bd96;vertical-align:baseline}
+.stage-honor-term:hover,.stage-honor-term:focus-visible{color:#ffdfad}
