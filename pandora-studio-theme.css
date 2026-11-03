@@ -1901,3 +1901,20 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  font-size:10px;line-height:1.4;color:#e8cb9f;background:#37271a}
 @media(max-width:460px){.stage-priest-fields{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
+
+
+/* Hero Book values stay compact; item references and unstacked source
+   effects are secondary, keyboard-accessible disclosures. */
+.stage-equipped-items:not([open])>:not(summary),
+.stage-independent-effects:not([open])>:not(summary){display:none}
+.stage-equipped-items>summary,.stage-independent-effects>summary{
+ cursor:pointer;list-style-position:inside;color:#efcc95;font-weight:650;
+ font-size:12px;padding:3px 2px
+}
+.stage-equipped-item{width:100%;min-width:0;padding:6px 5px;
+ border:0;border-top:1px solid #5f462f;background:transparent;
+ text-align:left;color:#f0d09e;font:inherit;cursor:pointer}
+.stage-equipped-item img{width:28px;height:28px;flex:none}
+.stage-equipped-item span{overflow-wrap:anywhere;font-size:12px}
+.stage-equipped-item:hover,.stage-equipped-item:focus-visible{background:#44301e}
+.stage-independent-effect-row{font-size:11px;overflow-wrap:anywhere}
