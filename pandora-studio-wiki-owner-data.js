@@ -6,7 +6,7 @@ const id=x=>Number.isSafeInteger(Number(x))&&Number(x)>0&&/^[1-9][0-9]{0,14}$/.t
 const record=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const fields=Object.freeze({
  monster:['name','desc','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
- map:['name','nameEn','desc','descEn','mobs','npcs','loot','tags','sections','extraSections'],
+ map:['name','nameEn','desc','descEn','notesRu','notesEn','mobs','npcs','loot','tags','sections','extraSections'],
  npc:['name','nameEn','desc','descEn','maps','service','serviceEn','grid'],
  instance:['name','blurb','blurbRu','mobs'],
  skill:['name','desc','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
@@ -43,7 +43,7 @@ function validPatch(type,patch){
  if(!keys.length||keys.some(k=>!fields[type].includes(k)))return false;
  return keys.every(k=>{
   const v=patch[k];
-  if(['name','nameEn','desc','descEn','blurb','blurbRu','service','serviceEn','grid'].includes(k))
+  if(['name','nameEn','desc','descEn','blurb','blurbRu','service','serviceEn','grid','notesRu','notesEn'].includes(k))
    return typeof v==='string'&&v.length<=2000&&(!['name','nameEn'].includes(k)||Boolean(v.trim()));
   if(k==='resists')return record(v)&&!Object.keys(v).some(key=>
    !resistKeys.includes(key)||!number(v[key])||Math.abs(v[key])>100);
@@ -108,14 +108,14 @@ function validTownPatch(type,key,patch){
  if(!(type==='map'?virtualMapId(key):type==='npc'&&virtualNpcId(key))||
   !record(patch))return false;
  const keys=Object.keys(patch);
- const allowed=type==='map'?['name','nameEn','desc','descEn',...mapExtraKeys,'mobs']:
+ const allowed=type==='map'?['name','nameEn','desc','descEn','notesRu','notesEn',...mapExtraKeys,'mobs']:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
  if(type==='map'&&customMapId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)))return false;
  return keys.every(k=>mapExtraKeys.includes(k)?validMapExtra(k,patch[k]):
   k==='mobs'?checkList(patch.mobs,120):k==='maps'?
   Array.isArray(patch.maps)&&patch.maps.length===1&&virtualMapId(patch.maps[0]):
-  typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')?2000:240)&&
+  typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')||k.startsWith('notes')?2000:240)&&
    (!['name','nameEn'].includes(k)||Boolean(patch[k].trim())));
 }
 function parse(value){try{return JSON.parse(value)}catch{return null}}
