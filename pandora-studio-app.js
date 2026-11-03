@@ -4095,14 +4095,16 @@ function renderWiki(root){
 }
 
 function renderProfile(root){
+ const tr=(ru,en)=>lang==='en'?en:ru;
+ const raceName=races[state.race]?.[lang==='en'?1:0]||races[state.race]?.[0]||'';
  const profile=state.profile&&typeof state.profile==="object"?state.profile:{};
  const view=h("div",{class:"ps-profile-grid"});
  const left=h("section",{class:"ps-profile-art"});
- left.append(h("img",{src:raceSource(state.race,state.gender),alt:"Облик расы "+races[state.race][0]}),
- h("strong",{text:state.name||"Без имени"}),h("small",{text:races[state.race][0]+" · "+jobs[state.job]+" · "+state.level+" ур."}));
+ left.append(h("img",{src:raceSource(state.race,state.gender),alt:tr("Облик расы ","Race appearance: ")+raceName}),
+ h("strong",{text:state.name||tr("Без имени","Unnamed hero")}),h("small",{text:raceName+" · "+jobs[state.job]+" · "+state.level+tr(" ур."," lvl.")}));
  const right=h("section",{class:"ps-profile-info"});
- const fields=[["name","Имя героя",state.name||"",64],["guild","Гильдия",profile.guild||"",80],
- ["nation","Нация",profile.nation||"",80],["rank","Ранг",profile.rank||"",80]];
+ const fields=[["name",tr("Имя героя","Hero name"),state.name||"",64],["guild",tr("Гильдия","Guild"),profile.guild||"",80],
+ ["nation",tr("Нация","Nation"),profile.nation||"",80],["rank",tr("Ранг","Rank"),profile.rank||"",80]];
  for(const [key,label,value,max]of fields){
    const row=h("label",{class:"ps-profile-row"});
    const input=h("input",{type:"text",maxLength:String(max),value,"aria-label":label,placeholder:label});
@@ -4114,17 +4116,18 @@ function renderProfile(root){
    row.append(h("span",{text:label}),input);right.append(row);
  }
  const bio=h("label",{class:"ps-profile-row ps-profile-bio"});
- const description=h("textarea",{rows:"5",maxLength:"500",placeholder:"Описание героя — сохраняется в билде","aria-label":"О себе"});
+ const description=h("textarea",{rows:"5",maxLength:"500",placeholder:tr("Описание героя — сохраняется в билде","Hero bio — saved with the build"),"aria-label":tr("О себе","About")});
  description.value=typeof profile.about==="string"?profile.about:"";
  description.addEventListener("input",()=>{state.profile??={};state.profile.about=description.value;persist()});
- bio.append(h("span",{text:"О себе"}),description);right.append(bio);
- right.append(h("p",{class:"muted",text:"Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах."}));
+ bio.append(h("span",{text:tr("О себе","About")}),description);right.append(bio);
+ right.append(h("p",{class:"muted",text:tr("Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах.","Profile fields are notes saved with the build. Nation, honor and rank are not verified against the game server and do not affect calculations.")}));
  view.append(left,right);root.append(view);
 }
 function renderCharacter(root){
+ const tr=(ru,en)=>lang==='en'?en:ru;
  if(characterPanelTab!=='profile')characterPanelTab='character';
- const tabs=h("div",{class:"ps-character-tabs",role:"tablist","aria-label":"Окно персонажа"});
- const selection=[["character","Персонаж"],["profile","Профиль"]];
+ const tabs=h("div",{class:"ps-character-tabs",role:"tablist","aria-label":tr("Окно персонажа","Character panel")});
+ const selection=[["character",tr("Персонаж","Character")],["profile",tr("Профиль","Profile")]];
  for(const[key,label]of selection){
   tabs.append(h("button",{role:"tab","aria-selected":String(characterPanelTab===key),class:characterPanelTab===key?"chosen":"",
    text:label,onclick:()=>{characterPanelTab=key;renderDetails()}}));
@@ -4134,14 +4137,14 @@ function renderCharacter(root){
  if(characterPanelTab==="profile")renderProfile(body);
  else{
   const cards=h("div",{class:"ps-overview-grid"});
-  cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:"Раса"}),h("strong",{text:races[state.race][0]})]),
-   h("div",{class:"ps-overview-card"},[h("span",{text:"Профессия"}),h("strong",{text:jobs[state.job]})]),
-   h("div",{class:"ps-overview-card"},[h("span",{text:"Уровень"}),h("strong",{text:String(state.level)})]));
+  cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:tr("Раса","Race")}),h("strong",{text:races[state.race][lang==='en'?1:0]})]),
+   h("div",{class:"ps-overview-card"},[h("span",{text:tr("Профессия","Class")}),h("strong",{text:jobs[state.job]})]),
+   h("div",{class:"ps-overview-card"},[h("span",{text:tr("Уровень","Level")}),h("strong",{text:String(state.level)})]));
   body.append(cards);
   const racialTitle=h('div',{class:'subhead',text:'✦ '+(lang==='en'?'Racial passive — choose one':'Расовая пассивка — выбери одну из трёх')});
   const passivePicker=h('div',{class:'race-passive-picker'});
   const passives=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
-  if(!passives.length)passivePicker.append(h('p',{class:'muted',text:'Загружаю расовые способности…'}));
+  if(!passives.length)passivePicker.append(h('p',{class:'muted',text:tr('Загружаю расовые способности…','Loading racial abilities…')}));
   for(const id of passives){
     const skill=catalog.skills?.[id],selected=String(state.racialPassiveId)===String(id);
     if(!skill)continue;
@@ -4152,20 +4155,20 @@ function renderCharacter(root){
     const image=src?h('img',{src,alt:'',loading:'lazy'}):
      h('span',{text:'✦',class:'skill-fallback'});
     if(src)image.onerror=()=>image.replaceWith(h('span',{text:'✦',class:'skill-fallback'}));
-    button.append(image,h('strong',{text:skill.name}),h('span',{text:skill.desc||'Описание отсутствует'}),h('small',{text:selected?'✓ Выбрано':'Выбрать'}));
+    button.append(image,h('strong',{text:skill.name}),h('span',{text:skill.desc||tr('Описание отсутствует','No description')}),h('small',{text:selected?tr('✓ Выбрано','✓ Selected'):tr('Выбрать','Select')}));
     passivePicker.append(button);
   }
   body.append(racialTitle,passivePicker);
-  body.append(h("p",{class:"muted",text:"Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет."}));
+  body.append(h("p",{class:"muted",text:tr("Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет.","Train skills in Hero Path and allocate attributes in Origin; these values have no duplicate editor here.")}));
   const jump=h("div",{class:"ps-overview-actions"});
-  jump.append(h("button",{class:"button-action",text:"⚔ Путь героя · умения",onclick:()=>{
+  jump.append(h("button",{class:"button-action",text:tr("⚔ Путь героя · умения","⚔ Hero Path · skills"),onclick:()=>{
    closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
    $('pathSkillsTab')?.focus({preventScroll:true});
   }}));
-  jump.append(h("button",{class:"button-action",text:"✥ Базовые характеристики",onclick:()=>{
+  jump.append(h("button",{class:"button-action",text:tr("✥ Базовые характеристики","✥ Base attributes"),onclick:()=>{
    closeWorkbench();originActive='stats';renderOriginTabs();saveView();
   }}));
-  jump.append(h("button",{class:"button-action",text:"✎ Изменить профиль",onclick:()=>{
+  jump.append(h("button",{class:"button-action",text:tr("✎ Изменить профиль","✎ Edit profile"),onclick:()=>{
    characterPanelTab='profile';renderDetails();
   }}));
   body.append(jump);
