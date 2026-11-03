@@ -1876,7 +1876,7 @@ function renderWiki(root){
  if(label)container.append(h('h4',{text:label}));
  const ids=[...new Set((existing||[]).map(String))];
  const candidates=kind==='monster'?wikiData.monsters:
-  kind==='npc'?wikiData.trades?.npcs:
+  kind==='npc'?wikiIndex.records('npc'):
   kind==='map'?wikiIndex.records('map'):
   kind==='item'?wikiData.items:wikiIndex.records('instance');
  const idValue=value=>/^[1-9][0-9]{0,14}$/.test(String(value))?Number(value):String(value);
@@ -3077,7 +3077,11 @@ function renderWiki(root){
       const geo=window.PandoraAstirLocations;
       const selector=h('select',{class:'wiki-inline-select wiki-town-npc-location',
        'aria-label':wt('Расположение NPC','NPC location')});
-      for(const mapId of geo.districtIds){
+      const locationsList=rec.ownerCreated?
+       Object.keys(wikiIndex.records('map')||{}).filter(x=>
+        window.PandoraWikiOwnerData.virtualMapId(x)):
+       geo.districtIds;
+      for(const mapId of locationsList){
        const option=h('option',{value:mapId,text:dataName('map',mapId)});
        option.selected=locations.includes(mapId);selector.append(option);
       }
@@ -3508,7 +3512,8 @@ function renderWiki(root){
       if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
        detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
         kind:'npc',existing:rec.npcs||[],limit:120,
-        onChange:next=>saveWikiRecordField('map',id,'npcs',next.map(Number))}));
+        onChange:next=>saveWikiRecordField('map',id,'npcs',
+         next.map(x=>/^\d+$/.test(String(x))?Number(x):String(x)))}));
       }else if(adminEditing&&adminToken&&!rec.virtual){
        detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
         kind:'npc',existing:residents.map(([npcId])=>String(npcId)),onChange:async next=>{
@@ -3534,6 +3539,56 @@ function renderWiki(root){
         list.append(entry);
        }
        detail.append(list);
+      }
+      // Existing curated and newly created NPCs are visible without inventing
+      // trade-NPC identities or forcing them into the source game data.
+      if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
+       const unmanaged=residents.filter(([npcId])=>
+        !(rec.npcs||[]).map(String).includes(String(npcId)));
+       if(unmanaged.length){
+        const linked=h('section',{class:'wiki-owner-location-residents'});
+        linked.append(h('small',{text:wt('NPC, привязанные через их карточки',
+         'NPCs linked from their own cards')}));
+        linked.append(linkFlow(unmanaged.map(([npcId])=>
+         wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
+        detail.append(linked);
+       }
+       const create=h('button',{type:'button',class:'wiki-owner-plus wiki-map-create-npc',
+        text:wt('+ Создать NPC в локации','+ Create NPC in location')});
+       create.onclick=()=>{
+        if(detail.querySelector('.wiki-map-create-npc-form'))return;
+        const form=h('div',{class:'wiki-owner-source-picker wiki-map-create-npc-form'});
+        const ru=ownerPlainTextField({class:'wiki-inline-input',
+         placeholder:'Название NPC · RU','aria-label':'Название нового NPC RU'});
+        const en=ownerPlainTextField({class:'wiki-inline-input',
+         placeholder:'NPC name · EN','aria-label':'New NPC name EN'});
+        const role=ownerPlainTextField({class:'wiki-inline-input',
+         placeholder:wt('Назначение (необязательно)','Service (optional)'),
+         'aria-label':'Назначение нового NPC'});
+        const err=h('small',{class:'inline-owner-error',role:'status'});
+        const submit=h('button',{type:'button',class:'wiki-owner-plus',
+         text:wt('Сохранить NPC','Save NPC')});
+        submit.onclick=async()=>{
+         const name=ru.value.trim(),nameEn=en.value.trim(),service=role.value.trim();
+         if(!name||!nameEn||name.length>240||nameEn.length>240||service.length>240){
+          err.textContent=wt('Укажи оба названия (RU/EN) до 240 символов',
+           'Provide both RU and EN names up to 240 characters');return;
+         }
+         const npcId='owner-npc-'+[...crypto.getRandomValues(new Uint8Array(8))]
+          .map(x=>x.toString(16).padStart(2,'0')).join('');
+         if(wikiIndex.records('npc')?.[npcId]){
+          err.textContent=wt('Конфликт ID, попробуй ещё раз','ID collision, please retry');return}
+         submit.disabled=true;
+         try{
+          await saveWikiRecordPatch('npc',npcId,{name,nameEn,service,maps:[String(id)]});
+          openWiki('map',id);
+         }catch(e){err.textContent=String(e.message||e);submit.disabled=false}
+        };
+        const cancel=h('button',{type:'button',class:'wiki-owner-remove',
+         text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+        form.append(ru,en,role,submit,cancel,err);create.after(form);ru.focus();
+       };
+       detail.append(create);
       }
       if(rec.placeType==='astir-district'&&rec.virtual&&adminEditing&&adminToken){
        const add=h('button',{type:'button',class:'wiki-owner-plus',
@@ -3641,7 +3696,8 @@ function renderWiki(root){
        if(ownerMap)panel.append(wikiOwnerEntityList({
         label:'',kind,existing:group.entries||[],limit:60,
         onChange:next=>saveWikiRecordField('map',id,'extraSections',
-         custom.map((entry,i)=>i===index?{...entry,entries:next.map(Number)}:entry))
+         custom.map((entry,i)=>i===index?{...entry,entries:next.map(x=>
+          /^\d+$/.test(String(x))?Number(x):String(x))}:entry))
        }));
        else panel.append(linkFlow((group.entries||[])
         .filter(item=>kind==='item'?wikiData.items?.[String(item)]:
