@@ -2328,11 +2328,16 @@ function renderWiki(root){
     }}));
   };
   if(type==='item'){
-    if(adminEditing&&adminToken)detail.append(h('small',{class:'wiki-owner-instruction',text:'Двойной клик по значению — изменить; выход из поля — сохранить.'}));
-    if(rec.sourceNote)detail.append(h('section',{class:'wiki-owner-note'},[
-      h('strong',{text:'Комментарий администратора об источнике'}),
-      h('p',{text:rec.sourceNote})
-    ]));
+    if(rec.sourceNote||adminEditing&&adminToken&&lang==='ru'){
+     const sourceNote=String(rec.sourceNote||'');
+     const note=h('p',{class:sourceNote?'':'wiki-description-placeholder',
+      text:sourceNote||wt('Двойной клик — добавить комментарий','Double-click to add a note'),
+      ...(adminEditing&&adminToken&&lang==='ru'?{
+       'data-owner-record':'item:'+id,'data-owner-field':'sourceNote',
+       ...(!sourceNote?{'data-owner-empty':'true'}:{})}:{})});
+     detail.append(h('section',{class:'wiki-owner-note'},[
+      h('strong',{text:wt('Комментарий об источнике','Source note')}),note]));
+    }
     const dl=h('dl',{class:'item-fields'});
     const itemFields=[
      [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang),'kind'],
@@ -2611,7 +2616,28 @@ function renderWiki(root){
     for(const [label,value,key] of skillFields)if(value!=null)
      dl.append(h('dt',{text:label}),wikiOwnerNumeric(h('dd',{text:String(value)}),
       value,'skill',id,key,{integer:key==='charLevel'}));
-    detail.append(dl,h('h4',{text:wt('Требования','Requirements')}));
+    detail.append(dl);
+    if(adminEditing&&adminToken){
+     const missing=skillFields.filter(([,value])=>value==null);
+     if(missing.length){
+      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-skill-add-field',
+       text:wt('+ Параметр навыка','+ Skill field')});
+      add.onclick=()=>{
+       const select=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить параметр навыка','Add skill field')});
+       select.append(h('option',{value:'',text:wt('Выбери параметр','Select field')}));
+       for(const [label,,key] of missing)
+        select.append(h('option',{value:key,text:label}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiRecordField('skill',id,
+        select.value,0).catch(e=>showStudioToast(e.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      };
+      detail.append(add);
+     }
+    }
+    detail.append(h('h4',{text:wt('Требования','Requirements')}));
     if(!rec.reqs?.length&&rec.prereq==null)detail.append(h('p',{class:'muted',
      text:wt('Требования веток не указаны.','No branch requirements listed.')}));
     const reqs=h('div',{class:'wiki-requirements',role:'list'});
@@ -2754,7 +2780,16 @@ function renderWiki(root){
      h('strong',{class:'wiki-soul-price-value',
       text:Number(rec.price).toLocaleString('ru-RU')}),
      rec.price,'soul',id,'price',{integer:true}));
-    else pricePane.append(h('span',{class:'muted',text:wt('Не указана','Not provided')}));
+    else if(adminEditing&&adminToken){
+     const missing=h('span',{class:'wiki-edit-value',
+      text:wt('Добавить стоимость','Add price'),
+      title:wt('Двойной клик — добавить стоимость души',
+       'Double-click to add Soul price')});
+     missing.addEventListener('dblclick',e=>{e.preventDefault();
+      editWikiValue(missing,0,{type:'number',integer:true,min:0,max:1000000000,
+       onCommit:value=>saveWikiRecordField('soul',id,'price',value)})});
+     pricePane.append(missing);
+    }else pricePane.append(h('span',{class:'muted',text:wt('Не указана','Not provided')}));
     traits.append(pricePane);
     detail.append(traits);
     detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));
@@ -2969,7 +3004,7 @@ function renderWiki(root){
     }
    }else if(type==='npc'){
     const locations=rec.maps||[];
-    if(rec.virtual){
+    {
      const fields=h('dl',{class:'item-fields'});
      const makeField=(label,field,value)=>{
       const dd=h('dd',{text:value||wt('Двойной клик — добавить','Double-click to add'),
@@ -2983,7 +3018,7 @@ function renderWiki(root){
      if(rec.grid||adminEditing&&adminToken)
       makeField(wt('Координаты','Coordinates'),'grid',rec.grid||'');
      detail.append(fields);
-     if(adminEditing&&adminToken){
+     if(rec.virtual&&adminEditing&&adminToken){
       const geo=window.PandoraAstirLocations;
       const selector=h('select',{class:'wiki-inline-select wiki-town-npc-location',
        'aria-label':wt('Расположение NPC','NPC location')});
