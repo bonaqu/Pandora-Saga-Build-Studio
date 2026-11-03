@@ -149,8 +149,6 @@ const bookEnglish=Object.freeze({
  'Физические состояния': "Physical conditions",
  'Психические состояния': "Mental conditions",
  'Профессия': "Class",
- 'Скорость естественного восстановления': 'Natural recovery speed',
- 'Естественное восстановление (расчётная величина)': 'Estimated natural recovery',
  'Известные бонусы снаряжения и душ': 'Known equipment and Soul bonuses',
  'Сопротивления состояниям': 'Status resistances',
  'Восстановление каждые 2 секунды': 'Recovery every 2 seconds',
