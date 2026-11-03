@@ -998,27 +998,36 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  root.PandoraGuideTooltip?.dismiss();
  target.replaceChildren();
  const copyOptions={overrides:copy,editable:canEdit,onTextEdit,onHonor};
+ const chapterTitle=(key,ru)=>{
+  const en=bookEnglish[ru]||ru;
+  const localized=root.PandoraHonorGuide?.field(copy,'chapter.'+key,ru,en);
+  return document.documentElement?.lang==='en'?(localized?.en||en):(localized?.ru||ru);
+ };
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
   next=bookPages[(index+1)%bookPages.length][0];
  target.setAttribute('role','region');
  target.setAttribute('aria-label',document.documentElement?.lang==='en'?
-  'Hero Book. '+bookText(bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
-  'Книга героя. '+bookPages[index][1]+'. Страница '+(index+1)+' из 6');
+  'Hero Book. '+chapterTitle(chosen,bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
+  'Книга героя. '+chapterTitle(chosen,bookPages[index][1])+'. Страница '+(index+1)+' из 6');
  target.append(make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
    onclick:()=>onPage(prior),'aria-label':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
    make('span',{text:(document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
-   make('strong',{text:bookPages[index][1]})]),
+   make('strong',{text:chapterTitle(chosen,bookPages[index][1])})]),
   make('button',{type:'button',class:'stage-book-arrow',text:'›',
    onclick:()=>onPage(next),'aria-label':'Следующая страница'}),
   make('button',{type:'button',text:'✕',class:'stage-book-close',onclick:onClose,
    'aria-label':'Вернуть портрет'})
  ]));
+ const headingTitle=target.querySelector?.('.stage-book-heading strong');
+ if(headingTitle)guideLabel(headingTitle,'chapter.'+chosen,
+  bookPages[index][1],bookEnglish[bookPages[index][1]]||bookPages[index][1],
+  copyOptions,'Название раздела Книги героя.','Hero Book chapter title.');
  const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':'Разделы книги героя'});
  for(const [name,label] of bookPages)nav.append(make('button',{
-  type:'button',role:'tab',text:label,id:'stageBookTab_'+name,
+  type:'button',role:'tab',text:chapterTitle(name,label),id:'stageBookTab_'+name,
   'aria-controls':'stageBookPanel','aria-selected':String(chosen===name),
   'aria-pressed':String(chosen===name),'data-book-page':name,
   class:chosen===name?'chosen':'',onclick:()=>onPage(name)
