@@ -72,8 +72,8 @@ test('gear range and uncoupled rates are labeled as independent, never final tot
 test('Hero Book final result sections are not replaced with source bonus formulas',()=>{
  const src=read('pandora-studio-hero-book.js'),css=read('pandora-studio-theme.css');
  assert.match(src,/if\(chosen==='effects'\)\s*appendIndependentEffects/);
- assert.match(src,/class:'stage-independent-effects'/);
- assert.match(src,/class:'stage-equipped-items'/);
+ assert.match(src,/class:'stage-attribute-row stage-independent-effects'/);
+ assert.match(src,/class:'stage-attribute-row stage-equipped-items'/);
  assert.doesNotMatch(src,/Базовая атака '\+\(rec\.W/);
  assert.doesNotMatch(src,/Базовая защита '\+\(rec\.AC/);
  assert.doesNotMatch(src,/appendVitalFormulas|appendCombatFormulas/);
