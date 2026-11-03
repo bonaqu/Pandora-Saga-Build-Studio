@@ -339,6 +339,11 @@ body:has(#ownerDock) .wiki-page [data-edit-key]:focus-visible{
 .wiki-map-create-npc-form .wiki-inline-input{min-width:160px;flex:1 1 175px}
 .wiki-map-create-npc-form .inline-owner-error{flex:1 1 100%}
 
+/* Keep editor accessible above the wiki workbench (z=69) but strictly
+   behind modal dialogs (z=90): no intercepted clicks on catalog/PR UI. */
+#ownerDock.owner-dock{z-index:78}
+body:has(.modal-root:not([hidden])) #ownerDock{pointer-events:none}
+
 /* Owner workbench 0.346: an intelligible autosave workflow, not a publish queue. */
 .owner-dock{width:min(430px,calc(100vw - 24px));max-width:calc(100vw - 24px);
  max-height:min(74vh,690px);overflow-y:auto;overflow-x:hidden;
