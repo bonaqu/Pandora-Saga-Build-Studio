@@ -25,12 +25,18 @@ export async function runHonorGuideSmoke(browser,base){
    .locator('.wiki-honor-list-row').count(),2);
   assert.equal(await panel.locator('.wiki-honor-add').count(),0,
    'Public readers cannot edit zones or wars');
+  // The encyclopedia is a modal workbench. Close it before switching locale
+  // through the actual clickable header control; opening Wiki restores Honor.
+  await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal((await page.locator('.wiki-honor-title').innerText()).trim(),
    'Honor points');
   assert.match(await panel.locator('.wiki-honor-rank.is-moon').innerText(),/Count/);
+  await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   const zone=panel.locator('.wiki-honor-list-row')
    .filter({hasText:'Эль Ведд'}).locator('.wiki-link');
   await zone.click();
