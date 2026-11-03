@@ -132,7 +132,17 @@ async function main(){
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild'));
-  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Honor passive skill'));
+ assert.equal(await page.locator('#stageBookPanel .stage-honor-term').innerText(),'passive skill');
+ assert.equal(await page.locator('#stageBookPanel .stage-book-honor-link').count(),0);
+ assert.equal((await page.locator('#stageBookPanel').innerText()).includes('129,000'),false);
+ const oldScroll=await page.locator('#stageBookPanel').evaluate(panel=>{
+  window.__psBookStablePanel=panel;panel.scrollTop=90;return panel.scrollTop;
+ });
+ await page.locator('#stageBookPanel [data-book-setting="guildAll"]').selectOption('1');
+ assert.equal(await page.locator('#stageBookPanel').evaluate(panel=>
+  panel===window.__psBookStablePanel),true,
+  'Changing guild settings must not remount the entire scrolling Hero Book');
+ assert.equal(await page.locator('#stageBookPanel').evaluate(panel=>panel.scrollTop),oldScroll);
  await page.locator('#stageBookPanel [data-book-setting="guildLevel"]').selectOption('10');
  assert.match(await page.locator('#stageBookPanel .stage-guild-level-effects').innerText(),/12%/);
  await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').check();
