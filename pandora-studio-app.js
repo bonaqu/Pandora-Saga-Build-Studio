@@ -1420,14 +1420,24 @@ let wikiOutsideCleanup=null;
 function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
 let wikiRenderSelected=null,wikiRenderedRoot=null,wikiBaseData=null;
+let wikiLoadGeneration=0;
+function invalidateWikiCatalog({dropSnapshot=false}={}){
+ wikiLoadGeneration++;
+ wikiIndex=null;wikiData=null;wikiPending=null;
+ if(dropSnapshot)wikiBaseData=null;
+}
 async function loadWiki(){
  if(wikiIndex)return wikiIndex;
  if(wikiPending)return wikiPending;
- wikiPending=(async()=>{
+ const generation=wikiLoadGeneration;
+ const pending=(async()=>{
   // Owner edits rebuild from the already validated snapshot: no redundant
   // round-trip of all 11 D1 datasets for each double-click edit.
   if(!wikiBaseData){
-   const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
+   let loaded;
+   try{loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch})}
+   catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
+   if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
   }
   const loaded={data:wikiBaseData};
@@ -1456,12 +1466,15 @@ async function loadWiki(){
    items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
   const resolved=window.PandoraWikiOwnerData.apply(source,override);
   const index=window.PandoraWikiData.build(resolved);
+  if(generation!==wikiLoadGeneration)return loadWiki();
   wikiData=resolved;
   wikiIndex=index;
   if(wikiSelection.id!=null)wikiSelection.id=index.canonical(wikiSelection.type,wikiSelection.id);
   return index;
- })().finally(()=>wikiPending=null);
- return wikiPending;
+ })();
+ wikiPending=pending;
+ try{return await pending}
+ finally{if(wikiPending===pending)wikiPending=null}
 }
 function openWiki(type,id,highlight=null){
  const sameCategory=activeTab==='wiki'&&wikiSelection.type===type&&
@@ -1522,7 +1535,12 @@ function renderWiki(root){
   outsidePickers.add(onOutside);
   document.addEventListener('pointerdown',onOutside,true);
  };
- wikiOutsideCleanup=cleanupOutsidePickers;
+ let wikiSearchTimer=null;
+ wikiOutsideCleanup=()=>{
+  cleanupOutsidePickers();
+  if(wikiSearchTimer!==null)clearTimeout(wikiSearchTimer);
+  wikiSearchTimer=null;
+ };
  let wikiResultsCache=null;
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['honor','Очки чести','Honor points'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
@@ -4045,11 +4063,24 @@ function renderWiki(root){
  };
  wikiRenderSelected=()=>{
   if(!root.isConnected||!wikiIndex)return;
+  if(wikiSearchTimer!==null){
+   clearTimeout(wikiSearchTimer);wikiSearchTimer=null;
+   draw(false);return;
+  }
   const present=[...browse.querySelectorAll('[data-wiki-record]')].some(
    row=>row.getAttribute('data-wiki-record')===wikiSelection.id);
   draw(present);
  };
- search.addEventListener('input',()=>{wikiSearch=search.value;wikiShown=100;wikiSelection={...wikiSelection,id:null,highlight:null};browse.scrollTop=0;if(wikiIndex)draw()});
+ search.addEventListener('input',()=>{
+  wikiSearch=search.value;wikiShown=100;
+  wikiSelection={...wikiSelection,id:null,highlight:null};
+  browse.scrollTop=0;
+  if(wikiSearchTimer!==null)clearTimeout(wikiSearchTimer);
+  wikiSearchTimer=setTimeout(()=>{
+   wikiSearchTimer=null;
+   if(root.isConnected&&activeTab==='wiki'&&wikiIndex)draw();
+  },100);
+ });
  if(wikiIndex)draw();
  else{
   browse.append(h('p',{class:'muted',text:wt('Загружаю записи…','Loading entries…')}));
@@ -5581,7 +5612,7 @@ async function showCatalogImport(){
  return workbench.open({
   request:(path,body)=>apiRequest(path,body,adminToken),
   apiBase:API,modal,h,
-  afterPublish:async()=>{wikiBaseData=null;wikiIndex=null;wikiData=null;await loadCatalog()}
+  afterPublish:async()=>{invalidateWikiCatalog({dropSnapshot:true});await loadCatalog()}
  });
 }
 
@@ -5704,7 +5735,7 @@ async function loadCatalog(){
 let ownerWikiRefreshId=0;
 async function refreshOwnerCatalog(){
  const generation=++ownerWikiRefreshId;
- wikiIndex=null;wikiData=null;wikiPending=null;
+ invalidateWikiCatalog();
  if(catalogSource)applyGameLocale({redraw:false});
  if(activeTab==='wiki'&&wikiRenderedRoot?.isConnected){
   try{

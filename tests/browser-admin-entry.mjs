@@ -412,7 +412,18 @@ export async function runAdminEntrySmoke(browser,base){
    catch{return false}
   },{timeout:20000});
   await form.getByRole('button',{name:/Save monster|Сохранить монстра/}).click();
-  await savedRoster;
+  try{await savedRoster}
+  catch(error){
+   const current=await page.evaluate(()=>({
+    message:document.querySelector('.wiki-owner-monster-form .inline-owner-error')?.textContent||null,
+    currentCard:document.querySelector('.wiki-page h3')?.textContent||null,
+    selected:document.querySelector('.wiki-list [aria-current="page"]')?.getAttribute('data-wiki-record')||null
+   }));
+   throw new Error('Monster link save did not finish: '+JSON.stringify({
+    current,monsterKeys:[...townOverrides.keys()].filter(k=>k.startsWith('wikiedit.monster.')),
+    mapRecord:townOverrides.get('wikiedit.map.el-beht')||null
+   }),{cause:error});
+  }
   const ownerMonsterKeys=[...townOverrides.keys()].filter(x=>/^wikiedit\.monster\.owner-monster-/.test(x));
   assert.equal(ownerMonsterKeys.length,1,'Owner created monster has a dedicated D1 key');
   assert.equal(JSON.parse(townOverrides.get(ownerMonsterKeys[0])).level,47);

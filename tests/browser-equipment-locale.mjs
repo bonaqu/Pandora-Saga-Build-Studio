@@ -59,6 +59,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.locator('.wiki-eligibility-filter').selectOption('now');
   await page.locator('.wiki-controls input[type="search"]').click();
   await page.locator('.wiki-controls input[type="search"]').fill('Корсет для мирины');
+  await page.waitForFunction(()=>document.querySelectorAll('.wiki-list [data-wiki-record]').length===0);
   assert.equal(await page.locator('.wiki-list [data-wiki-record]').count(),0,
    'Race-locked Myrine corset must not be compatible with an elf');
   await page.locator('.wiki-eligibility-filter').selectOption('all');
@@ -69,7 +70,9 @@ export async function runEquipmentLocaleSmoke(browser,base){
   // The reference tooltip in the game separates lore, parameters and upgrade conditions.
   await page.locator('.wiki-controls input[type="search"]').click();
   await page.locator('.wiki-controls input[type="search"]').fill('Алые астирские штаны');
-  await rows.first().click();
+  const redAstirPants=rows.filter({hasText:'Алые астирские штаны'}).first();
+  await redAstirPants.waitFor({state:'visible',timeout:20000});
+  await redAstirPants.click();
   const description=page.locator('.wiki-page .wiki-description');
   await description.waitFor({state:'visible'});
   assert.match(await description.textContent(),
@@ -177,6 +180,10 @@ export async function runEquipmentLocaleSmoke(browser,base){
   const enSearch=page.locator('.wiki-controls input[type="search"]');
   await enSearch.click();
   await enSearch.fill('Claris');
+  await page.waitForFunction(()=>{
+   const records=document.querySelectorAll('.wiki-list [data-wiki-record]');
+   return records.length===1&&records[0].getAttribute('data-wiki-record')==='astir-npc-kingdom-claris';
+  });
   assert.equal(await page.locator('.wiki-list [data-wiki-record="astir-npc-kingdom-claris"]').count(),1);
   await page.goto(base+'/#wiki/map/astir-kingdom',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-map-npc').first().waitFor({state:'visible',timeout:20000});
