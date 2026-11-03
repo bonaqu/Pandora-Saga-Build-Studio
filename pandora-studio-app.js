@@ -4186,20 +4186,23 @@ function renderSkills(root){
 function itemName(r){return window.PandoraItemPresentation.displayName(
  r,lang==='en'?'Unnamed item':'Предмет без названия',lang)}
 function renderStats(root){
+ const tr=(ru,en)=>lang==='en'?en:ru;
+ const statName=i=>lang==='en'?['Vitality','Strength','Agility','Dexterity','Spirit','Intelligence'][i]:ORIGIN_STAT_LABELS[i].name;
  const icons=['♥','⚔','➶','✥','✦','❂'];
- const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:'Характеристики'});
- const points=h('div',{class:'stat-total'},[h('strong',{text:'—'}),h('span',{text:'Свободные очки'})]);
+ const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:tr('Характеристики','Attributes')});
+ const points=h('div',{class:'stat-total'},[h('strong',{text:'—'}),h('span',{text:tr('Свободные очки','Available points')})]);
  overview.append(header,points);root.append(overview);
  const grid=h('div',{class:'stat-grid'}),controls=[];
  function refresh(){
   const s=attributeSnapshot();
   points.querySelector('strong').textContent=s?String(s.remaining):'—';
-  points.querySelector('span').textContent=s?'Свободно из '+s.total:'Свободные очки';
+  points.querySelector('span').textContent=s?tr('Свободно из ','Available out of ')+s.total:tr('Свободные очки','Available points');
   overview.classList.toggle('over-budget',!!s?.overBudget);
+  const estimate=previewBaseStats();
   for(const v of controls){
    const invested=Number(state.stats[STATS[v.i]]||0),base=s?.base[v.i];
-   v.note.textContent=base===undefined?'':'База '+base+' + '+invested;
-   const estimate=previewBaseStats(),code=ORIGIN_STAT_LABELS[v.i].code;
+   v.note.textContent=base===undefined?'':tr('База ','Base ')+base+' + '+invested;
+   const code=ORIGIN_STAT_LABELS[v.i].code;
    v.total.textContent=base===undefined?'—':String(estimate?.stats?.[code]??(base+invested));
    v.range.value=String((base??0)+invested);v.exact.value=String((base??0)+invested);
    v.range.min=String(base??0);v.exact.min=String(base??0);
@@ -4208,22 +4211,22 @@ function renderStats(root){
    v.minus.disabled=!s||invested===0;
    v.plus.disabled=!window.PandoraAttributeProgression.allowed(s,v.i,invested+1);
    v.range.disabled=!s;v.exact.disabled=!s;
-   v.plus.setAttribute('aria-label','Увеличить '+ORIGIN_STAT_LABELS[v.i].name+'. Стоимость: '+(window.PandoraAttributeProgression.nextCost(s,v.i)??'максимум'));
+   v.plus.setAttribute('aria-label',tr('Увеличить ','Increase ')+statName(v.i)+tr('. Стоимость: ','. Cost: ')+(window.PandoraAttributeProgression.nextCost(s,v.i)??tr('максимум','maximum')));
   }
  }
  ORIGIN_STAT_LABELS.forEach((info,i)=>{
   const s=attributeSnapshot(),card=h('section',{class:'stat-card stat-visual-editor'});
   const head=h('div',{class:'stat-visual-head'},[
    h('span',{class:'stat-emblem',text:icons[i]}),
-   h('h3',{text:info.name}),h('span',{class:'stat-visual-cap',text:s?'Макс. '+s.max[i]:''})
+   h('h3',{text:statName(i)}),h('span',{class:'stat-visual-cap',text:s?tr('Макс. ','Max ')+s.max[i]:''})
   ]);
   const note=h('span',{class:'stat-base-note',text:''}),total=h('strong',{class:'stat-visual-value',text:'—'});
   const bar=h('div',{class:'stat-visual-progress'}),fill=h('div',{class:'stat-visual-fill'});
   bar.append(fill);
   const range=h('input',{type:'range',min:'0',max:'99',step:'1',value:'0',
-   'aria-label':info.name+' — вложено'});
+   'aria-label':statName(i)+tr(' — вложено',' — invested')});
   const exact=h('input',{type:'number',min:'0',max:'99',step:'1',value:'0',
-   'aria-label':'Точное значение '+info.name});
+   'aria-label':tr('Точное значение ','Exact value ')+statName(i)});
   const change=value=>{
    const snap=attributeSnapshot(),absolute=window.PandoraAttributeProgression.resolveAbsolute(snap,i,value);
    if(absolute===null||!setAttributePoints(i,absolute-snap.base[i])){refresh();return}
