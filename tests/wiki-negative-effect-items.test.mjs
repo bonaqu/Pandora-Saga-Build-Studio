@@ -42,11 +42,11 @@ test('encyclopedia exposes localized negative effects filter and a truthful on-u
  assert.match(app,/\['harmful','Дают отрицательные эффекты','Apply negative effects'\]/);
  assert.match(app,/PandoraWikiData\.utilityCategories\(item,wikiData\?\.skills\)/);
  assert.match(app,/wiki-harmful-consumable-note/);
- assert.match(app,/состояние «Яд»/);
+ assert.match(app,/вызывает отравление \(«Яд»\)/);
  assert.match(app,/При употреблении вызывает отравление/);
  assert.doesNotMatch(app,/В обоих умениях есть EP_CAUSE_POISON/);
  assert.doesNotMatch(app,/неизучаемая техническая запись/);
- assert.match(app,/if\(effect\.func==='EP_DESTINED_POISON'&&key==='a'&&!\(adminEditing&&adminToken\)\)continue/);
+ assert.match(app,/itemEditor\.effectHasDisplayAmount\(effect\.func\)/);
  assert.doesNotMatch(book,/harmfulConsumables|stage-poison-consumables|Ядовитые расходники/);
  assert.match(book,/statusCures/);
  assert.match(book,/consumableSkills/);
