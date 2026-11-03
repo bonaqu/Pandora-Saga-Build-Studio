@@ -1,5 +1,21 @@
 (function(root){
 "use strict";
+// Source-based classification for used-on-demand effect items. Classify by the
+// actual OS effect codes rather than names, IDs or a presumed heal amount.
+function utilityCategories(item){
+ if(item?.slot!=null||!Array.isArray(item?.effects))return [];
+ const categories=[],effects=item.effects;
+ if(effects.some(effect=>typeof effect?.func==='string'&&
+  effect.func.startsWith('EP_RECOVERY_')))categories.push('cure');
+ if(effects.some(effect=>/^EP_SKILL_EXEC(?:_|$)/.test(effect?.func||'')))
+  categories.push('buff');
+ // Currently verified negative item-use effect: poisoning the consumer.
+ // EP_DESTINED_POISON a=50 is not a proven chance, damage or duration.
+ if(item.kind==='POTION'&&effects.some(effect=>
+  effect?.func==='EP_DESTINED_POISON'&&effect.dir==='TARGET'))
+  categories.push('harmful');
+ return categories;
+}
 function build(data){
  const sources=new Map(),drops=new Map(),npcTrades=new Map();
  const materialTrades=new Map(),npcLocations=new Map(),zoneLocations=new Map();
@@ -280,5 +296,5 @@ function build(data){
   search,normalize:normalizeSearch,sourceCount:sources.size
  });
 }
-root.PandoraWikiData=Object.freeze({build});
+root.PandoraWikiData=Object.freeze({build,utilityCategories});
 })(typeof window==='undefined'?globalThis:window);

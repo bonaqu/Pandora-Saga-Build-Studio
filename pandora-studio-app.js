@@ -1575,7 +1575,8 @@ function renderWiki(root){
   for(const [id,ru,en] of [
    ['all','Все предметы эффектов','All effect items'],
    ['buff','Дают положительные эффекты','Apply positive effects'],
-   ['cure','Снимают негативные эффекты','Remove negative effects']]){
+   ['cure','Снимают негативные эффекты','Remove negative effects'],
+   ['harmful','Дают отрицательные эффекты','Apply negative effects']]){
    const option=h('option',{value:id,text:wt(ru,en)});
    if(wikiEffectFilter===id)option.selected=true;
    filter.append(option);
@@ -1978,14 +1979,7 @@ function renderWiki(root){
    window.PandoraStudioRules.equipment(rec,{
     job:jobKeys[state.job],slot:rec.slot,level
    }).allowed&&window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender);
-  const utilityCategories=item=>{
-   if(item?.slot!=null)return [];
-   const codes=(item?.effects||[]).map(effect=>String(effect?.func||''));
-   const categories=[];
-   if(codes.some(code=>/^EP_RECOVERY_/.test(code)))categories.push('cure');
-   if(codes.some(code=>/^EP_SKILL_EXEC(?:_|$)/.test(code)))categories.push('buff');
-   return categories;
-  };
+  const utilityCategories=item=>window.PandoraWikiData.utilityCategories(item);
   const isUtilityItem=item=>utilityCategories(item).length>0;
   const isVisibleItem=(item,kind)=>kind==='all'?true:
    kind==='equipment'?slotKeys.includes(item.slot):
@@ -2124,6 +2118,10 @@ function renderWiki(root){
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
    detail.append(description);
   }
+  if(type==='item'&&utilityCategories(rec).includes('harmful'))
+   detail.append(h('p',{class:'wiki-description wiki-harmful-consumable-note',
+    text:wt('При использовании накладывает временный дебаф отравления на персонажа, использовавшего предмет. Значение серверного параметра не подтверждает урон, шанс или длительность.',
+     'On use, applies a temporary poison debuff to the character consuming the item. The server parameter does not establish damage, chance or duration.')}));
   if(type==='map'){
    const geo=window.PandoraAstirLocations;
    const district=geo?.district(id),nation=geo?.country(id);
@@ -2241,13 +2239,15 @@ function renderWiki(root){
      const effectRows=rec.effects||[];
      const effectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items,rec);
       const allEffectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items);
-      const labelFor=code=>lang==='ru'?
+      const labelFor=code=>code==='EP_DESTINED_POISON'&&lang==='en'?
+      'Applies poison':lang==='ru'?
        window.PandoraStudioItemOwnerEditor.effectDisplayLabel(code,lang):
        allEffectOptions.find(row=>row.value===code)?.label||code;
      const update=(index,patch)=>saveWikiItemField(id,'effects',
       effectRows.map((effect,i)=>i===index?{...effect,...patch}:effect));
      const list=h('div',{class:'wiki-owner-effects'});
-     list.append(h('h4',{text:wt('Бонусы предмета','Item bonuses')}));
+     list.append(h('h4',{text:utilityCategories(rec).includes('harmful')?
+      wt('Эффекты предмета','Item effects'):wt('Бонусы предмета','Item bonuses')}));
      for(const [index,effect] of effectRows.entries()){
       const row=h('div',{class:'wiki-owner-effect'});
       const effectName=h('span',{class:'wiki-owner-effect-name',text:labelFor(effect.func),
@@ -2264,11 +2264,15 @@ function renderWiki(root){
       }
       row.append(effectName);
       for(const [key,label] of [['a','Бонус'],['b','Доп. параметр']]){
+        if(effect.func==='EP_DESTINED_POISON'&&key==='a'&&!(adminEditing&&adminToken))continue;
         const initial=effect[key];
         if(key==='b'&&!adminEditing)continue;
         if(initial==null&&!adminEditing)continue;
         const value=h('span',{class:'wiki-owner-effect-value'});
-        if(adminEditing&&adminToken&&key==='b')value.append(h('small',{text:label}));
+        if(adminEditing&&adminToken&&(key==='b'||
+         (key==='a'&&effect.func==='EP_DESTINED_POISON')))
+         value.append(h('small',{text:key==='a'?
+          wt('Параметр OS (значение неизвестно)','OS parameter (meaning unknown)'):label}));
         const signed=/^EP_(?:MAXLIFE|MAXMANA|STRENGTH|VITARITY|AGILITY|DEXTERITY|SPIRITUAL|INTELIGENCE|ARMORCLASS|TOHIT|CRITICALRATE|DAMAGERATE|FIRE_RESISTANCE|COLD_RESISTANCE|MAGIC_RESISTANCE|ATTACKINTERVAL|DARK_RESISTANCE|HOLY_RESISTANCE|POISON_RESISTANCE|MOVESPEED|AVOIDANCE|DESTINE_WARDING|ELEMENT_DAMAGE|VOLUME_EXP|IMMUNE_BURN|IMMUNE_VIT_TYPE|SKILL_BENCH)/.test(effect.func);
         const percentage=key==='a'&&(/_SCALE$/.test(effect.func)||
          ['EP_IMMUNE_BURN','EP_IMMUNE_VIT_TYPE','EP_SKILL_BENCH','EP_SKILL_DELAY'].includes(effect.func));
