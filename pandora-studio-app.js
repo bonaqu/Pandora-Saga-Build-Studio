@@ -4401,6 +4401,8 @@ async function restoreSharedHash(){
 }
 function modal(title,content){const root=$('modalRoot');root.replaceChildren();root.hidden=false;const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});box.append(h('button',{class:'button-action close',text:'× Закрыть',onclick:()=>{root.hidden=true;root.replaceChildren()}}),h('h2',{text:title}),content);root.append(box);root.onclick=e=>{if(e.target===root){root.hidden=true;root.replaceChildren()}};return box}
 async function apiRequest(path,body,token=adminToken) {
+ const editingWrite=Boolean(body)&&/^\/api\/admin\/(?:override|reset)$/.test(path);
+ if(editingWrite){ownerSaveState='saving';ownerSaveError='';refreshOwnerUI()}
  let response;
  try {
   response=await fetch(API+path,{
@@ -4409,12 +4411,14 @@ async function apiRequest(path,body,token=adminToken) {
    ...(body?{body:JSON.stringify(body)}:{})
   });
  } catch {
+  if(editingWrite){ownerSaveState='error';ownerSaveError='Cloudflare Worker недоступен';refreshOwnerUI()}
   throw new Error("Нет соединения с Cloudflare Worker. Проверь Builds и /api/health. Пароль ещё не проверялся сервером.");
  }
  const data=await response.json().catch(()=>({error:"Сервер вернул ответ без JSON"}));
  if(!response.ok){
   const error=new Error(data.error||("Ошибка сервера HTTP "+response.status));
   error.httpStatus=response.status;error.reason=data.reason||null;
+  if(editingWrite){ownerSaveState='error';ownerSaveError=error.message;refreshOwnerUI()}
   if(response.status===401&&token&&token===adminToken&&path.startsWith('/api/admin/')){
    // The editor session is invalid. A player account uses a different token
    // and must never be signed out by this administrator-only failure.
@@ -4423,6 +4427,7 @@ async function apiRequest(path,body,token=adminToken) {
   }
   throw error;
  }
+ if(editingWrite){ownerSaveState='saved';ownerSaveError='';refreshOwnerUI()}
  return data;
 }
 function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Синхронизировать ручные правки с GitHub',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
@@ -4439,6 +4444,7 @@ function updateAdminHint(){
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
 const ownerEdits=[];
+let ownerSaveState='ready',ownerSaveError='';
 let activeInlineEditor=null;
 let editIsSaving=false;
 function closeInlineEditor(){
@@ -4446,22 +4452,73 @@ function closeInlineEditor(){
 }
 function activeOverride(key){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:null}
 function refreshOwnerUI(){
-  const dock=document.getElementById('ownerDock');
-  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return;}
-  if(dock){
-    dock.querySelector('[data-owner-count]').textContent='Правок: '+Object.keys(override).length;
-    dock.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving;
-    return;
-  }
-  const root=h('aside',{id:'ownerDock',class:'owner-dock',role:'toolbar','aria-label':'Управление сайтом'});
-  root.append(h('span',{class:'owner-dock-title',text:'✦ Редактор сайта'}),
-    h('span',{'data-owner-count':'',class:'owner-dock-count',text:'Правок: '+Object.keys(override).length}),
-    h('button',{type:'button',text:'↶ Отменить','data-owner-undo':'',disabled:!ownerEdits.length,onclick:undoOwnerEdit}),
-    h('button',{type:'button',text:'Все правки',onclick:showOverrideManager}),
-    h('button',{type:'button',text:'Игровой каталог',onclick:showCatalogImport}),
-    h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport}),
-    h('button',{type:'button',text:'Завершить',onclick:()=>{adminEditing=false;closeInlineEditor();render();updateAdminHint()}}));
-  document.body.append(root);
+ const dock=document.getElementById('ownerDock');
+ if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
+ const count=Object.keys(override).length;
+ const saveText=ownerSaveState==='saving'?'Сохраняю в Cloudflare D1…':
+  ownerSaveState==='error'?'Не сохранено: '+(ownerSaveError||'ошибка сервера'):
+  ownerSaveState==='saved'?'✓ Сохранено в Cloudflare D1':
+  '✓ Подключено к Cloudflare D1 · сохранение автоматическое';
+ const update=root=>{
+  const counter=root.querySelector('[data-owner-count]');
+  if(counter)counter.textContent=count+' '+(count===1?'запись':'записей')+' в D1';
+  const recent=root.querySelector('[data-owner-recent]');
+  if(recent)recent.textContent='За этот сеанс: '+ownerEdits.length;
+  const state=root.querySelector('[data-owner-save-state]');
+  if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
+  root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
+   ownerSaveState==='saving';
+ };
+ if(dock){update(dock);return}
+ const root=h('aside',{id:'ownerDock',class:'owner-dock',role:'region',
+  'aria-label':'Редактор сайта · изменения сохраняются автоматически'});
+ const head=h('div',{class:'owner-dock-head'},[
+  h('strong',{class:'owner-dock-title',text:'✎ Редактор сайта'}),
+  h('small',{class:'owner-dock-online',text:'Редактирование включено'})
+ ]);
+ const status=h('div',{class:'owner-dock-save-state','data-owner-save-state':'',
+  role:'status','aria-live':'polite'});
+ const counters=h('div',{class:'owner-dock-counters'},[
+  h('span',{'data-owner-count':'',class:'owner-dock-count'}),
+  h('span',{'data-owner-recent':'',class:'owner-dock-count'})
+ ]);
+ const guide=h('details',{class:'owner-workflow-guide',open:true},[
+  h('summary',{text:'Как редактировать и когда нажимать кнопки'}),
+  h('ol',{class:'owner-workflow-steps'},[
+   h('li',{text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'}),
+   h('li',{text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'}),
+   h('li',{text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})
+  ]),
+  h('div',{class:'owner-workflow-glossary'},[
+   h('p',{},[h('strong',{text:'Все правки'}),document.createTextNode(' — посмотреть сохранённые изменения и вернуть исходное.')]),
+   h('p',{},[h('strong',{text:'Игровой каталог'}),document.createTextNode(' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.')]),
+   h('p',{},[h('strong',{text:'PR правок'}),document.createTextNode(' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.')]),
+   h('p',{},[h('strong',{text:'Завершить'}),document.createTextNode(' — только скрыть инструменты редактирования, не удалить изменения.')])
+  ])
+ ]);
+ const actions=h('div',{class:'owner-dock-actions'},[
+  h('button',{type:'button',class:'owner-dock-primary',
+   text:'Открыть энциклопедию',onclick:()=>changeTab('wiki')}),
+  h('button',{type:'button',text:'↶ Отменить','data-owner-undo':'',onclick:undoOwnerEdit,
+   title:'Отменить последнее действие в этом сеансе в Cloudflare D1'}),
+  h('button',{type:'button',text:'Все правки',onclick:showOverrideManager,
+   title:'Просмотр всех сохранённых переопределений в D1'}),
+  h('button',{type:'button',text:'Игровой каталог',onclick:showCatalogImport,
+   title:'Отдельное обновление снимка игрового каталога'}),
+  h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport,
+   title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
+  h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
+   onclick:()=>{
+    if(ownerSaveState==='saving'||editIsSaving){
+     showStudioToast('Дождись окончания сохранения в Cloudflare D1','warning');return}
+    if(ownerSaveState==='error'){
+     showStudioToast('Есть ошибка сохранения. Проверь поле и повтори изменение.','warning');return}
+    adminEditing=false;closeInlineEditor();render();updateAdminHint()
+   }})
+ ]);
+ root.append(head,status,counters,guide,actions);
+ document.body.append(root);
+ update(root);
 }
 async function undoOwnerEdit(){
   if(!adminToken||!ownerEdits.length||editIsSaving)return;
