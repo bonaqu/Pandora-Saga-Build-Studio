@@ -71,7 +71,7 @@ function validPatch(type,patch){
    if(k==='prereq')return v===null||id(v);
    if(k==='classes')return record(v)&&Object.keys(v).length<=28&&
     Object.entries(v).every(([key,n])=>/^[A-Z_]{2,25}$/.test(key)&&n===1);
-   if(k==='mobs')return type==='map'?checkMonsterList(v,1000):checkList(v,1000);
+   if(k==='mobs')return ['map','instance'].includes(type)?checkMonsterList(v,1000):checkList(v,1000);
    if(k==='maps')return checkList(v,1000);
    if(type==='monster'&&k==='loot')return checkList(v,120);
    if(type==='map'&&mapExtraKeys.includes(k))return validMapExtra(k,v);
