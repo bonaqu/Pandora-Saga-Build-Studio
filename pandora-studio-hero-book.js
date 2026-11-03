@@ -257,7 +257,7 @@ function make(tag,attrs={},children=[]){
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
- const info=key.startsWith('summary.')?
+ const info=/^summary\\.\\d+$/.test(key)?
   guide?.summary(options.overrides||{},Number(key.slice(8)),ru,en):
   guide?.field(options.overrides||{},key,ru,en,fallbackRu,fallbackEn);
  const english=document.documentElement?.lang==='en';
@@ -268,11 +268,14 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  node.setAttribute('data-guide-key',key);
  if(options.editable&&typeof options.onTextEdit==='function'){
   node.classList.add('stage-guide-editable');
-  node.addEventListener('dblclick',event=>{
+  const editName=event=>{
    event.stopPropagation();event.preventDefault();
    root.PandoraGuideTooltip?.dismiss();
    options.onTextEdit(node,key,english?'en':'ru',label);
-  });
+  };
+  node.addEventListener('dblclick',editName);
+  node.setAttribute('aria-keyshortcuts','F2');
+  node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
   const pencil=make('button',{type:'button',class:'stage-guide-edit-hint',
    text:'✎',title:english?'Edit tooltip':'Изменить подсказку',
    'aria-label':english?'Edit tooltip for '+label:'Изменить подсказку: '+label,
