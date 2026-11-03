@@ -18,6 +18,7 @@ import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs'
 import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
 import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
+import {runBuildComparisonSmoke} from './browser-build-comparison.mjs';
 
 const base='http://127.0.0.1:4173';
 const argv=new Set(process.argv.slice(2));
@@ -232,11 +233,13 @@ async function main(){
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
   ['honor-guide',runHonorGuideSmoke],
+  ['build-comparison',runBuildComparisonSmoke],
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
  const quickCases=new Set(['share-link','equipment-locale','legacy-class-cap',
-  'manual-saved-overwrite','account-isolation','inline-skill-milestones']);
+  'manual-saved-overwrite','account-isolation','inline-skill-milestones',
+  'build-comparison']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
  const report=await runIndependentSmokes(selected,browser,base,{concurrency});
  console.log('Chromium '+(quick?'quick':'full')+' suite: '+
