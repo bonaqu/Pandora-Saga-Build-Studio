@@ -84,7 +84,7 @@ async function main(){
   const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
   assert.match(recovery,/Регенерация/);
   assert.match(recovery,/Восстановление/);
-  assert.match(recovery,/Ориентировочное действие умения/);
+  assert.match(recovery,/Ориентировочное действие навыка/);
   await page.locator('#stageAttributes [data-book-page="recovery"]').click();
  await page.locator('#stageAttributes .stage-mana-consumables').waitFor({state:'visible',timeout:20000});
  assert.match(await page.locator('#stageAttributes .stage-mana-consumables').innerText(),/Легкое восстанавливающее зелье/);
