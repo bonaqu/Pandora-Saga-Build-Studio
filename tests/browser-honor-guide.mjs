@@ -40,13 +40,22 @@ export async function runHonorGuideSmoke(browser,base){
   const zone=panel.locator('.wiki-honor-list-row')
    .filter({hasText:'Эль Ведд'}).locator('.wiki-link');
   await zone.click();
-  const historical=page.locator('.wiki-historic-roster');
-  await historical.waitFor({state:'visible',timeout:20000});
-  assert.equal(await historical.locator('.wiki-historic-mob').count(),22);
-  assert.equal(await historical.locator('.wiki-historic-unverified').count(),3);
-  assert.ok(await historical.locator('.wiki-historic-mob .wiki-link').count()>=19);
-  assert.match(await historical.innerText(),/Страж вожака/);
+  const native=page.locator('.wiki-page .wiki-map-monsters');
+  await native.waitFor({state:'visible',timeout:20000});
+  assert.equal(await native.locator('.wiki-mob-row').count(),22);
+  assert.ok(await native.locator('.wiki-mob-row .wiki-link').count()>=19);
+  assert.match(await native.innerText(),/Страж вожака/);
+  assert.equal(await page.locator('.wiki-historic-notice,.wiki-historic-tag').count(),0);
+  assert.doesNotMatch(await panel.innerText(),/Историческая PvP-локация|не представленная в актуальной карте OS/);
+  assert.equal(await panel.locator('.wiki-map-roster-actions').count(),0,
+   'Only authenticated administrators can edit the future monster roster');
+  await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
+  const ruins=page.locator('.wiki-list [data-wiki-record="astir-underground"]');
+  await ruins.waitFor({state:'visible',timeout:15000});
+  await ruins.click();
+  assert.equal((await panel.locator('h3').innerText()).trim(),'Подземные руины Астира');
+  assert.doesNotMatch(await panel.innerText(),/Историческая PvP-локация|недоступна на OS/);
   assert.deepEqual(errors,[]);
-  console.log('Chromium Honor encyclopedia passed: RU/EN, 12 ranks, historic 22-mob linked roster');
+  console.log('Chromium Honor and future maps passed: RU/EN, 12 ranks, native 22-mob location grid');
  }finally{await context.close()}
 }
