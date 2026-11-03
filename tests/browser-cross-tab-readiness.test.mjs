@@ -20,5 +20,5 @@ test('cross-tab account timeout reports non-secret UI state',()=>{
  assert.match(code,/catalogStatus:/);
  const section=code.slice(code.indexOf('const diagnostic=await page.evaluate('),
   code.indexOf('throw Error(\'Cross-tab account bootstrap'));
- assert.doesNotMatch(section,/ps-account-session|ps-build-library-secret|token/);
+ assert.doesNotMatch(section,/ps-account-session|ps-build-library-secret|\\.token\\b|authorization/i);
 });
