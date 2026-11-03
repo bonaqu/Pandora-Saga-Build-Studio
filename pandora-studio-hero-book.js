@@ -221,16 +221,20 @@ const bookLineFragments=Object.freeze({
  ' (отдельно от базового позиционного бонуса)':' (separate from base position bonus)',
  ' ОЗ, ':' HP, ',' ОМ. Усиления сохраняются в билде.':' MP. Buffs are saved with the build.'
 });
+// Immutable translation maps are read for every generated book node.
+// Build their ordered key/value pairs once, not on every element/attribute.
+const bookLineHeadEntries=Object.entries(bookLineHeads);
+const bookLineFragmentEntries=Object.entries(bookLineFragments);
 function bookText(value){
  if(typeof value!=='string'||document.documentElement?.lang!=='en')return value;
  if(Object.hasOwn(bookEnglish,value))return bookEnglish[value];
- const match=Object.entries(bookLineHeads).find(([ru])=>value.startsWith(ru));
+ const match=bookLineHeadEntries.find(([ru])=>value.startsWith(ru));
  if(!match)return value;
  let tail=value.slice(match[0].length);
  // Stat captions have numeric values; do not translate a player's or item's
  // name that merely happens to begin with the same ordinary Russian words.
  if(match[0]!=='Не действует: '&&!/^[+\-−]?[\d≈—]/.test(tail))return value;
- for(const [ru,en] of Object.entries(bookLineFragments))tail=tail.replaceAll(ru,en);
+ for(const [ru,en] of bookLineFragmentEntries)tail=tail.replaceAll(ru,en);
  return match[1]+tail;
 }
 function make(tag,attrs={},children=[]){
@@ -1370,6 +1374,32 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(chosen==='effects'){
   const english=document.documentElement?.lang==='en';
+  const harmful=modifiers?.harmfulConsumables?.rows||[];
+  if(harmful.length){
+   const panel=make('details',{class:'stage-attribute-row stage-poison-consumables'});
+   panel.append(make('summary',{text:(english?
+    'Poisonous consumables':'Ядовитые расходники')+' · '+harmful.length}));
+   panel.append(make('p',{class:'stage-attribute-note',text:english?
+    'These items have a poison effect in the current OS catalog and are not healing potions. The server value is NOT a proven damage amount, duration or chance.':
+    'У этих предметов в каталоге OS указан эффект отравления; это не лечебные зелья. Числовое поле сервера НЕ подтверждает величину урона, длительность или шанс.'}));
+   for(const entry of harmful){
+    const item=itemById(entry.id),name=item?.name||entry.name;
+    const row=make(item?'button':'div',{class:'stage-potion-item',
+     ...(item?{type:'button','aria-label':(english?'Open item: ':
+      'Открыть предмет: ')+name,onclick:()=>onItem(entry.id)}:{})});
+    if(item){
+     const src=icon(item);
+     if(src){
+      const image=make('img',{src,alt:'',loading:'lazy'});
+      image.onerror=()=>image.remove();row.append(image);
+     }
+    }
+    row.append(make('span',{text:name}),
+     make('strong',{text:english?'Poison effect':'Эффект отравления'}));
+    panel.append(row);
+   }
+   body.append(panel);
+  }
   const cures=modifiers?.statusCures?.rows||[];
   if(cures.length){
    const panel=make('details',{class:'stage-attribute-row stage-status-cures'});

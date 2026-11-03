@@ -1447,7 +1447,7 @@ function effectCoverage({records=[],itemForth=null}={}){
  return {counts,total:counts.calculated+counts.preview+counts.conditional+
   counts.missing+counts.inactive,sources:sources.size,
   pending:pending.slice(0,25),additionalPending:Math.max(0,pending.length-25),
-  verified:false,source:'Current current game server structured equipment/Soul/Forth effects'};
+  verified:false,source:'Current game server structured equipment/Soul/Forth effects'};
 }
 // Executed Remaked Legacy Calc('FirstAid'/'Heal'/'HealingAura'/
 // 'Sanctuary'/'Restoration') from js/calc.js Flag[5].
@@ -1575,6 +1575,31 @@ function statusCurePreview({items=null}={}){
  }
  rows.sort((a,b)=>a.id-b.id);
  return {rows,verified:false};
+}
+
+// The OS catalogue contains two explicit non-healing poison consumables.
+// Their EP_DESTINED_POISON a=50 is an unknown server parameter, NOT a proven
+// percent chance, tick damage or duration. Expose only a neutral warning.
+const knownPoisonConsumables=Object.freeze([50022,50056]);
+function harmfulConsumablePreview({items=null}={}){
+ const rows=[];
+ if(!items||typeof items!=='object'||Array.isArray(items))
+  return {rows,verified:false};
+ for(const id of knownPoisonConsumables){
+  const item=items[String(id)];
+  if(item?.id!==id||item.kind!=='POTION'||
+   !Array.isArray(item.effects))continue;
+  const poison=item.effects.filter(e=>e?.func==='EP_DESTINED_POISON'&&
+   e.dir==='TARGET'&&Number.isFinite(e.a));
+  if(poison.length!==1||item.effects.some(e=>
+   ['EP_HEAL_LIFE','EP_HEAL_LIFE_RATE','EP_HEAL_MANA','EP_HEAL_MANA_RATE']
+    .includes(e?.func)))continue;
+  rows.push({id,name:String(item.name||id),sourceValue:poison[0].a,
+   verified:false});
+ }
+ return {rows,verified:false,
+  source:'current OS items.json EP_DESTINED_POISON',
+  excluded:['poison damage','duration','server activation chance']};
 }
 
 // Current OS consumables may trigger a *catalogued* skill when used. Display
@@ -2087,6 +2112,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   skillCatalog:combatContext.skillCatalog
  }):null;
  const statusCures=statusCurePreview({items:consumableItems});
+ const harmfulConsumables=harmfulConsumablePreview({items:consumableItems});
  const consumableSkills=consumableSkillPreview({
   items:consumableItems,skills:combatContext.skillCatalog
  });
@@ -2120,7 +2146,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -2128,6 +2154,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

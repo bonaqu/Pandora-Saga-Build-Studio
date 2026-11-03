@@ -38,13 +38,30 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   await page.reload({waitUntil:'domcontentloaded'});
   // The owner marker changes before the account and OS catalog finish
   // rendering. A save issued mid-render can lose the typed name.
-  await page.waitForFunction(expected=>{
-   const catalog=document.querySelector('#catalogStatus')?.textContent||'';
-   const profile=document.querySelector('#profileTrigger')?.title||'';
-   return localStorage.getItem('ps-build-owner-scope.v1')==='account:'+expected&&
-    /\d+ навыков · \d+ предметов · \d+ душ/.test(catalog)&&
-    profile.includes(expected);
-  },username,{timeout:25000});
+  // Count text is locale-dependent and may re-render while D1 snapshots
+  // refresh. The editor bootstrap condition is the real race choices and
+  // hero portrait, alongside the account's own owner-scope/profile marker.
+  try{
+   await page.waitForFunction(expected=>{
+    const profile=document.querySelector('#profileTrigger')?.title||'';
+    return localStorage.getItem('ps-build-owner-scope.v1')==='account:'+expected&&
+     document.querySelector('#raceGrid')?.children.length>0&&
+     !!document.querySelector('#hero')?.getAttribute('src')&&
+     profile.includes(expected);
+   },username,{timeout:25000});
+  }catch(error){
+   const diagnostic=await page.evaluate(()=>({
+    owner:localStorage.getItem('ps-build-owner-scope.v1'),
+    raceCount:document.querySelector('#raceGrid')?.children.length||0,
+    hasHero:!!document.querySelector('#hero')?.getAttribute('src'),
+    profile:document.querySelector('#profileTrigger')?.title||'',
+    catalogStatus:document.querySelector('#catalogStatus')?.textContent||'',
+    readyState:document.readyState
+   }));
+   // No session tokens, passwords or private keys in CI logs.
+   throw Error('Cross-tab account bootstrap for '+username+
+    ' did not complete: '+JSON.stringify(diagnostic)+'; '+error.message);
+  }
  }
  async function save(page,name,expectedToken){
   if(!await page.locator('.build-name-input').isVisible())

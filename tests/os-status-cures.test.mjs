@@ -37,7 +37,10 @@ test('Hero Book keeps cleansing consumables separate and directly linked to the 
  assert.match(book,/stage-status-cures/);
  assert.match(book,/onItem\(entry\.id\)/);
  assert.match(calculator,/const statusCures=statusCurePreview\(\{items:consumableItems\}\)/);
- assert.match(calculator,/consumableRecovery,consumableSkills,statusCures,combat/);
+ assert.match(calculator,/consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat/);
+ assert.match(calculator,/const harmfulConsumables=harmfulConsumablePreview\(\{items:consumableItems\}\)/);
+ assert.doesNotMatch(book,/stage-status-cures stage-poison-consumables/,
+  'cleansing and harmful items must keep separate lists');
 });
 
 test('RU and EN status cure labels preserve every original source effect',()=>{
