@@ -1678,7 +1678,7 @@ function renderWiki(root){
   if(nameCache.has(key))return nameCache.get(key);
   const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):
    type==='chest'?wikiData.items?.[id]:wikiIndex.records(type)?.[id];
-  const en=(type==='map'&&obj?.nameEn)||(type==='npc'&&obj?.nameEn)||
+  const en=(obj?.nameEn&&['map','npc','monster','skill','soul','instance'].includes(type)?obj.nameEn:null)||
    (type==='npc'&&obj?.virtual?obj.en:null)||
    (type==='map'?(officialEnglish?.maps?.[id]?.n||
    officialEnglish?.tradeMaps?.[id]?.n):officialEnglish?.[
@@ -1710,6 +1710,7 @@ function renderWiki(root){
   const npc=type==='npc'?wikiIndex.records('npc')?.[id]:null;
   const verifiedNpcAlias=npc?[npc.en,npc.nameEn,npc.name].filter(Boolean).join(' '):null;
   const value=[dataName(type,id),translated?.n,verifiedNpcAlias,territoryAlias,
+   type==='monster'?wikiIndex.records('monster')?.[id]?.nameEn:null,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
   searchCache.set(key,value);
@@ -1808,9 +1809,9 @@ function renderWiki(root){
  const ids=[...new Set((existing||[]).map(String))];
  const candidates=kind==='monster'?wikiData.monsters:
   kind==='npc'?wikiData.trades?.npcs:
-  kind==='map'?Object.fromEntries(Object.entries(wikiIndex.records('map'))
-   .filter(([id])=>/^\d+$/.test(id))):
+  kind==='map'?wikiIndex.records('map'):
   kind==='item'?wikiData.items:wikiIndex.records('instance');
+ const idValue=value=>/^[1-9][0-9]{0,14}$/.test(String(value))?Number(value):String(value);
  const holder=h('div',{class:'wiki-entity-flow'});
  for(const key of ids){
   const chip=h('span',{class:'wiki-owner-mat'});
@@ -1818,7 +1819,7 @@ function renderWiki(root){
    wikiLink(dataName(kind,key),kind,key));
   if(adminEditing&&adminToken)chip.append(h('button',{type:'button',
    class:'wiki-owner-remove',text:'×','aria-label':'Удалить связь '+dataName(kind,key),
-   onclick:()=>void onChange(ids.filter(x=>x!==key).map(Number))
+   onclick:()=>void onChange(ids.filter(x=>x!==key).map(idValue))
     .catch(err=>showStudioToast(err.message,'warning'))}));
   holder.append(chip);
  }
@@ -1846,7 +1847,7 @@ function renderWiki(root){
    select.onchange=async()=>{
     if(!select.value)return;
     select.disabled=true;
-    try{await onChange([...ids,select.value].map(Number))}
+    try{await onChange([...ids,select.value].map(idValue))}
     catch(e){feedback.textContent=e.message;select.disabled=false}
    };
    const outside=e=>{
@@ -2145,7 +2146,7 @@ function renderWiki(root){
     ['item','chest'].includes(type)?'item.'+id:null;
    const heading=h('h3',{text:dataName(type,id),
     ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{}),
-    ...(adminEditing&&(lang==='ru'||['npc','map'].includes(type))&&
+    ...(adminEditing&&(lang==='ru'||['npc','map','monster'].includes(type))&&
      ['monster','map','npc','instance','soul'].includes(type)?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'nameEn':'name'}:{})});
@@ -2164,7 +2165,7 @@ function renderWiki(root){
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
   if(described?.desc||(lang==='en'&&described?.descEn)||
-   (adminEditing&&adminToken&&(lang==='ru'||['npc','map'].includes(type))&&type!=='instance')){
+   (adminEditing&&adminToken&&(lang==='ru'||['npc','map','monster'].includes(type))&&type!=='instance')){
    const text=englishDescription||described?.desc||'';
    const missing=!text.trim();
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
@@ -2173,7 +2174,7 @@ function renderWiki(root){
     missing?wt('Двойной клик — добавить описание','Double-click to add description'):
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
-    ...(adminEditing&&(lang==='ru'||['npc','map'].includes(type))&&
+    ...(adminEditing&&(lang==='ru'||['npc','map','monster'].includes(type))&&
      ['monster','map','npc','instance','soul'].includes(type)?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'descEn':type==='instance'?'blurbRu':'desc',
@@ -4616,7 +4617,7 @@ function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000
  return node;
 }
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
- if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map'].includes(type)))return node;
+ if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map','monster'].includes(type)))return node;
  node.classList.add('wiki-edit-value');
  // The delegated dblclick is the user's actual first gesture. Starting an
  // ondblclick listener here would silently require a SECOND double-click.
