@@ -41,8 +41,9 @@ test('encyclopedia exposes localized negative effects filter and a truthful on-u
  assert.match(app,/\['harmful','Дают отрицательные эффекты','Apply negative effects'\]/);
  assert.match(app,/PandoraWikiData\.utilityCategories\(item\)/);
  assert.match(app,/wiki-harmful-consumable-note/);
- assert.match(app,/временный дебаф отравления/);
- assert.match(app,/server parameter does not establish damage, chance or duration/);
+ assert.match(app,/временный эффект отравления/);
+ assert.match(app,/периодически наносит ему урон ядом/);
+ assert.match(app,/Tick damage, interval, duration and chance are not established/);
  assert.match(app,/if\(effect\.func==='EP_DESTINED_POISON'&&key==='a'&&!\(adminEditing&&adminToken\)\)continue/);
  assert.doesNotMatch(book,/harmfulConsumables|stage-poison-consumables|Ядовитые расходники/);
  assert.match(book,/statusCures/);
