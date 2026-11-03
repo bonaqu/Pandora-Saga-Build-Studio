@@ -381,7 +381,12 @@ function previewBaseStats(){
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
   supplementalSource:prayerSpirit?'Remaked Legacy: Inspiration / prayer Adeptness':null,
   enhancements:effectiveGuildBuffs.vitals,attributeBuffs:effectiveGuildBuffs.attributes,
-  potionContext:{racialPassiveId:state.racialPassiveId,jobKey:jobKeys[state.job],meleeMastery},
+  // A restored/shared build must never apply a passive from another race.
+  // Normalize numeric-string legacy IDs through the same canonical owner list
+  // used by the racial selection UI before *any* calculation runs.
+  potionContext:{racialPassiveId:window.PandoraGameNavigation.canonicalRacialPassiveId(
+   catalog.racialPassives,state.race,state.racialPassiveId),
+   jobKey:jobKeys[state.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
    jobKey:jobKeys[state.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,wardingMastery,
    skillCatalog:catalog.skills||{},branchMasteries,
