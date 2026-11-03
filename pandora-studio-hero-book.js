@@ -415,13 +415,18 @@ function buffsPage(body,options){
   make('small',{text:english?'Saved with this character':'Сохраняются с этим героем'})
  ]);
  body.append(status);
- const section=(name)=>{
+ let sectionIndex=0;
+ const section=(name,stableId=null)=>{
   const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
+  guideLabel(node.firstChild,'buffs.section.'+(stableId||sectionIndex++),
+   name,name,options,name,name);
   body.append(node);
   return node;
  };
  const select=(parent,name,key,levels,vital=false)=>{
   const field=make('label',{class:'stage-book-field'},[make('span',{text:name})]);
+  guideLabel(field.firstChild,key==='honorTitle'?'buffs.honor':'buffs.setting.'+key,
+   name,name,options,'Настройка усиления: '+name,'Enhancement setting: '+name);
   const entry=make('select',{'aria-label':name,'data-book-setting':key,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
   const selected=(vital?vitalsBuffs:buffs)[key]??0;
@@ -451,18 +456,18 @@ function buffsPage(body,options){
   (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
- const vitals=section('ОЗ и ОМ');
- if(!guildLevel){
-  select(vitals,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
-  select(vitals,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
- }else vitals.append(make('p',{class:'stage-attribute-note',text:english?
-  'HP and MP guild passives follow the selected guild level.':'Бонусы ОЗ и ОМ автоматически определяются уровнем гильдии.'}));
+ const vitals=section(english?'Vitals':'ОЗ и ОМ');
  toggle(vitals,'Знак жизни','lifeSign',true);
- const guild=section('Гильдия и честь');
+ const guild=section(english?'Guild':'Гильдия','guild');
  select(guild,english?'Guild level':'Уровень гильдии','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
    (english?'Manual guild buffs':'Ручной выбор усилений'):
    (english?'Guild level ':'Гильдия · уровень ')+i]));
+ if(!guildLevel){
+  select(guild,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+  select(guild,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+ }else guild.append(make('p',{class:'stage-attribute-note',text:english?
+  'HP and MP passives depend on guild level.':'Бонусы ОЗ и ОМ зависят от уровня гильдии.'}));
  if(guildLevel&&guildPreview){
   const rate=[0,2,4,6,9,12,15][guildPreview.guildHp]||0;
   const lines=[
@@ -481,7 +486,17 @@ function buffsPage(body,options){
  }
  select(guild,'Все характеристики','guildAll',opts([0,1,2,3,4,5,6]));
  select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
- select(guild,'Титул чести','honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]));
+ const honor=section(english?'Honor':'Честь','honor');
+ honor.append(make('p',{class:'stage-attribute-note',text:english?
+  'Choose one passive to simulate. Count (Moon): 129,000 Total Honor and 640,000 gold.':
+  'Выбери одно пассивное умение. Министр (Луна): 129 000 «Вся честь» и 640 000 золота.'}));
+ select(honor,english?'Honor passive skill':'Пассивное умение за честь',
+  'honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]));
+ if(typeof options.onHonor==='function')honor.append(make('button',{
+  class:'stage-book-honor-link',type:'button',
+  text:english?'Honor ranks and rewards':'Ранги и награды за честь',
+  onclick:options.onHonor
+ }));
  const priest=section(english?'Priest buffs':'Усиления жреца');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});
@@ -543,12 +558,11 @@ function buffsPage(body,options){
   }
   skills.append(group);
  }
- const regen=section('Восстановление');
  if(!guildLevel){
-  select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
-  select(regen,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
+  select(guild,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
+  select(guild,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
  }
- select(regen,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
+ select(guild,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
  if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
   const details=make('details',{class:'stage-legacy-buff-previews'});
   details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
@@ -761,8 +775,8 @@ function attackChapterGroups(calc){
 function defenseChapterGroups(calc){
  if(!calc)return[];
  const groups=[
-  {key:'recovery',ru:'Естественное восстановление',
-   en:'Natural recovery',rows:[]},
+  {key:'recovery',ru:'Пассивное восстановление',
+   en:'Passive recovery',rows:[]},
   {key:'status',ru:'Сопротивления отдельным состояниям',
    en:'Individual status resistances',rows:[]},
   {key:'special',ru:'Дополнительная защита',
@@ -776,9 +790,9 @@ function defenseChapterGroups(calc){
  put(0,'hpRecoveryAmount','Восстановление ОЗ','HP recovery amount',a?.hp?.known,'',true);
  put(0,'mpRecoveryAmount','Восстановление ОМ','MP recovery amount',a?.mp?.known,'',true);
  put(0,'hpRecoverySpeed','Скорость восстановления ОЗ',
-  'HP recovery speed',r?.hp?.total,'',true);
+  'HP recovery speed',r?.hp?.total,' инд.',true);
  put(0,'mpRecoverySpeed','Скорость восстановления ОМ',
-  'MP recovery speed',r?.mp?.total,'',true);
+  'MP recovery speed',r?.mp?.total,' инд.',true);
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
@@ -946,8 +960,11 @@ function defensePage(body,calc,english,options={}){
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
- combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{}}={}){
+ combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{},
+ copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
+ root.PandoraGuideTooltip?.dismiss();
  target.replaceChildren();
+ const copyOptions={overrides:copy,editable:canEdit,onTextEdit,onHonor};
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
   next=bookPages[(index+1)%bookPages.length][0];
@@ -977,11 +994,11 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  const body=make('div',{class:'stage-attribute-scroll stage-book-page',
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
- if(chosen==='summary')summaryPage(body,modifiers);
- if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en');
- if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en');
+ if(chosen==='summary')summaryPage(body,modifiers,copyOptions);
+ if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',copyOptions);
+ if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',copyOptions);
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
-  honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers});
+  honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
