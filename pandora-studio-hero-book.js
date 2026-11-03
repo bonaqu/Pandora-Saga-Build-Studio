@@ -629,6 +629,56 @@ function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},res
  renderSongSkills(body,modifiers);
 }
 
+
+function independentEffectRows(calc){
+ const rows=[],add=(ru,en,value,unit='')=>{
+  if(Number.isFinite(value)&&value!==0)rows.push({ru,en,value,unit});
+ };
+ const racial=calc?.combat?.racialWeapon;
+ if(racial?.matchesCategory===true&&
+  Number.isSafeInteger(racial.id)&&
+  ['oneHanded','axeBlunt','twoHanded'].includes(racial.kind)&&
+  typeof racial.ru==='string'&&racial.ru&&
+  typeof racial.en==='string'&&racial.en){
+  add(racial.ru+' · урон оружия (ед.)',
+   racial.en+' · weapon damage (flat)',racial.flat);
+  add(racial.ru+' · урон оружия (%)',
+   racial.en+' · weapon damage (%)',racial.percent,'%');
+ }
+ const range=calc?.attackRange;
+ // OS RANGE and CARRY are a single racial skill effect, not two bonuses.
+ if(Number.isFinite(range?.racialGeneral)&&
+  range.racialGeneral===range.racialCarry)
+  add('Зоркость · расовая дальность','Sharpsight · racial range',
+   range.racialGeneral);
+ if(Array.isArray(range?.entries))for(const e of range.entries){
+  if(!e||!['general','bow'].includes(e.kind)||
+   typeof e.source!=='string'||!e.source.trim()||e.source.length>240)continue;
+  add((e.kind==='general'?'Дальность атаки':'Дальность стрельбы')+
+   ' · '+e.source,(e.kind==='general'?'Attack range':'Bow range')+
+   ' · '+e.source,e.amount);
+ }
+ add('Подавление гнева · точность','Anger Suppression · accuracy',
+  calc?.combat?.racialRate?.accuracy,'%');
+ add('Интуиция · уклонение','Intuition · evasion',
+  calc?.combat?.racialRate?.dodge,'%');
+ add('Снаряжение · магический урон','Equipment · magic damage',
+  calc?.combat?.spellDamageEquipmentRate,'%');
+ return rows;
+}
+function appendIndependentEffects(body,calc,english){
+ const rows=independentEffectRows(calc);
+ if(!rows.length)return;
+ const details=make('details',{class:'stage-attribute-row stage-independent-effects'});
+ details.append(make('summary',{text:(english?'Other source effects':'Другие эффекты источников')+
+  ' · '+rows.length}));
+ for(const row of rows)details.append(make('p',{class:'stage-independent-effect-row',
+  text:(english?row.en:row.ru)+': '+(row.value>0?'+':'')+row.value+row.unit}));
+ details.append(make('small',{class:'stage-attribute-note',text:english?
+  'These effects are not combined into final totals without verified server rules.':
+  'Эффекты не прибавляются к итогам без подтверждённых серверных правил.'}));
+ body.append(details);
+}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{}}={}){
@@ -665,32 +715,37 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  if(chosen==='summary')summaryPage(body,modifiers,onPage);
  if(chosen==='effects')skillEffectsPage(body,{buffs,availability,combatSkillCards,resistanceSkillChoices,modifiers});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers});
+ // Final character values are rendered separately; item records are optional.
  if(['attack','defense'].includes(chosen)){
-  const intro=chosen==='attack'?'Параметры оружия':'Защита снаряжения';
-  body.append(make('p',{class:'stage-attribute-note',text:intro}));
+  const equipped=items.filter(row=>chosen==='attack'?row.record?.slot==='weapon':
+   row.record&&(row.record.AC!=null||row.record.block!=null));
+  if(equipped.length){
+   const en=document.documentElement?.lang==='en';
+   const section=make('details',{class:'stage-attribute-row stage-equipped-items'});
+   section.append(make('summary',{text:(en?'Equipped items':'Экипированные предметы')+
+    ' · '+equipped.length}));
+   for(const row of equipped){
+    const rec=row.record,id=rec?.id,clickable=Number.isSafeInteger(id)&&id>0;
+    const line=make(clickable?'button':'div',{
+     class:'stage-attribute-identity stage-equipped-item',
+     ...(clickable?{type:'button','aria-label':
+      (en?'Open item: ':'Открыть предмет: ')+(rec.name||id),
+      onclick:()=>onItem(id)}:{})});
+    const sprite=icon(rec);
+    if(sprite){const img=make('img',{src:sprite,alt:'',loading:'lazy'});
+     img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));line.append(img)}
+    line.append(make('span',{text:root.PandoraItemPresentation?.displayName(rec,
+     en?'Unnamed item':'Предмет без названия')||
+     rec.name||(en?'Unnamed item':'Предмет без названия')}));
+    section.append(line);
+    if(row.issue?.length)section.append(make('p',{class:'stage-item-unavailable',
+     text:(en?'Inactive: ':'Не действует: ')+row.issue.join(' · ')}));
+   }
+   body.append(section);
+  }
  }
- const selected=['attack','defense'].includes(chosen)?
-  items.filter(x=>chosen==='attack'?x.record?.slot==='weapon':
-   x.record&&(x.record.AC!=null||x.record.block!=null)):[];
- if(!selected.length&&['attack','defense'].includes(chosen))
-  body.append(make('p',{class:'muted',text:'Нет записей для этой вкладки'}));
- for(const row of selected){
-  const rec=row.record,card=make('section',{class:'stage-attribute-row'});
-  const top=make('div',{class:'stage-attribute-identity'});
-  const src=icon(rec);
-  if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));top.append(img)}
-  top.append(make('b',{text:root.PandoraItemPresentation?.displayName(rec,'Предмет без названия')||'Предмет без названия'}));
-  card.append(top);
-  if(row.issue?.length)card.append(make('p',{class:'stage-item-unavailable',
-   text:'Не действует: '+row.issue.join(' · ')}));
-  if(page==='attack'){
-   card.append(make('p',{text:'Базовая атака '+(rec.W??'—')+' · Дальность '+(rec.range??'—')+
-    ' · Скорость '+(rec.atkspeed??'—')+' · +'+row.refinement}));
-  }else if(page==='defense'){
-   card.append(make('p',{text:'Базовая защита '+(rec.AC??'—')+' · Блок '+(rec.block??'—')+
-    ' · Гнёзда '+(rec.soulslot??'—')+' · +'+row.refinement}));
-  }body.append(card);
- }
+ if(chosen==='effects')
+  appendIndependentEffects(body,modifiers,document.documentElement?.lang==='en');
  if(page==='effects'&&modifiers?.racialEffects?.survival){
   const survival=modifiers.racialEffects.survival;
   const english=document.documentElement?.lang==='en';
@@ -1250,5 +1305,5 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows});
+root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,independentEffectRows});
 })(typeof window==='undefined'?globalThis:window);
