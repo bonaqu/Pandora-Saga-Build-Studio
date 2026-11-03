@@ -85,12 +85,31 @@ function refinementEffects(record,grade){
 }
 // Official current OS itemForth level snapshots override narrative parsing.
 function sourceEffects(source,record,grade,itemForth=null){
- if(!record||typeof record!=='object')return [];
- const primary=Array.isArray(record.effects)?record.effects:[];
- if(!String(source).startsWith('item:'))return primary;
- const snapshot=itemForth?.[String(record.id)]?.[String(grade)];
- if(Array.isArray(snapshot))return [...primary,...snapshot];
- return [...primary,...refinementEffects(record,Number(grade))];
+ if(!record||typeof record!=='object'||
+  !Number.isInteger(grade)||grade<0||grade>10)return [];
+ const key=String(source);
+ // A stored/imported record may contain a stale ID after a catalog update.
+ // The source and the canonical item/Soul record must agree before any
+ // effects (including HP and MP) are used in character calculations.
+ const exact=key.match(/^(item|soul):(\d+)$/);
+ if(exact&&Number.isSafeInteger(record.id)&&
+  String(record.id)!==exact[2])return [];
+ // Imported or owner-edited structured data can be incomplete. A null
+ // row must never crash the stat rebuild or be interpreted as an effect.
+ const safeRows=rows=>Array.isArray(rows)?rows.filter(row=>
+  row&&typeof row==='object'&&typeof row.func==='string'):[];
+ const primary=safeRows(record.effects);
+ if(!key.startsWith('item:'))return primary;
+ // A Forth snapshot is tied to the official ID, not to a synthetic record
+ // label; otherwise arbitrary imported records could inherit the grade
+ // bonuses of an unrelated equipment entry.
+ const canonical=Number.isSafeInteger(record.id)&&
+  key==='item:'+record.id;
+ const snapshot=canonical?itemForth?.[String(record.id)]?.[String(grade)]:null;
+ if(Array.isArray(snapshot))return [...primary,...safeRows(snapshot)];
+ // Support the explicit legacy refinement-description fallback when no
+ // structured snapshot exists; never use it as a second bonus to a snapshot.
+ return [...primary,...refinementEffects(record,grade)];
 }
 
 // Current OS unison.json defines companion item IDs and root-item improvement
@@ -156,13 +175,17 @@ function gatherEffects(records=[],itemForth=null){
   for(const eff of sourceEffects(source,record,grade,itemForth)){
    if(Number.isFinite(eff.min)&&grade<eff.min)continue;
    if(Number.isFinite(eff.max)&&grade>eff.max)continue;
-   const value=Number(eff.a),key=keyByEffect[eff.func];
-   if(!Number.isFinite(value)){ignored.add(eff.func);continue}
+   // Explicit OS effect numeric fields are numbers. Coercing null, "" or
+   // true to 0/1 silently disagreed with effectCoverage's own source audit.
+   const value=eff?.a,key=Object.hasOwn(keyByEffect,eff?.func)?
+    keyByEffect[eff.func]:null;
+   if(!Number.isFinite(value)){ignored.add(eff?.func);continue}
    if(key)flat[key]+=value;
    else if(eff.func==='EP_MAXLIFE_CONST')health.hp+=value;
    else if(eff.func==='EP_MAXMANA_CONST')health.mp+=value;
-   else if(percentByEffect[eff.func])percent[percentByEffect[eff.func]].push({source,value});
-   else if(bonusByEffect[eff.func]){
+   else if(Object.hasOwn(percentByEffect,eff.func))
+    percent[percentByEffect[eff.func]].push({source,value});
+   else if(Object.hasOwn(bonusByEffect,eff.func)){
     const name=bonusByEffect[eff.func];bonuses[name]=(bonuses[name]||0)+value;
    }else{ignored.add(eff.func);continue}
    trace.push({source,func:eff.func,value});
