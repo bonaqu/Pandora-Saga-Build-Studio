@@ -551,7 +551,7 @@ function validWikiOwnerPatch(text,type){
     /^[A-Z_]{2,25}$/.test(k)&&n===1);
   if(key==='mobs')return ['map','instance'].includes(type)?validMonsterRefs(v,1000):checkIds(v);
   if(key==='maps')return checkIds(v);
-  if(type==='monster'&&key==='loot')return checkIds(v);
+  if(type==='monster'&&key==='loot')return Array.isArray(v)&&v.length<=120&&checkIds(v);
   if(type==='map'&&mapExtraNames.includes(key))return validMapExtra(key,v);
   if(key==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&
    v.every(x=>['weapon','shield','head','body','gloves','legs','feet','cloak',
@@ -575,7 +575,8 @@ function validTownWikiPatch(text,type,id){
    'magicProtection','warding','str','vit','agi','dex','spi','int','resists']:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  if(type==='monster'){
-  if(!patch.name?.trim()||!patch.nameEn?.trim()||
+  if(typeof patch.name!=='string'||typeof patch.nameEn!=='string'||
+   !patch.name.trim()||!patch.nameEn.trim()||
    patch.name.length>240||patch.nameEn.length>240)return false;
   return validWikiOwnerPatch(text,'monster')&&
    (patch.level==null||Number.isInteger(patch.level)&&patch.level>=1&&patch.level<=255);
@@ -583,7 +584,8 @@ function validTownWikiPatch(text,type,id){
  const keys=Object.keys(patch);
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
  if(type==='map'&&id.startsWith('custom-')&&
-  (!patch.name?.trim()||!patch.nameEn?.trim()))return false;
+  (typeof patch.name!=='string'||typeof patch.nameEn!=='string'||
+   !patch.name.trim()||!patch.nameEn.trim()))return false;
  return keys.every(k=>mapExtraNames.includes(k)?validMapExtra(k,patch[k]):k==='maps'?
    Array.isArray(patch.maps)&&patch.maps.length===1&&
     (townMapKey.test(patch.maps[0])||patch.maps[0]==='1001004'):
