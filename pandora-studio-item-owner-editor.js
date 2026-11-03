@@ -78,7 +78,108 @@ const nonEquipmentEffects=new Set([
  'EP_RECOVERY_RAVING','EP_RECOVERY_SILENCE'
 ]);
 const effectLabels=new Map([...effects,...Object.entries(extraLabels)]);
-function effectOptions(items,wearableItem=null){
+const englishEffectLabels=Object.freeze({
+ EP_MAXLIFE_CONST:"Max HP",
+ EP_MAXMANA_CONST:"Max MP",
+ EP_STRENGTH_CONST:"Strength",
+ EP_VITARITY_CONST:"Vitality",
+ EP_AGILITY_CONST:"Agility",
+ EP_DEXTERITY_CONST:"Dexterity",
+ EP_SPIRITUAL_CONST:"Spirit",
+ EP_INTELIGENCE_CONST:"Intelligence",
+ EP_ARMORCLASS_CONST:"Defense",
+ EP_TOHIT_CONST:"Accuracy",
+ EP_CRITICALRATE_CONST:"Critical hit chance",
+ EP_DAMAGERATE_CONST:"Attack",
+ EP_MAXLIFE_SCALE:"Max HP (%)",
+ EP_MAXMANA_SCALE:"Max MP (%)",
+ EP_FIRE_RESISTANCE_CONST:"Fire resistance",
+ EP_COLD_RESISTANCE_CONST:"Cold resistance",
+ EP_MAGIC_RESISTANCE_CONST:"Magic resistance",
+ EP_ATTACKINTERVAL_SCALE:"Attack speed (%)",
+ EP_ABILITY_RESET:"Reset attributes",
+ EP_ATTACK_BACKATK_RATE:"Back attack",
+ EP_AURADAMAGE_CONST:"Aura damage",
+ EP_AVOIDANCE_CONST:"Evasion",
+ EP_BADEFFECT_TIME_SCALE:"Negative effect duration",
+ EP_BLOCK_BREAK_RESIST:"Block break resistance",
+ EP_BOW_CARRY:"Bow carrying capacity",
+ EP_BOW_RANGE:"Bow range",
+ EP_CASTINGCANCEL_RESISTANCE_CONST:"Casting interruption resistance",
+ EP_CAST_HEAL_LIFE_SCALE:"Healing power",
+ EP_CHARM_RESISTANCE_CONST:"Charm resistance",
+ EP_DAMAGERATE_SCALE:"Attack power (%)",
+ EP_DARK_RESISTANCE_CONST:"Dark resistance",
+ EP_DESTINED_POISON:"Applies Poison",
+ EP_DESTINE_WARDING:"Warding",
+ EP_ELEMENT_DAMAGE_SCALE:"Elemental damage (%)",
+ EP_EXPERTISE_RESET:"Reset expertise",
+ EP_HEAL_LIFE:"Restore HP",
+ EP_HEAL_LIFE_RATE:"Restore HP (%)",
+ EP_HEAL_LIFE_REGENERATOR:"HP regeneration",
+ EP_HEAL_MANA:"Restore MP",
+ EP_HEAL_MANA_RATE:"Restore MP (%)",
+ EP_HOLY_RESISTANCE_CONST:"Holy resistance",
+ EP_IMMUNE_BURN:"Burn resistance",
+ EP_IMMUNE_CURSE:"Curse immunity",
+ EP_IMMUNE_DISEASE:"Disease immunity",
+ EP_IMMUNE_EVIL:"Evil magic protection",
+ EP_IMMUNE_KNOCKBACK:"Knockback immunity",
+ EP_IMMUNE_NUMB:"Numbness immunity",
+ EP_IMMUNE_RAVING:"Confusion immunity",
+ EP_IMMUNE_SILENCE:"Silence immunity",
+ EP_IMMUNE_SLEEP:"Sleep immunity",
+ EP_IMMUNE_SPI_TYPE:"Spirit-based resistance",
+ EP_IMMUNE_STUN:"Stun immunity",
+ EP_IMMUNE_TUMBLE:"Knockdown immunity",
+ EP_IMMUNE_VIT_TYPE:"Vitality-based resistance",
+ EP_MOVESPEED_SCALE:"Movement speed (%)",
+ EP_ONDAMAGE_ELEM_SKILL_EXEC:"Elemental skill when hit",
+ EP_ONDAMAGE_FIN_DAMAGE_SCALE:"Damage taken (%)",
+ EP_ONDAMAGE_SKILL_EXEC:"Skill when hit",
+ EP_ONDAMAGE_SKILL_EXEC_ATTACKER:"Skill against attacker when hit",
+ EP_ONHIT_SKILL_EXEC:"Skill on hit",
+ EP_ONHIT_SKILL_EXEC_ATTACKER:"Skill against attacker on hit",
+ EP_ONHIT_STUN:"Stun on hit",
+ EP_POISON_RESISTANCE_CONST:"Poison resistance",
+ EP_RACE_CARRY:"Racial carrying capacity",
+ EP_RACE_MANA_COSTCUT:"Racial MP cost reduction",
+ EP_RACE_RANGE:"Racial attack range",
+ EP_RANDOM_BOX:"Open random box",
+ EP_RECOVERY_BURN:"Remove Burn",
+ EP_RECOVERY_CURSE:"Remove Curse",
+ EP_RECOVERY_DISEASE:"Remove Disease",
+ EP_RECOVERY_NUMB:"Remove Numbness",
+ EP_RECOVERY_POISON:"Remove Poison",
+ EP_RECOVERY_RAVING:"Remove Confusion",
+ EP_RECOVERY_SILENCE:"Remove Silence",
+ EP_RESTART:"Return",
+ EP_RESTMAP_MOVESPEED_SCALE:"Movement speed in safe zones (%)",
+ EP_SKILL_BENCH:"Skill cooldown",
+ EP_SKILL_DELAY:"Skill casting time",
+ EP_SKILL_EXEC:"Activates skill",
+ EP_SKILL_EXEC_BALM:"Activates consumable skill",
+ EP_SKILL_EXEC_MAPIN:"Skill on map entry",
+ EP_TOHIT_SCALE:"Accuracy (%)",
+ EP_VOLUME_EXP:"Experience gained"
+});
+const skillReferenceEffects=new Set([
+ 'EP_SKILL_EXEC','EP_SKILL_EXEC_BALM','EP_SKILL_EXEC_MAPIN',
+ 'EP_ONHIT_SKILL_EXEC','EP_ONHIT_SKILL_EXEC_ATTACKER',
+ 'EP_ONDAMAGE_SKILL_EXEC','EP_ONDAMAGE_SKILL_EXEC_ATTACKER',
+ 'EP_ONDAMAGE_ELEM_SKILL_EXEC'
+]);
+const opaqueEffectNumbers=new Set([
+ 'EP_DESTINED_POISON','EP_RANDOM_BOX','EP_RESTART',
+ 'EP_ABILITY_RESET','EP_EXPERTISE_RESET','EP_ONHIT_STUN'
+]);
+function effectUsesSkillId(func){return skillReferenceEffects.has(func)}
+function effectHasDisplayAmount(func){
+ return effectLabels.has(func)&&!skillReferenceEffects.has(func)&&
+  !opaqueEffectNumbers.has(func)&&!func.startsWith('EP_RECOVERY_');
+}
+
+function effectOptions(items,wearableItem=null,lang='ru'){
  const chosen=new Set(effects.map(([code])=>code));
  for(const item of Object.values(items||{}))for(const entry of item?.effects||[])
   if(/^EP_[A-Z0-9_]{2,65}$/.test(entry?.func||''))chosen.add(entry.func);
@@ -98,9 +199,9 @@ function effectOptions(items,wearableItem=null){
   }
  }
  return [...chosen].map(func=>({
-  value:func,label:effectLabels.get(func)||
-   'Игровой эффект «'+func.replace(/^EP_/,'').toLowerCase().replaceAll('_',' ')+'»'
- })).sort((a,b)=>a.label.localeCompare(b.label,'ru'));
+  value:func,label:lang==='en'?(englishEffectLabels[func]||'Effect ('+func+')'):
+   effectLabels.get(func)||'Игровой эффект «'+func.replace(/^EP_/,'').toLowerCase().replaceAll('_',' ')+'»'
+ })).sort((a,b)=>a.label.localeCompare(b.label,lang==='en'?'en':'ru'));
 }
 const validId=id=>/^[0-9]{1,15}$/.test(String(id));
 const plain=value=>Boolean(value&&typeof value==='object'&&!Array.isArray(value));
@@ -167,8 +268,11 @@ const statAbbreviations=Object.freeze({
  EP_MAXLIFE_SCALE:'ОЗ (%)',EP_MAXMANA_SCALE:'ОМ (%)'
 });
 function effectDisplayLabel(func,lang='ru'){
- if(lang!=='ru')return effectLabels.get(func)||func;
+ if(lang==='en')return englishEffectLabels[func]||'Item effect';
  return statAbbreviations[func]||effectLabels.get(func)||'Игровой эффект';
 }
-root.PandoraStudioItemOwnerEditor=Object.freeze({applyItems,ownPatch,effectOptions,effectDisplayLabel});
+root.PandoraStudioItemOwnerEditor=Object.freeze({
+ applyItems,ownPatch,effectOptions,effectDisplayLabel,
+ effectUsesSkillId,effectHasDisplayAmount
+});
 })(typeof window==='undefined'?globalThis:window);

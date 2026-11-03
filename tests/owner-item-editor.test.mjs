@@ -88,7 +88,8 @@ test('all data-edit targets and runtime module loader are present',()=>{
  const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
  const html=readFileSync(new URL('index.html',root),'utf8');
  assert.doesNotMatch(app,/function openWikiItemEditor/);
- assert.match(app,/const effectOptions=window\.PandoraStudioItemOwnerEditor\.effectOptions/);
+ assert.match(app,/const effectOptions=adminEditing&&adminToken\?/);
+ assert.match(app,/itemEditor\.effectOptions\(wikiData\.items,rec,lang\)/);
  assert.match(app,/PandoraStudioItemOwnerEditor\.applyItems/);
  assert.match(app,/data-lpignore/);
  assert.match(app,/data-edit-key.*item/);

@@ -90,10 +90,9 @@ function utilityCategories(item,skills=null){
 }
 // Ingredient and output links come only from the actual item IDs/quantities
 // in EP_CONSUME_ITEM and EP_ADDITION_ITEM. Missing quantity is not assumed 1.
-function itemSkillRelations(id,skills=null){
- const key=Number(id),rows=[];
- if(!Number.isSafeInteger(key)||key<1||!skills||
-  typeof skills!=='object'||Array.isArray(skills))return rows;
+const skillRelationIndexes=new WeakMap();
+function buildSkillRelationIndex(skills){
+ const byItem=new Map();
  for(const [skillId,skill]of Object.entries(skills)){
   if(!skill||!Array.isArray(skill.funcs))continue;
   const take=type=>{
@@ -109,12 +108,28 @@ function itemSkillRelations(id,skills=null){
    return {ids,quantity};
   };
   const consume=take('EP_CONSUME_ITEM'),produce=take('EP_ADDITION_ITEM');
-  if(!consume.ids.includes(key)&&!produce.ids.includes(key))continue;
-  rows.push({id:skillId,name:skill.name||skillId,
+  if(!consume.ids.length&&!produce.ids.length)continue;
+  const row={id:skillId,name:skill.name||skillId,
    consumes:consume.ids,produces:produce.ids,
-   consumedQuantities:consume.quantity,producedQuantities:produce.quantity});
+   consumedQuantities:consume.quantity,producedQuantities:produce.quantity};
+  for(const itemId of new Set([...consume.ids,...produce.ids])){
+   const entries=byItem.get(itemId)||[];
+   entries.push(row);byItem.set(itemId,entries);
+  }
  }
- return rows.sort((a,b)=>Number(a.id)-Number(b.id));
+ for(const entries of byItem.values())entries.sort((a,b)=>Number(a.id)-Number(b.id));
+ return byItem;
+}
+function itemSkillRelations(id,skills=null){
+ const key=Number(id);
+ if(!Number.isSafeInteger(key)||key<1||!skills||
+  typeof skills!=='object'||Array.isArray(skills))return [];
+ let byItem=skillRelationIndexes.get(skills);
+ if(!byItem){
+  byItem=buildSkillRelationIndex(skills);
+  skillRelationIndexes.set(skills,byItem);
+ }
+ return (byItem.get(key)||[]).slice();
 }
 function build(data){
  const sources=new Map(),drops=new Map(),npcTrades=new Map();

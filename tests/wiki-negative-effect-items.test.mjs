@@ -42,10 +42,11 @@ test('encyclopedia exposes localized negative effects filter and a truthful on-u
  assert.match(app,/\['harmful','Дают отрицательные эффекты','Apply negative effects'\]/);
  assert.match(app,/PandoraWikiData\.utilityCategories\(item,wikiData\?\.skills\)/);
  assert.match(app,/wiki-harmful-consumable-note/);
- assert.match(app,/состояние «Яд»/);
- assert.match(app,/отравление периодически наносит урон/);
- assert.match(app,/OS data do not establish the duration, damage per tick or interval/);
- assert.match(app,/if\(effect\.func==='EP_DESTINED_POISON'&&key==='a'&&!\(adminEditing&&adminToken\)\)continue/);
+ assert.match(app,/вызывает отравление \(«Яд»\)/);
+ assert.match(app,/При употреблении вызывает отравление/);
+ assert.doesNotMatch(app,/В обоих умениях есть EP_CAUSE_POISON/);
+ assert.doesNotMatch(app,/неизучаемая техническая запись/);
+ assert.match(app,/itemEditor\.effectHasDisplayAmount\(effect\.func\)/);
  assert.doesNotMatch(book,/harmfulConsumables|stage-poison-consumables|Ядовитые расходники/);
  assert.match(book,/statusCures/);
  assert.match(book,/consumableSkills/);
@@ -176,4 +177,23 @@ test('source-based recipes preserve quantities and every venom consuming skill',
   ['220001001','220001003','220006001']);
  for(const link of venom.filter(link=>link.consumes.includes(50056)))
   assert.equal(link.consumedQuantities['50056'],1);
+});
+
+test('indexed recipe links survive repeated queries, new snapshots and caller mutation',()=>{
+ const sample={'1':{name:'Create',funcs:[
+  {ep:'EP_CONSUME_ITEM',fv1:[0,0,0,42],fv2:[0,0,0,2]},
+  {ep:'EP_ADDITION_ITEM',fv1:[0,0,0,43],fv2:[0,0,0,1]}
+ ]}};
+ const lookup=id=>root.PandoraWikiData.itemSkillRelations(id,sample);
+ assert.equal(lookup(42).length,1);
+ assert.equal(lookup(43).length,1);
+ assert.deepEqual(lookup(42)[0].consumedQuantities,{'42':2});
+ assert.deepEqual(lookup(43)[0].producedQuantities,{'43':1});
+ lookup(42).pop();
+ assert.equal(lookup(42).length,1,'caller must not remove cached rows');
+ const replacement={'2':{name:'Replace',funcs:[
+  {ep:'EP_CONSUME_ITEM',fv1:[0,0,0,42],fv2:[0,0,0,3]}
+ ]}};
+ assert.equal(root.PandoraWikiData.itemSkillRelations(42,replacement)[0].consumedQuantities['42'],3);
+ assert.deepEqual(root.PandoraWikiData.itemSkillRelations(43,replacement),[]);
 });
