@@ -2360,8 +2360,8 @@ function renderWiki(root){
     wikiData.skills?.[String(effect.a)]).map(effect=>String(effect.a)))];
    if(activated.length){
     const used=h('div',{class:'wiki-effect-usage'});
-    used.append(h('small',{text:wt('При использовании активирует умения:',
-     'Skills activated on use:')}));
+    used.append(h('small',{text:wt('При использовании:',
+     'On use:')}));
     for(const skillId of activated)used.append(wikiLink(
      dataName('skill',skillId),'skill',skillId));
     detail.append(used);
@@ -2370,32 +2370,23 @@ function renderWiki(root){
     wikiData.skills?.[skillId]?.funcs?.some(effect=>
      effect.ep==='EP_REMOVE_BAD_EFFECT'&&effect.dir==='TARGET')))
     detail.append(h('p',{class:'wiki-description wiki-effect-cure-note',
-     text:wt('Очищение снимает один отрицательный эффект с цели. Конкретное состояние определяется игрой, это не универсальное снятие всех эффектов сразу.',
-      'Purification removes one negative effect from the target. The game selects the affected status; it does not remove every debuff at once.')}));
+     text:wt('Снимает один отрицательный эффект с цели.',
+      'Removes one negative effect from the target.')}));
    if(kinds.includes('harmful')){
     const eatenPoison=effects.some(effect=>effect.func==='EP_DESTINED_POISON'&&
      effect.dir==='TARGET');
     detail.append(h('p',{class:'wiki-description wiki-harmful-consumable-note',
      text:eatenPoison?
-      wt('При употреблении накладывает на персонажа состояние «Яд»: отравление периодически наносит урон. Время действия, величина и интервал урона не установлены по данным OS. Число 50 в параметре предмета не подтверждено как шанс или урон.',
-       'Consuming this item applies Poison to the character, dealing periodic damage. OS data do not establish the duration, damage per tick or interval. The item parameter 50 is not a verified chance or damage value.'):
-      wt('В исходных эффектах обнаружено применение яда. Конкретная цель, длительность и урон зависят от механики вызываемого умения и пока не проверены.',
-       'Source effects indicate Poison. Target, duration and damage depend on the activated game skill and are not yet verified.')}));
-    const poisonStatus=wikiData.skills?.['500000004'];
+      wt('При употреблении вызывает отравление («Яд»).',
+       'Consuming this item causes Poison.'):
+      wt('Вызывает отравление («Яд»).','Causes Poison.')}));
     const poisonHit=wikiData.skills?.['430052001'];
-    if(poisonStatus?.learnable===false&&
-     poisonStatus.funcs?.some(effect=>effect.ep==='EP_CAUSE_POISON')&&
-     poisonHit?.funcs?.some(effect=>effect.ep==='EP_CAUSE_POISON')){
-     const compare=h('div',{class:'wiki-effect-usage'});
-     compare.append(h('small',{text:wt('Записи игры, связанные с отравлением:',
-      'Game records associated with poisoning:')}),
-      wikiLink(dataName('skill','500000004'),'skill','500000004'),
-      h('span',{text:wt('(неизучаемая техническая запись «Яд»)',
-       '(non-learnable technical Poison skill)')}),
-      wikiLink(dataName('skill','430052001'),'skill','430052001'),
-      h('span',{text:wt('В обоих умениях есть EP_CAUSE_POISON; предмет использует EP_DESTINED_POISON. Тождественность реализации, сила и длительность не доказаны.',
-       'Both skills use EP_CAUSE_POISON, while the items use EP_DESTINED_POISON. Equivalent implementation, potency and duration are unverified.')}));
-     detail.append(compare);
+    if(poisonHit?.learnable&&
+     poisonHit.funcs?.some(effect=>effect.ep==='EP_CAUSE_POISON')){
+     const related=h('div',{class:'wiki-effect-usage'});
+     related.append(h('small',{text:wt('Похожее умение:','Related skill:')}),
+      wikiLink(dataName('skill','430052001'),'skill','430052001'));
+     detail.append(related);
     }
     const antidotes=Object.entries(wikiData.items||{}).filter(([,item])=>
      item?.effects?.some(effect=>effect.func==='EP_RECOVERY_POISON'&&
@@ -2410,8 +2401,8 @@ function renderWiki(root){
    }
    if(kinds.includes('review')){
     detail.append(h('p',{class:'wiki-description wiki-effect-review-note',
-     text:wt('Код эффекта или вызываемое умение пока не подтверждены каталогом. Предмет оставлен доступным для проверки, но не отнесён к усилениям или лечению без доказательств.',
-      'The effect code or triggered skill is not verified by the catalogue. The item remains visible for review and is not assumed to be a buff or cure.')}));
+     text:wt('Действие предмета пока не описано.',
+      'The effect of this item is not yet described.')}));
    }
    const relations=window.PandoraWikiData.itemSkillRelations(id,wikiData.skills);
    if(relations.length){
