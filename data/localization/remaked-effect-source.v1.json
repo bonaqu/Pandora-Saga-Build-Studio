@@ -363,7 +363,7 @@
     },
     {
       "code": "EP_IMMUNE_CURSE",
-      "studioLabel": "Curse immunity",
+      "studioLabel": "Weakness resistance",
       "remakedOptionIndex": 160,
       "remakedEnglish": "Weak RES",
       "source": "modern/enhancement-effects.js",
@@ -374,7 +374,7 @@
     },
     {
       "code": "EP_IMMUNE_DISEASE",
-      "studioLabel": "Disease immunity",
+      "studioLabel": "Disease resistance",
       "remakedOptionIndex": 161,
       "remakedEnglish": "Disease RES",
       "source": "scripts/lib/current-effect-conversion.mjs",
@@ -384,7 +384,7 @@
     },
     {
       "code": "EP_IMMUNE_EVIL",
-      "studioLabel": "Evil magic protection",
+      "studioLabel": "Curse resistance",
       "remakedOptionIndex": 159,
       "remakedEnglish": "Curse RES",
       "source": "modern/enhancement-effects.js",
@@ -394,7 +394,7 @@
     },
     {
       "code": "EP_IMMUNE_KNOCKBACK",
-      "studioLabel": "Knockback immunity",
+      "studioLabel": "Knockback resistance",
       "remakedOptionIndex": 153,
       "remakedEnglish": "KB RES",
       "source": "modern/enhancement-effects.js",
@@ -406,7 +406,7 @@
     },
     {
       "code": "EP_IMMUNE_NUMB",
-      "studioLabel": "Numbness immunity",
+      "studioLabel": "Freeze resistance",
       "remakedOptionIndex": 150,
       "remakedEnglish": "Frozen RES",
       "source": "modern/enhancement-effects.js",
@@ -418,7 +418,7 @@
     },
     {
       "code": "EP_IMMUNE_RAVING",
-      "studioLabel": "Confusion immunity",
+      "studioLabel": "Madness resistance",
       "remakedOptionIndex": 157,
       "remakedEnglish": "Madness RES",
       "source": "scripts/lib/current-effect-conversion.mjs",
@@ -428,7 +428,7 @@
     },
     {
       "code": "EP_IMMUNE_SILENCE",
-      "studioLabel": "Silence immunity",
+      "studioLabel": "Silence resistance",
       "remakedOptionIndex": 158,
       "remakedEnglish": "Silence RES",
       "source": "modern/enhancement-effects.js",
@@ -440,7 +440,7 @@
     },
     {
       "code": "EP_IMMUNE_SLEEP",
-      "studioLabel": "Sleep immunity",
+      "studioLabel": "Sleep resistance",
       "remakedOptionIndex": 156,
       "remakedEnglish": "Sleep RES",
       "source": "modern/enhancement-effects.js",
@@ -463,7 +463,7 @@
     },
     {
       "code": "EP_IMMUNE_STUN",
-      "studioLabel": "Stun immunity",
+      "studioLabel": "Stun resistance",
       "remakedOptionIndex": 149,
       "remakedEnglish": "Stun RES",
       "source": "modern/enhancement-effects.js",
@@ -475,7 +475,7 @@
     },
     {
       "code": "EP_IMMUNE_TUMBLE",
-      "studioLabel": "Knockdown immunity",
+      "studioLabel": "Knockdown resistance",
       "remakedOptionIndex": 151,
       "remakedEnglish": "KD RES",
       "source": "modern/enhancement-effects.js",
@@ -810,7 +810,7 @@
     },
     {
       "code": "EP_SKILL_DELAY",
-      "studioLabel": "Skill casting time",
+      "studioLabel": "Casting speed",
       "remakedOptionIndex": 77,
       "remakedEnglish": "Cast SPD",
       "source": "modern/enhancement-effects.js",
