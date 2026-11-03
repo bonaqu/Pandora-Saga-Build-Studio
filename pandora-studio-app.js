@@ -2410,6 +2410,12 @@ function renderWiki(root){
        if(wikiData.items?.[String(itemId)])line.append(wikiLink(
         dataName('item',String(itemId)),'item',String(itemId)));
      }
+     if(!created&&relation.consumes.length>1){
+      line.append(h('small',{text:wt('Другие материалы:','Other ingredients:')}));
+      for(const itemId of relation.consumes)
+       if(itemId!==Number(id)&&wikiData.items?.[String(itemId)])line.append(wikiLink(
+        dataName('item',String(itemId)),'item',String(itemId)));
+     }
      usage.append(line);
     }
     detail.append(usage);
