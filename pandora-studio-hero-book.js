@@ -151,6 +151,9 @@ const bookEnglish=Object.freeze({
  'Профессия': "Class",
  'Известные бонусы снаряжения и душ': 'Known equipment and Soul bonuses',
  'Сопротивления состояниям': 'Status resistances',
+ // Legacy input aliases remain translatable, but player-facing names use Passive recovery.
+ 'Скорость естественного восстановления': 'Passive recovery speed',
+ 'Естественное восстановление (расчётная величина)': 'Estimated passive recovery',
  'Восстановление каждые 2 секунды': 'Recovery every 2 seconds',
  'Лечащие умения': 'Healing skills',
  'Действие зелий': 'Potion effects',
