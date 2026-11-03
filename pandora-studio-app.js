@@ -698,6 +698,9 @@ function showWorkbench(){
  if(stageSlotPickerOpen)closeStagePicker(false);
  panel.classList.add('is-open');panel.setAttribute('aria-modal','true');
  backdrop.hidden=false;document.body.classList.add('studio-workbench-open');
+ // When editing in the large workbench, keep the owner dock clear of inline
+ // NPC, map and monster controls. The status and expand action stay available.
+ if(adminEditing&&adminToken&&!wasOpen){ownerDockCollapsed=true;refreshOwnerUI()}
  if(!wasOpen)$('dockClose')?.focus({preventScroll:true});
 }
 function closeWorkbench(){
@@ -706,6 +709,7 @@ function closeWorkbench(){
  panel.classList.remove('is-open');panel.removeAttribute('aria-modal');
  if(backdrop)backdrop.hidden=true;
  document.body.classList.remove('studio-workbench-open');
+ if(adminEditing&&adminToken){ownerDockCollapsed=false;refreshOwnerUI()}
  const old=workbenchReturnFocus;workbenchReturnFocus=null;
  newBuildPromptOpen=false;newBuildDraftName=null;
  if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
