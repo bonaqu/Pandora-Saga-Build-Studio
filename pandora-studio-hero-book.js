@@ -635,54 +635,272 @@ function skillEffectsPage(body,{modifiers=null}={}){
    'Calculated skill effects appear here when game records and requirements are available.':
    'Здесь появятся эффекты навыков, для которых доступны игровые данные и расчёт.'}));
 }
-function independentEffectRows(calc){
- const rows=[],add=(ru,en,value,unit='')=>{
-  if(Number.isFinite(value)&&value!==0)rows.push({ru,en,value,unit});
- };
- const racial=calc?.combat?.racialWeapon;
- if(racial?.matchesCategory===true&&
-  Number.isSafeInteger(racial.id)&&
-  ['oneHanded','axeBlunt','twoHanded'].includes(racial.kind)&&
-  typeof racial.ru==='string'&&racial.ru&&
-  typeof racial.en==='string'&&racial.en){
-  add(racial.ru+' · урон оружия (ед.)',
-   racial.en+' · weapon damage (flat)',racial.flat);
-  add(racial.ru+' · урон оружия (%)',
-   racial.en+' · weapon damage (%)',racial.percent,'%');
- }
- const range=calc?.attackRange;
- // OS RANGE and CARRY are a single racial skill effect, not two bonuses.
- if(Number.isFinite(range?.racialGeneral)&&
-  range.racialGeneral===range.racialCarry)
-  add('Зоркость · расовая дальность','Sharpsight · racial range',
-   range.racialGeneral);
- if(Array.isArray(range?.entries))for(const e of range.entries){
-  if(!e||!['general','bow'].includes(e.kind)||
-   typeof e.source!=='string'||!e.source.trim()||e.source.length>240)continue;
-  add((e.kind==='general'?'Дальность атаки':'Дальность стрельбы')+
-   ' · '+e.source,(e.kind==='general'?'Attack range':'Bow range')+
-   ' · '+e.source,e.amount);
- }
- add('Подавление гнева · точность','Anger Suppression · accuracy',
-  calc?.combat?.racialRate?.accuracy,'%');
- add('Интуиция · уклонение','Intuition · evasion',
-  calc?.combat?.racialRate?.dodge,'%');
- add('Снаряжение · магический урон','Equipment · magic damage',
-  calc?.combat?.spellDamageEquipmentRate,'%');
- return rows;
+// Remaked uses three DISTINCT source matrices: Set.Status (43 totals),
+// Set.ATK (extra offense) and Set.RES (recovery and specific defenses).
+// Never copy a Set.Status number into Set.ATK/Set.RES display just to fill space.
+function chapterNumber(key,ru,en,value,unit='',allowZero=false){
+ if(!Number.isFinite(value)||(!allowZero&&value===0))return null;
+ return {key,ru,en,value,unit};
 }
-function appendIndependentEffects(body,calc,english){
- const rows=independentEffectRows(calc);
+const elementTerms=Object.freeze({
+ fire:['Огонь','Fire'],ice:['Лёд','Ice'],lightning:['Молния','Lightning'],
+ poison:['Яд','Poison'],charm:['Чары','Charm'],light:['Свет','Light'],
+ dark:['Тьма','Dark'],magic:['Магия','Magic']
+});
+function attackChapterGroups(calc){
+ if(!calc)return[];
+ const groups=[
+  {key:'weapon',ru:'Урон оружия и дальность',en:'Weapon damage and range',rows:[]},
+  {key:'aura',ru:'Аура оружия',en:'Weapon aura damage',rows:[]},
+  {key:'magic',ru:'Стихийная магия',en:'Elemental magic',rows:[]},
+  {key:'conditions',ru:'Наложение состояний',en:'Inflicting status effects',rows:[]}
+ ];
+ const put=(g,key,ru,en,value,unit='',zero=false)=>{
+  const row=chapterNumber(key,ru,en,value,unit,zero);
+  if(row)groups[g].rows.push(row);
+ };
+ const combat=calc.combat||{},range=calc.attackRange||{};
+ // Legacy ATK Status_21 (weapon physical bonus), NOT Status_18 (total ATK).
+ put(0,'weaponPhysical','Физический урон оружия','Physical weapon damage',
+  combat.weaponPhysical,'',true);
+ const racial=combat.racialWeapon;
+ if(racial?.matchesCategory===true&&
+  typeof racial.ru==='string'&&typeof racial.en==='string'&&
+  Number.isSafeInteger(racial.id)){
+  put(0,'racialWeaponFlat:'+racial.id,racial.ru+' · урон (ед.)',
+   racial.en+' · damage (flat)',racial.flat);
+  put(0,'racialWeaponRate:'+racial.id,racial.ru+' · урон (%)',
+   racial.en+' · damage (%)',racial.percent,'%');
+ }
+ if(Number.isFinite(range.racialGeneral)&&range.racialGeneral===range.racialCarry)
+  put(0,'racialRange','Зоркость · дальность','Sharpsight · range',
+   range.racialGeneral);
+ if(Array.isArray(range.entries))range.entries.forEach((entry,i)=>{
+  if(!entry||!['general','bow'].includes(entry.kind)||
+   typeof entry.source!=='string'||!entry.source.trim())return;
+  put(0,'gearRange:'+i,
+   (entry.kind==='bow'?'Дальность стрельбы':'Дальность атаки')+' · '+entry.source,
+   (entry.kind==='bow'?'Bow range':'Attack range')+' · '+entry.source,entry.amount);
+ });
+ put(0,'mountedRelease','Раскрытие характеристик верхом','Mounted attribute release',
+  calc.mountedRelease?.known,'%');
+ const aura=calc.auraDamage?.elements||{};
+ for(const [key,entry]of Object.entries(aura)){
+  const term=elementTerms[key];if(!term)continue;
+  put(1,'aura:'+key,'Урон ауры · '+term[0],'Aura damage · '+term[1],
+   entry?.known);
+ }
+ // The gem, title, and source-verified fire refinement are DIFFERENT
+ // components. Their server stacking is not established: never sum them.
+ for(const [key,amount]of Object.entries(calc.elementalMagic||{})){
+  const term=elementTerms[key];if(!term)continue;
+  put(2,'magicHonor:'+key,'Магия '+term[0].toLowerCase()+' · титул',
+   term[1]+' magic · title',amount,'%');
+ }
+ for(const [key,amount]of Object.entries(calc.gemstones?.magic||{})){
+  const term=elementTerms[key];if(!term)continue;
+  put(2,'magicGem:'+key,'Магия '+term[0].toLowerCase()+' · самоцвет',
+   term[1]+' magic · gem',amount,'%');
+ }
+ for(const entry of calc.elementalRefinement?.entries||[]){
+  if(entry?.itemId!==1862||entry.element!=='fire')continue;
+  put(2,'magicRefinement:1862:'+entry.grade,
+   'Кинжал огня зноя +'+entry.grade+' · магия огня',
+   'Dagger of Scorching Heat +'+entry.grade+' · fire magic',entry.rate,'%');
+ }
+ for(const [key,amount]of Object.entries(calc.gemstones?.status||{})){
+  const term=elementTerms[key];if(!term)continue;
+  put(3,'statusChance:'+key,'Наложение · '+term[0],
+   'Infliction · '+term[1],amount,'%');
+ }
+ put(3,'debuffDuration','Длительность накладываемых ослаблений',
+  'Outgoing debuff duration',combat.secondary?.outgoingDebuffDuration,'%');
+ put(3,'debuffSuccess','Шанс наложить ослабление',
+  'Debuff application chance',combat.secondary?.debuffSuccess,'%');
+ put(3,'racialAccuracy','Подавление гнева · эффект точности',
+  'Anger Suppression · accuracy effect',combat.racialRate?.accuracy,'%');
+ put(3,'racialDodge','Интуиция · эффект уклонения',
+  'Intuition · evasion effect',combat.racialRate?.dodge,'%');
+ return groups.filter(g=>g.rows.length);
+}
+function defenseChapterGroups(calc){
+ if(!calc)return[];
+ const groups=[
+  {key:'recovery',ru:'Естественное восстановление',
+   en:'Natural recovery',rows:[]},
+  {key:'status',ru:'Сопротивления отдельным состояниям',
+   en:'Individual status resistances',rows:[]},
+  {key:'special',ru:'Дополнительная защита',
+   en:'Additional defensive effects',rows:[]}
+ ];
+ const put=(g,key,ru,en,value,unit='',zero=false)=>{
+  const row=chapterNumber(key,ru,en,value,unit,zero);
+  if(row)groups[g].rows.push(row);
+ };
+ const a=calc.recoveryAmount,r=calc.regeneration;
+ put(0,'hpRecoveryAmount','Восстановление ОЗ','HP recovery amount',a?.hp?.known);
+ put(0,'mpRecoveryAmount','Восстановление ОМ','MP recovery amount',a?.mp?.known);
+ put(0,'hpRecoverySpeed','Скорость восстановления ОЗ',
+  'HP recovery speed',r?.hp?.total);
+ put(0,'mpRecoverySpeed','Скорость восстановления ОМ',
+  'MP recovery speed',r?.mp?.total);
+ const statuses={
+  burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
+  numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
+  knockback:['Отбрасывание','Knockback'],sleep:['Сон','Sleep'],
+  silence:['Немота','Silence'],evil:['Зло','Evil'],
+  curse:['Проклятие','Curse'],disease:['Болезнь','Disease'],
+  madness:['Помешательство','Madness'],blockBreak:['Пробитие блока','Block break']
+ };
+ for(const [key,value]of Object.entries(calc.resistances?.status||{})){
+  if(!statuses[key])continue;
+  put(1,'resistStatus:'+key,statuses[key][0],statuses[key][1],value,'%',true);
+ }
+ const res=calc.resistances||{};
+ put(2,'reflection','Отражение физического урона',
+  'Physical damage reflection',res.physicalReflection,'%');
+ put(2,'incomingDebuffDuration','Изменение длительности входящих ослаблений',
+  'Incoming debuff duration change',res.incomingDebuffDurationReduction,'%');
+ put(2,'damageNegation','Уклонение от физического урона',
+  'Physical damage negation',res.damageNegation);
+ for(const [i,e]of (calc.targetResistance?.entries||[]).entries()){
+  if(!e||!Number.isFinite(e.change))continue;
+  put(2,'targetResistance:'+i,'Урон от '+e.name+' · '+e.source,
+   'Damage from '+e.nameEn+' · '+e.source,e.change,'%');
+ }
+ return groups.filter(g=>g.rows.length);
+}
+function appendChapterGroups(body,groups,english,emptyRu,emptyEn){
+ if(!groups.length){body.append(make('p',{class:'stage-attribute-note',
+  text:english?emptyEn:emptyRu}));return;}
+ const number=new Intl.NumberFormat(english?'en-US':'ru-RU',
+  {maximumFractionDigits:2});
+ for(const group of groups){
+  const section=make('section',{class:'stage-attribute-row stage-chapter-group',
+   'data-chapter-group':group.key});
+  section.append(make('strong',{text:english?group.en:group.ru}));
+  const grid=make('div',{class:'stage-chapter-grid'});
+  for(const row of group.rows){
+   grid.append(make('div',{class:'stage-chapter-entry','data-chapter-stat':row.key},[
+    make('span',{text:english?row.en:row.ru}),
+    make('strong',{text:number.format(row.value)+row.unit})
+   ]));
+  }
+  section.append(grid);body.append(section);
+ }
+}
+function appendItemEvents(body,calc,english,kind){
+ const rows=[];
+ const belongs=code=>kind==='attack'?/^EP_ONHIT_/.test(code):
+  /^EP_ONDAMAGE_|^EP_ALL_CRITICAL$|^EP_RACE_TOUGH_HEART$|^EP_HEAL_LIFE_REGENERATOR$|^EP_DESTINE_WARDING$/.test(code);
+ for(const entry of calc?.specialEquipment?.entries||[]){
+  if(!belongs(entry.code))continue;
+  rows.push({source:entry.source,ru:entry.ru,en:entry.en});
+ }
+ for(const entry of calc?.procPreview?.entries||[]){
+  if(!belongs(entry.code))continue;
+  const tail=entry.chance==null?'':' · '+entry.chance+'%';
+  rows.push({source:entry.source,
+   ru:(entry.trigger||'Срабатывание')+' · '+entry.skillName+tail,
+   en:(entry.triggerEn||entry.trigger||'Trigger')+' · '+
+    (entry.skillNameEn||entry.skillName)+tail});
+ }
  if(!rows.length)return;
- const details=make('details',{class:'stage-attribute-row stage-independent-effects'});
- details.append(make('summary',{text:(english?'Other source effects':'Другие эффекты источников')+
-  ' · '+rows.length}));
- for(const row of rows)details.append(make('p',{class:'stage-independent-effect-row',
-  text:(english?row.en:row.ru)+': '+(row.value>0?'+':'')+row.value+row.unit}));
- details.append(make('small',{class:'stage-attribute-note',text:english?
-  'These effects are not combined into final totals without verified server rules.':
-  'Эффекты не прибавляются к итогам без подтверждённых серверных правил.'}));
- body.append(details);
+ const panel=make('details',{class:'stage-attribute-row stage-source-events'});
+ panel.append(make('summary',{text:(english?'Item and Soul triggers':
+  'Срабатывания предметов и душ')+' · '+rows.length}));
+ for(const row of rows)panel.append(make('p',{text:
+  row.source+' · '+(english?row.en:row.ru)}));
+ body.append(panel);
+}
+function appendWeaponConditions(body,calc,items,english){
+ const active=items.map(row=>({row,
+  bonus:root.PandoraConditionalItemBonuses?.activeFor?.(row)}))
+  .filter(x=>x.bonus&&(x.bonus.phoenix||x.bonus.rows.length));
+ if(!active.length)return;
+ const panel=make('details',{class:'stage-attribute-row stage-active-elemental'});
+ panel.append(make('summary',{text:(english?'Conditional elemental weapons':
+  'Условные эффекты стихийного оружия')+' · '+active.length}));
+ for(const {row,bonus}of active){
+  const rec=row.record||{},name=rec.name||'Оружие';
+  panel.append(make('strong',{text:name+' · '+(english?'Fire +':'Огонь +')+
+   row.refinement}));
+  // An itemForth fire-magic entry is already listed in Attack/Elemental Magic.
+  const alreadyShown=(calc?.elementalRefinement?.entries||[])
+   .some(e=>e.itemId===rec.id&&e.grade===row.refinement);
+  for(const effect of bonus.rows){
+   if(alreadyShown&&effect.name==='Магическая атака огнём')continue;
+   panel.append(make('p',{text:effect.name+': +'+effect.value+
+    (effect.unit==='%'?'%':'')}));
+  }
+  if(bonus.phoenix){
+   const outcome=root.PandoraConditionalItemBonuses.phoenixDamage(
+    bonus.phoenix,row.refinement,calc?.stats);
+   const format=v=>Number(v).toLocaleString(english?'en-US':'ru-RU',
+    {maximumFractionDigits:2});
+   panel.append(make('div',{class:'stage-skill-effect-row'},[
+    make('span',{text:english?'Phoenix Flame · estimated damage':
+     'Пламя феникса · расчётный урон'}),
+    make('strong',{text:outcome?format(outcome.damage):'—'})
+   ]));
+   if(outcome)panel.append(make('small',{text:english?
+    'Trigger chance '+format(outcome.chance)+'% · Cooldown '+
+     format(outcome.cooldown)+' s':
+    'Шанс срабатывания '+format(outcome.chance)+'% · Откат '+
+     format(outcome.cooldown)+' с'}));
+  }
+ }
+ body.append(panel);
+}
+function attackPage(body,calc,items,english){
+ appendChapterGroups(body,attackChapterGroups(calc),english,
+  'Нет подтверждённых дополнительных атакующих параметров.',
+  'No supported additional attack metrics.');
+ appendWeaponConditions(body,calc,items,english);
+ appendItemEvents(body,calc,english,'attack');
+}
+function defensePage(body,calc,english){
+ appendChapterGroups(body,defenseChapterGroups(calc),english,
+  'Нет подтверждённых дополнительных защитных параметров.',
+  'No supported additional defense metrics.');
+ const conditional=calc?.battleMapCloaks?.entries||[];
+ if(conditional.length){
+  const panel=make('details',{class:'stage-attribute-row stage-battle-map-cloaks'});
+  panel.append(make('summary',{text:(english?'Battle-map cloak effects':
+   'Эффекты плащей на военных картах')+' · '+conditional.length}));
+  for(const entry of conditional){
+   const line=english?['All attributes +'+entry.all,'DEF +'+entry.armor,
+    'HP +'+entry.hp]:['Все характеристики +'+entry.all,
+     'Защита +'+entry.armor,'ОЗ +'+entry.hp];
+   if(entry.resistance)line.push(english?
+    'Damage-type resistance +'+entry.resistance:
+    'Сопротивление типам урона +'+entry.resistance);
+   if(entry.magic)line.push(english?
+    'Magic resistance +'+entry.magic:
+    'Сопротивление магии +'+entry.magic);
+   panel.append(make('p',{text:entry.source+' · '+line.join(' · ')}));
+  }
+  body.append(panel);
+ }
+ if(calc?.racialEffects?.survival){
+  const survival=calc.racialEffects.survival;
+  body.append(make('section',{class:'stage-attribute-row stage-racial-survival'},[
+   make('strong',{text:english?'Dwarven racial survival':
+    'Расовая стойкость дворфа'}),
+   make('p',{text:(english?'Stronghearted: ':'Упрямое сердце: ')+
+    survival.chance+(english?'% skill-source chance':'% шанс по данным навыка')})
+  ]));
+ }
+ const exp=calc?.experienceBonus?.entries||[];
+ if(exp.length){
+  const panel=make('details',{class:'stage-attribute-row stage-experience-effects'});
+  panel.append(make('summary',{text:(english?'Experience gain bonuses':
+   'Бонусы к опыту')+' · '+exp.length}));
+  for(const e of exp)panel.append(make('p',{text:e.source+': '+
+   (e.percent>0?'+':'')+e.percent+'%'}));
+  body.append(panel);
+ }
+ appendItemEvents(body,calc,english,'defense');
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
