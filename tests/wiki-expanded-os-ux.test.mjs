@@ -259,6 +259,7 @@ test('skills expose hover preview, and book uses branded checkboxes and source-b
  assert.match(path,/path-milestone-preview/);
  assert.match(path,/tabindex:'0'/);
  assert.match(book,/PandoraOSCalculator\?\.potionPreview/);
- assert.match(book,/stage-combat-quick/);
+ assert.doesNotMatch(book,/stage-combat-quick/);
+ assert.match(book,/function attackChapterGroups\(calc\)/);
  assert.match(css,/\.stage-book-check input\[type=checkbox\]/);
 });

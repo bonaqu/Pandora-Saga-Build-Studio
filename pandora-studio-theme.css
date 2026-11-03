@@ -1087,10 +1087,7 @@ main{padding-top:10px}
 .stage-result-section{display:grid;gap:6px}
 .stage-result-section-head{display:flex;align-items:center;gap:8px;text-align:left;width:100%;
  border:1px solid #815d39;border-radius:4px;background:linear-gradient(120deg,#47301f,#251a12);
- color:#e8ca99;padding:8px;cursor:pointer;transition:border-color .15s,background .15s}
-.stage-result-section-head:hover,.stage-result-section-head:focus-visible{
- border-color:#dbb176;background:linear-gradient(120deg,#634128,#322116)}
-.stage-result-section-head:focus-visible{outline:2px solid #f4cc8d;outline-offset:1px}
+ color:#e8ca99;padding:8px;cursor:default}
 .stage-result-section-head strong{flex:1;font:600 15px 'Cormorant Garamond',Georgia,serif}
 .stage-result-symbol{display:grid;place-items:center;width:25px;height:25px;flex:0 0 25px;
  border:1px solid #a17d4e;border-radius:4px;background:#2e2219;color:#e8c286}
@@ -1257,7 +1254,6 @@ main{padding-top:10px}
  border:1px solid #694c30;border-radius:4px;background:linear-gradient(110deg,#251911,#302216)}
 .stage-potion-item span{font:11px/1.45 Manrope,Arial,sans-serif;color:#dec39a;overflow-wrap:anywhere}
 .stage-potion-item strong{flex:none;font:600 13px Manrope,Arial,sans-serif;color:#f9d59d;font-variant-numeric:tabular-nums}
-.stage-combat-quick{margin-bottom:12px}
 .stage-attribute-tabs button{transition:background-color .16s,border-color .16s}
 .stage-attribute-tabs button:focus-visible{outline:2px solid #ffe0a8;outline-offset:2px}
 
@@ -1903,18 +1899,31 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 
 
 
-/* Hero Book values stay compact; item references and unstacked source
-   effects are secondary, keyboard-accessible disclosures. */
-.stage-equipped-items:not([open])>:not(summary),
-.stage-independent-effects:not([open])>:not(summary){display:none}
-.stage-equipped-items>summary,.stage-independent-effects>summary{
- cursor:pointer;list-style-position:inside;color:#efcc95;font-weight:650;
- font-size:12px;padding:3px 2px
+
+/* Modern/Legacy Set.ATK and Set.RES contain secondary values, never a
+   second copy of the 43-field Set.Status result matrix. */
+.stage-chapter-group{gap:8px;padding:9px 10px}
+.stage-chapter-group>strong{font:600 18px/1.1 'Cormorant Garamond',Georgia,serif;
+ color:#f4d19a}
+.stage-chapter-grid{display:grid;gap:4px}
+.stage-chapter-entry{display:grid;grid-template-columns:minmax(0,1fr) auto;
+ align-items:center;gap:8px;padding:7px 8px;border:1px solid #6c5034;
+ border-radius:3px;background:linear-gradient(105deg,#312318,#251a14)}
+.stage-chapter-entry>span{font:500 11px/1.35 Manrope,Arial,sans-serif;
+ color:#e1c7a5;min-width:0;overflow-wrap:anywhere}
+.stage-chapter-entry>strong{font:650 15px/1.12 Manrope,Arial,sans-serif;
+ color:#ffe2b2;white-space:nowrap;font-variant-numeric:tabular-nums}
+.stage-source-events>summary,.stage-active-elemental>summary,
+.stage-battle-map-cloaks>summary,.stage-experience-effects>summary{
+ font:650 12px/1.35 Manrope,Arial,sans-serif;
+ cursor:pointer;color:#f3d29b;padding:5px 2px}
+.stage-source-events>p,.stage-active-elemental>p,
+.stage-battle-map-cloaks>p,.stage-experience-effects>p{
+ line-height:1.45;overflow-wrap:anywhere}
+.stage-active-elemental>strong{font:650 12px Manrope,Arial,sans-serif}
+.stage-book-unavailable{opacity:.72}
+@media(max-width:430px){
+ .stage-chapter-entry{padding:6px;gap:5px}
+ .stage-chapter-entry>span{font-size:10px}
+ .stage-chapter-entry>strong{font-size:13px}
 }
-.stage-equipped-item{width:100%;min-width:0;padding:6px 5px;
- border:0;border-top:1px solid #5f462f;background:transparent;
- text-align:left;color:#f0d09e;font:inherit;cursor:pointer}
-.stage-equipped-item img{width:28px;height:28px;flex:none}
-.stage-equipped-item span{overflow-wrap:anywhere;font-size:12px}
-.stage-equipped-item:hover,.stage-equipped-item:focus-visible{background:#44301e}
-.stage-independent-effect-row{font-size:11px;overflow-wrap:anywhere}

@@ -19,9 +19,9 @@ test('shared builds safely validate and persist combat choices',()=>{
 });
 test('attack and defense views show contribution of chosen skills',()=>{
  const stage=get('pandora-studio-hero-book.js'),calc=get('pandora-os-character-calculator.js');
- assert.match(stage,/battle\.attack\?\.known/);
+ assert.match(stage,/row\('АТК','ATK',c.attack\?\.known\)/);
  assert.match(calc,/activeAtk=baseAtk/);
- assert.match(stage,/battle\.defense\?\.known/);
+ assert.match(stage,/row\('Защита','Defense',c.defense\?\.known\)/);
  assert.match(calc,/activeDef=\(actives\.raging/);
  assert.match(calc,/actives\.lunge/);
 });

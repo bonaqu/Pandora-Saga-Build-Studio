@@ -39,7 +39,7 @@ test('unlearned skills retain theoretical numbers but are marked unavailable',()
 test('existing book receives computed skill values, not duplicate stat formulas',()=>{
  const a=read('pandora-studio-app.js'),ui=read('pandora-studio-hero-book.js');
  assert.match(a,/benevolenceMastery=window\.PandoraSkillProgression\.groupAdeptness/);
- assert.match(ui,/modifiers\.healingSpells/);
+ assert.match(ui,/modifiers\?\.healingSpells\?\.rows/);
  assert.match(ui,/row\.scaledBySkill/);
 });
 
@@ -93,5 +93,5 @@ test('base() supplies class cap and OS catalog; no automatic use or HP inflation
  assert.match(stage,/row\.nameEn\|\|row\.name/);
  assert.match(stage,/row\.requiresEn\|\|row\.requires/);
  assert.match(stage,/skillNamesEn\[entry\.id\]/);
- assert.match(stage,/english\?'Recovery every 2 seconds'/);
+ assert.match(stage,/en\?'Recovery every 2 seconds'/);
 });

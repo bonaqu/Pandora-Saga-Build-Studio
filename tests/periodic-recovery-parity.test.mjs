@@ -64,8 +64,8 @@ test('preview is linked to character model and player-only book, not applied as 
  assert.match(src,/level,spi:stats.spi,benevolence:combatContext.benevolenceMastery/);
  assert.match(src,/healingSpells,periodicRecovery,consumableRecovery/);
  assert.match(src,/const statusCures=statusCurePreview/);
- assert.match(ui,/if\(chosen==='effects'&&modifiers\?\.periodicRecovery\?\.rows\?\.length\)/);
- assert.match(ui,/Ориентировочное действие умения/);
+ assert.match(ui,/modifiers\?\.periodicRecovery\?\.rows/);
+ assert.match(ui,/Ориентировочное действие навыка/);
 });
 
 test('exact OS event vectors, prerequisites, class and rank gates protect periodic recovery',()=>{

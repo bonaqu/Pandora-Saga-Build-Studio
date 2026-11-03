@@ -26,9 +26,11 @@ test('engine maintains final combat values in summary and defense',()=>{
 });
 test('UI shows only final combat values in localized compact tiles',()=>{
  const source=read('pandora-studio-hero-book.js');
- assert.match(source,/label\('Скорость атаки','Attack speed'\)/);
- assert.match(source,/label\('Расход ОМ','MP cost'\)/);
- assert.match(source,/label\('Уклонение','Evasion'\)/);
+ assert.match(source,/row\('Скор\. атаки','Attack speed',c.attackSpeed\?\.known/);
+ assert.match(source,/row\('Расход ОМ','MP cost',c.manaCost\?\.remaining/);
+ assert.match(source,/row\('Уклонение','Evasion',c.dodge\?\.known/);
+ assert.match(source,/function attackChapterGroups\(calc\)/);
+ assert.doesNotMatch(source,/stage-combat-quick/);
  assert.doesNotMatch(source,/appendCombatFormulas|combatFormulaRows|stage-combat-formulas/);
  assert.doesNotMatch(source,/Показать расчёт по составляющим|Show calculation breakdown/);
  assert.doesNotMatch(source,/cm\.accuracy\.percentage|df\.refinement/);

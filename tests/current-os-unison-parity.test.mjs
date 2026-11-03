@@ -73,9 +73,9 @@ test('OS catalog atomic snapshot includes unison and the book shows active set e
  const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  assert.match(app,/\['meta','classes','skills','items','souls','racialPassives','unison'\]/);
  assert.match(app,/unisonCatalog:catalogSource\?\.unison/);
- assert.match(book,/Активные комплекты/);
- assert.match(book,/modifiers\?\.unison\?\.active/);
- assert.match(book,/Перезарядка умений/);
+ assert.match(book,/function defenseChapterGroups\(calc\)/);
+ assert.doesNotMatch(book,/if\(chosen==='effects'&&modifiers\?\.unison/);
+ assert.match(read('pandora-os-character-calculator.js'),/function unisonPreview\(/);
 });
 
 test('invalid root or companion enhancement never activates a real OS set',()=>{

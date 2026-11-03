@@ -50,9 +50,16 @@ test('Defense renders known elemental resistances including zero and vulnerabili
   elements:{fire:0,ice:20,poison:-5},states:{physical:0,mental:0},
   status:{},mitigation:{physical:0,magic:0}
  }}});
- const tiles=walk(target).filter(x=>x.className?.startsWith('stage-resistance-tile'));
- assert.equal(tiles.length,3);
- assert.ok(tiles.some(x=>x.children[0].textContent==='Огонь'&&x.children[1].textContent==='0'));
- assert.ok(tiles.some(x=>x.className.includes('negative')&&
-  x.children[1].textContent==='-5'));
+ assert.equal(walk(target).filter(x=>x.className?.startsWith('stage-resistance-tile')).length,0,
+  'Defense displays Set.RES rather than duplicating elemental Set.Status');
+ const result=new Element('root');
+ render(result,{page:'summary',modifiers:{resistances:{
+  elements:{fire:0,ice:20,poison:-5},states:{physical:0,mental:0},
+  status:{},mitigation:{physical:0,magic:0}
+ }}});
+ const tiles=walk(result).filter(x=>x.className==='stage-result-tile');
+ assert.ok(tiles.some(x=>x.children[0].textContent==='Сопр. огню'&&
+  x.children[1].textContent==='0%'));
+ assert.ok(tiles.some(x=>x.children[0].textContent==='Сопр. яду'&&
+  x.children[1].textContent==='-5%'));
 });

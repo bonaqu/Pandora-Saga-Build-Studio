@@ -46,8 +46,8 @@ test('duplicated CASTER row does not double Numb and corrupt skill row fails clo
 });
 test('UI book labels resistance effects as combined sources, not only gear',()=>{
  const source=read('pandora-studio-hero-book.js'),editor=read('pandora-studio-app.js');
- assert.match(source,/Сопротивления состояниям/);
- assert.match(source,/Устойчивость: \+15/);
+ assert.match(source,/Сопротивления отдельным состояниям/);
+ assert.match(source,/calc\.resistances\?\.status/);
  assert.match(editor,/const wardingMastery=window.PandoraSkillProgression.groupAdeptness/);
  assert.match(editor,/ridingMastery,wardingMastery/);
 });

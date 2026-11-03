@@ -39,6 +39,6 @@ test('integration reads existing saved gem choices and shows separate breakdown'
  assert.match(source,/PandoraEnchantModel\.normalize\(/);
  assert.match(source,/gemSelections\.push\(/);
  assert.match(source,/itemForth:gameItemForth,gemSelections/);
- assert.match(book,/modifiers\.gemstones\.items\.length/);
- assert.match(book,/Сопротивления от самоцветов включены в защиту/);
+ assert.match(book,/calc\.gemstones\?\.magic/);
+ assert.match(book,/row\('Сопр\. огню','Fire',elements.fire/);
 });

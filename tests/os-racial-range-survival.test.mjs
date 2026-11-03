@@ -103,8 +103,8 @@ test('Hero Book exposes source value with partial-warning notes in both locales'
  assert.doesNotMatch(book,/modifiers\?\.attackRange\?\.racialGeneral/);
  assert.match(book,/calc\?\.attackRange\?\.baseRanged/);
  assert.ok(C.racialUtilityPreview({racialPassiveId:900020002,skillCatalog:skills}));
- assert.match(book,/modifiers\?\.racialEffects\?\.survival/);
+ assert.match(book,/calc\?\.racialEffects\?\.survival/);
  assert.match(book,/Упрямое сердце:/);
- assert.match(book,/не постоянные ОЗ, броня или гарантированное спасение/);
+ assert.match(book,/Stronghearted: /);
  assert.match(book,/Dwarven racial survival/);
 });

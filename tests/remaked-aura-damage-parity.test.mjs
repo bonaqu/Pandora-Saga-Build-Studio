@@ -54,7 +54,7 @@ test('full level-55 character applies earring to aura preview but not HP or weap
 test('book shows final elemental aura while keeping gem base and magic distinct',()=>{
  const source=read('pandora-studio-hero-book.js');
  assert.doesNotMatch(source,/show\(english\?'Weapon aura base'/);
- assert.match(source,/modifiers\?\.auraDamage\?\.elements/);
- assert.match(source,/Итог ауры/);
- assert.match(source,/Магическое усиление оружия/);
+ assert.match(source,/calc\.auraDamage\?\.elements/);
+ assert.match(source,/Урон ауры/);
+ assert.match(source,/magicGem/);
 });

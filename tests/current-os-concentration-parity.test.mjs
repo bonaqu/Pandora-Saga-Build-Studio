@@ -46,5 +46,5 @@ test('book gates Concentration by the same trained slash skill and saves it in l
  assert.match(app,/rawAttributes\[key\]===true/);
  assert.match(app,/combatConcentration'\]/);
  assert.match(book,/\['combatConcentration','Сосредоточенность'\]/);
- assert.match(book,/battle\.accuracy\?\.known/);
+ assert.match(book,/row\('Точность','Accuracy',c.accuracy\?\.known\)/);
 });

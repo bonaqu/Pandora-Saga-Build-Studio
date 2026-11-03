@@ -18,11 +18,11 @@ test('character portrait can toggle source-backed stats without page scroll',()=
 });
 test('Hero Book summary groups source-backed results and navigates to relevant chapters',()=>{
  const attrs=get('pandora-studio-hero-book.js'),css=get('pandora-studio-theme.css');
- assert.match(attrs,/function summaryPage\(body,calc,onPage\)/);
+ assert.match(attrs,/function summaryPage\(body,calc\)/);
  assert.match(attrs,/class:'stage-result-section'/);
  assert.match(attrs,/class:'stage-result-section-head'/);
- assert.match(attrs,/onclick:\(\)=>onPage\(group\.page\)/);
- assert.match(attrs,/summaryPage\(body,modifiers,onPage\)/);
+ assert.doesNotMatch(attrs,/onclick:\(\)=>onPage\(group\.page\)/);
+ assert.match(attrs,/summaryPage\(body,modifiers\)/);
  assert.match(css,/\.stage-result-section-head/);
  assert.match(attrs,/class:'stage-buff-overview'/);
  assert.doesNotMatch(attrs,/stage-book-buff-optional/);

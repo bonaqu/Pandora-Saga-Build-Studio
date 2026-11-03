@@ -95,23 +95,21 @@ test('Phoenix is shown active only for valid equipped fire-gem +7 weapon',()=>{
  assert.match(app,/stage-elemental-proc/);
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/PandoraConditionalItemBonuses\?\.activeFor/);
- assert.match(book,/\['summary','attack','effects'\]/);
+ assert.match(book,/function appendWeaponConditions\(body,calc,items,english\)/);
  assert.match(book,/Пламя феникса/);
  assert.match(book,/phoenixDamage\(/);
- assert.match(book,/modifiers\?\.stats/);
- assert.match(book,/result\.damage/);
+ assert.match(book,/calc\?\.stats/);
+ assert.match(book,/outcome\.damage/);
 });
 
-test('Hero Book recovery page contains only HP/MP potion items',()=>{
+test('Hero Book owns cure and skill-activating consumables only on Potion chapter',()=>{
  const book=read('pandora-studio-hero-book.js');
  const recover=book.indexOf("if(chosen==='recovery'){");
- const next=book.indexOf("if(chosen==='effects'){",recover);
- assert.ok(recover>=0&&next>recover);
- const potions=book.slice(recover,next);
- assert.match(potions,/consumableRecovery/);
- assert.doesNotMatch(potions,/statusCures/);
- assert.doesNotMatch(potions,/consumableSkills/);
- assert.match(book.slice(next),/statusCures/);
- assert.match(book.slice(next),/consumableSkills/);
- assert.match(book,/if\(page==='summary'&&modifiers\?\.regeneration\)/);
+ assert.ok(recover>0);
+ assert.ok(book.includes('const cures=modifiers?.statusCures?.rows||[]'));
+ assert.ok(book.includes('const consumableSkills=modifiers?.consumableSkills?.rows||[]'));
+ assert.match(book,/if\(chosen==='recovery'\)\{\s*const english=document\.documentElement\?\.lang==='en'/);
+ assert.doesNotMatch(book,/if\(chosen==='effects'\)\{\s*const english=document\.documentElement\?\.lang==='en';\s*const cures=/);
+ assert.match(book,/function skillEffectsPage\(body/);
+ assert.match(book,/const spells=modifiers\?\.healingSpells\?\.rows/);
 });

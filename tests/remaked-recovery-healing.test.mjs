@@ -45,7 +45,7 @@ test('MP recovery speed and final skill delay Soul codes are separate from recov
 });
 test('stage includes distinct skill healing, standing recovery and external regen rate',()=>{
  const stage=get('pandora-studio-hero-book.js');
- assert.match(stage,/modifiers\?\.healingSkill/);
- assert.match(stage,/modifiers\?\.recoveryAmount/);
- assert.match(stage,/regen\.mp\?\.total/);
+ assert.match(stage,/modifiers\?\.healingSpells\?\.rows/);
+ assert.match(stage,/calc\.recoveryAmount/);
+ assert.match(stage,/r\?\.mp\?\.total/);
 });
