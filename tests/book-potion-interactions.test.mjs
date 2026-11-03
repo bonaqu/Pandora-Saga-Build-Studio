@@ -59,7 +59,7 @@ test('Defense renders known elemental resistances including zero and vulnerabili
  }}});
  const tiles=walk(result).filter(x=>x.className==='stage-result-tile');
  assert.ok(tiles.some(x=>x.children[0].textContent==='Сопр. огню'&&
-  x.children[1].textContent==='0'));
+  x.children[1].textContent==='0%'));
  assert.ok(tiles.some(x=>x.children[0].textContent==='Сопр. яду'&&
-  x.children[1].textContent==='-5'));
+  x.children[1].textContent==='-5%'));
 });

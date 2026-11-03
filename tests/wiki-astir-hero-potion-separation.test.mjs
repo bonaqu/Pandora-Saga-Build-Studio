@@ -99,7 +99,10 @@ test('Phoenix is shown active only for valid equipped fire-gem +7 weapon',()=>{
  assert.match(book,/Пламя феникса/);
  assert.match(book,/phoenixDamage\(/);
  assert.match(book,/calc\?\.stats/);
- assert.match(book,/outest('Hero Book owns cure and skill-activating consumables only on Potion chapter',()=>{
+ assert.match(book,/outcome\.damage/);
+});
+
+test('Hero Book owns cure and skill-activating consumables only on Potion chapter',()=>{
  const book=read('pandora-studio-hero-book.js');
  const recover=book.indexOf("if(chosen==='recovery'){");
  assert.ok(recover>0);
