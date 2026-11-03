@@ -11,7 +11,8 @@ test('Origin has no technical disclaimers under base stat controls',()=>{
 });
 test('detailed stat labels match compact editor while keeping save keys',()=>{
  const src=get('pandora-studio-app.js');
- assert.match(src,/h\('h3',\{text:info\.name\}\)/);
+ assert.match(src,/h\('h3',\{text:statName\(i\)\}\)/);
+ assert.match(src,/const statName=i=>lang==='en'/);
  assert.match(src,/if\(hp\)hp\.textContent=hpReady\?String\(calculated\.hp\):'—'/);
  assert.match(src,/if\(mp\)mp\.textContent=mpReady\?String\(calculated\.mp\):'—'/);
  assert.doesNotMatch(src,/ОЗ ≈/);
