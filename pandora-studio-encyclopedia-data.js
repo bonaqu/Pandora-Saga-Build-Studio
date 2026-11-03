@@ -116,6 +116,24 @@ function build(data){
   {...(data.trades?.mapNames||{}),...(data.maps||{})};
  for(const [id,patch] of Object.entries(data.townMaps||{}))
   maps[id]={...(maps[id]||{}),...patch};
+ // Metadata-only OS places and Astir districts share the same curated map
+ // relation graph. Never mutate imported monster spawn or loot tables.
+ for(const [mapId,map]of Object.entries(maps)){
+  if(Object.hasOwn(data.maps||{},String(mapId)))continue;
+  const place={type:'map',id:String(mapId),name:map.name};
+  for(const mob of map.mobs||[])if(Object.hasOwn(data.monsters||{},String(mob)))
+   addLocation(mob,place);
+  for(const npcId of map.npcs||[]){
+   const npc=(data.trades?.npcs||{})[String(npcId)];
+   if(!npc)continue;
+   const listed=npcLocations.get(String(mapId))||[];
+   if(!listed.some(([id])=>String(id)===String(npcId)))
+    append(npcLocations,mapId,[String(npcId),npc]);
+  }
+  for(const itemId of map.loot||[])
+   if(Object.hasOwn(data.items||{},String(itemId)))
+    add(itemId,{type:'owner-map',id:mapId,curated:true});
+ }
  // The actual item level and class-family name identify leveling reward boxes.
  // Source chest rolls exist only for the earlier boxes; later ones remain
  // browsable without synthesizing contents or changing the OS snapshot.
