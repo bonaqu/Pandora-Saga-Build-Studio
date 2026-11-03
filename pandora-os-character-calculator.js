@@ -94,7 +94,11 @@ function sourceEffects(source,record,grade,itemForth=null){
  const exact=key.match(/^(item|soul):(\d+)$/);
  if(exact&&Number.isSafeInteger(record.id)&&
   String(record.id)!==exact[2])return [];
- const primary=Array.isArray(record.effects)?record.effects:[];
+ // Imported or owner-edited structured data can be incomplete. A null
+ // row must never crash the stat rebuild or be interpreted as an effect.
+ const safeRows=rows=>Array.isArray(rows)?rows.filter(row=>
+  row&&typeof row==='object'&&typeof row.func==='string'):[];
+ const primary=safeRows(record.effects);
  if(!key.startsWith('item:'))return primary;
  // A Forth snapshot is tied to the official ID, not to a synthetic record
  // label; otherwise arbitrary imported records could inherit the grade
@@ -102,7 +106,7 @@ function sourceEffects(source,record,grade,itemForth=null){
  const canonical=Number.isSafeInteger(record.id)&&
   key==='item:'+record.id;
  const snapshot=canonical?itemForth?.[String(record.id)]?.[String(grade)]:null;
- if(Array.isArray(snapshot))return [...primary,...snapshot];
+ if(Array.isArray(snapshot))return [...primary,...safeRows(snapshot)];
  // Support the explicit legacy refinement-description fallback when no
  // structured snapshot exists; never use it as a second bonus to a snapshot.
  return [...primary,...refinementEffects(record,grade)];
