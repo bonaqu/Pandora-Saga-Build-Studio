@@ -1416,7 +1416,8 @@ function renderPathPages(){
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
  'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
-function renderDetails(){const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
+let wikiOutsideCleanup=null;
+function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
 let wikiRenderSelected=null,wikiRenderedRoot=null,wikiBaseData=null;
 async function loadWiki(){
@@ -1504,6 +1505,25 @@ function renderWiki(root){
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
+ const outsidePickers=new Set();
+ const cleanupOutsidePickers=()=>{
+  for(const onOutside of outsidePickers)
+   document.removeEventListener('pointerdown',onOutside,true);
+  outsidePickers.clear();
+ };
+ const registerOutsidePicker=(panel,trigger=null)=>{
+  const onOutside=event=>{
+   if(!panel.isConnected||(!panel.contains(event.target)&&event.target!==trigger)){
+    document.removeEventListener('pointerdown',onOutside,true);
+    outsidePickers.delete(onOutside);
+    panel.remove();
+   }
+  };
+  outsidePickers.add(onOutside);
+  document.addEventListener('pointerdown',onOutside,true);
+ };
+ wikiOutsideCleanup=cleanupOutsidePickers;
+ let wikiResultsCache=null;
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['honor','Очки чести','Honor points'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{
@@ -1874,12 +1894,7 @@ function renderWiki(root){
    try{await selectItem(Number(target.value))}
    catch(error){feedback.textContent=error.message;target.disabled=false}
   };
-  const outside=e=>{
-   if(!form.isConnected||!form.contains(e.target)){
-    document.removeEventListener('pointerdown',outside,true);form.remove();
-   }
-  };
-  document.addEventListener('pointerdown',outside,true);
+  registerOutsidePicker(form);
   fill();search.focus();
  };
  function wikiOwnerEntityList({label,items,existing,kind,onChange,limit=1000}){
@@ -1929,12 +1944,7 @@ function renderWiki(root){
     try{await onChange([...ids,select.value].map(idValue))}
     catch(e){feedback.textContent=e.message;select.disabled=false}
    };
-   const outside=e=>{
-    if(!panel.isConnected||(!panel.contains(e.target)&&e.target!==add)){
-     document.removeEventListener('pointerdown',outside,true);panel.remove()
-    }
-   };
-   document.addEventListener('pointerdown',outside,true);
+   registerOutsidePicker(panel,add);
    fill();search.focus();
   };
   container.append(add);
@@ -2092,12 +2102,7 @@ function renderWiki(root){
        try{await saveWikiAcquisitions(id,[...earlier,selected])}
        catch(error){target.disabled=false;feedback.textContent=error.message}
       };
-      const outside=event=>{
-       if(!panel.isConnected||(!panel.contains(event.target)&&event.target!==add)){
-        document.removeEventListener('pointerdown',outside,true);panel.remove();
-       }
-      };
-      document.addEventListener('pointerdown',outside,true);
+      registerOutsidePicker(panel,add);
       refresh();kind.focus();
      };
      detail.append(add);
@@ -2115,6 +2120,7 @@ function renderWiki(root){
    wikiSourceShown=80;wikiUsageShown=80;wikiSourceRecord=sourceKey;
   }
   if(!detailOnly)browse.replaceChildren();
+  cleanupOutsidePickers();
   detail.replaceChildren();
   const type=wikiSelection.type;
   const knownMaps=wikiIndex.records('map');
@@ -2157,19 +2163,30 @@ function renderWiki(root){
     if(picker)picker.value='all';
    }
   }
-  const results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id))
-   .filter(([,rec])=>{
-    if(type!=='item')return true;
-    if(!isVisibleItem(rec,wikiItemType))return false;
-    return ['all','elemental','utility'].includes(wikiItemType)||wikiItemEligibility==='all'||
-     heroCompatible(rec,state.level);
-   });
-  if(type==='map'&&!wikiSearch){
-   const geo=window.PandoraAstirLocations;
-   const rank=new Map([...(geo?.districtIds||[]),...(geo?.countryIds||[])]
-    .map((id,index)=>[id,index]));
-   results.sort((a,b)=>(rank.get(String(a[0]))??100)-
-    (rank.get(String(b[0]))??100));
+  const resultKey=JSON.stringify([type,wikiSearch,wikiItemType,wikiEffectFilter,
+   wikiElementFilter,wikiItemEligibility,state.level,state.job,state.race,
+   state.gender,lang]);
+  let results=wikiResultsCache?.index===wikiIndex&&
+   wikiResultsCache.equipment===catalog.equipment&&
+   wikiResultsCache.english===officialEnglish&&
+   wikiResultsCache.key===resultKey?wikiResultsCache.rows:null;
+  if(!results){
+   results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id))
+    .filter(([,rec])=>{
+     if(type!=='item')return true;
+     if(!isVisibleItem(rec,wikiItemType))return false;
+     return ['all','elemental','utility'].includes(wikiItemType)||wikiItemEligibility==='all'||
+      heroCompatible(rec,state.level);
+    });
+   if(type==='map'&&!wikiSearch){
+    const geo=window.PandoraAstirLocations;
+    const rank=new Map([...(geo?.districtIds||[]),...(geo?.countryIds||[])]
+     .map((id,index)=>[id,index]));
+    results.sort((a,b)=>(rank.get(String(a[0]))??100)-
+     (rank.get(String(b[0]))??100));
+   }
+   wikiResultsCache={index:wikiIndex,equipment:catalog.equipment,
+    english:officialEnglish,key:resultKey,rows:results};
   }
   // A source link outside the current search must clear that search, otherwise
   // the linked record opens in details but never appears in the browse list.
@@ -2701,12 +2718,7 @@ function renderWiki(root){
         catch(e){error.textContent=e.message;chooser.disabled=false}
        };
        panel.append(search,chooser,error);plus.after(panel);
-       const outside=e=>{
-        if(!panel.isConnected||(!panel.contains(e.target)&&e.target!==plus)){
-         document.removeEventListener('pointerdown',outside,true);panel.remove();
-        }
-       };
-       document.addEventListener('pointerdown',outside,true);
+       registerOutsidePicker(panel,plus);
        fill();search.focus();
       };
       list.append(plus);
