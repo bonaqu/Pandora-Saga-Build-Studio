@@ -58,6 +58,7 @@ test('player encyclopedia hides empty verification tab and technical notes',()=>
  const app=read('pandora-studio-app.js');
  assert.match(app,/if\(id==='review'&&!hasReviewItems\)continue/);
  assert.match(app,/missingDescription/);
+ assert.match(app,/if\(adminEditing&&adminToken&&lang==='ru'\)\{/);
  assert.doesNotMatch(app,/not a verified chance or damage value/);
  assert.doesNotMatch(app,/Both skills use EP_CAUSE_POISON/);
  assert.doesNotMatch(app,/неизучаемая техническая запись/);
