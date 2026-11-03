@@ -152,7 +152,7 @@ test('Worker advertises installed guide editing API without exposing admin edits
   'https://ps-build-studio-cloud.bonaqu.workers.dev/api/runtime-capabilities'),{DB:{}});
  assert.equal(response.status,200);
  const info=await response.json();
- assert.equal(info.codeRelease,'0.345.0');
+ assert.equal(info.codeRelease,'0.346.0');
  for(const capability of ['guideedit','honor-lists','historical-map-wiki'])
   assert.ok(info.ownerEditors.includes(capability),capability);
 });
@@ -181,7 +181,7 @@ test('Book, encyclopedia, Worker, scripts and styles are connected',()=>{
   css=read('pandora-studio-honor.css'),hint=read('pandora-studio-honor-guide.js');
  for(const file of ['pandora-studio-honor-guide.js','pandora-studio-guide-tooltips.js',
   'pandora-studio-historic-maps.js','pandora-studio-honor-view.js'])
-  assert.ok(html.includes(file+'?v=2026.11.03.345'),file);
+  assert.ok(html.includes(file+'?v=2026.11.03.346'),file);
  assert.match(book,/function guideLabel/);
  assert.match(book,/Пассивное восстановление/);
  assert.match(book,/Passive recovery/);
