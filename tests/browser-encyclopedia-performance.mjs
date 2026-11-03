@@ -61,7 +61,7 @@ export async function runEncyclopediaPerformanceSmoke(browser,base){
   const quantile=(values,q)=>{
    if(!values.length)return null;
    const sorted=values.slice().sort((a,b)=>a-b);
-   return sorted[Math.floor((sorted.length-1)*q)];
+   return sorted[Math.max(0,Math.ceil(sorted.length*q)-1)];
   };
   const report=results.map(row=>({
    chapter:row.chapter,rowsExpanded:row.rowsExpanded,expandedClicks:row.expandedClicks,
