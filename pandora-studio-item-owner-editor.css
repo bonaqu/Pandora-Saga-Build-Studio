@@ -325,3 +325,16 @@ body:has(#ownerDock) .wiki-page [data-edit-key]:hover{
 body:has(#ownerDock) .wiki-page [data-owner-record][data-owner-field]:focus-visible,
 body:has(#ownerDock) .wiki-page [data-edit-key]:focus-visible{
  outline:2px solid #e7bd77;outline-offset:3px}
+
+/* Safe deletion only for records that were created by the site owner. */
+.wiki-owner-delete-record{height:auto;min-height:28px;margin:2px 0 9px;
+ padding:5px 10px;color:#d8b49f;border-color:#966858;
+ background:#2e1e1a;font:600 11px Manrope,Arial,sans-serif}
+.wiki-owner-delete-record:hover{background:#4c2b25;border-color:#d09883}
+.wiki-owner-location-residents{display:grid;gap:6px;margin:6px 0 12px;
+ border-left:2px solid #8d7046;padding-left:9px}
+.wiki-owner-location-residents>small{color:#c7a77a;font-size:10px}
+.wiki-map-create-npc-form{display:flex;flex-wrap:wrap;gap:7px;
+ max-width:100%;margin:8px 0}
+.wiki-map-create-npc-form .wiki-inline-input{min-width:160px;flex:1 1 175px}
+.wiki-map-create-npc-form .inline-owner-error{flex:1 1 100%}
