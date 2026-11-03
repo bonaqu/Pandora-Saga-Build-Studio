@@ -18,8 +18,10 @@ test('shared builds safely validate and persist combat choices',()=>{
  assert.match(app,/current\.combatDefender/);
 });
 test('attack and defense views show contribution of chosen skills',()=>{
- const stage=get('pandora-studio-hero-book.js');
- assert.match(stage,/cm\.attack\?\.activeBonus/);
- assert.match(stage,/df\.activeBonus/);
- assert.match(stage,/cm\.activeSkills\?\.lunge/);
+ const stage=get('pandora-studio-hero-book.js'),calc=get('pandora-os-character-calculator.js');
+ assert.match(stage,/battle\.attack\?\.known/);
+ assert.match(calc,/activeAtk=baseAtk/);
+ assert.match(stage,/battle\.defense\?\.known/);
+ assert.match(calc,/activeDef=\(actives\.raging/);
+ assert.match(calc,/actives\.lunge/);
 });
