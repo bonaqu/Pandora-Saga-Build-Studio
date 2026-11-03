@@ -959,6 +959,38 @@ function defensePage(body,calc,english,options={}){
  }
  appendItemEvents(body,calc,english,'defense');
 }
+// Stable text identities: editing a caption never mutates the game skill or
+// item catalog. Details retain their live record counts after localization.
+const chapterCaptionSpecs=Object.freeze([
+ ['summary','results','.stage-result-intro > strong','Результаты расчёта','Calculated results'],
+ ['effects','healing','.stage-healing-spells > strong','Лечащие умения','Healing skills'],
+ ['effects','periodic','.stage-periodic-recovery > summary','Восстановление каждые 2 секунды','Recovery every 2 seconds'],
+ ['effects','songs','.stage-song-skills > summary','Песни для выбранного класса','Songs available to this class'],
+ ['recovery','potions','.stage-potion-book > strong','Эффекты зелий','Potion effects'],
+ ['recovery','enabled','.stage-potion-book .stage-book-check > span','Показывать восстановление от зелий','Show potion recovery'],
+ ['recovery','mana','.stage-mana-consumables > strong','Предметы восстановления ОМ','MP recovery items'],
+ ['recovery','health','.stage-health-consumables > summary','Предметы восстановления ОЗ','HP recovery items'],
+ ['recovery','cures','.stage-status-cures > summary','Снятие состояний','Remove status effects'],
+ ['recovery','skillItems','.stage-consumable-skills > summary','Предметы, активирующие умения','Items that activate skills']
+]);
+function decorateChapterCaptions(body,page,options){
+ for(const [section,key,selector,ru,en] of chapterCaptionSpecs){
+  if(page!==section)continue;
+  const node=body.querySelector?.(selector);
+  if(!node)continue;
+  let label=node;
+  if(node.tagName?.toLowerCase()==='summary'){
+   const text=String(node.textContent||'');
+   const suffix=text.match(/\s·\s\d+(?:\s(?:предметов|items))?$/)?.[0]||'';
+   node.replaceChildren();
+   label=make('span',{text:ru});
+   node.append(label);
+   if(suffix)node.append(document.createTextNode(suffix));
+  }
+  guideLabel(label,section+'.caption.'+key,ru,en,options,
+   'Описание раздела «'+ru+'».','Description of '+en+'.');
+ }
+}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{},
@@ -1126,6 +1158,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    body.append(section);
   }
  }
+ decorateChapterCaptions(body,chosen,copyOptions);
  target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,attackChapterGroups,defenseChapterGroups});
