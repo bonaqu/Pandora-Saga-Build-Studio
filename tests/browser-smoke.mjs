@@ -19,6 +19,7 @@ import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
 import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 import {runBuildComparisonSmoke} from './browser-build-comparison.mjs';
+import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 
 const base='http://127.0.0.1:4173';
 const argv=new Set(process.argv.slice(2));
@@ -235,6 +236,7 @@ async function main(){
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
   ['honor-guide',runHonorGuideSmoke],
   ['build-comparison',runBuildComparisonSmoke],
+  ['effect-items',runEffectItemsSmoke],
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
