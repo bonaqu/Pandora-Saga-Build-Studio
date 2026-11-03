@@ -16,6 +16,7 @@ import {runAccountSmoke} from './browser-account.mjs';
 import {runAccountLibraryIsolationSmoke} from './browser-account-isolation.mjs';
 import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs';
 import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
+import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 
 const base='http://127.0.0.1:4173';
@@ -64,6 +65,16 @@ async function main(){
  await page.locator('#hero').click();
  await page.locator('#stageAttributes').waitFor({state:'visible'});
  assert.equal(await page.locator('#stageAttributes [data-book-page]').count(),6);
+ const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
+ assert.equal(await guideLabels.count(),48,'43 result hints, four group headers and one editable caption');
+ await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
+ assert.match(await page.locator('#stage-guide-tooltip').innerText(),/Очки здоровья/);
+ await page.locator('#stageBookPanel [data-guide-key="summary.23"]').hover();
+ assert.match(await page.locator('#stage-guide-tooltip').innerText(),/атак в спину/);
+ await page.locator('#stageBookPanel [data-guide-key="summary.23"]').focus();
+ assert.equal(await page.locator('#stage-guide-tooltip').isVisible(),true);
+ await page.locator('#stageBookPanel [data-guide-key="summary.23"]').press('Escape');
+ assert.equal(await page.locator('#stage-guide-tooltip').isHidden(),true);
  await page.locator('#stageAttributes [data-book-page="attack"]').click();
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'attack');
  assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),0,
@@ -120,7 +131,8 @@ async function main(){
  assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
- assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild & honor'));
+ assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild'));
+  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Honor passive skill'));
  await page.locator('#stageBookPanel [data-book-setting="guildLevel"]').selectOption('10');
  assert.match(await page.locator('#stageBookPanel .stage-guild-level-effects').innerText(),/12%/);
  await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').check();
@@ -209,6 +221,7 @@ async function main(){
   ['account-isolation',runAccountLibraryIsolationSmoke],
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
+  ['honor-guide',runHonorGuideSmoke],
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];

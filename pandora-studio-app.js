@@ -927,6 +927,10 @@ function renderStageAttributes(){
    .map(row=>({...row,nameEn:officialEnglish?.skills?.[String(row.id)]?.n||row.name})),
   itemById:id=>catalogSource?.items?.[String(id)]||null,
   onItem:id=>openWiki('item',String(id)),
+  copy:override,canEdit:Boolean(adminEditing&&adminToken),
+  onTextEdit:(node,key,field,initial)=>editWikiValue(node,initial,{
+   type:'text',onCommit:value=>saveGuidePatch('book.'+key,{[field]:value})}),
+  onHonor:()=>openWiki('honor','overview'),
   onBuff:(key,value)=>setAttributeBuff(key,value),
   onVital:(key,value)=>setVitalsEnhancement(key,value),
   onClose:()=>{
@@ -1441,6 +1445,7 @@ async function loadWiki(){
    }catch{/* Damaged overrides must not break the original encyclopedia. */}
   }
   const source={...loaded.data,skills,ownerAcquisitions,
+   maps:{...loaded.data.maps,...(window.PandoraHistoricalMaps?.records()||{})},
    trades:window.PandoraStudioTradeOwnerData.apply(
     loaded.data.trades,loaded.data.items,override),
    items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
@@ -1496,7 +1501,7 @@ function renderWiki(root){
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
- for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
+ for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['honor','Очки чести','Honor points'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{
    class:(key==='utility'?wikiSelection.type==='item'&&wikiItemType==='utility':
     key==='item'?wikiSelection.type==='item'&&wikiItemType!=='utility':
@@ -1602,6 +1607,25 @@ function renderWiki(root){
  controls.append(view);
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
+ if(wikiSelection.type==='honor'){
+  view.hidden=true;
+  const renderHonor=()=>{
+   if(!root.isConnected)return;
+   window.PandoraHonorView?.render({
+    browse,detail,make:h,lang,article:window.PandoraHonorGuide?.article(override),
+    editable:adminEditing&&Boolean(adminToken),
+    editText:(node,initial,multiline,onCommit)=>editWikiValue(node,initial,{
+     type:multiline?'textarea':'text',onCommit}),
+    saveText:saveGuidePatch,saveList:saveGuideList,
+    link:(mapId,name)=>window.PandoraHistoricalMaps?.records()?.[mapId]||
+     mapId==='2005004'?wikiLink('◈ '+name,'map',mapId):null
+   });
+  };
+  wikiRenderSelected=renderHonor;
+  renderHonor();
+  return;
+ }
+
  const nameCache=new Map();
   let lastWikiIndex=null;
  const dataName=(type,id)=>{
@@ -2123,6 +2147,9 @@ function renderWiki(root){
     text:wt('При использовании отравляет персонажа, употребившего предмет: временный эффект отравления периодически наносит ему урон ядом. Урон за тик, интервал, длительность и шанс из данных OS не установлены.',
      'Using this item poisons the character who consumed it: the temporary poison effect deals periodic poison damage to that character. Tick damage, interval, duration and chance are not established by the OS data.')}));
   if(type==='map'){
+   if(rec.historic)detail.append(h('span',{class:'wiki-map-kind wiki-historic-tag',
+    text:wt('Историческая PvP-локация · недоступна на OS',
+     'Historical PvP location · not available on current OS')}));
    const geo=window.PandoraAstirLocations;
    const district=geo?.district(id),nation=geo?.country(id);
    if(district){
@@ -2965,6 +2992,9 @@ function renderWiki(root){
      if(adminEditing&&adminToken&&(type==='instance'||Object.hasOwn(wikiData.maps||{},id))){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
+       if(type==='map'&&rec.historic){
+        await saveWikiRecordField('map',id,'mobs',next.map(Number));return;
+       }
        const before=mobs.map(String),after=next.map(String);
        const added=after.find(x=>!before.includes(x));
        const removed=before.find(x=>!after.includes(x));
@@ -2972,7 +3002,7 @@ function renderWiki(root){
        else if(removed)await saveWikiSpawns(removed,type,id,false);
       }}));
     }
-    if(mobs.length){
+    if(mobs.length&&!rec.reportedSpawns){
      const roster=mobs.map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}));
      const levels=roster.map(row=>row.mon?.level).filter(Number.isFinite);
      const levelRange=levels.length?' · ур. '+Math.min(...levels)+
@@ -3002,6 +3032,30 @@ function renderWiki(root){
       for(const row of rows)row.entry.hidden=!matchesWords(row.name,search.value);
      });
      detail.append(search,list);
+    }
+    if(type==='map'&&Array.isArray(rec.reportedSpawns)){
+     const block=h('section',{class:'wiki-historic-roster'});
+     block.append(h('h4',{text:wt('Исторические монстры · ','Historical monsters · ')+rec.reportedSpawns.length}));
+     block.append(h('p',{class:'wiki-historic-notice',text:wt(
+      'Исторический состав Эль Ведда. Только подтверждённые совпадения связаны с карточками монстров. Появление на актуальном OS не подтверждено.',
+      'Historic El Beht roster. Only verified matches link to monster pages. Current OS spawns are not confirmed.')}));
+     const list=h('div',{class:'wiki-historic-mob-list'});
+     for(const entry of rec.reportedSpawns.slice().sort((a,b)=>a.level-b.level)){
+      const cell=h('div',{class:'wiki-historic-mob'+(entry.monsterId==null?' unverified':'')});
+      cell.append(h('span',{class:'wiki-historic-level',text:wt('Ур. ','Lv. ')+entry.level}));
+      const mapped=entry.monsterId!=null&&mobs.includes(entry.monsterId)&&
+       Boolean(wikiData.monsters?.[entry.monsterId]);
+      cell.append(mapped?wikiLink(entry.name,'monster',entry.monsterId):
+       h('span',{class:'wiki-historic-name',text:entry.name}));
+      if(entry.spawn==='anywhere')cell.append(h('small',{
+       text:wt('Может появиться в любой точке','May spawn anywhere')}));
+      else if(entry.spawn==='boss-guard')cell.append(h('small',{
+       text:wt('Страж вожака · при особых условиях','Boss guard · conditional spawn')}));
+      if(entry.monsterId==null)cell.append(h('small',{class:'wiki-historic-unverified',
+       text:wt('ID не подтверждён','ID unverified')}));
+      list.append(cell);
+     }
+     block.append(list);detail.append(block);
     }
     if(type==='map'){
       const residents=wikiIndex.residents(id);
@@ -3038,7 +3092,7 @@ function renderWiki(root){
         text:wt('Подтверждённых сведений о NPC пока нет.',
          'No verified NPC data available yet.')}));
       }
-      if(rec.virtual&&adminEditing&&adminToken){
+      if(rec.placeType==='astir-district'&&rec.virtual&&adminEditing&&adminToken){
        const add=h('button',{type:'button',class:'wiki-owner-plus',
         text:wt('+ Добавить NPC','+ Add NPC')});
        add.onclick=()=>{
@@ -4220,6 +4274,38 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  node.replaceChildren(control);control.focus();
  if(type==='number')control.select();
  else if(type==='text')window.getSelection()?.selectAllChildren(control);
+}
+async function saveGuidePatch(key,fields){
+ if(!adminEditing||!adminToken||!window.PandoraHonorGuide)
+  throw Error('Редактор справочника недоступен');
+ const overrideKey='guideedit.'+key,before=activeOverride(overrideKey);
+ let old={};try{old=JSON.parse(before||'{}')}catch{}
+ const patch={...(old&&typeof old==='object'&&!Array.isArray(old)?old:{}),...fields};
+ const serialized=JSON.stringify(patch);
+ if(!window.PandoraHonorGuide.validOverride(key,serialized))
+  throw Error('Некорректный текст справочника');
+ if(serialized===before)return;
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
+  override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
+  if(activeTab==='wiki'&&wikiSelection.type==='honor')renderDetails();
+  else renderStageAttributes();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
+async function saveGuideList(key,rows){
+ if(!['honor.zones','honor.wars'].includes(key)||!Array.isArray(rows))
+  throw Error('Неизвестный список');
+ const overrideKey='guideedit.'+key,before=activeOverride(overrideKey),value=JSON.stringify(rows);
+ if(!window.PandoraHonorGuide?.validOverride(key,value))
+  throw Error('Проверь названия, ID и связи списка');
+ if(value===before)return;
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key:overrideKey,value});
+  override[overrideKey]=value;ownerEdits.push({key:overrideKey,before,after:value});
+  if(activeTab==='wiki'&&wikiSelection.type==='honor')renderDetails();
+ }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveWikiRecordPatch(type,id,updates){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');

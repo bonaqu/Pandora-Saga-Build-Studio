@@ -149,10 +149,11 @@ const bookEnglish=Object.freeze({
  'Физические состояния': "Physical conditions",
  'Психические состояния': "Mental conditions",
  'Профессия': "Class",
- 'Скорость естественного восстановления': 'Natural recovery speed',
- 'Естественное восстановление (расчётная величина)': 'Estimated natural recovery',
  'Известные бонусы снаряжения и душ': 'Known equipment and Soul bonuses',
  'Сопротивления состояниям': 'Status resistances',
+ // Legacy input aliases remain translatable, but player-facing names use Passive recovery.
+ 'Скорость естественного восстановления': 'Passive recovery speed',
+ 'Естественное восстановление (расчётная величина)': 'Estimated passive recovery',
  'Восстановление каждые 2 секунды': 'Recovery every 2 seconds',
  'Лечащие умения': 'Healing skills',
  'Действие зелий': 'Potion effects',
@@ -252,6 +253,42 @@ function make(tag,attrs={},children=[]){
  return n;
 }
 
+// One visual metadata owner per chapter field. D1 changes affect copy only,
+// never IDs, numerical formulas, current equipment, or stored build settings.
+function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
+ if(!node)return node;
+ const guide=root.PandoraHonorGuide;
+ const info=/^summary\.\d+$/.test(key)?
+  guide?.summary(options.overrides||{},Number(key.slice(8)),ru,en):
+  guide?.field(options.overrides||{},key,ru,en,fallbackRu,fallbackEn);
+ const english=document.documentElement?.lang==='en';
+ const label=english?(info?.en||en):(info?.ru||ru);
+ const hint=english?info?.hintEn:info?.hintRu;
+ node.textContent=label;
+ if(hint)root.PandoraGuideTooltip?.attach(node,hint);
+ node.setAttribute('data-guide-key',key);
+ if(options.editable&&typeof options.onTextEdit==='function'){
+  node.classList.add('stage-guide-editable');
+  const editName=event=>{
+   event.stopPropagation();event.preventDefault();
+   root.PandoraGuideTooltip?.dismiss();
+   options.onTextEdit(node,key,english?'en':'ru',label);
+  };
+  node.addEventListener('dblclick',editName);
+  node.setAttribute('aria-keyshortcuts','F2');
+  node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
+  const pencil=make('button',{type:'button',class:'stage-guide-edit-hint',
+   text:'✎',title:english?'Edit tooltip':'Изменить подсказку',
+   'aria-label':english?'Edit tooltip for '+label:'Изменить подсказку: '+label,
+   onclick:event=>{
+    event.stopPropagation();root.PandoraGuideTooltip?.dismiss();
+    options.onTextEdit(node,key,english?'hintEn':'hintRu',hint||'');
+   }});
+  // Pencil is a separate control so editing a hint never changes a stat label.
+  node.after(pencil);
+ }
+ return node;
+}
 const bookPages=Object.freeze([
  ['summary','Результаты расчёта'],['attack','Атака'],['defense','Защита'],
  ['buffs','Усиления'],['effects','Эффекты умений'],['recovery','Эффекты зелий']
@@ -315,7 +352,7 @@ function summaryRows(calc){
  ];
 }
 
-function summaryPage(body,calc){
+function summaryPage(body,calc,options={}){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
   text:document.documentElement?.lang==='en'?
    'Stats appear after game data loads.':
@@ -325,6 +362,7 @@ function summaryPage(body,calc){
   make('strong',{text:en?'Calculated results':'Результаты расчёта'})
  ]));
  const format=new Intl.NumberFormat(en?'en-US':'ru-RU',{maximumFractionDigits:2});
+ let summaryIndex=0,summaryGroupIndex=0;
  for(const group of summaryRows(calc)){
   const section=make('section',{class:'stage-result-section',
    'data-result-group':group.page});
@@ -334,13 +372,16 @@ function summaryPage(body,calc){
    make('span',{class:'stage-result-symbol','aria-hidden':'true',text:group.symbol}),
    make('strong',{text:en?group.en:group.ru})
   ]);
+  guideLabel(heading.lastChild,'summary.group.'+summaryGroupIndex++,group.ru,group.en,options);
   const grid=make('div',{class:'stage-result-grid'});
   for(const result of group.rows){
    const text=Number.isFinite(result.value)?format.format(result.value)+result.unit:'—';
-   grid.append(make('div',{class:'stage-result-tile'},[
+   const tile=make('div',{class:'stage-result-tile'},[
     make('span',{text:en?result.en:result.ru}),
     make('strong',{text})
-   ]));
+   ]);
+   guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
+   grid.append(tile);
   }
   section.append(heading,grid);
   body.append(section);
@@ -378,13 +419,18 @@ function buffsPage(body,options){
   make('small',{text:english?'Saved with this character':'Сохраняются с этим героем'})
  ]);
  body.append(status);
- const section=(name)=>{
+ let sectionIndex=0;
+ const section=(name,stableId=null)=>{
   const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
+  guideLabel(node.firstChild,stableId==='guild'?'buffs.guild':
+   'buffs.section.'+(stableId||sectionIndex++),name,name,options,name,name);
   body.append(node);
   return node;
  };
  const select=(parent,name,key,levels,vital=false)=>{
   const field=make('label',{class:'stage-book-field'},[make('span',{text:name})]);
+  guideLabel(field.firstChild,key==='honorTitle'?'buffs.honor':'buffs.setting.'+key,
+   name,name,options,'Настройка усиления: '+name,'Enhancement setting: '+name);
   const entry=make('select',{'aria-label':name,'data-book-setting':key,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
   const selected=(vital?vitalsBuffs:buffs)[key]??0;
@@ -414,18 +460,18 @@ function buffsPage(body,options){
   (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
- const vitals=section('ОЗ и ОМ');
- if(!guildLevel){
-  select(vitals,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
-  select(vitals,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
- }else vitals.append(make('p',{class:'stage-attribute-note',text:english?
-  'HP and MP guild passives follow the selected guild level.':'Бонусы ОЗ и ОМ автоматически определяются уровнем гильдии.'}));
+ const vitals=section(english?'Vitals':'ОЗ и ОМ');
  toggle(vitals,'Знак жизни','lifeSign',true);
- const guild=section('Гильдия и честь');
+ const guild=section(english?'Guild':'Гильдия','guild');
  select(guild,english?'Guild level':'Уровень гильдии','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
    (english?'Manual guild buffs':'Ручной выбор усилений'):
    (english?'Guild level ':'Гильдия · уровень ')+i]));
+ if(!guildLevel){
+  select(guild,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+  select(guild,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+ }else guild.append(make('p',{class:'stage-attribute-note',text:english?
+  'HP and MP passives depend on guild level.':'Бонусы ОЗ и ОМ зависят от уровня гильдии.'}));
  if(guildLevel&&guildPreview){
   const rate=[0,2,4,6,9,12,15][guildPreview.guildHp]||0;
   const lines=[
@@ -444,7 +490,17 @@ function buffsPage(body,options){
  }
  select(guild,'Все характеристики','guildAll',opts([0,1,2,3,4,5,6]));
  select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
- select(guild,'Титул чести','honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]));
+ const honor=section(english?'Honor':'Честь','honor');
+ honor.append(make('p',{class:'stage-attribute-note',text:english?
+  'Choose one passive to simulate. Count (Moon): 129,000 Total Honor and 640,000 gold.':
+  'Выбери одно пассивное умение. Министр (Луна): 129 000 «Вся честь» и 640 000 золота.'}));
+ select(honor,english?'Honor passive skill':'Пассивное умение за честь',
+  'honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]));
+ if(typeof options.onHonor==='function')honor.append(make('button',{
+  class:'stage-book-honor-link',type:'button',
+  text:english?'Honor ranks and rewards':'Ранги и награды за честь',
+  onclick:options.onHonor
+ }));
  const priest=section(english?'Priest buffs':'Усиления жреца');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});
@@ -506,12 +562,11 @@ function buffsPage(body,options){
   }
   skills.append(group);
  }
- const regen=section('Восстановление');
  if(!guildLevel){
-  select(regen,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
-  select(regen,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
+  select(guild,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
+  select(guild,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
  }
- select(regen,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
+ select(guild,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
  if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
   const details=make('details',{class:'stage-legacy-buff-previews'});
   details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
@@ -724,8 +779,8 @@ function attackChapterGroups(calc){
 function defenseChapterGroups(calc){
  if(!calc)return[];
  const groups=[
-  {key:'recovery',ru:'Естественное восстановление',
-   en:'Natural recovery',rows:[]},
+  {key:'recovery',ru:'Пассивное восстановление',
+   en:'Passive recovery',rows:[]},
   {key:'status',ru:'Сопротивления отдельным состояниям',
    en:'Individual status resistances',rows:[]},
   {key:'special',ru:'Дополнительная защита',
@@ -739,9 +794,9 @@ function defenseChapterGroups(calc){
  put(0,'hpRecoveryAmount','Восстановление ОЗ','HP recovery amount',a?.hp?.known,'',true);
  put(0,'mpRecoveryAmount','Восстановление ОМ','MP recovery amount',a?.mp?.known,'',true);
  put(0,'hpRecoverySpeed','Скорость восстановления ОЗ',
-  'HP recovery speed',r?.hp?.total,'',true);
+  'HP recovery speed',r?.hp?.total,' инд.',true);
  put(0,'mpRecoverySpeed','Скорость восстановления ОМ',
-  'MP recovery speed',r?.mp?.total,'',true);
+  'MP recovery speed',r?.mp?.total,' инд.',true);
  const statuses={
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
@@ -770,7 +825,7 @@ function defenseChapterGroups(calc){
  }
  return groups.filter(g=>g.rows.length);
 }
-function appendChapterGroups(body,groups,english,emptyRu,emptyEn){
+function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
  if(!groups.length){body.append(make('p',{class:'stage-attribute-note',
   text:english?emptyEn:emptyRu}));return;}
  const number=new Intl.NumberFormat(english?'en-US':'ru-RU',
@@ -778,13 +833,19 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn){
  for(const group of groups){
   const section=make('section',{class:'stage-attribute-row stage-chapter-group',
    'data-chapter-group':group.key});
-  section.append(make('strong',{text:english?group.en:group.ru}));
+  const title=make('strong',{text:english?group.en:group.ru});
+  section.append(title);
+  guideLabel(title,(options.page||'attack')+'.group.'+group.key,group.ru,group.en,options);
   const grid=make('div',{class:'stage-chapter-grid'});
   for(const row of group.rows){
-   grid.append(make('div',{class:'stage-chapter-entry','data-chapter-stat':row.key},[
+   const entry=make('div',{class:'stage-chapter-entry','data-chapter-stat':row.key},[
     make('span',{text:english?row.en:row.ru}),
-    make('strong',{text:number.format(row.value)+row.unit})
-   ]));
+    make('strong',{text:number.format(row.value)+
+     (row.unit===' инд.'?(english?' idx':' инд.'):row.unit)})
+   ]);
+   guideLabel(entry.firstChild,(options.page||'attack')+'.'+row.key,
+    row.ru,row.en,options);
+   grid.append(entry);
   }
   section.append(grid);body.append(section);
  }
@@ -852,17 +913,17 @@ function appendWeaponConditions(body,calc,items,english){
  }
  body.append(panel);
 }
-function attackPage(body,calc,items,english){
+function attackPage(body,calc,items,english,options={}){
  appendChapterGroups(body,attackChapterGroups(calc),english,
   'Нет подтверждённых дополнительных атакующих параметров.',
-  'No supported additional attack metrics.');
+  'No supported additional attack metrics.',{...options,page:'attack'});
  appendWeaponConditions(body,calc,items,english);
  appendItemEvents(body,calc,english,'attack');
 }
-function defensePage(body,calc,english){
+function defensePage(body,calc,english,options={}){
  appendChapterGroups(body,defenseChapterGroups(calc),english,
   'Нет подтверждённых дополнительных защитных параметров.',
-  'No supported additional defense metrics.');
+  'No supported additional defense metrics.',{...options,page:'defense'});
  const conditional=calc?.battleMapCloaks?.entries||[];
  if(conditional.length){
   const panel=make('details',{class:'stage-attribute-row stage-battle-map-cloaks'});
@@ -902,31 +963,75 @@ function defensePage(body,calc,english){
  }
  appendItemEvents(body,calc,english,'defense');
 }
+// Stable text identities: editing a caption never mutates the game skill or
+// item catalog. Details retain their live record counts after localization.
+const chapterCaptionSpecs=Object.freeze([
+ ['summary','results','.stage-result-intro > strong','Результаты расчёта','Calculated results'],
+ ['effects','healing','.stage-healing-spells > strong','Лечащие умения','Healing skills'],
+ ['effects','periodic','.stage-periodic-recovery > summary','Восстановление каждые 2 секунды','Recovery every 2 seconds'],
+ ['effects','songs','.stage-song-skills > summary','Песни для выбранного класса','Songs available to this class'],
+ ['recovery','potions','.stage-potion-book > strong','Эффекты зелий','Potion effects'],
+ ['recovery','enabled','.stage-potion-book .stage-book-check > span','Показывать восстановление от зелий','Show potion recovery'],
+ ['recovery','mana','.stage-mana-consumables > strong','Предметы восстановления ОМ','MP recovery items'],
+ ['recovery','health','.stage-health-consumables > summary','Предметы восстановления ОЗ','HP recovery items'],
+ ['recovery','cures','.stage-status-cures > summary','Снятие состояний','Remove status effects'],
+ ['recovery','skillItems','.stage-consumable-skills > summary','Предметы, активирующие умения','Items that activate skills']
+]);
+function decorateChapterCaptions(body,page,options){
+ for(const [section,key,selector,ru,en] of chapterCaptionSpecs){
+  if(page!==section)continue;
+  const node=body.querySelector?.(selector);
+  if(!node)continue;
+  let label=node;
+  if(node.tagName?.toLowerCase()==='summary'){
+   const text=String(node.textContent||'');
+   const suffix=text.match(/\s·\s\d+(?:\s(?:предметов|items))?$/)?.[0]||'';
+   node.replaceChildren();
+   label=make('span',{text:ru});
+   node.append(label);
+   if(suffix)node.append(document.createTextNode(suffix));
+  }
+  guideLabel(label,section+'.caption.'+key,ru,en,options,
+   'Описание раздела «'+ru+'».','Description of '+en+'.');
+ }
+}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
- combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{}}={}){
+ combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{},
+ copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
+ root.PandoraGuideTooltip?.dismiss();
  target.replaceChildren();
+ const copyOptions={overrides:copy,editable:canEdit,onTextEdit,onHonor};
+ const chapterTitle=(key,ru)=>{
+  const en=bookEnglish[ru]||ru;
+  const localized=root.PandoraHonorGuide?.field(copy,'chapter.'+key,ru,en);
+  return document.documentElement?.lang==='en'?(localized?.en||en):(localized?.ru||ru);
+ };
  const index=Math.max(0,bookPages.findIndex(([name])=>name===page));
  const chosen=bookPages[index][0],prior=bookPages[(index+bookPages.length-1)%bookPages.length][0],
   next=bookPages[(index+1)%bookPages.length][0];
  target.setAttribute('role','region');
  target.setAttribute('aria-label',document.documentElement?.lang==='en'?
-  'Hero Book. '+bookText(bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
-  'Книга героя. '+bookPages[index][1]+'. Страница '+(index+1)+' из 6');
+  'Hero Book. '+chapterTitle(chosen,bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
+  'Книга героя. '+chapterTitle(chosen,bookPages[index][1])+'. Страница '+(index+1)+' из 6');
  target.append(make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
    onclick:()=>onPage(prior),'aria-label':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
    make('span',{text:(document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
-   make('strong',{text:bookPages[index][1]})]),
+   make('strong',{text:chapterTitle(chosen,bookPages[index][1])})]),
   make('button',{type:'button',class:'stage-book-arrow',text:'›',
    onclick:()=>onPage(next),'aria-label':'Следующая страница'}),
   make('button',{type:'button',text:'✕',class:'stage-book-close',onclick:onClose,
    'aria-label':'Вернуть портрет'})
  ]));
+ const headingTitle=target.querySelector?.('.stage-book-heading strong');
+ if(headingTitle)guideLabel(headingTitle,'chapter.'+chosen,
+  bookPages[index][1],bookEnglish[bookPages[index][1]]||bookPages[index][1],
+  copyOptions,'Название раздела Книги героя.','Hero Book chapter title.');
  const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':'Разделы книги героя'});
  for(const [name,label] of bookPages)nav.append(make('button',{
-  type:'button',role:'tab',text:label,id:'stageBookTab_'+name,
+  type:'button',role:'tab',text:chapterTitle(name,label),id:'stageBookTab_'+name,
   'aria-controls':'stageBookPanel','aria-selected':String(chosen===name),
   'aria-pressed':String(chosen===name),'data-book-page':name,
   class:chosen===name?'chosen':'',onclick:()=>onPage(name)
@@ -935,11 +1040,11 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  const body=make('div',{class:'stage-attribute-scroll stage-book-page',
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
- if(chosen==='summary')summaryPage(body,modifiers);
- if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en');
- if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en');
+ if(chosen==='summary')summaryPage(body,modifiers,copyOptions);
+ if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',copyOptions);
+ if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',copyOptions);
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
-  honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers});
+  honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
@@ -1066,6 +1171,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    body.append(section);
   }
  }
+ decorateChapterCaptions(body,chosen,copyOptions);
  target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,attackChapterGroups,defenseChapterGroups});

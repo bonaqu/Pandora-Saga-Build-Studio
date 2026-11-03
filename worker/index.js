@@ -376,9 +376,9 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/runtime-capabilities'&&method==='GET')
- return json({codeRelease:'0.322.0',ownerEditors:[
+ return json({codeRelease:'0.343.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
-   'virtual-town-wiki','bilingual-wiki'],
+   'virtual-town-wiki','historical-map-wiki','bilingual-wiki','guideedit','honor-lists'],
   githubOwnerExport:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
@@ -518,22 +518,56 @@ function validWikiOwnerPatch(text,type){
 }
 // Only administrator-owned Astir encyclopedia records use string IDs.
 // These are D1 overrides, not fake numeric IDs in the synchronized OS catalog.
-const townMapKey=/^astir-(?:union|empire|kingdom)$/;
+const townMapKey=/^(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground)$/;
 const townNpcKey=/^astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}$/;
 function validTownWikiPatch(text,type,id){
  if(typeof text!=='string'||text.length>8000||
   !(type==='map'?townMapKey.test(id):type==='npc'&&townNpcKey.test(id)))return false;
  let patch;try{patch=JSON.parse(text)}catch{return false}
  if(!patch||typeof patch!=='object'||Array.isArray(patch))return false;
- const allowed=type==='map'?['name','nameEn','desc','descEn']:
+ const historical=['el-beht','astir-underground'].includes(id);
+ const allowed=type==='map'?['name','nameEn','desc','descEn',...(historical?['mobs']:[])]:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  const keys=Object.keys(patch);
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
  return keys.every(k=>k==='maps'?
    Array.isArray(patch.maps)&&patch.maps.length===1&&
     (townMapKey.test(patch.maps[0])||patch.maps[0]==='1001004'):
+   k==='mobs'?Array.isArray(patch.mobs)&&patch.mobs.length<=120&&
+    new Set(patch.mobs).size===patch.mobs.length&&patch.mobs.every(
+     n=>Number.isSafeInteger(n)&&n>0):
    typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')?2000:240)&&
     (!['name','nameEn'].includes(k)||!!patch[k].trim()));
+}
+// Server gate for admin-owned Hero Book / Honor prose and repeatable lists.
+function validGuideEdit(text,key){
+ if(typeof text!=='string'||text.length>8000)return false;
+ let data;try{data=JSON.parse(text)}catch{return false}
+ const plain=x=>x&&typeof x==='object'&&!Array.isArray(x);
+ if(key==='honor.zones'||key==='honor.wars'){
+  if(!Array.isArray(data)||data.length>40)return false;
+  const seen=new Set();
+  return data.every(row=>{
+   if(!plain(row)||typeof row.id!=='string'||!/^[a-z][a-z0-9-]{0,35}$/.test(row.id)||
+    seen.has(row.id))return false;
+   seen.add(row.id);
+   const allowed=key==='honor.zones'?['id','nameRu','nameEn','mapId']:['id','nameRu','nameEn'];
+   return Object.keys(row).every(x=>allowed.includes(x))&&
+    ['nameRu','nameEn'].every(x=>typeof row[x]==='string'&&
+     row[x].trim()&&row[x].length<=140)&&
+    (key==='honor.wars'||row.mapId==null||typeof row.mapId==='string'&&
+     (/^[0-9]{1,15}$/.test(row.mapId)||['el-beht','astir-underground'].includes(row.mapId)));
+  });
+ }
+ if(!plain(data))return false;
+ const allowed=key.startsWith('book.')?['ru','en','hintRu','hintEn']:
+  key.startsWith('honor.rank.')?['nameRu','nameEn','benefitRu','benefitEn']:
+  ['overviewRu','overviewEn','gainRu','gainEn','lossRu','lossEn','currentRu',
+   'currentEn','ranksRu','ranksEn','cloaksRu','cloaksEn'];
+ const max=key==='honor.overview'?1800:key.startsWith('honor.rank.')?500:360;
+ const entries=Object.entries(data);
+ return entries.length>0&&entries.every(([field,value])=>allowed.includes(field)&&
+  typeof value==='string'&&value.trim()&&value.length<=max);
 }
 function validWikiDropEdit(text){
  if(typeof text!=='string'||text.length>24000)return false;
@@ -599,10 +633,11 @@ function validAcquisitionOverride(text){
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request,32768);const key=data?.key,value=data?.value;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}|wikiedit\.(?:map\.astir-(?:union|empire|kingdom)|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})|dropedit\.[0-9]{1,15}|chestedit\.[0-9]{1,15}|spawnedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:key.startsWith('wikiedit.')?8000:key.startsWith('spawnedit.')?6000:(key.startsWith('dropedit.')||key.startsWith('chestedit.'))?24000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}|wikiedit\.(?:map\.(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground)|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})|guideedit\.(?:book\.[a-z][a-z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01])|zones|wars))|dropedit\.[0-9]{1,15}|chestedit\.[0-9]{1,15}|spawnedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:(key.startsWith('wikiedit.')||key.startsWith('guideedit.'))?8000:key.startsWith('spawnedit.')?6000:(key.startsWith('dropedit.')||key.startsWith('chestedit.'))?24000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
  if(key.startsWith('itemedit.')&&!validItemOwnerPatch(value))return no('Invalid structured item edit',400);
  if(key.startsWith('acquireedit.')&&!validAcquisitionOverride(value))return no('Invalid acquisition relations',400);
  if(key.startsWith('tradeedit.')&&!validTradeOwnerPatch(value,key.slice(10)))return no('Invalid NPC trade relations',400);
+ if(key.startsWith('guideedit.')&&!validGuideEdit(value,key.slice(10)))return no('Invalid guide edit',400);
  if(key.startsWith('wikiedit.')){
   const parts=key.split('.');
   const virtual=parts.length===3&&!/^[0-9]+$/.test(parts[2]);
@@ -620,7 +655,7 @@ if(path==='/api/admin/override'&&method==='POST'){
 if(path==='/api/admin/reset'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request),key=data?.key;
- if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}|wikiedit\.(?:map\.astir-(?:union|empire|kingdom)|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})|dropedit\.[0-9]{1,15}|chestedit\.[0-9]{1,15}|spawnedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
+ if(typeof key!=='string'||!/^(site\.(title|subtitle)|race\.[0-5]|job\.(?:[0-9]|1[0-9]|2[0-7])|branch\.[a-zA-Z0-9_-]{1,32}|item\.[a-zA-Z0-9_.-]{1,70}|itemdesc\.[0-9]{1,15}|itemslots\.[0-9]{1,15}|itemedit\.[0-9]{1,15}|acquireedit\.[0-9]{1,15}|tradeedit\.[0-9]{1,15}|wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}|wikiedit\.(?:map\.(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground)|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})|guideedit\.(?:book\.[a-z][a-z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01])|zones|wars))|dropedit\.[0-9]{1,15}|chestedit\.[0-9]{1,15}|spawnedit\.[0-9]{1,15}|soul\.[a-zA-Z0-9_.-]{1,70}|skill\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|skilldesc\.[a-zA-Z0-9_-]{1,32}\.\d{1,12}|visual\.(?:logo|race\.[0-5]\.[fm]|skill\.[A-Za-z0-9_.-]{1,40}|item\.[0-9]{1,15}|soul\.[0-9]{1,15}))$/.test(key))return no('Unsupported editable field');
  const result=await env.DB.prepare('DELETE FROM overrides WHERE key=?').bind(key).run();
  return json({ok:true,key,deleted:(result.meta?.changes||0)>0});
 }

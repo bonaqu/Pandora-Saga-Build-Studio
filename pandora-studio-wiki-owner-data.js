@@ -75,17 +75,18 @@ function validSpawns(rows){
 }
 // User-curated city-only NPCs and maps use stable non-server IDs.
 // These patches live in the existing D1 overrides table, not in source game data.
-const virtualMapId=x=>x==='1001004'||/^astir-(?:union|empire|kingdom)$/.test(String(x));
+const historicalMapId=x=>['el-beht','astir-underground'].includes(String(x));
+const virtualMapId=x=>x==='1001004'||/^astir-(?:union|empire|kingdom)$/.test(String(x))||historicalMapId(x);
 const virtualNpcId=x=>/^astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}$/.test(String(x));
 const homeFromId=x=>'astir-'+String(x).split('-')[2];
 function validTownPatch(type,key,patch){
  if(!(type==='map'?virtualMapId(key):type==='npc'&&virtualNpcId(key))||
   !record(patch))return false;
  const keys=Object.keys(patch);
- const allowed=type==='map'?['name','nameEn','desc','descEn']:
+ const allowed=type==='map'?['name','nameEn','desc','descEn',...(historicalMapId(key)?['mobs']:[])]:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
- return keys.every(k=>k==='maps'?
+ return keys.every(k=>k==='mobs'?checkList(patch.mobs,120):k==='maps'?
   Array.isArray(patch.maps)&&patch.maps.length===1&&virtualMapId(patch.maps[0]):
   typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')?2000:240)&&
    (!['name','nameEn'].includes(k)||Boolean(patch[k].trim())));
@@ -96,14 +97,19 @@ function apply(data,overrides){
  const mut=(type)=>{clone();if(next[type]===data[type])next[type]={...data[type]};return next[type]};
  for(const [key,value] of Object.entries(overrides||{})){
   if(typeof value!=='string')continue;
-  let m=/^wikiedit\.(map\.astir-(?:union|empire|kingdom)|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})$/.exec(key);
+  let m=/^wikiedit\.(map\.(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground)|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})$/.exec(key);
   if(m){
    const dot=m[1].indexOf('.'),type=m[1].slice(0,dot),idValue=m[1].slice(dot+1),patch=parse(value);
    if(!validTownPatch(type,idValue,patch))continue;
    clone();
    if(type==='map'){
-    if(!next.townMaps)next.townMaps={};
-    next.townMaps[idValue]={...(next.townMaps[idValue]||{}),...patch,virtual:true};
+    if(historicalMapId(idValue)&&own(data.maps,idValue)){
+     const rows=mut('maps');
+     rows[idValue]={...rows[idValue],...patch,virtual:true};
+    }else{
+     if(!next.townMaps)next.townMaps={};
+     next.townMaps[idValue]={...(next.townMaps[idValue]||{}),...patch,virtual:true};
+    }
    }else{
     if(!next.townNpcs)next.townNpcs={};
     const original=root.PandoraAstirLocations?.npcRecords?.()[idValue];

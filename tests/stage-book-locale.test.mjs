@@ -66,7 +66,7 @@ test('compound combat and recovery captions translate only known UI prefixes',()
  assert.equal(en.bookText('Точность: 120 (база 110, бонусы 10)'),
   'Accuracy: 120 (base 110, bonuses 10)');
  assert.equal(en.bookText('Физические состояния: 15'),'Physical conditions: 15');
- assert.equal(en.bookText('Скорость естественного восстановления'),'Natural recovery speed');
+ assert.equal(en.bookText('Скорость естественного восстановления'),'Passive recovery speed');
  assert.equal(en.bookText('Восстановление каждые 2 секунды'),'Recovery every 2 seconds');
  for(const value of ['Базовая атака драконов','Душа несчастья',
   'Проклятый посох','Именной предмет: 50%','Мой герой','ОЗ +500']) {
