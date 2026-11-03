@@ -1,0 +1,108 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=x=>readFileSync(new URL('../'+x,import.meta.url),'utf8');
+const host={};
+Function('window',read('pandora-studio-honor-guide.js'))(host);
+Function('window',read('pandora-studio-historic-maps.js'))(host);
+Function('window',read('pandora-studio-wiki-owner-data.js'))(host);
+const g=host.PandoraHonorGuide,m=host.PandoraHistoricalMaps,owners=host.PandoraWikiOwnerData;
+const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
+const monsters=JSON.parse(read('data/os/monsters.json'));
+test('43 distinct Summary statistics have compact RU/EN descriptions',()=>{
+ const hero={};Function('window','document',book)(hero,{documentElement:{lang:'ru'}});
+ const rows=hero.PandoraStageAttributes.summaryRows(null).flatMap(x=>x.rows);
+ assert.equal(rows.length,43);
+ for(const [index,row] of rows.entries()){
+  const copy=g.summary({},index,row.ru,row.en);
+  assert.equal(copy.ru,row.ru);
+  assert.equal(copy.en,row.en);
+  assert.ok(copy.hintRu.length>8&&copy.hintRu.length<=160,row.ru);
+  assert.ok(copy.hintEn.length>8&&copy.hintEn.length<=160,row.en);
+ }
+ assert.match(g.summary({},0,'ОЗ','HP').hintRu,/Очки здоровья/);
+ assert.match(g.summary({},1,'Сопр. АТК сзади','Back').hintRu,/в спину/);
+});
+test('Book copy, honor ranks and list updates validate D1 override schemas',()=>{
+ const patch=JSON.stringify({ru:'Здоровье',en:'Health',hintRu:'Очки здоровья.',hintEn:'Health points.'});
+ assert.ok(g.validOverride('book.summary.0',patch));
+ const changed=g.summary({'guideedit.book.summary.0':patch},0,'ОЗ','HP');
+ assert.equal(changed.ru,'Здоровье');
+ assert.equal(changed.hintEn,'Health points.');
+ for(const [key,value] of [
+  ['book.summary.0',JSON.stringify({ru:'Name',ep:'untrusted'})],
+  ['book.summary.0',JSON.stringify({ru:'a'.repeat(361)})],
+  ['honor.rank.12',JSON.stringify({nameRu:'Invalid'})],
+  ['honor.overview',JSON.stringify({currentRu:'',fake:1})],
+  ['honor.zones',JSON.stringify([{id:'bad',nameRu:'Зона'}])],
+  ['honor.wars',JSON.stringify([{id:'bad',nameRu:'А',nameEn:'B',evil:1}])]
+ ])assert.equal(g.validOverride(key,value),false,key);
+ assert.ok(g.validOverride('honor.zones','[]'));
+ assert.ok(g.validOverride('honor.wars',JSON.stringify([{id:'custom-1',nameRu:'Война',nameEn:'War'}])));
+});
+test('12 Honor ranks separate Count passives from 3 monthly leaderboards',()=>{
+ const article=g.article({});
+ assert.equal(article.ranks.length,12);
+ const count=article.ranks[7];
+ assert.equal(count.nameRu,'Министр');
+ assert.equal(count.nameEn,'Count');
+ assert.deepEqual([count.points,count.gold],[129000,640000]);
+ assert.deepEqual(article.ranks.slice(9).map(x=>x.top),[15,5,1]);
+ assert.notEqual(article.ranks[8].nameEn,article.ranks[9].nameEn);
+ assert.ok(article.overview.currentRu.includes('Вся честь'));
+ assert.equal(article.zones.length,3);
+ assert.equal(article.battles.length,2);
+ const changed=g.article({'guideedit.honor.rank.7':JSON.stringify({benefitRu:'Новая награда'})});
+ assert.equal(changed.ranks[7].benefitRu,'Новая награда');
+});
+test('El Beht retains 22 historical spawns, with 19 exact OS monster identities',()=>{
+ const historical=m.records(),beht=historical['el-beht'];
+ assert.equal(beht.nameEn,'El Beht');
+ assert.equal(beht.serverAvailable,false);
+ assert.equal(historical['astir-underground'].mobs.length,0);
+ assert.equal(beht.reportedSpawns.length,22);
+ const confirmed=beht.reportedSpawns.filter(x=>x.monsterId!=null);
+ const missing=beht.reportedSpawns.filter(x=>x.monsterId==null);
+ assert.equal(confirmed.length,19);assert.equal(missing.length,3);
+ for(const row of confirmed){
+  const mob=monsters[String(row.monsterId)];
+  assert.ok(mob,row.monsterId+' missing');
+  assert.equal(mob.name,row.name,row.name);
+  assert.equal(mob.level,row.level,row.name);
+ }
+ assert.ok(missing.some(x=>x.level===60&&x.name==='Ящер-рыцарь'));
+ assert.equal(beht.reportedSpawns.find(x=>x.name==='Ящер-вожак').spawn,'anywhere');
+ assert.equal(beht.reportedSpawns.find(x=>x.name==='Ящер-стражник').spawn,'boss-guard');
+});
+test('Owner historical maps D1 patches do not alter game source records',()=>{
+ const base={maps:m.records(),monsters};
+ const patch={name:'Новая локация',nameEn:'New map',mobs:[21231,21232]};
+ assert.ok(owners.validTownPatch('map','el-beht',patch));
+ const edited=owners.apply(base,{'wikiedit.map.el-beht':JSON.stringify(patch)});
+ assert.equal(edited.maps['el-beht'].name,'Новая локация');
+ assert.deepEqual(edited.maps['el-beht'].mobs,[21231,21232]);
+ assert.equal(base.maps['el-beht'].name,'Эль Ведд');
+ assert.equal(owners.validTownPatch('map','astir-union',{mobs:[21231]}),false);
+ assert.equal(owners.validTownPatch('map','el-beht',{mobs:[21231,21231]}),false);
+});
+test('Book, encyclopedia, Worker, scripts and styles are connected',()=>{
+ const html=read('index.html'),worker=read('worker/index.js'),
+  css=read('pandora-studio-theme.css'),hint=read('pandora-studio-honor-guide.js');
+ for(const file of ['pandora-studio-honor-guide.js','pandora-studio-guide-tooltips.js',
+  'pandora-studio-historic-maps.js','pandora-studio-honor-view.js'])
+  assert.ok(html.includes(file+'?v=2026.11.03.343'),file);
+ assert.match(book,/function guideLabel/);
+ assert.match(book,/Пассивное восстановление/);
+ assert.match(book,/Passive recovery/);
+ assert.match(book,/Пассивное умение за честь/);
+ assert.ok(hint.includes('defense.hpRecoverySpeed'));
+ assert.match(app,/PandoraHistoricalMaps\?\.records/);
+ assert.match(app,/saveGuidePatch/);
+ assert.match(app,/PandoraHonorView\?\.render/);
+ assert.match(app,/wiki-historic-roster/);
+ assert.match(worker,/function validGuideEdit/);
+ assert.match(worker,/guideedit/);
+ assert.match(worker,/el-beht/);
+ assert.match(css,/\.stage-guide-popup/);
+ assert.match(css,/\.wiki-honor-rank/);
+});
