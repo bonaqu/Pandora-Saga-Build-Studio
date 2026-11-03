@@ -31,7 +31,7 @@ test('wiki navigation reuses unchanged search results without rebuilding the bro
  assert.match(wiki,/if\(!results\)\{\s*results=wikiIndex\.search/);
  assert.match(wiki,/wikiResultsCache=\{index:wikiIndex/);
  assert.match(wiki,/if\(!detailOnly\)browse\.replaceChildren\(\)/);
- assert.match(wiki,/if\(sameCategory\)wikiRenderSelected\(\)/);
+ assert.match(app,/if\(sameCategory\)wikiRenderSelected\(\)/);
 });
 
 test('verified English potion names are preserved in the checked-in OS localization',()=>{
