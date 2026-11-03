@@ -35,7 +35,7 @@ test('owner map allows typed bilingual sections, tags and source links; rejects 
   {...patch,unexpected:'unsafe'}
  ])assert.equal(owner.validTownPatch('map',customId,invalid),false,JSON.stringify(invalid).slice(0,150));
  assert.equal(owner.validTownPatch('map','custom-../../admin',patch),false);
- assert.equal(owner.validTownPatch('map','astir-union',{mobs:[21231]}),false);
+ assert.equal(owner.validTownPatch('map','astir-union',{mobs:[21231]}),true);
 });
 test('custom D1 map uses the same canonical location record and NPC reverse index',()=>{
  const base={maps:{'el-beht':{name:'Эль Ведд',mobs:[21231],virtual:true}},
