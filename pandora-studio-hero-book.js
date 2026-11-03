@@ -315,62 +315,6 @@ function summaryRows(calc){
  ];
 }
 
-function vitalFormulaRows(calc){
- const rows=[];
- for(const [key,ru,en] of [['hp','ОЗ','HP'],['mp','ОМ','MP']]){
-  const formula=calc?.vitalFormulas?.[key],bonus=calc?.vitalsBonus?.[key];
-  if(!formula||!bonus||!Array.isArray(bonus.percentParts))continue;
-  if(![formula.constant,formula.levelRate,formula.attributeRate,formula.level,
-   formula.attribute,formula.rawCents,formula.base,bonus.flat,bonus.guildRate,
-   bonus.guild,bonus.lifeSign,bonus.total,calc?.[key],calc?.[key+'Base']]
-   .every(Number.isFinite))continue;
-  if(!bonus.percentParts.every(row=>Number.isFinite(row?.rate)&&
-   Number.isFinite(row?.amount)))continue;
-  const parts=[
-   {ru:'Плоские бонусы',en:'Flat bonuses',amount:bonus.flat},
-   ...bonus.percentParts.map((part,i)=>({
-    ru:'Процентный бонус '+(i+1)+' ('+part.rate+'%)',
-    en:'Percentage bonus '+(i+1)+' ('+part.rate+'%)',amount:part.amount
-   })),
-   {ru:'Гильдия ('+bonus.guildRate+'%)',
-    en:'Guild ('+bonus.guildRate+'%)',amount:bonus.guild},
-   ...(key==='hp'?[{ru:'Знак жизни',en:'Sign of Life',amount:bonus.lifeSign}]:[])
-  ];
-  const sum=parts.reduce((acc,part)=>acc+part.amount,0);
-  if(Math.floor(formula.rawCents/100)!==formula.base||
-   formula.base!==calc[key+'Base']||sum!==bonus.total||
-   formula.base+bonus.total!==calc[key])continue;
-  rows.push({key,ru,en,formula,parts,total:calc[key],bonus:bonus.total});
- }
- return rows;
-}
-function appendVitalFormulas(section,calc,english){
- const rows=vitalFormulaRows(calc);
- if(!rows.length)return;
- const fmt=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:2});
- const signed=value=>(value>0?'+':'')+fmt.format(value);
- const details=make('details',{class:'stage-attribute-row stage-vital-formulas'});
- details.append(make('summary',{text:english?
-  'How HP and MP are calculated':'Как рассчитываются ОЗ и ОМ'}));
- for(const entry of rows){
-  const f=entry.formula,name=english?entry.en:entry.ru;
-  details.append(make('strong',{text:name}));
-  details.append(make('p',{text:(english?'Class base: floor(':'База класса: ⌊')+
-   fmt.format(f.constant)+' + '+f.level+' × '+fmt.format(f.levelRate)+
-   ' + '+f.attribute+' × '+fmt.format(f.attributeRate)+
-   (english?') = ':'⌋ = ')+fmt.format(f.base)}));
-  for(const part of entry.parts){
-   if(part.amount===0)continue;
-   details.append(make('p',{text:(english?part.en:part.ru)+': '+signed(part.amount)}));
-  }
-  details.append(make('p',{text:name+': '+fmt.format(f.base)+' '+
-   signed(entry.bonus)+' = '+fmt.format(entry.total)}));
- }
- details.append(make('small',{class:'stage-attribute-note',text:english?
-  'Class coefficients use integer hundredths. Each percentage bonus is rounded down independently. These are calculated build values, not proof of complete live-server parity.':
-  'Коэффициенты класса считаются в сотых. Каждый процентный бонус округляется вниз отдельно. Это расчёт билда, а не доказательство полной идентичности живому серверу.'}));
- section.append(details);
-}
 function summaryPage(body,calc,onPage){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
   text:document.documentElement?.lang==='en'?'Stats appear after game data loads.':'Параметры появятся после загрузки игровых данных.'}));return}
@@ -399,21 +343,6 @@ function summaryPage(body,calc,onPage){
    ]));
   }
   section.append(heading,grid);
-  if(group.ru==='Жизнь и восстановление')appendVitalFormulas(section,calc,english);
-  if(group.page==='attack'&&calc?.combat){
-   section.append(make('small',{class:'stage-attribute-note',text:english?
-    'Front accuracy and cast time use Remaked baseline calculations; positional equipment and active casting effects are not fully verified for OS.':
-    'Точность спереди и время каста рассчитаны по базовым правилам Remaked; отдельные позиционные бонусы и активные эффекты OS ещё не полностью проверены.'}));
-  }
-  if(group.ru==='Защита'&&calc?.combat?.rangedEvasion){
-   section.append(make('small',{class:'stage-attribute-note',text:english?
-    'Ranged evasion includes the original Remaked Honor bonus. Other OS conditional bonuses are not yet verified.':
-    'Уклонение от дальних атак включает исторический бонус титула Remaked. Другие условные бонусы OS ещё не подтверждены.'}));
-  }
-  if(group.page==='attack'&&calc?.attackRange?.baseOnly)
-   section.append(make('small',{class:'stage-attribute-note',text:english?
-    'Weapon range shows the OS base value in raw units, without unverified equipment and skill range bonuses.':
-    'Дальность оружия показана как базовое значение OS в исходных единицах, без неподтверждённых бонусов экипировки и навыков.'}));
   body.append(section);
  }
 }
@@ -700,105 +629,6 @@ function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},res
  renderSongSkills(body,modifiers);
 }
 
-function combatFormulaRows(calc,page){
- const c=calc?.combat;
- if(!c||!['attack','defense'].includes(page))return [];
- const results=[],p=(ru,en,value)=>({ru,en,value});
- const add=(ru,en,total,parts,round='exact')=>{
-  if(!Number.isFinite(total)||!Array.isArray(parts)||
-   parts.some(entry=>!Number.isFinite(entry?.value)))return;
-  const sum=parts.reduce((value,part)=>value+part.value,0);
-  if(Math.abs((round==='ceil'?Math.ceil(sum):sum)-total)>1e-8)return;
-  results.push({ru,en,total,parts,round});
- };
- if(page==='attack'){
-  const a=c.attack;
-  if(a&&Array.isArray(a.percentEquipment)){
-   const base=Number.isFinite(a.raw)?a.raw:
-    a.unarmed===true&&Number.isFinite(a.physical)?a.physical+1:null;
-   add('Физическая атака','Physical attack',a.known,[
-    p('Атака от силы и оружия','Strength and weapon',base),
-    p('Титул чести','Honor title',a.honor),
-    p('Плоские эффекты','Flat effects',a.flatEquipment),
-    ...a.percentEquipment.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
-     'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
-    p('Боевые навыки','Combat skills',a.activeBonus),
-    p('Гильдия','Guild',a.guildBonus)],'ceil');
-  }
-  const acc=c.accuracy;
-  if(acc&&Array.isArray(acc.percentage))add('Точность','Accuracy',acc.known,[
-   p('Уровень и ЛВК','Level and DEX',acc.base),
-   p('Экипировка','Equipment',acc.equipment),
-   ...acc.percentage.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
-    'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
-   p('Титул чести','Honor title',acc.honor),
-   p('Пассивное умение','Passive skill',acc.passive),
-   p('Активное умение','Active skill',acc.activeBonus)]);
-  const crit=c.critical;
-  if(crit)add('Шанс критического удара','Critical chance',crit.known,[
-   p('База','Base',crit.base),p('Экипировка','Equipment',crit.equipment),
-   p('Расовая способность','Racial passive',crit.racial)]);
-  const speed=c.attackSpeed;
-  if(speed)add('Скорость атаки','Attack speed',speed.known,[
-   p('База','Base',speed.base),p('Экипировка','Equipment',speed.equipment),
-   p('Рывок','Lunge',speed.lunge),
-   p('Усиление жреца','Priest buff',speed.priestBonus)]);
-  const mana=c.manaCost;
-  if(mana)add('Индекс расхода ОМ','MP cost index',mana.remaining,[
-   p('Исходный расход','Original cost',100),
-   p('Снижение от ИНТ','INT reduction',-mana.intReduction),
-   p('Расовая способность','Racial passive',-mana.racial),
-   p('Экипировка','Equipment',-mana.equipment)]);
-  const cast=c.castingSpeed;
-  if(cast)add('Скорость применения навыков','Casting speed',cast.known,[
-   p('База','Base',cast.base),
-   p('Экипировка','Equipment',cast.equipment)]);
-  const move=c.movementSpeed;
-  if(move)add('Скорость перемещения','Movement speed',move.known,[
-   p('База','Base',move.base),p('Экипировка','Equipment',move.equipment),
-   p('Активные навыки','Active skills',move.active)]);
- }else{
-  const d=c.defense;
-  if(d&&Array.isArray(d.percentParts))add('Защита','Defense',d.known,[
-   p('Броня','Armor',d.armor),p('Плоские эффекты','Flat effects',d.equipment),
-   p('Заточка','Refinement',d.refinement),
-   ...d.percentParts.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
-    'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
-   p('Титул чести','Honor title',d.honor),
-   p('Боевые навыки','Combat skills',d.activeBonus),
-   p('Усиление жреца','Priest buff',d.priestBonus)]);
-  const dodge=c.dodge;
-  if(dodge)add('Уклонение','Evasion',dodge.known,[
-   p('Уровень + ПРВ + ступень ПРВ','Level + AGI + AGI step',dodge.base),
-   p('Экипировка','Equipment',dodge.equipment),
-   p('Титул чести','Honor title',dodge.honor),
-   p('Пассивные навыки','Passive skills',dodge.passive),
-   p('Помощь ветра','Wind Assist',dodge.windAssist)]);
- }
- return results;
-}
-function appendCombatFormulas(body,calc,page,english){
- const rows=combatFormulaRows(calc,page);if(!rows.length)return;
- const details=make('details',{class:'stage-attribute-row stage-combat-formulas'});
- details.append(make('summary',{text:english?
-  'Show calculation breakdown':'Показать расчёт по составляющим'}));
- const format=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:4});
- for(const entry of rows){
-  details.append(make('strong',{text:english?entry.en:entry.ru}));
-  const terms=entry.parts.map((part,i)=>
-   (i===0?(part.value<0?'−':''):(part.value<0?' − ':' + '))+
-    format.format(Math.abs(part.value))).join('');
-  details.append(make('p',{text:(entry.round==='ceil'?'⌈'+terms+'⌉':terms)+
-   ' = '+format.format(entry.total)}));
-  for(const part of entry.parts)if(part.value!==0)
-   details.append(make('small',{class:'stage-formula-source',text:
-    (english?part.en:part.ru)+': '+format.format(part.value)}));
- }
- details.append(make('p',{class:'stage-attribute-note',text:english?
-  'This explains the calculated preview, not complete live-server combat. Conditional effects and unverified stacking are not included.':
-  'Это расшифровка расчётных величин, а не полная модель боя на игровом сервере. Непроверенные условные эффекты не учтены.'}));
- body.prepend(details);
-}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{}}={}){
@@ -835,8 +665,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  if(chosen==='summary')summaryPage(body,modifiers,onPage);
  if(chosen==='effects')skillEffectsPage(body,{buffs,availability,combatSkillCards,resistanceSkillChoices,modifiers});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers});
- if(['attack','defense'].includes(chosen)&&modifiers?.combat)
-  appendCombatFormulas(body,modifiers,chosen,document.documentElement?.lang==='en');
  if(['attack','defense'].includes(chosen)){
   const intro=chosen==='attack'?'Параметры оружия':'Защита снаряжения';
   body.append(make('p',{class:'stage-attribute-note',text:intro}));
@@ -990,7 +818,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     for(const [key,value] of Object.entries(values||{}))
      card.append(make('p',{text:title+' · '+(labels[key]||key)+': +'+value+suffix}));
    };
-   show(english?'Weapon aura base':'Основа ауры оружия',gem.auras);
    const totalAura=modifiers?.auraDamage?.elements||{};
    for(const [element,amount] of Object.entries(totalAura))
     card.append(make('p',{text:(english?'Total aura':'Итог ауры')+' · '+
@@ -1005,146 +832,15 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     'Сопротивления от самоцветов включены в защиту. Аура учитывает бонусы снаряжения и остаётся отдельной от физической атаки.'}));
    body.prepend(card);
   }
-  if(modifiers?.healingSkill){
-   const heal=modifiers.healingSkill,card=make('section',{class:'stage-attribute-row'});
-   card.append(make('strong',{text:english?
-    'Healing-skill effectiveness':'Эффективность лечащих навыков'}),
-    make('p',{text:(english?'Effectiveness: ':'Эффективность: ')+heal.percent+
-     (english?'% (base 100%, honor +':'% (основа 100%, честь +')+heal.honor+
-     (english?'%, equipment/Souls +':'%, предметы/души +')+heal.equipment+'%)'}),
-    make('p',{class:'stage-attribute-note',text:english?
-     'Healing-skill effectiveness is separate from potions. Not all active skill conditions are included.':
-     'Это действие лечащих умений, а не эффективность зелий; не учтены все активные особенности навыков.'}));
-   body.prepend(card);
-  }
-  if(modifiers?.combat?.manaCost){
-   const mp=modifiers.combat.manaCost,card=make('section',{class:'stage-attribute-row'});
-   card.append(make('strong',{text:english?'MP cost':'Расход ОМ'}),
-    make('p',{text:(english?'Remaining cost index: ':'Индекс остаточного расхода: ')+
-     mp.remaining+'%'}),
-    make('p',{text:(english?'INT base: ':'База от ИНТ: ')+mp.base+'%'}),
-    make('p',{text:(english?'Racial passive: −':'Расовая способность: −')+mp.racial+'%'}),
-    make('p',{text:(english?'Equipment and Souls: −':'Снаряжение и души: −')+
-     mp.equipment+'%'}),
-    make('p',{class:'stage-attribute-note',text:english?
-     'This preview excludes active effects and unstructured refinement bonuses; 100% means the original MP cost.':
-     'Это расчёт без активных эффектов и неструктурированных бонусов заточки; 100% означает исходный расход ОМ.'}));
-   body.prepend(card);
-  }
-  const honor=modifiers?.honor;
-  if(honor?.id){
-   const labels={
-    allAttributes:'Все характеристики',healingSkills:'Лечащие навыки',
-    attackPercent:'Сила атаки',fireMagic:'Магия огня',iceMagic:'Магия льда',
-    lightningMagic:'Магия молнии',fire:'Огонь',ice:'Лёд',lightning:'Молния',
-    burn:'Ожог',freeze:'Обморожение',knockdown:'Сбивание с ног',
-    castingResist:'Устойчивость к сбою',accuracy:'Точность',
-    weaponPhysical:'Физический урон оружия',mountedRelease:'Эффект верхом',
-    incomingCriticalChance:'Получаемый критический шанс',
-    incomingCriticalDamage:'Получаемый критический урон',
-    light:'Свет',dark:'Тьма',charm:'Очарование',
-    mentalState:'Психические состояния',magic:'Магия',
-    physicalState:'Физические состояния',potionRecovery:'Лечение зельями',
-    defense:'Защита',incomingPhysical:'Получаемый физический урон',
-    dodge:'Уклонение',rangedDodge:'Уклонение от дальнего боя',
-    frontAttack:'Фронтальная атака'
-   };
-   const honorEnglishLabels={
-    allAttributes:'All attributes',healingSkills:'Healing skills',
-    attackPercent:'Attack power',fireMagic:'Fire magic',iceMagic:'Ice magic',
-    lightningMagic:'Lightning magic',fire:'Fire',ice:'Ice',lightning:'Lightning',
-    burn:'Burn',freeze:'Freeze',knockdown:'Knockdown',
-    castingResist:'Casting interruption resistance',accuracy:'Accuracy',
-    weaponPhysical:'Physical weapon damage',mountedRelease:'Mounted release',
-    incomingCriticalChance:'Incoming critical chance',
-    incomingCriticalDamage:'Incoming critical damage',
-    light:'Light',dark:'Dark',charm:'Charm',
-    mentalState:'Mental conditions',magic:'Magic',
-    physicalState:'Physical conditions',potionRecovery:'Potion healing',
-    defense:'Defense',incomingPhysical:'Incoming physical damage',
-    dodge:'Evasion',rangedDodge:'Ranged evasion',frontAttack:'Front attack'
-   };
-   const percent=new Set(['healingSkills','attackPercent','fireMagic','iceMagic',
-    'lightningMagic','burn','freeze','knockdown','castingResist','mountedRelease',
-    'incomingCriticalChance','incomingCriticalDamage','potionRecovery',
-    'incomingPhysical','rangedDodge','frontAttack']);
-   const card=make('section',{class:'stage-attribute-row'});
-   card.append(make('strong',{text:document.documentElement?.lang==='en'?
-    'Honor title: '+honor.en:'Титул чести: '+honor.ru}));
-   for(const [key,value] of Object.entries(honor.effects)){
-    if(key==='allAttributes')continue; // already included in visible six stats
-    card.append(make('p',{text:(document.documentElement?.lang==='en'?
-     honorEnglishLabels[key]:labels[key]||key)+': '+(value>0?'+':'')+value+
-     (percent.has(key)?'%':'')}));
-   }
-   body.prepend(card);
-  }
-
  }
- if(chosen==='recovery'&&modifiers?.potion){
-  const english=document.documentElement?.lang==='en';
-   const potion=make('section',{class:'stage-attribute-row'});
-   potion.append(make('strong',{text:english?'Potion effects':'Действие зелий'}),
-    make('p',{text:(english?'Effectiveness: ':'Эффективность: ')+
-     modifiers.potion.percent+'%'}));
-   const parts=[
-    [english?'Stamina (base effectiveness)':'Выносливость (базовая эффективность)',
-     modifiers.potion.base,true],
-    [english?'Herbalist (human racial passive)':'Знахарство (расовая способность человека)',
-     modifiers.potion.racial,false],
-    [english?'Improved healing (melee mastery, Warrior level 12+)':
-     'Улучшение лечения (мастерство ближнего боя, воин с 12 уровня)',
-     modifiers.potion.mastery,false],
-    [english?'Honor title':'Титул чести',modifiers.potion.honor,false],
-    [english?'Equipment and Souls':'Экипировка и души',modifiers.potion.equipment,false]
-   ];
-   for(const [name,value,isBase] of parts){
-    if(!Number.isFinite(value)||value===0)continue;
-    potion.append(make('p',{text:name+': '+(isBase?'':value>0?'+':'')+value+'%'}));
-   }
-   body.prepend(potion);
-  }
- if(page==='attack'&&modifiers?.mountedRelease){
-  const riding=modifiers.mountedRelease;
-  const card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Верховая езда'}),
-   make('p',{text:'Раскрытие характеристик верхом: '+riding.known+'%'}),
-   make('p',{text:'Профессия '+riding.jobBase+'% · мастерство +'+riding.mastery+
-    '% · титул +'+riding.honor+'%'}));
-  body.prepend(card);
+ if(page==='attack'&&Number.isFinite(modifiers?.mountedRelease?.known)){
+  const en=document.documentElement?.lang==='en';
+  body.prepend(make('section',{class:'stage-attribute-row'},[
+   make('strong',{text:en?'Mounted attribute release':'Раскрытие характеристик верхом'}),
+   make('p',{text:String(modifiers.mountedRelease.known)+'%'})
+  ]));
  }
- if(page==='attack'&&modifiers?.attackRange?.baseOnly){
-  const range=modifiers.attackRange,english=document.documentElement?.lang==='en';
-  const base=range.baseRanged??range.baseMelee;
-  const card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:english?'Base weapon range':'Базовая дальность оружия'}),
-   make('p',{text:(english?'Raw game units: ':'Исходные игровые единицы: ')+base}),
-   make('p',{class:'stage-attribute-note',text:english?
-    'The game publishes this base distance. Equipment bonuses and mounted/skill modifiers have not been added.':
-    'Это базовая дистанция из игрового каталога. Бонусы вещей, верховой езды и навыков не суммировались.'}));
-  body.prepend(card);
- }
- if(page==='attack'&&modifiers?.attackRange?.racialGeneral){
-  const range=modifiers.attackRange,english=document.documentElement?.lang==='en';
-  const card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:english?'Elven racial range bonus':'Расовая дальность эльфа'}),
-   make('p',{text:(english?'Sharpsight: +':'Зоркость: +')+range.racialGeneral+
-    (english?' range units':' единиц дальности')}),
-   make('p',{class:'stage-attribute-note',text:english?
-    'Skill 900020002 publishes matching RANGE and CARRY values; this is one passive bonus, not their sum. The server\'s final weapon-range stacking is not yet verified.':
-    'Навык 900020002 содержит одинаковые RANGE и CARRY: это один расовый бонус, а не их сумма. Итоговый порядок расчёта дальности оружия сервером ещё не подтверждён.'}));
-  body.prepend(card);
- }
- if(page==='attack'&&modifiers?.attackRange?.entries?.length){
-  const range=modifiers.attackRange,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Бонусы дальности от снаряжения'}));
-  if(range.general)card.append(make('p',{text:'Дальность атаки: '+
-   (range.general>0?'+':'')+range.general}));
-  if(range.bow)card.append(make('p',{text:'Дальность стрельбы: '+
-   (range.bow>0?'+':'')+range.bow}));
-  body.prepend(card);
- }
- if(page==='attack'&&modifiers?.elementalRefinement?.entries?.length){
+ if(chosen==='effects'&&modifiers?.elementalRefinement?.entries?.length){
   const english=document.documentElement?.lang==='en';
   const card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:english?
@@ -1159,7 +855,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    'Показан эффект закалки из игрового каталога при выбранном самоцвете огня. Серверное суммирование и срабатывание Пламени феникса не подтверждены; значение не прибавлено к общей МАТК и титулу чести.'}));
   body.prepend(card);
  }
- if(page==='attack'&&modifiers?.elementalMagic){
+ if(chosen==='effects'&&modifiers?.elementalMagic){
   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',
    poison:'Яд',light:'Свет',dark:'Тьма'};
   const values=Object.entries(modifiers.elementalMagic)
@@ -1172,156 +868,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    body.prepend(magic);
   }
  }
- if(page==='attack'&&modifiers?.combat){
-  const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Боевые параметры'}));
-  card.append(make('p',{text:'Физическая атака оружия: '+
-   (cm.attack?.known??'—')+' · с выбранными усилениями'}),
-   make('p',{text:'Точность: '+cm.accuracy.known+' (база '+
-    cm.accuracy.base+', бонусы '+(cm.accuracy.known-cm.accuracy.base)+')'}),
-   make('p',{text:'Уклонение: '+cm.dodge.known+' (база '+
-    cm.dodge.base+', бонусы '+(cm.dodge.known-cm.dodge.base)+')'}),
-   make('p',{text:'Критический шанс: '+cm.critical.known}),
-   make('p',{text:'Исходящий критический урон: '+cm.criticalDamage+'%'}));
-  if(cm.racialWeapon){
-   const racial=cm.racialWeapon,english=document.documentElement?.lang==='en';
-   const amounts=(racial.flat?('+'+racial.flat+(english?' flat and ':' ед. и ')):'')+
-    '+'+racial.percent+'%';
-   const category=english?
-    {oneHanded:'one-handed weapons',axeBlunt:'axes and blunt weapons',
-     twoHanded:'two-handed weapons'}:
-    {oneHanded:'одноручное оружие',axeBlunt:'топоры и булавы',
-     twoHanded:'двуручное оружие'};
-   const eligibility=racial.matchesCategory===null?
-    (english?'No weapon equipped for category comparison.':'Нет оружия для проверки категории.'):
-    racial.matchesCategory?
-     (english?'Equipped weapon matches the stated category.':
-      'Надетое оружие соответствует указанной категории.'):
-     (english?'Equipped weapon does not match the stated category.':
-      'Надетое оружие не соответствует указанной категории.');
-   card.append(make('p',{text:(english?racial.en:racial.ru)+': '+amounts+
-    ' ('+category[racial.kind]+')'}),
-    make('p',{text:eligibility}),
-    make('p',{class:'stage-attribute-note',text:english?
-     'Source skill values only: not added to final ATK. Actual combat stacking, rounding, mounted and special weapon restrictions are not verified.':
-     'Это исходные числа навыка, не прибавленные к итоговой АТК. Порядок суммирования в бою, округление и особые ограничения оружия ещё не подтверждены.'}));
-  }
-  if(cm.attack?.flatEquipment||cm.attack?.percentEquipment?.length){
-   const flat=cm.attack.flatEquipment,percent=cm.attack.percentEquipment.reduce((sum,e)=>sum+e.bonus,0);
-   card.append(make('p',{text:'Прямые бонусы атаки от вещей и душ: '+
-    (flat>=0?'+':'')+flat+'; процентные: '+(percent>=0?'+':'')+percent}));
-  }
-  if(cm.attack?.activeBonus||cm.attack?.guildBonus){
-   const buff=cm.attack.activeBonus||0,guild=cm.attack.guildBonus||0;
-   card.append(make('p',{text:'Выбранные навыки: '+(buff>=0?'+':'')+buff+
-    ' · гильдия: '+(guild>=0?'+':'')+guild+' к атаке'}));
-  }
-  if(cm.activeSkills?.lunge)card.append(make('p',{text:'Рывок: '+
-   (cm.attackSpeed.lunge>0?'+':'')+cm.attackSpeed.lunge+' к скорости атаки'}));
-  if(cm.accuracy.percentage?.length){
-   const total=cm.accuracy.percentage.reduce((sum,e)=>sum+e.bonus,0);
-   card.append(make('p',{text:'Процентная точность вещей: '+
-    (total>=0?'+':'')+total+' (поштучное округление вверх)'}));
-  }
-  if(cm.accuracy.passive)card.append(make('p',{text:'Пассивная меткость лучника: +'+
-   cm.accuracy.passive}));
-  if(cm.accuracy.activeBonus)card.append(make('p',{text:
-   'Сосредоточенность: +'+cm.accuracy.activeBonus+' к точности'}));
-  if(cm.dodge.passive)card.append(make('p',{text:'Пассивное уклонение: +'+
-   cm.dodge.passive}));
-  if(cm.dodge.windAssist)card.append(make('p',{text:'Помощь ветра: +'+
-   cm.dodge.windAssist+' к уклонению'}));
-  if(cm.racialRate.accuracy)card.append(make('p',{text:
-   'Подавление гнева: +'+cm.racialRate.accuracy+
-   '% к точности · отдельный эффект'}));
-  if(cm.racialRate.dodge)card.append(make('p',{text:
-   'Интуиция: +'+cm.racialRate.dodge+
-   '% к уклонению · отдельный эффект'}));
-  if(cm.magicAttack)card.append(make('p',{text:'Магическая атака: '+
-   cm.magicAttack.known+'% (ИНТ '+cm.magicAttack.intelligence+
-   ', пассивка '+cm.magicAttack.passive+', оружие '+cm.magicAttack.staff+')'}));
-  if(cm.secondary){
-   const names={
-    auraFlat:'Аурный урон от снаряжения',
-    auraPercent:'Усиление аурного урона',
-    outgoingDebuffDuration:'Продолжительность дебаффов',
-    debuffSuccess:'Шанс наложения дебаффов',
-    cooldown:'Изменение отката от предметов'
-   };
-   for(const [key,label] of Object.entries(names)){
-    const value=cm.secondary[key];
-    if(value)card.append(make('p',{text:label+': '+
-     (value>0?'+':'')+value+(key==='auraPercent'?'%':'')}));
-   }
-  }
-  card.append(make('p',{text:'Физический урон оружия, пассивки и титулы: +'+
-   cm.weaponPhysical}),make('p',{text:'АТК сзади: +'+cm.backAttack+
-   ', спереди: +'+cm.frontAttack}),make('p',{text:'Откат умений (базовый индекс): '+
-   (cm.cooldown??'—')+'%'}));
-  if(cm.spellDamageEquipmentRate)card.append(make('p',{text:
-   'Структурированный бонус магического урона снаряжения: '+
-   (cm.spellDamageEquipmentRate>0?'+':'')+cm.spellDamageEquipmentRate+
-   '% (не суммирован повторно с бонусом жезла/посоха)'}));
-  if(cm.backAttackEquipmentRate)card.append(make('p',{text:
-   'Урон атаки в спину от предметов: +'+cm.backAttackEquipmentRate+
-   '% (отдельно от базового позиционного бонуса)'}));
-  if(cm.skillDelayFinalEquipment)card.append(make('p',{text:
-   'Финальная модификация скорости применения умений от души: '+
-   (cm.skillDelayFinalEquipment>0?'+':'')+cm.skillDelayFinalEquipment+
-   '% (не объединена с задержкой отдельных навыков)'}));
-  if(cm.skillDelayEquipment)card.append(make('p',{text:
-   'Изменение задержки применения навыков от вещей: '+
-   cm.skillDelayEquipment+'% (отдельно от показателя каста)'}));
-  card.append(make('p',{text:'Скорость передвижения: '+
-   cm.movementSpeed.known+' (снаряжение '+
-   (cm.movementSpeed.equipment>=0?'+':'')+cm.movementSpeed.equipment+
-   ', умения '+(cm.movementSpeed.active>=0?'+':'')+
-   cm.movementSpeed.active+')'}));
-  if(cm.movementSpeed.townEquipment)
-   card.append(make('p',{text:'Скорость в городе: '+
-    cm.movementSpeed.town+' (от снаряжения '+
-    (cm.movementSpeed.townEquipment>0?'+':'')+
-    cm.movementSpeed.townEquipment+')'}));
-  if(cm.attackSpeed)card.append(make('p',{text:'Скорость атаки (индекс): '+
-   cm.attackSpeed.known+' (база '+cm.attackSpeed.base+
-   ', экипировка '+(cm.attackSpeed.equipment>=0?'+':'')+
-   cm.attackSpeed.equipment+', навыки +'+cm.attackSpeed.lunge+')'}));
-  if(cm.castingSpeed)card.append(make('p',{text:'Скорость заклинаний: '+
-   cm.castingSpeed.known+' (база '+cm.castingSpeed.base+
-   ', снаряжение '+(cm.castingSpeed.equipment>=0?'+':'')+
-   cm.castingSpeed.equipment+')'}));
-  card.append(make('p',{class:'stage-attribute-note',
-   text:'Источник: Remaked Legacy + таблицы OS. Учитываются выбранные подтверждённые активные умения; другие условные навыки, комплекты и часть серверных условий всё ещё не рассчитаны.'}));
-  body.prepend(card);
- }
- if(page==='defense'&&modifiers?.combat?.defense){
-  const df=modifiers.combat.defense,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Защита снаряжения'}),
-   make('p',{text:'Подтверждённая основа: '+df.known}),
-   make('p',{text:'Базовая защита снаряжения: '+df.armor}),
-   make('p',{text:'Бонус заточки брони и щита: +'+df.refinement}),
-   make('p',{text:'Прямые бонусы вещей и душ: '+(df.equipment>=0?'+':'')+df.equipment}),
-   make('p',{text:'Процентные бонусы защиты: '+(df.percentBonus>=0?'+':'')+df.percentBonus}),
-   make('p',{text:'Титул чести: '+(df.honor>=0?'+':'')+df.honor}),
-   make('p',{text:'Эффект выбранной стойки: '+(df.activeBonus>=0?'+':'')+df.activeBonus}),
-   make('p',{class:'stage-attribute-note',
-    text:'Заточка щита и брони учтена по исходной формуле Remaked: ⌊+N×1,5⌋ за каждый предмет. Остальные условные эффекты и временные навыки ещё не полностью учитываются.'}));
-  body.prepend(card);
- }
- if(page==='defense'&&modifiers?.combat){
-  const cm=modifiers.combat,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Дополнительные защитные параметры'}),
-   make('p',{text:'Сопротивление прерыванию каста: '+
-    (cm.castInterruption>=0?'+':'')+cm.castInterruption}),
-   make('p',{text:'Изменение шанса входящего крита: '+cm.criticalIncoming}),
-   make('p',{text:'Множитель входящего критического урона: '+
-    cm.criticalIncomingDamage+'%'}),
-
-   make('p',{class:'stage-attribute-note',
-    text:'Частичные индексы по Remaked: навыки, душевные эффекты и условия серверного боя пока не все учтены.'}));
-  body.prepend(card);
- }
- if(page==='defense'&&modifiers?.targetResistance?.entries?.length){
+ if(chosen==='effects'&&modifiers?.targetResistance?.entries?.length){
   const english=document.documentElement?.lang==='en';
   const card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:english?'Defense by enemy type':
@@ -1398,48 +945,35 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   body.prepend(card);
  }
  if(page==='summary'&&modifiers?.regeneration){
-  const regen=modifiers.regeneration,english=document.documentElement?.lang==='en';
-  const card=make('section',{class:'stage-attribute-row'});
-  const bonus=(value,label)=>value?(', '+label+(value>0?'+':'')+value):'';
-  card.append(make('strong',{text:english?'Natural recovery speed':'Скорость естественного восстановления'}),
-   make('p',{text:(english?'HP: ':'ОЗ: ')+regen.hp.total+
-    (english?' (base ':' (база ')+regen.hp.base+
-    (english?', guild +':', гильдия +')+regen.hp.guild+
-    (english?', healing +':', лечение +')+regen.hp.healing+')'}),
-   make('p',{text:(english?'MP: ':'ОМ: ')+regen.mp.total+
-    (english?' (base ':' (база ')+regen.mp.base+
-    (english?', guild +':', гильдия +')+regen.mp.guild+
-    (english?', healing +':', лечение +')+regen.mp.healing+
-    bonus(regen.mp.equipment,english?'equipment ':'снаряжение ')+
-    bonus(regen.mp.racial,english?'racial passive ':'расовая способность ')+')'}),
-   make('p',{class:'stage-attribute-note',
-    text:english?
-     'Remaked-based speed indices, not HP/MP per tick. Supported equipment and racial effects are included; unverified active effects are excluded.':
-     'Показатели скорости из Remaked, не количество ОЗ/ОМ за тик. Подтверждённые бонусы экипировки и расовые способности учтены; непроверенные активные эффекты не включены.'}));
-  body.prepend(card);
+  const regen=modifiers.regeneration,en=document.documentElement?.lang==='en';
+  const values=[['ОЗ','HP',regen.hp?.total],['ОМ','MP',regen.mp?.total]]
+   .filter(row=>Number.isFinite(row[2]));
+  if(values.length){
+   const card=make('section',{class:'stage-attribute-row'});
+   card.append(make('strong',{text:en?'Natural recovery speed':'Скорость естественного восстановления'}));
+   for(const [ru,enName,total] of values)
+    card.append(make('p',{text:(en?enName:ru)+': '+total}));
+   body.prepend(card);
+  }
  }
  if(page==='summary'&&modifiers?.recoveryAmount){
-  const natural=modifiers.recoveryAmount,card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Естественное восстановление (расчётная величина)'}),
-   make('p',{text:'ОЗ: '+natural.hp.known+' (максимум ОЗ '+natural.hp.maxContribution+
-    ' + ВЫН '+natural.hp.attributeContribution+')'}),
-   make('p',{text:'ОМ: '+natural.mp.known+' (максимум ОМ '+natural.mp.maxContribution+
-    ' + СД '+natural.mp.attributeContribution+')'}));
-  const rate=modifiers?.combat?.mpRecoveryEquipmentRate||0;
-  if(rate)card.append(make('p',{text:'Отдельный бонус скорости восстановления ОМ: '+
-   (rate>0?'+':'')+rate+'%'}));
-  card.append(make('p',{class:'stage-attribute-note',
-   text:'Исторические формулы Remaked LPRec/MPRec: без сидения и условных активных эффектов. Не следует считать полученный показатель гарантированным восстановлением в секунду.'}));
-  body.prepend(card);
+  const amount=modifiers.recoveryAmount,en=document.documentElement?.lang==='en';
+  const values=[['ОЗ','HP',amount.hp?.known],['ОМ','MP',amount.mp?.known]]
+   .filter(row=>Number.isFinite(row[2]));
+  if(values.length){
+   const card=make('section',{class:'stage-attribute-row'});
+   card.append(make('strong',{text:en?'Estimated natural recovery':'Естественное восстановление (расчётная величина)'}));
+   for(const [ru,enName,total] of values)
+    card.append(make('p',{text:(en?enName:ru)+': '+total}));
+   body.prepend(card);
+  }
  }
  const totals=modifiers?.effects?.bonuses||{};
  const names={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
  charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия',
  accuracy:'Точность',dodge:'Уклонение',criticalChance:'Критический шанс'};
  const active=Object.entries(totals).filter(([key])=>names[key]&&
-  ['attack','defense','effects'].includes(chosen)&&
-  (page==='defense'? !['accuracy','dodge','criticalChance'].includes(key):
-   page==='attack'?['accuracy','dodge','criticalChance'].includes(key):true));
+  chosen==='effects');
  if(active.length){
   const card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Известные бонусы снаряжения и душ'}));
@@ -1653,10 +1187,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
       make('strong',{text:result?number(result.damage):'—'})
      ]));
      if(result){
-      panel.append(make('p',{class:'stage-elemental-explanation',text:
-       number(result.flat)+' + '+number(result.scale)+'% × '+
-       result.stat+' ('+number(result.attribute)+') = '+
-       number(result.damage)}));
       panel.append(make('p',{class:'stage-elemental-explanation',text:en?
        'Trigger chance: '+number(result.chance)+'% · Cooldown: '+number(result.cooldown)+' s':
        'Шанс срабатывания: '+number(result.chance)+'% · Откат: '+number(result.cooldown)+' сек.'}));
@@ -1669,8 +1199,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
      for(const entry of bonus.rows)
       panel.append(make('p',{text:entry.name+' +'+entry.value+
        (entry.unit==='%'?'%':'')}));
-     if(bonus.phoenix)panel.append(make('p',{class:'stage-elemental-explanation',
-      text:root.PandoraConditionalItemBonuses.phoenixExplanation(bonus.phoenix)}));
     }
    }
    body.prepend(panel);
@@ -1678,13 +1206,25 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(['attack','defense'].includes(chosen)&&modifiers?.combat){
   const battle=modifiers.combat;
+  const en=document.documentElement?.lang==='en';
+  const label=(ru,english)=>en?english:ru;
+  const percent=value=>Number.isFinite(value)?value+'%':null;
   const numbers=chosen==='attack'?
-   [['Физическая атака',battle.attack?.known],
-    ['Магическая атака',battle.magicAttack?.known==null?null:battle.magicAttack.known+'%'],
-    ['Точность',battle.accuracy?.known],['Критический шанс',battle.critical?.known]]:
-   [['Защита',battle.defense?.known],['Уклонение',battle.dodge?.known],
-    ['Входящий крит. урон',battle.criticalIncomingDamage==null?null:battle.criticalIncomingDamage+'%'],
-    ['Устойчивость к сбою',battle.castInterruption]];
+   [[label('Физическая атака','Physical attack'),battle.attack?.known],
+    [label('Магическая атака','Magic attack'),percent(battle.magicAttack?.known)],
+    [label('Точность','Accuracy'),battle.accuracy?.known],
+    [label('Шанс крита','Critical chance'),percent(battle.critical?.known)],
+    [label('Крит. урон','Critical damage'),percent(battle.criticalDamage)],
+    [label('Скорость атаки','Attack speed'),percent(battle.attackSpeed?.known)],
+    [label('Скорость каста','Casting speed'),percent(battle.castingSpeed?.known)],
+    [label('Расход ОМ','MP cost'),percent(battle.manaCost?.remaining)],
+    [label('Откат умений','Skill cooldown'),percent(battle.cooldown)],
+    [label('Скорость движения','Movement speed'),percent(battle.movementSpeed?.known)],
+    [label('Скорость в городе','Town speed'),percent(battle.movementSpeed?.town)]]:
+   [[label('Защита','Defense'),battle.defense?.known],
+    [label('Уклонение','Evasion'),battle.dodge?.known],
+    [label('Входящий крит. урон','Incoming critical damage'),percent(battle.criticalIncomingDamage)],
+    [label('Устойчивость к сбою','Cast interruption resistance'),battle.castInterruption]];
   const grid=make('div',{class:'stage-result-grid stage-combat-quick'});
   for(const [label,value]of numbers)grid.append(make('div',{class:'stage-result-tile'},[
    make('span',{text:label}),make('strong',{text:value??'—'})]));
@@ -1710,5 +1250,5 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,vitalFormulaRows,combatFormulaRows});
+root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows});
 })(typeof window==='undefined'?globalThis:window);

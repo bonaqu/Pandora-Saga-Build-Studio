@@ -7,59 +7,34 @@ function load(lang){
  const root={};Function('window','document',book)(root,{documentElement:{lang}});
  return root.PandoraStageAttributes;
 }
-test('gemstone elemental rows and explanatory text have explicit RU/EN captions',()=>{
- for(const text of [
-  "english?'Weapon aura base':'Основа ауры оружия'",
+test('gemstones preserve named final aura and independent magical effects in RU/EN',()=>{
+ for(const term of [
   "english?'Total aura':'Итог ауры'",
   "english?'Weapon magic enhancement':'Магическое усиление оружия'",
   "english?'Armor resistance':'Сопротивление от брони'",
   "english?'Status effect chance':'Шанс наложения состояния'",
   "english?'Rainbow gems: ':'Радужные самоцветы: '",
   "fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison'",
-  "fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд'",
-  "Gem resistances are included in defense.",
-  "Сопротивления от самоцветов включены в защиту."
- ])assert.ok(book.replace(/\s+/g,'').includes(text.replace(/\s+/g,'')),text);
- assert.match(book,/const labels=english\?/);
+  "fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд'"
+ ])assert.ok(book.replace(/\s+/g,'').includes(term.replace(/\s+/g,'')),term);
+ assert.doesNotMatch(book,/show\(english\?'Weapon aura base'/);
 });
-test('healing and mana breakdowns retain numeric formulas but translate all displayed headings',()=>{
- for(const text of [
-  "english?'Healing-skill effectiveness':'Эффективность лечащих навыков'",
-  "english?'Effectiveness: ':'Эффективность: '",
-  "english?'% (base 100%, honor +':'% (основа 100%, честь +'",
-  "english?'%, equipment/Souls +':'%, предметы/души +'",
-  "english?'MP cost':'Расход ОМ'",
-  "english?'Remaining cost index: ':'Индекс остаточного расхода: '",
-  "english?'INT base: ':'База от ИНТ: '",
-  "english?'Racial passive: −':'Расовая способность: −'",
-  "english?'Equipment and Souls: −':'Снаряжение и души: −'",
-  "Not all active skill conditions are included.",
-  "This preview excludes active effects"
- ])assert.ok(book.replace(/\s+/g,'').includes(text.replace(/\s+/g,'')),text);
- const ctx={};Function('window',calc)(ctx);
- assert.equal(typeof ctx.PandoraOSCalculator.potionRecovery,'function');
+test('potion, skill and mana results remain calculated but no origin equation appears in UI',()=>{
+ const root={};Function('window',calc)(root);
+ assert.equal(typeof root.PandoraOSCalculator.potionRecovery,'function');
+ for(const term of [
+  "row('Леч. зельями','Potion healing',calc?.potion?.percent,'%')",
+  "row('Леч. умениями','Skill healing',calc?.healingSkill?.percent,'%')",
+  "row('Расход ОМ','MP cost',c.manaCost?.remaining,'%')",
+  "english?'Healing skills':'Лечащие умения'",
+  "english?'Potion effectiveness':'Эффективность зелий'"
+ ])assert.ok(book.includes(term),term);
+ assert.doesNotMatch(book,/Remaining cost index: |База от ИНТ: |База от ВЫН: /);
 });
-test('potions retain base-vs-additive percentage semantics in both languages',()=>{
- for(const text of [
-  "english?'Potion effects':'Действие зелий'",
-  "english?'Stamina (base effectiveness)':'Выносливость (базовая эффективность)'",
-  "english?'Herbalist (human racial passive)':'Знахарство (расовая способность человека)'",
-  "english?'Honor title':'Титул чести'",
-  "english?'Equipment and Souls':'Экипировка и души'",
-  "modifiers.potion.base,true",
-  "modifiers.potion.racial,false",
-  "modifiers.potion.mastery,false",
-  "modifiers.potion.equipment,false",
-  "for(const [name,value,isBase] of parts)",
-  "(isBase?'':value>0?'+':'')+value+'%'"
- ])assert.ok(book.replace(/\s+/g,'').includes(text.replace(/\s+/g,'')),text);
- assert.ok(!book.includes("name.startsWith('Выносливость')"),
-  'sign must not depend on an untranslated Russian label');
-});
-test('unknown official names and user text remain unchanged across locales',()=>{
+test('unknown official names and custom user text remain unchanged',()=>{
  const en=load('en'),ru=load('ru');
  for(const text of ['Душа несчастья','Великий клинок','Custom name 77',
-  'Character ✦ 1','Проклятая броня']) {
+  'Character ✦ 1','Проклятая броня']){
   assert.equal(en.bookText(text),text);
   assert.equal(ru.bookText(text),text);
  }

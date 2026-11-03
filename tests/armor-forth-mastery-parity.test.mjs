@@ -60,10 +60,10 @@ test('critical Honor, back attack and INT cooldown remain independent',()=>{
 
 test('the portrait UI displays armor grade and class passive effects, not just raw W/AC',()=>{
  const view=read('pandora-studio-hero-book.js'),app=read('pandora-studio-app.js');
- assert.match(view,/df\.refinement/);
- assert.match(view,/cm\.magicAttack/);
- assert.match(view,/cm\.weaponPhysical/);
- assert.match(view,/cm\.accuracy\.passive/);
+ assert.match(view,/battle\.defense\?\.known/);
+ assert.match(view,/battle\.magicAttack\?\.known/);
+ assert.match(view,/battle\.attack\?\.known/);
+ assert.match(view,/battle\.accuracy\?\.known/);
  assert.match(app,/itemForth:gameItemForth/);
 });
 

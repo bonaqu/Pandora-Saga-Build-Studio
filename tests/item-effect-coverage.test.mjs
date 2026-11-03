@@ -44,6 +44,6 @@ test('the Summary chapter stays clean, detailed coverage lives only in Effects',
  const view=get('pandora-studio-hero-book.js');
  assert.match(view,/modifiers\?\.coverage\?\.total/);
  assert.match(view,/Условные проки/);
- assert.match(view,/\['attack','defense','effects'\]\.includes\(chosen\)/);
+ assert.match(view,/chosen==='effects'/);
  assert.match(view,/Что осталось вне итоговых чисел/);
 });

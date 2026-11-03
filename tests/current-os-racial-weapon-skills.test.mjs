@@ -93,9 +93,10 @@ test('missing and damaged OS skill source never creates a guessed weapon bonus',
 
 test('Hero Book labels racial values as source preview, not completed attack totals',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/if\(cm\.racialWeapon\)/);
- assert.match(book,/Бойцовский дух|racial\.ru/);
- assert.match(book,/не прибавленные к итоговой АТК/);
- assert.match(book,/not added to final ATK/);
- assert.match(book,/Надетое оружие не соответствует указанной категории/);
+ assert.doesNotMatch(book,/if\(cm\.racialWeapon\)/);
+ assert.match(book,/battle\.attack\?\.known/);
+ assert.ok(concrete(900010001,items[21]));
+ assert.equal(concrete(900010001,items[21]).verified,false);
+ assert.ok(!book.includes('Source skill values only: not added to final ATK'));
+ assert.equal(concrete(900010001,items[401]).matchesCategory,false);
 });

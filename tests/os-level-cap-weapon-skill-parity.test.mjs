@@ -52,8 +52,8 @@ test('the book and calculator ask the same source weapon eligibility question',(
 });
 test('incoming critical damage uses defensive metric; outgoing damage stays under Attack',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/\['Входящий крит\. урон',battle\.criticalIncomingDamage/);
- assert.match(book,/Исходящий критический урон: /);
+ assert.match(book,/label\('Входящий крит\. урон','Incoming critical damage'\),percent\(battle\.criticalIncomingDamage\)/);
+ assert.match(book,/label\('Крит\. урон','Critical damage'\),percent\(battle\.criticalDamage\)/);
  assert.ok(!book.includes("['Критический урон',battle.criticalDamage"));
  assert.ok(!book.includes('Базовый исходящий критический урон:'));
 });

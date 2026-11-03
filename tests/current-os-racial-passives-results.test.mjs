@@ -77,6 +77,6 @@ test('Rapin MP recovery speed +18 uses source and stays separate from MP total a
  assert.equal(equipped.regeneration.mp.equipment,6);
  assert.equal(equipped.regeneration.mp.racial,18);
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/regen\.mp\.racial/);
- assert.match(book,/расовые способности учтены/);
+ assert.match(book,/regen\.mp\?\.total/);
+ assert.doesNotMatch(book,/regen\.mp\.racial/);
 });

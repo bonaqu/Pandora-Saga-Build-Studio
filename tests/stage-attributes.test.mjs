@@ -33,7 +33,8 @@ test('partial combat preview does not imply fully verified combat stats',()=>{
  const attrs=get('pandora-studio-hero-book.js');
  assert.match(attrs,/Подробнее о точности расчёта/);
  assert.match(attrs,/Известные бонусы снаряжения и душ/);
- assert.match(attrs,/серверных условий/);
+ assert.match(attrs,/chosen==='effects'/);
+ assert.doesNotMatch(attrs,/appendCombatFormulas|appendVitalFormulas/);
  assert.doesNotMatch(attrs,/const effects=Array\.isArray\(rec\.effects\)/);
 });
 test('reloading preserves portrait attribute page independently of build',()=>{

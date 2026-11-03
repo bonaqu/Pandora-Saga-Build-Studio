@@ -66,6 +66,12 @@ async function main(){
  assert.equal(await page.locator('#stageAttributes [data-book-page]').count(),6);
  await page.locator('#stageAttributes [data-book-page="attack"]').click();
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'attack');
+ assert.equal(await page.locator('#stageBookPanel .stage-vital-formulas, #stageBookPanel .stage-combat-formulas').count(),0,
+  'No optional formula/explanation accordions in the player Hero Book');
+ const attackResults=page.locator('#stageBookPanel .stage-combat-quick .stage-result-tile');
+ assert.ok(await attackResults.count()>=8,'Attack chapter must keep compact final stat values');
+ assert.match(await page.locator('#stageBookPanel .stage-combat-quick').innerText(),/Скорость атаки/);
+ assert.doesNotMatch(await page.locator('#stageBookPanel').innerText(),/Показать расчёт по составляющим|Прямые бонусы атаки от вещей и душ/);
  await page.locator('#stageAttributes [data-book-page="attack"]').press('ArrowRight');
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'defense');
   await page.locator('#stageAttributes [data-book-page="effects"]').click();

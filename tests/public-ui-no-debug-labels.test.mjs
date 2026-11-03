@@ -10,8 +10,8 @@ test('hero book uses game-focused labels rather than debug disclaimers',()=>{
  assert.doesNotMatch(book,/сочетаний требуют специальной проверки/);
  assert.doesNotMatch(book,/Особых сочетаний самоцветов/);
  assert.match(book,/Радужные самоцветы: /);
- assert.match(book,/Магическая атака: /);
- assert.match(book,/отдельный эффект/);
+ assert.match(book,/label\('Магическая атака','Magic attack'\)/);
+ assert.match(book,/chosen==='effects'/);
 });
 test('player-facing icon state does not expose local archive counters',()=>{
  const app=read('pandora-studio-app.js');

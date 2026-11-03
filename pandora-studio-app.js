@@ -2120,8 +2120,8 @@ function renderWiki(root){
   }
   if(type==='item'&&utilityCategories(rec).includes('harmful'))
    detail.append(h('p',{class:'wiki-description wiki-harmful-consumable-note',
-    text:wt('При использовании накладывает временный дебаф отравления на персонажа, использовавшего предмет. Значение серверного параметра не подтверждает урон, шанс или длительность.',
-     'On use, applies a temporary poison debuff to the character consuming the item. The server parameter does not establish damage, chance or duration.')}));
+    text:wt('При использовании отравляет персонажа, употребившего предмет: временный эффект отравления периодически наносит ему урон ядом. Урон за тик, интервал, длительность и шанс из данных OS не установлены.',
+     'Using this item poisons the character who consumed it: the temporary poison effect deals periodic poison damage to that character. Tick damage, interval, duration and chance are not established by the OS data.')}));
   if(type==='map'){
    const geo=window.PandoraAstirLocations;
    const district=geo?.district(id),nation=geo?.country(id);
