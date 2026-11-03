@@ -427,9 +427,10 @@ function buffsPage(body,options){
   body.append(node);
   return node;
  };
- const select=(parent,name,key,levels,vital=false)=>{
-  const field=make('label',{class:'stage-book-field'},[make('span',{text:name})]);
-  guideLabel(field.firstChild,key==='honorTitle'?'buffs.honor':'buffs.setting.'+key,
+ const select=(parent,name,key,levels,vital=false,compact=false)=>{
+  const field=make(compact?'div':'label',{class:'stage-book-field'+(compact?' stage-book-choice-only':'')},
+   compact?[]:[make('span',{text:name})]);
+  if(!compact)guideLabel(field.firstChild,'buffs.setting.'+key,
    name,name,options,'Настройка усиления: '+name,'Enhancement setting: '+name);
   const entry=make('select',{'aria-label':name,'data-book-setting':key,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
@@ -491,16 +492,12 @@ function buffsPage(body,options){
  select(guild,'Все характеристики','guildAll',opts([0,1,2,3,4,5,6]));
  select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
  const honor=section(english?'Honor':'Честь','honor');
- honor.append(make('p',{class:'stage-attribute-note',text:english?
-  'Choose one passive to simulate. Count (Moon): 129,000 Total Honor and 640,000 gold.':
-  'Выбери одно пассивное умение. Министр (Луна): 129 000 «Вся честь» и 640 000 золота.'}));
+ const honorTerm=make('span',{class:'stage-honor-term',text:english?'passive skill':'пассивное умение'});
+ honor.firstChild.append(' · ',honorTerm);
+ guideLabel(honorTerm,'buffs.honor',english?'passive skill':'пассивное умение',
+  'passive skill',options);
  select(honor,english?'Honor passive skill':'Пассивное умение за честь',
-  'honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]));
- if(typeof options.onHonor==='function')honor.append(make('button',{
-  class:'stage-book-honor-link',type:'button',
-  text:english?'Honor ranks and rewards':'Ранги и награды за честь',
-  onclick:options.onHonor
- }));
+  'honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]),false,true);
  const priest=section(english?'Priest buffs':'Усиления жреца');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});
@@ -1000,7 +997,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
- target.replaceChildren();
+ // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
+ // a newly animated pane used to reset scroll/focus and visibly flash the Book.
+ const stablePanel=target.querySelector?.('.stage-book-page');
+ const reusePanel=stablePanel?.dataset.bookVisible===page;
+ const storedScroll=reusePanel?stablePanel.scrollTop:0;
+ if(reusePanel){
+  for(const child of [...target.children])if(child!==stablePanel)child.remove();
+ }else target.replaceChildren();
  const copyOptions={overrides:copy,editable:canEdit,onTextEdit,onHonor};
  const chapterTitle=(key,ru)=>{
   const en=bookEnglish[ru]||ru;
@@ -1014,7 +1018,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  target.setAttribute('aria-label',document.documentElement?.lang==='en'?
   'Hero Book. '+chapterTitle(chosen,bookPages[index][1])+'. Chapter '+(index+1)+' of 6':
   'Книга героя. '+chapterTitle(chosen,bookPages[index][1])+'. Страница '+(index+1)+' из 6');
- target.append(make('div',{class:'stage-attribute-head'},[
+ const bookHeader=make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
    onclick:()=>onPage(prior),'aria-label':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
@@ -1024,7 +1028,9 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    onclick:()=>onPage(next),'aria-label':'Следующая страница'}),
   make('button',{type:'button',text:'✕',class:'stage-book-close',onclick:onClose,
    'aria-label':'Вернуть портрет'})
- ]));
+ ]);
+ if(reusePanel)target.insertBefore(bookHeader,stablePanel);
+ else target.append(bookHeader);
  const headingTitle=target.querySelector?.('.stage-book-heading strong');
  if(headingTitle)guideLabel(headingTitle,'chapter.'+chosen,
   bookPages[index][1],bookEnglish[bookPages[index][1]]||bookPages[index][1],
@@ -1036,7 +1042,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   'aria-pressed':String(chosen===name),'data-book-page':name,
   class:chosen===name?'chosen':'',onclick:()=>onPage(name)
  }));
- target.append(nav);
+ if(reusePanel)target.insertBefore(nav,stablePanel);
+ else target.append(nav);
  const body=make('div',{class:'stage-attribute-scroll stage-book-page',
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
@@ -1172,7 +1179,10 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
  }
  decorateChapterCaptions(body,chosen,copyOptions);
- target.append(body);
+ if(reusePanel){
+  stablePanel.replaceChildren(...body.childNodes);
+  stablePanel.scrollTop=storedScroll;
+ }else target.append(body);
 }
 root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,attackChapterGroups,defenseChapterGroups});
 })(typeof window==='undefined'?globalThis:window);
