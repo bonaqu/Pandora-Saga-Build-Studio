@@ -37,10 +37,12 @@ export async function runEffectItemsSmoke(browser,base){
   assert.match(poisonDetails,/Создание яда/);
   assert.match(poisonDetails,/Яд/);
   assert.match(poisonDetails,/Скороговорка/);
-  assert.match(poisonDetails,/техническая запись «Яд»/);
+  assert.match(poisonDetails,/Похожее умение/);
   assert.match(poisonDetails,/×1/);
-  assert.equal(await page.locator('a[href="#wiki/skill/500000004"]').count(),1,
-   'Technical Poison skill must open as a separate verified wiki record');
+  assert.equal(await page.locator('a[href="#wiki/skill/500000004"]').count(),0,
+   'Technical non-learnable skill must not clutter the item description');
+  assert.doesNotMatch(await page.locator('.wiki-page').innerText(),
+   /EP_[A-Z_]+|500000004|неизучаемая техническая/);
   await selectGroup('cure');
   assert.equal(await page.locator('[data-wiki-record]').count(),10);
   for(const id of ['50016','50057','50065'])
@@ -64,19 +66,36 @@ export async function runEffectItemsSmoke(browser,base){
    assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),1,id);
   // The detail panel is a modal and intentionally blocks the header.
   // Close it through the real UI before switching the site language.
-  await selectGroup('review');
-  assert.equal(await page.locator('[data-wiki-record]').count(),0);
+  assert.equal(await page.locator('.wiki-effect-type option[value="review"]').count(),0,
+   'An empty verification filter is a misleading interface control');
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-effect-type').waitFor({state:'visible'});
-  assert.equal(await page.locator('.wiki-effect-type option:checked').innerText(),'Needs verification');
+  assert.equal(await page.locator('.wiki-effect-type option:checked').innerText(),'Other usable items');
   await page.locator('.wiki-effect-type').selectOption('other');
   assert.equal(await page.locator('.wiki-effect-type option:checked').innerText(),'Other usable items');
   await page.locator('.wiki-effect-type').selectOption('harmful');
   assert.equal(await page.locator('[data-wiki-record]').count(),2);
   await page.locator('[data-wiki-record="50022"]').click();
   assert.match(await page.locator('.wiki-harmful-consumable-note').innerText(),/Poison/);
+  assert.doesNotMatch(await page.locator('.wiki-page').innerText(),
+   /EP_[A-Z_]+|technical|catalogue|not verified/);
+  await page.locator('#dockClose').click();
+  await page.locator('[data-wiki-chapter="item"]').click();
+  await page.locator('.wiki-controls input[type="search"]').fill('Howling Sword');
+  await page.locator('[data-wiki-record="422"]').click();
+  const equipmentEffectText=await page.locator('.wiki-owner-effects').innerText();
+  assert.match(equipmentEffectText,/Skill on hit/);
+  assert.match(equipmentEffectText,/Tripped/);
+  assert.doesNotMatch(equipmentEffectText,/500000015/);
+  assert.equal(await page.locator('a[href="#wiki/skill/500000015"]').count(),1);
+  await page.locator('#dockClose').click();
+  await page.locator('[data-wiki-chapter="utility"]').click();
+  await page.locator('[data-wiki-record="50014"]').click();
+  assert.match(await page.locator('.wiki-owner-effects').innerText(),/Activates skill/);
+  assert.doesNotMatch(await page.locator('.wiki-owner-effects').innerText(),
+   /310002002|330005002/);
   await page.setViewportSize({width:390,height:780});
   const overflow=await page.evaluate(()=>
    Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
