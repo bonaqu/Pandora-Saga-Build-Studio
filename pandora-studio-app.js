@@ -1501,7 +1501,7 @@ function renderWiki(root){
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
- for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
+ for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['honor','Очки чести','Honor points'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
   categories.append(h('button',{
    class:(key==='utility'?wikiSelection.type==='item'&&wikiItemType==='utility':
     key==='item'?wikiSelection.type==='item'&&wikiItemType!=='utility':
@@ -1607,6 +1607,25 @@ function renderWiki(root){
  controls.append(view);
  const layout=h('div',{class:'wiki-layout'});
  layout.append(browse,detail);root.append(controls,layout);
+ if(wikiSelection.type==='honor'){
+  view.hidden=true;
+  const renderHonor=()=>{
+   if(!root.isConnected)return;
+   window.PandoraHonorView?.render({
+    browse,detail,make:h,lang,article:window.PandoraHonorGuide?.article(override),
+    editable:adminEditing&&Boolean(adminToken),
+    editText:(node,initial,multiline,onCommit)=>editWikiValue(node,initial,{
+     type:multiline?'textarea':'text',onCommit}),
+    saveText:saveGuidePatch,saveList:saveGuideList,
+    link:(mapId,name)=>window.PandoraHistoricalMaps?.records()?.[mapId]||
+     mapId==='2005004'?wikiLink('◈ '+name,'map',mapId):null
+   });
+  };
+  wikiRenderSelected=renderHonor;
+  renderHonor();
+  return;
+ }
+
  const nameCache=new Map();
   let lastWikiIndex=null;
  const dataName=(type,id)=>{
