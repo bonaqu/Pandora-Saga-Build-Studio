@@ -57,7 +57,11 @@ export async function runEffectItemsSmoke(browser,base){
   assert.equal(await page.locator('[data-wiki-record]').count(),5);
   for(const id of ['50066','90021','90053'])
    assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),1,id);
+  // The detail panel is a modal and intentionally blocks the header.
+  // Close it through the real UI before switching the site language.
+  await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-effect-type').waitFor({state:'visible'});
   assert.equal(await page.locator('.wiki-effect-type option:checked').innerText(),'Other usable items');
   await page.locator('.wiki-effect-type').selectOption('harmful');
