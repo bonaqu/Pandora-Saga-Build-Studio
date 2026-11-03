@@ -2809,13 +2809,30 @@ function renderWiki(root){
     if(adminEditing&&adminToken){
      for(const kind of ['map','instance']){
       const chosen=places.filter(x=>x.type===kind).map(x=>String(x.id));
-      detail.append(wikiOwnerEntityList({label:kind==='map'?'Локации':'Подземелья',
+      detail.append(wikiOwnerEntityList({label:kind==='map'?
+       wt('Локации','Locations'):wt('Подземелья','Dungeons'),
        kind,existing:chosen,onChange:async next=>{
         const updated=next.map(String);
         const added=updated.find(x=>!chosen.includes(x));
         const removed=chosen.find(x=>!updated.includes(x));
-        if(added)await saveWikiSpawns(id,kind,added,true);
-        else if(removed)await saveWikiSpawns(id,kind,removed,false);
+        const locationId=added||removed;
+        if(!locationId)return;
+        const loc=wikiIndex.records(kind)?.[locationId];
+        if(!loc)throw Error(wt('Локация не найдена','Location not found'));
+        const ownerLocation=kind==='map'&&(
+         !Object.hasOwn(wikiData.maps||{},locationId)||loc.virtual);
+        if(rec.ownerCreated||ownerLocation){
+         const current=(loc.mobs||[]).map(String);
+         const desired=added?[...new Set([...current,String(id)])]:
+          current.filter(x=>x!==String(id));
+         // A reported spawn row linked to this card must be unlinked as well.
+         const reports=kind==='map'?mapRoster(loc):[];
+         const patch={mobs:desired.map(x=>/^[1-9][0-9]{0,14}$/.test(x)?Number(x):x)};
+         if(reports.length&&removed)patch.roster=reports.map(row=>
+          String(row.monsterId)===String(id)?{...row,monsterId:null}:row);
+         await saveWikiRecordPatch(kind,locationId,patch);
+        }else if(added)await saveWikiSpawns(id,kind,added,true);
+        else await saveWikiSpawns(id,kind,removed,false);
        }}));
      }
     }else if(places.length)detail.append(linkFlow(places.map(loc=>
@@ -3211,10 +3228,16 @@ function renderWiki(root){
      if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||ownerMap)){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
-       if(type==='map'&&(rec.virtual||!Object.hasOwn(wikiData.maps||{},id))){
-        await saveWikiRecordField('map',id,'mobs',next.map(Number));return;
-       }
        const before=mobs.map(String),after=next.map(String);
+       const hasOwner=next.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x))||
+        before.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x));
+       if(type==='map'&&(rec.virtual||!Object.hasOwn(wikiData.maps||{},id)||hasOwner)){
+        const patch={mobs:next.map(x=>typeof x==='string'?x:Number(x))};
+        const reports=mapRoster(rec);
+        if(reports.length)patch.roster=reports.map(row=>row.monsterId!=null&&
+         !after.includes(String(row.monsterId))?{...row,monsterId:null}:row);
+        await saveWikiRecordPatch('map',id,patch);return;
+       }
        const added=after.find(x=>!before.includes(x));
        const removed=before.find(x=>!after.includes(x));
        if(added)await saveWikiSpawns(added,type,id,true);
