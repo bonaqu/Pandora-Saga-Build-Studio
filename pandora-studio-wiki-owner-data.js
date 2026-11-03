@@ -8,9 +8,9 @@ const fields=Object.freeze({
  monster:['name','nameEn','desc','descEn','loot','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
  map:['name','nameEn','desc','descEn','notesRu','notesEn','mobs','npcs','loot','tags','sections','extraSections','roster'],
  npc:['name','nameEn','desc','descEn','maps','service','serviceEn','grid'],
- instance:['name','blurb','blurbRu','mobs'],
- skill:['name','desc','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
- soul:['name','desc','price','slots']
+ instance:['name','nameEn','blurb','blurbRu','mobs'],
+ skill:['name','nameEn','desc','descEn','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
+ soul:['name','nameEn','desc','descEn','price','slots']
 });
 const resistKeys=['physical','fire','cold','lightning','poison','charm','magic','holy','dark'];
 const slots=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','neck','belt','ear','accessory'];
