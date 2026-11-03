@@ -30,13 +30,11 @@ test('source grade limits and invalid effect numbers cannot inflate attack reach
  const invalid=C.attackRangePreview({records:[['item:test',source,11]]});
  assert.equal(invalid.entries.length,0);
 });
-test('book presents honest equipment bonuses only on the attack page',()=>{
+test('equipment range bonuses stay in the engine, not in guessed final range',()=>{
  const book=read('pandora-studio-hero-book.js'),calc=read('pandora-os-character-calculator.js');
- assert.match(book,/page==='attack'&&modifiers\?\.attackRange\?\.entries\?\.length/);
- assert.match(book,/Бонусы дальности от снаряжения/);
- assert.match(book,/Дальность атаки: /);
- assert.match(book,/Дальность стрельбы: /);
+ assert.doesNotMatch(book,/if\(page==='attack'&&modifiers\?\.attackRange\?\.entries\?\.length/);
  assert.match(calc,/const attackRange=attackRangePreview\(\{records:combinedRecords,itemForth,/);
+ assert.match(book,/calc\?\.attackRange\?\.baseRanged/);
 });
 
 test('official base distance is typed by equipped weapon, without multiplying speculative gear bonuses',()=>{
@@ -71,5 +69,5 @@ test('base() passes eligible weapon source range to the 43-result book but never
  assert.equal(out.attackRange.baseMelee,null);
  assert.equal(out.attackRange.baseOnly,true);
  assert.match(book,/calc\?\.attackRange\?\.baseRanged/);
- assert.match(book,/базовое значение OS в исходных единицах/);
+ assert.doesNotMatch(book,/базовое значение OS в исходных единицах/);
 });

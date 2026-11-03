@@ -60,16 +60,13 @@ test('Book has six localized chapters without repeating Path skill search',()=>{
  assert.doesNotMatch(book,/renderSkillInspector|stage-skill-inspector/);
 });
 
-test('honor dropdown and reward text use approved English names without altering stored honor IDs',()=>{
+test('honor dropdown still uses localized title names while results show only totals',()=>{
  const root={};Function('window',read('pandora-os-character-calculator.js'))(root);
- assert.deepEqual(root.PandoraOSCalculator.honorTitles.map(x=>x.id),
-  Array.from({length:14},(_,i)=>i));
- assert.equal(root.PandoraOSCalculator.honorTitles[1].en,'Curiosity to strength');
+ const titles=root.PandoraOSCalculator.honorTitles;
+ assert.deepEqual(titles.map(x=>x.id),Array.from({length:14},(_,i)=>i));
+ assert.equal(titles[1].en,'Curiosity to strength');
  assert.match(book,/honorTitles.map\(x=>\[x.id,english\?x.en:x.ru\]\)/);
- assert.match(book,/Honor title: '\+honor.en:'Титул чести: '\+honor.ru/);
- for(const name of ['allAttributes','healingSkills','attackPercent','fireMagic',
-  'castingResist','incomingCriticalDamage','rangedDodge','frontAttack']){
-  assert.match(book,new RegExp(name+":'[^']+'"),name);
- }
- assert.match(book,/honorEnglishLabels\[key\]:labels\[key\]\|\|key/);
+ assert.match(book,/row\('ОЗ','HP',calc\?\.hp\)/);
+ assert.match(book,/row\('Защита','Defense',c.defense\?\.known\)/);
+ assert.doesNotMatch(book,/honorEnglishLabels\[key\]/);
 });
