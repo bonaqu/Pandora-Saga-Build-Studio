@@ -3444,10 +3444,6 @@ function renderWiki(root){
         list.append(entry);
        }
        detail.append(list);
-      }else if(rec.virtual){
-       detail.append(h('p',{class:'muted',
-        text:wt('Подтверждённых сведений о NPC пока нет.',
-         'No verified NPC data available yet.')}));
       }
       if(rec.placeType==='astir-district'&&rec.virtual&&adminEditing&&adminToken){
        const add=h('button',{type:'button',class:'wiki-owner-plus',
