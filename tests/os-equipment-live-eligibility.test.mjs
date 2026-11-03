@@ -21,8 +21,8 @@ test('saved equipment still exists but its source restrictions control whether e
  assert.equal(eligible(hat,'head','WARRIOR',38),true);
  assert.equal(hat.effects.find(e=>e.func==='EP_MAXLIFE_CONST').a,50);
  const original=read('pandora-studio-app.js');
- assert.match(original,/if\(!item\|\|equipmentIssue\(item,Number\(slot\)\)\.length\)continue/);
- assert.match(original,/const weapon=selectedWeapon&&!equipmentIssue\(selectedWeapon,0\)\.length\?selectedWeapon:null/);
+ assert.match(original,/if\(!item\|\|equipmentIssue\(item,Number\(slot\),snap\)\.length\)continue/);
+ assert.match(original,/const weapon=selectedWeapon&&!equipmentIssue\(selectedWeapon,0,snap\)\.length\?selectedWeapon:null/);
  assert.match(original,/issue:equipmentIssue\(rec,Number\(slot\)\)/);
  assert.match(original,/issue\.length\?' unavailable':'/);
  assert.match(read('pandora-studio-hero-book.js'),/Не действует: /);
@@ -62,5 +62,5 @@ test('authentic OS two-handed swords suppress shield while retaining future buil
  assert.match(app,/if\(slot===1&&item\.slot==='shield'\)/);
  assert.match(app,/PandoraEquipmentPlan\.occupiesOffhand\(weapon,Boolean\(usable\)\)/);
  assert.match(app,/Двуручное оружие занимает обе руки/);
- assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\)\)\.length\)continue/);
+ assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\),snap\)\.length\)continue/);
 });
