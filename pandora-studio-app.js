@@ -927,6 +927,10 @@ function renderStageAttributes(){
    .map(row=>({...row,nameEn:officialEnglish?.skills?.[String(row.id)]?.n||row.name})),
   itemById:id=>catalogSource?.items?.[String(id)]||null,
   onItem:id=>openWiki('item',String(id)),
+  copy:override,canEdit:Boolean(adminEditing&&adminToken),
+  onTextEdit:(node,key,field,initial)=>editWikiValue(node,initial,{
+   type:'text',onCommit:value=>saveGuidePatch('book.'+key,{[field]:value})}),
+  onHonor:()=>openWiki('honor','overview'),
   onBuff:(key,value)=>setAttributeBuff(key,value),
   onVital:(key,value)=>setVitalsEnhancement(key,value),
   onClose:()=>{
@@ -1441,6 +1445,7 @@ async function loadWiki(){
    }catch{/* Damaged overrides must not break the original encyclopedia. */}
   }
   const source={...loaded.data,skills,ownerAcquisitions,
+   maps:{...loaded.data.maps,...(window.PandoraHistoricalMaps?.records()||{})},
    trades:window.PandoraStudioTradeOwnerData.apply(
     loaded.data.trades,loaded.data.items,override),
    items:window.PandoraStudioItemOwnerEditor.applyItems(loaded.data.items,override)};
@@ -2965,6 +2970,9 @@ function renderWiki(root){
      if(adminEditing&&adminToken&&(type==='instance'||Object.hasOwn(wikiData.maps||{},id))){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
+       if(type==='map'&&rec.historic){
+        await saveWikiRecordField('map',id,'mobs',next.map(Number));return;
+       }
        const before=mobs.map(String),after=next.map(String);
        const added=after.find(x=>!before.includes(x));
        const removed=before.find(x=>!after.includes(x));
@@ -2972,7 +2980,7 @@ function renderWiki(root){
        else if(removed)await saveWikiSpawns(removed,type,id,false);
       }}));
     }
-    if(mobs.length){
+    if(mobs.length&&!rec.reportedSpawns){
      const roster=mobs.map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}));
      const levels=roster.map(row=>row.mon?.level).filter(Number.isFinite);
      const levelRange=levels.length?' · ур. '+Math.min(...levels)+
@@ -3038,7 +3046,7 @@ function renderWiki(root){
         text:wt('Подтверждённых сведений о NPC пока нет.',
          'No verified NPC data available yet.')}));
       }
-      if(rec.virtual&&adminEditing&&adminToken){
+      if(rec.placeType==='astir-district'&&rec.virtual&&adminEditing&&adminToken){
        const add=h('button',{type:'button',class:'wiki-owner-plus',
         text:wt('+ Добавить NPC','+ Add NPC')});
        add.onclick=()=>{
@@ -4220,6 +4228,38 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  node.replaceChildren(control);control.focus();
  if(type==='number')control.select();
  else if(type==='text')window.getSelection()?.selectAllChildren(control);
+}
+async function saveGuidePatch(key,fields){
+ if(!adminEditing||!adminToken||!window.PandoraHonorGuide)
+  throw Error('Редактор справочника недоступен');
+ const overrideKey='guideedit.'+key,before=activeOverride(overrideKey);
+ let old={};try{old=JSON.parse(before||'{}')}catch{}
+ const patch={...(old&&typeof old==='object'&&!Array.isArray(old)?old:{}),...fields};
+ const serialized=JSON.stringify(patch);
+ if(!window.PandoraHonorGuide.validOverride(key,serialized))
+  throw Error('Некорректный текст справочника');
+ if(serialized===before)return;
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
+  override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
+  if(activeTab==='wiki'&&wikiSelection.type==='honor')renderDetails();
+  else renderStageAttributes();
+ }finally{editIsSaving=false;refreshOwnerUI()}
+}
+async function saveGuideList(key,rows){
+ if(!['honor.zones','honor.wars'].includes(key)||!Array.isArray(rows))
+  throw Error('Неизвестный список');
+ const overrideKey='guideedit.'+key,before=activeOverride(overrideKey),value=JSON.stringify(rows);
+ if(!window.PandoraHonorGuide?.validOverride(key,value))
+  throw Error('Проверь названия, ID и связи списка');
+ if(value===before)return;
+ editIsSaving=true;
+ try{
+  await apiRequest('/api/admin/override',{key:overrideKey,value});
+  override[overrideKey]=value;ownerEdits.push({key:overrideKey,before,after:value});
+  if(activeTab==='wiki'&&wikiSelection.type==='honor')renderDetails();
+ }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveWikiRecordPatch(type,id,updates){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
