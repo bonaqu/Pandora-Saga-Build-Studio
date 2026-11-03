@@ -31,5 +31,5 @@ test('UI shows only final combat values in localized compact tiles',()=>{
  assert.match(source,/label\('Уклонение','Evasion'\)/);
  assert.doesNotMatch(source,/appendCombatFormulas|combatFormulaRows|stage-combat-formulas/);
  assert.doesNotMatch(source,/Показать расчёт по составляющим|Show calculation breakdown/);
- assert.doesNotMatch(source,/Процентная точность вещей|Базовая защита снаряжения:/);
+ assert.doesNotMatch(source,/cm\.accuracy\.percentage|df\.refinement/);
 });

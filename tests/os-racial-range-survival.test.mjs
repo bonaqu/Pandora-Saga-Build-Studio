@@ -100,9 +100,9 @@ test('wrong skill IDs and malformed/missing current OS source fail closed',()=>{
 
 test('Hero Book exposes source value with partial-warning notes in both locales',()=>{
  const book=read('pandora-studio-hero-book.js');
- assert.match(book,/modifiers\?\.attackRange\?\.racialGeneral/);
- assert.match(book,/Расовая дальность эльфа/);
- assert.match(book,/один расовый бонус, а не их сумма/);
+ assert.doesNotMatch(book,/modifiers\?\.attackRange\?\.racialGeneral/);
+ assert.match(book,/calc\?\.attackRange\?\.baseRanged/);
+ assert.ok(C.racialUtilityPreview({racialPassiveId:900020002,skillCatalog:skills}));
  assert.match(book,/modifiers\?\.racialEffects\?\.survival/);
  assert.match(book,/Упрямое сердце:/);
  assert.match(book,/не постоянные ОЗ, броня или гарантированное спасение/);

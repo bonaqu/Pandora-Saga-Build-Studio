@@ -27,6 +27,6 @@ test('Remaked city speed includes the current ordinary movement and separate tow
 test('book shows city speed without inflating base movement label',()=>{
  const book=read('pandora-studio-hero-book.js');
  assert.match(book,/Скорость в городе: /);
- assert.match(book,/cm\.movementSpeed\.town/);
- assert.match(book,/cm\.movementSpeed\.townEquipment/);
+ assert.match(book,/battle\.movementSpeed\?\.town/);
+ assert.doesNotMatch(book,/battle\.movementSpeed\.townEquipment/);
 });

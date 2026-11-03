@@ -47,5 +47,5 @@ test('stage includes distinct skill healing, standing recovery and external rege
  const stage=get('pandora-studio-hero-book.js');
  assert.match(stage,/modifiers\?\.healingSkill/);
  assert.match(stage,/modifiers\?\.recoveryAmount/);
- assert.match(stage,/mpRecoveryEquipmentRate/);
+ assert.match(stage,/regen\.mp\?\.total/);
 });
