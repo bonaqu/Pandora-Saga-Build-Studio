@@ -494,7 +494,7 @@ function buffsPage(body,options){
  const honor=section(english?'Honor':'Честь','honor');
  const honorTerm=make('span',{class:'stage-honor-term',text:english?'passive skill':'пассивное умение'});
  const honorHeading=honor.firstChild||honor.children?.[0];
- if(honorHeading)honorHeading.append(' · ',honorTerm);
+ if(honorHeading)honorHeading.append(make('span',{text:' · '}),honorTerm);
  guideLabel(honorTerm,'buffs.honor',english?'passive skill':'пассивное умение',
   'passive skill',options);
  select(honor,english?'Honor passive skill':'Пассивное умение за честь',
