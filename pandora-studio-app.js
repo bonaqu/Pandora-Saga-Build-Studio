@@ -2280,6 +2280,35 @@ function renderWiki(root){
      }
     }
    }
+   if(type==='npc'&&rec.ownerCreated&&window.PandoraWikiOwnerData.ownerNpcId(id)&&
+     adminEditing&&adminToken){
+    const button=h('button',{type:'button',class:'wiki-owner-remove wiki-owner-delete-record',
+     text:wt('Удалить созданного NPC','Delete created NPC')});
+    button.onclick=async()=>{
+     const linked=Object.values(wikiIndex.records('map')||{}).some(loc=>
+      (loc.npcs||[]).some(x=>String(x)===String(id))||
+      (loc.extraSections||[]).some(group=>
+       group.kind==='npc'&&(group.entries||[]).some(x=>String(x)===String(id))));
+     if(linked){
+      showStudioToast(wt('Сначала убери ссылки на NPC из локаций и разделов.',
+       'Remove NPC references from maps and custom sections before deletion.'),'warning');
+      return;
+     }
+     if(!confirm(wt('Удалить созданного вручную NPC из Cloudflare D1?',
+      'Delete this owner-created NPC from Cloudflare D1?')))return;
+     const key='wikiedit.npc.'+id,before=activeOverride(key);
+     if(before===null)return;
+     button.disabled=true;
+     try{
+      await apiRequest('/api/admin/reset',{key});
+      delete override[key];ownerEdits.push({key,before,after:null});
+      wikiSelection={type:'npc',id:null,highlight:null};wikiSearch='';
+      await refreshOwnerCatalog();refreshOwnerUI();
+     }catch(error){button.disabled=false;showStudioToast(
+      'Удаление не выполнено: '+error.message,'warning')}
+    };
+    detail.append(button);
+   }
    const namesakes=wikiIndex.sameName(type,id);
    if(namesakes.length)detail.append(h('small',{class:'wiki-variant-note',
     text:wt('Есть другие варианты с таким названием','Other entries share this name')}));
@@ -5029,12 +5058,15 @@ async function saveWikiRelationRows(kind,id,rows){
 function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000000000}={}){
  if(!adminToken||!adminEditing)return node;
  node.classList.add('wiki-edit-value');
- node.title='Двойной клик — изменить';
- node.ondblclick=e=>{
+ node.title='Двойной клик или F2 — изменить';
+ node.tabIndex=0;
+ const start=e=>{
   e.preventDefault();e.stopPropagation();
   editWikiValue(node,Number(value),{type:'number',min,max,integer,
    onCommit:next=>saveWikiRecordField(type,id,field,next)});
  };
+ node.ondblclick=start;
+ node.onkeydown=e=>{if(e.key==='Enter'||e.key==='F2')start(e)};
  return node;
 }
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
