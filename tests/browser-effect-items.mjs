@@ -39,6 +39,8 @@ export async function runEffectItemsSmoke(browser,base){
   assert.match(poisonDetails,/Скороговорка/);
   assert.match(poisonDetails,/техническая запись «Яд»/);
   assert.match(poisonDetails,/×1/);
+  assert.equal(await page.locator('a[href="#wiki/skill/500000004"]').count(),1,
+   'Technical Poison skill must open as a separate verified wiki record');
   await selectGroup('cure');
   assert.equal(await page.locator('[data-wiki-record]').count(),10);
   for(const id of ['50016','50057','50065'])
@@ -68,6 +70,8 @@ export async function runEffectItemsSmoke(browser,base){
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-effect-type').waitFor({state:'visible'});
+  assert.equal(await page.locator('.wiki-effect-type option:checked').innerText(),'Needs verification');
+  await page.locator('.wiki-effect-type').selectOption('other');
   assert.equal(await page.locator('.wiki-effect-type option:checked').innerText(),'Other usable items');
   await page.locator('.wiki-effect-type').selectOption('harmful');
   assert.equal(await page.locator('[data-wiki-record]').count(),2);
