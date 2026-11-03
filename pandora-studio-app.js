@@ -2217,14 +2217,15 @@ function renderWiki(root){
   const visible=selectedIndex>=wikiShown?
    [results[selectedIndex],...results.slice(0,wikiShown)]:results.slice(0,wikiShown);
   if(!detailOnly){
-   browse.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
+   const batch=document.createDocumentFragment();
+   batch.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
    let lastPlaceGroup=null;
    for(const [id,rec]of visible){
     if(type==='map'&&!wikiSearch){
      const geo=window.PandoraAstirLocations;
      const group=geo?.district(id)?'city':geo?.country(id)?'nation':'other';
      if(group!==lastPlaceGroup){
-      browse.append(h('h4',{class:'wiki-location-list-heading',text:{
+      batch.append(h('h4',{class:'wiki-location-list-heading',text:{
        city:wt('Город Астир · районы','Astir city · districts'),
        nation:wt('Государства','Nations'),
        other:wt('Другие локации','Other locations')
@@ -2238,12 +2239,13 @@ function renderWiki(root){
      row.classList.add('selected');
      row.setAttribute('aria-current','page');
     }
-    browse.append(row);
+    batch.append(row);
    }
    if(results.length>wikiShown){
-    browse.append(h('button',{type:'button',class:'wiki-more',text:(lang==='en'?'Show more ':'Показать ещё ')+Math.min(100,results.length-wikiShown)+' / '+(results.length-wikiShown),
+    batch.append(h('button',{type:'button',class:'wiki-more',text:(lang==='en'?'Show more ':'Показать ещё ')+Math.min(100,results.length-wikiShown)+' / '+(results.length-wikiShown),
      onclick:()=>{wikiShown+=100;draw()}}));
    }
+   browse.append(batch);
    browse.scrollTop=selectedIndex>=wikiShown?0:previousScroll;
   }else{
    browse.querySelectorAll('[data-wiki-record]').forEach(row=>{
