@@ -2217,14 +2217,15 @@ function renderWiki(root){
   const visible=selectedIndex>=wikiShown?
    [results[selectedIndex],...results.slice(0,wikiShown)]:results.slice(0,wikiShown);
   if(!detailOnly){
-   browse.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
+   const batch=document.createDocumentFragment();
+   batch.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
    let lastPlaceGroup=null;
    for(const [id,rec]of visible){
     if(type==='map'&&!wikiSearch){
      const geo=window.PandoraAstirLocations;
      const group=geo?.district(id)?'city':geo?.country(id)?'nation':'other';
      if(group!==lastPlaceGroup){
-      browse.append(h('h4',{class:'wiki-location-list-heading',text:{
+      batch.append(h('h4',{class:'wiki-location-list-heading',text:{
        city:wt('Город Астир · районы','Astir city · districts'),
        nation:wt('Государства','Nations'),
        other:wt('Другие локации','Other locations')
@@ -2238,12 +2239,13 @@ function renderWiki(root){
      row.classList.add('selected');
      row.setAttribute('aria-current','page');
     }
-    browse.append(row);
+    batch.append(row);
    }
    if(results.length>wikiShown){
-    browse.append(h('button',{type:'button',class:'wiki-more',text:(lang==='en'?'Show more ':'Показать ещё ')+Math.min(100,results.length-wikiShown)+' / '+(results.length-wikiShown),
+    batch.append(h('button',{type:'button',class:'wiki-more',text:(lang==='en'?'Show more ':'Показать ещё ')+Math.min(100,results.length-wikiShown)+' / '+(results.length-wikiShown),
      onclick:()=>{wikiShown+=100;draw()}}));
    }
+   browse.append(batch);
    browse.scrollTop=selectedIndex>=wikiShown?0:previousScroll;
   }else{
    browse.querySelectorAll('[data-wiki-record]').forEach(row=>{
@@ -4093,14 +4095,16 @@ function renderWiki(root){
 }
 
 function renderProfile(root){
+ const tr=(ru,en)=>lang==='en'?en:ru;
+ const raceName=races[state.race]?.[lang==='en'?1:0]||races[state.race]?.[0]||'';
  const profile=state.profile&&typeof state.profile==="object"?state.profile:{};
  const view=h("div",{class:"ps-profile-grid"});
  const left=h("section",{class:"ps-profile-art"});
- left.append(h("img",{src:raceSource(state.race,state.gender),alt:"Облик расы "+races[state.race][0]}),
- h("strong",{text:state.name||"Без имени"}),h("small",{text:races[state.race][0]+" · "+jobs[state.job]+" · "+state.level+" ур."}));
+ left.append(h("img",{src:raceSource(state.race,state.gender),alt:tr("Облик расы ","Race appearance: ")+raceName}),
+ h("strong",{text:state.name||tr("Без имени","Unnamed hero")}),h("small",{text:raceName+" · "+jobs[state.job]+" · "+state.level+tr(" ур."," lvl.")}));
  const right=h("section",{class:"ps-profile-info"});
- const fields=[["name","Имя героя",state.name||"",64],["guild","Гильдия",profile.guild||"",80],
- ["nation","Нация",profile.nation||"",80],["rank","Ранг",profile.rank||"",80]];
+ const fields=[["name",tr("Имя героя","Hero name"),state.name||"",64],["guild",tr("Гильдия","Guild"),profile.guild||"",80],
+ ["nation",tr("Нация","Nation"),profile.nation||"",80],["rank",tr("Ранг","Rank"),profile.rank||"",80]];
  for(const [key,label,value,max]of fields){
    const row=h("label",{class:"ps-profile-row"});
    const input=h("input",{type:"text",maxLength:String(max),value,"aria-label":label,placeholder:label});
@@ -4112,17 +4116,18 @@ function renderProfile(root){
    row.append(h("span",{text:label}),input);right.append(row);
  }
  const bio=h("label",{class:"ps-profile-row ps-profile-bio"});
- const description=h("textarea",{rows:"5",maxLength:"500",placeholder:"Описание героя — сохраняется в билде","aria-label":"О себе"});
+ const description=h("textarea",{rows:"5",maxLength:"500",placeholder:tr("Описание героя — сохраняется в билде","Hero bio — saved with the build"),"aria-label":tr("О себе","About")});
  description.value=typeof profile.about==="string"?profile.about:"";
  description.addEventListener("input",()=>{state.profile??={};state.profile.about=description.value;persist()});
- bio.append(h("span",{text:"О себе"}),description);right.append(bio);
- right.append(h("p",{class:"muted",text:"Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах."}));
+ bio.append(h("span",{text:tr("О себе","About")}),description);right.append(bio);
+ right.append(h("p",{class:"muted",text:tr("Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах.","Profile fields are notes saved with the build. Nation, honor and rank are not verified against the game server and do not affect calculations.")}));
  view.append(left,right);root.append(view);
 }
 function renderCharacter(root){
+ const tr=(ru,en)=>lang==='en'?en:ru;
  if(characterPanelTab!=='profile')characterPanelTab='character';
- const tabs=h("div",{class:"ps-character-tabs",role:"tablist","aria-label":"Окно персонажа"});
- const selection=[["character","Персонаж"],["profile","Профиль"]];
+ const tabs=h("div",{class:"ps-character-tabs",role:"tablist","aria-label":tr("Окно персонажа","Character panel")});
+ const selection=[["character",tr("Персонаж","Character")],["profile",tr("Профиль","Profile")]];
  for(const[key,label]of selection){
   tabs.append(h("button",{role:"tab","aria-selected":String(characterPanelTab===key),class:characterPanelTab===key?"chosen":"",
    text:label,onclick:()=>{characterPanelTab=key;renderDetails()}}));
@@ -4132,14 +4137,14 @@ function renderCharacter(root){
  if(characterPanelTab==="profile")renderProfile(body);
  else{
   const cards=h("div",{class:"ps-overview-grid"});
-  cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:"Раса"}),h("strong",{text:races[state.race][0]})]),
-   h("div",{class:"ps-overview-card"},[h("span",{text:"Профессия"}),h("strong",{text:jobs[state.job]})]),
-   h("div",{class:"ps-overview-card"},[h("span",{text:"Уровень"}),h("strong",{text:String(state.level)})]));
+  cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:tr("Раса","Race")}),h("strong",{text:races[state.race][lang==='en'?1:0]})]),
+   h("div",{class:"ps-overview-card"},[h("span",{text:tr("Профессия","Class")}),h("strong",{text:jobs[state.job]})]),
+   h("div",{class:"ps-overview-card"},[h("span",{text:tr("Уровень","Level")}),h("strong",{text:String(state.level)})]));
   body.append(cards);
   const racialTitle=h('div',{class:'subhead',text:'✦ '+(lang==='en'?'Racial passive — choose one':'Расовая пассивка — выбери одну из трёх')});
   const passivePicker=h('div',{class:'race-passive-picker'});
   const passives=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
-  if(!passives.length)passivePicker.append(h('p',{class:'muted',text:'Загружаю расовые способности…'}));
+  if(!passives.length)passivePicker.append(h('p',{class:'muted',text:tr('Загружаю расовые способности…','Loading racial abilities…')}));
   for(const id of passives){
     const skill=catalog.skills?.[id],selected=String(state.racialPassiveId)===String(id);
     if(!skill)continue;
@@ -4150,20 +4155,20 @@ function renderCharacter(root){
     const image=src?h('img',{src,alt:'',loading:'lazy'}):
      h('span',{text:'✦',class:'skill-fallback'});
     if(src)image.onerror=()=>image.replaceWith(h('span',{text:'✦',class:'skill-fallback'}));
-    button.append(image,h('strong',{text:skill.name}),h('span',{text:skill.desc||'Описание отсутствует'}),h('small',{text:selected?'✓ Выбрано':'Выбрать'}));
+    button.append(image,h('strong',{text:skill.name}),h('span',{text:skill.desc||tr('Описание отсутствует','No description')}),h('small',{text:selected?tr('✓ Выбрано','✓ Selected'):tr('Выбрать','Select')}));
     passivePicker.append(button);
   }
   body.append(racialTitle,passivePicker);
-  body.append(h("p",{class:"muted",text:"Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет."}));
+  body.append(h("p",{class:"muted",text:tr("Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет.","Train skills in Hero Path and allocate attributes in Origin; these values have no duplicate editor here.")}));
   const jump=h("div",{class:"ps-overview-actions"});
-  jump.append(h("button",{class:"button-action",text:"⚔ Путь героя · умения",onclick:()=>{
+  jump.append(h("button",{class:"button-action",text:tr("⚔ Путь героя · умения","⚔ Hero Path · skills"),onclick:()=>{
    closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
    $('pathSkillsTab')?.focus({preventScroll:true});
   }}));
-  jump.append(h("button",{class:"button-action",text:"✥ Базовые характеристики",onclick:()=>{
+  jump.append(h("button",{class:"button-action",text:tr("✥ Базовые характеристики","✥ Base attributes"),onclick:()=>{
    closeWorkbench();originActive='stats';renderOriginTabs();saveView();
   }}));
-  jump.append(h("button",{class:"button-action",text:"✎ Изменить профиль",onclick:()=>{
+  jump.append(h("button",{class:"button-action",text:tr("✎ Изменить профиль","✎ Edit profile"),onclick:()=>{
    characterPanelTab='profile';renderDetails();
   }}));
   body.append(jump);
@@ -4181,20 +4186,23 @@ function renderSkills(root){
 function itemName(r){return window.PandoraItemPresentation.displayName(
  r,lang==='en'?'Unnamed item':'Предмет без названия',lang)}
 function renderStats(root){
+ const tr=(ru,en)=>lang==='en'?en:ru;
+ const statName=i=>lang==='en'?['Vitality','Strength','Agility','Dexterity','Spirit','Intelligence'][i]:ORIGIN_STAT_LABELS[i].name;
  const icons=['♥','⚔','➶','✥','✦','❂'];
- const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:'Характеристики'});
- const points=h('div',{class:'stat-total'},[h('strong',{text:'—'}),h('span',{text:'Свободные очки'})]);
+ const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:tr('Характеристики','Attributes')});
+ const points=h('div',{class:'stat-total'},[h('strong',{text:'—'}),h('span',{text:tr('Свободные очки','Available points')})]);
  overview.append(header,points);root.append(overview);
  const grid=h('div',{class:'stat-grid'}),controls=[];
  function refresh(){
   const s=attributeSnapshot();
   points.querySelector('strong').textContent=s?String(s.remaining):'—';
-  points.querySelector('span').textContent=s?'Свободно из '+s.total:'Свободные очки';
+  points.querySelector('span').textContent=s?tr('Свободно из ','Available out of ')+s.total:tr('Свободные очки','Available points');
   overview.classList.toggle('over-budget',!!s?.overBudget);
+  const estimate=previewBaseStats();
   for(const v of controls){
    const invested=Number(state.stats[STATS[v.i]]||0),base=s?.base[v.i];
-   v.note.textContent=base===undefined?'':'База '+base+' + '+invested;
-   const estimate=previewBaseStats(),code=ORIGIN_STAT_LABELS[v.i].code;
+   v.note.textContent=base===undefined?'':tr('База ','Base ')+base+' + '+invested;
+   const code=ORIGIN_STAT_LABELS[v.i].code;
    v.total.textContent=base===undefined?'—':String(estimate?.stats?.[code]??(base+invested));
    v.range.value=String((base??0)+invested);v.exact.value=String((base??0)+invested);
    v.range.min=String(base??0);v.exact.min=String(base??0);
@@ -4203,22 +4211,22 @@ function renderStats(root){
    v.minus.disabled=!s||invested===0;
    v.plus.disabled=!window.PandoraAttributeProgression.allowed(s,v.i,invested+1);
    v.range.disabled=!s;v.exact.disabled=!s;
-   v.plus.setAttribute('aria-label','Увеличить '+ORIGIN_STAT_LABELS[v.i].name+'. Стоимость: '+(window.PandoraAttributeProgression.nextCost(s,v.i)??'максимум'));
+   v.plus.setAttribute('aria-label',tr('Увеличить ','Increase ')+statName(v.i)+tr('. Стоимость: ','. Cost: ')+(window.PandoraAttributeProgression.nextCost(s,v.i)??tr('максимум','maximum')));
   }
  }
  ORIGIN_STAT_LABELS.forEach((info,i)=>{
   const s=attributeSnapshot(),card=h('section',{class:'stat-card stat-visual-editor'});
   const head=h('div',{class:'stat-visual-head'},[
    h('span',{class:'stat-emblem',text:icons[i]}),
-   h('h3',{text:info.name}),h('span',{class:'stat-visual-cap',text:s?'Макс. '+s.max[i]:''})
+   h('h3',{text:statName(i)}),h('span',{class:'stat-visual-cap',text:s?tr('Макс. ','Max ')+s.max[i]:''})
   ]);
   const note=h('span',{class:'stat-base-note',text:''}),total=h('strong',{class:'stat-visual-value',text:'—'});
   const bar=h('div',{class:'stat-visual-progress'}),fill=h('div',{class:'stat-visual-fill'});
   bar.append(fill);
   const range=h('input',{type:'range',min:'0',max:'99',step:'1',value:'0',
-   'aria-label':info.name+' — вложено'});
+   'aria-label':statName(i)+tr(' — вложено',' — invested')});
   const exact=h('input',{type:'number',min:'0',max:'99',step:'1',value:'0',
-   'aria-label':'Точное значение '+info.name});
+   'aria-label':tr('Точное значение ','Exact value ')+statName(i)});
   const change=value=>{
    const snap=attributeSnapshot(),absolute=window.PandoraAttributeProgression.resolveAbsolute(snap,i,value);
    if(absolute===null||!setAttributePoints(i,absolute-snap.base[i])){refresh();return}

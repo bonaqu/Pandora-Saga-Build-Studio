@@ -146,3 +146,23 @@ test('owner acquisition relations extend both item and monster/NPC indexes witho
  assert.equal(source.drops[20].d.length,1);
  assert.equal(wiki.sources(55)[0].percent,5);
 });
+
+test('bilingual search normalizes aliases once per render and invalidates on a new resolver',()=>{
+ const w=ctx.window.PandoraWikiData.build({items:{
+  1:{name:'Первый меч'},2:{name:'Второй меч'},3:{name:'Третий меч'}},
+  trades:{npcs:{},trades:[],mapNames:{}},tables:{zoneDrops:[]}});
+ let calls=0;
+ const english=(id)=>{calls++;return ({1:'First Sword',2:'Second Sword',3:'Third Sword'})[id]};
+ assert.equal(w.search('item','sword',english).length,3);
+ assert.equal(calls,3,'all three aliases indexed once on first translated search');
+ assert.equal(w.search('item','first',english).length,1);
+ assert.equal(w.search('item','third',english).length,1);
+ assert.equal(calls,3,'search after another keystroke reuses normalized alias index');
+ let refreshed=0;
+ const next=(id)=>{refreshed++;return ({1:'One Blade',2:'Two Blades',3:'Three Blades'})[id]};
+ assert.equal(w.search('item','blade',next).length,3);
+ assert.equal(refreshed,3,'a new view/language resolver gets its own normalized aliases');
+ assert.equal(w.search('item','меч',english).length,3,'native names still use the source index');
+ assert.equal(w.search('item','',english).length,3);
+ assert.equal(calls,3,'empty query does not recompute translated aliases');
+});

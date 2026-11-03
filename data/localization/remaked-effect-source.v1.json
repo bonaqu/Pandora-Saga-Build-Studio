@@ -1,0 +1,1108 @@
+{
+  "schemaVersion": 1,
+  "auditDate": "2026-11-04",
+  "upstream": "bonaqu/Pandora-Saga-Simulator-remaked",
+  "upstreamRef": "bonaqu_projects",
+  "upstreamSource": "js/option.js · Name['Option'][index][4]",
+  "policy": "An index documents the Legacy/Remaked effect mapping; it does not automatically prove that a readable Studio label is an official in-game wording. Unmapped codes require independent game-source confirmation. Do not silently rewrite identifiers or mechanics.",
+  "total": 101,
+  "rows": [
+    {
+      "code": "EP_ABILITY_RESET",
+      "studioLabel": "Reset attributes",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_AGILITY_CONST",
+      "studioLabel": "Agility",
+      "remakedOptionIndex": 2,
+      "remakedEnglish": "AGI",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 36,
+        "souls": 4,
+        "itemForth": 25
+      }
+    },
+    {
+      "code": "EP_ALL_CRITICAL",
+      "studioLabel": null,
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "souls": 1
+      },
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
+    },
+    {
+      "code": "EP_ARMORCLASS_CONST",
+      "studioLabel": "Defense",
+      "remakedOptionIndex": 49,
+      "remakedEnglish": "DEF",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 7,
+        "itemForth": 70
+      }
+    },
+    {
+      "code": "EP_ARMORCLASS_SCALE",
+      "studioLabel": "Defense (%)",
+      "remakedOptionIndex": 49,
+      "remakedEnglish": "DEF",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "itemForth": 2
+      }
+    },
+    {
+      "code": "EP_ATTACK_BACKATK_RATE",
+      "studioLabel": "Back attack",
+      "remakedOptionIndex": 20,
+      "remakedEnglish": "Back+",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 2,
+        "itemForth": 15
+      }
+    },
+    {
+      "code": "EP_ATTACKINTERVAL_SCALE",
+      "studioLabel": "Attack speed (%)",
+      "remakedOptionIndex": 73,
+      "remakedEnglish": "ATK SPD",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 3,
+        "souls": 4,
+        "itemForth": 37
+      }
+    },
+    {
+      "code": "EP_AURADAMAGE_CONST",
+      "studioLabel": "Aura damage",
+      "remakedOptionIndex": 33,
+      "remakedEnglish": "Aura D",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1,
+        "itemForth": 10
+      }
+    },
+    {
+      "code": "EP_AURADAMAGE_SCALE",
+      "studioLabel": "Aura damage (%)",
+      "remakedOptionIndex": 33,
+      "remakedEnglish": "Aura D",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "itemForth": 10
+      }
+    },
+    {
+      "code": "EP_AVOIDANCE_CONST",
+      "studioLabel": "Evasion",
+      "remakedOptionIndex": 65,
+      "remakedEnglish": "Dodge",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 19,
+        "souls": 9
+      }
+    },
+    {
+      "code": "EP_BADEFFECT_TIME_CAST_SCALE",
+      "studioLabel": "G debuff",
+      "remakedOptionIndex": 80,
+      "remakedEnglish": "G debuff",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "itemForth": 12
+      }
+    },
+    {
+      "code": "EP_BADEFFECT_TIME_SCALE",
+      "studioLabel": "Negative effect duration",
+      "remakedOptionIndex": 162,
+      "remakedEnglish": "Debuff RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 2,
+        "souls": 1
+      }
+    },
+    {
+      "code": "EP_BLOCK_BREAK_RESIST",
+      "studioLabel": "Block break resistance",
+      "remakedOptionIndex": 133,
+      "remakedEnglish": "De-blocking",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1,
+        "itemForth": 3
+      }
+    },
+    {
+      "code": "EP_BOW_CARRY",
+      "studioLabel": "Bow carrying capacity",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_BOW_RANGE",
+      "studioLabel": "Bow range",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_BUFF_TOHIT_SCALE",
+      "studioLabel": "Debuff rate",
+      "remakedOptionIndex": 181,
+      "remakedEnglish": "debuff rate",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "itemForth": 12
+      }
+    },
+    {
+      "code": "EP_CAST_HEAL_LIFE_SCALE",
+      "studioLabel": "Healing power",
+      "remakedOptionIndex": 11,
+      "remakedEnglish": "%LP Heal",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 7,
+        "souls": 1,
+        "itemForth": 27
+      }
+    },
+    {
+      "code": "EP_CASTINGCANCEL_RESISTANCE_CONST",
+      "studioLabel": "Casting interruption resistance",
+      "remakedOptionIndex": 134,
+      "remakedEnglish": "Cast RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 8,
+        "souls": 2,
+        "itemForth": 10
+      }
+    },
+    {
+      "code": "EP_CHARM_RESISTANCE_CONST",
+      "studioLabel": "Charm resistance",
+      "remakedOptionIndex": 142,
+      "remakedEnglish": "Charm R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 12,
+        "souls": 4,
+        "itemForth": 4
+      }
+    },
+    {
+      "code": "EP_COLD_RESISTANCE_CONST",
+      "studioLabel": "Cold resistance",
+      "remakedOptionIndex": 139,
+      "remakedEnglish": "Ice R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 7,
+        "souls": 7,
+        "itemForth": 3
+      }
+    },
+    {
+      "code": "EP_CRITICAL_REGIST",
+      "studioLabel": "Critical resistance",
+      "remakedOptionIndex": 70,
+      "remakedEnglish": "Cri RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "itemForth": 10
+      }
+    },
+    {
+      "code": "EP_CRITICALRATE_CONST",
+      "studioLabel": "Critical hit chance",
+      "remakedOptionIndex": 69,
+      "remakedEnglish": "Cri",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 23,
+        "souls": 4,
+        "itemForth": 33
+      }
+    },
+    {
+      "code": "EP_DAMAGERATE_CONST",
+      "studioLabel": "Attack",
+      "remakedOptionIndex": 18,
+      "remakedEnglish": "MaxATK",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 18,
+        "itemForth": 25
+      }
+    },
+    {
+      "code": "EP_DAMAGERATE_SCALE",
+      "studioLabel": "Attack power (%)",
+      "remakedOptionIndex": 18,
+      "remakedEnglish": "MaxATK",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 2,
+        "souls": 1,
+        "itemForth": 31
+      }
+    },
+    {
+      "code": "EP_DARK_RESISTANCE_CONST",
+      "studioLabel": "Dark resistance",
+      "remakedOptionIndex": 144,
+      "remakedEnglish": "Dark R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 6,
+        "souls": 4,
+        "itemForth": 10
+      }
+    },
+    {
+      "code": "EP_DESTINE_WARDING",
+      "studioLabel": "Warding",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_DESTINED_POISON",
+      "studioLabel": "Applies Poison",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_DEXTERITY_CONST",
+      "studioLabel": "Dexterity",
+      "remakedOptionIndex": 3,
+      "remakedEnglish": "DEX",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 45,
+        "souls": 5,
+        "itemForth": 9
+      }
+    },
+    {
+      "code": "EP_ELEMENT_DAMAGE_SCALE",
+      "studioLabel": "Elemental damage (%)",
+      "remakedOptionIndex": 42,
+      "remakedEnglish": "MATK",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 30,
+        "souls": 2,
+        "itemForth": 51
+      }
+    },
+    {
+      "code": "EP_ELEMENT_DAMAGE_SCALE_FIRE",
+      "studioLabel": null,
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "itemForth": 4
+      },
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
+    },
+    {
+      "code": "EP_EXPERTISE_RESET",
+      "studioLabel": "Reset expertise",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_FIRE_RESISTANCE_CONST",
+      "studioLabel": "Fire resistance",
+      "remakedOptionIndex": 138,
+      "remakedEnglish": "Fire R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 8,
+        "souls": 7,
+        "itemForth": 11
+      }
+    },
+    {
+      "code": "EP_HEAL_LIFE",
+      "studioLabel": "Restore HP",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 12
+      }
+    },
+    {
+      "code": "EP_HEAL_LIFE_RATE",
+      "studioLabel": "Restore HP (%)",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_HEAL_LIFE_REGENERATOR",
+      "studioLabel": "HP regeneration",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_HEAL_MANA",
+      "studioLabel": "Restore MP",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 6
+      }
+    },
+    {
+      "code": "EP_HEAL_MANA_RATE",
+      "studioLabel": "Restore MP (%)",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_HEAL_TIME_SCALE",
+      "studioLabel": "MP recovery speed",
+      "remakedOptionIndex": 10,
+      "remakedEnglish": "MP Rec SPD",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 2,
+        "itemForth": 3
+      }
+    },
+    {
+      "code": "EP_HOLY_RESISTANCE_CONST",
+      "studioLabel": "Holy resistance",
+      "remakedOptionIndex": 143,
+      "remakedEnglish": "Light R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 2,
+        "souls": 4
+      }
+    },
+    {
+      "code": "EP_IMMUNE_BURN",
+      "studioLabel": "Burn resistance",
+      "remakedOptionIndex": 148,
+      "remakedEnglish": "Burn RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 22,
+        "souls": 3,
+        "itemForth": 2
+      }
+    },
+    {
+      "code": "EP_IMMUNE_CURSE",
+      "studioLabel": "Weakness resistance",
+      "remakedOptionIndex": 160,
+      "remakedEnglish": "Weak RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 6,
+        "souls": 2
+      }
+    },
+    {
+      "code": "EP_IMMUNE_DISEASE",
+      "studioLabel": "Disease resistance",
+      "remakedOptionIndex": 161,
+      "remakedEnglish": "Disease RES",
+      "source": "scripts/lib/current-effect-conversion.mjs",
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_IMMUNE_EVIL",
+      "studioLabel": "Curse resistance",
+      "remakedOptionIndex": 159,
+      "remakedEnglish": "Curse RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_IMMUNE_KNOCKBACK",
+      "studioLabel": "Knockback resistance",
+      "remakedOptionIndex": 153,
+      "remakedEnglish": "KB RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1,
+        "souls": 1,
+        "itemForth": 1
+      }
+    },
+    {
+      "code": "EP_IMMUNE_NUMB",
+      "studioLabel": "Freeze resistance",
+      "remakedOptionIndex": 150,
+      "remakedEnglish": "Frozen RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1,
+        "souls": 2,
+        "itemForth": 6
+      }
+    },
+    {
+      "code": "EP_IMMUNE_RAVING",
+      "studioLabel": "Madness resistance",
+      "remakedOptionIndex": 157,
+      "remakedEnglish": "Madness RES",
+      "source": "scripts/lib/current-effect-conversion.mjs",
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_IMMUNE_SILENCE",
+      "studioLabel": "Silence resistance",
+      "remakedOptionIndex": 158,
+      "remakedEnglish": "Silence RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 5,
+        "souls": 1,
+        "itemForth": 10
+      }
+    },
+    {
+      "code": "EP_IMMUNE_SLEEP",
+      "studioLabel": "Sleep resistance",
+      "remakedOptionIndex": 156,
+      "remakedEnglish": "Sleep RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 5,
+        "souls": 2,
+        "itemForth": 3
+      }
+    },
+    {
+      "code": "EP_IMMUNE_SPI_TYPE",
+      "studioLabel": "Spirit-based resistance",
+      "remakedOptionIndex": 147,
+      "remakedEnglish": "MDe-B R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 3,
+        "souls": 1
+      }
+    },
+    {
+      "code": "EP_IMMUNE_STUN",
+      "studioLabel": "Stun resistance",
+      "remakedOptionIndex": 149,
+      "remakedEnglish": "Stun RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 14,
+        "souls": 2,
+        "itemForth": 3
+      }
+    },
+    {
+      "code": "EP_IMMUNE_TUMBLE",
+      "studioLabel": "Knockdown resistance",
+      "remakedOptionIndex": 151,
+      "remakedEnglish": "KD RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 19,
+        "souls": 3,
+        "itemForth": 6
+      }
+    },
+    {
+      "code": "EP_IMMUNE_VIT_TYPE",
+      "studioLabel": "Vitality-based resistance",
+      "remakedOptionIndex": 146,
+      "remakedEnglish": "PDe-B R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 2,
+        "souls": 1
+      }
+    },
+    {
+      "code": "EP_INTELIGENCE_CONST",
+      "studioLabel": "Intelligence",
+      "remakedOptionIndex": 5,
+      "remakedEnglish": "INT",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 77,
+        "souls": 6,
+        "itemForth": 38
+      }
+    },
+    {
+      "code": "EP_LIGHTNING_RESISTANCE_CONST",
+      "studioLabel": "Lightning resistance",
+      "remakedOptionIndex": 140,
+      "remakedEnglish": "Thund R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 5
+      }
+    },
+    {
+      "code": "EP_MAGIC_RESISTANCE_CONST",
+      "studioLabel": "Magic resistance",
+      "remakedOptionIndex": 145,
+      "remakedEnglish": "Magic R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 33,
+        "souls": 1,
+        "itemForth": 27
+      }
+    },
+    {
+      "code": "EP_MASTERY_POTION",
+      "studioLabel": "Potion effectiveness",
+      "remakedOptionIndex": 8,
+      "remakedEnglish": "POT",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 1
+      }
+    },
+    {
+      "code": "EP_MAXLIFE_CONST",
+      "studioLabel": "Max HP",
+      "remakedOptionIndex": 6,
+      "remakedEnglish": "LP",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 72,
+        "souls": 6,
+        "itemForth": 117
+      }
+    },
+    {
+      "code": "EP_MAXLIFE_SCALE",
+      "studioLabel": "Max HP (%)",
+      "remakedOptionIndex": 6,
+      "remakedEnglish": "LP",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 2,
+        "itemForth": 33
+      }
+    },
+    {
+      "code": "EP_MAXMANA_CONST",
+      "studioLabel": "Max MP",
+      "remakedOptionIndex": 7,
+      "remakedEnglish": "MP",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 81,
+        "souls": 8,
+        "itemForth": 85
+      }
+    },
+    {
+      "code": "EP_MAXMANA_SCALE",
+      "studioLabel": "Max MP (%)",
+      "remakedOptionIndex": 7,
+      "remakedEnglish": "MP",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1,
+        "souls": 2,
+        "itemForth": 22
+      }
+    },
+    {
+      "code": "EP_MOVESPEED_SCALE",
+      "studioLabel": "Movement speed (%)",
+      "remakedOptionIndex": 74,
+      "remakedEnglish": "Move SPD",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1,
+        "souls": 1,
+        "itemForth": 12
+      }
+    },
+    {
+      "code": "EP_ONDAMAGE_ELEM_SCALE",
+      "studioLabel": "Magic resistance (%)",
+      "remakedOptionIndex": 60,
+      "remakedEnglish": "Mag RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 2,
+        "itemForth": 14
+      }
+    },
+    {
+      "code": "EP_ONDAMAGE_ELEM_SKILL_EXEC",
+      "studioLabel": "Elemental skill when hit",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_ONDAMAGE_FDS_RACE",
+      "studioLabel": null,
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "souls": 6
+      },
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
+    },
+    {
+      "code": "EP_ONDAMAGE_FIN_DAMAGE_CONST",
+      "studioLabel": "Physical damage resistance",
+      "remakedOptionIndex": 52,
+      "remakedEnglish": "Phy RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 1
+      }
+    },
+    {
+      "code": "EP_ONDAMAGE_FIN_DAMAGE_SCALE",
+      "studioLabel": "Damage taken (%)",
+      "remakedOptionIndex": 52,
+      "remakedEnglish": "Phy RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 16,
+        "souls": 4,
+        "itemForth": 21
+      }
+    },
+    {
+      "code": "EP_ONDAMAGE_REFLECTION",
+      "studioLabel": "Damage reflection",
+      "remakedOptionIndex": 135,
+      "remakedEnglish": "Reflect",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 2
+      }
+    },
+    {
+      "code": "EP_ONDAMAGE_SKILL_EXEC",
+      "studioLabel": "Skill when hit",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_ONDAMAGE_SKILL_EXEC_ATTACKER",
+      "studioLabel": "Skill against attacker when hit",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_ONHIT_SKILL_EXEC",
+      "studioLabel": "Skill on hit",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 5,
+        "souls": 6,
+        "itemForth": 44
+      }
+    },
+    {
+      "code": "EP_ONHIT_SKILL_EXEC_ATTACKER",
+      "studioLabel": "Skill against attacker on hit",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_ONHIT_STUN",
+      "studioLabel": "Stun on hit",
+      "remakedOptionIndex": 91,
+      "remakedEnglish": "Stun[F]",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_POISON_RESISTANCE_CONST",
+      "studioLabel": "Poison resistance",
+      "remakedOptionIndex": 141,
+      "remakedEnglish": "Poiso R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 1,
+        "souls": 3
+      }
+    },
+    {
+      "code": "EP_RACE_CARRY",
+      "studioLabel": "Racial carrying capacity",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_RACE_MANA_COSTCUT",
+      "studioLabel": "Racial MP cost reduction",
+      "remakedOptionIndex": 76,
+      "remakedEnglish": "Red MP",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 10,
+        "souls": 1,
+        "itemForth": 19
+      }
+    },
+    {
+      "code": "EP_RACE_RANGE",
+      "studioLabel": "Racial attack range",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_RACE_TOUGH_HEART",
+      "studioLabel": null,
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "souls": 1
+      },
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
+    },
+    {
+      "code": "EP_RANDOM_BOX",
+      "studioLabel": "Open random box",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 36
+      }
+    },
+    {
+      "code": "EP_RECOVERY_BURN",
+      "studioLabel": "Remove Burn",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 4
+      }
+    },
+    {
+      "code": "EP_RECOVERY_CURSE",
+      "studioLabel": "Remove Curse",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_RECOVERY_DISEASE",
+      "studioLabel": "Remove Disease",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 4
+      }
+    },
+    {
+      "code": "EP_RECOVERY_NUMB",
+      "studioLabel": "Remove Numbness",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 4
+      }
+    },
+    {
+      "code": "EP_RECOVERY_POISON",
+      "studioLabel": "Remove Poison",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_RECOVERY_RAVING",
+      "studioLabel": "Remove Confusion",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_RECOVERY_SILENCE",
+      "studioLabel": "Remove Silence",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 4
+      }
+    },
+    {
+      "code": "EP_RESTART",
+      "studioLabel": "Return",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
+      }
+    },
+    {
+      "code": "EP_RESTMAP_MOVESPEED_SCALE",
+      "studioLabel": "Movement speed in safe zones (%)",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_SKILL_BENCH",
+      "studioLabel": "Skill cooldown",
+      "remakedOptionIndex": 79,
+      "remakedEnglish": "Cooldown",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 7,
+        "souls": 1,
+        "itemForth": 30
+      }
+    },
+    {
+      "code": "EP_SKILL_DELAY",
+      "studioLabel": "Casting speed",
+      "remakedOptionIndex": 77,
+      "remakedEnglish": "Cast SPD",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 9,
+        "itemForth": 41
+      }
+    },
+    {
+      "code": "EP_SKILL_DELAY_FIN",
+      "studioLabel": "Casting speed (final)",
+      "remakedOptionIndex": 77,
+      "remakedEnglish": "Cast SPD",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 2
+      }
+    },
+    {
+      "code": "EP_SKILL_EQUIP_DAMAGERATE",
+      "studioLabel": "MaxATK",
+      "remakedOptionIndex": 18,
+      "remakedEnglish": "MaxATK",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "souls": 6
+      }
+    },
+    {
+      "code": "EP_SKILL_EXEC",
+      "studioLabel": "Activates skill",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 3
+      }
+    },
+    {
+      "code": "EP_SKILL_EXEC_BALM",
+      "studioLabel": "Activates consumable skill",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 46
+      }
+    },
+    {
+      "code": "EP_SKILL_EXEC_MAPIN",
+      "studioLabel": "Skill on map entry",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 9
+      }
+    },
+    {
+      "code": "EP_SPECIAL_WARDING_TYPE2",
+      "studioLabel": "DP damage",
+      "remakedOptionIndex": 182,
+      "remakedEnglish": "DP damage",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "itemForth": 5
+      }
+    },
+    {
+      "code": "EP_SPIRITUAL_CONST",
+      "studioLabel": "Spirit",
+      "remakedOptionIndex": 4,
+      "remakedEnglish": "SPR",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 57,
+        "souls": 6,
+        "itemForth": 15
+      }
+    },
+    {
+      "code": "EP_STRENGTH_CONST",
+      "studioLabel": "Strength",
+      "remakedOptionIndex": 1,
+      "remakedEnglish": "STR",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 56,
+        "souls": 6,
+        "itemForth": 85
+      }
+    },
+    {
+      "code": "EP_TOHIT_CONST",
+      "studioLabel": "Accuracy",
+      "remakedOptionIndex": 62,
+      "remakedEnglish": "Accuracy",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 30,
+        "souls": 4,
+        "itemForth": 77
+      }
+    },
+    {
+      "code": "EP_TOHIT_SCALE",
+      "studioLabel": "Accuracy (%)",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    },
+    {
+      "code": "EP_VITARITY_CONST",
+      "studioLabel": "Vitality",
+      "remakedOptionIndex": 0,
+      "remakedEnglish": "STA",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 40,
+        "souls": 4,
+        "itemForth": 57
+      }
+    },
+    {
+      "code": "EP_VOLUME_EXP",
+      "studioLabel": "Experience gained",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 1
+      }
+    }
+  ],
+  "upstreamCommit": "4e6abf98c914bfa761510f7e2710b1795aab2a3a"
+}
