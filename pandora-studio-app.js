@@ -3014,7 +3014,17 @@ function renderWiki(root){
       tagSection.append(h('h4',{text:wt('Теги локации','Location tags')}));
       const chips=h('div',{class:'wiki-map-tags'});
       for(const [i,tag]of tags.entries()){
-       const chip=h('span',{class:'wiki-map-kind wiki-map-tag',text:lang==='en'?tag.en:tag.ru});
+       const chip=h('span',{class:'wiki-map-kind wiki-map-tag'});
+       const label=h('span',{class:'wiki-map-tag-label',text:lang==='en'?tag.en:tag.ru});
+       if(ownerMap){
+        label.classList.add('wiki-honor-editable');label.tabIndex=0;
+        const field=lang==='en'?'en':'ru';
+        const start=()=>editWikiValue(label,tag[field],{type:'text',onCommit:value=>
+         saveWikiRecordField('map',id,'tags',tags.map((x,n)=>n===i?{...x,[field]:value}:x))});
+        label.addEventListener('dblclick',start);
+        label.addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();start()}});
+       }
+       chip.append(label);
        if(ownerMap)chip.append(h('button',{type:'button',class:'wiki-owner-remove',
         text:'×','aria-label':wt('Удалить тег','Remove tag')+' '+tag.ru,
         onclick:()=>void saveWikiRecordField('map',id,'tags',tags.filter((_,n)=>n!==i))
@@ -3269,6 +3279,15 @@ function renderWiki(root){
      for(const [index,group] of custom.entries()){
       const panel=h('section',{class:'wiki-map-section wiki-map-extra-section'});
       const head=h('h4',{text:lang==='en'?group.titleEn:group.titleRu});
+      if(ownerMap){
+       head.classList.add('wiki-honor-editable');head.tabIndex=0;
+       const key=lang==='en'?'titleEn':'titleRu';
+       const start=()=>editWikiValue(head,group[key],{type:'text',onCommit:value=>
+        saveWikiRecordField('map',id,'extraSections',custom.map((entry,i)=>
+         i===index?{...entry,[key]:value}:entry))});
+       head.addEventListener('dblclick',start);
+       head.addEventListener('keydown',e=>{if(e.key==='F2'){e.preventDefault();start()}});
+      }
       panel.append(head);
       if(ownerMap)panel.append(h('button',{type:'button',class:'wiki-owner-remove wiki-map-section-delete',
        text:wt('Удалить раздел','Remove section'),
