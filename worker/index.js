@@ -559,7 +559,9 @@ function validWikiOwnerPatch(text,type){
    Object.keys(v).length<=28&&Object.entries(v).every(([k,n])=>
     /^[A-Z_]{2,25}$/.test(k)&&n===1);
   if(key==='mobs')return ['map','instance'].includes(type)?validMonsterRefs(v,1000):checkIds(v);
-  if(key==='maps')return checkIds(v);
+  if(key==='maps')return type==='npc'?Array.isArray(v)&&v.length<=1000&&
+   new Set(v.map(String)).size===v.length&&v.every(x=>
+    validId(x)||townMapKey.test(String(x))||String(x)==='1001004'):checkIds(v);
   if(type==='monster'&&key==='loot')return Array.isArray(v)&&v.length<=120&&checkIds(v);
   if(type==='map'&&mapExtraNames.includes(key))return validMapExtra(key,v);
   if(key==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&
