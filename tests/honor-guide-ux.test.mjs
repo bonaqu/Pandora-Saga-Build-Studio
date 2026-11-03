@@ -17,6 +17,7 @@ test('43 distinct Summary statistics have compact RU/EN descriptions',()=>{
  assert.equal(rows.length,43);
  for(const [index,row] of rows.entries()){
   const copy=g.summary({},index,row.ru,row.en);
+  assert.ok(Object.hasOwn(g.hints,row.ru),'Missing dedicated RU/EN hint: '+row.ru);
   assert.equal(copy.ru,row.ru);
   assert.equal(copy.en,row.en);
   assert.ok(copy.hintRu.length>8&&copy.hintRu.length<=160,row.ru);
