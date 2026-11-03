@@ -415,7 +415,6 @@ body.studio-workbench-open #ownerDock{top:76px;bottom:auto;max-height:min(53vh,4
 .owner-dock-head [data-owner-collapse]{margin-left:auto;padding:5px 8px;
  min-height:28px;font:600 10px Manrope,Arial,sans-serif;white-space:nowrap}
 .owner-dock-collapsed{width:min(270px,calc(100vw - 24px));gap:5px}
-.owner-dock-collapsed .owner-dock-counters,
 .owner-dock-collapsed .owner-workflow-guide,
 .owner-dock-collapsed .owner-dock-actions,
 .owner-dock-collapsed .owner-dock-online{display:none}
