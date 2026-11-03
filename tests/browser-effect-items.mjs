@@ -15,6 +15,8 @@ export async function runEffectItemsSmoke(browser,base){
   const select=page.locator('.wiki-effect-type');
   await page.locator('[data-wiki-record="50022"]').waitFor({state:'visible',timeout:20000});
   assert.equal(await select.inputValue(),'all');
+  assert.equal(await page.locator('[data-wiki-record]').count(),67,
+   '71 source IDs collapse to 67 distinct visible entries (four exact duplicates)');
   const selectGroup=async type=>{
    await select.selectOption(type);
    await page.waitForFunction(value=>
@@ -35,20 +37,24 @@ export async function runEffectItemsSmoke(browser,base){
   assert.match(poisonDetails,/Создание яда/);
   assert.match(poisonDetails,/Яд/);
   await selectGroup('cure');
+  assert.equal(await page.locator('[data-wiki-record]').count(),10);
   for(const id of ['50016','50057','50065'])
    assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),1,id);
   await page.locator('[data-wiki-record="50016"]').click();
   assert.match(await page.locator('.wiki-effect-cure-note').innerText(),/один отрицательный эффект/);
   assert.match((await page.locator('.wiki-effect-usage').allInnerTexts()).join(' '),/Очищение/);
   await selectGroup('buff');
+  assert.equal(await page.locator('[data-wiki-record]').count(),52);
   for(const id of ['50001','50014','50065','90005'])
    assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),1,id);
   assert.equal(await page.locator('[data-wiki-record="50022"]').count(),0);
   await selectGroup('recovery');
+  assert.equal(await page.locator('[data-wiki-record]').count(),20);
   for(const id of ['50001','50023','50061','50065'])
    assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),1,id);
   assert.equal(await page.locator('[data-wiki-record="50014"]').count(),0);
   await selectGroup('other');
+  assert.equal(await page.locator('[data-wiki-record]').count(),5);
   for(const id of ['50066','90021','90053'])
    assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),1,id);
   await page.locator('#locale [data-locale="en"]').click();
