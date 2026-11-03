@@ -6,7 +6,7 @@ const id=x=>Number.isSafeInteger(Number(x))&&Number(x)>0&&/^[1-9][0-9]{0,14}$/.t
 const record=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const fields=Object.freeze({
  monster:['name','desc','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
- map:['name','nameEn','desc','descEn','mobs'],
+ map:['name','nameEn','desc','descEn','mobs','npcs','loot','tags','sections','extraSections'],
  npc:['name','nameEn','desc','descEn','maps','service','serviceEn','grid'],
  instance:['name','blurb','blurbRu','mobs'],
  skill:['name','desc','charLevel','mana','cast','cooldown','range','reqs','prereq','classes'],
@@ -15,6 +15,28 @@ const fields=Object.freeze({
 const resistKeys=['physical','fire','cold','lightning','poison','charm','magic','holy','dark'];
 const slots=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','neck','belt','ear','accessory'];
 const checkList=(x,max=1000)=>Array.isArray(x)&&x.length<=max&&new Set(x.map(String)).size===x.length&&x.every(id);
+// Optional encyclopedia-only sections do not change OS monster, item or zone records.
+const mapSectionKinds=['monsters','npcs','loot','tags','notes','custom'];
+const mapExtraKeys=['npcs','loot','tags','sections','extraSections'];
+const localized=(x,max=90)=>typeof x==='string'&&x.trim().length>0&&x.length<=max;
+function validMapExtra(key,v){
+ if(key==='npcs'||key==='loot')return checkList(v,120);
+ if(key==='tags')return Array.isArray(v)&&v.length<=16&&v.every(row=>
+  record(row)&&Object.keys(row).length===2&&localized(row.ru,70)&&localized(row.en,70));
+ if(key==='sections')return Array.isArray(v)&&v.length<=6&&
+  new Set(v).size===v.length&&v.every(k=>mapSectionKinds.includes(k));
+ if(key==='extraSections')return Array.isArray(v)&&v.length<=12&&
+  new Set(v.map(x=>x?.id)).size===v.length&&v.every(row=>
+   record(row)&&Object.keys(row).every(k=>
+    ['id','titleRu','titleEn','kind','entries','textRu','textEn'].includes(k))&&
+   /^section-[a-z0-9-]{1,34}$/.test(row.id)&&
+   localized(row.titleRu,100)&&localized(row.titleEn,100)&&
+   ['item','monster','npc','text'].includes(row.kind)&&
+   checkList(row.entries||[],60)&&
+   (row.textRu==null||typeof row.textRu==='string'&&row.textRu.length<=1200)&&
+   (row.textEn==null||typeof row.textEn==='string'&&row.textEn.length<=1200));
+ return false;
+}
 function validPatch(type,patch){
  if(!own(fields,type)||!record(patch))return false;
  const keys=Object.keys(patch);
@@ -34,6 +56,7 @@ function validPatch(type,patch){
    if(k==='classes')return record(v)&&Object.keys(v).length<=28&&
     Object.entries(v).every(([key,n])=>/^[A-Z_]{2,25}$/.test(key)&&n===1);
    if(k==='mobs'||k==='maps')return checkList(v,1000);
+   if(type==='map'&&mapExtraKeys.includes(k))return validMapExtra(k,v);
   if(k==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&v.every(x=>slots.includes(x));
   return number(v)&&v>=0;
  });
@@ -76,17 +99,21 @@ function validSpawns(rows){
 // User-curated city-only NPCs and maps use stable non-server IDs.
 // These patches live in the existing D1 overrides table, not in source game data.
 const historicalMapId=x=>['el-beht','astir-underground'].includes(String(x));
-const virtualMapId=x=>x==='1001004'||/^astir-(?:union|empire|kingdom)$/.test(String(x))||historicalMapId(x);
+const customMapId=x=>/^custom-[a-z0-9-]{6,42}$/.test(String(x));
+const ownerMapId=x=>historicalMapId(x)||customMapId(x);
+const virtualMapId=x=>x==='1001004'||/^astir-(?:union|empire|kingdom)$/.test(String(x))||ownerMapId(x);
 const virtualNpcId=x=>/^astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}$/.test(String(x));
 const homeFromId=x=>'astir-'+String(x).split('-')[2];
 function validTownPatch(type,key,patch){
  if(!(type==='map'?virtualMapId(key):type==='npc'&&virtualNpcId(key))||
   !record(patch))return false;
  const keys=Object.keys(patch);
- const allowed=type==='map'?['name','nameEn','desc','descEn',...(historicalMapId(key)?['mobs']:[])]:
+ const allowed=type==='map'?['name','nameEn','desc','descEn',...mapExtraKeys,...(ownerMapId(key)?['mobs']:[])]:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
- return keys.every(k=>k==='mobs'?checkList(patch.mobs,120):k==='maps'?
+ if(type==='map'&&customMapId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)))return false;
+ return keys.every(k=>mapExtraKeys.includes(k)?validMapExtra(k,patch[k]):
+  k==='mobs'?checkList(patch.mobs,120):k==='maps'?
   Array.isArray(patch.maps)&&patch.maps.length===1&&virtualMapId(patch.maps[0]):
   typeof patch[k]==='string'&&patch[k].length<=(k.startsWith('desc')?2000:240)&&
    (!['name','nameEn'].includes(k)||Boolean(patch[k].trim())));
@@ -97,15 +124,16 @@ function apply(data,overrides){
  const mut=(type)=>{clone();if(next[type]===data[type])next[type]={...data[type]};return next[type]};
  for(const [key,value] of Object.entries(overrides||{})){
   if(typeof value!=='string')continue;
-  let m=/^wikiedit\.(map\.(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground)|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})$/.exec(key);
+  let m=/^wikiedit\.(map\.(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground|custom-[a-z0-9-]{6,42})|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})$/.exec(key);
   if(m){
    const dot=m[1].indexOf('.'),type=m[1].slice(0,dot),idValue=m[1].slice(dot+1),patch=parse(value);
    if(!validTownPatch(type,idValue,patch))continue;
    clone();
    if(type==='map'){
-    if(historicalMapId(idValue)&&own(data.maps,idValue)){
+    if(ownerMapId(idValue)){
      const rows=mut('maps');
-     rows[idValue]={...rows[idValue],...patch,virtual:true};
+     rows[idValue]={...(rows[idValue]||{source:'owner',ownerCreated:true}),
+      ...patch,virtual:true,ownerCreated:customMapId(idValue)};
     }else{
      if(!next.townMaps)next.townMaps={};
      next.townMaps[idValue]={...(next.townMaps[idValue]||{}),...patch,virtual:true};
@@ -201,5 +229,5 @@ function apply(data,overrides){
  }
  return next;
 }
-root.PandoraWikiOwnerData=Object.freeze({apply,validPatch,validTownPatch,virtualMapId,virtualNpcId,validDrops,validChest,validSpawns,fields,resistKeys});
+root.PandoraWikiOwnerData=Object.freeze({apply,validPatch,validTownPatch,virtualMapId,customMapId,validMapExtra,virtualNpcId,validDrops,validChest,validSpawns,fields,resistKeys});
 })(typeof window==='undefined'?globalThis:window);
