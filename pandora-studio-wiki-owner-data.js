@@ -76,7 +76,8 @@ function validPatch(type,patch){
    if(k==='classes')return record(v)&&Object.keys(v).length<=28&&
     Object.entries(v).every(([key,n])=>/^[A-Z_]{2,25}$/.test(key)&&n===1);
    if(k==='mobs')return ['map','instance'].includes(type)?checkMonsterList(v,1000):checkList(v,1000);
-   if(k==='maps')return checkList(v,1000);
+   if(k==='maps')return type==='npc'?checkList(v,1000,x=>id(x)||virtualMapId(x)):
+    checkList(v,1000);
    if(type==='monster'&&k==='loot')return checkList(v,120);
    if(type==='map'&&mapExtraKeys.includes(k))return validMapExtra(k,v);
   if(k==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&v.every(x=>slots.includes(x));
