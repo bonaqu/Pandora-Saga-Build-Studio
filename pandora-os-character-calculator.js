@@ -34,7 +34,7 @@ function effectiveAbility(basic,flat=0,percent=0){
  return Math.max(1,basic+flat+Math.floor(basic*percent/100));
 }
 // Match current class-client integer-cents truncation instead of JS float drift.
-function classBase(classPart,level,attribute,key){
+function classBaseComponents(classPart,level,attribute,key){
  if(!classPart||!Number.isInteger(level)||level<1||
    !Number.isFinite(attribute)||attribute<0)return null;
  const parts=[classPart.base,classPart.lv,classPart[key]];
@@ -42,7 +42,11 @@ function classBase(classPart,level,attribute,key){
   return null;
  const cents=Math.round(classPart.base*100)+level*Math.round(classPart.lv*100)+
   attribute*Math.round(classPart[key]*100);
- return Math.floor(cents/100);
+ return {constant:classPart.base,levelRate:classPart.lv,attributeRate:classPart[key],
+  level,attribute,rawCents:cents,base:Math.floor(cents/100)};
+}
+function classBase(classPart,level,attribute,key){
+ return classBaseComponents(classPart,level,attribute,key)?.base??null;
 }
 // Parse only the explicit improvement clauses in the preserved OS item text.
 // These bonuses are absent from the base effects array; unknown prose is ignored.
@@ -2016,7 +2020,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   stats[key]=effectiveAbility(basic[key],effects.flat[key]+extra.flat[key]+(Number(supplementalFlat[key])||0),0);
  }
  const rawHp=classData.hp,rawMp=classData.mp;
- const hpBase=classBase(rawHp,level,stats.vit,'vit'),mpBase=classBase(rawMp,level,stats.spi,'spi');
+ const hpFormula=classBaseComponents(rawHp,level,stats.vit,'vit');
+ const mpFormula=classBaseComponents(rawMp,level,stats.spi,'spi');
+ const hpBase=hpFormula?.base??null,mpBase=mpFormula?.base??null;
  if(hpBase===null||mpBase===null)return null;
  const hpBonus=bonusFor('hp',hpBase,effects,enhancements);
  const mpBonus=bonusFor('mp',mpBase,effects,enhancements);
@@ -2142,7 +2148,8 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // An unavailable weapon/armor preview must NEVER erase otherwise valid HP/MP.
  if(!resistances||!regeneration)return null;
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
-  hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},resistanceSkills,
+  hpBase,mpBase,vitalsBonus:{hp:hpBonus,mp:mpBonus},
+  vitalFormulas:{hp:hpFormula,mp:mpFormula},resistanceSkills,
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
@@ -2153,7 +2160,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
- base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
+ base,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);

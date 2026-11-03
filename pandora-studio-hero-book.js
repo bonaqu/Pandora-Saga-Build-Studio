@@ -314,6 +314,63 @@ function summaryRows(calc){
    row('Сопр. магии','Magic',elements.magic,'%')]}
  ];
 }
+
+function vitalFormulaRows(calc){
+ const rows=[];
+ for(const [key,ru,en] of [['hp','ОЗ','HP'],['mp','ОМ','MP']]){
+  const formula=calc?.vitalFormulas?.[key],bonus=calc?.vitalsBonus?.[key];
+  if(!formula||!bonus||!Array.isArray(bonus.percentParts))continue;
+  if(![formula.constant,formula.levelRate,formula.attributeRate,formula.level,
+   formula.attribute,formula.rawCents,formula.base,bonus.flat,bonus.guildRate,
+   bonus.guild,bonus.lifeSign,bonus.total,calc?.[key],calc?.[key+'Base']]
+   .every(Number.isFinite))continue;
+  if(!bonus.percentParts.every(row=>Number.isFinite(row?.rate)&&
+   Number.isFinite(row?.amount)))continue;
+  const parts=[
+   {ru:'Плоские бонусы',en:'Flat bonuses',amount:bonus.flat},
+   ...bonus.percentParts.map((part,i)=>({
+    ru:'Процентный бонус '+(i+1)+' ('+part.rate+'%)',
+    en:'Percentage bonus '+(i+1)+' ('+part.rate+'%)',amount:part.amount
+   })),
+   {ru:'Гильдия ('+bonus.guildRate+'%)',
+    en:'Guild ('+bonus.guildRate+'%)',amount:bonus.guild},
+   ...(key==='hp'?[{ru:'Знак жизни',en:'Sign of Life',amount:bonus.lifeSign}]:[])
+  ];
+  const sum=parts.reduce((acc,part)=>acc+part.amount,0);
+  if(Math.floor(formula.rawCents/100)!==formula.base||
+   formula.base!==calc[key+'Base']||sum!==bonus.total||
+   formula.base+bonus.total!==calc[key])continue;
+  rows.push({key,ru,en,formula,parts,total:calc[key],bonus:bonus.total});
+ }
+ return rows;
+}
+function appendVitalFormulas(section,calc,english){
+ const rows=vitalFormulaRows(calc);
+ if(!rows.length)return;
+ const fmt=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:2});
+ const signed=value=>(value>0?'+':'')+fmt.format(value);
+ const details=make('details',{class:'stage-attribute-row stage-vital-formulas'});
+ details.append(make('summary',{text:english?
+  'How HP and MP are calculated':'Как рассчитываются ОЗ и ОМ'}));
+ for(const entry of rows){
+  const f=entry.formula,name=english?entry.en:entry.ru;
+  details.append(make('strong',{text:name}));
+  details.append(make('p',{text:(english?'Class base: floor(':'База класса: ⌊')+
+   fmt.format(f.constant)+' + '+f.level+' × '+fmt.format(f.levelRate)+
+   ' + '+f.attribute+' × '+fmt.format(f.attributeRate)+
+   (english?') = ':'⌋ = ')+fmt.format(f.base)}));
+  for(const part of entry.parts){
+   if(part.amount===0)continue;
+   details.append(make('p',{text:(english?part.en:part.ru)+': '+signed(part.amount)}));
+  }
+  details.append(make('p',{text:name+': '+fmt.format(f.base)+' '+
+   signed(entry.bonus)+' = '+fmt.format(entry.total)}));
+ }
+ details.append(make('small',{class:'stage-attribute-note',text:english?
+  'Class coefficients use integer hundredths. Each percentage bonus is rounded down independently. These are calculated build values, not proof of complete live-server parity.':
+  'Коэффициенты класса считаются в сотых. Каждый процентный бонус округляется вниз отдельно. Это расчёт билда, а не доказательство полной идентичности живому серверу.'}));
+ section.append(details);
+}
 function summaryPage(body,calc,onPage){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
   text:document.documentElement?.lang==='en'?'Stats appear after game data loads.':'Параметры появятся после загрузки игровых данных.'}));return}
@@ -342,6 +399,7 @@ function summaryPage(body,calc,onPage){
    ]));
   }
   section.append(heading,grid);
+  if(group.ru==='Жизнь и восстановление')appendVitalFormulas(section,calc,english);
   if(group.page==='attack'&&calc?.combat){
    section.append(make('small',{class:'stage-attribute-note',text:english?
     'Front accuracy and cast time use Remaked baseline calculations; positional equipment and active casting effects are not fully verified for OS.':
@@ -1550,5 +1608,5 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows});
+root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,vitalFormulaRows});
 })(typeof window==='undefined'?globalThis:window);
