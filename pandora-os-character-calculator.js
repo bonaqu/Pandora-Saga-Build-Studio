@@ -1561,21 +1561,27 @@ const statusCureCodesEn=Object.freeze({
  EP_RECOVERY_SILENCE:'Silence'
 });
 
-function statusCurePreview({items=null}={}){
+function statusCurePreview({items=null,skills=null}={}){
  if(!items||typeof items!=='object'||Array.isArray(items))return null;
  const rows=[];
  for(const [key,item] of Object.entries(items)){
   const id=Number(key);
   if(!Number.isSafeInteger(id)||id<0||!item||!Array.isArray(item.effects))continue;
-  const conditions=[...new Set(item.effects.filter(e=>
-   e&&e.dir==='TARGET'&&Object.hasOwn(statusCureCodes,e.func))
-   .map(e=>statusCureCodes[e.func]))];
-  if(conditions.length){
-   const conditionsEn=[...new Set(item.effects.filter(e=>
-    e&&e.dir==='TARGET'&&Object.hasOwn(statusCureCodesEn,e.func))
-    .map(e=>statusCureCodesEn[e.func]))];
-   rows.push({id,name:String(item.name||id),conditions,conditionsEn});
+  const targeted=item.effects.filter(e=>e?.dir==='TARGET');
+  const conditions=[...new Set(targeted.filter(e=>
+   Object.hasOwn(statusCureCodes,e.func)).map(e=>statusCureCodes[e.func]))];
+  const conditionsEn=[...new Set(targeted.filter(e=>
+   Object.hasOwn(statusCureCodesEn,e.func)).map(e=>statusCureCodesEn[e.func]))];
+  // An on-use item can trigger a cleansing skill instead of having an
+  // EP_RECOVERY_* modifier. Only a resolved EP_REMOVE_BAD_EFFECT proves it.
+  if(targeted.some(e=>e.func==='EP_SKILL_EXEC'&&
+   Number.isSafeInteger(e.a)&&skills?.[String(e.a)]?.funcs?.some(f=>
+    f.ep==='EP_REMOVE_BAD_EFFECT'&&f.dir==='TARGET'))){
+   conditions.push('Один отрицательный эффект');
+   conditionsEn.push('One negative status effect');
   }
+  if(conditions.length)rows.push({id,name:String(item.name||id),
+   conditions:[...new Set(conditions)],conditionsEn:[...new Set(conditionsEn)]});
  }
  rows.sort((a,b)=>a.id-b.id);
  return {rows,verified:false};
@@ -2117,7 +2123,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   benevolenceCap:classData.branchCaps?.benevolence??null,
   skillCatalog:combatContext.skillCatalog
  }):null;
- const statusCures=statusCurePreview({items:consumableItems});
+ const statusCures=statusCurePreview({items:consumableItems,skills:combatContext.skillCatalog});
  const harmfulConsumables=harmfulConsumablePreview({items:consumableItems});
  const consumableSkills=consumableSkillPreview({
   items:consumableItems,skills:combatContext.skillCatalog

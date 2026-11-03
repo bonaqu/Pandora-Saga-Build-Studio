@@ -19,6 +19,7 @@ import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
 import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 import {runBuildComparisonSmoke} from './browser-build-comparison.mjs';
+import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 
 const base='http://127.0.0.1:4173';
 const argv=new Set(process.argv.slice(2));
@@ -109,7 +110,8 @@ async function main(){
  const statusCures=page.locator('#stageAttributes .stage-status-cures');
  await statusCures.waitFor({state:'visible',timeout:20000});
  await statusCures.locator('summary').click();
- assert.equal(await statusCures.locator('.stage-potion-item').count(),9);
+ assert.equal(await statusCures.locator('.stage-potion-item').count(),10);
+  assert.match(await statusCures.innerText(),/Чудесное зелье/);
  assert.match(await statusCures.innerText(),/Панацея/);
  assert.match(await statusCures.innerText(),/Противоядие/);
  assert.ok(await page.locator('#stageAttributes .stage-consumable-skills').count()>0);
@@ -234,6 +236,7 @@ async function main(){
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
   ['honor-guide',runHonorGuideSmoke],
   ['build-comparison',runBuildComparisonSmoke],
+  ['effect-items',runEffectItemsSmoke],
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];

@@ -427,3 +427,12 @@ body.studio-workbench-open #ownerDock.owner-dock-collapsed{width:min(255px,calc(
   max-height:min(37vh,280px)}
  body.studio-workbench-open #ownerDock:not(.owner-dock-collapsed){right:7px;left:7px}
 }
+
+/* Source-backed on-use effects, crafting recipes and antidote links. */
+.wiki-effect-usage{display:flex;flex-wrap:wrap;gap:7px 11px;align-items:center;
+ margin:9px 0;padding:10px 12px;border:1px solid rgba(190,146,88,.28);
+ border-radius:8px;background:rgba(58,40,25,.35);font:12px/1.5 Manrope,Arial,sans-serif}
+.wiki-effect-usage>small,.wiki-effect-usage-row>small{color:#c6a980;font-size:11px}
+.wiki-effect-usage-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;width:100%}
+.wiki-effect-usage .wiki-link{overflow-wrap:anywhere}
+.wiki-effect-cure-note{border-left:3px solid #a0b99c;padding-left:10px}

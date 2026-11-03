@@ -1686,8 +1686,10 @@ function renderWiki(root){
   for(const [id,ru,en] of [
    ['all','Все предметы эффектов','All effect items'],
    ['buff','Дают положительные эффекты','Apply positive effects'],
+   ['recovery','Восстанавливают ОЗ/ОМ','Restore HP/MP'],
    ['cure','Снимают негативные эффекты','Remove negative effects'],
-   ['harmful','Дают отрицательные эффекты','Apply negative effects']]){
+   ['harmful','Дают отрицательные эффекты','Apply negative effects'],
+   ['other','Прочие активируемые предметы','Other usable items']]){
    const option=h('option',{value:id,text:wt(ru,en)});
    if(wikiEffectFilter===id)option.selected=true;
    filter.append(option);
@@ -2118,7 +2120,7 @@ function renderWiki(root){
    window.PandoraStudioRules.equipment(rec,{
     job:jobKeys[state.job],slot:rec.slot,level
    }).allowed&&window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender);
-  const utilityCategories=item=>window.PandoraWikiData.utilityCategories(item);
+  const utilityCategories=item=>window.PandoraWikiData.utilityCategories(item,wikiData?.skills);
   const isUtilityItem=item=>utilityCategories(item).length>0;
   const isVisibleItem=(item,kind)=>kind==='all'?true:
    kind==='equipment'?slotKeys.includes(item.slot):
@@ -2343,10 +2345,82 @@ function renderWiki(root){
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
    detail.append(description);
   }
-  if(type==='item'&&utilityCategories(rec).includes('harmful'))
-   detail.append(h('p',{class:'wiki-description wiki-harmful-consumable-note',
-    text:wt('При использовании отравляет персонажа, употребившего предмет: временный эффект отравления периодически наносит ему урон ядом. Урон за тик, интервал, длительность и шанс из данных OS не установлены.',
-     'Using this item poisons the character who consumed it: the temporary poison effect deals periodic poison damage to that character. Tick damage, interval, duration and chance are not established by the OS data.')}));
+  if(type==='item'){
+   const kinds=utilityCategories(rec),effects=Array.isArray(rec.effects)?rec.effects:[];
+   const activated=[...new Set(effects.filter(effect=>
+    effect?.dir==='TARGET'&&/^EP_SKILL_EXEC(?:_|$)/.test(effect.func||'')&&
+    wikiData.skills?.[String(effect.a)]).map(effect=>String(effect.a)))];
+   if(activated.length){
+    const used=h('div',{class:'wiki-effect-usage'});
+    used.append(h('small',{text:wt('При использовании активирует умения:',
+     'Skills activated on use:')}));
+    for(const skillId of activated)used.append(wikiLink(
+     dataName('skill',skillId),'skill',skillId));
+    detail.append(used);
+   }
+   if(kinds.includes('cure')&&activated.some(skillId=>
+    wikiData.skills?.[skillId]?.funcs?.some(effect=>
+     effect.ep==='EP_REMOVE_BAD_EFFECT'&&effect.dir==='TARGET')))
+    detail.append(h('p',{class:'wiki-description wiki-effect-cure-note',
+     text:wt('Очищение снимает один отрицательный эффект с цели. Конкретное состояние определяется игрой, это не универсальное снятие всех эффектов сразу.',
+      'Purification removes one negative effect from the target. The game selects the affected status; it does not remove every debuff at once.')}));
+   if(kinds.includes('harmful')){
+    detail.append(h('p',{class:'wiki-description wiki-harmful-consumable-note',
+     text:wt('При употреблении накладывает на персонажа состояние «Яд»: отравление периодически наносит урон. Время действия, величина и интервал урона не установлены по данным OS. Число 50 в параметре предмета не подтверждено как шанс или урон.',
+      'Consuming this item applies Poison to the character, dealing periodic damage. OS data do not establish the duration, damage per tick or interval. The item parameter 50 is not a verified chance or damage value.')}));
+    const poisonHit=wikiData.skills?.['430052001'];
+    if(poisonHit?.funcs?.some(effect=>effect.ep==='EP_CAUSE_POISON')){
+     const compare=h('div',{class:'wiki-effect-usage'});
+     compare.append(h('small',{text:wt('Связанное отрицательное состояние:',
+      'Related negative status:')}),
+      wikiLink(dataName('skill','430052001'),'skill','430052001'),
+      h('span',{text:wt('Также накладывает яд, но код применения отличается; одинаковая сила или длительность не подтверждена.',
+       'Also applies Poison using a different effect code; equal strength or duration is not verified.')}));
+     detail.append(compare);
+    }
+    const antidotes=Object.entries(wikiData.items||{}).filter(([,item])=>
+     item?.effects?.some(effect=>effect.func==='EP_RECOVERY_POISON'&&
+      effect.dir==='TARGET')).slice(0,8);
+    if(antidotes.length){
+     const clean=h('div',{class:'wiki-effect-usage'});
+     clean.append(h('small',{text:wt('Средство против яда:','Poison remedy:')}));
+     for(const [cureId]of antidotes)
+      clean.append(wikiLink(dataName('item',cureId),'item',cureId));
+     detail.append(clean);
+    }
+   }
+   const relations=window.PandoraWikiData.itemSkillRelations(id,wikiData.skills);
+   if(relations.length){
+    const usage=h('div',{class:'wiki-effect-usage'});
+    for(const relation of relations){
+     const created=relation.produces.includes(Number(id));
+     const line=h('div',{class:'wiki-effect-usage-row'});
+     line.append(h('small',{text:created?wt('Создаётся умением:','Crafted with:'):
+      wt('Расходуется умением:','Consumed by skill:')}),
+      wikiLink(dataName('skill',relation.id),'skill',relation.id));
+     if(created&&relation.consumes.length){
+      line.append(h('small',{text:wt('Материалы:','Ingredients:')}));
+      for(const itemId of relation.consumes)
+       if(wikiData.items?.[String(itemId)])line.append(wikiLink(
+        dataName('item',String(itemId)),'item',String(itemId)));
+     }
+     if(!created&&relation.produces.length){
+      line.append(h('small',{text:wt('Результат:','Produces:')}));
+      for(const itemId of relation.produces)
+       if(wikiData.items?.[String(itemId)])line.append(wikiLink(
+        dataName('item',String(itemId)),'item',String(itemId)));
+     }
+     if(!created&&relation.consumes.length>1){
+      line.append(h('small',{text:wt('Другие материалы:','Other ingredients:')}));
+      for(const itemId of relation.consumes)
+       if(itemId!==Number(id)&&wikiData.items?.[String(itemId)])line.append(wikiLink(
+        dataName('item',String(itemId)),'item',String(itemId)));
+     }
+     usage.append(line);
+    }
+    detail.append(usage);
+   }
+  }
   if(type==='map'){
    const geo=window.PandoraAstirLocations;
    const district=geo?.district(id),nation=geo?.country(id);
