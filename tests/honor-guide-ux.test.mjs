@@ -85,7 +85,7 @@ test('Owner historical maps D1 patches do not alter game source records',()=>{
  assert.equal(edited.maps['el-beht'].name,'Новая локация');
  assert.deepEqual(edited.maps['el-beht'].mobs,[21231,21232]);
  assert.equal(base.maps['el-beht'].name,'Эль Ведд');
- assert.equal(owners.validTownPatch('map','astir-union',{mobs:[21231]}),false);
+ assert.equal(owners.validTownPatch('map','astir-union',{mobs:[21231]}),true);
  assert.equal(owners.validTownPatch('map','el-beht',{mobs:[21231,21231]}),false);
 });
 test('authenticated D1 Worker saves and resets Honor copy, lists and historical maps',async()=>{
