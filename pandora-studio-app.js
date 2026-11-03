@@ -3067,7 +3067,7 @@ function renderWiki(root){
       const sectionDefs=[
        ['monsters',wt('Монстры','Monsters')],['npcs','NPC'],
        ['loot',wt('Добыча','Loot')],['tags',wt('Теги','Tags')],
-       ['custom',wt('Свои разделы','Custom sections')]];
+       ['notes',wt('Заметки','Notes')],['custom',wt('Свои разделы','Custom sections')]];
       const enabled=Array.isArray(rec.sections)?rec.sections:sectionDefs.map(x=>x[0]);
       const manage=h('div',{class:'wiki-map-section-controls'});
       manage.append(h('small',{text:wt('Разделы локации','Location sections')}));
@@ -3081,6 +3081,26 @@ function renderWiki(root){
          .catch(e=>showStudioToast(e.message,'warning'))}));
       }
       manage.append(buttons);detail.append(manage);
+     }
+    }
+    if(type==='map'&&showMapSection('notes')){
+     const key=lang==='en'?'notesEn':'notesRu';
+     const copy=String(rec[key]||'');
+     if(copy||ownerMap){
+      const section=h('section',{class:'wiki-map-section wiki-map-notes'});
+      section.append(h('h4',{text:wt('Заметки о локации','Location notes')}));
+      const text=h('p',{class:'wiki-description'+(!copy?' wiki-description-placeholder':''),
+       text:copy||wt('Двойной клик — добавить заметку','Double-click to add a note')});
+      if(ownerMap){
+       text.classList.add('wiki-honor-editable');text.tabIndex=0;
+       const open=()=>editWikiValue(text,copy,{type:'textarea',
+        onCommit:value=>saveWikiRecordField('map',id,key,value)});
+       text.addEventListener('dblclick',open);
+       text.addEventListener('keydown',event=>{
+        if(event.key==='F2'){event.preventDefault();open()}
+       });
+      }
+      section.append(text);detail.append(section);
      }
     }
     if(type==='instance'&&rec.kind==='quest')detail.append(h('span',{
