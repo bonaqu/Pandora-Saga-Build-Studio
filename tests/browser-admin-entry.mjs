@@ -433,9 +433,19 @@ export async function runAdminEntrySmoke(browser,base){
    if(!response.url().endsWith('/api/admin/override'))return false;
    try{return /^wikiedit\.npc\.owner-npc-/.test(response.request().postDataJSON().key)}
    catch{return false}
-  },{timeout:20000});
+  },{timeout:8000}).then(()=>true,()=>false);
   await npcForm.getByRole('button',{name:/Save NPC|Сохранить NPC/}).click();
-  await savedNpc;
+  if(!await savedNpc){
+   const diagnostic=await page.evaluate(()=>({
+    error:document.querySelector('.wiki-map-create-npc-form .inline-owner-error')?.textContent,
+    status:document.querySelector('#ownerDock [data-owner-save-state]')?.textContent,
+    form:document.querySelector('.wiki-map-create-npc-form')?.textContent?.slice(0,220),
+    selected:document.querySelector('.wiki-page h3')?.textContent,
+    jsErrors:document.querySelector('#siteNotice')?.textContent
+   }));
+   throw Error('Owner NPC creation did not POST: '+JSON.stringify(diagnostic)+
+    '; browser errors: '+errors.join('; '));
+  }
   const newNpcKeys=[...townOverrides.keys()].filter(key=>/^wikiedit\.npc\.owner-npc-/.test(key));
   assert.equal(newNpcKeys.length,1);
   const newNpc=JSON.parse(townOverrides.get(newNpcKeys[0]));
