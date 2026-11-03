@@ -3264,6 +3264,81 @@ function renderWiki(root){
       }
      }
     }
+    if(type==='map'&&showMapSection('custom')){
+     const custom=Array.isArray(rec.extraSections)?rec.extraSections:[];
+     for(const [index,group] of custom.entries()){
+      const panel=h('section',{class:'wiki-map-section wiki-map-extra-section'});
+      const head=h('h4',{text:lang==='en'?group.titleEn:group.titleRu});
+      panel.append(head);
+      if(ownerMap)panel.append(h('button',{type:'button',class:'wiki-owner-remove wiki-map-section-delete',
+       text:wt('Удалить раздел','Remove section'),
+       onclick:()=>void saveWikiRecordField('map',id,'extraSections',
+        custom.filter((_,i)=>i!==index)).catch(e=>showStudioToast(e.message,'warning'))}));
+      if(group.kind==='text'){
+       const key=lang==='en'?'textEn':'textRu';
+       const note=group[key]||'';
+       const text=h('p',{class:'wiki-description'+(!note?' wiki-description-placeholder':''),
+        text:note||wt('Двойной клик — добавить текст','Double-click to add text')});
+       if(ownerMap){
+        text.classList.add('wiki-honor-editable');text.tabIndex=0;
+        const start=()=>editWikiValue(text,note,{type:'textarea',onCommit:value=>
+         saveWikiRecordField('map',id,'extraSections',custom.map((entry,i)=>
+          i===index?{...entry,[key]:value}:entry))});
+        text.addEventListener('dblclick',start);
+        text.addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();start()}});
+       }
+       panel.append(text);
+      }else{
+       const kind=group.kind==='item'?'item':group.kind;
+       if(ownerMap)panel.append(wikiOwnerEntityList({
+        label:'',kind,existing:group.entries||[],limit:60,
+        onChange:next=>saveWikiRecordField('map',id,'extraSections',
+         custom.map((entry,i)=>i===index?{...entry,entries:next.map(Number)}:entry))
+       }));
+       else panel.append(linkFlow((group.entries||[])
+        .filter(item=>kind==='item'?wikiData.items?.[String(item)]:
+         kind==='monster'?wikiData.monsters?.[String(item)]:wikiData.trades?.npcs?.[String(item)])
+        .map(item=>kind==='item'?itemLink(item,dataName('item',item),id):
+         wikiLink(dataName(kind,item),kind,item))));
+      }
+      detail.append(panel);
+     }
+     if(ownerMap&&custom.length<12){
+      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-map-add-section',
+       text:wt('+ Добавить раздел','+ Add section')});
+      add.onclick=()=>{
+       if(detail.querySelector('.wiki-map-custom-form'))return;
+       const form=h('div',{class:'wiki-map-custom-form wiki-owner-source-picker'});
+       const ru=ownerPlainTextField({class:'wiki-inline-input',
+        placeholder:'Название раздела · RU','aria-label':'Название раздела RU'});
+       const en=ownerPlainTextField({class:'wiki-inline-input',
+        placeholder:'Section title · EN','aria-label':'Section title EN'});
+       const kind=h('select',{class:'wiki-inline-select','aria-label':wt('Содержимое раздела','Section content')});
+       for(const [value,label]of [
+        ['text',wt('Описание','Text')],
+        ['monster',wt('Монстры','Monsters')],
+        ['npc','NPC'],['item',wt('Предметы / добыча','Items / loot')]
+       ])kind.append(h('option',{value,text:label}));
+       const error=h('small',{class:'inline-owner-error',role:'status'});
+       const submit=h('button',{type:'button',class:'wiki-owner-plus',
+        text:wt('Добавить','Add'),onclick:async()=>{
+         const titleRu=ru.value.trim(),titleEn=en.value.trim();
+         if(!titleRu||!titleEn||titleRu.length>100||titleEn.length>100){
+          error.textContent=wt('Укажи названия RU и EN','Enter RU and EN titles');return}
+         const nextId='section-'+[...crypto.getRandomValues(new Uint8Array(6))]
+          .map(x=>x.toString(16).padStart(2,'0')).join('');
+         const row={id:nextId,titleRu,titleEn,kind:kind.value,entries:[]};
+         submit.disabled=true;
+         try{await saveWikiRecordField('map',id,'extraSections',[...custom,row])}
+         catch(e){error.textContent=e.message;submit.disabled=false}
+        }});
+       const cancel=h('button',{type:'button',class:'wiki-owner-remove',
+        text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+       form.append(ru,en,kind,submit,cancel,error);add.after(form);ru.focus();
+      };
+      detail.append(add);
+     }
+    }
   }else{
     const namedPlaces=wikiIndex.chestPlaces(id);
     if(namedPlaces.length)detail.append(h('div',{class:'wiki-chest-location'},[
