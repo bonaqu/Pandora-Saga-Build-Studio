@@ -4063,6 +4063,10 @@ function renderWiki(root){
  };
  wikiRenderSelected=()=>{
   if(!root.isConnected||!wikiIndex)return;
+  if(wikiSearchTimer!==null){
+   clearTimeout(wikiSearchTimer);wikiSearchTimer=null;
+   draw(false);return;
+  }
   const present=[...browse.querySelectorAll('[data-wiki-record]')].some(
    row=>row.getAttribute('data-wiki-record')===wikiSelection.id);
   draw(present);
