@@ -1959,6 +1959,10 @@ function renderWiki(root){
    line.append(withIcon(chest,wikiIcon('chest',row.id),'chest'));
   }else if(row.type==='zone'){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
+  }else if(row.type==='owner-monster'){
+   line.append(link('♞ '+dataName('monster',row.id),'monster',row.id,'wiki-source-primary'));
+   line.append(h('small',{class:'wiki-source-meta',text:wt(
+    'Указано редактором · шанс не задан','Curated entry · chance unspecified')}));
   }else if(row.type==='owner-map'){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
    line.append(h('small',{class:'wiki-source-meta',text:wt(
@@ -2817,6 +2821,20 @@ function renderWiki(root){
     }else if(places.length)detail.append(linkFlow(places.map(loc=>
      wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
     else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
+    if(rec.ownerCreated){
+     const entries=(rec.loot||[]).filter(x=>wikiData.items?.[String(x)]);
+     detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')+
+      (entries.length?' · '+entries.length:'')}));
+     if(adminEditing&&adminToken)
+      detail.append(wikiOwnerEntityList({kind:'item',existing:entries,limit:120,
+       onChange:next=>saveWikiRecordField('monster',id,'loot',next.map(Number))}));
+     else if(entries.length)detail.append(linkFlow(entries.map(itemId=>
+      itemLink(itemId,dataName('item',itemId),id))));
+     else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
+     detail.append(h('small',{class:'wiki-source-meta',text:wt(
+      'Связи с добычей добавлены редактором; шанс выпадения не указан.',
+      'Loot is curated by the owner; drop rates are not specified.')}));
+    }else{
     const ownDrop=wikiData.drops?.[id]||{d:[],s:[]};
     const dropRows=()=>({
      d:(ownDrop.d||[]).map(x=>({...x})),
@@ -2887,6 +2905,7 @@ function renderWiki(root){
       }
       detail.append(actions);
      }
+    }
    }else if(type==='npc'){
     const locations=rec.maps||[];
     if(rec.virtual){
