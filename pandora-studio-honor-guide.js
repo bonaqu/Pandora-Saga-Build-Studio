@@ -48,10 +48,10 @@ const hints=Object.freeze({
  'Сопр. магии':['Общее сопротивление магическим воздействиям.','Overall magic resistance.']
 });
 const help=Object.freeze({
- 'defense.recovery.hpRecoverySpeed':['Индекс скорости восстановления ОЗ. Не ОЗ/сек.','HP recovery speed index, not HP per second.'],
- 'defense.recovery.mpRecoverySpeed':['Индекс скорости восстановления ОМ. Не ОМ/сек.','MP recovery speed index, not MP per second.'],
- 'defense.recovery.hpRecoveryAmount':['Расчётное количество ОЗ при пассивном восстановлении.','Estimated HP amount of passive recovery.'],
- 'defense.recovery.mpRecoveryAmount':['Расчётное количество ОМ при пассивном восстановлении.','Estimated MP amount of passive recovery.'],
+ 'defense.hpRecoverySpeed':['Индекс скорости восстановления ОЗ. Не ОЗ/сек.','HP recovery speed index, not HP per second.'],
+ 'defense.mpRecoverySpeed':['Индекс скорости восстановления ОМ. Не ОМ/сек.','MP recovery speed index, not MP per second.'],
+ 'defense.hpRecoveryAmount':['Расчётное количество ОЗ при пассивном восстановлении.','Estimated HP amount of passive recovery.'],
+ 'defense.mpRecoveryAmount':['Расчётное количество ОМ при пассивном восстановлении.','Estimated MP amount of passive recovery.'],
  'buffs.honor':['Выбор одного пассивного умения за честь. Порог ранга Count — 129 000 «Вся честь» и 640 000 золота.','Simulate one Honor passive. Count threshold: 129,000 Total Honor and 640,000 gold.'],
  'buffs.guild':['Бонусы гильдии зависят от её уровня и выбранных усилений.','Guild bonuses depend on guild level and selected enhancements.']
 });
