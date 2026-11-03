@@ -16,6 +16,7 @@ import {runAccountSmoke} from './browser-account.mjs';
 import {runAccountLibraryIsolationSmoke} from './browser-account-isolation.mjs';
 import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs';
 import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
+import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 
 const base='http://127.0.0.1:4173';
@@ -220,6 +221,7 @@ async function main(){
   ['account-isolation',runAccountLibraryIsolationSmoke],
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
+  ['honor-guide',runHonorGuideSmoke],
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
