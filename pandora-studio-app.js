@@ -2519,7 +2519,7 @@ function renderWiki(root){
     }}));
   };
   if(type==='item'){
-    if(rec.sourceNote||adminEditing&&adminToken&&lang==='ru'){
+    if(adminEditing&&adminToken&&lang==='ru'){
      const sourceNote=String(rec.sourceNote||'');
      const note=h('p',{class:sourceNote?'':'wiki-description-placeholder',
       text:sourceNote||wt('Двойной клик — добавить комментарий','Double-click to add a note'),
@@ -3013,7 +3013,7 @@ function renderWiki(root){
     detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:
-     wt('Источник получения в доступном каталоге не указан.','No source listed in the current catalog.')}));
+     wt('Где получить эту душу, пока неизвестно.','Where to obtain this Soul is not yet known.')}));
     if(found.length)appendSourceFlow(found,id);
     moreSources(found);
     appendAcquisitionEditor(id);
