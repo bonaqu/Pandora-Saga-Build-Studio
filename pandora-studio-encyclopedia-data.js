@@ -51,6 +51,10 @@ function build(data){
  // Explicit, administrator-curated NPC references are indexed like ordinary
  // residents but never modify the NPC's original OS spawn/placement record.
  for(const [mapId,map] of Object.entries(data.maps||{})){
+  // Owner-curated loot links remain independent of the game's random drop tables.
+  for(const itemId of map.loot||[])
+   if(Object.hasOwn(data.items||{},String(itemId)))
+    add(itemId,{type:'owner-map',id:mapId,curated:true});
   for(const npcId of map.npcs||[]){
    const npc=(data.trades?.npcs||{})[String(npcId)];
    if(!npc)continue;
