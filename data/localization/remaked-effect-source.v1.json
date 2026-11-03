@@ -35,7 +35,9 @@
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
-      "observed": {},
+      "observed": {
+        "souls": 1
+      },
       "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
     },
     {
@@ -55,7 +57,9 @@
       "remakedOptionIndex": 49,
       "remakedEnglish": "DEF",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "itemForth": 2
+      }
     },
     {
       "code": "EP_ATTACK_BACKATK_RATE",
@@ -97,7 +101,9 @@
       "remakedOptionIndex": 33,
       "remakedEnglish": "Aura D",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "itemForth": 10
+      }
     },
     {
       "code": "EP_AVOIDANCE_CONST",
@@ -116,7 +122,9 @@
       "remakedOptionIndex": 80,
       "remakedEnglish": "G debuff",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "itemForth": 12
+      }
     },
     {
       "code": "EP_BADEFFECT_TIME_SCALE",
@@ -166,7 +174,9 @@
       "remakedOptionIndex": 181,
       "remakedEnglish": "debuff rate",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "itemForth": 12
+      }
     },
     {
       "code": "EP_CAST_HEAL_LIFE_SCALE",
@@ -222,7 +232,9 @@
       "remakedOptionIndex": 70,
       "remakedEnglish": "Cri RES",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "itemForth": 10
+      }
     },
     {
       "code": "EP_CRITICALRATE_CONST",
@@ -321,7 +333,9 @@
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
-      "observed": {},
+      "observed": {
+        "itemForth": 4
+      },
       "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
     },
     {
@@ -402,7 +416,10 @@
       "remakedOptionIndex": 10,
       "remakedEnglish": "MP Rec SPD",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "souls": 2,
+        "itemForth": 3
+      }
     },
     {
       "code": "EP_HOLY_RESISTANCE_CONST",
@@ -580,7 +597,9 @@
       "remakedOptionIndex": 140,
       "remakedEnglish": "Thund R",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "souls": 5
+      }
     },
     {
       "code": "EP_MAGIC_RESISTANCE_CONST",
@@ -600,7 +619,9 @@
       "remakedOptionIndex": 8,
       "remakedEnglish": "POT",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "souls": 1
+      }
     },
     {
       "code": "EP_MAXLIFE_CONST",
@@ -667,7 +688,10 @@
       "remakedOptionIndex": 60,
       "remakedEnglish": "Mag RES",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "souls": 2,
+        "itemForth": 14
+      }
     },
     {
       "code": "EP_ONDAMAGE_ELEM_SKILL_EXEC",
@@ -685,7 +709,9 @@
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
-      "observed": {},
+      "observed": {
+        "souls": 6
+      },
       "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
     },
     {
@@ -694,7 +720,9 @@
       "remakedOptionIndex": 52,
       "remakedEnglish": "Phy RES",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "souls": 1
+      }
     },
     {
       "code": "EP_ONDAMAGE_FIN_DAMAGE_SCALE",
@@ -714,7 +742,9 @@
       "remakedOptionIndex": 135,
       "remakedEnglish": "Reflect",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "souls": 2
+      }
     },
     {
       "code": "EP_ONDAMAGE_SKILL_EXEC",
@@ -817,7 +847,9 @@
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
-      "observed": {},
+      "observed": {
+        "souls": 1
+      },
       "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
     },
     {
@@ -949,7 +981,9 @@
       "remakedOptionIndex": 77,
       "remakedEnglish": "Cast SPD",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "souls": 2
+      }
     },
     {
       "code": "EP_SKILL_EQUIP_DAMAGERATE",
@@ -957,7 +991,9 @@
       "remakedOptionIndex": 18,
       "remakedEnglish": "MaxATK",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "souls": 6
+      }
     },
     {
       "code": "EP_SKILL_EXEC",
@@ -995,7 +1031,9 @@
       "remakedOptionIndex": 182,
       "remakedEnglish": "DP damage",
       "source": "modern/enhancement-effects.js",
-      "observed": {}
+      "observed": {
+        "itemForth": 5
+      }
     },
     {
       "code": "EP_SPIRITUAL_CONST",
@@ -1065,5 +1103,6 @@
         "items": 1
       }
     }
-  ]
+  ],
+  "upstreamCommit": "4e6abf98c914bfa761510f7e2710b1795aab2a3a"
 }
