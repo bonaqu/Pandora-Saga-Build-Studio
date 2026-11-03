@@ -58,7 +58,7 @@ test('full character returns hazardous consumables without adding their poison p
 test('Hero Book never lists poisonous consumables or a poisonous-items chapter',()=>{
  const book=read('pandora-studio-hero-book.js');
  assert.doesNotMatch(book,/harmfulConsumables|stage-poison-consumables|Ядовитые расходники|Poisonous consumables/);
- assert.match(book,/modifiers?.statusCures/);
+ assert.match(book,/modifiers\?\.statusCures/);
 });
 
 test('book translation entries are cached without changing RU/EN output or user-owned names',()=>{
