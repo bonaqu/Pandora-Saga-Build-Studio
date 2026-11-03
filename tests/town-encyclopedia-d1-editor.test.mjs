@@ -109,7 +109,7 @@ test('authenticated Worker saves and resets bounded town wiki patches in D1',asy
   ['wikiedit.npc.astir-npc-kingdom-claris',{nameEn:''}],
   ['wikiedit.npc.astir-npc-kingdom-claris',{maps:['astir-kingdom','astir-union']}],
   ['wikiedit.npc.astir-npc-kingdom-claris',{service:'A'.repeat(241)}],
-  ['wikiedit.map.astir-kingdom',{mobs:[100]}],
+  ['wikiedit.map.astir-kingdom',{mobs:[0]}],
   ['wikiedit.npc.astir-npc-kingdom-claris/../../admin',{name:'X'}]
  ])assert.equal((await send(key,patch)).status,400,key);
  const r=await worker.fetch(new Request(
