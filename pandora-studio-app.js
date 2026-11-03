@@ -2588,17 +2588,16 @@ function renderWiki(root){
     }
     if((rec.effects?.length||0)>0||(adminEditing&&adminToken)){
      const effectRows=rec.effects||[];
-     const effectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items,rec);
-      const allEffectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items);
-      const labelFor=code=>code==='EP_DESTINED_POISON'&&lang==='en'?
-      'Applies poison':lang==='ru'?
-       window.PandoraStudioItemOwnerEditor.effectDisplayLabel(code,lang):
-       allEffectOptions.find(row=>row.value===code)?.label||code;
+     const itemEditor=window.PandoraStudioItemOwnerEditor;
+     const effectOptions=adminEditing&&adminToken?
+      itemEditor.effectOptions(wikiData.items,rec,lang):[];
+     const labelFor=code=>itemEditor.effectDisplayLabel(code,lang);
      const update=(index,patch)=>saveWikiItemField(id,'effects',
       effectRows.map((effect,i)=>i===index?{...effect,...patch}:effect));
      const list=h('div',{class:'wiki-owner-effects'});
-     list.append(h('h4',{text:utilityCategories(rec).includes('harmful')?
-      wt('Эффекты предмета','Item effects'):wt('Бонусы предмета','Item bonuses')}));
+     list.append(h('h4',{text:rec.slot==null?
+      wt('Действие предмета','Item effects'):
+      wt('Бонусы предмета','Item bonuses')}));
      for(const [index,effect] of effectRows.entries()){
       const row=h('div',{class:'wiki-owner-effect'});
       const effectName=h('span',{class:'wiki-owner-effect-name',text:labelFor(effect.func),
@@ -2615,7 +2614,8 @@ function renderWiki(root){
       }
       row.append(effectName);
       for(const [key,label] of [['a','Бонус'],['b','Доп. параметр']]){
-        if(effect.func==='EP_DESTINED_POISON'&&key==='a'&&!(adminEditing&&adminToken))continue;
+        if(key==='a'&&!(adminEditing&&adminToken)&&
+         !itemEditor.effectHasDisplayAmount(effect.func))continue;
         const initial=effect[key];
         if(key==='b'&&!adminEditing)continue;
         if(initial==null&&!adminEditing)continue;
@@ -2640,6 +2640,13 @@ function renderWiki(root){
         };
        }
        value.append(number);row.append(value);
+      }
+      if(!(adminEditing&&adminToken)&&rec.slot!=null&&
+       itemEditor.effectUsesSkillId(effect.func)&&
+       wikiData.skills?.[String(effect.a)]){
+       const procSkillId=String(effect.a);
+       row.append(h('span',{class:'wiki-owner-effect-value wiki-effect-linked-skill'},[
+        wikiLink(dataName('skill',procSkillId),'skill',procSkillId)]));
       }
       if(adminEditing&&adminToken){
        const dir=h('span',{class:'wiki-owner-effect-value'});
