@@ -699,6 +699,106 @@ function skillEffectsPage(body,{buffs={},availability={},combatSkillCards={},res
  body.prepend(card);
  renderSongSkills(body,modifiers);
 }
+
+function combatFormulaRows(calc,page){
+ const c=calc?.combat;
+ if(!c||!['attack','defense'].includes(page))return [];
+ const results=[],p=(ru,en,value)=>({ru,en,value});
+ const add=(ru,en,total,parts,round='exact')=>{
+  if(!Number.isFinite(total)||!Array.isArray(parts)||
+   parts.some(entry=>!Number.isFinite(entry?.value)))return;
+  const sum=parts.reduce((value,part)=>value+part.value,0);
+  if(Math.abs((round==='ceil'?Math.ceil(sum):sum)-total)>1e-8)return;
+  results.push({ru,en,total,parts,round});
+ };
+ if(page==='attack'){
+  const a=c.attack;
+  if(a&&Array.isArray(a.percentEquipment)){
+   const base=Number.isFinite(a.raw)?a.raw:
+    a.unarmed===true&&Number.isFinite(a.physical)?a.physical+1:null;
+   add('Физическая атака','Physical attack',a.known,[
+    p('Атака от силы и оружия','Strength and weapon',base),
+    p('Титул чести','Honor title',a.honor),
+    p('Плоские эффекты','Flat effects',a.flatEquipment),
+    ...a.percentEquipment.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
+     'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
+    p('Боевые навыки','Combat skills',a.activeBonus),
+    p('Гильдия','Guild',a.guildBonus)],'ceil');
+  }
+  const acc=c.accuracy;
+  if(acc&&Array.isArray(acc.percentage))add('Точность','Accuracy',acc.known,[
+   p('Уровень и ЛВК','Level and DEX',acc.base),
+   p('Экипировка','Equipment',acc.equipment),
+   ...acc.percentage.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
+    'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
+   p('Титул чести','Honor title',acc.honor),
+   p('Пассивное умение','Passive skill',acc.passive),
+   p('Активное умение','Active skill',acc.activeBonus)]);
+  const crit=c.critical;
+  if(crit)add('Шанс критического удара','Critical chance',crit.known,[
+   p('База','Base',crit.base),p('Экипировка','Equipment',crit.equipment),
+   p('Расовая способность','Racial passive',crit.racial)]);
+  const speed=c.attackSpeed;
+  if(speed)add('Скорость атаки','Attack speed',speed.known,[
+   p('База','Base',speed.base),p('Экипировка','Equipment',speed.equipment),
+   p('Рывок','Lunge',speed.lunge),
+   p('Усиление жреца','Priest buff',speed.priestBonus)]);
+  const mana=c.manaCost;
+  if(mana)add('Индекс расхода ОМ','MP cost index',mana.remaining,[
+   p('Исходный расход','Original cost',100),
+   p('Снижение от ИНТ','INT reduction',-mana.intReduction),
+   p('Расовая способность','Racial passive',-mana.racial),
+   p('Экипировка','Equipment',-mana.equipment)]);
+  const cast=c.castingSpeed;
+  if(cast)add('Скорость применения навыков','Casting speed',cast.known,[
+   p('База','Base',cast.base),
+   p('Экипировка','Equipment',cast.equipment)]);
+  const move=c.movementSpeed;
+  if(move)add('Скорость перемещения','Movement speed',move.known,[
+   p('База','Base',move.base),p('Экипировка','Equipment',move.equipment),
+   p('Активные навыки','Active skills',move.active)]);
+ }else{
+  const d=c.defense;
+  if(d&&Array.isArray(d.percentParts))add('Защита','Defense',d.known,[
+   p('Броня','Armor',d.armor),p('Плоские эффекты','Flat effects',d.equipment),
+   p('Заточка','Refinement',d.refinement),
+   ...d.percentParts.map((x,i)=>p('Процентный эффект '+(i+1)+' ('+x.rate+'%)',
+    'Percentage effect '+(i+1)+' ('+x.rate+'%)',x.bonus)),
+   p('Титул чести','Honor title',d.honor),
+   p('Боевые навыки','Combat skills',d.activeBonus),
+   p('Усиление жреца','Priest buff',d.priestBonus)]);
+  const dodge=c.dodge;
+  if(dodge)add('Уклонение','Evasion',dodge.known,[
+   p('Уровень + ПРВ + ступень ПРВ','Level + AGI + AGI step',dodge.base),
+   p('Экипировка','Equipment',dodge.equipment),
+   p('Титул чести','Honor title',dodge.honor),
+   p('Пассивные навыки','Passive skills',dodge.passive),
+   p('Помощь ветра','Wind Assist',dodge.windAssist)]);
+ }
+ return results;
+}
+function appendCombatFormulas(body,calc,page,english){
+ const rows=combatFormulaRows(calc,page);if(!rows.length)return;
+ const details=make('details',{class:'stage-attribute-row stage-combat-formulas'});
+ details.append(make('summary',{text:english?
+  'Show calculation breakdown':'Показать расчёт по составляющим'}));
+ const format=new Intl.NumberFormat(english?'en-US':'ru-RU',{maximumFractionDigits:4});
+ for(const entry of rows){
+  details.append(make('strong',{text:english?entry.en:entry.ru}));
+  const terms=entry.parts.map((part,i)=>
+   (i===0?(part.value<0?'−':''):(part.value<0?' − ':' + '))+
+    format.format(Math.abs(part.value))).join('');
+  details.append(make('p',{text:(entry.round==='ceil'?'⌈'+terms+'⌉':terms)+
+   ' = '+format.format(entry.total)}));
+  for(const part of entry.parts)if(part.value!==0)
+   details.append(make('small',{class:'stage-formula-source',text:
+    (english?part.en:part.ru)+': '+format.format(part.value)}));
+ }
+ details.append(make('p',{class:'stage-attribute-note',text:english?
+  'This explains the calculated preview, not complete live-server combat. Conditional effects and unverified stacking are not included.':
+  'Это расшифровка расчётных величин, а не полная модель боя на игровом сервере. Непроверенные условные эффекты не учтены.'}));
+ body.prepend(details);
+}
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{}}={}){
@@ -735,6 +835,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  if(chosen==='summary')summaryPage(body,modifiers,onPage);
  if(chosen==='effects')skillEffectsPage(body,{buffs,availability,combatSkillCards,resistanceSkillChoices,modifiers});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers});
+ if(['attack','defense'].includes(chosen)&&modifiers?.combat)
+  appendCombatFormulas(body,modifiers,chosen,document.documentElement?.lang==='en');
  if(['attack','defense'].includes(chosen)){
   const intro=chosen==='attack'?'Параметры оружия':'Защита снаряжения';
   body.append(make('p',{class:'stage-attribute-note',text:intro}));
@@ -1608,5 +1710,5 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,vitalFormulaRows});
+root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,vitalFormulaRows,combatFormulaRows});
 })(typeof window==='undefined'?globalThis:window);
