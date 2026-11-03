@@ -4679,7 +4679,7 @@ function refreshOwnerUI(){
   h('span',{'data-owner-count':'',class:'owner-dock-count'}),
   h('span',{'data-owner-recent':'',class:'owner-dock-count'})
  ]);
- const guide=h('details',{class:'owner-workflow-guide',open:true},[
+ const guide=h('details',{class:'owner-workflow-guide'},[
   h('summary',{text:'Как редактировать и когда нажимать кнопки'}),
   h('ol',{class:'owner-workflow-steps'},[
    h('li',{text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'}),
