@@ -100,21 +100,6 @@
 .wiki-honor-rank-benefit{font:10px/1.45 Manrope,Arial,sans-serif;color:#d8bf9b}
 .wiki-honor-note,.wiki-honor-sources{font:10px/1.55 Manrope,Arial,sans-serif;
  color:#bba68b}
-.wiki-historic-tag{display:inline-block;margin-bottom:9px;border-color:#c49055}
-.wiki-historic-roster{padding:11px;border:1px solid #88663e;background:#241a13;
- border-radius:5px;display:grid;gap:8px}
-.wiki-historic-roster h4{font:650 20px 'Cormorant Garamond',Georgia,serif;
- color:#efce98}
-.wiki-historic-notice{font:10px/1.45 Manrope,Arial,sans-serif;color:#bea687}
-.wiki-historic-mob-list{display:grid;gap:4px}
-.wiki-historic-mob{display:flex;flex-wrap:wrap;align-items:center;gap:8px;
- padding:6px 8px;border:1px solid #634a32;background:#2a1e15;
- border-radius:3px;font-size:11px}
-.wiki-historic-mob .wiki-link{padding:2px;font-size:11px;flex:1 1 135px}
-.wiki-historic-level{font:700 10px Manrope,Arial,sans-serif;color:#e1b879}
-.wiki-historic-name{flex:1 1 135px;color:#d3b68f}
-.wiki-historic-mob small{color:#a89981;font-size:9px}
-.wiki-historic-unverified{color:#e6a28d!important}
 @media(max-width:600px){.wiki-honor-rank-list{grid-template-columns:1fr}
  .wiki-honor-dual{grid-template-columns:1fr}
  .wiki-honor-section{padding:9px}
@@ -127,7 +112,7 @@
 .stage-honor-term{font:600 13px/1.2 Manrope,Arial,sans-serif;color:#d8bd96;vertical-align:baseline}
 .stage-honor-term:hover,.stage-honor-term:focus-visible{color:#ffdfad}
 
-/* Native map panels shared by old, historic and administrator-created locations. */
+/* Native map panels shared by OS, forthcoming and owner-created locations. */
 .wiki-map-create-form,.wiki-map-tag-form,.wiki-map-custom-form{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
 .wiki-map-create-form .wiki-inline-input,.wiki-map-tag-form .wiki-inline-input,
 .wiki-map-custom-form .wiki-inline-input{flex:1 1 128px;min-width:90px}
@@ -145,7 +130,16 @@
 .wiki-map-extra-section{padding:10px;border:1px solid #785a3a;background:#231910;border-radius:4px}
 .wiki-map-section-delete{float:right;margin-top:-30px}
 .wiki-map-add-section{margin-top:9px}
-.wiki-historic-roster{display:grid}
-.wiki-historic-roster .wiki-historic-mob.unverified{border-style:dashed;opacity:.87}
-.wiki-historic-unverified{font-size:10px;color:#dcba86}
 @media(max-width:600px){.wiki-map-create-form,.wiki-map-custom-form{align-items:stretch}}
+
+/* Owner-only tools live inside standard monster rows; viewer layout is shared. */
+.wiki-map-roster-actions{display:flex;flex-wrap:wrap;align-items:center;gap:5px;width:100%;margin:3px 0 1px}
+.wiki-map-roster-actions .wiki-owner-plus,.wiki-map-roster-actions .wiki-owner-remove{
+ padding:4px 7px;font:600 10px Manrope,Arial,sans-serif}
+.wiki-map-reported-name{color:#d8ac74;cursor:help;white-space:nowrap;font-size:10px}
+.wiki-map-roster-actions .wiki-owner-relation-picker{flex-basis:100%;min-width:0}
+.wiki-owner-monster-form{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.wiki-owner-monster-form .wiki-inline-input{flex:1 1 140px;min-width:85px}
+.wiki-owner-monster-form .wiki-owner-monster-level{max-width:90px;flex:0 0 84px}
+.wiki-owner-monster-form .inline-owner-error{flex:1 1 100%}
+@media(max-width:600px){.wiki-map-roster-actions .wiki-owner-plus{flex:1 1 auto}}

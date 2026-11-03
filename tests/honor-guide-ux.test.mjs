@@ -58,10 +58,13 @@ test('12 Honor ranks separate Count passives from 3 monthly leaderboards',()=>{
  const changed=g.article({'guideedit.honor.rank.7':JSON.stringify({benefitRu:'Новая награда'})});
  assert.equal(changed.ranks[7].benefitRu,'Новая награда');
 });
-test('El Beht retains 22 historical spawns, with 19 exact OS monster identities',()=>{
+test('Confirmed future El Beht retains 22 spawns with 19 matching current catalog IDs',()=>{
  const historical=m.records(),beht=historical['el-beht'];
  assert.equal(beht.nameEn,'El Beht');
- assert.equal(beht.serverAvailable,false);
+ assert.equal(beht.releaseStage,'future');
+ assert.equal(beht.historic,undefined);
+ assert.equal(beht.desc,'');
+ assert.equal(beht.descEn,'');
  assert.equal(historical['astir-underground'].mobs.length,0);
  assert.equal(beht.reportedSpawns.length,22);
  const confirmed=beht.reportedSpawns.filter(x=>x.monsterId!=null);
@@ -149,7 +152,7 @@ test('Worker advertises installed guide editing API without exposing admin edits
   'https://ps-build-studio-cloud.bonaqu.workers.dev/api/runtime-capabilities'),{DB:{}});
  assert.equal(response.status,200);
  const info=await response.json();
- assert.equal(info.codeRelease,'0.344.0');
+ assert.equal(info.codeRelease,'0.345.0');
  for(const capability of ['guideedit','honor-lists','historical-map-wiki'])
   assert.ok(info.ownerEditors.includes(capability),capability);
 });
@@ -178,7 +181,7 @@ test('Book, encyclopedia, Worker, scripts and styles are connected',()=>{
   css=read('pandora-studio-honor.css'),hint=read('pandora-studio-honor-guide.js');
  for(const file of ['pandora-studio-honor-guide.js','pandora-studio-guide-tooltips.js',
   'pandora-studio-historic-maps.js','pandora-studio-honor-view.js'])
-  assert.ok(html.includes(file+'?v=2026.11.03.344'),file);
+  assert.ok(html.includes(file+'?v=2026.11.03.345'),file);
  assert.match(book,/function guideLabel/);
  assert.match(book,/Пассивное восстановление/);
  assert.match(book,/Passive recovery/);
@@ -187,7 +190,8 @@ test('Book, encyclopedia, Worker, scripts and styles are connected',()=>{
  assert.match(app,/PandoraHistoricalMaps\?\.records/);
  assert.match(app,/saveGuidePatch/);
  assert.match(app,/PandoraHonorView\?\.render/);
- assert.match(app,/wiki-historic-roster/);
+ assert.match(app,/wiki-map-roster-actions/);
+ assert.doesNotMatch(app,/wiki-historic-roster/);
  assert.match(worker,/function validGuideEdit/);
  assert.match(worker,/guideedit/);
  assert.match(worker,/el-beht/);

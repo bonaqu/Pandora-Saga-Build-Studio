@@ -117,7 +117,7 @@ export async function createCatalogPullRequest(env,active,activeSnapshot){
 }
 
 const OWNER_PATH='data/admin/encyclopedia-overrides.json';
-const ownerKey=/^(?:itemedit|item|itemdesc|itemslots|acquireedit|tradeedit|chestedit|dropedit|spawnedit)\.[0-9]{1,15}$|^wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}$|^wikiedit\.(?:map\.(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground|custom-[a-z0-9-]{6,42})|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})$|^guideedit\.(?:book\.[a-z][a-z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01])|zones|wars))$|^(?:skill|skilldesc)\.[A-Za-z0-9_-]{1,32}\.[0-9]{1,12}$|^soul\.[A-Za-z0-9_.-]{1,70}$/;
+const ownerKey=/^(?:itemedit|item|itemdesc|itemslots|acquireedit|tradeedit|chestedit|dropedit|spawnedit)\.[0-9]{1,15}$|^wikiedit\.(?:monster|map|npc|instance|skill|soul)\.[0-9]{1,15}$|^wikiedit\.(?:map\.(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground|custom-[a-z0-9-]{6,42})|npc\.astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}|monster\.owner-monster-[a-z0-9]{12,24})$|^guideedit\.(?:book\.[a-z][a-z0-9._:-]{1,80}|honor\.(?:overview|rank\.(?:[0-9]|1[01])|zones|wars))$|^(?:skill|skilldesc)\.[A-Za-z0-9_-]{1,32}\.[0-9]{1,12}$|^soul\.[A-Za-z0-9_.-]{1,70}$/;
 async function ownerPayload(env){
  const rows=(await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all()).results||[];
  const selected=rows.filter(row=>ownerKey.test(row.key)&&typeof row.value==='string');

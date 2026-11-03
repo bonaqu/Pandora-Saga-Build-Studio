@@ -1,8 +1,9 @@
 (function(root){
 'use strict';
-// Historical encyclopedia maps: NOT part of the present OS D1 game-map feed.
-// Verified links use existing monster IDs; unmatched descriptions stay
-// documented instead of creating fake monster records or a wrong-level alias.
+// Confirmed Pandora Saga locations planned for a forthcoming OS content update.
+// Listed monster names/levels come from the owner's game knowledge; a missing
+// current catalog ID is a missing cross-reference, not a nonexistent monster.
+// Keep future content distinct from the current OS simulation dataset.
 const elBeht=[
  [41,'Кровавый ящер',21231],
  [42,'Нетопырь-демон',95093],
@@ -31,21 +32,18 @@ const elBeht=[
 }));
 const sources=Object.freeze({
  'el-beht':Object.freeze({
-  name:'Эль Ведд',nameEn:'El Beht',virtual:true,historic:true,
-  placeType:'historical-pvp',serverAvailable:false,
-  desc:'Историческая PvP-локация, не представленная в актуальной карте OS. Здесь сражались игроки разных наций, а также обитали монстры с добычей и опытом.',
-  descEn:'A historical PvP area not currently available on the OS map. Players of opposing nations fought here alongside experience- and loot-dropping monsters.',
-  source:'player-curated + Japanese historical wiki',
+  name:'Эль Ведд',nameEn:'El Beht',virtual:true,
+  placeType:'pvp-zone',releaseStage:'future',
+  desc:'',descEn:'',
+  source:'player-confirmed future Pandora Saga content',
   mobs:elBeht.filter(x=>x.monsterId!=null).map(x=>x.monsterId),
   reportedSpawns:elBeht
  }),
  'astir-underground':Object.freeze({
   name:'Подземные руины Астира',nameEn:'Underground of Astir',
-  virtual:true,historic:true,placeType:'historical-pvp',
-  serverAvailable:false,
-  desc:'Историческая PvP-локация Pandora Saga. Сражения игроков из противоборствующих наций могли приносить очки чести. Набор монстров актуального сервера не подтверждён.',
-  descEn:'Historical Pandora Saga PvP location. Battles against players from rival nations could award Honor. A current-server monster roster is not verified.',
-  source:'player-curated + historical English PvP wiki',
+  virtual:true,placeType:'pvp-zone',releaseStage:'future',
+  desc:'',descEn:'',
+  source:'player-confirmed future Pandora Saga content',
   mobs:[]
  })
 });

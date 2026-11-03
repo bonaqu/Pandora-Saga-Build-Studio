@@ -1518,6 +1518,74 @@ function renderWiki(root){
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  guardEncyclopediaSearch(search);
  controls.append(categories,search);
+ // Add owner-authored monster cards without asserting a nonexistent OS numeric ID.
+ // Future-map reports can be linked to existing OR newly created encyclopedia cards.
+ const ownerMonsterIds=()=>new Set(Object.keys(wikiIndex?.records('monster')||{}));
+ const mapRoster=rec=>rec.roster||rec.reportedSpawns||[];
+ const persistRosterLink=async(mapId,entryId,monsterId)=>{
+  const rec=wikiIndex.records('map')?.[String(mapId)];
+  if(!rec)throw Error(wt('Локация не найдена','Location not found'));
+  const previous=mapRoster(rec);
+  if(!previous.some(row=>row.id===entryId))
+   throw Error(wt('Строка монстра не найдена','Monster entry not found'));
+  if(monsterId!=null&&!wikiIndex.records('monster')?.[String(monsterId)])
+   throw Error(wt('Карточка монстра отсутствует','Monster card not found'));
+  const next=previous.map(row=>row.id===entryId?{...row,monsterId}:row);
+  const referencedBefore=new Set(previous.map(row=>String(row.monsterId)).filter(x=>x!=='null'));
+  const extra=(rec.mobs||[]).filter(x=>!referencedBefore.has(String(x)));
+  const mobs=[...new Map([...extra,...next.map(row=>row.monsterId).filter(x=>x!=null)]
+   .map(x=>[String(x),x])).values()];
+  await saveWikiRecordPatch('map',mapId,{roster:next,mobs});
+ };
+ const createOwnerMonster=(button,{mapId=null,spawnId=null,name='',level=1}={})=>{
+  if(!adminEditing||!adminToken)return;
+  const parent=button.parentElement;
+  if(parent?.querySelector('.wiki-owner-monster-form'))return;
+  const form=h('div',{class:'wiki-owner-source-picker wiki-owner-monster-form'});
+  const ru=ownerPlainTextField({class:'wiki-inline-input',value:name,
+   'aria-label':wt('Название монстра RU','Monster name RU'),placeholder:'Название RU'});
+  const en=ownerPlainTextField({class:'wiki-inline-input',
+   'aria-label':wt('Название монстра EN','Monster name EN'),placeholder:'Name EN'});
+  const lvl=h('input',{type:'number',min:'1',max:'255',step:'1',
+   value:String(level),'aria-label':wt('Уровень монстра','Monster level'),
+   class:'wiki-inline-input wiki-owner-monster-level'});
+  const error=h('small',{class:'inline-owner-error',role:'status'});
+  const submit=h('button',{type:'button',class:'wiki-owner-plus',
+   text:wt('Сохранить монстра','Save monster'),onclick:async()=>{
+    const label=ru.value.trim(),english=en.value.trim(),num=Number(lvl.value);
+    if(!label||!english||label.length>240||english.length>240||
+      !Number.isInteger(num)||num<1||num>255){
+     error.textContent=wt('Нужны названия RU/EN и уровень 1–255',
+      'Both names and a level 1–255 are required');return;
+    }
+    let monsterId=null;
+    for(let attempt=0;attempt<8;attempt++){
+     const candidate='owner-monster-'+[...crypto.getRandomValues(new Uint8Array(8))]
+      .map(x=>x.toString(16).padStart(2,'0')).join('');
+     if(!ownerMonsterIds().has(candidate)&&
+       !Object.hasOwn(override,'wikiedit.monster.'+candidate)){
+      monsterId=candidate;break;
+     }
+    }
+    if(!monsterId){error.textContent=wt('Не удалось создать уникальный ID','No unique ID available');return}
+    submit.disabled=true;
+    try{
+     await saveWikiRecordPatch('monster',monsterId,{
+      name:label,nameEn:english,desc:'',descEn:'',level:num});
+     if(mapId&&spawnId)await persistRosterLink(mapId,spawnId,monsterId);
+     openWiki(mapId?'map':'monster',mapId||monsterId);
+    }catch(e){error.textContent=String(e.message||e);submit.disabled=false}
+   }});
+  const cancel=h('button',{type:'button',class:'wiki-owner-remove',
+   text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+  form.append(ru,en,lvl,submit,cancel,error);button.after(form);ru.focus();
+ };
+ if(adminEditing&&adminToken&&wikiSelection.type==='monster'){
+  const newMonster=h('button',{type:'button',class:'wiki-owner-plus wiki-monster-create',
+   text:wt('+ Создать монстра','+ Create monster')});
+  newMonster.onclick=()=>createOwnerMonster(newMonster);
+  controls.append(newMonster);
+ }
  if(adminEditing&&adminToken&&wikiSelection.type==='map'){
   const create=h('button',{type:'button',class:'wiki-owner-plus wiki-map-create',
    text:wt('+ Создать локацию','+ Create location')});
@@ -1678,7 +1746,7 @@ function renderWiki(root){
   if(nameCache.has(key))return nameCache.get(key);
   const obj=type==='item'?(wikiData.items?.[id]||wikiData.souls?.[id]):
    type==='chest'?wikiData.items?.[id]:wikiIndex.records(type)?.[id];
-  const en=(type==='map'&&obj?.nameEn)||(type==='npc'&&obj?.nameEn)||
+  const en=(obj?.nameEn&&['map','npc','monster','skill','soul','instance'].includes(type)?obj.nameEn:null)||
    (type==='npc'&&obj?.virtual?obj.en:null)||
    (type==='map'?(officialEnglish?.maps?.[id]?.n||
    officialEnglish?.tradeMaps?.[id]?.n):officialEnglish?.[
@@ -1710,6 +1778,7 @@ function renderWiki(root){
   const npc=type==='npc'?wikiIndex.records('npc')?.[id]:null;
   const verifiedNpcAlias=npc?[npc.en,npc.nameEn,npc.name].filter(Boolean).join(' '):null;
   const value=[dataName(type,id),translated?.n,verifiedNpcAlias,territoryAlias,
+   type==='monster'?wikiIndex.records('monster')?.[id]?.nameEn:null,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
   searchCache.set(key,value);
@@ -1808,9 +1877,9 @@ function renderWiki(root){
  const ids=[...new Set((existing||[]).map(String))];
  const candidates=kind==='monster'?wikiData.monsters:
   kind==='npc'?wikiData.trades?.npcs:
-  kind==='map'?Object.fromEntries(Object.entries(wikiIndex.records('map'))
-   .filter(([id])=>/^\d+$/.test(id))):
+  kind==='map'?wikiIndex.records('map'):
   kind==='item'?wikiData.items:wikiIndex.records('instance');
+ const idValue=value=>/^[1-9][0-9]{0,14}$/.test(String(value))?Number(value):String(value);
  const holder=h('div',{class:'wiki-entity-flow'});
  for(const key of ids){
   const chip=h('span',{class:'wiki-owner-mat'});
@@ -1818,7 +1887,7 @@ function renderWiki(root){
    wikiLink(dataName(kind,key),kind,key));
   if(adminEditing&&adminToken)chip.append(h('button',{type:'button',
    class:'wiki-owner-remove',text:'×','aria-label':'Удалить связь '+dataName(kind,key),
-   onclick:()=>void onChange(ids.filter(x=>x!==key).map(Number))
+   onclick:()=>void onChange(ids.filter(x=>x!==key).map(idValue))
     .catch(err=>showStudioToast(err.message,'warning'))}));
   holder.append(chip);
  }
@@ -1846,7 +1915,7 @@ function renderWiki(root){
    select.onchange=async()=>{
     if(!select.value)return;
     select.disabled=true;
-    try{await onChange([...ids,select.value].map(Number))}
+    try{await onChange([...ids,select.value].map(idValue))}
     catch(e){feedback.textContent=e.message;select.disabled=false}
    };
    const outside=e=>{
@@ -1890,6 +1959,10 @@ function renderWiki(root){
    line.append(withIcon(chest,wikiIcon('chest',row.id),'chest'));
   }else if(row.type==='zone'){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
+  }else if(row.type==='owner-monster'){
+   line.append(link('♞ '+dataName('monster',row.id),'monster',row.id,'wiki-source-primary'));
+   line.append(h('small',{class:'wiki-source-meta',text:wt(
+    'Указано редактором · шанс не задан','Curated entry · chance unspecified')}));
   }else if(row.type==='owner-map'){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
    line.append(h('small',{class:'wiki-source-meta',text:wt(
@@ -2145,7 +2218,7 @@ function renderWiki(root){
     ['item','chest'].includes(type)?'item.'+id:null;
    const heading=h('h3',{text:dataName(type,id),
     ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{}),
-    ...(adminEditing&&(lang==='ru'||['npc','map'].includes(type))&&
+    ...(adminEditing&&(lang==='ru'||['npc','map','monster'].includes(type))&&
      ['monster','map','npc','instance','soul'].includes(type)?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'nameEn':'name'}:{})});
@@ -2164,7 +2237,7 @@ function renderWiki(root){
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
   if(described?.desc||(lang==='en'&&described?.descEn)||
-   (adminEditing&&adminToken&&(lang==='ru'||['npc','map'].includes(type))&&type!=='instance')){
+   (adminEditing&&adminToken&&(lang==='ru'||['npc','map','monster'].includes(type))&&type!=='instance')){
    const text=englishDescription||described?.desc||'';
    const missing=!text.trim();
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
@@ -2173,7 +2246,7 @@ function renderWiki(root){
     missing?wt('Двойной клик — добавить описание','Double-click to add description'):
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
-    ...(adminEditing&&(lang==='ru'||['npc','map'].includes(type))&&
+    ...(adminEditing&&(lang==='ru'||['npc','map','monster'].includes(type))&&
      ['monster','map','npc','instance','soul'].includes(type)?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'descEn':type==='instance'?'blurbRu':'desc',
@@ -2185,9 +2258,6 @@ function renderWiki(root){
     text:wt('При использовании отравляет персонажа, употребившего предмет: временный эффект отравления периодически наносит ему урон ядом. Урон за тик, интервал, длительность и шанс из данных OS не установлены.',
      'Using this item poisons the character who consumed it: the temporary poison effect deals periodic poison damage to that character. Tick damage, interval, duration and chance are not established by the OS data.')}));
   if(type==='map'){
-   if(rec.historic)detail.append(h('span',{class:'wiki-map-kind wiki-historic-tag',
-    text:wt('Историческая PvP-локация · недоступна на OS',
-     'Historical PvP location · not available on current OS')}));
    const geo=window.PandoraAstirLocations;
    const district=geo?.district(id),nation=geo?.country(id);
    if(district){
@@ -2707,6 +2777,25 @@ function renderWiki(root){
        h('small',{text:label}),wikiOwnerNumeric(
         h('strong',{text:Number(value).toLocaleString('ru-RU')}),
         value,'monster',id,key,{integer:true})]))));
+    if(adminEditing&&adminToken){
+     const absent=monsterStats.filter(([,value])=>!Number.isFinite(value));
+     if(absent.length){
+      const add=h('button',{type:'button',class:'wiki-owner-plus',
+       text:wt('+ Характеристика','+ Add stat')});
+      add.onclick=()=>{
+       const select=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить характеристику монстра','Add monster stat')});
+       select.append(h('option',{value:'',text:wt('Выбери характеристику','Choose a stat')}));
+       for(const [label,,key]of absent)select.append(h('option',{value:key,text:label}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiRecordField('monster',id,select.value,0)
+        .catch(error=>showStudioToast(error.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      };
+      detail.append(add);
+     }
+    }
     if(rec.resists&&Object.keys(rec.resists).length){
      const names=lang==='en'?{physical:'Physical',fire:'Fire',cold:'Ice',
       lightning:'Lightning',poison:'Poison',charm:'Charm',magic:'Magic',
@@ -2734,23 +2823,79 @@ function renderWiki(root){
       detail.append(grid);
      }
     }
+    if(adminEditing&&adminToken){
+     const resistKeys=[
+      ['physical',wt('Физическое','Physical')],['fire',wt('Огонь','Fire')],
+      ['cold',wt('Лёд','Ice')],['lightning',wt('Молния','Lightning')],
+      ['poison',wt('Яд','Poison')],['charm',wt('Чары','Charm')],
+      ['magic',wt('Магия','Magic')],['holy',wt('Свет','Holy')],
+      ['dark',wt('Тьма','Dark')]];
+     const missing=resistKeys.filter(([key])=>!Object.hasOwn(rec.resists||{},key));
+     if(missing.length){
+      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-resistance',
+       text:wt('+ Сопротивление','+ Resistance')});
+      add.onclick=()=>{
+       const select=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить сопротивление','Add resistance')});
+       select.append(h('option',{value:'',text:wt('Выбери тип','Choose type')}));
+       for(const [key,label] of missing)select.append(h('option',{value:key,text:label}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiRecordField('monster',id,
+        'resists.'+select.value,0).catch(e=>showStudioToast(e.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      };
+      detail.append(add);
+     }
+    }
     detail.append(h('h4',{text:wt('Места появления','Spawn locations')}));
     const places=wikiIndex.locations(id);
     if(adminEditing&&adminToken){
      for(const kind of ['map','instance']){
       const chosen=places.filter(x=>x.type===kind).map(x=>String(x.id));
-      detail.append(wikiOwnerEntityList({label:kind==='map'?'Локации':'Подземелья',
+      detail.append(wikiOwnerEntityList({label:kind==='map'?
+       wt('Локации','Locations'):wt('Подземелья','Dungeons'),
        kind,existing:chosen,onChange:async next=>{
         const updated=next.map(String);
         const added=updated.find(x=>!chosen.includes(x));
         const removed=chosen.find(x=>!updated.includes(x));
-        if(added)await saveWikiSpawns(id,kind,added,true);
-        else if(removed)await saveWikiSpawns(id,kind,removed,false);
+        const locationId=added||removed;
+        if(!locationId)return;
+        const loc=wikiIndex.records(kind)?.[locationId];
+        if(!loc)throw Error(wt('Локация не найдена','Location not found'));
+        const ownerLocation=kind==='map'&&(
+         !Object.hasOwn(wikiData.maps||{},locationId)||loc.virtual);
+        if(rec.ownerCreated||ownerLocation){
+         const current=(loc.mobs||[]).map(String);
+         const desired=added?[...new Set([...current,String(id)])]:
+          current.filter(x=>x!==String(id));
+         // A reported spawn row linked to this card must be unlinked as well.
+         const reports=kind==='map'?mapRoster(loc):[];
+         const patch={mobs:desired.map(x=>/^[1-9][0-9]{0,14}$/.test(x)?Number(x):x)};
+         if(reports.length&&removed)patch.roster=reports.map(row=>
+          String(row.monsterId)===String(id)?{...row,monsterId:null}:row);
+         await saveWikiRecordPatch(kind,locationId,patch);
+        }else if(added)await saveWikiSpawns(id,kind,added,true);
+        else await saveWikiSpawns(id,kind,removed,false);
        }}));
      }
     }else if(places.length)detail.append(linkFlow(places.map(loc=>
      wikiLink('◈ '+dataName(loc.type,loc.id),loc.type,loc.id,id))));
     else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
+    if(rec.ownerCreated){
+     const entries=(rec.loot||[]).filter(x=>wikiData.items?.[String(x)]);
+     detail.append(h('h4',{text:wt('Выпадающие предметы','Dropped items')+
+      (entries.length?' · '+entries.length:'')}));
+     if(adminEditing&&adminToken)
+      detail.append(wikiOwnerEntityList({kind:'item',existing:entries,limit:120,
+       onChange:next=>saveWikiRecordField('monster',id,'loot',next.map(Number))}));
+     else if(entries.length)detail.append(linkFlow(entries.map(itemId=>
+      itemLink(itemId,dataName('item',itemId),id))));
+     else detail.append(h('p',{class:'wiki-empty-value',text:'—'}));
+     detail.append(h('small',{class:'wiki-source-meta',text:wt(
+      'Связи с добычей добавлены редактором; шанс выпадения не указан.',
+      'Loot is curated by the owner; drop rates are not specified.')}));
+    }else{
     const ownDrop=wikiData.drops?.[id]||{d:[],s:[]};
     const dropRows=()=>({
      d:(ownDrop.d||[]).map(x=>({...x})),
@@ -2821,6 +2966,7 @@ function renderWiki(root){
       }
       detail.append(actions);
      }
+    }
    }else if(type==='npc'){
     const locations=rec.maps||[];
     if(rec.virtual){
@@ -3126,50 +3272,65 @@ function renderWiki(root){
      if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||ownerMap)){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
-       if(type==='map'&&(rec.virtual||!Object.hasOwn(wikiData.maps||{},id))){
-        await saveWikiRecordField('map',id,'mobs',next.map(Number));return;
-       }
        const before=mobs.map(String),after=next.map(String);
+       const hasOwner=next.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x))||
+        before.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x));
+       if(type==='map'&&(rec.virtual||!Object.hasOwn(wikiData.maps||{},id)||hasOwner)){
+        const patch={mobs:next.map(x=>typeof x==='string'?x:Number(x))};
+        const reports=mapRoster(rec);
+        if(reports.length)patch.roster=reports.map(row=>row.monsterId!=null&&
+         !after.includes(String(row.monsterId))?{...row,monsterId:null}:row);
+        await saveWikiRecordPatch('map',id,patch);return;
+       }
        const added=after.find(x=>!before.includes(x));
        const removed=before.find(x=>!after.includes(x));
        if(added)await saveWikiSpawns(added,type,id,true);
        else if(removed)await saveWikiSpawns(removed,type,id,false);
       }}));
     }
-    // All locations use the same native monster section and cards. Historical
-    // spawn reports supply the three unnamed IDs without a separate layout.
+    // Planned maps share the identical searchable monster grid. Owner reports
+    // preserve names/levels even when no server-catalog cross-reference exists.
     if(showMapSection('monsters')){
-     const reports=type==='map'&&Array.isArray(rec.reportedSpawns)?rec.reportedSpawns:null;
+     const reports=type==='map'&&Array.isArray(rec.roster||rec.reportedSpawns)?mapRoster(rec):null;
      const roster=reports?[
-      ...reports.filter(x=>x.monsterId==null||mobs.includes(x.monsterId))
-       .map(x=>({id:x.monsterId,mon:x.monsterId==null?null:wikiData.monsters?.[x.monsterId],reported:x})),
-      ...mobs.filter(mob=>!reports.some(x=>x.monsterId===mob))
-       .map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}))
+      ...reports.map(x=>({id:x.monsterId,
+       mon:x.monsterId==null?null:wikiData.monsters?.[String(x.monsterId)],reported:x})),
+      ...mobs.filter(mob=>!reports.some(x=>String(x.monsterId)===String(mob)))
+       .map(mob=>({id:mob,mon:wikiData.monsters?.[String(mob)]}))
      ]:mobs.map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}));
      if(roster.length){
       const levels=roster.map(row=>row.reported?.level??row.mon?.level).filter(Number.isFinite);
       const levelRange=levels.length?' · '+wt('ур. ','Lv. ')+Math.min(...levels)+
        (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
       detail.append(h('h4',{text:wt('Монстры · ','Monsters · ')+roster.length+levelRange}));
-      if(reports)detail.append(h('p',{class:'wiki-historic-notice',text:wt(
-       'Исторические сведения: появление этих монстров на текущем сервере OS не подтверждено.',
-       'Historic records: these spawns are not confirmed on the current OS server.')}));
-      const search=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
+       const search=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
        placeholder:wt('Поиск монстра…','Search monsters…'),
        'aria-label':wt('Поиск монстра в локации','Search monsters in location'),
        name:'monster-roster-filter',autocomplete:'off','data-lpignore':'true',
        'data-1p-ignore':'true'});
       guardEncyclopediaSearch(search);
-      const list=h('div',{class:'wiki-map-monsters'+(reports?' wiki-historic-roster':'')}),rows=[];
+      const list=h('div',{class:'wiki-map-monsters'}),rows=[];
       for(const {id:mob,mon,reported} of roster.sort((a,b)=>
        (a.reported?.level??a.mon?.level??999)-(b.reported?.level??b.mon?.level??999))){
-       const name=reported?.name||(mob!=null?dataName('monster',mob):'');
+       const name=lang==='en'&&reported?.nameEn?reported.nameEn:
+        reported?.name||(mob!=null?dataName('monster',mob):'');
        const entry=h('div',{class:'wiki-entry wiki-mob-row'+
-        (reports?' wiki-historic-mob':'')+
-        (mob==null?' unverified':'')+
         (wikiSelection.highlight===String(mob)?' highlighted':'')});
-       entry.append(mob!=null&&mon?wikiLink(name,'monster',mob):
-        h('span',{class:'wiki-historic-name',text:name}));
+       const label=mob!=null&&mon?wikiLink(name,'monster',mob):
+        h('span',{class:'wiki-map-monster-name',text:name});
+       entry.append(label);
+       if(reported&&adminEditing&&adminToken){
+        const updateRow=(field,value)=>saveWikiRecordField('map',id,'roster',
+         reports.map(row=>row.id===reported.id?{...row,[field]:value}:row));
+        const editableName=h('span',{class:'wiki-map-reported-name wiki-edit-value',
+         text:wt('✎ Название','✎ Name'),title:wt('Двойной клик — исправить название монстра',
+          'Double-click to correct monster name')});
+        editableName.ondblclick=event=>{event.preventDefault();event.stopPropagation();
+         const field=lang==='en'?'nameEn':'name';
+         editWikiValue(editableName,reported[field]||reported.name,
+          {type:'text',onCommit:value=>updateRow(field,value)})};
+        entry.append(editableName);
+       }
        const extra=[];
        if(reported?.level!=null||mon?.level!=null)
         extra.push(wt('Ур. ','Lv. ')+(reported?.level??mon.level));
@@ -3179,13 +3340,71 @@ function renderWiki(root){
         const drops=wikiIndex.drops(mob);
         if(drops.length)extra.push(wt('Добыча: ','Loot: ')+drops.length);
        }
-       if(extra.length)entry.append(h('small',{class:'wiki-map-mob-meta',text:extra.join(' · ')}));
+       if(extra.length){
+        const meta=h('small',{class:'wiki-map-mob-meta',text:extra.join(' · ')});
+        if(reported&&adminEditing&&adminToken){
+         meta.classList.add('wiki-edit-value');
+         meta.title=wt('Двойной клик — изменить уровень','Double-click to edit level');
+         meta.ondblclick=event=>{event.preventDefault();event.stopPropagation();
+          editWikiValue(meta,reported.level,{type:'number',integer:true,min:1,max:255,
+           onCommit:value=>saveWikiRecordField('map',id,'roster',
+            reports.map(row=>row.id===reported.id?{...row,level:value}:row))})};
+        }
+        entry.append(meta);
+       }
        if(reported?.spawn==='anywhere')entry.append(h('small',{
         text:wt('Может появиться в любой точке','May spawn anywhere')}));
        else if(reported?.spawn==='boss-guard')entry.append(h('small',{
         text:wt('Страж вожака · при особых условиях','Boss guard · conditional spawn')}));
-       if(mob==null)entry.append(h('small',{class:'wiki-historic-unverified',
-        text:wt('ID не подтверждён','ID unverified')}));
+       if(reported&&adminEditing&&adminToken){
+        const actions=h('div',{class:'wiki-map-roster-actions'});
+        const choose=h('button',{type:'button',class:'wiki-owner-plus',
+         text:mob==null?wt('Связать с карточкой','Link monster card'):
+          wt('Изменить карточку','Change linked card')});
+        choose.onclick=()=>{
+         if(actions.querySelector('.wiki-owner-relation-picker'))return;
+         const picker=h('div',{class:'wiki-owner-source-picker wiki-owner-relation-picker'});
+         const input=ownerPlainTextField({class:'wiki-inline-input',
+          placeholder:wt('Поиск монстра…','Search monsters…'),
+          'aria-label':wt('Поиск карточки монстра','Find monster card')});
+         const selector=h('select',{class:'wiki-inline-select',
+          'aria-label':wt('Выбрать монстра','Choose monster')});
+         const message=h('small',{class:'inline-owner-error',role:'status'});
+         const fill=()=>{
+          const query=wikiIndex.normalize(input.value);
+          const choices=Object.entries(wikiIndex.records('monster')||{})
+           .filter(([key,record])=>(!query||
+            wikiIndex.normalize([record.name,record.nameEn].filter(Boolean).join(' '))
+             .includes(query))).slice(0,100);
+          selector.replaceChildren(h('option',{value:'',
+           text:wt('Выбери монстра','Select monster')}));
+          for(const [key]of choices)
+           selector.append(h('option',{value:key,text:dataName('monster',key)}));
+         };
+         input.oninput=fill;
+         selector.onchange=async()=>{
+          if(!selector.value)return;
+          selector.disabled=true;
+          try{await persistRosterLink(id,reported.id,
+           /^[1-9][0-9]{0,14}$/.test(selector.value)?Number(selector.value):selector.value)}
+          catch(error){message.textContent=error.message;selector.disabled=false}
+         };
+         picker.append(input,selector,message,h('button',{type:'button',
+          class:'wiki-owner-remove',text:wt('Отмена','Cancel'),
+          onclick:()=>picker.remove()}));
+         choose.after(picker);fill();input.focus();
+        };
+        actions.append(choose);
+        if(mob!=null)actions.append(h('button',{type:'button',
+         class:'wiki-owner-remove',text:wt('Отвязать','Unlink'),
+         onclick:()=>void persistRosterLink(id,reported.id,null)
+          .catch(error=>showStudioToast(error.message,'warning'))}));
+        const create=h('button',{type:'button',class:'wiki-owner-plus',
+         text:wt('+ Создать карточку','+ Create card')});
+        create.onclick=()=>createOwnerMonster(create,{mapId:id,spawnId:reported.id,
+         name:reported.name,level:reported.level});
+        actions.append(create);entry.append(actions);
+       }
        list.append(entry);rows.push({entry,name:wikiIndex.normalize(name)});
       }
       search.addEventListener('input',()=>{
@@ -4616,7 +4835,7 @@ function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000
  return node;
 }
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
- if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map'].includes(type)))return node;
+ if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map','monster'].includes(type)))return node;
  node.classList.add('wiki-edit-value');
  // The delegated dblclick is the user's actual first gesture. Starting an
  // ondblclick listener here would silently require a SECOND double-click.
