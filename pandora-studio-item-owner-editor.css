@@ -441,3 +441,9 @@ body.studio-workbench-open #ownerDock.owner-dock-collapsed{width:min(255px,calc(
 .wiki-effect-review-note{border-left:3px solid #bd9c64;padding-left:10px}
 .wiki-effect-quantity{font-variant-numeric:tabular-nums;white-space:nowrap;
  color:#e6c79b;font-size:11px;letter-spacing:.02em}
+
+/* Skill names in equipment effects stay legible on narrow screens. */
+.wiki-effect-linked-skill .wiki-link{
+ display:inline-flex;align-items:center;min-width:0;max-width:100%;
+ overflow-wrap:anywhere
+}
