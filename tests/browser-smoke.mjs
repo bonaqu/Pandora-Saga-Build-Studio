@@ -20,6 +20,7 @@ import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 import {runBuildComparisonSmoke} from './browser-build-comparison.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
+import {runEncyclopediaPerformanceSmoke} from './browser-encyclopedia-performance.mjs';
 
 const base='http://127.0.0.1:4173';
 const argv=new Set(process.argv.slice(2));
@@ -248,6 +249,9 @@ async function main(){
  console.log('Chromium '+(quick?'quick':'full')+' suite: '+
   report.length+' isolated flows, concurrency '+concurrency+
   ', aggregate scenario time '+report.reduce((sum,row)=>sum+row.ms,0)+'ms');
+ // Run large-list timings serially, outside the parallel smoke tasks, to
+ // avoid measuring CPU contention from other Chromium contexts.
+ if(!quick)await runEncyclopediaPerformanceSmoke(browser,base);
  // 4K full-page screenshots are memory-heavy: run layout after regular flows.
  if(!quick)await runLayoutAudit(browser,base);
 }
