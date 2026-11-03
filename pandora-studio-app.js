@@ -2777,6 +2777,25 @@ function renderWiki(root){
        h('small',{text:label}),wikiOwnerNumeric(
         h('strong',{text:Number(value).toLocaleString('ru-RU')}),
         value,'monster',id,key,{integer:true})]))));
+    if(adminEditing&&adminToken){
+     const absent=monsterStats.filter(([,value])=>!Number.isFinite(value));
+     if(absent.length){
+      const add=h('button',{type:'button',class:'wiki-owner-plus',
+       text:wt('+ Характеристика','+ Add stat')});
+      add.onclick=()=>{
+       const select=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить характеристику монстра','Add monster stat')});
+       select.append(h('option',{value:'',text:wt('Выбери характеристику','Choose a stat')}));
+       for(const [label,,key]of absent)select.append(h('option',{value:key,text:label}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiRecordField('monster',id,select.value,0)
+        .catch(error=>showStudioToast(error.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      };
+      detail.append(add);
+     }
+    }
     if(rec.resists&&Object.keys(rec.resists).length){
      const names=lang==='en'?{physical:'Physical',fire:'Fire',cold:'Ice',
       lightning:'Lightning',poison:'Poison',charm:'Charm',magic:'Magic',
@@ -2802,6 +2821,31 @@ function renderWiki(root){
        ]));
       }
       detail.append(grid);
+     }
+    }
+    if(adminEditing&&adminToken){
+     const resistKeys=[
+      ['physical',wt('Физическое','Physical')],['fire',wt('Огонь','Fire')],
+      ['cold',wt('Лёд','Ice')],['lightning',wt('Молния','Lightning')],
+      ['poison',wt('Яд','Poison')],['charm',wt('Чары','Charm')],
+      ['magic',wt('Магия','Magic')],['holy',wt('Свет','Holy')],
+      ['dark',wt('Тьма','Dark')]];
+     const missing=resistKeys.filter(([key])=>!Object.hasOwn(rec.resists||{},key));
+     if(missing.length){
+      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-resistance',
+       text:wt('+ Сопротивление','+ Resistance')});
+      add.onclick=()=>{
+       const select=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить сопротивление','Add resistance')});
+       select.append(h('option',{value:'',text:wt('Выбери тип','Choose type')}));
+       for(const [key,label] of missing)select.append(h('option',{value:key,text:label}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiRecordField('monster',id,
+        'resists.'+select.value,0).catch(e=>showStudioToast(e.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      };
+      detail.append(add);
      }
     }
     detail.append(h('h4',{text:wt('Места появления','Spawn locations')}));
