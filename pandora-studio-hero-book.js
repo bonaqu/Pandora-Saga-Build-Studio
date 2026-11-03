@@ -252,6 +252,39 @@ function make(tag,attrs={},children=[]){
  return n;
 }
 
+// One visual metadata owner per chapter field. D1 changes affect copy only,
+// never IDs, numerical formulas, current equipment, or stored build settings.
+function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
+ if(!node)return node;
+ const guide=root.PandoraHonorGuide;
+ const info=key.startsWith('summary.')?
+  guide?.summary(options.overrides||{},Number(key.slice(8)),ru,en):
+  guide?.field(options.overrides||{},key,ru,en,fallbackRu,fallbackEn);
+ const english=document.documentElement?.lang==='en';
+ const label=english?(info?.en||en):(info?.ru||ru);
+ const hint=english?info?.hintEn:info?.hintRu;
+ node.textContent=label;
+ if(hint)root.PandoraGuideTooltip?.attach(node,hint);
+ node.setAttribute('data-guide-key',key);
+ if(options.editable&&typeof options.onTextEdit==='function'){
+  node.classList.add('stage-guide-editable');
+  node.addEventListener('dblclick',event=>{
+   event.stopPropagation();event.preventDefault();
+   root.PandoraGuideTooltip?.dismiss();
+   options.onTextEdit(node,key,english?'en':'ru',label);
+  });
+  const pencil=make('button',{type:'button',class:'stage-guide-edit-hint',
+   text:'✎',title:english?'Edit tooltip':'Изменить подсказку',
+   'aria-label':english?'Edit tooltip for '+label:'Изменить подсказку: '+label,
+   onclick:event=>{
+    event.stopPropagation();root.PandoraGuideTooltip?.dismiss();
+    options.onTextEdit(node,key,english?'hintEn':'hintRu',hint||'');
+   }});
+  // Pencil is a separate control so editing a hint never changes a stat label.
+  node.after(pencil);
+ }
+ return node;
+}
 const bookPages=Object.freeze([
  ['summary','Результаты расчёта'],['attack','Атака'],['defense','Защита'],
  ['buffs','Усиления'],['effects','Эффекты умений'],['recovery','Эффекты зелий']
@@ -315,7 +348,7 @@ function summaryRows(calc){
  ];
 }
 
-function summaryPage(body,calc){
+function summaryPage(body,calc,options={}){
  if(!calc){body.append(make('p',{class:'stage-attribute-note',
   text:document.documentElement?.lang==='en'?
    'Stats appear after game data loads.':
@@ -325,6 +358,7 @@ function summaryPage(body,calc){
   make('strong',{text:en?'Calculated results':'Результаты расчёта'})
  ]));
  const format=new Intl.NumberFormat(en?'en-US':'ru-RU',{maximumFractionDigits:2});
+ let summaryIndex=0;
  for(const group of summaryRows(calc)){
   const section=make('section',{class:'stage-result-section',
    'data-result-group':group.page});
@@ -334,13 +368,16 @@ function summaryPage(body,calc){
    make('span',{class:'stage-result-symbol','aria-hidden':'true',text:group.symbol}),
    make('strong',{text:en?group.en:group.ru})
   ]);
+  guideLabel(heading.lastChild,'summary.group.'+group.page,group.ru,group.en,options);
   const grid=make('div',{class:'stage-result-grid'});
   for(const result of group.rows){
    const text=Number.isFinite(result.value)?format.format(result.value)+result.unit:'—';
-   grid.append(make('div',{class:'stage-result-tile'},[
+   const tile=make('div',{class:'stage-result-tile'},[
     make('span',{text:en?result.en:result.ru}),
     make('strong',{text})
-   ]));
+   ]);
+   guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
+   grid.append(tile);
   }
   section.append(heading,grid);
   body.append(section);
@@ -770,7 +807,7 @@ function defenseChapterGroups(calc){
  }
  return groups.filter(g=>g.rows.length);
 }
-function appendChapterGroups(body,groups,english,emptyRu,emptyEn){
+function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
  if(!groups.length){body.append(make('p',{class:'stage-attribute-note',
   text:english?emptyEn:emptyRu}));return;}
  const number=new Intl.NumberFormat(english?'en-US':'ru-RU',
@@ -778,13 +815,18 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn){
  for(const group of groups){
   const section=make('section',{class:'stage-attribute-row stage-chapter-group',
    'data-chapter-group':group.key});
-  section.append(make('strong',{text:english?group.en:group.ru}));
+  const title=make('strong',{text:english?group.en:group.ru});
+  section.append(title);
+  guideLabel(title,(options.page||'attack')+'.group.'+group.key,group.ru,group.en,options);
   const grid=make('div',{class:'stage-chapter-grid'});
   for(const row of group.rows){
-   grid.append(make('div',{class:'stage-chapter-entry','data-chapter-stat':row.key},[
+   const entry=make('div',{class:'stage-chapter-entry','data-chapter-stat':row.key},[
     make('span',{text:english?row.en:row.ru}),
     make('strong',{text:number.format(row.value)+row.unit})
-   ]));
+   ]);
+   guideLabel(entry.firstChild,(options.page||'attack')+'.'+row.key,
+    row.ru,row.en,options);
+   grid.append(entry);
   }
   section.append(grid);body.append(section);
  }
@@ -852,17 +894,17 @@ function appendWeaponConditions(body,calc,items,english){
  }
  body.append(panel);
 }
-function attackPage(body,calc,items,english){
+function attackPage(body,calc,items,english,options={}){
  appendChapterGroups(body,attackChapterGroups(calc),english,
   'Нет подтверждённых дополнительных атакующих параметров.',
-  'No supported additional attack metrics.');
+  'No supported additional attack metrics.',{...options,page:'attack'});
  appendWeaponConditions(body,calc,items,english);
  appendItemEvents(body,calc,english,'attack');
 }
-function defensePage(body,calc,english){
+function defensePage(body,calc,english,options={}){
  appendChapterGroups(body,defenseChapterGroups(calc),english,
   'Нет подтверждённых дополнительных защитных параметров.',
-  'No supported additional defense metrics.');
+  'No supported additional defense metrics.',{...options,page:'defense'});
  const conditional=calc?.battleMapCloaks?.entries||[];
  if(conditional.length){
   const panel=make('details',{class:'stage-attribute-row stage-battle-map-cloaks'});
