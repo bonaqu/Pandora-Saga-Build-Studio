@@ -39,7 +39,7 @@ test('release identifiers match every loaded client asset',()=>{
 
 test('character workshop no longer exposes duplicate skills/stat point editors',()=>{
  const app=source('pandora-studio-app.js'),html=source('index.html');
- assert.match(app,/const selection=\[\["character","Персонаж"\],\["profile","Профиль"\]\]/);
+ assert.match(app,/const selection=\[\["character",tr\("Персонаж","Character"\)\],\["profile",tr\("Профиль","Profile"\)\]\]/);
  assert.doesNotMatch(app,/if\(characterPanelTab==="skills"\)renderSkills\(body\)/);
  assert.doesNotMatch(app,/if\(characterPanelTab==="stats"\)renderStats\(body\)/);
  assert.doesNotMatch(app,/\$\("branchValue"\)/);
