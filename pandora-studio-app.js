@@ -5193,7 +5193,7 @@ function editor(el){
    class:'owner-plain-multiline','aria-label':'Редактируемый текст'});
   if(!visual)input.value=original;
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
-  root.append(bar,hint);
+  root.append(bar);
   if(visual){
     const preview=h('img',{class:'inline-owner-preview',src:original,alt:'Предпросмотр'});
     input.addEventListener('input',()=>{if(allowedArtwork(input.value.trim()))preview.src=input.value.trim()});
