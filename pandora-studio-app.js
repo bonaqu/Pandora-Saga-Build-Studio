@@ -2218,8 +2218,9 @@ function renderWiki(root){
     ['item','chest'].includes(type)?'item.'+id:null;
    const heading=h('h3',{text:dataName(type,id),
     ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{}),
-    ...(adminEditing&&(lang==='ru'||['npc','map','monster'].includes(type))&&
-     ['monster','map','npc','instance','soul'].includes(type)?
+    ...(adminEditing&&(lang==='ru'||['npc','map','monster','soul','instance'].includes(type))&&
+     ['monster','map','npc','instance','soul'].includes(type)||
+     adminEditing&&lang==='en'&&type==='skill'?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'nameEn':'name'}:{})});
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
@@ -2292,7 +2293,7 @@ function renderWiki(root){
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
   if(described?.desc||(lang==='en'&&described?.descEn)||
-   (adminEditing&&adminToken&&(lang==='ru'||['npc','map','monster'].includes(type))&&type!=='instance')){
+   (adminEditing&&adminToken&&(lang==='ru'||['npc','map','monster','soul','skill'].includes(type))&&type!=='instance')){
    const text=englishDescription||described?.desc||'';
    const missing=!text.trim();
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
@@ -2301,8 +2302,9 @@ function renderWiki(root){
     missing?wt('Двойной клик — добавить описание','Double-click to add description'):
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
-    ...(adminEditing&&(lang==='ru'||['npc','map','monster'].includes(type))&&
-     ['monster','map','npc','instance','soul'].includes(type)?
+    ...(adminEditing&&(lang==='ru'||['npc','map','monster','soul','instance'].includes(type))&&
+     ['monster','map','npc','instance','soul'].includes(type)||
+     adminEditing&&lang==='en'&&type==='skill'?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'descEn':type==='instance'?'blurbRu':'desc',
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
@@ -3348,13 +3350,13 @@ function renderWiki(root){
     }));
     const description=type==='instance'&&lang!=='en'?
      (rec.blurbRu||null):rec.blurb;
-    if(description||(type==='instance'&&adminEditing&&adminToken&&lang==='ru')){
-     const editable=type==='instance'&&adminEditing&&adminToken&&lang==='ru';
+    if(description||(type==='instance'&&adminEditing&&adminToken)){
+     const editable=type==='instance'&&adminEditing&&adminToken;
      detail.append(h('p',{
       class:'wiki-description'+(!description?' wiki-description-placeholder':''),
       text:description||'Двойной клик — добавить описание',
       ...(editable?{'data-owner-record':'instance:'+id,
-       'data-owner-field':'blurbRu',
+       'data-owner-field':lang==='en'?'blurb':'blurbRu',
        ...(!description?{'data-owner-empty':'true'}:{})}:{})
      }));
     }
@@ -5036,7 +5038,7 @@ function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000
  return node;
 }
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
- if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map','monster'].includes(type)))return node;
+ if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map','monster','skill','soul','instance'].includes(type)))return node;
  node.classList.add('wiki-edit-value');
  // The delegated dblclick is the user's actual first gesture. Starting an
  // ondblclick listener here would silently require a SECOND double-click.
@@ -5189,8 +5191,11 @@ function applyGameLocale({redraw=true}={}){
  const translate=(original,map,keepSourceDesc=false)=>{
   if(lang!=='en'||!map)return original;
   return Object.fromEntries(Object.entries(original).map(([id,item])=>{
-    const t=map[id];return [id,t?{...item,name:t.n||item.name,
-     desc:t.d??item.desc,...(keepSourceDesc?{sourceDesc:item.desc}:{})}:item]
+    const t=map[id];
+    if(!t&&!item.nameEn&&!item.descEn)return [id,item];
+    return [id,{...item,name:item.nameEn||t?.n||item.name,
+     desc:item.descEn??t?.d??item.desc,
+     ...(keepSourceDesc?{sourceDesc:item.desc}:{})}]
   }));
  };
  const en=lang==='en'?officialEnglish:null;
