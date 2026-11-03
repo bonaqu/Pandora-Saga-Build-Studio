@@ -2,19 +2,66 @@
 "use strict";
 // Source-based classification for used-on-demand effect items. Classify by the
 // actual OS effect codes rather than names, IDs or a presumed heal amount.
-function utilityCategories(item){
+const RECOVERY_EFFECTS=new Set([
+ 'EP_HEAL_LIFE','EP_HEAL_LIFE_RATE','EP_HEAL_MANA','EP_HEAL_MANA_RATE'
+]);
+const OTHER_USE_EFFECTS=new Set([
+ 'EP_RESTART','EP_ABILITY_RESET','EP_EXPERTISE_RESET'
+]);
+function executedSkill(effect,skills){
+ if(!effect||effect.dir!=='TARGET'||
+  !/^EP_SKILL_EXEC(?:_|$)/.test(effect.func||'')||
+  !Number.isSafeInteger(effect.a))return null;
+ const skill=skills?.[String(effect.a)];
+ return skill&&Array.isArray(skill.funcs)?skill:null;
+}
+function removesNegativeStatus(skill){
+ return skill?.funcs?.some(row=>row.ep==='EP_REMOVE_BAD_EFFECT'&&row.dir==='TARGET')===true;
+}
+function cosmeticTransformation(skill){
+ return skill?.funcs?.some(row=>row.ep==='EP_CNG_RACE_VIEW'&&row.dir==='TARGET')===true;
+}
+// One item can heal and cure simultaneously. Do not confuse HP/MP recovery
+// with a lasting buff, a crafting material or an arbitrary equipment bonus.
+function utilityCategories(item,skills=null){
  if(item?.slot!=null||!Array.isArray(item?.effects))return [];
  const categories=[],effects=item.effects;
- if(effects.some(effect=>typeof effect?.func==='string'&&
-  effect.func.startsWith('EP_RECOVERY_')))categories.push('cure');
- if(effects.some(effect=>/^EP_SKILL_EXEC(?:_|$)/.test(effect?.func||'')))
-  categories.push('buff');
- // Currently verified negative item-use effect: poisoning the consumer.
- // EP_DESTINED_POISON a=50 is not a proven chance, damage or duration.
- if(item.kind==='POTION'&&effects.some(effect=>
-  effect?.func==='EP_DESTINED_POISON'&&effect.dir==='TARGET'))
+ const target=effects.filter(e=>e?.dir==='TARGET');
+ const triggered=target.filter(e=>/^EP_SKILL_EXEC(?:_|$)/.test(e.func||''));
+ const heal=target.some(e=>RECOVERY_EFFECTS.has(e.func));
+ const directCure=target.some(e=>typeof e.func==='string'&&
+  e.func.startsWith('EP_RECOVERY_'));
+ const indirectCure=triggered.some(e=>removesNegativeStatus(executedSkill(e,skills)));
+ if(directCure||indirectCure)categories.push('cure');
+ if(heal||triggered.some(e=>{
+  const skill=executedSkill(e,skills);
+  return !removesNegativeStatus(skill)&&!cosmeticTransformation(skill);
+ }))categories.push('buff');
+ if(heal)categories.push('recovery');
+ if(item.kind==='POTION'&&target.some(e=>e.func==='EP_DESTINED_POISON'))
   categories.push('harmful');
+ if(effects.some(e=>OTHER_USE_EFFECTS.has(e?.func)&&
+  ['CASTER','TARGET'].includes(e.dir))||
+  triggered.some(e=>cosmeticTransformation(executedSkill(e,skills))))
+  categories.push('other');
  return categories;
+}
+// Ingredient and output links are derived from the real EP_CONSUME_ITEM and
+// EP_ADDITION_ITEM skills; no recipes or crafting quantities are invented.
+function itemSkillRelations(id,skills=null){
+ const key=Number(id),rows=[];
+ if(!Number.isSafeInteger(key)||key<1||!skills||
+  typeof skills!=='object'||Array.isArray(skills))return rows;
+ for(const [skillId,skill]of Object.entries(skills)){
+  if(!skill||!Array.isArray(skill.funcs))continue;
+  const take=type=>[...new Set(skill.funcs.filter(effect=>
+   effect?.ep===type&&Number.isSafeInteger(effect.fv1?.[3])&&
+   effect.fv1[3]>0).map(effect=>effect.fv1[3]))];
+  const consumes=take('EP_CONSUME_ITEM'),produces=take('EP_ADDITION_ITEM');
+  if(!consumes.includes(key)&&!produces.includes(key))continue;
+  rows.push({id:skillId,name:skill.name||skillId,consumes,produces});
+ }
+ return rows.sort((a,b)=>Number(a.id)-Number(b.id));
 }
 function build(data){
  const sources=new Map(),drops=new Map(),npcTrades=new Map();
@@ -342,5 +389,5 @@ function build(data){
   search,normalize:normalizeSearch,sourceCount:sources.size
  });
 }
-root.PandoraWikiData=Object.freeze({build,utilityCategories});
+root.PandoraWikiData=Object.freeze({build,utilityCategories,itemSkillRelations});
 })(typeof window==='undefined'?globalThis:window);

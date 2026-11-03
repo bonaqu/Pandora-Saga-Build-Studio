@@ -5,6 +5,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const host={};Function('window',read('pandora-os-character-calculator.js'))(host);
 const calc=host.PandoraOSCalculator;
 const items=JSON.parse(read('data/os/items.json'));
+const skills=JSON.parse(read('data/os/skills.json'));
 const cures=calc.statusCurePreview({items});
 const byId=id=>cures.rows.find(row=>row.id===id);
 test('actual OS cleansing items resolve exact status effects without healing assumptions',()=>{
@@ -36,7 +37,7 @@ test('Hero Book keeps cleansing consumables separate and directly linked to the 
  assert.match(book,/english\?'Remove status effects':'Снятие состояний'/);
  assert.match(book,/stage-status-cures/);
  assert.match(book,/onItem\(entry\.id\)/);
- assert.match(calculator,/const statusCures=statusCurePreview\(\{items:consumableItems\}\)/);
+ assert.match(calculator,/const statusCures=statusCurePreview\(\{items:consumableItems,skills:combatContext\.skillCatalog\}\)/);
  assert.match(calculator,/consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat/);
  assert.match(calculator,/const harmfulConsumables=harmfulConsumablePreview\(\{items:consumableItems\}\)/);
  assert.doesNotMatch(book,/stage-status-cures stage-poison-consumables/,
@@ -48,4 +49,17 @@ test('RU and EN status cure labels preserve every original source effect',()=>{
  assert.deepEqual(byId(50015).conditionsEn,['Weakness and curse','Madness','Disease']);
  assert.deepEqual(byId(50058).conditionsEn,['Freeze','Silence','Disease','Burn']);
  assert.equal(byId(50065).conditionsEn.length,byId(50065).conditions.length);
+});
+
+
+test('Hero Book now includes indirectly cleansing miracle potion without claiming a universal cure',()=>{
+ const withSkills=calc.statusCurePreview({items,skills});
+ assert.equal(withSkills.rows.length,10);
+ const miracle=withSkills.rows.find(row=>row.id===50016);
+ assert.deepEqual(miracle.conditions,['Один отрицательный эффект']);
+ assert.deepEqual(miracle.conditionsEn,['One negative status effect']);
+ const altered={...items,50016:{...items[50016],effects:[
+  {func:'EP_SKILL_EXEC',dir:'TARGET',a:123456789}]}};
+ assert.equal(calc.statusCurePreview({items:altered,skills}).rows.some(row=>row.id===50016),
+  false,'an unknown skill is not a proven cure');
 });

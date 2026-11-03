@@ -5,8 +5,9 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const root={};
 Function('window',read('pandora-studio-encyclopedia-data.js'))(root);
-const classify=item=>Array.from(root.PandoraWikiData.utilityCategories(item));
 const items=JSON.parse(read('data/os/items.json'));
+const skills=JSON.parse(read('data/os/skills.json'));
+const classify=item=>Array.from(root.PandoraWikiData.utilityCategories(item,skills));
 
 test('poison root and poison potion are negative effect items, not heals or cures',()=>{
  for(const id of [50022,50056]){
@@ -39,7 +40,7 @@ test('catalogue classification follows verified effect codes, not the item name 
 test('encyclopedia exposes localized negative effects filter and a truthful on-use poison note',()=>{
  const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
  assert.match(app,/\['harmful','Дают отрицательные эффекты','Apply negative effects'\]/);
- assert.match(app,/PandoraWikiData\.utilityCategories\(item\)/);
+ assert.match(app,/PandoraWikiData\.utilityCategories\(item,wikiData\?\.skills\)/);
  assert.match(app,/wiki-harmful-consumable-note/);
  assert.match(app,/временный эффект отравления/);
  assert.match(app,/периодически наносит ему урон ядом/);
@@ -48,4 +49,73 @@ test('encyclopedia exposes localized negative effects filter and a truthful on-u
  assert.doesNotMatch(book,/harmfulConsumables|stage-poison-consumables|Ядовитые расходники/);
  assert.match(book,/statusCures/);
  assert.match(book,/consumableSkills/);
+});
+
+
+test('all source-backed reusable effect items are categorized without duplicate UI records',()=>{
+ const result={buff:[],cure:[],harmful:[],recovery:[],other:[]};
+ for(const [id,item]of Object.entries(items))
+  for(const category of classify(item))result[category].push(Number(id));
+ assert.equal(result.harmful.length,2);
+ assert.deepEqual(result.harmful,[50022,50056]);
+ assert.equal(result.cure.length,10,'Nine direct cures and Purification potion');
+ assert.ok(result.cure.includes(50016));
+ assert.deepEqual(classify(items[50016]),['cure']);
+ assert.equal(result.recovery.length,20);
+ assert.equal(result.buff.length,56,'36 skill buffs and 20 healing items');
+ assert.equal(result.other.length,5,'Cosmetic cake, two teleports and two reset scrolls');
+ assert.deepEqual(classify(items[50066]),['other']);
+ assert.deepEqual(classify(items[90021]),['other']);
+ assert.deepEqual(classify(items[50023]),['cure','buff','recovery']);
+ assert.deepEqual(classify(items[50065]),['cure','buff','recovery']);
+ assert.equal(new Set(Object.values(result).flat()).size,71);
+ const allEffectItems=Object.entries(items).filter(([,item])=>classify(item).length);
+ assert.equal(allEffectItems.length,71);
+});
+test('new consumables are classified by their effects and resolved cleansing skill',()=>{
+ const cureSkill={id:99990001,funcs:[{ep:'EP_REMOVE_BAD_EFFECT',dir:'TARGET'}]};
+ const unknownSkill={id:99990002,funcs:[{ep:'EP_HEAL_LIFE_REGENERATOR',dir:'TARGET'}]};
+ assert.deepEqual(root.PandoraWikiData.utilityCategories(
+  {kind:'POTION',effects:[{dir:'TARGET',func:'EP_SKILL_EXEC',a:99990001}]},
+  {'99990001':cureSkill}),['cure']);
+ assert.deepEqual(root.PandoraWikiData.utilityCategories(
+  {kind:'POTION',effects:[{dir:'TARGET',func:'EP_SKILL_EXEC',a:99990002}]},
+  {'99990002':unknownSkill}),['buff']);
+ assert.deepEqual(classify({slot:'weapon',effects:[
+  {dir:'TARGET',func:'EP_HEAL_LIFE',a:100}]}),[]);
+ assert.deepEqual(classify({kind:'ETC',effects:[
+  {dir:'CASTER',func:'EP_RESTART'}]}),['other']);
+ assert.deepEqual(classify({kind:'TOY',effects:[
+  {dir:'TARGET',func:'EP_RANDOM_BOX'}]}),[]);
+ assert.deepEqual(classify({kind:'POTION',effects:[
+  {dir:'TARGET',func:'EP_HEAL_LIFE',a:5},
+  {dir:'TARGET',func:'EP_RECOVERY_POISON'}]}),['cure','buff','recovery']);
+});
+test('poison root crafting and venom application are derived from actual skill consume/add records',()=>{
+ const relations=id=>root.PandoraWikiData.itemSkillRelations(id,skills);
+ const rootCraft=relations(50022).find(x=>x.id==='220002001');
+ assert.ok(rootCraft);
+ assert.deepEqual(rootCraft.consumes,[50022,65011]);
+ assert.deepEqual(rootCraft.produces,[50056]);
+ const venom=relations(50056);
+ assert.ok(venom.some(x=>x.id==='220002001'&&x.produces.includes(50056)));
+ assert.ok(venom.some(x=>x.id==='220001001'&&x.consumes.includes(50056)));
+ assert.ok(venom.some(x=>x.id==='220001003'&&x.consumes.includes(50056)));
+ const hit=skills[430052001];
+ assert.ok(hit.funcs.some(x=>x.ep==='EP_CAUSE_POISON'));
+ assert.ok(items[50022].effects.some(x=>x.func==='EP_DESTINED_POISON'));
+ assert.ok(items[50056].effects.some(x=>x.func==='EP_DESTINED_POISON'));
+ assert.deepEqual(relations('garbage'),[]);
+ assert.deepEqual(relations(999999),[]);
+});
+test('effects and related wiki links remain bilingual and distinct from loot boxes',()=>{
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/\['recovery','Восстанавливают ОЗ\/ОМ','Restore HP\/MP'\]/);
+ assert.match(app,/\['other','Прочие активируемые предметы','Other usable items'\]/);
+ assert.match(app,/PandoraWikiData\.itemSkillRelations\(id,wikiData\.skills\)/);
+ assert.match(app,/wiki-effect-cure-note/);
+ assert.match(app,/wiki-effect-usage-row/);
+ assert.match(app,/EP_CAUSE_POISON/);
+ assert.match(app,/EP_RECOVERY_POISON/);
+ assert.match(app,/EP_REMOVE_BAD_EFFECT/);
 });
