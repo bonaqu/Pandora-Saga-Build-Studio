@@ -108,7 +108,7 @@ function validTownPatch(type,key,patch){
  if(!(type==='map'?virtualMapId(key):type==='npc'&&virtualNpcId(key))||
   !record(patch))return false;
  const keys=Object.keys(patch);
- const allowed=type==='map'?['name','nameEn','desc','descEn',...mapExtraKeys,...(ownerMapId(key)?['mobs']:[])]:
+ const allowed=type==='map'?['name','nameEn','desc','descEn',...mapExtraKeys,'mobs']:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
  if(type==='map'&&customMapId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)))return false;
