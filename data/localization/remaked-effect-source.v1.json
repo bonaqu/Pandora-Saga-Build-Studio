@@ -5,7 +5,7 @@
   "upstreamRef": "bonaqu_projects",
   "upstreamSource": "js/option.js · Name['Option'][index][4]",
   "policy": "An index documents the Legacy/Remaked effect mapping; it does not automatically prove that a readable Studio label is an official in-game wording. Unmapped codes require independent game-source confirmation. Do not silently rewrite identifiers or mechanics.",
-  "total": 83,
+  "total": 101,
   "rows": [
     {
       "code": "EP_ABILITY_RESET",
@@ -30,6 +30,15 @@
       }
     },
     {
+      "code": "EP_ALL_CRITICAL",
+      "studioLabel": null,
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {},
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
+    },
+    {
       "code": "EP_ARMORCLASS_CONST",
       "studioLabel": "Defense",
       "remakedOptionIndex": 49,
@@ -38,6 +47,25 @@
       "observed": {
         "souls": 7,
         "itemForth": 70
+      }
+    },
+    {
+      "code": "EP_ARMORCLASS_SCALE",
+      "studioLabel": "Defense (%)",
+      "remakedOptionIndex": 49,
+      "remakedEnglish": "DEF",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
+    },
+    {
+      "code": "EP_ATTACK_BACKATK_RATE",
+      "studioLabel": "Back attack",
+      "remakedOptionIndex": 20,
+      "remakedEnglish": "Back+",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 2,
+        "itemForth": 15
       }
     },
     {
@@ -53,17 +81,6 @@
       }
     },
     {
-      "code": "EP_ATTACK_BACKATK_RATE",
-      "studioLabel": "Back attack",
-      "remakedOptionIndex": 20,
-      "remakedEnglish": "Back+",
-      "source": "modern/enhancement-effects.js",
-      "observed": {
-        "items": 2,
-        "itemForth": 15
-      }
-    },
-    {
       "code": "EP_AURADAMAGE_CONST",
       "studioLabel": "Aura damage",
       "remakedOptionIndex": 33,
@@ -75,6 +92,14 @@
       }
     },
     {
+      "code": "EP_AURADAMAGE_SCALE",
+      "studioLabel": "Aura damage (%)",
+      "remakedOptionIndex": 33,
+      "remakedEnglish": "Aura D",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
+    },
+    {
       "code": "EP_AVOIDANCE_CONST",
       "studioLabel": "Evasion",
       "remakedOptionIndex": 65,
@@ -84,6 +109,14 @@
         "items": 19,
         "souls": 9
       }
+    },
+    {
+      "code": "EP_BADEFFECT_TIME_CAST_SCALE",
+      "studioLabel": "G debuff",
+      "remakedOptionIndex": 80,
+      "remakedEnglish": "G debuff",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
     },
     {
       "code": "EP_BADEFFECT_TIME_SCALE",
@@ -128,16 +161,12 @@
       }
     },
     {
-      "code": "EP_CASTINGCANCEL_RESISTANCE_CONST",
-      "studioLabel": "Casting interruption resistance",
-      "remakedOptionIndex": 134,
-      "remakedEnglish": "Cast RES",
+      "code": "EP_BUFF_TOHIT_SCALE",
+      "studioLabel": "Debuff rate",
+      "remakedOptionIndex": 181,
+      "remakedEnglish": "debuff rate",
       "source": "modern/enhancement-effects.js",
-      "observed": {
-        "items": 8,
-        "souls": 2,
-        "itemForth": 10
-      }
+      "observed": {}
     },
     {
       "code": "EP_CAST_HEAL_LIFE_SCALE",
@@ -149,6 +178,18 @@
         "items": 7,
         "souls": 1,
         "itemForth": 27
+      }
+    },
+    {
+      "code": "EP_CASTINGCANCEL_RESISTANCE_CONST",
+      "studioLabel": "Casting interruption resistance",
+      "remakedOptionIndex": 134,
+      "remakedEnglish": "Cast RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {
+        "items": 8,
+        "souls": 2,
+        "itemForth": 10
       }
     },
     {
@@ -174,6 +215,14 @@
         "souls": 7,
         "itemForth": 3
       }
+    },
+    {
+      "code": "EP_CRITICAL_REGIST",
+      "studioLabel": "Critical resistance",
+      "remakedOptionIndex": 70,
+      "remakedEnglish": "Cri RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
     },
     {
       "code": "EP_CRITICALRATE_CONST",
@@ -223,16 +272,6 @@
       }
     },
     {
-      "code": "EP_DESTINED_POISON",
-      "studioLabel": "Applies Poison",
-      "remakedOptionIndex": null,
-      "remakedEnglish": null,
-      "source": null,
-      "observed": {
-        "items": 2
-      }
-    },
-    {
       "code": "EP_DESTINE_WARDING",
       "studioLabel": "Warding",
       "remakedOptionIndex": null,
@@ -240,6 +279,16 @@
       "source": null,
       "observed": {
         "items": 1
+      }
+    },
+    {
+      "code": "EP_DESTINED_POISON",
+      "studioLabel": "Applies Poison",
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {
+        "items": 2
       }
     },
     {
@@ -265,6 +314,15 @@
         "souls": 2,
         "itemForth": 51
       }
+    },
+    {
+      "code": "EP_ELEMENT_DAMAGE_SCALE_FIRE",
+      "studioLabel": null,
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {},
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
     },
     {
       "code": "EP_EXPERTISE_RESET",
@@ -337,6 +395,14 @@
       "observed": {
         "items": 2
       }
+    },
+    {
+      "code": "EP_HEAL_TIME_SCALE",
+      "studioLabel": "MP recovery speed",
+      "remakedOptionIndex": 10,
+      "remakedEnglish": "MP Rec SPD",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
     },
     {
       "code": "EP_HOLY_RESISTANCE_CONST",
@@ -509,6 +575,14 @@
       }
     },
     {
+      "code": "EP_LIGHTNING_RESISTANCE_CONST",
+      "studioLabel": "Lightning resistance",
+      "remakedOptionIndex": 140,
+      "remakedEnglish": "Thund R",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
+    },
+    {
       "code": "EP_MAGIC_RESISTANCE_CONST",
       "studioLabel": "Magic resistance",
       "remakedOptionIndex": 145,
@@ -519,6 +593,14 @@
         "souls": 1,
         "itemForth": 27
       }
+    },
+    {
+      "code": "EP_MASTERY_POTION",
+      "studioLabel": "Potion effectiveness",
+      "remakedOptionIndex": 8,
+      "remakedEnglish": "POT",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
     },
     {
       "code": "EP_MAXLIFE_CONST",
@@ -580,6 +662,14 @@
       }
     },
     {
+      "code": "EP_ONDAMAGE_ELEM_SCALE",
+      "studioLabel": "Magic resistance (%)",
+      "remakedOptionIndex": 60,
+      "remakedEnglish": "Mag RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
+    },
+    {
       "code": "EP_ONDAMAGE_ELEM_SKILL_EXEC",
       "studioLabel": "Elemental skill when hit",
       "remakedOptionIndex": null,
@@ -588,6 +678,23 @@
       "observed": {
         "items": 1
       }
+    },
+    {
+      "code": "EP_ONDAMAGE_FDS_RACE",
+      "studioLabel": null,
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {},
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
+    },
+    {
+      "code": "EP_ONDAMAGE_FIN_DAMAGE_CONST",
+      "studioLabel": "Physical damage resistance",
+      "remakedOptionIndex": 52,
+      "remakedEnglish": "Phy RES",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
     },
     {
       "code": "EP_ONDAMAGE_FIN_DAMAGE_SCALE",
@@ -600,6 +707,14 @@
         "souls": 4,
         "itemForth": 21
       }
+    },
+    {
+      "code": "EP_ONDAMAGE_REFLECTION",
+      "studioLabel": "Damage reflection",
+      "remakedOptionIndex": 135,
+      "remakedEnglish": "Reflect",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
     },
     {
       "code": "EP_ONDAMAGE_SKILL_EXEC",
@@ -695,6 +810,15 @@
       "observed": {
         "items": 2
       }
+    },
+    {
+      "code": "EP_RACE_TOUGH_HEART",
+      "studioLabel": null,
+      "remakedOptionIndex": null,
+      "remakedEnglish": null,
+      "source": null,
+      "observed": {},
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
     },
     {
       "code": "EP_RANDOM_BOX",
@@ -820,6 +944,22 @@
       }
     },
     {
+      "code": "EP_SKILL_DELAY_FIN",
+      "studioLabel": "Casting speed (final)",
+      "remakedOptionIndex": 77,
+      "remakedEnglish": "Cast SPD",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
+    },
+    {
+      "code": "EP_SKILL_EQUIP_DAMAGERATE",
+      "studioLabel": "MaxATK",
+      "remakedOptionIndex": 18,
+      "remakedEnglish": "MaxATK",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
+    },
+    {
       "code": "EP_SKILL_EXEC",
       "studioLabel": "Activates skill",
       "remakedOptionIndex": null,
@@ -848,6 +988,14 @@
       "observed": {
         "items": 9
       }
+    },
+    {
+      "code": "EP_SPECIAL_WARDING_TYPE2",
+      "studioLabel": "DP damage",
+      "remakedOptionIndex": 182,
+      "remakedEnglish": "DP damage",
+      "source": "modern/enhancement-effects.js",
+      "observed": {}
     },
     {
       "code": "EP_SPIRITUAL_CONST",
