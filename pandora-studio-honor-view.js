@@ -7,6 +7,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  if(!browse||!detail||!article||typeof make!=='function')return;
  const en=lang==='en',tr=(ru,english)=>en?english:ru,
   fmt=new Intl.NumberFormat(en?'en-US':'ru-RU');
+ const oldBrowseScroll=browse.scrollTop,oldDetailScroll=detail.scrollTop;
  browse.replaceChildren();detail.replaceChildren();
  const node=(tag,cls,text)=>make(tag,{class:cls,text});
  const section=(id,ru,english)=>{
@@ -42,18 +43,35 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const paragraph=(sectionNode,value,key,field)=>
   sectionNode.append(editableText(node('p','wiki-honor-copy',value),
    value,key,field,true));
- const toc=make('div',{class:'wiki-honor-toc'});
- toc.append(node('strong','',tr('ОЧКИ ЧЕСТИ','HONOR POINTS')));
- for(const [id,ru,english]of [
-  ['overview','Система чести','Honor system'],['gain','Как заработать','How to earn'],
-  ['ranks','12 рангов','12 ranks'],['monthly','Ежемесячные награды','Monthly rewards']
- ]){
-  const jump=make('button',{type:'button',class:'wiki-honor-jump',
-   text:tr(ru,english),onclick:()=>detail.querySelector('#honor-'+id)
-    ?.scrollIntoView({block:'start',behavior:'smooth'})});
-  toc.append(jump);
+ // Same left-side row system as every other encyclopedia chapter.
+ const sidebar=[
+  ['overview','Система чести','Honor system','◈'],
+  ['gain','Получение и потеря','Earning and losing','⚔'],
+  ['ranks','Ранги и привилегии','Ranks and privileges','♜'],
+  ['monthly','Ежемесячные звания','Monthly titles','✦']
+ ];
+ browse.append(node('p','muted',tr('Разделы · 4','Sections · 4')));
+ browse.append(node('h4','wiki-location-list-heading',tr('Очки чести','Honor points')));
+ const nav=[];
+ for(const [id,ru,english,glyph]of sidebar){
+  const jump=make('button',{type:'button',class:'wiki-link wiki-honor-nav-link',
+   'data-honor-section':id,'aria-current':id==='overview'?'location':null});
+  jump.append(node('span','wiki-honor-nav-icon',glyph),
+   node('span','',tr(ru,english)));
+  jump.addEventListener('click',()=>{
+   for(const link of nav){
+    const active=link===jump;
+    link.classList.toggle('selected',active);
+    if(active)link.setAttribute('aria-current','location');
+    else link.removeAttribute('aria-current');
+   }
+   detail.querySelector('#honor-'+id)?.scrollIntoView({
+    block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?
+     'instant':'smooth'});
+  });
+  nav.push(jump);browse.append(jump);
  }
- browse.append(toc);
+ nav[0]?.classList.add('selected');
  const title=node('h3','wiki-honor-title',tr('Очки чести','Honor points'));
  detail.append(title,node('p','wiki-honor-subtitle',tr(
   'PvP · нации · звания · награды','PvP · nations · titles · rewards')));
@@ -178,9 +196,33 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const ranks=section('ranks','Ранги и привилегии','Honor ranks and privileges');
  paragraph(ranks,en?o.ranksEn:o.ranksRu,'honor.overview',
   en?'ranksEn':'ranksRu');
+ const rankFilters=make('div',{class:'wiki-honor-rank-filters',role:'group',
+  'aria-label':tr('Фильтр рангов','Rank filter')});
  const rankGrid=make('div',{class:'wiki-honor-rank-list'});
+ const filters=[
+  ['all',tr('Все · 12','All · 12')],
+  ['standard',tr('Обычные · 9','Standard · 9')],
+  ['monthly',tr('Месячные · 3','Monthly · 3')]
+ ];
+ for(const [key,label]of filters){
+  const button=make('button',{type:'button',class:'wiki-honor-filter'+(key==='all'?' chosen':''),
+   text:label,'aria-pressed':String(key==='all'),onclick:()=>{
+    for(const choice of rankFilters.querySelectorAll('button')){
+     const active=choice===button;
+     choice.classList.toggle('chosen',active);choice.setAttribute('aria-pressed',String(active));
+    }
+    for(const card of rankGrid.children)
+     card.hidden=key==='standard'?card.dataset.rankType!=='standard':
+      key==='monthly'?card.dataset.rankType!=='monthly':false;
+   }});
+  rankFilters.append(button);
+ }
+ ranks.append(rankFilters);
  for(const rank of article.ranks){
-  const card=make('div',{class:'wiki-honor-rank'+(rank.id===7?' is-moon':'')});
+  const card=make('div',{class:'wiki-honor-rank'+(rank.id===7?' is-moon':'')+
+   (rank.top!=null?' is-monthly':'')});
+  card.dataset.rankType=rank.top!=null?'monthly':'standard';
+  card.id='honor-rank-'+rank.id;
   const header=make('div',{class:'wiki-honor-rank-head'});
   header.append(node('span','wiki-honor-rank-number',
    rank.id===7?'☾':String(rank.id+1).padStart(2,'0')));
@@ -213,6 +255,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  detail.append(node('p','wiki-honor-sources',tr(
   'Источники: правила и числа предоставлены игроком, справочники старой Pandora Saga и новость OS от 23.10.2026. Исторические условия могут отличаться от живого сервера.',
   'Sources: player-supplied rules and figures, historical Pandora Saga references, and the OS announcement of Oct 23, 2026. Historical rules may differ from the live server.')));
+ browse.scrollTop=oldBrowseScroll;detail.scrollTop=oldDetailScroll;
 }
 root.PandoraHonorView=Object.freeze({render});
 })(typeof window==='undefined'?globalThis:window);
