@@ -2147,6 +2147,9 @@ function renderWiki(root){
     text:wt('При использовании отравляет персонажа, употребившего предмет: временный эффект отравления периодически наносит ему урон ядом. Урон за тик, интервал, длительность и шанс из данных OS не установлены.',
      'Using this item poisons the character who consumed it: the temporary poison effect deals periodic poison damage to that character. Tick damage, interval, duration and chance are not established by the OS data.')}));
   if(type==='map'){
+   if(rec.historic)detail.append(h('span',{class:'wiki-map-kind wiki-historic-tag',
+    text:wt('Историческая PvP-локация · недоступна на OS',
+     'Historical PvP location · not available on current OS')}));
    const geo=window.PandoraAstirLocations;
    const district=geo?.district(id),nation=geo?.country(id);
    if(district){
@@ -3029,6 +3032,30 @@ function renderWiki(root){
       for(const row of rows)row.entry.hidden=!matchesWords(row.name,search.value);
      });
      detail.append(search,list);
+    }
+    if(type==='map'&&Array.isArray(rec.reportedSpawns)){
+     const block=h('section',{class:'wiki-historic-roster'});
+     block.append(h('h4',{text:wt('Исторические монстры · ','Historical monsters · ')+rec.reportedSpawns.length}));
+     block.append(h('p',{class:'wiki-historic-notice',text:wt(
+      'Исторический состав Эль Ведда. Только подтверждённые совпадения связаны с карточками монстров. Появление на актуальном OS не подтверждено.',
+      'Historic El Beht roster. Only verified matches link to monster pages. Current OS spawns are not confirmed.')}));
+     const list=h('div',{class:'wiki-historic-mob-list'});
+     for(const entry of rec.reportedSpawns.slice().sort((a,b)=>a.level-b.level)){
+      const cell=h('div',{class:'wiki-historic-mob'+(entry.monsterId==null?' unverified':'')});
+      cell.append(h('span',{class:'wiki-historic-level',text:wt('Ур. ','Lv. ')+entry.level}));
+      const mapped=entry.monsterId!=null&&mobs.includes(entry.monsterId)&&
+       Boolean(wikiData.monsters?.[entry.monsterId]);
+      cell.append(mapped?wikiLink(entry.name,'monster',entry.monsterId):
+       h('span',{class:'wiki-historic-name',text:entry.name}));
+      if(entry.spawn==='anywhere')cell.append(h('small',{
+       text:wt('Может появиться в любой точке','May spawn anywhere')}));
+      else if(entry.spawn==='boss-guard')cell.append(h('small',{
+       text:wt('Страж вожака · при особых условиях','Boss guard · conditional spawn')}));
+      if(entry.monsterId==null)cell.append(h('small',{class:'wiki-historic-unverified',
+       text:wt('ID не подтверждён','ID unverified')}));
+      list.append(cell);
+     }
+     block.append(list);detail.append(block);
     }
     if(type==='map'){
       const residents=wikiIndex.residents(id);
