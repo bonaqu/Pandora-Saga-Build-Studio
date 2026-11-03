@@ -508,7 +508,8 @@ function validMapExtra(key,value){
    plain(row)&&Object.keys(row).every(x=>
     ['id','titleRu','titleEn','kind','entries','textRu','textEn'].includes(x))&&
    /^section-[a-z0-9-]{1,34}$/.test(row.id)&&word(row.titleRu,100)&&word(row.titleEn,100)&&
-   ['item','monster','npc','text'].includes(row.kind)&&validIds(row.entries||[])&&
+   ['item','monster','npc','text'].includes(row.kind)&&
+   (row.kind==='monster'?validMonsterRefs(row.entries||[],60):validIds(row.entries||[]))&&
    (row.textRu==null||typeof row.textRu==='string'&&row.textRu.length<=1200)&&
    (row.textEn==null||typeof row.textEn==='string'&&row.textEn.length<=1200));
  return false;
@@ -518,7 +519,7 @@ function validWikiOwnerPatch(text,type){
  let data;try{data=JSON.parse(text)}catch{return false}
  if(!data||typeof data!=='object'||Array.isArray(data))return false;
  const fields={
-  monster:['name','nameEn','desc','descEn','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
+  monster:['name','nameEn','desc','descEn','loot','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
   map:['name','nameEn','desc','descEn','notesRu','notesEn','mobs',...mapExtraNames],
   npc:['name','nameEn','desc','descEn','maps','service','serviceEn','grid'],
   instance:['name','blurb','blurbRu','mobs'],
@@ -550,6 +551,7 @@ function validWikiOwnerPatch(text,type){
     /^[A-Z_]{2,25}$/.test(k)&&n===1);
   if(key==='mobs')return type==='map'?validMonsterRefs(v,1000):checkIds(v);
   if(key==='maps')return checkIds(v);
+  if(type==='monster'&&key==='loot')return checkIds(v);
   if(type==='map'&&mapExtraNames.includes(key))return validMapExtra(key,v);
   if(key==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&
    v.every(x=>['weapon','shield','head','body','gloves','legs','feet','cloak',
@@ -569,7 +571,7 @@ function validTownWikiPatch(text,type,id){
  if(!patch||typeof patch!=='object'||Array.isArray(patch))return false;
  const ownerMap=['el-beht','astir-underground'].includes(id)||id.startsWith('custom-');
  const allowed=type==='map'?['name','nameEn','desc','descEn','notesRu','notesEn',...mapExtraNames,'mobs']:
-  type==='monster'?['name','nameEn','desc','descEn','level','life','ac',
+  type==='monster'?['name','nameEn','desc','descEn','loot','level','life','ac',
    'magicProtection','warding','str','vit','agi','dex','spi','int','resists']:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  if(type==='monster'){
