@@ -2224,6 +2224,61 @@ function renderWiki(root){
        'data-owner-field':lang==='en'?'nameEn':'name'}:{})});
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
    detail.append(heading);
+   if(adminEditing&&adminToken){
+    detail.append(h('p',{class:'wiki-owner-instruction',
+     text:wt('✎ Подчёркнутые значения: двойной клик или F2 — изменить. При выходе из поля — автосохранение в Cloudflare D1.',
+      '✎ Highlighted values: double-click or F2 to edit. Leaving the field saves automatically to Cloudflare D1.')}));
+    if(['map','monster','npc','skill','soul','instance'].includes(type))
+     heading.tabIndex=0;
+    if(['map','monster'].includes(type)&&
+     (type==='map'&&window.PandoraWikiOwnerData.customMapId(id)||
+      type==='monster'&&window.PandoraWikiOwnerData.ownerMonsterId(id))){
+     const owned=Boolean(rec.ownerCreated);
+     if(owned){
+      const button=h('button',{type:'button',
+       class:'wiki-owner-remove wiki-owner-delete-record',
+       text:type==='map'?wt('Удалить созданную локацию','Delete created location'):
+        wt('Удалить созданного монстра','Delete created monster')});
+      const remove=async()=>{
+       const maps=wikiIndex.records('map')||{};
+       const instances=wikiIndex.records('instance')||{};
+       const usedInCustom=Object.values(maps).some(loc=>
+        (loc.extraSections||[]).some(group=>
+         group.kind===type&&group.entries?.some(x=>String(x)===String(id))));
+       const linked=type==='map'?
+        (rec.mobs||[]).length||(rec.npcs||[]).length||
+         (rec.loot||[]).length||wikiIndex.residents(id).length||
+         (window.PandoraHonorGuide?.article?.(override)?.zones||[])
+          .some(row=>String(row.mapId)===String(id)):
+        wikiIndex.locations(id).length||
+         Object.values(instances).some(d=>(d.mobs||[]).some(x=>String(x)===String(id)));
+       if(linked||usedInCustom){
+        showStudioToast(wt(
+         'Сначала убери связанные монстров, NPC, добычу, разделы и ссылки на эту запись. Удаление с зависимостями заблокировано.',
+         'Remove linked monsters, NPCs, loot, sections and references before deleting this record.'),
+         'warning');return;
+       }
+       if(!confirm(type==='map'?
+        wt('Удалить созданную вручную локацию из D1? Это нельзя отменить после завершения сеанса.',
+         'Delete this owner-created location from D1? This cannot be undone after the session.'):
+        wt('Удалить созданную вручную карточку монстра из D1?',
+         'Delete this owner-created monster card from D1?')))return;
+       const key='wikiedit.'+type+'.'+id,before=activeOverride(key);
+       if(before===null)return;
+       button.disabled=true;
+       try{
+        await apiRequest('/api/admin/reset',{key});
+        delete override[key];ownerEdits.push({key,before,after:null});
+        wikiSelection={type,id:null,highlight:null};wikiSearch='';
+        await refreshOwnerCatalog();refreshOwnerUI();
+       }catch(error){button.disabled=false;showStudioToast(
+        'Удаление не выполнено: '+error.message,'warning')}
+      };
+      button.onclick=()=>void remove();
+      detail.append(button);
+     }
+    }
+   }
    const namesakes=wikiIndex.sameName(type,id);
    if(namesakes.length)detail.append(h('small',{class:'wiki-variant-note',
     text:wt('Есть другие варианты с таким названием','Other entries share this name')}));
@@ -4631,13 +4686,15 @@ function showOverrideManager(){
  function wikiDataOrCatalogHasRecord(target){
   if(target.type==='item'||target.type==='chest')
    return Boolean(wikiBaseData?.items?.[target.id]||catalogSource?.items?.[target.id]);
-  if(target.type==='monster')return Boolean(wikiBaseData?.monsters?.[target.id]);
+  if(target.type==='monster')return Boolean(wikiIndex?.records('monster')?.[target.id]||
+   wikiBaseData?.monsters?.[target.id]);
   if(target.type==='skill')return Boolean(wikiBaseData?.skills?.[target.id]);
   if(target.type==='npc')return Boolean(wikiBaseData?.trades?.npcs?.[target.id]||
    window.PandoraAstirLocations?.npcRecords?.()[target.id]||
-   wikiData?.townNpcs?.[target.id]);
+   wikiData?.townNpcs?.[target.id]||wikiIndex?.records('npc')?.[target.id]);
   if(target.type==='soul')return Boolean(wikiBaseData?.souls?.[target.id]);
-  if(target.type==='map')return Boolean(wikiBaseData?.maps?.[target.id]||
+  if(target.type==='map')return Boolean(wikiIndex?.records('map')?.[target.id]||
+   wikiBaseData?.maps?.[target.id]||
    wikiBaseData?.trades?.mapNames?.[target.id]||
    window.PandoraAstirLocations?.district(target.id));
   if(target.type==='instance')return (wikiBaseData?.instances||[]).some(x=>
@@ -5019,6 +5076,14 @@ function inlineWikiText(el){
 
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
+ if(editIsSaving||ownerSaveState==='saving'){
+  showStudioToast('Дождись завершения сохранения в Cloudflare D1 перед созданием PR.','warning');
+  return;
+ }
+ if(ownerSaveState==='error'){
+  showStudioToast('Сначала исправь ошибку сохранения. PR пока недоступен.','warning');
+  return;
+ }
  try{
   const info=await apiRequest('/api/admin/catalog/owner-review');
   if(!info.configured){showStudioToast('GitHub-токен пока недоступен Worker.','warning');return}
@@ -5234,6 +5299,24 @@ $('hero').addEventListener('keydown',event=>{
   showStudioToast('Не все игровые описания доступны на английском.','warning');
  applyGameLocale();
 };document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+document.addEventListener('keydown',event=>{
+ if(!adminEditing||!adminToken||!['F2','Enter'].includes(event.key)||
+  event.target.closest?.('[data-owner-text-field],input,textarea,select,button,a'))return;
+ const owner=event.target.closest?.('[data-owner-record][data-owner-field]');
+ if(owner&&owner===event.target){
+  const [type,id]=owner.dataset.ownerRecord.split(':');
+  event.preventDefault();event.stopPropagation();
+  wikiOwnerText(owner,type,id,owner.dataset.ownerField,
+   {multiline:!['name','nameEn'].includes(owner.dataset.ownerField)});
+  return;
+ }
+ const editable=event.target.closest?.('[data-edit-key]');
+ if(editable&&editable===event.target&&
+  /^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey)){
+  event.preventDefault();event.stopPropagation();
+  inlineWikiText(editable);
+ }
+},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const owner=event.target.closest('[data-owner-record]');
