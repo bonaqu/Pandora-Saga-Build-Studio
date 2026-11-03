@@ -1890,6 +1890,10 @@ function renderWiki(root){
    line.append(withIcon(chest,wikiIcon('chest',row.id),'chest'));
   }else if(row.type==='zone'){
    line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
+  }else if(row.type==='owner-map'){
+   line.append(link('◈ '+dataName('map',row.id),'map',row.id,'wiki-source-primary'));
+   line.append(h('small',{class:'wiki-source-meta',text:wt(
+    'Связь с добычей добавлена редактором','Curated loot reference')}));
   }
   if(row.manual&&adminEditing&&adminToken){
    if(row.type==='monster'){
