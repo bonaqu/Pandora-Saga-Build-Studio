@@ -4641,7 +4641,7 @@ function updateAdminHint(){
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
 const ownerEdits=[];
-let ownerSaveState='ready',ownerSaveError='';
+let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=false;
 let activeInlineEditor=null;
 let editIsSaving=false;
 function closeInlineEditor(){
@@ -4665,13 +4665,20 @@ function refreshOwnerUI(){
   if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
    ownerSaveState==='saving';
+  root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
+  const toggle=root.querySelector('[data-owner-collapse]');
+  if(toggle){toggle.textContent=ownerDockCollapsed?'Развернуть':'Свернуть';
+   toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed))}
  };
  if(dock){update(dock);return}
  const root=h('aside',{id:'ownerDock',class:'owner-dock',role:'region',
   'aria-label':'Редактор сайта · изменения сохраняются автоматически'});
  const head=h('div',{class:'owner-dock-head'},[
   h('strong',{class:'owner-dock-title',text:'✎ Редактор сайта'}),
-  h('small',{class:'owner-dock-online',text:'Редактирование включено'})
+  h('small',{class:'owner-dock-online',text:'Редактирование включено'}),
+  h('button',{type:'button','data-owner-collapse':'',
+   'aria-label':'Свернуть или развернуть панель редактора',
+   onclick:()=>{ownerDockCollapsed=!ownerDockCollapsed;refreshOwnerUI()}})
  ]);
  const status=h('div',{class:'owner-dock-save-state','data-owner-save-state':'',
   role:'status','aria-live':'polite'});
