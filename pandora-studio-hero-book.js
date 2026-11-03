@@ -818,7 +818,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
     for(const [key,value] of Object.entries(values||{}))
      card.append(make('p',{text:title+' · '+(labels[key]||key)+': +'+value+suffix}));
    };
-   show(english?'Weapon aura base':'Основа ауры оружия',gem.auras);
    const totalAura=modifiers?.auraDamage?.elements||{};
    for(const [element,amount] of Object.entries(totalAura))
     card.append(make('p',{text:(english?'Total aura':'Итог ауры')+' · '+
@@ -834,16 +833,14 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    body.prepend(card);
   }
  }
- if(page==='attack'&&modifiers?.mountedRelease){
-  const riding=modifiers.mountedRelease;
-  const card=make('section',{class:'stage-attribute-row'});
-  card.append(make('strong',{text:'Верховая езда'}),
-   make('p',{text:'Раскрытие характеристик верхом: '+riding.known+'%'}),
-   make('p',{text:'Профессия '+riding.jobBase+'% · мастерство +'+riding.mastery+
-    '% · титул +'+riding.honor+'%'}));
-  body.prepend(card);
+ if(page==='attack'&&Number.isFinite(modifiers?.mountedRelease?.known)){
+  const en=document.documentElement?.lang==='en';
+  body.prepend(make('section',{class:'stage-attribute-row'},[
+   make('strong',{text:en?'Mounted attribute release':'Раскрытие характеристик верхом'}),
+   make('p',{text:String(modifiers.mountedRelease.known)+'%'})
+  ]));
  }
- if(page==='attack'&&modifiers?.elementalRefinement?.entries?.length){
+ if(chosen==='effects'&&modifiers?.elementalRefinement?.entries?.length){
   const english=document.documentElement?.lang==='en';
   const card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:english?
@@ -858,7 +855,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    'Показан эффект закалки из игрового каталога при выбранном самоцвете огня. Серверное суммирование и срабатывание Пламени феникса не подтверждены; значение не прибавлено к общей МАТК и титулу чести.'}));
   body.prepend(card);
  }
- if(page==='attack'&&modifiers?.elementalMagic){
+ if(chosen==='effects'&&modifiers?.elementalMagic){
   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',
    poison:'Яд',light:'Свет',dark:'Тьма'};
   const values=Object.entries(modifiers.elementalMagic)
@@ -871,7 +868,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    body.prepend(magic);
   }
  }
- if(page==='defense'&&modifiers?.targetResistance?.entries?.length){
+ if(chosen==='effects'&&modifiers?.targetResistance?.entries?.length){
   const english=document.documentElement?.lang==='en';
   const card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:english?'Defense by enemy type':
@@ -976,9 +973,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  charm:'Очарование',light:'Свет',dark:'Тьма',magic:'Магия',
  accuracy:'Точность',dodge:'Уклонение',criticalChance:'Критический шанс'};
  const active=Object.entries(totals).filter(([key])=>names[key]&&
-  ['attack','defense','effects'].includes(chosen)&&
-  (page==='defense'? !['accuracy','dodge','criticalChance'].includes(key):
-   page==='attack'?['accuracy','dodge','criticalChance'].includes(key):true));
+  chosen==='effects');
  if(active.length){
   const card=make('section',{class:'stage-attribute-row'});
   card.append(make('strong',{text:'Известные бонусы снаряжения и душ'}));
@@ -1192,10 +1187,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
       make('strong',{text:result?number(result.damage):'—'})
      ]));
      if(result){
-      panel.append(make('p',{class:'stage-elemental-explanation',text:
-       number(result.flat)+' + '+number(result.scale)+'% × '+
-       result.stat+' ('+number(result.attribute)+') = '+
-       number(result.damage)}));
       panel.append(make('p',{class:'stage-elemental-explanation',text:en?
        'Trigger chance: '+number(result.chance)+'% · Cooldown: '+number(result.cooldown)+' s':
        'Шанс срабатывания: '+number(result.chance)+'% · Откат: '+number(result.cooldown)+' сек.'}));
@@ -1208,8 +1199,6 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
      for(const entry of bonus.rows)
       panel.append(make('p',{text:entry.name+' +'+entry.value+
        (entry.unit==='%'?'%':'')}));
-     if(bonus.phoenix)panel.append(make('p',{class:'stage-elemental-explanation',
-      text:root.PandoraConditionalItemBonuses.phoenixExplanation(bonus.phoenix)}));
     }
    }
    body.prepend(panel);
@@ -1217,13 +1206,25 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  }
  if(['attack','defense'].includes(chosen)&&modifiers?.combat){
   const battle=modifiers.combat;
+  const en=document.documentElement?.lang==='en';
+  const label=(ru,english)=>en?english:ru;
+  const percent=value=>Number.isFinite(value)?value+'%':null;
   const numbers=chosen==='attack'?
-   [['Физическая атака',battle.attack?.known],
-    ['Магическая атака',battle.magicAttack?.known==null?null:battle.magicAttack.known+'%'],
-    ['Точность',battle.accuracy?.known],['Критический шанс',battle.critical?.known]]:
-   [['Защита',battle.defense?.known],['Уклонение',battle.dodge?.known],
-    ['Входящий крит. урон',battle.criticalIncomingDamage==null?null:battle.criticalIncomingDamage+'%'],
-    ['Устойчивость к сбою',battle.castInterruption]];
+   [[label('Физическая атака','Physical attack'),battle.attack?.known],
+    [label('Магическая атака','Magic attack'),percent(battle.magicAttack?.known)],
+    [label('Точность','Accuracy'),battle.accuracy?.known],
+    [label('Шанс крита','Critical chance'),percent(battle.critical?.known)],
+    [label('Крит. урон','Critical damage'),percent(battle.criticalDamage)],
+    [label('Скорость атаки','Attack speed'),percent(battle.attackSpeed?.known)],
+    [label('Скорость каста','Casting speed'),percent(battle.castingSpeed?.known)],
+    [label('Расход ОМ','MP cost'),percent(battle.manaCost?.remaining)],
+    [label('Откат умений','Skill cooldown'),percent(battle.cooldown)],
+    [label('Скорость движения','Movement speed'),percent(battle.movementSpeed?.known)],
+    [label('Скорость в городе','Town speed'),percent(battle.movementSpeed?.town)]]:
+   [[label('Защита','Defense'),battle.defense?.known],
+    [label('Уклонение','Evasion'),battle.dodge?.known],
+    [label('Входящий крит. урон','Incoming critical damage'),percent(battle.criticalIncomingDamage)],
+    [label('Устойчивость к сбою','Cast interruption resistance'),battle.castInterruption]];
   const grid=make('div',{class:'stage-result-grid stage-combat-quick'});
   for(const [label,value]of numbers)grid.append(make('div',{class:'stage-result-tile'},[
    make('span',{text:label}),make('strong',{text:value??'—'})]));
