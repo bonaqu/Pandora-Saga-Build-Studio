@@ -56,7 +56,8 @@ function build(data){
    if(Object.hasOwn(data.items||{},String(itemId)))
     add(itemId,{type:'owner-map',id:mapId,curated:true});
   for(const npcId of map.npcs||[]){
-   const npc=(data.trades?.npcs||{})[String(npcId)];
+   const npc=(data.trades?.npcs||{})[String(npcId)]||
+    astirNpcs[String(npcId)];
    if(!npc)continue;
    const listed=npcLocations.get(String(mapId))||[];
    if(!listed.some(([id])=>String(id)===String(npcId)))
@@ -135,7 +136,8 @@ function build(data){
   for(const mob of map.mobs||[])if(Object.hasOwn(data.monsters||{},String(mob)))
    addLocation(mob,place);
   for(const npcId of map.npcs||[]){
-   const npc=(data.trades?.npcs||{})[String(npcId)];
+   const npc=(data.trades?.npcs||{})[String(npcId)]||
+    astirNpcs[String(npcId)];
    if(!npc)continue;
    const listed=npcLocations.get(String(mapId))||[];
    if(!listed.some(([id])=>String(id)===String(npcId)))
