@@ -3160,9 +3160,13 @@ function renderWiki(root){
       detail.append(search,list);
      }
     }
-    if(type==='map'){
+    if(type==='map'&&showMapSection('npcs')){
       const residents=wikiIndex.residents(id);
-      if(adminEditing&&adminToken&&!rec.virtual){
+      if(ownerMap&&rec.virtual){
+       detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
+        kind:'npc',existing:rec.npcs||[],limit:120,
+        onChange:next=>saveWikiRecordField('map',id,'npcs',next.map(Number))}));
+      }else if(adminEditing&&adminToken&&!rec.virtual){
        detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
         kind:'npc',existing:residents.map(([npcId])=>String(npcId)),onChange:async next=>{
          const before=residents.map(([npcId])=>String(npcId)),after=next.map(String);
@@ -3178,18 +3182,15 @@ function renderWiki(root){
         }}));
       }else if(residents.length){
        detail.append(h('h4',{text:wt('NPC в локации','NPCs in this location')+' · '+residents.length}));
-       if(rec.virtual){
-        const list=h('div',{class:'wiki-map-npcs'});
-        for(const [npcId,npc] of residents){
-         const entry=h('div',{class:'wiki-map-npc'});
-         entry.append(wikiLink('♙ '+dataName('npc',npcId),'npc',npcId));
-         const meta=[npc.grid,npc.service].filter(Boolean);
-         if(meta.length)entry.append(h('small',{text:meta.join(' · ')}));
-         list.append(entry);
-        }
-        detail.append(list);
-       }else detail.append(linkFlow(residents.map(([npcId])=>
-        wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
+       const list=h('div',{class:'wiki-map-npcs'});
+       for(const [npcId,npc] of residents){
+        const entry=h('div',{class:'wiki-map-npc'});
+        entry.append(wikiLink('♙ '+dataName('npc',npcId),'npc',npcId));
+        const meta=[npc.grid,npc.service].filter(Boolean);
+        if(meta.length)entry.append(h('small',{text:meta.join(' · ')}));
+        list.append(entry);
+       }
+       detail.append(list);
       }else if(rec.virtual){
        detail.append(h('p',{class:'muted',
         text:wt('Подтверждённых сведений о NPC пока нет.',
@@ -3234,9 +3235,22 @@ function renderWiki(root){
        };
        detail.append(add);
       }
+    }
+    if(type==='map'&&showMapSection('loot')){
+     const loot=Array.isArray(rec.loot)?rec.loot:[];
+     if(ownerMap){
+      detail.append(wikiOwnerEntityList({label:wt('Добыча в локации','Location loot'),
+       kind:'item',existing:loot,limit:120,
+       onChange:next=>saveWikiRecordField('map',id,'loot',next.map(Number))}));
+     }else if(loot.length){
+      detail.append(h('h4',{text:wt('Добыча в локации','Location loot')}));
+      detail.append(linkFlow(loot.filter(x=>wikiData.items?.[String(x)]).map(x=>
+       itemLink(x,dataName('item',x),id))));
+     }
      const dropZones=wikiIndex.zones(id);
      if(dropZones.length){
-      detail.append(h('h4',{text:wt('Добыча в локации','Location loot')}));
+      if(!ownerMap&&!loot.length)
+       detail.append(h('h4',{text:wt('Добыча в локации','Location loot')}));
       for(const zone of dropZones)for(const group of zone.rows||[]){
        const block=h('section',{class:'wiki-zone-group'});
        if(group.mob!=null&&wikiData.monsters?.[group.mob])
