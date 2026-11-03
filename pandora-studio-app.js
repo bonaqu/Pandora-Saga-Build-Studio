@@ -1535,7 +1535,12 @@ function renderWiki(root){
   outsidePickers.add(onOutside);
   document.addEventListener('pointerdown',onOutside,true);
  };
- wikiOutsideCleanup=cleanupOutsidePickers;
+ let wikiSearchTimer=null;
+ wikiOutsideCleanup=()=>{
+  cleanupOutsidePickers();
+  if(wikiSearchTimer!==null)clearTimeout(wikiSearchTimer);
+  wikiSearchTimer=null;
+ };
  let wikiResultsCache=null;
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['honor','Очки чести','Honor points'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
@@ -4062,7 +4067,16 @@ function renderWiki(root){
    row=>row.getAttribute('data-wiki-record')===wikiSelection.id);
   draw(present);
  };
- search.addEventListener('input',()=>{wikiSearch=search.value;wikiShown=100;wikiSelection={...wikiSelection,id:null,highlight:null};browse.scrollTop=0;if(wikiIndex)draw()});
+ search.addEventListener('input',()=>{
+  wikiSearch=search.value;wikiShown=100;
+  wikiSelection={...wikiSelection,id:null,highlight:null};
+  browse.scrollTop=0;
+  if(wikiSearchTimer!==null)clearTimeout(wikiSearchTimer);
+  wikiSearchTimer=setTimeout(()=>{
+   wikiSearchTimer=null;
+   if(root.isConnected&&activeTab==='wiki'&&wikiIndex)draw();
+  },100);
+ });
  if(wikiIndex)draw();
  else{
   browse.append(h('p',{class:'muted',text:wt('Загружаю записи…','Loading entries…')}));
