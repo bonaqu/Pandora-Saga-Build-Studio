@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import worker from '../worker/index.js';
 const read=x=>readFileSync(new URL('../'+x,import.meta.url),'utf8');
 const host={};
 Function('window',read('pandora-studio-honor-guide.js'))(host);
@@ -84,6 +85,62 @@ test('Owner historical maps D1 patches do not alter game source records',()=>{
  assert.equal(base.maps['el-beht'].name,'Эль Ведд');
  assert.equal(owners.validTownPatch('map','astir-union',{mobs:[21231]}),false);
  assert.equal(owners.validTownPatch('map','el-beht',{mobs:[21231,21231]}),false);
+});
+test('authenticated D1 Worker saves and resets Honor copy, lists and historical maps',async()=>{
+ const values=new Map();
+ const DB={prepare(sql){
+  let args=[];
+  return {
+   bind(...params){args=params;return this},
+   first:async()=>({id:1}),
+   run:async()=>{
+    if(sql.includes('INSERT INTO overrides'))values.set(args[0],args[1]);
+    if(sql.includes('DELETE FROM overrides'))values.delete(args[0]);
+    return {meta:{changes:1}};
+   }
+  };
+ }};
+ const token='a'.repeat(43),origin='https://bonaqu.github.io';
+ const invoke=async(path,payload,auth=true)=>{
+  const response=await worker.fetch(new Request(
+   'https://ps-build-studio-cloud.bonaqu.workers.dev'+path,{
+    method:'POST',headers:{Origin:origin,
+     ...(auth?{Authorization:'Bearer '+token}:{})},
+    body:JSON.stringify(payload)
+   }),{DB});
+  return response;
+ };
+ const examples=[
+  ['guideedit.book.summary.0',{ru:'Очки здоровья',hintEn:'Total health points.'}],
+  ['guideedit.book.buffs.honor',{hintRu:'Пассивное умение Министра.'}],
+  ['guideedit.honor.rank.7',{nameRu:'Министр',benefitEn:'Honor passive.'}],
+  ['guideedit.honor.overview',{currentRu:'Вся честь используется для рангов.'}],
+  ['guideedit.honor.zones',[{id:'elbeht',nameRu:'Эль Ведд',nameEn:'El Beht',mapId:'el-beht'}]],
+  ['guideedit.honor.wars',[{id:'lidia',nameRu:'Лидия',nameEn:'Lydia'}]],
+  ['wikiedit.map.el-beht',{name:'Эль Ведд',nameEn:'El Beht',mobs:[21231,21205]}],
+  ['wikiedit.map.astir-underground',{name:'Подземные руины Астира',mobs:[]}]
+ ];
+ for(const [key,object] of examples){
+  const value=JSON.stringify(object);
+  const result=await invoke('/api/admin/override',{key,value});
+  assert.equal(result.status,200,key+' '+await result.text());
+  assert.equal(values.get(key),value,key+' persisted');
+  assert.equal((await invoke('/api/admin/override',{key,value},false)).status,401);
+  const reset=await invoke('/api/admin/reset',{key});
+  assert.equal(reset.status,200,key+' reset '+await reset.text());
+  assert.equal(values.has(key),false,key+' removed');
+ }
+ for(const [key,object] of [
+  ['guideedit.book.summary.0',{ru:'Allowed',onclick:'alert(1)'}],
+  ['guideedit.honor.zones',[{id:'x',nameRu:'Only RU'}]],
+  ['guideedit.honor.wars',[{id:'x',nameRu:'RU',nameEn:'EN',evil:1}]],
+  ['wikiedit.map.el-beht',{mobs:[21231,21231]}],
+  ['wikiedit.map.astir-underground',{name:''}],
+  ['wikiedit.map.not-a-map',{name:'Fake'}]
+ ]){
+  const response=await invoke('/api/admin/override',{key,value:JSON.stringify(object)});
+  assert.equal(response.status,400,key+' '+await response.text());
+ }
 });
 test('Book, encyclopedia, Worker, scripts and styles are connected',()=>{
  const html=read('index.html'),worker=read('worker/index.js'),
