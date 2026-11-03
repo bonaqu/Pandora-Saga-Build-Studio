@@ -131,7 +131,7 @@ test('owner interface offers in-place bilingual editing, NPC creation and editab
  assert.match(app,/saveWikiRecordField\('npc',id,'maps',\[selector.value\]\)/);
  assert.match(app,/await apiRequest\('\/api\/admin\/override',\{key,value:after\}\)/);
  assert.match(workerSource,/validTownWikiPatch/);
- assert.match(exportSource,/npc\\\.astir-npc/);
+ assert.match(exportSource,/npc\\\.\(\?:astir-npc/);
  assert.ok(geo.district('astir-kingdom'));
 });
 

@@ -65,6 +65,12 @@ export async function runAdminEntrySmoke(browser,base){
     'x-ps-catalog-snapshot':'ps-browser-snapshot'},
     contentType:'application/json',body:JSON.stringify(content)});
   }
+  if(path==='/api/admin/reset'&&method==='POST'){
+   const data=route.request().postDataJSON();
+   assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
+   const existed=townOverrides.delete(data.key);
+   return json({ok:true,key:data.key,deleted:existed});
+  }
   if(path==='/api/admin/override'&&method==='POST'){
    const data=route.request().postDataJSON();
    townOverrides.set(data.key,data.value);
@@ -118,6 +124,18 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   assert.deepEqual(calls.filter(p=>p==='/api/admin/login'),['/api/admin/login']);
+  const ownerPanel=page.locator('#ownerDock');
+  assert.match(await ownerPanel.innerText(),/Cloudflare D1/);
+  assert.match(await ownerPanel.innerText(),/сохранение автоматически|сохранение автоматическое/);
+  assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),0,
+   'The floating dock must start compact and not cover editable wiki rows');
+  await ownerPanel.locator('.owner-workflow-guide>summary').click();
+  assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),1);
+  assert.match(await ownerPanel.locator('.owner-workflow-glossary').innerText(),/Игровой каталог/);
+  await ownerPanel.locator('.owner-workflow-guide>summary').click();
+  assert.match(await ownerPanel.innerText(),/PR правок/);
+  assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
+  assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
   // All catalog requests are mocked; no production Worker or D1 is mutated.
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
@@ -269,6 +287,27 @@ export async function runAdminEntrySmoke(browser,base){
   )?.textContent==='Кларис — проверка D1',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).name,
    'Кларис — проверка D1');
+  await ownerPanel.locator('[data-owner-save-state]').filter({hasText:'Сохранено в Cloudflare D1'})
+   .waitFor({state:'visible',timeout:15000});
+  // The long NPC title must stay entirely visible INSIDE its editable field,
+  // not be clipped at the old 320px/nowrap limit.
+  const longName='Мастер арены Алиса — координатор состязаний и тренировочного турнира';
+  await npcHeading.dblclick();
+  const fullEditor=npcHeading.locator('[data-owner-text-field]');
+  assert.equal((await fullEditor.innerText()).trim(),'Кларис — проверка D1');
+  await fullEditor.fill(longName);
+  const bounds=await fullEditor.evaluate(node=>({
+   scroll:node.scrollWidth,client:node.clientWidth,
+   whiteSpace:getComputedStyle(node).whiteSpace,overflow:getComputedStyle(node).overflow
+  }));
+  assert.match(bounds.whiteSpace,/pre-wrap|normal/);
+  assert.ok(bounds.scroll<=bounds.client+3,'Long NPC name clipped: '+JSON.stringify(bounds));
+  await fullEditor.press('Tab');
+  await page.waitForFunction(value=>document.querySelector(
+   '.wiki-page h3[data-owner-record="npc:astir-npc-kingdom-claris"]'
+  )?.textContent===value,longName,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).name,
+   longName);
   // This value changes before the async owner POST finishes. Observe the
   // actual isolated mock write instead of racing the optimistic select UI.
   const savedLocation=page.waitForResponse(response=>{
@@ -333,6 +372,20 @@ export async function runAdminEntrySmoke(browser,base){
    .waitFor({state:'visible',timeout:20000});
   assert.equal(JSON.parse(townOverrides.get(customMapKeys[0])).extraSections[0].titleEn,
    'History');
+  // Deleting a D1-only location must leave the official game maps untouched.
+  const removedKey=customMapKeys[0];
+  page.once('dialog',dialog=>void dialog.accept());
+  const resetCompleted=page.waitForResponse(response=>{
+   if(!response.url().endsWith('/api/admin/reset'))return false;
+   try{return response.request().postDataJSON().key===removedKey}
+   catch{return false}
+  },{timeout:15000});
+  await page.locator('.wiki-page .wiki-owner-delete-record').click();
+  await resetCompleted;
+  await page.waitForFunction(key=>!document.querySelector(
+   '.wiki-list [data-wiki-record="'+key+'"]'
+  ),removedKey.replace('wikiedit.map.',''),{timeout:15000});
+  assert.equal(townOverrides.has(removedKey),false,'Owner location removed from D1');
   // The owner's verified El Beht roster is editable without inventing OS
   // numeric IDs. Create an owner monster from an unmatched report and link it.
   await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
@@ -370,6 +423,39 @@ export async function runAdminEntrySmoke(browser,base){
   await elBeht.locator('.wiki-map-monsters .wiki-link[href="#wiki/monster/'+createdId+'"]')
    .waitFor({state:'visible',timeout:20000});
   assert.equal(await elBeht.locator('.wiki-map-monsters .wiki-mob-row').count(),22);
+  // Create a genuine administrator-owned NPC from the same confirmed map.
+  await elBeht.locator('.wiki-map-create-npc').click();
+  const npcForm=elBeht.locator('.wiki-map-create-npc-form');
+  await npcForm.locator('[aria-label="Название нового NPC RU"]').fill('Мастер арены Алиса');
+  await npcForm.locator('[aria-label="New NPC name EN"]').fill('Arena Master Alice');
+  await npcForm.locator('[aria-label="Назначение нового NPC"]').fill('Управляет ареной');
+  const savedNpc=page.waitForResponse(response=>{
+   if(!response.url().endsWith('/api/admin/override'))return false;
+   try{return /^wikiedit\.npc\.owner-npc-/.test(response.request().postDataJSON().key)}
+   catch{return false}
+  },{timeout:8000}).then(()=>true,()=>false);
+  await npcForm.getByRole('button',{name:/Save NPC|Сохранить NPC/}).click();
+  if(!await savedNpc){
+   const diagnostic=await page.evaluate(()=>({
+    error:document.querySelector('.wiki-map-create-npc-form .inline-owner-error')?.textContent,
+    status:document.querySelector('#ownerDock [data-owner-save-state]')?.textContent,
+    form:document.querySelector('.wiki-map-create-npc-form')?.textContent?.slice(0,220),
+    selected:document.querySelector('.wiki-page h3')?.textContent,
+    jsErrors:document.querySelector('#siteNotice')?.textContent
+   }));
+   throw Error('Owner NPC creation did not POST: '+JSON.stringify(diagnostic)+
+    '; browser errors: '+errors.join('; '));
+  }
+  const newNpcKeys=[...townOverrides.keys()].filter(key=>/^wikiedit\.npc\.owner-npc-/.test(key));
+  assert.equal(newNpcKeys.length,1);
+  const newNpc=JSON.parse(townOverrides.get(newNpcKeys[0]));
+  assert.equal(newNpc.name,'Мастер арены Алиса');
+  assert.deepEqual(newNpc.maps,['el-beht']);
+  const newNpcId=newNpcKeys[0].slice('wikiedit.npc.'.length);
+  await elBeht.locator('.wiki-owner-location-residents a[href="#wiki/npc/'+newNpcId+'"]')
+   .waitFor({state:'visible',timeout:20000});
+  assert.ok(await ownerPanel.locator('[data-owner-count]').innerText());
+  console.log('Chromium future-map NPC D1 passed: create, link and display bilingual owner NPC');
   console.log('Chromium future-map roster D1 passed: owner monster creation and cross-link');
   console.log('Chromium owner location created and edited through D1: RU/EN, tags, sections');
   console.log('Chromium admin town NPC D1 passed: inline RU/EN edits and relocation');

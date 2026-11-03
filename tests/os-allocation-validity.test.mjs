@@ -24,7 +24,7 @@ test('future armor remains in OS catalog with original requirements',()=>{
 });
 test('level 55 builds keep their allocation and calculated outputs, not server-45 clamp',()=>{
  assert.match(app,/!Number.isInteger\(original\.level\)\|\|original\.level<1\|\|original\.level>55/);
- assert.match(app,/function previewBaseStats\(\)\{/);
+ assert.match(app,/function previewBaseStats\(snap=state\)\{/);
  assert.doesNotMatch(app,/if\(allocationIssue\(\)\?\.invalid\)return null/);
  assert.doesNotMatch(app,/function renderAllocationWarning\(/);
  assert.doesNotMatch(app,/levelCapNotice|allocationWarning/);

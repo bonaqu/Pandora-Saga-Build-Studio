@@ -92,5 +92,175 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
  }
  return rows;
 }
-root.PandoraBuildComparison=Object.freeze({describe,savedItemName});
+
+/* Structured Build A/B comparison: rendered inside the saved-builds view, not
+   a modal. Every computed metric comes from the SAME Hero Book summary matrix.
+   Missing game data is unknown, never fabricated as zero. */
+function matrixRows(a={},b={},options={}){
+ const {lang='ru',races=[],jobs=[],stats=[],branches=[],slotLabels=[],
+  equipment={},souls={},skillCatalog={},enchant=null,honorTitles=[],
+  calcA=null,calcB=null,summaryA=[],summaryB=[],trained=null}=options;
+ const english=lang==='en',rows=[];
+ const label=(ru,en)=>english?en:ru;
+ const fmtNumber=value=>{
+  const n=Math.round(value*10000)/10000;
+  return new Intl.NumberFormat(english?'en-US':'ru-RU',
+   {maximumFractionDigits:4}).format(Object.is(n,-0)?0:n);
+ };
+ const readable=(value,kind)=>{
+  if(value===null||value===undefined)return '—';
+  if(kind==='number')return typeof value==='number'&&Number.isFinite(value)?
+   fmtNumber(value):'—';
+  if(kind==='boolean')return value===true?label('Вкл','On'):label('Выкл','Off');
+  if(typeof value==='string')return value.trim()||'—';
+  if(typeof value==='number'&&Number.isFinite(value))return fmtNumber(value);
+  return '—';
+ };
+ const push=(section,group,key,ru,en,left,right,{kind='text',unit=''}={})=>{
+  const aText=readable(left,kind),bText=readable(right,kind);
+  const number=kind==='number'&&typeof left==='number'&&typeof right==='number'&&
+   Number.isFinite(left)&&Number.isFinite(right);
+  const rawDelta=number?Math.round((right-left)*10000)/10000:null;
+  const delta=number?(rawDelta>0?'+':'')+fmtNumber(rawDelta)+unit:null;
+  rows.push({section,group,key,label:label(ru,en),a:aText+(aText==='—'?'':unit),
+   b:bText+(bText==='—'?'':unit),equal:aText===bText,delta,
+   direction:rawDelta===null?'unavailable':
+    rawDelta>0?'up':rawDelta<0?'down':'flat'});
+ };
+ const section=(ru,en)=>label(ru,en);
+ const metadata=section('Персонаж','Character');
+ push('character',metadata,'race','Раса','Race',
+  races[a.race]?.[english?1:0],races[b.race]?.[english?1:0]);
+ push('character',metadata,'gender','Пол','Gender',a.gender===1?
+  label('Мужской','Male'):label('Женский','Female'),
+  b.gender===1?label('Мужской','Male'):label('Женский','Female'));
+ push('character',metadata,'job','Профессия','Class',jobs[a.job],jobs[b.job]);
+ push('character',metadata,'level','Уровень','Level',a.level,b.level,{kind:'number'});
+ const profile=section('Профиль','Profile');
+ for(const [key,ru,en] of [['guild','Гильдия','Guild'],['nation','Нация','Nation'],
+  ['rank','Ранг','Rank'],['about','О герое','About']])
+  push('character',profile,'profile.'+key,ru,en,
+   String(a.profile?.[key]||'').slice(0,250),String(b.profile?.[key]||'').slice(0,250));
+ const racialName=value=>{
+  const id=value?.racialPassiveId;
+  return id==null?'—':String(skillCatalog[id]?.name||'№ '+id);
+ };
+ push('character',metadata,'racialPassiveId','Расовая пассивка','Racial passive',
+  racialName(a),racialName(b));
+ const invested=section('Распределённые характеристики','Allocated attributes');
+ const ability=section('Характеристики с бонусами','Effective attributes');
+ const keys=['vit','str','agi','dex','spi','int'];
+ for(let i=0;i<keys.length;i++){
+  const [ru,en]=stats[i]||[keys[i].toUpperCase(),keys[i].toUpperCase()];
+  const key=keys[i],from=Number(a.stats?.[ru]),to=Number(b.stats?.[ru]);
+  push('character',invested,'points.'+key,ru,en,
+   Number.isFinite(from)?from:0,Number.isFinite(to)?to:0,{kind:'number'});
+  const valueA=calcA?.stats?.[key],valueB=calcB?.stats?.[key];
+  push('results',ability,'effective.'+key,ru,en,valueA,valueB,{kind:'number'});
+ }
+ const totals=section('Результаты расчёта Книги героя','Hero Book results');
+ for(let i=0;i<Math.max(summaryA.length,summaryB.length);i++){
+  const groupA=summaryA[i],groupB=summaryB[i];
+  const group=totals+' · '+label(groupA?.ru||groupB?.ru||'',
+   groupA?.en||groupB?.en||'');
+  const listA=groupA?.rows||[],listB=groupB?.rows||[];
+  for(let j=0;j<Math.max(listA.length,listB.length);j++){
+   const left=listA[j],right=listB[j];
+   if(!left&&!right)continue;
+   const valueA=left?.value,valueB=right?.value,unit=left?.unit||right?.unit||'';
+   push('results',group,'result.'+i+'.'+j,left?.ru||right?.ru||'',
+    left?.en||right?.en||'',valueA,valueB,{kind:'number',unit});
+  }
+ }
+ const skillGroup=section('Ветви и мастерство','Branches & mastery');
+ push('skills',skillGroup,'masteryAuto','Автоматическое мастерство','Automatic mastery',
+  a.masteryAuto!==false,b.masteryAuto!==false,{kind:'boolean'});
+ for(const branch of branches){
+  const [id,ru,en]=branch;
+  push('skills',skillGroup,'branch.'+id,ru,en,
+   Number(a.points?.[id])||0,Number(b.points?.[id])||0,{kind:'number'});
+  if(typeof trained==='function'){
+   push('skills',skillGroup,'mastery.'+id,label('Мастерство: ','Mastery: ')+ru,
+    'Mastery: '+en,trained(a,id),trained(b,id),{kind:'number'});
+  }
+ }
+ const gearGroup=section('Снаряжение','Equipment');
+ const soulGroup=section('Души','Souls');
+ const gemGroup=section('Самоцветы','Gems');
+ const actualSlot=(i)=>english?EN_SLOTS[i]:(slotLabels[i]||'Слот '+(i+1));
+ for(let i=0;i<14;i++){
+  const slot=actualSlot(i),x=a.equipment?.[i],y=b.equipment?.[i];
+  push('equipment',gearGroup,'gear.'+i,slot,EN_SLOTS[i],
+   savedItemName(x,equipment,{lang}),savedItemName(y,equipment,{lang}));
+  if(x||y){
+   push('equipment',gearGroup,'refinement.'+i,'Заточка: '+slot,
+    'Refinement: '+EN_SLOTS[i],
+    typeof options.refinement==='function'?options.refinement(a,i,x):0,
+    typeof options.refinement==='function'?options.refinement(b,i,y):0,{kind:'number'});
+  }
+  const soulA=Array.isArray(a.souls?.[i])?a.souls[i]:
+   a.souls?.[i]?[a.souls[i]]:[];
+  const soulB=Array.isArray(b.souls?.[i])?b.souls[i]:
+   b.souls?.[i]?[b.souls[i]]:[];
+  for(let k=0;k<Math.max(soulA.length,soulB.length);k++)
+   push('equipment',soulGroup,'soul.'+i+'.'+k,
+    slot+' · '+label('Душа ','Soul ')+(k+1),
+    EN_SLOTS[i]+' · Soul '+(k+1),
+    savedItemName(soulA[k],souls,{lang,kind:'soul'}),
+    savedItemName(soulB[k],souls,{lang,kind:'soul'}));
+  const gemLabel=v=>{
+   if(!v)return '—';
+   const t=enchant?.types?.find(x=>x.id===v.type);
+   const e=enchant?.elements?.find(x=>x.id===v.element);
+   if(!t||!e)return '—';
+   return (english?(t.en||t.id):t.ru)+' · '+(english?e.en:e.ru);
+  };
+  const getGem=(snap,item)=>{
+   if(!item?.id)return null;
+   return enchant?.normalize?.(snap.gems?.[i+':'+item.id])||null;
+  };
+  if(x||y)push('equipment',gemGroup,'gem.'+i,'Самоцвет: '+slot,
+   'Gem: '+EN_SLOTS[i],gemLabel(getGem(a,x)),gemLabel(getGem(b,y)));
+ }
+ const buffGroup=section('Усиления и гильдия','Buffs & guild');
+ for(const [key,ru,en,fallback]of VITALS){
+  const read=s=>asValue(s.vitalsBuffs?.[key],fallback);
+  push('buffs',buffGroup,'vital.'+key,ru,en,read(a),read(b),
+   {kind:typeof fallback==='boolean'?'boolean':'number'});
+ }
+ for(const [key,ru,en,fallback]of BUFFS){
+  const read=s=>asValue(s.attributeBuffs?.[key],fallback);
+  push('buffs',buffGroup,'buff.'+key,ru,en,read(a),read(b),
+   {kind:typeof fallback==='boolean'?'boolean':'number'});
+ }
+ const priest=section('Усиления жреца','Priest buffs');
+ const extras=[
+  ['guildLevel','Уровень гильдии','Guild level',0],
+  ['priestEnabled','Внешний жрец включён','External priest enabled',false],
+  ['priestSpi','Дух жреца','Priest spirit',0],
+  ['priestBlessing','Благословение','Blessing',0],
+  ['priestHymn','Песнопение','Hymn',0],
+  ['priestEncouragement','Ободрение','Encouragement',false],
+  ['priestGratia','Знак атаки','Attack blessing',false],
+  ['priestLapisMedio','Знак защиты','Defense blessing',false],
+  ['priestDarkAura','Тёмная аура','Dark aura',false],
+  ['priestHolyWeapon','Священное оружие','Holy weapon',false]
+ ];
+ for(const [key,ru,en,fallback]of extras){
+  const get=s=>asValue(s.attributeBuffs?.[key],fallback);
+  push('buffs',priest,'priest.'+key,ru,en,get(a),get(b),
+   {kind:typeof fallback==='boolean'?'boolean':'number'});
+ }
+ const title=id=>honorTitles?.[id]?.[english?'en':'ru']||String(id);
+ const honorId=s=>Number.isInteger(s.attributeBuffs?.honorTitle)?
+  s.attributeBuffs.honorTitle:(s.attributeBuffs?.honorCuriosity===true?1:0);
+ push('buffs',buffGroup,'honorTitle','Титул чести','Honor title',
+  title(honorId(a)),title(honorId(b)));
+ push('buffs',buffGroup,'resistanceSkills','Умения сопротивления','Resistance skills',
+  (a.attributeBuffs?.resistanceSkillIds||[]).map(String).sort().join(', '),
+  (b.attributeBuffs?.resistanceSkillIds||[]).map(String).sort().join(', '));
+ return rows;
+}
+
+root.PandoraBuildComparison=Object.freeze({describe,savedItemName,matrixRows});
 })(typeof window==='undefined'?globalThis:window);

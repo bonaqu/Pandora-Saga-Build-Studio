@@ -14,9 +14,9 @@ const combat=(jobKey,selected,catalog=skills,branchMasteries={})=>calc.combatPre
 });
 test('frontend passes every known green mastery branch instead of Slash only',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/function trainedBranchMasteries\(innate=\{\}\)/);
- assert.match(app,/groupAdeptness\(state,\[id\],innate\)/);
- assert.match(app,/const branchMasteries=trainedBranchMasteries\(initialBranches\)/);
+ assert.match(app,/function trainedBranchMasteries\(innate=\{\},snap=state\)/);
+ assert.match(app,/groupAdeptness\(snap,\[id\],innate\)/);
+ assert.match(app,/const branchMasteries=trainedBranchMasteries\(initialBranches,snap\)/);
  const state={points:{slash:26,exorcism:30},masteryAuto:false,
   mastery:{slash:26,exorcism:28}};
  const innate={slash:0,exorcism:1};

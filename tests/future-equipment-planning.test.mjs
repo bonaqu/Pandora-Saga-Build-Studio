@@ -29,7 +29,7 @@ test('future selection is distinct from actual equipment eligibility and persist
  assert.match(app,/Будет доступен с /);
  assert.match(app,/stage-picker-future/);
  assert.match(app,/state\.equipment\[selectedSlot\]=\{id:rec\.id/);
- assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\)\)\.length\)continue/);
+ assert.match(app,/if\(!item\|\|equipmentIssue\(item,Number\(slot\),snap\)\.length\)continue/);
 });
 test('future equipment cannot bypass originating job or ornamental restrictions',()=>{
  const deco={id:90,slot:'weapon',level:50,kind:'DECO_SKIN',classes:{WARRIOR:1}};

@@ -291,49 +291,49 @@ function branchCap(branch){
  // No invented cap: when a game class is still loading, disable spending until real caps exist.
  return window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0;
 }
-function equipmentIssue(item,slot){
+function equipmentIssue(item,slot,snap=state){
  if(!item)return ['Предмет отсутствует в каталоге'];
  if(!window.PandoraEquipmentPlan.matchesEquipmentSlot(slot,item,slotKeys))
   return ['Предмет не подходит этому слоту'];
  const rules=window.PandoraStudioRules.equipment(item,{
-  slot:slotKeys[slot],job:jobKeys[state.job],level:state.level
+  slot:slotKeys[slot],job:jobKeys[snap.job],level:snap.level
  });
  const missing=[...rules.missing];
- if(!window.PandoraUIPlanner.raceCompatible(item,state.race,state.gender))
+ if(!window.PandoraUIPlanner.raceCompatible(item,snap.race,snap.gender))
   missing.push('Не подходит происхождению героя');
  if(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_'))
   missing.push('Это декоративный предмет');
  if(slot===1&&item.slot==='shield'){
-  const source=state.equipment?.[0];
+  const source=snap.equipment?.[0];
   const weapon=source&&catalog.equipment?.[String(source.id)];
   const usable=weapon&&window.PandoraStudioRules.equipment(weapon,{
-   slot:'weapon',job:jobKeys[state.job],level:state.level
-  }).allowed&&window.PandoraUIPlanner.raceCompatible(weapon,state.race,state.gender)&&
+   slot:'weapon',job:jobKeys[snap.job],level:snap.level
+  }).allowed&&window.PandoraUIPlanner.raceCompatible(weapon,snap.race,snap.gender)&&
    weapon.isCostumeOverlay!==true&&!String(weapon.kind||'').startsWith('DECO_');
   if(window.PandoraEquipmentPlan.occupiesOffhand(weapon,Boolean(usable)))
    missing.push('Двуручное оружие занимает обе руки');
  }
  return missing;
 }
-function trainedBranchMasteries(innate={}){
+function trainedBranchMasteries(innate={},snap=state){
  return Object.fromEntries(branches.map(({id})=>[
-  id,window.PandoraSkillProgression.groupAdeptness(state,[id],innate)
+  id,window.PandoraSkillProgression.groupAdeptness(snap,[id],innate)
  ]));
 }
-function previewBaseStats(){
- const clazz=catalog.classes?.[jobKeys[state.job]],raceKey=window.PandoraGameNavigation.raceKeys[state.race];
- const baseClass=clazz?.baseClass||jobKeys[state.job];
- const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(state.stats[STATS[i]]||0)]));
+function previewBaseStats(snap=state){
+ const clazz=catalog.classes?.[jobKeys[snap.job]],raceKey=window.PandoraGameNavigation.raceKeys[snap.race];
+ const baseClass=clazz?.baseClass||jobKeys[snap.job];
+ const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(snap.stats[STATS[i]]||0)]));
  const records=[],gemSelections=[];
- for(const [slot,selection] of Object.entries(state.equipment||{})){
+ for(const [slot,selection] of Object.entries(snap.equipment||{})){
   const item=selection&&catalog.equipment?.[String(selection.id)];
-  if(!item||equipmentIssue(item,Number(slot)).length)continue;
-  const grade=window.PandoraEquipmentPlan.refinementValue(state.refinements,Number(slot),selection);
+  if(!item||equipmentIssue(item,Number(slot),snap).length)continue;
+  const grade=window.PandoraEquipmentPlan.refinementValue(snap.refinements,Number(slot),selection);
   records.push(['item:'+item.id,item,grade]);
   const gem=window.PandoraEnchantModel.normalizeForSlot(item.slot,
-   state.gems?.[window.PandoraEquipmentPlan.refinementKey(Number(slot),selection)]);
+   snap.gems?.[window.PandoraEquipmentPlan.refinementKey(Number(slot),selection)]);
   if(gem)gemSelections.push({slot:item.slot,itemId:item.id,grade,gem});
-  const souls=window.PandoraEquipmentPlan.asSocketArray(state.souls?.[slot]);
+  const souls=window.PandoraEquipmentPlan.asSocketArray(snap.souls?.[slot]);
   const capacity=window.PandoraEquipmentPlan.socketCapacity(item);
   for(let i=0;i<(window.PandoraEquipmentPlan.supportsSoulSlot(slotKeys[Number(slot)])?(capacity??0):0);i++){
    const soul=souls[i]&&catalog.souls?.[String(souls[i].id)];
@@ -342,40 +342,40 @@ function previewBaseStats(){
   }
  }
  const initialBranches=gameTables?.jobInit?.[baseClass]?.branches||{};
- const weaponSelection=state.equipment?.[0];
+ const weaponSelection=snap.equipment?.[0];
  const selectedWeapon=weaponSelection&&catalog.equipment?.[String(weaponSelection.id)]||null;
- const weapon=selectedWeapon&&!equipmentIssue(selectedWeapon,0).length?selectedWeapon:null;
+ const weapon=selectedWeapon&&!equipmentIssue(selectedWeapon,0,snap).length?selectedWeapon:null;
  const weaponGrade=weaponSelection&&weapon?
-  window.PandoraEquipmentPlan.refinementValue(state.refinements,0,weaponSelection):0;
+  window.PandoraEquipmentPlan.refinementValue(snap.refinements,0,weaponSelection):0;
  const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(
-  jobKeys[state.job],state,initialBranches);
+  jobKeys[snap.job],snap,initialBranches);
  // Remaked Status.Skill[0][0] + [1]: innate branch green mastery
  // PLUS additionally trained green; exclude blue Potential from this sum.
- const masteries=window.PandoraSkillProgression.combatMasteries(state,initialBranches);
+ const masteries=window.PandoraSkillProgression.combatMasteries(snap,initialBranches);
  // Pass every trained branch to the OS skill gates; future catalog skills
  // may require more than the original Slash mastery.
- const branchMasteries=trainedBranchMasteries(initialBranches);
- const ridingMastery=window.PandoraSkillProgression.groupAdeptness(state,['riding'],initialBranches);
- const wardingMastery=window.PandoraSkillProgression.groupAdeptness(state,['warding'],initialBranches);
+ const branchMasteries=trainedBranchMasteries(initialBranches,snap);
+ const ridingMastery=window.PandoraSkillProgression.groupAdeptness(snap,['riding'],initialBranches);
+ const wardingMastery=window.PandoraSkillProgression.groupAdeptness(snap,['warding'],initialBranches);
  const meleeMastery=masteries.melee;
  const benevolenceMastery=window.PandoraSkillProgression.groupAdeptness(
-  state,['benevolence'],initialBranches);
+  snap,['benevolence'],initialBranches);
  const legacyBuffMasteries=Object.fromEntries(['blessing','hymn','alchemy']
   .map(branch=>[branch,window.PandoraSkillProgression.groupAdeptness(
-   state,[branch],initialBranches)]));
- const guildLevel=Number(state.attributeBuffs?.guildLevel)||0;
+   snap,[branch],initialBranches)]));
+ const guildLevel=Number(snap.attributeBuffs?.guildLevel)||0;
  const unlocked=window.PandoraOSCalculator.guildPassiveAtLevel(guildLevel);
  const effectiveGuildBuffs={
   vitals:guildLevel>0&&unlocked?
-   {...state.vitalsBuffs,guildHp:unlocked.guildHp,guildMp:unlocked.guildMp}:
-   state.vitalsBuffs||{},
+   {...snap.vitalsBuffs,guildHp:unlocked.guildHp,guildMp:unlocked.guildMp}:
+   snap.vitalsBuffs||{},
   attributes:guildLevel>0&&unlocked?
-   {...state.attributeBuffs,guildLifeRecovery:unlocked.guildLifeRecovery,
-    guildManaRecovery:unlocked.guildManaRecovery}:state.attributeBuffs||{}
+   {...snap.attributeBuffs,guildLifeRecovery:unlocked.guildLifeRecovery,
+    guildManaRecovery:unlocked.guildManaRecovery}:snap.attributeBuffs||{}
  };
  return window.PandoraOSCalculator.base({
   classData:clazz,raceData:gameTables?.raceInit?.[raceKey],jobData:gameTables?.jobInit?.[baseClass],
-  allocation,level:state.level,records,itemForth:gameItemForth,gemSelections,
+  allocation,level:snap.level,records,itemForth:gameItemForth,gemSelections,
   unisonCatalog:catalogSource?.unison||null,
   consumableItems:catalogSource?.items||null,
   supplementalFlat:prayerSpirit?{spi:prayerSpirit}:{},
@@ -385,15 +385,15 @@ function previewBaseStats(){
   // Normalize numeric-string legacy IDs through the same canonical owner list
   // used by the racial selection UI before *any* calculation runs.
   potionContext:{racialPassiveId:window.PandoraGameNavigation.canonicalRacialPassiveId(
-   catalog.racialPassives,state.race,state.racialPassiveId),
-   jobKey:jobKeys[state.job],meleeMastery},
+   catalog.racialPassives,snap.race,snap.racialPassiveId),
+   jobKey:jobKeys[snap.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
-   jobKey:jobKeys[state.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,wardingMastery,
+   jobKey:jobKeys[snap.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,wardingMastery,
    skillCatalog:catalog.skills||{},branchMasteries,
-   externalPriest:{enabled:state.attributeBuffs?.priestEnabled===true,
-    spi:state.attributeBuffs?.priestSpi||0,
-    blessing:state.attributeBuffs?.priestBlessing||0,
-    hymn:state.attributeBuffs?.priestHymn||0},...masteries}
+   externalPriest:{enabled:snap.attributeBuffs?.priestEnabled===true,
+    spi:snap.attributeBuffs?.priestSpi||0,
+    blessing:snap.attributeBuffs?.priestBlessing||0,
+    hymn:snap.attributeBuffs?.priestHymn||0},...masteries}
  });
 }
 function renderPotionPreview(calculated){
@@ -698,6 +698,9 @@ function showWorkbench(){
  if(stageSlotPickerOpen)closeStagePicker(false);
  panel.classList.add('is-open');panel.setAttribute('aria-modal','true');
  backdrop.hidden=false;document.body.classList.add('studio-workbench-open');
+ // When editing in the large workbench, keep the owner dock clear of inline
+ // NPC, map and monster controls. The status and expand action stay available.
+ if(adminEditing&&adminToken&&!wasOpen){ownerDockCollapsed=true;refreshOwnerUI()}
  if(!wasOpen)$('dockClose')?.focus({preventScroll:true});
 }
 function closeWorkbench(){
@@ -706,6 +709,7 @@ function closeWorkbench(){
  panel.classList.remove('is-open');panel.removeAttribute('aria-modal');
  if(backdrop)backdrop.hidden=true;
  document.body.classList.remove('studio-workbench-open');
+ if(adminEditing&&adminToken){ownerDockCollapsed=false;refreshOwnerUI()}
  const old=workbenchReturnFocus;workbenchReturnFocus=null;
  newBuildPromptOpen=false;newBuildDraftName=null;
  if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
@@ -1876,7 +1880,7 @@ function renderWiki(root){
  if(label)container.append(h('h4',{text:label}));
  const ids=[...new Set((existing||[]).map(String))];
  const candidates=kind==='monster'?wikiData.monsters:
-  kind==='npc'?wikiData.trades?.npcs:
+  kind==='npc'?wikiIndex.records('npc'):
   kind==='map'?wikiIndex.records('map'):
   kind==='item'?wikiData.items:wikiIndex.records('instance');
  const idValue=value=>/^[1-9][0-9]{0,14}$/.test(String(value))?Number(value):String(value);
@@ -2218,12 +2222,97 @@ function renderWiki(root){
     ['item','chest'].includes(type)?'item.'+id:null;
    const heading=h('h3',{text:dataName(type,id),
     ...(adminEditing&&lang==='ru'&&nameKey?{'data-edit-key':nameKey}:{}),
-    ...(adminEditing&&(lang==='ru'||['npc','map','monster'].includes(type))&&
-     ['monster','map','npc','instance','soul'].includes(type)?
+    ...(adminEditing&&(lang==='ru'||['npc','map','monster','soul','instance'].includes(type))&&
+     ['monster','map','npc','instance','soul'].includes(type)||
+     adminEditing&&lang==='en'&&type==='skill'?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'nameEn':'name'}:{})});
    detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
    detail.append(heading);
+   if(adminEditing&&adminToken){
+    detail.append(h('p',{class:'wiki-owner-instruction',
+     text:wt('✎ Подчёркнутые значения: двойной клик или F2 — изменить. При выходе из поля — автосохранение в Cloudflare D1.',
+      '✎ Highlighted values: double-click or F2 to edit. Leaving the field saves automatically to Cloudflare D1.')}));
+    if(['map','monster','npc','skill','soul','instance'].includes(type))
+     heading.tabIndex=0;
+    if(['map','monster'].includes(type)&&
+     (type==='map'&&window.PandoraWikiOwnerData.customMapId(id)||
+      type==='monster'&&window.PandoraWikiOwnerData.ownerMonsterId(id))){
+     const owned=Boolean(rec.ownerCreated);
+     if(owned){
+      const button=h('button',{type:'button',
+       class:'wiki-owner-remove wiki-owner-delete-record',
+       text:type==='map'?wt('Удалить созданную локацию','Delete created location'):
+        wt('Удалить созданного монстра','Delete created monster')});
+      const remove=async()=>{
+       const maps=wikiIndex.records('map')||{};
+       const instances=wikiIndex.records('instance')||{};
+       const usedInCustom=Object.values(maps).some(loc=>
+        (loc.extraSections||[]).some(group=>
+         group.kind===type&&group.entries?.some(x=>String(x)===String(id))));
+       const linked=type==='map'?
+        (rec.mobs||[]).length||(rec.npcs||[]).length||
+         (rec.loot||[]).length||wikiIndex.residents(id).length||
+         (window.PandoraHonorGuide?.article?.(override)?.zones||[])
+          .some(row=>String(row.mapId)===String(id)):
+        wikiIndex.locations(id).length||
+         Object.values(instances).some(d=>(d.mobs||[]).some(x=>String(x)===String(id)));
+       if(linked||usedInCustom){
+        showStudioToast(wt(
+         'Сначала убери связанные монстров, NPC, добычу, разделы и ссылки на эту запись. Удаление с зависимостями заблокировано.',
+         'Remove linked monsters, NPCs, loot, sections and references before deleting this record.'),
+         'warning');return;
+       }
+       if(!confirm(type==='map'?
+        wt('Удалить созданную вручную локацию из D1? Это нельзя отменить после завершения сеанса.',
+         'Delete this owner-created location from D1? This cannot be undone after the session.'):
+        wt('Удалить созданную вручную карточку монстра из D1?',
+         'Delete this owner-created monster card from D1?')))return;
+       const key='wikiedit.'+type+'.'+id,before=activeOverride(key);
+       if(before===null)return;
+       button.disabled=true;
+       try{
+        await apiRequest('/api/admin/reset',{key});
+        delete override[key];ownerEdits.push({key,before,after:null});
+        wikiSelection={type,id:null,highlight:null};wikiSearch='';
+        await refreshOwnerCatalog();refreshOwnerUI();
+       }catch(error){button.disabled=false;showStudioToast(
+        'Удаление не выполнено: '+error.message,'warning')}
+      };
+      button.onclick=()=>void remove();
+      detail.append(button);
+     }
+    }
+   }
+   if(type==='npc'&&rec.ownerCreated&&window.PandoraWikiOwnerData.ownerNpcId(id)&&
+     adminEditing&&adminToken){
+    const button=h('button',{type:'button',class:'wiki-owner-remove wiki-owner-delete-record',
+     text:wt('Удалить созданного NPC','Delete created NPC')});
+    button.onclick=async()=>{
+     const linked=Object.values(wikiIndex.records('map')||{}).some(loc=>
+      (loc.npcs||[]).some(x=>String(x)===String(id))||
+      (loc.extraSections||[]).some(group=>
+       group.kind==='npc'&&(group.entries||[]).some(x=>String(x)===String(id))));
+     if(linked){
+      showStudioToast(wt('Сначала убери ссылки на NPC из локаций и разделов.',
+       'Remove NPC references from maps and custom sections before deletion.'),'warning');
+      return;
+     }
+     if(!confirm(wt('Удалить созданного вручную NPC из Cloudflare D1?',
+      'Delete this owner-created NPC from Cloudflare D1?')))return;
+     const key='wikiedit.npc.'+id,before=activeOverride(key);
+     if(before===null)return;
+     button.disabled=true;
+     try{
+      await apiRequest('/api/admin/reset',{key});
+      delete override[key];ownerEdits.push({key,before,after:null});
+      wikiSelection={type:'npc',id:null,highlight:null};wikiSearch='';
+      await refreshOwnerCatalog();refreshOwnerUI();
+     }catch(error){button.disabled=false;showStudioToast(
+      'Удаление не выполнено: '+error.message,'warning')}
+    };
+    detail.append(button);
+   }
    const namesakes=wikiIndex.sameName(type,id);
    if(namesakes.length)detail.append(h('small',{class:'wiki-variant-note',
     text:wt('Есть другие варианты с таким названием','Other entries share this name')}));
@@ -2237,7 +2326,7 @@ function renderWiki(root){
    type==='item'||type==='chest'?'items':type==='soul'?'souls':
    type==='monster'?'monsters':type==='skill'?'skills':'maps']?.[id]?.d):null;
   if(described?.desc||(lang==='en'&&described?.descEn)||
-   (adminEditing&&adminToken&&(lang==='ru'||['npc','map','monster'].includes(type))&&type!=='instance')){
+   (adminEditing&&adminToken&&(lang==='ru'||['npc','map','monster','soul','skill'].includes(type))&&type!=='instance')){
    const text=englishDescription||described?.desc||'';
    const missing=!text.trim();
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
@@ -2246,8 +2335,9 @@ function renderWiki(root){
     missing?wt('Двойной клик — добавить описание','Double-click to add description'):
     ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
-    ...(adminEditing&&(lang==='ru'||['npc','map','monster'].includes(type))&&
-     ['monster','map','npc','instance','soul'].includes(type)?
+    ...(adminEditing&&(lang==='ru'||['npc','map','monster','soul','instance'].includes(type))&&
+     ['monster','map','npc','instance','soul'].includes(type)||
+     adminEditing&&lang==='en'&&type==='skill'?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'descEn':type==='instance'?'blurbRu':'desc',
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
@@ -2328,11 +2418,16 @@ function renderWiki(root){
     }}));
   };
   if(type==='item'){
-    if(adminEditing&&adminToken)detail.append(h('small',{class:'wiki-owner-instruction',text:'Двойной клик по значению — изменить; выход из поля — сохранить.'}));
-    if(rec.sourceNote)detail.append(h('section',{class:'wiki-owner-note'},[
-      h('strong',{text:'Комментарий администратора об источнике'}),
-      h('p',{text:rec.sourceNote})
-    ]));
+    if(rec.sourceNote||adminEditing&&adminToken&&lang==='ru'){
+     const sourceNote=String(rec.sourceNote||'');
+     const note=h('p',{class:sourceNote?'':'wiki-description-placeholder',
+      text:sourceNote||wt('Двойной клик — добавить комментарий','Double-click to add a note'),
+      ...(adminEditing&&adminToken&&lang==='ru'?{
+       'data-owner-record':'item:'+id,'data-owner-field':'sourceNote',
+       ...(!sourceNote?{'data-owner-empty':'true'}:{})}:{})});
+     detail.append(h('section',{class:'wiki-owner-note'},[
+      h('strong',{text:wt('Комментарий об источнике','Source note')}),note]));
+    }
     const dl=h('dl',{class:'item-fields'});
     const itemFields=[
      [wt('Тип','Type'),window.PandoraItemPresentation.kind(rec,lang),'kind'],
@@ -2370,6 +2465,26 @@ function renderWiki(root){
     if(rec.twoHanded===true)dl.append(h('dt',{text:wt('Хват','Grip')}),
      h('dd',{text:wt('Двуручное','Two-handed')}));
     detail.append(dl);
+    if(adminEditing&&adminToken){
+     const missing=itemFields.filter(([,value,key])=>value==null&&key!=='kind');
+     if(missing.length){
+      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-item-add-field',
+       text:wt('+ Параметр предмета','+ Item field')});
+      add.onclick=()=>{
+       const select=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить параметр предмета','Add item field')});
+       select.append(h('option',{value:'',text:wt('Выбери параметр','Select field')}));
+       for(const [label,,key] of missing)
+        select.append(h('option',{value:key,text:label}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiItemField(id,
+        select.value,0).catch(e=>showStudioToast(e.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      };
+      detail.append(add);
+     }
+    }
     if((rec.effects?.length||0)>0||(adminEditing&&adminToken)){
      const effectRows=rec.effects||[];
      const effectOptions=window.PandoraStudioItemOwnerEditor.effectOptions(wikiData.items,rec);
@@ -2611,7 +2726,28 @@ function renderWiki(root){
     for(const [label,value,key] of skillFields)if(value!=null)
      dl.append(h('dt',{text:label}),wikiOwnerNumeric(h('dd',{text:String(value)}),
       value,'skill',id,key,{integer:key==='charLevel'}));
-    detail.append(dl,h('h4',{text:wt('Требования','Requirements')}));
+    detail.append(dl);
+    if(adminEditing&&adminToken){
+     const missing=skillFields.filter(([,value])=>value==null);
+     if(missing.length){
+      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-skill-add-field',
+       text:wt('+ Параметр навыка','+ Skill field')});
+      add.onclick=()=>{
+       const select=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить параметр навыка','Add skill field')});
+       select.append(h('option',{value:'',text:wt('Выбери параметр','Select field')}));
+       for(const [label,,key] of missing)
+        select.append(h('option',{value:key,text:label}));
+       add.replaceWith(select);
+       select.onchange=()=>{if(select.value)void saveWikiRecordField('skill',id,
+        select.value,0).catch(e=>showStudioToast(e.message,'warning'))};
+       select.onblur=()=>{if(select.isConnected)select.replaceWith(add)};
+       select.focus();
+      };
+      detail.append(add);
+     }
+    }
+    detail.append(h('h4',{text:wt('Требования','Requirements')}));
     if(!rec.reqs?.length&&rec.prereq==null)detail.append(h('p',{class:'muted',
      text:wt('Требования веток не указаны.','No branch requirements listed.')}));
     const reqs=h('div',{class:'wiki-requirements',role:'list'});
@@ -2754,7 +2890,16 @@ function renderWiki(root){
      h('strong',{class:'wiki-soul-price-value',
       text:Number(rec.price).toLocaleString('ru-RU')}),
      rec.price,'soul',id,'price',{integer:true}));
-    else pricePane.append(h('span',{class:'muted',text:wt('Не указана','Not provided')}));
+    else if(adminEditing&&adminToken){
+     const missing=h('span',{class:'wiki-edit-value',
+      text:wt('Добавить стоимость','Add price'),
+      title:wt('Двойной клик — добавить стоимость души',
+       'Double-click to add Soul price')});
+     missing.addEventListener('dblclick',e=>{e.preventDefault();
+      editWikiValue(missing,0,{type:'number',integer:true,min:0,max:1000000000,
+       onCommit:value=>saveWikiRecordField('soul',id,'price',value)})});
+     pricePane.append(missing);
+    }else pricePane.append(h('span',{class:'muted',text:wt('Не указана','Not provided')}));
     traits.append(pricePane);
     detail.append(traits);
     detail.append(h('h4',{text:wt('Где получить душу','How to obtain this Soul')}));
@@ -2969,7 +3114,7 @@ function renderWiki(root){
     }
    }else if(type==='npc'){
     const locations=rec.maps||[];
-    if(rec.virtual){
+    {
      const fields=h('dl',{class:'item-fields'});
      const makeField=(label,field,value)=>{
       const dd=h('dd',{text:value||wt('Двойной клик — добавить','Double-click to add'),
@@ -2983,11 +3128,15 @@ function renderWiki(root){
      if(rec.grid||adminEditing&&adminToken)
       makeField(wt('Координаты','Coordinates'),'grid',rec.grid||'');
      detail.append(fields);
-     if(adminEditing&&adminToken){
+     if(rec.virtual&&adminEditing&&adminToken){
       const geo=window.PandoraAstirLocations;
       const selector=h('select',{class:'wiki-inline-select wiki-town-npc-location',
        'aria-label':wt('Расположение NPC','NPC location')});
-      for(const mapId of geo.districtIds){
+      const locationsList=rec.ownerCreated?
+       Object.keys(wikiIndex.records('map')||{}).filter(x=>
+        window.PandoraWikiOwnerData.virtualMapId(x)):
+       geo.districtIds;
+      for(const mapId of locationsList){
        const option=h('option',{value:mapId,text:dataName('map',mapId)});
        option.selected=locations.includes(mapId);selector.append(option);
       }
@@ -3254,13 +3403,13 @@ function renderWiki(root){
     }));
     const description=type==='instance'&&lang!=='en'?
      (rec.blurbRu||null):rec.blurb;
-    if(description||(type==='instance'&&adminEditing&&adminToken&&lang==='ru')){
-     const editable=type==='instance'&&adminEditing&&adminToken&&lang==='ru';
+    if(description||(type==='instance'&&adminEditing&&adminToken)){
+     const editable=type==='instance'&&adminEditing&&adminToken;
      detail.append(h('p',{
       class:'wiki-description'+(!description?' wiki-description-placeholder':''),
       text:description||'Двойной клик — добавить описание',
       ...(editable?{'data-owner-record':'instance:'+id,
-       'data-owner-field':'blurbRu',
+       'data-owner-field':lang==='en'?'blurb':'blurbRu',
        ...(!description?{'data-owner-empty':'true'}:{})}:{})
      }));
     }
@@ -3418,7 +3567,8 @@ function renderWiki(root){
       if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
        detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
         kind:'npc',existing:rec.npcs||[],limit:120,
-        onChange:next=>saveWikiRecordField('map',id,'npcs',next.map(Number))}));
+        onChange:next=>saveWikiRecordField('map',id,'npcs',
+         next.map(x=>/^\d+$/.test(String(x))?Number(x):String(x)))}));
       }else if(adminEditing&&adminToken&&!rec.virtual){
        detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
         kind:'npc',existing:residents.map(([npcId])=>String(npcId)),onChange:async next=>{
@@ -3444,10 +3594,56 @@ function renderWiki(root){
         list.append(entry);
        }
        detail.append(list);
-      }else if(rec.virtual){
-       detail.append(h('p',{class:'muted',
-        text:wt('Подтверждённых сведений о NPC пока нет.',
-         'No verified NPC data available yet.')}));
+      }
+      // Existing curated and newly created NPCs are visible without inventing
+      // trade-NPC identities or forcing them into the source game data.
+      if(ownerMap&&rec.virtual&&rec.placeType!=='astir-district'){
+       const unmanaged=residents.filter(([npcId])=>
+        !(rec.npcs||[]).map(String).includes(String(npcId)));
+       if(unmanaged.length){
+        const linked=h('section',{class:'wiki-owner-location-residents'});
+        linked.append(h('small',{text:wt('NPC, привязанные через их карточки',
+         'NPCs linked from their own cards')}));
+        linked.append(linkFlow(unmanaged.map(([npcId])=>
+         wikiLink('♙ '+dataName('npc',npcId),'npc',npcId))));
+        detail.append(linked);
+       }
+       const create=h('button',{type:'button',class:'wiki-owner-plus wiki-map-create-npc',
+        text:wt('+ Создать NPC в локации','+ Create NPC in location')});
+       create.onclick=()=>{
+        if(detail.querySelector('.wiki-map-create-npc-form'))return;
+        const form=h('div',{class:'wiki-owner-source-picker wiki-map-create-npc-form'});
+        const ru=ownerPlainTextField({class:'wiki-inline-input',
+         placeholder:'Название NPC · RU','aria-label':'Название нового NPC RU'});
+        const en=ownerPlainTextField({class:'wiki-inline-input',
+         placeholder:'NPC name · EN','aria-label':'New NPC name EN'});
+        const role=ownerPlainTextField({class:'wiki-inline-input',
+         placeholder:wt('Назначение (необязательно)','Service (optional)'),
+         'aria-label':'Назначение нового NPC'});
+        const err=h('small',{class:'inline-owner-error',role:'status'});
+        const submit=h('button',{type:'button',class:'wiki-owner-plus',
+         text:wt('Сохранить NPC','Save NPC')});
+        submit.onclick=async()=>{
+         const name=ru.value.trim(),nameEn=en.value.trim(),service=role.value.trim();
+         if(!name||!nameEn||name.length>240||nameEn.length>240||service.length>240){
+          err.textContent=wt('Укажи оба названия (RU/EN) до 240 символов',
+           'Provide both RU and EN names up to 240 characters');return;
+         }
+         const npcId='owner-npc-'+[...crypto.getRandomValues(new Uint8Array(8))]
+          .map(x=>x.toString(16).padStart(2,'0')).join('');
+         if(wikiIndex.records('npc')?.[npcId]){
+          err.textContent=wt('Конфликт ID, попробуй ещё раз','ID collision, please retry');return}
+         submit.disabled=true;
+         try{
+          await saveWikiRecordPatch('npc',npcId,{name,nameEn,service,maps:[String(id)]});
+          openWiki('map',id);
+         }catch(e){err.textContent=String(e.message||e);submit.disabled=false}
+        };
+        const cancel=h('button',{type:'button',class:'wiki-owner-remove',
+         text:wt('Отмена','Cancel'),onclick:()=>form.remove()});
+        form.append(ru,en,role,submit,cancel,err);create.after(form);ru.focus();
+       };
+       detail.append(create);
       }
       if(rec.placeType==='astir-district'&&rec.virtual&&adminEditing&&adminToken){
        const add=h('button',{type:'button',class:'wiki-owner-plus',
@@ -3555,7 +3751,8 @@ function renderWiki(root){
        if(ownerMap)panel.append(wikiOwnerEntityList({
         label:'',kind,existing:group.entries||[],limit:60,
         onChange:next=>saveWikiRecordField('map',id,'extraSections',
-         custom.map((entry,i)=>i===index?{...entry,entries:next.map(Number)}:entry))
+         custom.map((entry,i)=>i===index?{...entry,entries:next.map(x=>
+          /^\d+$/.test(String(x))?Number(x):String(x))}:entry))
        }));
        else panel.append(linkFlow((group.entries||[])
         .filter(item=>kind==='item'?wikiData.items?.[String(item)]:
@@ -3924,6 +4121,216 @@ function compareSnapshots(a,b){
  }));
  return rows;
 }
+
+let comparisonOpen=false,comparisonMode='changes',comparisonCategory='all',comparisonQuery='';
+function renderBuildComparison(host,onSelection=()=>{}){
+ host.replaceChildren();
+ host.className='build-compare-panel';
+ host.setAttribute('data-build-compare','');
+ const translate=(ru,en)=>lang==='en'?en:ru;
+ const header=h('div',{class:'build-compare-header'});
+ const title=h('div',{class:'build-compare-heading'},[
+  h('span',{class:'build-compare-emblem','aria-hidden':'true',text:'⚖'}),
+  h('div',{},[h('h3',{text:translate('Сравнение билдов','Build comparison')}),
+   h('small',{text:translate('Два сохранённых героя · без изменения самих билдов',
+    'Two saved characters · read-only comparison')})])
+ ]);
+ const badge=h('span',{class:'build-compare-picks',text:''});
+ const collapse=h('button',{type:'button',class:'build-compare-expand',
+  'aria-expanded':String(comparisonOpen),
+  text:comparisonOpen?translate('Скрыть сравнение','Collapse'):
+   translate('Развернуть сравнение','Expand'),
+  onclick:()=>{
+   comparisonOpen=!comparisonOpen;
+   content.hidden=!comparisonOpen;
+   collapse.setAttribute('aria-expanded',String(comparisonOpen));
+   collapse.textContent=comparisonOpen?translate('Скрыть сравнение','Collapse'):
+    translate('Развернуть сравнение','Expand');
+  }});
+ header.append(title,badge,collapse);
+ const content=h('div',{class:'build-compare-content',hidden:!comparisonOpen});
+ const controls=h('div',{class:'build-compare-controls'});
+ const pick=(letter,index)=>{
+  const select=h('select',{class:'build-compare-select',
+   'aria-label':translate('Билд ','Build ')+letter,
+   'data-compare-select':letter});
+  const field=h('label',{class:'build-compare-select-label'},[
+   h('span',{text:translate('Билд ','Build ')+letter}),select
+  ]);
+  const options=()=>{
+   select.replaceChildren(h('option',{value:'',text:translate(
+    'Выбери сохранённый билд','Choose a saved build')}));
+   for(const build of builds){
+    const opt=h('option',{value:build.id,text:build.name});
+    select.append(opt);
+   }
+   select.value=compareIds[index]||'';
+  };
+  options();
+  select.onchange=()=>{
+   const oldA=compareIds[0]||'',oldB=compareIds[1]||'',id=select.value;
+   let next=index===0?[id,oldB]:[oldA,id];
+   if(id&&next[1-index]===id)next[index===0?1:0]=index===0?oldA:oldB;
+   if(next[0]&&next[0]===next[1])next[index===0?1:0]='';
+   compareIds=next;onSelection();update();
+  };
+  return {field,select,options};
+ };
+ const A=pick('A',0),B=pick('B',1);
+ const swap=h('button',{type:'button',class:'build-compare-swap',
+  text:'⇄','aria-label':translate('Поменять билды A и B местами','Swap builds A and B'),
+  title:translate('Поменять A и B местами','Swap A and B'),
+  onclick:()=>{compareIds=[compareIds[1]||'',compareIds[0]||''];
+   onSelection();update()}});
+ controls.append(A.field,swap,B.field);
+ const options=h('div',{class:'build-compare-options'});
+ const tabs=h('div',{class:'build-compare-categories',role:'group',
+  'aria-label':translate('Раздел сравнения','Comparison category')});
+ const categories=[
+  ['all',translate('Все разделы','All')],
+  ['results',translate('Расчёт','Calculated')],
+  ['character',translate('Персонаж','Character')],
+  ['equipment',translate('Снаряжение','Gear')],
+  ['skills',translate('Навыки','Skills')],
+  ['buffs',translate('Усиления','Buffs')]
+ ];
+ const categoryButtons=[];
+ for(const [key,label]of categories){
+  const button=h('button',{type:'button','data-compare-category':key,text:label});
+  button.onclick=()=>{comparisonCategory=key;applyFilter()};
+  tabs.append(button);categoryButtons.push({key,button});
+ }
+ const mode=h('label',{class:'build-compare-differences'},[
+  h('input',{type:'checkbox','data-compare-differences':'',
+   'aria-label':translate('Только отличия','Differences only')}),
+  h('span',{text:translate('Только отличия','Differences only')})
+ ]);
+ const modeInput=mode.querySelector('input');
+ modeInput.checked=comparisonMode==='changes';
+ modeInput.onchange=()=>{comparisonMode=modeInput.checked?'changes':'all';applyFilter()};
+ const search=h('input',{type:'search',class:'build-compare-search',
+  value:comparisonQuery,placeholder:translate('Найти характеристику…','Find a stat…'),
+  'aria-label':translate('Поиск по сравнительным характеристикам','Search comparison metrics')});
+ search.addEventListener('input',()=>{comparisonQuery=search.value;applyFilter()});
+ options.append(tabs,h('div',{class:'build-compare-options-row'},[mode,search]));
+ const summary=h('div',{class:'build-compare-summary',role:'status','aria-live':'polite'});
+ const note=h('p',{class:'build-compare-note',text:translate(
+  'Δ = билд B минус билд A. Плюс не всегда лучше. Числа берутся из Книги героя; неподтверждённые параметры показаны как «—».',
+  'Δ = Build B minus Build A. Positive is not always better. Values use Hero Book calculations; unknown metrics are shown as “—”.')});
+ const wrap=h('div',{class:'build-compare-table-wrap'});
+ const table=h('table',{class:'build-compare-table','aria-label':translate(
+  'Сравнение двух сохранённых билдов','Saved build A/B comparison')});
+ const thead=h('thead');
+ thead.append(h('tr',{},[
+  h('th',{scope:'col',text:translate('Характеристика','Stat')}),
+  h('th',{scope:'col',text:translate('Билд A','Build A')}),
+  h('th',{scope:'col',text:translate('Билд B','Build B')}),
+  h('th',{scope:'col',text:'Δ (B − A)'})
+ ]));
+ const tbody=h('tbody');table.append(thead,tbody);wrap.append(table);
+ content.append(controls,options,summary,wrap,note);
+ host.append(header,content);
+ let groups=[];
+ function applyFilter(){
+  const q=comparisonQuery.trim().toLocaleLowerCase('ru');
+  let shown=0,changed=0,total=0;
+  for(const row of groups){
+   let visible=0;
+   for(const entry of row.entries){
+    total++;
+    if(!entry.data.equal)changed++;
+    const matchCategory=comparisonCategory==='all'||
+     entry.data.section===comparisonCategory;
+    const matchQuery=!q||[entry.data.label,entry.data.a,entry.data.b,row.name]
+     .join(' ').toLocaleLowerCase('ru').includes(q);
+    const ok=matchCategory&&matchQuery&&
+     (comparisonMode==='all'||!entry.data.equal);
+    entry.node.hidden=!ok;
+    if(ok){visible++;shown++}
+   }
+   row.heading.hidden=!visible;
+  }
+  for(const {key,button}of categoryButtons){
+   button.classList.toggle('chosen',comparisonCategory===key);
+   button.setAttribute('aria-pressed',String(comparisonCategory===key));
+  }
+  modeInput.checked=comparisonMode==='changes';
+  const a=compareIds[0]&&builds.find(x=>x.id===compareIds[0]);
+  const b=compareIds[1]&&builds.find(x=>x.id===compareIds[1]);
+  if(!a||!b){
+   summary.textContent=builds.length<2?
+    translate('Сохрани хотя бы два билда, чтобы сравнить характеристики.',
+     'Save at least two builds to compare metrics.'):
+    translate('Выбери разные сохранённые билды A и B.','Choose two distinct saved builds A and B.');
+   wrap.hidden=true;options.hidden=true;note.hidden=true;return;
+  }
+  wrap.hidden=false;options.hidden=false;note.hidden=false;
+  summary.textContent=translate('Отличаются: ','Different: ')+changed+
+   translate(' · Совпадают: ',' · Equal: ')+(total-changed)+
+   translate(' · Показано: ',' · Showing: ')+shown;
+  const empty=tbody.querySelector('.build-compare-empty');
+  if(empty)empty.hidden=shown>0;
+ }
+ function update(){
+  A.options();B.options();
+  badge.textContent=[compareIds[0],compareIds[1]].filter(id=>
+   id&&builds.some(b=>b.id===id)).length+' / 2';
+  tbody.replaceChildren();groups=[];
+  const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));
+  if(a&&b&&a.id!==b.id){
+   let calcA=null,calcB=null;
+   if(catalog.live&&gameTables){
+    try{calcA=previewBaseStats(a.data);calcB=previewBaseStats(b.data)}
+    catch(error){console.warn('Build comparison: calculations unavailable',error)}
+   }
+   const rows=window.PandoraBuildComparison.matrixRows(a.data,b.data,{
+    lang,races,jobs,stats:[['Выносливость','Vitality'],['Сила','Strength'],
+     ['Ловкость','Agility'],['Сноровка','Dexterity'],['Дух','Spirit'],
+     ['Интеллект','Intelligence']],
+    branches:branches.map(({id,name})=>[id,name,
+     officialEnglish?.branches?.[id]||name]),
+    slotLabels:slots.map(x=>x[0]),
+    equipment:catalog.equipment||{},souls:catalog.souls||{},
+    skillCatalog:catalog.skills||{},enchant:window.PandoraEnchantModel,
+    honorTitles:window.PandoraOSCalculator.honorTitles,
+    refinement:(snap,i,item)=>window.PandoraEquipmentPlan.refinementValue(
+     snap.refinements,i,item),
+    trained:(snap,id)=>window.PandoraSkillProgression.trained(snap,id),
+    calcA,calcB,
+    summaryA:calcA?window.PandoraStageAttributes.summaryRows(calcA):[],
+    summaryB:calcB?window.PandoraStageAttributes.summaryRows(calcB):[]
+   });
+   let current=null;
+   for(const item of rows){
+    if(!current||current.name!==item.group){
+     current={name:item.group,entries:[],heading:h('tr',{class:'build-compare-group'})};
+     current.heading.append(h('th',{scope:'rowgroup',colspan:'4',text:item.group}));
+     tbody.append(current.heading);groups.push(current);
+    }
+    const node=h('tr',{'data-compare-row':item.key,
+     'data-compare-equal':String(item.equal),
+     'data-compare-section':item.section});
+    node.append(
+     h('th',{scope:'row',text:item.label}),
+     h('td',{'data-compare-a':'',text:item.a}),
+     h('td',{'data-compare-b':'',text:item.b}),
+     h('td',{'data-compare-delta':'','data-direction':item.direction,
+      text:item.delta??(item.equal?'—':translate('Изменено','Changed'))})
+    );
+    current.entries.push({node,data:item});tbody.append(node);
+   }
+   const empty=h('tr',{class:'build-compare-empty',hidden:true});
+   empty.append(h('td',{colspan:'4',text:translate(
+    'В выбранном разделе отличий нет. Отключи «Только отличия», чтобы увидеть все значения.',
+    'No differences in this category. Turn off “Differences only” to see all values.')}));
+   tbody.append(empty);
+  }
+  applyFilter();
+ }
+ update();
+ return {update};
+}
+
 function restoreLoadedBuildUI(){
  state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);
  racePreviewIndex=selectedPortraitIndex(state.race,state.gender);
@@ -4077,7 +4484,13 @@ function renderBuilds(root){
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}),
   ...(window.PandoraAccountUI?.isLoggedIn()?[]:[buildLibraryTransfer()]));
+ const comparisonSlot=h('section',{'data-build-compare-slot':''});
+ root.append(comparisonSlot);
+ let comparison=null;
  const grid=h('div',{class:'build-grid'}),searchable=[];
+ const syncCompareCheckboxes=()=>{
+  for(const row of searchable)row.check.checked=compareIds.includes(row.build.id);
+ };
  const search=builds.length>5?h('input',{type:'search',class:'build-library-search',
   'aria-label':'Найти сохранённый билд',placeholder:'Поиск по названию, классу, уровню…',
   value:buildSearchQuery}):null;
@@ -4117,7 +4530,18 @@ function renderBuilds(root){
    }}),
    h('button',{class:'button-action',type:'button',text:'Отмена',onclick:()=>{deleteChoice.hidden=true}}));
   check.checked=compareIds.includes(b.id);
-  check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};
+  check.onchange=()=>{
+   const chosen=compareIds.filter(Boolean);
+   compareIds=check.checked?[...chosen.filter(id=>id!==b.id),b.id].slice(-2):
+    chosen.filter(id=>id!==b.id);
+   comparisonOpen=true;
+   if(comparison)comparison.update();
+   syncCompareCheckboxes();
+   comparisonSlot.querySelector('.build-compare-content')?.removeAttribute('hidden');
+   const expand=comparisonSlot.querySelector('.build-compare-expand');
+   if(expand){expand.setAttribute('aria-expanded','true');
+    expand.textContent=lang==='en'?'Collapse':'Скрыть сравнение'}
+  };
   box.append(h('h3',{text:b.name}),
    ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
     text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
@@ -4140,10 +4564,11 @@ function renderBuilds(root){
   box.append(overwriteChoice);
   box.append(shareSlot);
   grid.append(box);
-  searchable.push({box,searchText:[b.name,races[b.data?.race]?.[0],jobs[b.data?.job],
+  searchable.push({box,build:b,check,searchText:[b.name,races[b.data?.race]?.[0],jobs[b.data?.job],
    (lang==='en'?'Lv. ':'ур. ')+(b.data?.level??'')].filter(Boolean).join(' ').toLocaleLowerCase()});
  }
  root.append(grid);
+ comparison=renderBuildComparison(comparisonSlot,syncCompareCheckboxes);
  if(search){
   const none=h('p',{class:'muted',text:'Билды по запросу не найдены.',hidden:true});
   root.append(none);
@@ -4160,11 +4585,6 @@ function renderBuilds(root){
   apply();
  }
  if(!builds.length)root.append(h('p',{class:'muted',text:'Сохранённых билдов пока нет.'}));
- if(compareIds.length===2){
-  const [a,b]=compareIds.map(id=>builds.find(v=>v.id===id));
-  if(a&&b)root.append(h('h3',{text:(lang==='en'?'Comparison: ':'Сравнение: ')+a.name+' / '+b.name}),
-   h('p',{class:'muted',text:compareSnapshots(a.data,b.data).join(' · ')||'Выборы совпадают'}));
- }
  window.PandoraUILocale.localize(root,lang);
 }
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
@@ -4405,6 +4825,8 @@ async function restoreSharedHash(){
 }
 function modal(title,content){const root=$('modalRoot');root.replaceChildren();root.hidden=false;const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});box.append(h('button',{class:'button-action close',text:'× Закрыть',onclick:()=>{root.hidden=true;root.replaceChildren()}}),h('h2',{text:title}),content);root.append(box);root.onclick=e=>{if(e.target===root){root.hidden=true;root.replaceChildren()}};return box}
 async function apiRequest(path,body,token=adminToken) {
+ const editingWrite=Boolean(body)&&/^\/api\/admin\/(?:override|reset)$/.test(path);
+ if(editingWrite){ownerSaveState='saving';ownerSaveError='';refreshOwnerUI()}
  let response;
  try {
   response=await fetch(API+path,{
@@ -4413,12 +4835,14 @@ async function apiRequest(path,body,token=adminToken) {
    ...(body?{body:JSON.stringify(body)}:{})
   });
  } catch {
+  if(editingWrite){ownerSaveState='error';ownerSaveError='Cloudflare Worker недоступен';refreshOwnerUI()}
   throw new Error("Нет соединения с Cloudflare Worker. Проверь Builds и /api/health. Пароль ещё не проверялся сервером.");
  }
  const data=await response.json().catch(()=>({error:"Сервер вернул ответ без JSON"}));
  if(!response.ok){
   const error=new Error(data.error||("Ошибка сервера HTTP "+response.status));
   error.httpStatus=response.status;error.reason=data.reason||null;
+  if(editingWrite){ownerSaveState='error';ownerSaveError=error.message;refreshOwnerUI()}
   if(response.status===401&&token&&token===adminToken&&path.startsWith('/api/admin/')){
    // The editor session is invalid. A player account uses a different token
    // and must never be signed out by this administrator-only failure.
@@ -4427,6 +4851,7 @@ async function apiRequest(path,body,token=adminToken) {
   }
   throw error;
  }
+ if(editingWrite){ownerSaveState='saved';ownerSaveError='';refreshOwnerUI()}
  return data;
 }
 function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Синхронизировать ручные правки с GitHub',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
@@ -4443,6 +4868,7 @@ function updateAdminHint(){
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
 const ownerEdits=[];
+let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=false;
 let activeInlineEditor=null;
 let editIsSaving=false;
 function closeInlineEditor(){
@@ -4450,22 +4876,80 @@ function closeInlineEditor(){
 }
 function activeOverride(key){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:null}
 function refreshOwnerUI(){
-  const dock=document.getElementById('ownerDock');
-  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return;}
-  if(dock){
-    dock.querySelector('[data-owner-count]').textContent='Правок: '+Object.keys(override).length;
-    dock.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving;
-    return;
-  }
-  const root=h('aside',{id:'ownerDock',class:'owner-dock',role:'toolbar','aria-label':'Управление сайтом'});
-  root.append(h('span',{class:'owner-dock-title',text:'✦ Редактор сайта'}),
-    h('span',{'data-owner-count':'',class:'owner-dock-count',text:'Правок: '+Object.keys(override).length}),
-    h('button',{type:'button',text:'↶ Отменить','data-owner-undo':'',disabled:!ownerEdits.length,onclick:undoOwnerEdit}),
-    h('button',{type:'button',text:'Все правки',onclick:showOverrideManager}),
-    h('button',{type:'button',text:'Игровой каталог',onclick:showCatalogImport}),
-    h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport}),
-    h('button',{type:'button',text:'Завершить',onclick:()=>{adminEditing=false;closeInlineEditor();render();updateAdminHint()}}));
-  document.body.append(root);
+ const dock=document.getElementById('ownerDock');
+ if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
+ const count=Object.keys(override).length;
+ const saveText=ownerSaveState==='saving'?'Сохраняю в Cloudflare D1…':
+  ownerSaveState==='error'?'Не сохранено: '+(ownerSaveError||'ошибка сервера'):
+  ownerSaveState==='saved'?'✓ Сохранено в Cloudflare D1':
+  '✓ Подключено к Cloudflare D1 · сохранение автоматическое';
+ const update=root=>{
+  const counter=root.querySelector('[data-owner-count]');
+  if(counter)counter.textContent=count+' '+(count===1?'запись':'записей')+' в D1';
+  const recent=root.querySelector('[data-owner-recent]');
+  if(recent)recent.textContent='За этот сеанс: '+ownerEdits.length;
+  const state=root.querySelector('[data-owner-save-state]');
+  if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
+  root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
+   ownerSaveState==='saving';
+  root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
+  const toggle=root.querySelector('[data-owner-collapse]');
+  if(toggle){toggle.textContent=ownerDockCollapsed?'Развернуть':'Свернуть';
+   toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed))}
+ };
+ if(dock){update(dock);return}
+ const root=h('aside',{id:'ownerDock',class:'owner-dock',role:'region',
+  'aria-label':'Редактор сайта · изменения сохраняются автоматически'});
+ const head=h('div',{class:'owner-dock-head'},[
+  h('strong',{class:'owner-dock-title',text:'✎ Редактор сайта'}),
+  h('small',{class:'owner-dock-online',text:'Редактирование включено'}),
+  h('button',{type:'button','data-owner-collapse':'',
+   'aria-label':'Свернуть или развернуть панель редактора',
+   onclick:()=>{ownerDockCollapsed=!ownerDockCollapsed;refreshOwnerUI()}})
+ ]);
+ const status=h('div',{class:'owner-dock-save-state','data-owner-save-state':'',
+  role:'status','aria-live':'polite'});
+ const counters=h('div',{class:'owner-dock-counters'},[
+  h('span',{'data-owner-count':'',class:'owner-dock-count'}),
+  h('span',{'data-owner-recent':'',class:'owner-dock-count'})
+ ]);
+ const guide=h('details',{class:'owner-workflow-guide'},[
+  h('summary',{text:'Как редактировать и когда нажимать кнопки'}),
+  h('ol',{class:'owner-workflow-steps'},[
+   h('li',{text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'}),
+   h('li',{text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'}),
+   h('li',{text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})
+  ]),
+  h('div',{class:'owner-workflow-glossary'},[
+   h('p',{},[h('strong',{text:'Все правки'}),document.createTextNode(' — посмотреть сохранённые изменения и вернуть исходное.')]),
+   h('p',{},[h('strong',{text:'Игровой каталог'}),document.createTextNode(' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.')]),
+   h('p',{},[h('strong',{text:'PR правок'}),document.createTextNode(' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.')]),
+   h('p',{},[h('strong',{text:'Завершить'}),document.createTextNode(' — только скрыть инструменты редактирования, не удалить изменения.')])
+  ])
+ ]);
+ const actions=h('div',{class:'owner-dock-actions'},[
+  h('button',{type:'button',class:'owner-dock-primary',
+   text:'Открыть энциклопедию',onclick:()=>changeTab('wiki')}),
+  h('button',{type:'button',text:'↶ Отменить','data-owner-undo':'',onclick:undoOwnerEdit,
+   title:'Отменить последнее действие в этом сеансе в Cloudflare D1'}),
+  h('button',{type:'button',text:'Все правки',onclick:showOverrideManager,
+   title:'Просмотр всех сохранённых переопределений в D1'}),
+  h('button',{type:'button',text:'Игровой каталог',onclick:showCatalogImport,
+   title:'Отдельное обновление снимка игрового каталога'}),
+  h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport,
+   title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
+  h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
+   onclick:()=>{
+    if(ownerSaveState==='saving'||editIsSaving){
+     showStudioToast('Дождись окончания сохранения в Cloudflare D1','warning');return}
+    if(ownerSaveState==='error'){
+     showStudioToast('Есть ошибка сохранения. Проверь поле и повтори изменение.','warning');return}
+    adminEditing=false;closeInlineEditor();render();updateAdminHint()
+   }})
+ ]);
+ root.append(head,status,counters,guide,actions);
+ document.body.append(root);
+ update(root);
 }
 async function undoOwnerEdit(){
   if(!adminToken||!ownerEdits.length||editIsSaving)return;
@@ -4543,13 +5027,15 @@ function showOverrideManager(){
  function wikiDataOrCatalogHasRecord(target){
   if(target.type==='item'||target.type==='chest')
    return Boolean(wikiBaseData?.items?.[target.id]||catalogSource?.items?.[target.id]);
-  if(target.type==='monster')return Boolean(wikiBaseData?.monsters?.[target.id]);
+  if(target.type==='monster')return Boolean(wikiIndex?.records('monster')?.[target.id]||
+   wikiBaseData?.monsters?.[target.id]);
   if(target.type==='skill')return Boolean(wikiBaseData?.skills?.[target.id]);
   if(target.type==='npc')return Boolean(wikiBaseData?.trades?.npcs?.[target.id]||
    window.PandoraAstirLocations?.npcRecords?.()[target.id]||
-   wikiData?.townNpcs?.[target.id]);
+   wikiData?.townNpcs?.[target.id]||wikiIndex?.records('npc')?.[target.id]);
   if(target.type==='soul')return Boolean(wikiBaseData?.souls?.[target.id]);
-  if(target.type==='map')return Boolean(wikiBaseData?.maps?.[target.id]||
+  if(target.type==='map')return Boolean(wikiIndex?.records('map')?.[target.id]||
+   wikiBaseData?.maps?.[target.id]||
    wikiBaseData?.trades?.mapNames?.[target.id]||
    window.PandoraAstirLocations?.district(target.id));
   if(target.type==='instance')return (wikiBaseData?.instances||[]).some(x=>
@@ -4826,16 +5312,19 @@ async function saveWikiRelationRows(kind,id,rows){
 function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000000000}={}){
  if(!adminToken||!adminEditing)return node;
  node.classList.add('wiki-edit-value');
- node.title='Двойной клик — изменить';
- node.ondblclick=e=>{
+ node.title='Двойной клик или F2 — изменить';
+ node.tabIndex=0;
+ const start=e=>{
   e.preventDefault();e.stopPropagation();
   editWikiValue(node,Number(value),{type:'number',min,max,integer,
    onCommit:next=>saveWikiRecordField(type,id,field,next)});
  };
+ node.ondblclick=start;
+ node.onkeydown=e=>{if(e.key==='Enter'||e.key==='F2')start(e)};
  return node;
 }
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
- if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map','monster'].includes(type)))return node;
+ if(!adminToken||!adminEditing||(lang!=='ru'&&!['npc','map','monster','skill','soul','instance'].includes(type)))return node;
  node.classList.add('wiki-edit-value');
  // The delegated dblclick is the user's actual first gesture. Starting an
  // ondblclick listener here would silently require a SECOND double-click.
@@ -4931,6 +5420,14 @@ function inlineWikiText(el){
 
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
+ if(editIsSaving||ownerSaveState==='saving'){
+  showStudioToast('Дождись завершения сохранения в Cloudflare D1 перед созданием PR.','warning');
+  return;
+ }
+ if(ownerSaveState==='error'){
+  showStudioToast('Сначала исправь ошибку сохранения. PR пока недоступен.','warning');
+  return;
+ }
  try{
   const info=await apiRequest('/api/admin/catalog/owner-review');
   if(!info.configured){showStudioToast('GitHub-токен пока недоступен Worker.','warning');return}
@@ -4980,8 +5477,11 @@ function applyGameLocale({redraw=true}={}){
  const translate=(original,map,keepSourceDesc=false)=>{
   if(lang!=='en'||!map)return original;
   return Object.fromEntries(Object.entries(original).map(([id,item])=>{
-    const t=map[id];return [id,t?{...item,name:t.n||item.name,
-     desc:t.d??item.desc,...(keepSourceDesc?{sourceDesc:item.desc}:{})}:item]
+    const t=map[id];
+    if(!t&&!item.nameEn&&!item.descEn)return [id,item];
+    return [id,{...item,name:item.nameEn||t?.n||item.name,
+     desc:item.descEn??t?.d??item.desc,
+     ...(keepSourceDesc?{sourceDesc:item.desc}:{})}]
   }));
  };
  const en=lang==='en'?officialEnglish:null;
@@ -5146,6 +5646,24 @@ $('hero').addEventListener('keydown',event=>{
   showStudioToast('Не все игровые описания доступны на английском.','warning');
  applyGameLocale();
 };document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+document.addEventListener('keydown',event=>{
+ if(!adminEditing||!adminToken||!['F2','Enter'].includes(event.key)||
+  event.target.closest?.('[data-owner-text-field],input,textarea,select,button,a'))return;
+ const owner=event.target.closest?.('[data-owner-record][data-owner-field]');
+ if(owner&&owner===event.target){
+  const [type,id]=owner.dataset.ownerRecord.split(':');
+  event.preventDefault();event.stopPropagation();
+  wikiOwnerText(owner,type,id,owner.dataset.ownerField,
+   {multiline:!['name','nameEn'].includes(owner.dataset.ownerField)});
+  return;
+ }
+ const editable=event.target.closest?.('[data-edit-key]');
+ if(editable&&editable===event.target&&
+  /^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey)){
+  event.preventDefault();event.stopPropagation();
+  inlineWikiText(editable);
+ }
+},true);
 document.addEventListener('dblclick',event=>{
  if(!adminEditing||!event.target.closest)return;
  const owner=event.target.closest('[data-owner-record]');

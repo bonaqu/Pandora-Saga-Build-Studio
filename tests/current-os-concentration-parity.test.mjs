@@ -40,7 +40,7 @@ test('catalog EP changes follow source while missing mastery and missing record 
 });
 test('book gates Concentration by the same trained slash skill and saves it in links',()=>{
  const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
- assert.match(app,/function trainedBranchMasteries\(innate=\{\}\)/);
+ assert.match(app,/function trainedBranchMasteries\(innate=\{\},snap=state\)/);
  assert.match(app,/const branchMasteries=trainedBranchMasteries\(innate\)/);
  assert.match(app,/combatConcentration:'concentration'/);
  assert.match(app,/rawAttributes\[key\]===true/);

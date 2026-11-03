@@ -10,6 +10,11 @@ const labels={
  twoHanded:'Двуручное',kind:'Тип предмета',classes:'Доступные классы',
  effects:'Бонусы предмета',sourceNote:'Примечание к источнику',
  price:'Стоимость по справочнику',slots:'Совместимые слоты',
+ npcs:'NPC локации',loot:'Добыча',tags:'Теги локации',
+ sections:'Разделы локации',extraSections:'Дополнительные разделы',
+ roster:'Расположение монстров',notesRu:'Заметки RU',notesEn:'Заметки EN',
+ cast:'Подготовка',cooldown:'Перезарядка',magicProtection:'Магическая защита',
+ warding:'Защитный показатель',
  mobs:'Монстры',maps:'Локации',reqs:'Требования веток',
  prereq:'Предыдущее умение',resists:'Сопротивления',
  life:'ОЗ',mana:'ОМ',gold:'Золото',honor:'Честь',
@@ -86,6 +91,8 @@ function inspect(key,stored,{base=null,items=null,classes=null}={}){
   section=({soul:'Душа',skill:'Навык',npc:'NPC',monster:'Монстр',
    map:'Локация',instance:'Подземелье'})[sub]||'Энциклопедия';
   patch=toObject(stored);
+  if(!source&&typeof patch?.name==='string'&&patch.name.trim())
+   name=patch.name;
  }else if(type==='dropedit'){
   target={type:'monster',id};name=lookup('monster',id);
   source=raw.drops?.[id]||{d:[],s:[]};section='Добыча монстра';patch=toObject(stored);
