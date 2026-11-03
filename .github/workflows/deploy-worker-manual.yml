@@ -1,0 +1,89 @@
+name: Deploy existing Pandora Worker (manual, no D1 migrations)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type DEPLOY-0.351-TO-ps-build-studio-cloud'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pandora-production-worker-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/bonaqu_projects'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 57ac934cd0f0a7f5e8533177d612f893
+      PS_D1_DATABASE_ID: 0f8fbcd8-be06-414c-844b-a2091fdf6784
+    steps:
+      - name: Checkout reviewed Worker revision
+        uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify explicit deployment confirmation, target and source fields
+        env:
+          CONFIRM: ${{ inputs.confirmation }}
+        run: |
+          test "$CONFIRM" = 'DEPLOY-0.351-TO-ps-build-studio-cloud'
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
+          test "$PS_D1_DATABASE_ID" = '0f8fbcd8-be06-414c-844b-a2091fdf6784'
+          node --input-type=module -e '
+            import {readFileSync} from "node:fs";
+            const code=readFileSync("index.js","utf8");
+            for(const marker of ["codeRelease:\x270.351.0\x27",
+              "\x27bilingual-item-text\x27", "key===\x27nameEn\x27", "key===\x27descEn\x27"])
+              if(!code.includes(marker))throw Error("Missing expected reviewed Worker code: "+marker);
+          '
+      - name: Generate exact existing D1 config without secrets
+        run: node scripts/prepare-config.mjs
+      - name: Check live Worker health before updating code (read-only)
+        run: |
+          node --input-type=module -e '
+            const response=await fetch("https://ps-build-studio-cloud.bonaqu.workers.dev/api/health",
+              {signal:AbortSignal.timeout(15000)});
+            const data=await response.json();
+            if(!response.ok||data.storage!=="d1"||data.features?.catalog!==true||
+              data.features?.library!==true||data.features?.accounts!==true)
+              throw Error("Existing Worker/D1 is not healthy; refusing deploy");
+            console.log("Live production Worker and D1 are ready; no D1 write executed");
+          '
+      - name: Compile Worker safely without upload
+        run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/pandora-worker-preview --keep-vars
+      - name: Deploy Worker code while preserving dashboard variables and existing secrets
+        run: npx --yes wrangler@4 deploy --keep-vars
+      - name: Verify bilingual item editor capability and D1 health (read-only)
+        run: |
+          node --input-type=module -e '
+            const url="https://ps-build-studio-cloud.bonaqu.workers.dev";
+            for(let attempt=0;attempt<8;attempt++){
+              const response=await fetch(url+"/api/runtime-capabilities",
+                {cache:"no-store",signal:AbortSignal.timeout(15000)});
+              const caps=await response.json().catch(()=>null);
+              const healthy=await fetch(url+"/api/health",
+                {cache:"no-store",signal:AbortSignal.timeout(15000)});
+              const health=await healthy.json().catch(()=>null);
+              if(response.ok&&caps?.codeRelease==="0.351.0"&&
+                caps?.ownerEditors?.includes("bilingual-item-text")&&
+                healthy.ok&&health?.storage==="d1"&&health?.features?.catalog===true){
+                console.log("Verified live Worker 0.351.0, English item editing and the same D1 catalog");
+                process.exit(0);
+              }
+              if(attempt<7)await new Promise(resolve=>setTimeout(resolve,4000));
+            }
+            throw Error("Worker not yet serving 0.351.0 with bilingual-item-text and healthy D1");
+          '

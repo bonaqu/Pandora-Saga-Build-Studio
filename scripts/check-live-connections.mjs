@@ -70,6 +70,11 @@ try{
  console.log((deployed?'OK  ':'WARN')+' Worker runtime capability marker — '+
   (deployed?'0.322.0+ with 9 owner editor capabilities':'required current Cloudflare Worker capability set not verified')+
   ' / HTTP '+response.status+' / reported '+(payload?.codeRelease||'unavailable'));
+ const itemTextReady=deployed&&Number(release?.[1]||0)>=351&&
+  payload.ownerEditors?.includes('bilingual-item-text');
+ console.log((itemTextReady?'OK  ':'WARN')+' Live English item editing in D1 — '+
+  (itemTextReady?'Worker 0.351.0+ supports EN text overrides':
+   'deploy the reviewed Worker source to enable English item edits'));
 }catch(error){
  console.log('WARN Worker runtime capability marker — '+error.message);
 }
