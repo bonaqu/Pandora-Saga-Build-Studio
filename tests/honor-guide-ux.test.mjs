@@ -149,7 +149,7 @@ test('Worker advertises installed guide editing API without exposing admin edits
   'https://ps-build-studio-cloud.bonaqu.workers.dev/api/runtime-capabilities'),{DB:{}});
  assert.equal(response.status,200);
  const info=await response.json();
- assert.equal(info.codeRelease,'0.343.0');
+ assert.equal(info.codeRelease,'0.344.0');
  for(const capability of ['guideedit','honor-lists','historical-map-wiki'])
   assert.ok(info.ownerEditors.includes(capability),capability);
 });
