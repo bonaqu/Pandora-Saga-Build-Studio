@@ -52,7 +52,9 @@ test('A/B comparison shows real per-build numbers and delta B minus A',()=>{
  assert.deepEqual(a,first);assert.deepEqual(b,second,'Comparison must not mutate saved snapshots');
 });
 test('swapping A and B reverses signed numeric deltas without claiming better is always positive',()=>{
- const rows=comparison.matrixRows(second,first,opts);
+ const rows=comparison.matrixRows(second,first,{...opts,
+  calcA:opts.calcB,calcB:opts.calcA,
+  summaryA:opts.summaryB,summaryB:opts.summaryA});
  const delta=rows.find(x=>x.key==='result.0.0');
  assert.equal(delta.delta,'-300');assert.equal(delta.direction,'down');
  const noData=comparison.matrixRows(first,second,{
