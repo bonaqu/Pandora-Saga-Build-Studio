@@ -1434,7 +1434,9 @@ async function loadWiki(){
   // Owner edits rebuild from the already validated snapshot: no redundant
   // round-trip of all 11 D1 datasets for each double-click edit.
   if(!wikiBaseData){
-   const loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch});
+   let loaded;
+   try{loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch})}
+   catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
    if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
   }
