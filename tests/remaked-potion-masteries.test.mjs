@@ -70,7 +70,8 @@ test('exact Remaked approved RU labels are mapped to 18 current OS racial skill 
   assert.equal(nav.approvedRacialSkillNames[id],approved['racial_skill.'+i+'.'+j])));
  assert.equal(nav.approvedRacialSkillNames[900040001],'Охотничье чутьё');
  const app=read('pandora-studio-app.js');
- assert.match(app,/potionContext:\{racialPassiveId:state\.racialPassiveId,jobKey:jobKeys\[state\.job\],meleeMastery\}/);
+ assert.match(app,/potionContext:\{racialPassiveId:window\.PandoraGameNavigation\.canonicalRacialPassiveId\(/);
+ assert.match(app,/catalog\.racialPassives,state\.race,state\.racialPassiveId/);
  assert.match(app,/groupAdeptness\(/);
  assert.match(app,/localizedSkills\[id\]=\{\.\.\.localizedSkills\[id\],name\}/);
 });
