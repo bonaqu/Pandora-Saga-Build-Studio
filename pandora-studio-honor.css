@@ -1,0 +1,127 @@
+/* Hero Book contextual help and Honor Encyclopedia. Extends existing dark game UI. */
+/* Player help reuses .stage-hover-preview: a real fixed game-style popup,
+   not browser-native title bubbles. D1-edit affordances appear only to owner. */
+.stage-guide-popup{z-index:500;max-width:min(252px,75vw);width:max-content;
+ border:1px solid #c99d5d;border-radius:5px;
+ background:linear-gradient(145deg,#2d2117,#17110d);color:#f4d9ae;
+ padding:8px 10px;box-shadow:0 9px 28px #000b;
+ font:500 11px/1.42 Manrope,Arial,sans-serif;
+ white-space:normal;overflow-wrap:anywhere;pointer-events:none}
+.stage-guide-popup[hidden]{display:none!important}
+.stage-guide-label{cursor:help;text-decoration:underline dotted #92745080;
+ text-underline-offset:3px}
+.stage-guide-label:focus-visible{outline:2px solid #e4b879;outline-offset:2px;
+ border-radius:2px}
+.stage-guide-editable{cursor:text;text-decoration-color:#efcb91}
+.stage-result-tile,.stage-chapter-entry,.stage-result-section-head,
+.stage-book-field,.stage-book-buff-group{position:relative}
+.stage-guide-edit-hint{position:absolute;z-index:2;right:4px;top:4px;
+ min-width:19px;min-height:18px;padding:1px 2px;
+ border:1px solid #b58c58;border-radius:3px;
+ color:#f7dbac;background:#4a331e;cursor:pointer;font-size:11px;
+ box-shadow:0 1px 4px #0008}
+.stage-guide-edit-hint:hover,.stage-guide-edit-hint:focus-visible{
+ color:#fff0cf;background:#79532f;outline:1px solid #f1cc90}
+.stage-book-honor-link{padding:8px 9px;text-align:left;cursor:pointer;
+ border:1px solid #967047;border-radius:4px;background:#2b1d13;color:#f4cd90;
+ font:650 11px Manrope,Arial,sans-serif}
+.stage-book-honor-link:hover,.stage-book-honor-link:focus-visible{
+ border-color:#e5ba7a;background:#50351d}
+.stage-book-buff-group:has(.stage-book-honor-link){border-color:#ba8b52}
+.wiki-honor-toc{display:grid;gap:8px;align-content:start;padding:9px;
+ border:1px solid #725637;background:#211811}
+.wiki-honor-toc>strong{font:700 19px 'Cormorant Garamond',Georgia,serif;
+ color:#f7d8a2}
+.wiki-honor-jump{text-align:left;padding:9px 10px;cursor:pointer;
+ border:1px solid #755637;border-radius:4px;background:#302116;color:#e8c69a;
+ font:600 11px Manrope,Arial,sans-serif}
+.wiki-honor-jump:hover,.wiki-honor-jump:focus-visible{background:#53391f;
+ border-color:#cb995d}
+.wiki-honor-title{margin:0;color:#f3d39e;
+ font:650 30px 'Cormorant Garamond',Georgia,serif}
+.wiki-honor-subtitle{text-transform:uppercase;letter-spacing:.11em;
+ color:#b9a180;font-size:10px;margin:0 0 13px}
+.wiki-honor-section{display:grid;gap:10px;margin:0 0 17px;padding:12px;
+ min-width:0;border:1px solid #765737;border-radius:5px;
+ background:linear-gradient(135deg,#322419,#1e160f);scroll-margin-block-start:16px}
+.wiki-honor-heading{font:650 22px 'Cormorant Garamond',Georgia,serif;
+ margin:0;color:#f5ce96}
+.wiki-honor-copy{font:11px/1.58 Manrope,Arial,sans-serif;
+ white-space:pre-line;color:#dbc19f;margin:0}
+.wiki-honor-dual{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.wiki-honor-resource{padding:10px;display:grid;align-content:start;gap:6px;
+ border:1px solid #886541;background:linear-gradient(#3a281a,#251b13);
+ border-radius:4px}
+.wiki-honor-resource>strong{font:700 18px 'Cormorant Garamond',Georgia,serif;color:#ffe0ac}
+.wiki-honor-resource>p{font:10px/1.5 Manrope,Arial,sans-serif;
+ color:#d8bd99;margin:0}
+.wiki-honor-patch{display:grid;gap:5px;padding:9px;
+ border-left:2px solid #c69757;background:#251a12}
+.wiki-honor-patch>small{font-size:10px;font-weight:700;letter-spacing:.07em;
+ color:#e5b878}
+.wiki-honor-patch p{font:11px/1.5 Manrope,Arial,sans-serif;color:#e2c59a}
+.wiki-honor-patch a{font-size:10px;color:#edc786}
+.wiki-honor-joining{display:flex;justify-content:space-between;align-items:center;
+ flex-wrap:wrap;gap:7px;padding:9px;border:1px solid #a58046;background:#45301e;
+ border-radius:4px}
+.wiki-honor-joining strong{font:700 19px 'Cormorant Garamond',serif;color:#ffe1aa}
+.wiki-honor-joining small{font-size:10px;color:#e2c7a0}
+.wiki-honor-list-section{display:grid;gap:7px;min-width:0}
+.wiki-honor-list-section h5{font:700 15px 'Cormorant Garamond',Georgia,serif;
+ margin:0;color:#f4d19b}
+.wiki-honor-list{display:grid;gap:5px}
+.wiki-honor-list-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+ padding:8px;border:1px solid #655039;background:#291e16;border-radius:3px}
+.wiki-honor-list-names{display:grid;gap:3px;flex:1 1 130px;min-width:0}
+.wiki-honor-list-names span{font:600 11px/1.35 Manrope,Arial,sans-serif;
+ color:#edcfa1;overflow-wrap:anywhere}
+.wiki-honor-list-names span+span{font-size:10px;color:#ad9679}
+.wiki-honor-list-row .wiki-link{font-size:10px;padding:3px}
+.wiki-honor-location-select{min-width:0;max-width:142px;padding:5px;
+ background:#1c140e;color:#e9c899;border:1px solid #997048;font-size:10px}
+.wiki-honor-new{display:flex;flex-wrap:wrap;align-items:center;gap:5px;
+ padding:8px;border:1px dashed #92714b}
+.wiki-honor-new input{min-width:90px;flex:1 1 150px;padding:7px;
+ background:#1b140e;color:#efd4a6;border:1px solid #957047}
+.wiki-honor-editable{text-decoration:underline dotted #9e7952;text-underline-offset:3px;
+ cursor:text;border-radius:2px}
+.wiki-honor-editable:focus-visible{outline:2px solid #d9ae73}
+.wiki-honor-error{color:#eeac9a;font-size:10px}
+.wiki-honor-rank-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.wiki-honor-rank{min-width:0;display:grid;align-content:start;gap:7px;padding:10px;
+ border:1px solid #735438;border-radius:5px;background:#281c13}
+.wiki-honor-rank.is-moon{border-color:#c19a61;background:linear-gradient(135deg,#4d3522,#291c14)}
+.wiki-honor-rank-head{display:flex;gap:9px;align-items:center}
+.wiki-honor-rank-number{display:grid;place-items:center;flex:none;
+ width:32px;height:32px;border:1px solid #aa8150;border-radius:50%;
+ color:#ffda95;background:#392516;font:650 15px Georgia,serif}
+.wiki-honor-rank.is-moon .wiki-honor-rank-number{color:#ffeba4;font-size:22px}
+.wiki-honor-rank-name{display:grid;gap:2px;min-width:0}
+.wiki-honor-rank-name strong{font:650 18px/1.1 'Cormorant Garamond',Georgia,serif;
+ color:#f7d49d}
+.wiki-honor-rank-name small{font:10px Manrope,Arial,sans-serif;color:#ac9479}
+.wiki-honor-requirement{font:650 10px/1.45 Manrope,Arial,sans-serif;color:#debe89}
+.wiki-honor-rank-benefit{font:10px/1.45 Manrope,Arial,sans-serif;color:#d8bf9b}
+.wiki-honor-note,.wiki-honor-sources{font:10px/1.55 Manrope,Arial,sans-serif;
+ color:#bba68b}
+.wiki-historic-tag{display:inline-block;margin-bottom:9px;border-color:#c49055}
+.wiki-historic-roster{padding:11px;border:1px solid #88663e;background:#241a13;
+ border-radius:5px;display:grid;gap:8px}
+.wiki-historic-roster h4{font:650 20px 'Cormorant Garamond',Georgia,serif;
+ color:#efce98}
+.wiki-historic-notice{font:10px/1.45 Manrope,Arial,sans-serif;color:#bea687}
+.wiki-historic-mob-list{display:grid;gap:4px}
+.wiki-historic-mob{display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+ padding:6px 8px;border:1px solid #634a32;background:#2a1e15;
+ border-radius:3px;font-size:11px}
+.wiki-historic-mob .wiki-link{padding:2px;font-size:11px;flex:1 1 135px}
+.wiki-historic-level{font:700 10px Manrope,Arial,sans-serif;color:#e1b879}
+.wiki-historic-name{flex:1 1 135px;color:#d3b68f}
+.wiki-historic-mob small{color:#a89981;font-size:9px}
+.wiki-historic-unverified{color:#e6a28d!important}
+@media(max-width:600px){.wiki-honor-rank-list{grid-template-columns:1fr}
+ .wiki-honor-dual{grid-template-columns:1fr}
+ .wiki-honor-section{padding:9px}
+ .wiki-honor-rank{padding:9px}
+ .stage-guide-popup{max-width:min(235px,80vw)}}
+@media(prefers-reduced-motion:reduce){.wiki-honor-jump{scroll-behavior:auto}}

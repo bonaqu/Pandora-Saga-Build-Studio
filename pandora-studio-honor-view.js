@@ -83,7 +83,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  patch.append(txt);
  patch.append(make('a',{href:'https://pandorasaga-os.com/#news/8',
   target:'_blank',rel:'noopener noreferrer',text:tr(
-   'Официальная новость Pandora Saga OS','Pandora Saga OS official announcement')}));
+   'Официальная новость об обновлении чести','Official Honor system announcement')}));
  overview.append(patch);
  const gain=section('gain','Получение и потеря чести','Earning and losing Honor');
  paragraph(gain,en?o.gainEn:o.gainRu,'honor.overview',en?'gainEn':'gainRu');

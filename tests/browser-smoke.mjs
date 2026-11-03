@@ -120,7 +120,8 @@ async function main(){
  assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
- assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild & honor'));
+ assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild'));
+  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Honor passive skill'));
  await page.locator('#stageBookPanel [data-book-setting="guildLevel"]').selectOption('10');
  assert.match(await page.locator('#stageBookPanel .stage-guild-level-effects').innerText(),/12%/);
  await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').check();

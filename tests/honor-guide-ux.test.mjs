@@ -87,7 +87,7 @@ test('Owner historical maps D1 patches do not alter game source records',()=>{
 });
 test('Book, encyclopedia, Worker, scripts and styles are connected',()=>{
  const html=read('index.html'),worker=read('worker/index.js'),
-  css=read('pandora-studio-theme.css'),hint=read('pandora-studio-honor-guide.js');
+  css=read('pandora-studio-honor.css'),hint=read('pandora-studio-honor-guide.js');
  for(const file of ['pandora-studio-honor-guide.js','pandora-studio-guide-tooltips.js',
   'pandora-studio-historic-maps.js','pandora-studio-honor-view.js'])
   assert.ok(html.includes(file+'?v=2026.11.03.343'),file);
