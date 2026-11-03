@@ -417,7 +417,7 @@ function validItemOwnerPatch(text){
  try{obj=JSON.parse(text)}catch{return false}
  if(!obj||typeof obj!=='object'||Array.isArray(obj))return false;
  const allowed=new Set(['level','W','PEN','AC','atkspeed','range','soulslot',
-  'name','desc','kind','twoHanded','classes','effects','sourceNote']);
+  'name','nameEn','desc','descEn','kind','twoHanded','classes','effects','sourceNote']);
  const numbers=new Set(['level','W','PEN','AC','atkspeed','range','soulslot']);
  const plain=x=>Boolean(x&&typeof x==='object'&&!Array.isArray(x));
  const keys=Object.keys(obj);
@@ -426,9 +426,9 @@ function validItemOwnerPatch(text){
   if(numbers.has(key)){
    if(value!==null&&(!Number.isFinite(value)||value<0||value>(key==='soulslot'?3:100000)||
      (key==='soulslot'&&!Number.isInteger(value))))return false;
-  }else if(key==='name'){
+  }else if(key==='name'||key==='nameEn'){
    if(typeof value!=='string'||!value.trim()||value.length>240)return false;
-  }else if(key==='desc'){
+  }else if(key==='desc'||key==='descEn'){
    if(typeof value!=='string'||value.length>2000)return false;
   }else if(key==='kind'){
    const kinds=new Set('1H_SWORD 2H_SWORD 1H_AXE 2H_AXE 1H_BLUNT_WEAPON 2H_BLUNT_WEAPON POLE_ARM LANCE 1H_TRUMP_WEAPON 2H_TRUMP_WEAPON BOW CROSSBOW WAND STAFF HELMET TORSO CUISSES GLOVES BOOTS FOOT_SHIELD HORSE_SHIELD MANTLE RING AMULET BELT EARRING BRIDLE SADDLE STALL POTION TOY ETC RUNEGEM ARROW BOLT EGGMAKE_KIT MASTER_TALKEGG TALKEGG RECIPE BALM SOUL DECO_HELMET DECO_TORSO DECO_CUISSES DECO_GLOVES DECO_BOOTS DECO_MANTLE'.split(' '));
