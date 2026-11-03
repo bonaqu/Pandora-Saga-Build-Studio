@@ -82,6 +82,7 @@ export async function runEffectItemsSmoke(browser,base){
   assert.doesNotMatch(await page.locator('.wiki-page').innerText(),
    /EP_[A-Z_]+|technical|catalogue|not verified/);
   await page.locator('#dockClose').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="item"]').click();
   await page.locator('.wiki-controls input[type="search"]').fill('Howling Sword');
   await page.locator('[data-wiki-record="422"]').click();
@@ -91,6 +92,7 @@ export async function runEffectItemsSmoke(browser,base){
   assert.doesNotMatch(equipmentEffectText,/500000015/);
   assert.equal(await page.locator('a[href="#wiki/skill/500000015"]').count(),1);
   await page.locator('#dockClose').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="utility"]').click();
   await page.locator('[data-wiki-record="50014"]').click();
   assert.match(await page.locator('.wiki-owner-effects').innerText(),/Activates skill/);
