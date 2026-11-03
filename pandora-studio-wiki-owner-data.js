@@ -5,7 +5,7 @@ const number=x=>typeof x==='number'&&Number.isFinite(x)&&Math.abs(x)<=1000000000
 const id=x=>Number.isSafeInteger(Number(x))&&Number(x)>0&&/^[1-9][0-9]{0,14}$/.test(String(x));
 const record=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const fields=Object.freeze({
- monster:['name','nameEn','desc','descEn','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
+ monster:['name','nameEn','desc','descEn','loot','level','life','ac','magicProtection','warding','str','vit','agi','dex','spi','int','resists'],
  map:['name','nameEn','desc','descEn','notesRu','notesEn','mobs','npcs','loot','tags','sections','extraSections','roster'],
  npc:['name','nameEn','desc','descEn','maps','service','serviceEn','grid'],
  instance:['name','blurb','blurbRu','mobs'],
@@ -48,7 +48,7 @@ function validMapExtra(key,v){
    /^section-[a-z0-9-]{1,34}$/.test(row.id)&&
    localized(row.titleRu,100)&&localized(row.titleEn,100)&&
    ['item','monster','npc','text'].includes(row.kind)&&
-   checkList(row.entries||[],60)&&
+   (row.kind==='monster'?checkMonsterList(row.entries||[],60):checkList(row.entries||[],60))&&
    (row.textRu==null||typeof row.textRu==='string'&&row.textRu.length<=1200)&&
    (row.textEn==null||typeof row.textEn==='string'&&row.textEn.length<=1200));
  return false;
@@ -73,6 +73,7 @@ function validPatch(type,patch){
     Object.entries(v).every(([key,n])=>/^[A-Z_]{2,25}$/.test(key)&&n===1);
    if(k==='mobs')return type==='map'?checkMonsterList(v,1000):checkList(v,1000);
    if(k==='maps')return checkList(v,1000);
+   if(type==='monster'&&k==='loot')return checkList(v,120);
    if(type==='map'&&mapExtraKeys.includes(k))return validMapExtra(k,v);
   if(k==='slots')return Array.isArray(v)&&v.length<=12&&new Set(v).size===v.length&&v.every(x=>slots.includes(x));
   return number(v)&&v>=0;
