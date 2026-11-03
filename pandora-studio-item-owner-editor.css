@@ -299,3 +299,29 @@
 .wiki-page .wiki-town-npc-create .inline-owner-error{grid-column:1/-1}
 .wiki-page .wiki-owner-town-location{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:7px 0 13px}
 .wiki-page .wiki-owner-town-location select{min-width:180px;max-width:100%;min-height:30px}
+
+/* Full-length encyclopedia titles: preserve the whole value while typing.
+   Plaintext-only editable spans used to be capped at 320px and clipped. */
+.wiki-page h3[data-owner-record]>.wiki-owner-plaintext[data-owner-text-field],
+.wiki-page h3[data-edit-key]>.wiki-owner-plaintext[data-owner-text-field]{
+ display:block;width:100%;max-width:100%;min-width:0;min-height:1.7em;
+ white-space:pre-wrap;overflow:visible;overflow-wrap:anywhere;word-break:normal;
+ font:inherit;line-height:1.35;text-align:start;box-sizing:border-box;
+ padding:8px 10px;vertical-align:baseline}
+.wiki-page h3[data-owner-record],
+.wiki-page h3[data-edit-key]{min-width:0;overflow-wrap:anywhere}
+@media(max-width:680px){
+ .wiki-page h3[data-owner-record]>.wiki-owner-plaintext[data-owner-text-field],
+ .wiki-page h3[data-edit-key]>.wiki-owner-plaintext[data-owner-text-field]{
+  padding:9px 8px;font-size:clamp(18px,5vw,29px)}
+}
+/* Show editable fields and keyboard focus in every encyclopedia chapter. */
+.wiki-page [data-owner-record][data-owner-field],
+.wiki-page [data-edit-key]{transition:outline-color .15s,background-color .15s}
+body:has(#ownerDock) .wiki-page [data-owner-record][data-owner-field]:hover,
+body:has(#ownerDock) .wiki-page [data-edit-key]:hover{
+ outline:1px dashed #cfaa70;outline-offset:3px;background:rgba(215,168,94,.09);
+ cursor:text}
+body:has(#ownerDock) .wiki-page [data-owner-record][data-owner-field]:focus-visible,
+body:has(#ownerDock) .wiki-page [data-edit-key]:focus-visible{
+ outline:2px solid #e7bd77;outline-offset:3px}
