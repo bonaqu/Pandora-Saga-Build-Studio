@@ -1387,7 +1387,8 @@ const calculatedCodes=new Set([
 ]);
 const previewCodes=new Set([
  'EP_MOVESPEED_SCALE','EP_SKILL_DELAY','EP_SKILL_DELAY_FIN',
- 'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE','EP_ONDAMAGE_FDS_RACE','EP_VOLUME_EXP',
+ 'EP_ATTACK_BACKATK_RATE','EP_ELEMENT_DAMAGE_SCALE',
+ 'EP_ELEMENT_DAMAGE_SCALE_FIRE','EP_ONDAMAGE_FDS_RACE','EP_VOLUME_EXP',
  'EP_CASTINGCANCEL_RESISTANCE_CONST','EP_HEAL_TIME_SCALE',
  'EP_RACE_RANGE','EP_BOW_RANGE',
  'EP_ALL_CRITICAL','EP_RACE_TOUGH_HEART','EP_HEAL_LIFE_REGENERATOR'
@@ -1890,6 +1891,38 @@ function elementalMagicPreview({honorTitle=0}={}){
  return {fire:title.fireMagic||0,ice:title.iceMagic||0,
   lightning:title.lightningMagic||0,poison:0,light:0,dark:0};
 }
+// The present OS itemForth.json contains a dedicated grade-dependent fire
+// magic property on Fire Dagger of Scorching Heat (item 1862, +7..+10).
+// Its source description explicitly requires fire-element refinement. Only
+// show the structured source preview when that exact equipped weapon has a
+// fire gem at the same grade. Never add this to generic MATK or Honor magic:
+// the live server's final stacking and Phoenix proc remain unverified.
+function elementalRefinementPreview({records=[],itemForth=null,gemSelections=[]}={}){
+ const entries=[],seen=new Set();
+ if(!Array.isArray(records)||!Array.isArray(gemSelections)||
+  !itemForth||typeof itemForth!=='object')return {entries,verified:false};
+ for(const [source,item,grade] of records){
+  if(item?.id!==1862||source!=='item:1862'||item.slot!=='weapon'||
+   !Number.isInteger(grade)||grade<7||grade>10||seen.has(item.id))continue;
+  const hasFireGem=gemSelections.some(row=>row?.slot==='weapon'&&
+   row.itemId===item.id&&row.grade===grade&&row.gem?.element==='fire'&&
+   ['physical','magical'].includes(row.gem?.type));
+  if(!hasFireGem)continue;
+  const gradeEffects=itemForth[String(item.id)]?.[String(grade)];
+  if(!Array.isArray(gradeEffects))continue;
+  const matches=gradeEffects.filter(e=>e?.func==='EP_ELEMENT_DAMAGE_SCALE_FIRE');
+  if(matches.length!==1||!Number.isFinite(matches[0].a)||
+   matches[0].a<0||matches[0].b!==0)continue;
+  seen.add(item.id);
+  entries.push({itemId:item.id,source:'itemForth.json',grade,
+   element:'fire',rate:matches[0].a,gemElement:'fire',
+   verified:false});
+ }
+ return {entries,verified:false,
+  excluded:['final fire magic attack stacking','Phoenix proc trigger and damage',
+   'current server gemstone type restrictions']};
+}
+
 // The executed Remaked Legacy Calc('DAMAura' through 'DAMDark') combines
 // elemental weapon aura, shared flat aura and percent enhancement separately.
 // It only adds shared flat aura when that element already has a base aura.
@@ -1998,6 +2031,9 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const attackRange=attackRangePreview({records:combinedRecords,itemForth,
   weapon:combatContext.weapon,racialEffects});
  const elementalMagic=elementalMagicPreview({honorTitle:extra.honor.id});
+ const elementalRefinement=elementalRefinementPreview({
+  records:combinedRecords,itemForth,gemSelections
+ });
  const mountedRelease=mountedReleasePreview({jobKey:combatContext.jobKey,
   ridingMastery:combatContext.ridingMastery??0,honorTitle:extra.honor.id});
  const priest=combatContext.externalPriest;
@@ -2061,7 +2097,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
   stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,songSkills,otherEquipment,
-  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,mountedRelease,unison,coverage,
+  recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
@@ -2069,6 +2105,6 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
 }
 root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,classBase,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
- recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
+ recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
