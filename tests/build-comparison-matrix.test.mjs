@@ -90,3 +90,40 @@ test('comparison renders within saved builds instead of a modal, with familiar s
  assert.match(style,/build-compare-table-wrap/);
  assert.match(html,/pandora-studio-build-comparison\.css/);
 });
+
+
+test('corrupt legacy allocation and resistance skills remain unknown without crashing',()=>{
+ const damaged=structuredClone(first);
+ damaged.stats.Выносливость='not-a-number';
+ damaged.points.slash=-12;
+ damaged.attributeBuffs.resistanceSkillIds='invalid';
+ const rows=comparison.matrixRows(damaged,second,opts);
+ const invested=rows.find(x=>x.key==='points.vit');
+ const branch=rows.find(x=>x.key==='branch.slash');
+ const resistance=rows.find(x=>x.key==='resistanceSkills');
+ assert.equal(invested.a,'—','invalid allocation must never become zero');
+ assert.equal(invested.delta,null);
+ assert.equal(branch.a,'—','invalid branch points must never become zero');
+ assert.equal(branch.delta,null);
+ assert.equal(resistance.a,'—','malformed skill list must not throw');
+ assert.equal(rows.find(x=>x.key==='level').delta,'+20');
+ assert.deepEqual(damaged.attributeBuffs.resistanceSkillIds,'invalid');
+});
+test('one failed calculation cannot suppress the other saved build',()=>{
+ let attempts=0;
+ const calculated=comparison.calculatePair(first,second,snapshot=>{
+  attempts++;
+  if(snapshot===first)throw Error('Simulated malformed saved A');
+  return {hp:600,stats:{vit:22}};
+ });
+ assert.equal(attempts,2);
+ assert.equal(calculated[0],null);
+ assert.equal(calculated[1].hp,600);
+ const rows=comparison.matrixRows(first,second,{...opts,calcA:calculated[0],
+  calcB:calculated[1],summaryA:[],summaryB:opts.summaryB});
+ assert.equal(rows.find(x=>x.key==='effective.vit').a,'—');
+ assert.equal(rows.find(x=>x.key==='effective.vit').b,'22');
+ assert.equal(rows.find(x=>x.key==='result.0.0').b,'600');
+ assert.deepEqual(comparison.calculatePair(first,second,()=>({hp:9}),false),
+  [null,null],'Unavailable catalog must not fabricate a calculation');
+});

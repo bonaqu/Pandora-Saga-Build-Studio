@@ -44,6 +44,26 @@ function asValue(v,defaultValue){
  return typeof defaultValue==='boolean'?v===true:
   Number.isFinite(v)&&Number.isInteger(v)&&v>=0?v:defaultValue;
 }
+// Legacy snapshots may lack fields; malformed numeric payloads stay unknown.
+function savedNonnegativeInteger(raw){
+ if(raw===undefined||raw===null||raw==='')return 0;
+ if(typeof raw!=='number'&&
+  (typeof raw!=='string'||!/^(0|[1-9][0-9]*)$/.test(raw.trim())))return null;
+ const value=Number(raw);
+ return Number.isSafeInteger(value)&&value>=0?value:null;
+}
+// Each saved build must retain its own calculation even if the other fails.
+function calculatePair(a,b,calculate,ready=true){
+ if(!ready||typeof calculate!=='function')return [null,null];
+ return [a,b].map((snapshot,index)=>{
+  try{return calculate(snapshot)??null}
+  catch(error){
+   console.warn('Build comparison: '+(index===0?'A':'B')+
+    ' calculation unavailable',error);
+   return null;
+  }
+ });
+}
 function gemAt(snap,index,enchant){
  const id=snap?.equipment?.[index]?.id;
  if(id===null||id===undefined)return null;
@@ -152,9 +172,9 @@ function matrixRows(a={},b={},options={}){
  const keys=['vit','str','agi','dex','spi','int'];
  for(let i=0;i<keys.length;i++){
   const [ru,en]=stats[i]||[keys[i].toUpperCase(),keys[i].toUpperCase()];
-  const key=keys[i],from=Number(a.stats?.[ru]),to=Number(b.stats?.[ru]);
-  push('character',invested,'points.'+key,ru,en,
-   Number.isFinite(from)?from:0,Number.isFinite(to)?to:0,{kind:'number'});
+  const key=keys[i],from=savedNonnegativeInteger(a.stats?.[ru]),
+   to=savedNonnegativeInteger(b.stats?.[ru]);
+  push('character',invested,'points.'+key,ru,en,from,to,{kind:'number'});
   const valueA=calcA?.stats?.[key],valueB=calcB?.stats?.[key];
   push('results',ability,'effective.'+key,ru,en,valueA,valueB,{kind:'number'});
  }
@@ -178,7 +198,8 @@ function matrixRows(a={},b={},options={}){
  for(const branch of branches){
   const [id,ru,en]=branch;
   push('skills',skillGroup,'branch.'+id,ru,en,
-   Number(a.points?.[id])||0,Number(b.points?.[id])||0,{kind:'number'});
+   savedNonnegativeInteger(a.points?.[id]),
+   savedNonnegativeInteger(b.points?.[id]),{kind:'number'});
   if(typeof trained==='function'){
    push('skills',skillGroup,'mastery.'+id,label('Мастерство: ','Mastery: ')+ru,
     'Mastery: '+en,trained(a,id),trained(b,id),{kind:'number'});
@@ -256,11 +277,17 @@ function matrixRows(a={},b={},options={}){
   s.attributeBuffs.honorTitle:(s.attributeBuffs?.honorCuriosity===true?1:0);
  push('buffs',buffGroup,'honorTitle','Титул чести','Honor title',
   title(honorId(a)),title(honorId(b)));
+ const resistanceIds=s=>{
+  const ids=s.attributeBuffs?.resistanceSkillIds;
+  if(ids==null)return '';
+  if(!Array.isArray(ids))return null;
+  return [...new Set(ids.map(String).filter(id=>/^[0-9]+$/.test(id)))]
+   .sort((x,y)=>Number(x)-Number(y)).join(', ');
+ };
  push('buffs',buffGroup,'resistanceSkills','Умения сопротивления','Resistance skills',
-  (a.attributeBuffs?.resistanceSkillIds||[]).map(String).sort().join(', '),
-  (b.attributeBuffs?.resistanceSkillIds||[]).map(String).sort().join(', '));
+  resistanceIds(a),resistanceIds(b));
  return rows;
 }
 
-root.PandoraBuildComparison=Object.freeze({describe,savedItemName,matrixRows});
+root.PandoraBuildComparison=Object.freeze({describe,savedItemName,matrixRows,calculatePair});
 })(typeof window==='undefined'?globalThis:window);

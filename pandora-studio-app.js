@@ -323,7 +323,7 @@ function trainedBranchMasteries(innate={},snap=state){
 function previewBaseStats(snap=state){
  const clazz=catalog.classes?.[jobKeys[snap.job]],raceKey=window.PandoraGameNavigation.raceKeys[snap.race];
  const baseClass=clazz?.baseClass||jobKeys[snap.job];
- const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(snap.stats[STATS[i]]||0)]));
+ const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(snap.stats?.[STATS[i]]||0)]));
  const records=[],gemSelections=[];
  for(const [slot,selection] of Object.entries(snap.equipment||{})){
   const item=selection&&catalog.equipment?.[String(selection.id)];
@@ -4278,11 +4278,8 @@ function renderBuildComparison(host,onSelection=()=>{}){
   tbody.replaceChildren();groups=[];
   const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));
   if(a&&b&&a.id!==b.id){
-   let calcA=null,calcB=null;
-   if(catalog.live&&gameTables){
-    try{calcA=previewBaseStats(a.data);calcB=previewBaseStats(b.data)}
-    catch(error){console.warn('Build comparison: calculations unavailable',error)}
-   }
+   const [calcA,calcB]=window.PandoraBuildComparison.calculatePair(
+    a.data,b.data,previewBaseStats,Boolean(catalog.live&&gameTables));
    const rows=window.PandoraBuildComparison.matrixRows(a.data,b.data,{
     lang,races,jobs,stats:[['Выносливость','Vitality'],['Сила','Strength'],
      ['Ловкость','Agility'],['Сноровка','Dexterity'],['Дух','Spirit'],
