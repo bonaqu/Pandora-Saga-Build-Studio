@@ -3002,60 +3002,63 @@ function renderWiki(root){
        else if(removed)await saveWikiSpawns(removed,type,id,false);
       }}));
     }
-    if(mobs.length&&!rec.reportedSpawns){
-     const roster=mobs.map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}));
-     const levels=roster.map(row=>row.mon?.level).filter(Number.isFinite);
-     const levelRange=levels.length?' · ур. '+Math.min(...levels)+
-      (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
-     detail.append(h('h4',{text:'Монстры · '+mobs.length+levelRange}));
-     const search=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
+    // All locations use the same native monster section and cards. Historical
+    // spawn reports supply the three unnamed IDs without a separate layout.
+    if(showMapSection('monsters')){
+     const reports=type==='map'&&Array.isArray(rec.reportedSpawns)?rec.reportedSpawns:null;
+     const roster=reports?[
+      ...reports.filter(x=>x.monsterId==null||mobs.includes(x.monsterId))
+       .map(x=>({id:x.monsterId,mon:x.monsterId==null?null:wikiData.monsters?.[x.monsterId],reported:x})),
+      ...mobs.filter(mob=>!reports.some(x=>x.monsterId===mob))
+       .map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}))
+     ]:mobs.map(mob=>({id:mob,mon:wikiData.monsters?.[mob]}));
+     if(roster.length){
+      const levels=roster.map(row=>row.reported?.level??row.mon?.level).filter(Number.isFinite);
+      const levelRange=levels.length?' · '+wt('ур. ','Lv. ')+Math.min(...levels)+
+       (Math.max(...levels)!==Math.min(...levels)?'–'+Math.max(...levels):''):'';
+      detail.append(h('h4',{text:wt('Монстры · ','Monsters · ')+roster.length+levelRange}));
+      if(reports)detail.append(h('p',{class:'wiki-historic-notice',text:wt(
+       'Исторические сведения: появление этих монстров на текущем сервере OS не подтверждено.',
+       'Historic records: these spawns are not confirmed on the current OS server.')}));
+      const search=ownerPlainTextField({class:'wiki-inline-search wiki-owner-search',
        placeholder:wt('Поиск монстра…','Search monsters…'),
-       'aria-label':wt('Поиск монстра в подземелье или локации','Search monsters in dungeon or location'),
+       'aria-label':wt('Поиск монстра в локации','Search monsters in location'),
        name:'monster-roster-filter',autocomplete:'off','data-lpignore':'true',
-       'data-1p-ignore':'true','data-bwignore':'true'});
+       'data-1p-ignore':'true'});
       guardEncyclopediaSearch(search);
-     const list=h('div',{class:'wiki-map-monsters'}),rows=[];
-     for(const {id:mob,mon} of roster.sort((a,b)=>(a.mon?.level??999)-
-      (b.mon?.level??999)||dataName('monster',a.id).localeCompare(dataName('monster',b.id),'ru'))){
-      const entry=h('div',{class:'wiki-entry wiki-mob-row'+
-       (wikiSelection.highlight===String(mob)?' highlighted':'')});
-      entry.append(wikiLink(dataName('monster',mob),'monster',mob));
-      const extra=[];
-      if(mon?.level!=null)extra.push(wt('Ур. ','Lv. ')+mon.level);
-      if(Number.isFinite(mon?.life))extra.push(wt('ОЗ ','HP ')+Number(mon.life).toLocaleString(lang==='en'?'en-US':'ru-RU'));
-      const drops=wikiIndex.drops(mob);
-      if(drops.length)extra.push(wt('Добыча: ','Loot: ')+drops.length);
-      if(extra.length)entry.append(h('small',{class:'wiki-map-mob-meta',text:extra.join(' · ')}));
-      list.append(entry);rows.push({entry,name:wikiIndex.normalize(dataName('monster',mob))});
+      const list=h('div',{class:'wiki-map-monsters'+(reports?' wiki-historic-roster':'')}),rows=[];
+      for(const {id:mob,mon,reported} of roster.sort((a,b)=>
+       (a.reported?.level??a.mon?.level??999)-(b.reported?.level??b.mon?.level??999))){
+       const name=reported?.name||(mob!=null?dataName('monster',mob):'');
+       const entry=h('div',{class:'wiki-entry wiki-mob-row'+
+        (reports?' wiki-historic-mob':'')+
+        (mob==null?' unverified':'')+
+        (wikiSelection.highlight===String(mob)?' highlighted':'')});
+       entry.append(mob!=null&&mon?wikiLink(name,'monster',mob):
+        h('span',{class:'wiki-historic-name',text:name}));
+       const extra=[];
+       if(reported?.level!=null||mon?.level!=null)
+        extra.push(wt('Ур. ','Lv. ')+(reported?.level??mon.level));
+       if(Number.isFinite(mon?.life))extra.push(wt('ОЗ ','HP ')+
+        Number(mon.life).toLocaleString(lang==='en'?'en-US':'ru-RU'));
+       if(mob!=null&&mon){
+        const drops=wikiIndex.drops(mob);
+        if(drops.length)extra.push(wt('Добыча: ','Loot: ')+drops.length);
+       }
+       if(extra.length)entry.append(h('small',{class:'wiki-map-mob-meta',text:extra.join(' · ')}));
+       if(reported?.spawn==='anywhere')entry.append(h('small',{
+        text:wt('Может появиться в любой точке','May spawn anywhere')}));
+       else if(reported?.spawn==='boss-guard')entry.append(h('small',{
+        text:wt('Страж вожака · при особых условиях','Boss guard · conditional spawn')}));
+       if(mob==null)entry.append(h('small',{class:'wiki-historic-unverified',
+        text:wt('ID не подтверждён','ID unverified')}));
+       list.append(entry);rows.push({entry,name:wikiIndex.normalize(name)});
+      }
+      search.addEventListener('input',()=>{
+       for(const row of rows)row.entry.hidden=!matchesWords(row.name,search.value);
+      });
+      detail.append(search,list);
      }
-     search.addEventListener('input',()=>{
-      for(const row of rows)row.entry.hidden=!matchesWords(row.name,search.value);
-     });
-     detail.append(search,list);
-    }
-    if(type==='map'&&Array.isArray(rec.reportedSpawns)){
-     const block=h('section',{class:'wiki-historic-roster'});
-     block.append(h('h4',{text:wt('Исторические монстры · ','Historical monsters · ')+rec.reportedSpawns.length}));
-     block.append(h('p',{class:'wiki-historic-notice',text:wt(
-      'Исторический состав Эль Ведда. Только подтверждённые совпадения связаны с карточками монстров. Появление на актуальном OS не подтверждено.',
-      'Historic El Beht roster. Only verified matches link to monster pages. Current OS spawns are not confirmed.')}));
-     const list=h('div',{class:'wiki-historic-mob-list'});
-     for(const entry of rec.reportedSpawns.slice().sort((a,b)=>a.level-b.level)){
-      const cell=h('div',{class:'wiki-historic-mob'+(entry.monsterId==null?' unverified':'')});
-      cell.append(h('span',{class:'wiki-historic-level',text:wt('Ур. ','Lv. ')+entry.level}));
-      const mapped=entry.monsterId!=null&&mobs.includes(entry.monsterId)&&
-       Boolean(wikiData.monsters?.[entry.monsterId]);
-      cell.append(mapped?wikiLink(entry.name,'monster',entry.monsterId):
-       h('span',{class:'wiki-historic-name',text:entry.name}));
-      if(entry.spawn==='anywhere')cell.append(h('small',{
-       text:wt('Может появиться в любой точке','May spawn anywhere')}));
-      else if(entry.spawn==='boss-guard')cell.append(h('small',{
-       text:wt('Страж вожака · при особых условиях','Boss guard · conditional spawn')}));
-      if(entry.monsterId==null)cell.append(h('small',{class:'wiki-historic-unverified',
-       text:wt('ID не подтверждён','ID unverified')}));
-      list.append(cell);
-     }
-     block.append(list);detail.append(block);
     }
     if(type==='map'){
       const residents=wikiIndex.residents(id);
