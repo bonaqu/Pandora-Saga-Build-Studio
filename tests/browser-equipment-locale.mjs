@@ -150,7 +150,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
    await page.goto(base+'/#wiki/map/'+district,{waitUntil:'domcontentloaded'});
    await page.locator('.wiki-page h3').waitFor({state:'visible',timeout:20000});
    assert.equal(await page.locator('.wiki-map-npc').count(),0);
-   assert.match(await page.locator('.wiki-page').innerText(),/Подтверждённых сведений о NPC пока нет/);
+   assert.doesNotMatch(await page.locator('.wiki-page').innerText(),/Подтверждённых сведений о NPC пока нет/);
   }
   await page.goto(base+'/#wiki/map/astir-kingdom',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-map-npcs .wiki-link').first().waitFor({state:'visible',timeout:20000});
