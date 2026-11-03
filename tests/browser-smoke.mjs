@@ -64,6 +64,16 @@ async function main(){
  await page.locator('#hero').click();
  await page.locator('#stageAttributes').waitFor({state:'visible'});
  assert.equal(await page.locator('#stageAttributes [data-book-page]').count(),6);
+ const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
+ assert.equal(await guideLabels.count(),47,'43 result hints and four group headers');
+ await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
+ assert.match(await page.locator('#stage-guide-tooltip').innerText(),/Очки здоровья/);
+ await page.locator('#stageBookPanel [data-guide-key="summary.23"]').hover();
+ assert.match(await page.locator('#stage-guide-tooltip').innerText(),/атак в спину/);
+ await page.locator('#stageBookPanel [data-guide-key="summary.23"]').focus();
+ assert.equal(await page.locator('#stage-guide-tooltip').isVisible(),true);
+ await page.locator('#stageBookPanel [data-guide-key="summary.23"]').press('Escape');
+ assert.equal(await page.locator('#stage-guide-tooltip').isHidden(),true);
  await page.locator('#stageAttributes [data-book-page="attack"]').click();
  assert.equal(await page.locator('#stageBookPanel').getAttribute('data-book-visible'),'attack');
  assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),0,
