@@ -432,12 +432,25 @@ function build(data){
   row=>row.type+':'+row.id);
  const allDrops=id=>uniqueRows(related('monster',id).flatMap(key=>drops.get(key)||[]),
   row=>[row.itemId,row.kind,row.percent,row.condition,row.quantity].join(':'));
+ // Normalize bilingual aliases once per chapter and live render, not on every keypress.
+ // Weak callback keys let old view closures be collected after navigation.
+ const translatedSearchTerms=new WeakMap();
  const search=(type,query,displayName)=>{
   const all=entries[type]||[],q=normalizeSearch(query).split(' ').filter(Boolean);
   if(!q.length)return all;
-  return all.filter(([id,rec])=>{
+  let localized=null;
+  if(typeof displayName==='function'){
+   let chapters=translatedSearchTerms.get(displayName);
+   if(!chapters){chapters=new Map();translatedSearchTerms.set(displayName,chapters)}
+   localized=chapters.get(type);
+   if(!localized){
+    localized=new Map(all.map(([id,rec])=>[id,normalizeSearch(displayName(id,rec))]));
+    chapters.set(type,localized);
+   }
+  }
+  return all.filter(([id])=>{
    const indexed=terms[type]?.get(id)||'';
-   const translated=typeof displayName==='function'?normalizeSearch(displayName(id,rec)):'';
+   const translated=localized?.get(id)||'';
    return q.every(word=>indexed.includes(word)||translated.includes(word));
   });
  };
