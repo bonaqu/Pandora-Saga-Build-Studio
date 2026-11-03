@@ -66,7 +66,7 @@ async function main(){
  await page.locator('#stageAttributes').waitFor({state:'visible'});
  assert.equal(await page.locator('#stageAttributes [data-book-page]').count(),6);
  const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
- assert.equal(await guideLabels.count(),47,'43 result hints and four group headers');
+ assert.equal(await guideLabels.count(),48,'43 result hints, four group headers and one editable caption');
  await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/Очки здоровья/);
  await page.locator('#stageBookPanel [data-guide-key="summary.23"]').hover();
