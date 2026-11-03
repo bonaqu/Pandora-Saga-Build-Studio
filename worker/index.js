@@ -549,7 +549,7 @@ function validTownWikiPatch(text,type,id){
  let patch;try{patch=JSON.parse(text)}catch{return false}
  if(!patch||typeof patch!=='object'||Array.isArray(patch))return false;
  const ownerMap=['el-beht','astir-underground'].includes(id)||id.startsWith('custom-');
- const allowed=type==='map'?['name','nameEn','desc','descEn',...mapExtraNames,...(ownerMap?['mobs']:[])]:
+ const allowed=type==='map'?['name','nameEn','desc','descEn',...mapExtraNames,'mobs']:
   ['name','nameEn','desc','descEn','service','serviceEn','grid','maps'];
  const keys=Object.keys(patch);
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
