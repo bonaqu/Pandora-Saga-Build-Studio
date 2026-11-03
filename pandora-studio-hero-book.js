@@ -257,7 +257,7 @@ function make(tag,attrs={},children=[]){
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
- const info=/^summary\\.\\d+$/.test(key)?
+ const info=/^summary\.\d+$/.test(key)?
   guide?.summary(options.overrides||{},Number(key.slice(8)),ru,en):
   guide?.field(options.overrides||{},key,ru,en,fallbackRu,fallbackEn);
  const english=document.documentElement?.lang==='en';
