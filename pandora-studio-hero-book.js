@@ -980,6 +980,21 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    (range.bow>0?'+':'')+range.bow}));
   body.prepend(card);
  }
+ if(page==='attack'&&modifiers?.elementalRefinement?.entries?.length){
+  const english=document.documentElement?.lang==='en';
+  const card=make('section',{class:'stage-attribute-row'});
+  card.append(make('strong',{text:english?
+   'Elemental weapon refinement':'Стихийное усиление оружия'}));
+  for(const effect of modifiers.elementalRefinement.entries){
+   card.append(make('p',{text:(english?'Fire Dagger of Scorching Heat':'Огненный кинжал зноя')+
+    ' +'+effect.grade+': '+(english?'fire magic +':'магическая атака огнём +')+
+    effect.rate+'%'}));
+  }
+  card.append(make('p',{class:'stage-attribute-note',text:english?
+   'Source-confirmed fire-refinement effect with a matching fire gem. Its final server stacking and Phoenix proc are unverified; this value is not added to general MATK or Honor.':
+   'Показан эффект закалки из игрового каталога при выбранном самоцвете огня. Серверное суммирование и срабатывание Пламени феникса не подтверждены; значение не прибавлено к общей МАТК и титулу чести.'}));
+  body.prepend(card);
+ }
  if(page==='attack'&&modifiers?.elementalMagic){
   const labels={fire:'Огонь',ice:'Лёд',lightning:'Молния',
    poison:'Яд',light:'Свет',dark:'Тьма'};
