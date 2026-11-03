@@ -4480,7 +4480,13 @@ function renderBuilds(root){
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}),
   ...(window.PandoraAccountUI?.isLoggedIn()?[]:[buildLibraryTransfer()]));
+ const comparisonSlot=h('section',{'data-build-compare-slot':''});
+ root.append(comparisonSlot);
+ let comparison=null;
  const grid=h('div',{class:'build-grid'}),searchable=[];
+ const syncCompareCheckboxes=()=>{
+  for(const row of searchable)row.check.checked=compareIds.includes(row.build.id);
+ };
  const search=builds.length>5?h('input',{type:'search',class:'build-library-search',
   'aria-label':'Найти сохранённый билд',placeholder:'Поиск по названию, классу, уровню…',
   value:buildSearchQuery}):null;
@@ -4520,7 +4526,18 @@ function renderBuilds(root){
    }}),
    h('button',{class:'button-action',type:'button',text:'Отмена',onclick:()=>{deleteChoice.hidden=true}}));
   check.checked=compareIds.includes(b.id);
-  check.onchange=()=>{if(check.checked)compareIds=[...compareIds,b.id].slice(-2);else compareIds=compareIds.filter(id=>id!==b.id);renderDetails()};
+  check.onchange=()=>{
+   const chosen=compareIds.filter(Boolean);
+   compareIds=check.checked?[...chosen.filter(id=>id!==b.id),b.id].slice(-2):
+    chosen.filter(id=>id!==b.id);
+   comparisonOpen=true;
+   if(comparison)comparison.update();
+   syncCompareCheckboxes();
+   comparisonSlot.querySelector('.build-compare-content')?.removeAttribute('hidden');
+   const expand=comparisonSlot.querySelector('.build-compare-expand');
+   if(expand){expand.setAttribute('aria-expanded','true');
+    expand.textContent=lang==='en'?'Collapse':'Скрыть сравнение'}
+  };
   box.append(h('h3',{text:b.name}),
    ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
     text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
@@ -4543,10 +4560,11 @@ function renderBuilds(root){
   box.append(overwriteChoice);
   box.append(shareSlot);
   grid.append(box);
-  searchable.push({box,searchText:[b.name,races[b.data?.race]?.[0],jobs[b.data?.job],
+  searchable.push({box,build:b,check,searchText:[b.name,races[b.data?.race]?.[0],jobs[b.data?.job],
    (lang==='en'?'Lv. ':'ур. ')+(b.data?.level??'')].filter(Boolean).join(' ').toLocaleLowerCase()});
  }
  root.append(grid);
+ comparison=renderBuildComparison(comparisonSlot,syncCompareCheckboxes);
  if(search){
   const none=h('p',{class:'muted',text:'Билды по запросу не найдены.',hidden:true});
   root.append(none);
@@ -4563,11 +4581,6 @@ function renderBuilds(root){
   apply();
  }
  if(!builds.length)root.append(h('p',{class:'muted',text:'Сохранённых билдов пока нет.'}));
- if(compareIds.length===2){
-  const [a,b]=compareIds.map(id=>builds.find(v=>v.id===id));
-  if(a&&b)root.append(h('h3',{text:(lang==='en'?'Comparison: ':'Сравнение: ')+a.name+' / '+b.name}),
-   h('p',{class:'muted',text:compareSnapshots(a.data,b.data).join(' · ')||'Выборы совпадают'}));
- }
  window.PandoraUILocale.localize(root,lang);
 }
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
