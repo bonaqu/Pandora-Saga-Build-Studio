@@ -6,7 +6,7 @@ ac:'Защита',magicProtection:'Магическая защита',name:'На
 nameEn:'Название на английском',descEn:'Описание на английском',
 d:'Описание на английском',
 classes:'Доступные классы',effects:'Эффекты',slot:'Слот экипировки',W:'Атака',
-PEN:'Пробитие',n:'Название',blurbRu:'Описание',blurb:'Английское описание',
+PEN:'Пробитие',n:'Название на английском',blurbRu:'Описание',blurb:'Английское описание',
 quest:'Задание',kind:'Тип',mobs:'Монстры',p:'Значение шанса в таблице',
 slotAdd:'Дополнительные слоты',lo:'Нижняя граница',hi:'Верхняя граница'};
 const elements={physical:'физическому урону',fire:'огню',cold:'холоду',
@@ -25,9 +25,9 @@ const value=x=>x===undefined?'отсутствует':x===null?'не указа�
  typeof x==='string'?(x.length>160?x.slice(0,157)+'…':x):
  Array.isArray(x)?x.length+' записей':'изменён состав';
 const itemName=(id,ctx)=>{const item=ctx?.upstream?.items?.[id]||ctx?.baseline?.items?.[id];
- const n=item?.name?.ru||item?.name;return typeof n==='string'?n:'Предмет №'+id};
+ const n=item?.name?.ru||item?.name;return typeof n==='string'?n:'Предмет без подтверждённого названия'};
 const monsterName=(id,ctx)=>ctx?.upstream?.monsters?.[id]?.name||
- ctx?.baseline?.monsters?.[id]?.name||'Монстр №'+id;
+ ctx?.baseline?.monsters?.[id]?.name||'Монстр без подтверждённого названия';
 const fieldName=path=>path.startsWith('resists.')?
  (elements[path.slice(8)]?'Сопротивление '+elements[path.slice(8)]:null):
  names[path]||null;
@@ -57,7 +57,12 @@ function describeCompound(kind,before,after,ctx,add,unknown){
  let touched=0;
  const safeAdd=(title,a,b)=>{if(touched>=60){unknown('Остались изменения вне первых 60 строк');return}
    add(title,a,b);touched++};
- const shortItem=(id)=>itemName(id,ctx);
+ const shortItem=id=>{
+  const result=itemName(id,ctx);
+  if(result==='Предмет без подтверждённого названия')
+   unknown('Предмет отсутствует в каталоге: '+String(id));
+  return result;
+ };
  if(kind==='trades'){
   const oldTrades=enumerate(old.trades,'id'),newTrades=enumerate(next.trades,'id');
   let changed=0;
@@ -192,7 +197,9 @@ function describeCompound(kind,before,after,ctx,add,unknown){
 }
 
 function describe(change,ctx={}){
- let title=change.title,summary='',caution='',uncertain=false;
+ let title=typeof (change.after?.name||change.before?.name)==='string'
+  ?(change.after?.name||change.before?.name):change.title;
+ let summary='',caution='',uncertain=false;
  const rows=[],technical=[];
  const add=(label,a,b)=>{if(same(a,b))return;
   const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
@@ -233,6 +240,8 @@ function describe(change,ctx={}){
  }else if(kind==='drops'){
   title='Добыча · '+monsterName(change.key,ctx);
   const old=change.before||{},next=change.after||{};
+  if(title.includes('без подтверждённого названия'))
+   unknown('Монстр отсутствует в каталоге: '+change.key);
   for(const [group,groupName] of [['d','Обычная добыча'],['s','Дополнительная добыча']]){
    const a=old[group]||[],b=next[group]||[];
    const byItem=list=>{const out=new Map();for(const entry of list){
@@ -246,7 +255,10 @@ function describe(change,ctx={}){
     const aa=before.get(key)||[],bb=after.get(key)||[];
     for(let i=0;i<Math.max(aa.length,bb.length);i++){
      if(same(aa[i],bb[i]))continue;
-     const id=(aa[i]||bb[i])?.i,item=groupName+' · '+itemName(id,ctx);
+     const id=(aa[i]||bb[i])?.i,itemTitle=itemName(id,ctx);
+     if(itemTitle==='Предмет без подтверждённого названия')
+      unknown('Добыча содержит отсутствующий в каталоге предмет: '+String(id));
+     const item=groupName+' · '+itemTitle;
      if(!aa[i]||!bb[i])add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет');
      else for(const field of new Set([...Object.keys(aa[i]),...Object.keys(bb[i])])){
       if(field==='i'||field==='t'||same(aa[i][field],bb[i][field]))continue;
