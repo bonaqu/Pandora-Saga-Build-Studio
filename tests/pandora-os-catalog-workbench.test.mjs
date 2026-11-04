@@ -97,7 +97,7 @@ test('owner sync dashboard supports kind and approval filters without auto-accep
  assert.match(workbench,/\['accepted','Выбранные'\]/);
  assert.match(workbench,/\['declined','Не выбраны'\]/);
  assert.match(workbench,/\.filter\(matchesFilter\)/);
- assert.match(workbench,/Принять найденное/);
+ assert.match(workbench,/Выбрать найденное/);
  assert.match(workbench,/Ни одно изменение не принято автоматически/);
 });
 
