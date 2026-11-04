@@ -21,7 +21,8 @@ const canonical=value=>Array.isArray(value)?value.map(canonical):
 const same=(a,b)=>root.PandoraOSCatalogReview?.equal
  ?root.PandoraOSCatalogReview.equal(a,b):
  JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
-const cleanText=text=>text.replace(/<br\s*\/?>/gi,'\n').replace(/\r\n?/g,'\\n');
+const cleanText=text=>text.replace(/<br\s*\/?>/gi,'\n')
+ .replace(/\r\n?/g,'\n').replace(/<\/?(?!item\b)[a-z][a-z0-9-]*(?:\s+[^<>]*)?>/gi,'');
 const value=x=>x===undefined?'отсутствует':x===null?'не указано':
  typeof x==='number'?new Intl.NumberFormat('ru-RU').format(x):
  typeof x==='boolean'?(x?'да':'нет'):
@@ -204,13 +205,37 @@ function describe(change,ctx={}){
   ?(change.after?.name||change.before?.name):change.title;
  let summary='',caution='',uncertain=false;
  const rows=[],technical=[];
+ const readable=(text,label)=>{
+  if(typeof text!=='string')return text;
+  const en=/английск/i.test(label),language=en?'en':'ru';
+  const lookup=id=>{
+   const item=ctx.upstream?.items?.[id]||ctx.baseline?.items?.[id];
+   if(!item)return null;
+   if(en)return ctx.upstream?.['strings.en']?.items?.[id]?.n||
+    ctx.baseline?.['strings.en']?.items?.[id]?.n||item.name;
+   return item.name?.ru||item.name;
+  };
+  if(/описани/i.test(label)){
+   if(root.PandoraItemPresentation?.descriptionText)
+    return root.PandoraItemPresentation.descriptionText(text,lookup,language);
+   return cleanText(text).replace(/<item\s+([0-9]{1,12})\s*\/?>/gi,(_,id)=>
+    lookup(id)||(en?'Unknown item':'Неизвестный предмет'));
+  }
+  return cleanText(text).replace(/<item\s+([0-9]{1,12})\s*\/?>/gi,(_,id)=>
+   lookup(id)||(en?'Unknown item':'Неизвестный предмет'));
+ };
+ const shortened=text=>typeof text==='string'&&text.length>160?text.slice(0,157)+'…':text;
  const add=(label,a,b)=>{if(same(a,b))return;
+  const beforeText=typeof a==='string'?readable(a,label):null;
+  const afterText=typeof b==='string'?readable(b,label):null;
   const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
   const delta=numeric?b-a:null;
-  rows.push({label,before:value(a),after:value(b),numeric,delta,
-   // Expanded reviews retain the entire known text; only the short summary clips it.
-   beforeFull:typeof a==='string'?cleanText(a):undefined,
-   afterFull:typeof b==='string'?cleanText(b):undefined,
+  rows.push({label,before:beforeText===null?value(a):shortened(beforeText),
+   after:afterText===null?value(b):shortened(afterText),numeric,delta,
+   // Source strings remain unchanged in the review model; the visible values
+   // decode line breaks and resolve verified item names for people.
+   beforeFull:beforeText===null?undefined:beforeText,
+   afterFull:afterText===null?undefined:afterText,
    difference:delta===null||delta===0?'':(delta>0?'+':'−')+value(Math.abs(delta))});
  };
  const unknown=(path)=>{uncertain=true;technical.push(path)};
@@ -338,8 +363,12 @@ function describe(change,ctx={}){
   if(change.kind==='added')summary='Добавлено: '+title+'. '+summary;
   if(change.kind==='removed')summary='Удалено: '+title+'. '+summary;
  }
- const preview=rows.slice(0,2).map(row=>row.label+': '+row.before+' → '+row.after).join(' · ');
- if(preview&&!['drops','meta','instances','trades','chests','tables','expertise'].includes(kind))
+ const descriptionRow=rows.some(row=>/описани/i.test(row.label));
+ const preview=rows.slice(0,2).map(row=>row.label+': '+
+   String(row.before).replace(/\s+/g,' ')+' → '+String(row.after).replace(/\s+/g,' ')).join(' · ');
+ if(descriptionRow&&!['meta','instances','trades','chests','tables','expertise'].includes(kind))
+  summary='Изменилось описание. Полный текст «было → стало» — в подробностях ниже.';
+ else if(preview&&!['drops','meta','instances','trades','chests','tables','expertise'].includes(kind))
   summary=(change.kind==='added'?'Добавлено: '+title+'. ':
     change.kind==='removed'?'Удалено: '+title+'. ':'')+
    preview+(rows.length>2?' · ещё '+(rows.length-2):'');

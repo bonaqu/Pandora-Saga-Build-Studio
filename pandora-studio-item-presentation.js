@@ -45,13 +45,19 @@ function displayName(record,fallback='Без названия',lang='ru'){
  // Historical imported builds may have stored the database ID as the item's name.
  return name&&!/^\d{1,20}$/.test(name)?name:fallback;
 }
-function description(s){
+let defaultItemLookup=null,defaultLanguage=()=> 'ru';
+function setReferenceResolver(lookup,language){
+ defaultItemLookup=typeof lookup==='function'?lookup:null;
+ defaultLanguage=typeof language==='function'?language:()=> 'ru';
+}
+function formattedDescription(s){
  if(typeof s!=='string')return '';
  // Keep the original source wording, numbers and manually entered paragraphs.
  // OS exports sometimes concatenate lore, bonuses and upgrade conditions.
  const conditions='За кажд(?:ую|ые|ый|ое)|При улучшении|При усовершенствовании|При заточке|При экипировке|При наличии|Закалка самоцветом|Каждое следующее улучшение|Per every|At \\+\\d+ and above|When enhanced|With refinement';
  const stats='ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|STA|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Skill Cooldown|Cooldown|Healing|Reduction';
  return s.replace(/\r\n?/g,'\n').replace(/<br\s*\/?>/gi,'\n')
+  .replace(/<\/?(?!item\b)[a-z][a-z0-9-]*(?:\s+[^<>]*)?>/gi,'')
   .replace(/[ \t]*\n[ \t]*/g,'\n')
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+stats+')(?:\\s|[+-]|\\d))','gi'),'$1\n\n')
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+conditions+'))','gi'),'$1\n\n')
@@ -65,6 +71,44 @@ function description(s){
   .replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
 
-root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,displayName,
+// Description references are game data, never raw HTML. Resolve only records
+// that actually exist in the chosen catalog; unresolved IDs stay non-clickable.
+function descriptionSegments(source, lookupItem, lang='ru'){
+ const formatted=formattedDescription(source),segments=[];
+ const reference=/<item\b([^>]*)>/gi;
+ let offset=0,match;
+ while((match=reference.exec(formatted))){
+  if(match.index>offset)segments.push({type:'text',text:formatted.slice(offset,match.index)});
+  const id=/^\s*(\d{1,12})\s*\/?\s*$/.exec(match[1])?.[1]||null;
+  const record=id&&typeof lookupItem==='function'?lookupItem(id):null;
+  const found=typeof record==='string'?record:record?.name;
+  const exists=typeof found==='string'&&Boolean(found.trim());
+  segments.push({type:'item',id,text:exists?found.trim():
+   (lang==='en'?'Unknown item':'Неизвестный предмет'),exists});
+  offset=reference.lastIndex;
+ }
+ if(offset<formatted.length)segments.push({type:'text',text:formatted.slice(offset)});
+ return segments.length?segments:[{type:'text',text:formatted}];
+}
+const descriptionText=(source,lookupItem,lang='ru')=>
+ descriptionSegments(source,lookupItem,lang).map(piece=>piece.text).join('');
+// Plain-text tooltips also resolve references; they must never show raw tags.
+const description=source=>descriptionText(source,defaultItemLookup,defaultLanguage());
+
+// Convert visible item names back to source tokens only when an administrator
+// edits the description. Ambiguous names are never silently bound to an ID.
+function restoreReferences(edited,source,lookupItem,lang='ru'){
+ let result=String(edited);
+ const references=descriptionSegments(source,lookupItem,lang)
+  .filter(part=>part.type==='item'&&part.exists);
+ for(const reference of references){
+  const matches=result.split(reference.text).length-1;
+  if(matches>1)throw Error('Название «'+reference.text+
+   '» встречается несколько раз. Уточни текст перед сохранением ссылки.');
+  if(matches===1)result=result.replace(reference.text,'<item '+reference.id+'>');
+ }
+ return result;
+}
+root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
  kindOptions:(lang='ru')=>Object.entries(lang==='en'?namesEn:names).map(([value,label])=>({value,label}))});
 })(typeof window==='undefined'?globalThis:window);

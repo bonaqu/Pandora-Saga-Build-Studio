@@ -195,3 +195,17 @@ test('a server hash is never claimed for a partially cosmetic D1 snapshot',()=>{
   'A metadata checksum must require strict byte-level source equality');
  assert.equal(merged.meta.curated,true);
 });
+
+test('explicit typography-only publication restores source breaks without altering stats or owner decisions',()=>{
+ const before=snapshot(),after=snapshot();
+ before.items['1'].desc='Меч.ПРВ +1';
+ after.items['1'].desc='Меч.<br><br>ПРВ +1';
+ after.items['2'].W=300; // Important but not selected: must remain old.
+ assert.equal(review.formattingChanges('items',before.items,after.items).length,1);
+ const ready=review.compose(before,after,new Set(),files,{syncFormatting:true});
+ assert.equal(ready.items['1'].desc,after.items['1'].desc);
+ assert.equal(ready.items['2'].W,undefined,'never approve a numerical change as typography');
+ assert.equal(before.items['1'].desc,'Меч.ПРВ +1','do not mutate D1 in preview');
+ assert.equal(ready.meta.sha,undefined,'do not reuse original upstream CSV checksum');
+ assert.equal(ready.meta.curated,true);
+});

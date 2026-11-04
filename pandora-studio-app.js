@@ -2410,8 +2410,7 @@ function renderWiki(root){
    const descKey=type==='skill'?'skilldesc.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'itemdesc.'+id:null;
    const description=h('p',{class:'wiki-description'+(missing?' wiki-description-placeholder':''),text:
-    missing?wt('Двойной клик — добавить описание','Double-click to add description'):
-    ['item','chest','soul'].includes(type)?window.PandoraItemPresentation.description(text):text,
+    missing?wt('Двойной клик — добавить описание','Double-click to add description'):'',
     ...(adminEditing&&lang==='ru'&&descKey?{'data-edit-key':descKey}:{}),
     ...(adminEditing&&lang==='en'&&['item','chest'].includes(type)?
      {'data-owner-record':'item:'+id,'data-owner-field':'descEn',
@@ -2422,6 +2421,17 @@ function renderWiki(root){
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'descEn':type==='instance'?'blurbRu':'desc',
        ...(missing?{'data-owner-empty':'true'}:{})}:{})});
+   if(!missing){
+    // Treat the game description as plain text plus verified item references.
+    // Never inject game-provided markup into innerHTML.
+    description._sourceDescription=text;
+    const lookup=key=>wikiData.items?.[key]?dataName('item',key):null;
+    for(const segment of window.PandoraItemPresentation.descriptionSegments(text,lookup,lang)){
+     if(segment.type==='item'&&segment.exists)
+      description.append(wikiLink(segment.text,'item',segment.id));
+     else description.append(document.createTextNode(segment.text));
+    }
+   }
    detail.append(description);
   }
   if(type==='item'){
@@ -5431,7 +5441,7 @@ function guardOwnerInput(input){
 }
 function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit}={}){
  if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
- const before=String(initial??''),visibleBefore=node.textContent;
+ const before=String(initial??''),visibleNodes=[...node.childNodes];
  let finished=false,saving=false;
  const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
   type==='textarea'||type==='text'?ownerPlainTextField({
@@ -5447,7 +5457,7 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   }
  }else control.value=before;
  if(type==='number')guardOwnerInput(control);
- const restore=()=>{if(node.isConnected){node.replaceChildren(document.createTextNode(visibleBefore));node.classList.remove('wiki-inline-saving')}};
+ const restore=()=>{if(node.isConnected){node.replaceChildren(...visibleNodes);node.classList.remove('wiki-inline-saving')}};
  const save=async()=>{
   if(finished||saving)return;
   const raw=control.value;
@@ -5589,15 +5599,29 @@ function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000
  node.onkeydown=e=>{if(e.key==='Enter'||e.key==='F2')start(e)};
  return node;
 }
+function dataNameForEditor(id){
+ const record=wikiData?.items?.[id];
+ if(!record)return null;
+ const name=lang==='en'?
+  (record.nameEn||officialEnglish?.items?.[id]?.n||record.name):record.name;
+ return typeof name==='string'&&name.trim()?name.trim():null;
+}
 function wikiOwnerText(node,type,id,field,{multiline=false}={}){
  if(!adminToken||!adminEditing||(lang!=='ru'&&!['item','chest','npc','map','monster','skill','soul','instance'].includes(type)))return node;
  node.classList.add('wiki-edit-value');
  // The delegated dblclick is the user's actual first gesture. Starting an
  // ondblclick listener here would silently require a SECOND double-click.
- editWikiValue(node,node.dataset.ownerEmpty==='true'?'':String(node.textContent||''),{
+ const source=node._sourceDescription;
+ const initial=node.dataset.ownerEmpty==='true'?'':String(node.textContent||'');
+ editWikiValue(node,initial,{
   type:multiline?'textarea':'text',
-  onCommit:next=>type==='item'||type==='chest'?
-   saveWikiItemField(id,field,next):saveWikiRecordField(type,id,field,next)});
+  onCommit:next=>{
+   const raw=source&&/^(?:desc|descEn|blurbRu)$/.test(field)?
+    window.PandoraItemPresentation.restoreReferences(next,source,
+     key=>wikiData?.items?.[key]?dataNameForEditor(key):null,lang):next;
+   return type==='item'||type==='chest'?
+    saveWikiItemField(id,field,raw):saveWikiRecordField(type,id,field,raw);
+  }});
  return node;
 }
 async function saveWikiItemField(id,field,value){
@@ -5676,9 +5700,11 @@ function inlineWikiText(el){
  const source=matched?wikiData?.items?.[matched[2]]:null;
  const desc=key.startsWith('itemdesc.')||key.startsWith('skilldesc.');
  const raw=source?String(source[desc?'desc':'name']??''):el.textContent;
- const value=desc?window.PandoraItemPresentation.description(raw):raw;
+ const lookup=key=>dataNameForEditor(key);
+ const value=desc?window.PandoraItemPresentation.descriptionText(raw,lookup,lang):raw;
  editWikiValue(el,value,{type:desc?'textarea':'text',onCommit:async next=>{
-  if(matched)return saveWikiItemField(matched[2],desc?'desc':'name',next);
+  if(matched)return saveWikiItemField(matched[2],desc?'desc':'name',
+   desc?window.PandoraItemPresentation.restoreReferences(next,raw,lookup,lang):next);
   if(!next||next.length>(desc?2000:240))throw Error('Некорректная длина текста');
   const previous=activeOverride(key);
   await apiRequest('/api/admin/override',{key,value:next});
@@ -5838,6 +5864,13 @@ async function loadCatalog({archive=false}={}){
   throw Error('Отсутствуют основные таблицы персонажа и экипировки');
  catalogArchived=archive;activeCatalogSnapshot=archive?null:[...snapshots][0];
  catalogSource=data;gameTables=data.tables;gameItemForth=data.itemForth;
+ window.PandoraItemPresentation.setReferenceResolver?.(id=>{
+  const item=catalogSource?.items?.[id];
+  if(!item)return null;
+  const label=lang==='en'?
+    (item.nameEn||officialEnglish?.items?.[id]?.n||item.name):item.name;
+  return typeof label==='string'&&label.trim()?label.trim():null;
+ },()=>lang);
  officialEnglish=null;officialEnglishSnapshot=null;
   const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
   state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));

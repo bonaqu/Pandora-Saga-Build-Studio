@@ -30,6 +30,16 @@
   }
   const strictEqual=(left,right)=>JSON.stringify(stable(left,'',false))===JSON.stringify(stable(right,'',false));
   const equal = (left,right)=>JSON.stringify(stable(left)) === JSON.stringify(stable(right));
+  // Source fingerprints/counts are integrity diagnostics, not player-visible
+  // game changes. A level cap, class/branch definition or unknown game parameter
+  // still requires explicit owner review.
+  const technicalMetaKeys=new Set(['sha','counts','localeCounts','warnings',
+    'curated','generatedAt','updatedAt','sourceUpdatedAt']);
+  const gameplayMetadata=value=>Object.fromEntries(
+    Object.entries(value||{}).filter(([key])=>!technicalMetaKeys.has(key)));
+  const metadataOnlyTechnical=(before,after)=>
+    equal(gameplayMetadata(before),gameplayMetadata(after));
+
   const id = (dataset, key) => dataset + '\u0000' + key;
 
   function entries(dataset, value) {
@@ -66,6 +76,35 @@
     return result;
   }
 
+  // Typography-only records are intentionally NOT game changes. A separate
+  // explicit owner action may restore authentic source line breaks in D1.
+  function withSourceFormatting(before,after,key=''){
+    if(typeof before==='string'&&typeof after==='string'&&
+       descriptionFields.has(key)&&compactDescription(before)===compactDescription(after))
+      return after;
+    if(Array.isArray(before)&&Array.isArray(after)&&before.length===after.length)
+      return before.map((row,index)=>withSourceFormatting(row,after[index],key));
+    if(plain(before)&&plain(after)){
+      const output={...before};
+      for(const k of Object.keys(before))
+        if(Object.hasOwn(after,k))
+          output[k]=withSourceFormatting(before[k],after[k],k);
+      return output;
+    }
+    return before;
+  }
+  function formattingChanges(dataset,previous,current){
+    if(dataset==='meta')return [];
+    const before=entries(dataset,previous),after=entries(dataset,current),result=[];
+    for(const key of Object.keys(before)){
+      if(!Object.hasOwn(after,key)||!equal(before[key],after[key]))continue;
+      const formatted=withSourceFormatting(before[key],after[key]);
+      if(strictEqual(formatted,before[key])||!strictEqual(formatted,after[key]))continue;
+      result.push({dataset,key,id:id(dataset,key),after:formatted});
+    }
+    return result;
+  }
+
   function count(dataset, value) {
     if (dataset === 'instances') return Array.isArray(value) ? value.length : 0;
     if (dataset === 'trades') return Array.isArray(value?.trades) ? value.trades.length : 0;
@@ -93,7 +132,7 @@
     }
   }
 
-  function compose(previous, current, accepted, sourceFiles) {
+  function compose(previous, current, accepted, sourceFiles, {syncFormatting=false}={}) {
     if (!plain(previous?.meta) || !plain(current?.meta) || !Array.isArray(sourceFiles)) {
       throw Error('Incomplete OS catalog sources');
     }
@@ -108,6 +147,13 @@
       }
       for (const change of changes(dataset, previous[dataset], current[dataset])) {
         if (accepted.has(change.id)) putRecord(output, change);
+      }
+    }
+    if(syncFormatting){
+      for(const dataset of sourceFiles){
+        if(dataset==='meta')continue;
+        for(const change of formattingChanges(dataset,previous[dataset],current[dataset]))
+          putRecord(output,change);
       }
     }
     // Server metadata may change independently of equipment or skills.
@@ -161,6 +207,6 @@
   }
 
   root.PandoraOSCatalogReview = Object.freeze({
-    atomicDatasets, labels, id, changes, compose, retainLegacyRows, equal, strictEqual
+    atomicDatasets, labels, id, changes, formattingChanges, compose, retainLegacyRows, equal, strictEqual, metadataOnlyTechnical
   });
 })(typeof window === 'undefined' ? globalThis : window);

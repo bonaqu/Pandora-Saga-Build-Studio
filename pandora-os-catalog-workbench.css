@@ -158,3 +158,18 @@
    rather than literal HTML; never evaluate source descriptions as markup. */
 .os-sync-human-field .os-sync-full-value{white-space:pre-line;overflow-wrap:anywhere;line-height:1.5}
 .os-sync-change-summary{white-space:pre-line}
+
+
+/* Explicit formatting sync is not a gameplay change; keep it visually secondary. */
+.os-sync-formatting-option{display:flex;align-items:center;gap:9px;cursor:pointer;
+ margin:8px 0 2px;padding:10px 12px;border:1px solid #725134;
+ border-radius:4px;background:#251a13;color:#e6c18b;font-size:12px}
+.os-sync-formatting-option input{width:16px!important;min-width:16px!important;
+ height:16px;accent-color:#c99b5f;cursor:pointer}
+.os-sync-formatting-option:has(input:disabled){opacity:.6;cursor:default}
+.os-sync-formatting-info,.os-sync-meta-status{font-size:11px;line-height:1.55;padding:5px 9px}
+.os-sync-raw-field span{white-space:pre-line}
+.wiki-description .wiki-link{display:inline;color:#efc47b;text-decoration:underline;
+ text-decoration-color:#b78c54;text-decoration-thickness:1px;text-underline-offset:3px;
+ font:inherit}
+.wiki-description .wiki-link:hover,.wiki-description .wiki-link:focus-visible{color:#ffe2a4}
