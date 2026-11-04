@@ -1,0 +1,60 @@
+/* Owner tools overlay for authenticated sessions only. */
+/* Inline authenticated editor: anchored at the foot of the left game panel. */
+.workspace>.left>#ownerDock{
+ position:relative;inset:auto;width:100%;max-width:100%;min-width:0;
+ display:grid;grid-template-columns:minmax(0,1fr);gap:0;
+ margin:18px 0 0;padding:0;align-self:stretch;
+ background:linear-gradient(160deg,#35271b,#1f1712);
+ border:1px solid #947148;border-radius:9px;
+ box-shadow:0 8px 22px #0005;overflow:hidden;
+}
+#ownerDock .owner-dock-head{
+ display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px;
+ padding:10px 12px;min-width:0;
+}
+#ownerDock .owner-dock-title{
+ display:block;flex:1 1 140px;font-family:inherit;
+ font-size:13px;font-weight:700;color:#f6d5a2;
+}
+#ownerDock .owner-dock-online{font-size:10px;color:#c9b18a}
+#ownerDock [data-owner-collapse]{
+ margin-left:auto;padding:5px 8px;min-height:28px;border-radius:5px;
+ white-space:nowrap;font-size:11px;transition:background .18s,border-color .18s;
+}
+#ownerDock .owner-dock-body{
+ display:grid;gap:9px;min-width:0;padding:0 12px 12px;
+ overflow:hidden;max-height:1000px;opacity:1;
+ transition:max-height .28s ease,opacity .22s ease,padding .28s ease;
+}
+#ownerDock.owner-dock-collapsed .owner-dock-body{
+ max-height:0;opacity:0;padding-top:0;padding-bottom:0;
+ pointer-events:none;
+}
+#ownerDock .owner-dock-save-state{font-size:11px;line-height:1.5}
+#ownerDock .owner-dock-counters{display:flex;flex-wrap:wrap;gap:5px 12px}
+#ownerDock .owner-workflow-guide{border:1px solid #645037;border-radius:5px;padding:8px;
+ font-size:11px}
+#ownerDock .owner-workflow-guide summary{cursor:pointer}
+#ownerDock .owner-workflow-steps{padding-left:20px;margin:7px 0}
+#ownerDock .owner-workflow-glossary p{margin:5px 0}
+#ownerDock .owner-dock-actions{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
+}
+#ownerDock .owner-dock-actions button{
+ min-width:0;font-size:11px;line-height:1.35;padding:8px 6px;
+}
+#ownerDock .owner-dock-actions .owner-dock-primary,
+#ownerDock .owner-dock-actions .owner-dock-finish{
+ grid-column:1/-1;
+}
+#ownerDock .owner-dock-actions .owner-dock-primary{
+ background:#51371f;border-color:#ad824d;
+}
+#ownerDock button:focus-visible{outline:2px solid #ffd184;outline-offset:2px}
+@media(max-width:680px){
+ .workspace>.left>#ownerDock{margin-top:14px}
+ #ownerDock .owner-dock-head{padding:10px}
+}
+@media(prefers-reduced-motion:reduce){
+ #ownerDock .owner-dock-body,#ownerDock [data-owner-collapse]{transition:none}
+}
