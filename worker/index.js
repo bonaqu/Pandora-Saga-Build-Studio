@@ -431,7 +431,7 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
  const file=path.slice('/api/admin/catalog/source/'.length);
  const names=new Set(['meta','classes','skills','items','souls','monsters','drops','maps','instances',
  'racialPassives','itemForth','unison','trades','tables','expertise','chests','strings.en']);
- if(!/^[A-Za-z.]+\\.json$/.test(file)||!names.has(file.slice(0,-5)))return no('Unknown source dataset',404);
+ if(!/^[A-Za-z.]+\.json$/.test(file)||!names.has(file.slice(0,-5)))return no('Unknown source dataset',404);
  const result=await readCurrentGameFile(file);
  if(result.ok)return json(result.value,200,{'cache-control':'no-store'});
  return json({error:'Game data source temporarily unavailable',
