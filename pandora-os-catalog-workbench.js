@@ -40,10 +40,9 @@
       text:'Применить выбранные изменения',disabled:true});
     const testWrite = h('button',{type:'button',class:'button-action',
       text:'Проверить сохранение правок',
-      title:'Создаёт и удаляет только две временные записи, не изменяя игровые данные',disabled:false});
+      disabled:false});
     const github = h('button',{type:'button',class:'button-action',
-      text:'Создать PR в GitHub',disabled:true,
-      title:'Подготовить отдельное предложение изменений в репозитории, без автоматического объединения'});
+      text:'Создать PR в GitHub',disabled:true});
     const search = h('input', {type:'search',class:'os-sync-search',
       placeholder:'Поиск по названию, описанию и связанным предметам…','aria-label':'Поиск изменений'});
     const progress = h('progress', {class:'catalog-import-progress',max:'100',value:'0'});
@@ -406,7 +405,9 @@
     function render() {
       results.replaceChildren();
       const query = search.value.trim().toLocaleLowerCase();
-      const scrollBefore=results.scrollTop;
+      // The review uses the main modal's scrollbar, not a nested list.
+      const scrollHost=view.closest('.modal')||results;
+      const scrollBefore=scrollHost.scrollTop;
       const changedView=query!==renderedQuery||filterKind!==renderedFilter;
       for (const name of [...importer.files.filter(x=>x!=='meta'),'meta']) {
         const group = changes.filter(row=>row.dataset===name);
@@ -513,7 +514,7 @@
       refreshActions();
       // Keep the reviewer's place after selection; only a new search or
       // category filter intentionally starts at the beginning.
-      results.scrollTop=changedView?0:scrollBefore;
+      scrollHost.scrollTop=changedView?0:scrollBefore;
       renderedQuery=query;renderedFilter=filterKind;
     }
 
@@ -810,9 +811,9 @@
     ]).then(([settings,current])=>{
       githubReady=settings.configured===true;
       publishedSnapshot=current.active||null;
-      github.title=githubReady
-        ? 'Подготовить PR из опубликованного каталога'
-        : 'Для PR требуется секретный GitHub-токен в настройках Worker';
+      github.setAttribute('aria-label',githubReady
+        ? 'Создать PR в GitHub из опубликованного каталога'
+        : 'Создать PR в GitHub — требуется настройка токена на сервере');
       refreshActions();
     }).catch(()=>{githubReady=false;refreshActions()});
 
