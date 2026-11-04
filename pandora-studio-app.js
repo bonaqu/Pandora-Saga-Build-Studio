@@ -2,6 +2,31 @@
 // No invented combat formulas. Historical catalog is labelled explicitly.
 'use strict';
 const $=id=>document.getElementById(id);
+const startupOverlay=$('startupOverlay');
+let startupFinishId=0;
+function startupMessage(ru,en,locale=lang){
+ startupOverlay.hidden=false;
+ startupOverlay.classList.remove('is-finished');
+ startupOverlay.dataset.state='loading';
+ startupOverlay.dataset.language=locale;
+ $('startupStatus').textContent=locale==='en'?en:ru;
+}
+function startupDone(){
+ const token=++startupFinishId;
+ startupOverlay.classList.add('is-finished');
+ setTimeout(()=>{
+  if(token===startupFinishId&&startupOverlay.classList.contains('is-finished'))
+   startupOverlay.hidden=true;
+ },420);
+}
+function startupError(error){
+ console.warn('Build Studio startup failed',error);
+ startupOverlay.hidden=false;startupOverlay.classList.remove('is-finished');
+ startupOverlay.dataset.state='error';
+ const prefix=lang==='en'?'Could not load the current D1 catalog: ':
+  'Не удалось получить актуальные данные D1: ';
+ $('startupStatus').textContent=prefix+String(error?.message||error).slice(0,220);
+}
 const VIEW_KEY='ps-studio-navigation.v2';
 function readView(){try{return JSON.parse(sessionStorage.getItem(VIEW_KEY)||'{}')||{}}catch{return{}}}
 const bootView=readView();
@@ -5857,11 +5882,14 @@ async function refreshOwnerCatalog(){
  }else render();
  updateAdminHint();
 }
-async function loadOverrides(){try{
+async function loadOverrides({strict=false}={}){try{
  const response=await apiRequest('/api/overrides',null,'');
  override=response.values||{};
- refreshOwnerCatalog();
-}catch{ /* Not deployed or CORS restricted; static site remains usable. */ }}
+ await refreshOwnerCatalog();
+}catch(error){
+ if(strict)throw Error('Правки каталога D1 недоступны: '+error.message);
+ console.warn('Owner overrides unavailable in explicitly selected archive mode',error);
+}}
 $('originTabs').onclick=event=>{
  const button=event.target.closest('[data-origin-tab]');
  if(!button)return;
