@@ -178,6 +178,13 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
   assert.equal(await dialog.locator('.os-sync-raw-details').isVisible(),false,
     'raw IDs and JSON are hidden until owner explicitly opens details');
+  await dialog.getByRole('button',{name:/Расшифрованы · 1/}).click();
+  assert.equal(await dialog.locator('.os-sync-record').count(),1,
+    'readable changes can be shown independently');
+  await dialog.getByRole('button',{name:/Требует проверки · 0/}).click();
+  assert.equal(await dialog.locator('.os-sync-record').count(),0,
+    'unknown fields have an independent review filter');
+  await dialog.getByRole('button',{name:/Все · 1/}).click();
   const groups=dialog.locator('.os-sync-group');
   assert.equal(await groups.count(),1,'Exactly one intentionally changed D1 item');
   await groups.locator('summary.os-sync-group-heading').click();
@@ -190,6 +197,15 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await decision.check();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
+  let publishPrompt='';
+  page.once('dialog',confirmation=>{
+    publishPrompt=confirmation.message();
+    confirmation.dismiss();
+  });
+  await dialog.locator('.os-sync-review-steps button')
+    .filter({hasText:'Применить выбранные изменения'}).click();
+  assert.match(publishPrompt,/сохранённая копия проекта/);
+  assert.equal(calls.filter(x=>x==='d1-import').length,0,'dismissal prevents catalog publication');
   await dialog.getByRole('button',{name:'Снять весь выбор'}).click();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Выбрать понятные изменения',exact:true}).click();
