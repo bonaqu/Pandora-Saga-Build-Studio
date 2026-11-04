@@ -382,6 +382,14 @@
         toolbar.append(take,reject);
         if(query||filterKind!=='all')toolbar.append(takeVisible);
         panel.append(toolbar);
+        const variantTotal=new Map(),variantIndex=new Map(),variantOrder=new Map();
+        for(const entry of group){
+          const title=describe(entry).title;
+          variantTotal.set(title,(variantTotal.get(title)||0)+1);
+          const index=(variantIndex.get(title)||0)+1;
+          variantIndex.set(title,index);
+          variantOrder.set(entry.id,index);
+        }
         const limit = full.has(name)||query?filtered.length:Math.min(40,filtered.length);
         const list = h('div',{class:'os-sync-list'});
         for (const change of filtered.slice(0,limit)) {
@@ -391,6 +399,9 @@
             text:description.service?'Служебные данные · ручная проверка':
               description.uncertain?'Есть нерасшифрованные параметры':
               'Значения расшифрованы · проверь перед выбором'});
+          if(variantTotal.get(description.title)>1)
+            helper.textContent+=' · Вариант '+variantOrder.get(change.id)+
+              ' из '+variantTotal.get(description.title)+' с этим названием';
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
             'aria-label':'Выбрать изменение '+description.title});
           input.addEventListener('change',()=>setChoice(change,input.checked));
