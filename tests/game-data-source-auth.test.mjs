@@ -91,13 +91,17 @@ test('unavailable hostnames give a private diagnostic code without publishing pa
  try{
   const response=await worker.fetch(request('meta',true),env);
   assert.equal(response.status,502);
-  assert.deepEqual(await response.json(),{
-   error:'Game data source temporarily unavailable',code:'network',
-   sourceDataset:'meta.json',attempts:[
-    {host:'pandorasaga-os.com',code:'network'},
-    {host:'www.pandorasaga-os.com',code:'network'}
-   ]
-  });
+  const payload=await response.json();
+  assert.equal(payload.error,'Game data source temporarily unavailable');
+  assert.equal(payload.code,'network');
+  assert.equal(payload.sourceDataset,'meta.json');
+  assert.equal(payload.attempts.length,2);
+  assert.deepEqual(payload.attempts.map(row=>[row.host,row.code,row.stage]),[
+   ['pandorasaga-os.com','network','fetch'],
+   ['www.pandorasaga-os.com','network','fetch']
+  ]);
+  assert.ok(payload.attempts.every(row=>row.name==='TypeError'&&
+   row.message==='Network failure'));
  }finally{globalThis.fetch=old}
 });
 
