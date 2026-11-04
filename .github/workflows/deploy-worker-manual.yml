@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: 'Type DEPLOY-0.354-TO-ps-build-studio-cloud'
+        description: 'Type DEPLOY-0.355-TO-ps-build-studio-cloud'
         required: true
         type: string
 
@@ -38,15 +38,15 @@ jobs:
         env:
           CONFIRM: ${{ inputs.confirmation }}
         run: |
-          test "$CONFIRM" = 'DEPLOY-0.354-TO-ps-build-studio-cloud'
+          test "$CONFIRM" = 'DEPLOY-0.355-TO-ps-build-studio-cloud'
           test -n "$CLOUDFLARE_API_TOKEN"
           test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
           test "$PS_D1_DATABASE_ID" = '0f8fbcd8-be06-414c-844b-a2091fdf6784'
           node --input-type=module -e '
             import {readFileSync} from "node:fs";
             const code=readFileSync("index.js","utf8");
-            for(const marker of ["codeRelease:\x270.354.0\x27",
-              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "key===\x27nameEn\x27", "key===\x27descEn\x27"])
+            for(const marker of ["codeRelease:\x270.355.0\x27",
+              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "key===\x27nameEn\x27", "key===\x27descEn\x27"])
               if(!code.includes(marker))throw Error("Missing expected reviewed Worker code: "+marker);
           '
       - name: Generate exact existing D1 config without secrets
@@ -77,14 +77,15 @@ jobs:
               const healthy=await fetch(url+"/api/health",
                 {cache:"no-store",signal:AbortSignal.timeout(15000)});
               const health=await healthy.json().catch(()=>null);
-              if(response.ok&&caps?.codeRelease==="0.354.0"&&
+              if(response.ok&&caps?.codeRelease==="0.355.0"&&
                 caps?.ownerEditors?.includes("bilingual-item-text")&&
                 caps?.adminD1WriteCheck==="catalog-and-overrides"&&
+                caps?.catalogSourceFailover===true&&
                 healthy.ok&&health?.storage==="d1"&&health?.features?.catalog===true){
-                console.log("Verified live Worker 0.354.0, English item editing and the same D1 catalog");
+                console.log("Verified live Worker 0.355.0, English item editing and the same D1 catalog");
                 process.exit(0);
               }
               if(attempt<7)await new Promise(resolve=>setTimeout(resolve,4000));
             }
-            throw Error("Worker not yet serving 0.354.0 with bilingual-item-text and healthy D1");
+            throw Error("Worker not yet serving 0.355.0 with bilingual-item-text and healthy D1");
           '

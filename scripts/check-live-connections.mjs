@@ -81,6 +81,12 @@ try{
   (adminD1Ready?'Worker 0.354.0+ supports isolated catalog and owner edits':
    'deploy Worker 0.354.0; no authenticated production write has been attempted'));
 
+ const liveSourceReady=deployed&&Number(release?.[1]||0)>=355&&
+  payload?.catalogSourceFailover===true;
+ console.log((liveSourceReady?'OK  ':'WARN')+' Admin current-game source recovery — '+
+  (liveSourceReady?'Worker 0.355.0+ supports two trusted source aliases':
+   'Deploy Worker 0.355.0; upstream availability still requires a real admin check'));
+
 }catch(error){
  console.log('WARN Worker runtime capability marker — '+error.message);
 }

@@ -38,3 +38,8 @@ npm run bench:wiki:local
 The command starts a local HTTP server on port 4189 (loopback only), launches real headless Chromium on **your own PC**, times encyclopedia row expansions and searches for items, monsters and souls, prints raw milliseconds and CPU/OS metadata, then stops the server. Third-party and production D1 requests are blocked: the bundled catalog is measured and no admin credentials or real player data are required. Search timings include the intentionally configured 100 ms debounce; do not call these pure CPU search durations. For comparisons, repeat the test several times under similar machine load. GitHub Actions benchmarks run on GitHub hardware and do not prove local-PC speed.
 
 The admin's production D1 write test is separate: after deploying the updated Worker, log in to the site's admin catalog editor and click **Проверить запись в D1**. Success now requires catalog and override-table readback, scoped deletion, and an unchanged published snapshot. No test in this document claims that authenticated production action was executed remotely.
+
+
+### In-site owner benchmark (no local project folder needed)
+
+An authenticated administrator can open **Энциклопедия**, choose Equipment / Monsters / Souls, ensure the search is cleared and no item card is selected, then click **Проверить скорость этого списка**. The button measures actual list expansion, search (including 100 ms debounce) and one scroll in the user's own browser, restores the original list state, and displays a compact local report. No data is sent to Cloudflare or GitHub. The standalone Node.js/Playwright command remains an optional developer-only reproducibility tool, **not a prerequisite for the site owner**.

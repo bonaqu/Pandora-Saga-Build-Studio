@@ -76,7 +76,7 @@ test('live sync detects changing source revision and cannot misreport published 
 });
 
 test('administrator sees neutral game-catalog labels instead of a source host brand',()=>{
- assert.match(workbench,/Проверить обновления игрового каталога/);
+ assert.match(workbench,/Проверить изменения в текущей игре/);
  assert.match(workbench,/Применить выбранные изменения/);
  assert.match(app,/text:'Игровой каталог',onclick:showCatalogImport/);
  assert.doesNotMatch(workbench,/Pandora Saga OS|Pandora Saga Open Server/);
@@ -99,4 +99,17 @@ test('owner sync dashboard supports kind and approval filters without auto-accep
  assert.match(workbench,/\.filter\(matchesFilter\)/);
  assert.match(workbench,/Принять найденное/);
  assert.match(workbench,/Ни одно изменение не принято автоматически/);
+});
+
+
+test('sync review shows primary update, archival fallback and hidden maintenance tools',()=>{
+ assert.match(workbench,/Проверить изменения в текущей игре/);
+ assert.match(workbench,/Сверить с сохранённой копией/);
+ assert.match(workbench,/Это не проверка игрового сервера в реальном времени/);
+ assert.match(workbench,/os-sync-advanced/);
+ assert.match(workbench,/os-sync-review-steps/);
+ assert.match(workbench,/archiveChoice\.open=true/);
+ assert.match(workbench,/progress\.hidden=!value/);
+ assert.match(workbench,/не удалось получить обновления из игры/);
+ assert.doesNotMatch(workbench,/Сравнить с архивом проекта/);
 });

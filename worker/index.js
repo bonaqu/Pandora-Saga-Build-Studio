@@ -384,23 +384,39 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
  if(!/^[A-Za-z.]+\.json$/.test(file)||!names.has(file.slice(0,-5)))return no('Unknown source dataset',404);
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
  try{
-  const response=await fetch('https://pandorasaga-os.com/gamedata/'+file,{signal:controller.signal,headers:{accept:'application/json'},redirect:'error'});
-  if(!response.ok)return no('Source unavailable: '+response.status,502);
-  const raw=await response.text();
-  if(raw.length>1250000)return no('Source exceeds safety size limit',502);
-  const value=JSON.parse(raw);
-  if(!value||typeof value!=='object')return no('Invalid source data',502);
-  return json(value,200,{'cache-control':'no-store'});
- }catch(error){return no('Game data source temporarily unavailable',502)}
- finally{clearTimeout(timeout)}
+  // Two canonical spellings of the SAME upstream host: no arbitrary URLs,
+  // redirects, credentials or user input are forwarded to the game server.
+  const hosts=['https://pandorasaga-os.com','https://www.pandorasaga-os.com'];
+  let reason='network',value=null;
+  for(const host of hosts){
+   if(controller.signal.aborted)break;
+   try{
+    const response=await fetch(host+'/gamedata/'+file,{
+     signal:controller.signal,headers:{accept:'application/json'},redirect:'error'
+    });
+    if(!response.ok){reason='http-'+response.status;continue}
+    const raw=await response.text();
+    if(raw.length>1250000){reason='too-large';break}
+    try{value=JSON.parse(raw)}catch{reason='invalid-json';continue}
+    if(value&&typeof value==='object')return json(value,200,{'cache-control':'no-store'});
+    reason='invalid-format';
+   }catch(error){
+    reason=controller.signal.aborted?'timeout':'network';
+    if(controller.signal.aborted)break;
+   }
+  }
+  // Diagnostic metadata is admin-only; the player-facing app never gets it.
+  return json({error:'Game data source temporarily unavailable',
+   code:reason,sourceDataset:file},502);
+ }finally{clearTimeout(timeout)}
 }
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/runtime-capabilities'&&method==='GET')
- return json({codeRelease:'0.354.0',ownerEditors:[
+ return json({codeRelease:'0.355.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists'],
-  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides'});
+  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));

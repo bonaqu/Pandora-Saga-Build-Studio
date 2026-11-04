@@ -15,6 +15,12 @@
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "90021",
+        "exactText": "reset and redistribute all of your stat points",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -386,6 +392,12 @@
       "source": null,
       "observed": {
         "items": 12
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "50001",
+        "exactText": "restores 60 HP",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -396,6 +408,12 @@
       "source": null,
       "observed": {
         "items": 2
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "50004",
+        "exactText": "restores 15% of maximum HP",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -422,6 +440,12 @@
       "source": null,
       "observed": {
         "items": 6
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "50006",
+        "exactText": "restores 30 MP",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -432,6 +456,12 @@
       "source": null,
       "observed": {
         "items": 2
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "50009",
+        "exactText": "restores 15% of your maximum MP",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -788,6 +818,12 @@
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "12123",
+        "exactText": "5% chance to inflict Slow on an enemy that deals physical damage",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -800,6 +836,12 @@
         "items": 5,
         "souls": 6,
         "itemForth": 44
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "1041",
+        "exactText": "9% chance to stun",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -982,6 +1024,12 @@
       "source": null,
       "observed": {
         "items": 2
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "65004",
+        "exactText": "Return you to your resurrection point within 10 sec",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -1127,6 +1175,12 @@
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "11202",
+        "exactText": "Accuracy +10%",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -1149,6 +1203,12 @@
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "18073",
+        "exactText": "Experience Gained +5%",
+        "confidence": "item-description-only"
       }
     }
   ],

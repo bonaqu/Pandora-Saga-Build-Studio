@@ -1,15 +1,15 @@
 # Safe manual deployment of the existing Cloudflare Worker
 
-GitHub Pages and the Cloudflare Worker deploy independently. Build Studio 0.354.0
+GitHub Pages and the Cloudflare Worker deploy independently. Build Studio 0.355.0
 needs the corresponding Worker code to save bilingual item fields and verify writes to both the existing `catalog_entries` and `overrides` D1 tables.
 
 ## Procedure
 
 1. Open **GitHub → Actions → Deploy existing Pandora Worker (manual, no D1 migrations)**.
 2. Select **Run workflow** on branch `bonaqu_projects`.
-3. Enter `DEPLOY-0.354-TO-ps-build-studio-cloud`.
+3. Enter `DEPLOY-0.355-TO-ps-build-studio-cloud`.
 4. Watch the preflight, dry-run, deployment and read-only verification steps.
-5. Confirm `/api/runtime-capabilities` reports `codeRelease: 0.354.0` and
+5. Confirm `/api/runtime-capabilities` reports `codeRelease: 0.355.0` and
    `ownerEditors` contains `bilingual-item-text`, `adminD1WriteCheck` is `catalog-and-overrides`, and that `/api/health`
    continues to report an active D1 catalog.
 
@@ -28,3 +28,6 @@ after changes; a passing static or browser test does not authorize a D1 write.
 
 
 After successful **read-only** deployment verification, an authenticated administrator must open the catalog editor and click **Проверить запись в D1**. This creates two temporary rows (one catalog snapshot record, one reserved owner override), checks exact readbacks and scoped deletions, and compares the active catalog snapshot before and after. No deployment job performs this write automatically. Do not share session tokens or passwords.
+
+
+Worker 0.355 includes an allowlisted second-source retry when the current game's official data endpoint is temporarily unreachable. This does not bypass access controls or guarantee availability; both upstream attempts can still fail. The admin UI offers a separate comparison with the saved project copy in that case, never calling archived data live. Only authenticated admins can query the source adapter, and it never forwards their bearer credentials.
