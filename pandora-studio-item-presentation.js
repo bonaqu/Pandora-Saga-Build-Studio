@@ -56,9 +56,14 @@ function formattedDescription(s){
  // OS exports sometimes concatenate lore, bonuses and upgrade conditions.
  const conditions='За кажд(?:ую|ые|ый|ое)|При улучшении|При усовершенствовании|При заточке|При экипировке|При наличии|Закалка самоцветом|Каждое следующее улучшение|Per every|At \\+\\d+ and above|When enhanced|With refinement';
  const stats='ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|STA|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Skill Cooldown|Cooldown|Healing|Reduction';
- return s.replace(/\r\n?/g,'\n').replace(/<br\s*\/?>/gi,'\n')
-  .replace(/<\/?(?!item\b)[a-z][a-z0-9-]*(?:\s+[^<>]*)?>/gi,'')
-  .replace(/[ \t]*\n[ \t]*/g,'\n')
+ const hasSourceBreaks=/<br\\s*\\/?>/i.test(s);
+ const normalized=s.replace(/\\r\\n?/g,'\\n').replace(/<br\\s*\\/?>/gi,'\\n')
+  .replace(/<\\/?(?!item\\b)[a-z][a-z0-9-]*(?:\\s+[^<>]*)?>/gi,'')
+  .replace(/[ \\t]*\\n[ \\t]*/g,'\\n');
+ // A game-authored line break is authoritative: do not inject extra heuristic
+ // paragraphs that would change the structure seen in the source description.
+ if(hasSourceBreaks)return normalized.replace(/\\n{3,}/g,'\\n\\n').trim();
+ return normalized
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+stats+')(?:\\s|[+-]|\\d))','gi'),'$1\n\n')
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+conditions+'))','gi'),'$1\n\n')
   // Missing spaces between two normal sentences are not paragraph breaks.
