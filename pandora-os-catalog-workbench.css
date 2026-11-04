@@ -130,3 +130,25 @@
  .os-sync-raw-field{grid-template-columns:1fr;gap:3px}
  .os-sync-explanation{margin-left:0}
 }
+
+
+/* Only the administrator sees the comparison. Direction is numerical, not a
+   judgment about whether the game balance change helps or hurts players. */
+.os-sync-review-level{display:block;color:#bfae94;font-size:11px;line-height:1.35;font-weight:400}
+.os-sync-review-caution .os-sync-review-level{color:#e2b982}
+.os-sync-result-count{display:block;color:#c5ad8d;font-size:11px;margin:0 0 4px}
+.os-sync-change-summary{line-height:1.6;font-size:12px;max-width:75ch}
+.os-sync-field-details{margin-left:0}
+.os-sync-human-field{gap:6px 9px;min-width:0}
+.os-sync-human-field .os-sync-value-delta{
+ grid-column:2/-1;text-align:right;color:#dac39d;font-size:10px;
+ font-variant-numeric:tabular-nums;line-height:1.2
+}
+.os-sync-human-field .os-sync-old{color:#c2b1a0}
+.os-sync-human-field .os-sync-new{color:#f0d4a8;font-weight:600}
+.os-sync-filters{display:flex;flex-wrap:wrap;gap:6px}
+.os-sync-filter{white-space:normal}
+@media(max-width:670px){
+ .os-sync-human-field .os-sync-value-delta{grid-column:1/-1;text-align:left}
+ .os-sync-human-field{grid-template-columns:minmax(0,1fr) minmax(0,.65fr) 12px minmax(0,.65fr)}
+}
