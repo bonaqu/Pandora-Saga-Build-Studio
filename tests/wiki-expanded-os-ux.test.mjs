@@ -77,7 +77,7 @@ test('wiki imagery uses canonical item/skill icons and neutral glyphs for image-
  assert.match(css,/\.wiki-list-glyph/);
  assert.match(book,/presenter\?\.description\(record\.desc\)/);
  assert.match(book,/presenter\?\.description\(soul\.desc\)/);
- assert.match(app,/\['item','chest','soul'\]\.includes\(type\)\?window\.PandoraItemPresentation\.description/);
+ assert.match(app,/PandoraItemPresentation\.descriptionSegments\(text,lookup,lang\)/);
 });
 test('wiki shows localized game class names and consistent source labels',()=>{
  const app=read('pandora-studio-app.js');
