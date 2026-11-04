@@ -93,7 +93,35 @@ test('unavailable hostnames give a private diagnostic code without publishing pa
   assert.equal(response.status,502);
   assert.deepEqual(await response.json(),{
    error:'Game data source temporarily unavailable',code:'network',
-   sourceDataset:'meta.json'
+   sourceDataset:'meta.json',attempts:[
+    {host:'pandorasaga-os.com',code:'network'},
+    {host:'www.pandorasaga-os.com',code:'network'}
+   ]
   });
  }finally{globalThis.fetch=old}
+});
+
+
+test('public fixed upstream probe tests Cloudflare egress without exposing game records or writing D1',async()=>{
+ const original=globalThis.fetch;
+ const names=[];
+ globalThis.fetch=async url=>{
+  names.push(url);
+  return new Response(JSON.stringify({schemaVersion:1,counts:{items:1116}}),{status:200});
+ };
+ try{
+  const result=await worker.fetch(new Request('https://ps-build-studio-cloud.bonaqu.workers.dev/api/source-health'),
+   {DB:{prepare(){throw Error('Read-only probe cannot access D1')}}});
+  assert.equal(result.status,200);
+  const data=await result.json();
+  assert.equal(data.status,'ok');
+  assert.equal(data.source,'game-site');
+  assert.equal(data.value,undefined);
+  assert.ok(Number.isFinite(data.checkedAt));
+  assert.deepEqual(names,['https://pandorasaga-os.com/gamedata/meta.json']);
+  const cached=await worker.fetch(new Request('https://ps-build-studio-cloud.bonaqu.workers.dev/api/source-health'),
+   {DB:{prepare(){throw Error('No DB query in cached probe')}}});
+  assert.equal(cached.status,200);
+  assert.equal(names.length,1,'probe result should be cached to avoid upstream request floods');
+ }finally{globalThis.fetch=original}
 });
