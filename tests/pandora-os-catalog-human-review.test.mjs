@@ -128,3 +128,27 @@ test('changed English item name is anchored to the Russian game item instead of 
  assert.ok(result.rows.some(x=>x.label==='Название'&&x.after==='Gladius'));
  assert.equal(result.uncertain,false);
 });
+
+
+test('additional dungeon description is shown without raw JSON',()=>{
+ const old=read('instances'),next=structuredClone(old);
+ next[0].blurb='Updated game-side English description';
+ const result=describe(change('instances','@dataset',old,next),context);
+ assert.ok(result.rows.some(row=>row.label.includes('Беглец · Английское описание')));
+ assert.equal(result.uncertain,false);
+});
+test('repeated monster-drop IDs are marked for manual review instead of silently matched',()=>{
+ const before={d:[{i:50001,p:30},{i:50001,p:20}]};
+ const next={d:[{i:50001,p:35},{i:50001,p:20}]};
+ const result=describe(change('drops','43601',before,next),context);
+ assert.equal(result.uncertain,true);
+ assert.ok(result.technical.some(x=>x.includes('Несколько одинаковых предметов')));
+});
+test('Russian count labels agree for singular and plural game records',()=>{
+ const before={sha:{'a.csv':'old','b.csv':'old'},counts:{items:1}};
+ const next={sha:{'a.csv':'new','b.csv':'new'},counts:{items:1}};
+ assert.match(describe(change('meta','@dataset',before,next),context).summary,/2 файла/);
+ const chests=read('chests'),updated=structuredClone(chests);
+ updated.boxes[0].rolls[0][0].p=90;
+ assert.match(describe(change('chests','@dataset',chests,updated),context).summary,/1 сундуке/);
+});
