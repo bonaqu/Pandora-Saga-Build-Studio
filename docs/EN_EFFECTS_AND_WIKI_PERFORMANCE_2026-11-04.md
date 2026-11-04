@@ -1,12 +1,12 @@
 # Source audit: English effects, encyclopedia responsiveness, D1 verification
 
-Date: 2026-11-04 · Studio 0.353.0
+Date: 2026-11-04 · baseline 0.353.0; follow-up 0.354.0
 
 ## Scope and provenance
 
 Primary Remaked snapshot: [commit 4e6abf9](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/commit/4e6abf98c914bfa761510f7e2710b1795aab2a3a), with [Legacy English option names](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/4e6abf98c914bfa761510f7e2710b1795aab2a3a/js/option.js), [numeric effect mapping](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/4e6abf98c914bfa761510f7e2710b1795aab2a3a/modern/enhancement-effects.js) and its [current effect additions](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/4e6abf98c914bfa761510f7e2710b1795aab2a3a/scripts/lib/current-effect-conversion.mjs).
 
-Studio's current bundled OS `items.json`, `souls.json` and `itemForth.json` include **101 distinct item-related EP_* function codes**. Every observed code is recorded in `data/localization/remaked-effect-source.v1.json` together with its Studio EN label (if defined), original Remaked English option (if mapped), numeric index and source file. **64** codes can be mapped to the Remaked English results scale. **37** do not have a direct mapping in the inspected Remaked sources and must not be described as officially verified. **Four** of those have no confirmed English label and deliberately retain their identifier in the admin effect editor: `EP_ALL_CRITICAL`, `EP_ELEMENT_DAMAGE_SCALE_FIRE`, `EP_ONDAMAGE_FDS_RACE`, `EP_RACE_TOUGH_HEART`.
+Studio's current bundled OS `items.json`, `souls.json` and `itemForth.json` include **101 distinct item-related EP_* function codes**. Every observed code is recorded in `data/localization/remaked-effect-source.v1.json` together with its Studio EN label (if defined), original Remaked English option (if mapped), numeric index and source file. **64** codes can be mapped to the Remaked English results scale. **37** do not have a direct mapping in the inspected Remaked sources and must not be described as officially verified. **Three** of those have no confirmed English label and deliberately retain their identifier in the admin effect editor: `EP_ALL_CRITICAL`, `EP_ONDAMAGE_FDS_RACE`, `EP_RACE_TOUGH_HEART`.
 
 This is a comprehensive **inventory audit**, not proof that every translated English phrase is the exact current OS game-client label. The numeric-to-option relationship itself is primary-source verified; expanded English phrases remain editor-facing wording. Game-server changes since the bundled snapshot are not implied.
 
@@ -47,3 +47,21 @@ An independent manual-only isolated D1 lifecycle test exists at `.github/workflo
 - Confirm the 37 non-mapped EP codes against current OS game-client/localization data before claiming native English terminology.
 - Validate an admin edit's real `POST /api/admin/override`, subsequent `GET /api/overrides` and reset only under an authenticated owner-controlled session. A rollback must preserve any existing item overrides.
 - Profile CPU/DOM rendering on the owner's actual device and under its network/browser extensions; CI only captures its own virtual machine.
+
+
+## Follow-up: OS item-description source corroboration
+
+A second pass cross-checked the **37 non-Remaked-mapped codes** against the bundled original OS item effects and bilingual game descriptions. These are **not** 37 newly verified official UI strings: the numeric Remaked mapping still covers 64/101, and the game client has not been examined. Five EN editor-facing labels have direct, auditable semantic support in localized item text (`gameEvidence`, including item ID and exact fragment in `data/os/strings.en.json`):
+
+| Effect code | Game source and literal description fragment | Updated editor label |
+|---|---|---|
+| `EP_RECOVERY_CURSE` | Tranquilizer `50015` — Cures Weakness, Madness, and Disease. | Remove Weakness |
+| `EP_RECOVERY_NUMB` | Hepatica `50023` — Cures Freezing. | Remove Freeze |
+| `EP_RECOVERY_RAVING` | Tranquilizer `50015` — Cures Weakness, Madness, and Disease. | Remove Madness |
+| `EP_DESTINE_WARDING` | Dawn Veil (Myrine) `11552` — Physical Attack Evasion Chance +3% | Physical attack evasion chance (%) |
+| `EP_ELEMENT_DAMAGE_SCALE_FIRE` | Scorching Dagger `1862` — Fire magic attack +1% | Fire magic attack (%) |
+
+For the Fire code, the effect occurs in `data/os/itemForth.json` for the dagger, rather than the base item effects. For the others, the effect code occurs in the same item's `effects`. The assertions in `tests/remaked-english-effect-source.test.mjs` guard the precise relation. Three remaining effects are shown as raw codes because the English text does not establish their semantics. `EP_BOW_CARRY` and `EP_RACE_CARRY` occur alongside distinct range functions; source descriptions support the **range bonus** but do not identify the role of each paired engine function, so no independent carrying-capacity mechanic is claimed as verified. Published D1 or game-client labels are not modified.
+
+
+Three further editor-facing words were checked against the same OS snapshot: `EP_EXPERTISE_RESET` is **Reset skill points** (Skill Reset Scroll, ID `90034`); `EP_RESTMAP_MOVESPEED_SCALE` is **Town movement speed (%)** (student cloak, ID `18073`); and `EP_HEAL_LIFE_REGENERATOR` is neutrally **Gradual HP change** because the known Cursed Rod, ID `2841`, has a negative periodic effect described as *Gradual HP loss*. Item descriptions support these display explanations, not official byte-for-byte client UI localization. Their independent `gameEvidence` records and tests use the exact item IDs and game-source text.

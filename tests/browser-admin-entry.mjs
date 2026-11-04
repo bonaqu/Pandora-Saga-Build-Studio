@@ -19,7 +19,8 @@ export async function runAdminEntrySmoke(browser,base){
   if(path==='/api/admin/catalog/test-write'&&method==='POST'){
     assert.equal(route.request().headers().authorization,'Bearer '+ 'a'.repeat(43));
     calls.push('d1-write-check');
-    return json({ok:true,readback:true,cleaned:true,activeCatalogUnchanged:true});
+    return json({ok:true,readback:true,cleaned:true,
+      overrideReadback:true,overrideCleaned:true,activeCatalogUnchanged:true});
   }
   if(path==='/api/admin/catalog/github-status'&&method==='GET')
    return json({configured:true});

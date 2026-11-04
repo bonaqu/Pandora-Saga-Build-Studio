@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import {cpus,platform,arch} from 'node:os';
 
-// Real Chromium timings on the GitHub Actions runner, not estimates and not
-// measurements of a user's own device. All off-site requests are blocked.
-export async function runEncyclopediaPerformanceSmoke(browser,base){
+// Timings are from Chromium running on this machine with bundled OS data.
+// Off-site requests are blocked so results are comparable across runs.
+export async function runEncyclopediaPerformanceSmoke(browser,base,{environment='CI runner'}={}){
  const context=await browser.newContext({viewport:{width:1366,height:900}});
  await context.route('**/*',route=>route.request().url().startsWith(base+'/')?
   route.continue():route.abort());
@@ -71,7 +71,7 @@ export async function runEncyclopediaPerformanceSmoke(browser,base){
   }));
   const cpu=cpus()[0]?.model||'unavailable';
   console.log('Chromium encyclopedia performance: '+JSON.stringify({
-   runner:{platform:platform(),arch:arch(),cpu},measurement:'actual headless Chromium on CI runner; not a user-device benchmark',
+   runner:{platform:platform(),arch:arch(),cpu},measurement:'actual headless Chromium on '+environment,
    dataSource:'local bundled game snapshot; off-site traffic blocked',chapters:report
   }));
  }finally{await context.close()}

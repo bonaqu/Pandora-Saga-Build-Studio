@@ -7,9 +7,11 @@ const client=read('scripts/check-live-connections.mjs');
 const worker=read('worker/index.js');
 
 test('readonly readiness probe uses current Worker owner editor capability marker',()=>{
- assert.match(worker,/codeRelease:'0\.351\.0'/);
+ assert.match(worker,/codeRelease:'0\.354\.0'/);
  assert.ok(worker.includes("'bilingual-item-text'"));
+ assert.ok(worker.includes("adminD1WriteCheck:'catalog-and-overrides'"));
  assert.ok(client.includes("'bilingual-item-text'"));
+ assert.ok(client.includes("'catalog-and-overrides'"));
  for(const capability of [
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit',
   'chestedit','spawnedit','virtual-town-wiki','bilingual-wiki'

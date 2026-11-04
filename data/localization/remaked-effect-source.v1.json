@@ -285,12 +285,18 @@
     },
     {
       "code": "EP_DESTINE_WARDING",
-      "studioLabel": "Warding",
+      "studioLabel": "Physical attack evasion chance (%)",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "11552",
+        "exactText": "Physical Attack Evasion Chance +3%",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -329,23 +335,35 @@
     },
     {
       "code": "EP_ELEMENT_DAMAGE_SCALE_FIRE",
-      "studioLabel": null,
+      "studioLabel": "Fire magic attack (%)",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "itemForth": 4
       },
-      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector."
+      "unresolved": "No verified matching EN label in the Remaked mapping; keep code visible in the admin effect selector.",
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "1862",
+        "exactText": "Fire magic attack +1%",
+        "confidence": "item-description-only"
+      }
     },
     {
       "code": "EP_EXPERTISE_RESET",
-      "studioLabel": "Reset expertise",
+      "studioLabel": "Reset skill points",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "90034",
+        "exactText": "Allows you to reset and redistribute all of your skill points.",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -382,12 +400,18 @@
     },
     {
       "code": "EP_HEAL_LIFE_REGENERATOR",
-      "studioLabel": "HP regeneration",
+      "studioLabel": "Gradual HP change",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "2841",
+        "exactText": "Gradual HP loss.",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -874,12 +898,18 @@
     },
     {
       "code": "EP_RECOVERY_CURSE",
-      "studioLabel": "Remove Curse",
+      "studioLabel": "Remove Weakness",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 2
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "50015",
+        "exactText": "Cures Weakness, Madness, and Disease.",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -894,12 +924,18 @@
     },
     {
       "code": "EP_RECOVERY_NUMB",
-      "studioLabel": "Remove Numbness",
+      "studioLabel": "Remove Freeze",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 4
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "50023",
+        "exactText": "Cures Freezing.",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -914,12 +950,18 @@
     },
     {
       "code": "EP_RECOVERY_RAVING",
-      "studioLabel": "Remove Confusion",
+      "studioLabel": "Remove Madness",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "50015",
+        "exactText": "Cures Weakness, Madness, and Disease.",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -944,12 +986,18 @@
     },
     {
       "code": "EP_RESTMAP_MOVESPEED_SCALE",
-      "studioLabel": "Movement speed in safe zones (%)",
+      "studioLabel": "Town movement speed (%)",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "18073",
+        "exactText": "Town Movement Speed +15%",
+        "confidence": "item-description-only"
       }
     },
     {

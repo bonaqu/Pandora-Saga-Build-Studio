@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: 'Type DEPLOY-0.351-TO-ps-build-studio-cloud'
+        description: 'Type DEPLOY-0.354-TO-ps-build-studio-cloud'
         required: true
         type: string
 
@@ -38,15 +38,15 @@ jobs:
         env:
           CONFIRM: ${{ inputs.confirmation }}
         run: |
-          test "$CONFIRM" = 'DEPLOY-0.351-TO-ps-build-studio-cloud'
+          test "$CONFIRM" = 'DEPLOY-0.354-TO-ps-build-studio-cloud'
           test -n "$CLOUDFLARE_API_TOKEN"
           test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
           test "$PS_D1_DATABASE_ID" = '0f8fbcd8-be06-414c-844b-a2091fdf6784'
           node --input-type=module -e '
             import {readFileSync} from "node:fs";
             const code=readFileSync("index.js","utf8");
-            for(const marker of ["codeRelease:\x270.351.0\x27",
-              "\x27bilingual-item-text\x27", "key===\x27nameEn\x27", "key===\x27descEn\x27"])
+            for(const marker of ["codeRelease:\x270.354.0\x27",
+              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "key===\x27nameEn\x27", "key===\x27descEn\x27"])
               if(!code.includes(marker))throw Error("Missing expected reviewed Worker code: "+marker);
           '
       - name: Generate exact existing D1 config without secrets
@@ -66,7 +66,7 @@ jobs:
         run: npx --yes wrangler@4 deploy --dry-run --outdir /tmp/pandora-worker-preview --keep-vars
       - name: Deploy Worker code while preserving dashboard variables and existing secrets
         run: npx --yes wrangler@4 deploy --keep-vars
-      - name: Verify bilingual item editor capability and D1 health (read-only)
+      - name: Verify exact Worker release, D1 admin diagnostics and health (read-only)
         run: |
           node --input-type=module -e '
             const url="https://ps-build-studio-cloud.bonaqu.workers.dev";
@@ -77,13 +77,14 @@ jobs:
               const healthy=await fetch(url+"/api/health",
                 {cache:"no-store",signal:AbortSignal.timeout(15000)});
               const health=await healthy.json().catch(()=>null);
-              if(response.ok&&caps?.codeRelease==="0.351.0"&&
+              if(response.ok&&caps?.codeRelease==="0.354.0"&&
                 caps?.ownerEditors?.includes("bilingual-item-text")&&
+                caps?.adminD1WriteCheck==="catalog-and-overrides"&&
                 healthy.ok&&health?.storage==="d1"&&health?.features?.catalog===true){
-                console.log("Verified live Worker 0.351.0, English item editing and the same D1 catalog");
+                console.log("Verified live Worker 0.354.0, English item editing and the same D1 catalog");
                 process.exit(0);
               }
               if(attempt<7)await new Promise(resolve=>setTimeout(resolve,4000));
             }
-            throw Error("Worker not yet serving 0.351.0 with bilingual-item-text and healthy D1");
+            throw Error("Worker not yet serving 0.354.0 with bilingual-item-text and healthy D1");
           '

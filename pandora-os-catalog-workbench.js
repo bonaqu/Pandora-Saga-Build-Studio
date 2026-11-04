@@ -22,7 +22,7 @@
     const publish = h('button', {type:'button',class:'button-action primary',
       text:'Применить выбранные изменения',disabled:true});
     const testWrite = h('button',{type:'button',class:'button-action',
-      text:'Проверить запись в D1',title:'Безопасная временная запись и удаление',disabled:false});
+      text:'Проверить запись в D1',title:'Безопасная проверка сохранения каталога и админских правок',disabled:false});
     const github = h('button',{type:'button',class:'button-action',
       text:'Создать PR в GitHub',disabled:true,
       title:'Создать отдельную ветку с текущими опубликованными игровыми данными'});
@@ -372,13 +372,15 @@
     // contents ever pass through the browser.
     testWrite.onclick=async()=>{
       if(busy)return;
-      if(!confirm('Проверить запись в D1? Будет создана, прочитана и удалена одна временная запись; действующий каталог останется прежним.'))return;
+      if(!confirm('Проверить запись в D1? Будут созданы, прочитаны и удалены две временные записи (каталог и админские правки). Реальные игровые данные не изменяются.'))return;
       setBusy(true);
       try{
         const result=await request('/api/admin/catalog/test-write',{});
-        if(result.ok!==true||result.readback!==true||result.cleaned!==true)
-          throw Error('D1 не подтвердила полное удаление тестовой записи');
-        status.textContent='Проверка D1 пройдена: запись, чтение и удаление работают. Игровой каталог не изменён.';
+        if(result.ok!==true||result.readback!==true||result.cleaned!==true||
+           result.overrideReadback!==true||result.overrideCleaned!==true||
+           result.activeCatalogUnchanged!==true)
+          throw Error('D1 не подтвердила запись, чтение, очистку и неизменность каталога');
+        status.textContent='Проверка D1 пройдена: временные данные каталога и админских правок записаны, прочитаны и удалены. Опубликованный каталог не изменён.';
       }catch(error){
         status.textContent=error.httpStatus===401
           ? 'Сеанс администратора завершился. Войди заново.'
