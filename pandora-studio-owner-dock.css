@@ -26,7 +26,7 @@ body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
  pointer-events:none;
 }
 #ownerDock .owner-dock-handle{
- position:absolute;left:calc(100% - 1px);top:17px;
+ position:absolute;left:calc(100% - 1px);bottom:20px;
  display:flex;align-items:center;justify-content:center;
  width:45px;min-width:45px;height:112px;
  padding:10px 7px;margin:0;
@@ -127,7 +127,7 @@ body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
 @media(max-width:600px){
  body>#ownerDock{bottom:max(8px,env(safe-area-inset-bottom))}
  #ownerDock .owner-dock-panel{max-height:calc(100dvh - 32px)}
- #ownerDock .owner-dock-handle{top:12px;width:43px;min-width:43px;height:102px}
+ #ownerDock .owner-dock-handle{bottom:12px;width:43px;min-width:43px;height:102px}
 }
 @media(max-height:510px){
  #ownerDock .owner-dock-panel{max-height:calc(100dvh - 16px)}
