@@ -468,6 +468,8 @@
           const row = h('article',{class:'os-sync-record'+(description.uncertain?' os-sync-review-caution':'')});
           const helper=h('small',{class:'os-sync-review-level',
             text:description.service?'Служебные данные · ручная проверка':
+              hasLinks?'Игровая ссылка · требуется ручная проверка':
+              visuallySame?'Видимый текст совпадает · требуется ручная проверка':
               description.uncertain?'Есть нерасшифрованные параметры':
               'Значения расшифрованы · проверь перед выбором'});
           if(variantTotal.get(description.title)>1)
