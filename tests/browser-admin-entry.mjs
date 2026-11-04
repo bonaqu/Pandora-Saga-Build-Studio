@@ -708,6 +708,9 @@ export async function runInlineMilestonesSmoke(browser,base){
   const glow=await mark.evaluate(element=>getComputedStyle(element).boxShadow);
   assert.match(glow,/0px 0px 1px 0px/,'Focused skill tick glow radius must be 1px');
   await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.querySelector('#locale [data-locale="en"]')
+   ?.getAttribute('aria-pressed')==='true'&&
+   document.querySelector('#startupOverlay')?.hidden===true,null,{timeout:20000});
   assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Class limit:'));
   await page.locator('#pathSkillsTab').click();
   await page.locator('.path-skill-count').waitFor({state:'visible'});

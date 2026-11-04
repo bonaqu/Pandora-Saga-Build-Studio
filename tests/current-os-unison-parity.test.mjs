@@ -71,7 +71,7 @@ test('Gold armor fall protection unlocks with four companions and root grade +7'
 });
 test('OS catalog atomic snapshot includes unison and the book shows active set effects',()=>{
  const app=read('pandora-studio-app.js'),book=read('pandora-studio-hero-book.js');
- assert.match(app,/\['meta','classes','skills','items','souls','racialPassives','unison'\]/);
+ assert.ok(app.includes("'unison','tables','itemForth'"),'D1 snapshot includes set effects and formulas');
  assert.match(app,/unisonCatalog:catalogSource\?\.unison/);
  assert.match(book,/function defenseChapterGroups\(calc\)/);
  assert.doesNotMatch(book,/if\(chosen==='effects'&&modifiers\?\.unison/);

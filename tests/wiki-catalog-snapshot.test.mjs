@@ -131,3 +131,11 @@ test('validated local encyclopedia preview avoids a slow D1 request',async()=>{
  assert.equal(mock.paths.filter(url=>url.includes('/api/catalog/')).length,0);
  assert.equal(mock.paths.length,loader.keys.length);
 });
+
+test('strict production Wiki refuses a broken D1 snapshot instead of silently loading an archive',async()=>{
+ const mock=mockFetch(catalog('current'),catalog('archived'),{fail:'souls'});
+ await assert.rejects(
+  loader.load({api:'https://worker.example',fetcher:mock.fetcher,strict:true}),
+  /souls HTTP 503/);
+ assert.equal(mock.paths.filter(url=>url.startsWith('./data/os/')).length,0);
+});

@@ -15,14 +15,21 @@
   const clone = value => value === undefined ? undefined : JSON.parse(JSON.stringify(value));
   const plain = value => Boolean(value && typeof value === 'object' && !Array.isArray(value));
 
-  function stable(value) {
-    if (Array.isArray(value)) return value.map(stable);
+  // Only source description typography is presentation-only. Do not strip
+  // spaces or HTML from identifiers, names, formulas, prices or effects.
+  const descriptionFields=new Set(['desc','descEn','d','blurb','blurbRu']);
+  const compactDescription = text => text.replace(/<br\s*\/?>/gi,'').replace(/\r\n?|\n/g,'');
+  function stable(value, key='', semantics=true) {
+    if (typeof value==='string' && semantics && descriptionFields.has(key))
+      return compactDescription(value);
+    if (Array.isArray(value)) return value.map(v=>stable(v,key,semantics));
     if (plain(value)) {
-      return Object.fromEntries(Object.keys(value).sort().map(key => [key, stable(value[key])]));
+      return Object.fromEntries(Object.keys(value).sort().map(k => [k, stable(value[k],k,semantics)]));
     }
     return value;
   }
-  const equal = (left, right) => JSON.stringify(stable(left)) === JSON.stringify(stable(right));
+  const strictEqual=(left,right)=>JSON.stringify(stable(left,'',false))===JSON.stringify(stable(right,'',false));
+  const equal = (left,right)=>JSON.stringify(stable(left)) === JSON.stringify(stable(right));
   const id = (dataset, key) => dataset + '\u0000' + key;
 
   function entries(dataset, value) {
@@ -107,7 +114,7 @@
     // Never auto-apply its cap/version/hash without the owner's selection.
     const acceptMeta = accepted.has(id('meta', '@dataset'));
     const sameDataAsSource = sourceFiles.filter(name => name !== 'meta')
-      .every(name => equal(output[name], current[name]));
+      .every(name => strictEqual(output[name], current[name]));
     const sameMetaAsSource = acceptMeta || equal(previous.meta, current.meta);
     const identicalToSource = sameDataAsSource && sameMetaAsSource;
     output.meta = clone(acceptMeta ? current.meta : previous.meta);
@@ -154,6 +161,6 @@
   }
 
   root.PandoraOSCatalogReview = Object.freeze({
-    atomicDatasets, labels, id, changes, compose, retainLegacyRows, equal
+    atomicDatasets, labels, id, changes, compose, retainLegacyRows, equal, strictEqual
   });
 })(typeof window === 'undefined' ? globalThis : window);

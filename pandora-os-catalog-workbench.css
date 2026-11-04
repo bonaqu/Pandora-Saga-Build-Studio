@@ -153,3 +153,8 @@
 .os-sync-human-field .os-sync-full-value{
  white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;
 }
+
+/* A review is text-only. Game-authored <br> markers become visible line breaks
+   rather than literal HTML; never evaluate source descriptions as markup. */
+.os-sync-human-field .os-sync-full-value{white-space:pre-line;overflow-wrap:anywhere;line-height:1.5}
+.os-sync-change-summary{white-space:pre-line}

@@ -22,7 +22,7 @@ function stable(value){
  if(value&&typeof value==='object')return Object.fromEntries(Object.keys(value).sort().map(key=>[key,stable(value[key])]));
  return value;
 }
-const equal=(a,b)=>JSON.stringify(stable(a))===JSON.stringify(stable(b));
+const equal=(a,b)=>root.PandoraOSCatalogReview?.equal?root.PandoraOSCatalogReview.equal(a,b):JSON.stringify(stable(a))===JSON.stringify(stable(b));
 function summarize(value){
  if(value===undefined)return '—';
  if(value===null)return 'null';

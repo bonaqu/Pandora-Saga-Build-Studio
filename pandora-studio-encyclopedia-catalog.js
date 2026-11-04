@@ -70,7 +70,7 @@ function validate(input){
  }
  return data;
 }
-async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=false}={}){
+async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=false,strict=false}={}){
  if(typeof fetcher!=='function')throw TypeError('fetcher required');
  const remoteBase=String(api||'').replace(/\/$/,'');
  async function batch(remote){
@@ -164,6 +164,7 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   return loaded;
  }
  catch(remoteError){
+  if(strict)throw remoteError;
   try{return await batch(false)}
   catch(localError){throw Error('Не удалось загрузить согласованный игровой каталог',{
    cause:{remote:remoteError,local:localError}

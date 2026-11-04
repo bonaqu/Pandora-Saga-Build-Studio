@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const html=read('index.html'),app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
+const loadingCss=read('pandora-studio-loading.css');
 test('no visible introduction and character editor immediately follows site notice',()=>{
  assert.doesNotMatch(html,/<section\s+class="intro"/);
  assert.doesNotMatch(html,/АРХИВ ГЕРОЕВ|Создай свою легенду|Выбери расу, профессию, снаряжение/);
@@ -37,11 +38,16 @@ test('admin status still exists in header and only shows when editor active',()=
  assert.match(html,/<div class="header-actions"><span id="authState" class="owner-session-state" role="status" hidden>/);
  assert.match(css,/\.owner-session-state\[hidden\],\.notice\[hidden\]\{display:none!important\}/);
 });
-test('catalog success is shown in footer, catalog failure remains a visible notice',()=>{
- assert.match(app,/\$\('siteNotice'\)\.textContent='Каталог временно недоступен; сохранённые билды не удалены\.';\s*\$\('siteNotice'\)\.hidden=false/);
- assert.match(app,/\$\('siteNotice'\)\.hidden=true;\s*\$\('siteNotice'\)\.textContent='';/);
+test('catalog status always distinguishes current D1 from an explicitly chosen archive',()=>{
  assert.match(app,/data\.meta\.counts\.skills\+' навыков/);
- assert.match(app,/Временный архив · проверяем D1/);
+ assert.match(app,/Cloudflare D1 · актуальный опубликованный каталог/);
+ assert.match(app,/Архивная копия — НЕ текущие данные/);
+ assert.match(app,/\$\('siteNotice'\)\.hidden=!archive/);
+ assert.match(app,/archive:\['127\.0\.0\.1','localhost'\]\.includes\(location\.hostname\)/);
+ assert.match(html,/id="startupOverlay"/);
+ assert.match(html,/id="startupRetry"/);
+ assert.match(html,/id="startupArchive"/);
+ assert.match(loadingCss,/\.ps-boot-overlay\{position:fixed/);
 });
 test('critical user controls and owner dock survive removal of intro',()=>{
  for(const id of ['nav','locale','siteNotice','workspace','originTabs','stagePicker','stageAttributes',
