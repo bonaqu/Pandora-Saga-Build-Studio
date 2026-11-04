@@ -5815,7 +5815,7 @@ async function loadCatalog(){
   const fromD1=base===API+'/api/catalog',snapshots=new Set(),unknown=[];
   const entries=await Promise.all(names.map(async name=>{
    const response=await fetch(base+'/'+name+'.json',
-    {cache:'default',signal:AbortSignal.timeout(10000)});
+    {cache:fromD1?'no-cache':'default',signal:AbortSignal.timeout(10000)});
    if(!response.ok)throw Error(name+' HTTP '+response.status);
    if(fromD1){
     const snapshot=response.headers.get('x-ps-catalog-snapshot');
