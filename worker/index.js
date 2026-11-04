@@ -370,6 +370,26 @@ async function readCurrentGameFile(file){
  }
  return{ok:false,code:attempts.at(-1)?.code||'network',attempts};
 }
+// Public diagnostics return statuses only. The fixed full check runs at most
+// once per five minutes per isolate, with only three upstream requests in flight.
+const GAME_DATA_SETS=Object.freeze(['meta','classes','skills','items','souls','monsters',
+ 'drops','maps','instances','racialPassives','itemForth','unison','trades',
+ 'tables','expertise','chests','strings.en']);
+let deepSourceCache=null,deepSourceUntil=0;
+async function probeAllGameData(){
+ const failures=[];
+ let next=0,checked=0;
+ await Promise.all(Array.from({length:3},async()=>{
+  while(next<GAME_DATA_SETS.length){
+   const name=GAME_DATA_SETS[next++];
+   const result=await readCurrentGameFile(name+'.json');
+   checked++;
+   if(!result.ok)failures.push({name,code:result.code});
+  }
+ }));
+ return{status:failures.length?'unavailable':'ok',
+  checked,failures,source:'game-site',checkedAt:Date.now()};
+}
 // One fixed public probe, cached per isolate, to diagnose Worker egress.
 let sourceProbeCache=null,sourceProbeUntil=0;
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
@@ -429,6 +449,14 @@ if(path==='/api/admin/catalog/owner-pr'&&method==='POST'){
 // GitHub Actions or a browser. It never reads or changes D1 records.
 if(path==='/api/source-health'&&method==='GET'){
  const now=Date.now();
+ if(url.searchParams.get('scope')==='all'){
+  if(!deepSourceCache||now>=deepSourceUntil){
+   deepSourceCache=await probeAllGameData();
+   deepSourceUntil=Date.now()+300000;
+  }
+  return json(deepSourceCache,deepSourceCache.status==='ok'?200:503,
+   {'cache-control':'public, max-age=240'});
+ }
  if(!sourceProbeCache||now>=sourceProbeUntil){
   const probe=await readCurrentGameFile('meta.json');
   sourceProbeCache=probe.ok
@@ -457,7 +485,7 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.360.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists'],
-  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true});
+  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
