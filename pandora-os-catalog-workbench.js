@@ -82,7 +82,8 @@
 
     const filterChoices=[
       ['all','Все'],['added','Новые'],['changed','Изменённые'],
-      ['removed','Удалённые'],['accepted','Выбранные'],['declined','Не выбраны']
+      ['removed','Удалённые'],['accepted','Выбранные'],['declined','Не выбраны'],
+      ['needsReview','Требует проверки'],['readable','Расшифрованы']
     ];
     const filterButtons=new Map();
     for(const [id,label]of filterChoices){
@@ -97,6 +98,8 @@
     function matchesFilter(change){
       if(filterKind==='accepted')return chosen.has(change.id);
       if(filterKind==='declined')return !chosen.has(change.id);
+      if(filterKind==='needsReview')return describe(change).uncertain;
+      if(filterKind==='readable')return !describe(change).uncertain;
       return filterKind==='all'||change.kind===filterKind;
     }
     function setBusy(value) {
@@ -126,7 +129,9 @@
         all:changes.length,added:changes.filter(row=>row.kind==='added').length,
         changed:changes.filter(row=>row.kind==='changed').length,
         removed:changes.filter(row=>row.kind==='removed').length,
-        accepted:selected,declined:changes.length-selected
+        accepted:selected,declined:changes.length-selected,
+        needsReview:changes.filter(row=>describe(row).uncertain).length,
+        readable:changes.filter(row=>!describe(row).uncertain).length
       };
       for(const [id,label]of filterChoices){
         const button=filterButtons.get(id);
@@ -141,7 +146,7 @@
        stat('Добавлено',byKind.added,'added'),
        stat('Изменено',byKind.changed,'changed'),
        stat('Удалено',byKind.removed,'removed'),
-       stat('К публикации',selected,'selected')
+       stat('Выбрано',selected,'selected')
       );
       for(const panel of results.querySelectorAll('.os-sync-group')){
         const name=panel.getAttribute('data-game-dataset');
@@ -153,7 +158,8 @@
       const service=changes.filter(row=>describe(row).service).length;
       summary.textContent = changes.length
         ? 'Найдено изменений: '+changes.length+(service?' · Служебных: '+service:'')+
-          ' · Выбрано: '+selected+' · Не выбрано: '+(changes.length-selected)
+          ' · Выбрано: '+selected+' · Не выбрано: '+(changes.length-selected)+
+          (byKind.needsReview?' · Нужна проверка: '+byKind.needsReview:'')
         : baseline ? 'Различий в игровых данных нет' : '';
     }
     const checked = change => chosen.has(change.id);
@@ -167,17 +173,21 @@
 
     function fieldPreview(change,description) {
       const content=h('div',{class:'os-sync-explanation'});
+      if(description.rows.length>1)content.append(h('small',{
+        class:'os-sync-result-count',text:'Изменено параметров: '+description.rows.length}));
       content.append(h('p',{class:'os-sync-change-summary',text:description.summary}));
       if(description.caution)content.append(h('p',{
         class:'os-sync-change-caution',text:description.caution}));
       const details=h('details',{class:'os-sync-field-details'});
-      details.append(h('summary',{text:'Показать все изменения'}));
+      details.append(h('summary',{text:'Посмотреть подробно · '+description.rows.length}));
       if(description.rows.length){
         for(const field of description.rows)details.append(h('div',{
           class:'os-sync-field os-sync-human-field'},[
           h('strong',{text:field.label}),h('span',{text:field.before}),
           h('span',{class:'os-sync-field-arrow',text:'→'}),
-          h('span',{text:field.after})
+          h('span',{text:field.after}),
+          ...(field.difference?[h('small',{class:'os-sync-value-delta',
+            text:'Изменение: '+field.difference})]:[])
         ]));
       }else details.append(h('p',{class:'muted',
         text:'Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.'}));
@@ -208,7 +218,8 @@
           row.key.toLocaleLowerCase().includes(query) ||
           row.title.toLocaleLowerCase().includes(query) ||
           describe(row).title.toLocaleLowerCase().includes(query) ||
-          describe(row).summary.toLocaleLowerCase().includes(query)) : group).filter(matchesFilter);
+          describe(row).summary.toLocaleLowerCase().includes(query) ||
+          describe(row).rows.some(field=>field.label.toLocaleLowerCase().includes(query))) : group).filter(matchesFilter);
         if (!filtered.length) continue;
         const panel = h('details',{class:'os-sync-group'+(name==='meta'?' os-sync-service-group':''),
           'data-game-dataset':name});
@@ -250,6 +261,10 @@
         for (const change of filtered.slice(0,limit)) {
           const description=describe(change);
           const row = h('article',{class:'os-sync-record'+(description.uncertain?' os-sync-review-caution':'')});
+          const helper=h('small',{class:'os-sync-review-level',
+            text:description.service?'Служебные данные · ручная проверка':
+              description.uncertain?'Есть нерасшифрованные параметры':
+              'Значения расшифрованы · проверь перед выбором'});
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
             'aria-label':'Выбрать изменение '+description.title});
           input.addEventListener('change',()=>setChoice(change,input.checked));
@@ -258,7 +273,7 @@
           row.append(h('label',{class:'os-sync-record-label'},[
             input,
             h('span',{class:'os-sync-record-title'},[
-              h('strong',{text:description.title})
+              h('strong',{text:description.title}),helper
             ]),
             h('span',{class:'os-sync-kind '+change.kind,text:indicator})
            ]),fieldPreview(change,description));
@@ -396,9 +411,14 @@
       const changed=changes.filter(x=>checked(x)&&x.kind==='changed').length;
       const removed=changes.filter(x=>checked(x)&&x.kind==='removed').length;
       const uncertain=changes.filter(x=>checked(x)&&describe(x).uncertain).length;
-      if (!confirm('Применить только выбранные изменения игрового каталога?\n'+
+      const sourceWarning=mode==='archive'
+        ?'\nИСТОЧНИК: сохранённая копия проекта. Данные могут быть СТАРЕЕ текущей игры.':'\nИСТОЧНИК: текущая игра.';
+      const uncertainWarning=uncertain
+        ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
+      if (!confirm('Применить выбранные изменения игрового каталога?\n'+
         'Новых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+
-        '.\nПредыдущий опубликованный снимок останется доступен в D1.'))return;
+        '.'+sourceWarning+uncertainWarning+
+        '\nНичего не было опубликовано до этого подтверждения.'))return;
       setBusy(true);
       try {
         const current=await request('/api/admin/catalog/status',{});
