@@ -11,7 +11,7 @@ const html=readFileSync(new URL('index.html',root),'utf8');
 const workbench=readFileSync(new URL('pandora-os-catalog-workbench.js',root),'utf8');
 
 test('new D1 snapshot ID is valid before any catalog batch writes',()=>{
- const expression=workbench.match(/const snapshot=([^;]+);/);
+ const expression=workbench.match(/const snapshot=([^;\n]*crypto\.randomUUID\(\)[^;\n]*);/);
  assert.ok(expression,'catalog workbench must generate the snapshot locally');
  const id=vm.runInNewContext(expression[1],{
   crypto:{randomUUID:()=> 'a1234567-89ab-4cde-8123-456789abcdef'}
