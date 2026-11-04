@@ -3,8 +3,9 @@ import {readFileSync} from 'node:fs';
 
 export async function runAdminEntrySmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const calls=[],townOverrides=new Map(),
-  context=await browser.newContext({viewport:{width:1280,height:860}});
+ const calls=[],townOverrides=new Map();
+ let sourceUnavailable=false;
+ const context=await browser.newContext({viewport:{width:1280,height:860}});
  await context.route('**/*',async route=>{
   const url=route.request().url();
   if(url.startsWith(base+'/'))return route.continue();
@@ -34,6 +35,7 @@ export async function runAdminEntrySmoke(browser,base){
    return json({number:246,url:'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/246'});
   }
   if(path.startsWith('/api/admin/catalog/source/')&&method==='GET'){
+   if(sourceUnavailable)return json({error:'Game data source temporarily unavailable',code:'network'},502);
    const name=path.slice('/api/admin/catalog/source/'.length,-5);
    assert.equal(route.request().headers().authorization,'Bearer '+ 'a'.repeat(43),
     'Only a confirmed administrator token may retrieve the live source');
@@ -197,6 +199,20 @@ export async function runAdminEntrySmoke(browser,base){
     'all 17 datasets and one final meta revision check are required');
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true,
     'a fresh live comparison must reject all changes by default');
+  // The exact failure reported by an administrator must NOT suggest a live
+  // comparison succeeded. The archived comparison stays explicitly separate.
+  sourceUnavailable=true;
+  await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
+    ?.includes('не удалось получить обновления из игры'),null,{timeout:15000});
+  assert.equal(await dialog.locator('.os-sync-archive-choice').getAttribute('open'),'');
+  assert.equal(await dialog.locator('.os-sync-review-steps').isHidden(),true,
+    'a failed game-source check cannot leave publishing enabled');
+  await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
+    ?.includes('Сверка завершена.'),null,{timeout:30000});
+  assert.equal(await dialog.locator('.os-sync-review-steps button')
+    .filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   // Open an actual encyclopedia equipment page while admin editing is on.
   await dialog.getByRole('button',{name:/Закрыть/}).click();
   await page.locator('#nav [data-tab="wiki"]').click();
