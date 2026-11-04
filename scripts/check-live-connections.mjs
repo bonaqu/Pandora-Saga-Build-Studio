@@ -75,6 +75,12 @@ try{
  console.log((itemTextReady?'OK  ':'WARN')+' Live English item editing in D1 — '+
   (itemTextReady?'Worker 0.351.0+ supports EN text overrides':
    'deploy the reviewed Worker source to enable English item edits'));
+ const adminD1Ready=deployed&&Number(release?.[1]||0)>=354&&
+  payload?.adminD1WriteCheck==='catalog-and-overrides';
+ console.log((adminD1Ready?'OK  ':'WARN')+' Admin D1 write-check capability — '+
+  (adminD1Ready?'Worker 0.354.0+ supports isolated catalog and owner edits':
+   'deploy Worker 0.354.0; no authenticated production write has been attempted'));
+
 }catch(error){
  console.log('WARN Worker runtime capability marker — '+error.message);
 }
