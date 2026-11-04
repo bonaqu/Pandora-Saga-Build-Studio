@@ -6,14 +6,9 @@ body>#ownerDock{
  width:min(344px,calc(100vw - 54px));max-width:none;max-height:none;
  padding:0;margin:0;border:0;background:transparent;box-shadow:none;
  color:#e8cf9e;
- transform:translate3d(0,0,0);
- transition:transform .32s cubic-bezier(.22,.82,.2,1);
- will-change:transform;
+ transform:none;pointer-events:none;
 }
-body>#ownerDock.owner-dock-collapsed{
- transform:translate3d(-100%,0,0);
- pointer-events:none;
-}
+body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
 #ownerDock .owner-dock-panel{
  min-width:0;max-height:calc(100dvh - 80px);
  background:linear-gradient(155deg,#332318,#1d1611 64%,#211912);
@@ -22,6 +17,13 @@ body>#ownerDock.owner-dock-collapsed{
  overflow:auto;overscroll-behavior:contain;
  scrollbar-width:thin;scrollbar-color:#946e43 #241a12;
  pointer-events:auto;
+ transform:translate3d(0,0,0);
+ transition:transform .32s cubic-bezier(.22,.82,.2,1);
+ will-change:transform;
+}
+#ownerDock.owner-dock-collapsed .owner-dock-panel{
+ transform:translate3d(-100%,0,0);
+ pointer-events:none;
 }
 #ownerDock .owner-dock-handle{
  position:absolute;left:calc(100% - 1px);top:17px;
@@ -35,9 +37,10 @@ body>#ownerDock.owner-dock-collapsed{
  background:linear-gradient(160deg,#513722,#2e2016);
  color:#ffdaa1;box-shadow:8px 8px 26px #000a;
  cursor:pointer;pointer-events:auto;touch-action:manipulation;
- transition:background .18s,border-color .18s,box-shadow .18s;
+ transition:left .32s cubic-bezier(.22,.82,.2,1),background .18s,border-color .18s,box-shadow .18s;
 }
 #ownerDock.owner-dock-collapsed .owner-dock-handle{
+ left:0;
  border-color:#d1a267;background:linear-gradient(145deg,#5c3e25,#322015);
  box-shadow:6px 8px 24px #0009, inset -2px 0 0 #c99a58;
 }
@@ -131,7 +134,7 @@ body>#ownerDock.owner-dock-collapsed{
  body>#ownerDock{bottom:8px}
 }
 @media(prefers-reduced-motion:reduce){
- body>#ownerDock{transition:none;will-change:auto}
+ #ownerDock .owner-dock-panel{transition:none;will-change:auto}
  #ownerDock .owner-dock-handle,#ownerDock .owner-dock-actions button{
   transition:none;
  }
