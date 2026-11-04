@@ -1435,8 +1435,39 @@ async function loadWiki(){
   // round-trip of all 11 D1 datasets for each double-click edit.
   if(!wikiBaseData){
    let loaded;
-   try{loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch})}
-   catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
+   // A slow D1 response must not leave the encyclopedia blank. After a short
+   // head start, display a validated checked-in snapshot and replace it only
+   // when the complete, consistent D1 catalog is ready.
+   const remote=window.PandoraWikiCatalog.load({api:API,fetcher:fetch})
+    .then(value=>({value}),error=>({error}));
+   const early=await Promise.race([remote,
+    new Promise(resolve=>setTimeout(()=>resolve(null),850))]);
+   if(generation!==wikiLoadGeneration)return loadWiki();
+   if(early?.value)loaded=early.value;
+   else{
+    try{loaded=await window.PandoraWikiCatalog.load({
+     api:API,fetcher:fetch,preferLocal:true})}
+    catch(error){
+     if(early?.error)throw error;
+     const late=await remote;
+     if(!late.value)throw error;
+     loaded=late.value;
+    }
+    if(!early&&loaded.source==='local'){
+     const provisional=loaded.data;
+     void remote.then(async outcome=>{
+      if(outcome.value?.source!=='d1')return;
+      await pending.catch(()=>{});
+      if(generation!==wikiLoadGeneration||wikiBaseData!==provisional)return;
+      wikiBaseData=outcome.value.data;
+      invalidateWikiCatalog();
+      if(activeTab==='wiki'&&wikiRenderedRoot?.isConnected){
+       try{await loadWiki();wikiRenderSelected?.()}
+       catch(error){console.warn('D1 encyclopedia refresh skipped',error)}
+      }
+     });
+    }
+   }
    if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
   }
