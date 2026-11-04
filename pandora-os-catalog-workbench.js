@@ -6,7 +6,7 @@
   async function open({request, apiBase, modal, h, afterPublish}) {
     // Reuse the game's hover/focus helper. Tooltip text is static, never from D1.
     const hint=(node,description)=>{
-      root.PandoraGuideTooltip?.attach(node,description);
+      root.PandoraGuideTooltip?.attach(node,description,{hoverDelay:1000});
       return node;
     };
     const importer = root.PandoraCatalogImport;
