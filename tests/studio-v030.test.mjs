@@ -25,7 +25,7 @@ test('socket insertion is protected by Soul capacity and slot compatibility',()=
 });
 test('skill points, origin attributes and lost-state protection remain',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/gameTables=data\\.tables/);
+ assert.match(app,/gameTables=data\.tables/);
  assert.match(app,/function budgetSummary\(/);
  assert.match(app,/function allowedBranch\(/);
  assert.match(app,/Math\.min\(Math\.max\(0,requested\),allowedBranch\(key\)\)/);
