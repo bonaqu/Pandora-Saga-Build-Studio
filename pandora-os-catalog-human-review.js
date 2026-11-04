@@ -22,13 +22,17 @@ const itemName=(id,ctx)=>{const item=ctx?.upstream?.items?.[id]||ctx?.baseline?.
 const monsterName=(id,ctx)=>ctx?.upstream?.monsters?.[id]?.name||
  ctx?.baseline?.monsters?.[id]?.name||'Монстр №'+id;
 const fieldName=path=>path.startsWith('resists.')?
- 'Сопротивление '+(elements[path.slice(8)]||'неизвестному типу'):
+ (elements[path.slice(8)]?'Сопротивление '+elements[path.slice(8)]:null):
  names[path]||null;
 function describe(change,ctx={}){
  let title=change.title,summary='',caution='',uncertain=false;
  const rows=[],technical=[];
- const add=(label,a,b)=>{if(same(a,b))return;rows.push({label,before:value(a),after:value(b),
-  numeric:typeof a==='number'&&typeof b==='number'});};
+ const add=(label,a,b)=>{if(same(a,b))return;
+  const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
+  const delta=numeric?b-a:null;
+  rows.push({label,before:value(a),after:value(b),numeric,delta,
+   difference:delta===null||delta===0?'':(delta>0?'+':'−')+value(Math.abs(delta))});
+ };
  const unknown=(path)=>{uncertain=true;technical.push(path)};
  function walk(a,b,prefix='',depth=0){
   if(same(a,b))return;
@@ -53,7 +57,8 @@ function describe(change,ctx={}){
   for(const key of new Set([...Object.keys(old),...Object.keys(next)])){
    if(key!=='sha'&&!same(old[key],next[key]))walk(old[key],next[key],key);
   }
-  summary='Изменились служебные сведения '+changed.length+' файлов, а не боевые характеристики.';
+  summary=changed.length?'Обновились сведения о '+changed.length+' игровых файлах. Это не отдельное изменение характеристик.':
+   'Изменились служебные параметры каталога, не являющиеся игровыми характеристиками.';
   caution='Служебный раздел: не рекомендуется принимать отдельно от проверенных игровых изменений.';
   uncertain=true;
   technical.push(...changed.map(x=>'Файл '+x+' — изменена контрольная сумма'));
@@ -108,16 +113,23 @@ function describe(change,ctx={}){
  }else if(change.key==='@dataset'){
   title={trades:'Обмены у NPC',tables:'Игровые формулы',expertise:'Мастерство',
    chests:'Содержимое сундуков'}[kind]||title;
-  summary='Изменился состав сложных игровых данных.';
-  unknown('Составной игровой раздел');
+  summary=describeCompound(kind,change.before,change.after,ctx,add,unknown);
+  // Atomic datasets cannot be partly published even when many individual differences can be read.
+  uncertain=true;
  }else{
-  if(kind==='strings.en')title='Английский перевод: '+change.title;
+  if(kind==='strings.en'){
+   const [section,id]=change.key.split('/');
+   const linked=section==='items'?itemName(id,ctx):
+    section==='monsters'?monsterName(id,ctx):null;
+   title='Английский перевод · '+(linked||change.title);
+  }
   walk(change.before,change.after);
   summary={monsters:'Характеристики монстра',items:'Свойства предмета',
    skills:'Параметры умения'}[kind]||'Игровые данные';
  }
  const preview=rows.slice(0,2).map(row=>row.label+': '+row.before+' → '+row.after).join(' · ');
- if(preview&&!['drops','meta'].includes(kind))summary=preview+(rows.length>2?' · ещё '+(rows.length-2):'');
+ if(preview&&!['drops','meta','instances','trades','chests','tables','expertise'].includes(kind))
+  summary=preview+(rows.length>2?' · ещё '+(rows.length-2):'');
  if(uncertain&&!caution)caution='Часть параметров требует ручной проверки перед публикацией.';
  return {title,summary,rows,technical,uncertain,caution,service:kind==='meta'};
 }
