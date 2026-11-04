@@ -131,6 +131,4 @@ jobs:
             }catch(error){
               console.warn("GAME_DATA_WARNING: external check delayed:",error.message);
             }
-            // The independent game's uptime must not retroactively fail an
-            // already verified Worker + D1 deployment. D1 was not modified.
           '
