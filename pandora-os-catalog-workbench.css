@@ -209,7 +209,7 @@
 .os-sync-reference-preview[hidden]{display:none!important}
 .os-sync-reference-preview strong{color:#ffe0a5}
 .os-sync-reference-preview small{color:#ceb28a;font-size:11px}
-.os-sync-reference-preview p{margin:4px 0;line-height:1.5;white-space:pre-wrap;
+.os-sync-reference-preview .os-sync-reference-description{margin:4px 0;line-height:1.5;white-space:pre-wrap;
   max-height:8em;overflow:auto}
 .os-sync-reference-open{color:#f4cc85;text-decoration:underline;text-underline-offset:3px}
 .os-sync-reference-open:hover{color:#ffeaad}
