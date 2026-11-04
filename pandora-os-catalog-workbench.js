@@ -336,11 +336,11 @@
     // Request only three files at a time, rather than making 35 serial HTTP
     // round-trips. A failure prevents the review from publishing anything.
     async function mapLimited(names,task,limit=3){
-      let index=0,completed=0,failure=null;
+      let index=0,failure=null;
       await Promise.all(Array.from({length:Math.min(limit,names.length)},async()=>{
         while(index<names.length&&!failure){
           const name=names[index++];
-          try{await task(name,++completed)}
+          try{await task(name)}
           catch(error){failure??=error;return}
         }
       }));
