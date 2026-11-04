@@ -45,7 +45,12 @@ function displayName(record,fallback='Без названия',lang='ru'){
  // Historical imported builds may have stored the database ID as the item's name.
  return name&&!/^\d{1,20}$/.test(name)?name:fallback;
 }
-function description(s){
+let defaultItemLookup=null,defaultLanguage=()=> 'ru';
+function setReferenceResolver(lookup,language){
+ defaultItemLookup=typeof lookup==='function'?lookup:null;
+ defaultLanguage=typeof language==='function'?language:()=> 'ru';
+}
+function formattedDescription(s){
  if(typeof s!=='string')return '';
  // Keep the original source wording, numbers and manually entered paragraphs.
  // OS exports sometimes concatenate lore, bonuses and upgrade conditions.
@@ -69,7 +74,7 @@ function description(s){
 // Description references are game data, never raw HTML. Resolve only records
 // that actually exist in the chosen catalog; unresolved IDs stay non-clickable.
 function descriptionSegments(source, lookupItem, lang='ru'){
- const formatted=description(source),segments=[];
+ const formatted=formattedDescription(source),segments=[];
  const reference=/<item\b([^>]*)>/gi;
  let offset=0,match;
  while((match=reference.exec(formatted))){
@@ -87,6 +92,8 @@ function descriptionSegments(source, lookupItem, lang='ru'){
 }
 const descriptionText=(source,lookupItem,lang='ru')=>
  descriptionSegments(source,lookupItem,lang).map(piece=>piece.text).join('');
+// Plain-text tooltips also resolve references; they must never show raw tags.
+const description=source=>descriptionText(source,defaultItemLookup,defaultLanguage());
 
 // Convert visible item names back to source tokens only when an administrator
 // edits the description. Ambiguous names are never silently bound to an ID.
@@ -102,6 +109,6 @@ function restoreReferences(edited,source,lookupItem,lang='ru'){
  }
  return result;
 }
-root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,displayName,
+root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
  kindOptions:(lang='ru')=>Object.entries(lang==='en'?namesEn:names).map(([value,label])=>({value,label}))});
 })(typeof window==='undefined'?globalThis:window);
