@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.354.0 — 2026.11.04.354 · D1 admin-write integrity and local Wiki profiling
+
+- Added authenticated isolated readback and cleanup for both `catalog_entries` and `overrides` D1 tables, with actual before/after verification of the published catalog snapshot.
+- Isolated QA keys no longer appear in the public override response; admin UI requires both readback/cleanup checks and reports failures.
+- Added five D1 regression cases and a one-command local-PC headless Chromium benchmark for the Items, Monsters and Souls encyclopedia lists.
+- Browser acceptance, production Worker deployment, and true owner-device measurements must be verified independently.
+
+
 ## 0.353.0 — 2026.11.04.353 · Аудит английских эффектов и производительности энциклопедии
 
 - По OS-каталогу сверены 101 реально присутствующий код эффекта предметов, душ и заточки; каждому соответствует запись в `data/localization/remaked-effect-source.v1.json` с привязкой к неизменяемому коммиту Remaked.
