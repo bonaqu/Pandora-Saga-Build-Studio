@@ -46,7 +46,7 @@ test('source metadata appears as technical-only and is not bulk safe',()=>{
  const current={sha:{'monster/monster.csv':'new'},counts:{items:1116}};
  const result=describe(change('meta','@dataset',old,current),context);
  assert.equal(result.service,true);assert.equal(result.uncertain,true);
- assert.match(result.summary,/служебные сведения 1 файлов/);
+ assert.match(result.summary,/контрольные сведения: 1 файл/);
  assert.doesNotMatch(result.summary,/monster\.csv|sha\./);
 });
 test('atomic instance changes identify the affected quest by its Russian name',()=>{
@@ -101,7 +101,7 @@ test('chest reward groups show item names and group-scoped chances without false
  assert.match(result.title,/сундук/i);
  assert.ok(result.rows.some(x=>x.label.includes('Набор наград 1')&&
   x.label.includes('Шанс внутри набора')&&x.before==='100'&&x.after==='90'));
- assert.match(result.summary,/Шансы относятся к отдельным наборам наград/);
+ assert.match(result.summary,/Значения шансов относятся к отдельным наборам наград/);
  assert.equal(result.uncertain,true);
  assert.doesNotMatch(result.summary,/rolls|@dataset/);
 });
