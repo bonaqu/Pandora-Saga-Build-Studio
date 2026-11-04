@@ -331,7 +331,7 @@ async function readCurrentGameFile(file){
   let stage='fetch';
   try{
    const response=await fetch(host+'/gamedata/'+file,{
-    signal:controller.signal,headers:{accept:'application/json'},redirect:'error'
+    signal:controller.signal,headers:{accept:'application/json'},redirect:'manual'
    });
    if(!response.ok){
     attempts.push({host:new URL(host).hostname,code:'http-'+response.status});
