@@ -159,7 +159,7 @@ export async function runAdminEntrySmoke(browser,base){
     .some(node=>node.textContent?.includes('Сохранение работает')));
   assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
 
-  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
+  assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.locator('.os-sync-archive-choice>summary').click();
   await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
   await page.waitForFunction(()=>
@@ -176,11 +176,11 @@ export async function runAdminEntrySmoke(browser,base){
   const decision=dialog.locator('.os-sync-record input[type=checkbox]');
   await decision.waitFor({state:'visible'});
   assert.equal(await decision.isChecked(),false,'Changes must be declined by default');
-  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
+  assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await decision.check();
-  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isEnabled(),true);
+  assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
   await dialog.getByRole('button',{name:'Отклонить все'}).click();
-  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
+  assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await dialog.getByRole('button',{name:'Принять все'}).click();
   const downloadPromise=page.waitForEvent('download');
   await dialog.getByRole('button',{name:'Скачать выбранное для GitHub'}).click();
@@ -195,7 +195,7 @@ export async function runAdminEntrySmoke(browser,base){
     'meta must be fetched twice to detect mixed server revisions');
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,18,
     'all 17 datasets and one final meta revision check are required');
-  assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true,
+  assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true,
     'a fresh live comparison must reject all changes by default');
   // Open an actual encyclopedia equipment page while admin editing is on.
   await dialog.getByRole('button',{name:/Закрыть/}).click();
