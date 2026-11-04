@@ -200,15 +200,18 @@
     function render() {
       results.replaceChildren();
       const query = search.value.trim().toLocaleLowerCase();
-      for (const name of importer.files) {
+      for (const name of [...importer.files.filter(x=>x!=='meta'),'meta']) {
         const group = changes.filter(row=>row.dataset===name);
         if (!group.length) continue;
         const filtered = (query ? group.filter(row=>
           (review.labels[name]||name).toLocaleLowerCase().includes(query) ||
           row.key.toLocaleLowerCase().includes(query) ||
-          row.title.toLocaleLowerCase().includes(query)) : group).filter(matchesFilter);
+          row.title.toLocaleLowerCase().includes(query) ||
+          describe(row).title.toLocaleLowerCase().includes(query) ||
+          describe(row).summary.toLocaleLowerCase().includes(query)) : group).filter(matchesFilter);
         if (!filtered.length) continue;
-        const panel = h('details',{class:'os-sync-group','data-game-dataset':name});
+        const panel = h('details',{class:'os-sync-group'+(name==='meta'?' os-sync-service-group':''),
+          'data-game-dataset':name});
         panel.open = expanded.has(name) || Boolean(query);
         panel.addEventListener('toggle',()=> {
           if (panel.open) expanded.add(name);
@@ -217,14 +220,14 @@
         const selected = group.filter(checked).length;
         panel.append(h('summary',{class:'os-sync-group-heading'},[
           h('strong',{text:review.labels[name]||name}),
-          h('span',{class:'os-sync-count',text:selected+' / '+group.length+' принято'})
+          h('span',{class:'os-sync-count',text:selected+' / '+group.length+' выбрано'})
         ]));
         const toolbar = h('div',{class:'os-sync-group-actions'});
-        const take = h('button',{type:'button',class:'button-action',text:'Принять весь раздел',disabled:busy});
-        const reject = h('button',{type:'button',class:'button-action',text:'Отклонить весь раздел',disabled:busy});
+        const take = h('button',{type:'button',class:'button-action',text:'Выбрать понятные изменения раздела',disabled:busy||!group.some(safe)});
+        const reject = h('button',{type:'button',class:'button-action',text:'Снять выбор раздела',disabled:busy});
         take.addEventListener('click',()=> {
           if (busy) return;
-          for (const item of group) chosen.add(item.id);
+          for (const item of group)if(safe(item))chosen.add(item.id);
           refreshActions(); render();
         });
         reject.addEventListener('click',()=> {
@@ -233,10 +236,10 @@
           refreshActions(); render();
         });
         const takeVisible=h('button',{type:'button',class:'button-action',
-          text:'Принять найденное · '+filtered.length,disabled:busy});
+          text:'Выбрать найденное · '+filtered.filter(safe).length,disabled:busy||!filtered.some(safe)});
         takeVisible.onclick=()=>{
           if(busy)return;
-          for(const item of filtered)chosen.add(item.id);
+          for(const item of filtered)if(safe(item))chosen.add(item.id);
           render();
         };
         toolbar.append(take,reject);
@@ -245,19 +248,20 @@
         const limit = full.has(name)||query?filtered.length:Math.min(40,filtered.length);
         const list = h('div',{class:'os-sync-list'});
         for (const change of filtered.slice(0,limit)) {
-          const row = h('article',{class:'os-sync-record'});
+          const description=describe(change);
+          const row = h('article',{class:'os-sync-record'+(description.uncertain?' os-sync-review-caution':'')});
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
-            'aria-label':'Принять изменение '+change.key});
+            'aria-label':'Выбрать изменение '+description.title});
           input.addEventListener('change',()=>setChoice(change,input.checked));
           const indicator = change.kind==='added'?'Добавлено':
             change.kind==='removed'?'Удалено':'Изменено';
           row.append(h('label',{class:'os-sync-record-label'},[
             input,
             h('span',{class:'os-sync-record-title'},[
-              h('strong',{text:String(change.title)})
+              h('strong',{text:description.title})
             ]),
             h('span',{class:'os-sync-kind '+change.kind,text:indicator})
-          ]),fieldPreview(change));
+           ]),fieldPreview(change,description));
           list.append(row);
         }
         panel.append(list);
@@ -282,6 +286,11 @@
 
     async function compare(from) {
       setBusy(true);
+      descriptions.clear();
+      sourceBanner.hidden=false;
+      sourceBanner.textContent=from==='server'
+        ?'Сейчас сравниваются данные сайта и текущей игры'
+        :'Сейчас сравниваются данные сайта и сохранённой копии (копия может быть старее)';
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
@@ -386,6 +395,7 @@
       const added=changes.filter(x=>checked(x)&&x.kind==='added').length;
       const changed=changes.filter(x=>checked(x)&&x.kind==='changed').length;
       const removed=changes.filter(x=>checked(x)&&x.kind==='removed').length;
+      const uncertain=changes.filter(x=>checked(x)&&describe(x).uncertain).length;
       if (!confirm('Применить только выбранные изменения игрового каталога?\n'+
         'Новых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+
         '.\nПредыдущий опубликованный снимок останется доступен в D1.'))return;
@@ -495,7 +505,7 @@
 
     live.onclick=()=>compare('server');
     archive.onclick=()=>compare('archive');
-    acceptAll.onclick=()=>{chosen=new Set(changes.map(item=>item.id));render()};
+    acceptAll.onclick=()=>{chosen=new Set(changes.filter(safe).map(item=>item.id));render()};
     declineAll.onclick=()=>{chosen.clear();render()};
     search.addEventListener('input',render);
     refreshActions();
