@@ -14,7 +14,7 @@ test('only the site header owns language selection; modal duplicates are gone',(
  assert.match(js,/document\.querySelectorAll\('#locale \[data-locale\]'\)/);
  assert.match(js,/button\.dataset\.locale===lang/);
  assert.match(js,/syncLocaleControls\(\);\s*if\(!catalogSource\)return/);
- assert.match(js,/\$\('locale'\)\.onclick=event=>/);
+ assert.ok(js.includes("$('locale').onclick=async event=>"));
  assert.match(html,/data-i18n-aria-label="language"/);
 });
 
