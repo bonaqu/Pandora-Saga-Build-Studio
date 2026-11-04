@@ -152,3 +152,76 @@ test('Russian count labels agree for singular and plural game records',()=>{
  updated.boxes[0].rolls[0][0].p=90;
  assert.match(describe(change('chests','@dataset',chests,updated),context).summary,/1 сундуке/);
 });
+
+
+test('verified attributes use ПРВ for AGI and ЛВК for DEX',()=>{
+ const original={agi:23,dex:14},updated={agi:25,dex:16};
+ const result=describe(change('monsters','43601',original,updated),context);
+ assert.ok(result.rows.some(x=>x.label==='ПРВ (проворство)'&&x.difference==='+2'));
+ assert.ok(result.rows.some(x=>x.label==='ЛВК (ловкость)'&&x.difference==='+2'));
+ assert.ok(result.rows.every(x=>x.label!=='Точность'&&x.label!=='Ловкость'));
+});
+test('original English item descriptions are readable, not unknown technical d fields',()=>{
+ const before={n:'Gladius',d:'Old translated description'};
+ const next={n:'Gladius',d:'A sword resembling a dagger.AGI +1.'};
+ const result=describe(change('strings.en','items/1',before,next),context);
+ assert.match(result.title,/Спата/);
+ assert.ok(result.rows.some(x=>x.label==='Описание на английском'&&
+  x.after.includes('AGI +1')));
+ assert.equal(result.uncertain,false);
+});
+test('adding or removing a record explains known fields rather than showing only ID',()=>{
+ const previous=change('items','900',{name:'Старый предмет',level:12},undefined);
+ previous.kind='removed';
+ const removed=describe(previous,context);
+ assert.match(removed.summary,/Удалено/);
+ assert.ok(removed.rows.some(x=>x.label==='Название'));
+ const added=change('monsters','901',undefined,{name:'Новый монстр',level:5,life:100});
+ added.kind='added';
+ const result=describe(added,context);
+ assert.match(result.summary,/Добавлено/);
+ assert.ok(result.rows.some(x=>x.label==='Очки здоровья (ОЗ)'));
+});
+test('object field order does not create false changes in source review',()=>{
+ const previous={name:'Караван Союза',resists:{fire:25,cold:15}};
+ const next={resists:{cold:15,fire:25},name:'Караван Союза'};
+ const result=describe(change('monsters','43601',previous,next),context);
+ assert.equal(result.rows.length,0);
+ assert.equal(result.uncertain,false);
+});
+test('NPC recipe trade limit changes are decoded as source daily/weekly constraints',()=>{
+ const trades=read('trades'),previous=structuredClone(trades),current=structuredClone(trades);
+ const original=current.trades.find(x=>x.limit?.period==='weekly');
+ assert.ok(original);
+ original.limit.n+=1;
+ const result=describe(change('trades','@dataset',previous,current),context);
+ assert.ok(result.rows.some(x=>x.label.includes('Лимит обменов')&&
+  x.before.includes('в неделю')&&x.after.includes('в неделю')));
+ assert.equal(result.uncertain,true);
+ assert.ok(result.technical.some(x=>x.includes('целым разделом')));
+});
+test('a gold-only chest reward displays its payout range instead of a fake item ID',()=>{
+ const source=read('chests'),previous=structuredClone(source),next=structuredClone(source);
+ const chest=next.npc.find(x=>x.i===52002);
+ assert.ok(chest);
+ const prize=chest.rolls.flat().find(x=>Array.isArray(x.gold));
+ assert.ok(prize);
+ prize.gold[0]+=500;
+ const result=describe(change('chests','@dataset',previous,next),context);
+ const line=result.rows.find(row=>row.label.includes('Золото')&&row.label.includes('Сумма золота'));
+ assert.ok(line,'changed gold range should be presented in a normal gameplay row');
+ assert.match(line.after,/\d/);
+ assert.ok(!line.label.includes('Предмет №'),'gold is not a numbered item');
+});
+test('chest refinement changes are recognized as their own gameplay parameter',()=>{
+ const source=read('chests'),previous=structuredClone(source),next=structuredClone(source);
+ const chest=next.boxes.find(x=>x.i===51016);
+ assert.ok(chest);
+ const prize=chest.rolls.flat().find(x=>typeof x.plus==='number');
+ assert.ok(prize);
+ prize.plus+=1;
+ const result=describe(change('chests','@dataset',previous,next),context);
+ assert.ok(result.rows.some(row=>row.label.includes('Уровень заточки')&&
+  row.before==='3'&&row.after==='4'));
+ assert.equal(result.uncertain,true,'source group remains atomic, even when readable');
+});
