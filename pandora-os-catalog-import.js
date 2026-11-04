@@ -17,6 +17,20 @@ function checkKeys(dataset,entries){
    throw Error('Mismatched '+dataset+' record identity: '+key);
  }
 }
+// Source JSON is untrusted until validated: nested prototype keys could
+// otherwise mutate plain-object maps when selective records are merged.
+function checkNestedKeys(value,path='',depth=0){
+ if(!value||typeof value!=='object')return;
+ if(depth>24)throw Error('Catalog record nesting exceeds safe limit: '+path);
+ if(Array.isArray(value)){
+  for(let i=0;i<value.length;i++)checkNestedKeys(value[i],path+'['+i+']',depth+1);
+  return;
+ }
+ for(const [key,entry] of Object.entries(value)){
+  if(unsafeKeys.has(key))throw Error('Unsafe nested catalog key: '+path+'.'+key);
+  checkNestedKeys(entry,path?path+'.'+key:key,depth+1);
+ }
+}
 function checkIdentity(rows,dataset){
  const ids=new Set();
  for(const value of rows){
@@ -28,6 +42,7 @@ function checkIdentity(rows,dataset){
 function normalize(snapshot,legacy){
  const get=(o,k)=>{if(!o||typeof o!=="object"||Array.isArray(o))throw Error("Invalid dataset "+k);return o};
  get(snapshot,"snapshot");
+ checkNestedKeys(snapshot,'source');
  const meta=get(snapshot.meta,"meta"),expected=meta.counts||{};
  const result={};result.meta=[{key:"all",value:meta}];
  for(const key of base.slice(1)){
