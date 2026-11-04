@@ -17,7 +17,7 @@ test('a caravan resistance difference is readable in Russian and keeps every cha
  for(const code of ['fire','cold','lightning','poison','charm','magic','holy','dark'])
   old.resists[code]=code==='magic'?30:25;
  const result=describe(change('monsters','43601',old,current),context);
- assert.equal(result.title,'43601');
+ assert.equal(result.title,'Караван Союза');
  assert.equal(result.rows.length,8);
  assert.ok(result.rows.some(r=>r.label==='Сопротивление огню'&&r.before==='25'&&r.after==='15'));
  assert.ok(result.rows.some(r=>r.label==='Сопротивление магии'&&r.before==='30'&&r.after==='15'));
