@@ -120,3 +120,14 @@ test('Cloudflare public instances endpoint returns an array and snapshot header'
  assert.ok(Array.isArray(data));
  assert.equal(data[0].id,3);
 });
+
+test('validated local encyclopedia preview avoids a slow D1 request',async()=>{
+ const current=catalog('D1'),archived=catalog('archived');
+ const mock=mockFetch(current,archived);
+ const response=await loader.load({api:'https://worker.example',
+  fetcher:mock.fetcher,preferLocal:true});
+ assert.equal(response.source,'local');
+ assert.equal(response.data.items[1].name,'archived');
+ assert.equal(mock.paths.filter(url=>url.includes('/api/catalog/')).length,0);
+ assert.equal(mock.paths.length,loader.keys.length);
+});

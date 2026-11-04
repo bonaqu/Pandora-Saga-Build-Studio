@@ -1435,8 +1435,39 @@ async function loadWiki(){
   // round-trip of all 11 D1 datasets for each double-click edit.
   if(!wikiBaseData){
    let loaded;
-   try{loaded=await window.PandoraWikiCatalog.load({api:API,fetcher:fetch})}
-   catch(error){if(generation!==wikiLoadGeneration)return loadWiki();throw error}
+   // A slow D1 response must not leave the encyclopedia blank. After a short
+   // head start, display a validated checked-in snapshot and replace it only
+   // when the complete, consistent D1 catalog is ready.
+   const remote=window.PandoraWikiCatalog.load({api:API,fetcher:fetch})
+    .then(value=>({value}),error=>({error}));
+   const early=await Promise.race([remote,
+    new Promise(resolve=>setTimeout(()=>resolve(null),850))]);
+   if(generation!==wikiLoadGeneration)return loadWiki();
+   if(early?.value)loaded=early.value;
+   else{
+    try{loaded=await window.PandoraWikiCatalog.load({
+     api:API,fetcher:fetch,preferLocal:true})}
+    catch(error){
+     if(early?.error)throw error;
+     const late=await remote;
+     if(!late.value)throw error;
+     loaded=late.value;
+    }
+    if(!early&&loaded.source==='local'){
+     const provisional=loaded.data;
+     void remote.then(async outcome=>{
+      if(outcome.value?.source!=='d1')return;
+      await pending.catch(()=>{});
+      if(generation!==wikiLoadGeneration||wikiBaseData!==provisional)return;
+      wikiBaseData=outcome.value.data;
+      invalidateWikiCatalog();
+      if(activeTab==='wiki'&&wikiRenderedRoot?.isConnected){
+       try{await loadWiki();wikiRenderSelected?.()}
+       catch(error){console.warn('D1 encyclopedia refresh skipped',error)}
+      }
+     });
+    }
+   }
    if(generation!==wikiLoadGeneration)return loadWiki();
    wikiBaseData=loaded.data;
   }
@@ -5750,13 +5781,41 @@ function applyGameLocale({redraw=true}={}){
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  if(redraw)render();
 }
+// Start rendering against the checked-in catalog if D1 takes longer than a
+// short budget, then replace it atomically with the authoritative D1 snapshot.
+// A slow optional EN file must never block the Russian hero or equipment UI.
+let englishCatalogPending=null;
+async function ensureEnglishCatalog(){
+ if(!catalogSource||officialEnglish||englishCatalogPending)return englishCatalogPending;
+ englishCatalogPending=(async()=>{
+  let approved=null;
+  for(const path of [API+'/api/catalog/stringsEn.json','./data/os/strings.en.json']){
+   try{
+    const response=await fetch(path,{cache:'default',signal:AbortSignal.timeout(8000)});
+    if(!response.ok)continue;
+    const proposed=await response.json();
+    const expected=catalogSource?.meta?.localeCounts?.en||{};
+    if(proposed.locale!=='en')continue;
+    if(['items','skills','monsters','souls','classes'].some(
+      group=>Object.keys(proposed[group]||{}).length!==Number(expected[group])))continue;
+    approved=proposed;break;
+   }catch(error){console.info('Optional English locale unavailable',error.message)}
+  }
+  if(approved){
+   officialEnglish=approved;
+   if(lang==='en')applyGameLocale();
+  }
+  return approved;
+ })().finally(()=>{englishCatalogPending=null});
+ return englishCatalogPending;
+}
 async function loadCatalog(){
  const names=['meta','classes','skills','items','souls','racialPassives','unison'];
  const obtain=async base=>{
   const fromD1=base===API+'/api/catalog',snapshots=new Set(),unknown=[];
   const entries=await Promise.all(names.map(async name=>{
    const response=await fetch(base+'/'+name+'.json',
-    {cache:'no-cache',signal:AbortSignal.timeout(10000)});
+    {cache:fromD1?'no-cache':'default',signal:AbortSignal.timeout(10000)});
    if(!response.ok)throw Error(name+' HTTP '+response.status);
    if(fromD1){
     const snapshot=response.headers.get('x-ps-catalog-snapshot');
@@ -5773,49 +5832,70 @@ async function loadCatalog(){
    if(!Number.isSafeInteger(expected)||expected<1||actual<expected)
     throw Error('Неполный каталог '+name+': '+actual+' / '+expected);
   }
+  if(!data.meta?.counts?.skills||!data.classes?.CLERIC)
+   throw Error('Invalid game catalog');
   return data;
  };
- let live,sourceLabel;
- try{live=await obtain(API+'/api/catalog');sourceLabel='Cloudflare D1 · наша база'}
- catch(err){
-  console.info('D1 catalog unavailable or incomplete; using repository copy',err.message);
-  try{live=await obtain('./data/os');sourceLabel='Встроенный архив (до переноса в D1)'}
-  catch(error){
-   console.error('Catalog unavailable',error);
-   $('siteNotice').textContent='Каталог временно недоступен; сохранённые билды не удалены.';
-   $('siteNotice').hidden=false;
-   $('catalogStatus').textContent='Каталог не загружен';return;
+ let first=true;
+ function install(data,label){
+  catalogSource=data;
+  if(first){
+   first=false;
+  const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
+  state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));
+  if(state.mastery&&typeof state.mastery==='object'&&!Array.isArray(state.mastery))
+   state.mastery=Object.fromEntries(Object.entries(state.mastery)
+    .map(([key,val])=>[oldToOS[key]||key,val]));
+  if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
+  if(!window.PandoraGameNavigation.all.has(state.branch)){state.branch='slash'}
+  if(!pathGroupTouched)
+   selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
   }
+  $('siteNotice').hidden=true;
+  $('siteNotice').textContent='';
+  $('catalogStatus').textContent=
+   data.meta.counts.skills+' навыков · '+data.meta.counts.items+
+   ' предметов · '+data.meta.counts.souls+' душ · '+label;
+  applyGameLocale();
+  if(lang==='en')void ensureEnglishCatalog();
+  if(first===false)persist();
  }
- if(!live.meta?.counts?.skills||!live.classes?.CLERIC)throw Error('Invalid game catalog');
- catalogSource=live;
- const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
- state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));
- if(state.mastery&&typeof state.mastery==='object'&&!Array.isArray(state.mastery))
-  state.mastery=Object.fromEntries(Object.entries(state.mastery)
-   .map(([key,val])=>[oldToOS[key]||key,val]));
- if(typeof state.branch==='number')state.branch=oldToOS[state.branch]||'brush';
- if(!window.PandoraGameNavigation.all.has(state.branch)){state.branch='slash'}
- if(!pathGroupTouched)
-  selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
- let enData=null;
- for(const path of [API+'/api/catalog/stringsEn.json','./data/os/strings.en.json']){
-  try{
-   const response=await fetch(path,{cache:'no-cache',signal:AbortSignal.timeout(10000)});
-   if(!response.ok)continue;
-   const proposed=await response.json();
-   const expected=live.meta?.localeCounts?.en||{};
-   if(proposed.locale!=='en')continue;
-   if(['items','skills','monsters','souls','classes'].some(group=>Object.keys(proposed[group]||{}).length!==Number(expected[group])))continue;
-   enData=proposed;break;
-  }catch(error){console.info('English archive unavailable from '+path,error.message)}
+ const remote=obtain(API+'/api/catalog').then(
+  data=>({data}),error=>({error}));
+ const early=await Promise.race([remote,
+  new Promise(resolve=>setTimeout(()=>resolve(null),800))]);
+ if(early?.data){
+  install(early.data,'Cloudflare D1 · наша база');return;
  }
- officialEnglish=enData;
- // Keep routine catalog success details in the footer; reserve the top notice for failures.
- $('siteNotice').hidden=true;
- $('siteNotice').textContent='';
- $('catalogStatus').textContent=`${live.meta.counts.skills} навыков · ${live.meta.counts.items} предметов · ${live.meta.counts.souls} душ · ${sourceLabel}`;
- applyGameLocale();persist();
+ let local;
+ try{local=await obtain('./data/os')}
+ catch(error){
+  if(!early){
+   const late=await remote;
+   if(late.data){install(late.data,'Cloudflare D1 · наша база');return}
+  }
+  console.error('Catalog unavailable',error);
+  $('siteNotice').textContent='Каталог временно недоступен; сохранённые билды не удалены.';
+  $('siteNotice').hidden=false;
+  $('catalogStatus').textContent='Каталог не загружен';return;
+ }
+ install(local,early?.error?'Встроенный архив · D1 недоступна':
+  'Временный архив · проверяем D1');
+ if(early?.error){
+  console.info('D1 catalog unavailable or incomplete; local fallback',early.error.message);
+  return;
+ }
+ // Do not swap a partially downloaded or cross-snapshot D1 set into the UI.
+ void remote.then(outcome=>{
+  if(outcome.data)install(outcome.data,'Cloudflare D1 · наша база');
+  else{
+   console.info('D1 catalog unavailable or incomplete; local fallback',outcome.error?.message);
+   if(catalogSource===local)
+    $('catalogStatus').textContent=
+     local.meta.counts.skills+' навыков · '+local.meta.counts.items+
+     ' предметов · '+local.meta.counts.souls+' душ · Встроенный архив · D1 недоступна';
+  }
+ });
 }
 let ownerWikiRefreshId=0;
 async function refreshOwnerCatalog(){
@@ -5881,8 +5961,7 @@ $('hero').addEventListener('keydown',event=>{
  if(!button||button.dataset.locale===lang)return;
  lang=button.dataset.locale;
  localStorage.setItem('ps-build-lang',lang);
- if(lang==='en'&&!officialEnglish)
-  showStudioToast('Не все игровые описания доступны на английском.','warning');
+ if(lang==='en'&&!officialEnglish)void ensureEnglishCatalog();
  applyGameLocale();
 };document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('keydown',event=>{
@@ -6097,6 +6176,7 @@ fetch('./data/os/classes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
   if(classes?.[jobKeys[state.job]]&&!catalog.classes){
    catalog.classes=classes;
    renderBranches();refreshBudgetLabel();
+   renderOriginStats();renderOriginVitals();
   }
  }).catch(error=>console.warn('Local class limits unavailable',error));
 fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)

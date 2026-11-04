@@ -148,3 +148,73 @@ test('Cloudflare-compatible manual redirects never follow an offsite Location',a
   ]);
  }finally{globalThis.fetch=previous}
 });
+
+test('all 17 allowlisted game JSON sources accept their original dataset shapes',async()=>{
+ const previous=globalThis.fetch;
+ const names=['meta','classes','skills','items','souls','monsters','drops','maps',
+  'instances','racialPassives','itemForth','unison','trades','tables',
+  'expertise','chests','strings.en'];
+ const visited=[];
+ globalThis.fetch=async(url,options)=>{
+  const name=url.split('/').pop().slice(0,-5);
+  visited.push(name);
+  assert.equal(options.redirect,'manual');
+  assert.equal(options.headers.authorization,undefined);
+  const data=name==='instances'?[{id:20030040,name:'Dungeon',mobs:[]}]:
+   {test:{id:1}};
+  return new Response(JSON.stringify(data),{status:200});
+ };
+ try{
+  for(const name of names){
+   const response=await worker.fetch(request(name,true),env);
+   assert.equal(response.status,200,name+' must accept the official JSON shape');
+   const payload=await response.json();
+   assert.equal(Array.isArray(payload),name==='instances');
+  }
+  assert.deepEqual(visited,names);
+ }finally{globalThis.fetch=previous}
+});
+test('instances accepts an array only for instances and rejects malformed rows',async()=>{
+ const original=globalThis.fetch;
+ try{
+  for(const [name,body] of [
+   ['instances',{1:{id:1}}],
+   ['instances',[null]],
+   ['items',[{id:1}]]
+  ]){
+   globalThis.fetch=async()=>new Response(JSON.stringify(body),{status:200});
+   const response=await worker.fetch(request(name,true),env);
+   assert.equal(response.status,502,name+' should reject incorrect source shape');
+   const payload=await response.json();
+   assert.equal(payload.code,'invalid-format');
+   assert.equal(payload.attempts.length,2);
+  }
+ }finally{globalThis.fetch=original}
+});
+
+test('production-style full source probe checks 17 allowlisted datasets without D1 writes',async()=>{
+ const original=globalThis.fetch,visited=[];
+ globalThis.fetch=async(url,options)=>{
+  visited.push(url);
+  assert.equal(options.redirect,'manual');
+  const name=url.split('/').pop();
+  return new Response(JSON.stringify(name==='instances.json'?
+   [{id:20030040,name:'Dungeon'}]:{ok:true}),{status:200});
+ };
+ try{
+  const request=new Request('https://ps-build-studio-cloud.bonaqu.workers.dev/api/source-health?scope=all');
+  const noDb={DB:{prepare(){throw Error('Full source check must not query D1')}}};
+  const response=await worker.fetch(request,noDb);
+  assert.equal(response.status,200);
+  const body=await response.json();
+  assert.equal(body.status,'ok');
+  assert.equal(body.checked,17);
+  assert.deepEqual(body.failures,[]);
+  assert.equal(Object.hasOwn(body,'data'),false,'Do not expose public game JSON in diagnostics');
+  assert.equal(visited.length,17);
+  assert.ok(visited.every(url=>url.startsWith('https://pandorasaga-os.com/gamedata/')));
+  const cached=await worker.fetch(request,noDb);
+  assert.equal(cached.status,200);
+  assert.equal(visited.length,17,'Deep source probe must be throttled per isolate');
+ }finally{globalThis.fetch=original}
+});
