@@ -301,19 +301,24 @@ function describe(change,ctx={}){
  }else{
   if(kind==='strings.en'){
    const [section,id]=change.key.split('/');
-   const sources={items:ctx.upstream?.items||ctx.baseline?.items,
-    monsters:ctx.upstream?.monsters||ctx.baseline?.monsters,
-    skills:ctx.upstream?.skills||ctx.baseline?.skills,
-    classes:ctx.upstream?.classes||ctx.baseline?.classes,
-    maps:ctx.upstream?.maps||ctx.baseline?.maps,
-    souls:ctx.upstream?.souls||ctx.baseline?.souls};
-   const localized=sources[section]?.[id]?.name;
-   const linked=typeof localized==='string'?localized:
-    section==='items'?itemName(id,ctx):section==='monsters'?monsterName(id,ctx):null;
+   const record=ctx.upstream?.[section]?.[id]||ctx.baseline?.[section]?.[id];
+   const localized=record?.name;
+   const instance=(ctx.upstream?.instances||ctx.baseline?.instances||[])
+    .find?.(row=>String(row.id)===String(id))?.name;
+   const branch=ctx.upstream?.meta?.branchLabels?.[id]||
+    ctx.baseline?.meta?.branchLabels?.[id];
+   const npc=ctx.upstream?.trades?.npcs?.[id]?.name||
+    ctx.baseline?.trades?.npcs?.[id]?.name;
+   const npcMap=ctx.upstream?.trades?.mapNames?.[id]?.name||
+    ctx.baseline?.trades?.mapNames?.[id]?.name;
+   const linked=[localized,instance,branch,npc,npcMap].find(v=>
+    typeof v==='string'&&v.trim());
    const captions={items:'Предмет',monsters:'Монстр',skills:'Умение',
     classes:'Класс',maps:'Локация',souls:'Душа',instances:'Подземелье',
     branches:'Ветка мастерства',tradeNpcs:'NPC',tradeMaps:'Место обмена'};
-   title=(captions[section]||'Английский перевод')+' · '+(linked||change.title);
+   title=(captions[section]||'Английский перевод')+' · '+
+    (linked||'название пока не найдено');
+   if(!linked)unknown('Русское название записи не найдено: '+change.key);
    if(typeof change.before==='string'||typeof change.after==='string')
     add('Название на английском',change.before,change.after);
    else walk(change.before||{},change.after||{});
@@ -329,7 +334,9 @@ function describe(change,ctx={}){
  }
  const preview=rows.slice(0,2).map(row=>row.label+': '+row.before+' → '+row.after).join(' · ');
  if(preview&&!['drops','meta','instances','trades','chests','tables','expertise'].includes(kind))
-  summary=preview+(rows.length>2?' · ещё '+(rows.length-2):'');
+  summary=(change.kind==='added'?'Добавлено: '+title+'. ':
+    change.kind==='removed'?'Удалено: '+title+'. ':'')+
+   preview+(rows.length>2?' · ещё '+(rows.length-2):'');
  if(uncertain&&!caution)caution='Часть параметров требует ручной проверки перед публикацией.';
  return {title,summary,rows,technical,uncertain,caution,service:kind==='meta'};
 }
