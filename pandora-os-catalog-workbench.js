@@ -10,33 +10,62 @@
     if (!importer || !difference || !review) throw Error('OS catalog modules are missing');
 
     const view = h('div', {class:'os-sync'});
-    const intro = h('p', {class:'muted',
-      text:'Проверяй обновления игрового каталога и выбирай изменения перед публикацией. Сохранённые переводы не перезаписываются.'});
+    const intro = h('div',{class:'os-sync-intro'},[
+      h('strong',{text:'Обновление игрового каталога'}),
+      h('p',{text:'Сначала найди отличия, затем выбери, что добавить на сайт. Без твоего подтверждения ничего не изменится.'})
+    ]);
     const actions = h('div', {class:'os-sync-actions'});
-    const live = h('button', {type:'button',class:'button-action primary',
-      text:'Проверить обновления игрового каталога'});
-    const archive = h('button', {type:'button',class:'button-action',text:'Сравнить с архивом проекта'});
+    const live = h('button', {type:'button',class:'button-action primary os-sync-main-check',
+      text:'Проверить изменения в текущей игре'});
+    const archive = h('button', {type:'button',class:'button-action',
+      text:'Сверить с сохранённой копией'});
+    const archiveChoice=h('details',{class:'os-sync-archive-choice'},[
+      h('summary',{text:'Если игра сейчас недоступна'}),
+      h('p',{text:'Сравни данные сайта с последней сохранённой копией проекта. Это не проверка игрового сервера в реальном времени.'}),
+      archive
+    ]);
     const acceptAll = h('button', {type:'button',class:'button-action',text:'Принять все',disabled:true});
     const declineAll = h('button', {type:'button',class:'button-action',text:'Отклонить все',disabled:true});
-    const exportButton = h('button', {type:'button',class:'button-action',text:'Скачать выбранное для GitHub',disabled:true});
+    const exportButton = h('button', {type:'button',class:'button-action',
+      text:'Скачать выбранное для GitHub',disabled:true});
     const publish = h('button', {type:'button',class:'button-action primary',
       text:'Применить выбранные изменения',disabled:true});
     const testWrite = h('button',{type:'button',class:'button-action',
-      text:'Проверить запись в D1',title:'Безопасная проверка сохранения каталога и админских правок',disabled:false});
+      text:'Проверить сохранение правок',
+      title:'Создаёт и удаляет только две временные записи, не изменяя игровые данные',disabled:false});
     const github = h('button',{type:'button',class:'button-action',
       text:'Создать PR в GitHub',disabled:true,
-      title:'Создать отдельную ветку с текущими опубликованными игровыми данными'});
+      title:'Подготовить отдельное предложение изменений в репозитории, без автоматического объединения'});
     const search = h('input', {type:'search',class:'os-sync-search',
-      placeholder:'Найти предмет, навык, ID или раздел…','aria-label':'Поиск изменений'});
+      placeholder:'Поиск изменений по названию…','aria-label':'Поиск изменений'});
     const progress = h('progress', {class:'catalog-import-progress',max:'100',value:'0'});
+    progress.hidden=true;
     const filters=h('div',{class:'os-sync-filters',role:'group','aria-label':'Фильтр изменений'});
     const overview=h('div',{class:'os-sync-overview'});
     const summary = h('div', {class:'os-sync-summary',role:'status'});
-    const status = h('p', {class:'muted',role:'status',
-      text:'Выбери проверку API или архива. Без твоего подтверждения публикации не будет.'});
+    const status = h('p', {class:'os-sync-status',role:'status',
+      text:'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.'});
+    const diagnostic=h('details',{class:'os-sync-diagnostics'},[
+      h('summary',{text:'Технические сведения об ошибке'})
+    ]);
+    diagnostic.hidden=true;
+    const diagnosticText=h('p',{class:'muted'});
+    diagnostic.append(diagnosticText);
     const results = h('div', {class:'os-sync-results'});
-    actions.append(live,archive,acceptAll,declineAll,exportButton,publish,github,testWrite);
-    view.append(intro,actions,search,filters,overview,progress,summary,status,results);
+    const reviewSteps=h('section',{class:'os-sync-review-steps'});
+    reviewSteps.hidden=true;
+    reviewSteps.append(
+      h('p',{text:'Выбери нужные изменения галочками. Ничего не будет опубликовано, пока не нажмёшь «Применить».'}),
+      h('div',{class:'os-sync-review-actions'},[acceptAll,declineAll,publish])
+    );
+    const advanced=h('details',{class:'os-sync-advanced'},[
+      h('summary',{text:'Дополнительные инструменты'}),
+      h('p',{text:'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.'}),
+      h('div',{class:'os-sync-advanced-actions'},[testWrite,github,exportButton])
+    ]);
+    actions.append(live,archiveChoice,reviewSteps,advanced);
+    view.append(intro,actions,status,diagnostic,progress,summary,filters,overview,search,results);
+    for(const element of [filters,overview,search,results])element.hidden=true;
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
@@ -66,6 +95,7 @@
       busy = value;
       live.disabled = value;
       archive.disabled = value;
+      progress.hidden=!value;
       search.disabled = value;
       for(const button of filterButtons.values())button.disabled=value;
       for(const control of results.querySelectorAll('button,input[type="checkbox"]'))
@@ -81,6 +111,9 @@
       exportButton.disabled = !ready;
       github.disabled = busy || !githubReady || !publishedSnapshot;
       testWrite.disabled = busy;
+      const reviewing=Boolean(baseline);
+      reviewSteps.hidden=!reviewing||!changes.length;
+      for(const element of [filters,overview,search,results])element.hidden=!reviewing;
       const byKind={
         all:changes.length,added:changes.filter(row=>row.kind==='added').length,
         changed:changes.filter(row=>row.kind==='changed').length,
@@ -126,6 +159,7 @@
     function fieldPreview(change) {
       const details = h('details', {class:'os-sync-field-details'});
       details.append(h('summary', {text:'Что изменилось'}));
+      details.append(h('small',{class:'os-sync-technical-code',text:change.key}));
       const fields = difference.changedFields(change.before,change.after);
       const fieldsRu={name:'Название',desc:'Описание',W:'Атака',PEN:'Пробитие',
         AC:'Защита',level:'Уровень',classes:'Доступные классы',
@@ -198,8 +232,7 @@
           row.append(h('label',{class:'os-sync-record-label'},[
             input,
             h('span',{class:'os-sync-record-title'},[
-              h('strong',{text:String(change.title)}),
-              h('small',{text:change.key})
+              h('strong',{text:String(change.title)})
             ]),
             h('span',{class:'os-sync-kind '+change.kind,text:indicator})
           ]),fieldPreview(change));
@@ -227,14 +260,16 @@
 
     async function compare(from) {
       setBusy(true);
+      diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
       results.replaceChildren();summary.textContent='';
       progress.value=0;
+      refreshActions();
       try {
         const next={},old={};
         for (const [index,name] of importer.files.entries()) {
-          status.textContent='Получаю '+name+' · '+(index+1)+'/'+importer.files.length;
+          status.textContent='Проверяю игровые данные · '+(index+1)+' из '+importer.files.length;
           next[name]=await sourceFile(name,from);
           progress.value=Math.round(45*(index+1)/importer.files.length);
         }
@@ -278,9 +313,20 @@
           : 'Данные совпадают. Публикация не требуется.';
         render();
       }catch(error) {
-        status.textContent=error.httpStatus===401
-          ? 'Для сверки требуется повторный вход администратора. D1 не изменена.'
-          : 'Сверка остановлена. D1 не изменена: '+error.message;
+        const unavailable=from==='server'&&(
+          error.httpStatus===502||error.httpStatus===503||
+          /Game data source|Source unavailable|Failed to fetch|NetworkError/i.test(String(error.message))
+        );
+        if(unavailable){
+          archiveChoice.open=true;
+          status.textContent='Сейчас не удалось получить обновления из игры. Данные сайта не изменились. Ниже доступна сверка с сохранённой копией — она может быть старее.';
+        }else if(error.httpStatus===401){
+          status.textContent='Сеанс администратора завершился. Войди заново, чтобы повторить проверку.';
+        }else{
+          status.textContent='Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.';
+        }
+        diagnosticText.textContent=String(error.message||error);
+        diagnostic.hidden=false;
         baseline=null;upstream=null;changes=[];
         refreshActions();
       }finally{setBusy(false)}
@@ -372,7 +418,7 @@
     // contents ever pass through the browser.
     testWrite.onclick=async()=>{
       if(busy)return;
-      if(!confirm('Проверить запись в D1? Будут созданы, прочитаны и удалены две временные записи (каталог и админские правки). Реальные игровые данные не изменяются.'))return;
+      if(!confirm('Проверить, работают ли сохранение и удаление правок? Будут созданы и удалены две временные записи. Игровой каталог и билды не изменяются.'))return;
       setBusy(true);
       try{
         const result=await request('/api/admin/catalog/test-write',{});
@@ -380,7 +426,7 @@
            result.overrideReadback!==true||result.overrideCleaned!==true||
            result.activeCatalogUnchanged!==true)
           throw Error('D1 не подтвердила запись, чтение, очистку и неизменность каталога');
-        status.textContent='Проверка D1 пройдена: временные данные каталога и админских правок записаны, прочитаны и удалены. Опубликованный каталог не изменён.';
+        status.textContent='Сохранение работает: обе пробные записи созданы, прочитаны и удалены. Игровой каталог не изменился.';
       }catch(error){
         status.textContent=error.httpStatus===401
           ? 'Сеанс администратора завершился. Войди заново.'
@@ -431,7 +477,7 @@
     declineAll.onclick=()=>{chosen.clear();render()};
     search.addEventListener('input',render);
     refreshActions();
-    modal('Игровой каталог · проверка обновлений',view);
+    modal('Обновление игрового каталога',view);
   }
 
   root.PandoraOSCatalogWorkbench=Object.freeze({open});
