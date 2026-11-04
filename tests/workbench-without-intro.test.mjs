@@ -40,7 +40,8 @@ test('admin status still exists in header and only shows when editor active',()=
 test('catalog success is shown in footer, catalog failure remains a visible notice',()=>{
  assert.match(app,/\$\('siteNotice'\)\.textContent='Каталог временно недоступен; сохранённые билды не удалены\.';\s*\$\('siteNotice'\)\.hidden=false/);
  assert.match(app,/\$\('siteNotice'\)\.hidden=true;\s*\$\('siteNotice'\)\.textContent='';/);
- assert.match(app,/\$\('catalogStatus'\)\.textContent=\`\$\{live\.meta\.counts\.skills\}/);
+ assert.match(app,/data\.meta\.counts\.skills\+' навыков/);
+ assert.match(app,/Временный архив · проверяем D1/);
 });
 test('critical user controls and owner dock survive removal of intro',()=>{
  for(const id of ['nav','locale','siteNotice','workspace','originTabs','stagePicker','stageAttributes',
