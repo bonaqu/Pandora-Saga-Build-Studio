@@ -6,7 +6,7 @@ ac:'Защита',magicProtection:'Магическая защита',name:'На
 nameEn:'Название на английском',descEn:'Описание на английском',
 classes:'Доступные классы',effects:'Эффекты',slot:'Слот экипировки',W:'Атака',
 PEN:'Пробитие',n:'Название',blurbRu:'Описание',blurb:'Английское описание',
-quest:'Задание',mobs:'Монстры',p:'Значение шанса в таблице',
+quest:'Задание',kind:'Тип',mobs:'Монстры',p:'Значение шанса в таблице',
 slotAdd:'Дополнительные слоты',lo:'Нижняя граница',hi:'Верхняя граница'};
 const elements={physical:'физическому урону',fire:'огню',cold:'холоду',
 lightning:'молнии',poison:'яду',charm:'очарованию',magic:'магии',holy:'свету',dark:'тьме'};
@@ -61,10 +61,10 @@ function describeCompound(kind,before,after,ctx,add,unknown){
   for(const id of new Set([...oldTrades.keys(),...newTrades.keys()])){
    const a=oldTrades.get(id),b=newTrades.get(id);if(same(a,b))continue;changed++;
    const row=a||b;
-   const name='Обмен №'+id+' · '+shortItem(row?.i);
+   const name='Обмен · '+shortItem(row?.i);
    if(!a||!b){safeAdd(name,a?'предусмотрен':'нет',
      b?'предусмотрен':'удалён');continue}
-   if(a.i!==b.i)safeAdd('Обмен №'+id+' · Получаемый предмет',
+   if(a.i!==b.i)safeAdd('Обмен · Получаемый предмет',
      shortItem(a.i),shortItem(b.i));
    for(const [code,label] of [['gold','Золото'],['honor','Очки чести'],
      ['exp','Опыт']])if(a[code]!==b[code])safeAdd(name+' · '+label,a[code],b[code]);
@@ -194,7 +194,9 @@ function describe(change,ctx={}){
    const a=old[group]||[],b=next[group]||[];
    const byItem=list=>{const out=new Map();for(const entry of list){
     const key=String(entry?.i)+' / '+String(entry?.t||'');
-    const set=out.get(key)||[];set.push(entry);out.set(key,set);
+    const set=out.get(key)||[];
+    if(set.length)unknown('Несколько одинаковых предметов в добыче: '+key);
+    set.push(entry);out.set(key,set);
    }return out};
    const before=byItem(a),after=byItem(b);
    for(const key of new Set([...before.keys(),...after.keys()])){
@@ -225,12 +227,12 @@ function describe(change,ctx={}){
    const name=next?.name||old?.name||'Задание №'+id;
    if(!old||!next)add(name,old?'есть':'нет',next?'есть':'нет');
    else{
-    for(const key of ['name','blurbRu','quest','mobs'])if(!same(old[key],next[key])){
+    for(const key of ['name','blurbRu','blurb','kind','quest','mobs'])if(!same(old[key],next[key])){
      const render=v=>key==='mobs'?(v||[]).map(x=>monsterName(x,ctx)).join(', '):v;
      add(name+' · '+(names[key]||key),render(old[key]),render(next[key]));
     }
     for(const key of new Set([...Object.keys(old),...Object.keys(next)]))
-     if(!['id','name','blurbRu','quest','mobs'].includes(key)&&!same(old[key],next[key]))
+     if(!['id','name','blurbRu','blurb','kind','quest','mobs'].includes(key)&&!same(old[key],next[key]))
       unknown(name+'.'+key);
    }
   }
