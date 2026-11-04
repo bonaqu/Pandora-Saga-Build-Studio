@@ -56,7 +56,7 @@ function formattedDescription(s){
  // OS exports sometimes concatenate lore, bonuses and upgrade conditions.
  const conditions='За кажд(?:ую|ые|ый|ое)|При улучшении|При усовершенствовании|При заточке|При экипировке|При наличии|Закалка самоцветом|Каждое следующее улучшение|Per every|At \\+\\d+ and above|When enhanced|With refinement';
  const stats='ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|STA|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Skill Cooldown|Cooldown|Healing|Reduction';
- const hasSourceBreaks=/<br\s*\/?>/i.test(s);
+ const hasSourceBreaks=/<br\s*\/?>/i.test(s)||/[\r\n]/.test(s);
  const normalized=s.replace(/\r\n?/g,'\n').replace(/<br\s*\/?>/gi,'\n')
   .replace(/<\/?(?!item\b)[a-z][a-z0-9-]*(?:\s+[^<>]*)?>/gi,'')
   .replace(/[ \t]*\n[ \t]*/g,'\n');
