@@ -305,7 +305,7 @@
       sourceBanner.hidden=false;
       sourceBanner.textContent=from==='server'
         ?'Сейчас сравниваются данные сайта и текущей игры'
-        :'Сейчас сравниваются данные сайта и сохранённой копии (копия может быть старее)';
+        :'Архивная сверка: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.';
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
