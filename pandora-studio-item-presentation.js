@@ -87,6 +87,20 @@ function descriptionSegments(source, lookupItem, lang='ru'){
 const descriptionText=(source,lookupItem,lang='ru')=>
  descriptionSegments(source,lookupItem,lang).map(piece=>piece.text).join('');
 
-root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,descriptionSegments,descriptionText,displayName,
+// Convert visible item names back to source tokens only when an administrator
+// edits the description. Ambiguous names are never silently bound to an ID.
+function restoreReferences(edited,source,lookupItem,lang='ru'){
+ let result=String(edited);
+ const references=descriptionSegments(source,lookupItem,lang)
+  .filter(part=>part.type==='item'&&part.exists);
+ for(const reference of references){
+  const matches=result.split(reference.text).length-1;
+  if(matches>1)throw Error('Название «'+reference.text+
+   '» встречается несколько раз. Уточни текст перед сохранением ссылки.');
+  if(matches===1)result=result.replace(reference.text,'<item '+reference.id+'>');
+ }
+ return result;
+}
+root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,displayName,
  kindOptions:(lang='ru')=>Object.entries(lang==='en'?namesEn:names).map(([value,label])=>({value,label}))});
 })(typeof window==='undefined'?globalThis:window);
