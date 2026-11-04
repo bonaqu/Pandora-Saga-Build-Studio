@@ -217,6 +217,57 @@
       else refreshActions();
     }
 
+    // Build a safe interactive preview from validated source tokens, never from HTML.
+    // An item absent from published D1 can be inspected but not linked as published.
+    function linkedDescription(source,language='ru') {
+      const wrap=h('span',{class:'os-sync-linked-text'});
+      const names=key=>{
+        const item=upstream?.items?.[key]||baseline?.items?.[key];
+        if(!item)return null;
+        if(language==='en')return upstream?.['strings.en']?.items?.[key]?.n||
+          baseline?.['strings.en']?.items?.[key]?.n||item.name;
+        return item.name?.ru||item.name;
+      };
+      const segments=root.PandoraItemPresentation?.descriptionSegments?.(source,names,language);
+      if(!segments){wrap.textContent=String(source).replace(/<br\s*\/?>/gi,'\n');return wrap}
+      for(const segment of segments){
+        if(segment.type!=='item'||!segment.exists){
+          wrap.append(document.createTextNode(segment.text));continue;
+        }
+        const reference=h('span',{class:'os-sync-reference'});
+        const button=h('button',{type:'button',class:'os-sync-item-ref',
+          title:'Игровая ссылка на предмет. Нажми для предпросмотра.',
+          'aria-label':'Показать связанный предмет: '+segment.text,
+          'aria-expanded':'false',text:segment.text});
+        const preview=h('span',{class:'os-sync-reference-preview',hidden:true});
+        preview.append(h('strong',{text:segment.text}),
+          h('small',{text:'Связанный предмет · игровая ссылка в описании'}));
+        const record=upstream?.items?.[segment.id]||baseline?.items?.[segment.id];
+        const sourceDesc=language==='en'?
+          upstream?.['strings.en']?.items?.[segment.id]?.d||
+          baseline?.['strings.en']?.items?.[segment.id]?.d:
+          record?.desc;
+        if(typeof sourceDesc==='string'&&sourceDesc.trim())
+          preview.append(h('span',{class:'os-sync-reference-description',
+            text:root.PandoraItemPresentation.descriptionText(
+              sourceDesc,names,language).slice(0,280)}));
+        if(baseline?.items?.[segment.id]){
+          // A fresh tab preserves the current selection and scroll position.
+          preview.append(h('a',{
+            href:'#wiki/item/'+encodeURIComponent(segment.id),target:'_blank',
+            rel:'noopener noreferrer',class:'os-sync-reference-open',
+            text:'Открыть в энциклопедии (новая вкладка) ↗'}));
+        }else preview.append(h('small',{text:'Предмет пока не опубликован в энциклопедии.'}));
+        button.onclick=()=>{
+          const expanded=preview.hidden;
+          preview.hidden=!expanded;
+          button.setAttribute('aria-expanded',String(expanded));
+        };
+        reference.append(button,preview);
+        wrap.append(reference);
+      }
+      return wrap;
+    }
     function fieldPreview(change,description) {
       const content=h('div',{class:'os-sync-explanation'});
       if(description.rows.length>1)content.append(h('small',{
@@ -227,15 +278,44 @@
       const details=h('details',{class:'os-sync-field-details'});
       details.append(h('summary',{text:'Посмотреть подробно · '+description.rows.length}));
       if(description.rows.length){
-        for(const field of description.rows)details.append(h('div',{
-          class:'os-sync-field os-sync-human-field'},[
-          h('strong',{text:field.label}),
-          h('span',{class:'os-sync-full-value',text:field.beforeFull??field.before}),
-          h('span',{class:'os-sync-field-arrow',text:'→'}),
-          h('span',{class:'os-sync-full-value',text:field.afterFull??field.after}),
-          ...(field.difference?[h('small',{class:'os-sync-value-delta',
-            text:'Изменение: '+field.difference})]:[])
-        ]));
+        for(const field of description.rows){
+          const language=change.dataset==='strings.en'?'en':'ru';
+          const oldValue=h('span',{class:'os-sync-full-value os-sync-old'});
+          const newValue=h('span',{class:'os-sync-full-value os-sync-new'});
+          oldValue.append(field.sourceBefore!==null&&field.sourceBefore!==undefined?
+            linkedDescription(field.sourceBefore,language):
+            document.createTextNode(String(field.beforeFull??field.before)));
+          newValue.append(field.sourceAfter!==null&&field.sourceAfter!==undefined?
+            linkedDescription(field.sourceAfter,language):
+            document.createTextNode(String(field.afterFull??field.after)));
+          if(field.difference)newValue.append(h('small',{
+            class:'os-sync-value-delta',
+            text:(field.delta>0?'▲ ':'▼ ')+field.difference,
+            title:'Разница между старым и новым числом. Это не оценка полезности изменения.'}));
+          const label=h('strong',{text:field.label});
+          if(/^[0-9]{1,12}$/.test(field.linkedItemId||'')&&field.linkedItemName){
+            const start=field.label.indexOf(field.linkedItemName);
+            if(start>=0){
+              label.replaceChildren(
+                document.createTextNode(field.label.slice(0,start)),
+                linkedDescription('<item '+field.linkedItemId+'>','ru'),
+                document.createTextNode(field.label.slice(start+field.linkedItemName.length))
+              );
+            }
+          }
+          const line=h('div',{class:'os-sync-field os-sync-human-field'+
+            (field.sourceAfter!==null&&field.sourceAfter!==undefined?' os-sync-description-field':'')},[
+            label,
+            oldValue,
+            h('span',{class:'os-sync-field-arrow',text:'→'}),
+            newValue
+          ]);
+          if(field.note)line.append(h('p',{class:'os-sync-field-note',text:field.note}));
+          if(/Доп\. слоты$/.test(field.label))line.append(h('p',{
+            class:'os-sync-field-note',
+            text:'Это параметр дополнительных слотов конкретного предмета в таблице добычи. «Не указаны» означает отсутствие поля в старом источнике, а не подтверждённый ноль.'}));
+          details.append(line);
+        }
       }else details.append(h('p',{class:'muted',
         text:'Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.'}));
       const raw=h('details',{class:'os-sync-raw-details'});
@@ -314,6 +394,14 @@
         toolbar.append(take,reject);
         if(query||filterKind!=='all')toolbar.append(takeVisible);
         panel.append(toolbar);
+        const variantTotal=new Map(),variantIndex=new Map(),variantOrder=new Map();
+        for(const entry of group){
+          const title=describe(entry).title;
+          variantTotal.set(title,(variantTotal.get(title)||0)+1);
+          const index=(variantIndex.get(title)||0)+1;
+          variantIndex.set(title,index);
+          variantOrder.set(entry.id,index);
+        }
         const limit = full.has(name)||query?filtered.length:Math.min(40,filtered.length);
         const list = h('div',{class:'os-sync-list'});
         for (const change of filtered.slice(0,limit)) {
@@ -323,6 +411,9 @@
             text:description.service?'Служебные данные · ручная проверка':
               description.uncertain?'Есть нерасшифрованные параметры':
               'Значения расшифрованы · проверь перед выбором'});
+          if(variantTotal.get(description.title)>1)
+            helper.textContent+=' · Вариант '+variantOrder.get(change.id)+
+              ' из '+variantTotal.get(description.title)+' с этим названием';
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
             'aria-label':'Выбрать изменение '+description.title});
           input.addEventListener('change',()=>setChoice(change,input.checked));
