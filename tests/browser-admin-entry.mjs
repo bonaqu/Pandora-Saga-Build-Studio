@@ -172,18 +172,27 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.getByRole('button',{name:/Изменённые · 1/}).click();
   assert.equal(await dialog.locator('.os-sync-record').count(),1,'Only changed records');
   await dialog.getByRole('button',{name:/Все · 1/}).click();
+  assert.match(await dialog.locator('.os-sync-source-banner').innerText(),/сохранённой копии/);
+  assert.equal(await dialog.locator('.os-sync-results').evaluate(el=>getComputedStyle(el).overflowY),'visible',
+    'no nested review scrollbar');
+  assert.equal(await dialog.locator('.os-sync-record').count(),1);
+  assert.equal(await dialog.locator('.os-sync-raw-details').isVisible(),false,
+    'raw IDs and JSON are hidden until owner explicitly opens details');
   const groups=dialog.locator('.os-sync-group');
   assert.equal(await groups.count(),1,'Exactly one intentionally changed D1 item');
   await groups.locator('summary.os-sync-group-heading').click();
+  const explanation=dialog.locator('.os-sync-change-summary').first();
+  assert.notEqual((await explanation.innerText()).length,0,'gameplay change explanation is visible');
+  assert.doesNotMatch(await explanation.innerText(),/\[\{|resists\.|sha\.|@dataset/);
   const decision=dialog.locator('.os-sync-record input[type=checkbox]');
   await decision.waitFor({state:'visible'});
   assert.equal(await decision.isChecked(),false,'Changes must be declined by default');
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
   await decision.check();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
-  await dialog.getByRole('button',{name:'Отклонить все'}).click();
+  await dialog.getByRole('button',{name:'Снять весь выбор'}).click();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
-  await dialog.getByRole('button',{name:'Принять все'}).click();
+  await dialog.getByRole('button',{name:'Выбрать понятные изменения',exact:true}).click();
   const downloadPromise=page.waitForEvent('download');
   await dialog.getByRole('button',{name:'Скачать выбранное для GitHub'}).click();
   const download=await downloadPromise;
