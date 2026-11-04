@@ -7,7 +7,8 @@
     const importer = root.PandoraCatalogImport;
     const difference = root.PandoraCatalogDiff;
     const review = root.PandoraOSCatalogReview;
-    if (!importer || !difference || !review) throw Error('OS catalog modules are missing');
+    const human = root.PandoraCatalogHumanReview;
+    if (!importer || !difference || !review || !human) throw Error('Catalog review modules are missing');
 
     const view = h('div', {class:'os-sync'});
     const intro = h('div',{class:'os-sync-intro'},[
@@ -24,8 +25,8 @@
       h('p',{text:'Сравни данные сайта с последней сохранённой копией проекта. Это не проверка игрового сервера в реальном времени.'}),
       archive
     ]);
-    const acceptAll = h('button', {type:'button',class:'button-action',text:'Принять все',disabled:true});
-    const declineAll = h('button', {type:'button',class:'button-action',text:'Отклонить все',disabled:true});
+    const acceptAll = h('button', {type:'button',class:'button-action',text:'Выбрать понятные изменения',disabled:true});
+    const declineAll = h('button', {type:'button',class:'button-action',text:'Снять весь выбор',disabled:true});
     const exportButton = h('button', {type:'button',class:'button-action',
       text:'Скачать выбранное для GitHub',disabled:true});
     const publish = h('button', {type:'button',class:'button-action primary',
@@ -43,6 +44,7 @@
     const filters=h('div',{class:'os-sync-filters',role:'group','aria-label':'Фильтр изменений'});
     const overview=h('div',{class:'os-sync-overview'});
     const summary = h('div', {class:'os-sync-summary',role:'status'});
+    const sourceBanner=h('p',{class:'os-sync-source-banner',hidden:true});
     const status = h('p', {class:'os-sync-status',role:'status',
       text:'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.'});
     const diagnostic=h('details',{class:'os-sync-diagnostics'},[
@@ -55,7 +57,7 @@
     const reviewSteps=h('section',{class:'os-sync-review-steps'});
     reviewSteps.hidden=true;
     reviewSteps.append(
-      h('p',{text:'Выбери нужные изменения галочками. Ничего не будет опубликовано, пока не нажмёшь «Применить».'}),
+      h('p',{text:'Сравни игровые значения «было → стало». Отметь только проверенные изменения. Служебные сведения и непонятные параметры не выбираются автоматически.'}),
       h('div',{class:'os-sync-review-actions'},[acceptAll,declineAll,publish])
     );
     const advanced=h('details',{class:'os-sync-advanced'},[
@@ -64,17 +66,23 @@
       h('div',{class:'os-sync-advanced-actions'},[testWrite,github,exportButton])
     ]);
     actions.append(live,archiveChoice,reviewSteps,advanced);
-    view.append(intro,actions,summary,status,diagnostic,progress,filters,overview,search,results);
+    view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,filters,overview,search,results);
     for(const element of [filters,overview,search,results])element.hidden=true;
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
     let expanded = new Set(), full = new Set(), filterKind='all';
     let githubReady = false, publishedSnapshot = null;
+    const descriptions=new Map();
+    const describe=change=>{
+      if(!descriptions.has(change.id))descriptions.set(change.id,human.describe(change,{baseline,upstream}));
+      return descriptions.get(change.id);
+    };
+    const safe=change=>!describe(change).uncertain && !describe(change).service;
 
     const filterChoices=[
       ['all','Все'],['added','Новые'],['changed','Изменённые'],
-      ['removed','Удалённые'],['accepted','Принятые'],['declined','Отклонённые']
+      ['removed','Удалённые'],['accepted','Выбранные'],['declined','Не выбраны']
     ];
     const filterButtons=new Map();
     for(const [id,label]of filterChoices){
@@ -105,7 +113,7 @@
     function refreshActions() {
       const selected = chosen.size;
       const ready = !busy && selected > 0 && baseline && upstream;
-      acceptAll.disabled = busy || !changes.length;
+      acceptAll.disabled = busy || !changes.some(safe);
       declineAll.disabled = busy || !changes.length;
       publish.disabled = !ready;
       exportButton.disabled = !ready;
@@ -140,11 +148,12 @@
         const count=changes.filter(row=>row.dataset===name&&chosen.has(row.id)).length;
         const total=changes.filter(row=>row.dataset===name).length;
         const label=panel.querySelector('.os-sync-count');
-        if(label)label.textContent=count+' / '+total+' принято';
+        if(label)label.textContent=count+' / '+total+' выбрано';
       }
+      const service=changes.filter(row=>describe(row).service).length;
       summary.textContent = changes.length
-        ? 'Найдено изменений: ' + changes.length + ' · Принято: ' + selected +
-          ' · Отклонено: ' + (changes.length - selected)
+        ? 'Найдено изменений: '+changes.length+(service?' · Служебных: '+service:'')+
+          ' · Выбрано: '+selected+' · Не выбрано: '+(changes.length-selected)
         : baseline ? 'Различий в игровых данных нет' : '';
     }
     const checked = change => chosen.has(change.id);
@@ -156,23 +165,36 @@
       else refreshActions();
     }
 
-    function fieldPreview(change) {
-      const details = h('details', {class:'os-sync-field-details'});
-      details.append(h('summary', {text:'Что изменилось'}));
-      details.append(h('small',{class:'os-sync-technical-code',text:change.key}));
-      const fields = difference.changedFields(change.before,change.after);
-      const fieldsRu={name:'Название',desc:'Описание',W:'Атака',PEN:'Пробитие',
-        AC:'Защита',level:'Уровень',classes:'Доступные классы',
-        effects:'Эффекты',soulslot:'Гнёзда душ',meta:'Параметры каталога'};
-      for (const field of fields) {
-        details.append(h('div',{class:'os-sync-field'},[
-          h('code',{text:fieldsRu[field.field]||field.field}),
-          h('span',{text:field.before}),
+    function fieldPreview(change,description) {
+      const content=h('div',{class:'os-sync-explanation'});
+      content.append(h('p',{class:'os-sync-change-summary',text:description.summary}));
+      if(description.caution)content.append(h('p',{
+        class:'os-sync-change-caution',text:description.caution}));
+      const details=h('details',{class:'os-sync-field-details'});
+      details.append(h('summary',{text:'Показать все изменения'}));
+      if(description.rows.length){
+        for(const field of description.rows)details.append(h('div',{
+          class:'os-sync-field os-sync-human-field'},[
+          h('strong',{text:field.label}),h('span',{text:field.before}),
           h('span',{class:'os-sync-field-arrow',text:'→'}),
           h('span',{text:field.after})
         ]));
+      }else details.append(h('p',{class:'muted',
+        text:'Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.'}));
+      const raw=h('details',{class:'os-sync-raw-details'});
+      raw.append(h('summary',{text:'Технические сведения (для разработчика)'}));
+      raw.append(h('small',{class:'os-sync-technical-code',text:'ID: '+change.key}));
+      for(const field of difference.changedFields(change.before,change.after)){
+        raw.append(h('div',{class:'os-sync-raw-field'},[
+          h('code',{text:field.field}),
+          h('span',{text:field.before}),h('span',{text:'→'}),
+          h('span',{text:field.after})
+        ]));
       }
-      return details;
+      if(description.technical.length)
+        raw.append(h('p',{class:'muted',text:description.technical.join('; ')}));
+      details.append(raw);content.append(details);
+      return content;
     }
 
     function render() {
