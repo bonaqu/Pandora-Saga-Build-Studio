@@ -248,8 +248,9 @@
           baseline?.['strings.en']?.items?.[segment.id]?.d:
           record?.desc;
         if(typeof sourceDesc==='string'&&sourceDesc.trim())
-          preview.append(h('p',{text:root.PandoraItemPresentation.descriptionText(
-            sourceDesc,names,language).slice(0,280)}));
+          preview.append(h('span',{class:'os-sync-reference-description',
+            text:root.PandoraItemPresentation.descriptionText(
+              sourceDesc,names,language).slice(0,280)}));
         if(baseline?.items?.[segment.id]){
           // A fresh tab preserves the current selection and scroll position.
           preview.append(h('a',{
