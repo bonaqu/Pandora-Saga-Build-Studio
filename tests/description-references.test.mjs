@@ -29,6 +29,14 @@ test('literal game item tokens become safe readable verified links',()=>{
  assert.equal(presenter.restoreReferences(visible,source,lookup,'ru').includes('<item 300001>'),true);
 });
 
+test('regular equipment tooltip text also uses the live item name without HTML codes',()=>{
+ presenter.setReferenceResolver(lookup,()=> 'ru');
+ const text=presenter.description('Дозор выдаёт <item 300001>.<br>При улучшении +2.');
+ assert.match(text,/Дозор выдаёт Билет испытаний\./);
+ assert.match(text,/\n/);
+ assert.doesNotMatch(text,/<item|<br|300001/);
+});
+
 test('unresolved or malicious game markers never become links or evaluated markup',()=>{
  const parts=presenter.descriptionSegments('Item <item 999999999>. <img src=x onerror=alert(1)>',lookup,'en');
  assert.equal(parts.find(x=>x.type==='item').exists,false);
