@@ -68,7 +68,8 @@ test('non-Remaked effect labels corrected by game item descriptions have traceab
  const itemForth=JSON.parse(read('data/os/itemForth.json'));
  const strings=JSON.parse(read('data/os/strings.en.json'));
  const evidenceCodes=['EP_RECOVERY_CURSE','EP_RECOVERY_NUMB','EP_RECOVERY_RAVING',
-  'EP_DESTINE_WARDING','EP_ELEMENT_DAMAGE_SCALE_FIRE'];
+  'EP_DESTINE_WARDING','EP_ELEMENT_DAMAGE_SCALE_FIRE','EP_EXPERTISE_RESET',
+  'EP_RESTMAP_MOVESPEED_SCALE','EP_HEAL_LIFE_REGENERATOR'];
  for(const code of evidenceCodes){
   const row=data.rows.find(x=>x.code===code);
   const proof=row?.gameEvidence;

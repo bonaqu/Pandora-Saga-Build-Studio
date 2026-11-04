@@ -352,12 +352,18 @@
     },
     {
       "code": "EP_EXPERTISE_RESET",
-      "studioLabel": "Reset expertise",
+      "studioLabel": "Reset skill points",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "90034",
+        "exactText": "Allows you to reset and redistribute all of your skill points.",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -394,12 +400,18 @@
     },
     {
       "code": "EP_HEAL_LIFE_REGENERATOR",
-      "studioLabel": "HP regeneration",
+      "studioLabel": "Gradual HP change",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "2841",
+        "exactText": "Gradual HP loss.",
+        "confidence": "item-description-only"
       }
     },
     {
@@ -974,12 +986,18 @@
     },
     {
       "code": "EP_RESTMAP_MOVESPEED_SCALE",
-      "studioLabel": "Movement speed in safe zones (%)",
+      "studioLabel": "Town movement speed (%)",
       "remakedOptionIndex": null,
       "remakedEnglish": null,
       "source": null,
       "observed": {
         "items": 1
+      },
+      "gameEvidence": {
+        "source": "data/os/strings.en.json",
+        "itemId": "18073",
+        "exactText": "Town Movement Speed +15%",
+        "confidence": "item-description-only"
       }
     },
     {
