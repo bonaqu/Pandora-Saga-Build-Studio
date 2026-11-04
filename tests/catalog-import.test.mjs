@@ -78,3 +78,21 @@ test('reserved prototype keys are rejected before translating source records',()
  snapshot.items=JSON.parse('{"__proto__":{"id":101,"name":"Fake"}}');
  assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Unsafe or duplicate items record key/);
 });
+
+
+test('nested prototype-like property names are blocked even inside translated descriptions',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot['strings.en'].items['1']=JSON.parse('{"n":"Sword","__proto__":{"isAdmin":true}}');
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Unsafe nested catalog key/);
+});
+test('original bilingual source files satisfy the same structural and identity checks',()=>{
+ const full={};
+ for(const name of rules.files)
+  full[name]=JSON.parse(readFileSync(new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
+ const approved=JSON.parse(readFileSync(new URL('../data/localization/legacy-approved.v1.json',import.meta.url),'utf8'));
+ const result=rules.normalize(full,approved);
+ assert.equal(result.datasets.length,19);
+ assert.equal(result.counts.items,Object.keys(full.items).length);
+ assert.equal(result.counts.instances,full.instances.length);
+ assert.equal(result.counts.trades,full.trades.trades.length);
+});
