@@ -130,7 +130,7 @@ test('sync review shows primary update, archival fallback and hidden maintenance
  assert.match(workbench,/os-sync-review-steps/);
  assert.match(workbench,/archiveChoice\.open=true/);
  assert.match(workbench,/progress\.hidden=!value/);
- assert.match(workbench,/не удалось получить обновления из игры/);
+ assert.match(workbench,/Не удалось получить открытые игровые данные через Cloudflare Worker/);
  assert.doesNotMatch(workbench,/Сравнить с архивом проекта/);
 });
 
