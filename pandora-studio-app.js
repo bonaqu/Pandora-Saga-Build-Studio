@@ -5927,13 +5927,30 @@ $('hero').addEventListener('keydown',event=>{
  if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){
   event.preventDefault();openHeroBook();
  }
-});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{changeTab('builds')};$('locale').onclick=event=>{
+});$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{changeTab('builds')};let switchingLocale=false;
+$('locale').onclick=async event=>{
  const button=event.target.closest('[data-locale]');
- if(!button||button.dataset.locale===lang)return;
- lang=button.dataset.locale;
- localStorage.setItem('ps-build-lang',lang);
- if(lang==='en'&&!officialEnglish)void ensureEnglishCatalog();
- applyGameLocale();
+ if(!button||button.dataset.locale===lang||switchingLocale)return;
+ const requested=button.dataset.locale;
+ switchingLocale=true;
+ if(requested==='en'&&!officialEnglish)
+  startupMessage('Подготавливаем английские описания…',
+   'Loading English names and descriptions…','en');
+ try{
+  if(requested==='en'&&!officialEnglish){
+   const english=await ensureEnglishCatalog();
+   if(!english)throw Error('Английский перевод не загружен');
+  }
+  lang=requested;
+  localStorage.setItem('ps-build-lang',lang);
+  applyGameLocale();
+ }catch(error){
+  console.warn('Requested language is unavailable',error);
+  showStudioToast('Не удалось загрузить английские описания: '+error.message,'warning');
+ }finally{
+  switchingLocale=false;
+  if(!startupOverlay.hidden)startupDone();
+ }
 };document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('keydown',event=>{
  if(!adminEditing||!adminToken||!['F2','Enter'].includes(event.key)||
