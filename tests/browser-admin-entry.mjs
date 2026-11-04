@@ -41,6 +41,8 @@ export async function runAdminEntrySmoke(browser,base){
     'Only a confirmed administrator token may retrieve the live source');
    calls.push('game-source:'+name);
    const source=JSON.parse(readFileSync(new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
+   // Introduce a new game-item reference only in the mocked upstream data.
+   if(name==='items')source['2'].desc+=' Получить <item 300001>.';
    return json(source);
   }
   if(path==='/api/catalog/legacyLocale.json'){
@@ -258,6 +260,31 @@ export async function runAdminEntrySmoke(browser,base){
     'all 17 datasets and one final meta revision check are required');
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true,
     'a fresh live comparison must reject all changes by default');
+  await dialog.getByRole('button',{name:/Игровые ссылки · 1/}).click();
+  assert.equal(await dialog.locator('.os-sync-record').count(),1,
+   'A changed item reference has its own review filter');
+  await dialog.locator('.os-sync-group-heading').click();
+  const linked=dialog.locator('.os-sync-record');
+  assert.match(await linked.innerText(),/Связь с предметом изменилась/);
+  assert.equal(await linked.locator('input[type="checkbox"]').isChecked(),false);
+  await dialog.getByRole('button',{name:'Выбрать понятные изменения',exact:true}).click();
+  assert.equal(await linked.locator('input[type="checkbox"]').isChecked(),false,
+   'Bulk approval must not accept a changed item reference');
+  await linked.locator('.os-sync-field-details>summary').click();
+  const reference=linked.locator('.os-sync-item-ref').first();
+  await reference.click();
+  assert.equal(await reference.getAttribute('aria-expanded'),'true');
+  const goto=linked.locator('.os-sync-reference-open').first();
+  assert.equal(await goto.getAttribute('href'),'#wiki/item/300001');
+  assert.equal(await goto.getAttribute('target'),'_blank');
+  await dialog.getByRole('button',{name:/Требует проверки · 1/}).click();
+  assert.equal(await dialog.locator('.os-sync-record').count(),1);
+  await dialog.getByRole('button',{name:/Игровые ссылки · 1/}).click();
+  await dialog.locator('.os-sync-search').fill('Билет испытаний');
+  assert.equal(await dialog.locator('.os-sync-record').count(),1,
+   'A source reference is searchable by its resolved item name');
+  await dialog.locator('.os-sync-search').fill('');
+  await dialog.getByRole('button',{name:/Все · 2/}).click();
   // The exact failure reported by an administrator must NOT suggest a live
   // comparison succeeded. The archived comparison stays explicitly separate.
   sourceUnavailable=true;
