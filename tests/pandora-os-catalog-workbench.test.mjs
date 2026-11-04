@@ -2,12 +2,23 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
 import {spawnSync} from 'node:child_process';
+import vm from 'node:vm';
 const root=new URL('../',import.meta.url);
 const source=readFileSync(new URL('scripts/apply-reviewed-pandora-catalog.mjs',root),'utf8');
 const worker=readFileSync(new URL('worker/index.js',root),'utf8');
 const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
 const html=readFileSync(new URL('index.html',root),'utf8');
 const workbench=readFileSync(new URL('pandora-os-catalog-workbench.js',root),'utf8');
+
+test('new D1 snapshot ID is valid before any catalog batch writes',()=>{
+ const expression=workbench.match(/const snapshot=([^;]+);/);
+ assert.ok(expression,'catalog workbench must generate the snapshot locally');
+ const id=vm.runInNewContext(expression[1],{
+  crypto:{randomUUID:()=> 'a1234567-89ab-4cde-8123-456789abcdef'}
+ });
+ assert.match(id,/^ps-[a-f0-9]{32}$/);
+ assert.ok(id.length<=64);
+});
 
 test('reviewed GitHub export importer defaults to dry run with explicit write opt-in',()=>{
  assert.match(source,/const write=args\.includes\('--write'\)/);
