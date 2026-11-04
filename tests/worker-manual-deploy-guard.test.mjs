@@ -21,7 +21,7 @@ test('production Worker deployment requires explicit branch and target confirmat
 
 test('manual deployment verifies new Worker marker and existing D1 after publish',()=>{
  const worker=read('worker/index.js');
- assert.match(worker,/codeRelease:'0\.355\.0'/);
+ assert.match(worker,/codeRelease:'0\.358\.0'/);
  assert.match(worker,/'bilingual-item-text'/);
  assert.match(workflow,/api\/runtime-capabilities/);
  assert.match(workflow,/api\/health/);
