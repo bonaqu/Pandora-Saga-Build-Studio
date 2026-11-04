@@ -45,7 +45,7 @@
       text:'Создать PR в GitHub',disabled:true,
       title:'Подготовить отдельное предложение изменений в репозитории, без автоматического объединения'});
     const search = h('input', {type:'search',class:'os-sync-search',
-      placeholder:'Поиск изменений по названию…','aria-label':'Поиск изменений'});
+      placeholder:'Поиск по названию, описанию и связанным предметам…','aria-label':'Поиск изменений'});
     const progress = h('progress', {class:'catalog-import-progress',max:'100',value:'0'});
     progress.hidden=true;
     const filters=h('div',{class:'os-sync-filters',role:'group','aria-label':'Фильтр изменений'});
@@ -100,7 +100,10 @@
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
     let formattingCount=0;
-    let expanded = new Set(), full = new Set(), filterKind='all';
+    let expanded = new Set(), full = new Set(), expandedDetails=new Set(),
+        expandedReferences=new Set(), filterKind='all';
+    let renderedQuery='',renderedFilter='all';
+    const searchCache=new Map();
     let githubReady = false, publishedSnapshot = null;
     const descriptions=new Map();
     const describe=change=>{
@@ -112,7 +115,8 @@
     const filterChoices=[
       ['all','Все'],['added','Новые'],['changed','Изменённые'],
       ['removed','Удалённые'],['accepted','Выбранные'],['declined','Не выбраны'],
-      ['needsReview','Требует проверки'],['readable','Расшифрованы']
+      ['needsReview','Требует проверки'],['links','Игровые ссылки'],
+      ['sameVisible','Текст совпадает'],['readable','Расшифрованы']
     ];
     const filterButtons=new Map();
     for(const [id,label]of filterChoices){
@@ -130,6 +134,8 @@
         accepted:'Только изменения с поставленной галочкой.',
         declined:'Изменения без галочки, не выбранные для применения.',
         needsReview:'Неоднозначные или неизвестные параметры — требуют ручного анализа.',
+        links:'Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.',
+        sameVisible:'Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.',
         readable:'Изменения, для которых доступны понятные названия и описания.'
       })[id]);
       filters.append(button);filterButtons.set(id,button);
@@ -138,6 +144,8 @@
       if(filterKind==='accepted')return chosen.has(change.id);
       if(filterKind==='declined')return !chosen.has(change.id);
       if(filterKind==='needsReview')return describe(change).uncertain;
+      if(filterKind==='links')return describe(change).rows.some(row=>row.linkChanged);
+      if(filterKind==='sameVisible')return describe(change).rows.some(row=>row.sameVisible);
       if(filterKind==='readable')return !describe(change).uncertain;
       return filterKind==='all'||change.kind===filterKind;
     }
@@ -178,6 +186,8 @@
         removed:changes.filter(row=>row.kind==='removed').length,
         accepted:selected,declined:changes.length-selected,
         needsReview:changes.filter(row=>describe(row).uncertain).length,
+        links:changes.filter(row=>describe(row).rows.some(field=>field.linkChanged)).length,
+        sameVisible:changes.filter(row=>describe(row).rows.some(field=>field.sameVisible)).length,
         readable:changes.filter(row=>!describe(row).uncertain).length
       };
       for(const [id,label]of filterChoices){
@@ -219,7 +229,8 @@
 
     // Build a safe interactive preview from validated source tokens, never from HTML.
     // An item absent from published D1 can be inspected but not linked as published.
-    function linkedDescription(source,language='ru') {
+    function linkedDescription(source,language='ru',referenceContext='') {
+      let occurrence=0;
       const wrap=h('span',{class:'os-sync-linked-text'});
       const names=key=>{
         const item=upstream?.items?.[key]||baseline?.items?.[key];
@@ -235,11 +246,14 @@
           wrap.append(document.createTextNode(segment.text));continue;
         }
         const reference=h('span',{class:'os-sync-reference'});
+        const refKey=referenceContext?
+          referenceContext+'|'+segment.id+'|'+(occurrence++):null;
+        const wasExpanded=refKey?expandedReferences.has(refKey):false;
         const button=h('button',{type:'button',class:'os-sync-item-ref',
           title:'Игровая ссылка на предмет. Нажми для предпросмотра.',
           'aria-label':'Показать связанный предмет: '+segment.text,
-          'aria-expanded':'false',text:segment.text});
-        const preview=h('span',{class:'os-sync-reference-preview',hidden:true});
+          'aria-expanded':String(wasExpanded),text:segment.text});
+        const preview=h('span',{class:'os-sync-reference-preview',hidden:!wasExpanded});
         preview.append(h('strong',{text:segment.text}),
           h('small',{text:'Связанный предмет · игровая ссылка в описании'}));
         const record=upstream?.items?.[segment.id]||baseline?.items?.[segment.id];
@@ -262,6 +276,10 @@
           const expanded=preview.hidden;
           preview.hidden=!expanded;
           button.setAttribute('aria-expanded',String(expanded));
+          if(refKey){
+            if(expanded)expandedReferences.add(refKey);
+            else expandedReferences.delete(refKey);
+          }
         };
         reference.append(button,preview);
         wrap.append(reference);
@@ -276,6 +294,12 @@
       if(description.caution)content.append(h('p',{
         class:'os-sync-change-caution',text:description.caution}));
       const details=h('details',{class:'os-sync-field-details'});
+      details.open=expandedDetails.has(change.id);
+      details.addEventListener('toggle',()=>{
+        if(!details.isConnected)return;
+        if(details.open)expandedDetails.add(change.id);
+        else expandedDetails.delete(change.id);
+      });
       details.append(h('summary',{text:'Посмотреть подробно · '+description.rows.length}));
       if(description.rows.length){
         for(const field of description.rows){
@@ -283,10 +307,10 @@
           const oldValue=h('span',{class:'os-sync-full-value os-sync-old'});
           const newValue=h('span',{class:'os-sync-full-value os-sync-new'});
           oldValue.append(field.sourceBefore!==null&&field.sourceBefore!==undefined?
-            linkedDescription(field.sourceBefore,language):
+            linkedDescription(field.sourceBefore,language,change.id+'|'+field.label+'|old'):
             document.createTextNode(String(field.beforeFull??field.before)));
           newValue.append(field.sourceAfter!==null&&field.sourceAfter!==undefined?
-            linkedDescription(field.sourceAfter,language):
+            linkedDescription(field.sourceAfter,language,change.id+'|'+field.label+'|new'):
             document.createTextNode(String(field.afterFull??field.after)));
           if(field.difference)newValue.append(h('small',{
             class:'os-sync-value-delta',
@@ -298,7 +322,7 @@
             if(start>=0){
               label.replaceChildren(
                 document.createTextNode(field.label.slice(0,start)),
-                linkedDescription('<item '+field.linkedItemId+'>','ru'),
+                linkedDescription('<item '+field.linkedItemId+'>','ru',change.id+'|'+field.label+'|label'),
                 document.createTextNode(field.label.slice(start+field.linkedItemName.length))
               );
             }
@@ -363,6 +387,7 @@
           'data-game-dataset':name});
         panel.open = expanded.has(name) || Boolean(query);
         panel.addEventListener('toggle',()=> {
+          if(!panel.isConnected)return;
           if (panel.open) expanded.add(name);
           else expanded.delete(name);
         });
@@ -477,7 +502,9 @@
         :'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.';
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
-      changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
+      changes=[];chosen=new Set();expanded=new Set();full=new Set();
+      expandedDetails.clear();expandedReferences.clear();searchCache.clear();
+      filterKind='all';renderedQuery='';renderedFilter='all';
       formattingCount=0;formattingToggle.checked=false;
       results.replaceChildren();summary.textContent='';
       progress.value=0;
