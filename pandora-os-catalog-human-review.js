@@ -118,17 +118,46 @@ function describeCompound(kind,before,after,ctx,add,unknown){
     for(let group=0;group<Math.max(oa.length,ob.length);group++){
      if(same(oa[group],ob[group]))continue;
      const slot=title+' · Набор наград '+(group+1);
-     const beforeItems=enumerate(oa[group],'i'),afterItems=enumerate(ob[group],'i');
+     // Reward rows can be items or gold ranges. A gold reward has no item ID;
+     // never identify it as an invented item or silently drop it.
+     const rewards=rows=>{
+      const result=new Map();
+      for(const [index,row] of (rows||[]).entries()){
+       const key=row?.i!=null?'item:'+String(row.i):
+        Array.isArray(row?.gold)?'gold:'+index:'unknown:'+index;
+       if(result.has(key))unknown('Повторяющаяся награда: '+key);
+       if(key.startsWith('unknown:'))unknown('Награда без известного типа');
+       result.set(key,row);
+      }
+      return result;
+     };
+     const beforeItems=rewards(oa[group]),afterItems=rewards(ob[group]);
      for(const itemId of new Set([...beforeItems.keys(),...afterItems.keys()])){
       const x=beforeItems.get(itemId),y=afterItems.get(itemId);
       if(same(x,y))continue;
-      const item=slot+' · '+shortItem(itemId);
-      if(!x||!y){safeAdd(item,x?'есть':'нет',y?'есть':'удалён');continue}
+      const goldReward=itemId.startsWith('gold:');
+      const item=slot+' · '+(goldReward?'Золото':shortItem((x||y)?.i));
+      if(!x||!y){
+       safeAdd(item,x?'есть':'нет',y?'есть':'удалено');
+       if(goldReward){
+        const reward=x||y;
+        if(Array.isArray(reward.gold))safeAdd(item+' · Сумма золота',
+         x?'прошлая версия':'не было',
+         y?reward.gold.map(value).join('–'):'удалено');
+       }
+       continue;
+      }
+      const goldValue=range=>Array.isArray(range)&&range.length===2&&
+       range.every(n=>typeof n==='number'&&Number.isFinite(n))
+       ?range.map(value).join('–'):'не указано';
+      if(!same(x.gold,y.gold))safeAdd(item+' · Сумма золота',
+       goldValue(x.gold),goldValue(y.gold));
       for(const [field,caption] of [['p','Шанс внутри набора'],
-        ['n','Количество'],['soul','Душа'],['slotAdd','Дополнительный слот']])
+        ['n','Количество'],['plus','Уровень заточки'],
+        ['soul','Душа'],['slotAdd','Дополнительный слот']])
        if(!same(x[field],y[field]))safeAdd(item+' · '+caption,x[field],y[field]);
       for(const field of fields(x,y))
-       if(!['i','p','n','soul','slotAdd'].includes(field)&&
+       if(!['i','gold','p','n','plus','soul','slotAdd'].includes(field)&&
          !same(x[field],y[field]))unknown('Награда '+itemId+': '+field);
      }
     }
