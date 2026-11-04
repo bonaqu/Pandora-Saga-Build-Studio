@@ -230,10 +230,25 @@ function describe(change,ctx={}){
   const afterText=typeof b==='string'?readable(b,label):null;
   const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
   const delta=numeric?b-a:null;
-  rows.push({label,before:beforeText===null?value(a):shortened(beforeText),
-   after:afterText===null?value(b):shortened(afterText),numeric,delta,
-   // Source strings remain unchanged in the review model; the visible values
-   // decode line breaks and resolve verified item names for people.
+  const isSlots=/Доп\\. слоты$/.test(label);
+  const readableSlots=x=>x==null?'не указаны':Number.isFinite(x)?
+   value(x)+' '+plural(x,'дополнительный слот','дополнительных слота','дополнительных слотов'):
+   value(x);
+  const sourceLinks=text=>typeof text==='string'?
+   [...text.matchAll(/<item\\s+([0-9]{1,12})\\s*\\/?>/gi)].map(match=>match[1]).join(','):'';
+  const beforeLinks=sourceLinks(a),afterLinks=sourceLinks(b);
+  const sameVisible=beforeText!==null&&afterText!==null&&beforeText===afterText&&a!==b;
+  const linkChanged=beforeLinks!==afterLinks;
+  const note=linkChanged?
+   (afterLinks&&!beforeLinks?'В исходном тексте появилась игровая ссылка на предмет.':
+    beforeLinks&&!afterLinks?'Игровая ссылка на предмет удалена.':
+    'Изменилась привязка игровой ссылки к предмету.'):
+   sameVisible?'Видимый текст совпадает. Различие осталось только в исходной записи.':'';
+  rows.push({label,before:isSlots?readableSlots(a):beforeText===null?value(a):shortened(beforeText),
+   after:isSlots?readableSlots(b):afterText===null?value(b):shortened(afterText),
+   numeric,delta,note,linkChanged,sameVisible,
+   sourceBefore:/описани/i.test(label)&&typeof a==='string'?a:null,
+   sourceAfter:/описани/i.test(label)&&typeof b==='string'?b:null,
    beforeFull:beforeText===null?undefined:beforeText,
    afterFull:afterText===null?undefined:afterText,
    difference:delta===null||delta===0?'':(delta>0?'+':'−')+value(Math.abs(delta))});
