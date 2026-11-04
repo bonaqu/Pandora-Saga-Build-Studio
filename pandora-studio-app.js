@@ -1510,7 +1510,9 @@ async function loadWiki(){
 function openWiki(type,id,highlight=null){
  const fromView={tab:activeTab,
   open:Boolean($('detailPanel')?.classList.contains('is-open')),
-  selection:activeTab==='wiki'?{...wikiSelection}:null};
+  selection:activeTab==='wiki'?{...wikiSelection}:null,
+  search:activeTab==='wiki'?wikiSearch:'',
+  shown:activeTab==='wiki'?wikiShown:100};
  const sameCategory=activeTab==='wiki'&&wikiSelection.type===type&&
   typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
  if(activeTab!=='wiki'||wikiSelection.type!==type){wikiSearch='';wikiShown=100}
@@ -6340,7 +6342,11 @@ window.addEventListener('popstate',event=>{
   const previous=event.state?.psWikiReturn;
   if(previous?.open&&['wiki','builds','character'].includes(previous.tab)){
    activeTab=previous.tab;
-   if(previous.tab==='wiki'&&previous.selection)wikiSelection={...previous.selection};
+   if(previous.tab==='wiki'){
+    if(previous.selection)wikiSelection={...previous.selection};
+    wikiSearch=typeof previous.search==='string'?previous.search:'';
+    wikiShown=Number.isInteger(previous.shown)&&previous.shown>=100?previous.shown:100;
+   }
    for(const btn of document.querySelectorAll('[data-tab]'))
     btn.classList.toggle('active',btn.dataset.tab===activeTab);
    renderDetails();
