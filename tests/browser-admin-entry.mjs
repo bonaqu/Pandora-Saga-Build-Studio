@@ -237,7 +237,10 @@ export async function runAdminEntrySmoke(browser,base){
   sourceUnavailable=true;
   await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
   await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
-    ?.includes('не удалось получить обновления из игры'),null,{timeout:15000});
+    ?.includes('Cloudflare Worker не смог установить соединение с сайтом игры'),null,{timeout:15000});
+  await dialog.locator('.os-sync-diagnostics>summary').click();
+  assert.match(await dialog.locator('.os-sync-diagnostics').innerText(),/Причина: network/);
+  assert.match(await dialog.locator('.os-sync-diagnostics').innerText(),/meta[.]json/);
   assert.equal(await dialog.locator('.os-sync-archive-choice').getAttribute('open'),'');
   assert.equal(await dialog.locator('.os-sync-review-steps').isHidden(),true,
     'a failed game-source check cannot leave publishing enabled');
