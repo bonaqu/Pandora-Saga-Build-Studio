@@ -67,11 +67,18 @@
       h('p',{text:'Сравни игровые значения «было → стало». Отметь только проверенные изменения. Служебные сведения и непонятные параметры не выбираются автоматически.'}),
       h('div',{class:'os-sync-review-actions'},[acceptAll,declineAll,publish])
     );
+    const formattingToggle=h('input',{type:'checkbox',disabled:true,
+      'aria-label':'Синхронизировать переносы игровых описаний'});
+    const formattingLabel=h('span',{text:'Привести переносы строк в описаниях к виду игрового сайта'});
+    const formattingInfo=h('p',{class:'muted os-sync-formatting-info',
+      text:'Доступно после сверки с игровым сайтом. Не изменяет характеристики, названия или эффекты. Действие выполняется только после подтверждения публикации.'});
+    const formattingOption=h('label',{class:'os-sync-formatting-option'},
+      [formattingToggle,formattingLabel]);
     const metaStatus=h('p',{class:'muted os-sync-meta-status',
       text:'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.'});
     const advanced=h('details',{class:'os-sync-advanced'},[
       h('summary',{text:'Дополнительные инструменты'}),
-      metaStatus,
+      formattingOption,formattingInfo,metaStatus,
       h('p',{text:'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.'}),
       h('div',{class:'os-sync-advanced-actions'},[testWrite,github,exportButton])
     ]);
@@ -92,6 +99,7 @@
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
+    let formattingCount=0;
     let expanded = new Set(), full = new Set(), filterKind='all';
     let githubReady = false, publishedSnapshot = null;
     const descriptions=new Map();
@@ -139,6 +147,7 @@
       archive.disabled = value;
       progress.hidden=!value;
       search.disabled = value;
+      formattingToggle.disabled=value||!formattingCount||mode!=='server';
       for(const button of filterButtons.values())button.disabled=value;
       for(const control of results.querySelectorAll('button,input[type="checkbox"]'))
         control.disabled = value;
@@ -146,7 +155,14 @@
     }
     function refreshActions() {
       const selected = chosen.size;
-      const ready = !busy && selected > 0 && baseline && upstream;
+      const syncFormatting=mode==='server'&&formattingToggle.checked&&formattingCount>0;
+      const ready = !busy && (selected>0||syncFormatting) && baseline && upstream;
+      formattingToggle.disabled=busy||mode!=='server'||!formattingCount;
+      formattingLabel.textContent='Привести переносы строк в описаниях к виду игрового сайта'+
+        (formattingCount?' · '+formattingCount:'');
+      formattingInfo.textContent=formattingCount
+        ?'Это '+formattingCount+' описаний, отличающихся только переносами строк. Игровые характеристики не меняются. По умолчанию выключено; для сохранения потребуется подтверждение.'
+        :'Отличий только в переносах нет. Отдельное обновление оформления не требуется.';
       acceptAll.disabled = busy || !changes.some(safe);
       declineAll.disabled = busy || !changes.length;
       publish.disabled = !ready;
@@ -154,7 +170,7 @@
       github.disabled = busy || !githubReady || !publishedSnapshot;
       testWrite.disabled = busy;
       const reviewing=Boolean(baseline);
-      reviewSteps.hidden=!reviewing||!changes.length;
+      reviewSteps.hidden=!reviewing||(!changes.length&&!formattingCount);
       for(const element of [filters,overview,search,results])element.hidden=!reviewing;
       const byKind={
         all:changes.length,added:changes.filter(row=>row.kind==='added').length,
@@ -371,6 +387,7 @@
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
+      formattingCount=0;formattingToggle.checked=false;
       results.replaceChildren();summary.textContent='';
       progress.value=0;
       metaStatus.textContent='Служебная проверка контрольных сумм будет доступна после сравнения.';
@@ -427,13 +444,17 @@
           :'Сведения об источнике: изменения контрольных сумм не обнаружены.';
         if(!onlyTechnicalMeta)
           metaStatus.textContent+=' Есть и изменения настроек каталога — они показаны в списке отдельно и требуют ручной проверки.';
+        formattingCount=from==='server'?importer.files.reduce((sum,name)=>
+          sum+review.formattingChanges(name,old[name],next[name]).length,0):0;
         const findings=importer.files.flatMap(name=>
           name==='meta'&&onlyTechnicalMeta?[]:review.changes(name,old[name],next[name]));
         baseline=old;upstream=next;legacy=retained.locales;legacyRows=retained.records;mode=from;
         activeSnapshot=[...versions][0];changes=findings;
         status.textContent=findings.length
           ? 'Сверка завершена. Ни одно изменение не принято автоматически.'
-          : 'Данные совпадают. Публикация не требуется.';
+          : formattingCount
+           ? 'Игровые значения совпадают. Можно отдельно обновить только переносы описаний.'
+           : 'Данные совпадают. Публикация не требуется.';
         render();
       }catch(error) {
         const unavailable=from==='server'&&(
@@ -477,8 +498,10 @@
     }
 
     function prepare() {
-      if (!baseline || !upstream || !chosen.size) throw Error('Нет принятых изменений');
-      const combined=review.compose(baseline,upstream,chosen,importer.files);
+      const syncFormatting=mode==='server'&&formattingToggle.checked&&formattingCount>0;
+      if(!baseline||!upstream||(!chosen.size&&!syncFormatting))
+       throw Error('Нет выбранных изменений или форматирования');
+      const combined=review.compose(baseline,upstream,chosen,importer.files,{syncFormatting});
       // Full structural and count validation is required after selective merging.
       const normalized=importer.normalize(combined,legacy);
       if(!Array.isArray(legacyRows)||legacyRows.length!==normalized.counts.legacyLocale)
@@ -509,13 +532,14 @@
       const changed=changes.filter(x=>checked(x)&&x.kind==='changed').length;
       const removed=changes.filter(x=>checked(x)&&x.kind==='removed').length;
       const uncertain=changes.filter(x=>checked(x)&&describe(x).uncertain).length;
+      const formatted=mode==='server'&&formattingToggle.checked?formattingCount:0;
       const sourceWarning=mode==='archive'
         ?'\nИСТОЧНИК: сохранённая копия проекта. Данные могут быть СТАРЕЕ текущей игры.':'\nИСТОЧНИК: текущая игра.';
       const uncertainWarning=uncertain
         ?'\nВНИМАНИЕ: '+uncertain+' выбранных изменений требуют ручной проверки.':'';
       if (!confirm('Применить выбранные изменения игрового каталога?\n'+
         'Новых: '+added+'; изменённых: '+changed+'; удалённых: '+removed+
-        '.'+sourceWarning+uncertainWarning+
+        '; переносов описаний: '+formatted+'.'+sourceWarning+uncertainWarning+
         '\nНичего не было опубликовано до этого подтверждения.'))return;
       setBusy(true);
       try {
@@ -625,6 +649,7 @@
 
     live.onclick=()=>{root.PandoraGuideTooltip?.dismiss();compare('server')};
     archive.onclick=()=>{root.PandoraGuideTooltip?.dismiss();compare('archive')};
+    formattingToggle.addEventListener('change',refreshActions);
     acceptAll.onclick=()=>{chosen=new Set(changes.filter(safe).map(item=>item.id));render()};
     declineAll.onclick=()=>{chosen.clear();render()};
     search.addEventListener('input',render);
