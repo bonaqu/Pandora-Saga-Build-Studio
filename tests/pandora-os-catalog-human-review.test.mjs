@@ -125,7 +125,7 @@ test('modified combat tables and expertise categories show sections, never inven
 test('changed English item name is anchored to the Russian game item instead of a raw number',()=>{
  const result=describe(change('strings.en','items/1',{n:'Old'},{n:'Gladius'}),context);
  assert.match(result.title,/Спата/);
- assert.ok(result.rows.some(x=>x.label==='Название'&&x.after==='Gladius'));
+ assert.ok(result.rows.some(x=>x.label==='Название на английском'&&x.after==='Gladius'));
  assert.equal(result.uncertain,false);
 });
 
@@ -224,4 +224,28 @@ test('chest refinement changes are recognized as their own gameplay parameter',(
  assert.ok(result.rows.some(row=>row.label.includes('Уровень заточки')&&
   row.before==='3'&&row.after==='4'));
  assert.equal(result.uncertain,true,'source group remains atomic, even when readable');
+});
+
+
+test('expanded bilingual review never truncates an actual description',()=>{
+ const long='Длинное описание '.repeat(35);
+ const result=describe(change('strings.en','items/1',{d:'Short'},
+  {d:long}),context);
+ const field=result.rows.find(row=>row.label==='Описание на английском');
+ assert.ok(field);
+ assert.ok(field.after.length<field.afterFull.length,'headline preview stays compact');
+ assert.equal(field.afterFull,long);
+ assert.equal(field.beforeFull,'Short');
+});
+test('English NPC and map sources resolve their original Russian catalogue names',()=>{
+ const source=read('trades');
+ const contextual={...context,upstream:{...context.upstream,trades:source}};
+ const npcId=Object.keys(source.npcs)[0],mapId=Object.keys(source.mapNames)[0];
+ const npc=describe(change('strings.en','tradeNpcs/'+npcId,
+  {n:'Old'},{n:'New'}),contextual);
+ assert.ok(npc.title.includes(source.npcs[npcId].name));
+ const location=describe(change('strings.en','tradeMaps/'+mapId,
+  {n:'Old'},{n:'New'}),contextual);
+ assert.ok(location.title.includes(source.mapNames[mapId].name));
+ assert.equal(location.uncertain,false);
 });
