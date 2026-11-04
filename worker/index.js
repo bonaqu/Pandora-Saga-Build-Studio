@@ -346,7 +346,14 @@ async function readCurrentGameFile(file){
    let data;
    try{data=JSON.parse(raw)}
    catch{attempts.push({host:new URL(host).hostname,code:'invalid-json'});continue}
-   if(!data||typeof data!=='object'||Array.isArray(data)){
+   // All datasets except instances.json are JSON records. Instances is
+   // deliberately a JSON array of dungeon objects in the official source.
+   const array=Array.isArray(data);
+   const valid=data&&typeof data==='object'&&
+    (file==='instances.json'
+      ?array&&data.every(row=>row&&typeof row==='object'&&!Array.isArray(row))
+      :!array);
+   if(!valid){
     attempts.push({host:new URL(host).hostname,code:'invalid-format'});
     continue;
    }
@@ -447,10 +454,10 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/runtime-capabilities'&&method==='GET')
- return json({codeRelease:'0.358.0',ownerEditors:[
+ return json({codeRelease:'0.360.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists'],
-  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true});
+  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
