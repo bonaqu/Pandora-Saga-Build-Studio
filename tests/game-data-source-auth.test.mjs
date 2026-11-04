@@ -191,3 +191,30 @@ test('instances accepts an array only for instances and rejects malformed rows',
   }
  }finally{globalThis.fetch=original}
 });
+
+test('production-style full source probe checks 17 allowlisted datasets without D1 writes',async()=>{
+ const original=globalThis.fetch,visited=[];
+ globalThis.fetch=async(url,options)=>{
+  visited.push(url);
+  assert.equal(options.redirect,'manual');
+  const name=url.split('/').pop();
+  return new Response(JSON.stringify(name==='instances.json'?
+   [{id:20030040,name:'Dungeon'}]:{ok:true}),{status:200});
+ };
+ try{
+  const request=new Request('https://ps-build-studio-cloud.bonaqu.workers.dev/api/source-health?scope=all');
+  const noDb={DB:{prepare(){throw Error('Full source check must not query D1')}}};
+  const response=await worker.fetch(request,noDb);
+  assert.equal(response.status,200);
+  const body=await response.json();
+  assert.equal(body.status,'ok');
+  assert.equal(body.checked,17);
+  assert.deepEqual(body.failures,[]);
+  assert.equal(Object.hasOwn(body,'data'),false,'Do not expose public game JSON in diagnostics');
+  assert.equal(visited.length,17);
+  assert.ok(visited.every(url=>url.startsWith('https://pandorasaga-os.com/gamedata/')));
+  const cached=await worker.fetch(request,noDb);
+  assert.equal(cached.status,200);
+  assert.equal(visited.length,17,'Deep source probe must be throttled per isolate');
+ }finally{globalThis.fetch=original}
+});
