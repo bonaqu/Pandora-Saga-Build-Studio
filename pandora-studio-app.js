@@ -5864,6 +5864,13 @@ async function loadCatalog({archive=false}={}){
   throw Error('Отсутствуют основные таблицы персонажа и экипировки');
  catalogArchived=archive;activeCatalogSnapshot=archive?null:[...snapshots][0];
  catalogSource=data;gameTables=data.tables;gameItemForth=data.itemForth;
+ window.PandoraItemPresentation.setReferenceResolver?.(id=>{
+  const item=catalogSource?.items?.[id];
+  if(!item)return null;
+  const label=lang==='en'?
+    (item.nameEn||officialEnglish?.items?.[id]?.n||item.name):item.name;
+  return typeof label==='string'&&label.trim()?label.trim():null;
+ },()=>lang);
  officialEnglish=null;officialEnglishSnapshot=null;
   const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
   state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));
