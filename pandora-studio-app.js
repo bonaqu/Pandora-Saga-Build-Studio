@@ -5753,66 +5753,66 @@ function applyGameLocale({redraw=true}={}){
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  if(redraw)render();
 }
-// Start rendering against the checked-in catalog if D1 takes longer than a
-// short budget, then replace it atomically with the authoritative D1 snapshot.
-// A slow optional EN file must never block the Russian hero or equipment UI.
-let englishCatalogPending=null;
+// The active D1 snapshot is authoritative. Never silently show a GitHub
+// archive as current game data; only the user's explicit offline choice may
+// install the bundled copy. RU and EN use the same verified snapshot.
+let catalogArchived=false,activeCatalogSnapshot=null,catalogLoadVersion=0;
+let englishCatalogPending=null,officialEnglishSnapshot=null;
 async function ensureEnglishCatalog(){
- if(!catalogSource||officialEnglish||englishCatalogPending)return englishCatalogPending;
+ if(!catalogSource)throw Error('Сначала требуется каталог игры');
+ if(officialEnglish&&officialEnglishSnapshot===activeCatalogSnapshot)return officialEnglish;
+ if(englishCatalogPending)return englishCatalogPending;
+ const snapshot=activeCatalogSnapshot;
+ const source=catalogArchived?'./data/os/strings.en.json':API+'/api/catalog/stringsEn.json';
  englishCatalogPending=(async()=>{
-  let approved=null;
-  for(const path of [API+'/api/catalog/stringsEn.json','./data/os/strings.en.json']){
-   try{
-    const response=await fetch(path,{cache:'default',signal:AbortSignal.timeout(8000)});
-    if(!response.ok)continue;
-    const proposed=await response.json();
-    const expected=catalogSource?.meta?.localeCounts?.en||{};
-    if(proposed.locale!=='en')continue;
-    if(['items','skills','monsters','souls','classes'].some(
-      group=>Object.keys(proposed[group]||{}).length!==Number(expected[group])))continue;
-    approved=proposed;break;
-   }catch(error){console.info('Optional English locale unavailable',error.message)}
-  }
-  if(approved){
-   officialEnglish=approved;
-   if(lang==='en')applyGameLocale();
-  }
-  return approved;
+  const response=await fetch(source,{cache:'no-cache',signal:AbortSignal.timeout(16000)});
+  if(!response.ok)throw Error('Английский каталог: HTTP '+response.status);
+  if(!catalogArchived&&response.headers.get('x-ps-catalog-snapshot')!==snapshot)
+   throw Error('Версия английского перевода не совпадает с текущей D1');
+  const data=await response.json(),expected=catalogSource?.meta?.localeCounts?.en||{};
+  if(data.locale!=='en'||['items','skills','monsters','souls','classes'].some(
+     key=>Object.keys(data[key]||{}).length!==Number(expected[key])))
+   throw Error('Английский каталог неполон или не совпадает с версией игры');
+  if(snapshot!==activeCatalogSnapshot)return null;
+  officialEnglish=data;officialEnglishSnapshot=snapshot;
+  if(lang==='en')applyGameLocale();
+  return data;
  })().finally(()=>{englishCatalogPending=null});
  return englishCatalogPending;
 }
-async function loadCatalog(){
- const names=['meta','classes','skills','items','souls','racialPassives','unison'];
- const obtain=async base=>{
-  const fromD1=base===API+'/api/catalog',snapshots=new Set(),unknown=[];
-  const entries=await Promise.all(names.map(async name=>{
-   const response=await fetch(base+'/'+name+'.json',
-    {cache:fromD1?'no-cache':'default',signal:AbortSignal.timeout(10000)});
-   if(!response.ok)throw Error(name+' HTTP '+response.status);
-   if(fromD1){
-    const snapshot=response.headers.get('x-ps-catalog-snapshot');
-    if(snapshot)snapshots.add(snapshot);else unknown.push(name);
-   }
-   return [name,await response.json()];
-  }));
-  if(fromD1&&(snapshots.size!==1||unknown.length))
-   throw Error('Несогласованные версии каталога D1');
-  const data=Object.fromEntries(entries);
-  for(const name of names.filter(x=>x!=='meta')){
-   const expected=Number(data.meta?.counts?.[name]);
-   const actual=Object.keys(data[name]||{}).length;
-   if(!Number.isSafeInteger(expected)||expected<1||actual<expected)
-    throw Error('Неполный каталог '+name+': '+actual+' / '+expected);
+async function loadCatalog({archive=false}={}){
+ const version=++catalogLoadVersion;
+ const names=['meta','classes','skills','items','souls','racialPassives',
+  'unison','tables','itemForth'];
+ const base=archive?'./data/os':API+'/api/catalog';
+ const snapshots=new Set(),unknown=[];
+ const entries=await Promise.all(names.map(async name=>{
+  const response=await fetch(base+'/'+name+'.json',{
+   cache:archive?'default':'no-cache',signal:AbortSignal.timeout(14000)});
+  if(!response.ok)throw Error(name+' HTTP '+response.status);
+  if(!archive){
+   const snapshot=response.headers.get('x-ps-catalog-snapshot');
+   if(snapshot)snapshots.add(snapshot);else unknown.push(name);
   }
-  if(!data.meta?.counts?.skills||!data.classes?.CLERIC)
-   throw Error('Invalid game catalog');
-  return data;
- };
- let first=true;
- function install(data,label){
-  catalogSource=data;
-  if(first){
-   first=false;
+  return [name,await response.json()];
+ }));
+ if(version!==catalogLoadVersion)return;
+ if(!archive&&(snapshots.size!==1||unknown.length))
+  throw Error('В ходе загрузки изменилась версия каталога Cloudflare D1');
+ const data=Object.fromEntries(entries);
+ for(const name of names.filter(name=>!['meta','tables','itemForth'].includes(name))){
+  const expected=Number(data.meta?.counts?.[name]);
+  const actual=Object.keys(data[name]||{}).length;
+  if(!Number.isSafeInteger(expected)||expected<1||actual<expected)
+   throw Error('Неполный каталог '+name+': '+actual+' / '+expected);
+ }
+ if(!data.meta?.counts?.skills||!data.classes?.CLERIC||
+    !data.tables?.abilityPoint||!data.tables?.weaponPlus||!data.tables?.forge||
+    !data.itemForth||typeof data.itemForth!=='object'||Array.isArray(data.itemForth))
+  throw Error('Отсутствуют основные таблицы персонажа и экипировки');
+ catalogArchived=archive;activeCatalogSnapshot=archive?null:[...snapshots][0];
+ catalogSource=data;gameTables=data.tables;gameItemForth=data.itemForth;
+ officialEnglish=null;officialEnglishSnapshot=null;
   const oldToOS={1:'slash',2:'thrust',3:'brush',4:'blow',5:'defense',7:'archery',8:'alchemy',9:'assassin',10:'trap',11:'warding',13:'benevolence',14:'blessing',15:'exorcism',16:'hymn',18:'element',19:'embody',20:'darkness',21:'charm',23:'race',24:'riding'};
   state.points=Object.fromEntries(Object.entries(state.points).map(([key,val])=>[oldToOS[key]||key,val]));
   if(state.mastery&&typeof state.mastery==='object'&&!Array.isArray(state.mastery))
@@ -5822,52 +5822,23 @@ async function loadCatalog(){
   if(!window.PandoraGameNavigation.all.has(state.branch)){state.branch='slash'}
   if(!pathGroupTouched)
    selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
-  }
-  $('siteNotice').hidden=true;
-  $('siteNotice').textContent='';
-  $('catalogStatus').textContent=
-   data.meta.counts.skills+' навыков · '+data.meta.counts.items+
-   ' предметов · '+data.meta.counts.souls+' душ · '+label;
-  applyGameLocale();
-  if(lang==='en')void ensureEnglishCatalog();
-  if(first===false)persist();
- }
- const remote=obtain(API+'/api/catalog').then(
-  data=>({data}),error=>({error}));
- const early=await Promise.race([remote,
-  new Promise(resolve=>setTimeout(()=>resolve(null),800))]);
- if(early?.data){
-  install(early.data,'Cloudflare D1 · наша база');return;
- }
- let local;
- try{local=await obtain('./data/os')}
- catch(error){
-  if(!early){
-   const late=await remote;
-   if(late.data){install(late.data,'Cloudflare D1 · наша база');return}
-  }
-  console.error('Catalog unavailable',error);
-  $('siteNotice').textContent='Каталог временно недоступен; сохранённые билды не удалены.';
-  $('siteNotice').hidden=false;
-  $('catalogStatus').textContent='Каталог не загружен';return;
- }
- install(local,early?.error?'Встроенный архив · D1 недоступна':
-  'Временный архив · проверяем D1');
- if(early?.error){
-  console.info('D1 catalog unavailable or incomplete; local fallback',early.error.message);
-  return;
- }
- // Do not swap a partially downloaded or cross-snapshot D1 set into the UI.
- void remote.then(outcome=>{
-  if(outcome.data)install(outcome.data,'Cloudflare D1 · наша база');
-  else{
-   console.info('D1 catalog unavailable or incomplete; local fallback',outcome.error?.message);
-   if(catalogSource===local)
-    $('catalogStatus').textContent=
-     local.meta.counts.skills+' навыков · '+local.meta.counts.items+
-     ' предметов · '+local.meta.counts.souls+' душ · Встроенный архив · D1 недоступна';
-  }
- });
+
+ if(typeof state.branch==='number')state.branch='slash';
+ if(!window.PandoraGameNavigation.all.has(state.branch))state.branch='slash';
+ if(!pathGroupTouched)
+  selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
+ if(lang==='en')await ensureEnglishCatalog();
+ if(version!==catalogLoadVersion)return;
+ $('siteNotice').hidden=!archive;
+ $('siteNotice').textContent=archive?
+  'Архивный режим: сведения могут быть устаревшими. Подключись к D1 и обнови страницу для актуальных данных.':'';
+ $('catalogStatus').textContent=
+  data.meta.counts.skills+' навыков · '+data.meta.counts.items+
+  ' предметов · '+data.meta.counts.souls+' душ · '+
+  (archive?'Архивная копия — НЕ текущие данные':'Cloudflare D1 · актуальный опубликованный каталог');
+ invalidateWikiCatalog({dropSnapshot:true});
+ applyGameLocale();persist();
+ return data;
 }
 let ownerWikiRefreshId=0;
 async function refreshOwnerCatalog(){
