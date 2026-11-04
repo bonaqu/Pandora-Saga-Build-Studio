@@ -182,9 +182,10 @@
       if(description.rows.length){
         for(const field of description.rows)details.append(h('div',{
           class:'os-sync-field os-sync-human-field'},[
-          h('strong',{text:field.label}),h('span',{text:field.before}),
+          h('strong',{text:field.label}),
+          h('span',{class:'os-sync-full-value',text:field.beforeFull??field.before}),
           h('span',{class:'os-sync-field-arrow',text:'→'}),
-          h('span',{text:field.after}),
+          h('span',{class:'os-sync-full-value',text:field.afterFull??field.after}),
           ...(field.difference?[h('small',{class:'os-sync-value-delta',
             text:'Изменение: '+field.difference})]:[])
         ]));
