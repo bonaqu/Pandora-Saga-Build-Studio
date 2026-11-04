@@ -249,13 +249,31 @@ function describe(change,ctx={}){
  }else{
   if(kind==='strings.en'){
    const [section,id]=change.key.split('/');
-   const linked=section==='items'?itemName(id,ctx):
-    section==='monsters'?monsterName(id,ctx):null;
-   title='Английский перевод · '+(linked||change.title);
+   const sources={items:ctx.upstream?.items||ctx.baseline?.items,
+    monsters:ctx.upstream?.monsters||ctx.baseline?.monsters,
+    skills:ctx.upstream?.skills||ctx.baseline?.skills,
+    classes:ctx.upstream?.classes||ctx.baseline?.classes,
+    maps:ctx.upstream?.maps||ctx.baseline?.maps,
+    souls:ctx.upstream?.souls||ctx.baseline?.souls};
+   const localized=sources[section]?.[id]?.name;
+   const linked=typeof localized==='string'?localized:
+    section==='items'?itemName(id,ctx):section==='monsters'?monsterName(id,ctx):null;
+   const captions={items:'Предмет',monsters:'Монстр',skills:'Умение',
+    classes:'Класс',maps:'Локация',souls:'Душа',instances:'Подземелье',
+    branches:'Ветка мастерства',tradeNpcs:'NPC',tradeMaps:'Место обмена'};
+   title=(captions[section]||'Английский перевод')+' · '+(linked||change.title);
+   if(typeof change.before==='string'||typeof change.after==='string')
+    add('Название на английском',change.before,change.after);
+   else walk(change.before||{},change.after||{});
+   summary='Изменения английского названия или описания.';
+  }else{
+   // For a new or removed record, show the known fields instead of a bare ID.
+   walk(change.before||{},change.after||{});
+   summary={monsters:'Характеристики монстра',items:'Свойства предмета',
+    skills:'Параметры умения',classes:'Свойства класса'}[kind]||'Игровые данные';
   }
-  walk(change.before,change.after);
-  summary={monsters:'Характеристики монстра',items:'Свойства предмета',
-   skills:'Параметры умения'}[kind]||'Игровые данные';
+  if(change.kind==='added')summary='Добавлено: '+title+'. '+summary;
+  if(change.kind==='removed')summary='Удалено: '+title+'. '+summary;
  }
  const preview=rows.slice(0,2).map(row=>row.label+': '+row.before+' → '+row.after).join(' · ');
  if(preview&&!['drops','meta','instances','trades','chests','tables','expertise'].includes(kind))
