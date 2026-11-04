@@ -36,7 +36,7 @@ test('authorized game-data proxy uses allowlisted names and never forwards admin
  globalThis.fetch=async (url,options)=>{
   network++;
   assert.equal(url,'https://pandorasaga-os.com/gamedata/meta.json');
-  assert.equal(options.redirect,'error');
+  assert.equal(options.redirect,'manual');
   assert.equal(options.headers.accept,'application/json');
   assert.equal(options.headers.authorization,undefined);
   return new Response(JSON.stringify({counts:{items:1}}),{
@@ -70,7 +70,7 @@ test('a failed canonical hostname tries its www alias without credentials',async
  globalThis.fetch=async(url,options)=>{
   requests.push(url);
   assert.equal(options.headers.authorization,undefined);
-  assert.equal(options.redirect,'error');
+  assert.equal(options.redirect,'manual');
   if(requests.length===1)throw TypeError('Network error');
   return new Response(JSON.stringify({source:'current-game'}),{status:200});
  };
@@ -91,13 +91,17 @@ test('unavailable hostnames give a private diagnostic code without publishing pa
  try{
   const response=await worker.fetch(request('meta',true),env);
   assert.equal(response.status,502);
-  assert.deepEqual(await response.json(),{
-   error:'Game data source temporarily unavailable',code:'network',
-   sourceDataset:'meta.json',attempts:[
-    {host:'pandorasaga-os.com',code:'network'},
-    {host:'www.pandorasaga-os.com',code:'network'}
-   ]
-  });
+  const payload=await response.json();
+  assert.equal(payload.error,'Game data source temporarily unavailable');
+  assert.equal(payload.code,'network');
+  assert.equal(payload.sourceDataset,'meta.json');
+  assert.equal(payload.attempts.length,2);
+  assert.deepEqual(payload.attempts.map(row=>[row.host,row.code,row.stage]),[
+   ['pandorasaga-os.com','network','fetch'],
+   ['www.pandorasaga-os.com','network','fetch']
+  ]);
+  assert.ok(payload.attempts.every(row=>row.name==='TypeError'&&
+   row.message==='Network failure'));
  }finally{globalThis.fetch=old}
 });
 
@@ -124,4 +128,23 @@ test('public fixed upstream probe tests Cloudflare egress without exposing game 
   assert.equal(cached.status,200);
   assert.equal(names.length,1,'probe result should be cached to avoid upstream request floods');
  }finally{globalThis.fetch=original}
+});
+
+test('Cloudflare-compatible manual redirects never follow an offsite Location',async()=>{
+ const previous=globalThis.fetch,targets=[];
+ globalThis.fetch=async(url,options)=>{
+  targets.push(url);
+  assert.equal(options.redirect,'manual');
+  return new Response('',{status:302,headers:{location:'https://untrusted.example/steal'}});
+ };
+ try{
+  const result=await worker.fetch(request('meta',true),env);
+  assert.equal(result.status,502);
+  const payload=await result.json();
+  assert.deepEqual(payload.attempts.map(x=>x.code),['http-302','http-302']);
+  assert.deepEqual(targets,[
+   'https://pandorasaga-os.com/gamedata/meta.json',
+   'https://www.pandorasaga-os.com/gamedata/meta.json'
+  ]);
+ }finally{globalThis.fetch=previous}
 });
