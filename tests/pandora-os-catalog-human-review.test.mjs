@@ -65,3 +65,66 @@ test('unknown complex fields are not given a made-up gameplay meaning',()=>{
  assert.ok(result.rows.some(x=>x.label==='Название'));
  assert.ok(result.rows.every(x=>!x.label.includes('obscure')));
 });
+
+
+test('numeric change is shown as a signed neutral delta, not an inferred game advantage',()=>{
+ const previous={name:'Караван Союза',resists:{fire:25}};
+ const next={name:'Караван Союза',resists:{fire:15}};
+ const details=describe(change('monsters','43601',previous,next),context);
+ const fire=details.rows.find(x=>x.label==='Сопротивление огню');
+ assert.equal(fire.difference,'−10');
+ assert.equal(fire.delta,-10);
+ assert.equal(details.uncertain,false);
+});
+test('unrecognized resistance is not silently classified as a known game attribute',()=>{
+ const result=describe(change('monsters','43601',
+  {resists:{mystery:1}},{resists:{mystery:2}}),context);
+ assert.equal(result.uncertain,true);
+ assert.ok(result.technical.includes('resists.mystery'));
+ assert.equal(result.rows.length,0);
+});
+test('NPC trades identify obtained item, required materials and stated costs',()=>{
+ const source=read('trades'),previous=structuredClone(source),current=structuredClone(source);
+ const first=current.trades[0];
+ first.gold=12;first.mats[0].n+=20;
+ const result=describe(change('trades','@dataset',previous,current),context);
+ assert.match(result.summary,/1/);
+ assert.ok(result.rows.some(x=>x.label.includes('Золото')&&x.after==='12'));
+ assert.ok(result.rows.some(x=>x.label.includes('Нужные предметы')));
+ assert.doesNotMatch(result.summary,/mats|\\{\\[|@dataset/);
+ assert.equal(result.uncertain,true,'atomic trades require manual approval even with readable lines');
+});
+test('chest reward groups show item names and group-scoped chances without false guarantee',()=>{
+ const source=read('chests'),previous=structuredClone(source),current=structuredClone(source);
+ current.boxes[0].rolls[0][0].p=90;
+ const result=describe(change('chests','@dataset',previous,current),context);
+ assert.match(result.title,/сундук/i);
+ assert.ok(result.rows.some(x=>x.label.includes('Набор наград 1')&&
+  x.label.includes('Шанс внутри набора')&&x.before==='100'&&x.after==='90'));
+ assert.match(result.summary,/Шансы относятся к отдельным наборам наград/);
+ assert.equal(result.uncertain,true);
+ assert.doesNotMatch(result.summary,/rolls|\\{\\[/);
+});
+test('ambiguous repeated reward IDs cannot bypass the manual-review warning',()=>{
+ const source=read('chests'),previous=structuredClone(source),current=structuredClone(source);
+ current.boxes[0].rolls[0].push({...current.boxes[0].rolls[0][0],p:40});
+ const result=describe(change('chests','@dataset',previous,current),context);
+ assert.equal(result.uncertain,true);
+ assert.ok(result.technical.some(x=>x.includes('одинаковым ID')));
+});
+test('modified combat tables and expertise categories show sections, never invented math',()=>{
+ const tbl=describe(change('tables','@dataset',{weaponPlus:{1:{ratio:2}}},{weaponPlus:{1:{ratio:3}}}),context);
+ assert.match(tbl.summary,/Усиление оружия/);
+ assert.equal(tbl.uncertain,true);
+ assert.ok(tbl.rows.some(x=>x.label==='Усиление оружия'));
+ const master=describe(change('expertise','@dataset',{limit:{WARRIOR:{slash:2}}},
+  {limit:{WARRIOR:{slash:3}}}),context);
+ assert.match(master.summary,/Пределы мастерства/);
+ assert.equal(master.uncertain,true);
+});
+test('changed English item name is anchored to the Russian game item instead of a raw number',()=>{
+ const result=describe(change('strings.en','items/1',{n:'Old'},{n:'Gladius'}),context);
+ assert.match(result.title,/Спата/);
+ assert.ok(result.rows.some(x=>x.label==='Название'&&x.after==='Gladius'));
+ assert.equal(result.uncertain,false);
+});
