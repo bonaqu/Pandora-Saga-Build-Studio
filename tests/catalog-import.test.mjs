@@ -54,3 +54,27 @@ test('serialized source groups reassemble losslessly',()=>{
   assert.deepEqual(JSON.parse(result.entries[alias].map(e=>e.value.data).join('')),snapshot[source]);
  }
 });
+
+
+test('two instances with the same ID cannot silently overwrite the D1 record',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot.instances.push({id:777,name:'Collision'});
+ snapshot.meta.counts.instances=2;
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Duplicate or invalid instance ID/);
+});
+test('duplicate trade recipe IDs are rejected before any D1 import batches',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot.trades.trades.push({id:1,i:30});
+ snapshot.meta.counts.trades=2;
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Duplicate or invalid trade recipe ID/);
+});
+test('catalog dictionary keys cannot silently refer to a different game object',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot.items['100'].id=200;
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Mismatched items record identity/);
+});
+test('reserved prototype keys are rejected before translating source records',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot.items=JSON.parse('{"__proto__":{"id":101,"name":"Fake"}}');
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Unsafe or duplicate items record key/);
+});
