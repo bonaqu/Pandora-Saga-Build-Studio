@@ -205,6 +205,9 @@ function describe(change,ctx={}){
   const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
   const delta=numeric?b-a:null;
   rows.push({label,before:value(a),after:value(b),numeric,delta,
+   // Expanded reviews retain the entire known text; only the short summary clips it.
+   beforeFull:typeof a==='string'?a:undefined,
+   afterFull:typeof b==='string'?b:undefined,
    difference:delta===null||delta===0?'':(delta>0?'+':'−')+value(Math.abs(delta))});
  };
  const unknown=(path)=>{uncertain=true;technical.push(path)};
