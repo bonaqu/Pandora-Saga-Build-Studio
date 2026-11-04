@@ -65,31 +65,52 @@ async function adminCatalog(request,env,path){
   return json({ok:true,created:true});
  }
  if(path==='/api/admin/catalog/test-write'){
-  // Validate a real D1 insert/read/delete round-trip using an isolated
-  // never-active snapshot. No change to catalog_current or user accounts.
-  const snapshot='qa-'+crypto.randomUUID().replaceAll('-');
-  const record=JSON.stringify({temporary:true,snapshot,created:Date.now()});
-  let written=false,readback=false,cleaned=false;
+  // Verify BOTH D1 tables used by catalog publishing and inline admin edits.
+  // Reserved random identifiers do not overlap real catalog or owner records.
+  const before=await activeCatalog(env);
+  const unique=crypto.randomUUID().replaceAll('-','');
+  const snapshot='qa-'+unique,overrideKey='__qa.'+unique;
+  const catalogValue=JSON.stringify({temporary:true,snapshot,created:Date.now()});
+  const overrideValue=JSON.stringify({temporary:true,overrideKey,created:Date.now()});
+  let catalogWritten=false,overrideWritten=false;
+  let readback=false,cleaned=false,overrideReadback=false,overrideCleaned=false;
   try{
    await env.DB.prepare(
     'INSERT INTO catalog_entries(snapshot,dataset,record_key,name,kind,slot,is_costume_overlay,payload) VALUES(?,?,?,?,?,?,?,?)'
-   ).bind(snapshot,'meta','health','Temporary D1 check','','',0,record).run();
-   written=true;
+   ).bind(snapshot,'meta','health','Temporary D1 check','','',0,catalogValue).run();
+   catalogWritten=true;
    const saved=await env.DB.prepare(
     'SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset=? AND record_key=?'
    ).bind(snapshot,'meta','health').first();
-   readback=saved?.payload===record;
+   readback=saved?.payload===catalogValue;
+   await env.DB.prepare('INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?)')
+    .bind(overrideKey,overrideValue,Date.now()).run();
+   overrideWritten=true;
+   const edit=await env.DB.prepare('SELECT value FROM overrides WHERE key=?')
+    .bind(overrideKey).first();
+   overrideReadback=edit?.value===overrideValue;
   }finally{
-   if(written){
-    const removed=await env.DB.prepare(
-     'DELETE FROM catalog_entries WHERE snapshot=? AND dataset=?'
-    ).bind(snapshot,'meta').run();
-    cleaned=Number(removed.meta?.changes)===1;
+   try{
+    if(overrideWritten){
+     const removed=await env.DB.prepare('DELETE FROM overrides WHERE key=?')
+      .bind(overrideKey).run();
+     overrideCleaned=Number(removed.meta?.changes)===1;
+    }
+   }finally{
+    if(catalogWritten){
+     const removed=await env.DB.prepare(
+      'DELETE FROM catalog_entries WHERE snapshot=? AND dataset=? AND record_key=?'
+     ).bind(snapshot,'meta','health').run();
+     cleaned=Number(removed.meta?.changes)===1;
+    }
    }
   }
-  if(!readback||!cleaned)return no('D1 isolated write/read/cleanup check failed',502);
-  return json({ok:true,readback:true,cleaned:true,
-   activeCatalogUnchanged:true});
+  const after=await activeCatalog(env);
+  const activeCatalogUnchanged=JSON.stringify(before||null)===JSON.stringify(after||null);
+  if(!readback||!cleaned||!overrideReadback||!overrideCleaned||!activeCatalogUnchanged)
+   return no('D1 isolated catalog/override write, read or cleanup check failed',502);
+  return json({ok:true,readback,cleaned,overrideReadback,overrideCleaned,
+   activeCatalogUnchanged});
  }
  if(path==='/api/admin/catalog/status'){
   const current=await activeCatalog(env);
@@ -390,7 +411,7 @@ if(path==='/api/health'&&method==='GET'){
   features:{sharing:sharingReady,catalog:catalogPublished,library:found.has('private_builds'),
    accounts:['user_accounts','user_sessions','user_registration_limits'].every(n=>found.has(n))}},ready?200:503);
 }
-if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).map(r=>[r.key,r.value]))})}
+if(path==='/api/overrides'&&method==='GET'){const records=await env.DB.prepare('SELECT key,value FROM overrides ORDER BY key').all();return json({values:Object.fromEntries((records.results||[]).filter(r=>!String(r.key).startsWith('__qa.')).map(r=>[r.key,r.value]))})}
 if(path==='/api/admin/setup'&&method==='POST'){
  if(!env.ADMIN_SETUP_TOKEN||env.ADMIN_SETUP_TOKEN.length<32)return no('Secure setup not configured',503);
  const current=await env.DB.prepare('SELECT id FROM admins WHERE id=1').first();if(current)return no('Already initialized',409);
