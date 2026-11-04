@@ -139,15 +139,14 @@
         button.classList.toggle('active',id===filterKind);
         button.setAttribute('aria-pressed',String(id===filterKind));
       }
-      const stat=(label,value,kind)=>h('div',{class:'os-sync-stat '+kind},[
-        h('small',{text:label}),h('strong',{text:String(value)})
-      ]);
-      overview.replaceChildren(
-       stat('Добавлено',byKind.added,'added'),
-       stat('Изменено',byKind.changed,'changed'),
-       stat('Удалено',byKind.removed,'removed'),
-       stat('Выбрано',selected,'selected')
-      );
+      // Explain which game areas changed instead of repeating five counters
+      // inside a large dashboard of decorative statistics.
+      const groups=importer.files.filter(name=>changes.some(row=>row.dataset===name));
+      const ordered=[...groups.filter(name=>name!=='meta'),...groups.filter(name=>name==='meta')];
+      overview.textContent=ordered.length?'Затронутые разделы: '+
+        ordered.map(name=>(review.labels[name]||name)+' · '+
+          changes.filter(row=>row.dataset===name).length).join('   •   '):'';
+      overview.hidden=!reviewing||!changes.length;
       for(const panel of results.querySelectorAll('.os-sync-group')){
         const name=panel.getAttribute('data-game-dataset');
         const count=changes.filter(row=>row.dataset===name&&chosen.has(row.id)).length;
