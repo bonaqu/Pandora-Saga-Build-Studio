@@ -192,7 +192,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isEnabled(),true);
   await dialog.getByRole('button',{name:'Снять весь выбор'}).click();
   assert.equal(await dialog.locator('.os-sync-review-steps button').filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
-  await dialog.getByRole('button',{name:'Выбрать понятные изменения'}).click();
+  await dialog.getByRole('button',{name:'Выбрать понятные изменения',exact:true}).click();
   const downloadPromise=page.waitForEvent('download');
   await dialog.getByRole('button',{name:'Скачать выбранное для GitHub'}).click();
   const download=await downloadPromise;
