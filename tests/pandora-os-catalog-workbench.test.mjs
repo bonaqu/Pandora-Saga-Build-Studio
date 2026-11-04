@@ -117,13 +117,13 @@ test('sync review shows primary update, archival fallback and hidden maintenance
 
 test('catalog admin review interprets source data and excludes raw data from default presentation',()=>{
  const html=readFileSync(new URL('index.html',root),'utf8');
- assert.match(html,/pandora-os-catalog-human-review\\.js\\?v=/);
+ assert.match(html,/pandora-os-catalog-human-review\.js\?v=/);
  assert.ok(html.indexOf('pandora-os-catalog-human-review.js')<html.indexOf('pandora-os-catalog-workbench.js'));
  assert.match(workbench,/PandoraCatalogHumanReview/);
  assert.match(workbench,/os-sync-change-summary/);
- assert.match(workbench,/Технические сведения \\(для разработчика\\)/);
+ assert.match(workbench,/Технические сведения \(для разработчика\)/);
  assert.match(workbench,/Служебных:/);
  assert.match(workbench,/Не выбрано:/);
- assert.match(workbench,/changes\\.filter\\(safe\\)/);
- assert.match(workbench,/sourceBanner\\.textContent=from===/);
+ assert.match(workbench,/changes\.filter\(safe\)/);
+ assert.match(workbench,/sourceBanner\.textContent=from===/);
 });
