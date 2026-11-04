@@ -411,9 +411,11 @@ function describe(change,ctx={}){
  const hasInvisibleChange=rows.some(row=>row.sameVisible);
  if(hasReferenceChange||hasInvisibleChange){
   uncertain=true;
+  const earlierCaution=caution;
   caution=hasReferenceChange
    ?'Изменилась игровая связь на предмет. Проверь, куда ведёт ссылка, и выбери изменение вручную.'
    :'Текст на экране совпадает, но исходные данные различаются. Проверь подробности и выбирай вручную.';
+  if(earlierCaution)caution+=' '+earlierCaution;
  }
  if(uncertain&&!caution)caution='Часть параметров требует ручной проверки перед публикацией.';
  return {title,summary,rows,technical,uncertain,caution,service:kind==='meta'};
