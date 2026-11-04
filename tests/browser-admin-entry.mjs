@@ -183,7 +183,7 @@ export async function runAdminEntrySmoke(browser,base){
   await groups.locator('summary.os-sync-group-heading').click();
   const explanation=dialog.locator('.os-sync-change-summary').first();
   assert.notEqual((await explanation.innerText()).length,0,'gameplay change explanation is visible');
-  assert.doesNotMatch(await explanation.innerText(),/\\{\\[|resists\\.|sha\\.|@dataset/);
+  assert.doesNotMatch(await explanation.innerText(),/\[\{|resists\.|sha\.|@dataset/);
   const decision=dialog.locator('.os-sync-record input[type=checkbox]');
   await decision.waitFor({state:'visible'});
   assert.equal(await decision.isChecked(),false,'Changes must be declined by default');
