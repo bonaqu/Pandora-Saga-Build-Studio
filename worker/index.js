@@ -354,7 +354,7 @@ async function readCurrentGameFile(file){
   }catch(error){
    // No request headers, tokens, cookies, URLs from the caller or D1 values
    // are copied into the read-only diagnostic. Only safe error information.
-   const clean=v=>String(v||'').replace(/[\\r\\n<>]/g,' ').slice(0,160);
+   const clean=v=>String(v||'').replace(/[\r\n<>]/g,' ').slice(0,160);
    attempts.push({host:new URL(host).hostname,
     code:controller.signal.aborted?'timeout':'network',
     stage,name:clean(error?.name),message:clean(error?.message),
