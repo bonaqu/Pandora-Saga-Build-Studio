@@ -45,6 +45,6 @@ The admin's production D1 write test is separate: after deploying the updated Wo
 An authenticated administrator can open **Энциклопедия**, choose Equipment / Monsters / Souls, ensure the search is cleared and no item card is selected, then click **Проверить скорость этого списка**. The button measures actual list expansion, search (including 100 ms debounce) and one scroll in the user's own browser, restores the original list state, and displays a compact local report. No data is sent to Cloudflare or GitHub. The standalone Node.js/Playwright command remains an optional developer-only reproducibility tool, **not a prerequisite for the site owner**.
 
 
-### Человекочитаемые различия каталога (0.356.0)
+### Человекочитаемые различия каталога (улучшение версии 0.355.0)
 
 Сверка показывает характеристики монстров на русском языке, изменения добычи по предметам и названия изменённых заданий. Служебные контрольные сведения и непонятные поля не попадают в массовый выбор; их исходные значения доступны через «Показать все изменения» → «Технические сведения (для разработчика)». Отсутствие галочки означает «Не выбрано», а не «Отклонено». Источник сравнения (текущая игра либо сохранённая копия) указан явно. Данные не публикуются без подтверждения администратора.
