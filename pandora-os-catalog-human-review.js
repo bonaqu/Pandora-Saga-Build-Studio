@@ -37,8 +37,15 @@ const sectionNames={
 };
 function describeCompound(kind,before,after,ctx,add,unknown){
  const old=before||{},next=after||{};
- const enumerate=(rows,key)=>new Map((rows||[]).map((record,index)=>
-   [String(record?.[key]??index),record]));
+ const enumerate=(rows,key)=>{
+   const map=new Map();
+   for(const [index,record] of (rows||[]).entries()){
+    const id=String(record?.[key]??index);
+    if(map.has(id))unknown('Несколько записей с одинаковым ID: '+id);
+    map.set(id,record);
+   }
+   return map;
+ };
  const fields=(left,right)=>new Set([...Object.keys(left||{}),...Object.keys(right||{})]);
  let touched=0;
  const safeAdd=(title,a,b)=>{if(touched>=60){unknown('Остались изменения вне первых 60 строк');return}
@@ -116,7 +123,7 @@ function describeCompound(kind,before,after,ctx,add,unknown){
    if(!same(old[section],next[section]))unknown('Дополнительный параметр сундуков: '+section);
   unknown('Сундуки публикуются только полным разделом');
   return 'Изменены сведения о '+changed+
-    ' сундуках. Шансы относятся к отдельным наборам наград, а не к любому открытию.';
+    ' сундуках. Значения шансов относятся к отдельным наборам наград. Порядок наборов тоже может иметь значение.';
  }
  if(kind==='tables'||kind==='expertise'){
   const sections=[];
