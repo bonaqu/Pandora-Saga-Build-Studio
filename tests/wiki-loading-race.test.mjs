@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
-const begin=app.indexOf('let wikiRenderSelected=null,wikiRenderedRoot=null,wikiBaseData=null;');
+const begin=app.indexOf('let catalogArchived=false;');
 const end=app.indexOf('function openWiki(type,id,highlight=null)',begin);
 assert.ok(begin>=0&&end>begin,'Wiki loader must be inspectable');
 
