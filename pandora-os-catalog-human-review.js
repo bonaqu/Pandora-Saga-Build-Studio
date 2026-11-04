@@ -18,11 +18,14 @@ const plural=(count,one,few,many)=>{
 };
 const canonical=value=>Array.isArray(value)?value.map(canonical):
  plain(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
-const same=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
+const same=(a,b)=>root.PandoraOSCatalogReview?.equal
+ ?root.PandoraOSCatalogReview.equal(a,b):
+ JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
+const cleanText=text=>text.replace(/<br\\s*\\/?>/gi,'\\n').replace(/\\r\\n?/g,'\\n');
 const value=x=>x===undefined?'отсутствует':x===null?'не указано':
  typeof x==='number'?new Intl.NumberFormat('ru-RU').format(x):
  typeof x==='boolean'?(x?'да':'нет'):
- typeof x==='string'?(x.length>160?x.slice(0,157)+'…':x):
+ typeof x==='string'?(cleanText(x).length>160?cleanText(x).slice(0,157)+'…':cleanText(x)):
  Array.isArray(x)?x.length+' записей':'изменён состав';
 const itemName=(id,ctx)=>{const item=ctx?.upstream?.items?.[id]||ctx?.baseline?.items?.[id];
  const n=item?.name?.ru||item?.name;return typeof n==='string'?n:'Предмет без подтверждённого названия'};
@@ -206,8 +209,8 @@ function describe(change,ctx={}){
   const delta=numeric?b-a:null;
   rows.push({label,before:value(a),after:value(b),numeric,delta,
    // Expanded reviews retain the entire known text; only the short summary clips it.
-   beforeFull:typeof a==='string'?a:undefined,
-   afterFull:typeof b==='string'?b:undefined,
+   beforeFull:typeof a==='string'?cleanText(a):undefined,
+   afterFull:typeof b==='string'?cleanText(b):undefined,
    difference:delta===null||delta===0?'':(delta>0?'+':'−')+value(Math.abs(delta))});
  };
  const unknown=(path)=>{uncertain=true;technical.push(path)};
