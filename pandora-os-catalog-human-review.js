@@ -1,9 +1,10 @@
 (function(root){
 'use strict';
 const names={life:'Очки здоровья (ОЗ)',level:'Уровень',vit:'Выносливость',str:'Сила',
-agi:'Ловкость',dex:'Точность',spi:'Дух',int:'Интеллект',warding:'Уклонение',
+agi:'ПРВ (проворство)',dex:'ЛВК (ловкость)',spi:'Дух',int:'Интеллект',warding:'Уклонение',
 ac:'Защита',magicProtection:'Магическая защита',name:'Название',desc:'Описание',
 nameEn:'Название на английском',descEn:'Описание на английском',
+d:'Описание на английском',
 classes:'Доступные классы',effects:'Эффекты',slot:'Слот экипировки',W:'Атака',
 PEN:'Пробитие',n:'Название',blurbRu:'Описание',blurb:'Английское описание',
 quest:'Задание',kind:'Тип',mobs:'Монстры',p:'Значение шанса в таблице',
@@ -15,7 +16,9 @@ const plural=(count,one,few,many)=>{
  const n=Math.abs(count)%100,units=n%10;
  return n>=11&&n<=14?many:units===1?one:units>=2&&units<=4?few:many;
 };
-const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const canonical=value=>Array.isArray(value)?value.map(canonical):
+ plain(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+const same=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
 const value=x=>x===undefined?'отсутствует':x===null?'не указано':
  typeof x==='number'?new Intl.NumberFormat('ru-RU').format(x):
  typeof x==='boolean'?(x?'да':'нет'):
