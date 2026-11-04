@@ -58,7 +58,11 @@ function attach(node,text,{hoverDelay=0}={}){
  node.addEventListener('pointerleave',()=>{
   if(pending?.node===node||current===node)dismiss();
  });
- node.addEventListener('focus',show);
+ node.addEventListener('focus',()=>{
+  // Pointer focus should not bypass the hover delay. Keyboard focus should
+  // remain immediate for accessibility.
+  if(node.matches(':focus-visible'))show();
+ });
  node.addEventListener('blur',()=>{
   if(pending?.node===node||current===node)dismiss();
  });
