@@ -70,11 +70,12 @@ function description(s){
 // that actually exist in the chosen catalog; unresolved IDs stay non-clickable.
 function descriptionSegments(source, lookupItem, lang='ru'){
  const formatted=description(source),segments=[];
- const reference=/<item\s+([0-9]{1,12})\s*\/?>/gi;
+ const reference=/<item\b([^>]*)>/gi;
  let offset=0,match;
  while((match=reference.exec(formatted))){
   if(match.index>offset)segments.push({type:'text',text:formatted.slice(offset,match.index)});
-  const id=match[1],record=typeof lookupItem==='function'?lookupItem(id):null;
+  const id=/^\s*(\d{1,12})\s*\/?\s*$/.exec(match[1])?.[1]||null;
+  const record=id&&typeof lookupItem==='function'?lookupItem(id):null;
   const found=typeof record==='string'?record:record?.name;
   const exists=typeof found==='string'&&Boolean(found.trim());
   segments.push({type:'item',id,text:exists?found.trim():
