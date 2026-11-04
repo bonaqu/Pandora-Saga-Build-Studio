@@ -70,10 +70,12 @@ test('Soul query and selected-grade focus survive in-place equipment picker rere
   assert.ok(app.includes(phrase),phrase);
 });
 
-test('independent local class caps make skill spending work when wiki and remote API are down',()=>{
+test('current D1 class caps guard skill spending and the archive requires explicit choice',()=>{
  const app=read('pandora-studio-app.js'),hero=read('pandora-studio-hero-path.js');
- assert.match(app,/fetch\('\.\/data\/os\/classes\.json',\{cache:'no-cache'\}\)/);
- assert.match(app,/if\(classes\?\.\[jobKeys\[state\.job\]\]&&!catalog\.classes\)/);
+ assert.ok(app.includes("const base=archive?'./data/os':API+'/api/catalog'"));
+ assert.ok(app.includes("catalogSource=data;gameTables=data.tables;gameItemForth=data.itemForth"));
+ assert.ok(app.includes("if(!archive&&(snapshots.size!==1||unknown.length))"));
+ assert.ok(app.includes("catalogArchived=archive"));
  assert.match(app,/branchCap\(catalog\.classes,jobKeys\[state\.job\],branch\)/);
  assert.match(hero,/api\.allocationReady/);
  for(const path of ['pandora-studio-equipment-ui.js','pandora-studio-hero-book.js'])
