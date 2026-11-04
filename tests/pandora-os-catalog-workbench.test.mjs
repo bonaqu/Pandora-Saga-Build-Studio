@@ -76,7 +76,7 @@ test('live sync detects changing source revision and cannot misreport published 
 });
 
 test('administrator sees neutral game-catalog labels instead of a source host brand',()=>{
- assert.match(workbench,/Проверить обновления игрового каталога/);
+ assert.match(workbench,/Проверить изменения в текущей игре/);
  assert.match(workbench,/Применить выбранные изменения/);
  assert.match(app,/text:'Игровой каталог',onclick:showCatalogImport/);
  assert.doesNotMatch(workbench,/Pandora Saga OS|Pandora Saga Open Server/);
