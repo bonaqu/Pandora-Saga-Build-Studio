@@ -282,9 +282,9 @@
           referenceContext+'|'+segment.id+'|'+(occurrence++):null;
         const wasExpanded=refKey?expandedReferences.has(refKey):false;
         const button=h('button',{type:'button',class:'os-sync-item-ref',
-          title:'Игровая ссылка на предмет. Нажми для предпросмотра.',
           'aria-label':'Показать связанный предмет: '+segment.text,
           'aria-expanded':String(wasExpanded),text:segment.text});
+        hint(button,'Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.');
         const preview=h('span',{class:'os-sync-reference-preview',hidden:!wasExpanded});
         preview.append(h('strong',{text:segment.text}),
           h('small',{text:'Связанный предмет · игровая ссылка в описании'}));
@@ -344,10 +344,12 @@
           newValue.append(field.sourceAfter!==null&&field.sourceAfter!==undefined?
             linkedDescription(field.sourceAfter,language,change.id+'|'+field.label+'|new'):
             document.createTextNode(String(field.afterFull??field.after)));
-          if(field.difference)newValue.append(h('small',{
-            class:'os-sync-value-delta',
-            text:(field.delta>0?'▲ ':'▼ ')+field.difference,
-            title:'Разница между старым и новым числом. Это не оценка полезности изменения.'}));
+          if(field.difference){
+            const delta=h('small',{class:'os-sync-value-delta',
+              text:(field.delta>0?'▲ ':'▼ ')+field.difference});
+            hint(delta,'Изменение числа относительно опубликованной версии. Знак не означает, что изменение полезно или вредно.');
+            newValue.append(delta);
+          }
           const label=h('strong',{text:field.label});
           if(/^[0-9]{1,12}$/.test(field.linkedItemId||'')&&field.linkedItemName){
             const start=field.label.indexOf(field.linkedItemName);
@@ -460,6 +462,8 @@
         const list = h('div',{class:'os-sync-list'});
         for (const change of filtered.slice(0,limit)) {
           const description=describe(change);
+          const hasLinks=description.rows.some(field=>field.linkChanged);
+          const visuallySame=description.rows.some(field=>field.sameVisible);
           const row = h('article',{class:'os-sync-record'+(description.uncertain?' os-sync-review-caution':'')});
           const helper=h('small',{class:'os-sync-review-level',
             text:description.service?'Служебные данные · ручная проверка':
@@ -469,7 +473,8 @@
             helper.textContent+=' · Вариант '+variantOrder.get(change.id)+
               ' из '+variantTotal.get(description.title)+' с этим названием';
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
-            'aria-label':'Выбрать изменение '+description.title});
+            'aria-label':'Выбрать изменение '+description.title+
+              (hasLinks||visuallySame?' — требуется отдельная проверка':'')});
           input.addEventListener('change',()=>setChoice(change,input.checked));
           const indicator = change.kind==='added'?'Добавлено':
             change.kind==='removed'?'Удалено':'Изменено';
@@ -479,7 +484,20 @@
               h('strong',{text:description.title}),helper
             ]),
             h('span',{class:'os-sync-kind '+change.kind,text:indicator})
-           ]),fieldPreview(change,description));
+           ]));
+          if(hasLinks||visuallySame){
+            const signals=h('div',{class:'os-sync-review-signals'});
+            if(hasLinks)signals.append(h('small',{
+              class:'os-sync-review-signal os-sync-review-signal-link',
+              text:'Связь с предметом изменилась · проверить вручную'
+            }));
+            if(visuallySame)signals.append(h('small',{
+              class:'os-sync-review-signal',
+              text:'Текст выглядит одинаково · проверить исходное отличие'
+            }));
+            row.append(signals);
+          }
+          row.append(fieldPreview(change,description));
           list.append(row);
         }
         panel.append(list);
