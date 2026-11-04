@@ -32,9 +32,9 @@ test('admin workbench is optional for ordinary players and has explicit selectio
  assert.match(app,/function showCatalogImport\(\)/);
  assert.match(app,/if\(!adminToken\)return/);
  assert.match(workbench,/Ни одно изменение не принято автоматически/);
- assert.match(workbench,/Принять все/);
- assert.match(workbench,/Отклонить все/);
- assert.match(workbench,/Принять весь раздел/);
+ assert.match(workbench,/Выбрать понятные изменения/);
+ assert.match(workbench,/Снять весь выбор/);
+ assert.match(workbench,/Выбрать понятные изменения раздела/);
  assert.match(workbench,/Скачать выбранное для GitHub/);
  assert.match(workbench,/new Set\(\)/);
  assert.match(html,/pandora-os-catalog-review\.js\?v=/);
@@ -94,8 +94,8 @@ test('owner sync dashboard supports kind and approval filters without auto-accep
  assert.match(workbench,/\['added','Новые'\]/);
  assert.match(workbench,/\['changed','Изменённые'\]/);
  assert.match(workbench,/\['removed','Удалённые'\]/);
- assert.match(workbench,/\['accepted','Принятые'\]/);
- assert.match(workbench,/\['declined','Отклонённые'\]/);
+ assert.match(workbench,/\['accepted','Выбранные'\]/);
+ assert.match(workbench,/\['declined','Не выбраны'\]/);
  assert.match(workbench,/\.filter\(matchesFilter\)/);
  assert.match(workbench,/Принять найденное/);
  assert.match(workbench,/Ни одно изменение не принято автоматически/);
@@ -112,4 +112,18 @@ test('sync review shows primary update, archival fallback and hidden maintenance
  assert.match(workbench,/progress\.hidden=!value/);
  assert.match(workbench,/не удалось получить обновления из игры/);
  assert.doesNotMatch(workbench,/Сравнить с архивом проекта/);
+});
+
+
+test('catalog admin review interprets source data and excludes raw data from default presentation',()=>{
+ const html=readFileSync(new URL('index.html',root),'utf8');
+ assert.match(html,/pandora-os-catalog-human-review\\.js\\?v=/);
+ assert.ok(html.indexOf('pandora-os-catalog-human-review.js')<html.indexOf('pandora-os-catalog-workbench.js'));
+ assert.match(workbench,/PandoraCatalogHumanReview/);
+ assert.match(workbench,/os-sync-change-summary/);
+ assert.match(workbench,/Технические сведения \\(для разработчика\\)/);
+ assert.match(workbench,/Служебных:/);
+ assert.match(workbench,/Не выбрано:/);
+ assert.match(workbench,/changes\\.filter\\(safe\\)/);
+ assert.match(workbench,/sourceBanner\\.textContent=from===/);
 });
