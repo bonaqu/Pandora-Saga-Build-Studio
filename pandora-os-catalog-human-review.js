@@ -21,7 +21,7 @@ const canonical=value=>Array.isArray(value)?value.map(canonical):
 const same=(a,b)=>root.PandoraOSCatalogReview?.equal
  ?root.PandoraOSCatalogReview.equal(a,b):
  JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
-const cleanText=text=>text.replace(/<br\\s*\\/?>/gi,'\\n').replace(/\\r\\n?/g,'\\n');
+const cleanText=text=>text.replace(/<br\s*\/?>/gi,'\n').replace(/\r\n?/g,'\\n');
 const value=x=>x===undefined?'отсутствует':x===null?'не указано':
  typeof x==='number'?new Intl.NumberFormat('ru-RU').format(x):
  typeof x==='boolean'?(x?'да':'нет'):
