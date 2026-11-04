@@ -39,6 +39,15 @@ test('catalog admin gate and live snapshot compare remain server authenticated',
  assert.match(workbench,/versions\.size!==1/);
  assert.match(workbench,/importer\.normalize\(combined,legacy\)/);
 });
+test('admin source failures preserve the upstream reason and do not imply game-client file access',()=>{
+ assert.match(app,/error[.]reason=data[.]reason\|\|data[.]code\|\|null/);
+ assert.match(app,/error[.]sourceDataset=data[.]sourceDataset\|\|null/);
+ assert.match(workbench,/error[.]sourceDataset\?\?=name\+'[.]json'/);
+ assert.match(workbench,/PandoraGuideTooltip\?\.attach/);
+ assert.match(workbench,/не ищет файлы на твоём компьютере/);
+ assert.match(workbench,/Сайт игры не разрешил запрос Cloudflare Worker/);
+ assert.match(workbench,/Архивная сверка берёт файлы из репозитория/);
+});
 test('admin workbench is optional for ordinary players and has explicit selection controls',()=>{
  assert.match(app,/function showCatalogImport\(\)/);
  assert.match(app,/if\(!adminToken\)return/);
