@@ -23,3 +23,18 @@ The isolated share-link E2E now opens a shared link in a second browser context 
 The live readiness workflow runs the comprehensive `connection:check:full` variant, covering all 19 public D1 datasets (including monsters, drops, maps, NPC trades, localization and English strings) instead of only the five fast smoke datasets. Every response must be nonempty, marked as coming from D1, and allowed for the deployed Pages origin. The public endpoint tests do not modify D1. An actual green workflow is required to count complete public catalog accessibility.
 
 Full D1 readiness checks now require the `features.library` health flag too. The top-level calculator rejects levels outside 1–55 while leaving level 55 fully available, independent of temporary live server progression caps.
+
+
+### Benchmark encyclopedia performance on your Windows PC
+
+With Node.js 20+ and a local checkout of the repository, run in PowerShell:
+
+```powershell
+npm install --no-save --no-package-lock playwright@1.55.1
+npx playwright install chromium
+npm run bench:wiki:local
+```
+
+The command starts a local HTTP server on port 4189 (loopback only), launches real headless Chromium on **your own PC**, times encyclopedia row expansions and searches for items, monsters and souls, prints raw milliseconds and CPU/OS metadata, then stops the server. Third-party and production D1 requests are blocked: the bundled catalog is measured and no admin credentials or real player data are required. Search timings include the intentionally configured 100 ms debounce; do not call these pure CPU search durations. For comparisons, repeat the test several times under similar machine load. GitHub Actions benchmarks run on GitHub hardware and do not prove local-PC speed.
+
+The admin's production D1 write test is separate: after deploying the updated Worker, log in to the site's admin catalog editor and click **Проверить запись в D1**. Success now requires catalog and override-table readback, scoped deletion, and an unchanged published snapshot. No test in this document claims that authenticated production action was executed remotely.
