@@ -328,6 +328,7 @@ async function readCurrentGameFile(file){
  const attempts=[];
  for(const host of GAME_DATA_HOSTS){
   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+  let stage='fetch';
   try{
    const response=await fetch(host+'/gamedata/'+file,{
     signal:controller.signal,headers:{accept:'application/json'},redirect:'error'
@@ -336,6 +337,7 @@ async function readCurrentGameFile(file){
     attempts.push({host:new URL(host).hostname,code:'http-'+response.status});
     continue;
    }
+   stage='response-body';
    const raw=await response.text();
    if(raw.length>1250000){
     attempts.push({host:new URL(host).hostname,code:'too-large'});
@@ -350,8 +352,13 @@ async function readCurrentGameFile(file){
    }
    return{ok:true,value:data,host:new URL(host).hostname};
   }catch(error){
+   // No request headers, tokens, cookies, URLs from the caller or D1 values
+   // are copied into the read-only diagnostic. Only safe error information.
+   const clean=v=>String(v||'').replace(/[\\r\\n<>]/g,' ').slice(0,160);
    attempts.push({host:new URL(host).hostname,
-    code:controller.signal.aborted?'timeout':'network'});
+    code:controller.signal.aborted?'timeout':'network',
+    stage,name:clean(error?.name),message:clean(error?.message),
+    cause:clean(error?.cause?.message)});
   }finally{clearTimeout(timer)}
  }
  return{ok:false,code:attempts.at(-1)?.code||'network',attempts};
@@ -443,7 +450,7 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.358.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists'],
-  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true});
+  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
