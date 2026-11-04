@@ -70,7 +70,7 @@ function validate(input){
  }
  return data;
 }
-async function load({api,fetcher,local='./data/os',timeout=12000}={}){
+async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=false}={}){
  if(typeof fetcher!=='function')throw TypeError('fetcher required');
  const remoteBase=String(api||'').replace(/\/$/,'');
  async function batch(remote){
@@ -94,6 +94,7 @@ async function load({api,fetcher,local='./data/os',timeout=12000}={}){
   return {data:validate(Object.fromEntries(records)),
    source:remote?'d1':'local',snapshot:remote?[...snapshots][0]||null:null};
  }
+ if(preferLocal)return batch(false);
  try{
   const loaded=await batch(true);
   // Only localized copy is borrowed from our checked-in OS archive. Never
