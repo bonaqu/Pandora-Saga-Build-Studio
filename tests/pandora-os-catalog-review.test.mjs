@@ -160,3 +160,38 @@ test('published D1 Legacy data is reconstructed and retains exact source records
  rows['000001'].key='key0';rows['000001'].locale='ru';
  assert.throws(()=>review.retainLegacyRows(rows),/duplicate/);
 });
+
+test('description-only <br> formatting from game export is NOT a gameplay update',()=>{
+ const oldItem={id:1,name:'Спата',desc:'Меч, похожий на кинжал.ПРВ +1.'};
+ const newItem={id:1,name:'Спата',desc:'Меч, похожий на кинжал.<br><br>ПРВ +1.'};
+ assert.equal(review.changes('items',{'1':oldItem},{'1':newItem}).length,0);
+ assert.equal(review.changes('souls',{'1':{desc:'ОЗ +30'}},
+  {'1':{desc:'ОЗ +30<br>'}}).length,0);
+ assert.equal(review.changes('strings.en',
+  {locale:'en',items:{'1':{n:'Gladius',d:'A sword.AGI +1'}}},
+  {locale:'en',items:{'1':{n:'Gladius',d:'A sword.<br><br>AGI +1'}}}).length,0);
+ assert.equal(oldItem.desc,'Меч, похожий на кинжал.ПРВ +1.',
+  'Never rewrite the original saved description');
+ assert.equal(newItem.desc,'Меч, похожий на кинжал.<br><br>ПРВ +1.',
+  'Never discard source formatting');
+});
+test('genuine changes remain visible alongside formatting-only source differences',()=>{
+ const old={id:1,name:'Спата',desc:'Сила +1.',W:48};
+ const next={id:1,name:'Спата',desc:'Сила +2.<br>',W:48};
+ assert.equal(review.changes('items',{'1':old},{'1':next}).length,1);
+ next.desc='Сила +1.<br>';next.W=57;
+ assert.equal(review.changes('items',{'1':old},{'1':next}).length,1);
+ next.desc='Сила +1.';next.W=48;next.name='Другая спата';
+ assert.equal(review.changes('items',{'1':old},{'1':next}).length,1,
+  'Name changes must not be normalized away');
+});
+test('a server hash is never claimed for a partially cosmetic D1 snapshot',()=>{
+ const before=snapshot(),after=snapshot();
+ after.items['1'].desc='Описание.<br>Сила +1';
+ before.items['1'].desc='Описание.Сила +1';
+ assert.equal(review.changes('items',before.items,after.items).length,0);
+ const merged=review.compose(before,after,new Set(),files);
+ assert.equal(merged.meta.sha,undefined,
+  'A metadata checksum must require strict byte-level source equality');
+ assert.equal(merged.meta.curated,true);
+});
