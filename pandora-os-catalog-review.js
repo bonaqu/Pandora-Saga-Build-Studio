@@ -18,7 +18,7 @@
   // Only source description typography is presentation-only. Do not strip
   // spaces or HTML from identifiers, names, formulas, prices or effects.
   const descriptionFields=new Set(['desc','descEn','d','blurb','blurbRu']);
-  const compactDescription = text => text.replace(/<br\\s*\\/?>/gi,'').replace(/\\r\\n?|\\n/g,'');
+  const compactDescription = text => text.replace(/<br\s*\/?>/gi,'').replace(/\r\n?|\n/g,'');
   function stable(value, key='', semantics=true) {
     if (typeof value==='string' && semantics && descriptionFields.has(key))
       return compactDescription(value);
