@@ -55,6 +55,8 @@ test('slot additions are explicitly labeled but missing source fields are not as
  assert.equal(row.before,'не указаны');
  assert.match(row.after,/1 дополнительный слот/);
  assert.equal(row.difference,'');
+ assert.equal(row.linkedItemId,'123');
+ assert.equal(row.linkedItemName,'Тыква');
 });
 
 test('source formatting-only descriptions do not become automatic gameplay updates',()=>{
