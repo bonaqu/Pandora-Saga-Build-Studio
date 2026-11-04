@@ -4073,6 +4073,82 @@ function renderWiki(root){
    row=>row.getAttribute('data-wiki-record')===wikiSelection.id);
   draw(present);
  };
+ // Optional real UI timings in the administrator's OWN browser:
+ // no local checkout, Node.js, saved-build changes or D1 writes required.
+ if(adminEditing&&adminToken&&['item','monster','soul'].includes(wikiSelection.type)){
+  const speed=h('button',{type:'button',class:'wiki-speed-check',
+   text:wt('Проверить скорость этого списка','Measure list speed on this device')});
+  const measured=h('output',{class:'wiki-speed-result',role:'status'});
+  speed.onclick=async()=>{
+   if(!root.isConnected||!wikiIndex||!browse.isConnected)return;
+   if(wikiSearch.trim()||wikiSelection.id!==null){
+    measured.textContent=wt('Сначала открой список без поиска и выбранной карточки.',
+      'Open the list without searching or a selected record first.');
+    return;
+   }
+   const oldShown=wikiShown,oldScroll=browse.scrollTop,oldValue=search.value;
+   const expand=[],queries=[],scroll=[];
+   speed.disabled=true;
+   measured.textContent=wt('Измеряю на этом устройстве…','Measuring on this device…');
+   const median=values=>{
+    if(!values.length)return null;
+    const sorted=values.slice().sort((a,b)=>a-b);
+    return sorted[Math.floor(sorted.length/2)];
+   };
+   const measureSearch=term=>new Promise((resolve,reject)=>{
+    let complete=false;
+    const started=performance.now();
+    const finish=error=>{
+     if(complete)return;complete=true;clearTimeout(timer);observer.disconnect();
+     if(error)reject(error);else resolve(performance.now()-started);
+    };
+    const observer=new MutationObserver(()=>{
+     const count=browse.querySelectorAll('[data-wiki-record]').length;
+     if(term?count===0:count>0)finish();
+    });
+    observer.observe(browse,{subtree:true,childList:true});
+    const timer=setTimeout(()=>finish(Error('Search did not finish')),3000);
+    search.value=term;search.dispatchEvent(new Event('input',{bubbles:true}));
+   });
+   try{
+    wikiShown=100;draw();
+    let count=browse.querySelectorAll('[data-wiki-record]').length;
+    for(let i=0;i<5;i++){
+     const more=browse.querySelector('.wiki-more');if(!more)break;
+     const start=performance.now();more.click();
+     expand.push(performance.now()-start);
+     count=Math.max(count,browse.querySelectorAll('[data-wiki-record]').length);
+    }
+    if(browse.scrollHeight>browse.clientHeight){
+     const start=performance.now();
+     browse.scrollTop=browse.scrollHeight;
+     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+     scroll.push(performance.now()-start);
+    }
+    for(let i=0;i<2;i++){
+     await measureSearch('unlikely-benchmark-result-'+i);
+     queries.push(await measureSearch(''));
+    }
+    const ms=value=>value===null?'—':value.toFixed(1)+' мс';
+    measured.textContent=wt('Проверено ','Measured ')+count+
+     wt(' записей · развёртывание ',' records · expansion ')+ms(median(expand))+
+     wt(' · поиск ',' · search ')+ms(median(queries))+
+     wt(' · прокрутка ',' · scroll ')+ms(median(scroll))+
+     wt('. Поиск включает задержку ввода 100 мс; это замер браузера на твоём устройстве.',
+       '. Search includes a 100 ms input debounce; timed in your own browser.');
+   }catch(error){
+    measured.textContent=wt('Замер не завершился: ','Benchmark could not finish: ')+error.message;
+   }finally{
+    if(wikiSearchTimer!==null)clearTimeout(wikiSearchTimer);
+    wikiSearchTimer=null;
+    search.value=oldValue;wikiSearch=oldValue;wikiShown=oldShown;
+    if(root.isConnected&&wikiIndex)draw();
+    browse.scrollTop=oldScroll;
+    speed.disabled=false;
+   }
+  };
+  controls.append(h('div',{class:'wiki-speed-tools'},[speed,measured]));
+ }
  search.addEventListener('input',()=>{
   wikiSearch=search.value;wikiShown=100;
   wikiSelection={...wikiSelection,id:null,highlight:null};
