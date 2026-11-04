@@ -84,3 +84,19 @@ test('non-Remaked effect labels corrected by game item descriptions have traceab
  assert.equal(labels.EP_RECOVERY_NUMB,'Remove Freeze');
  assert.equal(labels.EP_RECOVERY_RAVING,'Remove Madness');
 });
+
+
+test('ten additional previously unmapped effects carry exact game-description provenance',()=>{
+ const sourceItems=JSON.parse(read('data/os/items.json'));
+ const english=JSON.parse(read('data/os/strings.en.json'));
+ const codes=["EP_ABILITY_RESET","EP_HEAL_LIFE","EP_HEAL_LIFE_RATE","EP_HEAL_MANA","EP_HEAL_MANA_RATE","EP_ONHIT_SKILL_EXEC","EP_ONDAMAGE_SKILL_EXEC_ATTACKER","EP_RESTART","EP_VOLUME_EXP","EP_TOHIT_SCALE"];
+ for(const code of codes){
+  const row=data.rows.find(x=>x.code===code);
+  const proof=row?.gameEvidence;
+  assert.equal(row.remakedEnglish,null,code+' is not a Remaked option label');
+  assert.equal(proof?.confidence,'item-description-only',code);
+  assert.ok(english.items[proof.itemId].d.includes(proof.exactText),code);
+  assert.ok(sourceItems[proof.itemId].effects.some(e=>e.func===code),code);
+ }
+ assert.equal(data.rows.filter(row=>row.gameEvidence).length,18);
+});
