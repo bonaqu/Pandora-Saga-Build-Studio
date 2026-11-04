@@ -173,6 +173,9 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await dialog.locator('.os-sync-record').count(),1,'Only changed records');
   await dialog.getByRole('button',{name:/Все · 1/}).click();
   assert.match(await dialog.locator('.os-sync-source-banner').innerText(),/сохранённой копии/);
+  assert.match(await dialog.locator('.os-sync-overview').innerText(),/Предметы · 1/);
+  assert.equal(await dialog.locator('.os-sync-stat').count(),0,
+    'redundant four-card metrics dashboard is no longer present');
   assert.equal(await dialog.locator('.os-sync-results').evaluate(el=>getComputedStyle(el).overflowY),'visible',
     'no nested review scrollbar');
   assert.equal(await dialog.locator('.os-sync-record').count(),1);
