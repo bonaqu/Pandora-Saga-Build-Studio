@@ -5078,7 +5078,8 @@ async function apiRequest(path,body,token=adminToken) {
  const data=await response.json().catch(()=>({error:"Сервер вернул ответ без JSON"}));
  if(!response.ok){
   const error=new Error(data.error||("Ошибка сервера HTTP "+response.status));
-  error.httpStatus=response.status;error.reason=data.reason||null;
+  error.httpStatus=response.status;error.reason=data.reason||data.code||null;
+  error.sourceDataset=data.sourceDataset||null;
   if(editingWrite){ownerSaveState='error';ownerSaveError=error.message;refreshOwnerUI()}
   if(response.status===401&&token&&token===adminToken&&path.startsWith('/api/admin/')){
    // The editor session is invalid. A player account uses a different token
