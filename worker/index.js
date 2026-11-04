@@ -322,6 +322,42 @@ async function libraryApi(request,env){
  }
  return json({ok:true,revision:item.at});
 }
+// Read only allowlisted public game JSON; no admin credentials or arbitrary URLs.
+const GAME_DATA_HOSTS=Object.freeze(['https://pandorasaga-os.com','https://www.pandorasaga-os.com']);
+async function readCurrentGameFile(file){
+ const attempts=[];
+ for(const host of GAME_DATA_HOSTS){
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),8000);
+  try{
+   const response=await fetch(host+'/gamedata/'+file,{
+    signal:controller.signal,headers:{accept:'application/json'},redirect:'error'
+   });
+   if(!response.ok){
+    attempts.push({host:new URL(host).hostname,code:'http-'+response.status});
+    continue;
+   }
+   const raw=await response.text();
+   if(raw.length>1250000){
+    attempts.push({host:new URL(host).hostname,code:'too-large'});
+    continue;
+   }
+   let data;
+   try{data=JSON.parse(raw)}
+   catch{attempts.push({host:new URL(host).hostname,code:'invalid-json'});continue}
+   if(!data||typeof data!=='object'||Array.isArray(data)){
+    attempts.push({host:new URL(host).hostname,code:'invalid-format'});
+    continue;
+   }
+   return{ok:true,value:data,host:new URL(host).hostname};
+  }catch(error){
+   attempts.push({host:new URL(host).hostname,
+    code:controller.signal.aborted?'timeout':'network'});
+  }finally{clearTimeout(timer)}
+ }
+ return{ok:false,code:attempts.at(-1)?.code||'network',attempts};
+}
+// One fixed public probe, cached per isolate, to diagnose Worker egress.
+let sourceProbeCache=null,sourceProbeUntil=0;
 async function handle(request,env){const url=new URL(request.url),path=url.pathname;const method=request.method;const ip=request.headers.get('CF-Connecting-IP')||'unknown';
 // Regular player views read D1 or bundled data. Only an authenticated admin may explicitly check the allowlisted external game-data source.
  if(!env.DB)return no('Database not configured',503);
@@ -375,48 +411,39 @@ if(path==='/api/admin/catalog/owner-pr'&&method==='POST'){
  catch(error){return no(String(error.message||'Cannot export owner edits').slice(0,190),
   [409,502,503].includes(error.status)?error.status:502)}
 }
+// This fixed metadata probe runs from the production Worker, unlike
+// GitHub Actions or a browser. It never reads or changes D1 records.
+if(path==='/api/source-health'&&method==='GET'){
+ const now=Date.now();
+ if(!sourceProbeCache||now>=sourceProbeUntil){
+  const probe=await readCurrentGameFile('meta.json');
+  sourceProbeCache=probe.ok
+   ?{status:'ok',source:'game-site',checkedAt:now}
+   :{status:'unavailable',code:probe.code,attempts:probe.attempts,checkedAt:now};
+  sourceProbeUntil=now+120000;
+ }
+ return json(sourceProbeCache,sourceProbeCache.status==='ok'?200:503,
+  {'cache-control':'public, max-age=90'});
+}
 // Only allowlisted game-data paths can reach the external source.
 if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
  if(!await auth(request,env))return no('Unauthorized',401);
  const file=path.slice('/api/admin/catalog/source/'.length);
  const names=new Set(['meta','classes','skills','items','souls','monsters','drops','maps','instances',
  'racialPassives','itemForth','unison','trades','tables','expertise','chests','strings.en']);
- if(!/^[A-Za-z.]+\.json$/.test(file)||!names.has(file.slice(0,-5)))return no('Unknown source dataset',404);
- const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),15000);
- try{
-  // Two canonical spellings of the SAME upstream host: no arbitrary URLs,
-  // redirects, credentials or user input are forwarded to the game server.
-  const hosts=['https://pandorasaga-os.com','https://www.pandorasaga-os.com'];
-  let reason='network',value=null;
-  for(const host of hosts){
-   if(controller.signal.aborted)break;
-   try{
-    const response=await fetch(host+'/gamedata/'+file,{
-     signal:controller.signal,headers:{accept:'application/json'},redirect:'error'
-    });
-    if(!response.ok){reason='http-'+response.status;continue}
-    const raw=await response.text();
-    if(raw.length>1250000){reason='too-large';break}
-    try{value=JSON.parse(raw)}catch{reason='invalid-json';continue}
-    if(value&&typeof value==='object')return json(value,200,{'cache-control':'no-store'});
-    reason='invalid-format';
-   }catch(error){
-    reason=controller.signal.aborted?'timeout':'network';
-    if(controller.signal.aborted)break;
-   }
-  }
-  // Diagnostic metadata is admin-only; the player-facing app never gets it.
-  return json({error:'Game data source temporarily unavailable',
-   code:reason,sourceDataset:file},502);
- }finally{clearTimeout(timeout)}
+ if(!/^[A-Za-z.]+\\.json$/.test(file)||!names.has(file.slice(0,-5)))return no('Unknown source dataset',404);
+ const result=await readCurrentGameFile(file);
+ if(result.ok)return json(result.value,200,{'cache-control':'no-store'});
+ return json({error:'Game data source temporarily unavailable',
+  code:result.code,sourceDataset:file,attempts:result.attempts},502);
 }
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/runtime-capabilities'&&method==='GET')
- return json({codeRelease:'0.355.0',ownerEditors:[
+ return json({codeRelease:'0.358.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists'],
-  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true});
+  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
