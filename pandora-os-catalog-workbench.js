@@ -64,7 +64,7 @@
       h('div',{class:'os-sync-advanced-actions'},[testWrite,github,exportButton])
     ]);
     actions.append(live,archiveChoice,reviewSteps,advanced);
-    view.append(intro,actions,status,diagnostic,progress,summary,filters,overview,search,results);
+    view.append(intro,actions,summary,status,diagnostic,progress,filters,overview,search,results);
     for(const element of [filters,overview,search,results])element.hidden=true;
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
