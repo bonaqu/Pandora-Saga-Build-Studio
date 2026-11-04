@@ -40,12 +40,11 @@
       text:'Применить выбранные изменения',disabled:true});
     const testWrite = h('button',{type:'button',class:'button-action',
       text:'Проверить сохранение правок',
-      title:'Создаёт и удаляет только две временные записи, не изменяя игровые данные',disabled:false});
+      disabled:false});
     const github = h('button',{type:'button',class:'button-action',
-      text:'Создать PR в GitHub',disabled:true,
-      title:'Подготовить отдельное предложение изменений в репозитории, без автоматического объединения'});
+      text:'Создать PR в GitHub',disabled:true});
     const search = h('input', {type:'search',class:'os-sync-search',
-      placeholder:'Поиск изменений по названию…','aria-label':'Поиск изменений'});
+      placeholder:'Поиск по названию, описанию и связанным предметам…','aria-label':'Поиск изменений'});
     const progress = h('progress', {class:'catalog-import-progress',max:'100',value:'0'});
     progress.hidden=true;
     const filters=h('div',{class:'os-sync-filters',role:'group','aria-label':'Фильтр изменений'});
@@ -100,7 +99,10 @@
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
     let formattingCount=0;
-    let expanded = new Set(), full = new Set(), filterKind='all';
+    let expanded = new Set(), full = new Set(), expandedDetails=new Set(),
+        expandedReferences=new Set(), filterKind='all';
+    let renderedQuery='',renderedFilter='all';
+    const searchCache=new Map();
     let githubReady = false, publishedSnapshot = null;
     const descriptions=new Map();
     const describe=change=>{
@@ -112,7 +114,8 @@
     const filterChoices=[
       ['all','Все'],['added','Новые'],['changed','Изменённые'],
       ['removed','Удалённые'],['accepted','Выбранные'],['declined','Не выбраны'],
-      ['needsReview','Требует проверки'],['readable','Расшифрованы']
+      ['needsReview','Требует проверки'],['links','Игровые ссылки'],
+      ['sameVisible','Текст совпадает'],['readable','Расшифрованы']
     ];
     const filterButtons=new Map();
     for(const [id,label]of filterChoices){
@@ -130,6 +133,8 @@
         accepted:'Только изменения с поставленной галочкой.',
         declined:'Изменения без галочки, не выбранные для применения.',
         needsReview:'Неоднозначные или неизвестные параметры — требуют ручного анализа.',
+        links:'Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.',
+        sameVisible:'Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.',
         readable:'Изменения, для которых доступны понятные названия и описания.'
       })[id]);
       filters.append(button);filterButtons.set(id,button);
@@ -138,6 +143,8 @@
       if(filterKind==='accepted')return chosen.has(change.id);
       if(filterKind==='declined')return !chosen.has(change.id);
       if(filterKind==='needsReview')return describe(change).uncertain;
+      if(filterKind==='links')return describe(change).rows.some(row=>row.linkChanged);
+      if(filterKind==='sameVisible')return describe(change).rows.some(row=>row.sameVisible);
       if(filterKind==='readable')return !describe(change).uncertain;
       return filterKind==='all'||change.kind===filterKind;
     }
@@ -161,7 +168,7 @@
       formattingLabel.textContent='Привести переносы строк в описаниях к виду игрового сайта'+
         (formattingCount?' · '+formattingCount:'');
       formattingInfo.textContent=formattingCount
-        ?'Это '+formattingCount+' описаний, отличающихся только переносами строк. Игровые характеристики не меняются. По умолчанию выключено; для сохранения потребуется подтверждение.'
+        ?'Это '+formattingCount+' записей с описаниями, отличающимися только переносами строк. Игровые характеристики не меняются. По умолчанию выключено; для сохранения потребуется подтверждение.'
         :'Отличий только в переносах нет. Отдельное обновление оформления не требуется.';
       acceptAll.disabled = busy || !changes.some(safe);
       declineAll.disabled = busy || !changes.length;
@@ -178,6 +185,8 @@
         removed:changes.filter(row=>row.kind==='removed').length,
         accepted:selected,declined:changes.length-selected,
         needsReview:changes.filter(row=>describe(row).uncertain).length,
+        links:changes.filter(row=>describe(row).rows.some(field=>field.linkChanged)).length,
+        sameVisible:changes.filter(row=>describe(row).rows.some(field=>field.sameVisible)).length,
         readable:changes.filter(row=>!describe(row).uncertain).length
       };
       for(const [id,label]of filterChoices){
@@ -209,17 +218,50 @@
         : baseline ? 'Различий в игровых данных нет' : '';
     }
     const checked = change => chosen.has(change.id);
+    // Search resolved descriptions and item names without exposing source IDs.
+    // Cache once per review so typing does not reparse large catalogs.
+    function searchableText(change){
+      if(searchCache.has(change.id))return searchCache.get(change.id);
+      const description=describe(change);
+      const referenceName=id=>{
+        const item=upstream?.items?.[id]||baseline?.items?.[id];
+        const name=typeof item?.name==='string'?item.name:item?.name?.ru;
+        return typeof name==='string'?name:'';
+      };
+      const readable=value=>String(value??'')
+        .replace(/<item\s+([0-9]{1,12})\s*\/?>/gi,(_,id)=>referenceName(id)||' ')
+        .replace(/<br\s*\/?>/gi,' ');
+      const text=[
+        review.labels[change.dataset]||change.dataset,
+        change.title,description.title,description.summary,
+        ...description.rows.flatMap(field=>[
+          field.label,field.linkedItemName||'',
+          field.beforeFull??field.before,field.afterFull??field.after
+        ])
+      ].map(readable).join(' ').toLocaleLowerCase();
+      searchCache.set(change.id,text);
+      return text;
+    }
     function setChoice(change, value) {
       if (busy) return;
       if (value) chosen.add(change.id);
       else chosen.delete(change.id);
-      if(filterKind==='accepted'||filterKind==='declined')render();
-      else refreshActions();
+      if(filterKind==='accepted'||filterKind==='declined'){
+        const inputs=[...results.querySelectorAll('.os-sync-record-label input[type="checkbox"]')];
+        const focusIndex=inputs.indexOf(document.activeElement);
+        render();
+        if(focusIndex>=0){
+          const remaining=[...results.querySelectorAll('.os-sync-record-label input[type="checkbox"]')];
+          (remaining[Math.min(focusIndex,remaining.length-1)]||search)
+            .focus({preventScroll:true});
+        }
+      }else refreshActions();
     }
 
     // Build a safe interactive preview from validated source tokens, never from HTML.
     // An item absent from published D1 can be inspected but not linked as published.
-    function linkedDescription(source,language='ru') {
+    function linkedDescription(source,language='ru',referenceContext='') {
+      let occurrence=0;
       const wrap=h('span',{class:'os-sync-linked-text'});
       const names=key=>{
         const item=upstream?.items?.[key]||baseline?.items?.[key];
@@ -235,11 +277,14 @@
           wrap.append(document.createTextNode(segment.text));continue;
         }
         const reference=h('span',{class:'os-sync-reference'});
+        const refKey=referenceContext?
+          referenceContext+'|'+segment.id+'|'+(occurrence++):null;
+        const wasExpanded=refKey?expandedReferences.has(refKey):false;
         const button=h('button',{type:'button',class:'os-sync-item-ref',
-          title:'Игровая ссылка на предмет. Нажми для предпросмотра.',
           'aria-label':'Показать связанный предмет: '+segment.text,
-          'aria-expanded':'false',text:segment.text});
-        const preview=h('span',{class:'os-sync-reference-preview',hidden:true});
+          'aria-expanded':String(wasExpanded),text:segment.text});
+        hint(button,'Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.');
+        const preview=h('span',{class:'os-sync-reference-preview',hidden:!wasExpanded});
         preview.append(h('strong',{text:segment.text}),
           h('small',{text:'Связанный предмет · игровая ссылка в описании'}));
         const record=upstream?.items?.[segment.id]||baseline?.items?.[segment.id];
@@ -262,6 +307,10 @@
           const expanded=preview.hidden;
           preview.hidden=!expanded;
           button.setAttribute('aria-expanded',String(expanded));
+          if(refKey){
+            if(expanded)expandedReferences.add(refKey);
+            else expandedReferences.delete(refKey);
+          }
         };
         reference.append(button,preview);
         wrap.append(reference);
@@ -276,6 +325,12 @@
       if(description.caution)content.append(h('p',{
         class:'os-sync-change-caution',text:description.caution}));
       const details=h('details',{class:'os-sync-field-details'});
+      details.open=expandedDetails.has(change.id);
+      details.addEventListener('toggle',()=>{
+        if(!details.isConnected)return;
+        if(details.open)expandedDetails.add(change.id);
+        else expandedDetails.delete(change.id);
+      });
       details.append(h('summary',{text:'Посмотреть подробно · '+description.rows.length}));
       if(description.rows.length){
         for(const field of description.rows){
@@ -283,22 +338,24 @@
           const oldValue=h('span',{class:'os-sync-full-value os-sync-old'});
           const newValue=h('span',{class:'os-sync-full-value os-sync-new'});
           oldValue.append(field.sourceBefore!==null&&field.sourceBefore!==undefined?
-            linkedDescription(field.sourceBefore,language):
+            linkedDescription(field.sourceBefore,language,change.id+'|'+field.label+'|old'):
             document.createTextNode(String(field.beforeFull??field.before)));
           newValue.append(field.sourceAfter!==null&&field.sourceAfter!==undefined?
-            linkedDescription(field.sourceAfter,language):
+            linkedDescription(field.sourceAfter,language,change.id+'|'+field.label+'|new'):
             document.createTextNode(String(field.afterFull??field.after)));
-          if(field.difference)newValue.append(h('small',{
-            class:'os-sync-value-delta',
-            text:(field.delta>0?'▲ ':'▼ ')+field.difference,
-            title:'Разница между старым и новым числом. Это не оценка полезности изменения.'}));
+          if(field.difference){
+            const delta=h('small',{class:'os-sync-value-delta',
+              text:(field.delta>0?'▲ ':'▼ ')+field.difference});
+            hint(delta,'Изменение числа относительно опубликованной версии. Знак не означает, что изменение полезно или вредно.');
+            newValue.append(delta);
+          }
           const label=h('strong',{text:field.label});
           if(/^[0-9]{1,12}$/.test(field.linkedItemId||'')&&field.linkedItemName){
             const start=field.label.indexOf(field.linkedItemName);
             if(start>=0){
               label.replaceChildren(
                 document.createTextNode(field.label.slice(0,start)),
-                linkedDescription('<item '+field.linkedItemId+'>','ru'),
+                linkedDescription('<item '+field.linkedItemId+'>','ru',change.id+'|'+field.label+'|label'),
                 document.createTextNode(field.label.slice(start+field.linkedItemName.length))
               );
             }
@@ -348,21 +405,21 @@
     function render() {
       results.replaceChildren();
       const query = search.value.trim().toLocaleLowerCase();
+      // The review uses the main modal's scrollbar, not a nested list.
+      const scrollHost=view.closest('.modal')||results;
+      const scrollBefore=scrollHost.scrollTop;
+      const changedView=query!==renderedQuery||filterKind!==renderedFilter;
       for (const name of [...importer.files.filter(x=>x!=='meta'),'meta']) {
         const group = changes.filter(row=>row.dataset===name);
         if (!group.length) continue;
-        const filtered = (query ? group.filter(row=>
-          (review.labels[name]||name).toLocaleLowerCase().includes(query) ||
-          row.key.toLocaleLowerCase().includes(query) ||
-          row.title.toLocaleLowerCase().includes(query) ||
-          describe(row).title.toLocaleLowerCase().includes(query) ||
-          describe(row).summary.toLocaleLowerCase().includes(query) ||
-          describe(row).rows.some(field=>field.label.toLocaleLowerCase().includes(query))) : group).filter(matchesFilter);
+        const filtered=(query ? group.filter(row=>searchableText(row).includes(query))
+          :group).filter(matchesFilter);
         if (!filtered.length) continue;
         const panel = h('details',{class:'os-sync-group'+(name==='meta'?' os-sync-service-group':''),
           'data-game-dataset':name});
         panel.open = expanded.has(name) || Boolean(query);
         panel.addEventListener('toggle',()=> {
+          if(!panel.isConnected)return;
           if (panel.open) expanded.add(name);
           else expanded.delete(name);
         });
@@ -406,16 +463,21 @@
         const list = h('div',{class:'os-sync-list'});
         for (const change of filtered.slice(0,limit)) {
           const description=describe(change);
+          const hasLinks=description.rows.some(field=>field.linkChanged);
+          const visuallySame=description.rows.some(field=>field.sameVisible);
           const row = h('article',{class:'os-sync-record'+(description.uncertain?' os-sync-review-caution':'')});
           const helper=h('small',{class:'os-sync-review-level',
             text:description.service?'Служебные данные · ручная проверка':
+              hasLinks?'Игровая ссылка · требуется ручная проверка':
+              visuallySame?'Видимый текст совпадает · требуется ручная проверка':
               description.uncertain?'Есть нерасшифрованные параметры':
               'Значения расшифрованы · проверь перед выбором'});
           if(variantTotal.get(description.title)>1)
             helper.textContent+=' · Вариант '+variantOrder.get(change.id)+
               ' из '+variantTotal.get(description.title)+' с этим названием';
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
-            'aria-label':'Выбрать изменение '+description.title});
+            'aria-label':'Выбрать изменение '+description.title+
+              (hasLinks||visuallySame?' — требуется отдельная проверка':'')});
           input.addEventListener('change',()=>setChoice(change,input.checked));
           const indicator = change.kind==='added'?'Добавлено':
             change.kind==='removed'?'Удалено':'Изменено';
@@ -425,7 +487,20 @@
               h('strong',{text:description.title}),helper
             ]),
             h('span',{class:'os-sync-kind '+change.kind,text:indicator})
-           ]),fieldPreview(change,description));
+           ]));
+          if(hasLinks||visuallySame){
+            const signals=h('div',{class:'os-sync-review-signals'});
+            if(hasLinks)signals.append(h('small',{
+              class:'os-sync-review-signal os-sync-review-signal-link',
+              text:'Связь с предметом изменилась · проверить вручную'
+            }));
+            if(visuallySame)signals.append(h('small',{
+              class:'os-sync-review-signal',
+              text:'Текст выглядит одинаково · проверить исходное отличие'
+            }));
+            row.append(signals);
+          }
+          row.append(fieldPreview(change,description));
           list.append(row);
         }
         panel.append(list);
@@ -439,6 +514,10 @@
       }
       if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',text:'По этому фильтру изменений нет. Измени запрос или выбери «Все».'}));
       refreshActions();
+      // Keep the reviewer's place after selection; only a new search or
+      // category filter intentionally starts at the beginning.
+      scrollHost.scrollTop=changedView?0:scrollBefore;
+      renderedQuery=query;renderedFilter=filterKind;
     }
 
     const sourceFile = async (name, from) => {
@@ -477,7 +556,9 @@
         :'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.';
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
-      changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
+      changes=[];chosen=new Set();expanded=new Set();full=new Set();
+      expandedDetails.clear();expandedReferences.clear();searchCache.clear();
+      filterKind='all';renderedQuery='';renderedFilter='all';search.value='';
       formattingCount=0;formattingToggle.checked=false;
       results.replaceChildren();summary.textContent='';
       progress.value=0;
@@ -732,9 +813,9 @@
     ]).then(([settings,current])=>{
       githubReady=settings.configured===true;
       publishedSnapshot=current.active||null;
-      github.title=githubReady
-        ? 'Подготовить PR из опубликованного каталога'
-        : 'Для PR требуется секретный GitHub-токен в настройках Worker';
+      github.setAttribute('aria-label',githubReady
+        ? 'Создать PR в GitHub из опубликованного каталога'
+        : 'Создать PR в GitHub — требуется настройка токена на сервере');
       refreshActions();
     }).catch(()=>{githubReady=false;refreshActions()});
 

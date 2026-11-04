@@ -42,6 +42,8 @@ test('rendered description equality does not hide a newly linked game item',()=>
  assert.ok(row);
  assert.equal(row.beforeFull,row.afterFull);
  assert.equal(row.linkChanged,true);
+ assert.equal(result.uncertain,true,'Link-only changes must require explicit approval');
+ assert.match(result.caution,/выбери изменение вручную/);
  assert.match(row.note,/ссылка на предмет/);
  assert.equal(row.sourceAfter,next.desc);
 });
@@ -73,6 +75,8 @@ test('unchanged rendered English text is explained in the review model',()=>{
  const row=result.rows.find(r=>r.label==='Описание на английском');
  assert.ok(row);
  assert.equal(row.sameVisible,true);
+ assert.equal(result.uncertain,true,'Invisible source changes must never be bulk-safe');
+ assert.match(result.caution,/выбирай вручную/);
  assert.match(row.note,/Видимый текст совпадает/);
 });
 
@@ -89,4 +93,18 @@ test('interactive links are safe UI controls with explicit non-published handlin
  assert.match(css,/text-decoration:underline dotted/);
  assert.match(app,/document\.body\.append\(root\)/);
  assert.match(app,/panel\.inert=ownerDockCollapsed/);
+});
+
+
+test('admin filters expose link and invisible changes and preserve expanded context',()=>{
+ const workbench=file('pandora-os-catalog-workbench.js');
+ assert.match(workbench,/\['links','Игровые ссылки'\]/);
+ assert.match(workbench,/\['sameVisible','Текст совпадает'\]/);
+ assert.match(workbench,/expandedDetails\.has\(change\.id\)/);
+ assert.match(workbench,/expandedReferences\.has\(refKey\)/);
+ assert.match(workbench,/searchableText\(row\)\.includes\(query\)/);
+ assert.match(workbench,/scrollHost=view\.closest\('\.modal'\)\|\|results/);
+ assert.match(workbench,/changedView\?0:scrollBefore/);
+ assert.match(workbench,/hasLinks\|\|visuallySame/);
+ assert.match(workbench,/Изменилась привязка ссылок на предметы/);
 });

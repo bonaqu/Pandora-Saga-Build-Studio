@@ -222,3 +222,32 @@
 @media(prefers-reduced-motion:reduce){
   .os-sync-item-ref{transition:none}
 }
+
+
+/* Review-only source semantics: visual cues never imply auto-approval. */
+.os-sync-review-signals{
+ display:flex;align-items:center;gap:5px 7px;flex-wrap:wrap;
+ margin:6px 0 4px 26px;
+}
+.os-sync-review-signal{
+ display:inline-flex;align-items:center;gap:4px;
+ padding:3px 7px;border:1px solid #91704b;border-radius:5px;
+ background:#33261a;color:#f3ce9a;
+ font-size:10px;line-height:1.4;font-weight:600;
+}
+.os-sync-review-signal-link{
+ border-style:dashed;border-color:#b78b53;
+ background:#382818;color:#ffda9b;
+}
+.os-sync-record.os-sync-review-caution:has(.os-sync-review-signal){
+ border-color:#9b764e;
+}
+.os-sync-results .os-sync-record:focus-within{
+ border-color:#bd9159;
+}
+.os-sync-field-details[open]>summary{
+ color:#f6d49d;
+}
+@media(max-width:580px){
+ .os-sync-review-signals{margin-left:0}
+}
