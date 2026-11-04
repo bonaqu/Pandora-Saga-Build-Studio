@@ -305,12 +305,23 @@ function describe(change,ctx={}){
      if(itemTitle==='Предмет без подтверждённого названия')
       unknown('Добыча содержит отсутствующий в каталоге предмет: '+String(id));
      const item=groupName+' · '+itemTitle;
-     if(!aa[i]||!bb[i])add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет');
-     else for(const field of new Set([...Object.keys(aa[i]),...Object.keys(bb[i])])){
+     // Keep a verified source identity only inside the review model so the
+     // label can offer a safe card preview without showing a raw database ID.
+     const attachItem=()=>{
+      const row=rows.at(-1);
+      if(row&&(row.label===item||row.label.startsWith(item+' · '))){
+       row.linkedItemId=String(id);
+       row.linkedItemName=itemTitle;
+      }
+     };
+     if(!aa[i]||!bb[i]){
+      add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет');
+      attachItem();
+     }else for(const field of new Set([...Object.keys(aa[i]),...Object.keys(bb[i])])){
       if(field==='i'||field==='t'||same(aa[i][field],bb[i][field]))continue;
       const label={p:'Шанс в таблице',n:'Количество',slotAdd:'Доп. слоты',
        lo:'Нижняя граница',hi:'Верхняя граница'}[field];
-      if(label)add(item+' · '+label,aa[i][field],bb[i][field]);
+      if(label){add(item+' · '+label,aa[i][field],bb[i][field]);attachItem();}
       else unknown(group+'.'+field);
      }
     }
