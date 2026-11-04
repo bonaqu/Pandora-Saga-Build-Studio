@@ -76,7 +76,7 @@ test('catalog dictionary keys cannot silently refer to a different game object',
 test('reserved prototype keys are rejected before translating source records',()=>{
  const {snapshot,legacy}=fixture();
  snapshot.items=JSON.parse('{"__proto__":{"id":101,"name":"Fake"}}');
- assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Unsafe or duplicate items record key/);
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Unsafe nested catalog key: source[.]items[.]__proto__/);
 });
 
 
