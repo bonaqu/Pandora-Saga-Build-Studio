@@ -1,11 +1,12 @@
 (function(root){
 'use strict';
 const names={life:'Очки здоровья (ОЗ)',level:'Уровень',vit:'Выносливость',str:'Сила',
-agi:'Ловкость',dex:'Точность',spi:'Дух',int:'Интеллект',warding:'Уклонение',
+agi:'ПРВ (проворство)',dex:'ЛВК (ловкость)',spi:'Дух',int:'Интеллект',warding:'Уклонение',
 ac:'Защита',magicProtection:'Магическая защита',name:'Название',desc:'Описание',
 nameEn:'Название на английском',descEn:'Описание на английском',
+d:'Описание на английском',
 classes:'Доступные классы',effects:'Эффекты',slot:'Слот экипировки',W:'Атака',
-PEN:'Пробитие',n:'Название',blurbRu:'Описание',blurb:'Английское описание',
+PEN:'Пробитие',n:'Название на английском',blurbRu:'Описание',blurb:'Английское описание',
 quest:'Задание',kind:'Тип',mobs:'Монстры',p:'Значение шанса в таблице',
 slotAdd:'Дополнительные слоты',lo:'Нижняя граница',hi:'Верхняя граница'};
 const elements={physical:'физическому урону',fire:'огню',cold:'холоду',
@@ -15,16 +16,18 @@ const plural=(count,one,few,many)=>{
  const n=Math.abs(count)%100,units=n%10;
  return n>=11&&n<=14?many:units===1?one:units>=2&&units<=4?few:many;
 };
-const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+const canonical=value=>Array.isArray(value)?value.map(canonical):
+ plain(value)?Object.fromEntries(Object.keys(value).sort().map(key=>[key,canonical(value[key])])):value;
+const same=(a,b)=>JSON.stringify(canonical(a))===JSON.stringify(canonical(b));
 const value=x=>x===undefined?'отсутствует':x===null?'не указано':
  typeof x==='number'?new Intl.NumberFormat('ru-RU').format(x):
  typeof x==='boolean'?(x?'да':'нет'):
  typeof x==='string'?(x.length>160?x.slice(0,157)+'…':x):
  Array.isArray(x)?x.length+' записей':'изменён состав';
 const itemName=(id,ctx)=>{const item=ctx?.upstream?.items?.[id]||ctx?.baseline?.items?.[id];
- const n=item?.name?.ru||item?.name;return typeof n==='string'?n:'Предмет №'+id};
+ const n=item?.name?.ru||item?.name;return typeof n==='string'?n:'Предмет без подтверждённого названия'};
 const monsterName=(id,ctx)=>ctx?.upstream?.monsters?.[id]?.name||
- ctx?.baseline?.monsters?.[id]?.name||'Монстр №'+id;
+ ctx?.baseline?.monsters?.[id]?.name||'Монстр без подтверждённого названия';
 const fieldName=path=>path.startsWith('resists.')?
  (elements[path.slice(8)]?'Сопротивление '+elements[path.slice(8)]:null):
  names[path]||null;
@@ -54,7 +57,12 @@ function describeCompound(kind,before,after,ctx,add,unknown){
  let touched=0;
  const safeAdd=(title,a,b)=>{if(touched>=60){unknown('Остались изменения вне первых 60 строк');return}
    add(title,a,b);touched++};
- const shortItem=(id)=>itemName(id,ctx);
+ const shortItem=id=>{
+  const result=itemName(id,ctx);
+  if(result==='Предмет без подтверждённого названия')
+   unknown('Предмет отсутствует в каталоге: '+String(id));
+  return result;
+ };
  if(kind==='trades'){
   const oldTrades=enumerate(old.trades,'id'),newTrades=enumerate(next.trades,'id');
   let changed=0;
@@ -75,8 +83,19 @@ function describeCompound(kind,before,after,ctx,add,unknown){
     source?.npcs?.[k]?.name||'NPC №'+k).join(', '):'не указаны';
    if(!same(a.npc,b.npc))safeAdd(name+' · NPC обмена',
      npcLabel(a.npc,old),npcLabel(b.npc,next));
+   if(!same(a.limit,b.limit)){
+    const limit=value=>{
+      if(value==null)return 'без указанного ограничения';
+      const period={daily:'в день',weekly:'в неделю',monthly:'в месяц'}[value.period];
+      if(Number.isSafeInteger(value.n)&&value.n>=0&&period)
+        return value.n+' '+plural(value.n,'раз','раза','раз')+' '+period;
+      unknown('Обмен: неизвестный формат ограничения');
+      return 'изменено неизвестное ограничение';
+    };
+    safeAdd(name+' · Лимит обменов',limit(a.limit),limit(b.limit));
+   }
    for(const key of fields(a,b))
-    if(!['id','i','gold','honor','exp','mats','npc'].includes(key)&&
+    if(!['id','i','gold','honor','exp','mats','npc','limit'].includes(key)&&
       !same(a[key],b[key]))unknown('Обмен №'+id+': '+key);
   }
   for(const section of ['npcs','mapNames','limitMeta'])
@@ -104,17 +123,46 @@ function describeCompound(kind,before,after,ctx,add,unknown){
     for(let group=0;group<Math.max(oa.length,ob.length);group++){
      if(same(oa[group],ob[group]))continue;
      const slot=title+' · Набор наград '+(group+1);
-     const beforeItems=enumerate(oa[group],'i'),afterItems=enumerate(ob[group],'i');
+     // Reward rows can be items or gold ranges. A gold reward has no item ID;
+     // never identify it as an invented item or silently drop it.
+     const rewards=rows=>{
+      const result=new Map();
+      for(const [index,row] of (rows||[]).entries()){
+       const key=row?.i!=null?'item:'+String(row.i):
+        Array.isArray(row?.gold)?'gold:'+index:'unknown:'+index;
+       if(result.has(key))unknown('В сундуке несколько наград с одинаковым ID предмета: '+String(row?.i));
+       if(key.startsWith('unknown:'))unknown('Награда без известного типа');
+       result.set(key,row);
+      }
+      return result;
+     };
+     const beforeItems=rewards(oa[group]),afterItems=rewards(ob[group]);
      for(const itemId of new Set([...beforeItems.keys(),...afterItems.keys()])){
       const x=beforeItems.get(itemId),y=afterItems.get(itemId);
       if(same(x,y))continue;
-      const item=slot+' · '+shortItem(itemId);
-      if(!x||!y){safeAdd(item,x?'есть':'нет',y?'есть':'удалён');continue}
+      const goldReward=itemId.startsWith('gold:');
+      const item=slot+' · '+(goldReward?'Золото':shortItem((x||y)?.i));
+      if(!x||!y){
+       safeAdd(item,x?'есть':'нет',y?'есть':'удалено');
+       if(goldReward){
+        const reward=x||y;
+        if(Array.isArray(reward.gold))safeAdd(item+' · Сумма золота',
+         x?'прошлая версия':'не было',
+         y?reward.gold.map(value).join('–'):'удалено');
+       }
+       continue;
+      }
+      const goldValue=range=>Array.isArray(range)&&range.length===2&&
+       range.every(n=>typeof n==='number'&&Number.isFinite(n))
+       ?range.map(value).join('–'):'не указано';
+      if(!same(x.gold,y.gold))safeAdd(item+' · Сумма золота',
+       goldValue(x.gold),goldValue(y.gold));
       for(const [field,caption] of [['p','Шанс внутри набора'],
-        ['n','Количество'],['soul','Душа'],['slotAdd','Дополнительный слот']])
+        ['n','Количество'],['plus','Уровень заточки'],
+        ['soul','Душа'],['slotAdd','Дополнительный слот']])
        if(!same(x[field],y[field]))safeAdd(item+' · '+caption,x[field],y[field]);
       for(const field of fields(x,y))
-       if(!['i','p','n','soul','slotAdd'].includes(field)&&
+       if(!['i','gold','p','n','plus','soul','slotAdd'].includes(field)&&
          !same(x[field],y[field]))unknown('Награда '+itemId+': '+field);
      }
     }
@@ -149,12 +197,17 @@ function describeCompound(kind,before,after,ctx,add,unknown){
 }
 
 function describe(change,ctx={}){
- let title=change.title,summary='',caution='',uncertain=false;
+ let title=typeof (change.after?.name||change.before?.name)==='string'
+  ?(change.after?.name||change.before?.name):change.title;
+ let summary='',caution='',uncertain=false;
  const rows=[],technical=[];
  const add=(label,a,b)=>{if(same(a,b))return;
   const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
   const delta=numeric?b-a:null;
   rows.push({label,before:value(a),after:value(b),numeric,delta,
+   // Expanded reviews retain the entire known text; only the short summary clips it.
+   beforeFull:typeof a==='string'?a:undefined,
+   afterFull:typeof b==='string'?b:undefined,
    difference:delta===null||delta===0?'':(delta>0?'+':'−')+value(Math.abs(delta))});
  };
  const unknown=(path)=>{uncertain=true;technical.push(path)};
@@ -190,6 +243,8 @@ function describe(change,ctx={}){
  }else if(kind==='drops'){
   title='Добыча · '+monsterName(change.key,ctx);
   const old=change.before||{},next=change.after||{};
+  if(title.includes('без подтверждённого названия'))
+   unknown('Монстр отсутствует в каталоге: '+change.key);
   for(const [group,groupName] of [['d','Обычная добыча'],['s','Дополнительная добыча']]){
    const a=old[group]||[],b=next[group]||[];
    const byItem=list=>{const out=new Map();for(const entry of list){
@@ -203,7 +258,10 @@ function describe(change,ctx={}){
     const aa=before.get(key)||[],bb=after.get(key)||[];
     for(let i=0;i<Math.max(aa.length,bb.length);i++){
      if(same(aa[i],bb[i]))continue;
-     const id=(aa[i]||bb[i])?.i,item=groupName+' · '+itemName(id,ctx);
+     const id=(aa[i]||bb[i])?.i,itemTitle=itemName(id,ctx);
+     if(itemTitle==='Предмет без подтверждённого названия')
+      unknown('Добыча содержит отсутствующий в каталоге предмет: '+String(id));
+     const item=groupName+' · '+itemTitle;
      if(!aa[i]||!bb[i])add(item,aa[i]?'есть':'нет',bb[i]?'есть':'нет');
      else for(const field of new Set([...Object.keys(aa[i]),...Object.keys(bb[i])])){
       if(field==='i'||field==='t'||same(aa[i][field],bb[i][field]))continue;
@@ -246,17 +304,42 @@ function describe(change,ctx={}){
  }else{
   if(kind==='strings.en'){
    const [section,id]=change.key.split('/');
-   const linked=section==='items'?itemName(id,ctx):
-    section==='monsters'?monsterName(id,ctx):null;
-   title='Английский перевод · '+(linked||change.title);
+   const record=ctx.upstream?.[section]?.[id]||ctx.baseline?.[section]?.[id];
+   const localized=record?.name;
+   const instance=(ctx.upstream?.instances||ctx.baseline?.instances||[])
+    .find?.(row=>String(row.id)===String(id))?.name;
+   const branch=ctx.upstream?.meta?.branchLabels?.[id]||
+    ctx.baseline?.meta?.branchLabels?.[id];
+   const npc=ctx.upstream?.trades?.npcs?.[id]?.name||
+    ctx.baseline?.trades?.npcs?.[id]?.name;
+   const npcMap=ctx.upstream?.trades?.mapNames?.[id]?.name||
+    ctx.baseline?.trades?.mapNames?.[id]?.name;
+   const linked=[localized,instance,branch,npc,npcMap].find(v=>
+    typeof v==='string'&&v.trim());
+   const captions={items:'Предмет',monsters:'Монстр',skills:'Умение',
+    classes:'Класс',maps:'Локация',souls:'Душа',instances:'Подземелье',
+    branches:'Ветка мастерства',tradeNpcs:'NPC',tradeMaps:'Место обмена'};
+   title=(captions[section]||'Английский перевод')+' · '+
+    (linked||'название пока не найдено');
+   if(!linked)unknown('Русское название записи не найдено: '+change.key);
+   if(typeof change.before==='string'||typeof change.after==='string')
+    add('Название на английском',change.before,change.after);
+   else walk(change.before||{},change.after||{});
+   summary='Изменения английского названия или описания.';
+  }else{
+   // For a new or removed record, show the known fields instead of a bare ID.
+   walk(change.before||{},change.after||{});
+   summary={monsters:'Характеристики монстра',items:'Свойства предмета',
+    skills:'Параметры умения',classes:'Свойства класса'}[kind]||'Игровые данные';
   }
-  walk(change.before,change.after);
-  summary={monsters:'Характеристики монстра',items:'Свойства предмета',
-   skills:'Параметры умения'}[kind]||'Игровые данные';
+  if(change.kind==='added')summary='Добавлено: '+title+'. '+summary;
+  if(change.kind==='removed')summary='Удалено: '+title+'. '+summary;
  }
  const preview=rows.slice(0,2).map(row=>row.label+': '+row.before+' → '+row.after).join(' · ');
  if(preview&&!['drops','meta','instances','trades','chests','tables','expertise'].includes(kind))
-  summary=preview+(rows.length>2?' · ещё '+(rows.length-2):'');
+  summary=(change.kind==='added'?'Добавлено: '+title+'. ':
+    change.kind==='removed'?'Удалено: '+title+'. ':'')+
+   preview+(rows.length>2?' · ещё '+(rows.length-2):'');
  if(uncertain&&!caution)caution='Часть параметров требует ручной проверки перед публикацией.';
  return {title,summary,rows,technical,uncertain,caution,service:kind==='meta'};
 }

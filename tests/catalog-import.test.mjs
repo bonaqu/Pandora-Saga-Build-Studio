@@ -54,3 +54,45 @@ test('serialized source groups reassemble losslessly',()=>{
   assert.deepEqual(JSON.parse(result.entries[alias].map(e=>e.value.data).join('')),snapshot[source]);
  }
 });
+
+
+test('two instances with the same ID cannot silently overwrite the D1 record',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot.instances.push({id:777,name:'Collision'});
+ snapshot.meta.counts.instances=2;
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Duplicate or invalid instance ID/);
+});
+test('duplicate trade recipe IDs are rejected before any D1 import batches',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot.trades.trades.push({id:1,i:30});
+ snapshot.meta.counts.trades=2;
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Duplicate or invalid trade recipe ID/);
+});
+test('catalog dictionary keys cannot silently refer to a different game object',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot.items['100'].id=200;
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Mismatched items record identity/);
+});
+test('reserved prototype keys are rejected before translating source records',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot.items=JSON.parse('{"__proto__":{"id":101,"name":"Fake"}}');
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Unsafe nested catalog key: source[.]items[.]__proto__/);
+});
+
+
+test('nested prototype-like property names are blocked even inside translated descriptions',()=>{
+ const {snapshot,legacy}=fixture();
+ snapshot['strings.en'].items['1']=JSON.parse('{"n":"Sword","__proto__":{"isAdmin":true}}');
+ assert.throws(()=>rules.normalize(snapshot,makeLargeLocale(legacy)),/Unsafe nested catalog key/);
+});
+test('original bilingual source files satisfy the same structural and identity checks',()=>{
+ const full={};
+ for(const name of rules.files)
+  full[name]=JSON.parse(readFileSync(new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
+ const approved=JSON.parse(readFileSync(new URL('../data/localization/legacy-approved.v1.json',import.meta.url),'utf8'));
+ const result=rules.normalize(full,approved);
+ assert.equal(result.datasets.length,19);
+ assert.equal(result.counts.items,Object.keys(full.items).length);
+ assert.equal(result.counts.instances,full.instances.length);
+ assert.equal(result.counts.trades,full.trades.trades.length);
+});

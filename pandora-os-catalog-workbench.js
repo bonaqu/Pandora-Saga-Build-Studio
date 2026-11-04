@@ -182,9 +182,10 @@
       if(description.rows.length){
         for(const field of description.rows)details.append(h('div',{
           class:'os-sync-field os-sync-human-field'},[
-          h('strong',{text:field.label}),h('span',{text:field.before}),
+          h('strong',{text:field.label}),
+          h('span',{class:'os-sync-full-value',text:field.beforeFull??field.before}),
           h('span',{class:'os-sync-field-arrow',text:'→'}),
-          h('span',{text:field.after}),
+          h('span',{class:'os-sync-full-value',text:field.afterFull??field.after}),
           ...(field.difference?[h('small',{class:'os-sync-value-delta',
             text:'Изменение: '+field.difference})]:[])
         ]));
@@ -304,7 +305,7 @@
       sourceBanner.hidden=false;
       sourceBanner.textContent=from==='server'
         ?'Сейчас сравниваются данные сайта и текущей игры'
-        :'Сейчас сравниваются данные сайта и сохранённой копии (копия может быть старее)';
+        :'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.';
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
@@ -423,7 +424,9 @@
         const current=await request('/api/admin/catalog/status',{});
         if (current.active!==activeSnapshot) throw Error('D1 обновлена после проверки. Сверь данные заново.');
         await request('/api/admin/catalog/initialize',{});
-        const snapshot='ps-'+crypto.randomUUID().replaceAll('-');
+        const snapshot='ps-'+crypto.randomUUID().replaceAll('-','');
+        if(!/^[a-z0-9-]{8,64}$/.test(snapshot))
+          throw Error('Не удалось подготовить новую версию каталога');
         const prepared=staged.normalized;
         const total=Object.values(prepared.counts).reduce((n,count)=>n+count,0);
         let done=0;
@@ -440,7 +443,7 @@
             await request('/api/admin/catalog/batch',{snapshot,dataset:name,records:batch});
             done+=batch.length;
             progress.value=Math.round(done/total*100);
-            status.textContent='Подготавливаю '+name+' · '+done+'/'+total;
+            status.textContent='Подготавливаю обновление · '+done+' из '+total;
           }
         }
         const result=await request('/api/admin/catalog/publish',{
