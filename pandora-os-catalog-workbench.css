@@ -173,3 +173,52 @@
  text-decoration-color:#b78c54;text-decoration-thickness:1px;text-underline-offset:3px;
  font:inherit}
 .wiki-description .wiki-link:hover,.wiki-description .wiki-link:focus-visible{color:#ffe2a4}
+
+
+/* Review 0.363: show meaning and linked game entities, not duplicate technical deltas. */
+.os-sync-human-field{grid-template-columns:minmax(130px,1.1fr) minmax(0,1fr) 16px minmax(0,1fr)}
+.os-sync-human-field .os-sync-full-value{min-width:0;white-space:pre-wrap;line-height:1.55}
+.os-sync-human-field .os-sync-new{font-weight:inherit}
+.os-sync-human-field .os-sync-value-delta{
+  display:inline-flex;grid-column:auto;vertical-align:baseline;align-items:center;
+  border:1px solid #816741;border-radius:12px;padding:1px 6px;
+  margin:0 0 0 8px;white-space:nowrap;color:#f1cc92;
+  background:#332719;font-size:10px;font-weight:600;font-variant-numeric:tabular-nums;
+}
+.os-sync-field-note{grid-column:2/-1;margin:0;color:#cbb48f;
+  font-size:11px;line-height:1.55}
+.os-sync-description-field{align-items:start}
+.os-sync-item-ref{
+  display:inline;border:0;background:none;padding:0;
+  color:#f7d38a;font:inherit;cursor:pointer;
+  text-decoration:underline dotted #f4bd68 1.5px;text-underline-offset:3px;
+  transition:color .15s ease,text-decoration-color .15s ease;
+}
+.os-sync-item-ref:hover,.os-sync-item-ref:focus-visible{
+  color:#fff1bf;text-decoration-color:#ffde95
+}
+.os-sync-item-ref:focus-visible{outline:2px solid #f7ca7c;outline-offset:2px}
+.os-sync-item-ref[aria-expanded="true"]{color:#fff1b9}
+.os-sync-linked-text{white-space:pre-wrap}
+.os-sync-reference-preview{
+  display:grid;gap:5px;margin:8px 0;padding:11px 12px;
+  border:1px solid #99734b;border-left:3px solid #d6a55b;border-radius:5px;
+  background:linear-gradient(135deg,#332517,#211a13);
+  color:#ebd2aa;box-shadow:0 4px 15px #09070688;white-space:normal;
+}
+.os-sync-reference-preview[hidden]{display:none!important}
+.os-sync-reference-preview strong{color:#ffe0a5}
+.os-sync-reference-preview small{color:#ceb28a;font-size:11px}
+.os-sync-reference-preview p{margin:4px 0;line-height:1.5;white-space:pre-wrap;
+  max-height:8em;overflow:auto}
+.os-sync-reference-open{color:#f4cc85;text-decoration:underline;text-underline-offset:3px}
+.os-sync-reference-open:hover{color:#ffeaad}
+@media(max-width:670px){
+  .os-sync-human-field{grid-template-columns:minmax(0,1fr) 16px minmax(0,1fr)}
+  .os-sync-human-field>strong{grid-column:1/-1}
+  .os-sync-field-note{grid-column:1/-1}
+  .os-sync-human-field .os-sync-value-delta{margin-left:5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .os-sync-item-ref{transition:none}
+}
