@@ -6166,7 +6166,9 @@ async function startStudio({archive=false}={}){
 }
 $('startupRetry').onclick=()=>void startStudio();
 $('startupArchive').onclick=()=>void startStudio({archive:true});
-void startStudio();
+// Local development serves its bundled snapshot; the published GitHub Pages
+// site always requires D1 unless the visitor explicitly opts into archive mode.
+void startStudio({archive:['127.0.0.1','localhost'].includes(location.hostname)});
 void window.PandoraAccountUI.init({
  baseUrl:API,legacyKey:()=>tabGuestSecret,
  onLogin:({register})=>{
