@@ -723,9 +723,11 @@ function showWorkbench(){
  if(stageSlotPickerOpen)closeStagePicker(false);
  panel.classList.add('is-open');panel.setAttribute('aria-modal','true');
  backdrop.hidden=false;document.body.classList.add('studio-workbench-open');
- // When editing in the large workbench, keep the owner dock clear of inline
- // NPC, map and monster controls. The status and expand action stay available.
- if(adminEditing&&adminToken&&!wasOpen){ownerDockCollapsed=true;refreshOwnerUI()}
+ // The editor is a floating drawer, not part of the game grid. Keep it
+ // unobtrusive when entering a workbench; opening it remains user controlled.
+ if(adminEditing&&adminToken&&!wasOpen&&!ownerDockCollapsed){
+  ownerDockCollapsed=true;refreshOwnerUI();
+ }
  if(!wasOpen)$('dockClose')?.focus({preventScroll:true});
 }
 function closeWorkbench(){
@@ -734,7 +736,7 @@ function closeWorkbench(){
  panel.classList.remove('is-open');panel.removeAttribute('aria-modal');
  if(backdrop)backdrop.hidden=true;
  document.body.classList.remove('studio-workbench-open');
- if(adminEditing&&adminToken){ownerDockCollapsed=false;refreshOwnerUI()}
+
  const old=workbenchReturnFocus;workbenchReturnFocus=null;
  newBuildPromptOpen=false;newBuildDraftName=null;
  if(old?.isConnected&&typeof old.focus==='function')old.focus({preventScroll:true});
@@ -5145,7 +5147,7 @@ function updateAdminHint(){
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
 const ownerEdits=[];
-let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=false;
+let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=true;
 let activeInlineEditor=null;
 let editIsSaving=false;
 function closeInlineEditor(){
@@ -5170,24 +5172,26 @@ function refreshOwnerUI(){
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
    ownerSaveState==='saving';
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
-   const body=root.querySelector('.owner-dock-body');
-   if(body){
-     body.inert=ownerDockCollapsed;
-     body.setAttribute('aria-hidden',String(ownerDockCollapsed));
-   }
+  root.dataset.saveState=ownerSaveState;
+  const panel=root.querySelector('.owner-dock-panel');
+  if(panel){
+   panel.inert=ownerDockCollapsed;
+   panel.setAttribute('aria-hidden',String(ownerDockCollapsed));
+  }
   const toggle=root.querySelector('[data-owner-collapse]');
-  if(toggle){toggle.textContent=ownerDockCollapsed?'▾ Панель редактора':'▴ Свернуть';
-   toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed))}
+  if(toggle){
+   toggle.textContent=ownerDockCollapsed?'✎ Редактор':'◀ Скрыть';
+   toggle.setAttribute('aria-label',ownerDockCollapsed?
+    'Открыть боковую панель редактора сайта':'Скрыть боковую панель редактора сайта');
+   toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed));
+  }
  };
  if(dock){update(dock);return}
  const root=h('aside',{id:'ownerDock',class:'owner-dock',role:'region',
   'aria-label':'Редактор сайта · изменения сохраняются автоматически'});
  const head=h('div',{class:'owner-dock-head'},[
   h('strong',{class:'owner-dock-title',text:'✎ Редактор сайта'}),
-  h('small',{class:'owner-dock-online',text:'Редактирование включено'}),
-  h('button',{type:'button','data-owner-collapse':'',
-   'aria-label':'Свернуть или развернуть панель редактора',
-   onclick:()=>{ownerDockCollapsed=!ownerDockCollapsed;refreshOwnerUI()}})
+  h('small',{class:'owner-dock-online',text:'Редактирование включено'})
  ]);
  const status=h('div',{class:'owner-dock-save-state','data-owner-save-state':'',
   role:'status','aria-live':'polite'});
@@ -5230,8 +5234,40 @@ function refreshOwnerUI(){
    }})
  ]);
  const body=h('div',{class:'owner-dock-body'},[status,counters,guide,actions]);
- root.append(head,body);
- (document.querySelector('.workspace>.left')||document.body).append(root);
+ const panel=h('div',{id:'ownerDockPanel',class:'owner-dock-panel'},[head,body]);
+ const toggle=h('button',{type:'button',class:'owner-dock-handle','data-owner-collapse':'',
+  'aria-controls':'ownerDockPanel','aria-expanded':'false',
+  'aria-label':'Открыть боковую панель редактора сайта',
+  onclick:()=>{
+   ownerDockCollapsed=!ownerDockCollapsed;
+   window.PandoraGuideTooltip?.dismiss();
+   refreshOwnerUI();
+  }});
+ root.append(panel,toggle);
+ // An edge drawer must not alter the left character column or page height.
+ document.body.append(root);
+ const hints=[
+  ['.owner-dock-primary','Открыть энциклопедию для редактирования данных прямо в карточках.'],
+  ['[data-owner-undo]','Отменяет последнюю ручную правку этого сеанса в Cloudflare D1.'],
+  ['.owner-dock-actions button:nth-child(3)','Посмотреть сохранённые ручные правки и вернуть исходные значения.'],
+  ['.owner-dock-actions button:nth-child(4)','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
+  ['.owner-dock-actions button:nth-child(5)','Предложить уже сохранённые правки для проверки в GitHub.'],
+  ['.owner-dock-finish','Выключить режим редактирования. Уже сохранённые данные D1 останутся на месте.']
+ ];
+ for(const [selector,message] of hints){
+  const button=panel.querySelector(selector);
+  if(!button)continue;
+  button.removeAttribute('title');
+  window.PandoraGuideTooltip?.attach(button,message,{hoverDelay:1000});
+ }
+ root.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||ownerDockCollapsed)return;
+  ownerDockCollapsed=true;
+  window.PandoraGuideTooltip?.dismiss();
+  refreshOwnerUI();
+  toggle.focus({preventScroll:true});
+  event.stopPropagation();
+ });
  update(root);
 }
 async function undoOwnerEdit(){
