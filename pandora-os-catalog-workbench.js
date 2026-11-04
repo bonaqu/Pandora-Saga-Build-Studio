@@ -292,9 +292,20 @@
             class:'os-sync-value-delta',
             text:(field.delta>0?'▲ ':'▼ ')+field.difference,
             title:'Разница между старым и новым числом. Это не оценка полезности изменения.'}));
+          const label=h('strong',{text:field.label});
+          if(/^[0-9]{1,12}$/.test(field.linkedItemId||'')&&field.linkedItemName){
+            const start=field.label.indexOf(field.linkedItemName);
+            if(start>=0){
+              label.replaceChildren(
+                document.createTextNode(field.label.slice(0,start)),
+                linkedDescription('<item '+field.linkedItemId+'>','ru'),
+                document.createTextNode(field.label.slice(start+field.linkedItemName.length))
+              );
+            }
+          }
           const line=h('div',{class:'os-sync-field os-sync-human-field'+
             (field.sourceAfter!==null&&field.sourceAfter!==undefined?' os-sync-description-field':'')},[
-            h('strong',{text:field.label}),
+            label,
             oldValue,
             h('span',{class:'os-sync-field-arrow',text:'→'}),
             newValue
