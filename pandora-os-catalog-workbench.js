@@ -424,7 +424,9 @@
         const current=await request('/api/admin/catalog/status',{});
         if (current.active!==activeSnapshot) throw Error('D1 обновлена после проверки. Сверь данные заново.');
         await request('/api/admin/catalog/initialize',{});
-        const snapshot='ps-'+crypto.randomUUID().replaceAll('-');
+        const snapshot='ps-'+crypto.randomUUID().replaceAll('-','');
+        if(!/^[a-z0-9-]{8,64}$/.test(snapshot))
+          throw Error('Не удалось подготовить новую версию каталога');
         const prepared=staged.normalized;
         const total=Object.values(prepared.counts).reduce((n,count)=>n+count,0);
         let done=0;
@@ -441,7 +443,7 @@
             await request('/api/admin/catalog/batch',{snapshot,dataset:name,records:batch});
             done+=batch.length;
             progress.value=Math.round(done/total*100);
-            status.textContent='Подготавливаю '+name+' · '+done+'/'+total;
+            status.textContent='Подготавливаю обновление · '+done+' из '+total;
           }
         }
         const result=await request('/api/admin/catalog/publish',{
