@@ -24,6 +24,119 @@ const monsterName=(id,ctx)=>ctx?.upstream?.monsters?.[id]?.name||
 const fieldName=path=>path.startsWith('resists.')?
  (elements[path.slice(8)]?'Сопротивление '+elements[path.slice(8)]:null):
  names[path]||null;
+
+const sectionNames={
+ weaponPlus:'Усиление оружия',magicPlus:'Усиление магии',
+ raceInit:'Начальные характеристики рас',jobInit:'Начальные параметры классов',
+ abilityPoint:'Очки характеристик',exp:'Опыт персонажа',
+ lvModify:'Поправки уровней',dropModify:'Изменения добычи',
+ levelCap:'Предел уровня',expCap:'Предел опыта',
+ premium:'Премиум-параметры',forge:'Улучшение предметов',afk:'Параметры отсутствия',
+ zoneDrops:'Добыча по локациям',limit:'Пределы мастерства',
+ expCurve:'Опыт мастерства',get:'Начисление мастерства',branchNames:'Названия веток'
+};
+function describeCompound(kind,before,after,ctx,add,unknown){
+ const old=before||{},next=after||{};
+ const enumerate=(rows,key)=>new Map((rows||[]).map((record,index)=>
+   [String(record?.[key]??index),record]));
+ const fields=(left,right)=>new Set([...Object.keys(left||{}),...Object.keys(right||{})]);
+ let touched=0;
+ const safeAdd=(title,a,b)=>{if(touched>=60){unknown('Остались изменения вне первых 60 строк');return}
+   add(title,a,b);touched++};
+ const shortItem=(id)=>itemName(id,ctx);
+ if(kind==='trades'){
+  const oldTrades=enumerate(old.trades,'id'),newTrades=enumerate(next.trades,'id');
+  let changed=0;
+  for(const id of new Set([...oldTrades.keys(),...newTrades.keys()])){
+   const a=oldTrades.get(id),b=newTrades.get(id);if(same(a,b))continue;changed++;
+   const row=a||b;
+   const name='Обмен №'+id+' · '+shortItem(row?.i);
+   if(!a||!b){safeAdd(name,a?'предусмотрен':'нет',
+     b?'предусмотрен':'удалён');continue}
+   if(a.i!==b.i)safeAdd('Обмен №'+id+' · Получаемый предмет',
+     shortItem(a.i),shortItem(b.i));
+   for(const [code,label] of [['gold','Золото'],['honor','Очки чести'],
+     ['exp','Опыт']])if(a[code]!==b[code])safeAdd(name+' · '+label,a[code],b[code]);
+   const material=items=>(items||[]).map(i=>shortItem(i.i)+' ×'+String(i.n??1)).join(', ');
+   if(!same(a.mats,b.mats))safeAdd(name+' · Нужные предметы',
+     material(a.mats),material(b.mats));
+   const npcLabel=(ids,source)=>Array.isArray(ids)?ids.map(k=>
+    source?.npcs?.[k]?.name||'NPC №'+k).join(', '):'не указаны';
+   if(!same(a.npc,b.npc))safeAdd(name+' · NPC обмена',
+     npcLabel(a.npc,old),npcLabel(b.npc,next));
+   for(const key of fields(a,b))
+    if(!['id','i','gold','honor','exp','mats','npc'].includes(key)&&
+      !same(a[key],b[key]))unknown('Обмен №'+id+': '+key);
+  }
+  for(const section of ['npcs','mapNames','limitMeta'])
+   if(!same(old[section],next[section])){
+    safeAdd({npcs:'Персонажи обмена',mapNames:'Места обмена',
+      limitMeta:'Ограничения обмена'}[section],
+      'прежняя версия','обновлённые сведения');
+    unknown('Обмены: '+section);
+   }
+  unknown('Обмены применяются только целым разделом');
+  return 'Изменены рецепты обмена: '+changed+
+    '. Публикация применяется ко всему разделу, а не к отдельному рецепту.';
+ }
+ if(kind==='chests'){
+  let changed=0;
+  for(const [section,label] of [['boxes','Открываемый сундук'],['npc','Сундук у NPC']]){
+   const left=enumerate(old[section],'i'),right=enumerate(next[section],'i');
+   for(const id of new Set([...left.keys(),...right.keys()])){
+    const a=left.get(id),b=right.get(id);
+    if(same(a,b))continue;changed++;
+    const title=label+' · '+shortItem(id);
+    if(!a||!b){safeAdd(title,a?'есть':'нет',b?'есть':'удалён');continue}
+    if(a.key!==b.key)safeAdd(title+' · Ключ',shortItem(a.key),shortItem(b.key));
+    const oa=a.rolls||[],ob=b.rolls||[];
+    for(let group=0;group<Math.max(oa.length,ob.length);group++){
+     if(same(oa[group],ob[group]))continue;
+     const slot=title+' · Набор наград '+(group+1);
+     const beforeItems=enumerate(oa[group],'i'),afterItems=enumerate(ob[group],'i');
+     for(const itemId of new Set([...beforeItems.keys(),...afterItems.keys()])){
+      const x=beforeItems.get(itemId),y=afterItems.get(itemId);
+      if(same(x,y))continue;
+      const item=slot+' · '+shortItem(itemId);
+      if(!x||!y){safeAdd(item,x?'есть':'нет',y?'есть':'удалён');continue}
+      for(const [field,caption] of [['p','Шанс внутри набора'],
+        ['n','Количество'],['soul','Душа'],['slotAdd','Дополнительный слот']])
+       if(!same(x[field],y[field]))safeAdd(item+' · '+caption,x[field],y[field]);
+      for(const field of fields(x,y))
+       if(!['i','p','n','soul','slotAdd'].includes(field)&&
+         !same(x[field],y[field]))unknown('Награда '+itemId+': '+field);
+     }
+    }
+    for(const field of fields(a,b))
+     if(!['i','rolls','key'].includes(field)&&!same(a[field],b[field]))
+      unknown('Сундук '+id+': '+field);
+   }
+  }
+  for(const section of ['npcId','masterKey'])
+   if(!same(old[section],next[section]))unknown('Дополнительный параметр сундуков: '+section);
+  unknown('Сундуки публикуются только полным разделом');
+  return 'Изменены сведения о '+changed+
+    ' сундуках. Шансы относятся к отдельным наборам наград, а не к любому открытию.';
+ }
+ if(kind==='tables'||kind==='expertise'){
+  const sections=[];
+  for(const name of fields(old,next)){
+   if(same(old[name],next[name]))continue;
+   sections.push(sectionNames[name]||'Другой раздел');
+   // No inferred gameplay arithmetic; display only what is definitely different.
+   if(typeof old[name]==='number'||typeof next[name]==='number')
+     safeAdd(sectionNames[name]||'Другой раздел',old[name],next[name]);
+   else safeAdd(sectionNames[name]||'Другой раздел','прежняя версия','изменены данные');
+   if(!sectionNames[name])unknown('Неизвестный раздел: '+name);
+  }
+  unknown('Игровые формулы и ограничения требуют полной отдельной проверки');
+  return 'Изменены разделы: '+sections.join(', ')+
+    '. Для проверки формул нужны исходные значения и правила расчёта.';
+ }
+ unknown('Неизвестный составной раздел');
+ return 'Изменён состав данных, правила расчёта пока не подтверждены.';
+}
+
 function describe(change,ctx={}){
  let title=change.title,summary='',caution='',uncertain=false;
  const rows=[],technical=[];
