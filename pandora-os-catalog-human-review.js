@@ -230,12 +230,12 @@ function describe(change,ctx={}){
   const afterText=typeof b==='string'?readable(b,label):null;
   const numeric=typeof a==='number'&&Number.isFinite(a)&&typeof b==='number'&&Number.isFinite(b);
   const delta=numeric?b-a:null;
-  const isSlots=/Доп\\. слоты$/.test(label);
+  const isSlots=/Доп\. слоты$/.test(label);
   const readableSlots=x=>x==null?'не указаны':Number.isFinite(x)?
    value(x)+' '+plural(x,'дополнительный слот','дополнительных слота','дополнительных слотов'):
    value(x);
   const sourceLinks=text=>typeof text==='string'?
-   [...text.matchAll(/<item\\s+([0-9]{1,12})\\s*\\/?>/gi)].map(match=>match[1]).join(','):'';
+   [...text.matchAll(/<item\s+([0-9]{1,12})\s*\/?>/gi)].map(match=>match[1]).join(','):'';
   const beforeLinks=sourceLinks(a),afterLinks=sourceLinks(b);
   const sameVisible=beforeText!==null&&afterText!==null&&beforeText===afterText&&a!==b;
   const linkChanged=beforeLinks!==afterLinks;
