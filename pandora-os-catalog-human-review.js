@@ -11,6 +11,10 @@ slotAdd:'Дополнительные слоты',lo:'Нижняя границ�
 const elements={physical:'физическому урону',fire:'огню',cold:'холоду',
 lightning:'молнии',poison:'яду',charm:'очарованию',magic:'магии',holy:'свету',dark:'тьме'};
 const plain=x=>x&&typeof x==='object'&&!Array.isArray(x);
+const plural=(count,one,few,many)=>{
+ const n=Math.abs(count)%100,units=n%10;
+ return n>=11&&n<=14?many:units===1?one:units>=2&&units<=4?few:many;
+};
 const same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
 const value=x=>x===undefined?'отсутствует':x===null?'не указано':
  typeof x==='number'?new Intl.NumberFormat('ru-RU').format(x):
@@ -83,8 +87,8 @@ function describeCompound(kind,before,after,ctx,add,unknown){
     unknown('Обмены: '+section);
    }
   unknown('Обмены применяются только целым разделом');
-  return 'Изменены рецепты обмена: '+changed+
-    '. Публикация применяется ко всему разделу, а не к отдельному рецепту.';
+  return 'Изменения в '+changed+' '+plural(changed,'рецепте','рецептах','рецептах')+
+    ' обмена. Публикация касается всего раздела, а не отдельного рецепта.';
  }
  if(kind==='chests'){
   let changed=0;
@@ -122,8 +126,8 @@ function describeCompound(kind,before,after,ctx,add,unknown){
   for(const section of ['npcId','masterKey'])
    if(!same(old[section],next[section]))unknown('Дополнительный параметр сундуков: '+section);
   unknown('Сундуки публикуются только полным разделом');
-  return 'Изменены сведения о '+changed+
-    ' сундуках. Значения шансов относятся к отдельным наборам наград. Порядок наборов тоже может иметь значение.';
+  return 'Изменения в '+changed+' '+plural(changed,'сундуке','сундуках','сундуках')+
+    '. Значения шансов относятся к отдельным наборам наград. Порядок наборов тоже может иметь значение.';
  }
  if(kind==='tables'||kind==='expertise'){
   const sections=[];
@@ -177,7 +181,8 @@ function describe(change,ctx={}){
   for(const key of new Set([...Object.keys(old),...Object.keys(next)])){
    if(key!=='sha'&&!same(old[key],next[key]))walk(old[key],next[key],key);
   }
-  summary=changed.length?'Обновились сведения о '+changed.length+' игровых файлах. Это не отдельное изменение характеристик.':
+  summary=changed.length?'Изменились контрольные сведения: '+changed.length+' '+
+   plural(changed.length,'файл','файла','файлов')+'. Это не изменение характеристик.':
    'Изменились служебные параметры каталога, не являющиеся игровыми характеристиками.';
   caution='Служебный раздел: не рекомендуется принимать отдельно от проверенных игровых изменений.';
   uncertain=true;
