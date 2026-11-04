@@ -144,6 +144,11 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
   const dialog=page.getByRole('dialog',{name:/Обновление игрового каталога/});
   await dialog.waitFor({state:'visible'});
+  const liveSource=dialog.getByRole('button',{name:'Проверить изменения в текущей игре'});
+  await liveSource.hover();
+  await page.getByRole('tooltip').filter({hasText:/pandorasaga-os[.]com/}).waitFor({state:'visible'});
+  assert.match(await dialog.locator('.os-sync-intro').innerText(),/не ищет файлы на твоём компьютере/);
+  assert.match(await dialog.locator('.os-sync-archive-choice>summary').innerText(),/сайт игры/);
   // A PR is generated from the published D1 snapshot via Worker, not the
   // browser's downloaded JSON. No GitHub token enters the client.
   await dialog.locator('.os-sync-advanced>summary').click();
@@ -232,7 +237,10 @@ export async function runAdminEntrySmoke(browser,base){
   sourceUnavailable=true;
   await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
   await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent
-    ?.includes('не удалось получить обновления из игры'),null,{timeout:15000});
+    ?.includes('Cloudflare Worker не смог установить соединение с сайтом игры'),null,{timeout:15000});
+  await dialog.locator('.os-sync-diagnostics>summary').click();
+  assert.match(await dialog.locator('.os-sync-diagnostics').innerText(),/Причина: network/);
+  assert.match(await dialog.locator('.os-sync-diagnostics').innerText(),/meta[.]json/);
   assert.equal(await dialog.locator('.os-sync-archive-choice').getAttribute('open'),'');
   assert.equal(await dialog.locator('.os-sync-review-steps').isHidden(),true,
     'a failed game-source check cannot leave publishing enabled');

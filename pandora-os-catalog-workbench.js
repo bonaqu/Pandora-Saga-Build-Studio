@@ -4,6 +4,11 @@
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
   async function open({request, apiBase, modal, h, afterPublish}) {
+    // Reuse the game's hover/focus helper. Tooltip text is static, never from D1.
+    const hint=(node,description)=>{
+      root.PandoraGuideTooltip?.attach(node,description);
+      return node;
+    };
     const importer = root.PandoraCatalogImport;
     const difference = root.PandoraCatalogDiff;
     const review = root.PandoraOSCatalogReview;
@@ -13,16 +18,18 @@
     const view = h('div', {class:'os-sync'});
     const intro = h('div',{class:'os-sync-intro'},[
       h('strong',{text:'Обновление игрового каталога'}),
-      h('p',{text:'Сначала найди отличия, затем выбери, что добавить на сайт. Без твоего подтверждения ничего не изменится.'})
+      h('p',{text:'Проверка получает открытые JSON с сайта pandorasaga-os.com через Cloudflare Worker и сравнивает их с опубликованным каталогом Build Studio в D1. Она не ищет файлы на твоём компьютере и не подключается напрямую к игровому серверу.'})
     ]);
     const actions = h('div', {class:'os-sync-actions'});
     const live = h('button', {type:'button',class:'button-action primary os-sync-main-check',
       text:'Проверить изменения в текущей игре'});
     const archive = h('button', {type:'button',class:'button-action',
       text:'Сверить с сохранённой копией'});
+    hint(live,'Получить 17 общедоступных файлов JSON с pandorasaga-os.com через Cloudflare Worker, сравнить с опубликованным каталогом Build Studio в D1. Не читает файлы на ПК, не обращается к клиенту игры и не сохраняет изменения автоматически.');
+    hint(archive,'Сравнить D1 с JSON-файлами, которые уже сохранены в GitHub Pages Build Studio. Это архив проекта, а НЕ новые данные с сайта игры. Может содержать более старые характеристики.');
     const archiveChoice=h('details',{class:'os-sync-archive-choice'},[
-      h('summary',{text:'Если игра сейчас недоступна'}),
-      h('p',{text:'Сравни данные сайта с последней сохранённой копией проекта. Это не проверка игрового сервера в реальном времени.'}),
+      h('summary',{text:'Если сайт игры не отдаёт данные'}),
+      h('p',{text:'Архивная сверка берёт файлы из репозитория Build Studio, а не с pandorasaga-os.com. Она не проверяет свежесть игрового сервера. Не применяй её результаты как заведомо актуальные.'}),
       archive
     ]);
     const acceptAll = h('button', {type:'button',class:'button-action',text:'Выбрать понятные изменения',disabled:true});
@@ -65,6 +72,17 @@
       h('p',{text:'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.'}),
       h('div',{class:'os-sync-advanced-actions'},[testWrite,github,exportButton])
     ]);
+    for(const [node,description] of [
+      [acceptAll,'Выбрать только изменения, которые удалось расшифровать, исключив непонятные параметры и служебные сведения. Это не публикация.'],
+      [declineAll,'Снять галочки со всех изменений. Уже опубликованный каталог D1 останется прежним.'],
+      [publish,'После подтверждения сохранить только выбранные изменения как новую версию каталога в Cloudflare D1. Это меняет данные на сайте, но не файлы игры на ПК.'],
+      [testWrite,'Проверить временную запись, чтение и удаление в Cloudflare D1. Опубликованные предметы и билды не меняются.'],
+      [github,'Создать предложение изменений в репозитории GitHub из уже опубликованной версии D1. Автоматического принятия изменений не будет.'],
+      [exportButton,'Скачать файл с выбранными изменениями для ручного обновления GitHub. Ничего не публикует.'],
+      [search,'Найти изменения по названиям игровых объектов. Поиск не меняет выбор и не публикует данные.'],
+      [archiveChoice.querySelector('summary'),'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.'],
+      [advanced.querySelector('summary'),'Необязательные операции: тест записи D1, экспорт и предложение изменений GitHub.']
+    ])hint(node,description);
     actions.append(live,archiveChoice,reviewSteps,advanced);
     view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,filters,overview,search,results);
     for(const element of [filters,overview,search,results])element.hidden=true;
@@ -93,6 +111,16 @@
         if(busy)return;
         filterKind=id;render();
       };
+      hint(button,({
+        all:'Все найденные изменения.',
+        added:'Объекты, добавленные в проверяемом источнике.',
+        changed:'Объекты, чьи параметры отличаются.',
+        removed:'Объекты, которых нет в проверяемом источнике.',
+        accepted:'Только изменения с поставленной галочкой.',
+        declined:'Изменения без галочки, не выбранные для применения.',
+        needsReview:'Неоднозначные или неизвестные параметры — требуют ручного анализа.',
+        readable:'Изменения, для которых доступны понятные названия и описания.'
+      })[id]);
       filters.append(button);filterButtons.set(id,button);
     }
     function matchesFilter(change){
@@ -293,7 +321,13 @@
     }
 
     const sourceFile = async (name, from) => {
-      if (from==='server') return request('/api/admin/catalog/source/'+name+'.json',null);
+      if (from==='server') {
+        try{return await request('/api/admin/catalog/source/'+name+'.json',null)}
+        catch(error){
+          error.sourceDataset??=name+'.json';
+          throw error;
+        }
+      }
       const response=await fetch('./data/os/'+name+'.json',{cache:'no-store'});
       if (!response.ok) throw Error('Архив '+name+': HTTP '+response.status);
       return response.json();
@@ -304,7 +338,7 @@
       descriptions.clear();
       sourceBanner.hidden=false;
       sourceBanner.textContent=from==='server'
-        ?'Сейчас сравниваются данные сайта и текущей игры'
+        ?'Проверяем открытые данные pandorasaga-os.com и опубликованный каталог Build Studio (D1). Это не прямое подключение к игровому серверу.'
         :'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.';
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
@@ -315,7 +349,7 @@
       try {
         const next={},old={};
         for (const [index,name] of importer.files.entries()) {
-          status.textContent='Проверяю игровые данные · '+(index+1)+' из '+importer.files.length;
+          status.textContent=(from==='server'?'Получаю данные сайта игры':'Читаю архив Build Studio')+' · '+(index+1)+' из '+importer.files.length;
           next[name]=await sourceFile(name,from);
           progress.value=Math.round(45*(index+1)/importer.files.length);
         }
@@ -365,13 +399,34 @@
         );
         if(unavailable){
           archiveChoice.open=true;
-          status.textContent='Сейчас не удалось получить обновления из игры. Данные сайта не изменились. Ниже доступна сверка с сохранённой копией — она может быть старее.';
+          const reason=String(error.reason||'');
+          const code=/^http-(\d{3})$/.exec(reason)?.[1];
+          const issue=code==='403'||code==='401'
+            ?'Сайт игры не разрешил запрос Cloudflare Worker (HTTP '+code+'). Даже если адрес открывается в браузере, серверные запросы могут блокироваться.'
+            :code==='404'
+            ?'На сайте игры не найден один из файлов игровых данных (HTTP 404).'
+            :code==='429'
+            ?'Сайт игры временно ограничил число запросов (HTTP 429).'
+            :reason==='timeout'
+            ?'Истекло время ожидания ответа сайта игры.'
+            :reason==='network'
+            ?'Cloudflare Worker не смог установить соединение с сайтом игры.'
+            :reason==='invalid-json'||reason==='invalid-format'
+            ?'Сайт игры ответил данными, которые нельзя распознать как игровой JSON.'
+            :reason==='too-large'
+            ?'Ответ сайта игры превысил ограничение безопасности.'
+            :code?'Сайт игры ответил HTTP '+code+'.'
+            :'Не удалось получить открытые игровые данные через Cloudflare Worker.';
+          status.textContent=issue+' Каталог Build Studio не изменён. Архивную копию можно сравнить отдельно, но она может быть старее.';
         }else if(error.httpStatus===401){
           status.textContent='Сеанс администратора завершился. Войди заново, чтобы повторить проверку.';
         }else{
           status.textContent='Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.';
         }
-        diagnosticText.textContent=String(error.message||error);
+        diagnosticText.textContent='Этап: '+(error.sourceDataset||'не определён')+
+          ' · Ответ Worker: '+(error.httpStatus??'нет HTTP-ответа')+
+          ' · Причина: '+(error.reason||'не указана')+
+          ' · '+String(error.message||error);
         diagnostic.hidden=false;
         baseline=null;upstream=null;changes=[];
         refreshActions();
@@ -525,8 +580,8 @@
       refreshActions();
     }).catch(()=>{githubReady=false;refreshActions()});
 
-    live.onclick=()=>compare('server');
-    archive.onclick=()=>compare('archive');
+    live.onclick=()=>{root.PandoraGuideTooltip?.dismiss();compare('server')};
+    archive.onclick=()=>{root.PandoraGuideTooltip?.dismiss();compare('archive')};
     acceptAll.onclick=()=>{chosen=new Set(changes.filter(safe).map(item=>item.id));render()};
     declineAll.onclick=()=>{chosen.clear();render()};
     search.addEventListener('input',render);

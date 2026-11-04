@@ -39,6 +39,15 @@ test('catalog admin gate and live snapshot compare remain server authenticated',
  assert.match(workbench,/versions\.size!==1/);
  assert.match(workbench,/importer\.normalize\(combined,legacy\)/);
 });
+test('admin source failures preserve the upstream reason and do not imply game-client file access',()=>{
+ assert.match(app,/error[.]reason=data[.]reason\|\|data[.]code\|\|null/);
+ assert.match(app,/error[.]sourceDataset=data[.]sourceDataset\|\|null/);
+ assert.match(workbench,/error[.]sourceDataset\?\?=name\+'[.]json'/);
+ assert.match(workbench,/PandoraGuideTooltip\?\.attach/);
+ assert.match(workbench,/не ищет файлы на твоём компьютере/);
+ assert.match(workbench,/Сайт игры не разрешил запрос Cloudflare Worker/);
+ assert.match(workbench,/Архивная сверка берёт файлы из репозитория/);
+});
 test('admin workbench is optional for ordinary players and has explicit selection controls',()=>{
  assert.match(app,/function showCatalogImport\(\)/);
  assert.match(app,/if\(!adminToken\)return/);
@@ -116,12 +125,12 @@ test('owner sync dashboard supports kind and approval filters without auto-accep
 test('sync review shows primary update, archival fallback and hidden maintenance tools',()=>{
  assert.match(workbench,/Проверить изменения в текущей игре/);
  assert.match(workbench,/Сверить с сохранённой копией/);
- assert.match(workbench,/Это не проверка игрового сервера в реальном времени/);
+ assert.match(workbench,/Она не проверяет свежесть игрового сервера/);
  assert.match(workbench,/os-sync-advanced/);
  assert.match(workbench,/os-sync-review-steps/);
  assert.match(workbench,/archiveChoice\.open=true/);
  assert.match(workbench,/progress\.hidden=!value/);
- assert.match(workbench,/не удалось получить обновления из игры/);
+ assert.match(workbench,/Не удалось получить открытые игровые данные через Cloudflare Worker/);
  assert.doesNotMatch(workbench,/Сравнить с архивом проекта/);
 });
 
