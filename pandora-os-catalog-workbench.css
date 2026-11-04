@@ -98,3 +98,35 @@
 .wiki-speed-check:hover:not(:disabled){border-color:#d5aa71}
 .wiki-speed-check:disabled{opacity:.65;cursor:wait}
 .wiki-speed-result{font-size:11px;color:#d6c19d;line-height:1.45;overflow-wrap:anywhere}
+
+/* Version 0.356: human-first catalog review. One modal scroll container. */
+.os-sync-results{max-height:none;overflow:visible;padding-right:0}
+.os-sync-source-banner{margin:0;padding:10px 12px;border:1px solid #75604a;
+ border-radius:6px;color:#e6caa4;font-size:12px;line-height:1.5}
+.os-sync-record{display:grid;gap:8px}
+.os-sync-explanation{margin-left:25px;min-width:0}
+.os-sync-change-summary{color:#e4c89e;font-size:12px;line-height:1.55;
+ margin:0;overflow-wrap:anywhere}
+.os-sync-change-caution{color:#efc78a;margin:6px 0;font-size:11px;line-height:1.5}
+.os-sync-field-details{margin:3px 0 0;font-size:12px}
+.os-sync-field-details>summary{color:#d4b187;padding:4px 0;font-size:11px}
+.os-sync-human-field{display:grid;grid-template-columns:minmax(150px,1.5fr) minmax(80px,1fr)
+  18px minmax(80px,1fr);align-items:center;gap:8px}
+.os-sync-human-field strong{font-weight:600;color:#eed4a9;overflow-wrap:anywhere}
+.os-sync-human-field>span{color:#d0b99b;overflow-wrap:anywhere}
+.os-sync-human-field .os-sync-field-arrow{color:#d9a862;text-align:center}
+.os-sync-review-caution{border-color:#866343}
+.os-sync-service-group{border-style:dashed}
+.os-sync-service-group .os-sync-group-heading strong{color:#d6b68e}
+.os-sync-raw-details{margin-top:8px;padding:8px 10px;border:1px solid #594633;
+ border-radius:5px;background:#1e1712}
+.os-sync-raw-details>summary{cursor:pointer;color:#a9957c;font-size:11px}
+.os-sync-raw-field{display:grid;grid-template-columns:130px minmax(80px,1fr) 12px minmax(80px,1fr);
+ padding:6px 0;gap:6px;border-top:1px solid #453629;overflow-wrap:anywhere;font-size:10px}
+.os-sync-raw-field code{white-space:normal}
+.os-sync-raw-field span{min-width:0;word-break:break-word}
+@media(max-width:670px){
+ .os-sync-human-field{grid-template-columns:minmax(0,1fr) minmax(0,.7fr) 12px minmax(0,.7fr)}
+ .os-sync-raw-field{grid-template-columns:1fr;gap:3px}
+ .os-sync-explanation{margin-left:0}
+}
