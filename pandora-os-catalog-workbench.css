@@ -88,3 +88,13 @@
  .os-sync-review-actions .primary{margin-left:0;flex:1}
  .os-sync-review-actions button{flex-grow:1}
 }
+
+
+/* Administrator-only, on-device encyclopedia performance check. */
+.wiki-speed-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+ border-top:1px solid #4d3e2a;padding-top:7px;min-width:0}
+.wiki-speed-check{appearance:none;border:1px solid #78603e;border-radius:6px;
+ background:#2b2118;color:#e9c997;padding:7px 10px;font:inherit;font-size:11px;cursor:pointer}
+.wiki-speed-check:hover:not(:disabled){border-color:#d5aa71}
+.wiki-speed-check:disabled{opacity:.65;cursor:wait}
+.wiki-speed-result{font-size:11px;color:#d6c19d;line-height:1.45;overflow-wrap:anywhere}
