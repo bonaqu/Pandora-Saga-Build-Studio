@@ -5145,7 +5145,7 @@ function updateAdminHint(){
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
 const ownerEdits=[];
-let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=true;
+let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=false;
 let activeInlineEditor=null;
 let editIsSaving=false;
 function closeInlineEditor(){
