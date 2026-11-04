@@ -30,6 +30,16 @@
   }
   const strictEqual=(left,right)=>JSON.stringify(stable(left,'',false))===JSON.stringify(stable(right,'',false));
   const equal = (left,right)=>JSON.stringify(stable(left)) === JSON.stringify(stable(right));
+  // Source fingerprints/counts are integrity diagnostics, not player-visible
+  // game changes. A level cap, class/branch definition or unknown game parameter
+  // still requires explicit owner review.
+  const technicalMetaKeys=new Set(['sha','counts','localeCounts','warnings',
+    'curated','generatedAt','updatedAt','sourceUpdatedAt']);
+  const gameplayMetadata=value=>Object.fromEntries(
+    Object.entries(value||{}).filter(([key])=>!technicalMetaKeys.has(key)));
+  const metadataOnlyTechnical=(before,after)=>
+    equal(gameplayMetadata(before),gameplayMetadata(after));
+
   const id = (dataset, key) => dataset + '\u0000' + key;
 
   function entries(dataset, value) {
@@ -161,6 +171,6 @@
   }
 
   root.PandoraOSCatalogReview = Object.freeze({
-    atomicDatasets, labels, id, changes, compose, retainLegacyRows, equal, strictEqual
+    atomicDatasets, labels, id, changes, compose, retainLegacyRows, equal, strictEqual, metadataOnlyTechnical
   });
 })(typeof window === 'undefined' ? globalThis : window);
