@@ -65,3 +65,10 @@ For the Fire code, the effect occurs in `data/os/itemForth.json` for the dagger,
 
 
 Three further editor-facing words were checked against the same OS snapshot: `EP_EXPERTISE_RESET` is **Reset skill points** (Skill Reset Scroll, ID `90034`); `EP_RESTMAP_MOVESPEED_SCALE` is **Town movement speed (%)** (student cloak, ID `18073`); and `EP_HEAL_LIFE_REGENERATOR` is neutrally **Gradual HP change** because the known Cursed Rod, ID `2841`, has a negative periodic effect described as *Gradual HP loss*. Item descriptions support these display explanations, not official byte-for-byte client UI localization. Their independent `gameEvidence` records and tests use the exact item IDs and game-source text.
+
+
+## Second pass: 10 more original-item corroborations
+
+The source-language audit now has **18 effects with traceable game-item description evidence**: eight from the previous review plus ten newly recorded observations. The ten additional codes are `EP_ABILITY_RESET`, `EP_HEAL_LIFE`, `EP_HEAL_LIFE_RATE`, `EP_HEAL_MANA`, `EP_HEAL_MANA_RATE`, `EP_ONHIT_SKILL_EXEC`, `EP_ONDAMAGE_SKILL_EXEC_ATTACKER`, `EP_RESTART`, `EP_VOLUME_EXP` and `EP_TOHIT_SCALE`. The source registry pins an item ID, the precise English description substring, and an `item-description-only` confidence level for each one. Automated tests verify that the ID and the same effect code occur on the source item.
+
+This **does not** turn those labels into verified exact game-client UI strings, establish proc cooldowns or damage formulas, or override data in production D1. The remaining three effects with no confirmed plain-English name remain raw identifiers. Paired `EP_BOW_CARRY` / `EP_BOW_RANGE` and `EP_RACE_CARRY` / `EP_RACE_RANGE` still require engine-side confirmation: item text alone identifies an attack-range bonus but not why two distinct effect codes appear. No numeric gameplay behavior has been inferred.
