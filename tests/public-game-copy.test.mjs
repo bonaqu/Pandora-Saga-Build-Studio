@@ -27,7 +27,7 @@ test('public copy and maintained docs avoid a specific server name',()=>{
 test('admin controls use approachable names while retaining secure API routing',()=>{
  const ui=read('pandora-os-catalog-workbench.js');
  const app=read('pandora-studio-app.js');
- assert.match(ui,/Проверить обновления игрового каталога/);
+ assert.match(ui,/Проверить изменения в текущей игре/);
  assert.match(ui,/Применить выбранные изменения/);
  assert.match(app,/text:'Игровой каталог',onclick:showCatalogImport/);
  assert.match(ui,/api\/admin\/catalog\/source/);
