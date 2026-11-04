@@ -404,6 +404,17 @@ function describe(change,ctx={}){
   summary='После отображения текст совпадает, но исходные записи различаются. Смыслового изменения текста здесь не видно; проверь перед выбором.';
  else if(rows.some(row=>row.sameVisible))
   summary+=' Есть строки, которые выглядят одинаково после форматирования.';
+ // Visible wording can be unchanged while item links or source markup changes.
+ // Those differences must never be swept up by a bulk "readable" selection:
+ // a person must explicitly decide whether to publish them.
+ const hasReferenceChange=rows.some(row=>row.linkChanged);
+ const hasInvisibleChange=rows.some(row=>row.sameVisible);
+ if(hasReferenceChange||hasInvisibleChange){
+  uncertain=true;
+  caution=hasReferenceChange
+   ?'Изменилась игровая связь на предмет. Проверь, куда ведёт ссылка, и выбери изменение вручную.'
+   :'Текст на экране совпадает, но исходные данные различаются. Проверь подробности и выбирай вручную.';
+ }
  if(uncertain&&!caution)caution='Часть параметров требует ручной проверки перед публикацией.';
  return {title,summary,rows,technical,uncertain,caution,service:kind==='meta'};
 }
