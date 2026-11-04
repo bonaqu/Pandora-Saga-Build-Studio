@@ -125,7 +125,7 @@ test('owner sync dashboard supports kind and approval filters without auto-accep
 test('sync review shows primary update, archival fallback and hidden maintenance tools',()=>{
  assert.match(workbench,/Проверить изменения в текущей игре/);
  assert.match(workbench,/Сверить с сохранённой копией/);
- assert.match(workbench,/Это не проверка игрового сервера в реальном времени/);
+ assert.match(workbench,/Она не проверяет свежесть игрового сервера/);
  assert.match(workbench,/os-sync-advanced/);
  assert.match(workbench,/os-sync-review-steps/);
  assert.match(workbench,/archiveChoice\.open=true/);
