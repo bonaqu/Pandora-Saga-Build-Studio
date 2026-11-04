@@ -130,7 +130,7 @@ function describeCompound(kind,before,after,ctx,add,unknown){
       for(const [index,row] of (rows||[]).entries()){
        const key=row?.i!=null?'item:'+String(row.i):
         Array.isArray(row?.gold)?'gold:'+index:'unknown:'+index;
-       if(result.has(key))unknown('Повторяющаяся награда: '+key);
+       if(result.has(key))unknown('В сундуке несколько наград с одинаковым ID предмета: '+String(row?.i));
        if(key.startsWith('unknown:'))unknown('Награда без известного типа');
        result.set(key,row);
       }
