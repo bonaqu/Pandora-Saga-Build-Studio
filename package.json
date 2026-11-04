@@ -22,7 +22,8 @@
     "test:quick": "node --test tests/skill-progression.test.mjs tests/hero-path-interactions.test.mjs tests/os-calculator.test.mjs tests/build-scope.test.mjs tests/build-save-workflow.test.mjs tests/build-library-merge.test.mjs tests/user-account-security.test.mjs tests/equipment-plan.test.mjs tests/hero-branch-skill-index.test.mjs tests/hero-noop-persistence.test.mjs tests/hero-skill-snapshot.test.mjs",
     "test:browser:quick": "node tests/browser-smoke.mjs --quick",
     "test:browser:serial": "node tests/browser-smoke.mjs --serial",
-    "catalog:review": "node scripts/apply-reviewed-pandora-catalog.mjs"
+    "catalog:review": "node scripts/apply-reviewed-pandora-catalog.mjs",
+    "bench:wiki:local": "node scripts/benchmark-encyclopedia.mjs"
   },
   "pandoraRelease": "2026.11.04.353"
 }
