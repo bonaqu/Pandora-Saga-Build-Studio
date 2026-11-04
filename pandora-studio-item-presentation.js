@@ -52,6 +52,7 @@ function description(s){
  const conditions='За кажд(?:ую|ые|ый|ое)|При улучшении|При усовершенствовании|При заточке|При экипировке|При наличии|Закалка самоцветом|Каждое следующее улучшение|Per every|At \\+\\d+ and above|When enhanced|With refinement';
  const stats='ОЗ|ОМ|СИЛ|ВЫН|ЛВК|ПРВ|СД|ИНТ|Атака|Защита|Точность|Уклонение|Сопротивляемость|Вероятность|Шанс|Скорость|Время|Урон|Магическая атака|Получаемый|Эффективность|Снижение|HP|MP|STR|AGI|DEX|STA|VIT|INT|SPI|Accuracy|Attack|Defense|Evasion|Critical|Resistance|Magic|Damage|Speed|Skill Cooldown|Cooldown|Healing|Reduction';
  return s.replace(/\r\n?/g,'\n').replace(/<br\s*\/?>/gi,'\n')
+  .replace(/<\/?(?!item\b)[a-z][a-z0-9-]*(?:\s+[^<>]*)?>/gi,'')
   .replace(/[ \t]*\n[ \t]*/g,'\n')
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+stats+')(?:\\s|[+-]|\\d))','gi'),'$1\n\n')
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+conditions+'))','gi'),'$1\n\n')
@@ -65,6 +66,27 @@ function description(s){
   .replace(/\n{3,}/g,'\n\n').replace(/[ \t]+\n/g,'\n').trim();
 }
 
-root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,displayName,
+// Description references are game data, never raw HTML. Resolve only records
+// that actually exist in the chosen catalog; unresolved IDs stay non-clickable.
+function descriptionSegments(source, lookupItem, lang='ru'){
+ const formatted=description(source),segments=[];
+ const reference=/<item\s+([0-9]{1,12})\s*\/?>/gi;
+ let offset=0,match;
+ while((match=reference.exec(formatted))){
+  if(match.index>offset)segments.push({type:'text',text:formatted.slice(offset,match.index)});
+  const id=match[1],record=typeof lookupItem==='function'?lookupItem(id):null;
+  const found=typeof record==='string'?record:record?.name;
+  const exists=typeof found==='string'&&Boolean(found.trim());
+  segments.push({type:'item',id,text:exists?found.trim():
+   (lang==='en'?'Unknown item':'Неизвестный предмет'),exists});
+  offset=reference.lastIndex;
+ }
+ if(offset<formatted.length)segments.push({type:'text',text:formatted.slice(offset)});
+ return segments.length?segments:[{type:'text',text:formatted}];
+}
+const descriptionText=(source,lookupItem,lang='ru')=>
+ descriptionSegments(source,lookupItem,lang).map(piece=>piece.text).join('');
+
+root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,descriptionSegments,descriptionText,displayName,
  kindOptions:(lang='ru')=>Object.entries(lang==='en'?namesEn:names).map(([value,label])=>({value,label}))});
 })(typeof window==='undefined'?globalThis:window);
