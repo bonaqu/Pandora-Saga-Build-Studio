@@ -333,6 +333,20 @@
       return response.json();
     };
 
+    // Request only three files at a time, rather than making 35 serial HTTP
+    // round-trips. A failure prevents the review from publishing anything.
+    async function mapLimited(names,task,limit=3){
+      let index=0,completed=0,failure=null;
+      await Promise.all(Array.from({length:Math.min(limit,names.length)},async()=>{
+        while(index<names.length&&!failure){
+          const name=names[index++];
+          try{await task(name,++completed)}
+          catch(error){failure??=error;return}
+        }
+      }));
+      if(failure)throw failure;
+    }
+
     async function compare(from) {
       setBusy(true);
       descriptions.clear();
@@ -348,11 +362,14 @@
       refreshActions();
       try {
         const next={},old={};
-        for (const [index,name] of importer.files.entries()) {
-          status.textContent=(from==='server'?'Получаю данные сайта игры':'Читаю архив Build Studio')+' · '+(index+1)+' из '+importer.files.length;
+        let readCount=0;
+        await mapLimited(importer.files,async name=>{
           next[name]=await sourceFile(name,from);
-          progress.value=Math.round(45*(index+1)/importer.files.length);
-        }
+          const done=++readCount;
+          status.textContent=(from==='server'?'Получаю данные сайта игры':'Читаю архив Build Studio')+
+            ' · '+done+' из '+importer.files.length;
+          progress.value=Math.round(45*done/importer.files.length);
+        });
         // Reject mixed upstream snapshots if the server changes during 17-file retrieval.
         if(from==='server') {
           const finalMeta=await sourceFile('meta','server');
@@ -364,7 +381,8 @@
         const approved=await locales.json();
         importer.normalize(next,approved); // Reject incomplete live source before review.
         const versions=new Set();
-        for (const [index,name] of importer.files.entries()) {
+        let compared=0;
+        await mapLimited(importer.files,async name=>{
           const alias=name==='strings.en'?'stringsEn':name;
           const response=await fetch(apiBase+'/api/catalog/'+alias+'.json',
             {cache:'no-store',signal:AbortSignal.timeout(15000)});
@@ -373,8 +391,8 @@
           if (!snapshot) throw Error('D1 не сообщает версию каталога');
           versions.add(snapshot);
           old[name]=await response.json();
-          progress.value=45+Math.round(55*(index+1)/importer.files.length);
-        }
+          progress.value=45+Math.round(55*(++compared)/importer.files.length);
+        });
         const localeResponse=await fetch(apiBase+'/api/catalog/legacyLocale.json',
           {cache:'no-store',signal:AbortSignal.timeout(15000)});
         if (!localeResponse.ok) throw Error('Не получен текущий перевод D1');
