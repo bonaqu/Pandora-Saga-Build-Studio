@@ -81,6 +81,7 @@ test('administrator can create a narrow PR without sharing credentials with brow
   requests.push({path,method:options.method,body:options.body?JSON.parse(options.body):null});
   assert.ok(url.startsWith('https://api.github.com/repos/bonaqu/Pandora-Saga-Build-Studio/'));
   assert.equal(options.headers.Authorization,'Bearer '+environment.GITHUB_CATALOG_TOKEN);
+  assert.equal(options.redirect,'manual','Cloudflare Workers cannot use redirect:error');
   const respond=(value,status=200)=>new Response(JSON.stringify(value),{status});
   if(path.endsWith('/git/ref/heads/catalog/snapshot-'+snap))return respond({message:'Not found'},404);
   if(path.endsWith('/git/ref/heads/bonaqu_projects'))return respond({object:{sha}});
