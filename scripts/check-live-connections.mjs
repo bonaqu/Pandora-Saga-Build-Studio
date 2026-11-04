@@ -83,9 +83,11 @@ try{
 
  const liveSourceReady=deployed&&Number(release?.[1]||0)>=355&&
   payload?.catalogSourceFailover===true;
- const probeReady=deployed&&Number(release?.[1]||0)>=358&&payload?.sourceEgressProbe===true;
+ const probeReady=deployed&&Number(release?.[1]||0)>=360&&
+  payload?.sourceEgressProbe===true&&payload?.sourceInstancesArray===true&&
+  payload?.sourceFullProbe===true;
  console.log((probeReady?'OK  ':'WARN')+' Worker game-source egress probe — '+
-  (probeReady?'read-only /api/source-health is available':'Worker 0.358.0 has not been deployed'));
+  (probeReady?'read-only /api/source-health is available':'Worker 0.360.0 has not been deployed'));
  console.log((liveSourceReady?'OK  ':'WARN')+' Admin current-game source recovery — '+
   (liveSourceReady?'Worker 0.355.0+ supports two trusted source aliases':
    'Deploy Worker 0.355.0; upstream availability still requires a real admin check'));
