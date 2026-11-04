@@ -78,8 +78,19 @@ function describeCompound(kind,before,after,ctx,add,unknown){
     source?.npcs?.[k]?.name||'NPC №'+k).join(', '):'не указаны';
    if(!same(a.npc,b.npc))safeAdd(name+' · NPC обмена',
      npcLabel(a.npc,old),npcLabel(b.npc,next));
+   if(!same(a.limit,b.limit)){
+    const limit=value=>{
+      if(value==null)return 'без указанного ограничения';
+      const period={daily:'в день',weekly:'в неделю',monthly:'в месяц'}[value.period];
+      if(Number.isSafeInteger(value.n)&&value.n>=0&&period)
+        return value.n+' '+plural(value.n,'раз','раза','раз')+' '+period;
+      unknown('Обмен: неизвестный формат ограничения');
+      return 'изменено неизвестное ограничение';
+    };
+    safeAdd(name+' · Лимит обменов',limit(a.limit),limit(b.limit));
+   }
    for(const key of fields(a,b))
-    if(!['id','i','gold','honor','exp','mats','npc'].includes(key)&&
+    if(!['id','i','gold','honor','exp','mats','npc','limit'].includes(key)&&
       !same(a[key],b[key]))unknown('Обмен №'+id+': '+key);
   }
   for(const section of ['npcs','mapNames','limitMeta'])
