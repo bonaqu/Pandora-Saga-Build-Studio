@@ -20,7 +20,7 @@ export const githubCatalogEnabled=env=>typeof env?.GITHUB_CATALOG_TOKEN==='strin
 
 async function gh(env,path,{method='GET',body=null,optional=false}={}){
  const response=await fetch(API+path,{
-  method,redirect:'error',signal:AbortSignal.timeout(20000),
+  method,redirect:'manual',signal:AbortSignal.timeout(20000),
   headers:{Authorization:'Bearer '+env.GITHUB_CATALOG_TOKEN,
    Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',
    'User-Agent':'Pandora-Studio-Catalog-Sync',
