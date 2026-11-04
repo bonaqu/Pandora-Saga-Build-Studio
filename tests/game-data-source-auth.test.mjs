@@ -59,7 +59,7 @@ test('unavailable or invalid upstream responses stop safely without touching D1'
  try{
   const denied=await worker.fetch(request('skills',true),env);
   assert.equal(denied.status,502);
-  assert.match((await denied.json()).error,/Source unavailable/);
+  assert.match((await denied.json()).error,/Game data source temporarily unavailable/);
   assert.equal(called,2,'Only the two known game host aliases may be tried');
  }finally{globalThis.fetch=original}
 });
