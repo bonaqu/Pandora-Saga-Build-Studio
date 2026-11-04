@@ -60,6 +60,40 @@ test('unavailable or invalid upstream responses stop safely without touching D1'
   const denied=await worker.fetch(request('skills',true),env);
   assert.equal(denied.status,502);
   assert.match((await denied.json()).error,/Source unavailable/);
-  assert.equal(called,1);
+  assert.equal(called,2,'Only the two known game host aliases may be tried');
  }finally{globalThis.fetch=original}
+});
+
+
+test('a failed canonical hostname tries its www alias without credentials',async()=>{
+ const original=globalThis.fetch,requests=[];
+ globalThis.fetch=async(url,options)=>{
+  requests.push(url);
+  assert.equal(options.headers.authorization,undefined);
+  assert.equal(options.redirect,'error');
+  if(requests.length===1)throw TypeError('Network error');
+  return new Response(JSON.stringify({source:'current-game'}),{status:200});
+ };
+ try{
+  const response=await worker.fetch(request('meta',true),env);
+  assert.equal(response.status,200);
+  assert.deepEqual(await response.json(),{source:'current-game'});
+  assert.deepEqual(requests,[
+   'https://pandorasaga-os.com/gamedata/meta.json',
+   'https://www.pandorasaga-os.com/gamedata/meta.json'
+  ]);
+ }finally{globalThis.fetch=original}
+});
+
+test('unavailable hostnames give a private diagnostic code without publishing partial catalog',async()=>{
+ const old=globalThis.fetch;
+ globalThis.fetch=async()=>{throw TypeError('Network failure')};
+ try{
+  const response=await worker.fetch(request('meta',true),env);
+  assert.equal(response.status,502);
+  assert.deepEqual(await response.json(),{
+   error:'Game data source temporarily unavailable',code:'network',
+   sourceDataset:'meta.json'
+  });
+ }finally{globalThis.fetch=old}
 });
