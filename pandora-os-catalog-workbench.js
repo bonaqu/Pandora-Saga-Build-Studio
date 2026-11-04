@@ -67,8 +67,11 @@
       h('p',{text:'Сравни игровые значения «было → стало». Отметь только проверенные изменения. Служебные сведения и непонятные параметры не выбираются автоматически.'}),
       h('div',{class:'os-sync-review-actions'},[acceptAll,declineAll,publish])
     );
+    const metaStatus=h('p',{class:'muted os-sync-meta-status',
+      text:'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.'});
     const advanced=h('details',{class:'os-sync-advanced'},[
       h('summary',{text:'Дополнительные инструменты'}),
+      metaStatus,
       h('p',{text:'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.'}),
       h('div',{class:'os-sync-advanced-actions'},[testWrite,github,exportButton])
     ]);
@@ -222,11 +225,22 @@
       const raw=h('details',{class:'os-sync-raw-details'});
       raw.append(h('summary',{text:'Технические сведения (для разработчика)'}));
       raw.append(h('small',{class:'os-sync-technical-code',text:'ID: '+change.key}));
+      const humanizeValue=value=>{
+        const source=String(value);
+        if(!/<(?:br|item)\b/i.test(source))return source;
+        const locale=change.dataset==='strings.en'?'en':'ru';
+        return root.PandoraItemPresentation?.descriptionText(source,key=>{
+          const record=upstream?.items?.[key]||baseline?.items?.[key];
+          if(!record)return null;
+          return locale==='en'?upstream?.['strings.en']?.items?.[key]?.n||
+            baseline?.['strings.en']?.items?.[key]?.n||record.name:record.name;
+        },locale)||source.replace(/<br\s*\/?>/gi,'\n');
+      };
       for(const field of difference.changedFields(change.before,change.after)){
         raw.append(h('div',{class:'os-sync-raw-field'},[
           h('code',{text:field.field}),
-          h('span',{text:field.before}),h('span',{text:'→'}),
-          h('span',{text:field.after})
+          h('span',{text:humanizeValue(field.before)}),h('span',{text:'→'}),
+          h('span',{text:humanizeValue(field.after)})
         ]));
       }
       if(description.technical.length)
@@ -359,6 +373,7 @@
       changes=[];chosen=new Set();expanded=new Set();full=new Set();filterKind='all';
       results.replaceChildren();summary.textContent='';
       progress.value=0;
+      metaStatus.textContent='Служебная проверка контрольных сумм будет доступна после сравнения.';
       refreshActions();
       try {
         const next={},old={};
@@ -402,8 +417,18 @@
         if (versions.size!==1) throw Error('D1 изменилась во время проверки — повтори сверку');
         const retained=review.retainLegacyRows(await localeResponse.json());
         importer.normalize(old,retained.locales); // Validate D1 itself, not the local backup.
+        const oldSha=old.meta?.sha||{},newSha=next.meta?.sha||{};
+        const fingerprintCount=[...new Set([...Object.keys(oldSha),...Object.keys(newSha)])]
+          .filter(key=>oldSha[key]!==newSha[key]).length;
+        const onlyTechnicalMeta=review.metadataOnlyTechnical(old.meta,next.meta);
+        metaStatus.textContent=fingerprintCount
+          ?'Сведения об источнике: контрольные суммы '+fingerprintCount+
+           ' файлов изменились. Это не означает изменения характеристик. Хэши используются для проверки целостности и не предлагаются к публикации как игровые данные.'
+          :'Сведения об источнике: изменения контрольных сумм не обнаружены.';
+        if(!onlyTechnicalMeta)
+          metaStatus.textContent+=' Есть и изменения настроек каталога — они показаны в списке отдельно и требуют ручной проверки.';
         const findings=importer.files.flatMap(name=>
-          review.changes(name,old[name],next[name]));
+          name==='meta'&&onlyTechnicalMeta?[]:review.changes(name,old[name],next[name]));
         baseline=old;upstream=next;legacy=retained.locales;legacyRows=retained.records;mode=from;
         activeSnapshot=[...versions][0];changes=findings;
         status.textContent=findings.length
