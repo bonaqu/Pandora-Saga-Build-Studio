@@ -1,12 +1,12 @@
 # Source audit: English effects, encyclopedia responsiveness, D1 verification
 
-Date: 2026-11-04 · Studio 0.353.0
+Date: 2026-11-04 · baseline 0.353.0; follow-up 0.354.0
 
 ## Scope and provenance
 
 Primary Remaked snapshot: [commit 4e6abf9](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/commit/4e6abf98c914bfa761510f7e2710b1795aab2a3a), with [Legacy English option names](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/4e6abf98c914bfa761510f7e2710b1795aab2a3a/js/option.js), [numeric effect mapping](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/4e6abf98c914bfa761510f7e2710b1795aab2a3a/modern/enhancement-effects.js) and its [current effect additions](https://github.com/bonaqu/Pandora-Saga-Simulator-remaked/blob/4e6abf98c914bfa761510f7e2710b1795aab2a3a/scripts/lib/current-effect-conversion.mjs).
 
-Studio's current bundled OS `items.json`, `souls.json` and `itemForth.json` include **101 distinct item-related EP_* function codes**. Every observed code is recorded in `data/localization/remaked-effect-source.v1.json` together with its Studio EN label (if defined), original Remaked English option (if mapped), numeric index and source file. **64** codes can be mapped to the Remaked English results scale. **37** do not have a direct mapping in the inspected Remaked sources and must not be described as officially verified. **Three** of those have no confirmed English label and deliberately retain their identifier in the admin effect editor: `EP_ALL_CRITICAL`, `EP_ELEMENT_DAMAGE_SCALE_FIRE`, `EP_ONDAMAGE_FDS_RACE`, `EP_RACE_TOUGH_HEART`.
+Studio's current bundled OS `items.json`, `souls.json` and `itemForth.json` include **101 distinct item-related EP_* function codes**. Every observed code is recorded in `data/localization/remaked-effect-source.v1.json` together with its Studio EN label (if defined), original Remaked English option (if mapped), numeric index and source file. **64** codes can be mapped to the Remaked English results scale. **37** do not have a direct mapping in the inspected Remaked sources and must not be described as officially verified. **Three** of those have no confirmed English label and deliberately retain their identifier in the admin effect editor: `EP_ALL_CRITICAL`, `EP_ONDAMAGE_FDS_RACE`, `EP_RACE_TOUGH_HEART`.
 
 This is a comprehensive **inventory audit**, not proof that every translated English phrase is the exact current OS game-client label. The numeric-to-option relationship itself is primary-source verified; expanded English phrases remain editor-facing wording. Game-server changes since the bundled snapshot are not implied.
 

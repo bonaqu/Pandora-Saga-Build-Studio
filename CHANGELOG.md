@@ -5,6 +5,7 @@
 - Added authenticated isolated readback and cleanup for both `catalog_entries` and `overrides` D1 tables, with actual before/after verification of the published catalog snapshot.
 - Isolated QA keys no longer appear in the public override response; admin UI requires both readback/cleanup checks and reports failures.
 - Added five D1 regression cases and a one-command local-PC headless Chromium benchmark for the Items, Monsters and Souls encyclopedia lists.
+- Source-checked five previously unmapped English effect names against the bundled OS item descriptions (Weakness, Freeze, Madness, physical attack evasion and fire magic); three more EP codes remain without corroborated plain-English labels.
 - Browser acceptance, production Worker deployment, and true owner-device measurements must be verified independently.
 
 
