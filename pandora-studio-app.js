@@ -1508,6 +1508,9 @@ async function loadWiki(){
  finally{if(wikiPending===pending)wikiPending=null}
 }
 function openWiki(type,id,highlight=null){
+ const fromView={tab:activeTab,
+  open:Boolean($('detailPanel')?.classList.contains('is-open')),
+  selection:activeTab==='wiki'?{...wikiSelection}:null};
  const sameCategory=activeTab==='wiki'&&wikiSelection.type===type&&
   typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
  if(activeTab!=='wiki'||wikiSelection.type!==type){wikiSearch='';wikiShown=100}
@@ -1522,8 +1525,7 @@ function openWiki(type,id,highlight=null){
   if(!location.hash.startsWith('#wiki/')){
    const oldState=history.state&&typeof history.state==='object'?history.state:{};
    history.replaceState({...oldState,psWikiReturn:{
-    tab:activeTab,open:Boolean($('detailPanel')?.classList.contains('is-open')),
-    selection:activeTab==='wiki'?{...wikiSelection}:null
+    ...fromView
    }},'',location.href);
   }
   const currentState=history.state&&typeof history.state==='object'?history.state:{};
@@ -2305,7 +2307,7 @@ function renderWiki(root){
     skill:'Skill',soul:'Soul',instance:'Dungeon',chest:'Chest'}:
    {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
-   if(history.state?.psWikiEntry===true){
+   if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true){
     detail.append(h('button',{type:'button',class:'button-action wiki-history-back',
      text:wt('← Назад','← Back'),
      'aria-label':wt('Вернуться к предыдущему экрану','Return to previous view'),
