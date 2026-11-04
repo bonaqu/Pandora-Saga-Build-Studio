@@ -144,6 +144,7 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.waitFor({state:'visible'});
   // A PR is generated from the published D1 snapshot via Worker, not the
   // browser's downloaded JSON. No GitHub token enters the client.
+  await dialog.locator('.os-sync-advanced>summary').click();
   const prButton=dialog.getByRole('button',{name:'Создать PR в GitHub'});
   await prButton.waitFor({state:'visible'});
   await page.waitForFunction(()=>!Array.from(document.querySelectorAll('.os-sync-actions button'))
@@ -153,13 +154,14 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.getByRole('link',{name:'Открыть PR #246'}).waitFor({state:'visible'});
   assert.deepEqual(calls.filter(x=>x==='github-pr'),['github-pr']);
   page.once('dialog',confirmation=>confirmation.accept());
-  await dialog.getByRole('button',{name:'Проверить запись в D1'}).click();
+  await dialog.getByRole('button',{name:'Проверить сохранение правок'}).click();
   await page.waitForFunction(()=>Array.from(document.querySelectorAll('.os-sync [role=status]'))
-    .some(node=>node.textContent?.includes('Проверка D1 пройдена')));
+    .some(node=>node.textContent?.includes('Сохранение работает')));
   assert.deepEqual(calls.filter(x=>x==='d1-write-check'),['d1-write-check']);
 
   assert.equal(await dialog.getByRole('button',{name:'Применить выбранные изменения'}).isDisabled(),true);
-  await dialog.getByRole('button',{name:'Сравнить с архивом проекта'}).click();
+  await dialog.locator('.os-sync-archive-choice>summary').click();
+  await dialog.getByRole('button',{name:'Сверить с сохранённой копией'}).click();
   await page.waitForFunction(()=>
    document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
    null,{timeout:30000});
@@ -186,7 +188,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(download.suggestedFilename(),'pandora-studio-reviewed-catalog.json');
   assert.match(await dialog.locator('.os-sync [role=status]').last().innerText(),/GitHub не изменён/);
   // Exercise the authenticated game-data proxy as well as archive preview.
-  await dialog.getByRole('button',{name:'Проверить обновления игрового каталога'}).click();
+  await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
   await page.waitForFunction(()=>document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
     null,{timeout:30000});
   assert.equal(calls.filter(x=>x==='game-source:meta').length,2,
@@ -200,6 +202,11 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#nav [data-tab="wiki"]').click();
   const wikiSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await wikiSearch.waitFor({state:'visible'});
+  const speedCheck=page.locator('.wiki-speed-check');
+  await speedCheck.waitFor({state:'visible'});
+  await speedCheck.click();
+  await page.waitForFunction(()=>document.querySelector('.wiki-speed-result')?.textContent?.includes('мс'),null,{timeout:15000});
+  assert.match(await page.locator('.wiki-speed-result').innerText(),/записей/);
   assert.equal(await wikiSearch.getAttribute('autocomplete'),'off');
   assert.equal(await wikiSearch.getAttribute('data-lpignore'),'true');
   await wikiSearch.click();
