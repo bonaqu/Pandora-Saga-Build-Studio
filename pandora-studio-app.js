@@ -6124,7 +6124,49 @@ for(const [id,key] of [['originUsePotionEffects','potionEffectsEnabled'],
  ['originCombatRage','combatRage'],['originCombatDefender','combatDefender']]){
  $(id)?.addEventListener('change',event=>setAttributeBuff(key,event.target.checked));
 }
-render();loadCatalog();loadOverrides();
+render();
+const skillLabelsReady=fetch('./data/localization/remaked-skill-identity.v1.json',{
+ cache:'default',signal:AbortSignal.timeout(14000)})
+ .then(response=>{
+  if(!response.ok)throw Error('Перевод умений: HTTP '+response.status);
+  return response.json();
+ }).then(mapping=>{
+  if(mapping?.originalEntries!==205||!mapping.skillLabelsById)
+   throw Error('Не удалось проверить русский перевод умений');
+  approvedSkillIdNames=mapping.skillLabelsById;
+ });
+let startupAttempt=0;
+async function startStudio({archive=false}={}){
+ const attempt=++startupAttempt;
+ startupMessage(
+  archive?'Открываем сохранённую копию каталога…':'Загружаем текущий каталог из Cloudflare D1…',
+  archive?'Opening saved game catalog archive…':'Loading current catalog from Cloudflare D1…');
+ try{
+  const loaded=await loadCatalog({archive});
+  if(attempt!==startupAttempt||!loaded)return;
+  startupMessage('Проверяем игровые данные и переводы…','Validating game data and translations…');
+  await skillLabelsReady;
+  if(!archive)await loadOverrides({strict:true});
+  if(attempt!==startupAttempt)return;
+  if(activeTab==='wiki')await loadWiki();
+  if(attempt!==startupAttempt)return;
+  applyGameLocale();
+  startupDone();
+  // Locale prefetch is intentionally nonblocking for RU. A future EN switch
+  // waits for this exact D1-snapshot translation before exposing EN UI.
+  if(lang==='ru'&&!archive){
+   const warm=()=>{if(lang==='ru'&&!catalogArchived)
+    void ensureEnglishCatalog().catch(e=>console.info('EN prefetch deferred',e.message))};
+   if(typeof requestIdleCallback==='function')requestIdleCallback(warm,{timeout:5000});
+   else setTimeout(warm,350);
+  }
+ }catch(error){
+  if(attempt===startupAttempt)startupError(error);
+ }
+}
+$('startupRetry').onclick=()=>void startStudio();
+$('startupArchive').onclick=()=>void startStudio({archive:true});
+void startStudio();
 void window.PandoraAccountUI.init({
  baseUrl:API,legacyKey:()=>tabGuestSecret,
  onLogin:({register})=>{
@@ -6158,28 +6200,8 @@ document.addEventListener('visibilitychange',()=>{
  if(document.visibilityState==='visible'&&navigator.onLine)resumeCloudLibrary();
 });
 requestAnimationFrame(syncOriginPanelHeight);
-// Independence: class caps must be usable even when unrelated wiki/skills/D1 data fails.
-fetch('./data/os/classes.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
- .then(classes=>{
-  if(classes?.[jobKeys[state.job]]&&!catalog.classes){
-   catalog.classes=classes;
-   renderBranches();refreshBudgetLabel();
-   renderOriginStats();renderOriginVitals();
-  }
- }).catch(error=>console.warn('Local class limits unavailable',error));
-fetch('./data/os/tables.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
-.then(t=>{if(t?.abilityPoint&&t?.weaponPlus&&t?.forge){gameTables=t;render()}}).catch(()=>{});
-fetch('./data/localization/remaked-skill-identity.v1.json',{cache:'no-cache'})
- .then(r=>r.ok?r.json():null)
- .then(mapping=>{
-  if(mapping?.originalEntries===205&&mapping?.skillLabelsById){
-   approvedSkillIdNames=mapping.skillLabelsById;
-   if(catalogSource)applyGameLocale();
-  }
- }).catch(()=>{});
-fetch('./data/os/itemForth.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null)
-.then(t=>{if(t&&typeof t==='object'){gameItemForth=t;renderOriginVitals();
- if(stageAttributesPage)renderStageAttributes();}}).catch(()=>{});
+// Main attributes, item effects and formula tables come from the SAME
+// published D1 snapshot as equipment. No local table can overwrite it later.
 restoreWikiHash();
 restoreSharedHash();
 if(bootView.open&&bootView.tab!=='wiki'&&!String(location.hash).startsWith('#wiki/')){
