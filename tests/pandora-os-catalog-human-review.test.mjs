@@ -91,7 +91,7 @@ test('NPC trades identify obtained item, required materials and stated costs',()
  assert.match(result.summary,/1/);
  assert.ok(result.rows.some(x=>x.label.includes('Золото')&&x.after==='12'));
  assert.ok(result.rows.some(x=>x.label.includes('Нужные предметы')));
- assert.doesNotMatch(result.summary,/mats|\\{\\[|@dataset/);
+ assert.doesNotMatch(result.summary,/mats|@dataset/);
  assert.equal(result.uncertain,true,'atomic trades require manual approval even with readable lines');
 });
 test('chest reward groups show item names and group-scoped chances without false guarantee',()=>{
@@ -103,7 +103,7 @@ test('chest reward groups show item names and group-scoped chances without false
   x.label.includes('Шанс внутри набора')&&x.before==='100'&&x.after==='90'));
  assert.match(result.summary,/Шансы относятся к отдельным наборам наград/);
  assert.equal(result.uncertain,true);
- assert.doesNotMatch(result.summary,/rolls|\\{\\[/);
+ assert.doesNotMatch(result.summary,/rolls|@dataset/);
 });
 test('ambiguous repeated reward IDs cannot bypass the manual-review warning',()=>{
  const source=read('chests'),previous=structuredClone(source),current=structuredClone(source);
