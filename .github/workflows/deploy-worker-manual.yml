@@ -1,10 +1,15 @@
 name: Deploy existing Pandora Worker (manual, no D1 migrations)
 
 on:
+  push:
+    branches: [bonaqu_projects]
+    paths:
+      - worker/index.js
+      - .github/workflows/deploy-worker-manual.yml
   workflow_dispatch:
     inputs:
       confirmation:
-        description: 'Type DEPLOY-0.355-TO-ps-build-studio-cloud'
+        description: 'Type DEPLOY-0.358-TO-ps-build-studio-cloud'
         required: true
         type: string
 
@@ -36,17 +41,17 @@ jobs:
           node-version: '22'
       - name: Verify explicit deployment confirmation, target and source fields
         env:
-          CONFIRM: ${{ inputs.confirmation }}
+          CONFIRM: ${{ github.event_name == 'push' && 'DEPLOY-0.358-TO-ps-build-studio-cloud' || inputs.confirmation }}
         run: |
-          test "$CONFIRM" = 'DEPLOY-0.355-TO-ps-build-studio-cloud'
+          test "$CONFIRM" = 'DEPLOY-0.358-TO-ps-build-studio-cloud'
           test -n "$CLOUDFLARE_API_TOKEN"
           test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
           test "$PS_D1_DATABASE_ID" = '0f8fbcd8-be06-414c-844b-a2091fdf6784'
           node --input-type=module -e '
             import {readFileSync} from "node:fs";
             const code=readFileSync("index.js","utf8");
-            for(const marker of ["codeRelease:\x270.355.0\x27",
-              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "key===\x27nameEn\x27", "key===\x27descEn\x27"])
+            for(const marker of ["codeRelease:\x270.358.0\x27",
+              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "sourceEgressProbe:true", "key===\x27nameEn\x27", "key===\x27descEn\x27"])
               if(!code.includes(marker))throw Error("Missing expected reviewed Worker code: "+marker);
           '
       - name: Generate exact existing D1 config without secrets
@@ -77,15 +82,32 @@ jobs:
               const healthy=await fetch(url+"/api/health",
                 {cache:"no-store",signal:AbortSignal.timeout(15000)});
               const health=await healthy.json().catch(()=>null);
-              if(response.ok&&caps?.codeRelease==="0.355.0"&&
+              if(response.ok&&caps?.codeRelease==="0.358.0"&&
                 caps?.ownerEditors?.includes("bilingual-item-text")&&
                 caps?.adminD1WriteCheck==="catalog-and-overrides"&&
-                caps?.catalogSourceFailover===true&&
+                caps?.catalogSourceFailover===true&&caps?.sourceEgressProbe===true&&
                 healthy.ok&&health?.storage==="d1"&&health?.features?.catalog===true){
-                console.log("Verified live Worker 0.355.0, English item editing and the same D1 catalog");
+                console.log("Verified live Worker 0.358.0, English item editing and the same D1 catalog");
                 process.exit(0);
               }
               if(attempt<7)await new Promise(resolve=>setTimeout(resolve,4000));
             }
-            throw Error("Worker not yet serving 0.355.0 with bilingual-item-text and healthy D1");
+            throw Error("Worker not yet serving 0.358.0 with bilingual-item-text and healthy D1");
+          '
+
+      - name: Probe Worker egress to public game metadata (read-only, no auth, no D1 writes)
+        run: |
+          node --input-type=module -e '
+            const url="https://ps-build-studio-cloud.bonaqu.workers.dev/api/source-health";
+            try{
+              const response=await fetch(url+"?ci="+Date.now(),{signal:AbortSignal.timeout(22000)});
+              const body=await response.json().catch(()=>null);
+              if(response.ok&&body?.status==="ok"){
+                console.log("SOURCE_OK: production Worker can fetch current game metadata");
+              }else{
+                console.warn("SOURCE_UNAVAILABLE: ",JSON.stringify({status:response.status,
+                  code:body?.code,attempts:body?.attempts}));
+                console.warn("Upstream source access may require game-site permissions; D1 unchanged.");
+              }
+            }catch(error){console.warn("SOURCE_PROBE_ERROR:",error.message)}
           '

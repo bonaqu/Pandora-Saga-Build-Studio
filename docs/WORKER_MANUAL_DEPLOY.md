@@ -1,15 +1,15 @@
 # Safe manual deployment of the existing Cloudflare Worker
 
-GitHub Pages and the Cloudflare Worker deploy independently. Build Studio 0.355.0
+GitHub Pages and the Cloudflare Worker deploy independently. The reviewed 0.358 Worker also deploys on merges into bonaqu_projects when the CLOUDFLARE_API_TOKEN GitHub Actions secret is configured; manual deployment remains available. Build Studio 0.358.0
 needs the corresponding Worker code to save bilingual item fields and verify writes to both the existing `catalog_entries` and `overrides` D1 tables.
 
 ## Procedure
 
 1. Open **GitHub → Actions → Deploy existing Pandora Worker (manual, no D1 migrations)**.
 2. Select **Run workflow** on branch `bonaqu_projects`.
-3. Enter `DEPLOY-0.355-TO-ps-build-studio-cloud`.
+3. Enter `DEPLOY-0.358-TO-ps-build-studio-cloud`.
 4. Watch the preflight, dry-run, deployment and read-only verification steps.
-5. Confirm `/api/runtime-capabilities` reports `codeRelease: 0.355.0` and
+5. Confirm `/api/runtime-capabilities` reports `codeRelease: 0.358.0` and
    `ownerEditors` contains `bilingual-item-text`, `adminD1WriteCheck` is `catalog-and-overrides`, and that `/api/health`
    continues to report an active D1 catalog.
 
