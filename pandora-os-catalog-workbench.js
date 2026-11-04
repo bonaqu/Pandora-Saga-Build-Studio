@@ -169,7 +169,7 @@
       formattingLabel.textContent='Привести переносы строк в описаниях к виду игрового сайта'+
         (formattingCount?' · '+formattingCount:'');
       formattingInfo.textContent=formattingCount
-        ?'Это '+formattingCount+' описаний, отличающихся только переносами строк. Игровые характеристики не меняются. По умолчанию выключено; для сохранения потребуется подтверждение.'
+        ?'Это '+formattingCount+' записей с описаниями, отличающимися только переносами строк. Игровые характеристики не меняются. По умолчанию выключено; для сохранения потребуется подтверждение.'
         :'Отличий только в переносах нет. Отдельное обновление оформления не требуется.';
       acceptAll.disabled = busy || !changes.some(safe);
       declineAll.disabled = busy || !changes.length;
@@ -219,12 +219,44 @@
         : baseline ? 'Различий в игровых данных нет' : '';
     }
     const checked = change => chosen.has(change.id);
+    // Search resolved descriptions and item names without exposing source IDs.
+    // Cache once per review so typing does not reparse large catalogs.
+    function searchableText(change){
+      if(searchCache.has(change.id))return searchCache.get(change.id);
+      const description=describe(change);
+      const referenceName=id=>{
+        const item=upstream?.items?.[id]||baseline?.items?.[id];
+        const name=typeof item?.name==='string'?item.name:item?.name?.ru;
+        return typeof name==='string'?name:'';
+      };
+      const readable=value=>String(value??'')
+        .replace(/<item\s+([0-9]{1,12})\s*\/?>/gi,(_,id)=>referenceName(id)||' ')
+        .replace(/<br\s*\/?>/gi,' ');
+      const text=[
+        review.labels[change.dataset]||change.dataset,
+        change.title,description.title,description.summary,
+        ...description.rows.flatMap(field=>[
+          field.label,field.linkedItemName||'',
+          field.beforeFull??field.before,field.afterFull??field.after
+        ])
+      ].map(readable).join(' ').toLocaleLowerCase();
+      searchCache.set(change.id,text);
+      return text;
+    }
     function setChoice(change, value) {
       if (busy) return;
       if (value) chosen.add(change.id);
       else chosen.delete(change.id);
-      if(filterKind==='accepted'||filterKind==='declined')render();
-      else refreshActions();
+      if(filterKind==='accepted'||filterKind==='declined'){
+        const inputs=[...results.querySelectorAll('.os-sync-record-label input[type="checkbox"]')];
+        const focusIndex=inputs.indexOf(document.activeElement);
+        render();
+        if(focusIndex>=0){
+          const remaining=[...results.querySelectorAll('.os-sync-record-label input[type="checkbox"]')];
+          (remaining[Math.min(focusIndex,remaining.length-1)]||search)
+            .focus({preventScroll:true});
+        }
+      }else refreshActions();
     }
 
     // Build a safe interactive preview from validated source tokens, never from HTML.
@@ -372,16 +404,13 @@
     function render() {
       results.replaceChildren();
       const query = search.value.trim().toLocaleLowerCase();
+      const scrollBefore=results.scrollTop;
+      const changedView=query!==renderedQuery||filterKind!==renderedFilter;
       for (const name of [...importer.files.filter(x=>x!=='meta'),'meta']) {
         const group = changes.filter(row=>row.dataset===name);
         if (!group.length) continue;
-        const filtered = (query ? group.filter(row=>
-          (review.labels[name]||name).toLocaleLowerCase().includes(query) ||
-          row.key.toLocaleLowerCase().includes(query) ||
-          row.title.toLocaleLowerCase().includes(query) ||
-          describe(row).title.toLocaleLowerCase().includes(query) ||
-          describe(row).summary.toLocaleLowerCase().includes(query) ||
-          describe(row).rows.some(field=>field.label.toLocaleLowerCase().includes(query))) : group).filter(matchesFilter);
+        const filtered=(query ? group.filter(row=>searchableText(row).includes(query))
+          :group).filter(matchesFilter);
         if (!filtered.length) continue;
         const panel = h('details',{class:'os-sync-group'+(name==='meta'?' os-sync-service-group':''),
           'data-game-dataset':name});
@@ -464,6 +493,10 @@
       }
       if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',text:'По этому фильтру изменений нет. Измени запрос или выбери «Все».'}));
       refreshActions();
+      // Keep the reviewer's place after selection; only a new search or
+      // category filter intentionally starts at the beginning.
+      results.scrollTop=changedView?0:scrollBefore;
+      renderedQuery=query;renderedFilter=filterKind;
     }
 
     const sourceFile = async (name, from) => {
@@ -504,7 +537,7 @@
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();
       expandedDetails.clear();expandedReferences.clear();searchCache.clear();
-      filterKind='all';renderedQuery='';renderedFilter='all';
+      filterKind='all';renderedQuery='';renderedFilter='all';search.value='';
       formattingCount=0;formattingToggle.checked=false;
       results.replaceChildren();summary.textContent='';
       progress.value=0;
