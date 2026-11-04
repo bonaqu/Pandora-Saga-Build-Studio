@@ -1444,6 +1444,7 @@ function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,sta
 let wikiOutsideCleanup=null;
 function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
+let catalogArchived=false;
 let wikiRenderSelected=null,wikiRenderedRoot=null,wikiBaseData=null;
 let wikiLoadGeneration=0;
 function invalidateWikiCatalog({dropSnapshot=false}={}){
@@ -5781,7 +5782,7 @@ function applyGameLocale({redraw=true}={}){
 // The active D1 snapshot is authoritative. Never silently show a GitHub
 // archive as current game data; only the user's explicit offline choice may
 // install the bundled copy. RU and EN use the same verified snapshot.
-let catalogArchived=false,activeCatalogSnapshot=null,catalogLoadVersion=0;
+let activeCatalogSnapshot=null,catalogLoadVersion=0;
 let englishCatalogPending=null,officialEnglishSnapshot=null;
 async function ensureEnglishCatalog(){
  if(!catalogSource)throw Error('Сначала требуется каталог игры');
