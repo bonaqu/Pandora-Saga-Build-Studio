@@ -5145,7 +5145,7 @@ function updateAdminHint(){
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
 const ownerEdits=[];
-let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=false;
+let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=true;
 let activeInlineEditor=null;
 let editIsSaving=false;
 function closeInlineEditor(){
@@ -5170,8 +5170,13 @@ function refreshOwnerUI(){
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
    ownerSaveState==='saving';
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
+   const body=root.querySelector('.owner-dock-body');
+   if(body){
+     body.inert=ownerDockCollapsed;
+     body.setAttribute('aria-hidden',String(ownerDockCollapsed));
+   }
   const toggle=root.querySelector('[data-owner-collapse]');
-  if(toggle){toggle.textContent=ownerDockCollapsed?'Развернуть':'Свернуть';
+  if(toggle){toggle.textContent=ownerDockCollapsed?'▾ Панель редактора':'▴ Свернуть';
    toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed))}
  };
  if(dock){update(dock);return}
@@ -5224,8 +5229,9 @@ function refreshOwnerUI(){
     adminEditing=false;closeInlineEditor();render();updateAdminHint()
    }})
  ]);
- root.append(head,status,counters,guide,actions);
- document.body.append(root);
+ const body=h('div',{class:'owner-dock-body'},[status,counters,guide,actions]);
+ root.append(head,body);
+ (document.querySelector('.workspace>.left')||document.body).append(root);
  update(root);
 }
 async function undoOwnerEdit(){
