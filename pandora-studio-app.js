@@ -1508,15 +1508,32 @@ async function loadWiki(){
  finally{if(wikiPending===pending)wikiPending=null}
 }
 function openWiki(type,id,highlight=null){
+ const fromView={tab:activeTab,
+  open:Boolean($('detailPanel')?.classList.contains('is-open')),
+  selection:activeTab==='wiki'?{...wikiSelection}:null,
+  search:activeTab==='wiki'?wikiSearch:'',
+  shown:activeTab==='wiki'?wikiShown:100};
  const sameCategory=activeTab==='wiki'&&wikiSelection.type===type&&
   typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
  if(activeTab!=='wiki'||wikiSelection.type!==type){wikiSearch='';wikiShown=100}
  wikiSelection={type,id:String(id),highlight:highlight==null?null:String(highlight)};
  activeTab='wiki';
  for(const btn of document.querySelectorAll('[data-tab]'))btn.classList.toggle('active',btn.dataset.tab==='wiki');
- // A real navigation entry without an extra hashchange-driven full rerender.
- history.pushState(history.state,'','#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(id)+
-  (highlight!=null?'/'+encodeURIComponent(highlight):''));
+ // Capture the view before the first deep-link navigation. Browser Back
+ // must return to the actual list or previous chapter, not a stale wiki page.
+ const destination='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(id)+
+  (highlight!=null?'/'+encodeURIComponent(highlight):'');
+ if(location.hash!==destination){
+  if(!location.hash.startsWith('#wiki/')){
+   const oldState=history.state&&typeof history.state==='object'?history.state:{};
+   history.replaceState({...oldState,psWikiReturn:{
+    ...fromView
+   }},'',location.href);
+  }
+  const currentState=history.state&&typeof history.state==='object'?history.state:{};
+  // pushState does not generate a hashchange event or redraw the list.
+  history.pushState({...currentState,psWikiEntry:true},'',destination);
+ }
  if(sameCategory)wikiRenderSelected();
  else{renderDetails();$('detailContent').scrollTop=0}
  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
@@ -2292,6 +2309,12 @@ function renderWiki(root){
     skill:'Skill',soul:'Soul',instance:'Dungeon',chest:'Chest'}:
    {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
+   if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true){
+    detail.append(h('button',{type:'button',class:'button-action wiki-history-back',
+     text:wt('← Назад','← Back'),
+     'aria-label':wt('Вернуться к предыдущему экрану','Return to previous view'),
+     onclick:()=>history.back()}));
+   }
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'item.'+id:null;
@@ -6139,6 +6162,11 @@ window.addEventListener('hashchange',()=>{
  if(location.hash.startsWith('#wiki/')){
   const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})(?:\/([0-9]{1,15}))?$/);
   if(match){
+   // popstate already restored this record when browser Back/Forward fired.
+   if(activeTab==='wiki'&&wikiSelection.type===match[1]&&
+      wikiSelection.id===match[2]&&
+      (wikiSelection.highlight||null)===(match[3]||null)&&
+      $('detailPanel')?.classList.contains('is-open'))return;
    const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
     typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
    wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
@@ -6292,14 +6320,38 @@ document.addEventListener('pandora:before-update',saveView);
 document.addEventListener('scroll',saveView,{passive:true});
 $('skillBranches').addEventListener('scroll',saveView,{passive:true});
 $('detailContent').addEventListener('scroll',saveView,{passive:true});
-window.addEventListener('popstate',()=>{
+window.addEventListener('popstate',event=>{
  if(location.hash.startsWith('#wiki/')){
   const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})(?:\/([0-9]{1,15}))?$/);
   if(!match)return;
+  const already=activeTab==='wiki'&&wikiSelection.type===match[1]&&
+   wikiSelection.id===match[2]&&(wikiSelection.highlight||null)===(match[3]||null)&&
+   $('detailPanel')?.classList.contains('is-open');
+  if(already)return;
   const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
    typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
   wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
   activeTab='wiki';
+  for(const btn of document.querySelectorAll('[data-tab]'))
+   btn.classList.toggle('active',btn.dataset.tab==='wiki');
   if(same)wikiRenderSelected();else renderDetails();
+  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+  saveView();
+ }else if(activeTab==='wiki'&&!location.hash.startsWith('#b/')){
+  // The previous history entry has no wiki hash. Restore its original view.
+  const previous=event.state?.psWikiReturn;
+  if(previous?.open&&['wiki','builds','character'].includes(previous.tab)){
+   activeTab=previous.tab;
+   if(previous.tab==='wiki'){
+    if(previous.selection)wikiSelection={...previous.selection};
+    wikiSearch=typeof previous.search==='string'?previous.search:'';
+    wikiShown=Number.isInteger(previous.shown)&&previous.shown>=100?previous.shown:100;
+   }
+   for(const btn of document.querySelectorAll('[data-tab]'))
+    btn.classList.toggle('active',btn.dataset.tab===activeTab);
+   renderDetails();
+   if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+   saveView();
+  }else closeWorkbench();
  }
 });

@@ -6,7 +6,7 @@ test('wiki selects records without recreating list and triggering two hash reren
  const app=read('pandora-studio-app.js');
  assert.match(app,/wikiRenderSelected=\(\)=>\{/);
  assert.match(app,/draw\(present\)/);
- assert.match(app,/history\.pushState\(history\.state/);
+ assert.match(app,/history\.pushState\(\{\.\.\.currentState,psWikiEntry:true\}/);
  assert.match(app,/if\(sameCategory\)wikiRenderSelected\(\)/);
  assert.match(app,/const draw=\(detailOnly=false\)=>/);
  assert.match(app,/if\(!detailOnly\)browse\.replaceChildren\(\)/);
@@ -29,4 +29,21 @@ test('drops and NPC exchange rewards include actual item icon and linked ingredi
  assert.match(app,/itemLink\(trade\.i/);
  assert.match(app,/row\.append\(itemLink\(material\.i/);
  assert.match(app,/option\.append\(itemLink\(row\.i/);
+});
+
+
+test('return navigation captures the previous view and respects direct links',()=>{
+ const app=read('pandora-studio-app.js');
+ const css=read('pandora-studio-wiki-history.css');
+ assert.match(app,/const fromView=\{tab:activeTab/);
+ assert.match(app,/history\.replaceState\(\{\.\.\.oldState,psWikiReturn:/);
+ assert.match(app,/if\(location\.hash!==destination\)/);
+ assert.match(app,/psWikiEntry===true/);
+ assert.match(app,/onclick:\(\)=>history\.back\(\)/);
+ assert.match(app,/else if\(activeTab==='wiki'&&!location\.hash\.startsWith\('#b\/'\)\)/);
+ assert.match(app,/const previous=event\.state\?\.psWikiReturn/);
+ assert.match(app,/wikiSelection=\{\.\.\.previous\.selection\}/);
+ assert.match(app,/wikiSearch=typeof previous\.search/);
+ assert.match(app,/if\(!\$\('detailPanel'\)\?\.classList\.contains\('is-open'\)\)showWorkbench\(\)/);
+ assert.match(css,/\.wiki-page>\.wiki-history-back/);
 });
