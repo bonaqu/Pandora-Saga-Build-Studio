@@ -87,6 +87,6 @@ test('interactive links are safe UI controls with explicit non-published handlin
  assert.match(workbench,/noopener noreferrer/);
  assert.match(workbench,/Предмет пока не опубликован/);
  assert.match(css,/text-decoration:underline dotted/);
- assert.match(app,/document\.querySelector\('\.workspace>\.left'\)/);
- assert.match(app,/body\.inert=ownerDockCollapsed/);
+ assert.match(app,/document\.body\.append\(root\)/);
+ assert.match(app,/panel\.inert=ownerDockCollapsed/);
 });

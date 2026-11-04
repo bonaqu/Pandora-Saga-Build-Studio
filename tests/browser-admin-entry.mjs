@@ -128,6 +128,21 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#ownerDock').waitFor({state:'visible'});
   assert.deepEqual(calls.filter(p=>p==='/api/admin/login'),['/api/admin/login']);
   const ownerPanel=page.locator('#ownerDock');
+  assert.equal(await ownerPanel.evaluate(node=>node.parentElement===document.body),true,
+   'Editor must float above the page, not live inside the stat column');
+  assert.equal(await ownerPanel.locator('.owner-dock-panel').evaluate(node=>node.inert),true);
+  assert.equal(await ownerPanel.getAttribute('class'),'owner-dock owner-dock-collapsed');
+  const originBefore=await page.locator('.workspace>.left').evaluate(node=>node.getBoundingClientRect().height);
+  const edge=ownerPanel.locator('[data-owner-collapse]');
+  assert.equal(await edge.getAttribute('aria-expanded'),'false');
+  await edge.click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'true');
+  assert.equal(await ownerPanel.locator('.owner-dock-panel').evaluate(node=>node.inert),false);
+  const originAfter=await page.locator('.workspace>.left').evaluate(node=>node.getBoundingClientRect().height);
+  assert.ok(Math.abs(originBefore-originAfter)<2,'The drawer must not stretch the stat column');
+  await edge.click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'false');
+  await edge.click();
   assert.match(await ownerPanel.innerText(),/Cloudflare D1/);
   assert.match(await ownerPanel.innerText(),/сохранение автоматически|сохранение автоматическое/);
   assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),0,
@@ -146,7 +161,18 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.waitFor({state:'visible'});
   const liveSource=dialog.getByRole('button',{name:'Проверить изменения в текущей игре'});
   await liveSource.hover();
-  await page.getByRole('tooltip').filter({hasText:/pandorasaga-os[.]com/}).waitFor({state:'visible'});
+  await page.waitForTimeout(330);
+  assert.equal(await page.getByRole('tooltip').isVisible(),false,
+   'Admin hints must not appear immediately after pointer entry');
+  await page.getByRole('tooltip').filter({hasText:/pandorasaga-os[.]com/}).waitFor({state:'visible',timeout:3500});
+  await page.mouse.move(2,2);
+  await page.getByRole('tooltip').waitFor({state:'hidden'});
+  await liveSource.hover();
+  await page.waitForTimeout(150);
+  await page.mouse.move(2,2);
+  await page.waitForTimeout(1050);
+  assert.equal(await page.getByRole('tooltip').isVisible(),false,
+   'Leaving an admin button cancels the tooltip timer');
   assert.match(await dialog.locator('.os-sync-intro').innerText(),/не ищет файлы на твоём компьютере/);
   assert.match(await dialog.locator('.os-sync-archive-choice>summary').innerText(),/сайт игры/);
   // A PR is generated from the published D1 snapshot via Worker, not the

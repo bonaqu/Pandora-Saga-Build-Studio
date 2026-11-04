@@ -1,47 +1,112 @@
-/* Owner tools overlay for authenticated sessions only. */
-/* Inline authenticated editor: anchored at the foot of the left game panel. */
-.workspace>.left>#ownerDock{
- position:relative;inset:auto;width:100%;max-width:100%;min-width:0;
- display:grid;grid-template-columns:minmax(0,1fr);gap:0;
- margin:18px 0 0;padding:0;align-self:stretch;
- background:linear-gradient(160deg,#35271b,#1f1712);
- border:1px solid #947148;border-radius:9px;
- box-shadow:0 8px 22px #0005;overflow:hidden;
+/* Authenticated editor: user-controlled overlay, never a child of the game grid.
+   The narrow handle remains at the left viewport edge when the drawer is shut. */
+body>#ownerDock{
+ position:fixed;left:0;right:auto;bottom:max(14px,env(safe-area-inset-bottom));
+ z-index:82;display:block;flex:none;align-items:initial;
+ width:min(344px,calc(100vw - 54px));max-width:none;max-height:none;
+ padding:0;margin:0;border:0;background:transparent;box-shadow:none;
+ color:#e8cf9e;
+ transform:none;pointer-events:none;
 }
-#ownerDock .owner-dock-head{
- display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px;
- padding:10px 12px;min-width:0;
+body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
+#ownerDock .owner-dock-panel{
+ min-width:0;max-height:calc(100dvh - 80px);
+ background:linear-gradient(155deg,#332318,#1d1611 64%,#211912);
+ border:1px solid #a17d4d;border-left:0;border-radius:0 11px 11px 0;
+ box-shadow:12px 12px 42px #000b,inset 0 0 0 2px #382919;
+ overflow:auto;overscroll-behavior:contain;
+ scrollbar-width:thin;scrollbar-color:#946e43 #241a12;
+ pointer-events:auto;
+ transform:translate3d(0,0,0);
+ transition:transform .32s cubic-bezier(.22,.82,.2,1);
+ will-change:transform;
 }
-#ownerDock .owner-dock-title{
- display:block;flex:1 1 140px;font-family:inherit;
- font-size:13px;font-weight:700;color:#f6d5a2;
-}
-#ownerDock .owner-dock-online{font-size:10px;color:#c9b18a}
-#ownerDock [data-owner-collapse]{
- margin-left:auto;padding:5px 8px;min-height:28px;border-radius:5px;
- white-space:nowrap;font-size:11px;transition:background .18s,border-color .18s;
-}
-#ownerDock .owner-dock-body{
- display:grid;gap:9px;min-width:0;padding:0 12px 12px;
- overflow:hidden;max-height:1000px;opacity:1;
- transition:max-height .28s ease,opacity .22s ease,padding .28s ease;
-}
-#ownerDock.owner-dock-collapsed .owner-dock-body{
- max-height:0;opacity:0;padding-top:0;padding-bottom:0;
+#ownerDock.owner-dock-collapsed .owner-dock-panel{
+ transform:translate3d(-100%,0,0);
  pointer-events:none;
 }
-#ownerDock .owner-dock-save-state{font-size:11px;line-height:1.5}
-#ownerDock .owner-dock-counters{display:flex;flex-wrap:wrap;gap:5px 12px}
-#ownerDock .owner-workflow-guide{border:1px solid #645037;border-radius:5px;padding:8px;
- font-size:11px}
-#ownerDock .owner-workflow-guide summary{cursor:pointer}
-#ownerDock .owner-workflow-steps{padding-left:20px;margin:7px 0}
-#ownerDock .owner-workflow-glossary p{margin:5px 0}
+#ownerDock .owner-dock-handle{
+ position:absolute;left:calc(100% - 1px);bottom:20px;
+ display:flex;align-items:center;justify-content:center;
+ width:45px;min-width:45px;height:112px;
+ padding:10px 7px;margin:0;
+ writing-mode:vertical-rl;text-orientation:mixed;
+ letter-spacing:.04em;line-height:1.2;
+ font:700 12px Manrope,Arial,sans-serif;
+ border:1px solid #bd9359;border-left:0;border-radius:0 9px 9px 0;
+ background:linear-gradient(160deg,#513722,#2e2016);
+ color:#ffdaa1;box-shadow:8px 8px 26px #000a;
+ cursor:pointer;pointer-events:auto;touch-action:manipulation;
+ transition:left .32s cubic-bezier(.22,.82,.2,1),background .18s,border-color .18s,box-shadow .18s;
+}
+#ownerDock.owner-dock-collapsed .owner-dock-handle{
+ left:0;
+ border-color:#d1a267;background:linear-gradient(145deg,#5c3e25,#322015);
+ box-shadow:6px 8px 24px #0009, inset -2px 0 0 #c99a58;
+}
+#ownerDock .owner-dock-handle:hover{background:#69462a;border-color:#f2c886}
+#ownerDock .owner-dock-handle:focus-visible{
+ outline:2px solid #ffdf9c;outline-offset:3px;
+}
+#ownerDock[data-save-state="error"] .owner-dock-handle{
+ border-color:#e69a7a;box-shadow:6px 8px 24px #000a,inset -3px 0 0 #d67d56;
+}
+#ownerDock[data-save-state="saving"] .owner-dock-handle{
+ border-color:#f0ca85;
+}
+#ownerDock .owner-dock-head{
+ position:sticky;top:0;z-index:1;
+ display:flex;align-items:center;flex-wrap:wrap;gap:6px 9px;
+ padding:13px 13px 11px;border-bottom:1px solid #765633;
+ background:linear-gradient(125deg,#402c1c,#281c14);min-width:0;
+}
+#ownerDock .owner-dock-title{
+ display:block;flex:1 1 136px;
+ font:700 14px Manrope,Arial,sans-serif;color:#f4d2a0;
+}
+#ownerDock .owner-dock-online{
+ font-size:10px;color:#cbb895;line-height:1.35;
+}
+#ownerDock .owner-dock-online:before{
+ content:"";display:inline-block;width:6px;height:6px;
+ margin-right:6px;border-radius:50%;background:#91be7b;
+ vertical-align:middle;
+}
+#ownerDock .owner-dock-body{
+ display:grid;gap:12px;min-width:0;
+ padding:12px 13px 14px;
+}
+#ownerDock .owner-dock-save-state{
+ font-size:11px;line-height:1.5;overflow-wrap:anywhere;
+ border:1px solid #735939;background:#211811;
+ border-radius:6px;padding:8px 10px;color:#e7cea7;
+}
+#ownerDock .owner-dock-save-state[data-state="error"]{
+ border-color:#b97453;color:#ffd0b7;
+}
+#ownerDock .owner-dock-counters{
+ display:flex;justify-content:space-between;flex-wrap:wrap;gap:5px 9px;
+}
+#ownerDock .owner-dock-count{color:#c6b08d;font-size:10px}
+#ownerDock .owner-workflow-guide{
+ border:1px solid #685039;border-radius:6px;
+ background:#241b14;padding:9px 11px;font-size:11px;
+}
+#ownerDock .owner-workflow-guide summary{
+ cursor:pointer;color:#edd1a6;line-height:1.5;
+}
+#ownerDock .owner-workflow-guide summary:focus-visible{
+ outline:2px solid #ffd184;outline-offset:3px;
+}
+#ownerDock .owner-workflow-steps{padding-left:19px;margin:8px 0;color:#ddc7a6}
+#ownerDock .owner-workflow-glossary p{margin:6px 0;color:#cbb89d}
 #ownerDock .owner-dock-actions{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;
 }
 #ownerDock .owner-dock-actions button{
- min-width:0;font-size:11px;line-height:1.35;padding:8px 6px;
+ min-width:0;min-height:37px;line-height:1.35;
+ padding:8px 6px;margin:0;border-radius:5px;font-size:11px;
+ white-space:normal;transition:border-color .18s,background .18s;
 }
 #ownerDock .owner-dock-actions .owner-dock-primary,
 #ownerDock .owner-dock-actions .owner-dock-finish{
@@ -50,11 +115,27 @@
 #ownerDock .owner-dock-actions .owner-dock-primary{
  background:#51371f;border-color:#ad824d;
 }
-#ownerDock button:focus-visible{outline:2px solid #ffd184;outline-offset:2px}
-@media(max-width:680px){
- .workspace>.left>#ownerDock{margin-top:14px}
- #ownerDock .owner-dock-head{padding:10px}
+#ownerDock .owner-dock-actions .owner-dock-finish{
+ background:#29291f;border-color:#8b8b69;
+}
+#ownerDock .owner-dock-actions button:disabled{
+ opacity:.52;cursor:not-allowed;
+}
+#ownerDock .owner-dock-actions button:focus-visible{
+ outline:2px solid #ffd184;outline-offset:2px;
+}
+@media(max-width:600px){
+ body>#ownerDock{bottom:max(8px,env(safe-area-inset-bottom))}
+ #ownerDock .owner-dock-panel{max-height:calc(100dvh - 32px)}
+ #ownerDock .owner-dock-handle{bottom:12px;width:43px;min-width:43px;height:102px}
+}
+@media(max-height:510px){
+ #ownerDock .owner-dock-panel{max-height:calc(100dvh - 16px)}
+ body>#ownerDock{bottom:8px}
 }
 @media(prefers-reduced-motion:reduce){
- #ownerDock .owner-dock-body,#ownerDock [data-owner-collapse]{transition:none}
+ #ownerDock .owner-dock-panel{transition:none;will-change:auto}
+ #ownerDock .owner-dock-handle,#ownerDock .owner-dock-actions button{
+  transition:none;
+ }
 }
