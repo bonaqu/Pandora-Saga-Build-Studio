@@ -4,6 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const html=read('index.html'),app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
+const loadingCss=read('pandora-studio-loading.css');
 test('no visible introduction and character editor immediately follows site notice',()=>{
  assert.doesNotMatch(html,/<section\s+class="intro"/);
  assert.doesNotMatch(html,/АРХИВ ГЕРОЕВ|Создай свою легенду|Выбери расу, профессию, снаряжение/);
@@ -46,7 +47,7 @@ test('catalog status always distinguishes current D1 from an explicitly chosen a
  assert.match(html,/id="startupOverlay"/);
  assert.match(html,/id="startupRetry"/);
  assert.match(html,/id="startupArchive"/);
- assert.match(css,/\.ps-boot-overlay\{position:fixed/);
+ assert.match(loadingCss,/\.ps-boot-overlay\{position:fixed/);
 });
 test('critical user controls and owner dock survive removal of intro',()=>{
  for(const id of ['nav','locale','siteNotice','workspace','originTabs','stagePicker','stageAttributes',
