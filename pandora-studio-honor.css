@@ -47,14 +47,26 @@
 .wiki-honor-list-section{display:grid;gap:7px;min-width:0}
 .wiki-honor-list-section h5{font:700 15px 'Cormorant Garamond',Georgia,serif;
  margin:0;color:#f4d19b}
-.wiki-honor-list{display:grid;gap:5px}
-.wiki-honor-list-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap;
- padding:6px 8px;border:1px solid #655039;background:#291e16;border-radius:3px}
-.wiki-honor-list-names{display:grid;gap:3px;justify-items:start;
- flex:1 1 130px;min-width:0}
-.wiki-honor-list-names span{font:600 11px/1.35 Manrope,Arial,sans-serif;
- color:#edcfa1;overflow-wrap:anywhere}
-.wiki-honor-list-row .wiki-link{font-size:10px;padding:3px}
+/* Honor references use the same entity-flow layout as monster locations.
+   A row is only an editing host; the actual link is the whole visual chip. */
+.wiki-honor-list.wiki-entity-flow{
+ display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:2px 0 5px;
+}
+.wiki-honor-list-row{
+ display:inline-flex;align-items:center;justify-content:flex-start;
+ gap:6px;flex:0 1 auto;min-width:0;max-width:100%;margin:0;
+ padding:0;background:transparent;border:0;border-radius:0;
+}
+.wiki-honor-list-names{
+ display:inline-flex;align-items:center;gap:5px;min-width:0;
+ max-width:100%;flex:0 1 auto;
+}
+.wiki-honor-list-names>span:not(.wiki-entity-reference-icon){
+ display:inline-flex;align-items:center;min-height:33px;max-width:100%;
+ padding:6px 10px;border:1px solid #5d4e3b;border-radius:5px;
+ background:#231c16;color:#a99880;
+ font:600 11px/1.35 Manrope,Arial,sans-serif;overflow-wrap:anywhere;
+}
 .wiki-honor-location-select{
  min-width:0;max-width:min(100%,260px);min-height:32px;padding:7px 9px;
  background:#21180f;color:#e9c899;border:1px solid #997048;
@@ -63,24 +75,34 @@
 .wiki-honor-location-select:focus-visible,.wiki-honor-new input:focus-visible{
  outline:2px solid #e3ba83;outline-offset:2px;
 }
-/* Location names themselves open the canonical map page. */
-.wiki-honor-list-row .wiki-honor-war-link.wiki-link,
-.wiki-honor-list-row .wiki-honor-location-link.wiki-link{
- display:inline;width:auto;max-width:100%;min-height:0;min-width:0;
- margin:0;padding:0;border:0;border-radius:0;box-shadow:none;
- background:transparent;color:#edcfa1;font:600 11px/1.45 Manrope,Arial,sans-serif;
- text-decoration:underline;text-decoration-color:#bd9057;
- text-underline-offset:3px;overflow-wrap:anywhere;
+/* One interactive card, using .wiki-entity-flow's canonical layout. */
+.wiki-page .wiki-honor-list .wiki-entity-reference.wiki-link{
+ display:inline-flex;align-items:center;justify-content:flex-start;
+ width:auto;max-width:100%;min-width:0;min-height:34px;
+ padding:6px 11px;margin:0;gap:8px;
+ border:1px solid #785b3c;border-radius:5px;
+ background:linear-gradient(145deg,#352519,#1e1711);
+ box-shadow:inset 0 1px 0 #c79b5420;
+ color:#ebc998;font:650 11px/1.4 Manrope,Arial,sans-serif;
+ text-align:left;text-decoration:none;overflow-wrap:anywhere;
+ transition:border-color .16s,background .16s,box-shadow .16s;
 }
-.wiki-honor-list-row .wiki-honor-war-link.wiki-link:hover,
-.wiki-honor-list-row .wiki-honor-location-link.wiki-link:hover,
-.wiki-honor-list-row .wiki-honor-war-link.wiki-link:focus-visible,
-.wiki-honor-list-row .wiki-honor-location-link.wiki-link:focus-visible{
- background:transparent;color:#ffe3b1;text-decoration-color:currentColor;
+.wiki-page .wiki-honor-list .wiki-entity-reference.wiki-link:hover{
+ border-color:#ddb47b;background:linear-gradient(140deg,#513520,#2a1d15);
+ box-shadow:inset 0 1px 0 #eac08430;color:#ffe5bb;
 }
-.wiki-honor-list-row .wiki-honor-war-link.wiki-link:focus-visible,
-.wiki-honor-list-row .wiki-honor-location-link.wiki-link:focus-visible{
- outline:2px solid #eac58a;outline-offset:3px;
+.wiki-page .wiki-honor-list .wiki-entity-reference.wiki-link:focus-visible{
+ outline:2px solid #f1c987;outline-offset:2px;
+ background:#44301d;color:#ffebc8;
+}
+.wiki-honor-list .wiki-entity-reference-icon{
+ display:inline-grid;place-items:center;flex:0 0 23px;
+ width:23px;height:23px;border-radius:4px;
+ border:1px solid #8a683e;background:#4b3320;
+ color:#dfb985;font-size:14px;line-height:1;
+}
+.wiki-honor-list .wiki-honor-war-link .wiki-entity-reference-icon{
+ color:#ecc99b;
 }
 .wiki-honor-new{
  display:grid;grid-template-columns:minmax(0,1fr) auto auto;
@@ -96,7 +118,11 @@
  border:0;background:transparent;color:#e4bf88;
  font-size:11px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;
 }
-.wiki-honor-monthly-list{display:grid;gap:10px}
+.wiki-honor-monthly-list{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;
+}
+@media(max-width:1080px){.wiki-honor-monthly-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.wiki-honor-monthly-list{grid-template-columns:minmax(0,1fr)}}
 .wiki-honor-monthly-card{
  display:grid;gap:8px;padding:12px;min-width:0;
  border:1px solid #896339;border-radius:5px;
@@ -113,9 +139,23 @@
  font:600 10px Manrope,Arial,sans-serif;color:#bca280;
 }
 .wiki-honor-monthly-card .wiki-honor-cloak-list{
- margin:0;padding-left:1px;white-space:pre-line;
- font:11px/1.8 Manrope,Arial,sans-serif;
+ display:grid;gap:6px;min-width:0;margin:0;padding:0;
+ font:11px/1.45 Manrope,Arial,sans-serif;white-space:normal;
 }
+.wiki-honor-cloak-row{
+ display:grid;grid-template-columns:minmax(70px,.62fr) minmax(0,1.38fr);
+ gap:7px;align-items:center;min-width:0;
+ padding:6px 8px;border:1px solid #74543b66;border-radius:4px;
+ background:linear-gradient(105deg,#332419,#241a13);
+}
+.wiki-honor-cloak-row:hover,.wiki-honor-cloak-row:focus-within{
+ border-color:#a98355;background:linear-gradient(105deg,#3d2b1d,#291d15);
+}
+.wiki-honor-cloak-nation{
+ color:#bca282;font:600 10px/1.3 Manrope,Arial,sans-serif;
+}
+.wiki-honor-cloak-reward{min-width:0;overflow-wrap:anywhere;line-height:1.38}
+.wiki-honor-cloak-unlinked{color:#b9a487;font-size:11px}
 /* The requirements read as text, not tall highlighted callouts. */
 .wiki-honor-requirement{
  grid-column:2;grid-row:2;min-width:0;margin:0;padding:0;
@@ -218,10 +258,11 @@
   brightness(1.15) contrast(1.14) drop-shadow(0 1px 1px #0b0705);
 }
 .wiki-honor-cloak-list .wiki-honor-cloak-link.wiki-link{
- display:inline;inline-size:auto;width:auto;min-height:0;padding:0;margin:0;
- border:0;background:transparent;box-shadow:none;
+ display:inline-flex;align-items:center;max-width:100%;width:auto;min-width:0;
+ min-height:24px;padding:2px 3px;margin:0;border:0;border-radius:3px;
+ background:transparent;box-shadow:none;white-space:normal;
  color:#f6d293;text-decoration:underline;text-decoration-color:#b58b55;
- text-underline-offset:3px;font:inherit;line-height:inherit;
+ text-underline-offset:3px;font:600 11px/1.35 Manrope,Arial,sans-serif;
 }
 .wiki-honor-cloak-link.wiki-link:hover,
 .wiki-honor-cloak-link.wiki-link:focus-visible{
