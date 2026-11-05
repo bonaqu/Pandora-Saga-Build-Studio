@@ -1,6 +1,6 @@
 {
   "name": "pandora-saga-build-studio",
-  "version": "0.370.0",
+  "version": "0.371.0",
   "private": true,
   "description": "Self-hosted Pandora Saga build planner, encyclopedia, and D1 catalog tools",
   "type": "module",
@@ -26,5 +26,5 @@
     "bench:wiki:local": "node scripts/benchmark-encyclopedia.mjs",
     "locales:audit": "node scripts/audit-os-localization.mjs"
   },
-  "pandoraRelease": "2026.11.05.370"
+  "pandoraRelease": "2026.11.05.371"
 }
