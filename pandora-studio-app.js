@@ -5593,7 +5593,8 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   if(finished||saving)return;
   const raw=control.value;
   const value=type==='number'?(raw.trim()===''?null:Number(raw)):raw.trim();
-  if(type==='number'&&(value===null||!Number.isFinite(value)||value<min||value>max||
+  if(type==='number'&&value===null&&before===''){finished=true;restore();return}
+   if(type==='number'&&(value===null||!Number.isFinite(value)||value<min||value>max||
    (integer&&!Number.isInteger(value)))){
    control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
   }
