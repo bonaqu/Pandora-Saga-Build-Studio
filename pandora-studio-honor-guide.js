@@ -148,6 +148,10 @@ const listValid=(x,type)=>{
 const validOverride=(key,value)=>{
  if(typeof key!=='string'||typeof value!=='string'||value.length>8000)return false;
  const data=parse(value);
+ if(key==='wiki.labels')return plain(data)&&Object.keys(data).length>0&&
+  Object.keys(data).length<=28&&Object.entries(data).every(([k,v])=>
+   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly))_(?:ru|en)$/.test(k)&&
+   typeof v==='string'&&v.trim()&&v.length<=90);
  if(validBookKey(key))return cleanPatch(data,fields,360)!==null;
  if(validRankKey(key))return cleanPatch(data,rankFields,500)!==null;
  if(key==='honor.overview')return cleanPatch(data,introFields,2200)!==null;
