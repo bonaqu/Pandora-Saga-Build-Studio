@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-05 · **Latest source release:** 0.368.0 (`2026.11.05.368`)
+**Updated:** 2026-11-05 · **Latest source release:** 0.369.0 (`2026.11.05.369`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
@@ -12,6 +12,13 @@
 **0.323.0:** устранение неиспользуемых точных дублей монстров с сохранением всех серверных ID и привязок. Гигантский питон 11205 (Лейбгольдские теснины, 8 записей добычи) выбран каноническим вместо пустого 72006. Скрываются полностью эквивалентные монстры без собственных источников, а также копии с одинаковыми локациями и таблицами добычи. Только варианты с различающимся дропом или отдельной значимой записью без лута остаются отдельными. Одинаковые предметы показывают совокупность источников получения разных ID. Поиск дубликатов названий использует готовый индекс вместо полного сканирования списка при каждом открытии.
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.369.0 — integrated scroll-to-top footer
+
+- [x] Change the scroll-top action from an overlay obscuring item rows to a compact footer directly below the left encyclopedia list, with matching panel borders and no absolute positioning.
+- [x] Show it only after significant list scrolling; preserve current article, list selection and browser history. Respect reduced-motion preferences and the English language.
+- [x] Browser regression asserts footer geometry: the action cannot overlap list items, and it scrolls the independent list rather than the article.
+- [ ] Continue full live formula parity, verified NPC/drop relationships, and production authenticated D1 writes as separate evidence-backed tasks.
 
 ## Source update 0.368.0 — clear chest contents and useful wiki list navigation
 
