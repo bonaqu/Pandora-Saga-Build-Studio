@@ -83,7 +83,13 @@ export async function runHonorGuideSmoke(browser,base){
   await ruins.click();
   assert.equal((await panel.locator('h3').innerText()).trim(),'Подземные руины Астира');
   assert.doesNotMatch(await panel.innerText(),/Историческая PvP-локация|недоступна на OS/);
+  // Regression: a deep-linked NPC record must never make Honor unclickable.
+  await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
+  await page.locator('.wiki-list [data-wiki-record]').first().click();
+  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
+  assert.equal((await panel.locator('.wiki-honor-rank').count()),12);
   assert.deepEqual(errors,[]);
-  console.log('Chromium Honor and future maps passed: RU/EN, 12 ranks, native 22-mob location grid');
+  console.log('Chromium Honor: vector ranks, cloaks, item previews, NPC navigation and RU/EN');
  }finally{await context.close()}
 }
