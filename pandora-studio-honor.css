@@ -51,11 +51,6 @@
 .wiki-honor-resource>strong{font:700 18px 'Cormorant Garamond',Georgia,serif;color:#ffe0ac}
 .wiki-honor-resource>p{font:10px/1.5 Manrope,Arial,sans-serif;
  color:#d8bd99;margin:0}
-.wiki-honor-joining{display:flex;justify-content:space-between;align-items:center;
- flex-wrap:wrap;gap:7px;padding:9px;border:1px solid #a58046;background:#45301e;
- border-radius:4px}
-.wiki-honor-joining strong{font:700 19px 'Cormorant Garamond',serif;color:#ffe1aa}
-.wiki-honor-joining small{font-size:10px;color:#e2c7a0}
 .wiki-honor-list-section{display:grid;gap:7px;min-width:0}
 .wiki-honor-list-section h5{font:700 15px 'Cormorant Garamond',Georgia,serif;
  margin:0;color:#f4d19b}
@@ -186,3 +181,23 @@
 .wiki-owner-monster-form .wiki-owner-monster-level{max-width:90px;flex:0 0 84px}
 .wiki-owner-monster-form .inline-owner-error{flex:1 1 100%}
 @media(max-width:600px){.wiki-map-roster-actions .wiki-owner-plus{flex:1 1 auto}}
+
+/* Consistent editable rows: link, replace, remove, then inline Add. */
+.wiki-honor-list-row .wiki-honor-add{
+ margin-left:0;flex:0 0 auto;min-height:30px;padding:5px 10px;
+ font:600 11px Manrope,Arial,sans-serif;
+}
+.wiki-honor-list-row .wiki-honor-location-select{flex:1 1 160px;max-width:265px}
+.wiki-honor-emblem{font-size:11px;letter-spacing:-.075em;white-space:nowrap}
+.wiki-honor-rank:nth-child(-n+5) .wiki-honor-emblem{font-size:11px}
+.wiki-honor-rank:nth-child(6) .wiki-honor-emblem{font-size:21px}
+.wiki-honor-rank:nth-child(7) .wiki-honor-emblem{font-size:22px}
+.wiki-honor-rank:nth-child(8) .wiki-honor-emblem{font-size:16px}
+.wiki-honor-rank:nth-child(9) .wiki-honor-emblem{font-size:13px}
+.wiki-honor-rank-number.wiki-honor-emblem{width:43px;height:35px;border-radius:7px}
+.wiki-honor-rank-benefit{padding-top:6px;border-top:1px solid #79573655}
+.wiki-honor-monthly-head small{font-size:11px;color:#e6c491}
+@media(max-width:670px){
+ .wiki-honor-list-row .wiki-honor-location-select{flex-basis:100%;max-width:100%}
+ .wiki-honor-list-row .wiki-honor-add{margin-left:0}
+}
