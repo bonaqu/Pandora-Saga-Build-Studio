@@ -55,3 +55,33 @@ test('stat hold intent is shared with Hero Book, green + and red minus',()=>{
  assert.match(app,/setInterval\(run,85\)/);
  assert.match(app,/,340\)/);
 });
+
+test('guest receives approved custom caption but no editor pencil or editing affordance',()=>{
+ const beginning=app.indexOf('function originGuideKey(');
+ const ending=app.indexOf('function editAttr(',beginning);
+ assert.ok(beginning>0&&ending>beginning);
+ const source=app.slice(beginning,ending);
+ const overrides={'guideedit.book.origin.race-choose':JSON.stringify({ru:'Выбрать расу'})};
+ const makeNode=()=>({
+  textContent:'',dataset:{},tagName:'BUTTON',
+  classList:{state:false,toggle(_key,on){this.state=on}},
+  querySelector:()=>null,addEventListener(){}
+ });
+ const makeHost=()=>({children:[],querySelectorAll(){return this.children},
+  append(child){this.children.push(child)}});
+ const make=(authenticated)=>Function('window','lang','override','adminEditing','adminToken','h',
+  source+'\nreturn originCopyLabel;')(
+  {PandoraHonorGuide:guide},'ru',overrides,authenticated,authenticated?'token':'',
+  (_tag,attrs)=>({dataset:{originEditFor:attrs['data-origin-edit-for']},
+   ...attrs,remove(){}}));
+ const guest=makeNode(),guestHost=makeHost();
+ make(false)(guest,'raceChoose','Выбрать эту расу','Choose this race',{pencilHost:guestHost});
+ assert.equal(guest.textContent,'Выбрать расу');
+ assert.equal(guestHost.children.length,0);
+ assert.equal(guest.classList.state,false);
+ const admin=makeNode(),adminHost=makeHost();
+ make(true)(admin,'raceChoose','Выбрать эту расу','Choose this race',{pencilHost:adminHost});
+ assert.equal(admin.textContent,'Выбрать расу');
+ assert.equal(adminHost.children.length,1);
+ assert.equal(admin.classList.state,true);
+});
