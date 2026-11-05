@@ -723,11 +723,8 @@ function showWorkbench(){
  if(stageSlotPickerOpen)closeStagePicker(false);
  panel.classList.add('is-open');panel.setAttribute('aria-modal','true');
  backdrop.hidden=false;document.body.classList.add('studio-workbench-open');
- // The editor is a floating drawer, not part of the game grid. Keep it
- // unobtrusive when entering a workbench; opening it remains user controlled.
- if(adminEditing&&adminToken&&!wasOpen&&!ownerDockCollapsed){
-  ownerDockCollapsed=true;refreshOwnerUI();
- }
+ // A floating owner drawer keeps the explicit user's open/collapsed state
+ // when switching between the hero, saved builds and encyclopedia.
  if(!wasOpen)$('dockClose')?.focus({preventScroll:true});
 }
 function closeWorkbench(){
