@@ -272,3 +272,30 @@
  background:#302318;border:1px solid #b18b55;border-radius:5px}
 .wiki-category-edit-host .wiki-inline-input{max-width:290px}
 .wiki-categories [hidden]{display:none!important}
+
+/* Honor authored line breaks in encyclopedia text even outside edit mode. */
+.wiki-page [data-owner-field="desc"],
+.wiki-page [data-owner-field="descEn"],
+.wiki-page [data-owner-field="blurb"],
+.wiki-page [data-owner-field="blurbRu"],
+.wiki-page [data-owner-field="notesRu"],
+.wiki-page [data-owner-field="notesEn"],
+.wiki-page [data-owner-field="service"],
+.wiki-page [data-owner-field="serviceEn"],
+.wiki-page [data-edit-key^="itemdesc."],
+.wiki-page [data-edit-key^="skilldesc."]{
+ white-space:pre-wrap;overflow-wrap:anywhere;
+}
+/* Linked item references stay inline; a full-width flex anchor can change
+   the hovered hit box and flicker when item preview appears. */
+.wiki-page .wiki-description a.wiki-link,
+.wiki-page .wiki-honor-copy a.wiki-link{
+ display:inline;width:auto;min-height:0;margin:0;padding:0;
+ border:0;background:transparent;vertical-align:baseline;
+ color:#f2ce8b;text-decoration:underline;text-underline-offset:3px;
+ line-height:inherit;
+}
+.wiki-page .wiki-description a.wiki-link:hover,
+.wiki-page .wiki-honor-copy a.wiki-link:hover{
+ color:#ffe2ad;background:transparent;text-decoration:underline;
+}
