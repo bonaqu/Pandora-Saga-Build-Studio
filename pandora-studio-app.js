@@ -1618,7 +1618,9 @@ function renderWiki(root){
      wikiSelection={type:'item',id:null,highlight:null};
      wikiItemType=key==='utility'?'utility':'equipment';
     }else wikiSelection={type:key,id:null,highlight:null};
-    wikiSearch='';wikiShown=100;renderDetails();
+    wikiSearch='';wikiShown=100;
+    if(location.hash.startsWith('#wiki/'))openWikiChapterList();
+    else renderDetails();
    }}));
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
