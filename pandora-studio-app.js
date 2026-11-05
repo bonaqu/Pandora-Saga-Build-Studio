@@ -1601,6 +1601,8 @@ function renderWiki(root){
  listPanel.append(browse,listTop);
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
+ const wikiTitle=(group,key,ru,en)=>
+  window.PandoraWikiLabels?.value(override,group,key,lang)||wt(ru,en);
  const outsidePickers=new Set();
  const cleanupOutsidePickers=()=>{
   for(const onOutside of outsidePickers)
@@ -1626,12 +1628,18 @@ function renderWiki(root){
  };
  let wikiResultsCache=null;
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
- for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['honor','Очки чести','Honor points'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
-  categories.append(h('button',{
+ for(const [key,ru,en]of[['item','Экипировка','Equipment'],
+  ['utility','Предметы эффектов','Effect items'],
+  ['monster','Монстры','Monsters'],['map','Локации','Locations'],
+  ['honor','Честь','Honor'],['npc','NPC-обмен','NPC trades'],
+  ['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],
+  ['skill','Навыки','Skills'],['soul','Души','Souls']]){
+  const current=wikiTitle('chapter',key,ru,en);
+  const chapter=h('button',{
    class:(key==='utility'?wikiSelection.type==='item'&&wikiItemType==='utility':
     key==='item'?wikiSelection.type==='item'&&wikiItemType!=='utility':
     wikiSelection.type===key)?'chosen':'',
-   text:lang==='en'?en:ru,'data-wiki-chapter':key,
+   'data-wiki-chapter':key,
    onclick:()=>{
     if(key==='item'||key==='utility'){
      wikiSelection={type:'item',id:null,highlight:null};
@@ -1640,7 +1648,24 @@ function renderWiki(root){
     wikiSearch='';wikiShown=100;
     if(location.hash.startsWith('#wiki/'))openWikiChapterList();
     else renderDetails();
-   }}));
+   }},[h('span',{class:'wiki-category-text',text:current})]);
+  const line=h('div',{class:'wiki-category-line'},[chapter]);
+  if(adminEditing&&adminToken){
+   const edit=h('button',{type:'button',class:'wiki-category-edit',
+    title:wt('Переименовать вкладку','Rename chapter'),
+    'aria-label':wt('Переименовать вкладку: ','Rename chapter: ')+current,
+    text:'✎'});
+   edit.onclick=()=>{
+    if(line.querySelector('[data-owner-text-field]'))return;
+    const label=chapter.querySelector('.wiki-category-text');
+    const field=window.PandoraWikiLabels.key('chapter',key,lang);
+    editWikiValue(label,label.textContent,{type:'text',
+     onCommit:value=>saveGuidePatch('wiki.labels',{[field]:value}),
+     onCommitted:value=>{if(label.isConnected)label.textContent=value}});
+   };
+   line.append(edit);
+  }
+  categories.append(line);
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  guardEncyclopediaSearch(search);
@@ -1850,6 +1875,11 @@ function renderWiki(root){
    window.PandoraHonorView?.render({
     browse,detail,make:h,lang,article:window.PandoraHonorGuide?.article(override),
     editable:adminEditing&&Boolean(adminToken),
+    label:(group,id,ru,en)=>wikiTitle(group,id,ru,en),
+    editLabel:(node,id,initial)=>editWikiValue(node,initial,{type:'text',
+     onCommit:value=>saveGuidePatch('wiki.labels',{
+      [window.PandoraWikiLabels.key('honor',id,lang)]:value
+     })}),
     editText:(node,initial,multiline,onCommit)=>editWikiValue(node,initial,{
      type:multiline?'textarea':'text',onCommit}),
     saveText:saveGuidePatch,saveList:saveGuideList,
@@ -5780,7 +5810,7 @@ function guardOwnerInput(input){
  input.addEventListener('focus',()=>{input.readOnly=false},{once:true});
  return input;
 }
-function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit}={}){
+function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit,onCommitted}={}){
  if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
  const before=String(initial??''),visibleNodes=[...node.childNodes];
  let finished=false,saving=false;
@@ -5815,7 +5845,7 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   }
   if(String(value)===before){finished=true;restore();return}
   saving=true;control.disabled=true;node.classList.add('wiki-inline-saving');
-  try{await onCommit(value);finished=true;restore()}
+  try{await onCommit(value);finished=true;restore();onCommitted?.(value)}
   catch(error){saving=false;control.disabled=false;node.classList.remove('wiki-inline-saving');
    if(control.setCustomValidity){
     control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity()
@@ -5852,7 +5882,8 @@ async function saveGuidePatch(key,fields){
    wikiRenderSelected?.();
    if(pane)pane.scrollTop=position;
    saveView();
-  }else renderStageAttributes();
+  }else if(key==='wiki.labels')saveView();
+  else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveGuideList(key,rows){
