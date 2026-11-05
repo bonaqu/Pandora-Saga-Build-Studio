@@ -19,10 +19,9 @@ body>#ownerDock.owner-dock-collapsed{
  box-shadow:12px 12px 42px #000b,inset 0 0 0 2px #382919;
  overflow:hidden;pointer-events:auto;
  transform:none;
- transition:opacity .2s ease;
 }
 #ownerDock.owner-dock-collapsed .owner-dock-panel{
- visibility:hidden;opacity:0;transform:none;pointer-events:none;
+ display:none;pointer-events:none;
 }
 #ownerDock .owner-dock-handle{
  /* The sticky header has z-index:1; keep the hide button above it. */
