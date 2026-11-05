@@ -8,6 +8,7 @@ import {runCloudSaveFailureSmoke} from './browser-cloud-save-failure.mjs';
 import {runDeletedBuildRecoverySmoke} from './browser-deleted-recovery.mjs';
 import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs';
 import {runEquipmentLocaleSmoke} from './browser-equipment-locale.mjs';
+import {runItemHoverDelaySmoke} from './browser-item-hover-delay.mjs';
 import {runLegacySkillCapSmoke} from './browser-legacy-skill-cap.mjs';
 import {runTwoHandedSmoke} from './browser-two-handed.mjs';
 import {runFutureGearSmoke} from './browser-future-gear.mjs';
@@ -228,6 +229,7 @@ async function main(){
   ['deleted-build-recovery',runDeletedBuildRecoverySmoke],
   ['equipment-eligibility',runEquipmentEligibilitySmoke],
   ['equipment-locale',runEquipmentLocaleSmoke],
+  ['item-preview-delay',runItemHoverDelaySmoke],
   ['legacy-class-cap',runLegacySkillCapSmoke],
   ['two-handed-gear',runTwoHandedSmoke],
   ['future-level-gear',runFutureGearSmoke],
