@@ -37,6 +37,29 @@ test('honor cards are not duplicated; vector icons and item hover/navigation are
  assert.match(css,/\.wiki-honor-note\{[^}]*white-space:pre-wrap/s);
 });
 
+test('Honor section selection follows scroll without observer leaks',()=>{
+ const app=read('pandora-studio-app.js'),view=read('pandora-studio-honor-view.js');
+ assert.match(view,/scroller\.addEventListener\('scroll',onScroll,\{passive:true\}\)/);
+ assert.match(view,/const readingLine=scroller\.getBoundingClientRect\(\)\.top/);
+ assert.match(view,/selectSection\(current\)/);
+ assert.match(view,/const stopObserving|function stopObserving/);
+ assert.match(view,/scroller\.removeEventListener\('scroll',onScroll\)/);
+ assert.match(app,/PandoraHonorView\?\.stopObserving\?\.\(\)/);
+});
+
+test('PvP map names are ordinary reversible wiki links; ranks share compact styling',()=>{
+ const view=read('pandora-studio-honor-view.js'),css=read('pandora-studio-honor.css');
+ assert.match(view,/link\(item\.mapId,value\)/);
+ assert.match(view,/anchor\.classList\.add\('wiki-honor-location-link'\)/);
+ assert.doesNotMatch(view,/wiki-honor-open-location|link\(item\.mapId,'↗'\)/);
+ assert.match(css,/\.wiki-honor-list-row \.wiki-honor-location-link\.wiki-link/);
+ assert.match(css,/\.wiki-honor-rank-head\{display:contents\}/);
+ assert.match(css,/grid-template-columns:34px minmax\(0,1fr\)/);
+ assert.match(css,/filter:grayscale\(1\) sepia\(1\)/);
+ assert.doesNotMatch(view,/is-moon/);
+ assert.doesNotMatch(css,/\.wiki-honor-rank\.is-moon/);
+});
+
 test('text editing preserves saved line breaks; anchors keep stable hit boxes',()=>{
  const css=read('pandora-studio-wiki-polish.css');
  const dock=read('pandora-studio-owner-dock.css');
