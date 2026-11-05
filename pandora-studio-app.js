@@ -1580,6 +1580,24 @@ function guardEncyclopediaSearch(input){
 function renderWiki(root){
  wikiRenderedRoot=root;
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
+ // The list remains visible next to an article; a scroll control is more
+ // useful than a redundant button that clears the current selection.
+ const listPanel=h('div',{class:'wiki-list-panel'});
+ const listTop=h('button',{type:'button',class:'wiki-list-top',
+  text:lang==='en'?'↑ To top':'↑ Наверх',hidden:true,
+  'aria-label':lang==='en'?'Scroll the encyclopedia list to the beginning':
+   'Прокрутить список энциклопедии к началу'});
+ const updateListTop=()=>{
+  const far=browse.scrollTop>Math.max(260,browse.clientHeight*.65);
+  listTop.hidden=!far||browse.scrollHeight<=browse.clientHeight+40;
+ };
+ listTop.addEventListener('click',()=>{
+  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  browse.scrollTo({top:0,behavior:reduced?'instant':'smooth'});
+  if(reduced)updateListTop();
+ });
+ browse.addEventListener('scroll',updateListTop,{passive:true});
+ listPanel.append(browse,listTop);
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
  const outsidePickers=new Set();
@@ -1823,7 +1841,7 @@ function renderWiki(root){
    }}));
  controls.append(view);
  const layout=h('div',{class:'wiki-layout'});
- layout.append(browse,detail);root.append(controls,layout);
+ layout.append(listPanel,detail);root.append(controls,layout);
  if(wikiSelection.type==='honor'){
   view.hidden=true;
   const renderHonor=()=>{
@@ -2313,6 +2331,7 @@ function renderWiki(root){
    }
    browse.append(batch);
    browse.scrollTop=selectedIndex>=wikiShown?0:previousScroll;
+   updateListTop();
   }else{
    browse.querySelectorAll('[data-wiki-record]').forEach(row=>{
     const selected=row.getAttribute('data-wiki-record')===wikiSelection.id;
@@ -2349,12 +2368,9 @@ function renderWiki(root){
      text:wt('← Назад','← Back'),
      'aria-label':wt('Вернуться к предыдущему экрану','Return to previous view'),
      onclick:()=>history.back()}));
-   navActions.append(h('button',{type:'button',class:'wiki-nav-button wiki-chapter-list',
-    text:wt('☷ К списку','☷ To list'),
-    'aria-label':wt('Открыть список раздела «'+listNames[type]+'»',
-     'Open '+listNames[type]+' list'),
-    onclick:openWikiChapterList}));
-   navigate.append(navActions);detail.append(navigate);
+   // The list remains visible on the left, including in a deep-linked article.
+   if(navActions.childElementCount)navigate.append(navActions);
+   detail.append(navigate);
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'item.'+id:null;
@@ -2771,7 +2787,7 @@ function renderWiki(root){
         if(adminEditing&&adminToken&&(key==='b'||
          (key==='a'&&effect.func==='EP_DESTINED_POISON')))
          value.append(h('small',{text:key==='a'?
-          wt('Параметр OS (значение неизвестно)','OS parameter (meaning unknown)'):label}));
+          wt('Неизвестный параметр','Unknown effect parameter'):label}));
         const signed=/^EP_(?:MAXLIFE|MAXMANA|STRENGTH|VITARITY|AGILITY|DEXTERITY|SPIRITUAL|INTELIGENCE|ARMORCLASS|TOHIT|CRITICALRATE|DAMAGERATE|FIRE_RESISTANCE|COLD_RESISTANCE|MAGIC_RESISTANCE|ATTACKINTERVAL|DARK_RESISTANCE|HOLY_RESISTANCE|POISON_RESISTANCE|MOVESPEED|AVOIDANCE|DESTINE_WARDING|ELEMENT_DAMAGE|VOLUME_EXP|IMMUNE_BURN|IMMUNE_VIT_TYPE|SKILL_BENCH)/.test(effect.func);
         const percentage=key==='a'&&(/_SCALE$/.test(effect.func)||
          ['EP_IMMUNE_BURN','EP_IMMUNE_VIT_TYPE','EP_SKILL_BENCH','EP_SKILL_DELAY'].includes(effect.func));
@@ -2892,7 +2908,7 @@ function renderWiki(root){
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:wikiIndex.rewardChest(id)?
      wt('Награда за достижение уровня указана выше.','The level reward is shown above.'):
-     wt('Подтверждённые источники в доступном каталоге не найдены.','No confirmed sources in the current catalog.')}));
+     wt('Источники получения не указаны.','No acquisition sources listed.')}));
     if(found.length)appendSourceFlow(found,id);
     moreSources(found);
     appendAcquisitionEditor(id);
@@ -3668,7 +3684,7 @@ function renderWiki(root){
      if(type==='map'&&adminEditing&&adminToken&&!rec.virtual&&
       !Object.hasOwn(wikiData.maps||{},id))
       detail.append(h('p',{class:'wiki-owner-map-note',text:
-       'Место известно по расположению NPC, но отсутствует в каталоге карт с монстрами. Добавление здесь недоступно.'}));
+       wt('Здесь пока нельзя добавить монстров.','Monster editing is not available for this location.')}));
      if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||ownerMap)){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
@@ -4087,13 +4103,13 @@ function renderWiki(root){
      };
      const category=colored[String(id)];
      if(category)detail.append(h('div',{class:'wiki-chest-unverified'},[
-      h('strong',{text:wt('Указанная категория наград: ','Listed reward category: ')+category}),
-      h('p',{text:wt('Точный список предметов и шансы открытия пока не опубликованы в доступной таблице игрового сервера. Это не означает, что сундук пустой.',
-       'The accessible server data does not publish the exact items or opening probabilities. This does not mean the chest is empty.')})
+      h('strong',{text:wt('Категория наград: ','Reward category: ')+category}),
+      h('p',{text:wt('Сведения о содержимом отсутствуют.',
+       'Contents are not listed.')})
      ]));
      else detail.append(h('p',{class:'muted',text:wt(
-      'Состав наград пока не указан в игровом каталоге.',
-      'Reward contents are not yet specified in the game catalog.'
+      'Содержимое сундука не указано.',
+      'Chest contents are not listed.'
      )}));
     }
     const chestIds=new Set(Object.keys(wikiIndex.records('chest')||{}));
@@ -4102,21 +4118,24 @@ function renderWiki(root){
     const certainBoard=h('section',{class:'wiki-chest-collection wiki-chest-listed-100'});
     certainBoard.append(h('div',{class:'wiki-chest-collection-head'},[
      h('strong',{text:wt('Награды с шансом 100%','Rewards listed at 100%')}),
-     h('small',{text:chestView.listed100.length+' '+
-      wt('отдельных розыгрышей','separate roll groups')})
+     h('small',{text:wt('Наград: ','Rewards: ')+chestView.listed100.length})
     ]));
     const certainItems=h('div',{class:'wiki-chest-assured-grid'});
     certainBoard.append(certainItems);
     for(const [i,group]of groups.entries()){
      const listedSingle=group.length===1&&group[0]?.p===100;
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
-      h('span',{class:'wiki-chest-group-mark','aria-hidden':'true',text:String(i+1)}),
+      ...(adminEditing&&adminToken?[h('span',{class:'wiki-chest-group-mark',
+       'aria-hidden':'true',text:String(i+1)})]:[]),
       h('span',{class:'wiki-chest-group-name',
-       text:group.length>1?wt('Варианты · группа ','Options · group ')+(i+1):
-        wt('Розыгрыш ','Roll ')+(i+1)}),
+       text:adminEditing&&adminToken?
+        (group.length>1?wt('Варианты · группа ','Options · group ')+(i+1):
+         wt('Розыгрыш ','Roll ')+(i+1)):
+        (group.length>1?wt('Возможные награды','Possible rewards'):
+         wt('Награда','Reward'))}),
       h('small',{text:group.length===1?(listedSingle?
-       wt('100% по таблице','Listed at 100%'):wt('1 предмет','1 item')):
-       group.length+' '+wt('вариантов','listed options')}),
+       '100%':wt('1 предмет','1 item')):
+       wt('Вариантов: ','Options: ')+group.length}),
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
      const options=h('div',{class:'wiki-chest-options'});
@@ -4195,9 +4214,6 @@ function renderWiki(root){
      else gallery.append(section);
     }
     if(!adminEditing&&!adminToken&&chestView.listed100.length)gallery.prepend(certainBoard);
-    if(groups.length)detail.append(h('p',{class:'wiki-chest-probability-note',
-     text:wt('Шансы относятся к отдельным группам розыгрыша. 100% — значение из игровой таблицы, без учёта дополнительных условий получения.',
-      'Chances refer to separate roll groups. Listed 100% values do not account for possible reward conditions.')}));
     detail.append(gallery);
     if(adminEditing&&adminToken)detail.append(h('button',{type:'button',
      class:'wiki-owner-plus wiki-add-source',text:'+ Предмет',

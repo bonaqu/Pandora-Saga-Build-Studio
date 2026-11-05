@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-05 · **Latest source release:** 0.367.0 (`2026.11.05.367`)
+**Updated:** 2026-11-05 · **Latest source release:** 0.368.0 (`2026.11.05.368`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
@@ -12,6 +12,17 @@
 **0.323.0:** устранение неиспользуемых точных дублей монстров с сохранением всех серверных ID и привязок. Гигантский питон 11205 (Лейбгольдские теснины, 8 записей добычи) выбран каноническим вместо пустого 72006. Скрываются полностью эквивалентные монстры без собственных источников, а также копии с одинаковыми локациями и таблицами добычи. Только варианты с различающимся дропом или отдельной значимой записью без лута остаются отдельными. Одинаковые предметы показывают совокупность источников получения разных ID. Поиск дубликатов названий использует готовый индекс вместо полного сканирования списка при каждом открытии.
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.368.0 — clear chest contents and useful wiki list navigation
+
+- [x] Replace the redundant «К списку» card button with a context-sensitive «↑ Наверх» control on the independent left list scroller; only show it after substantial scrolling, without changing article URL or selection.
+- [x] Hide roll group indices from the player, display «Возможные награды», show the number of options, keep exact source groups and editing indices for owners.
+- [x] Remove player-facing game-source commentary from chest pages; simplify colored chest notices to «Категория наград» and «Сведения о содержимом отсутствуют».
+- [x] Polish reusable wiki controls (list selected/focus, chapter selection, keyboard focus and responsive list button).
+- [x] Replace a few more technical descriptions in item source and unknown-effect panels with concise UI labels.
+- [x] Validate checked-in OS snapshots: monster drop keys, drop items, NPC trades and their item/NPC dependencies, chest rewards and bounded chances; this is not proof of production D1 contents.
+- [ ] Game chest roll probability interpretation still requires gameplay verification. Current source percentages remain unchanged.
+- [ ] Source-backed formula parity, authenticated production D1 writes, complete owner relation editing, original icons and remaining locale coverage remain independent open milestones.
 
 ## Source update 0.367.0 — better wiki navigation and chest display
 

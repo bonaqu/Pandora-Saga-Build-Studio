@@ -117,11 +117,6 @@
 .wiki-chest-board .wiki-chest-group-mark{
  background:#25170f;color:#e8bd7a;border-color:#9d7548;
 }
-.wiki-chest-probability-note{
- margin:8px 0 5px;padding:7px 10px;
- border-left:2px solid #876b48;background:#241b14;
- color:#c5b097;font-size:11px;line-height:1.5;
-}
 .wiki-level-reward{display:flex;align-items:center;gap:13px;padding:11px 14px}
 .wiki-level-reward-details{display:grid;grid-template-columns:auto 1fr;column-gap:14px;row-gap:3px;align-items:baseline}
 .wiki-level-reward-details small{grid-column:1/-1}
@@ -154,4 +149,66 @@
 @media(prefers-reduced-motion:reduce){
  .wiki-page .wiki-nav-button,.wiki-chest-board .wiki-chest-reward,
  .wiki-equipment-view button{transition:none}
+}
+
+
+/* Navigation is an overlay on the persistent left list, not an extra page. */
+.wiki-list-panel{position:relative;min-width:0;min-height:0}
+.wiki-list-panel>.wiki-list{min-width:0}
+.wiki-list-panel>.wiki-list-top{
+ position:absolute;z-index:3;right:16px;bottom:13px;
+ display:inline-flex;align-items:center;justify-content:center;
+ min-height:34px;max-width:calc(100% - 24px);padding:7px 12px;
+ border:1px solid #bc9560;border-radius:5px;
+ background:linear-gradient(150deg,#4c3521,#271b13);
+ box-shadow:0 3px 10px #0b0809c9,inset 0 1px #d8ae7459;
+ color:#ffe0aa;font:700 11px/1.3 Manrope,Arial,sans-serif;
+ cursor:pointer;transition:background .17s,border-color .17s,box-shadow .17s;
+}
+.wiki-list-panel>.wiki-list-top[hidden]{display:none!important}
+.wiki-list-panel>.wiki-list-top:hover{
+ background:linear-gradient(145deg,#60422a,#382618);border-color:#ebc185;
+}
+.wiki-list-panel>.wiki-list-top:focus-visible,
+.wiki-list-panel>.wiki-list .wiki-link:focus-visible{
+ outline:2px solid #f5c988;outline-offset:2px;
+}
+.wiki-list-panel>.wiki-list .wiki-link{
+ transition:background .15s,border-color .15s,box-shadow .15s;
+}
+.wiki-list-panel>.wiki-list .wiki-link:hover{
+ border-color:#d4a36a;background:#3f2a1c;
+}
+.wiki-list-panel>.wiki-list .wiki-link.selected{
+ border-color:#edc084;box-shadow:inset 0 0 0 1px #d4aa70;
+ background:linear-gradient(150deg,#53331e,#382519);
+}
+.wiki-controls .wiki-categories button{
+ min-height:36px;border-radius:3px;
+ box-shadow:inset 0 1px #b892512c;
+ transition:background .15s,border-color .15s,color .15s;
+}
+.wiki-controls .wiki-categories button.chosen{
+ border-color:#ca9c62;box-shadow:inset 0 0 0 1px #aa794e;
+}
+.wiki-controls .wiki-categories button:focus-visible,
+.wiki-controls .wiki-equipment-view button:focus-visible{
+ outline:2px solid #f3c580;outline-offset:2px;
+}
+.wiki-page .wiki-chest-unverified{
+ border:1px solid #765a3d;border-radius:5px;
+ background:linear-gradient(145deg,#302319,#1c1712);
+ padding:12px 14px;max-width:100%;
+}
+.wiki-page .wiki-chest-unverified strong{color:#edc891;font-size:13px}
+.wiki-page .wiki-chest-unverified p{color:#c3ad8c;font-size:12px;margin:7px 0 0}
+.wiki-page .wiki-chest-group-summary .wiki-chest-group-name{
+ line-height:1.3;
+}
+@media(max-width:780px){
+ .wiki-list-panel>.wiki-list-top{bottom:10px;right:13px}
+}
+@media(prefers-reduced-motion:reduce){
+ .wiki-list-panel>.wiki-list-top,.wiki-list-panel>.wiki-list .wiki-link,
+ .wiki-controls .wiki-categories button{transition:none}
 }
