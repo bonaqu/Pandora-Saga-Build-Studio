@@ -100,3 +100,32 @@ test('all source-sprite wrappers preserve actual 23×23 PNG pixel data',()=>{
   assert.ok(bytes.includes(Buffer.from('IDAT')),path+' image data');
  }
 });
+
+test('monthly navigation is readable at end-of-article and not pinned to 100px',()=>{
+ const view=read('pandora-studio-honor-view.js');
+ assert.match(view,/Math\.min\(380,scroller\.clientHeight\*\.46\)/);
+ assert.match(view,/else if\(remaining<=36\)current='monthly'/);
+ assert.match(view,/selectSection\(current\)/);
+});
+
+test('every D1 PvP war, including future owner-added records, has a stable internal page',()=>{
+ const view=read('pandora-studio-honor-view.js'),app=read('pandora-studio-app.js');
+ const next=[...guide.PandoraHonorGuide.wars,{
+  id:'custom-1',nameRu:'Новая война',nameEn:'New war'
+ }];
+ const overrides={'guideedit.honor.wars':JSON.stringify(next)};
+ assert.equal(guide.PandoraHonorGuide.validOverride('honor.wars',overrides['guideedit.honor.wars']),true);
+ const wars=guide.PandoraHonorGuide.article(overrides).battles;
+ assert.equal(wars.at(-1).id,'custom-1');
+ assert.match(view,/const anchor=warLink\(item\.id,value\)/);
+ assert.match(view,/article\.battles\.find\(war=>war\.id===warId\)/);
+ assert.match(view,/warLink\(war\.id,name\)/);
+ assert.match(view,/wiki-honor-war-return/);
+ assert.match(app,/wikiLink\(name,'honor','war-'\+warId\)/);
+ assert.match(app,/warId:\/\^war-\[a-z\]/);
+ assert.match(app,/psWikiHonorScroll/);
+ assert.match(app,/psWikiHonorOrigin/);
+ const match=/\(item\|monster\|map\|npc\|chest\|skill\|soul\|instance\|honor\)/g;
+ assert.equal([...app.matchAll(match)].length,3,
+  'restore, hashchange and popstate accept Honor war deep links');
+});
