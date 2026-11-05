@@ -41,13 +41,21 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await rows.first().click();
   await page.waitForFunction(expected=>location.hash===expected,chosenHash);
   assert.equal(await page.locator('.wiki-page-nav').count(),1);
-  await page.locator('.wiki-chapter-list').click();
-  await page.waitForFunction(()=>location.hash==='');
-  assert.equal(await page.locator('.wiki-history-back').count(),0);
+  assert.equal(await page.locator('.wiki-chapter-list').count(),0,
+   'The chapter list is already visible; no duplicate navigation action');
+  const sidebar=page.locator('.wiki-list');
+  assert.equal(await page.locator('.wiki-list-top').isHidden(),true);
+  await sidebar.evaluate(el=>{el.scrollTop=el.scrollHeight});
+  await page.locator('.wiki-list-top').waitFor({state:'visible'});
+  await page.locator('.wiki-list-top').click();
+  await page.waitForFunction(()=>document.querySelector('.wiki-list').scrollTop<=1);
+  assert.equal(await page.locator('.wiki-list-top').isHidden(),true);
+  assert.equal(await page.evaluate(()=>location.hash),chosenHash,
+   'Scrolling the list must not discard the open article or browser history');
   await page.goBack();
-  await page.waitForFunction(expected=>location.hash===expected,chosenHash);
+  await page.waitForFunction(expected=>location.hash===expected,originalHash);
   await page.goForward();
-  await page.waitForFunction(()=>location.hash==='');
+  await page.waitForFunction(expected=>location.hash===expected,chosenHash);
   assert.equal(await page.locator('#dockLocale').count(),0);
   assert.equal(await page.locator('#dockTabs').count(),0);
   assert.equal(await page.locator('#nav [data-tab="wiki"]').isHidden(),true,
@@ -146,6 +154,10 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.waitForFunction(()=>location.hash.startsWith('#wiki/chest/51004'));
   assert.ok(await page.locator('.wiki-chest-alternatives').count()>=1);
   assert.equal(await page.locator('.wiki-chest-alternatives .wiki-chest-reward').count(),7);
+  const rollHeading=await page.locator('.wiki-chest-alternatives .wiki-chest-group-summary').innerText();
+  assert.match(rollHeading,/Возможные награды/);
+  assert.doesNotMatch(rollHeading,/группа [0-9]|Розыгрыш|таблице/);
+  assert.equal(await page.locator('.wiki-chest-probability-note').count(),0);
   await page.locator('.wiki-history-back').click();
   await page.waitForFunction(()=>location.hash==='#wiki/chest/51003');
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 5/);
@@ -184,7 +196,11 @@ export async function runEquipmentLocaleSmoke(browser,base){
   for(const [box,category] of [[51038,'Оружие и доспехи'],[51040,'Аксессуары'],[51042,'Души']]){
    await page.goto(base+'/#wiki/chest/'+box,{waitUntil:'domcontentloaded'});
    await page.locator('.wiki-chest-unverified').waitFor({state:'visible',timeout:20000});
-   assert.match(await page.locator('.wiki-chest-unverified').innerText(),new RegExp(category));
+   const notice=await page.locator('.wiki-chest-unverified').innerText();
+   assert.match(notice,new RegExp(category));
+   assert.match(notice,/Категория наград/);
+   assert.match(notice,/Сведения о содержимом отсутствуют/);
+   assert.doesNotMatch(notice,/доступной таблице|игрового сервера|No confirmed/);
    assert.equal(await page.locator('.wiki-chest-reward').count(),0);
   }
   // Country NPCs remain in country records, not in similarly named Astir districts.
