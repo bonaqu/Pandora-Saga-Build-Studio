@@ -428,14 +428,24 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const ruRows=String(o.cloaksRu||'').split(/\n\s*\n|\n(?=Топ-|Top )/);
   const parseLine=line=>/^(.*?[—–]\s*)(.+?)([;,.]?\s*)$/.exec(line);
   for(const [lineIndex,line]of entry.split('\n').entries()){
-   if(lineIndex)content.append(document.createTextNode('\n'));
    const parts=parseLine(line);
-   if(!parts){content.append(document.createTextNode(line));continue}
+   const reward=make('span',{class:'wiki-honor-cloak-row'});
+   if(!parts){
+    reward.append(node('span','wiki-honor-cloak-unlinked',line));
+    content.append(reward);
+    continue;
+   }
+   // Nation and reward become two scannable columns. Preserve the editable
+   // original text verbatim in D1; this is presentation only.
+   reward.append(node('span','wiki-honor-cloak-nation',
+    parts[1].replace(/[—–]\s*$/,'').trim()));
    const canonical=parseLine(ruRows[index]?.split('\n')[lineIndex]||'')?.[2]||null;
    const anchor=cloakLink(parts[2],canonical);
    if(anchor)anchor.addEventListener('dblclick',event=>event.stopPropagation());
-   content.append(document.createTextNode(parts[1]),anchor||
-    document.createTextNode(parts[2]),document.createTextNode(parts[3]));
+   const value=make('span',{class:'wiki-honor-cloak-reward'});
+   value.append(anchor||document.createTextNode(parts[2]));
+   reward.append(value);
+   content.append(reward);
   }
   if(editable){
    // One editable nation group; merge with two unchanged groups on save.
