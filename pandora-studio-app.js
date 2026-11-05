@@ -634,7 +634,7 @@ function renderRaces(){
  const actions=h('div',{class:'race-slide-actions'});
  actions.append(h('span',{class:'race-slide-position',text:(racePreviewIndex+1)+' / '+portraitOptions.length}),
   h('button',{type:'button',class:'race-slide-select'+(chosen?' selected':''),'aria-pressed':String(chosen),
-   text:chosen?'✓ Выбрано':'Выбрать этот образ',onclick:chooseRace}));
+   text:chosen?(lang==='en'?'✓ Selected':'✓ Выбрано'):(lang==='en'?'Choose this race':'Выбрать эту расу'),onclick:chooseRace}));
  grid.append(frame,actions);
 }
 const CLASS_PARENT_FALLBACK={"WARRIOR":null,"GLADIATOR":"WARRIOR","KNIGHT":"WARRIOR","SCOUT":null,"ARCHER":"SCOUT","AGENT":"SCOUT","ACOLYTE":null,"PRIEST":"ACOLYTE","ASCETIC":"ACOLYTE","MAGE":null,"WIZARD":"MAGE","DARKROAR":"MAGE","JUGGERNAUT":"GLADIATOR","DRAGOON":"GLADIATOR","GENERAL":"KNIGHT","PALADIN":"KNIGHT","SNIPER":"ARCHER","PREDATOR":"ARCHER","ASSASSIN":"AGENT","DISTURBANCE":"AGENT","CLERIC":"PRIEST","ENCHANTER":"PRIEST","MONK":"ASCETIC","EXORCIST":"ASCETIC","WARLOCK":"WIZARD","CONJURER":"WIZARD","JESTER":"DARKROAR","CALAMITY":"DARKROAR"};
@@ -649,6 +649,7 @@ function selectJob(index){
 }
 function renderJobs(){
  const grid=$('classGrid');grid.replaceChildren();
+ const tr=(ru,en)=>lang==='en'?en:ru;
  const records=jobKeys.map((key,i)=>({key,i,name:editableValue('job.'+i,jobs[i]||key),
   parent:catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null}));
  const byKey=new Map(records.map(x=>[x.key,x]));
@@ -660,34 +661,36 @@ function renderJobs(){
  for(let k=jobPathKey;k&&byKey.has(k);k=parentOf(k))path.unshift(byKey.get(k));
  const depth=Math.min(path.length,2),activeAncestors=new Set();
  const selectedProfession=byKey.get(jobKeys[state.job])||null;
+ const selectedCurrent=Boolean(current&&state.job===current.i);
  for(let k=jobKeys[state.job];k&&byKey.has(k);k=parentOf(k))activeAncestors.add(k);
  const progress=h('div',{class:'class-wizard-progress','aria-label':'Этап выбора профессии'});
  for(let i=0;i<3;i++){
-  progress.append(h('span',{class:'class-wizard-step'+(i===depth?' current':'')+(i<depth?' completed':''),
-   text:(i+1)+'. '+['Направление','Профессия','Специализация'][i]}));
+  progress.append(h('span',{class:'class-wizard-step'+(i===depth?' current':'')+(i<depth?' completed':'')+
+   (i===depth&&selectedCurrent?' selected':''),
+   text:(i+1)+'. '+(lang==='en'?['Direction','Profession','Specialization']:['Направление','Профессия','Специализация'])[i]}));
  }
  grid.append(progress);
  const top=h('div',{class:'class-wizard-header'});
  if(current){
-  top.append(h('button',{type:'button',class:'class-back',text:'← Назад',onclick:()=>{
+  top.append(h('button',{type:'button',class:'class-back',text:tr('← Назад','← Back'),onclick:()=>{
    jobPathKey=parentOf(jobPathKey);renderJobs();saveView();
   }}));
  }
- top.append(h('strong',{class:'class-wizard-title',text:current?current.name:'Направление профессии'}));
+ top.append(h('strong',{class:'class-wizard-title',text:current?current.name:tr('Выберите направление','Choose a direction')}));
  if(selectedProfession)top.append(h('span',{class:'class-wizard-selected',role:'status',
-  text:'✓ Выбрано: '+selectedProfession.name}));
+  text:tr('✓ Выбрано: ','✓ Selected: ')+selectedProfession.name}));
  grid.append(top);
  if(path.length){
   const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':'Вернуться на предыдущий уровень'});
-  crumbs.append(h('button',{type:'button',text:'Все направления',onclick:()=>{jobPathKey=null;renderJobs();saveView()}}));
+  crumbs.append(h('button',{type:'button',text:tr('Все направления','All directions'),onclick:()=>{jobPathKey=null;renderJobs();saveView()}}));
   for(const node of path)crumbs.append(h('button',{type:'button',text:node.name,'aria-current':node.key===jobPathKey?'step':null,
     onclick:()=>{jobPathKey=node.key;renderJobs();saveView()}}));
   grid.append(crumbs);
  }
  if(path.length){
   grid.append(h('p',{class:'class-wizard-path',text:path.map(x=>x.name).join(' › ')}));
-  grid.append(h('button',{type:'button',class:'class-current-select',
-    text:state.job===current.i?'✓ '+current.name+' · выбрано':'Выбрать '+current.name,
+  grid.append(h('button',{type:'button',class:'class-current-select'+(selectedCurrent?' selected':''),
+    text:selectedCurrent?'✓ '+current.name+' · '+tr('выбрано','selected'):tr('Выбрать ','Choose ')+current.name,
     'aria-pressed':String(state.job===current.i),onclick:()=>{
      selectJob(current.i);
     }}));
@@ -697,9 +700,9 @@ function renderJobs(){
  for(const node of next){
   const hasChildren=records.some(x=>x.parent===node.key);
   const selectedOnPath=Boolean(hasChildren&&activeAncestors.has(node.key)&&selectedProfession);
-  const status=state.job===node.i?'✓ Выбрано':
+  const status=state.job===node.i?tr('✓ Выбрано','✓ Selected'):
    selectedOnPath?'✓ '+selectedProfession.name:
-   hasChildren?'Специализации ›':'Выбрать';
+   hasChildren?tr('Специализации ›','Specializations ›'):tr('Выбрать','Select');
   const specialties=Object.entries(catalog.classes?.[node.key]?.branchCaps||{})
    .filter(([,cap])=>Number(cap)>0).sort((a,b)=>Number(b[1])-Number(a[1]))
    .slice(0,2).map(([key])=>catalog.meta?.branchLabels?.[key]||key);
@@ -718,7 +721,9 @@ function renderJobs(){
     ]));
  }
  grid.append(choices);
- if(!next.length&&current)grid.append(h('p',{class:'class-wizard-hint',text:'Конечная специализация. Можно выбрать её или вернуться назад.'}));
+ if(!next.length&&current)grid.append(h('p',{class:'class-wizard-hint',text:selectedCurrent?
+ tr('Специализация выбрана. Можно вернуться и изменить направление.','Specialization selected. Go back to change direction.'):
+ tr('Выберите специализацию или вернитесь назад.','Choose the specialization or go back.')}));
 }
 let workbenchReturnFocus=null;
 function showWorkbench(){
