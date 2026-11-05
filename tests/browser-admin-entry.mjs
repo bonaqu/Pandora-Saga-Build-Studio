@@ -129,6 +129,16 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   assert.deepEqual(calls.filter(p=>p==='/api/admin/login'),['/api/admin/login']);
+  // The hero must remain the Book entry even with owner permissions.
+  assert.equal(await page.locator('#hero').getAttribute('data-edit-key'),null);
+  await page.locator('#hero').click();
+  await page.locator('#stageAttributes').waitFor({state:'visible'});
+  assert.equal(await page.locator('.inline-owner-editor').count(),0);
+  await page.locator('#stageAttributes .stage-book-close').click();
+  await page.locator('#hero').focus();
+  await page.keyboard.press('Enter');
+  await page.locator('#stageAttributes').waitFor({state:'visible'});
+  await page.locator('#stageAttributes .stage-book-close').click();
   const ownerPanel=page.locator('#ownerDock');
   assert.equal(await ownerPanel.evaluate(node=>node.parentElement===document.body),true,
    'Editor must float above the page, not live inside the stat column');
@@ -140,6 +150,23 @@ export async function runAdminEntrySmoke(browser,base){
   await edge.click();
   assert.equal(await edge.getAttribute('aria-expanded'),'true');
   assert.equal(await ownerPanel.locator('.owner-dock-panel').evaluate(node=>node.inert),false);
+  const ownerGeometry=await ownerPanel.evaluate(node=>{
+   const box=node.querySelector('.owner-dock-panel');
+   const content=node.querySelector('.owner-dock-body');
+   const toggle=node.querySelector('[data-owner-collapse]');
+   const bounds=box.getBoundingClientRect();
+   const handle=toggle.getBoundingClientRect();
+   return{width:bounds.width,innerScroll:getComputedStyle(content).overflowY,
+    outerScroll:getComputedStyle(box).overflowY,
+    writingMode:getComputedStyle(toggle).writingMode,
+    handleTop:handle.top,boxTop:bounds.top};
+  });
+  assert.ok(ownerGeometry.width>=430,'Editor should fit more content: '+JSON.stringify(ownerGeometry));
+  assert.equal(ownerGeometry.innerScroll,'auto');
+  assert.equal(ownerGeometry.outerScroll,'hidden');
+  assert.equal(ownerGeometry.writingMode,'horizontal-tb');
+  assert.ok(ownerGeometry.handleTop>=ownerGeometry.boxTop,
+   'Expanded editor handle must be inside the panel, not sticking out');
   const originAfter=await page.locator('.workspace>.left').evaluate(node=>node.getBoundingClientRect().height);
   assert.ok(Math.abs(originBefore-originAfter)<2,'The drawer must not stretch the stat column');
   await edge.click();
