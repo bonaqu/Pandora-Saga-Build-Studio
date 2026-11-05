@@ -23,7 +23,8 @@
     "test:browser:quick": "node tests/browser-smoke.mjs --quick",
     "test:browser:serial": "node tests/browser-smoke.mjs --serial",
     "catalog:review": "node scripts/apply-reviewed-pandora-catalog.mjs",
-    "bench:wiki:local": "node scripts/benchmark-encyclopedia.mjs"
+    "bench:wiki:local": "node scripts/benchmark-encyclopedia.mjs",
+    "locales:audit": "node scripts/audit-os-localization.mjs"
   },
   "pandoraRelease": "2026.11.05.370"
 }
