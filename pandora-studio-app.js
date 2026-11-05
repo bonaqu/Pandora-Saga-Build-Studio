@@ -1501,7 +1501,8 @@ async function loadWiki(){
   if(generation!==wikiLoadGeneration)return loadWiki();
   wikiData=resolved;
   wikiIndex=index;
-  if(wikiSelection.id!=null)wikiSelection.id=index.canonical(wikiSelection.type,wikiSelection.id);
+  if(wikiSelection.id!=null&&wikiSelection.type!=='honor')
+   wikiSelection.id=index.canonical(wikiSelection.type,wikiSelection.id);
   return index;
  })();
  wikiPending=pending;
@@ -1509,6 +1510,14 @@ async function loadWiki(){
  finally{if(wikiPending===pending)wikiPending=null}
 }
 function openWiki(type,id,highlight=null){
+ const honorWar=type==='honor'&&/^war-[a-z][a-z0-9-]{0,35}$/.test(String(id));
+ const fromHonor=honorWar&&activeTab==='wiki'&&
+  wikiSelection.type==='honor'&&wikiSelection.id==null;
+ if(fromHonor){
+  const previous=history.state&&typeof history.state==='object'?history.state:{};
+  history.replaceState({...previous,
+   psWikiHonorScroll:$('detailContent')?.scrollTop||0},'',location.href);
+ }
  const fromView={tab:activeTab,
   open:Boolean($('detailPanel')?.classList.contains('is-open')),
   selection:activeTab==='wiki'?{...wikiSelection}:null,
@@ -1533,7 +1542,8 @@ function openWiki(type,id,highlight=null){
   }
   const currentState=history.state&&typeof history.state==='object'?history.state:{};
   // pushState does not generate a hashchange event or redraw the list.
-  history.pushState({...currentState,psWikiEntry:true},'',destination);
+  history.pushState({...currentState,psWikiEntry:true,
+   ...(fromHonor?{psWikiHonorOrigin:true}:{})},'',destination);
  }
  if(sameCategory)wikiRenderSelected();
  else{renderDetails();$('detailContent').scrollTop=0}
@@ -1891,6 +1901,17 @@ function renderWiki(root){
     editText:(node,initial,multiline,onCommit)=>editWikiValue(node,initial,{
      type:multiline?'textarea':'text',onCommit}),
     saveText:saveGuidePatch,saveList:saveGuideList,
+    warId:/^war-[a-z][a-z0-9-]{0,35}$/.test(wikiSelection.id||'')?
+     wikiSelection.id.slice(4):null,
+    warLink:(warId,name)=>{
+     const anchor=wikiLink(name,'honor','war-'+warId);
+     anchor.addEventListener('click',event=>{
+      if(event.button===0&&!event.ctrlKey&&!event.metaKey&&!event.shiftKey&&!event.altKey)
+       $('detailContent').scrollTop=0;
+     });
+     return anchor;
+    },
+    onWarReturn:()=>history.state?.psWikiHonorOrigin?history.back():openWikiChapterList(),
     mapOptions:Object.entries(wikiIndex?.records('map')||{})
      .map(([id,rec])=>{
       const approved=window.PandoraHonorGuide?.maps?.find(row=>String(row.mapId)===id);
@@ -6535,7 +6556,7 @@ function restoreWikiHash(){
  const navigationType=performance.getEntriesByType?.('navigation')?.[0]?.type;
  if(navigationType==='reload'&&
     (bootView.tab&&bootView.tab!=='wiki'||bootView.tab==='wiki'&&bootView.open===false))return;
- const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})(?:\/([0-9]{1,15}))?$/);
+ const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance|honor)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}|war-[a-z][a-z0-9-]{0,35})(?:\/([0-9]{1,15}))?$/);
  if(!match)return;
  wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
  activeTab='wiki';
@@ -6545,7 +6566,7 @@ function restoreWikiHash(){
 window.addEventListener('hashchange',()=>{
  if(location.hash.startsWith('#b/')){restoreSharedHash();return}
  if(location.hash.startsWith('#wiki/')){
-  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})(?:\/([0-9]{1,15}))?$/);
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance|honor)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}|war-[a-z][a-z0-9-]{0,35})(?:\/([0-9]{1,15}))?$/);
   if(match){
    // popstate already restored this record when browser Back/Forward fired.
    if(activeTab==='wiki'&&wikiSelection.type===match[1]&&
@@ -6707,7 +6728,7 @@ $('skillBranches').addEventListener('scroll',saveView,{passive:true});
 $('detailContent').addEventListener('scroll',saveView,{passive:true});
 window.addEventListener('popstate',event=>{
  if(location.hash.startsWith('#wiki/')){
-  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32})(?:\/([0-9]{1,15}))?$/);
+  const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance|honor)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}|war-[a-z][a-z0-9-]{0,35})(?:\/([0-9]{1,15}))?$/);
   if(!match)return;
   const already=activeTab==='wiki'&&wikiSelection.type===match[1]&&
    wikiSelection.id===match[2]&&(wikiSelection.highlight||null)===(match[3]||null)&&
@@ -6724,7 +6745,7 @@ window.addEventListener('popstate',event=>{
   saveView();
  }else if(event.state?.psWikiList&&!location.hash){
   const chapter=event.state.psWikiList;
-  if(!['item','monster','map','npc','chest','skill','soul','instance'].includes(chapter.type))return;
+  if(!['item','monster','map','npc','chest','skill','soul','instance','honor'].includes(chapter.type))return;
   activeTab='wiki';wikiSelection={type:chapter.type,id:null,highlight:null};
   wikiSearch=typeof chapter.search==='string'?chapter.search:'';
   wikiShown=Number.isInteger(chapter.shown)&&chapter.shown>=100?chapter.shown:100;
@@ -6749,6 +6770,12 @@ window.addEventListener('popstate',event=>{
     btn.classList.toggle('active',btn.dataset.tab===activeTab);
    renderDetails();
    if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+   if(previous.tab==='wiki'&&previous.selection?.type==='honor'&&
+    Number.isFinite(event.state?.psWikiHonorScroll))
+    requestAnimationFrame(()=>{
+     if(wikiSelection.type==='honor'&&!wikiSelection.id)
+      $('detailContent').scrollTop=event.state.psWikiHonorScroll;
+    });
    saveView();
   }else closeWorkbench();
  }
