@@ -26,7 +26,8 @@ const validField=k=>/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|ins
 const validPatch=patch=>patch&&typeof patch==='object'&&!Array.isArray(patch)&&
  Object.keys(patch).length>0&&Object.keys(patch).length<=28&&
  Object.entries(patch).every(([k,v])=>validField(k)&&typeof v==='string'&&
- v.trim().length>0&&v.length<=90&&!/[\\x00-\\x1f]/.test(v));
+ v.trim().length>0&&v.length<=90&&
+ Array.from(v).every(ch=>ch.charCodeAt(0)>=32));
 const parse=(overrides)=>{
  try{
   const raw=overrides?.['guideedit.wiki.labels'];
