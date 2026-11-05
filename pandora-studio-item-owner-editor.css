@@ -378,3 +378,17 @@ body:has(.modal-root:not([hidden])) #ownerDock{pointer-events:none}
 .stage-attribute-head .stage-book-heading>.stage-guide-edit-hint:hover{
  border-color:#dab47b;background:#49321f
 }
+
+/* Shared entity-link editing: the same searchable picker supports both
+   creation and replacement, with the action sitting beside its linked item. */
+.wiki-entity-flow .wiki-owner-replace{
+ border:1px solid #856640;background:#372619;color:#e5bd84;
+ border-radius:4px;padding:4px 7px;min-height:27px;
+ font-size:12px;line-height:1;cursor:pointer}
+.wiki-entity-flow .wiki-owner-replace:hover,
+.wiki-entity-flow .wiki-owner-replace:focus-visible{
+ border-color:#dfb878;background:#533821;outline-offset:2px}
+.wiki-entity-flow .wiki-owner-relation-picker{
+ flex:1 1 100%;min-width:0;max-width:100%;
+}
+.wiki-entity-flow>.wiki-add-source{align-self:center;margin:0 0 0 3px}
