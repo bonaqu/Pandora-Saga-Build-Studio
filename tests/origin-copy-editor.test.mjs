@@ -20,7 +20,7 @@ test('Origin copy uses existing bilingual D1 override contract with no new migra
  const single={['guideedit.'+key]:JSON.stringify({ru:'Выбрать расу'})};
  assert.equal(guide.field(single,'origin.race-choose','Выбрать эту расу','Choose this race').en,'Choose this race',
   'RU does not overwrite English defaults');
- assert.ok(worker.includes('guideedit\\\\.(?:book\\\\.'),'Worker accepts existing book.* override keys');
+ assert.ok(worker.includes("key.startsWith('guideedit.')"),'Worker accepts existing guide edit overrides');
  assert.match(app,/saveGuidePatch\('book\.origin\.'\+originGuideKey\(key\),\{\[lang\]:next\}\)/);
  assert.match(app,/onFinished:/);
 });
