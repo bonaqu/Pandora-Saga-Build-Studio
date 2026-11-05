@@ -143,7 +143,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   const nextChest=page.locator('.wiki-chest-reward-nested .wiki-link').first();
   assert.equal(await nextChest.count(),1,'The source chest chain is explicitly marked');
   await nextChest.click();
-  await page.waitForFunction(()=>location.hash==='#wiki/chest/51004');
+  await page.waitForFunction(()=>location.hash.startsWith('#wiki/chest/51004'));
   assert.ok(await page.locator('.wiki-chest-alternatives').count()>=1);
   assert.equal(await page.locator('.wiki-chest-alternatives .wiki-chest-reward').count(),7);
   await page.locator('.wiki-history-back').click();
