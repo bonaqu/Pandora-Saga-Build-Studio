@@ -117,6 +117,15 @@ function dismissPreview(){
  liveTarget?.removeAttribute('aria-describedby');
  livePreview=null;liveTarget=null;
 }
+function queuePreview(target,show){
+ cancelPendingPreview();
+ const timer=setTimeout(()=>{
+  if(pendingPreview?.target!==target)return;
+  pendingPreview=null;
+  if(target.isConnected&&target.matches(':hover'))show();
+ },ITEM_PREVIEW_HOVER_DELAY_MS);
+ pendingPreview={target,timer,show};
+}
 // An item window must not linger after navigation, scrolling, closing the
 // page, clicking elsewhere or leaving the link before its timer completes.
 document.addEventListener?.('pointerdown',event=>{
@@ -127,7 +136,16 @@ document.addEventListener?.('pointerdown',event=>{
 document.addEventListener?.('keydown',event=>{
  if(event.key==='Escape')dismissPreview();
 });
-document.addEventListener?.('scroll',dismissPreview,{capture:true,passive:true});
+document.addEventListener?.('scroll',()=>{
+ // Browser auto-scroll-to-hover can finish after pointerenter. Re-arm the
+ // delay for a still-hovered link instead of silently losing its preview.
+ if(livePreview)dismissPreview();
+ else if(pendingPreview){
+  const {target,show}=pendingPreview;
+  if(target.isConnected&&target.matches(':hover'))queuePreview(target,show);
+  else cancelPendingPreview();
+ }
+},{capture:true,passive:true});
 document.addEventListener?.('visibilitychange',()=>{
  if(document.hidden)dismissPreview();
 });
@@ -170,13 +188,7 @@ function attachPreview(target,record,icon,kind='item',context=null){
  target.addEventListener('pointerenter',event=>{
   if(event.pointerType==='touch')return;
   dismissPreview();
-  const timer=setTimeout(()=>{
-   if(pendingPreview?.target!==target)return;
-   pendingPreview=null;
-   // Never display a stale preview if the page rerendered during a hover.
-   if(target.isConnected&&target.matches(':hover'))show();
-  },ITEM_PREVIEW_HOVER_DELAY_MS);
-  pendingPreview={target,timer};
+  queuePreview(target,show);
  });
  target.addEventListener('pointerleave',remove);
  target.addEventListener('pointerdown',remove);
