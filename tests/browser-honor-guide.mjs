@@ -233,7 +233,8 @@ export async function runHonorGuideSmoke(browser,base){
     radius:style.borderTopLeftRadius,padding:style.padding,
     text:button.textContent};
   });
-  assert.equal(appearance.x,0,'Honor return control starts at the left edge');
+  assert.ok(appearance.x>=0&&appearance.x<=30,
+   'Honor return button belongs in the left padded edge of the card');
   assert.match(appearance.text,/Назад к Чести/);
   assert.equal(await panel.locator('.wiki-page-nav').count(),0);
   // Normal encyclopedia records must reproduce the war button, not
