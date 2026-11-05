@@ -44,9 +44,13 @@
  gap:5px 10px;padding:10px 13px;border-bottom:1px solid #795638;
 }
 .wiki-chest-collection-head strong{font:600 17px Georgia,serif;color:#ebc894}
-.wiki-chest-collection-head small{color:#bba482;font-size:11px}
+.wiki-chest-collection-head small{
+ flex:0 0 auto;display:inline-flex;align-items:center;white-space:nowrap;
+ padding:3px 8px;border:1px solid #6d5034;border-radius:999px;
+ background:#211911;color:#d0b58c;font-size:11px;
+}
 .wiki-chest-assured-grid{
- display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr));
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));
  gap:8px;padding:11px;
 }
 .wiki-chest-board>.wiki-chest-group{
@@ -117,11 +121,35 @@
 .wiki-chest-board .wiki-chest-group-mark{
  background:#25170f;color:#e8bd7a;border-color:#9d7548;
 }
-.wiki-level-reward{display:flex;align-items:center;gap:13px;padding:11px 14px}
-.wiki-level-reward-details{display:grid;grid-template-columns:auto 1fr;column-gap:14px;row-gap:3px;align-items:baseline}
-.wiki-level-reward-details small{grid-column:1/-1}
-.wiki-level-reward-details strong{white-space:nowrap}
-.wiki-level-reward-details span{align-self:center}
+/* Compact vertical rhythm: the level is primary, class is a distinct chip. */
+.wiki-level-reward{
+ box-sizing:border-box;width:100%;max-width:480px;
+ align-items:flex-start;gap:13px;margin:13px 0 18px;padding:14px 16px;
+ border-radius:7px;box-shadow:inset 0 1px #e8c58c24,0 3px 12px #130c0829;
+}
+.wiki-level-reward-mark{
+ flex:0 0 42px;width:42px;height:42px;margin-top:2px;
+}
+.wiki-level-reward-details{
+ display:grid;grid-template-columns:minmax(0,1fr);
+ justify-items:start;align-content:center;row-gap:7px;min-width:0;
+}
+.wiki-level-reward-details small{
+ grid-column:auto;margin:0;line-height:1.35;
+ font-size:11px;color:#ccb28c;
+}
+.wiki-level-reward-details strong{
+ display:block;white-space:normal;margin:0;
+ font:600 23px/1.15 Georgia,serif;color:#f7d296;
+}
+.wiki-level-reward-details .wiki-level-reward-class{
+ display:inline-flex;align-items:center;align-self:start;
+ max-width:100%;padding:4px 9px;margin-top:1px;
+ border:1px solid #85633c;border-radius:999px;
+ background:linear-gradient(145deg,#322315,#241911);
+ font:500 11px/1.35 Manrope,Arial,sans-serif;color:#e9c99c;
+ overflow-wrap:anywhere;
+}
 .wiki-equipment-view button{
  min-height:35px;background:linear-gradient(160deg,#322317,#1c150f);
  box-shadow:inset 0 1px #a17a4738,inset 0 -2px #0d0908a8;
@@ -139,7 +167,8 @@
  .wiki-chest-assured-grid,.wiki-chest-board>.wiki-chest-group .wiki-chest-options{
   grid-template-columns:repeat(auto-fill,minmax(min(100%,185px),1fr));
  }
- .wiki-level-reward-details{grid-template-columns:1fr}
+ .wiki-level-reward{max-width:100%;padding:12px}
+ .wiki-level-reward-details{grid-template-columns:minmax(0,1fr)}
 }
 @media(max-width:420px){
  .wiki-page-nav-actions{width:100%}
