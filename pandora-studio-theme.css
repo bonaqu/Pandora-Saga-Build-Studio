@@ -451,6 +451,11 @@ a.wiki-link:hover{text-decoration:none}
 .origin-stat-title span{font-size:9px;color:#b9a181;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .origin-stat-row button{height:27px;min-width:0;background:#3c2a1a;border:1px solid #967146;color:#f2ca8b;font-size:17px;line-height:1}
 .origin-stat-row button:hover{background:#73502d;border-color:#f2ca8b}
+.origin-stat-row button,.stat-visual-controls button{touch-action:none;user-select:none;-webkit-user-select:none}
+.origin-stat-row button.is-repeating,.stat-visual-controls button.is-repeating{
+ background:#35502b;border-color:#a5cf86;color:#e2f7d5;
+ box-shadow:inset 0 0 0 1px #91b77555;
+}
 .origin-stat-input{width:100%;min-width:0;background:#130e0a;color:#f9deaa;border:1px solid #80613f;font-size:12px;text-align:center;padding:6px 2px;font-variant-numeric:tabular-nums}
 .origin-stat-input::-webkit-outer-spin-button,.origin-stat-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .origin-stat-input{-moz-appearance:textfield;appearance:textfield}
