@@ -683,7 +683,8 @@ function renderJobs(){
  if(path.length){
   const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':'Вернуться на предыдущий уровень'});
   crumbs.append(h('button',{type:'button',text:tr('Все направления','All directions'),onclick:()=>{jobPathKey=null;renderJobs();saveView()}}));
-  for(const node of path)crumbs.append(h('button',{type:'button',text:node.name,'aria-current':node.key===jobPathKey?'step':null,
+  for(const node of path)crumbs.append(h('button',{type:'button',text:node.name,
+   class:selectedProfession?.key===node.key?'selected':'','aria-current':node.key===jobPathKey?'step':null,
     onclick:()=>{jobPathKey=node.key;renderJobs();saveView()}}));
   grid.append(crumbs);
  }
@@ -1145,6 +1146,46 @@ function attributeSnapshot(){
   added:STATS.map(key=>Number(state.stats[key]||0)),caps:klass?.statCaps
  });
 }
+// Shared input contract for both stat editors: one increment per tap/click,
+// then repeated increments only while the primary pointer is held.
+// No global listeners: removed panels cannot leave orphaned timers behind.
+function bindHoldStep(button,step){
+ let delay=null,interval=null,pressed=false,skipClick=false;
+ const stop=()=>{
+  pressed=false;
+  if(delay!==null){clearTimeout(delay);delay=null}
+  if(interval!==null){clearInterval(interval);interval=null}
+  button.classList.remove('is-repeating');
+ };
+ const run=()=>{
+  if(button.disabled||!button.isConnected){stop();return}
+  step();
+  if(button.disabled)stop();
+ };
+ button.addEventListener('pointerdown',event=>{
+  if(button.disabled||event.button!==0||event.isPrimary===false)return;
+  stop();pressed=true;skipClick=true;run();
+  if(!pressed)return;
+  delay=setTimeout(()=>{
+   delay=null;
+   if(!pressed||!button.isConnected||button.disabled){stop();return}
+   button.classList.add('is-repeating');
+   interval=setInterval(run,85);
+  },340);
+ });
+ button.addEventListener('click',()=>{
+  if(skipClick){skipClick=false;return}
+  run(); // keyboard and assistive activation never require a pointer
+ });
+ button.addEventListener('pointerup',stop);
+ button.addEventListener('pointerleave',stop);
+ button.addEventListener('pointercancel',()=>{stop();skipClick=false});
+ button.addEventListener('lostpointercapture',stop);
+ button.addEventListener('blur',stop);
+ button.addEventListener('keydown',event=>{if(event.key==='Escape')stop()});
+ button.setAttribute('aria-description',lang==='en'?
+  'Press once to adjust by one; hold to repeat.':'Нажмите для изменения на один; удерживайте для повторения.');
+}
 function setAttributePoints(index,added){
  if(!window.PandoraAttributeProgression.allowed(attributeSnapshot(),index,added))return false;
  state.stats[STATS[index]]=added;persist();renderOriginVitals();return true;
@@ -1209,8 +1250,8 @@ function renderOriginStats(){
     const scroll=$('detailContent').scrollTop;renderDetails();$('detailContent').scrollTop=scroll;
    }
   };
-  minus.addEventListener('click',()=>commit((attributeSnapshot()?.values[i]??0)-1));
-  plus.addEventListener('click',()=>commit((attributeSnapshot()?.values[i]??0)+1));
+  bindHoldStep(minus,()=>commit((attributeSnapshot()?.values[i]??0)-1));
+  bindHoldStep(plus,()=>commit((attributeSnapshot()?.values[i]??0)+1));
   input.addEventListener('change',()=>commit(input.value));
   wrap.append(title,minus,input,plus,box);
   list.append(wrap);entries.push({i,input,result,caption,minus,plus});
@@ -4783,8 +4824,10 @@ function renderStats(root){
    if(absolute===null||!setAttributePoints(i,absolute-snap.base[i])){refresh();return}
    refresh();renderOriginStats();
   };
-  const minus=h('button',{type:'button',text:'−',onclick:()=>change((attributeSnapshot()?.values[i]??0)-1)});
-  const plus=h('button',{type:'button',text:'+',onclick:()=>change((attributeSnapshot()?.values[i]??0)+1)});
+  const minus=h('button',{type:'button',text:'−'});
+  const plus=h('button',{type:'button',text:'+'});
+  bindHoldStep(minus,()=>change((attributeSnapshot()?.values[i]??0)-1));
+  bindHoldStep(plus,()=>change((attributeSnapshot()?.values[i]??0)+1));
   range.addEventListener('input',()=>change(range.value));
   exact.addEventListener('change',()=>change(exact.value));
   card.append(head,note,total,bar,h('div',{class:'stat-visual-controls'},[minus,range,plus,exact]));
