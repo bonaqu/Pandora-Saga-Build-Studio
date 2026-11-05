@@ -163,7 +163,7 @@ export async function runHonorGuideSmoke(browser,base){
    .locator('a.wiki-honor-war-link').filter({hasText:'Гихайм'}).click();
   await page.waitForURL(/#wiki\/honor\/war-siegheim$/);
   assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Гихайм');
-  await panel.locator('.wiki-page > .wiki-return-button').click();
+  await page.locator('.wiki-page > .wiki-return-button').click();
   await panel.locator('.wiki-honor-monthly-card').first().waitFor({state:'visible'});
   assert.equal(await panel.locator('a.wiki-honor-war-link').count(),2);
   assert.equal(await panel.locator('.wiki-honor-add').count(),0,
