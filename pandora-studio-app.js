@@ -2787,7 +2787,7 @@ function renderWiki(root){
         if(adminEditing&&adminToken&&(key==='b'||
          (key==='a'&&effect.func==='EP_DESTINED_POISON')))
          value.append(h('small',{text:key==='a'?
-          wt('Параметр OS (значение неизвестно)','OS parameter (meaning unknown)'):label}));
+          wt('Неизвестный параметр','Unknown effect parameter'):label}));
         const signed=/^EP_(?:MAXLIFE|MAXMANA|STRENGTH|VITARITY|AGILITY|DEXTERITY|SPIRITUAL|INTELIGENCE|ARMORCLASS|TOHIT|CRITICALRATE|DAMAGERATE|FIRE_RESISTANCE|COLD_RESISTANCE|MAGIC_RESISTANCE|ATTACKINTERVAL|DARK_RESISTANCE|HOLY_RESISTANCE|POISON_RESISTANCE|MOVESPEED|AVOIDANCE|DESTINE_WARDING|ELEMENT_DAMAGE|VOLUME_EXP|IMMUNE_BURN|IMMUNE_VIT_TYPE|SKILL_BENCH)/.test(effect.func);
         const percentage=key==='a'&&(/_SCALE$/.test(effect.func)||
          ['EP_IMMUNE_BURN','EP_IMMUNE_VIT_TYPE','EP_SKILL_BENCH','EP_SKILL_DELAY'].includes(effect.func));
@@ -2908,7 +2908,7 @@ function renderWiki(root){
     const found=wikiIndex.sources(id);
     if(!found.length)detail.append(h('p',{class:'muted',text:wikiIndex.rewardChest(id)?
      wt('Награда за достижение уровня указана выше.','The level reward is shown above.'):
-     wt('Подтверждённые источники в доступном каталоге не найдены.','No confirmed sources in the current catalog.')}));
+     wt('Источники получения не указаны.','No acquisition sources listed.')}));
     if(found.length)appendSourceFlow(found,id);
     moreSources(found);
     appendAcquisitionEditor(id);
@@ -3684,7 +3684,7 @@ function renderWiki(root){
      if(type==='map'&&adminEditing&&adminToken&&!rec.virtual&&
       !Object.hasOwn(wikiData.maps||{},id))
       detail.append(h('p',{class:'wiki-owner-map-note',text:
-       'Место известно по расположению NPC, но отсутствует в каталоге карт с монстрами. Добавление здесь недоступно.'}));
+       wt('Здесь пока нельзя добавить монстров.','Monster editing is not available for this location.')}));
      if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||ownerMap)){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
       kind:'monster',existing:mobs,onChange:async next=>{
