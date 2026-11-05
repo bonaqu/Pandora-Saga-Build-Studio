@@ -21,6 +21,7 @@ This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets w
 - [x] Polish reusable wiki controls (list selected/focus, chapter selection, keyboard focus and responsive list button).
 - [x] Replace a few more technical descriptions in item source and unknown-effect panels with concise UI labels.
 - [x] Fix search/filter leaving an outdated deep-link when clearing the selected entry. Keep one history entry for browser Back/Forward, and maintain the searched list state.
+- [x] Validate checked-in OS snapshots: monster drop keys, drop items, NPC trades and their item/NPC dependencies, chest rewards and bounded chances; this is not proof of production D1 contents.
 - [ ] Game chest roll probability interpretation still requires gameplay verification. Current source percentages remain unchanged.
 - [ ] Source-backed formula parity, authenticated production D1 writes, complete owner relation editing, original icons and remaining locale coverage remain independent open milestones.
 
