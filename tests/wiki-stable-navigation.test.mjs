@@ -39,13 +39,13 @@ test('return navigation captures the previous view and respects direct links',()
  assert.match(app,/history\.replaceState\(\{\.\.\.oldState,psWikiReturn:/);
  assert.match(app,/if\(location\.hash!==destination\)/);
  assert.match(app,/psWikiEntry===true/);
- assert.match(app,/onclick:\(\)=>history\.back\(\)/);
+ assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)&&history\.state\?\.psWikiEntry===true\)\s*history\.back\(\)/);
  assert.match(app,/else if\(activeTab==='wiki'&&!location\.hash\.startsWith\('#b\/'\)\)/);
  assert.match(app,/const previous=event\.state\?\.psWikiReturn/);
  assert.match(app,/wikiSelection=\{\.\.\.previous\.selection\}/);
  assert.match(app,/wikiSearch=typeof previous\.search/);
  assert.match(app,/if\(!\$\('detailPanel'\)\?\.classList\.contains\('is-open'\)\)showWorkbench\(\)/);
- assert.match(css,/\.wiki-page>\.wiki-history-back/);
+ assert.match(css,/\.wiki-page>\.wiki-return-button/);
 });
 
 
@@ -55,13 +55,44 @@ test('wiki keeps history and shows a contextual scroll-to-top in its persistent 
  assert.match(app,/function openWikiChapterList\(\)/);
  assert.match(app,/psWikiList:listView/);
  assert.match(app,/else if\(event\.state\?\.psWikiList&&!location\.hash\)/);
- assert.match(app,/class:'wiki-page-nav'/);
+ assert.match(app,/detail\.append\(wikiBackButton\(backChapters\[type\]/);
+ assert.doesNotMatch(app,/class:'wiki-page-nav'/);
  assert.doesNotMatch(app,/class:'wiki-nav-button wiki-chapter-list'/);
  assert.match(app,/class:'wiki-list-top'/);
  assert.match(app,/listTop\.hidden=!far/);
  assert.match(app,/listPanel\.append\(browse,listTop\)/);
  assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)\)openWikiChapterList\(\)/);
- assert.match(css,/\.wiki-page>\.wiki-page-nav/);
+ assert.doesNotMatch(css,/wiki-page-nav|wiki-nav-button/);
  assert.match(css,/\.wiki-chest-assured-grid/);
  assert.match(css,/prefers-reduced-motion:reduce/);
+});
+
+test('all Wiki records reuse the Honor Back button and one source of CSS styles',()=>{
+ const app=read('pandora-studio-app.js');
+ const honor=read('pandora-studio-honor-view.js');
+ const css=read('pandora-studio-wiki-history.css');
+ const polish=read('pandora-studio-wiki-polish.css');
+ const honorCss=read('pandora-studio-honor.css');
+ assert.match(app,/function wikiBackButton\(chapter,onBack=null\)/);
+ assert.match(app,/class:'wiki-return-button'/);
+ assert.match(app,/detail\.append\(wikiBackButton\(backChapters\[type\]/);
+ assert.match(app,/backButton:wikiBackButton/);
+ assert.match(app,/const icon=skillIcon\(rec\.branch,id,rec\);[\s\S]*?const back=detail\.querySelector\('\.wiki-return-button'\);/);
+ assert.match(honor,/backButton\(tr\('Чести','Honor'\),onWarReturn\)/);
+ assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)&&history\.state\?\.psWikiEntry===true\)/);
+ assert.match(app,/else openWikiChapterList\(\)/);
+ for(const kind of ['item','monster','map','npc','chest','skill','soul','instance'])
+  assert.match(app,new RegExp('(?:^|[\\s,{])'+kind+':','m'),kind);
+ assert.match(css,/\.wiki-page>\.wiki-return-button\{/);
+ assert.match(css,/margin:0 0 15px/);
+ assert.doesNotMatch(honor,/wiki-honor-war-return/);
+ assert.doesNotMatch(honorCss,/wiki-honor-war-return/);
+ assert.doesNotMatch(polish,/wiki-page-nav|wiki-nav-button/);
+ assert.doesNotMatch(app,/class:'wiki-page-nav'/);
+});
+
+test('Honor resolves item and location links after a late catalog fetch',()=>{
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/if\(!wikiIndex\)\{\s*void loadWiki\(\)\.then\(\(\)=>\{/);
+ assert.match(app,/if\(root\.isConnected&&activeTab==='wiki'&&wikiSelection\.type==='honor'\)\s*renderHonor\(\)/);
 });

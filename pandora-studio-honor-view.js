@@ -14,7 +14,7 @@ function stopObserving(){
 }
 function render({browse,detail,make,lang='ru',article,editable=false,
  editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,cloakLink=()=>null,
- warId=null,warLink=()=>null,onWarReturn=()=>{},
+ warId=null,warLink=()=>null,onWarReturn=()=>{},backButton=()=>null,
  label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
  mapOptions=[],onOpenLocations=()=>{}}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
@@ -46,8 +46,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     browse.append(anchor);
    }else browse.append(node('p','wiki-honor-copy',name));
   }
-  detail.append(make('button',{type:'button',class:'wiki-honor-war-return',
-   text:tr('← Назад к Чести','← Back to Honor'),onclick:onWarReturn}));
+  const back=backButton(tr('Чести','Honor'),onWarReturn);
+  if(back)detail.append(back);
   if(entry){
    detail.append(node('p','wiki-honor-war-eyebrow',tr('PvP-война','PvP war')));
    const name=en?entry.nameEn:entry.nameRu;

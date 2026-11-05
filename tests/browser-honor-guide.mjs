@@ -122,7 +122,11 @@ export async function runHonorGuideSmoke(browser,base){
    '.wiki-honor-nav-link.selected')?.dataset.honorSection==='overview');
   await pane.evaluate(el=>el.scrollTo({top:0,behavior:'instant'}));
   const cloaks=panel.locator('.wiki-honor-cloak-link');
-  assert.equal(await cloaks.count(),9,'All 9 cloak rewards resolve to catalog items');
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-honor-cloak-link').length===9,
+   null,{timeout:20000});
+  assert.equal(await cloaks.count(),9,
+   'Honor must resolve all 9 cloak links after the catalog loads asynchronously');
   await cloaks.first().hover();
   await page.locator('#stage-gear-tooltip').waitFor({state:'visible'});
   await cloaks.first().click();
@@ -163,7 +167,7 @@ export async function runHonorGuideSmoke(browser,base){
    .locator('a.wiki-honor-war-link').filter({hasText:'Гихайм'}).click();
   await page.waitForURL(/#wiki\/honor\/war-siegheim$/);
   assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Гихайм');
-  await panel.locator('.wiki-honor-war-return').click();
+  await page.locator('.wiki-page > .wiki-return-button').click();
   await panel.locator('.wiki-honor-monthly-card').first().waitFor({state:'visible'});
   assert.equal(await panel.locator('a.wiki-honor-war-link').count(),2);
   assert.equal(await panel.locator('.wiki-honor-add').count(),0,
@@ -218,6 +222,64 @@ export async function runHonorGuideSmoke(browser,base){
   await page.goto(base+'/#wiki/honor/war-lidia',{waitUntil:'domcontentloaded'});
   await panel.locator('.wiki-honor-war-title').waitFor({state:'visible',timeout:20000});
   assert.match(await panel.locator('.wiki-honor-war-title').innerText(),/Лидия/);
+  const returnStyle=page.locator('.wiki-page > .wiki-return-button');
+  await returnStyle.waitFor({state:'visible'});
+  const appearance=await returnStyle.evaluate(button=>{
+   const outer=button.closest('.wiki-page').getBoundingClientRect();
+   const rect=button.getBoundingClientRect(),style=getComputedStyle(button);
+   return {x:Math.round(rect.left-outer.left),
+    y:Math.round(rect.top-outer.top),
+    background:style.backgroundColor,border:style.borderTopColor,
+    radius:style.borderTopLeftRadius,padding:style.padding,
+    text:button.textContent};
+  });
+  assert.ok(appearance.x>=0&&appearance.x<=30,
+   'Honor return button belongs in the left padded edge of the card');
+  assert.match(appearance.text,/Назад к Чести/);
+  assert.equal(await panel.locator('.wiki-page-nav').count(),0);
+  // Normal encyclopedia records must reproduce the war button, not
+  // introduce another navigation bar or return alignment.
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#nav [data-tab="wiki"]').click();
+  for(const [category,label]of [
+   ['item','Экипировке'],['monster','Монстрам'],['map','Локациям'],
+   ['npc','NPC-обмену'],['chest','Сундукам'],['skill','Навыкам'],
+   ['soul','Душам'],['instance','Подземельям']]){
+   await page.locator('.wiki-categories [data-wiki-chapter="'+category+'"]').click();
+   const first=page.locator('.wiki-list [data-wiki-record]').first();
+   await first.waitFor({state:'visible',timeout:15000});
+   await first.click();
+   const back=page.locator('.wiki-page > .wiki-return-button');
+   await back.waitFor({state:'visible'});
+   assert.equal(await page.locator('.wiki-page-nav').count(),0,
+    category+' must not create a second header toolbar');
+   assert.match(await back.innerText(),new RegExp('Назад к '+label));
+   const state=await back.evaluate(button=>{
+    const parent=button.closest('.wiki-page').getBoundingClientRect();
+    const rect=button.getBoundingClientRect(),style=getComputedStyle(button);
+    return {x:Math.round(rect.left-parent.left),
+     y:Math.round(rect.top-parent.top),
+     background:style.backgroundColor,border:style.borderTopColor,
+     radius:style.borderTopLeftRadius,padding:style.padding,
+     first:button.parentElement.firstElementChild===button};
+   });
+   assert.equal(state.first,true,'Back must be above the '+category+' heading');
+   assert.deepEqual({...state,first:undefined},
+    {x:appearance.x,y:appearance.y,background:appearance.background,
+     border:appearance.border,radius:appearance.radius,
+     padding:appearance.padding,first:undefined},
+    category+' must match Honor Back position and appearance');
+   await back.click();
+   await page.waitForFunction(()=>!document.querySelector(
+    '.wiki-page > .wiki-return-button'),null,{timeout:4000});
+  }
+  // Opening a record URL directly (without reversible session history)
+  // still offers a safe return to its category rather than browser exit.
+  await page.goto(base+'/#wiki/item/252',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page > .wiki-return-button').waitFor({state:'visible'});
+  await page.locator('.wiki-page > .wiki-return-button').click();
+  await page.waitForURL(url=>!url.hash.startsWith('#wiki/'));
+  assert.equal(await page.locator('.wiki-page > .wiki-return-button').count(),0);
   // The Phoenix Flame explanation previously displaced the hovered term
   // and triggered an endless show/hide layout oscillation.
   await page.goto(base+'/#wiki/item/252',{waitUntil:'domcontentloaded'});
