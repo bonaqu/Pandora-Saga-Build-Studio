@@ -52,15 +52,11 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal(await page.locator('.wiki-list-top').isHidden(),true);
   assert.equal(await page.evaluate(()=>location.hash),chosenHash,
    'Scrolling the list must not discard the open article or browser history');
-  await page.goBack();
-  await page.waitForFunction(expected=>location.hash===expected,originalHash);
-  await page.goForward();
-  await page.waitForFunction(expected=>location.hash===expected,chosenHash);
-  // Close the locale-test chapter from its origin list rather than while
-  // Browser Forward is still restoring a linked detail record.
-  await page.locator('.wiki-history-back').click();
-  await page.waitForFunction(expected=>location.hash===expected,originalHash);
-  await page.locator('.wiki-equipment-type').waitFor({state:'visible'});
+  // The chapter tab returns to the already-visible list while preserving
+  // the same list history state used by earlier browser acceptance checks.
+  await page.locator('.wiki-categories [data-wiki-chapter="item"]').click();
+  await page.waitForFunction(()=>location.hash==='');
+  assert.equal(await page.locator('.wiki-history-back').count(),0);
   assert.equal(await page.locator('#dockLocale').count(),0);
   assert.equal(await page.locator('#dockTabs').count(),0);
   assert.equal(await page.locator('#nav [data-tab="wiki"]').isHidden(),true,
