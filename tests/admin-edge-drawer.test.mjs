@@ -23,6 +23,8 @@ test('owner editor is a fixed overlay with an accessible left-edge handle',()=>{
  assert.match(css,/box-sizing:border-box;width:100%;min-width:0/);
  assert.doesNotMatch(css,/translate3d\(-100%,0,0\)/);
  assert.match(css,/\.owner-dock-handle/);
+ assert.ok(css.includes('position:absolute;z-index:3;top:14px;right:12px'),
+  'The Hide button must render above the sticky owner header');
  assert.match(css,/writing-mode:horizontal-tb/);
  assert.match(css,/min-width:128px;height:38px/);
  assert.match(css,/width:min\(474px,calc\(100vw - 16px\)\)/);

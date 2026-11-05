@@ -23,7 +23,8 @@ body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
  visibility:hidden;opacity:0;transform:none;pointer-events:none;
 }
 #ownerDock .owner-dock-handle{
- position:absolute;top:14px;right:12px;left:auto;bottom:auto;
+ /* The sticky header has z-index:1; keep the hide button above it. */
+ position:absolute;z-index:3;top:14px;right:12px;left:auto;bottom:auto;
  display:inline-flex;align-items:center;justify-content:center;
  width:auto;min-width:84px;height:34px;
  padding:6px 10px;margin:0;white-space:nowrap;

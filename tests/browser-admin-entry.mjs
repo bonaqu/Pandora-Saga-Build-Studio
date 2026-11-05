@@ -225,6 +225,22 @@ export async function runAdminEntrySmoke(browser,base){
   assert.ok(Math.abs(expandedOnWiki.left)<2&&
    expandedOnWiki.right<=expandedOnWiki.viewport+2,
    'Expanded editor not docked at left in Wiki: '+JSON.stringify(expandedOnWiki));
+  // The old sticky heading could cover the visible "Hide" control; the
+  // button must be the actual pointer target before *and after* Wiki opens.
+  const hitArea=async()=>edge.evaluate(button=>{
+   const rect=button.getBoundingClientRect();
+   const target=document.elementFromPoint(
+    rect.left+rect.width/2,rect.top+rect.height/2);
+   return target===button||button.contains(target);
+  });
+  assert.equal(await hitArea(),true,
+   'Sticky owner heading intercepted the Hide button');
+  await edge.click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'false');
+  assert.equal(await hitArea(),true,
+   'Collapsed launcher is not the topmost pointer target');
+  await edge.click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'true');
   // Honor is directly editable and D1-saving must preserve the encyclopedia
   // scroll position rather than rebuilding the entire workbench from the top.
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
