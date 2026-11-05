@@ -264,3 +264,118 @@
 .wiki-page .wiki-honor-copy a.wiki-link:hover{
  color:#ffe2ad;background:transparent;text-decoration:underline;
 }
+
+/*
+ * Encyclopedia UI language: reuse the proven location/source entity-chip
+ * treatment across chapters. This only changes presentation. The existing
+ * DOM links, card selection, owner edit controls and navigation stay intact.
+ */
+.wiki-page{
+ --wiki-ref-border:#7b5d3e;
+ --wiki-ref-hover:#dcb47c;
+ --wiki-ref-ink:#eed2a6;
+ --wiki-ref-muted:#bca58a;
+}
+.wiki-page>h4:not(.wiki-location-list-heading){
+ display:flex;align-items:center;gap:10px;min-width:0;
+ margin:18px 0 9px;padding:0 0 7px;
+ border-bottom:1px solid #8c693e65;
+ color:#efcfa0;line-height:1.25;
+}
+.wiki-page>h4:not(.wiki-location-list-heading)::after{
+ content:'';height:1px;flex:1 1 20px;min-width:12px;
+ background:linear-gradient(90deg,#94704438,transparent);
+}
+/* Shared navigable entity cards — monster spawns, NPC locations, dungeon
+ * references, item associations and Honor's PvP relations. */
+.wiki-page .wiki-entity-flow{
+ display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+}
+.wiki-page .wiki-entity-flow .wiki-link{
+ min-width:0;max-width:100%;min-height:34px;
+ border-color:var(--wiki-ref-border);border-radius:5px;
+ background:linear-gradient(140deg,#362519,#1d1711);
+ color:var(--wiki-ref-ink);font-weight:600;
+ box-shadow:inset 0 1px 0 #c29a6130;
+ transition:border-color .16s,background .16s,box-shadow .16s;
+ overflow-wrap:anywhere;
+}
+.wiki-page .wiki-entity-flow .wiki-link:hover{
+ border-color:var(--wiki-ref-hover);color:#ffe5bc;
+ background:linear-gradient(140deg,#4b3221,#261b14);
+ box-shadow:inset 0 1px 0 #efbf7a37;
+}
+.wiki-page .wiki-entity-flow .wiki-link:focus-visible{
+ outline:2px solid #f0c58b;outline-offset:2px;
+ border-color:#deb97f;background:#49301d;color:#fff1d8;
+}
+.wiki-page .wiki-entity-flow .wiki-link:active{
+ background:#251a13;
+}
+/* Equipment + effect items — long source names should remain readable. */
+.wiki-page .wiki-source-token{
+ min-width:0;max-width:100%;
+ border-radius:5px;box-shadow:inset 0 1px 0 #b38d4a24;
+}
+.wiki-page .wiki-source-token:focus-within{
+ border-color:#d7ac70;box-shadow:0 0 0 1px #be965c5c;
+}
+.wiki-page .wiki-source-token .wiki-link{
+ overflow-wrap:anywhere;
+}
+/* Monsters — make stat cells and clickable locations feel like one system. */
+.wiki-page .wiki-monster-stat,.wiki-page .wiki-monster-resist{
+ border-color:#765938;background:linear-gradient(140deg,#302219,#201811);
+}
+.wiki-page .wiki-monster-stat strong{font-variant-numeric:tabular-nums}
+.wiki-page .wiki-monster-resist.negative{border-color:#a3594d}
+/* Maps and dungeons — consistent compact creature rows with hover/focus. */
+.wiki-page .wiki-map-monsters .wiki-mob-row{
+ min-width:0;border-radius:5px;
+ background:linear-gradient(130deg,#302219,#211811);
+ transition:border-color .16s,background .16s;
+}
+.wiki-page .wiki-map-monsters .wiki-mob-row:hover,
+.wiki-page .wiki-map-monsters .wiki-mob-row:focus-within{
+ border-color:#c99e65;background:#3d2a1c;
+}
+/* NPC exchanges — existing item/tool links stay functional and editable. */
+.wiki-page .wiki-trade-card{
+ border-radius:6px;border-color:#7e613d;
+ box-shadow:inset 0 1px 0 #d8ab6330;
+ transition:border-color .16s,background .16s;
+}
+.wiki-page .wiki-trade-card:focus-within{border-color:#d3a86c}
+.wiki-page .wiki-trade-currency{
+ font-variant-numeric:tabular-nums;
+}
+/* Chests — reward link focus/hover and odds stay high-contrast. */
+.wiki-page .wiki-chest-board .wiki-chest-reward:focus-within{
+ border-color:#dfb176;box-shadow:0 0 0 1px #d2a16662;
+}
+.wiki-page .wiki-chest-board .wiki-chest-reward .wiki-link:focus-visible{
+ outline:2px solid #efc687;outline-offset:2px;
+}
+/* Skills and souls — compact distinct data surfaces, never fake links. */
+.wiki-page .wiki-prerequisite .wiki-link:focus-visible,
+.wiki-page .wiki-recipe-npcs .wiki-link:focus-visible,
+.wiki-page .wiki-loot-chip .wiki-link:focus-visible{
+ outline:2px solid #f0c78b;outline-offset:2px;
+}
+.wiki-page .wiki-soul-properties-half{
+ min-width:0;border-color:#7a5b3b;
+}
+.wiki-page .wiki-instance-kind{
+ border-radius:5px;border-color:#97734b;
+ background:linear-gradient(130deg,#40301e,#261b14);
+}
+@media(max-width:780px){
+ .wiki-page>h4:not(.wiki-location-list-heading){gap:6px;font-size:16px}
+ .wiki-page .wiki-entity-flow{gap:6px}
+ .wiki-page .wiki-entity-flow .wiki-link{min-height:36px}
+}
+@media(prefers-reduced-motion:reduce){
+ .wiki-page .wiki-entity-flow .wiki-link,
+ .wiki-page .wiki-map-monsters .wiki-mob-row,
+ .wiki-page .wiki-trade-card{transition:none}
+}
