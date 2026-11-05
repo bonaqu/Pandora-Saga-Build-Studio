@@ -56,6 +56,11 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.waitForFunction(expected=>location.hash===expected,originalHash);
   await page.goForward();
   await page.waitForFunction(expected=>location.hash===expected,chosenHash);
+  // Close the locale-test chapter from its origin list rather than while
+  // Browser Forward is still restoring a linked detail record.
+  await page.locator('.wiki-history-back').click();
+  await page.waitForFunction(expected=>location.hash===expected,originalHash);
+  await page.locator('.wiki-equipment-type').waitFor({state:'visible'});
   assert.equal(await page.locator('#dockLocale').count(),0);
   assert.equal(await page.locator('#dockTabs').count(),0);
   assert.equal(await page.locator('#nav [data-tab="wiki"]').isHidden(),true,
