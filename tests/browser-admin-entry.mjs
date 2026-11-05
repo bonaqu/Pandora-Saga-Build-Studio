@@ -268,6 +268,27 @@ export async function runAdminEntrySmoke(browser,base){
    /Muldian Uncivilized District|El Beht|Underground of Astir/);
   assert.ok(await honorPanel.locator('.wiki-honor-location-select').first()
    .locator('option').count()>4,'Location picker must include existing maps');
+  // A chapter's text is editable without mutating its stable data-wiki-chapter.
+  const chapterRow=page.locator('.wiki-category-line')
+   .filter({has:page.locator('[data-wiki-chapter="honor"]')});
+  await chapterRow.locator('.wiki-category-edit').click();
+  const chapterEditor=chapterRow.locator('[data-owner-text-field="true"]');
+  await chapterEditor.waitFor({state:'visible'});
+  await chapterEditor.fill('Честь и ранги');
+  await chapterEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-wiki-chapter="honor"] .wiki-category-text')?.textContent==='Честь и ранги');
+  assert.equal(JSON.parse(townOverrides.get('guideedit.wiki.labels')).chapter_honor_ru,
+   'Честь и ранги');
+  const gainHeading=honorPanel.locator('#honor-gain .wiki-honor-heading');
+  await gainHeading.dblclick();
+  const gainEditor=gainHeading.locator('[data-owner-text-field="true"]');
+  await gainEditor.fill('Получение и потеря чести — тест');
+  await gainEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-heading')?.textContent==='Получение и потеря чести — тест');
+  assert.equal(JSON.parse(townOverrides.get('guideedit.wiki.labels')).honor_gain_ru,
+   'Получение и потеря чести — тест');
   const rankBenefit=honorPanel.locator('#honor-rank-8 .wiki-honor-rank-benefit');
   await rankBenefit.dblclick();
   // The inline editor intentionally uses a plaintext-only contenteditable,
