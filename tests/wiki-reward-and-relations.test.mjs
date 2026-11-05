@@ -55,7 +55,7 @@ test('owner item source picker can create a real reverse-indexed monster loot ro
  assert.equal(appended.length,1);
  appended[0].onclick();
  const kind=elements.find(node=>node.tag==='select'&&node['aria-label']==='Тип получения');
- const target=elements.find(node=>node.tag==='select'&&node['aria-label']==='Выбери источник');
+ const target=elements.find(node=>node.tag==='select'&&node['aria-label']==='У кого получить');
  const feedback=elements.find(node=>node.tag==='small'&&node.role==='status');
  assert.ok(kind&&target&&feedback);
  kind.value='drop';kind.onchange();
