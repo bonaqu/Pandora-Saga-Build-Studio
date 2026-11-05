@@ -1173,12 +1173,15 @@ function bindHoldStep(button,step){
    interval=setInterval(run,85);
   },340);
  });
- button.addEventListener('click',()=>{
+ button.addEventListener('click',event=>{
+  // Keyboard/assistive clicks have detail=0; never consume them merely because
+  // a previous pointer gesture was cancelled or its click was suppressed.
+  if(event.detail===0){skipClick=false;run();return}
   if(skipClick){skipClick=false;return}
-  run(); // keyboard and assistive activation never require a pointer
+  run();
  });
  button.addEventListener('pointerup',stop);
- button.addEventListener('pointerleave',stop);
+ button.addEventListener('pointerleave',()=>{stop();skipClick=false});
  button.addEventListener('pointercancel',()=>{stop();skipClick=false});
  button.addEventListener('lostpointercapture',stop);
  button.addEventListener('blur',stop);
