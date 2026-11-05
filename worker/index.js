@@ -730,15 +730,18 @@ function validGuideEdit(text,key){
     ['nameRu','nameEn'].every(x=>typeof row[x]==='string'&&
      row[x].trim()&&row[x].length<=140)&&
     (key==='honor.wars'||row.mapId==null||typeof row.mapId==='string'&&
-     (/^[0-9]{1,15}$/.test(row.mapId)||['el-beht','astir-underground'].includes(row.mapId)));
+     (/^[0-9]{1,15}$/.test(row.mapId)||/^[a-z][a-z0-9-]{1,63}$/.test(row.mapId)));
   });
  }
  if(!plain(data))return false;
  const allowed=key.startsWith('book.')?['ru','en','hintRu','hintEn']:
-  key.startsWith('honor.rank.')?['nameRu','nameEn','benefitRu','benefitEn']:
+  key.startsWith('honor.rank.')?['nameRu','nameEn','benefitRu','benefitEn',
+   'requirementRu','requirementEn']:
   ['overviewRu','overviewEn','gainRu','gainEn','lossRu','lossEn','currentRu',
-   'currentEn','ranksRu','ranksEn','cloaksRu','cloaksEn'];
- const max=key==='honor.overview'?1800:key.startsWith('honor.rank.')?500:360;
+   'currentEn','ranksRu','ranksEn','cloaksRu','cloaksEn',
+   'honorRu','honorEn','totalRu','totalEn','joiningRu','joiningEn',
+   'monthlyNoteRu','monthlyNoteEn'];
+ const max=key==='honor.overview'?2200:key.startsWith('honor.rank.')?500:360;
  const entries=Object.entries(data);
  return entries.length>0&&entries.every(([field,value])=>allowed.includes(field)&&
   typeof value==='string'&&value.trim()&&value.length<=max);
