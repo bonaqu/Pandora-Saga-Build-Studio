@@ -605,6 +605,74 @@ function allowedBranch(branch){
 }
 
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
+// Reuse the existing authenticated, bilingual D1 guide store. The established
+// book.origin.* namespace is Worker-compatible; no separate write API needed.
+function originCopy(key,ru,en){
+ const entry=window.PandoraHonorGuide?.field(override,'origin.'+key,ru,en);
+ return lang==='en'?(entry?.en||en):(entry?.ru||ru);
+}
+const originFixedLabels=[
+ ['.workspace>.left>.panel-heading h2','heading','Происхождение','Origin'],
+ ['#originTabs [data-origin-tab="race"]','tabRace','Раса','Race'],
+ ['#originTabs [data-origin-tab="class"]','tabProfession','Профессия','Class'],
+ ['#originTabs [data-origin-tab="stats"]','tabStats','Характеристики','Stats'],
+ ['#originPanelRace [data-i18n="raceSelect"]','racePrompt','Выбери расу','Choose a race'],
+ ['#originPanelRace [data-i18n="racePassive"]','passiveHeading','Расовая пассивка','Racial passive'],
+ ['#originPanelClass #classCount','classCount','28 классов','28 classes'],
+ ['#originPanelStats [data-i18n="heroProgress"]','progressHeading','Развитие героя','Hero progression'],
+ ['#originPanelStats [data-i18n="levelParameters"]','levelParameters','Уровень и параметры','Level and attributes'],
+ ['#originPanelStats [data-i18n="heroLevel"]','levelHeading','Уровень героя','Hero level'],
+ ['#originPanelStats [data-i18n="baseStats"]','baseHeading','Базовые характеристики','Base attributes'],
+ ['#originPanelStats [data-i18n="distributePoints"]','distributeHeading','Распредели очки','Distribute points']
+];
+function originCopyLabel(node,key,ru,en,{pencilHost=null}={}){
+ if(!node)return node;
+ if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
+  node.textContent=originCopy(key,ru,en);
+ node.dataset.originCopyKey=key;
+ const editing=Boolean(adminEditing&&adminToken);
+ node.classList.toggle('origin-copy-editable',editing);
+ if(!node.dataset.originCopyBound){
+  node.dataset.originCopyBound='1';
+  node.addEventListener('dblclick',event=>{
+   if(!adminEditing||!adminToken)return;
+   event.preventDefault();event.stopImmediatePropagation();
+   editOriginCopyLabel(node,key,ru,en);
+  },true);
+ }
+ if(pencilHost){
+  const existing=[...pencilHost.querySelectorAll('[data-origin-edit-for]')]
+   .find(x=>x.dataset.originEditFor===key);
+  if(existing&&!editing)existing.remove();
+  else if(!existing&&editing){
+   pencilHost.append(h('button',{type:'button',class:'origin-copy-pencil',
+    'data-origin-edit-for':key,
+    'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+originCopy(key,ru,en),
+    title:lang==='en'?'Edit this caption':'Изменить эту надпись',
+    text:'✎',onclick:event=>{event.preventDefault();event.stopPropagation();
+     editOriginCopyLabel(node,key,ru,en)}}));
+  }
+ }
+ return node;
+}
+function editOriginCopyLabel(node,key,ru,en){
+ if(!adminEditing||!adminToken||node.dataset.originEditing==='1')return;
+ const value=originCopy(key,ru,en),isButton=node.tagName==='BUTTON';
+ const mount=isButton?h('span',{class:'origin-copy-input-slot'}):node;
+ if(isButton){node.after(mount);node.hidden=true}
+ node.dataset.originEditing='1';
+ editWikiValue(mount,value,{type:'text',
+  onCommit:next=>saveGuidePatch('book.origin.'+key,{[lang]:next}),
+  onCommitted:next=>{node.textContent=next},
+  onFinished:()=>{
+   node.dataset.originEditing='0';
+   if(isButton){node.hidden=false;mount.remove()}
+  }});
+}
+function renderOriginCopyLabels(){
+ for(const [selector,key,ru,en] of originFixedLabels)
+  originCopyLabel(document.querySelector(selector),key,ru,en);
+}
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
 if(!Number.isInteger(i)||i<0||i>=races.length)return 'assets/pandora-logo.png';
