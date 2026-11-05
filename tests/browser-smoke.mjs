@@ -65,6 +65,21 @@ async function main(){
  assert.equal(await page.locator('#levelOut').textContent(),'1');
  assert.equal(await page.locator('#level').getAttribute('max'),'55');
  assert.equal(await page.locator('#stageAttributes').isHidden(),true);
+ assert.match(await page.locator('#raceGrid .race-slide-select').innerText(),/Выбрать эту расу/);
+ assert.equal(await page.locator('#classGrid .class-wizard-selected').count(),0);
+ assert.match(await page.locator('#activeJob').innerText(),/Выберите профессию/);
+ assert.match(await page.locator('#originStatSummary').innerText(),/Бюджет уровня: 0/);
+ // Select the same Elf/Cleric fixture explicitly; the fresh hero no longer
+ // silently commits either choice on initial load.
+ for(let i=0;i<3;i++)await page.locator('#raceGrid .race-slide-arrow.next').click();
+ await page.locator('#raceGrid .race-slide-select').click();
+ await page.locator('[data-origin-tab="class"]').click();
+ await page.locator('#classGrid .class-wizard-choice').nth(2).click(); // Acolyte
+ await page.locator('#classGrid .class-wizard-choice').first().click(); // Priest
+ await page.locator('#classGrid .class-wizard-choice').first().click(); // Cleric
+ assert.equal(await page.locator('#classGrid .class-current-select.selected').count(),1);
+ assert.equal(await page.locator('#classGrid .class-wizard-step.selected').count(),1);
+ assert.match(await page.locator('#classGrid .class-current-select').innerText(),/✓/);
 
  // The portrait itself opens the book; chapter navigation supports the keyboard.
  await page.locator('#hero').click();
@@ -172,6 +187,7 @@ async function main(){
   el.value='55';el.dispatchEvent(new Event('input',{bubbles:true}));
  });
  assert.equal(await page.locator('#levelOut').textContent(),'55');
+ assert.match(await page.locator('#budgetState').innerText(),/134/);
  await page.reload({waitUntil:'domcontentloaded'});
  await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='55',
   null,{timeout:30000});
@@ -193,6 +209,8 @@ async function main(){
  await page.getByRole('button',{name:/^(Создать без сохранения|Create without saving)$/}).click();
  assert.equal(await page.locator('#levelOut').textContent(),'1');
  assert.equal(await page.locator('#level').inputValue(),'1');
+ assert.match(await page.locator('#raceGrid .race-slide-select').innerText(),/Choose this race|Выбрать эту расу/);
+ assert.match(await page.locator('#activeJob').innerText(),/Choose a class|Выберите профессию/);
  assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
  console.log('Chromium desktop smoke passed: hero book, keyboard, level 1–55 and unsaved build');
  await context.close();
