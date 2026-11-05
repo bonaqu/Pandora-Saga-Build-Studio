@@ -149,8 +149,8 @@ export async function runHonorGuideSmoke(browser,base){
   await page.waitForURL(/#wiki\/honor\/war-lidia$/);
   assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Лидия');
   assert.match(await panel.locator('.wiki-honor-war-eyebrow').innerText(),/pvp-война/i);
-  assert.equal(await panel.locator('.wiki-honor-war-link').count(),2,
-   'War pages retain a linked navigation list');
+  assert.equal(await page.locator('.wiki-layout-honor .wiki-list .wiki-honor-war-link').count(),2,
+   'War detail pages retain two linked war entries in the left navigation');
   assert.equal(await panel.locator('.wiki-honor-rank').count(),0,
    'War pages do not duplicate the full Honor rank article');
   await page.goBack({waitUntil:'domcontentloaded'});
