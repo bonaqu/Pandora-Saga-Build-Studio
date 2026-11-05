@@ -122,7 +122,11 @@ export async function runHonorGuideSmoke(browser,base){
    '.wiki-honor-nav-link.selected')?.dataset.honorSection==='overview');
   await pane.evaluate(el=>el.scrollTo({top:0,behavior:'instant'}));
   const cloaks=panel.locator('.wiki-honor-cloak-link');
-  assert.equal(await cloaks.count(),9,'All 9 cloak rewards resolve to catalog items');
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-honor-cloak-link').length===9,
+   null,{timeout:20000});
+  assert.equal(await cloaks.count(),9,
+   'Honor must resolve all 9 cloak links after the catalog loads asynchronously');
   await cloaks.first().hover();
   await page.locator('#stage-gear-tooltip').waitFor({state:'visible'});
   await cloaks.first().click();
