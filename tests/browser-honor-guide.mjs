@@ -400,6 +400,9 @@ export async function runHonorGuideSmoke(browser,base){
   assert.ok(mobile.overflow<=2,'Linked PvP cards must not overflow their container');
   assert.ok(mobile.cardHeight>=32,'PvP map links remain usable on touch screens');
   assert.equal(mobile.maps,3);
+  // :focus-visible follows keyboard modality; a bare .focus() after mouse
+  // navigation does not imply the user is navigating with a keyboard.
+  await page.keyboard.press('Tab');
   await page.locator('.wiki-honor-location-link').first().focus();
   assert.equal(await page.locator('.wiki-honor-location-link').first().evaluate(node=>
    getComputedStyle(node).outlineStyle),'solid','Keyboard focus must be visible');
