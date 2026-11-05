@@ -57,6 +57,8 @@ const help=Object.freeze({
 });
 const defaultRanks=Object.freeze([
  {id:0,nameRu:'Оруженосец',nameEn:'Page',points:null,gold:0,
+  requirementRu:'При вступлении в любую из существующих наций персонаж получает ранг Оруженосец и 1 000 очков начальной чести.',
+  requirementEn:'Joining any nation grants the Squire rank and 1,000 starting Honor.',
   benefitRu:'Начальный ранг, иконка возле имени.',benefitEn:'Starting rank and nameplate icon.'},
  {id:1,nameRu:'Помощник',nameEn:'Esquire',points:null,gold:10000,
   benefitRu:'Возможность создать гильдию.',benefitEn:'Unlocks guild creation.'},
@@ -93,8 +95,8 @@ const wars=Object.freeze([
  {id:'siegheim',nameRu:'Гихайм',nameEn:'Siegheim'}
 ].map(Object.freeze));
 const intro=Object.freeze({
- overviewRu:'Честь — PvP-ресурс. При вступлении в нацию персонаж получает 1 000 очков. За PvP-победы и участие в войнах можно заработать ещё честь. Разделяется на «Честь» — расходуемый ресурс; «Вся честь» — общий заработанный запас для повышения рангов и рейтинга.',
- overviewEn:'Honor is a PvP resource. Joining a nation grants 1,000 Honor. PvP victories and wars provide further Honor. “Honor” is the spendable resource; “Total Honor” is the overall earned amount used for ranks and leaderboards.',
+ overviewRu:'За победы над игроками вражеских наций и участие в войнах персонаж зарабатывает честь. Она используется для обмена предметов, повышения ранга и участия в рейтингах.',
+ overviewEn:'Defeat players of enemy nations or take part in wars to earn Honor. Honor is used for item exchanges, rank progression, and leaderboards.',
  honorRu:'Расходуемый PvP-ресурс. Можно тратить в обмене; теряется при смерти.',
  honorEn:'Spendable PvP resource. Used in exchanges; may decrease on death.',
  totalRu:'Заработанная за всё время честь: определяет ранги и рейтинги.',
