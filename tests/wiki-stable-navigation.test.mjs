@@ -55,7 +55,7 @@ test('wiki keeps history and shows a contextual scroll-to-top in its persistent 
  assert.match(app,/function openWikiChapterList\(\)/);
  assert.match(app,/psWikiList:listView/);
  assert.match(app,/else if\(event\.state\?\.psWikiList&&!location\.hash\)/);
- assert.match(app,/detail\.append\(wikiBackButton\(backChapters\[type\]/);
+ assert.match(app,/detail\.append\(wikiBackButton\(\)\)/);
  assert.doesNotMatch(app,/class:'wiki-page-nav'/);
  assert.doesNotMatch(app,/class:'wiki-nav-button wiki-chapter-list'/);
  assert.match(app,/class:'wiki-list-top'/);
@@ -73,12 +73,14 @@ test('all Wiki records reuse the Honor Back button and one source of CSS styles'
  const css=read('pandora-studio-wiki-history.css');
  const polish=read('pandora-studio-wiki-polish.css');
  const honorCss=read('pandora-studio-honor.css');
- assert.match(app,/function wikiBackButton\(chapter,onBack=null\)/);
+ assert.match(app,/function wikiBackButton\(\)/);
+ assert.match(app,/const label=lang==='en'\?'← Back':'← Назад'/);
+ assert.doesNotMatch(app,/backChapters|Назад к|Back to '\+chapter/);
  assert.match(app,/class:'wiki-return-button'/);
- assert.match(app,/detail\.append\(wikiBackButton\(backChapters\[type\]/);
+ assert.match(app,/detail\.append\(wikiBackButton\(\)\)/);
  assert.match(app,/backButton:wikiBackButton/);
  assert.match(app,/const icon=skillIcon\(rec\.branch,id,rec\);[\s\S]*?const back=detail\.querySelector\('\.wiki-return-button'\);/);
- assert.match(honor,/backButton\(tr\('Чести','Honor'\)\)/);
+ assert.match(honor,/backButton\(\)/);
  assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)&&history\.state\?\.psWikiEntry===true\)/);
  assert.match(app,/else openWikiChapterList\(\)/);
  for(const kind of ['item','monster','map','npc','chest','skill','soul','instance'])

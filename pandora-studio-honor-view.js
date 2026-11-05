@@ -47,7 +47,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    }else browse.append(node('p','wiki-honor-copy',name));
   }
   // Honor wars follow the same browser history contract as maps and items.
-  const back=backButton(tr('Чести','Honor'));
+  const back=backButton();
   if(back)detail.append(back);
   if(entry){
    detail.append(node('p','wiki-honor-war-eyebrow',tr('PvP-война','PvP war')));

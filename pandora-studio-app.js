@@ -1593,13 +1593,12 @@ function openWikiChapterList(){
  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
  saveView();
 }
-// One Back button for all encyclopedia records: the Honor war page is
-// the approved top-left placement, size and visual style.
-function wikiBackButton(chapter,onBack=null){
- const label=lang==='en'?'← Back to '+chapter:'← Назад к '+chapter;
+// One Back action and one neutral label everywhere. The destination depends
+// on the actual history entry, never on the currently displayed record type.
+function wikiBackButton(){
+ const label=lang==='en'?'← Back':'← Назад';
  return h('button',{type:'button',class:'wiki-return-button',
   text:label,'aria-label':label,onclick:()=>{
-   if(typeof onBack==='function'){onBack();return}
    if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true)
     history.back();
    else openWikiChapterList();
@@ -2556,19 +2555,9 @@ function renderWiki(root){
   }
   const id=wikiSelection.id,rec=id==null?null:records?.[id];
   if(!rec){detail.append(h('p',{class:'muted',text:!results.length?(lang==='en'?'No matching entries.':'Ничего не найдено.'):(lang==='en'?'Select an entry to view its details and sources.':'Выбери запись для просмотра характеристик и связанных источников.')}));return}
-  // A clear, left-aligned Back control comes before the record heading.
-  // Russian chapter names are inflected for "Назад к …".
-  const backChapters=lang==='en'?{
-   item:wikiItemType==='utility'?'Effect items':'Equipment',
-   monster:'Monsters',map:'Locations',npc:'NPC trades',chest:'Chests',
-   instance:'Dungeons',skill:'Skills',soul:'Souls'
-  }:{
-   item:wikiItemType==='utility'?'Предметам эффектов':'Экипировке',
-   monster:'Монстрам',map:'Локациям',npc:'NPC-обмену',chest:'Сундукам',
-   instance:'Подземельям',skill:'Навыкам',soul:'Душам'
-  };
-  detail.append(wikiBackButton(backChapters[type]||
-   wt('Энциклопедии','Encyclopedia')));
+  // The destination is the real origin, which may belong to another chapter.
+  // A neutral label avoids falsely promising a category-specific destination.
+  detail.append(wikiBackButton());
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'item.'+id:null;
