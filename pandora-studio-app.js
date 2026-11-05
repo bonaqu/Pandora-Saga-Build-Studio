@@ -607,8 +607,9 @@ function allowedBranch(branch){
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
 // Reuse the existing authenticated, bilingual D1 guide store. The established
 // book.origin.* namespace is Worker-compatible; no separate write API needed.
+function originGuideKey(key){return key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase())}
 function originCopy(key,ru,en){
- const entry=window.PandoraHonorGuide?.field(override,'origin.'+key,ru,en);
+ const entry=window.PandoraHonorGuide?.field(override,'origin.'+originGuideKey(key),ru,en);
  return lang==='en'?(entry?.en||en):(entry?.ru||ru);
 }
 const originFixedLabels=[
@@ -665,7 +666,7 @@ function editOriginCopyLabel(node,key,ru,en){
  if(isButton){node.after(mount);node.hidden=true}
  node.dataset.originEditing='1';
  editWikiValue(mount,value,{type:'text',
-  onCommit:next=>saveGuidePatch('book.origin.'+key,{[lang]:next}),
+  onCommit:next=>saveGuidePatch('book.origin.'+originGuideKey(key),{[lang]:next}),
   onCommitted:next=>{node.textContent=next},
   onFinished:()=>{
    node.dataset.originEditing='0';
