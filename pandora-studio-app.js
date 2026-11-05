@@ -2212,6 +2212,19 @@ function renderWiki(root){
  };
 
  const draw=(detailOnly=false)=>{
+   // Searching or changing filters clears the selected record. Preserve an
+   // actual history entry to return to that record instead of leaving a
+   // misleading #wiki/item/... address on an empty list.
+   if(wikiSelection.id==null&&(location.hash.startsWith('#wiki/')||
+       (!location.hash&&history.state?.psWikiList))){
+    const current=history.state&&typeof history.state==='object'?history.state:{};
+    const listState={type:wikiSelection.type,itemType:wikiItemType,
+     search:wikiSearch,shown:wikiShown};
+    const next={...current,psWikiEntry:false,psWikiList:listState};
+    if(location.hash.startsWith('#wiki/'))
+     history.pushState(next,'',location.pathname+location.search);
+    else history.replaceState(next,'',location.href);
+   }
    if(lastWikiIndex!==wikiIndex){
     nameCache.clear();searchCache.clear();lastWikiIndex=wikiIndex;
    }
