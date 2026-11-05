@@ -87,6 +87,9 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.locator('.wiki-chest-unverified').waitFor({state:'visible'});
   assert.match(await page.locator('.wiki-chest-unverified').innerText(),
    /Reward category: Accessories[\s\S]*Contents are not listed/);
+  // The separate locale test below expects the equipment chapter.
+  await page.locator('.wiki-categories [data-wiki-chapter="item"]').click();
+  await page.locator('.wiki-equipment-type').waitFor({state:'visible'});
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
