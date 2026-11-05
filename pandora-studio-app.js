@@ -1176,7 +1176,7 @@ function bindHoldStep(button,step){
  button.addEventListener('click',event=>{
   // Keyboard/assistive clicks have detail=0; never consume them merely because
   // a previous pointer gesture was cancelled or its click was suppressed.
-  if(event.detail===0){skipClick=false;run();return}
+  if(event?.detail===0){skipClick=false;run();return}
   if(skipClick){skipClick=false;return}
   run();
  });
