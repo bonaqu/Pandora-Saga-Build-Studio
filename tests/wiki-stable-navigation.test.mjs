@@ -77,6 +77,7 @@ test('all Wiki records reuse the Honor Back button and one source of CSS styles'
  assert.match(app,/class:'wiki-return-button'/);
  assert.match(app,/detail\.append\(wikiBackButton\(backChapters\[type\]/);
  assert.match(app,/backButton:wikiBackButton/);
+ assert.match(app,/const icon=skillIcon\(rec\.branch,id,rec\);[\s\S]*?const back=detail\.querySelector\('\.wiki-return-button'\);/);
  assert.match(honor,/backButton\(tr\('Чести','Honor'\),onWarReturn\)/);
  assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)&&history\.state\?\.psWikiEntry===true\)/);
  assert.match(app,/else openWikiChapterList\(\)/);
