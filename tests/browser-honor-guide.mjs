@@ -95,9 +95,8 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await menu.locator('.wiki-honor-nav-link').count(),4);
   // Direct scroll/keyboard/wheel and clicking menu use the same active state.
   const autoHighlight=async section=>{
-   await pane.evaluate(id=>{
+   await pane.evaluate((container,id)=>{
     const target=document.querySelector('#honor-'+id);
-    const container=document.querySelector('#detailContent');
     const y=target.getBoundingClientRect().top-container.getBoundingClientRect().top;
     container.scrollTo({top:container.scrollTop+y-26,behavior:'instant'});
    },section);
