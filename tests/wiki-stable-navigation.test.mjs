@@ -6,7 +6,7 @@ test('wiki selects records without recreating list and triggering two hash reren
  const app=read('pandora-studio-app.js');
  assert.match(app,/wikiRenderSelected=\(\)=>\{/);
  assert.match(app,/draw\(present\)/);
- assert.match(app,/history\.pushState\(\{\.\.\.currentState,psWikiEntry:true\}/);
+ assert.match(app,/history\.pushState\(\{\.\.\.currentState,psWikiEntry:true,/);
  assert.match(app,/if\(sameCategory\)wikiRenderSelected\(\)/);
  assert.match(app,/const draw=\(detailOnly=false\)=>/);
  assert.match(app,/if\(!detailOnly\)browse\.replaceChildren\(\)/);
