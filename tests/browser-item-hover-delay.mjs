@@ -66,7 +66,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   await spata.hover();
   await page.waitForTimeout(100);
   await page.locator('#detailContent').evaluate(node=>{
-   node.scrollTop=node.scrollTop+40;
+   node.scrollTop=node.scrollTop>40?node.scrollTop-40:node.scrollTop+40;
   });
   await page.waitForTimeout(780);
   assert.equal(await tooltip.count(),0,
