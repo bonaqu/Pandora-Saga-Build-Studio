@@ -19,7 +19,9 @@ test('owner editor is a fixed overlay with an accessible left-edge handle',()=>{
  assert.match(css,/position:fixed/);
  assert.ok(css.includes('inset:auto auto max(14px,env(safe-area-inset-bottom)) 0!important'));
  assert.match(css,/owner-dock-collapsed\{/);
- assert.match(css,/visibility:hidden;transform:none;pointer-events:none/);
+ assert.match(css,/visibility:hidden;opacity:0;transform:none;pointer-events:none/);
+ assert.match(css,/box-sizing:border-box;width:100%;min-width:0/);
+ assert.doesNotMatch(css,/translate3d\(-100%,0,0\)/);
  assert.match(css,/\.owner-dock-handle/);
  assert.match(css,/writing-mode:horizontal-tb/);
  assert.match(css,/min-width:128px;height:38px/);
