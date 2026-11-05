@@ -7,11 +7,18 @@
 // files; the game's original silhouettes stay intact on any theme.
 const honorIconSrc=id=>Number.isInteger(id)&&id>=0&&id<12?
  'assets/wiki/honor-ranks/'+id+'.svg':null;
+let removeHonorScrollListener=()=>{};
+function stopObserving(){
+ removeHonorScrollListener();
+ removeHonorScrollListener=()=>{};
+}
 function render({browse,detail,make,lang='ru',article,editable=false,
  editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,cloakLink=()=>null,
  label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
  mapOptions=[],onOpenLocations=()=>{}}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
+ // Re-rendering after admin edits must never accumulate scroll observers.
+ stopObserving();
  const en=lang==='en',tr=(ru,english)=>en?english:ru,
   fmt=new Intl.NumberFormat(en?'en-US':'ru-RU');
  const oldBrowseScroll=browse.scrollTop,oldDetailScroll=detail.scrollTop;
@@ -74,18 +81,21 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  browse.append(node('h4','wiki-location-list-heading',
   label('chapter','honor','Честь','Honor')));
  const nav=[];
+ const selectSection=id=>{
+  for(const jump of nav){
+   const active=jump.dataset.honorSection===id;
+   jump.classList.toggle('selected',active);
+   if(active)jump.setAttribute('aria-current','location');
+   else jump.removeAttribute('aria-current');
+  }
+ };
  for(const [id,ru,english,glyph]of sidebar){
   const jump=make('button',{type:'button',class:'wiki-link wiki-honor-nav-link',
    'data-honor-section':id,'aria-current':id===oldSection?'location':null});
   jump.append(node('span','wiki-honor-nav-icon',glyph),
    node('span','',label('honor',id,ru,english)));
   jump.addEventListener('click',()=>{
-   for(const link of nav){
-    const active=link===jump;
-    link.classList.toggle('selected',active);
-    if(active)link.setAttribute('aria-current','location');
-    else link.removeAttribute('aria-current');
-   }
+   selectSection(id);
    const selected=detail.querySelector('#honor-'+id);
    const pane=detail.closest('#detailContent')||detail;
    if(selected&&pane){
@@ -131,27 +141,22 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    const field=en?'nameEn':'nameRu';
    const linked=isZone?mapOptions.find(option=>option.id===item.mapId):null;
    const value=(linked?(en?linked.nameEn:linked.nameRu):item[field])||'';
-   const label=node('span','',value);
+   const name=node('span','',value);
    if(isZone){
-    // Names of existing maps are managed in the Locations editor only.
-    // Never create a second, diverging translation in the Honor chapter.
-    if(editable)label.setAttribute('title',tr(
-     'Название изменяется в разделе «Локации»',
-     'Edit the name in the Locations chapter'));
-    names.append(label);
-   }else names.append(editableListText(label,value,key,items,index,field));
-   row.append(names);
-   if(isZone&&item.mapId){
-    const anchor=link(item.mapId,'↗');
+    // Reuse the existing Wiki map link and history; editing the canonical
+    // location name still belongs to the Locations chapter, not here.
+    const anchor=item.mapId&&linked?link(item.mapId,value):null;
     if(anchor){
-     anchor.classList.add('wiki-honor-open-location');
-     anchor.textContent='↗';
-     anchor.setAttribute('aria-label',
-      tr('Открыть локацию: ','Open location: ')+value);
-     anchor.setAttribute('title',tr('Открыть локацию','Open location'));
-     row.append(anchor);
+     anchor.classList.add('wiki-honor-location-link');
+     names.append(anchor);
+    }else{
+     if(editable)name.setAttribute('title',tr(
+      'Название изменяется в разделе «Локации»',
+      'Edit the name in Locations'));
+     names.append(name);
     }
-   }
+   }else names.append(editableListText(name,value,key,items,index,field));
+   row.append(names);
    if(editable){
     if(isZone){
      const select=make('select',{class:'wiki-honor-location-select',
@@ -292,17 +297,17 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  }
  ranks.append(rankFilters);
  for(const rank of article.ranks){
-  const card=make('div',{class:'wiki-honor-rank'+(rank.id===7?' is-moon':'')+
+  const card=make('div',{class:'wiki-honor-rank'+
    (rank.top!=null?' is-monthly':'')});
   card.dataset.rankType=rank.top!=null?'monthly':'standard';
   card.id='honor-rank-'+rank.id;
   const header=make('div',{class:'wiki-honor-rank-head'});
   const marker=make('span',{class:'wiki-honor-rank-number wiki-honor-emblem',
-   'aria-label':tr('Эмблема ранга ','Rank emblem: ')+(en?rank.nameEn:rank.nameRu)});
+   role:'img','aria-label':tr('Эмблема ранга ','Rank emblem: ')+(en?rank.nameEn:rank.nameRu)});
   const src=honorIconSrc(rank.id);
   if(src)marker.append(make('img',{
    class:'wiki-honor-emblem-source',src,alt:'','aria-hidden':'true',
-   width:'35',height:'35',decoding:'async'}));
+   width:'27',height:'27',decoding:'async'}));
   header.append(marker);
   const rankTitle=make('div',{class:'wiki-honor-rank-name'});
   const name=en?rank.nameEn:rank.nameRu;
@@ -392,6 +397,31 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  monthly.append(editableText(node('p','wiki-honor-note',note),
   note,'honor.overview',en?'monthlyNoteEn':'monthlyNoteRu',true));
  browse.scrollTop=oldBrowseScroll;detail.scrollTop=oldDetailScroll;
+ // #detailContent is the real scroll plane, not the browser document.
+ // Use the last section crossing the reading line for wheel/keyboard/drag.
+ const scroller=detail.closest('#detailContent')||detail;
+ let frame=0;
+ const syncSection=()=>{
+  frame=0;
+  if(!detail.isConnected)return;
+  const readingLine=scroller.getBoundingClientRect().top+
+   Math.min(100,scroller.clientHeight*.22);
+  let current=sidebar[0][0];
+  for(const [id]of sidebar){
+   if(detail.querySelector('#honor-'+id)?.getBoundingClientRect().top<=readingLine)
+    current=id;
+  }
+  selectSection(current);
+ };
+ const onScroll=()=>{
+  if(!frame)frame=root.requestAnimationFrame(syncSection);
+ };
+ scroller.addEventListener('scroll',onScroll,{passive:true});
+ removeHonorScrollListener=()=>{
+  scroller.removeEventListener('scroll',onScroll);
+  if(frame)root.cancelAnimationFrame(frame);
+ };
+ syncSection();
 }
-root.PandoraHonorView=Object.freeze({render});
+root.PandoraHonorView=Object.freeze({render,stopObserving});
 })(typeof window==='undefined'?globalThis:window);

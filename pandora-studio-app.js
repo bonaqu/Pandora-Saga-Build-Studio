@@ -1579,6 +1579,9 @@ function guardEncyclopediaSearch(input){
  return input;
 }
 function renderWiki(root){
+ // Unsubscribe previous Honor scroll tracking when a chapter is replaced.
+ // Owner inline re-renders separately restart their own listener.
+ window.PandoraHonorView?.stopObserving?.();
  wikiRenderedRoot=root;
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
  // The list remains visible next to an article; a scroll control is more
