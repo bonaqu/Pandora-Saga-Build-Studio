@@ -2173,7 +2173,7 @@ function renderWiki(root){
     'aria-label':wt('Найти монстра или NPC','Find a monster or NPC'),
     placeholder:wt('Поиск по названию…','Search by name…'),autocomplete:'off'});
    const target=h('select',{class:'wiki-inline-select',
-    'aria-label':wt('Выбери источник','Choose source'),disabled:true});
+    'aria-label':wt('У кого получить','Source to obtain from'),disabled:true});
    const feedback=h('small',{class:'inline-owner-error',role:'status'});
    const hint=h('small',{class:'wiki-source-meta',text:''});
    const label=(text,control)=>h('label',{class:'wiki-owner-source-field'},[
