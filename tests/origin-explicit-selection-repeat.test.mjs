@@ -115,6 +115,8 @@ test('holding repeatedly adds points until release, leave, or a disabled cap',()
  button.dispatch('pointerleave');
  assert.equal(button.classes.has('is-repeating'),false);
  const previous=count;clock.advance(1000);assert.equal(count,previous);
+ button.dispatch('click',{detail:0});
+ assert.equal(count,previous+1,'a cancelled pointer gesture must not eat the next keyboard click');
  assert.equal(clock.pending(),0);
 });
 test('race passive selection flows to the book calculator, not only the visual checkmark',()=>{
