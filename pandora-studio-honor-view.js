@@ -3,7 +3,8 @@
 // Bilingual, source-labelled Honor article. All data is textContent only, so
 // editor-authored D1 prose cannot inject HTML or scripts.
 function render({browse,detail,make,lang='ru',article,editable=false,
- editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null}={}){
+ editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,
+ mapOptions=[],onOpenLocations=()=>{}}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
  const en=lang==='en',tr=(ru,english)=>en?english:ru,
   fmt=new Intl.NumberFormat(en?'en-US':'ru-RU');
@@ -81,28 +82,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  paragraph(overview,en?o.overviewEn:o.overviewRu,'honor.overview',
   en?'overviewEn':'overviewRu');
  const panels=make('div',{class:'wiki-honor-dual'});
- const honor=make('article',{class:'wiki-honor-resource'},[
-  node('strong','',tr('Честь','Honor')),
-  node('p','',tr('Расходуемый PvP-ресурс. Можно тратить в обмене; теряется при смерти.',
-  'Spendable PvP currency. Used for exchanges; can decrease on death.'))
- ]);
- const total=make('article',{class:'wiki-honor-resource'},[
-  node('strong','',tr('Вся честь','Total Honor')),
-  node('p','',tr('Заработанная за всё время честь: определяет ранги и рейтинги. Также может уменьшаться при смерти.',
-  'Lifetime earned Honor: determines ranks and leaderboards; may also decrease on death.'))
- ]);
- panels.append(honor,total);overview.append(panels);
- const patch=make('div',{class:'wiki-honor-patch'});
- patch.append(node('small','',tr('ИЗМЕНЕНИЕ ПРАВИЛ · 23.10.2026',
-  'RULE UPDATE · 23 OCT 2026')));
- const changeValue=en?o.currentEn:o.currentRu;
- const txt=editableText(node('p','',changeValue),changeValue,'honor.overview',
-  en?'currentEn':'currentRu',true);
- patch.append(txt);
- patch.append(make('a',{href:'https://pandorasaga-os.com/#news/8',
-  target:'_blank',rel:'noopener noreferrer',text:tr(
-   'Официальная новость об обновлении чести','Official Honor system announcement')}));
- overview.append(patch);
+ const resource=(label,copy,field)=>{
+  const card=make('article',{class:'wiki-honor-resource'});
+  card.append(node('strong','',label),
+   editableText(node('p','',copy),copy,'honor.overview',field,true));
+  return card;
+ };
+ panels.append(
+  resource(tr('Честь','Honor'),en?o.honorEn:o.honorRu,
+   en?'honorEn':'honorRu'),
+  resource(tr('Вся честь','Total Honor'),en?o.totalEn:o.totalRu,
+   en?'totalEn':'totalRu'));
+ overview.append(panels);
  const gain=section('gain','Получение и потеря чести','Earning and losing Honor');
  paragraph(gain,en?o.gainEn:o.gainRu,'honor.overview',en?'gainEn':'gainRu');
  gain.append(make('div',{class:'wiki-honor-joining'},[
@@ -118,17 +109,21 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   for(const [index,item]of items.entries()){
    const row=make('div',{class:'wiki-honor-list-row'});
    const names=make('div',{class:'wiki-honor-list-names'});
-   for(const [field,label]of [
-    [en?'nameEn':'nameRu',tr('Название','Name')],
-    ...(editable?[[en?'nameRu':'nameEn',tr('Вторая локаль','Other language')]]:[])
-   ]){
-    const text=item[field];
-    names.append(editableListText(node('span','',text),text,key,items,index,field));
-   }
+   // Show only the selected language. The opposite locale is edited after
+   // switching RU/EN in the global header, never concatenated on a row.
+   const field=en?'nameEn':'nameRu',value=item[field]||'';
+   names.append(editableListText(node('span','',value),value,key,items,index,field));
    row.append(names);
    if(isZone&&item.mapId){
-    const anchor=link(item.mapId,en?item.nameEn:item.nameRu);
-    if(anchor)row.append(anchor);
+    const anchor=link(item.mapId,'↗');
+    if(anchor){
+     anchor.classList.add('wiki-honor-open-location');
+     anchor.textContent='↗';
+     anchor.setAttribute('aria-label',
+      tr('Открыть локацию: ','Open location: ')+value);
+     anchor.setAttribute('title',tr('Открыть локацию','Open location'));
+     row.append(anchor);
+    }
    }
    if(editable){
     if(isZone){
@@ -136,17 +131,19 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       'aria-label':tr('Связь с локацией','Linked location'),
       onchange:event=>{
        const id=event.target.value||null;
-       const updated=items.map((row,n)=>n===index?{
-        ...row,...(id?{mapId:id}:{mapId:null})}:row);
+       const chosen=mapOptions.find(option=>option.id===id);
+       const updated=items.map((entry,n)=>n===index?{
+        ...entry,mapId:id,
+        ...(chosen?{nameRu:chosen.nameRu,nameEn:chosen.nameEn}:{})
+       }:entry);
        void Promise.resolve(saveList(key,updated)).catch(error=>showError(row,error));
       }});
-     for(const [id,label]of [
-      ['',tr('Без привязки','Unlinked')],
-      ['2005004',tr('Мальдия','Muldia')],['el-beht','El Beht'],
-      ['astir-underground',tr('Руины Астира','Astir Underground')]
-     ]){
-      const opt=make('option',{value:id,text:label});
-      if(id===item.mapId)opt.selected=true;select.append(opt);
+     select.append(make('option',{value:'',text:tr('Без привязки','Unlinked')}));
+     for(const candidate of mapOptions){
+      const opt=make('option',{value:candidate.id,
+       text:en?candidate.nameEn:candidate.nameRu});
+      if(candidate.id===item.mapId)opt.selected=true;
+      select.append(opt);
      }
      row.append(select);
     }
@@ -160,27 +157,66 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   wrapper.append(content);
   if(editable){
    const add=make('button',{type:'button',class:'wiki-owner-plus wiki-honor-add',
-    text:tr('+ Добавить','+ Add'),onclick:()=>{
+    text:isZone?tr('+ Связать локацию','+ Link location'):
+     tr('+ Добавить войну','+ Add war'),
+    onclick:()=>{
      if(wrapper.querySelector('.wiki-honor-new'))return;
      const form=make('div',{class:'wiki-honor-new'});
-     const ru=make('input',{type:'text',maxLength:140,placeholder:'Русское название',
-      'aria-label':'Русское название'});
-     const engl=make('input',{type:'text',maxLength:140,placeholder:'English name',
-      'aria-label':'English name'});
      const note=node('small','wiki-honor-error','');
-     const confirm=make('button',{type:'button',class:'wiki-owner-plus',
-      text:tr('Добавить','Add'),onclick:async()=>{
-       const nameRu=ru.value.trim(),nameEn=engl.value.trim();
-       if(!nameRu||!nameEn){note.textContent=tr('Заполни RU и EN','Enter RU and EN');return}
-       let id='custom-1',n=1;
-       while(items.some(item=>item.id===id))id='custom-'+(++n);
-       try{await saveList(key,[...items,{id,nameRu,nameEn}])}
-       catch(error){note.textContent=error?.message||String(error)}
-      }});
      const cancel=make('button',{type:'button',class:'wiki-owner-remove',
       text:tr('Отмена','Cancel'),onclick:()=>form.remove()});
-     form.append(ru,engl,confirm,cancel,note);wrapper.append(form);
-     ru.focus();
+     if(isZone){
+      const search=make('input',{type:'search',
+       'aria-label':tr('Поиск существующей локации','Search existing locations'),
+       placeholder:tr('Найти локацию…','Find a location…'),autocomplete:'off'});
+      const select=make('select',{class:'wiki-honor-location-select',
+       'aria-label':tr('Выбери существующую локацию','Choose an existing location')});
+      const fill=()=>{
+       const q=search.value.trim().toLocaleLowerCase();
+       const found=mapOptions.filter(option=>
+        !items.some(item=>item.mapId===option.id)&&
+        (!q||[option.nameRu,option.nameEn].some(name=>
+         name.toLocaleLowerCase().includes(q)))).slice(0,100);
+       select.replaceChildren(make('option',{value:'',text:found.length?
+        tr('Выбери локацию','Choose location'):
+        tr('Локации не найдены','No locations found')}));
+       for(const entry of found)select.append(make('option',{
+        value:entry.id,text:en?entry.nameEn:entry.nameRu}));
+       select.disabled=!found.length;
+      };
+      const submit=make('button',{type:'button',class:'wiki-owner-plus',
+       text:tr('Добавить','Add'),onclick:async()=>{
+        const selected=mapOptions.find(entry=>entry.id===select.value);
+        if(!selected){note.textContent=tr('Выбери локацию','Choose a location');return}
+        let id='custom-1',n=1;
+        while(items.some(item=>item.id===id))id='custom-'+(++n);
+        try{await saveList(key,[...items,{id,mapId:selected.id,
+         nameRu:selected.nameRu,nameEn:selected.nameEn}])}
+        catch(error){note.textContent=error?.message||String(error)}
+       }});
+      const create=make('button',{type:'button',class:'wiki-honor-create-location',
+       text:tr('Нет в списке? Создать в «Локациях»',
+        'Not listed? Create it in Locations'),
+       onclick:()=>onOpenLocations()});
+      form.append(search,select,submit,cancel,create,note);
+      search.addEventListener('input',fill);fill();search.focus();
+     }else{
+      const ru=make('input',{type:'text',maxLength:140,
+       placeholder:'Русское название','aria-label':'Русское название'});
+      const english=make('input',{type:'text',maxLength:140,
+       placeholder:'English name','aria-label':'English name'});
+      const submit=make('button',{type:'button',class:'wiki-owner-plus',
+       text:tr('Добавить','Add'),onclick:async()=>{
+        const nameRu=ru.value.trim(),nameEn=english.value.trim();
+        if(!nameRu||!nameEn){note.textContent=tr('Заполни RU и EN','Enter RU and EN');return}
+        let id='custom-1',n=1;
+        while(items.some(item=>item.id===id))id='custom-'+(++n);
+        try{await saveList(key,[...items,{id,nameRu,nameEn}])}
+        catch(error){note.textContent=error?.message||String(error)}
+       }});
+      form.append(ru,english,submit,cancel,note);ru.focus();
+     }
+     wrapper.append(form);
     }});
    wrapper.append(add);
   }
