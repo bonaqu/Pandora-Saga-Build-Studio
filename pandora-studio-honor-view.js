@@ -87,7 +87,6 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   'PvP · нации · звания · награды','PvP · nations · titles · rewards')));
  const overview=section('overview','Система чести','Honor system');
  const o=article.overview;
- const change=editable?' ✎':'';
  paragraph(overview,en?o.overviewEn:o.overviewRu,'honor.overview',
   en?'overviewEn':'overviewRu');
  const panels=make('div',{class:'wiki-honor-dual'});
@@ -105,10 +104,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  overview.append(panels);
  const gain=section('gain','Получение и потеря чести','Earning and losing Honor');
  paragraph(gain,en?o.gainEn:o.gainRu,'honor.overview',en?'gainEn':'gainRu');
+ const joiningValue=en?o.joiningEn:o.joiningRu;
  gain.append(make('div',{class:'wiki-honor-joining'},[
   node('strong','',tr('+1 000 чести','+1,000 Honor')),
-  node('small','',tr('При вступлении в любую из трёх наций',
-   'On joining any of the three nations'))
+  editableText(node('small','',joiningValue),joiningValue,
+   'honor.overview',en?'joiningEn':'joiningRu',true)
  ]));
  function listField(items,kind,captionRu,captionEn){
   const isZone=kind==='zones',key='honor.'+kind;
