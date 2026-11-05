@@ -25,7 +25,8 @@ test('hover lifecycle cancels stale previews and retains instant keyboard access
   assert.ok(ui.includes("target.addEventListener('"+event+"',remove)"),event);
  for(const event of ['hashchange','popstate','blur'])
   assert.ok(ui.includes("root.addEventListener?.('"+event+"',dismissPreview)"),event);
- assert.match(ui,/document\.addEventListener\?\.\('scroll',dismissPreview/);
+ assert.match(ui,/document\.addEventListener\?\.\('scroll',\(\)=>\{/);
+ assert.match(ui,/if\(target\.isConnected&&target\.matches\(':hover'\)\)queuePreview\(target,show\)/);
  assert.match(ui,/document\.addEventListener\?\.\('visibilitychange'/);
  assert.match(ui,/clearTimeout\(pendingPreview\.timer\)/);
  assert.match(ui,/if\(target\.matches\(':focus-visible'\)\)show\(\)/);
