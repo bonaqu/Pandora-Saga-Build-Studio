@@ -178,7 +178,7 @@
  .wiki-owner-effect-value{flex:0 0 auto;min-width:74px;margin-left:auto}
 }
 .wiki-conditional-bonuses{display:grid;gap:7px;margin:11px 0 0;
- padding-top:12px;border-top:1px solid rgba(224,172,104,.25)}
+ padding-top:12px;border-top:1px solid rgba(224,172,104,.25);position:relative}
 .wiki-conditional-bonuses>h4{color:#e8c489;font:600 16px Georgia,serif;
  margin:0 0 1px}
 .wiki-conditional-condition{color:#cda974;font-size:.8rem;margin:0 0 4px;
@@ -190,12 +190,20 @@
  text-decoration-thickness:2px;text-underline-offset:4px;text-decoration-color:#d6ad6f;
  cursor:help;color:#f6d69d}
 .wiki-conditional-term:focus-visible{outline:2px solid #edc27c;outline-offset:3px}
-.wiki-phoenix-explanation{margin:-2px 0 9px;padding:8px 11px;border:1px solid #80603b;
- background:rgba(30,22,15,.85);border-radius:7px;line-height:1.5;
- font-size:.81rem;color:#e8d2ae;display:none}
+/* Overlay rather than toggling display in the document flow. Before this,
+   opening the tooltip moved its trigger under the cursor, causing infinite
+   hover/leave oscillation and layout flicker. */
+.wiki-phoenix-explanation{
+ position:absolute;z-index:14;top:100%;left:0;right:0;
+ margin:5px 0 0;padding:8px 11px;border:1px solid #80603b;
+ background:#261b13;border-radius:7px;line-height:1.5;
+ font-size:.81rem;color:#e8d2ae;visibility:hidden;opacity:0;
+ pointer-events:none;box-shadow:0 9px 22px #000c;
+}
 .wiki-conditional-row:has(.wiki-conditional-term:hover)+.wiki-phoenix-explanation,
 .wiki-conditional-row:has(.wiki-conditional-term:focus-visible)+.wiki-phoenix-explanation{
- display:block}
+ visibility:visible;opacity:1;
+}
 .wiki-chest-opening{display:block}
 .wiki-chest-opening>strong{display:block;margin-bottom:10px}
 .wiki-chest-opening-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
