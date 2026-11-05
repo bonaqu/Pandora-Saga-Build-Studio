@@ -6,7 +6,7 @@ test('wiki selects records without recreating list and triggering two hash reren
  const app=read('pandora-studio-app.js');
  assert.match(app,/wikiRenderSelected=\(\)=>\{/);
  assert.match(app,/draw\(present\)/);
- assert.match(app,/history\.pushState\(\{\.\.\.currentState,psWikiEntry:true,/);
+ assert.match(app,/history\.pushState\(\{\.\.\.history\.state,psWikiEntry:true,psWikiPosition:null\}/);
  assert.match(app,/if\(sameCategory\)wikiRenderSelected\(\)/);
  assert.match(app,/const draw=\(detailOnly=false\)=>/);
  assert.match(app,/if\(!detailOnly\)browse\.replaceChildren\(\)/);
@@ -36,7 +36,7 @@ test('return navigation captures the previous view and respects direct links',()
  const app=read('pandora-studio-app.js');
  const css=read('pandora-studio-wiki-history.css');
  assert.match(app,/const fromView=\{tab:activeTab/);
- assert.match(app,/history\.replaceState\(\{\.\.\.oldState,psWikiReturn:/);
+ assert.match(app,/history\.replaceState\(\{\.\.\.oldState,psWikiPosition:fromPosition/);
  assert.match(app,/if\(location\.hash!==destination\)/);
  assert.match(app,/psWikiEntry===true/);
  assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)&&history\.state\?\.psWikiEntry===true\)\s*history\.back\(\)/);
@@ -78,7 +78,7 @@ test('all Wiki records reuse the Honor Back button and one source of CSS styles'
  assert.match(app,/detail\.append\(wikiBackButton\(backChapters\[type\]/);
  assert.match(app,/backButton:wikiBackButton/);
  assert.match(app,/const icon=skillIcon\(rec\.branch,id,rec\);[\s\S]*?const back=detail\.querySelector\('\.wiki-return-button'\);/);
- assert.match(honor,/backButton\(tr\('Чести','Honor'\),onWarReturn\)/);
+ assert.match(honor,/backButton\(tr\('Чести','Honor'\)\)/);
  assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)&&history\.state\?\.psWikiEntry===true\)/);
  assert.match(app,/else openWikiChapterList\(\)/);
  for(const kind of ['item','monster','map','npc','chest','skill','soul','instance'])
@@ -95,4 +95,18 @@ test('Honor resolves item and location links after a late catalog fetch',()=>{
  const app=read('pandora-studio-app.js');
  assert.match(app,/if\(!wikiIndex\)\{\s*void loadWiki\(\)\.then\(\(\)=>\{/);
  assert.match(app,/if\(root\.isConnected&&activeTab==='wiki'&&wikiSelection\.type==='honor'\)\s*renderHonor\(\)/);
+});
+
+test('history captures and restores every wiki chapter, record, search and both scroll containers',()=>{
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/function wikiPosition\(\)/);
+ assert.match(app,/chapter:wikiSelection\.type,id:wikiSelection\.id/);
+ assert.match(app,/inner:\$\('detailContent'\)\?\.scrollTop/);
+ assert.match(app,/browse:\$\('detailContent'\)\?\.querySelector\('\.wiki-list'\)\?\.scrollTop/);
+ assert.match(app,/function restoreWikiFilters\(state,type,id\)/);
+ assert.match(app,/function restoreWikiPosition\(state\)/);
+ assert.match(app,/scroller\.scrollTo\(\{top:Math\.max\(0,position\.inner\),behavior:'instant'\}\)/);
+ assert.match(app,/browse\.scrollTop=Math\.max\(0,position\.browse\)/);
+ assert.match(app,/restoreWikiPosition\(event\.state\)/);
+ assert.doesNotMatch(app,/psWikiHonorScroll|psWikiHonorOrigin/);
 });
