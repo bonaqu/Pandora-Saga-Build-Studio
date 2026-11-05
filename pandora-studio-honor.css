@@ -64,6 +64,7 @@
  outline:2px solid #e3ba83;outline-offset:2px;
 }
 /* Location names themselves open the canonical map page. */
+.wiki-honor-list-row .wiki-honor-war-link.wiki-link,
 .wiki-honor-list-row .wiki-honor-location-link.wiki-link{
  display:inline;width:auto;max-width:100%;min-height:0;min-width:0;
  margin:0;padding:0;border:0;border-radius:0;box-shadow:none;
@@ -71,10 +72,13 @@
  text-decoration:underline;text-decoration-color:#bd9057;
  text-underline-offset:3px;overflow-wrap:anywhere;
 }
+.wiki-honor-list-row .wiki-honor-war-link.wiki-link:hover,
 .wiki-honor-list-row .wiki-honor-location-link.wiki-link:hover,
+.wiki-honor-list-row .wiki-honor-war-link.wiki-link:focus-visible,
 .wiki-honor-list-row .wiki-honor-location-link.wiki-link:focus-visible{
  background:transparent;color:#ffe3b1;text-decoration-color:currentColor;
 }
+.wiki-honor-list-row .wiki-honor-war-link.wiki-link:focus-visible,
 .wiki-honor-list-row .wiki-honor-location-link.wiki-link:focus-visible{
  outline:2px solid #eac58a;outline-offset:3px;
 }
@@ -250,4 +254,31 @@
  .wiki-layout-honor>.wiki-list-panel>.wiki-list{
   max-height:none;overflow:visible;
  }
+}
+
+/* PvP wars are own Honor wiki records, not imaginary location cards. */
+.wiki-honor-war-rename{
+ border:0;background:transparent;color:#c39b61;cursor:pointer;
+ padding:2px 5px;min-height:23px;font-size:12px;
+}
+.wiki-honor-war-rename:hover,.wiki-honor-war-rename:focus-visible{
+ color:#ffe0aa;background:#44301e;
+}
+.wiki-honor-war-return{
+ display:inline-flex;align-items:center;width:max-content;max-width:100%;
+ padding:6px 10px;margin:0 0 15px;
+ border:1px solid #896443;border-radius:4px;
+ background:#302319;color:#f0d1a1;cursor:pointer;font-size:12px;
+}
+.wiki-honor-war-return:hover,.wiki-honor-war-return:focus-visible{
+ background:#48301f;border-color:#ddb278;color:#ffe5b7;
+}
+.wiki-honor-war-eyebrow{
+ text-transform:uppercase;letter-spacing:.12em;color:#bfa17a;
+ font:650 10px/1.5 Manrope,Arial,sans-serif;
+}
+.wiki-page .wiki-honor-war-title{margin:4px 0 13px}
+.wiki-honor-war-copy{
+ padding:12px;border:1px solid #634d37;border-radius:5px;
+ background:#261b13;
 }
