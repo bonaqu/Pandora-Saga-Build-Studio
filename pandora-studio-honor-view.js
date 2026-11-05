@@ -2,8 +2,66 @@
 'use strict';
 // Bilingual, source-labelled Honor article. All data is textContent only, so
 // editor-authored D1 prose cannot inject HTML or scripts.
+// A small vector vocabulary follows the actual rank silhouettes while using
+// the site's gold/copper palette. No third-party assets or guessed image IDs.
+function honorEmblem(id){
+ const ns='http://www.w3.org/2000/svg';
+ const svg=document.createElementNS(ns,'svg');
+ svg.setAttribute('viewBox','0 0 56 40');
+ svg.setAttribute('class','wiki-honor-emblem-svg');
+ svg.setAttribute('aria-hidden','true');
+ const shape=(tag,attributes)=>{
+  const element=document.createElementNS(ns,tag);
+  for(const [key,value]of Object.entries(attributes))
+   element.setAttribute(key,String(value));
+  svg.append(element);return element;
+ };
+ const gold='#eac488',edge='#7c502d',light='#fff0bd';
+ if(id>=0&&id<=4){
+  const count=id+1;
+  for(let i=0;i<count;i++){
+   const x=28+(i-(count-1)/2)*10,y=20+(i%2===0?0:1);
+   shape('polygon',{points:`${x},${y-7} ${x+5},${y} ${x},${y+7} ${x-5},${y}`,
+    fill:gold,stroke:edge,'stroke-width':1.2});
+   shape('circle',{cx:x,cy:y-1,r:1,fill:light});
+  }
+ }else if(id===5){
+  const vertices=[];
+  for(let i=0;i<24;i++){
+   const angle=i*Math.PI/12-Math.PI/2,r=i%2?11:17;
+   vertices.push((28+Math.cos(angle)*r).toFixed(2)+','+
+    (20+Math.sin(angle)*r).toFixed(2));
+  }
+  shape('polygon',{points:vertices.join(' '),fill:gold,stroke:edge,
+   'stroke-width':1.4});
+  shape('polygon',{points:'28,9 38,20 28,31 18,20',fill:'#6a4225',
+   stroke:light,'stroke-width':1.3});
+  shape('circle',{cx:28,cy:20,r:3,fill:light});
+ }else if(id<=10){
+  const count=id-5;
+  for(let i=0;i<count;i++){
+   const x=28+(i-(count-1)/2)*10;
+   const d=`M ${x+3} 11 A 9 9 0 1 0 ${x+3} 29 Q ${x-4} 20 ${x+3} 11 Z`;
+   shape('path',{d,fill:gold,stroke:edge,'stroke-width':1.2});
+   shape('path',{d:`M ${x-4} 15 Q ${x-8} 20 ${x-4} 25`,fill:'none',
+    stroke:light,'stroke-width':.9});
+  }
+ }else{
+  shape('path',{d:'M28 3 45 11 42 28 28 37 14 28 11 11Z',
+   fill:'#744c2d',stroke:gold,'stroke-width':1.6});
+  shape('path',{d:'M19 29 37 10 M20 11 36 29',fill:'none',
+   stroke:light,'stroke-width':2.8,'stroke-linecap':'round'});
+  shape('path',{d:'M33 9 37 5 41 9 37 13Z',fill:gold,stroke:edge,
+   'stroke-width':1});
+  shape('path',{d:'M15 11 20 11 20 16 M33 30 40 30',fill:'none',
+   stroke:gold,'stroke-width':2});
+  shape('circle',{cx:28,cy:20,r:3,fill:gold,stroke:edge,
+   'stroke-width':1});
+ }
+ return svg;
+}
 function render({browse,detail,make,lang='ru',article,editable=false,
- editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,
+ editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,cloakLink=()=>null,
  label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
  mapOptions=[],onOpenLocations=()=>{}}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
@@ -111,19 +169,6 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const o=article.overview;
  paragraph(overview,en?o.overviewEn:o.overviewRu,'honor.overview',
   en?'overviewEn':'overviewRu');
- const panels=make('div',{class:'wiki-honor-dual'});
- const resource=(label,copy,field)=>{
-  const card=make('article',{class:'wiki-honor-resource'});
-  card.append(node('strong','',label),
-   editableText(node('p','',copy),copy,'honor.overview',field,true));
-  return card;
- };
- panels.append(
-  resource(tr('Честь','Honor'),en?o.honorEn:o.honorRu,
-   en?'honorEn':'honorRu'),
-  resource(tr('Вся честь','Total Honor'),en?o.totalEn:o.totalRu,
-   en?'totalEn':'totalRu'));
- overview.append(panels);
  const gain=section('gain','Получение и потеря чести','Earning and losing Honor');
  paragraph(gain,en?o.gainEn:o.gainRu,'honor.overview',en?'gainEn':'gainRu');
  function listField(items,kind,captionRu,captionEn){
@@ -305,11 +350,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   card.dataset.rankType=rank.top!=null?'monthly':'standard';
   card.id='honor-rank-'+rank.id;
   const header=make('div',{class:'wiki-honor-rank-head'});
-  const honorMark=rank.id<=4?'◆'.repeat(rank.id+1):
-   rank.id===5?'✺':rank.id<=8?'☾'.repeat(rank.id-5):
-   String(rank.id+1).padStart(2,'0');
-  header.append(node('span','wiki-honor-rank-number wiki-honor-emblem',
-   honorMark));
+  const marker=make('span',{class:'wiki-honor-rank-number wiki-honor-emblem',
+   'aria-label':tr('Эмблема ранга ','Rank emblem: ')+(en?rank.nameEn:rank.nameRu)});
+  marker.append(honorEmblem(rank.id));
+  header.append(marker);
   const rankTitle=make('div',{class:'wiki-honor-rank-name'});
   const name=en?rank.nameEn:rank.nameRu;
   rankTitle.append(editableText(node('strong','',name),name,
@@ -360,7 +404,19 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    node('small','',tr('Награды','Rewards')));
   row.append(head);
   const entry=monthlyRows[index]||'';
-  const content=node('p','wiki-honor-copy wiki-honor-cloak-list',entry);
+  const content=node('p','wiki-honor-copy wiki-honor-cloak-list','');
+  const ruRows=String(o.cloaksRu||'').split(/\n\s*\n|\n(?=Топ-|Top )/);
+  const parseLine=line=>/^(.*?[—–]\s*)(.+?)([;,.]?\s*)$/.exec(line);
+  for(const [lineIndex,line]of entry.split('\n').entries()){
+   if(lineIndex)content.append(document.createTextNode('\n'));
+   const parts=parseLine(line);
+   if(!parts){content.append(document.createTextNode(line));continue}
+   const canonical=parseLine(ruRows[index]?.split('\n')[lineIndex]||'')?.[2]||null;
+   const anchor=cloakLink(parts[2],canonical);
+   if(anchor)anchor.addEventListener('dblclick',event=>event.stopPropagation());
+   content.append(document.createTextNode(parts[1]),anchor||
+    document.createTextNode(parts[2]),document.createTextNode(parts[3]));
+  }
   if(editable){
    // One editable nation group; merge with two unchanged groups on save.
    const startEdit=()=>editText(content,entry,true,next=>{
@@ -370,7 +426,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    content.classList.add('wiki-honor-editable');
    content.setAttribute('tabindex','0');
    content.setAttribute('title',tr('Двойной клик — изменить','Double-click to edit'));
-   content.addEventListener('dblclick',startEdit);
+   content.addEventListener('dblclick',event=>{
+    if(event.target.closest?.('a'))return;
+    startEdit();
+   });
    content.addEventListener('keydown',event=>{
     if(event.key==='F2'){event.preventDefault();startEdit()}
    });
