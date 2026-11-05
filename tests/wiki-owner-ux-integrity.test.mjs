@@ -79,7 +79,7 @@ test('player UI avoids internal IDs and editing retains selected wiki detail con
  assert.doesNotMatch(tooltip,/rows\.push\(\['ID'/);
  assert.match(app,/wikiRenderSelected\?\.\(\)/);
  assert.match(app,/appendAcquisitionEditor\(id\)/);
- assert.match(app,/wiki-chest-groups wiki-chest-flat/);
+ assert.match(app,/wiki-chest-groups wiki-chest-board/);
  assert.match(app,/const existingIndex=overwriteId\?builds\.findIndex/);
  assert.match(style,/\.wiki-soul-price/);
  assert.match(style,/\.wiki-chest-flat/);

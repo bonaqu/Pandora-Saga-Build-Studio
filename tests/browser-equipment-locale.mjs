@@ -38,6 +38,16 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.locator('.wiki-history-back').click();
   await page.waitForFunction(expected=>location.hash===expected,originalHash);
   assert.equal(await page.locator('#detailPanel').getAttribute('aria-modal'),'true');
+  await rows.first().click();
+  await page.waitForFunction(expected=>location.hash===expected,chosenHash);
+  assert.equal(await page.locator('.wiki-page-nav').count(),1);
+  await page.locator('.wiki-chapter-list').click();
+  await page.waitForFunction(()=>location.hash==='');
+  assert.equal(await page.locator('.wiki-history-back').count(),0);
+  await page.goBack();
+  await page.waitForFunction(expected=>location.hash===expected,chosenHash);
+  await page.goForward();
+  await page.waitForFunction(()=>location.hash==='');
   assert.equal(await page.locator('#dockLocale').count(),0);
   assert.equal(await page.locator('#dockTabs').count(),0);
   assert.equal(await page.locator('#nav [data-tab="wiki"]').isHidden(),true,
@@ -124,10 +134,20 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await page.locator('.wiki-requirement-copy').innerText(),/Вложено/);
   // Chest contents are shown as one visible list; original roll boundaries remain in the data.
   await page.goto(base+'/#wiki/chest/51003',{waitUntil:'domcontentloaded'});
-  await page.locator('.wiki-chest-group').first().waitFor({state:'visible',timeout:20000});
-  assert.equal(await page.locator('.wiki-chest-group').count(),5);
-  assert.equal(await page.locator('.wiki-chest-group-summary:visible').count(),0);
-  assert.equal(await page.locator('.wiki-chest-group').nth(1).getAttribute('open'),'');
+  await page.locator('.wiki-chest-listed-100 .wiki-chest-reward').first().waitFor({state:'visible',timeout:20000});
+  assert.equal(await page.locator('.wiki-chest-listed-100 .wiki-chest-reward').count(),5,
+   'Five separate 100% source rows are grouped only visually');
+  assert.equal(await page.locator('.wiki-chest-group').count(),0,
+   'Single 100%-listed rolls do not waste space as standalone sections');
+  assert.match(await page.locator('.wiki-chest-collection-head').innerText(),/100%/);
+  const nextChest=page.locator('.wiki-chest-reward-nested .wiki-link').first();
+  assert.equal(await nextChest.count(),1,'The source chest chain is explicitly marked');
+  await nextChest.click();
+  await page.waitForFunction(()=>location.hash.startsWith('#wiki/chest/51004'));
+  assert.ok(await page.locator('.wiki-chest-alternatives').count()>=1);
+  assert.equal(await page.locator('.wiki-chest-alternatives .wiki-chest-reward').count(),7);
+  await page.locator('.wiki-history-back').click();
+  await page.waitForFunction(()=>location.hash==='#wiki/chest/51003');
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 5/);
   // Level-60 boxes exist even without an invented loot table.
   await page.goto(base+'/#wiki/chest/51010',{waitUntil:'domcontentloaded'});
@@ -138,13 +158,14 @@ export async function runEquipmentLocaleSmoke(browser,base){
   // The same-category transition must render actual rewards of the next chest,
   // not the ordinary item record with no chest contents.
   await page.goto(base+'/#wiki/chest/51003',{waitUntil:'domcontentloaded'});
-  await page.locator('.wiki-chest-group').first().waitFor({state:'visible',timeout:20000});
+  await page.locator('.wiki-chest-listed-100 .wiki-chest-reward').first().waitFor({state:'visible',timeout:20000});
   assert.equal(await page.locator('.wiki-chest-group-summary:visible').count(),0);
-  await page.locator('.wiki-chest-group').nth(4).locator('.wiki-chest-reward .wiki-link').first().click();
+  await page.locator('.wiki-chest-reward-nested .wiki-link').first().click();
   await page.waitForFunction(()=>location.hash.startsWith('#wiki/chest/51004'));
   assert.match(await page.locator('.wiki-page h3').innerText(),/Шкатулка охотника/);
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 10/);
-  assert.equal(await page.locator('.wiki-chest-group').count(),5);
+  assert.equal(await page.locator('.wiki-chest-group').count(),1);
+  assert.equal(await page.locator('.wiki-chest-alternatives .wiki-chest-reward').count(),7);
   // Location chests have real OS probabilities in the NPC chest dataset,
   // and must display them just like ordinary inventory boxes.
   await page.goto(base+'/#wiki/chest/52011',{waitUntil:'domcontentloaded'});

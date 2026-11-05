@@ -1539,6 +1539,22 @@ function openWiki(type,id,highlight=null){
  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
  saveView();
 }
+function openWikiChapterList(){
+ const chapter=wikiSelection.type;
+ if(!['item','monster','map','npc','chest','skill','soul','instance'].includes(chapter))return;
+ const listView={type:chapter,itemType:wikiItemType,search:wikiSearch,shown:wikiShown};
+ const previous=history.state&&typeof history.state==='object'?history.state:{};
+ // Back reopens the current record; Forward returns to this chapter list.
+ history.pushState({...previous,psWikiEntry:false,psWikiList:listView},'',
+  location.pathname+location.search);
+ wikiSelection={type:chapter,id:null,highlight:null};
+ activeTab='wiki';
+ for(const btn of document.querySelectorAll('[data-tab]'))
+  btn.classList.toggle('active',btn.dataset.tab==='wiki');
+ renderDetails();
+ if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+ saveView();
+}
 function wikiLink(text,type,id,highlight=null){
  const displayId=wikiIndex?.canonical?.(type,id)||String(id);
  const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(displayId)+(highlight==null?'':'/'+encodeURIComponent(highlight));
@@ -1602,7 +1618,9 @@ function renderWiki(root){
      wikiSelection={type:'item',id:null,highlight:null};
      wikiItemType=key==='utility'?'utility':'equipment';
     }else wikiSelection={type:key,id:null,highlight:null};
-    wikiSearch='';wikiShown=100;renderDetails();
+    wikiSearch='';wikiShown=100;
+    if(location.hash.startsWith('#wiki/'))openWikiChapterList();
+    else renderDetails();
    }}));
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
@@ -2309,12 +2327,34 @@ function renderWiki(root){
     skill:'Skill',soul:'Soul',instance:'Dungeon',chest:'Chest'}:
    {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
-   if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true){
-    detail.append(h('button',{type:'button',class:'button-action wiki-history-back',
+   const listNames=lang==='en'?{
+    item:wikiItemType==='utility'?'Effect items':'Equipment',
+    monster:'Monsters',map:'Locations',npc:'NPC trades',chest:'Chests',
+    instance:'Dungeons',skill:'Skills',soul:'Souls'
+   }:{
+    item:wikiItemType==='utility'?'Предметы эффектов':'Экипировка',
+    monster:'Монстры',map:'Локации',npc:'NPC-обмен',chest:'Сундуки',
+    instance:'Подземелья',skill:'Навыки',soul:'Души'
+   };
+   const navigate=h('nav',{class:'wiki-page-nav',
+    'aria-label':wt('Навигация по энциклопедии','Encyclopedia navigation')});
+   navigate.append(h('span',{class:'wiki-page-nav-trail'},[
+    h('span',{class:'wiki-page-nav-origin',text:wt('Энциклопедия','Encyclopedia')}),
+    h('span',{'aria-hidden':'true',text:'›'}),
+    h('span',{class:'wiki-page-nav-chapter',text:listNames[type]||typeLabel[type]})
+   ]));
+   const navActions=h('div',{class:'wiki-page-nav-actions'});
+   if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true)
+    navActions.append(h('button',{type:'button',class:'wiki-history-back wiki-nav-button',
      text:wt('← Назад','← Back'),
      'aria-label':wt('Вернуться к предыдущему экрану','Return to previous view'),
      onclick:()=>history.back()}));
-   }
+   navActions.append(h('button',{type:'button',class:'wiki-nav-button wiki-chapter-list',
+    text:wt('☷ К списку','☷ To list'),
+    'aria-label':wt('Открыть список раздела «'+listNames[type]+'»',
+     'Open '+listNames[type]+' list'),
+    onclick:openWikiChapterList}));
+   navigate.append(navActions);detail.append(navigate);
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'item.'+id:null;
@@ -2327,7 +2367,6 @@ function renderWiki(root){
      adminEditing&&lang==='en'&&type==='skill'?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'nameEn':'name'}:{})});
-   detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
    detail.append(heading);
    if(adminEditing&&adminToken){
     detail.append(h('p',{class:'wiki-owner-instruction',
@@ -2419,7 +2458,10 @@ function renderWiki(root){
 
   if(type==='item'||type==='chest'||type==='soul'){
     const img=wikiImage(wikiIcon(type,id,rec),'wiki-record-icon wiki-item-portrait',type);
-    if(img)detail.prepend(img);
+    if(img){
+     const nav=detail.querySelector('.wiki-page-nav');
+     if(nav)nav.after(img);else detail.prepend(img);
+    }
   }
   const described=type==='chest'?wikiData.items?.[id]:rec;
   const englishDescription=lang==='en'?(described?.descEn||rec?.descEn||officialEnglish?.[
@@ -4054,53 +4096,88 @@ function renderWiki(root){
       'Reward contents are not yet specified in the game catalog.'
      )}));
     }
-    const gallery=h('div',{class:'wiki-chest-groups wiki-chest-flat'});
+    const chestIds=new Set(Object.keys(wikiIndex.records('chest')||{}));
+    const chestView=window.PandoraStudioChestPresentation.analyze(groups,chestIds);
+    const gallery=h('div',{class:'wiki-chest-groups wiki-chest-board'});
+    const certainBoard=h('section',{class:'wiki-chest-collection wiki-chest-listed-100'});
+    certainBoard.append(h('div',{class:'wiki-chest-collection-head'},[
+     h('strong',{text:wt('Награды с шансом 100%','Rewards listed at 100%')}),
+     h('small',{text:chestView.listed100.length+' '+
+      wt('отдельных розыгрышей','separate roll groups')})
+    ]));
+    const certainItems=h('div',{class:'wiki-chest-assured-grid'});
+    certainBoard.append(certainItems);
     for(const [i,group]of groups.entries()){
+     const listedSingle=group.length===1&&group[0]?.p===100;
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
       h('span',{class:'wiki-chest-group-mark','aria-hidden':'true',text:String(i+1)}),
-      h('span',{class:'wiki-chest-group-name',text:wt('Группа ','Group ')+(i+1)}),
-      h('small',{text:group.length===1?wt('1 предмет','1 item'):
-       group.length+' '+wt('вариантов','options')}),
+      h('span',{class:'wiki-chest-group-name',
+       text:group.length>1?wt('Варианты · группа ','Options · group ')+(i+1):
+        wt('Розыгрыш ','Roll ')+(i+1)}),
+      h('small',{text:group.length===1?(listedSingle?
+       wt('100% по таблице','Listed at 100%'):wt('1 предмет','1 item')):
+       group.length+' '+wt('вариантов','listed options')}),
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
      const options=h('div',{class:'wiki-chest-options'});
      for(const [rowIndex,row] of group.entries()){
+      const nextChest=chestIds.has(String(row.i))&&String(row.i)!==String(id);
       const option=h('div',{class:'wiki-chest-reward'+
-       (wikiSelection.highlight===String(row.i)?' highlighted':'')});
-      option.append(itemLink(row.i,dataName('item',row.i),id));
+       (nextChest?' wiki-chest-reward-nested':'')+
+       (wikiSelection.highlight===String(row.i)?' highlighted':''),
+       'data-roll-group':String(i+1)});
+      const rewardMain=h('div',{class:'wiki-chest-reward-main'},[
+       itemLink(row.i,dataName('item',row.i),id)
+      ]);
+      if(nextChest)rewardMain.append(h('small',{class:'wiki-chest-nested-note',
+       text:wt('↳ Следующая шкатулка','↳ Next chest')}));
+      option.append(rewardMain);
+      const rewardMeta=h('div',{class:'wiki-chest-reward-meta'});
       if(adminEditing&&adminToken){
        const quantity=h('span',{class:'wiki-reward-quantity wiki-edit-value',
-        text:'×'+(row.n??1),title:'Двойной клик — изменить количество'});
+        text:'×'+(row.n??1),
+        'aria-label':wt('Количество. Двойной клик — изменить',
+         'Quantity. Double-click to edit')});
+       window.PandoraGuideTooltip?.attach(quantity,
+        wt('Двойной клик — изменить количество','Double-click to edit quantity'),
+        {hoverDelay:1000});
        quantity.ondblclick=e=>{e.preventDefault();
         editWikiValue(quantity,row.n??1,{type:'number',min:1,max:999999,integer:true,
          onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
           g.map((r,ri)=>ri===rowIndex?{...r,n}:r)))});
        };
-       option.append(quantity);
-      }else if(row.n!=null&&row.n!==1)option.append(h('span',{class:'wiki-reward-quantity',
+       rewardMeta.append(quantity);
+      }else if(row.n!=null&&row.n!==1)rewardMeta.append(h('span',{class:'wiki-reward-quantity',
        text:'×'+row.n}));
-      if(row.plus!=null&&row.plus>0)option.append(h('small',{class:'wiki-reward-enhance',
+      if(row.plus!=null&&row.plus>0)rewardMeta.append(h('small',{class:'wiki-reward-enhance',
        text:'+'+row.plus}));
-      if(row.soul!=null&&row.soul>0)option.append(h('small',{class:'wiki-reward-enhance',
+      if(row.soul!=null&&row.soul>0)rewardMeta.append(h('small',{class:'wiki-reward-enhance',
        text:wt('Душ: ','Souls: ')+row.soul}));
       if(adminEditing&&adminToken){
        const chance=h('small',{class:'wiki-reward-percent wiki-edit-value',
-        title:'Двойной клик — изменить вероятность внутри группы',
-        text:row.p==null?'Шанс не указан':row.p+'%'});
+        text:window.PandoraStudioChestPresentation.chance(row.p,lang),
+        'aria-label':wt('Шанс внутри группы. Двойной клик — изменить',
+         'Chance within this roll. Double-click to edit')});
+       window.PandoraGuideTooltip?.attach(chance,
+        wt('Двойной клик — изменить шанс внутри группы',
+         'Double-click to edit the chance within this group'),{hoverDelay:1000});
        chance.ondblclick=e=>{e.preventDefault();
-        editWikiValue(chance,row.p??0,{type:'number',min:0,max:100,
+        editWikiValue(chance,row.p,{type:'number',min:0,max:100,
          onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
           g.map((r,ri)=>ri===rowIndex?{...r,p:n}:r)))});
        };
-       option.append(chance);
-       option.append(h('button',{type:'button',class:'wiki-owner-remove',
+       rewardMeta.append(chance);
+       rewardMeta.append(h('button',{type:'button',class:'wiki-owner-remove',
         text:'×','aria-label':'Удалить предмет из сундука',
         onclick:()=>void changeChest(groups.map((g,gi)=>gi!==i?g:
          g.filter((_,ri)=>ri!==rowIndex)))
          .catch(e=>showStudioToast(e.message,'warning'))}));
-      }else if(row.p!=null)option.append(h('small',{class:'wiki-reward-percent'+
-       (row.p===100?' certain':''),title:wt('Вероятность внутри группы','Probability within group'),
-       text:row.p+'%'}));
+      }else rewardMeta.append(h('small',{class:'wiki-reward-percent'+
+       (row.p===100?' certain':'')+(row.p==null?' unknown':''),
+       'aria-label':wt('Шанс внутри группы: ','Chance within group: ')+
+        window.PandoraStudioChestPresentation.chance(row.p,lang),
+       text:window.PandoraStudioChestPresentation.chance(row.p,lang)}));
+      option.append(rewardMeta);
       options.append(option);
      }
      if(adminEditing&&adminToken){
@@ -4111,10 +4188,16 @@ function renderWiki(root){
        text:'Удалить группу',onclick:()=>void changeChest(groups.filter((_,gi)=>gi!==i))
         .catch(e=>showStudioToast(e.message,'warning'))}));
      }
-     const section=h('details',{class:'wiki-chest-group'},[heading,options]);
+     const section=h('details',{class:'wiki-chest-group'+
+      (group.length>1?' wiki-chest-alternatives':'')},[heading,options]);
      section.open=true;
-     gallery.append(section);
+     if(!adminEditing&&!adminToken&&listedSingle)certainItems.append(options.firstElementChild);
+     else gallery.append(section);
     }
+    if(!adminEditing&&!adminToken&&chestView.listed100.length)gallery.prepend(certainBoard);
+    if(groups.length)detail.append(h('p',{class:'wiki-chest-probability-note',
+     text:wt('Шансы относятся к отдельным группам розыгрыша. 100% — значение из игровой таблицы, без учёта дополнительных условий получения.',
+      'Chances refer to separate roll groups. Listed 100% values do not account for possible reward conditions.')}));
     detail.append(gallery);
     if(adminEditing&&adminToken)detail.append(h('button',{type:'button',
      class:'wiki-owner-plus wiki-add-source',text:'+ Предмет',
@@ -5527,7 +5610,8 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   if(finished||saving)return;
   const raw=control.value;
   const value=type==='number'?(raw.trim()===''?null:Number(raw)):raw.trim();
-  if(type==='number'&&(value===null||!Number.isFinite(value)||value<min||value>max||
+  if(type==='number'&&value===null&&before===''){finished=true;restore();return}
+   if(type==='number'&&(value===null||!Number.isFinite(value)||value<min||value>max||
    (integer&&!Number.isInteger(value)))){
    control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
   }
@@ -6335,6 +6419,19 @@ window.addEventListener('popstate',event=>{
   for(const btn of document.querySelectorAll('[data-tab]'))
    btn.classList.toggle('active',btn.dataset.tab==='wiki');
   if(same)wikiRenderSelected();else renderDetails();
+  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+  saveView();
+ }else if(event.state?.psWikiList&&!location.hash){
+  const chapter=event.state.psWikiList;
+  if(!['item','monster','map','npc','chest','skill','soul','instance'].includes(chapter.type))return;
+  activeTab='wiki';wikiSelection={type:chapter.type,id:null,highlight:null};
+  wikiSearch=typeof chapter.search==='string'?chapter.search:'';
+  wikiShown=Number.isInteger(chapter.shown)&&chapter.shown>=100?chapter.shown:100;
+  if(chapter.type==='item'&&typeof chapter.itemType==='string')
+   wikiItemType=chapter.itemType;
+  for(const btn of document.querySelectorAll('[data-tab]'))
+   btn.classList.toggle('active',btn.dataset.tab==='wiki');
+  renderDetails();
   if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
   saveView();
  }else if(activeTab==='wiki'&&!location.hash.startsWith('#b/')){

@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-05 · **Latest source release:** 0.366.0 (`2026.11.05.366`)
+**Updated:** 2026-11-05 · **Latest source release:** 0.367.0 (`2026.11.05.367`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
@@ -12,6 +12,17 @@
 **0.323.0:** устранение неиспользуемых точных дублей монстров с сохранением всех серверных ID и привязок. Гигантский питон 11205 (Лейбгольдские теснины, 8 записей добычи) выбран каноническим вместо пустого 72006. Скрываются полностью эквивалентные монстры без собственных источников, а также копии с одинаковыми локациями и таблицами добычи. Только варианты с различающимся дропом или отдельной значимой записью без лута остаются отдельными. Одинаковые предметы показывают совокупность источников получения разных ID. Поиск дубликатов названий использует готовый индекс вместо полного сканирования списка при каждом открытии.
 
 This is a durable, evidence-led work plan. A GitHub Pages deploy proves assets were published, **not** that a feature passes real-user browser flows, actual Cloudflare Worker deploy, or game-calculation parity.
+
+## Source update 0.367.0 — better wiki navigation and chest display
+
+- [x] Replace the isolated Back button with an in-game navigation strip and a deliberate «К списку» action that remembers browser history.
+- [x] Make chapter switching clear the previous entity URL without discarding the ability to navigate Back/Forward.
+- [x] Present independent 100%-listed chest rolls together in read-only mode; keep each original roll separate for editing and for multi-option prize groups.
+- [x] Mark nested chests with linked navigation and preserve source probabilities, original group indices and unknown values (not zero).
+- [x] Give item/chest editor numeric fields a no-op on leaving an untouched blank field.
+- [x] Improve visual response on reward, chapter mode and navigation controls with keyboard and reduced-motion support.
+- [ ] Verify any actual guarantee semantics or chest opening mechanics with live game output before describing table-based 100% entries as unconditional rewards.
+- [ ] Confirm combat formulas against client outputs, finish full D1 relation editor validation and original game art; these are not silently considered complete.
 
 ## Source update 0.309.0 — discoverable encyclopedia editing
 

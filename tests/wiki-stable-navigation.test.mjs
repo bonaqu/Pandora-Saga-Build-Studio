@@ -28,7 +28,7 @@ test('drops and NPC exchange rewards include actual item icon and linked ingredi
  assert.match(app,/const itemLink=\(id,label,highlight=null\)=>/);
  assert.match(app,/itemLink\(trade\.i/);
  assert.match(app,/row\.append\(itemLink\(material\.i/);
- assert.match(app,/option\.append\(itemLink\(row\.i/);
+ assert.match(app,/itemLink\(row\.i,dataName\('item',row\.i\),id\)/);
 });
 
 
@@ -46,4 +46,20 @@ test('return navigation captures the previous view and respects direct links',()
  assert.match(app,/wikiSearch=typeof previous\.search/);
  assert.match(app,/if\(!\$\('detailPanel'\)\?\.classList\.contains\('is-open'\)\)showWorkbench\(\)/);
  assert.match(css,/\.wiki-page>\.wiki-history-back/);
+});
+
+
+test('wiki navigation has explicit chapter list and restores forward/back without stale hashes',()=>{
+ const app=read('pandora-studio-app.js');
+ const css=read('pandora-studio-wiki-polish.css');
+ assert.match(app,/function openWikiChapterList\(\)/);
+ assert.match(app,/psWikiList:listView/);
+ assert.match(app,/else if\(event\.state\?\.psWikiList&&!location\.hash\)/);
+ assert.match(app,/class:'wiki-page-nav'/);
+ assert.match(app,/class:'wiki-nav-button wiki-chapter-list'/);
+ assert.match(app,/onclick:openWikiChapterList/);
+ assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)\)openWikiChapterList\(\)/);
+ assert.match(css,/\.wiki-page>\.wiki-page-nav/);
+ assert.match(css,/\.wiki-chest-assured-grid/);
+ assert.match(css,/prefers-reduced-motion:reduce/);
 });
