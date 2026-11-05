@@ -1580,6 +1580,24 @@ function guardEncyclopediaSearch(input){
 function renderWiki(root){
  wikiRenderedRoot=root;
  const browse=h('div',{class:'wiki-list'}),detail=h('article',{class:'wiki-page'});
+ // The list remains visible next to an article; a scroll control is more
+ // useful than a redundant button that clears the current selection.
+ const listPanel=h('div',{class:'wiki-list-panel'});
+ const listTop=h('button',{type:'button',class:'wiki-list-top',
+  text:lang==='en'?'↑ To top':'↑ Наверх',hidden:true,
+  'aria-label':lang==='en'?'Scroll the encyclopedia list to the beginning':
+   'Прокрутить список энциклопедии к началу'});
+ const updateListTop=()=>{
+  const far=browse.scrollTop>Math.max(260,browse.clientHeight*.65);
+  listTop.hidden=!far||browse.scrollHeight<=browse.clientHeight+40;
+ };
+ listTop.addEventListener('click',()=>{
+  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  browse.scrollTo({top:0,behavior:reduced?'instant':'smooth'});
+  if(reduced)updateListTop();
+ });
+ browse.addEventListener('scroll',updateListTop,{passive:true});
+ listPanel.append(browse,listTop);
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
  const outsidePickers=new Set();
@@ -1823,7 +1841,7 @@ function renderWiki(root){
    }}));
  controls.append(view);
  const layout=h('div',{class:'wiki-layout'});
- layout.append(browse,detail);root.append(controls,layout);
+ layout.append(listPanel,detail);root.append(controls,layout);
  if(wikiSelection.type==='honor'){
   view.hidden=true;
   const renderHonor=()=>{
@@ -2313,6 +2331,7 @@ function renderWiki(root){
    }
    browse.append(batch);
    browse.scrollTop=selectedIndex>=wikiShown?0:previousScroll;
+   updateListTop();
   }else{
    browse.querySelectorAll('[data-wiki-record]').forEach(row=>{
     const selected=row.getAttribute('data-wiki-record')===wikiSelection.id;
@@ -2349,12 +2368,9 @@ function renderWiki(root){
      text:wt('← Назад','← Back'),
      'aria-label':wt('Вернуться к предыдущему экрану','Return to previous view'),
      onclick:()=>history.back()}));
-   navActions.append(h('button',{type:'button',class:'wiki-nav-button wiki-chapter-list',
-    text:wt('☷ К списку','☷ To list'),
-    'aria-label':wt('Открыть список раздела «'+listNames[type]+'»',
-     'Open '+listNames[type]+' list'),
-    onclick:openWikiChapterList}));
-   navigate.append(navActions);detail.append(navigate);
+   // The list remains visible on the left, including in a deep-linked article.
+   if(navActions.childElementCount)navigate.append(navActions);
+   detail.append(navigate);
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'item.'+id:null;
