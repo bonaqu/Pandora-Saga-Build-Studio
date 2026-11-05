@@ -723,11 +723,8 @@ function showWorkbench(){
  if(stageSlotPickerOpen)closeStagePicker(false);
  panel.classList.add('is-open');panel.setAttribute('aria-modal','true');
  backdrop.hidden=false;document.body.classList.add('studio-workbench-open');
- // The editor is a floating drawer, not part of the game grid. Keep it
- // unobtrusive when entering a workbench; opening it remains user controlled.
- if(adminEditing&&adminToken&&!wasOpen&&!ownerDockCollapsed){
-  ownerDockCollapsed=true;refreshOwnerUI();
- }
+ // A floating owner drawer keeps the explicit user's open/collapsed state
+ // when switching between the hero, saved builds and encyclopedia.
  if(!wasOpen)$('dockClose')?.focus({preventScroll:true});
 }
 function closeWorkbench(){
@@ -1604,6 +1601,8 @@ function renderWiki(root){
  listPanel.append(browse,listTop);
  const controls=h('div',{class:'wiki-controls'}),categories=h('div',{class:'wiki-categories'});
  const wt=(ru,en)=>lang==='en'?en:ru;
+ const wikiTitle=(group,key,ru,en)=>
+  window.PandoraWikiLabels?.value(override,group,key,lang)||wt(ru,en);
  const outsidePickers=new Set();
  const cleanupOutsidePickers=()=>{
   for(const onOutside of outsidePickers)
@@ -1629,12 +1628,18 @@ function renderWiki(root){
  };
  let wikiResultsCache=null;
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
- for(const [key,ru,en]of[['item','Экипировка','Equipment'],['utility','Предметы эффектов','Effect items'],['monster','Монстры','Monsters'],['map','Локации','Locations'],['honor','Очки чести','Honor points'],['npc','NPC-обмен','NPC trades'],['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],['skill','Навыки','Skills'],['soul','Души','Souls']]){
-  categories.append(h('button',{
+ for(const [key,ru,en]of[['item','Экипировка','Equipment'],
+  ['utility','Предметы эффектов','Effect items'],
+  ['monster','Монстры','Monsters'],['map','Локации','Locations'],
+  ['honor','Честь','Honor'],['npc','NPC-обмен','NPC trades'],
+  ['chest','Сундуки','Chests'],['instance','Подземелья','Dungeons'],
+  ['skill','Навыки','Skills'],['soul','Души','Souls']]){
+  const current=wikiTitle('chapter',key,ru,en);
+  const chapter=h('button',{
    class:(key==='utility'?wikiSelection.type==='item'&&wikiItemType==='utility':
     key==='item'?wikiSelection.type==='item'&&wikiItemType!=='utility':
     wikiSelection.type===key)?'chosen':'',
-   text:lang==='en'?en:ru,'data-wiki-chapter':key,
+   'data-wiki-chapter':key,
    onclick:()=>{
     if(key==='item'||key==='utility'){
      wikiSelection={type:'item',id:null,highlight:null};
@@ -1643,7 +1648,27 @@ function renderWiki(root){
     wikiSearch='';wikiShown=100;
     if(location.hash.startsWith('#wiki/'))openWikiChapterList();
     else renderDetails();
-   }}));
+   }},[h('span',{class:'wiki-category-text',text:current})]);
+  const line=h('div',{class:'wiki-category-line'},[chapter]);
+  if(adminEditing&&adminToken){
+   const edit=h('button',{type:'button',class:'wiki-category-edit',
+    title:wt('Переименовать вкладку','Rename chapter'),
+    'aria-label':wt('Переименовать вкладку: ','Rename chapter: ')+current,
+    text:'✎'});
+   edit.onclick=()=>{
+    if(line.querySelector('[data-owner-text-field]'))return;
+    const label=chapter.querySelector('.wiki-category-text');
+    const field=window.PandoraWikiLabels.key('chapter',key,lang);
+    const host=h('span',{class:'wiki-category-edit-host',text:label.textContent});
+    chapter.hidden=true;edit.hidden=true;line.append(host);
+    editWikiValue(host,label.textContent,{type:'text',
+     onCommit:value=>saveGuidePatch('wiki.labels',{[field]:value}),
+     onCommitted:value=>{if(label.isConnected)label.textContent=value},
+     onFinished:()=>{chapter.hidden=false;edit.hidden=false;host.remove()}});
+   };
+   line.append(edit);
+  }
+  categories.append(line);
  }
  const search=h('input',{type:'search',value:wikiSearch,placeholder:lang==='en'?'Search by name':'Поиск по названию','aria-label':lang==='en'?'Search encyclopedia':'Поиск по энциклопедии',name:'pandora-studio-encyclopedia-filter',autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true','data-bwignore':'true',spellcheck:'false'});
  guardEncyclopediaSearch(search);
@@ -1853,6 +1878,11 @@ function renderWiki(root){
    window.PandoraHonorView?.render({
     browse,detail,make:h,lang,article:window.PandoraHonorGuide?.article(override),
     editable:adminEditing&&Boolean(adminToken),
+    label:(group,id,ru,en)=>wikiTitle(group,id,ru,en),
+    editLabel:(node,group,id,initial)=>editWikiValue(node,initial,{type:'text',
+     onCommit:value=>saveGuidePatch('wiki.labels',{
+      [window.PandoraWikiLabels.key(group,id,lang)]:value
+     })}),
     editText:(node,initial,multiline,onCommit)=>editWikiValue(node,initial,{
      type:multiline?'textarea':'text',onCommit}),
     saveText:saveGuidePatch,saveList:saveGuideList,
@@ -2016,7 +2046,7 @@ function renderWiki(root){
   registerOutsidePicker(form);
   fill();search.focus();
  };
- function wikiOwnerEntityList({label,items,existing,kind,onChange,limit=1000}){
+ function wikiOwnerEntityList({label,existing,kind,onChange,limit=1000,replaceable=true}){
  const container=h('div',{class:'wiki-owner-relations'});
  if(label)container.append(h('h4',{text:label}));
  const ids=[...new Set((existing||[]).map(String))];
@@ -2025,49 +2055,72 @@ function renderWiki(root){
   kind==='map'?wikiIndex.records('map'):
   kind==='item'?wikiData.items:wikiIndex.records('instance');
  const idValue=value=>/^[1-9][0-9]{0,14}$/.test(String(value))?Number(value):String(value);
+ const wt=(ru,en)=>lang==='en'?en:ru;
  const holder=h('div',{class:'wiki-entity-flow'});
+ const openPicker=(button,replaceId=null)=>{
+  const previous=container.querySelector('.wiki-owner-relation-picker');
+  if(previous){previous.remove();if(previous.dataset.ownerSource===replaceId)return}
+  const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-relation-picker'});
+  panel.dataset.ownerSource=replaceId||'';
+  const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
+   placeholder:wt('Поиск по названию…','Search by name…'),
+   'aria-label':wt('Поиск связи','Search relations'),autocomplete:'off'});
+  const select=h('select',{class:'wiki-inline-select',
+   'aria-label':replaceId?wt('Заменить на','Replace with'):
+    wt('Выбери запись','Choose entry')});
+  const feedback=h('small',{class:'inline-owner-error',role:'status'});
+  const fill=()=>{
+   const q=wikiIndex.normalize(search.value);
+   const choices=Object.entries(candidates||{}).filter(([key])=>
+    !ids.includes(key)&&(!q||wikiIndex.normalize(dataName(kind,key)).includes(q))
+   ).slice(0,90);
+   select.replaceChildren(h('option',{value:'',text:choices.length?
+    wt('Выбери запись','Choose entry'):wt('Ничего не найдено','No matches')}));
+   for(const [key] of choices)select.append(h('option',{
+    value:key,text:dataName(kind,key)}));
+   select.disabled=!choices.length;
+  };
+  select.onchange=async()=>{
+   const chosen=String(select.value||'');
+   if(!chosen||!Object.hasOwn(candidates||{},chosen)||ids.includes(chosen))return;
+   const next=replaceId?ids.map(id=>id===replaceId?chosen:id):[...ids,chosen];
+   if(new Set(next).size!==next.length)return;
+   select.disabled=true;feedback.textContent='';
+   try{await Promise.resolve(onChange(next.map(idValue)))}
+   catch(error){feedback.textContent=error?.message||String(error);select.disabled=false}
+  };
+  panel.append(search,select,feedback,h('button',{type:'button',
+   class:'wiki-owner-remove',text:wt('Отмена','Cancel'),
+   onclick:()=>panel.remove()}));
+  button.after(panel);
+  search.oninput=fill;registerOutsidePicker(panel,button);
+  fill();search.focus();
+ };
  for(const key of ids){
   const chip=h('span',{class:'wiki-owner-mat'});
   chip.append(kind==='item'?itemLink(key,dataName(kind,key)):
    wikiLink(dataName(kind,key),kind,key));
-  if(adminEditing&&adminToken)chip.append(h('button',{type:'button',
-   class:'wiki-owner-remove',text:'×','aria-label':'Удалить связь '+dataName(kind,key),
-   onclick:()=>void onChange(ids.filter(x=>x!==key).map(idValue))
-    .catch(err=>showStudioToast(err.message,'warning'))}));
+  if(adminEditing&&adminToken){
+   if(replaceable)chip.append(h('button',{type:'button',
+    class:'wiki-owner-replace',text:'✎',
+    'aria-label':wt('Заменить связь: ','Replace relation: ')+dataName(kind,key),
+    title:wt('Заменить на другую запись из каталога','Replace with an existing record'),
+    onclick:event=>{event.stopPropagation();openPicker(chip,key)}}));
+   chip.append(h('button',{type:'button',class:'wiki-owner-remove',text:'×',
+    'aria-label':wt('Удалить связь: ','Remove relation: ')+dataName(kind,key),
+    onclick:()=>void Promise.resolve(onChange(ids.filter(id=>id!==key).map(idValue)))
+     .catch(err=>showStudioToast(err.message,'warning'))}));
+  }
   holder.append(chip);
  }
- container.append(holder);
  if(adminEditing&&adminToken&&ids.length<limit){
   const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-   text:'+ Добавить',title:'Добавить связь'});
-  add.onclick=()=>{
-   if(container.querySelector('.wiki-owner-relation-picker'))return;
-   const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-relation-picker'});
-   const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
-    placeholder:'Поиск по названию…','aria-label':'Поиск для добавления'});
-   
-   const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери запись'});
-   const feedback=h('small',{class:'inline-owner-error',role:'status'});
-   const fill=()=>{
-    const q=wikiIndex.normalize(search.value);
-    const choices=Object.entries(candidates||{}).filter(([key])=>!ids.includes(key)&&
-     (!q||wikiIndex.normalize(dataName(kind,key)).includes(q))).slice(0,90);
-    select.replaceChildren(h('option',{value:'',text:choices.length?'Выбери запись':'Не найдено'}));
-    for(const [key]of choices)select.append(h('option',{value:key,text:dataName(kind,key)}));
-   };
-   panel.append(search,select,feedback);add.after(panel);
-   search.oninput=fill;
-   select.onchange=async()=>{
-    if(!select.value)return;
-    select.disabled=true;
-    try{await onChange([...ids,select.value].map(idValue))}
-    catch(e){feedback.textContent=e.message;select.disabled=false}
-   };
-   registerOutsidePicker(panel,add);
-   fill();search.focus();
-  };
-  container.append(add);
+   text:wt('+ Добавить','+ Add'),
+   title:wt('Выбрать запись по имени','Choose an existing record by name'),
+   onclick:()=>openPicker(add)});
+  holder.append(add);
  }
+ container.append(holder);
  return container;
 }
 
@@ -3398,7 +3451,7 @@ function renderWiki(root){
       const chosen=places.filter(x=>x.type===kind).map(x=>String(x.id));
       detail.append(wikiOwnerEntityList({label:kind==='map'?
        wt('Локации','Locations'):wt('Подземелья','Dungeons'),
-       kind,existing:chosen,onChange:async next=>{
+       kind,existing:chosen,replaceable:false,onChange:async next=>{
         const updated=next.map(String);
         const added=updated.find(x=>!chosen.includes(x));
         const removed=chosen.find(x=>!updated.includes(x));
@@ -3848,7 +3901,7 @@ function renderWiki(root){
        wt('Здесь пока нельзя добавить монстров.','Monster editing is not available for this location.')}));
      if(showMapSection('monsters')&&adminEditing&&adminToken&&(type==='instance'||ownerMap)){
       detail.append(wikiOwnerEntityList({label:'Монстры в '+(type==='instance'?'подземелье':'локации'),
-      kind:'monster',existing:mobs,onChange:async next=>{
+      kind:'monster',existing:mobs,replaceable:false,onChange:async next=>{
        const before=mobs.map(String),after=next.map(String);
        const hasOwner=next.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x))||
         before.some(x=>window.PandoraWikiOwnerData.ownerMonsterId(x));
@@ -3999,7 +4052,7 @@ function renderWiki(root){
          next.map(x=>/^\d+$/.test(String(x))?Number(x):String(x)))}));
       }else if(adminEditing&&adminToken&&!rec.virtual){
        detail.append(wikiOwnerEntityList({label:wt('NPC в локации','NPCs in this location'),
-        kind:'npc',existing:residents.map(([npcId])=>String(npcId)),onChange:async next=>{
+        kind:'npc',existing:residents.map(([npcId])=>String(npcId)),replaceable:false,onChange:async next=>{
          const before=residents.map(([npcId])=>String(npcId)),after=next.map(String);
          const added=after.find(n=>!before.includes(n));
          const removed=before.find(n=>!after.includes(n));
@@ -5783,7 +5836,7 @@ function guardOwnerInput(input){
  input.addEventListener('focus',()=>{input.readOnly=false},{once:true});
  return input;
 }
-function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit}={}){
+function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit,onCommitted,onFinished}={}){
  if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
  const before=String(initial??''),visibleNodes=[...node.childNodes];
  let finished=false,saving=false;
@@ -5801,7 +5854,7 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   }
  }else control.value=before;
  if(type==='number')guardOwnerInput(control);
- const restore=()=>{if(node.isConnected){node.replaceChildren(...visibleNodes);node.classList.remove('wiki-inline-saving')}};
+ const restore=()=>{if(node.isConnected){node.replaceChildren(...visibleNodes);node.classList.remove('wiki-inline-saving')}onFinished?.()};
  const save=async()=>{
   if(finished||saving)return;
   const raw=control.value;
@@ -5818,7 +5871,7 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   }
   if(String(value)===before){finished=true;restore();return}
   saving=true;control.disabled=true;node.classList.add('wiki-inline-saving');
-  try{await onCommit(value);finished=true;restore()}
+  try{await onCommit(value);finished=true;restore();onCommitted?.(value)}
   catch(error){saving=false;control.disabled=false;node.classList.remove('wiki-inline-saving');
    if(control.setCustomValidity){
     control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity()
@@ -5850,12 +5903,19 @@ async function saveGuidePatch(key,fields){
  try{
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
+  if(key==='wiki.labels'&&window.PandoraWikiLabels){
+   for(const node of document.querySelectorAll('.wiki-category-line [data-wiki-chapter]')){
+    const id=node.dataset.wikiChapter,caption=node.querySelector('.wiki-category-text');
+    if(caption)caption.textContent=window.PandoraWikiLabels.value(override,'chapter',id,lang);
+   }
+  }
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
    if(pane)pane.scrollTop=position;
    saveView();
-  }else renderStageAttributes();
+  }else if(key==='wiki.labels')saveView();
+  else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveGuideList(key,rows){

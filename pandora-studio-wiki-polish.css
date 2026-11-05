@@ -251,3 +251,24 @@
  .wiki-list-panel>.wiki-list-top,.wiki-list-panel>.wiki-list .wiki-link,
  .wiki-controls .wiki-categories button{transition:none}
 }
+
+/* One canonical chapter label per RU/EN locale. Editing is a separate
+   adjacent control: chapter navigation never contains an input. */
+.wiki-categories .wiki-category-line{display:inline-flex;align-items:stretch;
+ min-width:0;max-width:100%;border-radius:5px;overflow:visible}
+.wiki-categories .wiki-category-line>[data-wiki-chapter]{
+ border-radius:5px;max-width:100%;min-width:0}
+.wiki-categories .wiki-category-line:has(.wiki-category-edit)>[data-wiki-chapter]{
+ border-radius:5px 0 0 5px}
+.wiki-categories .wiki-category-line .wiki-category-edit{
+ display:inline-grid;place-items:center;min-width:29px;width:29px;padding:3px;
+ border-left:0;border-radius:0 5px 5px 0;background:#352419;color:#eac48f;
+ font-size:12px;cursor:pointer}
+.wiki-categories .wiki-category-line .wiki-category-edit:hover,
+.wiki-categories .wiki-category-line .wiki-category-edit:focus-visible{
+ background:#594027;outline:1px solid #e5bd7e}
+.wiki-category-edit-host{display:inline-flex;align-items:center;
+ max-width:min(310px,80vw);min-height:34px;padding:4px 8px;
+ background:#302318;border:1px solid #b18b55;border-radius:5px}
+.wiki-category-edit-host .wiki-inline-input{max-width:290px}
+.wiki-categories [hidden]{display:none!important}

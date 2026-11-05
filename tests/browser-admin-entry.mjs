@@ -197,48 +197,64 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/PR правок/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
-  // Regression: opening Wiki must not detach the collapsed editor launcher
-  // from the viewport's LEFT edge or reintroduce the vertical side tab.
+  // A floating owner drawer must preserve explicit expansion across workbenches.
+  await page.locator('#nav [data-tab="builds"]').click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
+  assert.equal(await edge.getAttribute('aria-expanded'),'true',
+   'Opening saved builds must not collapse the editor');
+  await page.locator('#dockClose').click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'true');
   await ownerPanel.locator('.owner-dock-primary').click();
   await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
-  const collapsedAfterWiki=await edge.evaluate(node=>{
-   const bounds=node.getBoundingClientRect();
-   const root=document.querySelector('#ownerDock').getBoundingClientRect();
-   return{left:bounds.left,rootLeft:root.left,
-    pos:getComputedStyle(node).position,
-    mode:getComputedStyle(node).writingMode,
-    expanded:node.getAttribute('aria-expanded')};
-  });
-  assert.ok(Math.abs(collapsedAfterWiki.left)<2,
-   'Editor launcher moved away from viewport left in Wiki: '+
-   JSON.stringify(collapsedAfterWiki));
-  assert.ok(Math.abs(collapsedAfterWiki.rootLeft)<2);
-  assert.equal(collapsedAfterWiki.pos,'fixed');
-  assert.equal(collapsedAfterWiki.mode,'horizontal-tb');
-  assert.equal(collapsedAfterWiki.expanded,'false');
-  await edge.click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'true',
+   'Opening Wiki must not collapse the editor');
   const expandedOnWiki=await ownerPanel.locator('.owner-dock-panel').evaluate(node=>{
    const bounds=node.getBoundingClientRect();
    return{left:bounds.left,right:bounds.right,width:bounds.width,
     viewport:document.documentElement.clientWidth};
   });
   assert.ok(Math.abs(expandedOnWiki.left)<2&&
-   expandedOnWiki.right<=expandedOnWiki.viewport+2,
+   expandedOnWiki.right<=expandedOnWiki.viewport+2&&expandedOnWiki.width>=430,
    'Expanded editor not docked at left in Wiki: '+JSON.stringify(expandedOnWiki));
-  // The old sticky heading could cover the visible "Hide" control; the
-  // button must be the actual pointer target before *and after* Wiki opens.
   const hitArea=async()=>edge.evaluate(button=>{
    const rect=button.getBoundingClientRect();
    const target=document.elementFromPoint(
     rect.left+rect.width/2,rect.top+rect.height/2);
    return target===button||button.contains(target);
   });
-  assert.equal(await hitArea(),true,
-   'Sticky owner heading intercepted the Hide button');
+  assert.equal(await hitArea(),true,'Sticky heading intercepted Hide');
   await edge.click();
   assert.equal(await edge.getAttribute('aria-expanded'),'false');
-  assert.equal(await hitArea(),true,
-   'Collapsed launcher is not the topmost pointer target');
+  const collapsedAfterWiki=await edge.evaluate(node=>{
+   const rect=node.getBoundingClientRect(),root=
+    document.querySelector('#ownerDock').getBoundingClientRect();
+   return{left:rect.left,rootLeft:root.left,
+    position:getComputedStyle(node).position,
+    mode:getComputedStyle(node).writingMode};
+  });
+  assert.ok(Math.abs(collapsedAfterWiki.left)<2&&
+   Math.abs(collapsedAfterWiki.rootLeft)<2,
+   'Collapsed editor must remain flush left: '+JSON.stringify(collapsedAfterWiki));
+  assert.equal(collapsedAfterWiki.position,'relative');
+  assert.equal(collapsedAfterWiki.mode,'horizontal-tb');
+  await edge.hover();
+  const hoverFrames=await edge.evaluate(async button=>{
+   const samples=[];
+   for(let i=0;i<6;i++){
+    await new Promise(resolve=>setTimeout(resolve,130));
+    const bounds=button.getBoundingClientRect();
+    const top=document.elementFromPoint(bounds.left+bounds.width/2,
+     bounds.top+bounds.height/2);
+    const style=getComputedStyle(button);
+    samples.push({left:bounds.left,opacity:Number(style.opacity),
+     visible:style.visibility,display:style.display,
+     topmost:top===button||button.contains(top)});
+   }
+   return samples;
+  });
+  assert.ok(hoverFrames.every(x=>x.visible==='visible'&&x.display!=='none'&&
+   x.opacity>=.99&&x.topmost&&Math.abs(x.left)<2),
+   'Hover must never blink or shift the editor launcher: '+JSON.stringify(hoverFrames));
   await edge.click();
   assert.equal(await edge.getAttribute('aria-expanded'),'true');
   // Honor is directly editable and D1-saving must preserve the encyclopedia
@@ -252,6 +268,27 @@ export async function runAdminEntrySmoke(browser,base){
    /Muldian Uncivilized District|El Beht|Underground of Astir/);
   assert.ok(await honorPanel.locator('.wiki-honor-location-select').first()
    .locator('option').count()>4,'Location picker must include existing maps');
+  // A chapter's text is editable without mutating its stable data-wiki-chapter.
+  const chapterRow=page.locator('.wiki-category-line')
+   .filter({has:page.locator('[data-wiki-chapter="honor"]')});
+  await chapterRow.locator('.wiki-category-edit').click();
+  const chapterEditor=chapterRow.locator('[data-owner-text-field="true"]');
+  await chapterEditor.waitFor({state:'visible'});
+  await chapterEditor.fill('Честь и ранги');
+  await chapterEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-wiki-chapter="honor"] .wiki-category-text')?.textContent==='Честь и ранги');
+  assert.equal(JSON.parse(townOverrides.get('guideedit.wiki.labels')).chapter_honor_ru,
+   'Честь и ранги');
+  const gainHeading=honorPanel.locator('#honor-gain .wiki-honor-heading');
+  await gainHeading.dblclick();
+  const gainEditor=gainHeading.locator('[data-owner-text-field="true"]');
+  await gainEditor.fill('Получение и потеря чести — тест');
+  await gainEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#honor-gain .wiki-honor-heading')?.textContent==='Получение и потеря чести — тест');
+  assert.equal(JSON.parse(townOverrides.get('guideedit.wiki.labels')).honor_gain_ru,
+   'Получение и потеря чести — тест');
   const rankBenefit=honorPanel.locator('#honor-rank-8 .wiki-honor-rank-benefit');
   await rankBenefit.dblclick();
   // The inline editor intentionally uses a plaintext-only contenteditable,
@@ -440,9 +477,18 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await wikiSearch.getAttribute('data-lpignore'),'true');
   await wikiSearch.click();
   await wikiSearch.fill('Старое название из D1');
+  // The owner panel intentionally stays open across navigation. A user may
+  // hide it to reach wiki entries covered by the floating panel; the admin
+  // editing permission stays enabled when only the drawer is collapsed.
+  assert.equal(await edge.getAttribute('aria-expanded'),'true');
+  await edge.click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'false');
   const firstItem=page.locator('[data-wiki-record="1"]');
   await firstItem.waitFor({state:'visible',timeout:20000});
-  await firstItem.click();
+  // The wiki list can redraw while indexed search settles. Keyboard
+  // activation is stable across re-renders and verifies accessible links.
+  await firstItem.press('Enter');
+  await page.locator('.wiki-page .item-fields').waitFor({state:'visible',timeout:20000});
   const attackLabel=page.locator('.item-fields dt').filter({hasText:'Атака'}).first();
   const attack=attackLabel.locator('xpath=following-sibling::dd[1]');
   await attack.dblclick();

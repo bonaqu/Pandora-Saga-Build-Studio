@@ -19,14 +19,18 @@ test('owner editor is a fixed overlay with an accessible left-edge handle',()=>{
  assert.match(css,/position:fixed/);
  assert.ok(css.includes('inset:auto auto max(14px,env(safe-area-inset-bottom)) 0!important'));
  assert.match(css,/owner-dock-collapsed\{/);
- assert.match(css,/visibility:hidden;opacity:0;transform:none;pointer-events:none/);
+ assert.match(css,/display:none;pointer-events:none/);
+ assert.match(css,/width:128px;max-width:calc\(100vw - 8px\);pointer-events:auto/);
+ assert.doesNotMatch(app,/if\(adminEditing&&adminToken&&!wasOpen&&!ownerDockCollapsed\)/,
+  'Entering builds or Wiki must never collapse a manually opened editor');
  assert.match(css,/box-sizing:border-box;width:100%;min-width:0/);
  assert.doesNotMatch(css,/translate3d\(-100%,0,0\)/);
  assert.match(css,/\.owner-dock-handle/);
  assert.ok(css.includes('position:absolute;z-index:3;top:14px;right:12px'),
   'The Hide button must render above the sticky owner header');
  assert.match(css,/writing-mode:horizontal-tb/);
- assert.match(css,/min-width:128px;height:38px/);
+ assert.match(css,/width:128px;min-width:128px;height:38px/);
+ assert.match(css,/position:relative;inset:auto;top:auto/);
  assert.match(css,/width:min\(474px,calc\(100vw - 16px\)\)/);
  assert.match(css,/#ownerDock \.owner-dock-body\{[\s\S]*?overflow-y:auto;overflow-x:hidden/);
  assert.match(css,/#ownerDock \.owner-dock-panel\{[\s\S]*?overflow:hidden/);
