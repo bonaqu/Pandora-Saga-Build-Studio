@@ -17,7 +17,8 @@ test('a clean character and New Build require explicit race/class selection',()=
  assert.match(app,/function newBlankBuild\(\)\{\s*selectActiveBuild\(null\);state=fresh\(\)/);
  assert.match(app,/function previewBaseStats\(snap=state\)\{[\s\S]*?return null;/);
  assert.match(app,/function attributeSnapshot\(\)\{\s*if\(!Number\.isInteger\(state\.race\)\|\|!Number\.isInteger\(state\.job\)\)return null/);
- assert.match(app,/text:chosen\?\(lang==='en'\?'✓ Selected':'✓ Выбрано'\):\(lang==='en'\?'Choose this race':'Выбрать эту расу'\)/);
+ assert.match(app,/originCopyLabel\(select,chosen\?'raceChosen':'raceChoose'/);
+ assert.match(app,/chosen\?'✓ Выбрано':'Выбрать эту расу'/);
  assert.doesNotMatch(read('index.html'),/id="activeJob">Клирик|id="raceTitle">Эльф/);
 });
 
