@@ -170,7 +170,7 @@ test('item and soul sources use one translated renderer and independent paginati
  assert.match(app,/if\(group==='usage'\)wikiUsageShown\+=80/);
  assert.match(app,/for\(const trade of usedIn\.slice\(0,wikiUsageShown\)\)/);
  assert.match(app,/dataName\('map',loc\.id\)/);
- assert.match(app,/No confirmed sources in the current catalog/);
+ assert.match(app,/No acquisition sources listed/);
 });
 test('English encyclopedia indexes official names only and never reveals raw class codes',()=>{
  const app=read('pandora-studio-app.js'),english=JSON.parse(read('data/os/strings.en.json'));
