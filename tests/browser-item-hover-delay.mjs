@@ -41,6 +41,39 @@ export async function runItemHoverDelaySmoke(browser,base){
    'Cancelled hover must never produce a delayed stray preview');
 
   // Focus via keyboard should be immediate and accessible (no mouse delay).
+  // Crossing neighboring item links must cancel the first timer and
+  // display only the item currently under the pointer.
+  const allRewards=page.locator('.wiki-recipe-use a.wiki-recipe-result');
+  assert.ok(await allRewards.count()>=2,'Spata must have multiple NPC-trade outputs');
+  const another=allRewards.filter({hasNotText:'Прочная спата'}).first();
+  await another.scrollIntoViewIfNeeded();
+  await clearPointer();
+  await spata.hover();
+  await page.waitForTimeout(110);
+  await another.hover();
+  await page.waitForTimeout(150);
+  assert.equal(await tooltip.count(),0,'Switching items must not show a stale preview');
+  await tooltip.waitFor({state:'visible',timeout:2500});
+  assert.equal((await tooltip.locator('.stage-rich-head strong').innerText()).trim(),
+   (await another.innerText()).trim(),'Only the currently hovered item may be previewed');
+  assert.equal(await page.locator('#stage-gear-tooltip').count(),1);
+  await clearPointer();
+  assert.equal(await tooltip.count(),0);
+
+  // Scrolling a long Wiki article cancels pending hovers as links move.
+  await spata.scrollIntoViewIfNeeded();
+  await clearPointer();
+  await spata.hover();
+  await page.waitForTimeout(100);
+  await page.locator('#detailContent').evaluate(node=>{
+   node.scrollTop=node.scrollTop+40;
+  });
+  await page.waitForTimeout(780);
+  assert.equal(await tooltip.count(),0,
+   'Scrolling must cancel any pending rich item tooltip');
+  await spata.scrollIntoViewIfNeeded();
+  await clearPointer();
+
   await page.keyboard.press('Tab');
   await spata.focus();
   assert.equal(await spata.evaluate(node=>node.matches(':focus-visible')),true,
