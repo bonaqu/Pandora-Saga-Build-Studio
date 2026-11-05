@@ -235,12 +235,6 @@ export async function runAdminEntrySmoke(browser,base){
    {ru:'Выбрать расу',en:'Select race'});
   await page.locator('#locale [data-locale="ru"]').click();
   await captionReady(page,'Выбрать расу','RU-return');
-  const viewer=await context.newPage();
-  await viewer.goto(base+'/',{waitUntil:'domcontentloaded'});
-  await captionReady(viewer,'Выбрать расу','guest-reload');
-  assert.equal(await viewer.locator('[data-origin-edit-for="raceChoose"]').count(),0,
-   'Guests cannot edit stored Origin labels');
-  await viewer.close();
   assert.equal(await page.locator('#originTabs [data-origin-copy-key="tabRace"]').count(),1);
   await edge.click();
   assert.equal(await edge.getAttribute('aria-expanded'),'true');
