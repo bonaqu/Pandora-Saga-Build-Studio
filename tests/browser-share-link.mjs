@@ -55,6 +55,11 @@ export async function runShareLinkSmoke(browser,base){
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0,
    null,{timeout:20000});
+  // A shareable build must have an explicitly chosen origin.
+  await page.locator('#raceGrid .race-slide-select').click(); // Human preview
+  await page.locator('[data-origin-tab="class"]').click();
+  await page.locator('#classGrid .class-wizard-choice').first().click(); // Warrior direction
+  await page.locator('#classGrid .class-current-select').click(); // Confirm Warrior
   await page.locator('[data-origin-tab="stats"]').click();
   await page.locator('#level').evaluate(el=>{
    el.value='55';el.dispatchEvent(new Event('input',{bubbles:true}));
