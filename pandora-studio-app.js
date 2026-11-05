@@ -5480,6 +5480,7 @@ function refreshOwnerUI(){
    h('p',{},[h('strong',{text:'Все правки'}),document.createTextNode(' — посмотреть сохранённые изменения и вернуть исходное.')]),
    h('p',{},[h('strong',{text:'Игровой каталог'}),document.createTextNode(' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.')]),
    h('p',{},[h('strong',{text:'PR правок'}),document.createTextNode(' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.')]),
+   h('p',{},[h('strong',{text:'Проверить запись D1'}),document.createTextNode(' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.')]),
    h('p',{},[h('strong',{text:'Завершить'}),document.createTextNode(' — только скрыть инструменты редактирования, не удалить изменения.')])
   ])
  ]);
@@ -5492,6 +5493,23 @@ function refreshOwnerUI(){
    title:'Просмотр всех сохранённых переопределений в D1'}),
   h('button',{type:'button',text:'Игровой каталог',onclick:showCatalogImport,
    title:'Отдельное обновление снимка игрового каталога'}),
+  h('button',{type:'button',class:'owner-dock-d1-check',
+   text:'Проверить запись D1',
+   title:'Записать и удалить две случайные временные тестовые записи в D1',
+   onclick:async function(){
+    if(editIsSaving||ownerSaveState==='saving')return;
+    this.disabled=true;
+    try{
+     const result=await apiRequest('/api/admin/catalog/test-write',{});
+     if(!result?.ok||!result.readback||!result.cleaned||
+      !result.overrideReadback||!result.overrideCleaned||
+      !result.activeCatalogUnchanged)
+      throw Error('Проверка не подтвердила чтение, удаление или сохранность каталога');
+     showStudioToast('D1: временная запись и чтение проверены, тестовые данные удалены.','success');
+    }catch(error){
+     showStudioToast('Не удалось проверить запись в D1: '+error.message,'warning');
+    }finally{if(this.isConnected)this.disabled=false}
+   }}),
   h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport,
    title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
@@ -5521,7 +5539,8 @@ function refreshOwnerUI(){
   ['[data-owner-undo]','Отменяет последнюю ручную правку этого сеанса в Cloudflare D1.'],
   ['.owner-dock-actions button:nth-child(3)','Посмотреть сохранённые ручные правки и вернуть исходные значения.'],
   ['.owner-dock-actions button:nth-child(4)','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
-  ['.owner-dock-actions button:nth-child(5)','Предложить уже сохранённые правки для проверки в GitHub.'],
+  ['.owner-dock-actions button:nth-child(5)','Проверить временную запись и удаление D1 без затрагивания пользовательских данных.'],
+  ['.owner-dock-actions button:nth-child(6)','Предложить уже сохранённые правки для проверки в GitHub.'],
   ['.owner-dock-finish','Выключить режим редактирования. Уже сохранённые данные D1 останутся на месте.']
  ];
  for(const [selector,message] of hints){
