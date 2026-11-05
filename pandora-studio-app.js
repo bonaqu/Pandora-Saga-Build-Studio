@@ -1509,15 +1509,43 @@ async function loadWiki(){
  try{return await pending}
  finally{if(wikiPending===pending)wikiPending=null}
 }
+// Every navigation entry owns its own source position. Honor, linked items,
+// maps, NPCs and PvP wars all restore through the SAME history mechanism.
+function wikiPosition(){
+ if(activeTab!=='wiki')return null;
+ return{
+  chapter:wikiSelection.type,id:wikiSelection.id,
+  inner:$('detailContent')?.scrollTop||0,
+  browse:$('detailContent')?.querySelector('.wiki-list')?.scrollTop||0,
+  search:wikiSearch,shown:wikiShown,itemType:wikiItemType
+ };
+}
+function restoreWikiFilters(state,type,id){
+ const position=state?.psWikiPosition;
+ if(!position||position.chapter!==type||String(position.id??'')!==String(id??''))return;
+ if(typeof position.search==='string')wikiSearch=position.search;
+ if(Number.isInteger(position.shown)&&position.shown>=100)wikiShown=position.shown;
+ if(type==='item'&&typeof position.itemType==='string')
+  wikiItemType=position.itemType;
+}
+function restoreWikiPosition(state){
+ const position=state?.psWikiPosition;
+ if(!position||position.chapter!==wikiSelection.type||
+  String(position.id??'')!==String(wikiSelection.id??''))return;
+ const {type,id}=wikiSelection;
+ // React to completed DOM reconstruction, never restore the outgoing article.
+ requestAnimationFrame(()=>requestAnimationFrame(()=>{
+  if(activeTab!=='wiki'||wikiSelection.type!==type||wikiSelection.id!==id)return;
+  const scroller=$('detailContent');
+  if(scroller&&Number.isFinite(position.inner))
+   scroller.scrollTo({top:Math.max(0,position.inner),behavior:'instant'});
+  const browse=scroller?.querySelector('.wiki-list');
+  if(browse&&Number.isFinite(position.browse))
+   browse.scrollTop=Math.max(0,position.browse);
+ }));
+}
 function openWiki(type,id,highlight=null){
- const honorWar=type==='honor'&&/^war-[a-z][a-z0-9-]{0,35}$/.test(String(id));
- const fromHonor=honorWar&&activeTab==='wiki'&&
-  wikiSelection.type==='honor'&&wikiSelection.id==null;
- if(fromHonor){
-  const previous=history.state&&typeof history.state==='object'?history.state:{};
-  history.replaceState({...previous,
-   psWikiHonorScroll:$('detailContent')?.scrollTop||0},'',location.href);
- }
+ const fromPosition=wikiPosition();
  const fromView={tab:activeTab,
   open:Boolean($('detailPanel')?.classList.contains('is-open')),
   selection:activeTab==='wiki'?{...wikiSelection}:null,
@@ -1534,19 +1562,18 @@ function openWiki(type,id,highlight=null){
  const destination='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(id)+
   (highlight!=null?'/'+encodeURIComponent(highlight):'');
  if(location.hash!==destination){
-  if(!location.hash.startsWith('#wiki/')){
-   const oldState=history.state&&typeof history.state==='object'?history.state:{};
-   history.replaceState({...oldState,psWikiReturn:{
-    ...fromView
-   }},'',location.href);
-  }
-  const currentState=history.state&&typeof history.state==='object'?history.state:{};
-  // pushState does not generate a hashchange event or redraw the list.
-  history.pushState({...currentState,psWikiEntry:true,
-   ...(fromHonor?{psWikiHonorOrigin:true}:{})},'',destination);
+  const oldState=history.state&&typeof history.state==='object'?history.state:{};
+  history.replaceState({...oldState,psWikiPosition:fromPosition,
+   ...(!location.hash.startsWith('#wiki/')?{psWikiReturn:fromView}:{})},'',
+   location.href);
+  // pushState doesn't emit popstate/hashchange. The destination gets its
+  // own empty position, filled only when the reader navigates elsewhere.
+  history.pushState({...history.state,psWikiEntry:true,psWikiPosition:null},
+   '',destination);
  }
  if(sameCategory)wikiRenderSelected();
- else{renderDetails();$('detailContent').scrollTop=0}
+ else renderDetails();
+ $('detailContent').scrollTo({top:0,behavior:'instant'});
  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
  saveView();
 }
@@ -1923,7 +1950,6 @@ function renderWiki(root){
      });
      return anchor;
     },
-    onWarReturn:()=>history.state?.psWikiHonorOrigin?history.back():openWikiChapterList(),
     backButton:wikiBackButton,
     mapOptions:Object.entries(wikiIndex?.records('map')||{})
      .map(([id,rec])=>{
@@ -6748,12 +6774,14 @@ window.addEventListener('popstate',event=>{
   if(already)return;
   const same=activeTab==='wiki'&&wikiSelection.type===match[1]&&
    typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
+  restoreWikiFilters(event.state,match[1],match[2]);
   wikiSelection={type:match[1],id:match[2],highlight:match[3]||null};
   activeTab='wiki';
   for(const btn of document.querySelectorAll('[data-tab]'))
    btn.classList.toggle('active',btn.dataset.tab==='wiki');
   if(same)wikiRenderSelected();else renderDetails();
   if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+  restoreWikiPosition(event.state);
   saveView();
  }else if(event.state?.psWikiList&&!location.hash){
   const chapter=event.state.psWikiList;
@@ -6767,6 +6795,7 @@ window.addEventListener('popstate',event=>{
    btn.classList.toggle('active',btn.dataset.tab==='wiki');
   renderDetails();
   if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+  restoreWikiPosition(event.state);
   saveView();
  }else if(activeTab==='wiki'&&!location.hash.startsWith('#b/')){
   // The previous history entry has no wiki hash. Restore its original view.
@@ -6777,17 +6806,15 @@ window.addEventListener('popstate',event=>{
     if(previous.selection)wikiSelection={...previous.selection};
     wikiSearch=typeof previous.search==='string'?previous.search:'';
     wikiShown=Number.isInteger(previous.shown)&&previous.shown>=100?previous.shown:100;
+    if(previous.selection?.type==='item'&&
+     typeof event.state?.psWikiPosition?.itemType==='string')
+     wikiItemType=event.state.psWikiPosition.itemType;
    }
    for(const btn of document.querySelectorAll('[data-tab]'))
     btn.classList.toggle('active',btn.dataset.tab===activeTab);
    renderDetails();
    if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
-   if(previous.tab==='wiki'&&previous.selection?.type==='honor'&&
-    Number.isFinite(event.state?.psWikiHonorScroll))
-    requestAnimationFrame(()=>{
-     if(wikiSelection.type==='honor'&&!wikiSelection.id)
-      $('detailContent').scrollTop=event.state.psWikiHonorScroll;
-    });
+   restoreWikiPosition(event.state);
    saveView();
   }else closeWorkbench();
  }
