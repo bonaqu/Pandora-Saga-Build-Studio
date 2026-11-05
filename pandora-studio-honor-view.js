@@ -9,6 +9,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const en=lang==='en',tr=(ru,english)=>en?english:ru,
   fmt=new Intl.NumberFormat(en?'en-US':'ru-RU');
  const oldBrowseScroll=browse.scrollTop,oldDetailScroll=detail.scrollTop;
+ const oldSection=detail.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||
+  browse.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection||'overview';
+ const oldFilter=detail.querySelector('.wiki-honor-filter.chosen')?.dataset.honorFilter||'all';
  browse.replaceChildren();detail.replaceChildren();
  const node=(tag,cls,text)=>make(tag,{class:cls,text});
  const section=(id,ru,english)=>{
@@ -56,7 +59,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const nav=[];
  for(const [id,ru,english,glyph]of sidebar){
   const jump=make('button',{type:'button',class:'wiki-link wiki-honor-nav-link',
-   'data-honor-section':id,'aria-current':id==='overview'?'location':null});
+   'data-honor-section':id,'aria-current':id===oldSection?'location':null});
   jump.append(node('span','wiki-honor-nav-icon',glyph),
    node('span','',tr(ru,english)));
   jump.addEventListener('click',()=>{
@@ -70,9 +73,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?
      'instant':'smooth'});
   });
+  if(id===oldSection)jump.classList.add('selected');
   nav.push(jump);browse.append(jump);
  }
- nav[0]?.classList.add('selected');
  const title=node('h3','wiki-honor-title',tr('Очки чести','Honor points'));
  detail.append(title,node('p','wiki-honor-subtitle',tr(
   'PvP · нации · звания · награды','PvP · nations · titles · rewards')));
@@ -241,8 +244,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   ['monthly',tr('Месячные · 3','Monthly · 3')]
  ];
  for(const [key,label]of filters){
-  const button=make('button',{type:'button',class:'wiki-honor-filter'+(key==='all'?' chosen':''),
-   text:label,'aria-pressed':String(key==='all'),onclick:()=>{
+  const button=make('button',{type:'button',class:'wiki-honor-filter'+(key===oldFilter?' chosen':''),
+   text:label,'data-honor-filter':key,
+   'aria-pressed':String(key===oldFilter),onclick:()=>{
     for(const choice of rankFilters.querySelectorAll('button')){
      const active=choice===button;
      choice.classList.toggle('chosen',active);choice.setAttribute('aria-pressed',String(active));
@@ -266,31 +270,80 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const name=en?rank.nameEn:rank.nameRu;
   rankTitle.append(editableText(node('strong','',name),name,
    'honor.rank.'+rank.id,en?'nameEn':'nameRu'));
-  rankTitle.append(node('small','',en?rank.nameRu:rank.nameEn));
+  // Display only the active locale, including in owner edit mode.
   header.append(rankTitle);card.append(header);
-  const requirement=rank.top!=null?
-   tr('Топ-'+rank.top+' нации · 1 месяц','Nation top '+rank.top+' · 1 month'):
+  const defaultRequirement=rank.top!=null?
+   tr('Для получения ранга необходимо находиться в топ-'+rank.top+
+    ' нации за предыдущий месяц.',
+    'To earn this rank, finish in your nation’s top '+rank.top+
+    ' for the previous month.'):
    rank.points!=null?
-   fmt.format(rank.points)+' '+tr('оч. «Вся честь»','Total Honor')+
-    ' · '+fmt.format(rank.gold)+' '+tr('золота','gold'):
-   rank.id===0?tr('При вступлении в нацию','On joining a nation'):
-   fmt.format(rank.gold)+' '+tr('золота','gold');
-  card.append(node('small','wiki-honor-requirement',requirement));
+    tr('Для получения ранга необходимо ','To obtain this rank, you need ')+
+    fmt.format(rank.points)+
+    tr(' оч. ресурса «Вся честь» · ',' Total Honor points · ')+
+    fmt.format(rank.gold)+tr(' золота.',' gold.'):
+   rank.id===0?
+    tr('Ранг можно получить при вступлении в любую из существующих наций в игре.',
+     'This rank can be earned by joining any of the nations in the game.'):
+    tr('Для получения ранга необходимо ','To obtain this rank, you need ')+
+     fmt.format(rank.gold)+tr(' золота.',' gold.');
+  const required=en?rank.requirementEn||defaultRequirement:
+   rank.requirementRu||defaultRequirement;
+  card.append(editableText(node('p','wiki-honor-requirement',required),
+   required,'honor.rank.'+rank.id,
+   en?'requirementEn':'requirementRu',true));
   const bonus=en?rank.benefitEn:rank.benefitRu;
   card.append(editableText(node('p','wiki-honor-rank-benefit',bonus),
    bonus,'honor.rank.'+rank.id,en?'benefitEn':'benefitRu',true));
+  card.hidden=oldFilter==='standard'?card.dataset.rankType!=='standard':
+   oldFilter==='monthly'?card.dataset.rankType!=='monthly':false;
   rankGrid.append(card);
  }
  ranks.append(rankGrid);
  const monthly=section('monthly','Ежемесячные звания','Monthly titles');
- paragraph(monthly,en?o.cloaksEn:o.cloaksRu,'honor.overview',
-  en?'cloaksEn':'cloaksRu');
- monthly.append(node('p','wiki-honor-note',tr(
-  'Топ-15 / топ-5 / топ-1 каждой нации определяются 1-го числа по прошлому месяцу. Звание действует месяц и не продлевается автоматически.',
-  'Each nation’s top 15 / top 5 / top 1 is determined on the first day of the month from prior-month results. Titles last one month and never auto-renew.')));
- detail.append(node('p','wiki-honor-sources',tr(
-  'Источники: правила и числа предоставлены игроком, справочники старой Pandora Saga и новость OS от 23.10.2026. Исторические условия могут отличаться от живого сервера.',
-  'Sources: player-supplied rules and figures, historical Pandora Saga references, and the OS announcement of Oct 23, 2026. Historical rules may differ from the live server.')));
+ const rawCloaks=en?o.cloaksEn:o.cloaksRu,field=en?'cloaksEn':'cloaksRu';
+ // The three author-editable cloak groups are kept in the same validated
+ // D1 text field. Existing saved text without blank lines is supported.
+ const monthlyRows=rawCloaks.split(/\n\s*\n|\n(?=Топ-|Top )/).filter(Boolean);
+ const monthlyGrid=make('div',{class:'wiki-honor-monthly-list'});
+ const titles=article.ranks.filter(rank=>rank.top!=null);
+ for(const [index,rank] of titles.entries()){
+  const row=make('article',{class:'wiki-honor-monthly-card'});
+  const name=en?rank.nameEn:rank.nameRu;
+  const head=make('div',{class:'wiki-honor-monthly-head'});
+  head.append(node('strong','',name),
+   node('small','',tr('Нация','Nation')));
+  row.append(head);
+  const fallback=monthlyRows[index]||'';
+  const content=editableText(node('p','wiki-honor-copy wiki-honor-cloak-list',
+   fallback),fallback,'honor.overview',field,true);
+  if(editable){
+   // Editing one nation-group keeps the other two groups and the stored
+   // RU/EN text intact; the editor is still the normal inline D1 textarea.
+   const startEdit=()=>editText(content,fallback,true,next=>{
+    const nextRows=[...monthlyRows];nextRows[index]=next;
+    return saveText('honor.overview',{[field]:nextRows.join('\n\n')});
+   });
+   content.replaceWith(node('p','wiki-honor-copy wiki-honor-cloak-list',fallback));
+   const copy=row.querySelector('.wiki-honor-cloak-list');
+   if(copy){
+    copy.classList.add('wiki-honor-editable');copy.setAttribute('tabindex','0');
+    copy.addEventListener('dblclick',startEdit);
+    copy.addEventListener('keydown',event=>{
+     if(event.key==='F2'){event.preventDefault();startEdit()}
+    });
+   }
+  }else row.append(content);
+  if(editable){
+   const editableCopy=row.querySelector('.wiki-honor-cloak-list');
+   if(editableCopy)row.append(editableCopy);
+  }
+  monthlyGrid.append(row);
+ }
+ monthly.append(monthlyGrid);
+ const note=en?o.monthlyNoteEn:o.monthlyNoteRu;
+ monthly.append(editableText(node('p','wiki-honor-note',note),
+  note,'honor.overview',en?'monthlyNoteEn':'monthlyNoteRu',true));
  browse.scrollTop=oldBrowseScroll;detail.scrollTop=oldDetailScroll;
 }
 root.PandoraHonorView=Object.freeze({render});
