@@ -177,7 +177,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const isZone=kind==='zones',key='honor.'+kind;
   const wrapper=make('section',{class:'wiki-honor-list-section'});
   wrapper.append(node('h5','',tr(captionRu,captionEn)));
-  const content=make('div',{class:'wiki-honor-list'});
+  // Reuse the same compact relation chips as monster spawn locations and
+  // NPC/map links. The owner controls stay adjacent to the proper record.
+  const content=make('div',{class:'wiki-honor-list wiki-entity-flow'});
   for(const [index,item]of items.entries()){
    const row=make('div',{class:'wiki-honor-list-row'});
    const names=make('div',{class:'wiki-honor-list-names'});
@@ -192,7 +194,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     // location name still belongs to the Locations chapter, not here.
     const anchor=item.mapId&&linked?link(item.mapId,value):null;
     if(anchor){
-     anchor.classList.add('wiki-honor-location-link');
+     anchor.classList.add('wiki-honor-location-link','wiki-entity-reference');
+     anchor.prepend(make('span',{class:'wiki-entity-reference-icon',
+      'aria-hidden':'true',text:'◈'}));
      names.append(anchor);
     }else{
      if(editable)name.setAttribute('title',tr(
@@ -203,7 +207,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    }else{
     const anchor=warLink(item.id,value);
     if(anchor){
-     anchor.classList.add('wiki-honor-war-link');
+     anchor.classList.add('wiki-honor-war-link','wiki-entity-reference');
+     anchor.prepend(make('span',{class:'wiki-entity-reference-icon',
+      'aria-hidden':'true',text:'⚔'}));
      names.append(anchor);
     }else names.append(editableListText(name,value,key,items,index,field));
     if(editable&&anchor){
