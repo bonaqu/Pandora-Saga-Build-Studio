@@ -127,12 +127,17 @@ export async function runHonorGuideSmoke(browser,base){
    null,{timeout:20000});
   assert.equal(await cloaks.count(),9,
    'Honor must resolve all 9 cloak links after the catalog loads asynchronously');
+  await cloaks.first().scrollIntoViewIfNeeded();
   await cloaks.first().hover();
   await page.locator('#stage-gear-tooltip').waitFor({state:'visible'});
+  const cloakOrigin=await pane.evaluate(el=>el.scrollTop);
   await cloaks.first().click();
   assert.match(await panel.locator('h3').innerText(),/плащ победителя/);
-  await page.goBack({waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page > .wiki-return-button').click();
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
+  await page.waitForFunction(origin=>
+   Math.abs(document.querySelector('#detailContent').scrollTop-origin)<10,
+   cloakOrigin,{timeout:4000});
   assert.match(await panel.locator('.wiki-honor-monthly-head').first().innerText(),/Награды/);
   assert.match(await panel.locator('#honor-rank-7').innerText(),
    /Министр|129\s*000/);
@@ -157,19 +162,25 @@ export async function runHonorGuideSmoke(browser,base){
    'War detail pages retain two linked war entries in the left navigation');
   assert.equal(await panel.locator('.wiki-honor-rank').count(),0,
    'War pages do not duplicate the full Honor rank article');
-  await page.goBack({waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page > .wiki-return-button').click();
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal(await panel.locator('a.wiki-honor-war-link').count(),2);
   await page.waitForFunction(expected=>
    Math.abs(document.querySelector('#detailContent').scrollTop-expected)<10,
    savedScroll,{timeout:4000});
-  await panel.locator('.wiki-honor-list-section').last()
-   .locator('a.wiki-honor-war-link').filter({hasText:'Гихайм'}).click();
+  const siegheim=panel.locator('.wiki-honor-list-section').last()
+   .locator('a.wiki-honor-war-link').filter({hasText:'Гихайм'});
+  await siegheim.scrollIntoViewIfNeeded();
+  const siegheimOrigin=await pane.evaluate(el=>el.scrollTop);
+  await siegheim.click();
   await page.waitForURL(/#wiki\/honor\/war-siegheim$/);
   assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Гихайм');
   await page.locator('.wiki-page > .wiki-return-button').click();
   await panel.locator('.wiki-honor-monthly-card').first().waitFor({state:'visible'});
   assert.equal(await panel.locator('a.wiki-honor-war-link').count(),2);
+  await page.waitForFunction(expected=>
+   Math.abs(document.querySelector('#detailContent').scrollTop-expected)<10,
+   siegheimOrigin,{timeout:4000});
   assert.equal(await panel.locator('.wiki-honor-add').count(),0,
    'Public readers cannot edit zones or wars');
   // The encyclopedia is a modal workbench. Close it before switching locale
@@ -192,6 +203,8 @@ export async function runHonorGuideSmoke(browser,base){
   const zone=panel.locator('.wiki-honor-list-row')
    .filter({hasText:'Эль Ведд'}).locator('a.wiki-honor-location-link');
   assert.match(await zone.innerText(),/Эль Ведд/);
+  await zone.scrollIntoViewIfNeeded();
+  const mapOrigin=await pane.evaluate(el=>el.scrollTop);
   await zone.click();
   const native=page.locator('.wiki-page .wiki-map-monsters');
   await native.waitFor({state:'visible',timeout:20000});
@@ -202,10 +215,26 @@ export async function runHonorGuideSmoke(browser,base){
   assert.doesNotMatch(await panel.innerText(),/Историческая PvP-локация|не представленная в актуальной карте OS/);
   assert.equal(await panel.locator('.wiki-map-roster-actions').count(),0,
    'Only authenticated administrators can edit the future monster roster');
-  await page.goBack({waitUntil:'domcontentloaded'});
+  // Nested Wiki navigation: map -> linked monster -> Back returns to exact
+  // position inside the map, then Back returns to the Honor PvP-location link.
+  const monsterLink=native.locator('.wiki-mob-row .wiki-link').first();
+  await monsterLink.scrollIntoViewIfNeeded();
+  const mapArticleScroll=await pane.evaluate(el=>el.scrollTop);
+  const mapHash=await page.evaluate(()=>location.hash);
+  await monsterLink.click();
+  await page.waitForURL(/#wiki\/monster\//);
+  await page.locator('.wiki-page > .wiki-return-button').click();
+  await page.waitForFunction(expected=>location.hash===expected,mapHash);
+  await page.waitForFunction(expected=>
+   Math.abs(document.querySelector('#detailContent').scrollTop-expected)<10,
+   mapArticleScroll,{timeout:4000});
+  await page.locator('.wiki-page > .wiki-return-button').click();
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal(await panel.locator('.wiki-honor-location-link').count(),3,
    'Back must restore the original Honor PvP-location links');
+  await page.waitForFunction(expected=>
+   Math.abs(document.querySelector('#detailContent').scrollTop-expected)<10,
+   mapOrigin,{timeout:4000});
   await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
   const ruins=page.locator('.wiki-list [data-wiki-record="astir-underground"]');
   await ruins.waitFor({state:'visible',timeout:15000});
