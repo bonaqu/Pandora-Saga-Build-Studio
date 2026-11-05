@@ -238,8 +238,12 @@ export async function runAdminEntrySmoke(browser,base){
    .locator('option').count()>4,'Location picker must include existing maps');
   const rankBenefit=honorPanel.locator('#honor-rank-8 .wiki-honor-rank-benefit');
   await rankBenefit.dblclick();
-  const editInput=rankBenefit.locator('textarea');
+  // The inline editor intentionally uses a plaintext-only contenteditable,
+  // not a textarea. Exercise the real visible editor element.
+  const editInput=rankBenefit.locator('[data-owner-text-field="true"][contenteditable="plaintext-only"]');
   await editInput.waitFor({state:'visible'});
+  assert.equal(await editInput.getAttribute('role'),'textbox');
+  assert.equal(await editInput.getAttribute('aria-multiline'),'true');
   const updatedBenefit='Новые предметы в обменнике предметов за честь!';
   await editInput.fill(updatedBenefit);
   const honorScrollBefore=await page.locator('#detailContent').evaluate(n=>n.scrollTop);
