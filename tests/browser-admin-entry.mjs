@@ -790,6 +790,14 @@ export async function runInlineMilestonesSmoke(browser,base){
   // Require the real fully validated catalog before exercising the tree.
   await page.waitForFunction(()=>/\d+ навыков · \d+ предметов · \d+ душ/.test(
    document.querySelector('#catalogStatus')?.textContent||''),null,{timeout:20000});
+  // A blank hero no longer silently starts as a Cleric. Choose the
+  // correct profession before inspecting the source-backed prayer track.
+  await page.locator('#raceGrid .race-slide-select').click();
+  await page.locator('[data-origin-tab="class"]').click();
+  await page.locator('#classGrid .class-wizard-choice').nth(2).click(); // Acolyte
+  await page.locator('#classGrid .class-wizard-choice').first().click(); // Priest
+  await page.locator('#classGrid .class-wizard-choice').first().click(); // Cleric
+  assert.match(await page.locator('#activeJob').innerText(),/Клирик/);
   // A brand-new level-1 hero has no allocatable mastery points. Set the
   // planning level to 45 before exercising a real 0 -> 1 -> 2 allocation.
   await page.locator('#level').evaluate(input=>{

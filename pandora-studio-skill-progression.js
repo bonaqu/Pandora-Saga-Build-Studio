@@ -60,15 +60,22 @@ function combatMasteries(state,innate={}){
 function legacyPrayerSpirit(job,state,innate={}){
  return INSPIRED.has(job)?1+Math.floor(prayerAdeptness(state,innate)/10):0;
 }
+// Remaked js/bonus.js BPt[level][1] is the source for spendable skill points.
+// The OS abilityPoint table has different values (e.g. L2=2 rather than 1),
+// so it is used only as a catalog-readiness check, never as this budget.
+function skillGrant(level){
+ if(!Number.isInteger(level)||level<2||level>55)return 0;
+ return level<=10?1:level<=20?2:3;
+}
 function spending(table,level,points){
  const max=Number(level);
  const spent=Object.entries(points||{}).reduce((sum,[key,n])=>sum+(key==='race'?0:value(n)),0);
- if(!table||!Number.isInteger(max)||max<1)return {total:null,spent,remaining:null};
+ if(!table||!Number.isInteger(max)||max<1||max>55)return {total:null,spent,remaining:null};
  let total=0;
  for(let lv=2;lv<=max;lv++){
-  const x=table[String(lv)];
-  if(!Number.isInteger(x)||x<0)return {total:null,spent,remaining:null};
-  total+=x;
+  const existing=table[String(lv)];
+  if(!Number.isInteger(existing)||existing<0)return {total:null,spent,remaining:null};
+  total+=skillGrant(lv);
  }
  return {total,spent,remaining:total-spent};
 }
@@ -80,7 +87,7 @@ function canAllocate(table,level,points,key,cap,amount){
   amount<=cap&&budget.spent-current+amount<=budget.total;
 }
 root.PandoraSkillProgression=Object.freeze({
- potential,trained,setPotential,setTrained,setAuto,spending,canAllocate,
+ potential,trained,setPotential,setTrained,setAuto,skillGrant,spending,canAllocate,
  groupAdeptness,prayerAdeptness,legacyPrayerSpirit,combatMasteries,PRAYER,MAGIC,TECHNIQUE,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);

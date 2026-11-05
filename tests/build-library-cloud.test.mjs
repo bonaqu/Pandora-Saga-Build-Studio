@@ -5,7 +5,7 @@ import worker from '../worker/index.js';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('new heroes are level 1 and sharing is exclusively per saved build',()=>{
  const app=read('pandora-studio-app.js'),html=read('index.html');
- assert.match(app,/function fresh\(\)\{return\{race:1,gender:0,job:16,level:1,/);
+ assert.match(app,/function fresh\(\)\{return\{race:null,gender:0,job:null,level:1,/);
  assert.match(html,/id="level"[^>]*max="55"[^>]*value="1"/);
  assert.match(app,/Сохранить и создать/);
  assert.match(app,/Создать без сохранения/);

@@ -14,7 +14,7 @@ assert.ok(code.startsWith('function renderOriginStats(){'),'origin renderer must
 class Element{
  constructor(tag){
   this.tag=tag;this.children=[];this.listeners={};this.value='';this.textContent='';
-  this.disabled=false;this.attributes={};this.classList={toggle(){},contains(){return false}};
+  this.disabled=false;this.isConnected=true;this.attributes={};this.classList={toggle(){},contains(){return false},add(){},remove(){}};
  }
  append(...items){this.children.push(...items)}
  replaceChildren(...items){this.children=[...items]}
@@ -46,10 +46,13 @@ function fixture(level=55){
   return {stats:Object.fromEntries(labels.map((label,i)=>[
    label.code,s.values[i]+(label.code==='dex'?11:0)]))};
  };
+ const holdSource=app.slice(app.indexOf('function bindHoldStep('),app.indexOf('function setAttributePoints('));
+ const bindHoldStep=Function('lang',holdSource+'\nreturn bindHoldStep;')('ru');
  const render=Function('$','h','STATS','ORIGIN_STAT_LABELS','state',
   'attributeSnapshot','previewBaseStats','setAttributePoints','window','renderDetails','activeTab',
+  'bindHoldStep','lang',
   code+'\nreturn renderOriginStats;')(get,h,names,labels,state,snapshot,estimate,change,
-  {PandoraAttributeProgression:model},()=>{},'character');
+  {PandoraAttributeProgression:model},()=>{},'character',bindHoldStep,'ru');
  render();
  return{rows:roots.originStats.children[0].children,state,snapshot,get persisted(){return persisted}};
 }

@@ -63,10 +63,10 @@ function chosenProfession(){
  const state={job:jobKeys.indexOf('JUGGERNAUT')},grid=new El('div');
  assert.ok(state.job>=0);
  let saves=0;
- const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue','saveView',
+ const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue','saveView','lang',
   fallback+'\nlet jobPathKey=null;\nfunction selectJob(index){state.job=index;renderJobs()}\n'+
   app.slice(start,end)+'\nreturn {renderJobs,state,get:()=>jobPathKey};')(
-  h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++);
+  h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++,'ru');
  const buttons=()=>walk(grid).filter(x=>x.tag==='button');
  const matching=key=>buttons().find(x=>x.className.includes('class-wizard-choice')&&
   x.children[0]?.textContent===jobs[jobKeys.indexOf(key)]);

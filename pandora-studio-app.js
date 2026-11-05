@@ -72,7 +72,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:1,gender:0,job:16,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
@@ -317,6 +317,8 @@ function branchCap(branch){
  return window.PandoraStudioRules.branchCap(catalog.classes,jobKeys[state.job],branch)??0;
 }
 function equipmentIssue(item,slot,snap=state){
+ if(!Number.isInteger(snap.race)||!Number.isInteger(snap.job))
+  return ['Выберите расу и профессию'];
  if(!item)return ['Предмет отсутствует в каталоге'];
  if(!window.PandoraEquipmentPlan.matchesEquipmentSlot(slot,item,slotKeys))
   return ['Предмет не подходит этому слоту'];
@@ -346,6 +348,9 @@ function trainedBranchMasteries(innate={},snap=state){
  ]));
 }
 function previewBaseStats(snap=state){
+ // A new build has no game identity until both choices are explicit.
+ if(!Number.isInteger(snap.race)||!Number.isInteger(snap.job)||
+  snap.race<0||snap.race>=races.length||snap.job<0||snap.job>=jobKeys.length)return null;
  const clazz=catalog.classes?.[jobKeys[snap.job]],raceKey=window.PandoraGameNavigation.raceKeys[snap.race];
  const baseClass=clazz?.baseClass||jobKeys[snap.job];
  const allocation=Object.fromEntries(['vit','str','agi','dex','spi','int'].map((key,i)=>[key,Number(snap.stats?.[STATS[i]]||0)]));
@@ -602,6 +607,7 @@ function allowedBranch(branch){
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
+if(!Number.isInteger(i)||i<0||i>=races.length)return 'assets/pandora-logo.png';
 return override["visual.race."+i+"."+(gender?"m":"f")]||imageUrl(races[i][gender?3:2]);
 }
 function renderRaces(){
@@ -628,7 +634,7 @@ function renderRaces(){
  const actions=h('div',{class:'race-slide-actions'});
  actions.append(h('span',{class:'race-slide-position',text:(racePreviewIndex+1)+' / '+portraitOptions.length}),
   h('button',{type:'button',class:'race-slide-select'+(chosen?' selected':''),'aria-pressed':String(chosen),
-   text:chosen?'✓ Выбрано':'Выбрать этот образ',onclick:chooseRace}));
+   text:chosen?(lang==='en'?'✓ Selected':'✓ Выбрано'):(lang==='en'?'Choose this race':'Выбрать эту расу'),onclick:chooseRace}));
  grid.append(frame,actions);
 }
 const CLASS_PARENT_FALLBACK={"WARRIOR":null,"GLADIATOR":"WARRIOR","KNIGHT":"WARRIOR","SCOUT":null,"ARCHER":"SCOUT","AGENT":"SCOUT","ACOLYTE":null,"PRIEST":"ACOLYTE","ASCETIC":"ACOLYTE","MAGE":null,"WIZARD":"MAGE","DARKROAR":"MAGE","JUGGERNAUT":"GLADIATOR","DRAGOON":"GLADIATOR","GENERAL":"KNIGHT","PALADIN":"KNIGHT","SNIPER":"ARCHER","PREDATOR":"ARCHER","ASSASSIN":"AGENT","DISTURBANCE":"AGENT","CLERIC":"PRIEST","ENCHANTER":"PRIEST","MONK":"ASCETIC","EXORCIST":"ASCETIC","WARLOCK":"WIZARD","CONJURER":"WIZARD","JESTER":"DARKROAR","CALAMITY":"DARKROAR"};
@@ -643,6 +649,7 @@ function selectJob(index){
 }
 function renderJobs(){
  const grid=$('classGrid');grid.replaceChildren();
+ const tr=(ru,en)=>lang==='en'?en:ru;
  const records=jobKeys.map((key,i)=>({key,i,name:editableValue('job.'+i,jobs[i]||key),
   parent:catalog.classes?.[key]?.parent??CLASS_PARENT_FALLBACK[key]??null}));
  const byKey=new Map(records.map(x=>[x.key,x]));
@@ -654,34 +661,37 @@ function renderJobs(){
  for(let k=jobPathKey;k&&byKey.has(k);k=parentOf(k))path.unshift(byKey.get(k));
  const depth=Math.min(path.length,2),activeAncestors=new Set();
  const selectedProfession=byKey.get(jobKeys[state.job])||null;
+ const selectedCurrent=Boolean(current&&state.job===current.i);
  for(let k=jobKeys[state.job];k&&byKey.has(k);k=parentOf(k))activeAncestors.add(k);
  const progress=h('div',{class:'class-wizard-progress','aria-label':'Этап выбора профессии'});
  for(let i=0;i<3;i++){
-  progress.append(h('span',{class:'class-wizard-step'+(i===depth?' current':'')+(i<depth?' completed':''),
-   text:(i+1)+'. '+['Направление','Профессия','Специализация'][i]}));
+  progress.append(h('span',{class:'class-wizard-step'+(i===depth?' current':'')+(i<depth?' completed':'')+
+   (i===depth&&selectedCurrent?' selected':''),
+   text:(i+1)+'. '+(lang==='en'?['Direction','Profession','Specialization']:['Направление','Профессия','Специализация'])[i]}));
  }
  grid.append(progress);
  const top=h('div',{class:'class-wizard-header'});
  if(current){
-  top.append(h('button',{type:'button',class:'class-back',text:'← Назад',onclick:()=>{
+  top.append(h('button',{type:'button',class:'class-back',text:tr('← Назад','← Back'),onclick:()=>{
    jobPathKey=parentOf(jobPathKey);renderJobs();saveView();
   }}));
  }
- top.append(h('strong',{class:'class-wizard-title',text:current?current.name:'Направление профессии'}));
+ top.append(h('strong',{class:'class-wizard-title',text:current?current.name:tr('Выберите направление','Choose a direction')}));
  if(selectedProfession)top.append(h('span',{class:'class-wizard-selected',role:'status',
-  text:'✓ Выбрано: '+selectedProfession.name}));
+  text:tr('✓ Выбрано: ','✓ Selected: ')+selectedProfession.name}));
  grid.append(top);
  if(path.length){
   const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':'Вернуться на предыдущий уровень'});
-  crumbs.append(h('button',{type:'button',text:'Все направления',onclick:()=>{jobPathKey=null;renderJobs();saveView()}}));
-  for(const node of path)crumbs.append(h('button',{type:'button',text:node.name,'aria-current':node.key===jobPathKey?'step':null,
+  crumbs.append(h('button',{type:'button',text:tr('Все направления','All directions'),onclick:()=>{jobPathKey=null;renderJobs();saveView()}}));
+  for(const node of path)crumbs.append(h('button',{type:'button',text:node.name,
+   class:selectedProfession?.key===node.key?'selected':'','aria-current':node.key===jobPathKey?'step':null,
     onclick:()=>{jobPathKey=node.key;renderJobs();saveView()}}));
   grid.append(crumbs);
  }
  if(path.length){
   grid.append(h('p',{class:'class-wizard-path',text:path.map(x=>x.name).join(' › ')}));
-  grid.append(h('button',{type:'button',class:'class-current-select',
-    text:state.job===current.i?'✓ '+current.name+' · выбрано':'Выбрать '+current.name,
+  grid.append(h('button',{type:'button',class:'class-current-select'+(selectedCurrent?' selected':''),
+    text:selectedCurrent?'✓ '+current.name+' · '+tr('выбрано','selected'):tr('Выбрать ','Choose ')+current.name,
     'aria-pressed':String(state.job===current.i),onclick:()=>{
      selectJob(current.i);
     }}));
@@ -691,9 +701,9 @@ function renderJobs(){
  for(const node of next){
   const hasChildren=records.some(x=>x.parent===node.key);
   const selectedOnPath=Boolean(hasChildren&&activeAncestors.has(node.key)&&selectedProfession);
-  const status=state.job===node.i?'✓ Выбрано':
+  const status=state.job===node.i?tr('✓ Выбрано','✓ Selected'):
    selectedOnPath?'✓ '+selectedProfession.name:
-   hasChildren?'Специализации ›':'Выбрать';
+   hasChildren?tr('Специализации ›','Specializations ›'):tr('Выбрать','Select');
   const specialties=Object.entries(catalog.classes?.[node.key]?.branchCaps||{})
    .filter(([,cap])=>Number(cap)>0).sort((a,b)=>Number(b[1])-Number(a[1]))
    .slice(0,2).map(([key])=>catalog.meta?.branchLabels?.[key]||key);
@@ -712,7 +722,9 @@ function renderJobs(){
     ]));
  }
  grid.append(choices);
- if(!next.length&&current)grid.append(h('p',{class:'class-wizard-hint',text:'Конечная специализация. Можно выбрать её или вернуться назад.'}));
+ if(!next.length&&current)grid.append(h('p',{class:'class-wizard-hint',text:selectedCurrent?
+ tr('Специализация выбрана. Можно вернуться и изменить направление.','Specialization selected. Go back to change direction.'):
+ tr('Выберите специализацию или вернитесь назад.','Choose the specialization or go back.')}));
 }
 let workbenchReturnFocus=null;
 function showWorkbench(){
@@ -1075,7 +1087,7 @@ function renderStagePicker(focusSearch=false){
    stageSlotView='choose';persist();render();
  }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
- const records=catalog.live?window.PandoraUIPlanner.planningEquippable(
+ const records=catalog.live&&Number.isInteger(state.race)&&Number.isInteger(state.job)?window.PandoraUIPlanner.planningEquippable(
   Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,
   window.PandoraStudioRules.equipment)
  .filter(rec=>window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender)&&
@@ -1092,6 +1104,7 @@ function renderStagePicker(focusSearch=false){
   const matches=records.filter(rec=>itemName(rec).toLocaleLowerCase('ru').includes(query));
   count.textContent=matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
   if(!catalog.live)list.append(h('p',{class:'muted',text:'Каталог ещё не загружен.'}));
+  else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))list.append(h('p',{class:'muted',text:lang==='en'?'Choose a race and class first.':'Сначала выберите расу и профессию.'}));
   else if(!matches.length)list.append(h('p',{class:'muted',text:'Нет совместимых предметов. Измени поиск или слот.'}));
   for(const rec of matches.slice(0,stageSlotShown)){
    const selected=String(equipped?.id)===String(rec.id);
@@ -1126,11 +1139,55 @@ function renderStagePicker(focusSearch=false){
  if(focusSearch)search.focus({preventScroll:true});
 }
 function attributeSnapshot(){
+ if(!Number.isInteger(state.race)||!Number.isInteger(state.job))return null;
  const klass=catalog.classes?.[jobKeys[state.job]],root=klass?.baseClass||jobKeys[state.job];
  return window.PandoraAttributeProgression.snapshot({
   tables:gameTables,race:window.PandoraGameNavigation.raceKeys[state.race],klass:root,level:state.level,
   added:STATS.map(key=>Number(state.stats[key]||0)),caps:klass?.statCaps
  });
+}
+// Shared input contract for both stat editors: one increment per tap/click,
+// then repeated increments only while the primary pointer is held.
+// No global listeners: removed panels cannot leave orphaned timers behind.
+function bindHoldStep(button,step){
+ let delay=null,interval=null,pressed=false,skipClick=false;
+ const stop=()=>{
+  pressed=false;
+  if(delay!==null){clearTimeout(delay);delay=null}
+  if(interval!==null){clearInterval(interval);interval=null}
+  button.classList.remove('is-repeating');
+ };
+ const run=()=>{
+  if(button.disabled||!button.isConnected){stop();return}
+  step();
+  if(button.disabled)stop();
+ };
+ button.addEventListener('pointerdown',event=>{
+  if(button.disabled||event.button!==0||event.isPrimary===false)return;
+  stop();pressed=true;skipClick=true;run();
+  if(!pressed)return;
+  delay=setTimeout(()=>{
+   delay=null;
+   if(!pressed||!button.isConnected||button.disabled){stop();return}
+   button.classList.add('is-repeating');
+   interval=setInterval(run,85);
+  },340);
+ });
+ button.addEventListener('click',event=>{
+  // Keyboard/assistive clicks have detail=0; never consume them merely because
+  // a previous pointer gesture was cancelled or its click was suppressed.
+  if(event?.detail===0){skipClick=false;run();return}
+  if(skipClick){skipClick=false;return}
+  run();
+ });
+ button.addEventListener('pointerup',stop);
+ button.addEventListener('pointerleave',()=>{stop();skipClick=false});
+ button.addEventListener('pointercancel',()=>{stop();skipClick=false});
+ button.addEventListener('lostpointercapture',stop);
+ button.addEventListener('blur',stop);
+ button.addEventListener('keydown',event=>{if(event.key==='Escape')stop()});
+ button.setAttribute('aria-description',lang==='en'?
+  'Press once to adjust by one; hold to repeat.':'Нажмите для изменения на один; удерживайте для повторения.');
 }
 function setAttributePoints(index,added){
  if(!window.PandoraAttributeProgression.allowed(attributeSnapshot(),index,added))return false;
@@ -1153,7 +1210,9 @@ function renderOriginStats(){
  // Saved stats remain invested-only. The input is the absolute race/class baseline + investment.
  function refresh(){
   const snap=attributeSnapshot(),estimate=previewBaseStats();
-  summary.textContent=snap?'Свободно: '+snap.remaining+' / '+snap.total+' · Потрачено: '+snap.spent:'Характеристики';
+  summary.textContent=snap?'Свободно: '+snap.remaining+' / '+snap.total+' · Потрачено: '+snap.spent:
+  (lang==='en'?'Choose a race and class · ':'Выберите расу и профессию · ')+
+  (lang==='en'?'Level budget: ':'Бюджет уровня: ')+(window.PandoraAttributeProgression.budget(state.level)??'—');
   summary.classList.toggle('over-budget',!!snap?.overBudget);
   for(const row of entries){
    const base=snap?.base[row.i],spent=Number(state.stats[STATS[row.i]]||0);
@@ -1194,8 +1253,8 @@ function renderOriginStats(){
     const scroll=$('detailContent').scrollTop;renderDetails();$('detailContent').scrollTop=scroll;
    }
   };
-  minus.addEventListener('click',()=>commit((attributeSnapshot()?.values[i]??0)-1));
-  plus.addEventListener('click',()=>commit((attributeSnapshot()?.values[i]??0)+1));
+  bindHoldStep(minus,()=>commit((attributeSnapshot()?.values[i]??0)-1));
+  bindHoldStep(plus,()=>commit((attributeSnapshot()?.values[i]??0)+1));
   input.addEventListener('change',()=>commit(input.value));
   wrap.append(title,minus,input,plus,box);
   list.append(wrap);entries.push({i,input,result,caption,minus,plus});
@@ -1205,6 +1264,12 @@ function renderOriginStats(){
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
  root.replaceChildren();
+ const raceName=$('originRaceName');
+ if(!Number.isInteger(state.race)||state.race<0||state.race>=races.length){
+  if(raceName)raceName.textContent=lang==='en'?'Race not selected':'Раса не выбрана';
+  root.append(h('p',{class:'muted',text:lang==='en'?'Choose a race to see its passives.':'Выберите расу, чтобы увидеть её пассивные способности.'}));
+  return;
+ }
  const ids=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
  // A restored local build must not keep a racial passive from a different race.
  const raceKey=window.PandoraGameNavigation.raceKeys[state.race];
@@ -1212,7 +1277,7 @@ function renderOriginPassives(){
     !window.PandoraGameNavigation.selectionValid(catalog.racialPassives,state.race,state.racialPassiveId)){
   state.racialPassiveId=null;persist();
  }
- const raceName=$('originRaceName');if(raceName)raceName.textContent=races[state.race][0];
+ if(raceName)raceName.textContent=races[state.race][lang==='en'?1:0];
  if(!ids.length){root.append(h('p',{class:'muted',text:'Расовые способности появятся после загрузки каталога.'}));return}
  for(const id of ids){
   const skill=catalog.skills?.[String(id)];if(!skill)continue;
@@ -1220,7 +1285,7 @@ function renderOriginPassives(){
   const btn=h('button',{type:'button',class:'origin-passive'+(selected?' selected':''),'aria-pressed':String(selected),
    'aria-label':skill.name+(selected?' — выбрано':' — выбрать'),
    onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();
-    renderOriginVitals();if(stageAttributesPage)renderStageAttributes();
+    renderOriginVitals();renderOriginStats();if(stageAttributesPage)renderStageAttributes();
     if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
@@ -1437,13 +1502,17 @@ function renderPathPages(){
  }
  if(!grow)renderPathSkills();
 }
-function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
+function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hasRace=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length;
+ const hasJob=Number.isInteger(state.job)&&state.job>=0&&state.job<jobKeys.length;
+ const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
- 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);
+ 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race]||(lang==='en'?'Choose a race first':'Сначала выберите расу');$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);
 // The central hero portrait is the Book entry, never an image-edit target.
 // Race portrait artwork remains editable in Origin > Race carousel.
 $('hero').removeAttribute('data-edit-key');$('hero').classList.remove('admin-edit');
-$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
+$('hero').alt=hasRace?races[state.race][lang==='en'?1:0]:(lang==='en'?'Race not selected':'Раса не выбрана');
+$('raceTitle').textContent=hasRace?editableValue('race.'+state.race,races[state.race][lang==='en'?1:0]):(lang==='en'?'Choose a race':'Выберите расу');
+$('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job]):(lang==='en'?'Choose a class':'Выберите профессию');$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
 let wikiOutsideCleanup=null;
 function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -4627,7 +4696,7 @@ function renderProfile(root){
  const view=h("div",{class:"ps-profile-grid"});
  const left=h("section",{class:"ps-profile-art"});
  left.append(h("img",{src:raceSource(state.race,state.gender),alt:tr("Облик расы ","Race appearance: ")+raceName}),
- h("strong",{text:state.name||tr("Без имени","Unnamed hero")}),h("small",{text:raceName+" · "+jobs[state.job]+" · "+state.level+tr(" ур."," lvl.")}));
+ h("strong",{text:state.name||tr("Без имени","Unnamed hero")}),h("small",{text:(raceName||tr('Раса не выбрана','Race not selected'))+" · "+(jobs[state.job]||tr('Профессия не выбрана','Class not selected'))+" · "+state.level+tr(" ур."," lvl.")}));
  const right=h("section",{class:"ps-profile-info"});
  const fields=[["name",tr("Имя героя","Hero name"),state.name||"",64],["guild",tr("Гильдия","Guild"),profile.guild||"",80],
  ["nation",tr("Нация","Nation"),profile.nation||"",80],["rank",tr("Ранг","Rank"),profile.rank||"",80]];
@@ -4663,14 +4732,14 @@ function renderCharacter(root){
  if(characterPanelTab==="profile")renderProfile(body);
  else{
   const cards=h("div",{class:"ps-overview-grid"});
-  cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:tr("Раса","Race")}),h("strong",{text:races[state.race][lang==='en'?1:0]})]),
-   h("div",{class:"ps-overview-card"},[h("span",{text:tr("Профессия","Class")}),h("strong",{text:jobs[state.job]})]),
+  cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:tr("Раса","Race")}),h("strong",{text:races[state.race]?.[lang==='en'?1:0]||tr('Не выбрана','Not selected')})]),
+   h("div",{class:"ps-overview-card"},[h("span",{text:tr("Профессия","Class")}),h("strong",{text:jobs[state.job]||tr('Не выбрана','Not selected')})]),
    h("div",{class:"ps-overview-card"},[h("span",{text:tr("Уровень","Level")}),h("strong",{text:String(state.level)})]));
   body.append(cards);
   const racialTitle=h('div',{class:'subhead',text:'✦ '+(lang==='en'?'Racial passive — choose one':'Расовая пассивка — выбери одну из трёх')});
   const passivePicker=h('div',{class:'race-passive-picker'});
   const passives=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
-  if(!passives.length)passivePicker.append(h('p',{class:'muted',text:tr('Загружаю расовые способности…','Loading racial abilities…')}));
+  if(!passives.length)passivePicker.append(h('p',{class:'muted',text:Number.isInteger(state.race)?tr('Загружаю расовые способности…','Loading racial abilities…'):tr('Выберите расу','Choose a race')}));
   for(const id of passives){
     const skill=catalog.skills?.[id],selected=String(state.racialPassiveId)===String(id);
     if(!skill)continue;
@@ -4758,8 +4827,10 @@ function renderStats(root){
    if(absolute===null||!setAttributePoints(i,absolute-snap.base[i])){refresh();return}
    refresh();renderOriginStats();
   };
-  const minus=h('button',{type:'button',text:'−',onclick:()=>change((attributeSnapshot()?.values[i]??0)-1)});
-  const plus=h('button',{type:'button',text:'+',onclick:()=>change((attributeSnapshot()?.values[i]??0)+1)});
+  const minus=h('button',{type:'button',text:'−'});
+  const plus=h('button',{type:'button',text:'+'});
+  bindHoldStep(minus,()=>change((attributeSnapshot()?.values[i]??0)-1));
+  bindHoldStep(plus,()=>change((attributeSnapshot()?.values[i]??0)+1));
   range.addEventListener('input',()=>change(range.value));
   exact.addEventListener('change',()=>change(exact.value));
   card.append(head,note,total,bar,h('div',{class:'stat-visual-controls'},[minus,range,plus,exact]));

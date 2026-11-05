@@ -66,25 +66,25 @@ function fixture(job='CLERIC',section='prayer',branch='benevolence'){
  const range=walk(target).find(x=>x.tag==='input'&&x.attributes.type==='range');
  return {state,api,target,range,budget};
 }
-test('45-level Cleric with 103 available points has actually ENABLED skill range',()=>{
+test('45-level Cleric with 104 available points has actually ENABLED skill range',()=>{
  const {range,budget}=fixture();
- assert.equal(budget().remaining,103);assert.ok(range);
+ assert.equal(budget().remaining,104);assert.ok(range);
  assert.equal(range.disabled,false);
  assert.equal(Object.hasOwn(range.attributes,'disabled'),false);
  assert.equal(range.attributes.max,'90');
 });
-test('range input spends 10, 30 points and refunds all back to 103',()=>{
+test('range input spends 10, 30 points and refunds all back to 104',()=>{
  const {range,state,budget}=fixture();
  range.value='10';range.listeners.input();
- assert.equal(state.points.benevolence,10);assert.equal(budget().remaining,93);
+ assert.equal(state.points.benevolence,10);assert.equal(budget().remaining,94);
  range.value='30';range.listeners.input();
- assert.equal(state.points.benevolence,30);assert.equal(budget().remaining,73);
+ assert.equal(state.points.benevolence,30);assert.equal(budget().remaining,74);
  range.value='0';range.listeners.input();
- assert.equal(state.points.benevolence,0);assert.equal(budget().remaining,103);
+ assert.equal(state.points.benevolence,0);assert.equal(budget().remaining,104);
 });
 test('zero class-cap cannot be spent',()=>{
  const {range,budget}=fixture('CLERIC','melee','slash');
- assert.ok(range);assert.equal(range.disabled,true);assert.equal(budget().remaining,103);
+ assert.ok(range);assert.equal(range.disabled,true);assert.equal(budget().remaining,104);
 });
 test('actual app category handler collapses and reopens on repeated click',()=>{
  const match=sources['pandora-studio-app.js'].match(/onGroup:(key=>\{[\s\S]*?\n  \}),\n  onExpand:/);
