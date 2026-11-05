@@ -32,6 +32,9 @@ test('Honor displays succinct rank descriptions and three proper monthly title g
  assert.match(view,/rank\.requirementRu/);
  assert.doesNotMatch(view,/en\?rank\.nameRu:rank\.nameEn/);
  assert.doesNotMatch(view,/Вторая локаль|Other language/);
+ assert.match(view,/if\(isZone\)\{/);
+ assert.match(view,/Names of existing maps are managed in the Locations editor only/);
+ assert.match(view,/linked\?\(en\?linked\.nameEn:linked\.nameRu\):item\[field\]/);
  assert.doesNotMatch(view,/23.10.2026/);
 });
 
