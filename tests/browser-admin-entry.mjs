@@ -485,7 +485,10 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await edge.getAttribute('aria-expanded'),'false');
   const firstItem=page.locator('[data-wiki-record="1"]');
   await firstItem.waitFor({state:'visible',timeout:20000});
-  await firstItem.click();
+  // The wiki list can redraw while indexed search settles. Keyboard
+  // activation is stable across re-renders and verifies accessible links.
+  await firstItem.press('Enter');
+  await page.locator('.wiki-page .item-fields').waitFor({state:'visible',timeout:20000});
   const attackLabel=page.locator('.item-fields dt').filter({hasText:'Атака'}).first();
   const attack=attackLabel.locator('xpath=following-sibling::dd[1]');
   await attack.dblclick();
