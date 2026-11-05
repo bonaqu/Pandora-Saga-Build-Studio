@@ -629,12 +629,13 @@ function originCopyLabel(node,key,ru,en,{pencilHost=null}={}){
  if(!node)return node;
  if(!node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))
   node.textContent=originCopy(key,ru,en);
+ if(!node.dataset)node.dataset={}; // lightweight browser-free test elements
  node.dataset.originCopyKey=key;
  const editing=Boolean(adminEditing&&adminToken);
- node.classList.toggle('origin-copy-editable',editing);
+ node.classList?.toggle?.('origin-copy-editable',editing);
  if(!node.dataset.originCopyBound){
   node.dataset.originCopyBound='1';
-  node.addEventListener('dblclick',event=>{
+  node.addEventListener?.('dblclick',event=>{
    if(!adminEditing||!adminToken)return;
    event.preventDefault();event.stopImmediatePropagation();
    editOriginCopyLabel(node,key,ru,en);
