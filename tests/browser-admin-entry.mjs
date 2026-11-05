@@ -197,6 +197,35 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/PR правок/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
+  // Origin captions share the same authenticated inline D1 path as approved
+  // encyclopedia editing: pencil -> focus/blur -> independent RU/EN fields.
+  const raceCopy='guideedit.book.origin.raceChoose';
+  const originEditor=async value=>{
+   await page.locator('[data-origin-edit-for="raceChoose"]').click();
+   const field=page.locator('.origin-copy-input-slot [contenteditable]');
+   await field.waitFor({state:'visible'});
+   await field.fill(value);
+   await field.press('Tab');
+   await page.waitForFunction(()=>!document.querySelector('.origin-copy-input-slot'));
+   assert.equal((await page.locator('.race-slide-select').innerText()).trim(),value);
+  };
+  assert.equal(await page.locator('[data-origin-edit-for="raceChoose"]').count(),1);
+  await originEditor('Выбрать расу');
+  assert.equal(JSON.parse(townOverrides.get(raceCopy)).ru,'Выбрать расу');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.querySelector('.race-slide-select')?.textContent==='Choose this race');
+  await originEditor('Select race');
+  assert.deepEqual(JSON.parse(townOverrides.get(raceCopy)),
+   {ru:'Выбрать расу',en:'Select race'});
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.querySelector('.race-slide-select')?.textContent==='Выбрать расу');
+  const viewer=await context.newPage();
+  await viewer.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await viewer.waitForFunction(()=>document.querySelector('.race-slide-select')?.textContent==='Выбрать расу');
+  assert.equal(await viewer.locator('[data-origin-edit-for="raceChoose"]').count(),0,
+   'Guests cannot edit stored Origin labels');
+  await viewer.close();
+  assert.equal(await page.locator('#originTabs [data-origin-copy-key="tabRace"]').count(),1);
   // A floating owner drawer must preserve explicit expansion across workbenches.
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
