@@ -2456,7 +2456,10 @@ function renderWiki(root){
 
   if(type==='item'||type==='chest'||type==='soul'){
     const img=wikiImage(wikiIcon(type,id,rec),'wiki-record-icon wiki-item-portrait',type);
-    if(img)detail.prepend(img);
+    if(img){
+     const nav=detail.querySelector('.wiki-page-nav');
+     if(nav)nav.after(img);else detail.prepend(img);
+    }
   }
   const described=type==='chest'?wikiData.items?.[id]:rec;
   const englishDescription=lang==='en'?(described?.descEn||rec?.descEn||officialEnglish?.[
@@ -4130,7 +4133,12 @@ function renderWiki(root){
       const rewardMeta=h('div',{class:'wiki-chest-reward-meta'});
       if(adminEditing&&adminToken){
        const quantity=h('span',{class:'wiki-reward-quantity wiki-edit-value',
-        text:'×'+(row.n??1),title:'Двойной клик — изменить количество'});
+        text:'×'+(row.n??1),
+        'aria-label':wt('Количество. Двойной клик — изменить',
+         'Quantity. Double-click to edit')});
+       window.PandoraGuideTooltip?.attach(quantity,
+        wt('Двойной клик — изменить количество','Double-click to edit quantity'),
+        {hoverDelay:1000});
        quantity.ondblclick=e=>{e.preventDefault();
         editWikiValue(quantity,row.n??1,{type:'number',min:1,max:999999,integer:true,
          onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
@@ -4145,8 +4153,12 @@ function renderWiki(root){
        text:wt('Душ: ','Souls: ')+row.soul}));
       if(adminEditing&&adminToken){
        const chance=h('small',{class:'wiki-reward-percent wiki-edit-value',
-        title:'Двойной клик — изменить вероятность внутри группы',
-        text:window.PandoraStudioChestPresentation.chance(row.p,lang)});
+        text:window.PandoraStudioChestPresentation.chance(row.p,lang),
+        'aria-label':wt('Шанс внутри группы. Двойной клик — изменить',
+         'Chance within this roll. Double-click to edit')});
+       window.PandoraGuideTooltip?.attach(chance,
+        wt('Двойной клик — изменить шанс внутри группы',
+         'Double-click to edit the chance within this group'),{hoverDelay:1000});
        chance.ondblclick=e=>{e.preventDefault();
         editWikiValue(chance,row.p,{type:'number',min:0,max:100,
          onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
