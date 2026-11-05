@@ -15,5 +15,5 @@ test('encyclopedia provides true counts and can progressively load all matches',
 test('search and category changes reset pagination without dropping entries',()=>{
  const code=get('pandora-studio-app.js');
  assert.match(code,/wikiSearch=search.value;wikiShown=100/);
- assert.match(code,/wikiSearch='';wikiShown=100;renderDetails\(\)/);
+ assert.match(code,/wikiSearch='';wikiShown=100;\s*if\(location\.hash\.startsWith\('#wiki\/'\)\)openWikiChapterList\(\)/);
 });
