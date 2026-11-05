@@ -114,7 +114,20 @@ export async function runItemHoverDelaySmoke(browser,base){
   await page.keyboard.press('Escape');
   assert.equal(await tooltip.count(),0,'Escape closes focused item preview');
   assert.equal(await spata.getAttribute('aria-describedby'),null);
+  assert.equal(await page.evaluate(()=>location.hash),'#wiki/item/1',
+   'First Escape must preserve Spata article and navigation state');
+  assert.equal(await page.locator('#detailPanel').getAttribute('aria-modal'),'true',
+   'Closing a preview must not close the Encyclopedia workbench');
   await spata.evaluate(node=>node.blur());
+
+  // Escape must also cancel a scheduled (not yet visible) preview.
+  await hover(spata,'Spata pending hover');
+  await page.waitForTimeout(110);
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(710);
+  assert.equal(await tooltip.count(),0,'Escape cancels a not-yet-visible tooltip');
+  assert.equal(await page.evaluate(()=>location.hash),'#wiki/item/1');
+  await clearPointer();
 
   // A pending hover cannot leak into the next page after a click.
   await hover(spata,'Spata NPC trade');
