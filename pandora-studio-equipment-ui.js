@@ -101,35 +101,48 @@ function summary(record,icon,kind='item',context=null){
  }
  return wrap;
 }
-let livePreview=null,liveTarget=null;
+// A short intentional hover prevents rapid pointer movement across trade,
+// loot and equipment links from opening a large item tooltip every time.
+// All item and Soul previews use this single controller and timing.
+const ITEM_PREVIEW_HOVER_DELAY_MS=650;
+let livePreview=null,liveTarget=null,pendingPreview=null;
+function cancelPendingPreview(){
+ if(!pendingPreview)return;
+ clearTimeout(pendingPreview.timer);
+ pendingPreview=null;
+}
 function dismissPreview(){
+ cancelPendingPreview();
  livePreview?.remove();
  liveTarget?.removeAttribute('aria-describedby');
  livePreview=null;liveTarget=null;
 }
-// Outside clicks, Escape and page navigation dismiss any item preview.
+// An item window must not linger after navigation, scrolling, closing the
+// page, clicking elsewhere or leaving the link before its timer completes.
 document.addEventListener?.('pointerdown',event=>{
- if(liveTarget&&!liveTarget.contains(event.target))dismissPreview();
+ if((liveTarget&&!liveTarget.contains(event.target))||
+  (pendingPreview&&!pendingPreview.target.contains(event.target)))
+  dismissPreview();
 },true);
 document.addEventListener?.('keydown',event=>{
  if(event.key==='Escape')dismissPreview();
 });
+document.addEventListener?.('scroll',dismissPreview,{capture:true,passive:true});
+document.addEventListener?.('visibilitychange',()=>{
+ if(document.hidden)dismissPreview();
+});
 root.addEventListener?.('hashchange',dismissPreview);
+root.addEventListener?.('popstate',dismissPreview);
+root.addEventListener?.('blur',dismissPreview);
 function attachPreview(target,record,icon,kind='item',context=null){
  if(!record)return;
- // A custom preview must never coexist with the browser's native title popup.
+ // Never allow the browser's native title bubble to compete with our preview.
  target.removeAttribute('title');
  target.querySelectorAll?.('[title]').forEach(node=>node.removeAttribute('title'));
- let tip=null;
- const remove=()=>{
-  if(livePreview===tip)dismissPreview();
-  else tip?.remove();
-  tip=null;target.removeAttribute('aria-describedby');
- };
  const show=()=>{
-  if(tip?.isConnected)return;
-  dismissPreview();remove();
-  tip=el('aside',{id:'stage-gear-tooltip',class:'stage-hover-preview stage-item-tooltip',
+  if(!target.isConnected||liveTarget===target&&livePreview?.isConnected)return;
+  dismissPreview();
+  const tip=el('aside',{id:'stage-gear-tooltip',class:'stage-hover-preview stage-item-tooltip',
    role:'tooltip'},[summary(record,icon,kind,context)]);
   livePreview=tip;liveTarget=target;
   document.body.append(tip);
@@ -139,7 +152,8 @@ function attachPreview(target,record,icon,kind='item',context=null){
   tip.style.maxWidth=Math.max(180,Math.min(380,vw-16))+'px';
   tip.style.maxHeight=Math.max(110,vh-16)+'px';
   const w=tip.getBoundingClientRect().width,h=tip.getBoundingClientRect().height;
-  // Prefer the side of the slot with enough space. Avoid covering the hovered icon.
+  // Keep the rich tooltip outside the document flow and away from the
+  // hovered element so its appearance cannot oscillate the pointer hitbox.
   const right=box.right+10,left=box.left-w-10;
   const preferredLeft=Boolean(target.closest?.('.right-rail'));
   const preferredRight=Boolean(target.closest?.('.left-rail'));
@@ -150,9 +164,27 @@ function attachPreview(target,record,icon,kind='item',context=null){
   const y=Math.max(8,Math.min(vh-h-8,box.top));
   tip.style.left=x+'px';tip.style.top=y+'px';
  };
- target.addEventListener('mouseenter',show);
- target.addEventListener('focus',show);
- target.addEventListener('mouseleave',remove);
+ const remove=()=>{
+  if(liveTarget===target||pendingPreview?.target===target)dismissPreview();
+ };
+ target.addEventListener('pointerenter',event=>{
+  if(event.pointerType==='touch')return;
+  dismissPreview();
+  const timer=setTimeout(()=>{
+   if(pendingPreview?.target!==target)return;
+   pendingPreview=null;
+   // Never display a stale preview if the page rerendered during a hover.
+   if(target.isConnected&&target.matches(':hover'))show();
+  },ITEM_PREVIEW_HOVER_DELAY_MS);
+  pendingPreview={target,timer};
+ });
+ target.addEventListener('pointerleave',remove);
+ target.addEventListener('pointerdown',remove);
+ target.addEventListener('focus',()=>{
+  // Pointer-initiated focus must not skip the mouse delay. Keyboard focus
+  // remains immediate and accessible via aria-describedby.
+  if(target.matches(':focus-visible'))show();
+ });
  target.addEventListener('blur',remove);
  target.addEventListener('click',remove);
 }
