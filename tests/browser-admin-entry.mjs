@@ -695,7 +695,9 @@ export async function runAdminEntrySmoke(browser,base){
   const newNpcId=newNpcKeys[0].slice('wikiedit.npc.'.length);
   await elBeht.locator('.wiki-owner-location-residents a[href="#wiki/npc/'+newNpcId+'"]')
    .waitFor({state:'visible',timeout:20000});
-  assert.ok(await ownerPanel.locator('[data-owner-count]').innerText());
+  // The drawer may be collapsed after Wiki navigation; textContent still
+  // represents the saved D1 count, unlike hidden-element innerText.
+  assert.match(await ownerPanel.locator('[data-owner-count]').textContent(),/запис/);
   console.log('Chromium future-map NPC D1 passed: create, link and display bilingual owner NPC');
   console.log('Chromium future-map roster D1 passed: owner monster creation and cross-link');
   console.log('Chromium owner location created and edited through D1: RU/EN, tags, sections');
