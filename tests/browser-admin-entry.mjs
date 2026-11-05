@@ -225,6 +225,35 @@ export async function runAdminEntrySmoke(browser,base){
   assert.ok(Math.abs(expandedOnWiki.left)<2&&
    expandedOnWiki.right<=expandedOnWiki.viewport+2,
    'Expanded editor not docked at left in Wiki: '+JSON.stringify(expandedOnWiki));
+  // Honor is directly editable and D1-saving must preserve the encyclopedia
+  // scroll position rather than rebuilding the entire workbench from the top.
+  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  const honorPanel=page.locator('.wiki-page');
+  await honorPanel.locator('.wiki-honor-rank').first().waitFor({state:'visible'});
+  assert.doesNotMatch(await honorPanel.innerText(),
+   /RULE UPDATE|ИЗМЕНЕНИЕ ПРАВИЛ|Официальная новость|Источники:/);
+  assert.doesNotMatch(await honorPanel.locator('.wiki-honor-list').first().innerText(),
+   /Muldian Uncivilized District|El Beht|Underground of Astir/);
+  assert.ok(await honorPanel.locator('.wiki-honor-location-select').first()
+   .locator('option').count()>4,'Location picker must include existing maps');
+  const rankBenefit=honorPanel.locator('#honor-rank-8 .wiki-honor-rank-benefit');
+  await rankBenefit.dblclick();
+  const editInput=rankBenefit.locator('textarea');
+  await editInput.waitFor({state:'visible'});
+  const updatedBenefit='Новые предметы в обменнике предметов за честь!';
+  await editInput.fill(updatedBenefit);
+  const honorScrollBefore=await page.locator('#detailContent').evaluate(n=>n.scrollTop);
+  assert.ok(honorScrollBefore>150,'Scroll restoration test must start below article top');
+  await editInput.blur();
+  await page.waitForFunction(expected=>{
+   const text=document.querySelector('#honor-rank-8 .wiki-honor-rank-benefit')?.textContent;
+   return text===expected;
+  },updatedBenefit,{timeout:20000});
+  const honorScrollAfter=await page.locator('#detailContent').evaluate(n=>n.scrollTop);
+  assert.ok(Math.abs(honorScrollAfter-honorScrollBefore)<18,
+   'Saving Honor jumps to top: '+JSON.stringify({honorScrollBefore,honorScrollAfter}));
+  assert.equal(JSON.parse(townOverrides.get('guideedit.honor.rank.8')).benefitRu,
+   updatedBenefit);
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
   // All catalog requests are mocked; no production Worker or D1 is mutated.
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
