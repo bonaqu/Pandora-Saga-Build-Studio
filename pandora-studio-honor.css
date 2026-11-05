@@ -51,12 +51,6 @@
 .wiki-honor-resource>strong{font:700 18px 'Cormorant Garamond',Georgia,serif;color:#ffe0ac}
 .wiki-honor-resource>p{font:10px/1.5 Manrope,Arial,sans-serif;
  color:#d8bd99;margin:0}
-.wiki-honor-patch{display:grid;gap:5px;padding:9px;
- border-left:2px solid #c69757;background:#251a12}
-.wiki-honor-patch>small{font-size:10px;font-weight:700;letter-spacing:.07em;
- color:#e5b878}
-.wiki-honor-patch p{font:11px/1.5 Manrope,Arial,sans-serif;color:#e2c59a}
-.wiki-honor-patch a{font-size:10px;color:#edc786}
 .wiki-honor-joining{display:flex;justify-content:space-between;align-items:center;
  flex-wrap:wrap;gap:7px;padding:9px;border:1px solid #a58046;background:#45301e;
  border-radius:4px}
@@ -71,13 +65,63 @@
 .wiki-honor-list-names{display:grid;gap:3px;flex:1 1 130px;min-width:0}
 .wiki-honor-list-names span{font:600 11px/1.35 Manrope,Arial,sans-serif;
  color:#edcfa1;overflow-wrap:anywhere}
-.wiki-honor-list-names span+span{font-size:10px;color:#ad9679}
 .wiki-honor-list-row .wiki-link{font-size:10px;padding:3px}
-.wiki-honor-location-select{min-width:0;max-width:142px;padding:5px;
- background:#1c140e;color:#e9c899;border:1px solid #997048;font-size:10px}
-.wiki-honor-new{display:flex;flex-wrap:wrap;align-items:center;gap:5px;
- padding:8px;border:1px dashed #92714b}
-.wiki-honor-new input{min-width:90px;flex:1 1 150px;padding:7px;
+.wiki-honor-location-select{
+ min-width:0;max-width:min(100%,260px);min-height:32px;padding:7px 9px;
+ background:#21180f;color:#e9c899;border:1px solid #997048;
+ border-radius:4px;font-size:11px;cursor:pointer;
+}
+.wiki-honor-location-select:focus-visible,.wiki-honor-new input:focus-visible{
+ outline:2px solid #e3ba83;outline-offset:2px;
+}
+.wiki-honor-open-location.wiki-link{
+ display:inline-grid;place-items:center;flex:0 0 30px;
+ width:30px;max-width:30px;min-height:30px;padding:3px;margin:0;
+ border-radius:5px;font-size:17px;
+}
+.wiki-honor-new{
+ display:grid;grid-template-columns:minmax(0,1fr) auto auto;
+ align-items:center;gap:7px;padding:11px;
+ border-radius:5px;background:#271c13;
+}
+.wiki-honor-new input,.wiki-honor-new select{width:100%;max-width:none;min-width:0}
+.wiki-honor-new .wiki-honor-error,.wiki-honor-new .wiki-honor-create-location{
+ grid-column:1/-1;
+}
+.wiki-honor-create-location{
+ display:inline-flex;justify-content:flex-start;align-items:center;
+ border:0;background:transparent;color:#e4bf88;
+ font-size:11px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;
+}
+.wiki-honor-monthly-list{display:grid;gap:10px}
+.wiki-honor-monthly-card{
+ display:grid;gap:8px;padding:12px;min-width:0;
+ border:1px solid #896339;border-radius:5px;
+ background:linear-gradient(140deg,#372516,#211910);
+}
+.wiki-honor-monthly-head{
+ display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+ padding-bottom:7px;border-bottom:1px solid #80603d69;
+}
+.wiki-honor-monthly-head strong{
+ color:#f4d19a;font:650 20px/1.15 'Cormorant Garamond',Georgia,serif;
+}
+.wiki-honor-monthly-head small{
+ font:600 10px Manrope,Arial,sans-serif;color:#bca280;
+}
+.wiki-honor-monthly-card .wiki-honor-cloak-list{
+ margin:0;padding-left:1px;white-space:pre-line;
+ font:11px/1.8 Manrope,Arial,sans-serif;
+}
+.wiki-honor-requirement{
+ margin:0;padding:7px 9px;border-left:2px solid #b89354;
+ background:#302317;color:#e5c89d;font:600 11px/1.5 Manrope,Arial,sans-serif;
+}
+.wiki-honor-note{font:11px/1.6 Manrope,Arial,sans-serif;
+ color:#cdb38e;margin:3px 0 0}
+
+
+ .wiki-honor-new input{padding:7px;
  background:#1b140e;color:#efd4a6;border:1px solid #957047}
 .wiki-honor-editable{text-decoration:underline dotted #9e7952;text-underline-offset:3px;
  cursor:text;border-radius:2px}
@@ -98,12 +142,11 @@
 .wiki-honor-rank-name small{font:10px Manrope,Arial,sans-serif;color:#ac9479}
 .wiki-honor-requirement{font:650 10px/1.45 Manrope,Arial,sans-serif;color:#debe89}
 .wiki-honor-rank-benefit{font:10px/1.45 Manrope,Arial,sans-serif;color:#d8bf9b}
-.wiki-honor-note,.wiki-honor-sources{font:10px/1.55 Manrope,Arial,sans-serif;
- color:#bba68b}
 @media(max-width:600px){.wiki-honor-rank-list{grid-template-columns:1fr}
  .wiki-honor-dual{grid-template-columns:1fr}
  .wiki-honor-section{padding:9px}
  .wiki-honor-rank{padding:9px}
+ .wiki-honor-new{grid-template-columns:minmax(0,1fr) auto}
  .stage-guide-popup{max-width:min(235px,80vw)}}
 @media(prefers-reduced-motion:reduce){.wiki-honor-jump{scroll-behavior:auto}}
 
