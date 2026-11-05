@@ -10,7 +10,7 @@ test('all 9 monthly cloak rewards have one real item in the published source cat
  const items=JSON.parse(read('data/os/items.json'));
  const rewardNames=guide.PandoraHonorGuide.article({}).overview.cloaksRu
   .split(/\n/).map(line=>line.match(/[—–]\s*([^;]+);?$/)?.[1])
-  .filter(Boolean).map(x=>x.replace(/;$/,'').trim());
+  .filter(Boolean).map(x=>x.replace(/[;,.]+$/,'').trim());
  assert.equal(rewardNames.length,9);
  const byName=Object.values(items);
  for(const name of rewardNames){
