@@ -89,3 +89,9 @@ test('all Wiki records reuse the Honor Back button and one source of CSS styles'
  assert.doesNotMatch(polish,/wiki-page-nav|wiki-nav-button/);
  assert.doesNotMatch(app,/class:'wiki-page-nav'/);
 });
+
+test('Honor resolves item and location links after a late catalog fetch',()=>{
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/if\(!wikiIndex\)\{\s*void loadWiki\(\)\.then\(\(\)=>\{/);
+ assert.match(app,/if\(root\.isConnected&&activeTab==='wiki'&&wikiSelection\.type==='honor'\)\s*renderHonor\(\)/);
+});
