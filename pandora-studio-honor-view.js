@@ -311,33 +311,27 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const row=make('article',{class:'wiki-honor-monthly-card'});
   const name=en?rank.nameEn:rank.nameRu;
   const head=make('div',{class:'wiki-honor-monthly-head'});
-  head.append(node('strong','',name),
+  head.append(editableText(node('strong','',name),name,
+   'honor.rank.'+rank.id,en?'nameEn':'nameRu'),
    node('small','',tr('Нация','Nation')));
   row.append(head);
-  const fallback=monthlyRows[index]||'';
-  const content=editableText(node('p','wiki-honor-copy wiki-honor-cloak-list',
-   fallback),fallback,'honor.overview',field,true);
+  const entry=monthlyRows[index]||'';
+  const content=node('p','wiki-honor-copy wiki-honor-cloak-list',entry);
   if(editable){
-   // Editing one nation-group keeps the other two groups and the stored
-   // RU/EN text intact; the editor is still the normal inline D1 textarea.
-   const startEdit=()=>editText(content,fallback,true,next=>{
+   // One editable nation group; merge with two unchanged groups on save.
+   const startEdit=()=>editText(content,entry,true,next=>{
     const nextRows=[...monthlyRows];nextRows[index]=next;
-    return saveText('honor.overview',{[field]:nextRows.join('\n\n')});
+    return saveText('honor.overview',{[field]:nextRows.join('\\n\\n')});
    });
-   content.replaceWith(node('p','wiki-honor-copy wiki-honor-cloak-list',fallback));
-   const copy=row.querySelector('.wiki-honor-cloak-list');
-   if(copy){
-    copy.classList.add('wiki-honor-editable');copy.setAttribute('tabindex','0');
-    copy.addEventListener('dblclick',startEdit);
-    copy.addEventListener('keydown',event=>{
-     if(event.key==='F2'){event.preventDefault();startEdit()}
-    });
-   }
-  }else row.append(content);
-  if(editable){
-   const editableCopy=row.querySelector('.wiki-honor-cloak-list');
-   if(editableCopy)row.append(editableCopy);
+   content.classList.add('wiki-honor-editable');
+   content.setAttribute('tabindex','0');
+   content.setAttribute('title',tr('Двойной клик — изменить','Double-click to edit'));
+   content.addEventListener('dblclick',startEdit);
+   content.addEventListener('keydown',event=>{
+    if(event.key==='F2'){event.preventDefault();startEdit()}
+   });
   }
+  row.append(content);
   monthlyGrid.append(row);
  }
  monthly.append(monthlyGrid);
