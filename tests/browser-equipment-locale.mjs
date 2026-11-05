@@ -58,6 +58,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.waitForFunction(expected=>location.hash===expected,chosenHash);
   // Search while an article is open must not leave its stale deep-link in
   // the address bar; browser Back must still return to the prior article.
+  await page.locator('.wiki-controls input[type="search"]').click();
   await page.locator('.wiki-controls input[type="search"]').fill('zz-no-such-item-368');
   await page.waitForFunction(()=>location.hash==='');
   await page.goBack();
