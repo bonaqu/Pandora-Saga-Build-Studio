@@ -107,6 +107,15 @@ export async function runHonorGuideSmoke(browser,base){
   };
   for(const chapter of ['overview','gain','ranks','monthly'])
    await autoHighlight(chapter);
+  // Reproduce a reader dragging the scrollbar to the very end: the final
+  // monthly heading cannot reach a 100px top threshold in this position.
+  await pane.evaluate(el=>el.scrollTo({
+   top:el.scrollHeight-el.clientHeight,behavior:'instant'
+  }));
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-honor-nav-link.selected')?.dataset.honorSection==='monthly',
+   null,{timeout:4000});
+  assert.equal(await menu.locator('[data-honor-section="monthly"][aria-current="location"]').count(),1);
   await menu.locator('[data-honor-section="overview"]').click();
   await page.waitForFunction(()=>document.querySelector(
    '.wiki-honor-nav-link.selected')?.dataset.honorSection==='overview');
@@ -127,6 +136,36 @@ export async function runHonorGuideSmoke(browser,base){
    .locator('.wiki-honor-list-row').count(),3);
   assert.equal(await panel.locator('.wiki-honor-list-section').last()
    .locator('.wiki-honor-list-row').count(),2);
+  const warList=panel.locator('.wiki-honor-list-section').last();
+  assert.equal(await warList.locator('a.wiki-honor-war-link').count(),2,
+   'Existing wars and future D1 rows use their names as links');
+  assert.equal(await warList.locator('.wiki-honor-war-rename').count(),0,
+   'No administrative war edit affordances appear for public readers');
+  const savedScroll=await pane.evaluate(el=>{
+   el.scrollTo({top:Math.min(460,el.scrollHeight-el.clientHeight),behavior:'instant'});
+   return el.scrollTop;
+  });
+  await warList.locator('a.wiki-honor-war-link').filter({hasText:'Лидия'}).click();
+  await page.waitForURL(/#wiki\/honor\/war-lidia$/);
+  assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Лидия');
+  assert.match(await panel.locator('.wiki-honor-war-eyebrow').innerText(),/PvP-война/);
+  assert.equal(await panel.locator('.wiki-honor-war-link').count(),2,
+   'War pages retain a linked navigation list');
+  assert.equal(await panel.locator('.wiki-honor-rank').count(),0,
+   'War pages do not duplicate the full Honor rank article');
+  await page.goBack({waitUntil:'domcontentloaded'});
+  await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
+  assert.equal(await panel.locator('a.wiki-honor-war-link').count(),2);
+  await page.waitForFunction(expected=>
+   Math.abs(document.querySelector('#detailContent').scrollTop-expected)<10,
+   savedScroll,{timeout:4000});
+  await panel.locator('.wiki-honor-list-section').last()
+   .locator('a.wiki-honor-war-link').filter({hasText:'Гихайм'}).click();
+  await page.waitForURL(/#wiki\/honor\/war-siegheim$/);
+  assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Гихайм');
+  await panel.locator('.wiki-honor-war-return').click();
+  await panel.locator('.wiki-honor-monthly-card').first().waitFor({state:'visible'});
+  assert.equal(await panel.locator('a.wiki-honor-war-link').count(),2);
   assert.equal(await panel.locator('.wiki-honor-add').count(),0,
    'Public readers cannot edit zones or wars');
   // The encyclopedia is a modal workbench. Close it before switching locale
@@ -175,6 +214,10 @@ export async function runHonorGuideSmoke(browser,base){
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal((await panel.locator('.wiki-honor-rank').count()),12);
+  // Direct links to a war must also open after a fresh page load.
+  await page.goto(base+'/#wiki/honor/war-lidia',{waitUntil:'domcontentloaded'});
+  await panel.locator('.wiki-honor-war-title').waitFor({state:'visible',timeout:20000});
+  assert.match(await panel.locator('.wiki-honor-war-title').innerText(),/Лидия/);
   // The Phoenix Flame explanation previously displaced the hovered term
   // and triggered an endless show/hide layout oscillation.
   await page.goto(base+'/#wiki/item/252',{waitUntil:'domcontentloaded'});
@@ -199,6 +242,6 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await explanation.evaluate(node=>getComputedStyle(node).position),
    'absolute','The tooltip must float over the page rather than relayout it');
   assert.deepEqual(errors,[]);
-  console.log('Chromium Honor: scrollspy, compact gold ranks, direct PvP map links, 12 original icons and RU/EN');
+  console.log('Chromium Honor: bottom monthly highlight, deep-linked PvP war pages, map navigation and 12 rank icons');
  }finally{await context.close()}
 }
