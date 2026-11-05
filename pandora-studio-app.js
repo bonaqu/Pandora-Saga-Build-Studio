@@ -1539,6 +1539,22 @@ function openWiki(type,id,highlight=null){
  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
  saveView();
 }
+function openWikiChapterList(){
+ const chapter=wikiSelection.type;
+ if(!['item','monster','map','npc','chest','skill','soul','instance'].includes(chapter))return;
+ const listView={type:chapter,itemType:wikiItemType,search:wikiSearch,shown:wikiShown};
+ const previous=history.state&&typeof history.state==='object'?history.state:{};
+ // Back reopens the current record; Forward returns to this chapter list.
+ history.pushState({...previous,psWikiEntry:false,psWikiList:listView},'',
+  location.pathname+location.search);
+ wikiSelection={type:chapter,id:null,highlight:null};
+ activeTab='wiki';
+ for(const btn of document.querySelectorAll('[data-tab]'))
+  btn.classList.toggle('active',btn.dataset.tab==='wiki');
+ renderDetails();
+ if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+ saveView();
+}
 function wikiLink(text,type,id,highlight=null){
  const displayId=wikiIndex?.canonical?.(type,id)||String(id);
  const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(displayId)+(highlight==null?'':'/'+encodeURIComponent(highlight));
@@ -2309,12 +2325,34 @@ function renderWiki(root){
     skill:'Skill',soul:'Soul',instance:'Dungeon',chest:'Chest'}:
    {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
     skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
-   if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true){
-    detail.append(h('button',{type:'button',class:'button-action wiki-history-back',
+   const listNames=lang==='en'?{
+    item:wikiItemType==='utility'?'Effect items':'Equipment',
+    monster:'Monsters',map:'Locations',npc:'NPC trades',chest:'Chests',
+    instance:'Dungeons',skill:'Skills',soul:'Souls'
+   }:{
+    item:wikiItemType==='utility'?'Предметы эффектов':'Экипировка',
+    monster:'Монстры',map:'Локации',npc:'NPC-обмен',chest:'Сундуки',
+    instance:'Подземелья',skill:'Навыки',soul:'Души'
+   };
+   const navigate=h('nav',{class:'wiki-page-nav',
+    'aria-label':wt('Навигация по энциклопедии','Encyclopedia navigation')});
+   navigate.append(h('span',{class:'wiki-page-nav-trail'},[
+    h('span',{class:'wiki-page-nav-origin',text:wt('Энциклопедия','Encyclopedia')}),
+    h('span',{'aria-hidden':'true',text:'›'}),
+    h('span',{class:'wiki-page-nav-chapter',text:listNames[type]||typeLabel[type]})
+   ]));
+   const navActions=h('div',{class:'wiki-page-nav-actions'});
+   if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true)
+    navActions.append(h('button',{type:'button',class:'wiki-history-back wiki-nav-button',
      text:wt('← Назад','← Back'),
      'aria-label':wt('Вернуться к предыдущему экрану','Return to previous view'),
      onclick:()=>history.back()}));
-   }
+   navActions.append(h('button',{type:'button',class:'wiki-nav-button wiki-chapter-list',
+    text:wt('☷ К списку','☷ To list'),
+    'aria-label':wt('Открыть список раздела «'+listNames[type]+'»',
+     'Open '+listNames[type]+' list'),
+    onclick:openWikiChapterList}));
+   navigate.append(navActions);detail.append(navigate);
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'item.'+id:null;
@@ -2327,7 +2365,6 @@ function renderWiki(root){
      adminEditing&&lang==='en'&&type==='skill'?
       {'data-owner-record':type+':'+id,
        'data-owner-field':lang==='en'?'nameEn':'name'}:{})});
-   detail.append(h('small',{class:'eyebrow',text:typeLabel[type]||'Сведения'}));
    detail.append(heading);
    if(adminEditing&&adminToken){
     detail.append(h('p',{class:'wiki-owner-instruction',
@@ -6335,6 +6372,19 @@ window.addEventListener('popstate',event=>{
   for(const btn of document.querySelectorAll('[data-tab]'))
    btn.classList.toggle('active',btn.dataset.tab==='wiki');
   if(same)wikiRenderSelected();else renderDetails();
+  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
+  saveView();
+ }else if(event.state?.psWikiList&&!location.hash){
+  const chapter=event.state.psWikiList;
+  if(!['item','monster','map','npc','chest','skill','soul','instance'].includes(chapter.type))return;
+  activeTab='wiki';wikiSelection={type:chapter.type,id:null,highlight:null};
+  wikiSearch=typeof chapter.search==='string'?chapter.search:'';
+  wikiShown=Number.isInteger(chapter.shown)&&chapter.shown>=100?chapter.shown:100;
+  if(chapter.type==='item'&&typeof chapter.itemType==='string')
+   wikiItemType=chapter.itemType;
+  for(const btn of document.querySelectorAll('[data-tab]'))
+   btn.classList.toggle('active',btn.dataset.tab==='wiki');
+  renderDetails();
   if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
   saveView();
  }else if(activeTab==='wiki'&&!location.hash.startsWith('#b/')){
