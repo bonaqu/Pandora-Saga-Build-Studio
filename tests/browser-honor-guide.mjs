@@ -26,13 +26,39 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await panel.locator('.wiki-honor-joining').count(),0,
    'Starting Honor belongs to the Squire rank, not a duplicated callout');
   assert.match(await panel.locator('#honor-rank-0 .wiki-honor-requirement').innerText(),/1 000/);
-  assert.equal(await panel.locator('.wiki-honor-emblem-svg').count(),12);
-  for(let i=0;i<5;i++)assert.equal(
-   await panel.locator('#honor-rank-'+i+' svg polygon').count(),i+1);
-  assert.ok(await panel.locator('#honor-rank-5 svg polygon').count()>=2);
-  for(let i=6;i<11;i++)assert.ok(
-   await panel.locator('#honor-rank-'+i+' svg path').count()>=i-5);
-  assert.ok(await panel.locator('#honor-rank-11 svg path').count()>=3);
+  // Every rank uses its exact original 23x23 game sprite, not drawn shapes.
+  const sprites=panel.locator('.wiki-honor-emblem-source');
+  assert.equal(await sprites.count(),12);
+  await page.waitForFunction(()=>[...document.querySelectorAll(
+   '.wiki-honor-emblem-source')].every(img=>img.complete&&img.naturalWidth===23),
+   null,{timeout:15000});
+  for(let i=0;i<12;i++)assert.ok(
+   (await panel.locator('#honor-rank-'+i+' img').getAttribute('src'))
+    .endsWith('/'+i+'.svg'));
+
+  // Honor's left four-section menu must remain pinned as #detailContent
+  // scrolls through the long article; the browser window itself does not scroll.
+  const menu=page.locator('.wiki-layout-honor > .wiki-list-panel');
+  const pane=page.locator('#detailContent');
+  assert.equal(await menu.evaluate(el=>getComputedStyle(el).position),'sticky');
+  const maxScroll=await pane.evaluate(el=>el.scrollHeight-el.clientHeight);
+  assert.ok(maxScroll>900,'Honor article must exceed one viewport');
+  const stickyPosition=async()=>{
+   await page.waitForTimeout(65);
+   const menuRect=await menu.boundingBox(),paneRect=await pane.boundingBox();
+   assert.ok(menuRect&&paneRect);
+   assert.ok(menuRect.top>=paneRect.top-2&&menuRect.bottom<paneRect.bottom+2,
+    'The four section buttons must stay visible inside the workbench');
+   return menuRect.top;
+  };
+  await pane.evaluate(el=>el.scrollTo({top:Math.min(850,el.scrollHeight-el.clientHeight),behavior:'instant'}));
+  const firstTop=await stickyPosition();
+  await pane.evaluate(el=>el.scrollTo({top:Math.min(1400,el.scrollHeight-el.clientHeight),behavior:'instant'}));
+  const secondTop=await stickyPosition();
+  assert.ok(Math.abs(secondTop-firstTop)<3,'Honor sidebar must follow article scroll');
+  assert.equal(await menu.locator('.wiki-honor-nav-link').count(),4);
+  await menu.locator('[data-honor-section="overview"]').click();
+  await pane.evaluate(el=>el.scrollTo({top:0,behavior:'instant'}));
   const cloaks=panel.locator('.wiki-honor-cloak-link');
   assert.equal(await cloaks.count(),9,'All 9 cloak rewards resolve to catalog items');
   await cloaks.first().hover();
@@ -113,6 +139,6 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await explanation.evaluate(node=>getComputedStyle(node).position),
    'absolute','The tooltip must float over the page rather than relayout it');
   assert.deepEqual(errors,[]);
-  console.log('Chromium Honor: vector ranks, cloaks, item previews, NPC navigation and RU/EN');
+  console.log('Chromium Honor: 12 real game rank icons, sticky navigation, cloaks, previews and RU/EN');
  }finally{await context.close()}
 }
