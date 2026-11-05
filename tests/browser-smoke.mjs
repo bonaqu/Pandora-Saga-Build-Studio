@@ -84,6 +84,19 @@ async function main(){
  // The portrait itself opens the book; chapter navigation supports the keyboard.
  await page.locator('#hero').click();
  await page.locator('#stageAttributes').waitFor({state:'visible'});
+ // Elf's first passive reduces mana spending by 15%; test the full live
+ // interaction (race control -> canonical passive -> calculator -> Hero Book).
+ const manaRow=page.locator('#stageBookPanel .stage-result-tile').filter({hasText:'Расход ОМ'});
+ const manaBefore=Number((await manaRow.locator('strong').innerText()).replace('%','').trim());
+ assert.ok(Number.isFinite(manaBefore),'MP cost must be calculated for a selected origin');
+ await page.locator('#stageAttributes .stage-book-close').click();
+ await page.locator('[data-origin-tab="race"]').click();
+ await page.locator('#originPassives .origin-passive-choice').first().click();
+ assert.equal(await page.locator('#originPassives .origin-passive-choice.selected').count(),1);
+ await page.locator('#hero').click();
+ await page.locator('#stageAttributes').waitFor({state:'visible'});
+ const manaAfter=Number((await manaRow.locator('strong').innerText()).replace('%','').trim());
+ assert.equal(manaAfter,manaBefore-15,'Selected Elf passive must change the Hero Book MP cost');
  assert.equal(await page.locator('#stageAttributes [data-book-page]').count(),6);
  const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
  assert.equal(await guideLabels.count(),48,'43 result hints, four group headers and one editable caption');
