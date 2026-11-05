@@ -6,9 +6,11 @@ body>#ownerDock{
  width:min(474px,calc(100vw - 16px));max-width:none;max-height:none;
  padding:0;margin:0;border:0;background:transparent;box-shadow:none;
  color:#e8cf9e;
- transform:none;pointer-events:none;
+ transform:none;pointer-events:auto;
 }
-body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
+body>#ownerDock.owner-dock-collapsed{
+ width:128px;max-width:calc(100vw - 8px);pointer-events:auto;
+}
 #ownerDock .owner-dock-panel{
  display:flex;flex-direction:column;box-sizing:border-box;width:100%;min-width:0;
  max-height:calc(100dvh - 28px);
