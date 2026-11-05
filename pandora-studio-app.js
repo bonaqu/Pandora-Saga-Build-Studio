@@ -3587,8 +3587,11 @@ function renderWiki(root){
        mats.append(row);
       }
       if(editing)mats.append(h('button',{type:'button',class:'wiki-owner-plus',
-       text:'+ Материал',onclick:()=>wikiItemChoice(mats,i=>{
-        if((trade.mats||[]).length>=20)throw Error('Можно добавить не более 20 материалов');
+       text:wt('+ Материал','+ Material'),onclick:()=>wikiItemChoice(mats,i=>{
+        if((trade.mats||[]).length>=20)
+         throw Error(wt('Можно добавить не более 20 материалов','Maximum 20 materials'));
+        if((trade.mats||[]).some(row=>String(row.i)===String(i)))
+         throw Error(wt('Этот материал уже есть в обмене','Material already listed'));
         return amend({mats:[...(trade.mats||[]),{i,n:1}]});
        })}));
       entry.append(mats);
@@ -3628,19 +3631,46 @@ function renderWiki(root){
          .catch(e=>showStudioToast(e.message,'warning'))}));
        owner.append(chip);
       }
-      const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+ NPC'});
+      const plus=h('button',{type:'button',class:'wiki-owner-plus',
+       text:wt('+ NPC','+ NPC')});
       plus.onclick=()=>{
-       if(owner.querySelector('select'))return;
-       const pick=h('select',{class:'wiki-inline-select','aria-label':'Добавить NPC'});
-       pick.append(h('option',{value:'',text:'Выбери NPC'}));
-       for(const [key] of Object.entries(wikiData.trades.npcs||{}))
-        if(!(trade.npc||[]).map(String).includes(key))
-         pick.append(h('option',{value:key,text:dataName('npc',key)}));
-       plus.replaceWith(pick);
-       pick.onchange=()=>{if(pick.value)void amend({npc:[...trade.npc,Number(pick.value)]})
-        .catch(e=>showStudioToast(e.message,'warning'))};
-       pick.onblur=()=>{if(pick.isConnected)pick.replaceWith(plus)};
-       pick.focus();
+       const previous=owner.querySelector('.wiki-owner-trade-npc-picker');
+       if(previous){previous.remove();return}
+       const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-trade-npc-picker'});
+       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
+        placeholder:wt('Найти NPC по имени…','Find NPC by name…'),
+        autocomplete:'off','aria-label':wt('Поиск NPC для обмена','Search NPC for trade')});
+       const pick=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить NPC','Add NPC')});
+       const feedback=h('small',{class:'inline-owner-error',role:'status'});
+       const fill=()=>{
+        const q=wikiIndex.normalize(search.value);
+        const candidates=Object.entries(wikiData.trades?.npcs||{})
+         .filter(([key])=>!(trade.npc||[]).map(String).includes(key)&&
+          (!q||wikiIndex.normalize(dataName('npc',key)).includes(q))).slice(0,80);
+        pick.replaceChildren(h('option',{value:'',
+         text:candidates.length?wt('Выбери NPC','Choose NPC'):
+          wt('NPC не найден','No NPC found')}));
+        for(const [key] of candidates)pick.append(h('option',
+         {value:key,text:dataName('npc',key)}));
+        pick.disabled=!candidates.length;
+       };
+       pick.onchange=async()=>{
+        if(!pick.value)return;
+        if((trade.npc||[]).some(id=>String(id)===pick.value)||
+         !wikiData.trades?.npcs?.[pick.value]){
+         feedback.textContent=wt('NPC уже указан или отсутствует','NPC already present or missing');
+         return;
+        }
+        pick.disabled=true;
+        try{await amend({npc:[...trade.npc,Number(pick.value)]})}
+        catch(e){feedback.textContent=e.message;pick.disabled=false}
+       };
+       panel.append(search,pick,feedback,h('button',{type:'button',
+        class:'wiki-owner-cancel',text:wt('Отмена','Cancel'),
+        onclick:()=>panel.remove()}));
+       plus.after(panel);search.oninput=fill;registerOutsidePicker(panel,plus);
+       fill();search.focus();
       };
       if(trade.npc.length<24)owner.append(plus);
       const remove=h('button',{type:'button',class:'wiki-trade-delete',
