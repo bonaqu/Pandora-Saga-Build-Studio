@@ -9,7 +9,7 @@ test('Origin labels show only ОЗ/ОМ, no icons or approximation marks',()=>{
  assert.match(html,/<span>ОЗ<\/span><strong id="originHp">/);
  assert.match(html,/<span>ОМ<\/span><strong id="originMp">/);
  assert.doesNotMatch(html,/♥ ОЗ|✦ ОМ|Выбери облик/);
- assert.match(html,/Раса <span[^>]*>Выбери расу<\/span>/);
+ assert.match(html,/data-origin-copy-static="race">Раса<\/span> <span[^>]*>Выбери расу<\/span>/);
  assert.match(css,/\.origin-vital\{[\s\S]*?min-height:66px/);
 });
 test('HP/MP are calculated integers and coverage limitations remain transparent',()=>{
@@ -63,10 +63,11 @@ function chosenProfession(){
  const state={job:jobKeys.indexOf('JUGGERNAUT')},grid=new El('div');
  assert.ok(state.job>=0);
  let saves=0;
- const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue','saveView','lang',
+ const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue','saveView','lang','originCopy','originCopyLabel',
   fallback+'\nlet jobPathKey=null;\nfunction selectJob(index){state.job=index;renderJobs()}\n'+
   app.slice(start,end)+'\nreturn {renderJobs,state,get:()=>jobPathKey};')(
-  h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++,'ru');
+  h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++,'ru',
+  (_key,ru)=>ru,(node,_key,ru)=>{node.textContent=ru;return node});
  const buttons=()=>walk(grid).filter(x=>x.tag==='button');
  const matching=key=>buttons().find(x=>x.className.includes('class-wizard-choice')&&
   x.children[0]?.textContent===jobs[jobKeys.indexOf(key)]);
