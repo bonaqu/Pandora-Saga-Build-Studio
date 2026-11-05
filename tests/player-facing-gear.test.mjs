@@ -15,6 +15,11 @@ class Element{
  querySelectorAll(key){return key==='[title]'?walk(this).filter(n=>n!==this&&Object.hasOwn(n.attrs,'title')):[]}
  getBoundingClientRect(){return this.rect||{left:20,right:64,top:90,bottom:134,width:44,height:44}}
  closest(){return null}
+ matches(selector){
+  if(selector===':hover')return Boolean(this.hovered);
+  if(selector===':focus-visible')return Boolean(this.focusVisible);
+  return false;
+ }
  remove(){this.isConnected=false;this.removed=true}
 }
 const walk=e=>[e,...(e.children||[]).flatMap(x=>x instanceof Element?walk(x):[])];
@@ -23,9 +28,20 @@ function fixture(admin=false){
   body:new Element('body'),documentElement:{clientWidth:1024}};
  document.body.isConnected=true;
  const window={innerHeight:768,PandoraStudioAdminActive:()=>admin};
+ const timers=new Map();
+ let timerId=0;
+ const setTimer=(callback,delay)=>{
+  const id=++timerId;timers.set(id,{callback,delay});return id;
+ };
+ const clearTimer=id=>timers.delete(id);
+ const runTimers=()=>{
+  const pending=[...timers.values()];timers.clear();
+  for(const row of pending)row.callback();
+ };
  Function('window',read('pandora-studio-item-presentation.js'))(window);
- Function('window','document',read('pandora-studio-equipment-ui.js'))(window,document);
- return {window,document,api:window.PandoraStageItemUI};
+ Function('window','document','setTimeout','clearTimeout',
+  read('pandora-studio-equipment-ui.js'))(window,document,setTimer,clearTimer);
+ return {window,document,api:window.PandoraStageItemUI,timers,runTimers};
 }
 const ring={id:19022,name:'Кольцо метели',kind:'RING',level:20,AC:0,soulslot:0,
  desc:'Кольцо из странного металла, помеченное знаком льда. СИЛ -1, ИНТ +1'};
@@ -42,23 +58,44 @@ test('admin inspection also keeps internal database IDs hidden',()=>{
  assert.ok(!walk(node).some(n=>n.tag==='dt'&&n.textContent==='ID'));
  assert.ok(!walk(node).some(n=>n.tag==='dd'&&n.textContent==='19022'));
 });
-test('hover removes native title and uses exactly one custom tooltip, also on focus',()=>{
- const {api,document}=fixture(),button=new Element('button');
+test('rich hover delay does not flash while crossing items; keyboard focus stays immediate',()=>{
+ const {api,document,timers,runTimers}=fixture();
+ const button=new Element('button');
+ document.body.append(button);
  button.setAttribute('title','Native item tooltip');
  api.attachPreview(button,ring,()=>null);
  assert.equal(button.title,'');
  assert.equal(Object.hasOwn(button.attrs,'title'),false);
- button.listeners.mouseenter();
+ button.hovered=true;
+ button.listeners.pointerenter({pointerType:'mouse'});
+ assert.equal(document.body.children.length,1,
+  'Preview must not be inserted immediately on mouse hover');
+ assert.equal(timers.size,1);
+ assert.equal([...timers.values()][0].delay,650);
+ // Pointer focus never skips the delay.
+ button.listeners.focus();
  assert.equal(document.body.children.length,1);
- let tip=document.body.children[0];
+ runTimers();
+ assert.equal(document.body.children.length,2);
+ const tip=document.body.children[1];
  assert.equal(tip.id,'stage-gear-tooltip');
  assert.equal(button.attrs['aria-describedby'],tip.id);
- button.listeners.mouseleave();
+ assert.equal(tip.isConnected,true);
+ button.hovered=false;
+ button.listeners.pointerleave();
  assert.equal(tip.isConnected,false);
  assert.equal(button.attrs['aria-describedby'],undefined);
+ button.hovered=true;
+ button.listeners.pointerenter({pointerType:'mouse'});
+ button.hovered=false;
+ button.listeners.pointerleave();
+ assert.equal(timers.size,0,'Leaving before the timeout cancels the pending tooltip');
+ runTimers();
+ assert.equal(document.body.children.length,2,'Cancelled timer must not append another popup');
+ button.focusVisible=true;
  button.listeners.focus();
- assert.equal(document.body.children.length,2);
- const focusTip=document.body.children[1];
+ assert.equal(document.body.children.length,3);
+ const focusTip=document.body.children[2];
  assert.equal(focusTip.isConnected,true);
  api.dismissPreview();
  assert.equal(focusTip.isConnected,false);
