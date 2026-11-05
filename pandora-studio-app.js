@@ -2147,71 +2147,118 @@ function renderWiki(root){
    h('div',{class:'wiki-level-reward-details'},[
     h('small',{text:wt('Награда за достижение уровня','Reward for reaching level')}),
     h('strong',{text:wt('Уровень ','Level ')+reward.level}),
-    ...(className?[h('span',{text:wt('Класс: ','Class: ')+className})]:[])
+    ...(className?[h('span',{class:'wiki-level-reward-class',text:wt('Класс: ','Class: ')+className})]:[])
    ])
   ]));
   return true;
  };
 
  const appendAcquisitionEditor=(id)=>{
-    if(adminEditing&&adminToken){
-     const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-      text:'+ Добавить источник',title:'Связать предмет с NPC или монстром'});
-     add.onclick=()=>{
-      const previous=detail.querySelector('.wiki-owner-acquisition-picker');
-       if(previous){previous.remove();return}
-       const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-acquisition-picker'});
-      const kind=h('select',{class:'wiki-inline-select','aria-label':'Тип получения'},[
-       h('option',{value:'',text:'Выбери тип получения'}),
-       h('option',{value:'monster',text:'Монстр'}),
-       h('option',{value:'npc',text:'NPC'})]);
-      const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
-       'aria-label':'Найти NPC или монстра',placeholder:'Поиск по названию…',autocomplete:'off'});
-      const target=h('select',{class:'wiki-inline-select',
-       'aria-label':'У кого получить',disabled:true});
-      const feedback=h('small',{class:'inline-owner-error',role:'status'});
-      const label=(text,control)=>h('label',{class:'wiki-owner-source-field'},[
-       h('span',{text}),control]);
-      panel.append(label('Тип получения',kind),label('Найди по имени',search),
-        label('У кого получить',target),feedback,
-        h('button',{type:'button',class:'wiki-owner-cancel',text:'Отмена',onclick:()=>panel.remove()}));
-      add.after(panel);
-      const refresh=()=>{
-       const entries=kind.value==='monster'?Object.entries(wikiData.monsters||{}):
-        kind.value==='npc'?Object.entries(wikiData.trades?.npcs||{}):[];
-       const q=wikiIndex.normalize(search.value);
-       const filtered=entries.filter(([key])=>!q||
-        wikiIndex.normalize(dataName(kind.value,key)).includes(q)).slice(0,90);
-       target.replaceChildren(h('option',{value:'',
-        text:filtered.length?(kind.value==='monster'?'Выбери монстра':'Выбери персонажа'):'Ничего не найдено'}));
-       for(const [key,obj] of filtered){
-        const suffix=kind.value==='monster'&&Number.isFinite(obj.level)?
-         ' · ур. '+obj.level:'';
-        target.append(h('option',{value:key,text:dataName(kind.value,key)+suffix}));
-       }
-       target.disabled=!kind.value||!filtered.length;
-      };
-      kind.onchange=()=>{search.value='';feedback.textContent='';refresh();search.focus()};
-      search.oninput=refresh;
-      target.onchange=async()=>{
-       if(!target.value||!kind.value)return;
-       const selected={type:kind.value,id:String(target.value)};
-       const existing=wikiIndex.sources(id).some(row=>row.type===selected.type&&
-        String(row.id)===selected.id);
-       if(existing){feedback.textContent='Этот источник уже указан.';return}
-       const earlier=wikiData.ownerAcquisitions?.[id]||[];
-       if(earlier.length>=24){feedback.textContent='Достигнут предел: 24 источника.';return}
-       target.disabled=true;
-       try{await saveWikiAcquisitions(id,[...earlier,selected])}
-       catch(error){target.disabled=false;feedback.textContent=error.message}
-      };
-      registerOutsidePicker(panel,add);
-      refresh();kind.focus();
-     };
-     detail.append(add);
+  if(!adminEditing||!adminToken)return;
+  const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
+   text:wt('+ Добавить источник','+ Add source'),
+   title:wt('Связать предмет с игровым источником','Link an item to a source')});
+  add.onclick=()=>{
+   const previous=detail.querySelector('.wiki-owner-acquisition-picker');
+   if(previous){previous.remove();return}
+   const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-acquisition-picker'});
+   const kind=h('select',{class:'wiki-inline-select',
+    'aria-label':wt('Тип получения','Source type')},[
+    h('option',{value:'',text:wt('Выбери тип получения','Select source type')}),
+    h('option',{value:'drop',text:wt('Добыча монстра','Monster loot')}),
+    h('option',{value:'monster',text:wt('Справочная связь с монстром','Monster reference')}),
+    h('option',{value:'npc',text:wt('Справочная связь с NPC','NPC reference')})
+   ]);
+   const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
+    'aria-label':wt('Найти монстра или NPC','Find a monster or NPC'),
+    placeholder:wt('Поиск по названию…','Search by name…'),autocomplete:'off'});
+   const target=h('select',{class:'wiki-inline-select',
+    'aria-label':wt('Выбери источник','Choose source'),disabled:true});
+   const feedback=h('small',{class:'inline-owner-error',role:'status'});
+   const hint=h('small',{class:'wiki-source-meta',text:''});
+   const label=(text,control)=>h('label',{class:'wiki-owner-source-field'},[
+    h('span',{text}),control]);
+   panel.append(label(wt('Тип получения','Source type'),kind),
+    label(wt('Найди по имени','Search by name'),search),
+    label(wt('Выбери источник','Choose source'),target),hint,feedback,
+    h('button',{type:'button',class:'wiki-owner-cancel',
+     text:wt('Отмена','Cancel'),onclick:()=>panel.remove()}));
+   add.after(panel);
+   const refresh=()=>{
+    const isMonster=kind.value==='drop'||kind.value==='monster';
+    const entries=isMonster?Object.entries(wikiData.monsters||{}):
+     kind.value==='npc'?Object.entries(wikiData.trades?.npcs||{}):[];
+    const q=wikiIndex.normalize(search.value);
+    const filtered=entries.filter(([key])=>
+     (kind.value!=='drop'||/^[1-9][0-9]{0,14}$/.test(String(key)))&&
+     (!q||wikiIndex.normalize(dataName(isMonster?'monster':'npc',key)).includes(q))
+    ).slice(0,90);
+    target.replaceChildren(h('option',{value:'',
+     text:filtered.length?wt('Выбери запись','Choose entry'):
+      wt('Ничего не найдено','No matches')}));
+    for(const [key,obj] of filtered){
+     const suffix=isMonster&&Number.isFinite(obj.level)?
+      wt(' · ур. ',' · lvl ')+obj.level:'';
+     target.append(h('option',{value:key,
+      text:dataName(isMonster?'monster':'npc',key)+suffix}));
     }
+    target.disabled=!kind.value||!filtered.length;
+    hint.textContent=kind.value==='drop'?
+     wt('Добавит предмет в обычную добычу монстра. Шанс останется не указан.',
+      'Adds the item to normal monster loot. Drop chance remains unspecified.'):
+     kind.value?
+     wt('Справочная связь не изменяет таблицы добычи и обменов.',
+      'Reference only; does not modify loot or trade tables.'):'';
+   };
+   kind.onchange=()=>{search.value='';feedback.textContent='';refresh();search.focus()};
+   search.oninput=refresh;
+   target.onchange=async()=>{
+    if(!target.value||!kind.value)return;
+    feedback.textContent='';
+    const targetId=String(target.value);
+    if(kind.value==='drop'){
+     if(!/^[1-9][0-9]{0,14}$/.test(targetId)||
+      !wikiData.monsters?.[targetId]||!wikiData.items?.[id]){
+      feedback.textContent=wt('Монстр или предмет не найден','Monster or item not found');
+      return;
+     }
+     const current=wikiData.drops?.[targetId]||{d:[],s:[]};
+     const d=(current.d||[]).map(row=>({...row}));
+     const special=(current.s||[]).map(row=>({...row}));
+     if([...d,...special].some(row=>String(row.i)===String(id))){
+      feedback.textContent=wt('Предмет уже есть в добыче этого монстра.',
+       'This item is already in this monster’s loot.');return;
+     }
+     if(d.length>=200){
+      feedback.textContent=wt('Список обычной добычи заполнен.',
+       'The normal loot list is full.');return;
+     }
+     target.disabled=true;
+     try{
+      await saveWikiRelationRows('drop',targetId,{
+       d:[...d,{i:Number(id),n:1,p:null}],s:special});
+     }catch(error){target.disabled=false;feedback.textContent=error.message}
+     return;
+    }
+    const selected={type:kind.value,id:targetId};
+    if(wikiIndex.sources(id).some(row=>row.type===selected.type&&
+     String(row.id)===selected.id)){
+     feedback.textContent=wt('Этот источник уже указан.','Source already listed.');return;
+    }
+    const earlier=wikiData.ownerAcquisitions?.[id]||[];
+    if(earlier.length>=24){
+     feedback.textContent=wt('Достигнут предел: 24 связи.',
+      'Limit reached: 24 references.');return;
+    }
+    target.disabled=true;
+    try{await saveWikiAcquisitions(id,[...earlier,selected])}
+    catch(error){target.disabled=false;feedback.textContent=error.message}
+   };
+   registerOutsidePicker(panel,add);
+   refresh();kind.focus();
+  };
+  detail.append(add);
  };
-
  const draw=(detailOnly=false)=>{
    if(lastWikiIndex!==wikiIndex){
     nameCache.clear();searchCache.clear();lastWikiIndex=wikiIndex;
@@ -2953,7 +3000,7 @@ function renderWiki(root){
     }
     if(adminEditing&&adminToken){
      const plus=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-      text:'+ Обмен NPC с этим материалом'});
+      text:wt('+ Обмен NPC с этим материалом','+ NPC trade using this item')});
      plus.onclick=()=>{
       if(detail.querySelector('.wiki-owner-trade-npc'))return;
       const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-trade-npc'});
@@ -2981,6 +3028,61 @@ function renderWiki(root){
       pick.focus();
      };
      detail.append(plus);
+     // Reciprocal workflow: create a real NPC recipe from the reward item,
+     // rather than a reference-only acquisition link.
+     const rewardTrade=h('button',{type:'button',
+      class:'wiki-owner-plus wiki-add-source wiki-owner-reward-trade-button',
+      text:wt('+ Получить через обмен NPC','+ Obtain via NPC trade')});
+     rewardTrade.onclick=()=>{
+      if(detail.querySelector('.wiki-owner-reward-trade'))return;
+      const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-reward-trade'});
+      const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
+       placeholder:wt('Найти NPC…','Find an NPC…'),autocomplete:'off',
+       'aria-label':wt('Поиск NPC для обмена','Find NPC for trade')});
+      const npc=h('select',{class:'wiki-inline-select',
+       'aria-label':wt('Выбери NPC','Choose NPC')});
+      const feedback=h('small',{class:'inline-owner-error',role:'status'});
+      const filter=()=>{
+       const q=wikiIndex.normalize(search.value);
+       const matches=Object.entries(wikiData.trades?.npcs||{})
+        .filter(([npcId])=>!q||wikiIndex.normalize(dataName('npc',npcId)).includes(q))
+        .slice(0,90);
+       npc.replaceChildren(h('option',{value:'',text:matches.length?
+        wt('Выбери NPC','Choose NPC'):wt('NPC не найден','NPC not found')}));
+       for(const [npcId] of matches)npc.append(h('option',{value:npcId,
+        text:dataName('npc',npcId)}));
+       npc.disabled=!matches.length;
+      };
+      panel.append(h('small',{text:wt(
+       'Выбери NPC, затем предмет, необходимый для обмена.',
+       'Choose an NPC, then an item required for the trade.')}),
+       search,npc,feedback,
+       h('button',{type:'button',class:'wiki-owner-cancel',
+        text:wt('Отмена','Cancel'),onclick:()=>panel.remove()}));
+      rewardTrade.after(panel);search.oninput=filter;
+      npc.onchange=()=>{
+       if(!npc.value)return;
+       const npcId=Number(npc.value);
+       wikiItemChoice(panel,async materialId=>{
+        if(!wikiData.items?.[materialId]||!wikiData.trades?.npcs?.[npcId])
+         throw Error(wt('Предмет или NPC не найден','Item or NPC not found'));
+        let unique=null;
+        for(let n=0;n<30;n++){
+         const candidate=900000000+crypto.getRandomValues(new Uint32Array(1))[0];
+         if(!(wikiData.trades.trades||[]).some(row=>row.id===candidate)&&
+          !Object.hasOwn(override,'tradeedit.'+candidate)){
+          unique=candidate;break;
+         }
+        }
+        if(unique===null)throw Error(wt('Не удалось создать обмен','Could not create trade'));
+        await saveWikiTradeRecipe({id:unique,i:Number(id),npc:[npcId],
+         mats:[{i:materialId,n:1}],gold:0,honor:0,exp:0});
+       });
+      };
+      registerOutsidePicker(panel,rewardTrade);
+      filter();search.focus();
+     };
+     detail.append(rewardTrade);
     }
   }else if(type==='skill'){
     const skillFields=[
@@ -5743,6 +5845,16 @@ async function saveWikiRelationRows(kind,id,rows){
   window.PandoraWikiOwnerData.validDrops(rows):
   window.PandoraWikiOwnerData.validChest(rows);
  if(!valid)throw Error('Проверь список и числа');
+ // Reject orphaned references before sending an override to D1. The client
+ // cannot claim a successful relation if the local overlay would discard it.
+ if(kind==='drop'&&(!Object.hasOwn(wikiData?.monsters||{},String(id))||
+  !['d','s'].every(group=>rows[group].every(row=>
+   Object.hasOwn(wikiData?.items||{},String(row.i))))))
+  throw Error('Монстр или один из предметов отсутствует в каталоге');
+ if(kind==='chest'&&(!Object.hasOwn(wikiData?.items||{},String(id))||
+  !rows.every(group=>group.every(row=>
+   Object.hasOwn(wikiData?.items||{},String(row.i))))))
+  throw Error('Сундук или одна из наград отсутствует в каталоге');
  const before=activeOverride(key),after=JSON.stringify(rows);
  if(before===after)return;
  editIsSaving=true;
