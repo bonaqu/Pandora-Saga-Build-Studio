@@ -477,6 +477,12 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await wikiSearch.getAttribute('data-lpignore'),'true');
   await wikiSearch.click();
   await wikiSearch.fill('Старое название из D1');
+  // The owner panel intentionally stays open across navigation. A user may
+  // hide it to reach wiki entries covered by the floating panel; the admin
+  // editing permission stays enabled when only the drawer is collapsed.
+  assert.equal(await edge.getAttribute('aria-expanded'),'true');
+  await edge.click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'false');
   const firstItem=page.locator('[data-wiki-record="1"]');
   await firstItem.waitFor({state:'visible',timeout:20000});
   await firstItem.click();
