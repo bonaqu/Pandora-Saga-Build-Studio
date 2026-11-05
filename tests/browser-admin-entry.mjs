@@ -197,6 +197,47 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/PR правок/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
+  // Origin captions share the same authenticated inline D1 path as approved
+  // encyclopedia editing: pencil -> focus/blur -> independent RU/EN fields.
+  const raceCopy='guideedit.book.origin.race-choose';
+  await edge.click(); // owner drawer must not overlay the actual inline caption
+  assert.equal(await edge.getAttribute('aria-expanded'),'false');
+  const captionReady=async (target,value,stage)=>{
+   try{await target.waitForFunction(expected=>
+    document.querySelector('.race-slide-select')?.textContent?.trim()===expected,
+    value,{timeout:12000})}
+   catch(error){
+    const detail=await target.evaluate(()=>({
+     lang:document.documentElement.lang,
+     shown:document.querySelector('.race-slide-select')?.textContent,
+     editor:document.querySelector('.origin-copy-input-slot')?.textContent,
+     catalog:document.querySelector('#catalogStatus')?.textContent,
+     status:document.querySelector('#startupStatus')?.textContent
+    }));
+    throw Error('Origin edit stage '+stage+': '+JSON.stringify(detail)+'; '+error.message);
+   }
+  };
+  const originEditor=async (value,stage)=>{
+   await page.locator('[data-origin-edit-for="raceChoose"]').click();
+   const field=page.locator('.origin-copy-input-slot [contenteditable]');
+   await field.waitFor({state:'visible'});
+   await field.fill(value);
+   await field.press('Tab');
+   await captionReady(page,value,stage);
+  };
+  assert.equal(await page.locator('[data-origin-edit-for="raceChoose"]').count(),1);
+  await originEditor('Выбрать расу','RU-save');
+  assert.equal(JSON.parse(townOverrides.get(raceCopy)).ru,'Выбрать расу');
+  await page.locator('#locale [data-locale="en"]').click();
+  await captionReady(page,'Choose this race','EN-default');
+  await originEditor('Select race','EN-save');
+  assert.deepEqual(JSON.parse(townOverrides.get(raceCopy)),
+   {ru:'Выбрать расу',en:'Select race'});
+  await page.locator('#locale [data-locale="ru"]').click();
+  await captionReady(page,'Выбрать расу','RU-return');
+  assert.equal(await page.locator('#originTabs [data-origin-copy-key="tabRace"]').count(),1);
+  await edge.click();
+  assert.equal(await edge.getAttribute('aria-expanded'),'true');
   // A floating owner drawer must preserve explicit expansion across workbenches.
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('#detailPanel.is-open').waitFor({state:'visible'});

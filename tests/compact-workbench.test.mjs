@@ -39,7 +39,7 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
  assert.equal(fake.originHp.textContent,'—');
  assert.equal(fake.originMp.textContent,'—');
  assert.match(app,/function setAttributePoints\([\s\S]*?persist\(\);renderOriginVitals\(\)/);
- assert.match(app,/function render\(\)[\s\S]*?renderOriginVitals\(\);renderVitalsEnhancements\(\);updateAdminHint\(\)/);
+ assert.match(app,/function render\(\)[\s\S]*?renderOriginVitals\(\);renderVitalsEnhancements\(\);renderOriginCopyLabels\(\);updateAdminHint\(\)/);
 });
 
 test('skill tick overlay is passive, not a drag-blocking button',()=>{
