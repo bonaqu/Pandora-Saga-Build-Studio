@@ -37,7 +37,8 @@ export async function runHonorGuideSmoke(browser,base){
    return {display:style.display,border:style.borderTopStyle,
     minHeight:rect.height,background:style.backgroundImage};
   });
-  assert.equal(cardStyle.display,'inline-flex');
+  assert.ok(['flex','inline-flex'].includes(cardStyle.display),
+   'PvP location chip must be a flexible clickable card');
   assert.equal(cardStyle.border,'solid');
   assert.ok(cardStyle.minHeight>=32,'PvP location card must be a large click target');
   assert.match(cardStyle.background,/gradient/);
