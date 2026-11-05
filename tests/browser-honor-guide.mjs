@@ -55,26 +55,21 @@ export async function runHonorGuideSmoke(browser,base){
   const maxScroll=await pane.evaluate(el=>el.scrollHeight-el.clientHeight);
   assert.ok(maxScroll>900,'Honor article must exceed one viewport');
   const stickyPosition=async()=>{
-   await page.waitForTimeout(65);
-   const menuRect=await menu.boundingBox(),paneRect=await pane.boundingBox();
-   assert.ok(menuRect&&paneRect);
-   const debug=await menu.evaluate(node=>{
-    const scroller=document.querySelector('#detailContent');
-    const layout=node.parentElement,style=getComputedStyle(node);
-    return {scroll:scroller.scrollTop,scrollMax:scroller.scrollHeight-scroller.clientHeight,
-     menuTop:node.getBoundingClientRect().top,
-     menuBottom:node.getBoundingClientRect().bottom,
-     paneTop:scroller.getBoundingClientRect().top,
-     paneBottom:scroller.getBoundingClientRect().bottom,
-     layoutTop:layout.getBoundingClientRect().top,
-     layoutBottom:layout.getBoundingClientRect().bottom,
-     sticky:style.position,align:style.alignSelf,height:style.height,
-     parentOverflow:getComputedStyle(layout).overflow};
+   // Read both bounding boxes in the same browser layout snapshot. Two
+   // separate Playwright calls can observe a changing scroll animation.
+   await page.waitForTimeout(80);
+   const geometry=await menu.evaluate(node=>{
+    const scroll=document.querySelector('#detailContent');
+    const menuRect=node.getBoundingClientRect();
+    const paneRect=scroll.getBoundingClientRect();
+    return {menuTop:menuRect.top,menuBottom:menuRect.bottom,
+     paneTop:paneRect.top,paneBottom:paneRect.bottom,
+     scrollTop:scroll.scrollTop};
    });
-   assert.ok(menuRect.top>=paneRect.top-2&&menuRect.bottom<paneRect.bottom+2,
-    'The four section buttons must stay visible inside the workbench: '+
-    JSON.stringify(debug));
-   return menuRect.top;
+   assert.ok(geometry.menuTop>=geometry.paneTop-2&&
+    geometry.menuBottom<=geometry.paneBottom+2,
+    'Four Honor navigation links must stay visible: '+JSON.stringify(geometry));
+   return geometry.menuTop;
   };
   await pane.evaluate(el=>el.scrollTo({top:Math.min(850,el.scrollHeight-el.clientHeight),behavior:'instant'}));
   const firstTop=await stickyPosition();
