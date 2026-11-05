@@ -4127,6 +4127,7 @@ function renderWiki(root){
       if(nextChest)rewardMain.append(h('small',{class:'wiki-chest-nested-note',
        text:wt('↳ Следующая шкатулка','↳ Next chest')}));
       option.append(rewardMain);
+      const rewardMeta=h('div',{class:'wiki-chest-reward-meta'});
       if(adminEditing&&adminToken){
        const quantity=h('span',{class:'wiki-reward-quantity wiki-edit-value',
         text:'×'+(row.n??1),title:'Двойной клик — изменить количество'});
@@ -4135,12 +4136,12 @@ function renderWiki(root){
          onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
           g.map((r,ri)=>ri===rowIndex?{...r,n}:r)))});
        };
-       option.append(quantity);
-      }else if(row.n!=null&&row.n!==1)option.append(h('span',{class:'wiki-reward-quantity',
+       rewardMeta.append(quantity);
+      }else if(row.n!=null&&row.n!==1)rewardMeta.append(h('span',{class:'wiki-reward-quantity',
        text:'×'+row.n}));
-      if(row.plus!=null&&row.plus>0)option.append(h('small',{class:'wiki-reward-enhance',
+      if(row.plus!=null&&row.plus>0)rewardMeta.append(h('small',{class:'wiki-reward-enhance',
        text:'+'+row.plus}));
-      if(row.soul!=null&&row.soul>0)option.append(h('small',{class:'wiki-reward-enhance',
+      if(row.soul!=null&&row.soul>0)rewardMeta.append(h('small',{class:'wiki-reward-enhance',
        text:wt('Душ: ','Souls: ')+row.soul}));
       if(adminEditing&&adminToken){
        const chance=h('small',{class:'wiki-reward-percent wiki-edit-value',
@@ -4151,17 +4152,18 @@ function renderWiki(root){
          onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
           g.map((r,ri)=>ri===rowIndex?{...r,p:n}:r)))});
        };
-       option.append(chance);
-       option.append(h('button',{type:'button',class:'wiki-owner-remove',
+       rewardMeta.append(chance);
+       rewardMeta.append(h('button',{type:'button',class:'wiki-owner-remove',
         text:'×','aria-label':'Удалить предмет из сундука',
         onclick:()=>void changeChest(groups.map((g,gi)=>gi!==i?g:
          g.filter((_,ri)=>ri!==rowIndex)))
          .catch(e=>showStudioToast(e.message,'warning'))}));
-      }else option.append(h('small',{class:'wiki-reward-percent'+
+      }else rewardMeta.append(h('small',{class:'wiki-reward-percent'+
        (row.p===100?' certain':'')+(row.p==null?' unknown':''),
        'aria-label':wt('Шанс внутри группы: ','Chance within group: ')+
         window.PandoraStudioChestPresentation.chance(row.p,lang),
        text:window.PandoraStudioChestPresentation.chance(row.p,lang)}));
+      option.append(rewardMeta);
       options.append(option);
      }
      if(adminEditing&&adminToken){
