@@ -17,9 +17,9 @@ test('owner editor is a fixed overlay with an accessible left-edge handle',()=>{
  assert.match(app,/root\.addEventListener\('keydown'/);
  assert.match(css,/body>#ownerDock\{/);
  assert.match(css,/position:fixed/);
- assert.match(css,/left:0/);
+ assert.match(css,/inset:auto auto max\\(14px,env\\(safe-area-inset-bottom\\)\\) 0!important/);
  assert.match(css,/owner-dock-collapsed\{/);
- assert.match(css,/translate3d\(-100%,0,0\)/);
+ assert.match(css,/visibility:hidden;transform:none;pointer-events:none/);
  assert.match(css,/\.owner-dock-handle/);
  assert.match(css,/writing-mode:horizontal-tb/);
  assert.match(css,/min-width:128px;height:38px/);
