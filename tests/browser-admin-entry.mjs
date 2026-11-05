@@ -199,7 +199,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
   // Origin captions share the same authenticated inline D1 path as approved
   // encyclopedia editing: pencil -> focus/blur -> independent RU/EN fields.
-  const raceCopy='guideedit.book.origin.raceChoose';
+  const raceCopy='guideedit.book.origin.race-choose';
   const originEditor=async value=>{
    await page.locator('[data-origin-edit-for="raceChoose"]').click();
    const field=page.locator('.origin-copy-input-slot [contenteditable]');
