@@ -2136,17 +2136,18 @@ function renderWiki(root){
   return flow;
  };
  const rewardLabels=lang==='en'?
-  {warrior:'Warriors',scout:'Scouts',acolyte:'Acolytes',mage:'Mages'}:
-  {warrior:'Воины',scout:'Следопыты',acolyte:'Адепты',mage:'Маги'};
+  {warrior:'Warrior',scout:'Scout',acolyte:'Acolyte',mage:'Mage'}:
+  {warrior:'Воин',scout:'Следопыт',acolyte:'Адепт',mage:'Маг'};
  const appendRewardChestInfo=(itemId)=>{
   const reward=wikiIndex.rewardChest(itemId);
   if(!reward)return false;
+  const className=rewardLabels[reward.family];
   detail.append(h('div',{class:'wiki-level-reward'},[
    h('span',{class:'wiki-level-reward-mark','aria-hidden':'true',text:'✦'}),
    h('div',{class:'wiki-level-reward-details'},[
     h('small',{text:wt('Награда за достижение уровня','Reward for reaching level')}),
     h('strong',{text:wt('Уровень ','Level ')+reward.level}),
-    h('span',{text:wt('Для направления: ','Class family: ')+(rewardLabels[reward.family]||reward.family)})
+    ...(className?[h('span',{text:wt('Класс: ','Class: ')+className})]:[])
    ])
   ]));
   return true;
