@@ -4091,20 +4091,41 @@ function renderWiki(root){
       'Reward contents are not yet specified in the game catalog.'
      )}));
     }
-    const gallery=h('div',{class:'wiki-chest-groups wiki-chest-flat'});
+    const chestIds=new Set(Object.keys(wikiIndex.records('chest')||{}));
+    const chestView=window.PandoraStudioChestPresentation.analyze(groups,chestIds);
+    const gallery=h('div',{class:'wiki-chest-groups wiki-chest-board'});
+    const certainBoard=h('section',{class:'wiki-chest-collection wiki-chest-listed-100'});
+    certainBoard.append(h('div',{class:'wiki-chest-collection-head'},[
+     h('strong',{text:wt('Награды с шансом 100%','Rewards listed at 100%')}),
+     h('small',{text:chestView.listed100.length+' '+
+      wt('отдельных розыгрышей','separate roll groups')})
+    ]));
+    const certainItems=h('div',{class:'wiki-chest-assured-grid'});
+    certainBoard.append(certainItems);
     for(const [i,group]of groups.entries()){
+     const listedSingle=group.length===1&&group[0]?.p===100;
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
       h('span',{class:'wiki-chest-group-mark','aria-hidden':'true',text:String(i+1)}),
-      h('span',{class:'wiki-chest-group-name',text:wt('Группа ','Group ')+(i+1)}),
-      h('small',{text:group.length===1?wt('1 предмет','1 item'):
-       group.length+' '+wt('вариантов','options')}),
+      h('span',{class:'wiki-chest-group-name',
+       text:group.length>1?wt('Варианты · группа ','Options · group ')+(i+1):
+        wt('Розыгрыш ','Roll ')+(i+1)}),
+      h('small',{text:group.length===1?(listedSingle?
+       wt('100% по таблице','Listed at 100%'):wt('1 предмет','1 item')):
+       group.length+' '+wt('вариантов','listed options')}),
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
      const options=h('div',{class:'wiki-chest-options'});
      for(const [rowIndex,row] of group.entries()){
+      const nextChest=chestIds.has(String(row.i))&&String(row.i)!==String(id);
       const option=h('div',{class:'wiki-chest-reward'+
+       (nextChest?' wiki-chest-reward-nested':'')+
        (wikiSelection.highlight===String(row.i)?' highlighted':'')});
-      option.append(itemLink(row.i,dataName('item',row.i),id));
+      const rewardMain=h('div',{class:'wiki-chest-reward-main'},[
+       itemLink(row.i,dataName('item',row.i),id)
+      ]);
+      if(nextChest)rewardMain.append(h('small',{class:'wiki-chest-nested-note',
+       text:wt('↳ Следующая шкатулка','↳ Next chest')}));
+      option.append(rewardMain);
       if(adminEditing&&adminToken){
        const quantity=h('span',{class:'wiki-reward-quantity wiki-edit-value',
         text:'×'+(row.n??1),title:'Двойной клик — изменить количество'});
@@ -4123,9 +4144,9 @@ function renderWiki(root){
       if(adminEditing&&adminToken){
        const chance=h('small',{class:'wiki-reward-percent wiki-edit-value',
         title:'Двойной клик — изменить вероятность внутри группы',
-        text:row.p==null?'Шанс не указан':row.p+'%'});
+        text:window.PandoraStudioChestPresentation.chance(row.p,lang)});
        chance.ondblclick=e=>{e.preventDefault();
-        editWikiValue(chance,row.p??0,{type:'number',min:0,max:100,
+        editWikiValue(chance,row.p,{type:'number',min:0,max:100,
          onCommit:n=>changeChest(groups.map((g,gi)=>gi!==i?g:
           g.map((r,ri)=>ri===rowIndex?{...r,p:n}:r)))});
        };
@@ -4135,9 +4156,11 @@ function renderWiki(root){
         onclick:()=>void changeChest(groups.map((g,gi)=>gi!==i?g:
          g.filter((_,ri)=>ri!==rowIndex)))
          .catch(e=>showStudioToast(e.message,'warning'))}));
-      }else if(row.p!=null)option.append(h('small',{class:'wiki-reward-percent'+
-       (row.p===100?' certain':''),title:wt('Вероятность внутри группы','Probability within group'),
-       text:row.p+'%'}));
+      }else option.append(h('small',{class:'wiki-reward-percent'+
+       (row.p===100?' certain':'')+(row.p==null?' unknown':''),
+       'aria-label':wt('Шанс внутри группы: ','Chance within group: ')+
+        window.PandoraStudioChestPresentation.chance(row.p,lang),
+       text:window.PandoraStudioChestPresentation.chance(row.p,lang)}));
       options.append(option);
      }
      if(adminEditing&&adminToken){
@@ -4148,10 +4171,16 @@ function renderWiki(root){
        text:'Удалить группу',onclick:()=>void changeChest(groups.filter((_,gi)=>gi!==i))
         .catch(e=>showStudioToast(e.message,'warning'))}));
      }
-     const section=h('details',{class:'wiki-chest-group'},[heading,options]);
+     const section=h('details',{class:'wiki-chest-group'+
+      (group.length>1?' wiki-chest-alternatives':'')},[heading,options]);
      section.open=true;
-     gallery.append(section);
+     if(!adminEditing&&!adminToken&&listedSingle)certainItems.append(section);
+     else gallery.append(section);
     }
+    if(!adminEditing&&!adminToken&&chestView.listed100.length)gallery.prepend(certainBoard);
+    if(groups.length)detail.append(h('p',{class:'wiki-chest-probability-note',
+     text:wt('Шансы относятся к отдельным группам розыгрыша. 100% — значение из игровой таблицы, без учёта дополнительных условий получения.',
+      'Chances refer to separate roll groups. Listed 100% values do not account for possible reward conditions.')}));
     detail.append(gallery);
     if(adminEditing&&adminToken)detail.append(h('button',{type:'button',
      class:'wiki-owner-plus wiki-add-source',text:'+ Предмет',
