@@ -121,7 +121,7 @@ test('every D1 PvP war, including future owner-added records, has a stable inter
  assert.match(view,/const anchor=warLink\(item\.id,value\)/);
  assert.match(view,/article\.battles\.find\(war=>war\.id===warId\)/);
  assert.match(view,/warLink\(war\.id,name\)/);
- assert.match(view,/wiki-honor-war-return/);
+ assert.match(view,/backButton\(tr\('Чести','Honor'\),onWarReturn\)/);
  assert.match(app,/wikiLink\(name,'honor','war-'\+warId\)/);
  assert.match(app,/warId:\/\^war-\[a-z\]/);
  assert.match(app,/psWikiHonorScroll/);
