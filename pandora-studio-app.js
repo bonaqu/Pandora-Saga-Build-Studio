@@ -1872,6 +1872,8 @@ function renderWiki(root){
  const layout=h('div',{class:'wiki-layout'});
  layout.append(listPanel,detail);root.append(controls,layout);
  if(wikiSelection.type==='honor'){
+  // Honor navigation sticks inside the encyclopedia's actual scroll viewport.
+  layout.classList.add('wiki-layout-honor');
   view.hidden=true;
   const renderHonor=()=>{
    if(!root.isConnected)return;

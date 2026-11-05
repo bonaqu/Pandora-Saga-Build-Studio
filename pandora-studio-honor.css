@@ -188,8 +188,13 @@
  background:radial-gradient(ellipse at 45% 30%,#5d4127,#25180f 83%);
  box-shadow:inset 0 0 0 2px #39291b,0 2px 8px #0007;
 }
-.wiki-honor-emblem-svg{display:block;width:100%;height:100%;
- filter:drop-shadow(0 1px 1px #170c06)}
+/* Preserve the original 23x23 game silhouettes. Only the framing and
+   gentle shadow belong to Build Studio, never altered vector geometry. */
+.wiki-honor-emblem-source{
+ display:block;width:35px;height:35px;max-width:100%;max-height:100%;
+ object-fit:contain;image-rendering:auto;
+ filter:drop-shadow(0 1px 2px #140b06);
+}
 .wiki-honor-rank.is-monthly .wiki-honor-emblem{border-color:#dfb676}
 .wiki-honor-cloak-list .wiki-honor-cloak-link.wiki-link{
  display:inline;inline-size:auto;width:auto;min-height:0;padding:0;margin:0;
@@ -206,4 +211,26 @@
 @media(max-width:670px){
  .wiki-honor-list-row .wiki-honor-location-select{flex-basis:100%;max-width:100%}
  .wiki-honor-list-row .wiki-honor-add{margin-left:0}
+}
+
+/* The Encyclopedia scrolls #detailContent rather than the body. Honor's
+   navigation must stick in the SAME scroll plane and stay alongside its
+   very long article. Keep the four entries fully visible on desktop. */
+@media(min-width:781px){
+ .wiki-layout.wiki-layout-honor{align-items:stretch}
+ .wiki-layout-honor>.wiki-list-panel{
+  position:sticky;top:12px;align-self:start;
+  z-index:2;height:max-content;max-height:min(440px,calc(100dvh - 115px));
+ }
+ .wiki-layout-honor>.wiki-list-panel>.wiki-list{
+  overflow-y:auto;overscroll-behavior:contain;
+ }
+}
+/* The one-column narrow layout uses normal in-flow section navigation;
+   never let a tall four-item menu cover the article on a phone. */
+@media(max-width:780px){
+ .wiki-layout-honor>.wiki-list-panel{position:static;max-height:none}
+ .wiki-layout-honor>.wiki-list-panel>.wiki-list{
+  max-height:none;overflow:visible;
+ }
 }
