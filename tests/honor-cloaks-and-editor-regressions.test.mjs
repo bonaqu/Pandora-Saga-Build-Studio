@@ -40,7 +40,7 @@ test('honor cards are not duplicated; vector icons and item hover/navigation are
 test('Honor section selection follows scroll without observer leaks',()=>{
  const app=read('pandora-studio-app.js'),view=read('pandora-studio-honor-view.js');
  assert.match(view,/scroller\.addEventListener\('scroll',onScroll,\{passive:true\}\)/);
- assert.match(view,/const readingLine=scroller\.getBoundingClientRect\(\)\.top/);
+ assert.match(view,/const paneTop=scroller\.getBoundingClientRect\(\)\.top/);
  assert.match(view,/selectSection\(current\)/);
  assert.match(view,/const stopObserving|function stopObserving/);
  assert.match(view,/scroller\.removeEventListener\('scroll',onScroll\)/);
@@ -105,7 +105,7 @@ test('monthly navigation is readable at end-of-article and not pinned to 100px',
  const view=read('pandora-studio-honor-view.js');
  assert.match(view,/Math\.min\(100,scroller\.clientHeight\*\.22\)/);
  assert.match(view,/monthlyTop<=paneTop\+Math\.min\(280,scroller\.clientHeight\*\.43\)/);
- assert.match(view,/else if\(remaining<=36\)current='monthly'/);
+ assert.match(view,/else if\(remaining<=36\|\|monthlyVisible\)current='monthly'/);
  assert.match(view,/selectSection\(current\)/);
 });
 
