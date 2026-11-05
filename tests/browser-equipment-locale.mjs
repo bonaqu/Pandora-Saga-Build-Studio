@@ -28,19 +28,21 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await rows.first().click();
   await page.waitForFunction(()=>location.hash.startsWith('#wiki/item/'));
   const chosenHash=await page.evaluate(()=>location.hash);
-  await page.locator('.wiki-history-back').waitFor({state:'visible'});
+  await page.locator('.wiki-return-button').waitFor({state:'visible'});
   await page.goBack();
   await page.waitForFunction(expected=>location.hash===expected,originalHash);
   assert.equal(await page.locator('#detailPanel').getAttribute('aria-modal'),'true');
-  assert.equal(await page.locator('.wiki-history-back').count(),0);
+  assert.equal(await page.locator('.wiki-return-button').count(),0);
   await page.goForward();
   await page.waitForFunction(expected=>location.hash===expected,chosenHash);
-  await page.locator('.wiki-history-back').click();
+  await page.locator('.wiki-return-button').click();
   await page.waitForFunction(expected=>location.hash===expected,originalHash);
   assert.equal(await page.locator('#detailPanel').getAttribute('aria-modal'),'true');
   await rows.first().click();
   await page.waitForFunction(expected=>location.hash===expected,chosenHash);
-  assert.equal(await page.locator('.wiki-page-nav').count(),1);
+  assert.equal(await page.locator('.wiki-page-nav').count(),0,
+   'The old navigation bar should be absent');
+  assert.equal(await page.locator('.wiki-page > .wiki-return-button').count(),1);
   assert.equal(await page.locator('.wiki-chapter-list').count(),0,
    'The chapter list is already visible; no duplicate navigation action');
   const sidebar=page.locator('.wiki-list');
@@ -66,7 +68,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   // the same list history state used by earlier browser acceptance checks.
   await page.locator('.wiki-categories [data-wiki-chapter="item"]').click();
   await page.waitForFunction(()=>location.hash==='');
-  assert.equal(await page.locator('.wiki-history-back').count(),0);
+  assert.equal(await page.locator('.wiki-return-button').count(),0);
   assert.equal(await page.locator('#dockLocale').count(),0);
   assert.equal(await page.locator('#dockTabs').count(),0);
   assert.equal(await page.locator('#nav [data-tab="wiki"]').isHidden(),true,
@@ -135,8 +137,8 @@ export async function runEquipmentLocaleSmoke(browser,base){
    null,{timeout:20000});
   assert.equal(await page.locator('.wiki-equipment-type').count(),0,
    'Unslotted material is accessible via source link without pretending it is equipment');
-  assert.equal(await page.locator('.wiki-history-back').count(),0,
-   'External deep links must not invent a previous in-app view');
+  assert.equal(await page.locator('.wiki-return-button').count(),1,
+   'Direct links must provide safe return to their category');
   // Source-backed clickable chips navigate to the actual monster.
   await page.goto(base+'/#wiki/soul/101000',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-source-flow .wiki-source-primary').first()
@@ -151,7 +153,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await page.locator('.wiki-page').innerText(),/Душа|Soul/);
   await page.goForward();
   await page.waitForFunction(expected=>location.hash===expected,monsterHash);
-  await page.locator('.wiki-history-back').click();
+  await page.locator('.wiki-return-button').click();
   await page.waitForFunction(()=>location.hash==='#wiki/soul/101000');
   // Skill requirements show current investment without pretending the
   // entire ability is unlocked by one branch threshold.
@@ -176,7 +178,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(rollHeading,/Возможные награды/);
   assert.doesNotMatch(rollHeading,/группа [0-9]|Розыгрыш|таблице/);
   assert.equal(await page.locator('.wiki-chest-probability-note').count(),0);
-  await page.locator('.wiki-history-back').click();
+  await page.locator('.wiki-return-button').click();
   await page.waitForFunction(()=>location.hash==='#wiki/chest/51003');
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 5/);
   // Level-60 boxes exist even without an invented loot table.
