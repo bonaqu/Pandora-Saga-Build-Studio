@@ -16,8 +16,8 @@ export async function runHonorGuideSmoke(browser,base){
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.doesNotMatch(await panel.innerText(),
    /23.10.2026|Официальная новость|Источники:/);
-  assert.match(await panel.locator('.wiki-honor-resource').last().innerText(),
-   /Заработанная за всё время честь: определяет ранги и рейтинги\./);
+  assert.equal(await panel.locator('.wiki-honor-dual,.wiki-honor-resource').count(),0,
+   'Honor has no duplicate resource cards');
   assert.equal(await panel.locator('.wiki-honor-monthly-card').count(),3);
   assert.match(await panel.locator('.wiki-honor-monthly-card').first().innerText(),/Герцог/);
   assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
@@ -26,9 +26,21 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await panel.locator('.wiki-honor-joining').count(),0,
    'Starting Honor belongs to the Squire rank, not a duplicated callout');
   assert.match(await panel.locator('#honor-rank-0 .wiki-honor-requirement').innerText(),/1 000/);
-  const symbols=await panel.locator('.wiki-honor-rank-number').allInnerTexts();
-  assert.deepEqual(symbols.slice(0,5),['◆','◆◆','◆◆◆','◆◆◆◆','◆◆◆◆◆']);
-  assert.deepEqual(symbols.slice(6,9),['☾','☾☾','☾☾☾']);
+  assert.equal(await panel.locator('.wiki-honor-emblem-svg').count(),12);
+  for(let i=0;i<5;i++)assert.equal(
+   await panel.locator('#honor-rank-'+i+' svg polygon').count(),i+1);
+  assert.ok(await panel.locator('#honor-rank-5 svg polygon').count()>=2);
+  for(let i=6;i<11;i++)assert.ok(
+   await panel.locator('#honor-rank-'+i+' svg path').count()>=i-5);
+  assert.ok(await panel.locator('#honor-rank-11 svg path').count()>=3);
+  const cloaks=panel.locator('.wiki-honor-cloak-link');
+  assert.equal(await cloaks.count(),9,'All 9 cloak rewards resolve to catalog items');
+  await cloaks.first().hover();
+  await page.locator('#stage-gear-tooltip').waitFor({state:'visible'});
+  await cloaks.first().click();
+  assert.match(await panel.locator('h3').innerText(),/плащ победителя/);
+  await page.goBack({waitUntil:'domcontentloaded'});
+  await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.match(await panel.locator('.wiki-honor-monthly-head').first().innerText(),/Награды/);
   assert.match(await panel.locator('.wiki-honor-rank.is-moon').innerText(),
    /Министр|129\s*000/);
@@ -71,7 +83,36 @@ export async function runHonorGuideSmoke(browser,base){
   await ruins.click();
   assert.equal((await panel.locator('h3').innerText()).trim(),'Подземные руины Астира');
   assert.doesNotMatch(await panel.innerText(),/Историческая PvP-локация|недоступна на OS/);
+  // Regression: a deep-linked NPC record must never make Honor unclickable.
+  await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
+  await page.locator('.wiki-list [data-wiki-record]').first().click();
+  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
+  assert.equal((await panel.locator('.wiki-honor-rank').count()),12);
+  // The Phoenix Flame explanation previously displaced the hovered term
+  // and triggered an endless show/hide layout oscillation.
+  await page.goto(base+'/#wiki/item/252',{waitUntil:'domcontentloaded'});
+  const phoenix=page.locator('.wiki-conditional-term');
+  await phoenix.waitFor({state:'visible',timeout:20000});
+  await phoenix.scrollIntoViewIfNeeded();
+  const localPosition=()=>phoenix.evaluate(node=>{
+   const row=node.closest('.wiki-conditional-row').getBoundingClientRect();
+   const term=node.getBoundingClientRect();
+   return {x:term.left-row.left,y:term.top-row.top};
+  });
+  const before=await localPosition();
+  await phoenix.hover();
+  const explanation=page.locator('.wiki-phoenix-explanation');
+  await explanation.waitFor({state:'visible'});
+  await page.waitForTimeout(250);
+  assert.equal(await explanation.isVisible(),true,
+   'Phoenix Flame tooltip must stay visible without a pointer oscillation');
+  const after=await localPosition();
+  assert.ok(Math.abs(after.x-before.x)<1&&Math.abs(after.y-before.y)<1,
+   'Opening the tooltip must not move its trigger inside the effect row');
+  assert.equal(await explanation.evaluate(node=>getComputedStyle(node).position),
+   'absolute','The tooltip must float over the page rather than relayout it');
   assert.deepEqual(errors,[]);
-  console.log('Chromium Honor and future maps passed: RU/EN, 12 ranks, native 22-mob location grid');
+  console.log('Chromium Honor: vector ranks, cloaks, item previews, NPC navigation and RU/EN');
  }finally{await context.close()}
 }

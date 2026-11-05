@@ -36,7 +36,8 @@ body>#ownerDock.owner-dock-collapsed{
  background:linear-gradient(160deg,#513722,#2e2016);
  color:#ffdaa1;box-shadow:3px 6px 18px #0008;
  cursor:pointer;pointer-events:auto;touch-action:manipulation;
- transition:background .18s,border-color .18s,box-shadow .18s;
+ /* Hover is never allowed to animate the launcher opacity or visibility. */
+ transition:none;opacity:1;visibility:visible;animation:none;
 }
 #ownerDock.owner-dock-collapsed .owner-dock-handle{
  position:relative;inset:auto;top:auto;right:auto;bottom:auto;left:auto;
@@ -147,4 +148,13 @@ body>#ownerDock.owner-dock-collapsed{
  #ownerDock .owner-dock-handle,#ownerDock .owner-dock-actions button{
   transition:none;
  }
+}
+
+/* Preserve one permanent pointer target even when other site styles animate. */
+body>#ownerDock.owner-dock-collapsed,
+body>#ownerDock.owner-dock-collapsed .owner-dock-handle,
+body>#ownerDock.owner-dock-collapsed .owner-dock-handle:hover{
+ opacity:1!important;visibility:visible!important;
+ animation:none!important;transition:none!important;
+ transform:none!important;
 }
