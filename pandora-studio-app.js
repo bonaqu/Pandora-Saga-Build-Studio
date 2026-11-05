@@ -4103,13 +4103,13 @@ function renderWiki(root){
      };
      const category=colored[String(id)];
      if(category)detail.append(h('div',{class:'wiki-chest-unverified'},[
-      h('strong',{text:wt('Указанная категория наград: ','Listed reward category: ')+category}),
-      h('p',{text:wt('Точный список предметов и шансы открытия пока не опубликованы в доступной таблице игрового сервера. Это не означает, что сундук пустой.',
-       'The accessible server data does not publish the exact items or opening probabilities. This does not mean the chest is empty.')})
+      h('strong',{text:wt('Категория наград: ','Reward category: ')+category}),
+      h('p',{text:wt('Сведения о содержимом отсутствуют.',
+       'Contents are not listed.')})
      ]));
      else detail.append(h('p',{class:'muted',text:wt(
-      'Состав наград пока не указан в игровом каталоге.',
-      'Reward contents are not yet specified in the game catalog.'
+      'Содержимое сундука не указано.',
+      'Chest contents are not listed.'
      )}));
     }
     const chestIds=new Set(Object.keys(wikiIndex.records('chest')||{}));
@@ -4118,21 +4118,24 @@ function renderWiki(root){
     const certainBoard=h('section',{class:'wiki-chest-collection wiki-chest-listed-100'});
     certainBoard.append(h('div',{class:'wiki-chest-collection-head'},[
      h('strong',{text:wt('Награды с шансом 100%','Rewards listed at 100%')}),
-     h('small',{text:chestView.listed100.length+' '+
-      wt('отдельных розыгрышей','separate roll groups')})
+     h('small',{text:wt('Наград: ','Rewards: ')+chestView.listed100.length})
     ]));
     const certainItems=h('div',{class:'wiki-chest-assured-grid'});
     certainBoard.append(certainItems);
     for(const [i,group]of groups.entries()){
      const listedSingle=group.length===1&&group[0]?.p===100;
      const heading=h('summary',{class:'wiki-chest-group-summary'},[
-      h('span',{class:'wiki-chest-group-mark','aria-hidden':'true',text:String(i+1)}),
+      ...(adminEditing&&adminToken?[h('span',{class:'wiki-chest-group-mark',
+       'aria-hidden':'true',text:String(i+1)})]:[]),
       h('span',{class:'wiki-chest-group-name',
-       text:group.length>1?wt('Варианты · группа ','Options · group ')+(i+1):
-        wt('Розыгрыш ','Roll ')+(i+1)}),
+       text:adminEditing&&adminToken?
+        (group.length>1?wt('Варианты · группа ','Options · group ')+(i+1):
+         wt('Розыгрыш ','Roll ')+(i+1)):
+        (group.length>1?wt('Возможные награды','Possible rewards'):
+         wt('Награда','Reward'))}),
       h('small',{text:group.length===1?(listedSingle?
-       wt('100% по таблице','Listed at 100%'):wt('1 предмет','1 item')):
-       group.length+' '+wt('вариантов','listed options')}),
+       '100%':wt('1 предмет','1 item')):
+       wt('Вариантов: ','Options: ')+group.length}),
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
      const options=h('div',{class:'wiki-chest-options'});
@@ -4211,9 +4214,6 @@ function renderWiki(root){
      else gallery.append(section);
     }
     if(!adminEditing&&!adminToken&&chestView.listed100.length)gallery.prepend(certainBoard);
-    if(groups.length)detail.append(h('p',{class:'wiki-chest-probability-note',
-     text:wt('Шансы относятся к отдельным группам розыгрыша. 100% — значение из игровой таблицы, без учёта дополнительных условий получения.',
-      'Chances refer to separate roll groups. Listed 100% values do not account for possible reward conditions.')}));
     detail.append(gallery);
     if(adminEditing&&adminToken)detail.append(h('button',{type:'button',
      class:'wiki-owner-plus wiki-add-source',text:'+ Предмет',
