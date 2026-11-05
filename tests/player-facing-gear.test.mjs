@@ -24,8 +24,10 @@ class Element{
 }
 const walk=e=>[e,...(e.children||[]).flatMap(x=>x instanceof Element?walk(x):[])];
 function fixture(admin=false){
+ const listeners={};
  const document={createElement:t=>new Element(t),createTextNode:t=>({textContent:t}),
-  body:new Element('body'),documentElement:{clientWidth:1024}};
+  body:new Element('body'),documentElement:{clientWidth:1024},
+  addEventListener:(name,listener)=>{listeners[name]=listener}};
  document.body.isConnected=true;
  const window={innerHeight:768,PandoraStudioAdminActive:()=>admin};
  const timers=new Map();
@@ -41,7 +43,7 @@ function fixture(admin=false){
  Function('window',read('pandora-studio-item-presentation.js'))(window);
  Function('window','document','setTimeout','clearTimeout',
   read('pandora-studio-equipment-ui.js'))(window,document,setTimer,clearTimer);
- return {window,document,api:window.PandoraStageItemUI,timers,runTimers};
+ return {window,document,api:window.PandoraStageItemUI,timers,runTimers,listeners};
 }
 const ring={id:19022,name:'Кольцо метели',kind:'RING',level:20,AC:0,soulslot:0,
  desc:'Кольцо из странного металла, помеченное знаком льда. СИЛ -1, ИНТ +1'};
@@ -59,7 +61,7 @@ test('admin inspection also keeps internal database IDs hidden',()=>{
  assert.ok(!walk(node).some(n=>n.tag==='dd'&&n.textContent==='19022'));
 });
 test('rich hover delay does not flash while crossing items; keyboard focus stays immediate',()=>{
- const {api,document,timers,runTimers}=fixture();
+ const {api,document,timers,runTimers,listeners}=fixture();
  const button=new Element('button');
  document.body.append(button);
  button.setAttribute('title','Native item tooltip');
@@ -97,9 +99,19 @@ test('rich hover delay does not flash while crossing items; keyboard focus stays
  assert.equal(document.body.children.length,3);
  const focusTip=document.body.children[2];
  assert.equal(focusTip.isConnected,true);
- api.dismissPreview();
+ const event={key:'Escape',prevented:false,stopped:false,
+  preventDefault(){this.prevented=true},
+  stopImmediatePropagation(){this.stopped=true}};
+ listeners.keydown(event);
+ assert.equal(event.prevented,true);
+ assert.equal(event.stopped,true,'Escape must not bubble to Wiki workbench');
  assert.equal(focusTip.isConnected,false);
  assert.equal(button.attrs['aria-describedby'],undefined);
+ const emptyEvent={key:'Escape',prevented:false,stopped:false,
+  preventDefault(){this.prevented=true},
+  stopImmediatePropagation(){this.stopped=true}};
+ listeners.keydown(emptyEvent);
+ assert.equal(emptyEvent.stopped,false,'Without a tooltip, normal Wiki Escape remains active');
 });
 test('soul slots display localized labels rather than raw internal names',()=>{
  const {api}=fixture();
