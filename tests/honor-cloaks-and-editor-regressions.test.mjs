@@ -50,9 +50,13 @@ test('Honor section selection follows scroll without observer leaks',()=>{
 test('PvP map names are ordinary reversible wiki links; ranks share compact styling',()=>{
  const view=read('pandora-studio-honor-view.js'),css=read('pandora-studio-honor.css');
  assert.match(view,/link\(item\.mapId,value\)/);
- assert.match(view,/anchor\.classList\.add\('wiki-honor-location-link'\)/);
+ assert.match(view,/anchor\.classList\.add\('wiki-honor-location-link','wiki-entity-reference'\)/);
  assert.doesNotMatch(view,/wiki-honor-open-location|link\(item\.mapId,'↗'\)/);
- assert.match(css,/\.wiki-honor-list-row \.wiki-honor-location-link\.wiki-link/);
+ assert.match(view,/class:'wiki-honor-list wiki-entity-flow'/);
+ assert.match(view,/anchor\.classList\.add\('wiki-honor-location-link','wiki-entity-reference'\)/);
+ assert.match(view,/anchor\.classList\.add\('wiki-honor-war-link','wiki-entity-reference'\)/);
+ assert.match(css,/\.wiki-page \.wiki-honor-list \.wiki-entity-reference\.wiki-link/);
+ assert.doesNotMatch(css,/\/\* Location names themselves open the canonical map page/);
  assert.match(css,/\.wiki-honor-rank-head\{display:contents\}/);
  assert.match(css,/grid-template-columns:34px minmax\(0,1fr\)/);
  assert.match(css,/filter:grayscale\(1\) sepia\(1\)/);
@@ -130,4 +134,27 @@ test('every D1 PvP war, including future owner-added records, has a stable inter
  const match=/\(item\|monster\|map\|npc\|chest\|skill\|soul\|instance\|honor\)/g;
  assert.equal([...app.matchAll(match)].length,3,
   'restore, hashchange and popstate accept Honor war deep links');
+});
+
+test('Wiki visual system reuses the same linked-entity cards and key interaction states',()=>{
+ const app=read('pandora-studio-app.js');
+ const honor=read('pandora-studio-honor-view.js');
+ const shared=read('pandora-studio-wiki-polish.css');
+ const theme=read('pandora-studio-theme.css');
+ assert.match(app,/const holder=h\('div',\{class:'wiki-entity-flow'\}\)/);
+ assert.match(app,/else if\(places.length\)detail\.append\(linkFlow\(places\.map/);
+ assert.match(honor,/class:'wiki-honor-list wiki-entity-flow'/);
+ assert.match(shared,/\.wiki-page \.wiki-entity-flow \.wiki-link\{/);
+ assert.match(shared,/\.wiki-page \.wiki-entity-flow \.wiki-link:focus-visible\{/);
+ assert.match(shared,/\.wiki-page>h4:not\(\.wiki-location-list-heading\)/);
+ for(const component of ['wiki-source-token','wiki-monster-stat',
+  'wiki-map-monsters','wiki-trade-card','wiki-chest-board',
+  'wiki-prerequisite','wiki-soul-properties-half','wiki-instance-kind'])
+  assert.ok(shared.includes(component),'Chapter design should account for '+component);
+ assert.match(theme,/\.wiki-entity-flow\{display:flex;flex-wrap:wrap/);
+ assert.match(honor,/class:'wiki-honor-cloak-row'/);
+ assert.match(honor,/node\('span','wiki-honor-cloak-nation'/);
+ assert.match(honor,/class:'wiki-honor-cloak-reward'/);
+ assert.match(read('pandora-studio-honor.css'),/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+ assert.match(shared,/@media\(prefers-reduced-motion:reduce\)/);
 });
