@@ -69,9 +69,15 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     if(active)link.setAttribute('aria-current','location');
     else link.removeAttribute('aria-current');
    }
-   detail.querySelector('#honor-'+id)?.scrollIntoView({
-    block:'start',behavior:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?
-     'instant':'smooth'});
+   const selected=detail.querySelector('#honor-'+id);
+   const pane=detail.closest('#detailContent')||detail;
+   if(selected&&pane){
+    const delta=selected.getBoundingClientRect().top-
+     pane.getBoundingClientRect().top;
+    const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    pane.scrollTo({top:pane.scrollTop+delta-12,
+     behavior:reduced?'instant':'smooth'});
+   }
   });
   if(id===oldSection)jump.classList.add('selected');
   nav.push(jump);browse.append(jump);
@@ -321,7 +327,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    // One editable nation group; merge with two unchanged groups on save.
    const startEdit=()=>editText(content,entry,true,next=>{
     const nextRows=[...monthlyRows];nextRows[index]=next;
-    return saveText('honor.overview',{[field]:nextRows.join('\\n\\n')});
+    return saveText('honor.overview',{[field]:nextRows.join('\n\n')});
    });
    content.classList.add('wiki-honor-editable');
    content.setAttribute('tabindex','0');
