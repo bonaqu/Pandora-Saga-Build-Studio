@@ -32,7 +32,9 @@ test('hover lifecycle cancels stale previews and retains instant keyboard access
  assert.match(ui,/if\(target\.matches\(':focus-visible'\)\)show\(\)/);
  assert.match(ui,/target\.setAttribute\('aria-describedby',tip\.id\)/);
  assert.match(ui,/liveTarget\?\.removeAttribute\('aria-describedby'\)/);
- assert.match(ui,/if\(event\.key==='Escape'\)dismissPreview\(\)/);
+ assert.match(ui,/if\(event\.key!=='Escape'\|\|!livePreview&&!pendingPreview\)return/);
+ assert.match(ui,/event\.preventDefault\(\)/);
+ assert.match(ui,/event\.stopImmediatePropagation\(\)/);
 });
 
 test('trade, loot, Honor cloak and equipped slot share the exact same preview controller',()=>{
