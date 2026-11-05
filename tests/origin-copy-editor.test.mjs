@@ -9,19 +9,19 @@ const host={};Function('window',read('pandora-studio-honor-guide.js'))(host);
 const guide=host.PandoraHonorGuide;
 
 test('Origin copy uses existing bilingual D1 override contract with no new migration',()=>{
- const key='book.origin.raceChoose';
+ const key='book.origin.race-choose';
  assert.equal(guide.validOverride(key,JSON.stringify({ru:'Выбрать расу'})),true);
  assert.equal(guide.validOverride(key,JSON.stringify({ru:'Выбрать расу',en:'Choose a race'})),true);
  assert.equal(guide.validOverride(key,JSON.stringify({ru:' ',en:' '})),false);
  assert.equal(guide.validOverride(key,JSON.stringify({ru:'a'.repeat(361)})),false);
  const variants={['guideedit.'+key]:JSON.stringify({ru:'Выбрать расу',en:'Choose a race'})};
- assert.equal(guide.field(variants,'origin.raceChoose','Выбрать эту расу','Choose this race').ru,'Выбрать расу');
- assert.equal(guide.field(variants,'origin.raceChoose','Выбрать эту расу','Choose this race').en,'Choose a race');
+ assert.equal(guide.field(variants,'origin.race-choose','Выбрать эту расу','Choose this race').ru,'Выбрать расу');
+ assert.equal(guide.field(variants,'origin.race-choose','Выбрать эту расу','Choose this race').en,'Choose a race');
  const single={['guideedit.'+key]:JSON.stringify({ru:'Выбрать расу'})};
- assert.equal(guide.field(single,'origin.raceChoose','Выбрать эту расу','Choose this race').en,'Choose this race',
+ assert.equal(guide.field(single,'origin.race-choose','Выбрать эту расу','Choose this race').en,'Choose this race',
   'RU does not overwrite English defaults');
  assert.ok(worker.includes('guideedit\\\\.(?:book\\\\.'),'Worker accepts existing book.* override keys');
- assert.match(app,/saveGuidePatch\('book\.origin\.'\+key,\{\[lang\]:next\}\)/);
+ assert.match(app,/saveGuidePatch\('book\.origin\.'\+originGuideKey\(key\),\{\[lang\]:next\}\)/);
  assert.match(app,/onFinished:/);
 });
 
