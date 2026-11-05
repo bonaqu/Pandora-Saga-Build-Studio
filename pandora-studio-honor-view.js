@@ -303,11 +303,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   card.id='honor-rank-'+rank.id;
   const header=make('div',{class:'wiki-honor-rank-head'});
   const marker=make('span',{class:'wiki-honor-rank-number wiki-honor-emblem',
-   'aria-label':tr('Эмблема ранга ','Rank emblem: ')+(en?rank.nameEn:rank.nameRu)});
+   role:'img','aria-label':tr('Эмблема ранга ','Rank emblem: ')+(en?rank.nameEn:rank.nameRu)});
   const src=honorIconSrc(rank.id);
   if(src)marker.append(make('img',{
    class:'wiki-honor-emblem-source',src,alt:'','aria-hidden':'true',
-   width:'35',height:'35',decoding:'async'}));
+   width:'27',height:'27',decoding:'async'}));
   header.append(marker);
   const rankTitle=make('div',{class:'wiki-honor-rank-name'});
   const name=en?rank.nameEn:rank.nameRu;
