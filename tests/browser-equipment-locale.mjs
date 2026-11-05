@@ -63,6 +63,9 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.waitForFunction(()=>location.hash==='');
   await page.goBack();
   await page.waitForFunction(expected=>location.hash===expected,chosenHash);
+  await page.locator('.wiki-equipment-type').waitFor({state:'visible'});
+  await page.waitForFunction(name=>
+   document.querySelector('.wiki-page h3')?.textContent?.trim()===name,firstRu);
   assert.equal(await page.locator('#dockLocale').count(),0);
   assert.equal(await page.locator('#dockTabs').count(),0);
   assert.equal(await page.locator('#nav [data-tab="wiki"]').isHidden(),true,
