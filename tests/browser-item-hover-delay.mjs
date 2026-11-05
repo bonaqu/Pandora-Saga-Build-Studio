@@ -24,8 +24,14 @@ export async function runItemHoverDelaySmoke(browser,base){
   }
  };
  try{
-  await page.goto(base+'/#wiki/item/1',{waitUntil:'domcontentloaded'});
-  const spata=page.locator('#detailContent .wiki-page:visible .wiki-recipe-use a.wiki-recipe-result:visible')
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>/\d+ навыков · \d+ предметов · \d+ душ/.test(
+   document.querySelector('#catalogStatus')?.textContent||''),null,{timeout:20000});
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('.wiki-equipment-type').waitFor({state:'visible'});
+  await page.locator('.wiki-list [data-wiki-record]').first().click();
+  await page.waitForURL(/#wiki\/item\/1$/);
+  const spata=page.locator('#detailContent .wiki-recipe-use a.wiki-recipe-result')
    .filter({hasText:'Прочная спата'}).first();
   await spata.waitFor({state:'visible',timeout:20000});
   await spata.scrollIntoViewIfNeeded();
@@ -37,7 +43,15 @@ export async function runItemHoverDelaySmoke(browser,base){
   await tooltip.waitFor({state:'visible',timeout:2500});
   assert.match(await tooltip.locator('.stage-rich-head strong').innerText(),
    /Прочная спата/);
-  assert.equal(await spata.getAttribute('aria-describedby'),'stage-gear-tooltip');
+  const owner=await page.evaluate(()=>{
+   const popup=document.querySelector('#stage-gear-tooltip');
+   const anchor=document.querySelector('[aria-describedby="stage-gear-tooltip"]');
+   return {text:anchor?.textContent||'',connected:!!anchor?.isConnected,
+    popupConnected:!!popup?.isConnected};
+  });
+  assert.equal(owner.connected,true,'Preview must belong to a connected item link');
+  assert.equal(owner.popupConnected,true);
+  assert.match(owner.text,/Прочная спата/);
   assert.equal(await tooltip.evaluate(node=>getComputedStyle(node).pointerEvents),
    'none','A floating rich tooltip must not steal pointer events');
   await clearPointer();
@@ -54,7 +68,7 @@ export async function runItemHoverDelaySmoke(browser,base){
 
   // Crossing neighboring item links must cancel the first timer and
   // display only the item currently under the pointer.
-  const allRewards=page.locator('#detailContent .wiki-page:visible .wiki-recipe-use a.wiki-recipe-result:visible');
+  const allRewards=page.locator('#detailContent .wiki-recipe-use a.wiki-recipe-result');
   assert.ok(await allRewards.count()>=2,'Spata must have multiple NPC-trade outputs');
   const another=allRewards.filter({hasNotText:'Прочная спата'}).first();
   await another.scrollIntoViewIfNeeded();
