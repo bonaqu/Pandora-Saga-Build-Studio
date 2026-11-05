@@ -11,14 +11,26 @@ export async function runItemHoverDelaySmoke(browser,base){
  page.on('pageerror',error=>errors.push(error.message));
  const tooltip=page.locator('#stage-gear-tooltip');
  const clearPointer=()=>page.mouse.move(1,1);
+ const hover=async(locator,step)=>{
+  try{await locator.hover({timeout:6500})}
+  catch(error){
+   const state=await page.evaluate(()=>({
+    hash:location.hash,active:document.activeElement?.tagName,
+    references:[...document.querySelectorAll('.wiki-recipe-use a.wiki-recipe-result')]
+     .map(node=>({text:node.textContent,visible:!!node.getClientRects().length,
+      box:node.getBoundingClientRect().toJSON()}))
+   }));
+   throw new Error('Hover '+step+' failed '+JSON.stringify(state)+'; '+error.message);
+  }
+ };
  try{
   await page.goto(base+'/#wiki/item/1',{waitUntil:'domcontentloaded'});
-  const spata=page.locator('.wiki-recipe-use a.wiki-recipe-result')
+  const spata=page.locator('#detailContent .wiki-page:visible .wiki-recipe-use a.wiki-recipe-result:visible')
    .filter({hasText:'Прочная спата'}).first();
   await spata.waitFor({state:'visible',timeout:20000});
   await spata.scrollIntoViewIfNeeded();
   await clearPointer();
-  await spata.hover();
+  await hover(spata,'Spata NPC trade');
   await page.waitForTimeout(140);
   assert.equal(await tooltip.count(),0,
    'Item preview must not appear immediately upon hovering a trade reward');
@@ -33,24 +45,23 @@ export async function runItemHoverDelaySmoke(browser,base){
 
   // A brief cursor pass must never open a tooltip later, after the reader
   // has already moved on to a different part of the article.
-  await spata.hover();
+  await hover(spata,'Spata NPC trade');
   await page.waitForTimeout(120);
   await clearPointer();
   await page.waitForTimeout(750);
   assert.equal(await tooltip.count(),0,
    'Cancelled hover must never produce a delayed stray preview');
 
-  // Focus via keyboard should be immediate and accessible (no mouse delay).
   // Crossing neighboring item links must cancel the first timer and
   // display only the item currently under the pointer.
-  const allRewards=page.locator('.wiki-recipe-use a.wiki-recipe-result');
+  const allRewards=page.locator('#detailContent .wiki-page:visible .wiki-recipe-use a.wiki-recipe-result:visible');
   assert.ok(await allRewards.count()>=2,'Spata must have multiple NPC-trade outputs');
   const another=allRewards.filter({hasNotText:'Прочная спата'}).first();
   await another.scrollIntoViewIfNeeded();
   await clearPointer();
-  await spata.hover();
+  await hover(spata,'Spata NPC trade');
   await page.waitForTimeout(110);
-  await another.hover();
+  await hover(another,'neighboring Spata recipe');
   await page.waitForTimeout(150);
   assert.equal(await tooltip.count(),0,'Switching items must not show a stale preview');
   await tooltip.waitFor({state:'visible',timeout:2500});
@@ -60,17 +71,23 @@ export async function runItemHoverDelaySmoke(browser,base){
   await clearPointer();
   assert.equal(await tooltip.count(),0);
 
-  // Scrolling a long Wiki article cancels pending hovers as links move.
+  // Scrolling moves the pointer off an article link and must cancel its
+  // pending tooltip; if a link stays hovered, the timer is re-armed.
   await spata.scrollIntoViewIfNeeded();
   await clearPointer();
-  await spata.hover();
+  await hover(spata,'Spata NPC trade');
   await page.waitForTimeout(100);
   await page.locator('#detailContent').evaluate(node=>{
-   node.scrollTop=node.scrollTop>40?node.scrollTop-40:node.scrollTop+40;
+   const max=node.scrollHeight-node.clientHeight;
+   node.scrollTop=node.scrollTop>max/2?0:max;
   });
+  await page.waitForFunction(()=>
+   ![...document.querySelectorAll('.wiki-recipe-use a.wiki-recipe-result')]
+    .some(node=>node.textContent.includes('Прочная спата')&&node.matches(':hover')),
+   null,{timeout:2000});
   await page.waitForTimeout(780);
   assert.equal(await tooltip.count(),0,
-   'Scrolling must cancel any pending rich item tooltip');
+   'Scrolling off an item must not leave a pending rich tooltip');
   await spata.scrollIntoViewIfNeeded();
   await clearPointer();
 
@@ -86,7 +103,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   await spata.evaluate(node=>node.blur());
 
   // A pending hover cannot leak into the next page after a click.
-  await spata.hover();
+  await hover(spata,'Spata NPC trade');
   await page.waitForTimeout(90);
   await spata.click();
   await page.waitForURL(/#wiki\/item\/2$/);
@@ -99,7 +116,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   await loot.waitFor({state:'visible',timeout:20000});
   await loot.scrollIntoViewIfNeeded();
   await clearPointer();
-  await loot.hover();
+  await hover(loot,'monster loot');
   await page.waitForTimeout(140);
   assert.equal(await tooltip.count(),0,'Monster loot uses the same hover delay');
   await tooltip.waitFor({state:'visible',timeout:2500});
@@ -114,7 +131,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   await cloak.waitFor({state:'visible',timeout:20000});
   await cloak.scrollIntoViewIfNeeded();
   await clearPointer();
-  await cloak.hover();
+  await hover(cloak,'Honor cloak');
   await page.waitForTimeout(140);
   assert.equal(await tooltip.count(),0,'Honor cloak uses the same hover delay');
   await tooltip.waitFor({state:'visible',timeout:2500});
