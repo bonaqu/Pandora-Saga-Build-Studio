@@ -28,7 +28,7 @@ test('drops and NPC exchange rewards include actual item icon and linked ingredi
  assert.match(app,/const itemLink=\(id,label,highlight=null\)=>/);
  assert.match(app,/itemLink\(trade\.i/);
  assert.match(app,/row\.append\(itemLink\(material\.i/);
- assert.match(app,/option\.append\(itemLink\(row\.i/);
+ assert.match(app,/itemLink\(row\.i,dataName\('item',row\.i\),id\)/);
 });
 
 
