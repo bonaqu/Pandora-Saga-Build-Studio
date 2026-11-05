@@ -66,3 +66,26 @@ test('wiki keeps history and shows a contextual scroll-to-top in its persistent 
  assert.match(css,/\.wiki-chest-assured-grid/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
+
+test('all Wiki records reuse the Honor Back button and one source of CSS styles',()=>{
+ const app=read('pandora-studio-app.js');
+ const honor=read('pandora-studio-honor-view.js');
+ const css=read('pandora-studio-wiki-history.css');
+ const polish=read('pandora-studio-wiki-polish.css');
+ const honorCss=read('pandora-studio-honor.css');
+ assert.match(app,/function wikiBackButton\(chapter,onBack=null\)/);
+ assert.match(app,/class:'wiki-return-button'/);
+ assert.match(app,/detail\.append\(wikiBackButton\(backChapters\[type\]/);
+ assert.match(app,/backButton:wikiBackButton/);
+ assert.match(honor,/backButton\(tr\('Чести','Honor'\),onWarReturn\)/);
+ assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)&&history\.state\?\.psWikiEntry===true\)/);
+ assert.match(app,/else openWikiChapterList\(\)/);
+ for(const kind of ['item','monster','map','npc','chest','skill','soul','instance'])
+  assert.match(app,new RegExp('(?:^|[\\s,{])'+kind+':','m'),kind);
+ assert.match(css,/\.wiki-page>\.wiki-return-button\{/);
+ assert.match(css,/margin:0 0 15px/);
+ assert.doesNotMatch(honor,/wiki-honor-war-return/);
+ assert.doesNotMatch(honorCss,/wiki-honor-war-return/);
+ assert.doesNotMatch(polish,/wiki-page-nav|wiki-nav-button/);
+ assert.doesNotMatch(app,/class:'wiki-page-nav'/);
+});
