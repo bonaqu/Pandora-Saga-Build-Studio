@@ -49,15 +49,17 @@ test('return navigation captures the previous view and respects direct links',()
 });
 
 
-test('wiki navigation has explicit chapter list and restores forward/back without stale hashes',()=>{
+test('wiki keeps history and shows a contextual scroll-to-top in its persistent left list',()=>{
  const app=read('pandora-studio-app.js');
  const css=read('pandora-studio-wiki-polish.css');
  assert.match(app,/function openWikiChapterList\(\)/);
  assert.match(app,/psWikiList:listView/);
  assert.match(app,/else if\(event\.state\?\.psWikiList&&!location\.hash\)/);
  assert.match(app,/class:'wiki-page-nav'/);
- assert.match(app,/class:'wiki-nav-button wiki-chapter-list'/);
- assert.match(app,/onclick:openWikiChapterList/);
+ assert.doesNotMatch(app,/class:'wiki-nav-button wiki-chapter-list'/);
+ assert.match(app,/class:'wiki-list-top'/);
+ assert.match(app,/listTop\.hidden=!far/);
+ assert.match(app,/listPanel\.append\(browse,listTop\)/);
  assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)\)openWikiChapterList\(\)/);
  assert.match(css,/\.wiki-page>\.wiki-page-nav/);
  assert.match(css,/\.wiki-chest-assured-grid/);
