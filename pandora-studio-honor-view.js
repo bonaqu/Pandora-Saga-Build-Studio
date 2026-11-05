@@ -14,6 +14,7 @@ function stopObserving(){
 }
 function render({browse,detail,make,lang='ru',article,editable=false,
  editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,cloakLink=()=>null,
+ warId=null,warLink=()=>null,onWarReturn=()=>{},
  label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
  mapOptions=[],onOpenLocations=()=>{}}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
@@ -27,6 +28,49 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const oldFilter=detail.querySelector('.wiki-honor-filter.chosen')?.dataset.honorFilter||'all';
  browse.replaceChildren();detail.replaceChildren();
  const node=(tag,cls,text)=>make(tag,{class:cls,text});
+ // Wars are Honor records, not OS map IDs. Give every existing and
+ // owner-created entry its own page without inventing location records.
+ if(warId!=null){
+  const entry=article.battles.find(war=>war.id===warId);
+  browse.append(node('p','muted',tr('PvP-войны','PvP wars')));
+  browse.append(node('h4','wiki-location-list-heading',
+   label('chapter','honor','Честь','Honor')));
+  for(const war of article.battles){
+   const name=en?war.nameEn:war.nameRu;
+   const anchor=warLink(war.id,name);
+   if(anchor){
+    anchor.classList.add('wiki-honor-war-link');
+    if(war.id===warId){
+     anchor.classList.add('selected');anchor.setAttribute('aria-current','page');
+    }
+    browse.append(anchor);
+   }else browse.append(node('p','wiki-honor-copy',name));
+  }
+  detail.append(make('button',{type:'button',class:'wiki-honor-war-return',
+   text:tr('← Назад к Чести','← Back to Honor'),onclick:onWarReturn}));
+  if(entry){
+   detail.append(node('p','wiki-honor-war-eyebrow',tr('PvP-война','PvP war')));
+   const name=en?entry.nameEn:entry.nameRu;
+   const title=node('h3','wiki-honor-title wiki-honor-war-title',name);
+   if(editable){
+    title.classList.add('wiki-honor-editable');title.tabIndex=0;
+    const edit=()=>editText(title,name,false,next=>saveList('honor.wars',
+     article.battles.map(war=>war.id===entry.id?{
+      ...war,[en?'nameEn':'nameRu']:next}:war)));
+    title.addEventListener('dblclick',edit);
+    title.addEventListener('keydown',event=>{
+     if(event.key==='F2'){event.preventDefault();edit()}
+    });
+   }
+   detail.append(title);
+   // Use existing Honor information instead of inventing war-specific rules.
+   detail.append(node('p','wiki-honor-copy wiki-honor-war-copy',
+    en?article.overview.gainEn:article.overview.gainRu));
+  }else detail.append(node('h3','wiki-honor-title',tr(
+   'Война не найдена','War not found')));
+  browse.scrollTop=0;detail.scrollTop=0;
+  return;
+ }
  const section=(id,ru,english)=>{
   const element=make('section',{class:'wiki-honor-section',id:'honor-'+id});
   const name=label('honor',id,ru,english);
@@ -155,7 +199,21 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       'Edit the name in Locations'));
      names.append(name);
     }
-   }else names.append(editableListText(name,value,key,items,index,field));
+   }else{
+    const anchor=warLink(item.id,value);
+    if(anchor){
+     anchor.classList.add('wiki-honor-war-link');
+     names.append(anchor);
+    }else names.append(editableListText(name,value,key,items,index,field));
+    if(editable&&anchor){
+     // Clicking a war name navigates; editing remains a separate owner action.
+     const edit=make('button',{type:'button',class:'wiki-honor-war-rename',
+      text:'✎','aria-label':tr('Изменить название войны','Edit war name')+': '+value,
+      onclick:()=>editText(edit,value,false,next=>saveList(key,
+       items.map((row,i)=>i===index?{...row,[field]:next}:row)))});
+     names.append(edit);
+    }
+   }
    row.append(names);
    if(editable){
     if(isZone){
@@ -404,13 +462,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const syncSection=()=>{
   frame=0;
   if(!detail.isConnected)return;
+  // Use the main reading area, not a fixed top strip: the final section
+  // can dominate the visible viewport without its heading reaching 100px.
   const readingLine=scroller.getBoundingClientRect().top+
-   Math.min(100,scroller.clientHeight*.22);
+   Math.min(380,scroller.clientHeight*.46);
   let current=sidebar[0][0];
   for(const [id]of sidebar){
    if(detail.querySelector('#honor-'+id)?.getBoundingClientRect().top<=readingLine)
     current=id;
   }
+  const remaining=scroller.scrollHeight-scroller.clientHeight-scroller.scrollTop;
+  if(scroller.scrollTop<=3)current='overview';
+  else if(remaining<=36)current='monthly';
   selectSection(current);
  };
  const onScroll=()=>{
