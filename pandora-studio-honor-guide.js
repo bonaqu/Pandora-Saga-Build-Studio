@@ -73,7 +73,7 @@ const defaultRanks=Object.freeze([
  {id:7,nameRu:'Министр',nameEn:'Count',points:129000,gold:640000,
   benefitRu:'Расширение инвентаря и выбор пассивного умения (Луна).',benefitEn:'Inventory expansion and an Honor passive (Moon).'},
  {id:8,nameRu:'Маркграф',nameEn:'Margrave',points:257000,gold:1280000,
-  benefitRu:'Новые предметы за честь.',benefitEn:'Additional Honor exchange items.'},
+  benefitRu:'Новые предметы в обменнике предметов за честь.',benefitEn:'New items in the Honor exchange shop.'},
  {id:9,nameRu:'Герцог',nameEn:'Duke',points:null,gold:0,top:15,
   benefitRu:'На месяц: плащ победителя своей нации.',benefitEn:'One-month national Victor cloak.'},
  {id:10,nameRu:'Кронпринц',nameEn:'Prince',points:null,gold:0,top:5,
@@ -93,8 +93,12 @@ const wars=Object.freeze([
  {id:'siegheim',nameRu:'Гихайм',nameEn:'Siegheim'}
 ].map(Object.freeze));
 const intro=Object.freeze({
- overviewRu:'Честь — PvP-ресурс. При вступлении в нацию персонаж получает 1 000 очков. За PvP-победы и участие в войнах можно заработать ещё честь.',
- overviewEn:'Honor is a PvP resource. Joining a nation grants 1,000 Honor. PvP victories and wars provide further Honor.',
+ overviewRu:'Честь — PvP-ресурс. При вступлении в нацию персонаж получает 1 000 очков. За PvP-победы и участие в войнах можно заработать ещё честь. Разделяется на «Честь» — расходуемый ресурс; «Вся честь» — общий заработанный запас для повышения рангов и рейтинга.',
+ overviewEn:'Honor is a PvP resource. Joining a nation grants 1,000 Honor. PvP victories and wars provide further Honor. “Honor” is the spendable resource; “Total Honor” is the overall earned amount used for ranks and leaderboards.',
+ honorRu:'Расходуемый PvP-ресурс. Можно тратить в обмене; теряется при смерти.',
+ honorEn:'Spendable PvP resource. Used in exchanges; may decrease on death.',
+ totalRu:'Заработанная за всё время честь: определяет ранги и рейтинги.',
+ totalEn:'Total Honor earned over time: determines ranks and leaderboards.',
  gainRu:'Очки чести получают за победу над игроками вражеских наций в PvP-локациях и за участие в войнах.',
  gainEn:'Earn Honor by defeating players of enemy nations in PvP zones and participating in wars.',
  lossRu:'Честь может уменьшаться после гибели от вражеского игрока. По историческим правилам — также при смерти от монстра, если потеря опыта превышает накопленный опыт уровня.',
@@ -102,9 +106,13 @@ const intro=Object.freeze({
  currentRu:'С 23 октября 2026 года на OS: «Честь» — расходуемый ресурс; «Вся честь» — общий заработанный запас для рангов и рейтинга. Оба показателя могут уменьшаться после смерти.',
  currentEn:'Since October 23, 2026 on OS: “Honor” is spendable; “Total Honor” tracks lifetime earned Honor for ranks and leaderboards. Both can decrease on death.',
  ranksRu:'12 рангов. Обычные ранги требуют «Вся честь» и игровое золото. Высшие места определяются результатами прошлого месяца и действуют один месяц.',
- ranksEn:'12 ranks. Ordinary ranks require Total Honor and gold. Monthly top rankings use the previous month and last one month.',
- cloaksRu:'Топ-15 · Победитель: Империя — Вечный плащ победителя; Союз — Великолепный плащ победителя; Королевство — Священный плащ победителя.\nТоп-5 · Монарх: Империя — Вечный плащ монарха; Союз — Великолепный плащ монарха; Королевство — Священный плащ монарха.\nТоп-1 · Император: Империя — Вечный плащ императора; Союз — Великолепный плащ императора; Королевство — Священный плащ императора.',
- cloaksEn:'Top 15 · Victor: Empire — Eternal Victor Cloak; Union — Magnificent Victor Cloak; Kingdom — Sacred Victor Cloak.\nTop 5 · Monarch: Empire — Eternal Monarch Cloak; Union — Magnificent Monarch Cloak; Kingdom — Sacred Monarch Cloak.\nTop 1 · Emperor: Empire — Eternal Emperor Cloak; Union — Magnificent Emperor Cloak; Kingdom — Sacred Emperor Cloak.'
+ ranksEn:'12 ranks. Standard ranks require Total Honor and gold. Monthly titles are awarded from the previous month’s results and last one month.',
+ joiningRu:'При вступлении в любую из существующих наций в игре',
+ joiningEn:'On joining any of the nations in the game',
+ cloaksRu:'Империя — Вечный плащ победителя;\nСоюз — Великолепный плащ победителя;\nКоролевство — Священный плащ победителя.\n\nИмперия — Вечный плащ монарха;\nСоюз — Великолепный плащ монарха;\nКоролевство — Священный плащ монарха.\n\nИмперия — Вечный плащ императора;\nСоюз — Великолепный плащ императора;\nКоролевство — Священный плащ императора.',
+ cloaksEn:'Empire — Eternal Victor Cloak;\nUnion — Magnificent Victor Cloak;\nKingdom — Sacred Victor Cloak.\n\nEmpire — Eternal Monarch Cloak;\nUnion — Magnificent Monarch Cloak;\nKingdom — Sacred Monarch Cloak.\n\nEmpire — Eternal Emperor Cloak;\nUnion — Magnificent Emperor Cloak;\nKingdom — Sacred Emperor Cloak.',
+ monthlyNoteRu:'Ранги Герцог, Кронпринц и Эрцгерцог в каждой нации определяются 1-го числа по результатам прошлого месяца. Звание действует месяц и не продлевается, если в следующем месяце не выполнены условия для получения соответствующего плаща.',
+ monthlyNoteEn:'Duke, Crown Prince and Archduke ranks are awarded separately in each nation on the first day of the month based on the previous month’s results. Each title lasts one month and is renewed only when the requirements for its cloak are met again.'
 });
 const cleanPatch=(patch,allowed,max=600)=>{
  if(!patch||typeof patch!=='object'||Array.isArray(patch))return null;
@@ -119,7 +127,7 @@ const plain=x=>x&&typeof x==='object'&&!Array.isArray(x);
 const validBookKey=x=>/^book\.[a-z][a-z0-9._:-]{1,80}$/.test(x);
 const validRankKey=x=>/^honor\.rank\.(?:[0-9]|1[01])$/.test(x);
 const fields=['ru','en','hintRu','hintEn'];
-const rankFields=['nameRu','nameEn','benefitRu','benefitEn'];
+const rankFields=['nameRu','nameEn','benefitRu','benefitEn','requirementRu','requirementEn'];
 const introFields=Object.keys(intro);
 const locationFields=['nameRu','nameEn','mapId'];
 const listValid=(x,type)=>{
@@ -134,7 +142,7 @@ const listValid=(x,type)=>{
    ['nameRu','nameEn'].every(k=>typeof entry[k]==='string'&&
     entry[k].trim()&&entry[k].length<=140)&&
    (type!=='zones'||entry.mapId==null||typeof entry.mapId==='string'&&
-    (/^[0-9]{1,15}$/.test(entry.mapId)||['el-beht','astir-underground'].includes(entry.mapId)));
+    (/^[0-9]{1,15}$/.test(entry.mapId)||/^[a-z][a-z0-9-]{1,63}$/.test(entry.mapId)));
  });
 };
 const validOverride=(key,value)=>{
@@ -142,7 +150,7 @@ const validOverride=(key,value)=>{
  const data=parse(value);
  if(validBookKey(key))return cleanPatch(data,fields,360)!==null;
  if(validRankKey(key))return cleanPatch(data,rankFields,500)!==null;
- if(key==='honor.overview')return cleanPatch(data,introFields,1800)!==null;
+ if(key==='honor.overview')return cleanPatch(data,introFields,2200)!==null;
  if(key==='honor.zones'||key==='honor.wars')return listValid(data,key.split('.')[1]);
  return false;
 };
