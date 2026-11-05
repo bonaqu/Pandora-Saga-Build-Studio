@@ -3,7 +3,8 @@
 // Presentation-only interpretation of independent loot groups.
 // Never normalize game probabilities, infer missing chances, or mutate the source.
 function analyze(rolls,chestIds=[]){
- const boxes=chestIds instanceof Set?chestIds:new Set(chestIds.map(String));
+ const boxes=chestIds&&typeof chestIds.has==='function'?chestIds:
+  new Set((Array.isArray(chestIds)?chestIds:[]).map(String));
  const records=Array.isArray(rolls)?rolls.map((entries,index)=>({
   index,
   entries:Array.isArray(entries)?entries:[],
