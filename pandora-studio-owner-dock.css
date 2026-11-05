@@ -39,9 +39,9 @@ body>#ownerDock.owner-dock-collapsed{
  transition:background .18s,border-color .18s,box-shadow .18s;
 }
 #ownerDock.owner-dock-collapsed .owner-dock-handle{
- position:fixed;inset:auto auto max(14px,env(safe-area-inset-bottom)) 0;
- min-width:128px;height:38px;padding:7px 13px;
- border-radius:0 9px 9px 0;border-color:#d1a267;
+ position:relative;inset:auto;top:auto;right:auto;bottom:auto;left:auto;
+ display:flex;box-sizing:border-box;width:128px;min-width:128px;height:38px;
+ padding:7px 13px;border-radius:0 9px 9px 0;border-color:#d1a267;
  background:linear-gradient(145deg,#5c3e25,#322015);
  box-shadow:6px 8px 24px #0009,inset -2px 0 0 #c99a58;
 }
