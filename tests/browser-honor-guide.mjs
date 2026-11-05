@@ -35,6 +35,17 @@ export async function runHonorGuideSmoke(browser,base){
   for(let i=0;i<12;i++)assert.ok(
    (await panel.locator('#honor-rank-'+i+' img').getAttribute('src'))
     .endsWith('/'+i+'.svg'));
+  // naturalWidth alone isn't enough: an SVG can load while an embedded PNG
+  // is blocked. Verify that the browser actually paints sprite pixels.
+  const rendered=await sprites.first().evaluate(img=>{
+   const canvas=document.createElement('canvas');canvas.width=23;canvas.height=23;
+   const context=canvas.getContext('2d');context.drawImage(img,0,0,23,23);
+   const image=context.getImageData(0,0,23,23).data;
+   let opaque=0;
+   for(let i=3;i<image.length;i+=4)if(image[i]>20)opaque++;
+   return opaque;
+  });
+  assert.ok(rendered>8,'The actual source rank emblem must render, not a blank SVG');
 
   // Honor's left four-section menu must remain pinned as #detailContent
   // scrolls through the long article; the browser window itself does not scroll.
