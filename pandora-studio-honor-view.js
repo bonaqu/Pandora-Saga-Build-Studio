@@ -462,18 +462,22 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const syncSection=()=>{
   frame=0;
   if(!detail.isConnected)return;
-  // Use the main reading area, not a fixed top strip: the final section
-  // can dominate the visible viewport without its heading reaching 100px.
-  const readingLine=scroller.getBoundingClientRect().top+
-   Math.min(380,scroller.clientHeight*.46);
+  // Keep the established top reading line for normal sections. The final
+  // section needs a separate rule because the scroll stops at the page end
+  // before the last heading can rise to that line.
+  const paneTop=scroller.getBoundingClientRect().top;
+  const readingLine=paneTop+Math.min(100,scroller.clientHeight*.22);
   let current=sidebar[0][0];
   for(const [id]of sidebar){
    if(detail.querySelector('#honor-'+id)?.getBoundingClientRect().top<=readingLine)
     current=id;
   }
   const remaining=scroller.scrollHeight-scroller.clientHeight-scroller.scrollTop;
+  const monthlyTop=detail.querySelector('#honor-monthly')?.getBoundingClientRect().top;
+  const monthlyVisible=Number.isFinite(monthlyTop)&&
+   monthlyTop<=paneTop+Math.min(280,scroller.clientHeight*.43);
   if(scroller.scrollTop<=3)current='overview';
-  else if(remaining<=36)current='monthly';
+  else if(remaining<=36||monthlyVisible)current='monthly';
   selectSection(current);
  };
  const onScroll=()=>{
