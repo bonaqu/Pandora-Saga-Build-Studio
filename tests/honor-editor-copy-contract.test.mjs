@@ -38,7 +38,7 @@ test('Honor displays succinct rank descriptions and three proper monthly title g
  assert.doesNotMatch(view,/en\?rank\.nameRu:rank\.nameEn/);
  assert.doesNotMatch(view,/Вторая локаль|Other language/);
  assert.match(view,/if\(isZone\)\{/);
- assert.match(view,/Names of existing maps are managed in the Locations editor only/);
+ assert.match(view,/location name still belongs to the Locations chapter/);
  assert.match(view,/linked\?\(en\?linked\.nameEn:linked\.nameRu\):item\[field\]/);
  assert.doesNotMatch(view,/23.10.2026/);
 });
@@ -47,7 +47,7 @@ test('Honor editor links selected known map in UI and keeps article scroll after
  assert.match(view,/mapOptions\.find\(entry=>entry\.id===select\.value\)/);
  assert.match(view,/onOpenLocations\(\)/);
  assert.match(view,/mapOptions\.filter/);
- assert.match(view,/row\.append\(anchor\)/);
+ assert.match(view,/names\.append\(anchor\)/);
  assert.match(view,/pane\.scrollTo/);
  assert.doesNotMatch(view,/scrollIntoView/);
  assert.match(app,/wikiRenderSelected\?\.\(\)/);
