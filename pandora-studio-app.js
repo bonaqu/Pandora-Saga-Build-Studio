@@ -1566,6 +1566,18 @@ function openWikiChapterList(){
  if(!$('detailPanel')?.classList.contains('is-open'))showWorkbench();
  saveView();
 }
+// One Back button for all encyclopedia records: the Honor war page is
+// the approved top-left placement, size and visual style.
+function wikiBackButton(chapter,onBack=null){
+ const label=lang==='en'?'← Back to '+chapter:'← Назад к '+chapter;
+ return h('button',{type:'button',class:'wiki-return-button',
+  text:label,'aria-label':label,onclick:()=>{
+   if(typeof onBack==='function'){onBack();return}
+   if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true)
+    history.back();
+   else openWikiChapterList();
+  }});
+}
 function wikiLink(text,type,id,highlight=null){
  const displayId=wikiIndex?.canonical?.(type,id)||String(id);
  const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(displayId)+(highlight==null?'':'/'+encodeURIComponent(highlight));
@@ -1912,6 +1924,7 @@ function renderWiki(root){
      return anchor;
     },
     onWarReturn:()=>history.state?.psWikiHonorOrigin?history.back():openWikiChapterList(),
+    backButton:wikiBackButton,
     mapOptions:Object.entries(wikiIndex?.records('map')||{})
      .map(([id,rec])=>{
       const approved=window.PandoraHonorGuide?.maps?.find(row=>String(row.mapId)===id);
@@ -2506,35 +2519,19 @@ function renderWiki(root){
   }
   const id=wikiSelection.id,rec=id==null?null:records?.[id];
   if(!rec){detail.append(h('p',{class:'muted',text:!results.length?(lang==='en'?'No matching entries.':'Ничего не найдено.'):(lang==='en'?'Select an entry to view its details and sources.':'Выбери запись для просмотра характеристик и связанных источников.')}));return}
-  const typeLabel=lang==='en'?{item:'Item',monster:'Monster',map:'Location',npc:'NPC',
-    skill:'Skill',soul:'Soul',instance:'Dungeon',chest:'Chest'}:
-   {item:'Предмет',monster:'Монстр',map:'Локация',npc:'Персонаж',
-    skill:'Умение',soul:'Душа',instance:'Подземелье',chest:'Сундук'};
-   const listNames=lang==='en'?{
-    item:wikiItemType==='utility'?'Effect items':'Equipment',
-    monster:'Monsters',map:'Locations',npc:'NPC trades',chest:'Chests',
-    instance:'Dungeons',skill:'Skills',soul:'Souls'
-   }:{
-    item:wikiItemType==='utility'?'Предметы эффектов':'Экипировка',
-    monster:'Монстры',map:'Локации',npc:'NPC-обмен',chest:'Сундуки',
-    instance:'Подземелья',skill:'Навыки',soul:'Души'
-   };
-   const navigate=h('nav',{class:'wiki-page-nav',
-    'aria-label':wt('Навигация по энциклопедии','Encyclopedia navigation')});
-   navigate.append(h('span',{class:'wiki-page-nav-trail'},[
-    h('span',{class:'wiki-page-nav-origin',text:wt('Энциклопедия','Encyclopedia')}),
-    h('span',{'aria-hidden':'true',text:'›'}),
-    h('span',{class:'wiki-page-nav-chapter',text:listNames[type]||typeLabel[type]})
-   ]));
-   const navActions=h('div',{class:'wiki-page-nav-actions'});
-   if(location.hash.startsWith('#wiki/')&&history.state?.psWikiEntry===true)
-    navActions.append(h('button',{type:'button',class:'wiki-history-back wiki-nav-button',
-     text:wt('← Назад','← Back'),
-     'aria-label':wt('Вернуться к предыдущему экрану','Return to previous view'),
-     onclick:()=>history.back()}));
-   // The list remains visible on the left, including in a deep-linked article.
-   if(navActions.childElementCount)navigate.append(navActions);
-   detail.append(navigate);
+  // A clear, left-aligned Back control comes before the record heading.
+  // Russian chapter names are inflected for "Назад к …".
+  const backChapters=lang==='en'?{
+   item:wikiItemType==='utility'?'Effect items':'Equipment',
+   monster:'Monsters',map:'Locations',npc:'NPC trades',chest:'Chests',
+   instance:'Dungeons',skill:'Skills',soul:'Souls'
+  }:{
+   item:wikiItemType==='utility'?'Предметам эффектов':'Экипировке',
+   monster:'Монстрам',map:'Локациям',npc:'NPC-обмену',chest:'Сундукам',
+   instance:'Подземельям',skill:'Навыкам',soul:'Душам'
+  };
+  detail.append(wikiBackButton(backChapters[type]||
+   wt('Энциклопедии','Encyclopedia')));
    if(['monster','map','npc','instance'].includes(type))detail.append(h('span',{class:'wiki-category-symbol','aria-hidden':'true',text:wikiGlyphs[type]}));
    const nameKey=type==='skill'?'skill.'+(rec.branch||'race')+'.'+id:
     ['item','chest'].includes(type)?'item.'+id:null;
@@ -2639,8 +2636,8 @@ function renderWiki(root){
   if(type==='item'||type==='chest'||type==='soul'){
     const img=wikiImage(wikiIcon(type,id,rec),'wiki-record-icon wiki-item-portrait',type);
     if(img){
-     const nav=detail.querySelector('.wiki-page-nav');
-     if(nav)nav.after(img);else detail.prepend(img);
+     const back=detail.querySelector('.wiki-return-button');
+     if(back)back.after(img);else detail.prepend(img);
     }
   }
   const described=type==='chest'?wikiData.items?.[id]:rec;
