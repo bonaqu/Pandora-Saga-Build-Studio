@@ -7,6 +7,42 @@ const items=JSON.parse(read('data/os/items.json'));
 const chests=JSON.parse(read('data/os/chests.json'));
 const souls=JSON.parse(read('data/os/souls.json'));
 
+test('level reward chest cards show singular base class labels in RU/EN',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf(" const rewardLabels=lang==='en'?");
+ const end=app.indexOf('\n const appendAcquisitionEditor=',start);
+ assert.ok(start>=0&&end>start,'Reward card renderer exists');
+ const build=Function('lang','wikiIndex','detail','h','wt',
+  app.slice(start,end)+'\nreturn appendRewardChestInfo');
+ const names={
+  warrior:['Воин','Warrior'],scout:['Следопыт','Scout'],
+  acolyte:['Адепт','Acolyte'],mage:['Маг','Mage']
+ };
+ for(const [family,translations] of Object.entries(names)){
+  for(const [index,lang] of ['ru','en'].entries()){
+   const children=[];
+   const h=(tag,props,inner=[])=>({tag,...props,children:inner});
+   const appendRewardChestInfo=build(lang,
+    {rewardChest:()=>({level:40,family})},
+    {append:node=>children.push(node)},h,
+    (ru,en)=>lang==='en'?en:ru);
+   assert.equal(appendRewardChestInfo('id'),true);
+   const details=children[0].children[1].children;
+   assert.deepEqual(details.map(node=>node.text),[
+    lang==='en'?'Reward for reaching level':'Награда за достижение уровня',
+    lang==='en'?'Level 40':'Уровень 40',
+    (lang==='en'?'Class: ':'Класс: ')+translations[index]
+   ]);
+  }
+ }
+ const nodes=[];
+ const h=(tag,props,children=[])=>({tag,...props,children});
+ build('ru',{rewardChest:()=>({level:40,family:'unverified'})},
+  {append:node=>nodes.push(node)},h,(ru)=>ru)('id');
+ assert.equal(nodes[0].children[1].children.length,2,
+  'Unexpected source identifiers must not appear as class names');
+});
+
 test('every available OS chest has a canonical item image identity',()=>{
  assert.equal(chests.boxes.length,32);
  for(const chest of chests.boxes)
