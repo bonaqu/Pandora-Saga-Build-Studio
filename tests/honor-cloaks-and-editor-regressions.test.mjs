@@ -24,12 +24,16 @@ test('honor cards are not duplicated; vector icons and item hover/navigation are
  const app=read('pandora-studio-app.js'),view=read('pandora-studio-honor-view.js');
  const css=read('pandora-studio-honor.css');
  assert.doesNotMatch(view,/wiki-honor-dual|wiki-honor-resource/);
- assert.match(view,/marker\.append\(honorEmblem\(rank\.id\)\)/);
+ assert.doesNotMatch(view,/function honorEmblem\(/);
+ assert.match(view,/honorIconSrc\(rank\.id\)/);
+ assert.match(view,/wiki-honor-emblem-source/);
  assert.match(view,/cloakLink\(parts\[2\],canonical\)/);
  assert.match(app,/cloakLink:\(name,russianName\)=>/);
  assert.match(app,/PandoraStageItemUI\?\.attachPreview\(anchor,translated/);
  assert.match(app,/\['item','monster','map','npc','chest','skill','soul','instance','honor'\]/);
- assert.match(css,/wiki-honor-emblem-svg/);
+ assert.match(css,/wiki-honor-emblem-source/);
+ assert.match(css,/\.wiki-layout-honor>\.wiki-list-panel\{/);
+ assert.match(css,/position:sticky;top:12px/);
  assert.match(css,/\.wiki-honor-note\{[^}]*white-space:pre-wrap/s);
 });
 
@@ -55,4 +59,21 @@ test('Phoenix Flame hint stays outside document flow when hovered or focused',()
  assert.match(css,/wiki-conditional-term:focus-visible/);
  const game=JSON.parse(read('data/os/items.json'));
  assert.match(game['252'].desc,/Пламя феникса/);
+});
+
+test('all source-sprite wrappers preserve actual 23×23 PNG pixel data',()=>{
+ for(let index=0;index<12;index++){
+  const path='assets/wiki/honor-ranks/'+index+'.svg';
+  const sprite=read(path);
+  assert.match(sprite,/viewBox="0 0 23 23"/,path);
+  const source='https://pandorasaga-os.com/img/rank/2/'+index+'.png';
+  assert.ok(sprite.includes(source),path+' provenance');
+  const embedded=sprite.match(/<image[^>]+href="data:image\/png;base64,([^"]+)"/)?.[1];
+  assert.ok(embedded,path+' must carry exact PNG data');
+  const bytes=Buffer.from(embedded,'base64');
+  assert.equal(bytes.subarray(0,8).toString('hex'),'89504e470d0a1a0a',path);
+  assert.equal(bytes.readUInt32BE(16),23,path+' PNG width');
+  assert.equal(bytes.readUInt32BE(20),23,path+' PNG height');
+  assert.ok(bytes.includes(Buffer.from('IDAT')),path+' image data');
+ }
 });
