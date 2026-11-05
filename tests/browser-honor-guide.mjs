@@ -46,6 +46,22 @@ export async function runHonorGuideSmoke(browser,base){
    return opaque;
   });
   assert.ok(rendered>8,'The actual source rank emblem must render, not a blank SVG');
+  const firstCard=panel.locator('#honor-rank-0');
+  assert.ok((await firstCard.boundingBox()).height<132,
+   'Rank rows should not regain tall icon/requirement callouts');
+  assert.equal(await firstCard.locator('.wiki-honor-emblem').evaluate(
+   node=>Math.round(node.getBoundingClientRect().height)),34);
+  assert.match(await sprites.first().evaluate(node=>getComputedStyle(node).filter),
+   /sepia\(1\)/,'Original game pixels must use the site brass palette');
+  const minister=await panel.locator('#honor-rank-7').evaluate(node=>({
+   background:getComputedStyle(node).backgroundColor,
+   border:getComputedStyle(node).borderLeftColor
+  }));
+  const marquis=await panel.locator('#honor-rank-6').evaluate(node=>({
+   background:getComputedStyle(node).backgroundColor,
+   border:getComputedStyle(node).borderLeftColor
+  }));
+  assert.deepEqual(minister,marquis,'Minister must not have separate styling');
 
   // Honor's left four-section menu must remain pinned as #detailContent
   // scrolls through the long article; the browser window itself does not scroll.
@@ -77,7 +93,24 @@ export async function runHonorGuideSmoke(browser,base){
   const secondTop=await stickyPosition();
   assert.ok(Math.abs(secondTop-firstTop)<3,'Honor sidebar must follow article scroll');
   assert.equal(await menu.locator('.wiki-honor-nav-link').count(),4);
+  // Direct scroll/keyboard/wheel and clicking menu use the same active state.
+  const autoHighlight=async section=>{
+   await pane.evaluate(id=>{
+    const target=document.querySelector('#honor-'+id);
+    const container=document.querySelector('#detailContent');
+    const y=target.getBoundingClientRect().top-container.getBoundingClientRect().top;
+    container.scrollTo({top:container.scrollTop+y-26,behavior:'instant'});
+   },section);
+   await page.waitForFunction(id=>
+    document.querySelector('.wiki-honor-nav-link.selected')?.dataset.honorSection===id,
+    section,{timeout:4000});
+   assert.equal(await menu.locator('.wiki-honor-nav-link[aria-current="location"]').count(),1);
+  };
+  for(const chapter of ['overview','gain','ranks','monthly'])
+   await autoHighlight(chapter);
   await menu.locator('[data-honor-section="overview"]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-honor-nav-link.selected')?.dataset.honorSection==='overview');
   await pane.evaluate(el=>el.scrollTo({top:0,behavior:'instant'}));
   const cloaks=panel.locator('.wiki-honor-cloak-link');
   assert.equal(await cloaks.count(),9,'All 9 cloak rewards resolve to catalog items');
@@ -88,7 +121,7 @@ export async function runHonorGuideSmoke(browser,base){
   await page.goBack({waitUntil:'domcontentloaded'});
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.match(await panel.locator('.wiki-honor-monthly-head').first().innerText(),/Награды/);
-  assert.match(await panel.locator('.wiki-honor-rank.is-moon').innerText(),
+  assert.match(await panel.locator('#honor-rank-7').innerText(),
    /Министр|129\s*000/);
   assert.equal(await panel.locator('.wiki-honor-list-section').count(),2);
   assert.equal(await panel.locator('.wiki-honor-list-section').first()
@@ -105,14 +138,18 @@ export async function runHonorGuideSmoke(browser,base){
   await page.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal((await page.locator('.wiki-honor-title').innerText()).trim(),
    'Honor');
-  assert.match(await panel.locator('.wiki-honor-rank.is-moon').innerText(),/Count/);
+  assert.match(await panel.locator('#honor-rank-7').innerText(),/Count/);
   assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
    .innerText(),/Покинутые земли Мальдии|Подземные руины Астира/);
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
+  assert.equal(await panel.locator('.wiki-honor-location-link').count(),3);
+  assert.equal(await panel.locator('.wiki-honor-open-location').count(),0,
+   'Do not add separate arrow targets beside PvP maps');
   const zone=panel.locator('.wiki-honor-list-row')
-   .filter({hasText:'Эль Ведд'}).locator('.wiki-link');
+   .filter({hasText:'Эль Ведд'}).locator('a.wiki-honor-location-link');
+  assert.match(await zone.innerText(),/Эль Ведд/);
   await zone.click();
   const native=page.locator('.wiki-page .wiki-map-monsters');
   await native.waitFor({state:'visible',timeout:20000});
@@ -123,6 +160,10 @@ export async function runHonorGuideSmoke(browser,base){
   assert.doesNotMatch(await panel.innerText(),/Историческая PvP-локация|не представленная в актуальной карте OS/);
   assert.equal(await panel.locator('.wiki-map-roster-actions').count(),0,
    'Only authenticated administrators can edit the future monster roster');
+  await page.goBack({waitUntil:'domcontentloaded'});
+  await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
+  assert.equal(await panel.locator('.wiki-honor-location-link').count(),3,
+   'Back must restore the original Honor PvP-location links');
   await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
   const ruins=page.locator('.wiki-list [data-wiki-record="astir-underground"]');
   await ruins.waitFor({state:'visible',timeout:15000});
@@ -159,6 +200,6 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await explanation.evaluate(node=>getComputedStyle(node).position),
    'absolute','The tooltip must float over the page rather than relayout it');
   assert.deepEqual(errors,[]);
-  console.log('Chromium Honor: 12 real game rank icons, sticky navigation, cloaks, previews and RU/EN');
+  console.log('Chromium Honor: scrollspy, compact gold ranks, direct PvP map links, 12 original icons and RU/EN');
  }finally{await context.close()}
 }
