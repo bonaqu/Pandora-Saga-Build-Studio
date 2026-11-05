@@ -50,7 +50,7 @@ test('Honor section selection follows scroll without observer leaks',()=>{
 test('PvP map names are ordinary reversible wiki links; ranks share compact styling',()=>{
  const view=read('pandora-studio-honor-view.js'),css=read('pandora-studio-honor.css');
  assert.match(view,/link\(item\.mapId,value\)/);
- assert.match(view,/anchor\.classList\.add\('wiki-honor-location-link'\)/);
+ assert.match(view,/anchor\.classList\.add\('wiki-honor-location-link','wiki-entity-reference'\)/);
  assert.doesNotMatch(view,/wiki-honor-open-location|link\(item\.mapId,'↗'\)/);
  assert.match(view,/class:'wiki-honor-list wiki-entity-flow'/);
  assert.match(view,/anchor\.classList\.add\('wiki-honor-location-link','wiki-entity-reference'\)/);
@@ -153,7 +153,7 @@ test('Wiki visual system reuses the same linked-entity cards and key interaction
   assert.ok(shared.includes(component),'Chapter design should account for '+component);
  assert.match(theme,/\.wiki-entity-flow\{display:flex;flex-wrap:wrap/);
  assert.match(honor,/class:'wiki-honor-cloak-row'/);
- assert.match(honor,/class:'wiki-honor-cloak-nation'/);
+ assert.match(honor,/node\('span','wiki-honor-cloak-nation'/);
  assert.match(honor,/class:'wiki-honor-cloak-reward'/);
  assert.match(read('pandora-studio-honor.css'),/grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
  assert.match(shared,/@media\(prefers-reduced-motion:reduce\)/);
