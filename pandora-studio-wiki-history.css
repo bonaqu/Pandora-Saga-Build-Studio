@@ -1,19 +1,17 @@
-/* Encyclopedia back navigation only for internally opened, reversible pages. */
-.wiki-page>.wiki-history-back{
- display:inline-flex;align-items:center;justify-content:center;gap:6px;
- width:max-content;max-width:100%;min-height:32px;
- padding:6px 11px;margin:0 0 10px;
- font:600 12px/1.4 Manrope,Arial,sans-serif;
- background:#34251a;border:1px solid #846242;
- border-radius:5px;color:#eccc98;
- transition:background .16s,border-color .16s,color .16s;
+/* One return control for every encyclopedia record. This preserves the
+   exact top-left placement/shape approved on the Lydia and Siegheim pages. */
+.wiki-page>.wiki-return-button{
+ display:inline-flex;align-items:center;width:max-content;max-width:100%;
+ padding:6px 10px;margin:0 0 15px;
+ border:1px solid #896443;border-radius:4px;
+ background:#302319;color:#f0d1a1;cursor:pointer;font-size:12px;
+ font-family:Manrope,Arial,sans-serif;
 }
-.wiki-page>.wiki-history-back:hover{
- background:#49321f;border-color:#c59a5c;color:#ffe0a3;
+.wiki-page>.wiki-return-button:hover,
+.wiki-page>.wiki-return-button:focus-visible{
+ background:#48301f;border-color:#ddb278;color:#ffe5b7;
 }
-.wiki-page>.wiki-history-back:focus-visible{
+.wiki-page>.wiki-return-button:focus-visible{
  outline:2px solid #ffce87;outline-offset:2px;
 }
-@media(prefers-reduced-motion:reduce){
- .wiki-page>.wiki-history-back{transition:none}
-}
+.wiki-page>.wiki-return-button:active{background:#261a11}
