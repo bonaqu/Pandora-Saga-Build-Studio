@@ -58,8 +58,22 @@ export async function runHonorGuideSmoke(browser,base){
    await page.waitForTimeout(65);
    const menuRect=await menu.boundingBox(),paneRect=await pane.boundingBox();
    assert.ok(menuRect&&paneRect);
+   const debug=await menu.evaluate(node=>{
+    const scroller=document.querySelector('#detailContent');
+    const layout=node.parentElement,style=getComputedStyle(node);
+    return {scroll:scroller.scrollTop,scrollMax:scroller.scrollHeight-scroller.clientHeight,
+     menuTop:node.getBoundingClientRect().top,
+     menuBottom:node.getBoundingClientRect().bottom,
+     paneTop:scroller.getBoundingClientRect().top,
+     paneBottom:scroller.getBoundingClientRect().bottom,
+     layoutTop:layout.getBoundingClientRect().top,
+     layoutBottom:layout.getBoundingClientRect().bottom,
+     sticky:style.position,align:style.alignSelf,height:style.height,
+     parentOverflow:getComputedStyle(layout).overflow};
+   });
    assert.ok(menuRect.top>=paneRect.top-2&&menuRect.bottom<paneRect.bottom+2,
-    'The four section buttons must stay visible inside the workbench');
+    'The four section buttons must stay visible inside the workbench: '+
+    JSON.stringify(debug));
    return menuRect.top;
   };
   await pane.evaluate(el=>el.scrollTo({top:Math.min(850,el.scrollHeight-el.clientHeight),behavior:'instant'}));
