@@ -173,7 +173,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await page.goto(base+'/#wiki/chest/51010',{waitUntil:'domcontentloaded'});
   await page.locator('.wiki-level-reward').waitFor({state:'visible',timeout:20000});
   assert.match(await page.locator('.wiki-level-reward').innerText(),/Уровень 60/);
-  assert.match(await page.locator('.wiki-page').innerText(),/Состав наград пока не указан/);
+  assert.match(await page.locator('.wiki-page').innerText(),/Содержимое сундука не указано/);
   assert.equal(await page.locator('.wiki-chest-group').count(),0);
   // The same-category transition must render actual rewards of the next chest,
   // not the ordinary item record with no chest contents.
