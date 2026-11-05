@@ -5903,6 +5903,12 @@ async function saveGuidePatch(key,fields){
  try{
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
+  if(key==='wiki.labels'&&window.PandoraWikiLabels){
+   for(const node of document.querySelectorAll('.wiki-category-line [data-wiki-chapter]')){
+    const id=node.dataset.wikiChapter,caption=node.querySelector('.wiki-category-text');
+    if(caption)caption.textContent=window.PandoraWikiLabels.value(override,'chapter',id,lang);
+   }
+  }
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
