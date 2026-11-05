@@ -4119,7 +4119,8 @@ function renderWiki(root){
       const nextChest=chestIds.has(String(row.i))&&String(row.i)!==String(id);
       const option=h('div',{class:'wiki-chest-reward'+
        (nextChest?' wiki-chest-reward-nested':'')+
-       (wikiSelection.highlight===String(row.i)?' highlighted':'')});
+       (wikiSelection.highlight===String(row.i)?' highlighted':''),
+       'data-roll-group':String(i+1)});
       const rewardMain=h('div',{class:'wiki-chest-reward-main'},[
        itemLink(row.i,dataName('item',row.i),id)
       ]);
@@ -4174,7 +4175,7 @@ function renderWiki(root){
      const section=h('details',{class:'wiki-chest-group'+
       (group.length>1?' wiki-chest-alternatives':'')},[heading,options]);
      section.open=true;
-     if(!adminEditing&&!adminToken&&listedSingle)certainItems.append(section);
+     if(!adminEditing&&!adminToken&&listedSingle)certainItems.append(options.firstElementChild);
      else gallery.append(section);
     }
     if(!adminEditing&&!adminToken&&chestView.listed100.length)gallery.prepend(certainBoard);
