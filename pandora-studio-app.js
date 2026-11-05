@@ -1857,8 +1857,12 @@ function renderWiki(root){
      type:multiline?'textarea':'text',onCommit}),
     saveText:saveGuidePatch,saveList:saveGuideList,
     mapOptions:Object.entries(wikiIndex?.records('map')||{})
-     .map(([id,rec])=>({id,nameRu:rec.name||String(id),
-      nameEn:rec.nameEn||officialEnglish?.maps?.[id]?.n||rec.name||String(id)}))
+     .map(([id,rec])=>{
+      const approved=window.PandoraHonorGuide?.maps?.find(row=>String(row.mapId)===id);
+      return{id,nameRu:rec.name||approved?.nameRu||String(id),
+       nameEn:rec.nameEn||officialEnglish?.maps?.[id]?.n||
+        approved?.nameEn||rec.name||String(id)};
+     })
      .sort((a,b)=>(lang==='en'?a.nameEn:a.nameRu)
       .localeCompare(lang==='en'?b.nameEn:b.nameRu,lang==='en'?'en':'ru')),
     link:(mapId,name)=>wikiIndex?.records('map')?.[String(mapId)]?
