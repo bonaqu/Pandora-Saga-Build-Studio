@@ -1964,6 +1964,17 @@ function renderWiki(root){
   };
   wikiRenderSelected=renderHonor;
   renderHonor();
+  // Honor's reward cloaks and PvP map links use the same indexed catalog as
+  // the rest of Wiki. Opening Honor before its first async load used to leave
+  // those names permanently unlinked until the whole chapter was reopened.
+  if(!wikiIndex){
+   void loadWiki().then(()=>{
+    if(root.isConnected&&activeTab==='wiki'&&wikiSelection.type==='honor')
+     renderHonor();
+   }).catch(()=>{
+    // Keep the readable Honor article visible if the catalog is unavailable.
+   });
+  }
   return;
  }
 
