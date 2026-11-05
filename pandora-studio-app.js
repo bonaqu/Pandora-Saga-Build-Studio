@@ -3348,7 +3348,11 @@ function renderWiki(root){
     if(prereqPane.childElementCount>1)detail.append(prereqPane);
     renderClassEligibility(Object.keys(rec.classes||{}).filter(key=>rec.classes[key]),false);
     const icon=skillIcon(rec.branch,id,rec);
-    if(icon){const image=wikiImage(icon,'wiki-record-icon',type);detail.prepend(image)}
+    if(icon){
+     const image=wikiImage(icon,'wiki-record-icon',type);
+     const back=detail.querySelector('.wiki-return-button');
+     if(back)back.after(image);else detail.prepend(image);
+    }
   }else if(type==='soul'){
     const slotLabel=slot=>window.PandoraItemPresentation.slotLabel(slot,lang);
     const traits=h('section',{class:'wiki-soul-properties','aria-label':wt('Свойства души','Soul properties')});
