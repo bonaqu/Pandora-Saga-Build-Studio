@@ -616,6 +616,8 @@ const originFixedLabels=[
  ['#originTabs [data-origin-tab="race"]','tabRace','Раса','Race'],
  ['#originTabs [data-origin-tab="class"]','tabProfession','Профессия','Class'],
  ['#originTabs [data-origin-tab="stats"]','tabStats','Характеристики','Stats'],
+ ['#originPanelRace [data-origin-copy-static="race"]','raceHeading','Раса','Race'],
+ ['#originPanelClass [data-origin-copy-static="profession"]','professionHeading','Профессия','Profession'],
  ['#originPanelRace [data-i18n="raceSelect"]','racePrompt','Выбери расу','Choose a race'],
  ['#originPanelRace [data-i18n="racePassive"]','passiveHeading','Расовая пассивка','Racial passive'],
  ['#originPanelClass #classCount','classCount','28 классов','28 classes'],
