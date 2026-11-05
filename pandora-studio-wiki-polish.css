@@ -1,0 +1,157 @@
+/* Compact in-world navigation and source-grounded chest reward presentation. */
+.wiki-page>.wiki-page-nav{
+ display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+ gap:8px 12px;padding:0 0 11px;margin:0 0 14px;
+ border-bottom:1px solid #775638;
+}
+.wiki-page-nav-trail{display:flex;align-items:center;flex-wrap:wrap;gap:8px;
+ min-width:0;color:#a89273;font-size:11px;letter-spacing:.045em}
+.wiki-page-nav-origin{color:#b6a184}
+.wiki-page-nav-chapter{color:#ebc48e;font-weight:700}
+.wiki-page-nav-actions{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-left:auto}
+.wiki-page .wiki-nav-button{
+ display:inline-flex;align-items:center;justify-content:center;gap:6px;
+ min-width:0;min-height:33px;max-width:100%;padding:6px 11px;
+ border:1px solid #947049;border-radius:4px;
+ box-shadow:inset 0 1px #b994553c,inset 0 -2px #110a06a6;
+ background:linear-gradient(165deg,#47301f,#271b13);color:#e6c593;
+ font:600 11px/1.3 Manrope,Arial,sans-serif;letter-spacing:.01em;
+ white-space:nowrap;cursor:pointer;
+ transition:background .16s,border-color .16s,color .16s,box-shadow .16s;
+}
+.wiki-page .wiki-nav-button:hover{
+ border-color:#d2a466;background:linear-gradient(165deg,#604128,#382419);
+ color:#ffdfa6;box-shadow:inset 0 1px #ddb77a55,inset 0 -2px #150c08aa;
+}
+.wiki-page .wiki-nav-button:active{background:#261b12;box-shadow:inset 0 2px 5px #0c0907}
+.wiki-page .wiki-nav-button:focus-visible{
+ outline:2px solid #f8ce8e;outline-offset:2px;
+}
+.wiki-page .wiki-nav-button.wiki-chapter-list{
+ background:linear-gradient(165deg,#30261c,#211912);
+ color:#d2b48b;border-color:#746044;
+}
+.wiki-page .wiki-nav-button.wiki-chapter-list:hover{color:#ffe1ac;border-color:#cba56d}
+.wiki-page>.wiki-page-nav+h3{margin-top:8px}
+.wiki-chest-board{display:grid;gap:12px;margin:10px 0 16px}
+.wiki-chest-collection{
+ min-width:0;border:1px solid #927044;border-radius:6px;
+ background:linear-gradient(160deg,#2e2117,#1a1510);
+ box-shadow:inset 0 1px #ac885039;
+}
+.wiki-chest-collection-head{
+ display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;
+ gap:5px 10px;padding:10px 13px;border-bottom:1px solid #795638;
+}
+.wiki-chest-collection-head strong{font:600 17px Georgia,serif;color:#ebc894}
+.wiki-chest-collection-head small{color:#bba482;font-size:11px}
+.wiki-chest-assured-grid{
+ display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,205px),1fr));
+ gap:8px;padding:11px;
+}
+.wiki-chest-board>.wiki-chest-group{
+ border-color:#785b3c;box-shadow:inset 0 1px #b38d442a;
+ background:linear-gradient(160deg,#332418,#1a1510);
+}
+.wiki-chest-board>.wiki-chest-group[open]{border-color:#9a7449}
+.wiki-chest-board>.wiki-chest-group .wiki-chest-options{
+ grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));
+}
+.wiki-chest-board .wiki-chest-reward{
+ display:flex;flex-direction:column;justify-content:space-between;align-items:stretch;
+ gap:10px;min-width:0;min-height:82px;padding:10px;
+ background:linear-gradient(145deg,#302218,#21170f);
+ border:1px solid #77583b;border-radius:5px;
+ box-shadow:inset 0 1px #a17b4526;
+ transition:border-color .16s,background .16s,transform .16s;
+}
+.wiki-chest-board .wiki-chest-reward:hover,
+.wiki-chest-board .wiki-chest-reward:focus-within{
+ border-color:#d1a263;background:linear-gradient(145deg,#402a1b,#2a1c13);
+}
+.wiki-chest-board .wiki-chest-reward:focus-within{box-shadow:0 0 0 1px #e2ba796b}
+.wiki-chest-board .wiki-chest-reward-main{display:grid;gap:6px;min-width:0}
+.wiki-page .wiki-chest-board .wiki-chest-reward .wiki-link{
+ display:flex;gap:9px;align-items:center;min-width:0;max-width:100%;
+ background:transparent;padding:0;margin:0;border:0;line-height:1.45;
+ font-size:12px;color:#f0ca92;text-decoration:none;
+}
+.wiki-page .wiki-chest-board .wiki-chest-reward .wiki-link:hover{color:#ffe1ad}
+.wiki-chest-board .wiki-chest-reward .wiki-list-icon{
+ flex:0 0 35px;width:35px;height:35px;
+ padding:3px;border:1px solid #6d5137;border-radius:4px;
+ background:#140e0b;object-fit:contain;
+}
+.wiki-chest-reward .wiki-chest-reward-meta{
+ display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-end;
+ gap:5px 8px;margin-top:auto;min-width:0;
+}
+.wiki-chest-reward-meta .wiki-reward-percent{
+ display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;
+ border:1px solid #6b593b;border-radius:4px;padding:2px 6px;
+ background:#29241a;color:#d0bc99;font-size:10px;
+ font-variant-numeric:tabular-nums;
+}
+.wiki-chest-reward-meta .wiki-reward-percent.certain{
+ border-color:#586846;background:#243021;color:#bad8a4;
+}
+.wiki-chest-reward-meta .wiki-reward-percent.unknown{
+ border-style:dashed;color:#bdab91;border-color:#79634b;background:#292018;
+}
+.wiki-chest-reward-meta .wiki-reward-quantity{
+ color:#e6c69b;background:#352618;border:1px solid #6b4f33;
+ padding:2px 5px;border-radius:3px;
+}
+.wiki-chest-reward-meta .wiki-reward-enhance{color:#b7ce9e}
+.wiki-chest-reward-nested{border-left:3px solid #bd955e!important}
+.wiki-chest-nested-note{
+ display:inline-flex;align-items:center;width:max-content;max-width:100%;
+ padding:2px 6px;border:1px solid #95744e;border-radius:3px;
+ color:#e4c38f;background:#38281a;font-size:10px;
+}
+.wiki-chest-board .wiki-chest-group-summary{
+ padding:11px 13px;background:linear-gradient(120deg,#382719,#271b13);
+}
+.wiki-chest-board .wiki-chest-group-summary:hover{background:#46301f}
+.wiki-chest-board .wiki-chest-group-name{font:600 16px Georgia,serif;color:#eac48b}
+.wiki-chest-board .wiki-chest-group-mark{
+ background:#25170f;color:#e8bd7a;border-color:#9d7548;
+}
+.wiki-chest-probability-note{
+ margin:8px 0 5px;padding:7px 10px;
+ border-left:2px solid #876b48;background:#241b14;
+ color:#c5b097;font-size:11px;line-height:1.5;
+}
+.wiki-level-reward{display:flex;align-items:center;gap:13px;padding:11px 14px}
+.wiki-level-reward-details{display:grid;grid-template-columns:auto 1fr;column-gap:14px;row-gap:3px;align-items:baseline}
+.wiki-level-reward-details small{grid-column:1/-1}
+.wiki-level-reward-details strong{white-space:nowrap}
+.wiki-level-reward-details span{align-self:center}
+.wiki-equipment-view button{
+ min-height:35px;background:linear-gradient(160deg,#322317,#1c150f);
+ box-shadow:inset 0 1px #a17a4738,inset 0 -2px #0d0908a8;
+ transition:background .16s,border-color .16s;
+}
+.wiki-equipment-view button:hover{border-color:#c99e64;color:#ffe0ac}
+.wiki-equipment-view button.chosen{
+ background:linear-gradient(160deg,#624126,#382517);
+ border-color:#dfb778;box-shadow:inset 0 1px #dfbd8461,inset 0 -2px #120b086b;
+}
+.wiki-equipment-view button:focus-visible{outline:2px solid #f2c884;outline-offset:2px}
+@media(max-width:670px){
+ .wiki-page>.wiki-page-nav{align-items:flex-start}
+ .wiki-page-nav-actions{margin-left:0}
+ .wiki-chest-assured-grid,.wiki-chest-board>.wiki-chest-group .wiki-chest-options{
+  grid-template-columns:repeat(auto-fill,minmax(min(100%,185px),1fr));
+ }
+ .wiki-level-reward-details{grid-template-columns:1fr}
+}
+@media(max-width:420px){
+ .wiki-page-nav-actions{width:100%}
+ .wiki-page .wiki-nav-button{flex:1}
+ .wiki-chest-assured-grid{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+ .wiki-page .wiki-nav-button,.wiki-chest-board .wiki-chest-reward,
+ .wiki-equipment-view button{transition:none}
+}
