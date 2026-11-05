@@ -46,8 +46,18 @@ export async function runEquipmentLocaleSmoke(browser,base){
   const sidebar=page.locator('.wiki-list');
   assert.equal(await page.locator('.wiki-list-top').isHidden(),true);
   await sidebar.evaluate(el=>{el.scrollTop=el.scrollHeight});
-  await page.locator('.wiki-list-top').waitFor({state:'visible'});
-  await page.locator('.wiki-list-top').click();
+  const scrollFooter=page.locator('.wiki-list-top');
+  await scrollFooter.waitFor({state:'visible'});
+  assert.equal(await scrollFooter.evaluate(el=>getComputedStyle(el).position),'static',
+   'Navigation must be in document flow, not float over the list entries');
+  const listRect=await sidebar.boundingBox();
+  const footerRect=await scrollFooter.boundingBox();
+  assert.ok(listRect&&footerRect);
+  assert.ok(footerRect.y>=listRect.y+listRect.height-1,
+   'The footer must start below the independently scrollable list');
+  assert.ok(footerRect.width>=listRect.width-3,
+   'The footer should be integrated with the full width of the list panel');
+  await scrollFooter.click();
   await page.waitForFunction(()=>document.querySelector('.wiki-list').scrollTop<=1);
   assert.equal(await page.locator('.wiki-list-top').isHidden(),true);
   assert.equal(await page.evaluate(()=>location.hash),chosenHash,
