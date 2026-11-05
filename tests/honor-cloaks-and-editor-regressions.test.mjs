@@ -43,3 +43,16 @@ test('text editing preserves saved line breaks; anchors keep stable hit boxes',(
  assert.match(dock,/owner-dock-collapsed \.owner-dock-handle:hover/);
  assert.match(dock,/opacity:1!important;visibility:visible!important/);
 });
+
+test('Phoenix Flame hint stays outside document flow when hovered or focused',()=>{
+ const css=read('pandora-studio-item-owner-editor.css');
+ const term=css.match(/\.wiki-phoenix-explanation\{([^}]+)\}/)?.[1]||'';
+ assert.match(term,/position:absolute/);
+ assert.match(term,/pointer-events:none/);
+ assert.match(term,/visibility:hidden/);
+ assert.doesNotMatch(term,/display:none/);
+ assert.match(css,/wiki-conditional-term:hover/);
+ assert.match(css,/wiki-conditional-term:focus-visible/);
+ const game=JSON.parse(read('data/os/items.json'));
+ assert.match(game['252'].desc,/Пламя феникса/);
+});
