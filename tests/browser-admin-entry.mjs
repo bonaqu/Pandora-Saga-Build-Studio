@@ -410,6 +410,9 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.getByRole('button',{name:/Закрыть/}).click();
   await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="wiki"]').click();
+  // Do not inherit Honor from the preceding regression: item editing starts
+  // in the equipment chapter, regardless of the user's last visited chapter.
+  await page.locator('.wiki-categories [data-wiki-chapter="item"]').click();
   const wikiSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await wikiSearch.waitFor({state:'visible'});
   const speedCheck=page.locator('.wiki-speed-check');
