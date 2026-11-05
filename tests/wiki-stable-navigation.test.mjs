@@ -39,13 +39,13 @@ test('return navigation captures the previous view and respects direct links',()
  assert.match(app,/history\.replaceState\(\{\.\.\.oldState,psWikiReturn:/);
  assert.match(app,/if\(location\.hash!==destination\)/);
  assert.match(app,/psWikiEntry===true/);
- assert.match(app,/onclick:\(\)=>history\.back\(\)/);
+ assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)&&history\.state\?\.psWikiEntry===true\)\s*history\.back\(\)/);
  assert.match(app,/else if\(activeTab==='wiki'&&!location\.hash\.startsWith\('#b\/'\)\)/);
  assert.match(app,/const previous=event\.state\?\.psWikiReturn/);
  assert.match(app,/wikiSelection=\{\.\.\.previous\.selection\}/);
  assert.match(app,/wikiSearch=typeof previous\.search/);
  assert.match(app,/if\(!\$\('detailPanel'\)\?\.classList\.contains\('is-open'\)\)showWorkbench\(\)/);
- assert.match(css,/\.wiki-page>\.wiki-history-back/);
+ assert.match(css,/\.wiki-page>\.wiki-return-button/);
 });
 
 
@@ -55,13 +55,14 @@ test('wiki keeps history and shows a contextual scroll-to-top in its persistent 
  assert.match(app,/function openWikiChapterList\(\)/);
  assert.match(app,/psWikiList:listView/);
  assert.match(app,/else if\(event\.state\?\.psWikiList&&!location\.hash\)/);
- assert.match(app,/class:'wiki-page-nav'/);
+ assert.match(app,/detail\.append\(wikiBackButton\(backChapters\[type\]/);
+ assert.doesNotMatch(app,/class:'wiki-page-nav'/);
  assert.doesNotMatch(app,/class:'wiki-nav-button wiki-chapter-list'/);
  assert.match(app,/class:'wiki-list-top'/);
  assert.match(app,/listTop\.hidden=!far/);
  assert.match(app,/listPanel\.append\(browse,listTop\)/);
  assert.match(app,/if\(location\.hash\.startsWith\('#wiki\/'\)\)openWikiChapterList\(\)/);
- assert.match(css,/\.wiki-page>\.wiki-page-nav/);
+ assert.doesNotMatch(css,/wiki-page-nav|wiki-nav-button/);
  assert.match(css,/\.wiki-chest-assured-grid/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
