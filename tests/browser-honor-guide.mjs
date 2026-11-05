@@ -133,6 +133,8 @@ export async function runHonorGuideSmoke(browser,base){
   const cloakOrigin=await pane.evaluate(el=>el.scrollTop);
   await cloaks.first().click();
   assert.match(await panel.locator('h3').innerText(),/плащ победителя/);
+  assert.equal((await page.locator('.wiki-page > .wiki-return-button').innerText()).trim(),
+   '← Назад','Honor → cloak must not say Back to Equipment');
   await page.locator('.wiki-page > .wiki-return-button').click();
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
   await page.waitForFunction(origin=>
@@ -157,6 +159,8 @@ export async function runHonorGuideSmoke(browser,base){
   await lidia.click();
   await page.waitForURL(/#wiki\/honor\/war-lidia$/);
   assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Лидия');
+  assert.equal((await page.locator('.wiki-page > .wiki-return-button').innerText()).trim(),
+   '← Назад','Honor → Lydia uses universal caption');
   assert.match(await panel.locator('.wiki-honor-war-eyebrow').innerText(),/pvp-война/i);
   assert.equal(await page.locator('.wiki-layout-honor .wiki-list .wiki-honor-war-link').count(),2,
    'War detail pages retain two linked war entries in the left navigation');
@@ -175,6 +179,8 @@ export async function runHonorGuideSmoke(browser,base){
   await siegheim.click();
   await page.waitForURL(/#wiki\/honor\/war-siegheim$/);
   assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Гихайм');
+  assert.equal((await page.locator('.wiki-page > .wiki-return-button').innerText()).trim(),
+   '← Назад','Honor → Siegheim uses universal caption');
   await page.locator('.wiki-page > .wiki-return-button').click();
   await panel.locator('.wiki-honor-monthly-card').first().waitFor({state:'visible'});
   assert.equal(await panel.locator('a.wiki-honor-war-link').count(),2);
@@ -188,6 +194,13 @@ export async function runHonorGuideSmoke(browser,base){
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('.wiki-honor-title').waitFor({state:'visible'});
+  const firstEnglishCloak=page.locator('.wiki-honor-cloak-link').first();
+  await firstEnglishCloak.waitFor({state:'visible'});
+  await firstEnglishCloak.click();
+  assert.equal((await page.locator('.wiki-page > .wiki-return-button').innerText()).trim(),
+   '← Back','English UI uses the same neutral caption');
+  await page.locator('.wiki-page > .wiki-return-button').click();
   await page.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal((await page.locator('.wiki-honor-title').innerText()).trim(),
    'Honor');
@@ -206,6 +219,8 @@ export async function runHonorGuideSmoke(browser,base){
   await zone.scrollIntoViewIfNeeded();
   const mapOrigin=await pane.evaluate(el=>el.scrollTop);
   await zone.click();
+  assert.equal((await page.locator('.wiki-page > .wiki-return-button').innerText()).trim(),
+   '← Назад','Honor → El Vedd must not say Back to Locations');
   const native=page.locator('.wiki-page .wiki-map-monsters');
   await native.waitFor({state:'visible',timeout:20000});
   assert.equal(await native.locator('.wiki-mob-row').count(),22);
@@ -223,6 +238,8 @@ export async function runHonorGuideSmoke(browser,base){
   const mapHash=await page.evaluate(()=>location.hash);
   await monsterLink.click();
   await page.waitForURL(/#wiki\/monster\//);
+  assert.equal((await page.locator('.wiki-page > .wiki-return-button').innerText()).trim(),
+   '← Назад','Map → monster keeps universal caption');
   await page.locator('.wiki-page > .wiki-return-button').click();
   await page.waitForFunction(expected=>location.hash===expected,mapHash);
   await page.waitForFunction(expected=>
@@ -240,6 +257,8 @@ export async function runHonorGuideSmoke(browser,base){
   await ruins.waitFor({state:'visible',timeout:15000});
   await ruins.click();
   assert.equal((await panel.locator('h3').innerText()).trim(),'Подземные руины Астира');
+  assert.equal((await page.locator('.wiki-page > .wiki-return-button').innerText()).trim(),
+   '← Назад','Direct location pages use universal caption');
   assert.doesNotMatch(await panel.innerText(),/Историческая PvP-локация|недоступна на OS/);
   // Regression: a deep-linked NPC record must never make Honor unclickable.
   await page.locator('.wiki-categories [data-wiki-chapter="npc"]').click();
@@ -282,6 +301,12 @@ export async function runHonorGuideSmoke(browser,base){
     category+' must not create a second header toolbar');
    assert.equal((await back.innerText()).trim(),'← Назад',
     category+' must use neutral caption regardless of its origin');
+   assert.equal(await back.getAttribute('aria-label'),'← Назад',
+    category+' must expose the same accessible label');
+   assert.equal(await page.locator('.wiki-list [data-wiki-record]').count()>0,true,
+    category+' must have a usable record list');
+   assert.ok((await page.locator('.wiki-page').innerText()).trim().length>15,
+    category+' record must render substantive content');
    const state=await back.evaluate(button=>{
     const parent=button.closest('.wiki-page').getBoundingClientRect();
     const rect=button.getBoundingClientRect(),style=getComputedStyle(button);
