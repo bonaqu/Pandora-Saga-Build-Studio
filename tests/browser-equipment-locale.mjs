@@ -88,6 +88,10 @@ export async function runEquipmentLocaleSmoke(browser,base){
   await picker.selectOption('ring');
   await rows.first().click();
   assert.match(await page.locator('.wiki-page').innerText(),/How to obtain/);
+  await page.goto(base+'/#wiki/chest/51040',{waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-chest-unverified').waitFor({state:'visible'});
+  assert.match(await page.locator('.wiki-chest-unverified').innerText(),
+   /Reward category: Accessories[\s\S]*Contents are not listed/);
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
