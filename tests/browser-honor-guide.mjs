@@ -94,18 +94,22 @@ export async function runHonorGuideSmoke(browser,base){
   await page.goto(base+'/#wiki/item/252',{waitUntil:'domcontentloaded'});
   const phoenix=page.locator('.wiki-conditional-term');
   await phoenix.waitFor({state:'visible',timeout:20000});
-  const before=await phoenix.boundingBox();
-  assert.ok(before);
+  await phoenix.scrollIntoViewIfNeeded();
+  const localPosition=()=>phoenix.evaluate(node=>{
+   const row=node.closest('.wiki-conditional-row').getBoundingClientRect();
+   const term=node.getBoundingClientRect();
+   return {x:term.left-row.left,y:term.top-row.top};
+  });
+  const before=await localPosition();
   await phoenix.hover();
   const explanation=page.locator('.wiki-phoenix-explanation');
   await explanation.waitFor({state:'visible'});
   await page.waitForTimeout(250);
   assert.equal(await explanation.isVisible(),true,
    'Phoenix Flame tooltip must stay visible without a pointer oscillation');
-  const after=await phoenix.boundingBox();
-  assert.ok(after);
-  assert.ok(Math.abs(after.y-before.y)<1,
-   'Opening the tooltip must not move the trigger in document flow');
+  const after=await localPosition();
+  assert.ok(Math.abs(after.x-before.x)<1&&Math.abs(after.y-before.y)<1,
+   'Opening the tooltip must not move its trigger inside the effect row');
   assert.equal(await explanation.evaluate(node=>getComputedStyle(node).position),
    'absolute','The tooltip must float over the page rather than relayout it');
   assert.deepEqual(errors,[]);
