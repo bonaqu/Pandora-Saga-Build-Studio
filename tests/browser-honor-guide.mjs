@@ -25,6 +25,29 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal(await panel.locator('.wiki-honor-rank').count(),12);
   assert.equal(await panel.locator('.wiki-honor-joining').count(),0,
    'Starting Honor belongs to the Squire rank, not a duplicated callout');
+  // In-world entity cards: match the established spawn-location design.
+  assert.equal(await panel.locator('.wiki-honor-list.wiki-entity-flow').count(),2,
+   'Both PvP collections reuse the canonical linked-entity flow');
+  assert.equal(await panel.locator('.wiki-honor-location-link.wiki-entity-reference').count(),3);
+  assert.equal(await panel.locator('.wiki-honor-war-link.wiki-entity-reference').count(),2);
+  const pvpCard=panel.locator('.wiki-honor-location-link.wiki-entity-reference').first();
+  assert.equal(await pvpCard.locator('.wiki-entity-reference-icon').innerText(),'◈');
+  const cardStyle=await pvpCard.evaluate(node=>{
+   const style=getComputedStyle(node),rect=node.getBoundingClientRect();
+   return {display:style.display,border:style.borderTopStyle,
+    minHeight:rect.height,background:style.backgroundImage};
+  });
+  assert.equal(cardStyle.display,'inline-flex');
+  assert.equal(cardStyle.border,'solid');
+  assert.ok(cardStyle.minHeight>=32,'PvP location card must be a large click target');
+  assert.match(cardStyle.background,/gradient/);
+  assert.equal(await panel.locator('.wiki-honor-cloak-row').count(),9,
+   'Monthly reward rows must align every nation and linked cloak');
+  assert.equal(await panel.locator('.wiki-honor-cloak-row .wiki-honor-cloak-nation').count(),9);
+  assert.equal(await panel.locator('.wiki-honor-cloak-row .wiki-honor-cloak-reward .wiki-honor-cloak-link').count(),9);
+  const desktopColumns=await panel.locator('.wiki-honor-monthly-list').evaluate(node=>
+   getComputedStyle(node).gridTemplateColumns.split(' ').length);
+  assert.equal(desktopColumns,3,'Wide screens arrange monthly title groups in 3 columns');
   assert.match(await panel.locator('#honor-rank-0 .wiki-honor-requirement').innerText(),/1 000/);
   // Every rank uses its exact original 23x23 game sprite, not drawn shapes.
   const sprites=panel.locator('.wiki-honor-emblem-source');
@@ -356,7 +379,30 @@ export async function runHonorGuideSmoke(browser,base){
    'Opening the tooltip must not move its trigger inside the effect row');
   assert.equal(await explanation.evaluate(node=>getComputedStyle(node).position),
    'absolute','The tooltip must float over the page rather than relayout it');
+  // Responsive audit: compact linked cards stay usable without creating
+  // horizontal overflow, and the monthly rewards become a single column.
+  await page.setViewportSize({width:390,height:820});
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  await panel.locator('.wiki-honor-location-link').first().waitFor({state:'visible'});
+  const mobile=await panel.evaluate(node=>{
+   const card=node.querySelector('.wiki-honor-location-link');
+   const monthly=node.querySelector('.wiki-honor-monthly-list');
+   const flow=node.querySelector('.wiki-honor-list.wiki-entity-flow');
+   return {columns:getComputedStyle(monthly).gridTemplateColumns.split(' ').length,
+    overflow:flow.scrollWidth-flow.clientWidth,
+    cardHeight:card.getBoundingClientRect().height,
+    maps:node.querySelectorAll('a.wiki-honor-location-link').length};
+  });
+  assert.equal(mobile.columns,1,'Mobile Honor reward groups must stack');
+  assert.ok(mobile.overflow<=2,'Linked PvP cards must not overflow their container');
+  assert.ok(mobile.cardHeight>=32,'PvP map links remain usable on touch screens');
+  assert.equal(mobile.maps,3);
+  await page.locator('.wiki-honor-location-link').first().focus();
+  assert.equal(await page.locator('.wiki-honor-location-link').first().evaluate(node=>
+   getComputedStyle(node).outlineStyle),'solid','Keyboard focus must be visible');
   assert.deepEqual(errors,[]);
-  console.log('Chromium Honor: bottom monthly highlight, deep-linked PvP war pages, map navigation and 12 rank icons');
+  console.log('Chromium Honor: shared PvP entity chips, aligned monthly rewards, mobile layout, navigation and source icons');
  }finally{await context.close()}
 }
