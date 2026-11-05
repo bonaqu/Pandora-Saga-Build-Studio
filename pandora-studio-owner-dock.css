@@ -133,9 +133,9 @@ body>#ownerDock.owner-dock-collapsed{
  body>#ownerDock{bottom:max(8px,env(safe-area-inset-bottom))}
  #ownerDock .owner-dock-panel{max-height:calc(100dvh - 22px)}
  #ownerDock .owner-dock-handle{top:12px;right:10px}
+ #ownerDock.owner-dock-collapsed{width:122px}
  #ownerDock.owner-dock-collapsed .owner-dock-handle{
-  position:fixed;inset:auto auto max(8px,env(safe-area-inset-bottom)) 0;
-  min-width:122px;height:36px
+  position:relative;inset:auto;width:122px;min-width:122px;height:36px
  }
 }
 @media(max-height:510px){
