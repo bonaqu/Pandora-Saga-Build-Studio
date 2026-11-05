@@ -508,8 +508,17 @@ export async function runAdminEntrySmoke(browser,base){
   )?.textContent==='Кларис — проверка D1',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).name,
    'Кларис — проверка D1');
-  await ownerPanel.locator('[data-owner-save-state]').filter({hasText:'Сохранено в Cloudflare D1'})
-   .waitFor({state:'visible',timeout:15000});
+  // A workbench intentionally collapses the owner drawer; a completed save
+  // must still be tracked even while its status row is offscreen.
+  const status=ownerPanel.locator('[data-owner-save-state]');
+  await page.waitForFunction(()=>document.querySelector(
+   '#ownerDock [data-owner-save-state]')?.dataset.state==='saved',null,{timeout:15000});
+  assert.match(await status.textContent(),/Сохранено в Cloudflare D1/);
+  if(await edge.getAttribute('aria-expanded')==='false'){
+   await edge.click();
+   await status.waitFor({state:'visible'});
+   await edge.click();
+  }
   // The long NPC title must stay entirely visible INSIDE its editable field,
   // not be clipped at the old 320px/nowrap limit.
   const longName='Мастер арены Алиса — координатор состязаний и тренировочного турнира';
