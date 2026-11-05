@@ -89,6 +89,25 @@ export async function runHonorGuideSmoke(browser,base){
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal((await panel.locator('.wiki-honor-rank').count()),12);
+  // The Phoenix Flame explanation previously displaced the hovered term
+  // and triggered an endless show/hide layout oscillation.
+  await page.goto(base+'/#wiki/item/252',{waitUntil:'domcontentloaded'});
+  const phoenix=page.locator('.wiki-conditional-term');
+  await phoenix.waitFor({state:'visible',timeout:20000});
+  const before=await phoenix.boundingBox();
+  assert.ok(before);
+  await phoenix.hover();
+  const explanation=page.locator('.wiki-phoenix-explanation');
+  await explanation.waitFor({state:'visible'});
+  await page.waitForTimeout(250);
+  assert.equal(await explanation.isVisible(),true,
+   'Phoenix Flame tooltip must stay visible without a pointer oscillation');
+  const after=await phoenix.boundingBox();
+  assert.ok(after);
+  assert.ok(Math.abs(after.y-before.y)<1,
+   'Opening the tooltip must not move the trigger in document flow');
+  assert.equal(await explanation.evaluate(node=>getComputedStyle(node).position),
+   'absolute','The tooltip must float over the page rather than relayout it');
   assert.deepEqual(errors,[]);
   console.log('Chromium Honor: vector ranks, cloaks, item previews, NPC navigation and RU/EN');
  }finally{await context.close()}
