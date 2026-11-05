@@ -51,7 +51,7 @@ jobs:
             import {readFileSync} from "node:fs";
             const code=readFileSync("index.js","utf8");
             for(const marker of ["codeRelease:\x270.360.0\x27",
-              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "sourceEgressProbe:true", "sourceInstancesArray:true", "sourceFullProbe:true", "key===\x27nameEn\x27", "key===\x27descEn\x27"])
+              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "sourceEgressProbe:true", "sourceInstancesArray:true", "sourceFullProbe:true", "key===\x27nameEn\x27", "key===\x27descEn\x27", "honorExtendedEditing:true"])
               if(!code.includes(marker))throw Error("Missing expected reviewed Worker code: "+marker);
           '
       - name: Generate exact existing D1 config without secrets
@@ -85,7 +85,7 @@ jobs:
               if(response.ok&&caps?.codeRelease==="0.360.0"&&
                 caps?.ownerEditors?.includes("bilingual-item-text")&&
                 caps?.adminD1WriteCheck==="catalog-and-overrides"&&
-                caps?.catalogSourceFailover===true&&caps?.sourceEgressProbe===true&&
+                caps?.catalogSourceFailover===true&&caps?.honorExtendedEditing===true&&caps?.sourceEgressProbe===true&&
                 caps?.sourceInstancesArray===true&&caps?.sourceFullProbe===true&&
                 healthy.ok&&health?.storage==="d1"&&health?.features?.catalog===true){
                 console.log("Verified live Worker 0.360.0, English item editing and the same D1 catalog");
