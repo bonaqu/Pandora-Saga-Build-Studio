@@ -120,8 +120,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    const names=make('div',{class:'wiki-honor-list-names'});
    // Show only the selected language. The opposite locale is edited after
    // switching RU/EN in the global header, never concatenated on a row.
-   const field=en?'nameEn':'nameRu',value=item[field]||'';
-   names.append(editableListText(node('span','',value),value,key,items,index,field));
+   const field=en?'nameEn':'nameRu';
+   const linked=isZone?mapOptions.find(option=>option.id===item.mapId):null;
+   const value=(linked?(en?linked.nameEn:linked.nameRu):item[field])||'';
+   const label=node('span','',value);
+   if(isZone){
+    // Names of existing maps are managed in the Locations editor only.
+    // Never create a second, diverging translation in the Honor chapter.
+    if(editable)label.setAttribute('title',tr(
+     'Название изменяется в разделе «Локации»',
+     'Edit the name in the Locations chapter'));
+    names.append(label);
+   }else names.append(editableListText(label,value,key,items,index,field));
    row.append(names);
    if(isZone&&item.mapId){
     const anchor=link(item.mapId,'↗');
