@@ -103,7 +103,8 @@ test('all source-sprite wrappers preserve actual 23×23 PNG pixel data',()=>{
 
 test('monthly navigation is readable at end-of-article and not pinned to 100px',()=>{
  const view=read('pandora-studio-honor-view.js');
- assert.match(view,/Math\.min\(380,scroller\.clientHeight\*\.46\)/);
+ assert.match(view,/Math\.min\(100,scroller\.clientHeight\*\.22\)/);
+ assert.match(view,/monthlyTop<=paneTop\+Math\.min\(280,scroller\.clientHeight\*\.43\)/);
  assert.match(view,/else if\(remaining<=36\)current='monthly'/);
  assert.match(view,/selectSection\(current\)/);
 });
