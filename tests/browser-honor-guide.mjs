@@ -107,6 +107,7 @@ export async function runHonorGuideSmoke(browser,base){
   };
   for(const chapter of ['overview','gain','ranks','monthly'])
    await autoHighlight(chapter);
+  await autoHighlight('ranks');
   // Reproduce a reader dragging the scrollbar to the very end: the final
   // monthly heading cannot reach a 100px top threshold in this position.
   await pane.evaluate(el=>el.scrollTo({
@@ -141,11 +142,10 @@ export async function runHonorGuideSmoke(browser,base){
    'Existing wars and future D1 rows use their names as links');
   assert.equal(await warList.locator('.wiki-honor-war-rename').count(),0,
    'No administrative war edit affordances appear for public readers');
-  const savedScroll=await pane.evaluate(el=>{
-   el.scrollTo({top:Math.min(460,el.scrollHeight-el.clientHeight),behavior:'instant'});
-   return el.scrollTop;
-  });
-  await warList.locator('a.wiki-honor-war-link').filter({hasText:'Лидия'}).click();
+  const lidia=warList.locator('a.wiki-honor-war-link').filter({hasText:'Лидия'});
+  await lidia.scrollIntoViewIfNeeded();
+  const savedScroll=await pane.evaluate(el=>el.scrollTop);
+  await lidia.click();
   await page.waitForURL(/#wiki\/honor\/war-lidia$/);
   assert.equal((await panel.locator('.wiki-honor-war-title').innerText()).trim(),'Лидия');
   assert.match(await panel.locator('.wiki-honor-war-eyebrow').innerText(),/PvP-война/);
