@@ -264,16 +264,14 @@ export async function runHonorGuideSmoke(browser,base){
   });
   assert.ok(appearance.x>=0&&appearance.x<=30,
    'Honor return button belongs in the left padded edge of the card');
-  assert.match(appearance.text,/Назад к Чести/);
+  assert.equal(appearance.text.trim(),'← Назад');
   assert.equal(await panel.locator('.wiki-page-nav').count(),0);
   // Normal encyclopedia records must reproduce the war button, not
   // introduce another navigation bar or return alignment.
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#nav [data-tab="wiki"]').click();
-  for(const [category,label]of [
-   ['item','Экипировке'],['monster','Монстрам'],['map','Локациям'],
-   ['npc','NPC-обмену'],['chest','Сундукам'],['skill','Навыкам'],
-   ['soul','Душам'],['instance','Подземельям']]){
+  for(const category of [
+   'item','monster','map','npc','chest','skill','soul','instance']){
    await page.locator('.wiki-categories [data-wiki-chapter="'+category+'"]').click();
    const first=page.locator('.wiki-list [data-wiki-record]').first();
    await first.waitFor({state:'visible',timeout:15000});
@@ -282,7 +280,8 @@ export async function runHonorGuideSmoke(browser,base){
    await back.waitFor({state:'visible'});
    assert.equal(await page.locator('.wiki-page-nav').count(),0,
     category+' must not create a second header toolbar');
-   assert.match(await back.innerText(),new RegExp('Назад к '+label));
+   assert.equal((await back.innerText()).trim(),'← Назад',
+    category+' must use neutral caption regardless of its origin');
    const state=await back.evaluate(button=>{
     const parent=button.closest('.wiki-page').getBoundingClientRect();
     const rect=button.getBoundingClientRect(),style=getComputedStyle(button);
