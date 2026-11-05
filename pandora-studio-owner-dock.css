@@ -1,22 +1,21 @@
-/* Authenticated editor: user-controlled overlay, never a child of the game grid.
-   The narrow handle remains at the left viewport edge when the drawer is shut. */
+/* Authenticated editor: one scroll region and a compact bottom-edge launcher.
+   Keep the drawer outside the hero/workbench layout at every viewport size. */
 body>#ownerDock{
  position:fixed;left:0;right:auto;bottom:max(14px,env(safe-area-inset-bottom));
  z-index:82;display:block;flex:none;align-items:initial;
- width:min(344px,calc(100vw - 54px));max-width:none;max-height:none;
+ width:min(474px,calc(100vw - 16px));max-width:none;max-height:none;
  padding:0;margin:0;border:0;background:transparent;box-shadow:none;
  color:#e8cf9e;
  transform:none;pointer-events:none;
 }
 body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
 #ownerDock .owner-dock-panel{
- min-width:0;max-height:calc(100dvh - 80px);
+ display:flex;flex-direction:column;min-width:0;
+ max-height:calc(100dvh - 28px);
  background:linear-gradient(155deg,#332318,#1d1611 64%,#211912);
  border:1px solid #a17d4d;border-left:0;border-radius:0 11px 11px 0;
  box-shadow:12px 12px 42px #000b,inset 0 0 0 2px #382919;
- overflow:auto;overscroll-behavior:contain;
- scrollbar-width:thin;scrollbar-color:#946e43 #241a12;
- pointer-events:auto;
+ overflow:hidden;pointer-events:auto;
  transform:translate3d(0,0,0);
  transition:transform .32s cubic-bezier(.22,.82,.2,1);
  will-change:transform;
@@ -26,23 +25,25 @@ body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
  pointer-events:none;
 }
 #ownerDock .owner-dock-handle{
- position:absolute;left:calc(100% - 1px);bottom:20px;
- display:flex;align-items:center;justify-content:center;
- width:45px;min-width:45px;height:112px;
- padding:10px 7px;margin:0;
- writing-mode:vertical-rl;text-orientation:mixed;
- letter-spacing:.04em;line-height:1.2;
- font:700 12px Manrope,Arial,sans-serif;
- border:1px solid #bd9359;border-left:0;border-radius:0 9px 9px 0;
+ position:absolute;top:14px;right:12px;left:auto;bottom:auto;
+ display:inline-flex;align-items:center;justify-content:center;
+ width:auto;min-width:84px;height:34px;
+ padding:6px 10px;margin:0;white-space:nowrap;
+ writing-mode:horizontal-tb;text-orientation:mixed;
+ letter-spacing:.01em;line-height:1.25;
+ font:700 11px Manrope,Arial,sans-serif;
+ border:1px solid #bd9359;border-radius:7px;
  background:linear-gradient(160deg,#513722,#2e2016);
- color:#ffdaa1;box-shadow:8px 8px 26px #000a;
+ color:#ffdaa1;box-shadow:3px 6px 18px #0008;
  cursor:pointer;pointer-events:auto;touch-action:manipulation;
- transition:left .32s cubic-bezier(.22,.82,.2,1),background .18s,border-color .18s,box-shadow .18s;
+ transition:background .18s,border-color .18s,box-shadow .18s;
 }
 #ownerDock.owner-dock-collapsed .owner-dock-handle{
- left:0;
- border-color:#d1a267;background:linear-gradient(145deg,#5c3e25,#322015);
- box-shadow:6px 8px 24px #0009, inset -2px 0 0 #c99a58;
+ top:auto;right:auto;bottom:0;left:12px;
+ min-width:128px;height:38px;padding:7px 13px;
+ border-radius:9px;border-color:#d1a267;
+ background:linear-gradient(145deg,#5c3e25,#322015);
+ box-shadow:6px 8px 24px #0009,inset -2px 0 0 #c99a58;
 }
 #ownerDock .owner-dock-handle:hover{background:#69462a;border-color:#f2c886}
 #ownerDock .owner-dock-handle:focus-visible{
@@ -57,7 +58,8 @@ body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
 #ownerDock .owner-dock-head{
  position:sticky;top:0;z-index:1;
  display:flex;align-items:center;flex-wrap:wrap;gap:6px 9px;
- padding:13px 13px 11px;border-bottom:1px solid #765633;
+ flex:0 0 auto;padding:13px 108px 11px 16px;
+ border-bottom:1px solid #765633;
  background:linear-gradient(125deg,#402c1c,#281c14);min-width:0;
 }
 #ownerDock .owner-dock-title{
@@ -73,8 +75,11 @@ body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
  vertical-align:middle;
 }
 #ownerDock .owner-dock-body{
- display:grid;gap:12px;min-width:0;
- padding:12px 13px 14px;
+ display:grid;grid-auto-rows:max-content;align-content:start;
+ flex:1 1 auto;min-width:0;min-height:0;
+ gap:12px;padding:14px 16px 16px;
+ overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;
+ scrollbar-width:thin;scrollbar-color:#946e43 #241a12;
 }
 #ownerDock .owner-dock-save-state{
  font-size:11px;line-height:1.5;overflow-wrap:anywhere;
@@ -126,8 +131,11 @@ body>#ownerDock.owner-dock-collapsed{pointer-events:none;}
 }
 @media(max-width:600px){
  body>#ownerDock{bottom:max(8px,env(safe-area-inset-bottom))}
- #ownerDock .owner-dock-panel{max-height:calc(100dvh - 32px)}
- #ownerDock .owner-dock-handle{bottom:12px;width:43px;min-width:43px;height:102px}
+ #ownerDock .owner-dock-panel{max-height:calc(100dvh - 22px)}
+ #ownerDock .owner-dock-handle{top:12px;right:10px}
+ #ownerDock.owner-dock-collapsed .owner-dock-handle{
+  top:auto;right:auto;bottom:0;left:10px;min-width:122px;height:36px
+ }
 }
 @media(max-height:510px){
  #ownerDock .owner-dock-panel{max-height:calc(100dvh - 16px)}

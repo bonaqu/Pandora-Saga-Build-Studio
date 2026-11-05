@@ -1442,7 +1442,11 @@ function renderPathPages(){
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
  $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
- 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);$('hero').dataset.editKey='visual.race.'+state.race+'.'+(state.gender?'m':'f');$('hero').classList.toggle('admin-edit',adminEditing);$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
+ 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race];$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);
+// The central hero portrait is the Book entry, never an image-edit target.
+// Race portrait artwork remains editable in Origin > Race carousel.
+$('hero').removeAttribute('data-edit-key');$('hero').classList.remove('admin-edit');
+$('hero').alt=races[state.race][0];$('raceTitle').textContent=editableValue('race.'+state.race,races[state.race][0]);$('jobTitle').textContent=editableValue('job.'+state.job,jobs[state.job]);$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();updateAdminHint()}
 let wikiOutsideCleanup=null;
 function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
@@ -3583,8 +3587,11 @@ function renderWiki(root){
        mats.append(row);
       }
       if(editing)mats.append(h('button',{type:'button',class:'wiki-owner-plus',
-       text:'+ Материал',onclick:()=>wikiItemChoice(mats,i=>{
-        if((trade.mats||[]).length>=20)throw Error('Можно добавить не более 20 материалов');
+       text:wt('+ Материал','+ Material'),onclick:()=>wikiItemChoice(mats,i=>{
+        if((trade.mats||[]).length>=20)
+         throw Error(wt('Можно добавить не более 20 материалов','Maximum 20 materials'));
+        if((trade.mats||[]).some(row=>String(row.i)===String(i)))
+         throw Error(wt('Этот материал уже есть в обмене','Material already listed'));
         return amend({mats:[...(trade.mats||[]),{i,n:1}]});
        })}));
       entry.append(mats);
@@ -3624,19 +3631,46 @@ function renderWiki(root){
          .catch(e=>showStudioToast(e.message,'warning'))}));
        owner.append(chip);
       }
-      const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+ NPC'});
+      const plus=h('button',{type:'button',class:'wiki-owner-plus',
+       text:wt('+ NPC','+ NPC')});
       plus.onclick=()=>{
-       if(owner.querySelector('select'))return;
-       const pick=h('select',{class:'wiki-inline-select','aria-label':'Добавить NPC'});
-       pick.append(h('option',{value:'',text:'Выбери NPC'}));
-       for(const [key] of Object.entries(wikiData.trades.npcs||{}))
-        if(!(trade.npc||[]).map(String).includes(key))
-         pick.append(h('option',{value:key,text:dataName('npc',key)}));
-       plus.replaceWith(pick);
-       pick.onchange=()=>{if(pick.value)void amend({npc:[...trade.npc,Number(pick.value)]})
-        .catch(e=>showStudioToast(e.message,'warning'))};
-       pick.onblur=()=>{if(pick.isConnected)pick.replaceWith(plus)};
-       pick.focus();
+       const previous=owner.querySelector('.wiki-owner-trade-npc-picker');
+       if(previous){previous.remove();return}
+       const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-trade-npc-picker'});
+       const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
+        placeholder:wt('Найти NPC по имени…','Find NPC by name…'),
+        autocomplete:'off','aria-label':wt('Поиск NPC для обмена','Search NPC for trade')});
+       const pick=h('select',{class:'wiki-inline-select',
+        'aria-label':wt('Добавить NPC','Add NPC')});
+       const feedback=h('small',{class:'inline-owner-error',role:'status'});
+       const fill=()=>{
+        const q=wikiIndex.normalize(search.value);
+        const candidates=Object.entries(wikiData.trades?.npcs||{})
+         .filter(([key])=>!(trade.npc||[]).map(String).includes(key)&&
+          (!q||wikiIndex.normalize(dataName('npc',key)).includes(q))).slice(0,80);
+        pick.replaceChildren(h('option',{value:'',
+         text:candidates.length?wt('Выбери NPC','Choose NPC'):
+          wt('NPC не найден','No NPC found')}));
+        for(const [key] of candidates)pick.append(h('option',
+         {value:key,text:dataName('npc',key)}));
+        pick.disabled=!candidates.length;
+       };
+       pick.onchange=async()=>{
+        if(!pick.value)return;
+        if((trade.npc||[]).some(id=>String(id)===pick.value)||
+         !wikiData.trades?.npcs?.[pick.value]){
+         feedback.textContent=wt('NPC уже указан или отсутствует','NPC already present or missing');
+         return;
+        }
+        pick.disabled=true;
+        try{await amend({npc:[...trade.npc,Number(pick.value)]})}
+        catch(e){feedback.textContent=e.message;pick.disabled=false}
+       };
+       panel.append(search,pick,feedback,h('button',{type:'button',
+        class:'wiki-owner-cancel',text:wt('Отмена','Cancel'),
+        onclick:()=>panel.remove()}));
+       plus.after(panel);search.oninput=fill;registerOutsidePicker(panel,plus);
+       fill();search.focus();
       };
       if(trade.npc.length<24)owner.append(plus);
       const remove=h('button',{type:'button',class:'wiki-trade-delete',
@@ -5446,6 +5480,7 @@ function refreshOwnerUI(){
    h('p',{},[h('strong',{text:'Все правки'}),document.createTextNode(' — посмотреть сохранённые изменения и вернуть исходное.')]),
    h('p',{},[h('strong',{text:'Игровой каталог'}),document.createTextNode(' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.')]),
    h('p',{},[h('strong',{text:'PR правок'}),document.createTextNode(' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.')]),
+   h('p',{},[h('strong',{text:'Проверить запись D1'}),document.createTextNode(' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.')]),
    h('p',{},[h('strong',{text:'Завершить'}),document.createTextNode(' — только скрыть инструменты редактирования, не удалить изменения.')])
   ])
  ]);
@@ -5458,6 +5493,23 @@ function refreshOwnerUI(){
    title:'Просмотр всех сохранённых переопределений в D1'}),
   h('button',{type:'button',text:'Игровой каталог',onclick:showCatalogImport,
    title:'Отдельное обновление снимка игрового каталога'}),
+  h('button',{type:'button',class:'owner-dock-d1-check',
+   text:'Проверить запись D1',
+   title:'Записать и удалить две случайные временные тестовые записи в D1',
+   onclick:async function(){
+    if(editIsSaving||ownerSaveState==='saving')return;
+    this.disabled=true;
+    try{
+     const result=await apiRequest('/api/admin/catalog/test-write',{});
+     if(!result?.ok||!result.readback||!result.cleaned||
+      !result.overrideReadback||!result.overrideCleaned||
+      !result.activeCatalogUnchanged)
+      throw Error('Проверка не подтвердила чтение, удаление или сохранность каталога');
+     showStudioToast('D1: временная запись и чтение проверены, тестовые данные удалены.','success');
+    }catch(error){
+     showStudioToast('Не удалось проверить запись в D1: '+error.message,'warning');
+    }finally{if(this.isConnected)this.disabled=false}
+   }}),
   h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport,
    title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
@@ -5487,7 +5539,8 @@ function refreshOwnerUI(){
   ['[data-owner-undo]','Отменяет последнюю ручную правку этого сеанса в Cloudflare D1.'],
   ['.owner-dock-actions button:nth-child(3)','Посмотреть сохранённые ручные правки и вернуть исходные значения.'],
   ['.owner-dock-actions button:nth-child(4)','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
-  ['.owner-dock-actions button:nth-child(5)','Предложить уже сохранённые правки для проверки в GitHub.'],
+  ['.owner-dock-actions button:nth-child(5)','Проверить временную запись и удаление D1 без затрагивания пользовательских данных.'],
+  ['.owner-dock-actions button:nth-child(6)','Предложить уже сохранённые правки для проверки в GitHub.'],
   ['.owner-dock-finish','Выключить режим редактирования. Уже сохранённые данные D1 останутся на месте.']
  ];
  for(const [selector,message] of hints){
@@ -6231,7 +6284,7 @@ if($('stageBuffToggle'))$('stageBuffToggle').onclick=()=>{
  renderStageAttributes();saveView();
 };
 const openHeroBook=()=>{
- if(stageSlotPickerOpen||adminEditing)return;
+ if(stageSlotPickerOpen)return;
  stageAttributesPage='summary';renderStageAttributes();saveView();
 };
 if($('portraitBookOpen'))$('portraitBookOpen').onclick=openHeroBook;
@@ -6248,7 +6301,7 @@ $('stageAttributes')?.addEventListener('keydown',event=>{
 });
 $('hero').addEventListener('click',openHeroBook);
 $('hero').addEventListener('keydown',event=>{
- if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen&&!adminEditing){
+ if((event.key==='Enter'||event.key===' ')&&!stageSlotPickerOpen){
   event.preventDefault();openHeroBook();
  }
 });$('newBuildQuick').onclick=()=>{changeTab('builds');$('newBuildButton')?.click()};$('snapshot').onclick=()=>{changeTab('builds')};let switchingLocale=false;
@@ -6275,7 +6328,7 @@ $('locale').onclick=async event=>{
   switchingLocale=false;
   if(!startupOverlay.hidden)startupDone();
  }
-};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
+};document.addEventListener('click',event=>{if(!adminEditing||!event.target.closest||event.target.closest('#ownerDock, .inline-owner-editor, #modalRoot, #hero'))return;const editable=event.target.closest('[data-edit-key]');if(editable){if(/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;event.preventDefault();event.stopImmediatePropagation();editor(editable)}},true);
 document.addEventListener('keydown',event=>{
  if(!adminEditing||!adminToken||!['F2','Enter'].includes(event.key)||
   event.target.closest?.('[data-owner-text-field],input,textarea,select,button,a'))return;

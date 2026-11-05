@@ -21,6 +21,11 @@ test('owner editor is a fixed overlay with an accessible left-edge handle',()=>{
  assert.match(css,/owner-dock-collapsed\{/);
  assert.match(css,/translate3d\(-100%,0,0\)/);
  assert.match(css,/\.owner-dock-handle/);
+ assert.match(css,/writing-mode:horizontal-tb/);
+ assert.match(css,/min-width:128px;height:38px/);
+ assert.match(css,/width:min\(474px,calc\(100vw - 16px\)\)/);
+ assert.match(css,/#ownerDock \.owner-dock-body\{[\s\S]*?overflow-y:auto;overflow-x:hidden/);
+ assert.match(css,/#ownerDock \.owner-dock-panel\{[\s\S]*?overflow:hidden/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
 

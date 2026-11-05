@@ -17,7 +17,10 @@ test('click, Enter, Space, Escape and back action switch the existing overlay',(
  assert.match(app,/event\.key==='Enter'\|\|event\.key===' '/);
  assert.match(app,/stageAttributesPage='summary'/);
  assert.match(app,/if\(stageAttributesPage\)\{/);
- assert.match(app,/stageSlotPickerOpen\|\|adminEditing/);
+ assert.doesNotMatch(app,/if\(stageSlotPickerOpen\|\|adminEditing\)return/);
+ assert.match(app,/if\(stageSlotPickerOpen\)return/);
+ assert.match(app,/removeAttribute\('data-edit-key'\)/);
+
  assert.match(app,/attributes:stageAttributesPage/);
 });
 test('six accessible chapters and guarded toggle setters share one build model',()=>{

@@ -447,3 +447,18 @@ body.studio-workbench-open #ownerDock.owner-dock-collapsed{width:min(255px,calc(
  display:inline-flex;align-items:center;min-width:0;max-width:100%;
  overflow-wrap:anywhere
 }
+
+/* Inline owner guide pencil is absolutely contained by the heading.
+   It must never extend over Book navigation or intercept Close/Next. */
+.stage-attribute-head .stage-book-heading{position:relative;padding-right:24px}
+.stage-attribute-head .stage-book-heading>.stage-guide-edit-hint{
+ position:absolute;top:50%;right:1px;transform:translateY(-50%);
+ display:grid;place-items:center;width:20px;height:20px;min-width:20px;
+ min-height:20px;padding:0;margin:0;
+ font:600 11px/1 Manrope,Arial,sans-serif;
+ border:1px solid #8c6d47;border-radius:4px;
+ background:#332318;color:#e7c69b;cursor:pointer;
+}
+.stage-attribute-head .stage-book-heading>.stage-guide-edit-hint:hover{
+ border-color:#dab47b;background:#49321f
+}
