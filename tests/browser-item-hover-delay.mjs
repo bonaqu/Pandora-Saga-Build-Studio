@@ -120,7 +120,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   await hover(spata,'Spata NPC trade');
   await page.waitForTimeout(90);
   await spata.click();
-  await page.waitForURL(/#wiki\/item\/2$/);
+  await page.waitForURL(/#wiki\/item\/2(?:\/1)?$/);
   await page.waitForTimeout(750);
   assert.equal(await tooltip.count(),0,'Navigation cancels pending item preview');
 
