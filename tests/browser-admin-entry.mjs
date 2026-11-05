@@ -197,6 +197,34 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/PR правок/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
+  // Regression: opening Wiki must not detach the collapsed editor launcher
+  // from the viewport's LEFT edge or reintroduce the vertical side tab.
+  await ownerPanel.locator('.owner-dock-primary').click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
+  const collapsedAfterWiki=await edge.evaluate(node=>{
+   const bounds=node.getBoundingClientRect();
+   const root=document.querySelector('#ownerDock').getBoundingClientRect();
+   return{left:bounds.left,rootLeft:root.left,
+    pos:getComputedStyle(node).position,
+    mode:getComputedStyle(node).writingMode,
+    expanded:node.getAttribute('aria-expanded')};
+  });
+  assert.ok(Math.abs(collapsedAfterWiki.left)<2,
+   'Editor launcher moved away from viewport left in Wiki: '+
+   JSON.stringify(collapsedAfterWiki));
+  assert.ok(Math.abs(collapsedAfterWiki.rootLeft)<2);
+  assert.equal(collapsedAfterWiki.pos,'fixed');
+  assert.equal(collapsedAfterWiki.mode,'horizontal-tb');
+  assert.equal(collapsedAfterWiki.expanded,'false');
+  await edge.click();
+  const expandedOnWiki=await ownerPanel.locator('.owner-dock-panel').evaluate(node=>{
+   const bounds=node.getBoundingClientRect();
+   return{left:bounds.left,right:bounds.right,width:bounds.width,
+    viewport:document.documentElement.clientWidth};
+  });
+  assert.ok(Math.abs(expandedOnWiki.left)<2&&
+   expandedOnWiki.right<=expandedOnWiki.viewport+2,
+   'Expanded editor not docked at left in Wiki: '+JSON.stringify(expandedOnWiki));
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
   // All catalog requests are mocked; no production Worker or D1 is mutated.
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
