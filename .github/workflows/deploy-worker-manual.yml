@@ -85,7 +85,7 @@ jobs:
               if(response.ok&&caps?.codeRelease==="0.360.0"&&
                 caps?.ownerEditors?.includes("bilingual-item-text")&&
                 caps?.adminD1WriteCheck==="catalog-and-overrides"&&
-                caps?.catalogSourceFailover===true&&caps?.honorExtendedEditing===true&&caps?.sourceEgressProbe===true&&
+                caps?.catalogSourceFailover===true&&caps?.honorExtendedEditing===true&&caps?.wikiLabelEditing===true&&caps?.sourceEgressProbe===true&&
                 caps?.sourceInstancesArray===true&&caps?.sourceFullProbe===true&&
                 healthy.ok&&health?.storage==="d1"&&health?.features?.catalog===true){
                 console.log("Verified live Worker 0.360.0, English item editing and the same D1 catalog");
