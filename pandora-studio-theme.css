@@ -1069,6 +1069,20 @@ main{padding-top:10px}
  letter-spacing:.15em;color:#bda17a}
 .stage-book-heading strong{font:600 25px/1.12 'Cormorant Garamond',Georgia,serif;
  display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Inline owner guide pencil is absolutely contained by the heading.
+   It must never extend over Book navigation or intercept Close/Next. */
+.stage-attribute-head .stage-book-heading{position:relative;padding-right:24px}
+.stage-attribute-head .stage-book-heading>.stage-guide-edit-hint{
+ position:absolute;top:50%;right:1px;transform:translateY(-50%);
+ display:grid;place-items:center;width:20px;height:20px;min-width:20px;
+ min-height:20px;padding:0;margin:0;
+ font:600 11px/1 Manrope,Arial,sans-serif;
+ border:1px solid #8c6d47;border-radius:4px;
+ background:#332318;color:#e7c69b;cursor:pointer;
+}
+.stage-attribute-head .stage-book-heading>.stage-guide-edit-hint:hover{
+ border-color:#dab47b;background:#49321f
+}
 .stage-attribute-head .stage-book-arrow{font:28px/1 Georgia,serif;padding:0;min-width:30px;cursor:pointer}
 .stage-attribute-head .stage-book-close{font-size:12px;padding:0;min-width:30px}
 .stage-attribute-tabs{position:relative;z-index:1;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
