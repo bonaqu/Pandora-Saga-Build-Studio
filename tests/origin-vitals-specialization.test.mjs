@@ -63,7 +63,54 @@ function chosenProfession(){
  const state={job:jobKeys.indexOf('JUGGERNAUT')},grid=new El('div');
  assert.ok(state.job>=0);
  let saves=0;
- const runtime=Function('h','$','jobKeys','jobs','catalog','state','editableValue','saveView',
+ const runtime=Function('h','
+  fallback+'\nlet jobPathKey=null;\nfunction selectJob(index){state.job=index;renderJobs()}\n'+
+  app.slice(start,end)+'\nreturn {renderJobs,state,get:()=>jobPathKey};')(
+  h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++,'ru');
+ const buttons=()=>walk(grid).filter(x=>x.tag==='button');
+ const matching=key=>buttons().find(x=>x.className.includes('class-wizard-choice')&&
+  x.children[0]?.textContent===jobs[jobKeys.indexOf(key)]);
+ const label=e=>e.children.map(x=>x.textContent||'').join(' ');
+ return{runtime,matching,buttons,label,grid,jobs,jobKeys,get saves(){return saves}};
+}
+test('after selecting final class, root directions display the actual specialization',()=>{
+ const f=chosenProfession();f.runtime.renderJobs();
+ const root=f.matching('WARRIOR');
+ assert.ok(root);
+ assert.match(f.label(root),/Джаггернаут/);
+ assert.equal(root.attributes['aria-pressed'],'false','ancestor is not the actual selected leaf');
+ assert.match(root.attributes['aria-label'],/выбранная специализация/);
+ assert.ok(walk(f.grid).some(x=>x.className==='class-wizard-selected'&&
+  x.textContent.includes('Джаггернаут')));
+});
+test('Back navigation retains the selection at every parent level',()=>{
+ const f=chosenProfession();f.runtime.renderJobs();
+ f.matching('WARRIOR').listeners.click();
+ assert.match(f.label(f.matching('GLADIATOR')),/Джаггернаут/);
+ f.matching('GLADIATOR').listeners.click();
+ assert.ok(f.matching('JUGGERNAUT'));
+ f.buttons().find(x=>x.className==='class-back').listeners.click();
+ assert.match(f.label(f.matching('GLADIATOR')),/Джаггернаут/);
+ f.buttons().find(x=>x.className==='class-back').listeners.click();
+ assert.match(f.label(f.matching('WARRIOR')),/Джаггернаут/);
+ assert.equal(f.jobKeys[f.runtime.state.job],'JUGGERNAUT');
+ assert.equal(f.saves,4);
+});
+test('Origin height tracks center portrait stage only on desktop',()=>{
+ const start=app.indexOf('function syncOriginPanelHeight(){');
+ const end=app.indexOf("\nwindow.addEventListener('resize',syncOriginPanelHeight",start);
+ assert.ok(start>0&&end>start);
+ const styles={value:null,setProperty(k,v){this.value=v},removeProperty(k){this.value=null}};
+ const origin={style:styles},stage={getBoundingClientRect(){return {height:734.6}}};
+ const dom={querySelector:selector=>selector==='.workspace>.left'?origin:
+  selector==='.workspace>.stage'?stage:null};
+ const window={innerWidth:1920};
+ const fn=Function('window','document',app.slice(start,end)+'\nreturn syncOriginPanelHeight;')(window,dom);
+ fn();assert.equal(styles.value,'735px');
+ window.innerWidth=390;fn();assert.equal(styles.value,null);
+ assert.match(css,/\.workspace>.left\{min-height:var\(--character-stage-height,700px\)/);
+});
+,'jobKeys','jobs','catalog','state','editableValue','saveView','lang',
   fallback+'\nlet jobPathKey=null;\nfunction selectJob(index){state.job=index;renderJobs()}\n'+
   app.slice(start,end)+'\nreturn {renderJobs,state,get:()=>jobPathKey};')(
   h,()=>grid,jobKeys,jobs,{classes},state,(_,v)=>v,()=>saves++);
