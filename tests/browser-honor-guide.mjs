@@ -14,7 +14,14 @@ export async function runHonorGuideSmoke(browser,base){
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   const panel=page.locator('.wiki-page');
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
-  assert.match(await panel.innerText(),/23.10.2026/);
+  assert.doesNotMatch(await panel.innerText(),
+   /23.10.2026|Официальная новость|Источники:/);
+  assert.match(await panel.locator('.wiki-honor-resource').last().innerText(),
+   /Заработанная за всё время честь: определяет ранги и рейтинги\./);
+  assert.equal(await panel.locator('.wiki-honor-monthly-card').count(),3);
+  assert.match(await panel.locator('.wiki-honor-monthly-card').first().innerText(),/Герцог/);
+  assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
+   .innerText(),/Muldian Uncivilized District|El Beht|Underground of Astir/);
   assert.equal(await panel.locator('.wiki-honor-rank').count(),12);
   assert.match(await panel.locator('.wiki-honor-rank.is-moon').innerText(),
    /Министр|129\s*000/);
@@ -34,6 +41,8 @@ export async function runHonorGuideSmoke(browser,base){
   assert.equal((await page.locator('.wiki-honor-title').innerText()).trim(),
    'Honor points');
   assert.match(await panel.locator('.wiki-honor-rank.is-moon').innerText(),/Count/);
+  assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
+   .innerText(),/Покинутые земли Мальдии|Подземные руины Астира/);
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
