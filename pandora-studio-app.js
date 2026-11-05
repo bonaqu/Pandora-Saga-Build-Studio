@@ -1659,9 +1659,12 @@ function renderWiki(root){
     if(line.querySelector('[data-owner-text-field]'))return;
     const label=chapter.querySelector('.wiki-category-text');
     const field=window.PandoraWikiLabels.key('chapter',key,lang);
-    editWikiValue(label,label.textContent,{type:'text',
+    const host=h('span',{class:'wiki-category-edit-host',text:label.textContent});
+    chapter.hidden=true;edit.hidden=true;line.append(host);
+    editWikiValue(host,label.textContent,{type:'text',
      onCommit:value=>saveGuidePatch('wiki.labels',{[field]:value}),
-     onCommitted:value=>{if(label.isConnected)label.textContent=value}});
+     onCommitted:value=>{if(label.isConnected)label.textContent=value},
+     onFinished:()=>{chapter.hidden=false;edit.hidden=false;host.remove()}});
    };
    line.append(edit);
   }
@@ -5810,7 +5813,7 @@ function guardOwnerInput(input){
  input.addEventListener('focus',()=>{input.readOnly=false},{once:true});
  return input;
 }
-function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit,onCommitted}={}){
+function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit,onCommitted,onFinished}={}){
  if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
  const before=String(initial??''),visibleNodes=[...node.childNodes];
  let finished=false,saving=false;
@@ -5828,7 +5831,7 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   }
  }else control.value=before;
  if(type==='number')guardOwnerInput(control);
- const restore=()=>{if(node.isConnected){node.replaceChildren(...visibleNodes);node.classList.remove('wiki-inline-saving')}};
+ const restore=()=>{if(node.isConnected){node.replaceChildren(...visibleNodes);node.classList.remove('wiki-inline-saving')}onFinished?.()};
  const save=async()=>{
   if(finished||saving)return;
   const raw=control.value;
