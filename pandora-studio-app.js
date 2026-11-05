@@ -6139,6 +6139,7 @@ async function saveGuidePatch(key,fields){
    if(pane)pane.scrollTop=position;
    saveView();
   }else if(key==='wiki.labels')saveView();
+  else if(key.startsWith('book.origin.'))saveView(); // editable label keeps its mounted input
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
