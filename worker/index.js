@@ -737,7 +737,8 @@ function validGuideEdit(text,key){
  if(key==='wiki.labels')return Object.keys(data).length>0&&
   Object.keys(data).length<=28&&Object.entries(data).every(([k,v])=>
    /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly))_(?:ru|en)$/.test(k)&&
-   typeof v==='string'&&v.trim()&&v.length<=90);
+   typeof v==='string'&&v.trim()&&v.length<=90&&
+   Array.from(v).every(ch=>ch.charCodeAt(0)>=32));
  const allowed=key.startsWith('book.')?['ru','en','hintRu','hintEn']:
   key.startsWith('honor.rank.')?['nameRu','nameEn','benefitRu','benefitEn',
    'requirementRu','requirementEn']:
