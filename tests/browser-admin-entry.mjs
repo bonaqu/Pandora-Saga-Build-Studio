@@ -404,8 +404,11 @@ export async function runAdminEntrySmoke(browser,base){
     ?.includes('Сверка завершена.'),null,{timeout:30000});
   assert.equal(await dialog.locator('.os-sync-review-steps button')
     .filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
-  // Open an actual encyclopedia equipment page while admin editing is on.
+  // The new Honor smoke opened the Wiki workbench earlier in this same
+  // scenario. Restore the original navigation context before re-entering Wiki:
+  // page-level #nav is intentionally hidden while a workbench is open.
   await dialog.getByRole('button',{name:/Закрыть/}).click();
+  await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="wiki"]').click();
   const wikiSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await wikiSearch.waitFor({state:'visible'});
