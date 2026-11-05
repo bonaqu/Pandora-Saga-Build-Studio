@@ -264,15 +264,6 @@
 .wiki-honor-war-rename:hover,.wiki-honor-war-rename:focus-visible{
  color:#ffe0aa;background:#44301e;
 }
-.wiki-honor-war-return{
- display:inline-flex;align-items:center;width:max-content;max-width:100%;
- padding:6px 10px;margin:0 0 15px;
- border:1px solid #896443;border-radius:4px;
- background:#302319;color:#f0d1a1;cursor:pointer;font-size:12px;
-}
-.wiki-honor-war-return:hover,.wiki-honor-war-return:focus-visible{
- background:#48301f;border-color:#ddb278;color:#ffe5b7;
-}
 .wiki-honor-war-eyebrow{
  text-transform:uppercase;letter-spacing:.12em;color:#bfa17a;
  font:650 10px/1.5 Manrope,Arial,sans-serif;
