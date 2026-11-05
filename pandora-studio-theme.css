@@ -456,6 +456,29 @@ a.wiki-link:hover{text-decoration:none}
  background:#35502b;border-color:#a5cf86;color:#e2f7d5;
  box-shadow:inset 0 0 0 1px #91b77555;
 }
+/* Shared +/- feedback: positive is green, negative is red, without changing
+   press duration, focus behaviour, or disabled spending limits. */
+.origin-stat-row button.stat-step-decrement.is-repeating,
+.stat-visual-controls button.stat-step-decrement.is-repeating{
+ background:#552a29;border-color:#df8c80;color:#ffd8d0;
+ box-shadow:inset 0 0 0 1px #b96e6555;
+}
+/* One visual language for text editable in Origin, using the shared inline
+   editor. The pencil never covers the working race selector. */
+.origin-copy-editable:not(button){text-decoration:underline dotted #bd9869;text-decoration-thickness:1px;text-underline-offset:3px;cursor:text}
+.origin-copy-editable:not(button):hover{color:#f8dfa9}
+.origin-copy-editable:not(button)::after{content:' ✎';font-size:.78em;opacity:.65;text-decoration:none;pointer-events:none}
+.origin-copy-editable.origin-copy-input-slot::after{content:none}
+.origin-copy-editable:is(button){outline:1px dotted #a88452;outline-offset:-3px}
+.origin-copy-editable:is(button):focus-visible{outline:2px solid #eec588;outline-offset:2px}
+.origin-copy-pencil{flex:0 0 auto;min-width:30px;height:34px;border:1px solid #b58b55;
+ background:#35261b;color:#f5d6a3;border-radius:4px;font-size:15px;cursor:pointer}
+.origin-copy-pencil:hover,.origin-copy-pencil:focus-visible{border-color:#efca8a;background:#60402a;outline-offset:2px}
+.race-slide-actions>.race-slide-select[hidden]{display:none!important}
+.origin-copy-input-slot{display:inline-flex;flex:1 1 140px;min-width:0;align-items:center}
+.origin-copy-input-slot .wiki-inline-input{width:100%;min-width:0;min-height:32px;padding:7px;
+ background:#1b140f;color:#ffe0ad;border:1px solid #ecba79;border-radius:3px}
+.origin-copy-input-slot .wiki-inline-input:focus-visible{outline:2px solid #efc681;outline-offset:1px}
 .origin-stat-input{width:100%;min-width:0;background:#130e0a;color:#f9deaa;border:1px solid #80613f;font-size:12px;text-align:center;padding:6px 2px;font-variant-numeric:tabular-nums}
 .origin-stat-input::-webkit-outer-spin-button,.origin-stat-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .origin-stat-input{-moz-appearance:textfield;appearance:textfield}
