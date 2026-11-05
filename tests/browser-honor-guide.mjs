@@ -23,6 +23,13 @@ export async function runHonorGuideSmoke(browser,base){
   assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
    .innerText(),/Muldian Uncivilized District|El Beht|Underground of Astir/);
   assert.equal(await panel.locator('.wiki-honor-rank').count(),12);
+  assert.equal(await panel.locator('.wiki-honor-joining').count(),0,
+   'Starting Honor belongs to the Squire rank, not a duplicated callout');
+  assert.match(await panel.locator('#honor-rank-0 .wiki-honor-requirement').innerText(),/1 000/);
+  const symbols=await panel.locator('.wiki-honor-rank-number').allInnerTexts();
+  assert.deepEqual(symbols.slice(0,5),['◆','◆◆','◆◆◆','◆◆◆◆','◆◆◆◆◆']);
+  assert.deepEqual(symbols.slice(6,9),['☾','☾☾','☾☾☾']);
+  assert.match(await panel.locator('.wiki-honor-monthly-head').first().innerText(),/Награды/);
   assert.match(await panel.locator('.wiki-honor-rank.is-moon').innerText(),
    /Министр|129\s*000/);
   assert.equal(await panel.locator('.wiki-honor-list-section').count(),2);
@@ -39,7 +46,7 @@ export async function runHonorGuideSmoke(browser,base){
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-honor-title').waitFor({state:'visible'});
   assert.equal((await page.locator('.wiki-honor-title').innerText()).trim(),
-   'Honor points');
+   'Honor');
   assert.match(await panel.locator('.wiki-honor-rank.is-moon').innerText(),/Count/);
   assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
    .innerText(),/Покинутые земли Мальдии|Подземные руины Астира/);
