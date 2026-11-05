@@ -134,6 +134,20 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#hero').click();
   await page.locator('#stageAttributes').waitFor({state:'visible'});
   assert.equal(await page.locator('.inline-owner-editor').count(),0);
+  const bookControls=await page.evaluate(()=>{
+   const rect=selector=>document.querySelector(selector)?.getBoundingClientRect();
+   const pencil=rect('.stage-book-heading>.stage-guide-edit-hint');
+   const close=rect('#stageAttributes .stage-book-close');
+   const next=rect('#stageAttributes .stage-book-arrow[aria-label="Следующая страница"]');
+   const intersects=(a,b)=>a&&b&&a.left<b.right&&a.right>b.left&&
+    a.top<b.bottom&&a.bottom>b.top;
+   return{pencil:!!pencil,close:!!close,intersectsClose:intersects(pencil,close),
+    intersectsNext:intersects(pencil,next)};
+  });
+  assert.equal(bookControls.intersectsClose,false,
+   'Admin hint pencil must not cover Book close');
+  assert.equal(bookControls.intersectsNext,false,
+   'Admin hint pencil must not cover Book next');
   await page.locator('#stageAttributes .stage-book-close').click();
   await page.locator('#hero').focus();
   await page.keyboard.press('Enter');
