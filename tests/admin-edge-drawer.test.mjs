@@ -17,15 +17,21 @@ test('owner editor is a fixed overlay with an accessible left-edge handle',()=>{
  assert.match(app,/root\.addEventListener\('keydown'/);
  assert.match(css,/body>#ownerDock\{/);
  assert.match(css,/position:fixed/);
- assert.match(css,/left:0/);
+ assert.ok(css.includes('inset:auto auto max(14px,env(safe-area-inset-bottom)) 0!important'));
  assert.match(css,/owner-dock-collapsed\{/);
- assert.match(css,/translate3d\(-100%,0,0\)/);
+ assert.match(css,/visibility:hidden;opacity:0;transform:none;pointer-events:none/);
+ assert.match(css,/box-sizing:border-box;width:100%;min-width:0/);
+ assert.doesNotMatch(css,/translate3d\(-100%,0,0\)/);
  assert.match(css,/\.owner-dock-handle/);
  assert.match(css,/writing-mode:horizontal-tb/);
  assert.match(css,/min-width:128px;height:38px/);
  assert.match(css,/width:min\(474px,calc\(100vw - 16px\)\)/);
  assert.match(css,/#ownerDock \.owner-dock-body\{[\s\S]*?overflow-y:auto;overflow-x:hidden/);
  assert.match(css,/#ownerDock \.owner-dock-panel\{[\s\S]*?overflow:hidden/);
+ const ownerItemCss=read('pandora-studio-item-owner-editor.css');
+ assert.doesNotMatch(ownerItemCss,/body\.studio-workbench-open #ownerDock/,
+  'Outdated workbench positioning must never override the editor dock');
+ assert.doesNotMatch(ownerItemCss,/\.owner-dock-collapsed\{width:/);
  assert.match(css,/prefers-reduced-motion:reduce/);
 });
 

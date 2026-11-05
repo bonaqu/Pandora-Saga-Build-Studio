@@ -197,6 +197,67 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/PR правок/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
+  // Regression: opening Wiki must not detach the collapsed editor launcher
+  // from the viewport's LEFT edge or reintroduce the vertical side tab.
+  await ownerPanel.locator('.owner-dock-primary').click();
+  await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
+  const collapsedAfterWiki=await edge.evaluate(node=>{
+   const bounds=node.getBoundingClientRect();
+   const root=document.querySelector('#ownerDock').getBoundingClientRect();
+   return{left:bounds.left,rootLeft:root.left,
+    pos:getComputedStyle(node).position,
+    mode:getComputedStyle(node).writingMode,
+    expanded:node.getAttribute('aria-expanded')};
+  });
+  assert.ok(Math.abs(collapsedAfterWiki.left)<2,
+   'Editor launcher moved away from viewport left in Wiki: '+
+   JSON.stringify(collapsedAfterWiki));
+  assert.ok(Math.abs(collapsedAfterWiki.rootLeft)<2);
+  assert.equal(collapsedAfterWiki.pos,'fixed');
+  assert.equal(collapsedAfterWiki.mode,'horizontal-tb');
+  assert.equal(collapsedAfterWiki.expanded,'false');
+  await edge.click();
+  const expandedOnWiki=await ownerPanel.locator('.owner-dock-panel').evaluate(node=>{
+   const bounds=node.getBoundingClientRect();
+   return{left:bounds.left,right:bounds.right,width:bounds.width,
+    viewport:document.documentElement.clientWidth};
+  });
+  assert.ok(Math.abs(expandedOnWiki.left)<2&&
+   expandedOnWiki.right<=expandedOnWiki.viewport+2,
+   'Expanded editor not docked at left in Wiki: '+JSON.stringify(expandedOnWiki));
+  // Honor is directly editable and D1-saving must preserve the encyclopedia
+  // scroll position rather than rebuilding the entire workbench from the top.
+  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  const honorPanel=page.locator('.wiki-page');
+  await honorPanel.locator('.wiki-honor-rank').first().waitFor({state:'visible'});
+  assert.doesNotMatch(await honorPanel.innerText(),
+   /RULE UPDATE|ИЗМЕНЕНИЕ ПРАВИЛ|Официальная новость|Источники:/);
+  assert.doesNotMatch(await honorPanel.locator('.wiki-honor-list').first().innerText(),
+   /Muldian Uncivilized District|El Beht|Underground of Astir/);
+  assert.ok(await honorPanel.locator('.wiki-honor-location-select').first()
+   .locator('option').count()>4,'Location picker must include existing maps');
+  const rankBenefit=honorPanel.locator('#honor-rank-8 .wiki-honor-rank-benefit');
+  await rankBenefit.dblclick();
+  // The inline editor intentionally uses a plaintext-only contenteditable,
+  // not a textarea. Exercise the real visible editor element.
+  const editInput=rankBenefit.locator('[data-owner-text-field="true"][contenteditable="plaintext-only"]');
+  await editInput.waitFor({state:'visible'});
+  assert.equal(await editInput.getAttribute('role'),'textbox');
+  assert.equal(await editInput.getAttribute('aria-multiline'),'true');
+  const updatedBenefit='Новые предметы в обменнике предметов за честь!';
+  await editInput.fill(updatedBenefit);
+  const honorScrollBefore=await page.locator('#detailContent').evaluate(n=>n.scrollTop);
+  assert.ok(honorScrollBefore>150,'Scroll restoration test must start below article top');
+  await editInput.blur();
+  await page.waitForFunction(expected=>{
+   const text=document.querySelector('#honor-rank-8 .wiki-honor-rank-benefit')?.textContent;
+   return text===expected;
+  },updatedBenefit,{timeout:20000});
+  const honorScrollAfter=await page.locator('#detailContent').evaluate(n=>n.scrollTop);
+  assert.ok(Math.abs(honorScrollAfter-honorScrollBefore)<18,
+   'Saving Honor jumps to top: '+JSON.stringify({honorScrollBefore,honorScrollAfter}));
+  assert.equal(JSON.parse(townOverrides.get('guideedit.honor.rank.8')).benefitRu,
+   updatedBenefit);
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
   // All catalog requests are mocked; no production Worker or D1 is mutated.
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
@@ -343,9 +404,15 @@ export async function runAdminEntrySmoke(browser,base){
     ?.includes('Сверка завершена.'),null,{timeout:30000});
   assert.equal(await dialog.locator('.os-sync-review-steps button')
     .filter({hasText:'Применить выбранные изменения'}).isDisabled(),true);
-  // Open an actual encyclopedia equipment page while admin editing is on.
+  // The new Honor smoke opened the Wiki workbench earlier in this same
+  // scenario. Restore the original navigation context before re-entering Wiki:
+  // page-level #nav is intentionally hidden while a workbench is open.
   await dialog.getByRole('button',{name:/Закрыть/}).click();
+  await page.locator('#dockClose').click();
   await page.locator('#nav [data-tab="wiki"]').click();
+  // Do not inherit Honor from the preceding regression: item editing starts
+  // in the equipment chapter, regardless of the user's last visited chapter.
+  await page.locator('.wiki-categories [data-wiki-chapter="item"]').click();
   const wikiSearch=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await wikiSearch.waitFor({state:'visible'});
   const speedCheck=page.locator('.wiki-speed-check');
@@ -441,8 +508,17 @@ export async function runAdminEntrySmoke(browser,base){
   )?.textContent==='Кларис — проверка D1',null,{timeout:15000});
   assert.equal(JSON.parse(townOverrides.get('wikiedit.npc.astir-npc-kingdom-claris')).name,
    'Кларис — проверка D1');
-  await ownerPanel.locator('[data-owner-save-state]').filter({hasText:'Сохранено в Cloudflare D1'})
-   .waitFor({state:'visible',timeout:15000});
+  // A workbench intentionally collapses the owner drawer; a completed save
+  // must still be tracked even while its status row is offscreen.
+  const status=ownerPanel.locator('[data-owner-save-state]');
+  await page.waitForFunction(()=>document.querySelector(
+   '#ownerDock [data-owner-save-state]')?.dataset.state==='saved',null,{timeout:15000});
+  assert.match(await status.textContent(),/Сохранено в Cloudflare D1/);
+  if(await edge.getAttribute('aria-expanded')==='false'){
+   await edge.click();
+   await status.waitFor({state:'visible'});
+   await edge.click();
+  }
   // The long NPC title must stay entirely visible INSIDE its editable field,
   // not be clipped at the old 320px/nowrap limit.
   const longName='Мастер арены Алиса — координатор состязаний и тренировочного турнира';
@@ -619,7 +695,9 @@ export async function runAdminEntrySmoke(browser,base){
   const newNpcId=newNpcKeys[0].slice('wikiedit.npc.'.length);
   await elBeht.locator('.wiki-owner-location-residents a[href="#wiki/npc/'+newNpcId+'"]')
    .waitFor({state:'visible',timeout:20000});
-  assert.ok(await ownerPanel.locator('[data-owner-count]').innerText());
+  // The drawer may be collapsed after Wiki navigation; textContent still
+  // represents the saved D1 count, unlike hidden-element innerText.
+  assert.match(await ownerPanel.locator('[data-owner-count]').textContent(),/запис/);
   console.log('Chromium future-map NPC D1 passed: create, link and display bilingual owner NPC');
   console.log('Chromium future-map roster D1 passed: owner monster creation and cross-link');
   console.log('Chromium owner location created and edited through D1: RU/EN, tags, sections');

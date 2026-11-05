@@ -115,5 +115,6 @@ test('admin UI explains autosave semantics and every encyclopedia type offers ed
  assert.doesNotMatch(app,/Подтверждённых сведений о NPC пока нет/);
  assert.match(ownerCss,/wiki-page h3\[data-owner-record\]>.wiki-owner-plaintext/);
  assert.match(ownerCss,/white-space:pre-wrap;overflow:visible/);
- assert.match(ownerCss,/owner-dock-save-state\[data-state="error"\]/);
+ assert.match(read('pandora-studio-owner-dock.css'),
+  /owner-dock-save-state\[data-state="error"\]/);
 });

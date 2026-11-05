@@ -484,8 +484,8 @@ if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(r
 if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.360.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
-   'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists'],
-  githubOwnerExport:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true});
+   'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit'],
+  githubOwnerExport:true,honorExtendedEditing:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
@@ -730,15 +730,18 @@ function validGuideEdit(text,key){
     ['nameRu','nameEn'].every(x=>typeof row[x]==='string'&&
      row[x].trim()&&row[x].length<=140)&&
     (key==='honor.wars'||row.mapId==null||typeof row.mapId==='string'&&
-     (/^[0-9]{1,15}$/.test(row.mapId)||['el-beht','astir-underground'].includes(row.mapId)));
+     (/^[0-9]{1,15}$/.test(row.mapId)||/^[a-z][a-z0-9-]{1,63}$/.test(row.mapId)));
   });
  }
  if(!plain(data))return false;
  const allowed=key.startsWith('book.')?['ru','en','hintRu','hintEn']:
-  key.startsWith('honor.rank.')?['nameRu','nameEn','benefitRu','benefitEn']:
+  key.startsWith('honor.rank.')?['nameRu','nameEn','benefitRu','benefitEn',
+   'requirementRu','requirementEn']:
   ['overviewRu','overviewEn','gainRu','gainEn','lossRu','lossEn','currentRu',
-   'currentEn','ranksRu','ranksEn','cloaksRu','cloaksEn'];
- const max=key==='honor.overview'?1800:key.startsWith('honor.rank.')?500:360;
+   'currentEn','ranksRu','ranksEn','cloaksRu','cloaksEn',
+   'honorRu','honorEn','totalRu','totalEn','joiningRu','joiningEn',
+   'monthlyNoteRu','monthlyNoteEn'];
+ const max=key==='honor.overview'?2200:key.startsWith('honor.rank.')?500:360;
  const entries=Object.entries(data);
  return entries.length>0&&entries.every(([field,value])=>allowed.includes(field)&&
   typeof value==='string'&&value.trim()&&value.length<=max);

@@ -1856,8 +1856,21 @@ function renderWiki(root){
     editText:(node,initial,multiline,onCommit)=>editWikiValue(node,initial,{
      type:multiline?'textarea':'text',onCommit}),
     saveText:saveGuidePatch,saveList:saveGuideList,
-    link:(mapId,name)=>window.PandoraHistoricalMaps?.records()?.[mapId]||
-     mapId==='2005004'?wikiLink('◈ '+name,'map',mapId):null
+    mapOptions:Object.entries(wikiIndex?.records('map')||{})
+     .map(([id,rec])=>{
+      const approved=window.PandoraHonorGuide?.maps?.find(row=>String(row.mapId)===id);
+      return{id,nameRu:rec.name||approved?.nameRu||String(id),
+       nameEn:rec.nameEn||officialEnglish?.maps?.[id]?.n||
+        approved?.nameEn||rec.name||String(id)};
+     })
+     .sort((a,b)=>(lang==='en'?a.nameEn:a.nameRu)
+      .localeCompare(lang==='en'?b.nameEn:b.nameRu,lang==='en'?'en':'ru')),
+    link:(mapId,name)=>wikiIndex?.records('map')?.[String(mapId)]?
+     wikiLink(name,'map',mapId):null,
+    onOpenLocations:()=>{
+     wikiSelection={type:'map',id:null,highlight:null};
+     wikiSearch='';wikiShown=100;renderDetails();saveView();
+    }
    });
   };
   wikiRenderSelected=renderHonor;
@@ -5837,8 +5850,12 @@ async function saveGuidePatch(key,fields){
  try{
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
-  if(activeTab==='wiki'&&wikiSelection.type==='honor')renderDetails();
-  else renderStageAttributes();
+  if(activeTab==='wiki'&&wikiSelection.type==='honor'){
+   const pane=$('detailContent'),position=pane?.scrollTop||0;
+   wikiRenderSelected?.();
+   if(pane)pane.scrollTop=position;
+   saveView();
+  }else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveGuideList(key,rows){
@@ -5852,7 +5869,12 @@ async function saveGuideList(key,rows){
  try{
   await apiRequest('/api/admin/override',{key:overrideKey,value});
   override[overrideKey]=value;ownerEdits.push({key:overrideKey,before,after:value});
-  if(activeTab==='wiki'&&wikiSelection.type==='honor')renderDetails();
+  if(activeTab==='wiki'&&wikiSelection.type==='honor'){
+   const pane=$('detailContent'),position=pane?.scrollTop||0;
+   wikiRenderSelected?.();
+   if(pane)pane.scrollTop=position;
+   saveView();
+  }
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveWikiRecordPatch(type,id,updates){
