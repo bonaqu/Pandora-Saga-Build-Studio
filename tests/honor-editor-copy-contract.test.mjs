@@ -17,6 +17,11 @@ test('Honor displays succinct rank descriptions and three proper monthly title g
  assert.deepEqual(ranks.slice(9).map(r=>r.nameRu),['Герцог','Кронпринц','Эрцгерцог']);
  assert.deepEqual(ranks.slice(9).map(r=>r.top),[15,5,1]);
  assert.equal(ranks[10].nameEn,'Crown Prince');
+ assert.match(ranks[0].requirementRu,/1 000 очков начальной чести/);
+ assert.doesNotMatch(overview.overviewRu,/1 000/);
+ assert.doesNotMatch(view,/wiki-honor-joining/);
+ assert.match(view,/wiki-honor-emblem/);
+ assert.match(view,/tr\('Награды','Rewards'\)/);
  assert.match(ranks[8].benefitRu,/Новые предметы в обменнике предметов за честь/);
  assert.equal(overview.totalRu,'Заработанная за всё время честь: определяет ранги и рейтинги.');
  assert.equal(overview.cloaksRu.split(/\n\s*\n/).length,3);
