@@ -91,8 +91,8 @@ async function main(){
  assert.ok(Number.isFinite(manaBefore),'MP cost must be calculated for a selected origin');
  await page.locator('#stageAttributes .stage-book-close').click();
  await page.locator('[data-origin-tab="race"]').click();
- await page.locator('#originPassives .origin-passive-choice').first().click();
- assert.equal(await page.locator('#originPassives .origin-passive-choice.selected').count(),1);
+ await page.locator('#originPassives .origin-passive').first().click();
+ assert.equal(await page.locator('#originPassives .origin-passive.selected').count(),1);
  await page.locator('#hero').click();
  await page.locator('#stageAttributes').waitFor({state:'visible'});
  const manaAfter=Number((await manaRow.locator('strong').innerText()).replace('%','').trim());
