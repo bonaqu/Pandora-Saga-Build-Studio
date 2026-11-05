@@ -4,6 +4,7 @@
 // editor-authored D1 prose cannot inject HTML or scripts.
 function render({browse,detail,make,lang='ru',article,editable=false,
  editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,
+ label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
  mapOptions=[],onOpenLocations=()=>{}}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
  const en=lang==='en',tr=(ru,english)=>en?english:ru,
@@ -16,8 +17,18 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const node=(tag,cls,text)=>make(tag,{class:cls,text});
  const section=(id,ru,english)=>{
   const element=make('section',{class:'wiki-honor-section',id:'honor-'+id});
-  element.append(node('h4','wiki-honor-heading',tr(ru,english)));
-  detail.append(element);
+  const name=label('honor',id,ru,english);
+  const heading=node('h4','wiki-honor-heading',name);
+  if(editable){
+   heading.classList.add('wiki-honor-editable');heading.tabIndex=0;
+   heading.title=tr('Двойной клик — изменить заголовок','Double-click to edit heading');
+   const change=()=>editLabel(heading,'honor',id,name);
+   heading.addEventListener('dblclick',change);
+   heading.addEventListener('keydown',event=>{
+    if(event.key==='F2'){event.preventDefault();change()}
+   });
+  }
+  element.append(heading);detail.append(element);
   return element;
  };
  const editableText=(target,value,key,field,multiline=false)=>{
@@ -55,13 +66,14 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   ['monthly','Ежемесячные звания','Monthly titles','✦']
  ];
  browse.append(node('p','muted',tr('Разделы · 4','Sections · 4')));
- browse.append(node('h4','wiki-location-list-heading',tr('Очки чести','Honor points')));
+ browse.append(node('h4','wiki-location-list-heading',
+  label('chapter','honor','Честь','Honor')));
  const nav=[];
  for(const [id,ru,english,glyph]of sidebar){
   const jump=make('button',{type:'button',class:'wiki-link wiki-honor-nav-link',
    'data-honor-section':id,'aria-current':id===oldSection?'location':null});
   jump.append(node('span','wiki-honor-nav-icon',glyph),
-   node('span','',tr(ru,english)));
+   node('span','',label('honor',id,ru,english)));
   jump.addEventListener('click',()=>{
    for(const link of nav){
     const active=link===jump;
@@ -82,7 +94,17 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   if(id===oldSection)jump.classList.add('selected');
   nav.push(jump);browse.append(jump);
  }
- const title=node('h3','wiki-honor-title',tr('Очки чести','Honor points'));
+ const honorTitle=label('chapter','honor','Честь','Honor');
+ const title=node('h3','wiki-honor-title',honorTitle);
+ if(editable){
+  title.classList.add('wiki-honor-editable');title.tabIndex=0;
+  title.title=tr('Двойной клик — изменить название','Double-click to edit title');
+  const change=()=>editLabel(title,'chapter','honor',honorTitle);
+  title.addEventListener('dblclick',change);
+  title.addEventListener('keydown',event=>{
+   if(event.key==='F2'){event.preventDefault();change()}
+  });
+ }
  detail.append(title,node('p','wiki-honor-subtitle',tr(
   'PvP · нации · звания · награды','PvP · nations · titles · rewards')));
  const overview=section('overview','Система чести','Honor system');
@@ -104,12 +126,6 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  overview.append(panels);
  const gain=section('gain','Получение и потеря чести','Earning and losing Honor');
  paragraph(gain,en?o.gainEn:o.gainRu,'honor.overview',en?'gainEn':'gainRu');
- const joiningValue=en?o.joiningEn:o.joiningRu;
- gain.append(make('div',{class:'wiki-honor-joining'},[
-  node('strong','',tr('+1 000 чести','+1,000 Honor')),
-  editableText(node('small','',joiningValue),joiningValue,
-   'honor.overview',en?'joiningEn':'joiningRu',true)
- ]));
  function listField(items,kind,captionRu,captionEn){
   const isZone=kind==='zones',key='honor.'+kind;
   const wrapper=make('section',{class:'wiki-honor-list-section'});
@@ -147,10 +163,15 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    if(editable){
     if(isZone){
      const select=make('select',{class:'wiki-honor-location-select',
-      'aria-label':tr('Связь с локацией','Linked location'),
+      'aria-label':tr('Заменить локацию','Replace location'),
       onchange:event=>{
        const id=event.target.value||null;
        const chosen=mapOptions.find(option=>option.id===id);
+       if(!chosen||items.some((row,i)=>i!==index&&row.mapId===id)){
+        event.target.value=item.mapId||'';
+        showError(row,new Error(tr('Выбери другую существующую локацию',
+         'Choose another existing location')));return;
+       }
        const updated=items.map((entry,n)=>n===index?{
         ...entry,mapId:id,
         ...(chosen?{nameRu:chosen.nameRu,nameEn:chosen.nameEn}:{})
@@ -162,6 +183,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       const opt=make('option',{value:candidate.id,
        text:en?candidate.nameEn:candidate.nameRu});
       if(candidate.id===item.mapId)opt.selected=true;
+      else if(items.some((row,i)=>i!==index&&row.mapId===candidate.id))
+       opt.disabled=true;
       select.append(opt);
      }
      row.append(select);
@@ -237,7 +260,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      }
      wrapper.append(form);
     }});
-   wrapper.append(add);
+   // Keep Add immediately beside the final row's remove action.
+   const destination=content.lastElementChild||content;
+   destination.append(add);
   }
   return wrapper;
  }
@@ -280,8 +305,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   card.dataset.rankType=rank.top!=null?'monthly':'standard';
   card.id='honor-rank-'+rank.id;
   const header=make('div',{class:'wiki-honor-rank-head'});
-  header.append(node('span','wiki-honor-rank-number',
-   rank.id===7?'☾':String(rank.id+1).padStart(2,'0')));
+  const honorMark=rank.id<=4?'◆'.repeat(rank.id+1):
+   rank.id===5?'✺':rank.id<=8?'☾'.repeat(rank.id-5):
+   String(rank.id+1).padStart(2,'0');
+  header.append(node('span','wiki-honor-rank-number wiki-honor-emblem',
+   honorMark));
   const rankTitle=make('div',{class:'wiki-honor-rank-name'});
   const name=en?rank.nameEn:rank.nameRu;
   rankTitle.append(editableText(node('strong','',name),name,
@@ -329,7 +357,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const head=make('div',{class:'wiki-honor-monthly-head'});
   head.append(editableText(node('strong','',name),name,
    'honor.rank.'+rank.id,en?'nameEn':'nameRu'),
-   node('small','',tr('Нация','Nation')));
+   node('small','',tr('Награды','Rewards')));
   row.append(head);
   const entry=monthlyRows[index]||'';
   const content=node('p','wiki-honor-copy wiki-honor-cloak-list',entry);
