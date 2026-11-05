@@ -1542,7 +1542,7 @@ function openWiki(type,id,highlight=null){
 }
 function openWikiChapterList(){
  const chapter=wikiSelection.type;
- if(!['item','monster','map','npc','chest','skill','soul','instance'].includes(chapter))return;
+ if(!['item','monster','map','npc','chest','skill','soul','instance','honor'].includes(chapter))return;
  const listView={type:chapter,itemType:wikiItemType,search:wikiSearch,shown:wikiShown};
  const previous=history.state&&typeof history.state==='object'?history.state:{};
  // Back reopens the current record; Forward returns to this chapter list.
@@ -1897,6 +1897,26 @@ function renderWiki(root){
       .localeCompare(lang==='en'?b.nameEn:b.nameRu,lang==='en'?'en':'ru')),
     link:(mapId,name)=>wikiIndex?.records('map')?.[String(mapId)]?
      wikiLink(name,'map',mapId):null,
+    cloakLink:(name,russianName)=>{
+     // Existing catalog records are the single source of truth for reward links.
+     const normalize=value=>wikiIndex?.normalize(String(value||''))||'';
+     const candidates=new Set([name,russianName].map(normalize).filter(Boolean));
+     const found=Object.entries(wikiIndex?.records('item')||{}).find(([id,row])=>{
+      const source=wikiData?.items?.[id]||row;
+      return [row.name,row.nameEn,source.name,source.nameEn,
+       officialEnglish?.items?.[id]?.n].some(value=>
+        value&&candidates.has(normalize(value)));
+     });
+     if(!found)return null;
+     const [id,row]=found,source=wikiData?.items?.[id]||row;
+     const translated=lang==='en'?{...source,
+      name:source.nameEn||officialEnglish?.items?.[id]?.n||source.name,
+      desc:source.descEn??officialEnglish?.items?.[id]?.d??source.desc}:source;
+     const anchor=wikiLink(name,'item',id);
+     anchor.classList.add('wiki-honor-cloak-link');
+     window.PandoraStageItemUI?.attachPreview(anchor,translated,item=>itemIcon(item),'item');
+     return anchor;
+    },
     onOpenLocations:()=>{
      wikiSelection={type:'map',id:null,highlight:null};
      wikiSearch='';wikiShown=100;renderDetails();saveView();
