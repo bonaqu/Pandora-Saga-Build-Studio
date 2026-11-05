@@ -134,8 +134,13 @@ document.addEventListener?.('pointerdown',event=>{
   dismissPreview();
 },true);
 document.addEventListener?.('keydown',event=>{
- if(event.key==='Escape')dismissPreview();
-});
+ if(event.key!=='Escape'||!livePreview&&!pendingPreview)return;
+ // Escape should close only the visible/pending item tooltip. Without
+ // capturing it here, the Wiki's Escape handler closes the whole workbench.
+ dismissPreview();
+ event.preventDefault();
+ event.stopImmediatePropagation();
+},true);
 document.addEventListener?.('scroll',()=>{
  // Browser auto-scroll-to-hover can finish after pointerenter. Re-arm the
  // delay for a still-hovered link instead of silently losing its preview.
