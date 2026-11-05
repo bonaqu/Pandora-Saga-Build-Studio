@@ -3066,6 +3066,17 @@ function renderWiki(root){
        wikiItemChoice(panel,async materialId=>{
         if(!wikiData.items?.[materialId]||!wikiData.trades?.npcs?.[npcId])
          throw Error(wt('Предмет или NPC не найден','Item or NPC not found'));
+        // Never create the same free one-material recipe twice.
+        const duplicate=(wikiData.trades.trades||[]).some(trade=>
+         String(trade.i)===String(id)&&
+         (trade.npc||[]).some(n=>String(n)===String(npcId))&&
+         (trade.mats||[]).length===1&&
+         String(trade.mats[0].i)===String(materialId)&&
+         Number(trade.mats[0].n)===1&&
+         Number(trade.gold||0)===0&&Number(trade.honor||0)===0&&
+         Number(trade.exp||0)===0);
+        if(duplicate)throw Error(wt(
+         'Такой обмен уже указан.','This trade is already listed.'));
         let unique=null;
         for(let n=0;n<30;n++){
          const candidate=900000000+crypto.getRandomValues(new Uint32Array(1))[0];
@@ -5841,6 +5852,7 @@ async function saveWikiSpawns(monsterId,type,placeId,include){
 }
 async function saveWikiRelationRows(kind,id,rows){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
+ if(kind!=='drop'&&kind!=='chest')throw Error('Неизвестный тип связи');
  const key=kind+'edit.'+id,valid=kind==='drop'?
   window.PandoraWikiOwnerData.validDrops(rows):
   window.PandoraWikiOwnerData.validChest(rows);
