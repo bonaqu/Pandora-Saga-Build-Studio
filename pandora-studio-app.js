@@ -1584,11 +1584,11 @@ function renderWiki(root){
  // useful than a redundant button that clears the current selection.
  const listPanel=h('div',{class:'wiki-list-panel'});
  const listTop=h('button',{type:'button',class:'wiki-list-top',
-  text:lang==='en'?'↑ To top':'↑ Наверх',hidden:true,
+  text:lang==='en'?'↑ Back to top':'↑ В начало списка',hidden:true,
   'aria-label':lang==='en'?'Scroll the encyclopedia list to the beginning':
    'Прокрутить список энциклопедии к началу'});
  const updateListTop=()=>{
-  const far=browse.scrollTop>Math.max(260,browse.clientHeight*.65);
+  const far=browse.scrollTop>Math.max(360,browse.clientHeight*.85);
   listTop.hidden=!far||browse.scrollHeight<=browse.clientHeight+40;
  };
  listTop.addEventListener('click',()=>{
