@@ -27,7 +27,8 @@ export async function runLegacySkillCapSmoke(browser,base){
   const exact=page.locator('[data-branch-control="slash:potential-number"]');
   await exact.waitFor({state:'visible'});
   assert.equal(await exact.inputValue(),'12');
-  assert.equal(await page.locator('[data-branch-control="slash:potential-range"]').inputValue(),'12');
+  assert.equal(await page.locator('[data-branch-control="slash:potential-range"]').inputValue(),'0',
+   'a blocked branch renders no active allocated rail, but its saved points remain refundable');
   assert.match(await page.locator('.inline-branch-editor .budget-excess').innerText(),
    /Ветка недоступна для текущей профессии/);
   await exact.fill('8');await exact.press('Tab');
