@@ -66,7 +66,7 @@ test('real Hero Path renders saved over-cap points instead of a misleading dash'
  };
  assert.equal(render(0).label,'—');
  const old=render(12);
- assert.equal(old.label,'12 / 12');
+ assert.equal(old.label,'12 / 0');
  assert.equal(old.state.points.slash,12);
  assert.equal(old.editorCount,1);
 });
