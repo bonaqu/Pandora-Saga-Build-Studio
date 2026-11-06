@@ -202,9 +202,8 @@ function attachPreview(target,record,icon,kind='item',context=null){
   // scroll the focused link into view after dispatching focus. A scroll
   // dismisses all stale popups, so re-open on the next frame if the same
   // keyboard-focused item is still active. Pointer focus is unaffected.
-  if(!target.matches(':focus-visible'))return;
-  show();
-  requestAnimationFrame(()=>{
+  if(target.matches(':focus-visible'))show();
+  root.requestAnimationFrame?.(()=>{
    if(target.isConnected&&document.activeElement===target&&
     target.matches(':focus-visible')&&!livePreview)show();
   });
