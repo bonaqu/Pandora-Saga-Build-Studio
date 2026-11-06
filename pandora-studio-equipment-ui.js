@@ -170,7 +170,8 @@ function attachPreview(target,record,icon,kind='item',context=null){
  target.removeAttribute('title');
  target.querySelectorAll?.('[title]').forEach(node=>node.removeAttribute('title'));
  const show=()=>{
-  if(!target.isConnected||liveTarget===target&&livePreview?.isConnected)return;
+  if(!target.isConnected||target.querySelector?.('[data-issue-tooltip]:hover')||
+   liveTarget===target&&livePreview?.isConnected)return;
   dismissPreview();
   const tip=el('aside',{id:'stage-gear-tooltip',class:'stage-hover-preview stage-item-tooltip',
    role:'tooltip'},[summary(record,icon,kind,context)]);
@@ -198,9 +199,14 @@ function attachPreview(target,record,icon,kind='item',context=null){
   if(liveTarget===target||pendingPreview?.target===target)dismissPreview();
  };
  target.addEventListener('pointerenter',event=>{
-  if(event.pointerType==='touch')return;
+  if(event.pointerType==='touch'||target.querySelector?.('[data-issue-tooltip]:hover'))return;
   dismissPreview();
   queuePreview(target,show);
+ });
+ target.addEventListener('pointerover',event=>{
+  if(event.target?.closest?.('[data-issue-tooltip]')){dismissPreview();return}
+  if(event.relatedTarget?.closest?.('[data-issue-tooltip]')&&target.matches(':hover'))
+   queuePreview(target,show);
  });
  target.addEventListener('pointerleave',remove);
  target.addEventListener('pointerdown',remove);
