@@ -79,15 +79,21 @@ export async function runOutfitSoulScrollSmoke(browser,base){
    list.scrollTop=Math.min(list.scrollHeight-list.clientHeight,Math.max(0,Math.floor(list.scrollHeight*.3)));
    list.dispatchEvent(new Event('scroll'));
   });
+  // A real click naturally scrolls its own target into view. Align it BEFORE
+  // taking the baseline; otherwise the test confuses browser auto-scroll with
+  // a picker rerender jumping to the top.
+  await target.scrollIntoViewIfNeeded();
   const initial=await scrollState(page);
   await target.click();
   const afterSoul=await scrollState(page);
   assert.ok(Math.abs(afterSoul.list-initial.list)<=10,
-   'Inserting a soul must not jump the soul list back to the beginning');
+   'Inserting a soul must not jump the soul list back to the beginning: '+
+   JSON.stringify({initial,afterSoul}));
   await page.locator('#stagePicker [data-socket-index="1"]').click();
   const afterSwitch=await scrollState(page);
   assert.ok(Math.abs(afterSwitch.list-initial.list)<=10,
-   'Changing from first to second socket retains the soul-list position');
+   'Changing from first to second socket retains the soul-list position: '+
+   JSON.stringify({initial,afterSwitch}));
   assert.ok(Math.abs(afterSwitch.body-afterSoul.body)<=10,
    'Soul picker main body must also retain scroll state');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
