@@ -275,10 +275,13 @@ async function loadCloudBuilds(){
 
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);
  if(tag==='input'||tag==='textarea'){
-  const credential=[attrs.name,attrs.id,attrs.placeholder,attrs['aria-label'],attrs.autocomplete]
-   .filter(x=>typeof x==='string').join(' ').toLowerCase();
+  const hint=String(attrs.autocomplete||'').toLowerCase();
+  // A search for a user/login is still SEARCH, not an authentication form.
+  // Password managers must only detect credential inputs explicitly marked
+  // as such; arbitrary Russian/English placeholder text is never proof.
   const isLogin=String(attrs.type||'').toLowerCase()==='password'||
-   /логин|username|login|sign.in|вход в аккаунт/.test(credential);
+   ['username','current-password','new-password'].includes(hint)||
+   attrs['data-auth-field']==='true';
   if(!isLogin){
    attrs={...attrs,autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true',
     'data-bwignore':'true','data-form-type':'other',
