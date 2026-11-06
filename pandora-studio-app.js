@@ -1614,18 +1614,22 @@ function heroPathApi(){
    }
    return target;
   },
-  onMastery:(key,requested)=>{
-   // Manual mastery starts at genuine zero, and can never exceed
-   // (starting allocated points + extra spent points) or the class cap.
+  onMastery:(key,requested,final=true)=>{
    if(state.masteryAuto!==false||!Number.isInteger(requested)||requested<0||
     !window.PandoraSkillProgression.setTrained(state,key,requested,
      innateBranches(),branchCapacities()))return false;
    const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
-   persist();renderBranches();renderOriginStats();renderOriginVitals();
-   if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
-    ?.focus({preventScroll:true});
-   if(heroPathPage==='skills')renderPathSkills();
-   saveView();return true;
+   persist();
+   // Hold-to-repeat updates the existing rail without removing the pressed
+   // button. The final pointerup/keyboard commit refreshes all derived stats.
+   if(final){
+    renderBranches();renderOriginStats();renderOriginVitals();
+    if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
+     ?.focus({preventScroll:true});
+    if(heroPathPage==='skills')renderPathSkills();
+    saveView();
+   }
+   return true;
   },
   onSkill:skill=>{
    selectedSkill=skill;pathSkillFilter='all';pathSkillQuery='';pathSkillShown=24;
