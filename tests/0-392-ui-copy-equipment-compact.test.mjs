@@ -73,9 +73,9 @@ test('site shell has clean title/footer; counts remain grounded in loaded catalo
 
 test('every stylesheet link is a complete standalone HTML tag',()=>{
  const head=html.slice(0,html.indexOf('</head>'));
- const all=(head.match(/<link\\b/g)||[]).length;
- const tags=[...head.matchAll(/<link\\b[^<>]*>/g)].map(m=>m[0]);
+ const all=(head.match(/<link\b/g)||[]).length;
+ const tags=[...head.matchAll(/<link\b[^<>]*>/g)].map(m=>m[0]);
  assert.equal(tags.length,all,'A nested or unclosed <link> tag swallows the following stylesheet');
  assert.ok(tags.every(x=>/href="[^"]+"/.test(x)));
- assert.match(head,/<link rel="stylesheet" href="pandora-studio-forge-controls\\.css\\?v=2026\\.11\\.06\\.399"><link rel="stylesheet" href="pandora-studio-owner-inline-ui\\.css\\?v=2026\\.11\\.06\\.399">/);
+ assert.match(head,/<link rel="stylesheet" href="pandora-studio-forge-controls\.css\?v=2026\.11\.06\.399"><link rel="stylesheet" href="pandora-studio-owner-inline-ui\.css\?v=2026\.11\.06\.399">/);
 });
