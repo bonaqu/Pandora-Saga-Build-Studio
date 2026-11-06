@@ -18,7 +18,7 @@ test('bad inputs fail closed',()=>{
  for(const v of [{},{jobKey:'WARRIOR',ridingMastery:-1},{jobKey:'WARRIOR',ridingMastery:1.5},{jobKey:'WARRIOR',honorTitle:99}])assert.equal(calc(v),null);
 });
 test('riding is attached to character calculator and hero book',()=>{
- assert.match(read('pandora-studio-app.js'),/groupAdeptness\(snap,\['riding'\],initialBranches\)/);
+ assert.match(read('pandora-studio-app.js'),/groupAdeptness\(snap,\['riding'\],initialBranches,caps\)/);
  assert.match(read('pandora-studio-hero-book.js'),/calc\.mountedRelease\?\.known/);
  assert.match(read('docs/REMAKED_FORMULA_INVENTORY.md'),/\| `RelHorse` \|[^\n]+\| PARTIAL \|/);
 });
