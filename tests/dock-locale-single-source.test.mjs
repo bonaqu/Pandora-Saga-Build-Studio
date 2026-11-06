@@ -19,8 +19,8 @@ test('only the site header owns language selection; modal duplicates are gone',(
 });
 
 test('one invested/max value remains in the branch header; exact inputs survive',()=>{
- assert.ok(hero.includes("const branchCount=make('b',{class:'count',text:cap>0||points>0?points+' / '+cap:'—'});"));
- assert.ok(hero.includes("branchCount.textContent=cap>0||target>0?target+' / '+cap:'—';"));
+ assert.match(hero,/const branchCount=make\('b',\{class:'count',[\s\S]*?trained\+' \/ '\+\(cap\+points\)/);
+ assert.match(hero,/branchCount\.textContent=cap>0\|\|base>0\|\|target>0\?[\s\S]*?branchMastery\(state,key,innate,caps\)\+' \/ '\+\(cap\+target\)/);
  assert.doesNotMatch(hero,/inline-branch-value|branchPoints|label\.textContent=target\+' \/ '/);
  assert.ok(hero.includes('editor.append(track,legend);'));
  assert.ok(hero.includes("key+':potential-number'"));
