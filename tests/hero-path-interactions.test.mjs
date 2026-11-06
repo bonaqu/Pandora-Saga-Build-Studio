@@ -426,8 +426,8 @@ test('Tactics shows 44 trained / 44 learned / 29 invested, then 0 trained but 44
   assert.ok(head,'Tactics header must exist');
   return head.children.find(el=>el.tag==='small')?.textContent;
  };
- assert.equal(count(),'44 освоено · 44 изучено · вложено 29');
+ assert.equal(count(),'освоено 44 · изучено 44 · вложено 29');
  f.state.masteryAuto=false;
  f.state.mastery={};
- assert.equal(count(),'0 освоено · 44 изучено · вложено 29');
+ assert.equal(count(),'освоено 0 · изучено 44 · вложено 29');
 });
