@@ -43,7 +43,8 @@ function reconcileSoulOwnership(state,equipmentCatalog,soulCatalog){
  state.souls??={};state.soulOwners??={};
  let changed=false;
  for(const slot of Object.keys(state.souls)){
-  const existing=asSocketArray(state.souls[slot]).filter(Boolean);
+  const positions=asSocketArray(state.souls[slot]);
+  const existing=positions.filter(Boolean);
   if(!existing.length){delete state.souls[slot];delete state.soulOwners[slot];changed=true;continue}
   const equipment=state.equipment?.[slot],id=equipment?.id;
   const item=id==null?null:equipmentCatalog[String(id)];
@@ -55,7 +56,10 @@ function reconcileSoulOwnership(state,equipmentCatalog,soulCatalog){
   }
   const cap=socketCapacity(item);
   const owner=state.soulOwners[slot];
+  // The index matters: one Soul in slot 3 is still invalid for a
+  // replacement item that has only one slot, despite count===1.
   const compatible=cap!=null&&cap>0&&existing.length<=cap&&
+   positions.slice(cap).every(entry=>!entry)&&
    existing.every(entry=>{
     const soul=soulCatalog[String(entry.id)];
     return !soul||validSoul(soul,item.slot);
