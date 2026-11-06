@@ -44,18 +44,11 @@ test('missing artwork filter is independent from gameplay category',()=>{
 });
 test('owner image override removes a record from the missing artwork filter',()=>{
  const unknownId='500000001';
- const options={'visual.skill.'+unknownId:'assets/custom/known.webp'};
+ const options={['visual.skill.'+unknownId]:'assets/custom/known.webp'};
  const model=classifier.build(skills,null,manifest,options);
  assert.equal(model.missing(unknownId),false);
 });
 test('source records remain searchable with variants without rewriting their IDs',()=>{
- const ctx={};
- Function('window',read('pandora-studio-encyclopedia-data.js'))(ctx);
- const input={meta:{counts:{}},skills:{
-  '100':{id:100,name:'Контратака',branch:'brush',learnable:true,classes:{WARRIOR:1}},
-  '101':{id:101,name:'Контратака',branch:'brush',learnable:false,classes:{}},
-  '102':{id:102,name:'Катапульта',branch:'special',learnable:false,classes:{}}
- },items:{},monsters:{},maps:{},trades:{},chests:{},souls:{},tables:{},drops:{},instances:[]};
  // A full index requires source lists; verify the canonical search signature
  // in the current implementation instead of creating synthetic gameplay tables.
  const source=read('pandora-studio-encyclopedia-data.js');
