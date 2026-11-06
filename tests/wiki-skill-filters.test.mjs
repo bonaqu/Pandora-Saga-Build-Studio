@@ -59,7 +59,8 @@ test('source records remain searchable with variants without rewriting their IDs
  assert.match(source,/const expanded=type==='skill'&&options\.includeVariants===true/);
  assert.match(source,/expanded\?Object\.entries\(chapters\[type\]\|\|\{\}\):entries\[type\]\|\|\[\]/);
  const app=read('pandora-studio-app.js');
- assert.match(app,/wikiSkillFilter='player'/);
+ assert.match(app,/wikiSkillFilter=\['player','guild','special'/);
+ assert.match(app,/includes\(bootView\.wikiSkillFilter\)\?bootView\.wikiSkillFilter:'player'/);
  assert.match(app,/wikiIndex\.search\(type,wikiSearch,id=>searchTerms\(type,id\),/);
  assert.match(app,/\{includeVariants:type==='skill'\}/);
  assert.match(app,/filterModel\.matches\(id,wikiSkillFilter\)/);
