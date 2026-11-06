@@ -67,24 +67,45 @@ function summary(record,icon,kind='item',context=null){
  if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
   rows.push([tr('Вставлено душ','Socketed Souls'),
    (context.souls?.length||0)+' / '+context.capacity]);
- const dl=el('dl',{class:'stage-rich-fields'});
- for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){
-  const dd=el('dd',{text:String(value)});
-  if(kind==='item'&&key===tr('Слоты','Slots'))dd.dataset.editKey='itemslots.'+record.id;
-  dl.append(el('dt',{text:key}),dd);
+ const fieldNames=kind==='soul'?
+  [['soulCompatible','Подходящие слоты','Compatible slots']]:
+  [['type','Тип','Type'],['level','Уровень','Level'],
+   ['attack','Атака','Attack'],['defense','Защита','Defense'],
+   ['slots','Слоты','Slots'],['speed','Скорость','Speed'],
+   ['range','Дальность','Range']];
+ if(gem&&grade>0){
+  if((context.slot||record.slot)==='weapon'&&gemType)
+   fieldNames.push(['gemType','Тип самоцвета','Gemstone type']);
+  if(gemElement)fieldNames.push(['element','Стихия улучшения','Refinement element']);
  }
+ if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
+  fieldNames.push(['insertedSouls','Вставлено душ','Socketed Souls']);
+ const dl=el('dl',{class:'stage-rich-fields'});
+ rows.forEach(([key,value],index)=>{
+  if(value===null||value===undefined||value==='')return;
+  const dd=el('dd',{text:String(value)}),field=fieldNames[index];
+  const dt=el('dt',{text:field?context?.copyLabel?.('field.'+field[0],field[1],field[2])||key:key});
+  if(field)context?.editLabel?.(dt,'field.'+field[0],field[1],field[2]);
+  if(kind==='item'&&key===tr('Слоты','Slots'))dd.dataset.editKey='itemslots.'+record.id;
+  dl.append(dt,dd);
+ });
  if(dl.children.length)wrap.append(dl);
  if(wearers?.length){
-  const fit=el('div',{class:'stage-gear-wearers'},[
-   el('span',{class:'stage-gear-wearers-label',text:tr('Подходит','Wearable by')})
-  ]);
+  const labelRu='Подходит',labelEn='Wearable by';
+  const labelNode=el('span',{class:'stage-gear-wearers-label',
+   text:context?.copyLabel?.('wearableBy',labelRu,labelEn)||tr(labelRu,labelEn)});
+  context?.editLabel?.(labelNode,'wearableBy',labelRu,labelEn);
+  const fit=el('div',{class:'stage-gear-wearers'},[labelNode]);
   const chips=el('div',{class:'stage-gear-wearer-chips'});
   for(const wearer of wearers)chips.append(el('span',{class:'stage-gear-wearer',text:wearer}));
   fit.append(chips);wrap.append(fit);
  }
  if(kind==='item'&&root.PandoraUIPlanner?.occupiesBodyAndLegs?.(record))
-  wrap.append(el('small',{class:'stage-outfit-note',
-   text:tr('Броня + штаны · одна вещь','Armor + pants · one item')}));
+  {const ru='Броня + штаны · одна вещь',en='Armor + pants · one item';
+   const note=el('small',{class:'stage-outfit-note',
+    text:context?.copyLabel?.('outfitNote',ru,en)||tr(ru,en)});
+   context?.editLabel?.(note,'outfitNote',ru,en);
+   wrap.append(note);}
  if(record.desc){const desc=el('p',{class:'stage-rich-desc',
   text:presenter?.description(record.desc)||record.desc});
   if(kind==='item')desc.dataset.editKey='itemdesc.'+record.id;
@@ -238,6 +259,23 @@ function render(root,api){
  const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
  const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
  const editable=(node,key,ru,en)=>{api.editLabel?.(node,key,ru,en);return node};
+ const labeledAction=(button,key,ru,en,prefix='')=>{
+  if(!api.canEdit)return button;
+  const caption=editable(el('span',{class:'stage-copy-caption',text:copy(key,ru,en)}),key,ru,en);
+  const pencil=el('span',{class:'stage-control-pencil',role:'button',tabindex:'0',
+   text:'✎','aria-label':tr('Изменить надпись: ','Edit caption: ')+copy(key,ru,en)});
+  const start=event=>{
+   event.preventDefault();event.stopPropagation();
+   caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+  };
+  pencil.addEventListener('click',start);
+  pencil.addEventListener('keydown',event=>{
+   if(event.key==='Enter'||event.key===' ')start(event);
+  });
+  button.replaceChildren(...(prefix?[el('span',{class:'stage-action-glyph',text:prefix})]:[]),
+   caption,pencil);
+  return button;
+ };
  const tabs=el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
   role:'group','aria-label':tr('Настройка предмета','Item settings')});
  const sections=[
@@ -245,15 +283,24 @@ function render(root,api){
   ['details',tr('Свойства','Properties')]
  ];
  if(hasSouls)sections.push(['souls',tr('Души','Souls')]);
- for(const [key,title]of sections)tabs.append(el('button',{type:'button',text:title,
-  class:mode===key?'chosen':'','aria-pressed':String(mode===key),
-  'data-stage-tab':key,
-  disabled:!record&&key!=='choose',onclick:()=>api.changeMode(key)}));
+ for(const [key,title]of sections){
+  const names={choose:['Выбор','Choose'],details:['Свойства','Properties'],
+   souls:['Души','Souls']};
+  const [ru,en]=names[key],text=copy('tab.'+key,ru,en);
+  const button=el('button',{type:'button',text,
+   class:mode===key?'chosen':'','aria-pressed':String(mode===key),
+   'data-stage-tab':key,disabled:!record&&key!=='choose',
+   onclick:event=>{
+    if(event.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+    api.changeMode(key);
+   }});
+  tabs.append(labeledAction(button,'tab.'+key,ru,en));
+ }
  root.append(tabs);
  if(!record){root.append(el('p',{class:'muted',text:'Сначала выбери предмет.'}));return}
  const body=el('div',{class:'stage-rich-body'+(mode==='details'?' stage-rich-details':'')});root.append(body);
  if(mode==='details'){
-  body.append(summary(record,icons,'item',{slot,refinement,gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),tables:gameTables}));
+  body.append(summary(record,icons,'item',{slot,refinement,gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),tables:gameTables,copyLabel:copy,editLabel:editable}));
   if(refinable){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
@@ -276,13 +323,19 @@ function render(root,api){
      editKey,baseRu,baseEn));
     for(const option of entries){
      const name=english?option.en:option.ru;
-     line.append(el('button',{type:'button',
-      text:(key==='element'?(elementIcons[option.id]||'✦')+' ':'')+name,
+     const iconText=key==='element'?(elementIcons[option.id]||'✦')+' ':'';
+     const captionKey='gem.'+key+'.'+option.id;
+     const button=el('button',{type:'button',
+      text:iconText+copy(captionKey,option.ru,option.en),
       class:choice?.[key]===option.id?'chosen':'',
       'aria-label':label+': '+name,'aria-pressed':String(choice?.[key]===option.id),
       'data-enchant-key':key,'data-enchant-value':option.id,
-      onclick:()=>api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
-       element:key==='element'?option.id:(choice?.element||'fire')})}));
+      onclick:event=>{
+       if(event.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+       api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
+        element:key==='element'?option.id:(choice?.element||'fire')});
+      }});
+     line.append(labeledAction(button,captionKey,option.ru,option.en,iconText));
     }
     box.append(line);return box;
    };
