@@ -16,7 +16,9 @@ test('obsolete detached/diamond skill markers are absent from current CSS and He
   'path-integrated-milestones','path-milestone-tooltip',
   'path-current-notch'])
   assert.ok(css.includes('.'+name)&&path.includes(name),name);
- assert.ok(css.length<148000,'Stylesheet must stay bounded after new encyclopedia UI components');
+ // Explicit Origin, two-slot item and mastery baseline styles use a modest
+ // additional budget; still guard against runaway duplicate CSS accumulation.
+ assert.ok(css.length<156000,'Stylesheet must stay bounded after new encyclopedia UI components');
 });
 
 test('actual milestone tooltip and 18px hidden native thumb remain after pruning',()=>{
