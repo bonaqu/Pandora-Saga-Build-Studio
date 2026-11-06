@@ -252,9 +252,11 @@ function render(root,api){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
     class:n===grade?'chosen':'','aria-pressed':String(n===grade),'data-grade':String(n),onclick:()=>api.updateGrade(n)}));
-   body.append(editable(el('h4',{class:'stage-refine-heading',
+   const forgeFrame=el('fieldset',{class:'stage-enchant-fieldset stage-refine-fieldset'});
+   forgeFrame.append(editable(el('legend',{
     text:copy('refinementHeading','Заточка: +0…+10','Refinement: +0…+10')}),
     'refinementHeading','Заточка: +0…+10','Refinement: +0…+10'),buttons);
+   body.append(forgeFrame);
    // Item properties expose actual grade; inferred weapon math stays out of the editor.
    const model=globalThis.PandoraEnchantModel,choice=model.normalize(gems);
    const elementIcons={fire:'🔥',ice:'❄️',lightning:'⚡',poison:'☠️',
@@ -278,11 +280,7 @@ function render(root,api){
     }
     box.append(line);return box;
    };
-   const titleKey=slot==='weapon'?'gemHeadingWeapon':'gemHeadingArmor';
-   const titleRu=slot==='weapon'?'Тип и стихия':'Стихия';
-   const titleEn=slot==='weapon'?'Type and element':'Element';
-   body.append(editable(el('h4',{class:'stage-enchant-heading',
-    text:copy(titleKey,titleRu,titleEn)}),titleKey,titleRu,titleEn));
+
    if(slot==='weapon')body.append(group(tr('Тип','Type'),model.types,'type'));
    body.append(group(tr('Стихия','Element'),model.elements,'element'));
   }
