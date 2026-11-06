@@ -36,6 +36,16 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.equal(await page.locator('#originHp').innerText(),'181');
   assert.equal(await page.locator('#originMp').innerText(),'42');
 
+  // All five innate melee lines must match the screenshots, not only Slash.
+  for(const [key,green,potential] of [
+   ['slash',5,25],['thrust',2,25],['brush',5,25],
+   ['blow',2,20],['defense',4,25]
+  ]){
+   const branch=page.locator('#skillBranches [data-path-branch="'+key+'"]');
+   await branch.waitFor({state:'visible'});
+   assert.equal((await branch.locator('.count').innerText()).replaceAll(' ',''),
+    green+'/'+potential,'Wrong innate baseline '+key);
+  }
   const slash=page.locator('#skillBranches [data-path-branch="slash"]');
   await slash.waitFor({state:'visible'});
   assert.equal((await slash.locator('.count').innerText()).replaceAll(' ',''),'5/25');
@@ -61,10 +71,19 @@ export async function runInnateSkillMasterySmoke(browser,base){
 
   // The live client's Special section contains grey unavailable Racial
   // mastery as well as Riding. Racial passives are chosen in Origin.
+  for(const group of ['prayer','magic']){
+   await page.locator('#skillBranches [data-path-group="'+group+'"]').click();
+   assert.equal(await page.locator('#skillBranches .branch-row').count(),4,
+    'All '+group+' branches must be present');
+   assert.equal(await page.locator('#skillBranches .branch-row.disabled-branch').count(),4,
+    'All '+group+' branches must be disabled for Warrior');
+  }
   await page.locator('#skillBranches [data-path-group="special"]').click();
   const racial=page.locator('#skillBranches [data-path-branch="race"]');
   assert.equal(await racial.isDisabled(),true);
   assert.match(await racial.innerText(),/Расовые/);
+  assert.equal(await page.locator('#skillBranches [data-path-branch="riding"]').isDisabled(),false);
+  assert.equal(await page.locator('#skillBranches [data-path-branch="riding"]').evaluate(node=>node.classList.contains('disabled-branch')),true);
   await page.locator('#pathSkillsTab').click();
   await skillSearch.click();
   assert.equal(await skillSearch.evaluate(el=>el.readOnly),false);
