@@ -1299,7 +1299,8 @@ function renderStagePicker(focusSearch=false){
     (lang==='en'?' · Slots: ':' · Слоты: ')+socketLabel;
    btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),
     h('small',{text:meta})]));
-   if(future)btn.append(h('span',{class:'stage-picker-future',text:'◷ '+rec.level+' ур.'}));
+   if(future)btn.append(h('span',{class:'stage-picker-future',
+    text:lang==='en'?'From '+rec.level+' Lv.':'С '+rec.level+' ур.'}));
    if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
    list.append(btn);
    window.PandoraStageItemUI.attachPreview(btn,rec,
