@@ -114,10 +114,6 @@ export async function runOutfitSoulScrollSmoke(browser,base){
    'Condensed grade controls must still change the actual selected grade');
   const choose=page.locator('#stagePicker [data-stage-tab="choose"]');
   assert.equal(await choose.count(),1);
-  await choose.click();
-  const selectedEquipment=page.locator('#stagePicker .stage-picker-item').first();
-  assert.match(await selectedEquipment.locator('.stage-picker-item-label small').innerText(),
-   /^Уровень (?:\d+|—) · Слоты: (?:\d+|—)$/);
   await page.locator('#stagePicker [data-stage-tab="souls"]').click();
   const soulTab=page.locator('#stagePicker .stage-rich-tabs').getByRole('button',{name:'Души'});
   assert.equal(await soulTab.getAttribute('aria-pressed'),'true');
@@ -148,6 +144,12 @@ export async function runOutfitSoulScrollSmoke(browser,base){
    'Soul picker main body must also retain scroll state');
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.ok(saved.souls?.[0]?.[0]?.id!=null,'The chosen soul must actually be saved');
+  // The separate inventory picker replaces the rich properties tabs.
+  // Visit it AFTER the Soul workflow, as a real player would.
+  await page.locator('#stagePicker [data-stage-tab="choose"]').click();
+  const selectedEquipment=page.locator('#stagePicker .stage-picker-item').first();
+  assert.match(await selectedEquipment.locator('.stage-picker-item-label small').innerText(),
+   /^Уровень (?:\d+|—) · Слоты: (?:\d+|—)$/);
   assert.deepEqual(errors,[]);
  }finally{await second.context.close()}
  console.log('Chromium 0.389 accepted: shared armor+pants, choice hover, pants replacement, soul list scroll');
