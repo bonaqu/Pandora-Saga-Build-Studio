@@ -32,6 +32,17 @@ export async function runOutfitSoulScrollSmoke(browser,base){
  const first=await contextFor(browser,base,{3:{id:dress.id,name:dress.name}});
  try{
   const {page,errors}=first;
+  await page.locator('[data-origin-tab="class"]').click();
+  const wizardSteps=page.locator('.class-wizard-progress .class-wizard-step');
+  assert.equal(await wizardSteps.count(),3,'Profession wizard has exactly three steps');
+  const wizardGeometry=await wizardSteps.evaluateAll(rows=>rows.map(row=>{
+   const rect=row.getBoundingClientRect(),label=row.lastElementChild?.getBoundingClientRect();
+   return {top:Math.round(rect.top),bottom:Math.round(rect.bottom),
+    labelCenter:label?Math.round(label.top+label.height/2):null};
+  }));
+  assert.ok(wizardGeometry.every(row=>row.top===wizardGeometry[0].top&&
+   row.bottom===wizardGeometry[0].bottom&&row.labelCenter===wizardGeometry[0].labelCenter),
+   'Direction, Profession and Specialization stay aligned: '+JSON.stringify(wizardGeometry));
   const armor=page.locator('.equipment-slot[data-slot-index="3"]');
   const pants=page.locator('.equipment-slot[data-slot-index="5"]');
   assert.match(await armor.getAttribute('class'),/equipped/);
