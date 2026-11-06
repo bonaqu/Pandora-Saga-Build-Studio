@@ -50,7 +50,8 @@ test('numeric guard never touches credentials or normal text/search controls',()
 test('numeric guard is shared by all Hero Path, Origin and Hero Book factories',()=>{
  const html=read('index.html'),app=read('pandora-studio-app.js'),
   path=read('pandora-studio-hero-path.js'),book=read('pandora-studio-hero-book.js');
- assert.match(html,/src="pandora-studio-numeric-field\.js\?v=2026\.11\.06\.391"/);
+ assert.match(html,/src="pandora-studio-numeric-field\.js\?v=2026\.11\.06\.391"><\/script>/,
+  'new helper must have its own closed script tag before loading Hero Book');
  assert.ok(html.indexOf('pandora-studio-numeric-field.js')<html.indexOf('pandora-studio-hero-book.js'));
  assert.match(app,/PandoraNumericField\?\.prepare\(el\)/);
  assert.match(path,/PandoraNumericField\?\.prepare\(e\)/);
