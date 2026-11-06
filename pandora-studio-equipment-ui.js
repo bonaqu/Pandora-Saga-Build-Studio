@@ -111,6 +111,7 @@ function cancelPendingPreview(){
  clearTimeout(pendingPreview.timer);
  pendingPreview=null;
 }
+let focusPreviewToken=0;
 function dismissPreview(){
  cancelPendingPreview();
  livePreview?.remove();
@@ -135,8 +136,9 @@ document.addEventListener?.('pointerdown',event=>{
 },true);
 document.addEventListener?.('keydown',event=>{
  if(event.key!=='Escape'||!livePreview&&!pendingPreview)return;
- // Escape should close only the visible/pending item tooltip. Without
- // capturing it here, the Wiki's Escape handler closes the whole workbench.
+ // Escape must cancel an already scheduled post-focus preview as well.
+ // Otherwise the next animation frame can reopen the tooltip immediately.
+ focusPreviewToken++;
  dismissPreview();
  event.preventDefault();
  event.stopImmediatePropagation();
@@ -198,17 +200,18 @@ function attachPreview(target,record,icon,kind='item',context=null){
  target.addEventListener('pointerleave',remove);
  target.addEventListener('pointerdown',remove);
  target.addEventListener('focus',()=>{
+  const token=++focusPreviewToken;
   // Keyboard focus remains immediately accessible, but the browser may
   // scroll the focused link into view after dispatching focus. A scroll
   // dismisses all stale popups, so re-open on the next frame if the same
   // keyboard-focused item is still active. Pointer focus is unaffected.
   if(target.matches(':focus-visible'))show();
   root.requestAnimationFrame?.(()=>{
-   if(target.isConnected&&document.activeElement===target&&
+   if(token===focusPreviewToken&&target.isConnected&&document.activeElement===target&&
     target.matches(':focus-visible')&&!livePreview)show();
   });
  });
- target.addEventListener('blur',remove);
+ target.addEventListener('blur',()=>{focusPreviewToken++;remove()});
  target.addEventListener('click',remove);
 }
 function render(root,api){
