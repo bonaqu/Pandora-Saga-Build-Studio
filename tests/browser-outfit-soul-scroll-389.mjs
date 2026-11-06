@@ -106,6 +106,9 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   assert.equal(new Set(elementTops).size,2,'Element selector is a compact 4+3 layout');
   assert.match(await page.locator('#stagePicker [data-enchant-value="fire"]').innerText(),/🔥/);
   assert.match(await page.locator('#stagePicker [data-enchant-value="rainbow"]').innerText(),/🌈/);
+  await page.locator('#stagePicker [data-enchant-key="element"][data-enchant-value="ice"]').click();
+  assert.equal(await page.locator('#stagePicker [data-enchant-key="element"][data-enchant-value="ice"]').getAttribute('aria-pressed'),'true',
+   'Choosing a compact element remains a functional, persisted selection');
   await gradeButtons.nth(4).click();
   assert.equal(await page.locator('#stagePicker [data-grade="4"]').getAttribute('aria-pressed'),'true',
    'Condensed grade controls must still change the actual selected grade');
