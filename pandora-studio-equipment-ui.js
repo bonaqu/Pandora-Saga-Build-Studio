@@ -89,17 +89,22 @@ function summary(record,icon,kind='item',context=null){
   if(kind==='item'&&key===tr('Слоты','Slots'))dd.dataset.editKey='itemslots.'+record.id;
   dl.append(dt,dd);
  });
- if(dl.children.length)wrap.append(dl);
+ // Variant 02 — wearable races belong to the ordinary item stat rows.
+ // Keep the exact catalog order and RU/EN names, without a separate card,
+ // extra border, clickable chips, or gameplay data changes.
  if(wearers?.length){
   const labelRu='Подходит',labelEn='Wearable by';
-  const labelNode=el('span',{class:'stage-gear-wearers-label',
+  const labelNode=el('dt',{class:'stage-gear-wearers-label',
    text:context?.copyLabel?.('wearableBy',labelRu,labelEn)||tr(labelRu,labelEn)});
   context?.editLabel?.(labelNode,'wearableBy',labelRu,labelEn);
-  const fit=el('div',{class:'stage-gear-wearers'},[labelNode]);
-  const chips=el('div',{class:'stage-gear-wearer-chips'});
-  for(const wearer of wearers)chips.append(el('span',{class:'stage-gear-wearer',text:wearer}));
-  fit.append(chips);wrap.append(fit);
+  const value=el('dd',{class:'stage-gear-wearers-value'});
+  wearers.forEach((wearer,index)=>{
+   if(index)value.append(document.createTextNode(' · '));
+   value.append(el('span',{class:'stage-gear-wearer-name',text:wearer}));
+  });
+  dl.append(labelNode,value);
  }
+ if(dl.children.length)wrap.append(dl);
  if(kind==='item'&&root.PandoraUIPlanner?.occupiesBodyAndLegs?.(record))
   {const ru='Броня + штаны · одна вещь',en='Armor + pants · one item';
    const note=el('small',{class:'stage-outfit-note',

@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-06 · **Latest source release:** 0.399.0 (`2026.11.06.399`)
+**Updated:** 2026-11-06 · **Latest source release:** 0.400.0 (`2026.11.06.400`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **0.389.0:** Source-backed two-slot outfits display in both armor/pants rails while storing one calculated item; pants selection replaces dresses. Shared rich equipment-choice previews and preserved Soul catalog scroll. Visual green split D vs extra training; Origin wizard alignment and compact numeric cards. Regression/production checks tracked independently.
@@ -24,6 +24,8 @@
 **0.398.0:** Correct sparse Soul socket position validation during legacy build reconciliation: a soul at index 2 must not survive into equipment offering only index 0, even if one Soul in total fits capacity. Preserve valid sparse arrangements within capacity. Move live Pages/Worker verification from concurrent push trigger to successful Pages completion so queuing does not cause premature CI failure. No Worker/D1 migration.
 
 **0.399.0:** A missing `>` after the forge stylesheet link caused the subsequently declared `pandora-studio-owner-inline-ui.css` link to be parsed as attributes rather than an independent stylesheet. Fixed malformed HTML and added structural regression for ALL head <link> tags and browser computed stylesheet registration. No D1, Worker, or game logic changes.
+
+**0.400.0:** Approved wearable-by layout 02: item race/gender compatibility is rendered inside the same dl as Type, Level, Slots as a right-aligned wrapping meta value, without the redundant framed chip group. Editor RU/EN label persisted as before. Added exact 264-entry missing artwork audit grounded in OS local item/skill catalogs, including 4 item IDs, 260 skill IDs, same-name candidate icons, Japanese archive references and rights/identity caveats. No unverified/copyright-unclear artwork replacements.
 
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
