@@ -354,7 +354,7 @@ function viewGrowth(target,api){
      'aria-label':tr(api,'Мастерство ','Mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
     input.addEventListener('change',()=>{
-     const raw=input.value.trim(),requested=raw===''?0:Number(raw);
+     const raw=input.value.trim(),requested=raw===''?base:Number(raw);
      if(!Number.isInteger(requested)||requested<base||
       !api.onMastery(key,requested))
       input.value=String(M.branchMastery(state,key,innate,caps));
