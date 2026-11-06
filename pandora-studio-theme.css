@@ -2085,3 +2085,55 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  display:block;margin:3px 0 7px;color:#bbcf9d;
  font:500 10px/1.35 Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums
 }
+
+/* Mirrored dress slot: perceptibly occupied, but still click-to-replace. */
+.workspace .equipment-rail .equipment-slot.shared-outfit{
+ border-style:solid;border-color:#756651;
+ background:linear-gradient(#211a17,#100d0b);
+ box-shadow:inset 0 0 0 1px #0008
+}
+.workspace .equipment-rail .shared-outfit .equipped-icon,
+.workspace .equipment-rail .shared-outfit .slot-glyph,
+.workspace .equipment-rail .shared-outfit>small{
+ filter:brightness(.65) saturate(.58)
+}
+.workspace .equipment-rail .shared-outfit:hover .equipped-icon,
+.workspace .equipment-rail .shared-outfit:hover>small{
+ filter:brightness(.85) saturate(.8)
+}
+.workspace .equipment-rail .shared-outfit .stage-shared-mark{
+ min-width:18px;height:18px;font-size:11px;
+ background:#35291feF;color:#efd6ad
+}
+/* One compact refinement row; horizontal scrolling only on tiny widths. */
+.stage-rich-tabs.has-souls{grid-template-columns:repeat(3,minmax(0,1fr))}
+.stage-rich-tabs.no-souls{grid-template-columns:repeat(2,minmax(0,1fr))}
+.stage-rich-tabs button{min-height:31px;border-radius:3px;font-weight:600}
+.stage-rich-tabs button:hover,.stage-rich-tabs button:focus-visible{
+ border-color:#ebbb79;background:#50321d;outline-offset:2px
+}
+.stage-grade{
+ grid-template-columns:repeat(11,minmax(24px,1fr));gap:2px;
+ overflow-x:auto;max-width:100%;padding-bottom:3px
+}
+.stage-grade button{
+ font:600 10px/1.2 Manrope,Arial,sans-serif;
+ padding:7px 0;min-width:24px;border-radius:3px
+}
+.stage-grade button:hover,.stage-enchant-options button:hover{
+ border-color:#eec080;background:#5b3c26
+}
+.stage-enchant-options.is-element-options{
+ grid-template-columns:repeat(4,minmax(0,1fr));gap:4px
+}
+.stage-enchant-options.is-type-options{
+ grid-template-columns:repeat(2,minmax(0,1fr));gap:4px
+}
+.stage-enchant-fieldset{padding:6px;margin:3px 0}
+.stage-enchant-options button{
+ min-height:31px;padding:5px 2px;border-radius:3px;
+ font-size:10px;white-space:nowrap
+}
+.stage-rich-body .stage-refine-heading,.stage-rich-body .stage-enchant-heading{
+ margin:5px 0 0
+}
