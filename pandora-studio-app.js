@@ -72,7 +72,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
@@ -139,7 +139,7 @@ function restoreScopedDraft({initial=false}={}){
    {...base,...raw,points:{...base.points,...raw.points},
     masteryFormat:raw.masteryFormat===2?2:1,
     stats:{...base.stats,...raw.stats},equipment:{...base.equipment,...raw.equipment},
-    souls:{...base.souls,...raw.souls},refinements:{...base.refinements,...raw.refinements},
+    souls:{...base.souls,...raw.souls},soulOwners:{...base.soulOwners,...raw.soulOwners},refinements:{...base.refinements,...raw.refinements},
     gems:{...base.gems,...raw.gems},attributeBuffs:{...base.attributeBuffs,...raw.attributeBuffs},profile:{...base.profile,...raw.profile}}:base;
  }catch{state=fresh()}
  try{
@@ -304,8 +304,8 @@ function skillIcon(cat,idx,record=null){
  if(catalog.live&&record?.iconId){
   const stem='skill_'+record.iconId,path=iconManifest?.icons?.skills?.[stem];
   if(path)return path;
-  if(unavailableIconIds.has('skills/'+stem))return null;
-  return `${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`;
+  // A missing original stays a neutral glyph; do not request a confirmed 404.
+  return null;
  }
  return branchIcon(cat);
 }
@@ -318,8 +318,9 @@ function itemIcon(rec,kind='items'){
  const selfHostedSoul=soul?iconManifest?.icons?.souls?.[rec.icon]:null;
  const archived=selfHostedSoul||iconManifest?.icons?.[pathKind]?.[rec.icon];
  if(archived)return archived;
- if(unavailableIconIds.has(pathKind+'/'+rec.icon))return null;
- return `${OS}/icons/${pathKind}/${rec.icon}.webp?v=07682901`;
+ // Missing/unknown originals are never probed on every encyclopedia hover.
+ // The local verified artwork manifest is the only image authority.
+ return null;
 }
 function branchCap(branch){
  // No invented cap: when a game class is still loading, disable spending until real caps exist.
@@ -647,24 +648,29 @@ function originCopy(key,ru,en){
 
 // Editable, bilingual equipment captions share the existing D1 guide namespace.
 // These are display labels only; edit actions never touch item stats or saved builds.
-function equipmentCopy(key,ru,en){
- const entry=window.PandoraHonorGuide?.field(override,'equipment.'+key,ru,en);
+function ownerCopyKey(section,key){
+ return section+'.'+String(key).replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+}
+function ownerCopy(section,key,ru,en){
+ const entry=window.PandoraHonorGuide?.field(override,ownerCopyKey(section,key),ru,en);
  return lang==='en'?(entry?.en||en):(entry?.ru||ru);
 }
-function equipmentCopyLabel(node,key,ru,en){
+function ownerCopyLabel(node,section,key,ru,en){
  if(!node||!adminEditing||!adminToken)return;
  node.classList.add('origin-copy-editable');
- node.title=lang==='en'?'Double-click to edit caption':'Двойной клик — изменить надпись';
  node.addEventListener('dblclick',event=>{
   if(!adminEditing||!adminToken)return;
   event.preventDefault();event.stopPropagation();
-  editWikiValue(node,equipmentCopy(key,ru,en),{
+  editWikiValue(node,ownerCopy(section,key,ru,en),{
    type:'text',
-   onCommit:next=>saveGuidePatch('book.equipment.'+key,{[lang]:next}),
+   onCommit:next=>saveGuidePatch('book.'+ownerCopyKey(section,key),{[lang]:next}),
    onCommitted:next=>{node.textContent=next}
   });
  });
 }
+const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
+const equipmentCopyLabel=(node,key,ru,en)=>
+ ownerCopyLabel(node,'equipment',key,ru,en);
 const originFixedLabels=[
  ['.workspace>.left>.panel-heading h2','heading','Происхождение','Origin'],
  ['#originTabs [data-origin-tab="race"]','tabRace','Раса','Race'],
@@ -1028,7 +1034,8 @@ function renderSlotRails(){
     const message=reasons.join(' ');
     const badge=h('span',{class:'stage-conflict',text:'!','aria-label':message,
      'data-issue-tooltip':message,role:'img',
-     onpointerenter:()=>showStageRailWarning(badge,message),
+     onpointerenter:event=>{event?.stopPropagation?.();
+      window.PandoraStageItemUI.dismissPreview();showStageRailWarning(badge,message)},
      onpointerleave:hideStageRailWarning});
     button.append(badge);
    }
@@ -1206,6 +1213,7 @@ function renderStagePicker(focusSearch=false){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
    copyLabel:equipmentCopy,editLabel:equipmentCopyLabel,
+   canEdit:Boolean(adminEditing&&adminToken),
    record,item:equipped,slot:key,
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+
     (lang==='en'?['Weapon','Shield','Helmet','Armor','Gloves','Pants',
@@ -1238,7 +1246,11 @@ function renderStagePicker(focusSearch=false){
     if(entry&&!plan.validSoul(entry,key))return;
     const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
-    state.souls[selectedSlot]=next;stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderOriginStats();renderOriginVitals();
+    state.souls[selectedSlot]=next;
+    state.soulOwners??={};
+    if(next.some(Boolean))state.soulOwners[selectedSlot]=String(equipped.id);
+    else {delete state.souls[selectedSlot];delete state.soulOwners[selectedSlot]}
+    stageSlotView='souls';persist();renderStagePicker();renderSlotRails();renderOriginStats();renderOriginVitals();
     const restoreFocus=stageSoulQuery?'[data-soul-query]':'[data-socket-index="'+selectedSocket+'"]';
     root.querySelector(restoreFocus)?.focus({preventScroll:true});
    },
@@ -1620,6 +1632,9 @@ function heroPathApi(){
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
   shown:pathSkillShown,onMoreSkills:()=>{pathSkillShown+=24;renderPathSkills()},
   cap:branchCap,
+  canEdit:Boolean(adminEditing&&adminToken),
+  copyLabel:(key,ru,en)=>ownerCopy('path',key,ru,en),
+  editLabel:(node,key,ru,en)=>ownerCopyLabel(node,'path',key,ru,en),
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
   icon:(key,skill)=>skillIcon(key,skill?.id,skill),
   hover:(node,skill)=>skillHover(node,skill),
@@ -1743,6 +1758,54 @@ function renderBranches(){
 function renderPathSkills(){
  window.PandoraHeroPath.viewSkills($('pathSkillGallery'),$('pathSkillDetails'),heroPathApi());
 }
+function renderPathCopyControls(){
+ const editing=Boolean(adminEditing&&adminToken);
+ const copy=(key,ru,en)=>ownerCopy('path',key,ru,en);
+ const labels=[
+  ['#pathGrowthPage .path-mastery-toggle span','autoMastery','Автоматически заполнять зелёное мастерство','Automatically fill green mastery'],
+  ['#pathGrowthPage .path-legend .potential','available','Свободно','Available'],
+  ['#pathGrowthPage .path-legend .invested','invested','Вложено','Invested'],
+  ['#pathGrowthPage .path-legend .trained','trained','Освоено','Trained']
+ ];
+ for(const [selector,key,ru,en] of labels){
+  const node=document.querySelector(selector);if(!node)continue;
+  if(!node.querySelector('.wiki-inline-input'))node.textContent=copy(key,ru,en);
+  node.classList.toggle('origin-copy-editable',editing);
+  if(!node.dataset.pathCopyBound){
+   node.dataset.pathCopyBound='1';
+   node.addEventListener('dblclick',event=>{
+    if(!adminEditing||!adminToken)return;
+    event.preventDefault();event.stopPropagation();
+    editWikiValue(node,copy(key,ru,en),{type:'text',
+     onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
+     onCommitted:next=>{node.textContent=next}});
+   });
+  }
+ }
+ for(const [id,key,ru,en,symbol] of [
+  ['pathGrowthTab','tabGrowth','Развитие','Growth','◈'],
+  ['pathSkillsTab','tabSkills','Умения','Skills','✦']
+ ]){
+  const button=$(id);if(!button)continue;
+  const label=copy(key,ru,en);
+  if(!editing){button.textContent=symbol+' '+label;continue}
+  const caption=h('span',{class:'path-tab-copy',text:label});
+  const pencil=h('span',{class:'path-tab-pencil',role:'button',tabindex:'0',text:'✎',
+   'aria-label':lang==='en'?'Edit '+label:'Редактировать '+label});
+  const edit=event=>{
+   event.preventDefault();event.stopPropagation();
+   editWikiValue(caption,copy(key,ru,en),{type:'text',
+    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
+    onCommitted:next=>{caption.textContent=next}});
+  };
+  caption.addEventListener('dblclick',edit);
+  pencil.addEventListener('click',edit);
+  pencil.addEventListener('keydown',event=>{
+   if(event.key==='Enter'||event.key===' ')edit(event);
+  });
+  button.replaceChildren(h('span',{text:symbol}),caption,pencil);
+ }
+}
 function renderPathPages(){
  const grow=heroPathPage==='growth';
  $('pathGrowthPage').hidden=!grow;$('pathSkillsPage').hidden=grow;
@@ -1750,6 +1813,7 @@ function renderPathPages(){
   $(id).classList.toggle('chosen',on);
   $(id).setAttribute('aria-selected',String(on));
  }
+ renderPathCopyControls();
  if(!grow)renderPathSkills();
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hasRace=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length;
@@ -5357,7 +5421,7 @@ function openSavedBuild(b){
     state={...base,...draft,
      points:{...base.points,...draft.points},stats:{...base.stats,...draft.stats},
      equipment:{...base.equipment,...draft.equipment},
-     souls:{...base.souls,...draft.souls},
+     souls:{...base.souls,...draft.souls},soulOwners:{...base.soulOwners,...draft.soulOwners},
      refinements:{...base.refinements,...draft.refinements},
      gems:{...base.gems,...draft.gems},
      attributeBuffs:{...base.attributeBuffs,...draft.attributeBuffs},
@@ -6626,6 +6690,8 @@ function applyGameLocale({redraw=true}={}){
  }
  catalog={meta,classes:translate(catalogSource.classes,en?.classes),skills:localizedSkills,
    equipment:translate(itemRecords,en?.items,true),souls:translate(ownerGameData.souls,en?.souls),racialPassives:catalogSource.racialPassives,live:true};
+ // Remove stale Soul arrays left by older builds that reused equipment slots.
+ if(window.PandoraEquipmentPlan.reconcileSoulOwnership(state,catalog.equipment,catalog.souls))persist();
  jobs=jobKeys.map(id=>catalog.classes[id]?.name||id);
  branches=window.PandoraGameNavigation.groups.flatMap(g=>g.branches.map(id=>({id,name:meta.branchLabels[id]||id})));
  if(redraw)render();
@@ -6843,8 +6909,8 @@ document.addEventListener('dblclick',event=>{
  if(!editable||!/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;
  event.preventDefault();event.stopImmediatePropagation();inlineWikiText(editable);
 },true);
-$('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView()};
- $('pathSkillsTab').onclick=()=>{heroPathPage='skills';renderPathPages();saveView()};
+$('pathGrowthTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,.wiki-inline-input'))return;heroPathPage='growth';renderPathPages();saveView()};
+ $('pathSkillsTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,.wiki-inline-input'))return;heroPathPage='skills';renderPathPages();saveView()};
  $('pathResetPoints').onclick=()=>{
   const spent=budgetSummary().spent;
   if(!spent)return;

@@ -1038,12 +1038,38 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   bookPages[index][1],bookEnglish[bookPages[index][1]]||bookPages[index][1],
   copyOptions,'Название раздела Книги героя.','Hero Book chapter title.');
  const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':'Разделы книги героя'});
- for(const [name,label] of bookPages)nav.append(make('button',{
-  type:'button',role:'tab',text:chapterTitle(name,label),id:'stageBookTab_'+name,
-  'aria-controls':'stageBookPanel','aria-selected':String(chosen===name),
-  'aria-pressed':String(chosen===name),'data-book-page':name,
-  class:chosen===name?'chosen':'',onclick:()=>onPage(name)
- }));
+ for(const [name,label] of bookPages){
+  const button=make('button',{
+   type:'button',role:'tab',text:chapterTitle(name,label),id:'stageBookTab_'+name,
+   'aria-controls':'stageBookPanel','aria-selected':String(chosen===name),
+   'aria-pressed':String(chosen===name),'data-book-page':name,
+   class:chosen===name?'chosen':'',
+   onclick:event=>{
+    if(event.target?.closest?.('.stage-book-tab-pencil,.wiki-inline-input'))return;
+    onPage(name);
+   }
+  });
+  if(canEdit&&typeof onTextEdit==='function'){
+   const display=chapterTitle(name,label);
+   const caption=make('span',{class:'stage-book-tab-copy',text:display});
+   const pencil=make('span',{class:'stage-book-tab-pencil',role:'button',
+    tabindex:'0',text:'✎',
+    'aria-label':document.documentElement?.lang==='en'?
+     'Edit tab '+display:'Редактировать вкладку '+display});
+   const edit=event=>{
+    event.preventDefault();event.stopPropagation();
+    onTextEdit(caption,'chapter.'+name,
+     document.documentElement?.lang==='en'?'en':'ru',display);
+   };
+   caption.addEventListener('dblclick',edit);
+   pencil.addEventListener('click',edit);
+   pencil.addEventListener('keydown',event=>{
+    if(event.key==='Enter'||event.key===' ')edit(event);
+   });
+   button.replaceChildren(caption,pencil);
+  }
+  nav.append(button);
+ }
  if(reusePanel)target.insertBefore(nav,stablePanel);
  else target.append(nav);
  const body=make('div',{class:'stage-attribute-scroll stage-book-page',

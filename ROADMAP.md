@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-06 · **Latest source release:** 0.396.0 (`2026.11.06.396`)
+**Updated:** 2026-11-06 · **Latest source release:** 0.397.0 (`2026.11.06.397`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **0.389.0:** Source-backed two-slot outfits display in both armor/pants rails while storing one calculated item; pants selection replaces dresses. Shared rich equipment-choice previews and preserved Soul catalog scroll. Visual green split D vs extra training; Origin wizard alignment and compact numeric cards. Regression/production checks tracked independently.
@@ -18,6 +18,8 @@
 **0.395.0:** Approved UI direction applied to the actual Properties equipment panel: concept #02's contiguous 11-step forge bar with responsive text sizing; joined compact physical/magical type control. Element buttons use prior demo #05's grid: 4 equal buttons above, equal Light/Dark cells and double-width Rainbow below. Forge CSS is isolated in `pandora-studio-forge-controls.css`; Souls tab unchanged. Browser regression verifies grades at multiple widths, type seam, element geometry, and saved selections.
 
 **0.396.0:** Refinement title now belongs to a framed fieldset matching Type/Element; redundant combined header removed. Properties scroll body reserves right-side room. Replacement or removal of equipment clears Souls bound to the old item even when one-piece outfits restore/displace pants; same catalog ID re-selection preserves Souls. Mirrored pants display no duplicate +grade. Exclamation badges expose exact invalid-gear and socket-capacity reasons in an unclipped floating tooltip.
+
+**0.397.0:** Exclusive warning-badge hover stops equipment's rich preview and resumes it on the actual icon. D1 item Souls now track equipped item IDs and legacy drafts are reconciled once the current source catalog loads; invalid or oversubscribed Soul arrays are removed. Wearable-by race restrictions use readable chips in item Properties as well as hover previews. Book tabs, Hero Path headings/tabs/legends, equipment field labels, enchantment options, and Soul-picker controls now support authenticated RU/EN in-place editing through the existing D1 guide and record overrides. The encyclopedia's verified local icon manifest is authoritative: known-404 OS URLs are no longer requested. Real original missing sprites remain unspecified (no invented replacements). Added tests and asset-coverage audit.
 
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 

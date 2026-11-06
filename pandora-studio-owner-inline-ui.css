@@ -1,0 +1,63 @@
+/* Unified on-page copy editing: one subtle pencil inside interactive controls.
+   Only visible to a logged-in owner; ordinary player layout is unchanged. */
+.stage-rich-tabs button:has(.stage-control-pencil),
+.stage-enchant-options button:has(.stage-control-pencil),
+.stage-attribute-tabs button:has(.stage-book-tab-pencil),
+.path-sections button:has(.path-tab-pencil){
+ display:flex;align-items:center;justify-content:center;gap:4px;
+ min-width:0;position:relative
+}
+.stage-copy-caption,.stage-book-tab-copy,.path-tab-copy{
+ min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap
+}
+.stage-copy-pencil,.stage-control-pencil,.stage-book-tab-pencil,
+.path-group-pencil,.path-tab-pencil{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 14px;width:14px;height:15px;
+ margin-left:2px;border:1px solid #80613d;border-radius:3px;
+ background:#312318b8;color:#cbaa7c;
+ font:600 11px/1 Manrope,Arial,sans-serif;
+ cursor:pointer;opacity:.72;vertical-align:middle
+}
+.stage-control-pencil:hover,.stage-control-pencil:focus-visible,
+.stage-book-tab-pencil:hover,.stage-book-tab-pencil:focus-visible,
+.path-group-pencil:hover,.path-group-pencil:focus-visible,
+.path-tab-pencil:hover,.path-tab-pencil:focus-visible{
+ opacity:1;background:#513720;color:#ffe3b0;border-color:#efc181;
+ outline-offset:1px
+}
+.stage-rich-body .origin-copy-editable,
+.stage-book-tab-copy,.path-tab-copy{
+ cursor:text
+}
+.stage-rich-body dt.origin-copy-editable{
+ text-decoration:underline dotted #987b50;text-underline-offset:3px
+}
+.game-tree-head:has(.path-group-pencil){gap:5px}
+.game-tree-head .path-group-pencil{margin-left:auto}
+.path-sections button .path-tab-copy{flex:0 1 auto}
+.stage-rich-body .wiki-inline-input,
+.stage-attribute-tabs .wiki-inline-input,
+.path-sections .wiki-inline-input{
+ width:min(240px,100%);max-width:100%;font-size:11px
+}
+@media(max-width:390px){
+ .stage-rich-tabs .stage-control-pencil,
+ .stage-enchant-options .stage-control-pencil{
+  flex-basis:12px;width:12px;height:13px;font-size:9px;margin-left:0
+ }
+}
+
+.stage-rich-result:has(.stage-control-pencil){
+ display:flex;align-items:center;gap:7px
+}
+.stage-rich-result .stage-soul-result-caption{
+ min-width:0;flex:1;text-align:left;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.stage-rich-result .stage-control-pencil{margin-left:auto;flex-shrink:0}
+.stage-soul-search-caption{
+ display:block;margin:5px 2px 0;
+ color:#cdb084;font:600 10px/1.25 Manrope,Arial,sans-serif
+}

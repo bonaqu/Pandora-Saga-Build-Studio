@@ -32,6 +32,41 @@ function clearChangedEquipmentSouls(state,beforeEquipment){
      (nextId===null||nextId===undefined?'':String(nextId)))continue;
   changed.push(slot);
   if(state.souls&&typeof state.souls==='object')delete state.souls[slot];
+  if(state.soulOwners&&typeof state.soulOwners==='object')delete state.soulOwners[slot];
+ }
+ return changed;
+}
+// Explicit item identity for Soul slots. Historic builds predate soulOwners; only
+// migrate Souls when the current catalog verifies both capacity and compatibility.
+function reconcileSoulOwnership(state,equipmentCatalog,soulCatalog){
+ if(!state||!equipmentCatalog||!soulCatalog)return false;
+ state.souls??={};state.soulOwners??={};
+ let changed=false;
+ for(const slot of Object.keys(state.souls)){
+  const existing=asSocketArray(state.souls[slot]).filter(Boolean);
+  if(!existing.length){delete state.souls[slot];delete state.soulOwners[slot];changed=true;continue}
+  const equipment=state.equipment?.[slot],id=equipment?.id;
+  const item=id==null?null:equipmentCatalog[String(id)];
+  if(!item){
+   // An unequipped position cannot carry any Souls. Unknown catalog entries
+   // are preserved until the source catalog is available again.
+   if(id==null){delete state.souls[slot];delete state.soulOwners[slot];changed=true}
+   continue;
+  }
+  const cap=socketCapacity(item);
+  const owner=state.soulOwners[slot];
+  const compatible=cap!=null&&cap>0&&existing.length<=cap&&
+   existing.every(entry=>{
+    const soul=soulCatalog[String(entry.id)];
+    return !soul||validSoul(soul,item.slot);
+   });
+  if(!compatible||(owner!=null&&String(owner)!==String(id))){
+   delete state.souls[slot];delete state.soulOwners[slot];changed=true;continue;
+  }
+  if(owner==null){state.soulOwners[slot]=String(id);changed=true}
+ }
+ for(const slot of Object.keys(state.soulOwners)){
+  if(!state.souls[slot]){delete state.soulOwners[slot];changed=true}
  }
  return changed;
 }
@@ -55,5 +90,5 @@ function matchesEquipmentSlot(index,item,slotKeys){
 function occupiesOffhand(weapon,weaponEligible=true){
  return weaponEligible===true&&weapon?.slot==='weapon'&&weapon.twoHanded===true;
 }
-root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,clearChangedEquipmentSouls,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket,occupiesOffhand,matchesEquipmentSlot});
+root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,clearChangedEquipmentSouls,reconcileSoulOwnership,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket,occupiesOffhand,matchesEquipmentSlot});
 })(typeof window==='undefined'?globalThis:window);
