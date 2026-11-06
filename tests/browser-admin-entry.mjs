@@ -971,7 +971,7 @@ export async function runInlineMilestonesSmoke(browser,base){
    ['Вложено','Мастерство']);
   const inputHeights=await fields.locator('input[type=number]').evaluateAll(inputs=>
    inputs.map(input=>Math.round(input.getBoundingClientRect().height)));
-  assert.deepEqual(inputHeights,[28,28],'Both compact fields have equal height');
+  assert.deepEqual(inputHeights,[35,35],'Both redesigned numeric fields have equal height');
   const controlsPosition=await fields.locator('label.path-point-group').evaluateAll(labels=>
    labels.map(label=>({top:Math.round(label.getBoundingClientRect().top),
     bottom:Math.round(label.getBoundingClientRect().bottom)})));
