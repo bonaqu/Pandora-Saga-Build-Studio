@@ -160,7 +160,8 @@ function viewGrowth(target,api){
    }
    for(const key of branchKeys){
     const points=M.potential(state,key),base=M.branchBase(innate,key),
-     trained=M.branchMastery(state,key,innate,caps),cap=api.cap(key),isOpen=expandedBranch===key;
+     trained=M.branchMastery(state,key,innate,caps),cap=Math.min(90,api.cap(key)),
+     level=M.branchPotential(state,key,innate,caps),isOpen=expandedBranch===key;
     const branch=make('button',{type:'button',disabled:cap===0&&points===0,
      class:'branch-row'+(isOpen?' active':'')+(cap===0?' disabled-branch':''),
      'aria-expanded':String(isOpen),'data-path-branch':key,
@@ -170,7 +171,7 @@ function viewGrowth(target,api){
     // Duplicating it in the header adds/removes a whole line at zero -> one.
 
     const branchCount=make('b',{class:'count',
-     text:cap>0?trained+' / '+(cap+points):points>0?points+' / 0':'—',
+     text:cap>0?level+' / '+cap:points>0?points+' / 0':'—',
      'aria-label':tr(api,'Старт ','Innate ')+base+
       tr(api,', вложено ', ', invested ')+points+
       tr(api,', мастерство ', ', mastery ')+trained});
@@ -180,14 +181,12 @@ function viewGrowth(target,api){
     const editor=make('div',{class:'inline-branch-editor'});
     const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
     const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':tr(api,'Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ')+api.branchName(key)});
-    const visualMax=Math.max(1,cap+Math.max(points,budget.total||0),base+points);
+    const visualMax=90; // fixed game-wide scale, never cap + budget
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
-          innateFill=make('div',{class:'path-innate-fill','aria-hidden':'true'}),
           locked=make('div',{class:'inline-mastery-locked',
-           'aria-label':tr(api,'Потенциал ветки: ','Branch potential: ')+(cap+points)+
+           'aria-label':tr(api,'Предел профессии: ','Class branch limit: ')+cap+
             tr(api,' из ',' of ')+visualMax});
-    if(cap+points>=visualMax)locked.hidden=true;
     // The active fill, class limit, value marker and native thumb all share
     // the same 21px rail inset (range inset 12px + 18px thumb / 2).
     const railInset=21;
@@ -198,43 +197,37 @@ function viewGrowth(target,api){
     };
     const widthOnRail=(fraction)=>
      'calc('+(fraction*100).toFixed(6)+'% - '+(2*railInset*fraction).toFixed(6)+'px)';
-    const setPotentialEdge=invested=>{
-     const availablePotential=cap>0?cap+invested:0;
-     locked.hidden=availablePotential>=visualMax;
-     locked.style.left=positionOnRail(Math.max(0,Math.min(1,availablePotential/visualMax)));
-     locked.setAttribute('aria-label',tr(api,'Потенциал ветки: ','Branch potential: ')+availablePotential);
+    const setPotentialEdge=()=>{
+     locked.hidden=cap>=visualMax;
+     locked.style.left=positionOnRail(Math.max(0,Math.min(1,cap/visualMax)));
+     locked.setAttribute('aria-label',tr(api,'Предел профессии: ','Class limit: ')+cap);
     };
-    setPotentialEdge(points);
+    setPotentialEdge();
     const currentNotch=make('span',{class:'path-current-notch','aria-hidden':'true'});
     const milestonesOnTrack=[];
     const paint=()=>{
-     const invested=M.potential(state,key),mastery=M.branchMastery(state,key,innate,caps);
-     const goldFraction=Math.max(0,Math.min(1,invested/visualMax));
-     const innateFraction=Math.max(0,Math.min(1,base/visualMax));
-     const addedGreenFraction=Math.max(0,Math.min(1,(mastery-base)/visualMax));
-     // Highlight immutable starting mastery separately. Only additional
-     // trained green occupies the vivid segment, so 5 innate + 10 trained
-     // appears as a TEN-point green segment, not fifteen earned points.
-     innateFill.style.width=widthOnRail(innateFraction);
+     const invested=M.potential(state,key),level=M.branchPotential(state,key,innate,caps);
+     const mastery=M.branchMastery(state,key,innate,caps);
+     const goldFraction=Math.max(0,Math.min(1,level/visualMax));
+     const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
+     // Gold marks D + extra allocations, green marks actual learned
+     // proficiency from zero. Class limit and scale remain fixed.
      gold.style.width=widthOnRail(goldFraction);
-     green.style.left='calc(12px + '+(innateFraction*100).toFixed(6)+'% - '+
-      (42*innateFraction).toFixed(6)+'px)';
-     green.style.width=widthOnRail(addedGreenFraction);
+     green.style.width=widthOnRail(greenFraction);
      currentNotch.style.left=positionOnRail(goldFraction);
-     setPotentialEdge(invested);
-     range.setAttribute('aria-valuetext',base+
-      tr(api,' старт, ',' innate, ')+invested+
-      tr(api,' вложено, ',' invested, ')+mastery+
-      tr(api,' мастерство, потенциал ',' mastery, potential ')+(cap+invested));
+     setPotentialEdge();
+     range.setAttribute('aria-valuetext',level+
+      tr(api,' очков ветки, ',' branch points, ')+mastery+
+      tr(api,' мастерство, ',' mastery, ')+invested+
+      tr(api,' вложено сверх старта, предел ',' extra spent, limit ')+cap);
      for(const entry of milestonesOnTrack)
       entry.tick.classList.toggle('reached',
        !entry.locked&&entry.skills.some(skill=>readiness(skill,api,new Set(),skillIndex).learned));
     };
     track.append(bed,gold,green,locked);
-    track.append(innateFill);
     track.append(currentNotch);
     const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
-     value:String(points),disabled:!available,
+     value:String(level),disabled:!available,
      'aria-label':tr(api,'Вложенные очки ','Spent branch points: ')+api.branchName(key),
      'data-branch-control':key+':potential-range'});
     track.append(range);paint();
@@ -245,33 +238,33 @@ function viewGrowth(target,api){
      'data-branch-control':key+':potential-number'});
     const restorePotential=()=>{
      const current=String(M.potential(state,key));
-     range.value=current;numeric.value=current;
+     range.value=String(M.branchPotential(state,key,innate,caps));numeric.value=current;
     };
     const update=(requested,final)=>{
      if(!Number.isInteger(requested)||requested<0){restorePotential();return}
      const target=api.onAllocate(key,requested,final);
      if(!Number.isInteger(target)){restorePotential();return}
-     range.value=String(target);numeric.value=String(target);
+     range.value=String(M.branchPotential(state,key,innate,caps));numeric.value=String(target);
      branchCount.textContent=cap>0?
-      M.branchMastery(state,key,innate,caps)+' / '+(cap+target):
+      M.branchPotential(state,key,innate,caps)+' / '+cap:
       target>0?target+' / 0':'—';
 
      groupCount.textContent=groupSummary();
      input.value=String(M.branchMastery(state,key,innate,caps));
-     input.max=String(cap>0?cap+target:base);
+     input.max=String(M.branchPotential(state,key,innate,caps));
      const potentialCaption=editor.querySelector('.path-track-limit-value');
-     if(potentialCaption)potentialCaption.textContent=tr(api,'Потенциал: ','Potential: ')+(cap+target);
+     if(potentialCaption)potentialCaption.textContent=tr(api,'Предел: ','Limit: ')+cap;
      paint();
      // Committing rebuilds the UI so all branch totals stay synchronized.
     };
-    range.addEventListener('input',()=>update(Number(range.value),false));
-    range.addEventListener('change',()=>update(Number(range.value),true));
+    range.addEventListener('input',()=>update(Number(range.value)-base,false));
+    range.addEventListener('change',()=>update(Number(range.value)-base,true));
     numeric.addEventListener('change',()=>{
      const raw=numeric.value.trim();
      update(raw===''?0:Number(raw),true);
     });
     const skills=skillsByBranch.get(key)||[];
-    const marks=api.milestones(skills,key,cap+points);
+    const marks=api.milestones(skills,key,cap);
     let unlockDetails=null;
     if(marks.length){
      const ticks=make('div',{class:'path-integrated-milestones'});
@@ -369,14 +362,14 @@ function viewGrowth(target,api){
      }
      unlockDetails.append(list);
     }
-    const input=make('input',{type:'number',min:String(base),
-     max:String(cap>0?cap+points:base),step:'1',
+    const input=make('input',{type:'number',min:'0',
+     max:String(level),step:'1',
      value:String(trained),disabled:auto||!available,
      'aria-label':tr(api,'Мастерство ','Mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
     input.addEventListener('change',()=>{
-     const raw=input.value.trim(),requested=raw===''?base:Number(raw);
-     if(!Number.isInteger(requested)||requested<base||
+     const raw=input.value.trim(),requested=raw===''?0:Number(raw);
+     if(!Number.isInteger(requested)||requested<0||
       !api.onMastery(key,requested))
       input.value=String(M.branchMastery(state,key,innate,caps));
     });
@@ -389,15 +382,15 @@ function viewGrowth(target,api){
     };
     controls.append(
      pointField(root.PandoraUILocale?.text('exactPoints',api.lang)||tr(api,'Вложено','Spent'),
-      tr(api,'Свободные очки умений, вложенные в увеличение потенциала. Не включают стартовое мастерство.','Free skill points invested into extending branch potential. Excludes innate mastery.'),numeric),
+      tr(api,'Очки умений, вложенные сверх начальной прокачки.','Skill points invested beyond the initial class allocation.'),numeric),
      pointField(root.PandoraUILocale?.text('greenMastery',api.lang)||tr(api,'Мастерство','Mastery'),
-      tr(api,'Начальные очки профессии плюс освоенные дополнительно. Стартовые очки нельзя удалить.','Innate class points plus further trained mastery. Innate points cannot be removed.'),input,true)
+      tr(api,'Освоено использованием навыков: от 0 до уровня прокачки ветки.','Earned by using skills: from zero to the allocated branch level.'),input,true)
     );
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
      make('span',{class:'path-track-limit'},[
       make('span',{class:'path-track-limit-value',text:api.lang==='en'?
-       'Potential: '+(cap+points):'Потенциал: '+(cap+points)}),
+       'Limit: '+cap:'Предел: '+cap}),
       ...(base>0?[make('span',{class:'path-innate-baseline',
        text:tr(api,'Старт: ','Innate: ')+base,
        'aria-label':tr(api,'Начальная прокачка класса: ','Class innate mastery: ')+base})]:[])
