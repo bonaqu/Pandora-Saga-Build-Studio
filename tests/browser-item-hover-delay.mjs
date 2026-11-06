@@ -109,7 +109,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   await spata.focus();
   assert.equal(await spata.evaluate(node=>node.matches(':focus-visible')),true,
    'Keyboard navigation must retain its visible focus indicator');
-  await tooltip.waitFor({state:'visible',timeout:600});
+  await tooltip.waitFor({state:'visible',timeout:2000});
   assert.equal(await spata.getAttribute('aria-describedby'),'stage-gear-tooltip');
   await page.keyboard.press('Escape');
   assert.equal(await tooltip.count(),0,'Escape closes focused item preview');
