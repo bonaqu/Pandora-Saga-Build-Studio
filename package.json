@@ -27,7 +27,8 @@
     "locales:audit": "node scripts/audit-os-localization.mjs",
     "assets:missing": "node scripts/report-missing-original-artwork.mjs",
     "assets:aliases:check": "node scripts/skill-icon-display-aliases.mjs",
-    "assets:aliases:refresh": "node scripts/skill-icon-display-aliases.mjs --write"
+    "assets:aliases:refresh": "node scripts/skill-icon-display-aliases.mjs --write",
+    "skills:duplicates": "node scripts/report-skill-identity-overlaps.mjs"
   },
   "pandoraRelease": "2026.11.07.403"
 }
