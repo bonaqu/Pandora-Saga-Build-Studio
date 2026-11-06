@@ -49,7 +49,7 @@ function saveView(){try{sessionStorage.setItem(VIEW_KEY,JSON.stringify({
  page:Math.round(window.scrollY),inner:document.getElementById('detailContent')?.scrollTop||0,
  slot:selectedSlot,slotView:stageSlotView,slotOpen:stageSlotPickerOpen,attributes:stageAttributesPage,
  expandedClasses:[...expandedClassKeys],classTreeTouched,origin:originActive,jobPathKey,pathPage:heroPathPage,
- soulQuery:stageSoulQuery,wikiLayout:wikiItemLayout,
+ soulQuery:stageSoulQuery,wikiLayout:wikiItemLayout,wikiSkillFilter,
  skillGroup:selectedSkillGroup,expandedBranch:inlineBranchId,groupTouched:pathGroupTouched,
  pathScroll:document.getElementById('skillBranches')?.scrollTop||0
  }))}catch{}}
@@ -73,7 +73,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter='player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
+let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
 function restoreActiveBuildId(){
@@ -301,7 +301,7 @@ function branchIcon(id){return typeof id==='string'&&Object.hasOwn(BRANCH_ICON_P
 function skillIcon(cat,idx,record=null){
  const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];
  if(custom)return custom;
- if(catalog.live&&record?.iconId){
+ if(record?.iconId){
   const stem='skill_'+record.iconId,originals=iconManifest?.icons?.skills||{};
   // Exact original always beats a display-only reuse.
   if(originals[stem])return originals[stem];
@@ -332,7 +332,7 @@ function skillIcon(cat,idx,record=null){
  }
  // An iconless skill uses the transparent, original-client question mark.
  // This is a presentation fallback, NOT an original for its missing OS ID.
- if(record&&catalog.live)return 'assets/skills/icons/skill_unknown.webp';
+ if(record)return 'assets/skills/icons/skill_unknown.webp';
  return branchIcon(cat);
 }
 function itemIcon(rec,kind='items'){
@@ -1910,7 +1910,10 @@ async function loadWiki(){
   if(generation!==wikiLoadGeneration)return loadWiki();
   wikiData=resolved;
   wikiIndex=index;
-  if(wikiSelection.id!=null&&wikiSelection.type!=='honor')
+  // Skills offer an explicit "All / Variants" source-record view: retain
+  // the exact requested ID, including after F5 and direct wiki hyperlinks.
+  // Other encyclopedia chapters still use their canonical entries.
+  if(wikiSelection.id!=null&&!['honor','skill'].includes(wikiSelection.type))
    wikiSelection.id=index.canonical(wikiSelection.type,wikiSelection.id);
   return index;
  })();
@@ -1926,7 +1929,7 @@ function wikiPosition(){
   chapter:wikiSelection.type,id:wikiSelection.id,
   inner:$('detailContent')?.scrollTop||0,
   browse:$('detailContent')?.querySelector('.wiki-list')?.scrollTop||0,
-  search:wikiSearch,shown:wikiShown,itemType:wikiItemType
+  search:wikiSearch,shown:wikiShown,itemType:wikiItemType,skillFilter:wikiSkillFilter
  };
 }
 function restoreWikiFilters(state,type,id){
@@ -1936,6 +1939,8 @@ function restoreWikiFilters(state,type,id){
  if(Number.isInteger(position.shown)&&position.shown>=100)wikiShown=position.shown;
  if(type==='item'&&typeof position.itemType==='string')
   wikiItemType=position.itemType;
+ if(type==='skill'&&Object.hasOwn(window.PandoraWikiSkillFilters.names,
+  position.skillFilter||''))wikiSkillFilter=position.skillFilter;
 }
 function restoreWikiPosition(state){
  const position=state?.psWikiPosition;
@@ -1959,7 +1964,8 @@ function openWiki(type,id,highlight=null){
   open:Boolean($('detailPanel')?.classList.contains('is-open')),
   selection:activeTab==='wiki'?{...wikiSelection}:null,
   search:activeTab==='wiki'?wikiSearch:'',
-  shown:activeTab==='wiki'?wikiShown:100};
+  shown:activeTab==='wiki'?wikiShown:100,
+  skillFilter:wikiSkillFilter};
  const sameCategory=activeTab==='wiki'&&wikiSelection.type===type&&
   typeof wikiRenderSelected==='function'&&wikiRenderedRoot?.isConnected&&wikiIndex;
  if(activeTab!=='wiki'||wikiSelection.type!==type){wikiSearch='';wikiShown=100}
@@ -1989,7 +1995,8 @@ function openWiki(type,id,highlight=null){
 function openWikiChapterList(){
  const chapter=wikiSelection.type;
  if(!['item','monster','map','npc','chest','skill','soul','instance','honor'].includes(chapter))return;
- const listView={type:chapter,itemType:wikiItemType,search:wikiSearch,shown:wikiShown};
+ const listView={type:chapter,itemType:wikiItemType,search:wikiSearch,
+  skillFilter:wikiSkillFilter,shown:wikiShown};
  const previous=history.state&&typeof history.state==='object'?history.state:{};
  // Back reopens the current record; Forward returns to this chapter list.
  history.pushState({...previous,psWikiEntry:false,psWikiList:listView},'',
@@ -2931,6 +2938,7 @@ function renderWiki(root){
   let results=wikiResultsCache?.index===wikiIndex&&
    wikiResultsCache.equipment===catalog.equipment&&
    wikiResultsCache.english===officialEnglish&&
+   (type!=='skill'||wikiResultsCache.filterModel===filterModel)&&
    wikiResultsCache.key===resultKey?wikiResultsCache.rows:null;
   if(!results){
    results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id),
@@ -2950,7 +2958,7 @@ function renderWiki(root){
      (rank.get(String(b[0]))??100));
    }
    wikiResultsCache={index:wikiIndex,equipment:catalog.equipment,
-    english:officialEnglish,key:resultKey,rows:results};
+    english:officialEnglish,filterModel,key:resultKey,rows:results};
   }
   // A source link outside the current search must clear that search, otherwise
   // the linked record opens in details but never appears in the browse list.
@@ -7238,6 +7246,8 @@ window.addEventListener('popstate',event=>{
   wikiShown=Number.isInteger(chapter.shown)&&chapter.shown>=100?chapter.shown:100;
   if(chapter.type==='item'&&typeof chapter.itemType==='string')
    wikiItemType=chapter.itemType;
+  if(chapter.type==='skill'&&Object.hasOwn(window.PandoraWikiSkillFilters.names,
+   chapter.skillFilter||''))wikiSkillFilter=chapter.skillFilter;
   for(const btn of document.querySelectorAll('[data-tab]'))
    btn.classList.toggle('active',btn.dataset.tab==='wiki');
   renderDetails();
@@ -7256,6 +7266,9 @@ window.addEventListener('popstate',event=>{
     if(previous.selection?.type==='item'&&
      typeof event.state?.psWikiPosition?.itemType==='string')
      wikiItemType=event.state.psWikiPosition.itemType;
+    if(previous.selection?.type==='skill'&&
+     Object.hasOwn(window.PandoraWikiSkillFilters.names,
+      previous.skillFilter||''))wikiSkillFilter=previous.skillFilter;
    }
    for(const btn of document.querySelectorAll('[data-tab]'))
     btn.classList.toggle('active',btn.dataset.tab===activeTab);
