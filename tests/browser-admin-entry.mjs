@@ -997,7 +997,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#locale [data-locale="en"]')
    ?.getAttribute('aria-pressed')==='true'&&
    document.querySelector('#startupOverlay')?.hidden===true,null,{timeout:20000});
-  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Limit:'));
+  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Limit (pts):'));
   await page.locator('#pathSkillsTab').click();
   await page.locator('.path-skill-count').waitFor({state:'visible'});
   assert.match(await page.locator('.path-skill-count').innerText(),/skills/);
