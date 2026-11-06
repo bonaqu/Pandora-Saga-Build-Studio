@@ -912,10 +912,10 @@ export async function runInlineMilestonesSmoke(browser,base){
    await page.evaluate(()=>new Promise(requestAnimationFrame));
    return measureBranch();
   };
-  const stable=[await measureBranch(),await drag(1),await drag(2),await drag(0)];
+  const stable=[await measureBranch(),await drag(6),await drag(7),await drag(5)];
   assert.ok(stable.every(x=>x.duplicatePoints===0&&x.exactControls===2),
    'The duplicate points row is absent; both exact controls remain');
-  assert.ok(stable[0].points.includes('5 / 90'),'Cleric inherits 5 green on an unspent branch');
+  assert.ok(stable[0].points.includes('5 / 90'),'Cleric starts with five branch points, but no manual green');
   assert.ok(stable[1].points.includes('5 / 91')&&stable[2].points.includes('5 / 92'),
    'Blue investment increases P while manually trained green stays at class baseline');
   assert.ok(stable.every(x=>Math.abs(x.height-stable[0].height)<=1),
@@ -940,7 +940,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await exact.fill('');
   await exact.press('Tab');
   assert.equal(await exact.inputValue(),'0','Clearing and blurring precise field must refund points');
-  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'0');
+  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'5');
   await drag(5);
   assert.match(await page.locator('[data-path-branch="benevolence"] .count').innerText(),/5\s*\/\s*95/);
   assert.equal(await page.locator('.inline-branch-value').count(),0);
@@ -950,7 +950,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await mastery.fill('9');await mastery.press('Tab');
   assert.equal(await mastery.inputValue(),'9');
   await mastery.fill('');await mastery.press('Tab');
-  assert.equal(await mastery.inputValue(),'5','Clearing manual mastery restores immutable innate green');
+  assert.equal(await mastery.inputValue(),'0','Clearing manual mastery resets to true zero');
   assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'5',
    'Clearing manual green must not refund invested blue points');
   await drag(0);
@@ -967,7 +967,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   assert.match(await mark.locator('.path-milestone-cost').first().innerText(),/Затрат ОМ: [0-9]+/);
   const fields=page.locator('.path-point-controls').first();
   await fields.waitFor({state:'visible'});
-  assert.deepEqual(await fields.locator('label.path-point-group .path-point-name').allTextContents(),
+  assert.deepEqual(await fields.locator('.path-point-group .path-point-name').allTextContents(),
    ['Вложено','Мастерство']);
   const inputHeights=await fields.locator('input[type=number]').evaluateAll(inputs=>
    inputs.map(input=>Math.round(input.getBoundingClientRect().height)));
@@ -997,7 +997,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#locale [data-locale="en"]')
    ?.getAttribute('aria-pressed')==='true'&&
    document.querySelector('#startupOverlay')?.hidden===true,null,{timeout:20000});
-  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Potential:'));
+  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Limit:'));
   await page.locator('#pathSkillsTab').click();
   await page.locator('.path-skill-count').waitFor({state:'visible'});
   assert.match(await page.locator('.path-skill-count').innerText(),/skills/);
