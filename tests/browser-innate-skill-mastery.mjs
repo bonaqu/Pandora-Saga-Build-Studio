@@ -33,6 +33,11 @@ export async function runInnateSkillMasterySmoke(browser,base){
   const stats=await page.locator('#originStats .origin-stat-input').evaluateAll(rows=>
    rows.map(row=>Number(row.value)));
   assert.deepEqual(stats,[10,9,3,5,5,2]);
+  const originInput=page.locator('#originStats .origin-stat-input').first();
+  assert.equal(await originInput.getAttribute('autocomplete'),'none');
+  assert.equal(await originInput.getAttribute('data-game-numeric'),'true');
+  assert.equal(await originInput.evaluate(input=>input.readOnly),false,
+   'Chromium input must remain editable for direct typing');
   assert.equal(await page.locator('#originHp').innerText(),'181');
   assert.equal(await page.locator('#originMp').innerText(),'42');
 
@@ -52,6 +57,10 @@ export async function runInnateSkillMasterySmoke(browser,base){
   if(await slash.getAttribute('aria-expanded')!=='true')await slash.click();
   const spent=page.locator('[data-branch-control="slash:potential-number"]');
   const green=page.locator('[data-branch-control="slash:mastery-number"]');
+  for(const control of [spent,green]){
+   assert.equal(await control.getAttribute('autocomplete'),'none');
+   assert.equal(await control.getAttribute('data-game-numeric'),'true');
+  }
   assert.equal(await spent.inputValue(),'0');
   assert.equal(await green.inputValue(),'0');
   assert.equal(await green.getAttribute('min'),'0');
