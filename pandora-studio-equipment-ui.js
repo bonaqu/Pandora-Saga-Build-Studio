@@ -220,7 +220,8 @@ function attachPreview(target,record,icon,kind='item',context=null){
   if(liveTarget===target||pendingPreview?.target===target)dismissPreview();
  };
  target.addEventListener('pointerenter',event=>{
-  if(event.pointerType==='touch'||target.querySelector?.('[data-issue-tooltip]:hover'))return;
+  if(event.pointerType==='touch')return;
+  if(target.querySelector?.('[data-issue-tooltip]:hover'))return;
   dismissPreview();
   queuePreview(target,show);
  });
@@ -291,7 +292,7 @@ function render(root,api){
    class:mode===key?'chosen':'','aria-pressed':String(mode===key),
    'data-stage-tab':key,disabled:!record&&key!=='choose',
    onclick:event=>{
-    if(event.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+    if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
     api.changeMode(key);
    }});
   tabs.append(labeledAction(button,'tab.'+key,ru,en));
@@ -331,7 +332,7 @@ function render(root,api){
       'aria-label':label+': '+name,'aria-pressed':String(choice?.[key]===option.id),
       'data-enchant-key':key,'data-enchant-value':option.id,
       onclick:event=>{
-       if(event.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+       if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
        api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
         element:key==='element'?option.id:(choice?.element||'fire')});
       }});
@@ -372,7 +373,7 @@ function render(root,api){
    for(const rec of results.slice(0,80)){
     const button=el('button',{type:'button',class:'stage-rich-result',
      onclick:event=>{
-      if(event.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+      if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
       api.assignSoul(rec);
      }});
     const src=icons(rec,'soul');
@@ -410,7 +411,7 @@ function render(root,api){
   const remove=el('button',{type:'button',class:'stage-enchant-reset',
    text:'✕ '+copy('soulRemove',removeRu,removeEn),
    onclick:event=>{
-    if(event.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+    if(event?.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
     api.assignSoul(null);
    }});
   body.append(query,labeledAction(remove,'soulRemove',removeRu,removeEn,'✕'),list);
