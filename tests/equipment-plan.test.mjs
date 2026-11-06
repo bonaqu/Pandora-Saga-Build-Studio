@@ -17,3 +17,34 @@ test('souls are available in belts but not other jewelry or cloaks',()=>{
  assert.equal(p.canSocket('cloak',{slot:'cloak',soulslot:3}),false);
  assert.equal(p.canSocket('belt',{slot:'belt',soulslot:2}),true);
 });
+
+test('replacing a weapon clears its Souls instead of carrying them to the new weapon',()=>{
+ const state={equipment:{0:{id:22},11:{id:32}},souls:{0:[{id:1001}],11:[{id:2002}]}};
+ const before={...state.equipment};
+ state.equipment[0]={id:23};
+ assert.deepEqual(Array.from(p.clearChangedEquipmentSouls(state,before)),['0']);
+ assert.equal(state.souls[0],undefined);
+ assert.equal(state.souls[11][0].id,2002,'Other gear retains its own Soul');
+});
+test('equipping the same item again preserves its Souls',()=>{
+ const state={equipment:{0:{id:22}},souls:{0:[{id:1001}]}};
+ const before={...state.equipment};
+ state.equipment[0]={id:'22'};
+ assert.deepEqual(Array.from(p.clearChangedEquipmentSouls(state,before)),[]);
+ assert.equal(state.souls[0][0].id,1001);
+});
+test('removing an item clears its Souls, including a two-slot outfit displacement',()=>{
+ const state={equipment:{3:{id:12616},5:{id:24}},souls:{3:[{id:1001}],5:[{id:2002}]}};
+ const before={...state.equipment};
+ state.displacedLegwear=state.equipment[5];
+ delete state.equipment[5];
+ p.clearChangedEquipmentSouls(state,before);
+ assert.equal(state.souls[5],undefined);
+ assert.equal(state.souls[3][0].id,1001);
+ const next={...state.equipment};
+ delete state.equipment[3];
+ state.equipment[5]=state.displacedLegwear;
+ p.clearChangedEquipmentSouls(state,next);
+ assert.equal(state.souls[3],undefined);
+ assert.equal(state.souls[5],undefined,'Restored pants must not inherit stale Souls');
+});

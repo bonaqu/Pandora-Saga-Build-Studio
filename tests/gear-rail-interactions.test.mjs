@@ -26,7 +26,7 @@ function fixture(issue=()=>[]){
  Function('window',read('pandora-studio-ui-planner.js'))(window);
  Function('window',read('pandora-studio-item-presentation.js'))(window);
  Function('window',read('pandora-studio-enchantment.js'))(window);
- let dismiss=0,attached=0;
+ let dismiss=0,attached=0,lastWarning=null;
  window.PandoraStageItemUI={
   dismissPreview:()=>dismiss++,
   attachPreview(button){attached++;assert.equal(button.attributes.title,undefined)}
@@ -53,17 +53,18 @@ function fixture(issue=()=>[]){
  const render=Function('window','state','$','slots','slotKeys','h','slotVisual',
   'equippedRecord','equipmentIssue','itemIcon','itemName','selectedSlot','stageSlotPickerOpen',
   'selectedSocket','gearMode','stageSlotQuery','stageSoulQuery','stageSlotShown',
-  'stageSlotView','renderStagePicker','catalog','gameTables',source+'\nreturn renderSlotRails;')(
+  'stageSlotView','renderStagePicker','catalog','gameTables',
+  'hideStageRailWarning','showStageRailWarning',source+'\nreturn renderSlotRails;')(
   window,state,$,slots,slotKeys,h,i=>h('span',{class:'slot-glyph',text:slots[i][1]}),
   i=>records[i]||null,issue,()=>null,
   r=>window.PandoraItemPresentation.displayName(r),0,false,0,'equipment','','',48,
   'choose',()=>{},{souls:{
    '41':{id:41,name:'Душа меткости',desc:'Точность +2'},
    '42':{id:42,name:'Душа стойкости',desc:'Защита +1'}
-  }},{weaponPlus:{}}
+  }},{weaponPlus:{}},()=>{},(_badge,message)=>{lastWarning=message}
  );
  render();
- return{left,right,attached,get dismissed(){return dismiss}};
+ return{left,right,attached,get dismissed(){return dismiss},get warning(){return lastWarning}};
 }
 test('portrait renders 14 gear slots without exposing native title tooltips',()=>{
  const f=fixture(),all=[...f.left.children,...f.right.children];
@@ -90,5 +91,9 @@ test('persisted incompatible item keeps slot and receives a game-like inactive m
  const weapon=[...f.left.children,...f.right.children].find(x=>x.attributes['data-slot-index']==='0');
  assert.match(weapon.className,/unavailable/);
  assert.match(weapon.attributes['aria-label'],/Не действует: Требуется уровень 40/);
- assert.ok(weapon.children.some(x=>x.className==='stage-conflict'));
+ const badge=weapon.children.find(x=>x.className==='stage-conflict');
+ assert.ok(badge);
+ assert.match(badge.attributes['data-issue-tooltip'],/Предмет не действует: Требуется уровень 40/);
+ badge.listeners.pointerenter();
+ assert.match(f.warning,/Требуется уровень 40/);
 });

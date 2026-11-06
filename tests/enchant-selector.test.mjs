@@ -6,7 +6,9 @@ test('gemstone type and seven original elements appear in selector',()=>{
  const x=get('pandora-studio-enchantment.js');
  for(const id of ['physical','magical','fire','ice','lightning','poison','light','dark','rainbow'])
   assert.match(x,new RegExp("id:'"+id+"'"));
- assert.match(get('pandora-studio-equipment-ui.js'),/Тип и стихия/);
+ assert.doesNotMatch(get('pandora-studio-equipment-ui.js'),/Тип и стихия/);
+ assert.match(get('pandora-studio-equipment-ui.js'),/class:'stage-enchant-fieldset stage-refine-fieldset'/);
+ assert.match(get('pandora-studio-equipment-ui.js'),/copy\('refinementHeading','Заточка: \+0…\+10'/);
  assert.match(get('pandora-studio-equipment-ui.js'),/Стихия/);
 });
 test('all OS weaponPlus coefficients determine the preview attack bonus',()=>{

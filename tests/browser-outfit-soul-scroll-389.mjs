@@ -63,6 +63,16 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   assert.equal(before[3].id,dress.id);
   assert.equal(before[5],undefined,'one outfit is stored once, not double counted');
 
+  // The mirrored pants projection must not repeat the +6 refinement badge.
+  await armor.click();
+  assert.equal(await page.locator('#stagePicker .stage-refine-fieldset legend').innerText(),
+   'Заточка: +0…+10');
+  assert.equal(await page.locator('#stagePicker .stage-enchant-heading').count(),0,
+   'Type and Element already have their own fieldset legends');
+  await page.locator('#stagePicker [data-grade="6"]').click();
+  assert.equal(await armor.locator('.stage-enhance').innerText(),'+6');
+  assert.equal(await pants.locator('.stage-enhance').count(),0,
+   'Two-slot dress refinement may appear only on the armor rail');
   await pants.click();
   const list=page.locator('#stagePicker .stage-picker-list');
   const choices=list.locator('.stage-picker-item');
@@ -196,7 +206,42 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   const selectedEquipment=page.locator('#stagePicker .stage-picker-item').first();
   assert.match(await selectedEquipment.locator('.stage-picker-item-label small').innerText(),
    /^Уровень (?:\d+|—) · Слоты: (?:\d+|—)$/);
+  const differentWeapon=page.locator('#stagePicker .stage-picker-item:not([data-stage-choice="'+weapon.id+'"])').first();
+  assert.ok(await differentWeapon.count()>0,'The inventory must offer a different weapon');
+  const replacingId=Number(await differentWeapon.getAttribute('data-stage-choice'));
+  await differentWeapon.click();
+  const afterSwap=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
+  assert.equal(Number(afterSwap.equipment[0].id),replacingId);
+  assert.equal(afterSwap.souls?.[0],undefined,
+   'Soul sockets from the previous weapon must be cleared on item replacement');
   assert.deepEqual(errors,[]);
  }finally{await second.context.close()}
+
+ const underlevelWeapon=Object.values(items).find(item=>item?.slot==='weapon'&&
+  Number(item.level)>10&&Number(item.level)<=55&&!item.isCostumeOverlay);
+ assert.ok(underlevelWeapon,'Missing under-level weapon fixture');
+ const third=await contextFor(browser,base,{0:{id:underlevelWeapon.id,name:underlevelWeapon.name}});
+ try{
+  const {page,errors}=third;
+  await page.evaluate(()=>{
+   const saved=JSON.parse(localStorage.getItem('ps-build-studio.v1'));
+   saved.level=1;localStorage.setItem('ps-build-studio.v1',JSON.stringify(saved));
+  });
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.equipment-slot[data-slot-index="0"] .stage-conflict').waitFor({state:'visible'});
+  const issue=page.locator('.equipment-slot[data-slot-index="0"] .stage-conflict');
+  assert.match(await issue.getAttribute('aria-label'),/Предмет не действует:/);
+  await issue.hover();
+  const popup=page.locator('.stage-rail-warning-popover');
+  await popup.waitFor({state:'visible'});
+  assert.match(await popup.innerText(),/Предмет не действует:/);
+  const bounds=await popup.boundingBox();
+  assert.ok(bounds&&bounds.x>=0&&bounds.x+bounds.width<=1365,
+   'Reason tooltip must not be clipped by the equipment icon or viewport');
+  await page.mouse.move(2,2);
+  await popup.waitFor({state:'detached'});
+  assert.deepEqual(errors,[]);
+ }finally{await third.context.close()}
+
  console.log('Chromium 0.389 accepted: shared armor+pants, choice hover, pants replacement, soul list scroll');
 }
