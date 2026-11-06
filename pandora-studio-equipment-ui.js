@@ -70,7 +70,7 @@ function summary(record,icon,kind='item',context=null){
  const dl=el('dl',{class:'stage-rich-fields'});
  for(const [key,value] of rows)if(value!==null&&value!==undefined&&value!==''){
   const dd=el('dd',{text:String(value)});
-  if(kind==='item'&&key===tr('Гнёзда','Sockets'))dd.dataset.editKey='itemslots.'+record.id;
+  if(kind==='item'&&key===tr('Слоты','Slots'))dd.dataset.editKey='itemslots.'+record.id;
   dl.append(el('dt',{text:key}),dd);
  }
  if(dl.children.length)wrap.append(dl);
