@@ -360,7 +360,8 @@ function render(root,api){
   body.append(editable(el('h4',{
    text:copy('soulSlotsHeading','Слоты душ','Soul slots')}),
    'soulSlotsHeading','Слоты душ','Soul slots'),row);
-  const query=el('input',{type:'search',placeholder:tr('Поиск совместимой души','Find a compatible Soul'),
+  const searchRu='Поиск совместимой души',searchEn='Find a compatible Soul';
+  const query=el('input',{type:'search',placeholder:copy('soulSearch',searchRu,searchEn),
    'aria-label':tr('Поиск души','Find Soul'),
    'data-soul-query':'1',value:api.soulQuery||''});
   const list=el('div',{class:'stage-rich-list'});
@@ -369,18 +370,50 @@ function render(root,api){
    const results=Object.values(api.catalog.souls||{}).filter(rec=>plan.validSoul(rec,slot)&&
     String(rec.name||'').toLocaleLowerCase('ru').includes(needle));
    for(const rec of results.slice(0,80)){
-    const button=el('button',{type:'button',class:'stage-rich-result',onclick:()=>api.assignSoul(rec)});
+    const button=el('button',{type:'button',class:'stage-rich-result',
+     onclick:event=>{
+      if(event.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+      api.assignSoul(rec);
+     }});
     const src=icons(rec,'soul');
     if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
-    button.append(el('span',{text:globalThis.PandoraItemPresentation?.displayName(rec,'Душа без названия')||'Душа без названия'}));list.append(button);attachPreview(button,rec,icons,'soul');
+    const name=globalThis.PandoraItemPresentation?.displayName(rec,
+     tr('Душа без названия','Unnamed Soul'),english?'en':'ru')||
+     tr('Душа без названия','Unnamed Soul');
+    const caption=el('span',{text:name,class:'stage-soul-result-caption'});
+    if(api.canEdit){
+     caption.setAttribute('data-owner-record','soul:'+rec.id);
+     caption.setAttribute('data-owner-field',english?'nameEn':'name');
+     const pencil=el('span',{class:'stage-control-pencil',role:'button',
+      tabindex:'0',text:'✎','aria-label':tr('Изменить душу: ','Edit Soul: ')+name});
+     const edit=event=>{
+      event.preventDefault();event.stopPropagation();
+      caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+     };
+     pencil.addEventListener('click',edit);
+     pencil.addEventListener('keydown',event=>{
+      if(event.key==='Enter'||event.key===' ')edit(event);
+     });
+     button.append(caption,pencil);
+    }else button.append(caption);
+    list.append(button);attachPreview(button,rec,icons,'soul');
    }
    if(results.length>80)list.append(el('p',{class:'muted',text:'Показано 80 душ. Уточни поиск.'}));
    if(!results.length)list.append(el('p',{class:'muted',text:'Совместимых душ не найдено'}));
   };
   query.addEventListener('input',()=>{api.onSoulQuery?.(query.value);draw()});
-  body.append(query,el('button',{type:'button',class:'stage-enchant-reset',
-    text:tr('✕ Извлечь душу из выбранного слота','✕ Remove Soul from selected slot'),
-    onclick:()=>api.assignSoul(null)}),list);
+  if(api.canEdit)body.append(editable(el('label',{
+   class:'stage-soul-search-caption',text:copy('soulSearch',searchRu,searchEn)}),
+   'soulSearch',searchRu,searchEn));
+  const removeRu='Извлечь душу из выбранного слота';
+  const removeEn='Remove Soul from selected slot';
+  const remove=el('button',{type:'button',class:'stage-enchant-reset',
+   text:'✕ '+copy('soulRemove',removeRu,removeEn),
+   onclick:event=>{
+    if(event.target?.closest?.('.stage-control-pencil,.wiki-inline-input'))return;
+    api.assignSoul(null);
+   }});
+  body.append(query,labeledAction(remove,'soulRemove',removeRu,removeEn,'✕'),list);
   draw();
  }
 }
