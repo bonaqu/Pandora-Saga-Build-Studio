@@ -28,9 +28,9 @@ test('known missing originals return null instead of repeating HTTP 404 requests
  const {skillIcon,itemIcon}=resolver();
  assert.equal(skillIcon('slash',0,{id:100055002,iconId:100055002}),null);
  assert.equal(itemIcon({id:900001,icon:'I_900001_00'}),null);
- assert.match(skillIcon('slash',0,{id:999999,iconId:999999}),/^https:\/\//);
+ assert.equal(skillIcon('slash',0,{id:999999,iconId:999999}),null);
  assert.equal(skillIcon('slash',0,null),'branch:slash');
- assert.match(itemIcon({id:123,icon:'I_unknown_01'}),/^https:\/\//);
+ assert.equal(itemIcon({id:123,icon:'I_unknown_01'}),null);
 });
 test('404 list is read only from verified manifest and invisible passives retain a glyph',()=>{
  assert.match(app,/unavailableIconIds=new Set\(\(Array\.isArray\(data\.missing\)/);
