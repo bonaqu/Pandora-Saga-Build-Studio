@@ -25,8 +25,9 @@ export async function runInnateSkillMasterySmoke(browser,base){
   await page.locator('#classGrid .class-current-select').click(); // Warrior itself
   assert.match(await page.locator('#activeJob').innerText(),/Воин/);
   assert.equal(await page.locator('#levelOut').innerText(),'1');
-  assert.equal(await page.locator('#pathAutoMastery').isChecked(),false,
-   'A freshly created level-1 character must not already have max-trained green mastery');
+  assert.equal(await page.locator('#pathAutoMastery').isChecked(),true,
+   'A fresh build must auto-fill green mastery by default');
+  await page.locator('#pathAutoMastery').uncheck(); // Exercise the independent manual green mastery starting from zero.
   const budget=await page.locator('#budgetState').innerText();
   assert.match(budget,/0[\s\S]*Вложено/);
   await page.locator('[data-origin-tab="stats"]').click();

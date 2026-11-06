@@ -9,7 +9,9 @@ const path=read('pandora-studio-hero-path.js'),app=read('pandora-studio-app.js')
 test('skill group displays independently calculated mastered, learned and manually invested totals',()=>{
  assert.match(path,/const mastered=branchKeys\.reduce\(\(sum,key\)=>sum\+M\.branchMastery\(state,key,innate,caps\),0\)/);
  assert.match(path,/const learned=branchKeys\.reduce\(\(sum,key\)=>sum\+M\.branchPotential\(state,key,innate,caps\),0\)/);
- assert.match(path,/learned\+tr\(api,' изучено · вложено ',' learned · invested '\)\+spent/);
+ assert.match(path,/tr\(api,'освоено ','trained '\)\+mastered/);
+ assert.match(path,/tr\(api,' · изучено ',' · learned '\)\+learned/);
+ assert.match(path,/tr\(api,' · вложено ',' · invested '\)\+spent/);
 });
 test('milestone labels consistently distinguish initial, invested, class cap and absolute threshold',()=>{
  for(const fragment of [
@@ -32,22 +34,21 @@ test('outfit mirrored pants has a lock but stays an interactive, nonduplicated s
  assert.match(css,/\.shared-outfit .equipped-icon/);
  assert.doesNotMatch(app,/disabled:shared/);
 });
-test('all equipment rows show source-backed socket counts, not invented slot capacities',()=>{
- assert.match(app,/const socketCount=window\.PandoraEquipmentPlan\.socketCapacity\(rec\)/);
- assert.match(app,/const socketLabel=socketCount===null\?'—':String\(socketCount\)/);
+test('only compatible equipment rows show source-backed Soul slot counts',()=>{
+ assert.match(app,/const socketCount=window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\?/);
+ assert.match(app,/const meta=window\.PandoraEquipmentPlan\.supportsSoulSlot\(key\)\?/);
  assert.match(app,/ · Слоты: /);
  assert.match(app,/ · Slots: /);
  assert.match(app,/class:'stage-picker-item-label'/);
 });
-test('refinement stays one row and seven canonical game elements remain selectable',()=>{
+test('refinement wraps without clipping and seven canonical game elements fill rows',()=>{
  const host={};Function('window',read('pandora-studio-enchantment.js'))(host);
  assert.deepEqual(host.PandoraEnchantModel.elements.map(e=>e.id),
  ['fire','ice','lightning','poison','light','dark','rainbow']);
  assert.match(equipment,/for\(let n=0;n<=10;n\+\+\)/);
- assert.match(css,/\.stage-grade\{[\s\S]*?grid-template-columns:repeat\(11,minmax\(24px,1fr\)\)/);
- assert.match(css,/\.stage-enchant-options\.is-element-options\{[\s\S]*?repeat\(4,minmax\(0,1fr\)\)/);
- assert.doesNotMatch(css,/\.stage-enchant-options\{display:flex;flex-wrap:wrap/,
-  'Legacy flex-wrap overrides actual 4+3 element grid');
+ assert.match(css,/\.stage-rich-body \.stage-grade\{\s*display:flex;flex-wrap:wrap/);
+ assert.match(css,/\.stage-rich-body \.stage-enchant-options\.is-element-options\{\s*display:flex;flex-wrap:wrap/);
+ assert.match(css,/\.stage-rich-body \.stage-enchant-options\.is-element-options button\{\s*flex:1 1/);
  assert.match(equipment,/elementIcons=\{fire:'🔥',ice:'❄️',lightning:'⚡',poison:'☠️'/);
  assert.match(equipment,/light:'☀️',dark:'🌑',rainbow:'🌈'/);
  assert.match(equipment,/onclick:\(\)=>api\.assignGem\(\{type:key==='type'/);
@@ -63,5 +64,5 @@ test('site shell has clean title/footer; counts remain grounded in loaded catalo
  assert.match(app,/data\.meta\.counts\.souls/);
  assert.ok(!app.includes("'Cloudflare D1 · актуальный опубликованный каталог'"));
  assert.match(app,/\$\('siteNotice'\)\.textContent=archive\?/);
- assert.match(html,/2026\.11\.06\.392/);
+ assert.match(html,/2026\.11\.06\.393/);
 });

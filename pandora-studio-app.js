@@ -72,7 +72,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:false,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
@@ -644,6 +644,27 @@ function originCopy(key,ru,en){
  const entry=window.PandoraHonorGuide?.field(override,'origin.'+originGuideKey(key),ru,en);
  return lang==='en'?(entry?.en||en):(entry?.ru||ru);
 }
+
+// Editable, bilingual equipment captions share the existing D1 guide namespace.
+// These are display labels only; edit actions never touch item stats or saved builds.
+function equipmentCopy(key,ru,en){
+ const entry=window.PandoraHonorGuide?.field(override,'equipment.'+key,ru,en);
+ return lang==='en'?(entry?.en||en):(entry?.ru||ru);
+}
+function equipmentCopyLabel(node,key,ru,en){
+ if(!node||!adminEditing||!adminToken)return;
+ node.classList.add('origin-copy-editable');
+ node.title=lang==='en'?'Double-click to edit caption':'Двойной клик — изменить надпись';
+ node.addEventListener('dblclick',event=>{
+  if(!adminEditing||!adminToken)return;
+  event.preventDefault();event.stopPropagation();
+  editWikiValue(node,equipmentCopy(key,ru,en),{
+   type:'text',
+   onCommit:next=>saveGuidePatch('book.equipment.'+key,{[lang]:next}),
+   onCommitted:next=>{node.textContent=next}
+  });
+ });
+}
 const originFixedLabels=[
  ['.workspace>.left>.panel-heading h2','heading','Происхождение','Origin'],
  ['#originTabs [data-origin-tab="race"]','tabRace','Раса','Race'],
@@ -979,7 +1000,7 @@ function renderSlotRails(){
      'aria-label':'Пламя феникса: +'+activeFire.phoenix.chance+'%'}));
    }
    if(report.excess>0||issue.length)button.append(h('span',{class:'stage-conflict',text:'!',
-    'aria-label':issue.length?'Предмет временно недоступен':'Конфликт гнёзд'}));
+    'aria-label':issue.length?'Предмет временно недоступен':'Конфликт слотов душ'}));
    container.append(button);
   }
  }
@@ -1153,6 +1174,7 @@ function renderStagePicker(focusSearch=false){
  if(stageSlotView!=='choose'){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
+   copyLabel:equipmentCopy,editLabel:equipmentCopyLabel,
    record,item:equipped,slot:key,
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+
     (lang==='en'?['Weapon','Shield','Helmet','Armor','Gloves','Pants',
@@ -1291,12 +1313,14 @@ function renderStagePicker(focusSearch=false){
    const src=itemIcon(rec);
    if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
    else btn.append(h('span',{class:'item-glyph',text:'⚔'}));
-   const socketCount=window.PandoraEquipmentPlan.socketCapacity(rec);
-   const socketLabel=socketCount===null?'—':String(socketCount);
    const itemLevel=Number(rec.level);
-   const meta=(lang==='en'?'Level ':'Уровень ')+
-    (Number.isFinite(itemLevel)&&itemLevel>=1?itemLevel:'—')+
-    (lang==='en'?' · Slots: ':' · Слоты: ')+socketLabel;
+   const levelText=(lang==='en'?'Level ':'Уровень ')+
+    (Number.isFinite(itemLevel)&&itemLevel>=1?itemLevel:'—');
+   const socketCount=window.PandoraEquipmentPlan.supportsSoulSlot(key)?
+    window.PandoraEquipmentPlan.socketCapacity(rec):null;
+   const meta=window.PandoraEquipmentPlan.supportsSoulSlot(key)?
+    levelText+(lang==='en'?' · Slots: ':' · Слоты: ')+
+     (socketCount===null?'—':String(socketCount)):levelText;
    btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),
     h('small',{text:meta})]));
    if(future)btn.append(h('span',{class:'stage-picker-future',
@@ -3152,9 +3176,9 @@ function renderWiki(root){
      [wt('Защита','Defense'),rec.AC,'AC'],
      [wt('Скорость атаки','Attack speed'),rec.atkspeed,'atkspeed'],
      [wt('Дальность','Range'),rec.range,'range'],
-     [wt('Гнёзда душ','Soul sockets'),rec.soulslot,'soulslot']
+     [wt('Слоты душ','Soul slots'),rec.soulslot,'soulslot']
     ];
-    const hints={kind:'Игровая категория предмета',level:'Уровень предмета',W:'Показатель атаки оружия',PEN:'Показатель пробития оружия',AC:'Защита предмета',atkspeed:'Скорость атаки',range:'Дальность действия',soulslot:'Гнёзда душ: от 0 до 3'};
+    const hints={kind:'Игровая категория предмета',level:'Уровень предмета',W:'Показатель атаки оружия',PEN:'Показатель пробития оружия',AC:'Защита предмета',atkspeed:'Скорость атаки',range:'Дальность действия',soulslot:'Слоты душ: от 0 до 3'};
     for(const [label,value,key]of itemFields)if(value!=null){
      const dt=h('dt',{class:'wiki-help-label'},[
       h('span',{text:label,title:hints[key]||label,class:'wiki-help-word'})]);
@@ -3880,7 +3904,7 @@ function renderWiki(root){
       if(row.kind==='conditional')entry.append(h('small',{class:'wiki-loot-conditional',
        text:wt('Особый','Conditional')}));
       if(row.slotAdd>0)entry.append(h('small',{class:'wiki-loot-sockets',
-       text:wt('Гнёзда +','Sockets +')+row.slotAdd}));
+       text:wt('Слоты +','Slots +')+row.slotAdd}));
       flow.append(entry);
      }
      detail.append(flow);
@@ -6079,7 +6103,7 @@ function editor(el){
     h('button',{type:'button',text:'✕','aria-label':'Закрыть редактор',onclick:closeInlineEditor}));
   const input=visual?ownerPlainTextField({class:'owner-plain-path',
    'aria-label':'Путь к изображению',value:original,placeholder:'assets/image.webp'}):
-   slotEdit?h('input',{type:'number',min:'0',max:'32',step:'1',value:original,'aria-label':'Число гнёзд'}):
+   slotEdit?h('input',{type:'number',min:'0',max:'32',step:'1',value:original,'aria-label':'Число слотов душ'}):
     ownerPlainTextField({multiline:true,rows:key.startsWith('skilldesc.')?5:3,
    class:'owner-plain-multiline','aria-label':'Редактируемый текст'});
   if(!visual)input.value=original;

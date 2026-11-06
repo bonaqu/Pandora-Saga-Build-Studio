@@ -59,7 +59,7 @@ test('current live OS drop slot variants are preserved as source-specific annota
   assert.equal(drops[id].d.find(x=>x.i===11095)?.slotAdd,1);
  }
  assert.match(source('pandora-studio-encyclopedia-data.js'),/slotAdd:r\.slotAdd\?\?0/);
- assert.match(source('pandora-studio-app.js'),/Гнёзда \+/);
+ assert.match(source('pandora-studio-app.js'),/Слоты \+/);
 });
 
 // Prerequisites from current OS skills 320007001 and 320008001.

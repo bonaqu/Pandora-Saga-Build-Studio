@@ -185,8 +185,9 @@ function viewGrowth(target,api){
    const mastered=branchKeys.reduce((sum,key)=>sum+M.branchMastery(state,key,innate,caps),0);
    const learned=branchKeys.reduce((sum,key)=>sum+M.branchPotential(state,key,innate,caps),0);
    // Green trained, total learned branch points and extra spent points differ.
-   return mastered+tr(api,' освоено · ',' trained · ')+
-    learned+tr(api,' изучено · вложено ',' learned · invested ')+spent;
+   return tr(api,'освоено ','trained ')+mastered+
+    tr(api,' · изучено ',' · learned ')+learned+
+    tr(api,' · вложено ',' · invested ')+spent;
   };
   const groupCount=make('small',{text:groupSummary()});
   groupButton.append(make('strong',{text:api.lang==='en'?group.en:group.ru}),groupCount);
