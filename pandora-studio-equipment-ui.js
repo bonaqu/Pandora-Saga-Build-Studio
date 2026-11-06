@@ -53,7 +53,9 @@ function summary(record,icon,kind='item',context=null){
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
  [[tr('Тип','Type'),presenter?.kind(record,locale)||tr('Предмет','Item')],
  [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),attackDisplay],
- [tr('Защита','Defense'),armorDisplay],[tr('Гнёзда','Sockets'),record.soulslot],
+ [tr('Защита','Defense'),armorDisplay],
+ ...(root.PandoraEquipmentPlan?.supportsSoulSlot?.(context?.slot||record.slot)?
+  [[tr('Слоты','Slots'),record.soulslot]]:[]),
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
  if(gem&&grade>0){
@@ -228,6 +230,8 @@ function render(root,api){
   el('button',{type:'button',text:'✕',onclick:api.close,'aria-label':'Закрыть настройку'})
  ]);root.append(head);
  const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
+ const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
+ const editable=(node,key,ru,en)=>{api.editLabel?.(node,key,ru,en);return node};
  const tabs=el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
   role:'group','aria-label':tr('Настройка предмета','Item settings')});
  const sections=[
@@ -248,7 +252,9 @@ function render(root,api){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
     class:n===grade?'chosen':'','aria-pressed':String(n===grade),'data-grade':String(n),onclick:()=>api.updateGrade(n)}));
-   body.append(el('h4',{class:'stage-refine-heading',text:tr('Заточка: +0…+10','Refinement: +0…+10')}),buttons);
+   body.append(editable(el('h4',{class:'stage-refine-heading',
+    text:copy('refinementHeading','Заточка: +0…+10','Refinement: +0…+10')}),
+    'refinementHeading','Заточка: +0…+10','Refinement: +0…+10'),buttons);
    // Item properties expose actual grade; inferred weapon math stays out of the editor.
    const model=globalThis.PandoraEnchantModel,choice=model.normalize(gems);
    const elementIcons={fire:'🔥',ice:'❄️',lightning:'⚡',poison:'☠️',
@@ -256,7 +262,10 @@ function render(root,api){
    const group=(label,entries,key)=>{
     const box=el('fieldset',{class:'stage-enchant-fieldset stage-enchant-inline stage-enchant-'+key});
     const line=el('div',{class:'stage-enchant-options '+(key==='element'?'is-element-options':'is-type-options')});
-    box.append(el('legend',{text:label}));
+    const editKey=key==='type'?'gemTypeLabel':'gemElementLabel';
+    const baseRu=key==='type'?'Тип':'Стихия',baseEn=key==='type'?'Type':'Element';
+    box.append(editable(el('legend',{text:copy(editKey,baseRu,baseEn)}),
+     editKey,baseRu,baseEn));
     for(const option of entries){
      const name=english?option.en:option.ru;
      line.append(el('button',{type:'button',
@@ -269,8 +278,11 @@ function render(root,api){
     }
     box.append(line);return box;
    };
-   body.append(el('h4',{class:'stage-enchant-heading',
-    text:slot==='weapon'?tr('Тип и стихия','Type and element'):tr('Стихия','Element')}));
+   const titleKey=slot==='weapon'?'gemHeadingWeapon':'gemHeadingArmor';
+   const titleRu=slot==='weapon'?'Тип и стихия':'Стихия';
+   const titleEn=slot==='weapon'?'Type and element':'Element';
+   body.append(editable(el('h4',{class:'stage-enchant-heading',
+    text:copy(titleKey,titleRu,titleEn)}),titleKey,titleRu,titleEn));
    if(slot==='weapon')body.append(group(tr('Тип','Type'),model.types,'type'));
    body.append(group(tr('Стихия','Element'),model.elements,'element'));
   }
@@ -280,15 +292,19 @@ function render(root,api){
   for(let i=0;i<cap;i++){
    const value=souls[i],soul=value&&api.catalog.souls?.[String(value.id)],selected=i===api.selectedSocket;
    const button=el('button',{type:'button',class:selected?'selected':'','aria-pressed':String(selected),
-    'aria-label':'Гнездо '+(i+1)+': '+(soul?.name||'пусто'),
+    'aria-label':tr('Слот души ','Soul slot ')+(i+1)+': '+(soul?.name||tr('пусто','empty')),
     'data-socket-index':String(i),onclick:()=>api.openSocket(i)});
    const src=soul&&icons(soul,'soul');
    if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
-   else button.append(el('span',{text:soul?'✦':'+'}));
-   button.append(el('small',{text:String(i+1)}));row.append(button);attachPreview(button,soul,icons,'soul');
+   else button.append(el('span',{class:'stage-soul-slot-empty',text:soul?'✦':'+'}));
+   button.append(el('small',{text:tr('Слот ','Slot ')+(i+1)}));
+   row.append(button);attachPreview(button,soul,icons,'soul');
   }
-  body.append(el('h4',{text:'Гнёзда душ'}),row);
-  const query=el('input',{type:'search',placeholder:'Поиск совместимой души','aria-label':'Поиск души',
+  body.append(editable(el('h4',{
+   text:copy('soulSlotsHeading','Слоты душ','Soul slots')}),
+   'soulSlotsHeading','Слоты душ','Soul slots'),row);
+  const query=el('input',{type:'search',placeholder:tr('Поиск совместимой души','Find a compatible Soul'),
+   'aria-label':tr('Поиск души','Find Soul'),
    'data-soul-query':'1',value:api.soulQuery||''});
   const list=el('div',{class:'stage-rich-list'});
   const draw=()=>{
@@ -306,7 +322,8 @@ function render(root,api){
   };
   query.addEventListener('input',()=>{api.onSoulQuery?.(query.value);draw()});
   body.append(query,el('button',{type:'button',class:'stage-enchant-reset',
-    text:'✕ Извлечь душу из выбранного гнезда',onclick:()=>api.assignSoul(null)}),list);
+    text:tr('✕ Извлечь душу из выбранного слота','✕ Remove Soul from selected slot'),
+    onclick:()=>api.assignSoul(null)}),list);
   draw();
  }
 }
