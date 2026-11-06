@@ -53,9 +53,9 @@ export async function runInnateSkillMasterySmoke(browser,base){
   const spent=page.locator('[data-branch-control="slash:potential-number"]');
   const green=page.locator('[data-branch-control="slash:mastery-number"]');
   assert.equal(await spent.inputValue(),'0');
-  assert.equal(await green.inputValue(),'5');
-  assert.equal(await green.getAttribute('min'),'5');
-  assert.equal(await green.getAttribute('max'),'25');
+  assert.equal(await green.inputValue(),'0');
+  assert.equal(await green.getAttribute('min'),'0');
+  assert.equal(await green.getAttribute('max'),'5');
   assert.match(await page.locator('.path-innate-baseline').first().innerText(),/Старт: 5/);
   // Persisted legacy auto=true is not an instruction to max every branch.
   await page.locator('#pathAutoMastery').check();
@@ -67,13 +67,14 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.equal(await page.locator('#pathAutoMastery').isChecked(),true);
   assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replaceAll(' ',''),'5/25');
   await page.locator('#pathAutoMastery').uncheck();
-  await page.locator('[data-branch-control="slash:mastery-number"]').fill('6');
+  await page.locator('[data-branch-control="slash:mastery-number"]').fill('4');
   await page.locator('[data-branch-control="slash:mastery-number"]').press('Tab');
-  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'6');
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'4');
   await page.locator('#pathAutoMastery').check();
-  assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replaceAll(' ',''),'6/25');
+  assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replaceAll(' ',''),'5/25');
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'5');
   await page.locator('#pathAutoMastery').uncheck();
-  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'6');
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'4');
   assert.equal(await spent.inputValue(),'0');
   assert.match(await page.locator('#budgetState').innerText(),/0[\s\S]*Вложено/);
 
