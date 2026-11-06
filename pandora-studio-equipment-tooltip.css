@@ -1,10 +1,6 @@
 /* Equipped tooltip: compact requirements, per-piece armor, socketed Soul effects. */
 .stage-item-tooltip .stage-rich-head{gap:7px;align-items:center}
 .stage-item-tooltip .stage-gear-grade{margin-left:auto;flex:none;border:1px solid #b38a50;background:#45301b;border-radius:3px;padding:1px 5px;font:700 11px Manrope,Arial,sans-serif;color:#ffd893}
-.stage-item-tooltip .stage-gear-wearers{padding:7px 0 5px;border-top:1px solid #574129}
-.stage-item-tooltip .stage-gear-wearers-label{display:block;color:#bc9b71;font-size:10px;margin-bottom:5px}
-.stage-item-tooltip .stage-gear-wearer-chips{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px}
-.stage-item-tooltip .stage-gear-wearer{padding:2px 6px;border:1px solid #705036;background:#2f2319;border-radius:3px;color:#ecc68c;font:600 10px/1.4 Manrope,Arial,sans-serif}
 .stage-item-tooltip .stage-gear-souls{margin-top:8px;border-top:1px solid #654a2e;padding-top:8px;display:grid;gap:6px}
 .stage-item-tooltip .stage-gear-souls>strong{font-size:11px;color:#f1ce98}
 .stage-item-tooltip .stage-gear-soul{display:flex;align-items:flex-start;gap:7px;padding:6px;background:#1a130e;border:1px solid #5b412b;border-radius:3px}
@@ -28,26 +24,15 @@
  overflow-wrap:anywhere;pointer-events:none
 }
 
-/* Item summaries in Properties and hover previews share the SAME wearer chips.
-   Previously these styles were scoped only to hover tooltips and the text
-   collapsed into a visually unseparated sequence in the main Properties tab. */
-.stage-rich-summary .stage-gear-wearers{
- margin:8px 0 7px;padding:8px 9px 9px;
- background:linear-gradient(135deg,#312218,#241912);
- border:1px solid #765636;border-radius:6px;
- display:flex;flex-direction:column;align-items:flex-start;gap:6px
+/* Approved layout 02: item wearer compatibility is a plain dl stat row.
+   It uses the same baseline, label tint and right-aligned value as Level/Slots.
+   No chip backgrounds, frames, forced fixed-height cells or unnecessary spacing. */
+.stage-rich-summary .stage-rich-fields>.stage-gear-wearers-label{
+ color:#baa17c;font:inherit;min-width:0
 }
-.stage-rich-summary .stage-gear-wearers-label{
- display:block;color:#d9b57f;font:600 11px/1.25 Manrope,Arial,sans-serif
+.stage-rich-summary .stage-rich-fields>.stage-gear-wearers-value{
+ margin:0;min-width:0;
+ color:#f3d2a1;text-align:right;line-height:1.4;
+ white-space:normal;overflow-wrap:normal;word-break:normal
 }
-.stage-rich-summary .stage-gear-wearer-chips{
- display:flex;align-items:center;flex-wrap:wrap;gap:5px 6px;
- width:100%;min-width:0
-}
-.stage-rich-summary .stage-gear-wearer{
- display:inline-flex;align-items:center;min-height:24px;
- padding:4px 8px;border:1px solid #8d6e4a;border-radius:4px;
- background:#3b291b;color:#f0d1a2;
- font:600 10px/1.25 Manrope,Arial,sans-serif;
- white-space:nowrap
-}
+.stage-rich-summary .stage-gear-wearer-name{white-space:normal}
