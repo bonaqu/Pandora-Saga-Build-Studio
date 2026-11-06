@@ -17,6 +17,12 @@ function value(raw){
  return Number.isSafeInteger(n)&&n>0?n:0;
 }
 function potential(state,key){return value(state?.points?.[key])}
+// The innate (already trained) green points belong to the root profession
+// and exist even with ZERO free skill points on a new level-1 character.
+// They are not skill allocations and cannot be refunded.
+function branchBase(innate,key){return value(innate?.[key])}
+function branchPotential(state,key,innate={}){return branchBase(innate,key)+potential(state,key)}
+function branchMastery(state,key,innate={}){return branchBase(innate,key)+trained(state,key)}
 function trained(state,key){
  const max=potential(state,key);
  if(state?.masteryAuto!==false)return max;
@@ -46,7 +52,7 @@ function setAuto(state,on,keys){
 // BOTH contribute to derivative skill passives. Neither is the blue Potential.
 // OS tables.json jobInit.<baseClass>.branches matches legacy innate branch values.
 function groupAdeptness(state,branchKeys,innate={}){
- return branchKeys.reduce((sum,key)=>sum+value(innate?.[key])+trained(state,key),0);
+ return branchKeys.reduce((sum,key)=>sum+branchMastery(state,key,innate),0);
 }
 function prayerAdeptness(state,innate={}){return groupAdeptness(state,PRAYER,innate)}
 function combatMasteries(state,innate={}){
@@ -87,7 +93,8 @@ function canAllocate(table,level,points,key,cap,amount){
   amount<=cap&&budget.spent-current+amount<=budget.total;
 }
 root.PandoraSkillProgression=Object.freeze({
- potential,trained,setPotential,setTrained,setAuto,skillGrant,spending,canAllocate,
+ potential,trained,branchBase,branchPotential,branchMastery,
+ setPotential,setTrained,setAuto,skillGrant,spending,canAllocate,
  groupAdeptness,prayerAdeptness,legacyPrayerSpirit,combatMasteries,PRAYER,MAGIC,TECHNIQUE,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);
