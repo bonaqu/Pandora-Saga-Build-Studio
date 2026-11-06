@@ -48,3 +48,38 @@ test('removing an item clears its Souls, including a two-slot outfit displacemen
  assert.equal(state.souls[3],undefined);
  assert.equal(state.souls[5],undefined,'Restored pants must not inherit stale Souls');
 });
+
+test('reconcile removes stale Souls from unwearable or unsocketed item types',()=>{
+ const current={
+  equipment:{0:{id:100},3:{id:200},8:{id:300},11:{id:400}},
+  souls:{0:[{id:1}],3:[{id:2},{id:3},{id:4}],
+   8:[{id:2}],11:[{id:5}]},soulOwners:{}
+ };
+ const items={100:{slot:'weapon',soulslot:1},200:{slot:'body',soulslot:0},
+  300:{slot:'ring',soulslot:3},400:{slot:'belt'}};
+ const souls={1:{slots:['weapon']},2:{slots:['body']},3:{slots:['body']},
+  4:{slots:['body']},5:{slots:['belt']}};
+ assert.equal(p.reconcileSoulOwnership(current,items,souls),true);
+ assert.equal(current.souls[3],undefined);
+ assert.equal(current.souls[8],undefined);
+ assert.equal(current.souls[11],undefined);
+ assert.equal(current.souls[0][0].id,1);
+ assert.equal(current.soulOwners[0],'100');
+});
+test('old saved Soul ownership mismatch never migrates to a newly equipped item',()=>{
+ const current={equipment:{0:{id:201}},souls:{0:[{id:1}]},
+  soulOwners:{0:'200'}};
+ const items={201:{slot:'weapon',soulslot:2}};
+ const souls={1:{slots:['weapon']}};
+ assert.equal(p.reconcileSoulOwnership(current,items,souls),true);
+ assert.equal(current.souls[0],undefined);
+ assert.equal(current.soulOwners[0],undefined);
+});
+test('legacy excessive Souls are not truncated onto a smaller new item',()=>{
+ const current={equipment:{3:{id:201}},souls:{3:[{id:1},{id:2},{id:3}]},
+  soulOwners:{}};
+ const items={201:{slot:'body',soulslot:1}};
+ const souls={1:{slots:['body']},2:{slots:['body']},3:{slots:['body']}};
+ p.reconcileSoulOwnership(current,items,souls);
+ assert.equal(current.souls[3],undefined);
+});
