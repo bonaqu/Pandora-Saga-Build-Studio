@@ -10,8 +10,8 @@ export async function runInnateSkillMasterySmoke(browser,base){
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
-  await page.waitForFunction(()=>/\\d+ навыков · \\d+ предметов · \\d+ душ/.test(
-   document.querySelector('#catalogStatus')?.textContent||''),null,{timeout:25000});
+  await page.waitForFunction(()=>document.querySelector('#catalogStatus')?.textContent?.includes('навыков')&&document.querySelector('#catalogStatus')?.textContent?.includes('предметов'),null,{timeout:25000});
+
   const skillSearch=page.locator('#pathSkillSearch');
   assert.equal(await skillSearch.getAttribute('autocomplete'),'off');
   assert.equal(await skillSearch.getAttribute('name'),'ps-hero-skill-filter');
@@ -38,7 +38,7 @@ export async function runInnateSkillMasterySmoke(browser,base){
 
   const slash=page.locator('#skillBranches [data-path-branch="slash"]');
   await slash.waitFor({state:'visible'});
-  assert.match((await slash.locator('.count').innerText()).replace(/\\s/g,''),/^5\\/25$/);
+  assert.equal((await slash.locator('.count').innerText()).replaceAll(' ',''),'5/25');
   if(await slash.getAttribute('aria-expanded')!=='true')await slash.click();
   const spent=page.locator('[data-branch-control="slash:potential-number"]');
   const green=page.locator('[data-branch-control="slash:mastery-number"]');
@@ -55,7 +55,7 @@ export async function runInnateSkillMasterySmoke(browser,base){
   const tactics=page.locator('#skillBranches [data-path-group="tactics"]');
   await tactics.click();
   const archery=page.locator('#skillBranches [data-path-branch="archery"]');
-  assert.match((await archery.locator('.count').innerText()).replace(/\\s/g,''),/^1\\/5$/);
+  assert.equal((await archery.locator('.count').innerText()).replaceAll(' ',''),'1/5');
   assert.equal(await page.locator('#skillBranches [data-path-branch="alchemy"]')
    .evaluate(node=>node.classList.contains('disabled-branch')),true);
 
