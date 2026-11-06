@@ -1237,9 +1237,9 @@ function renderStagePicker(focusSearch=false){
   }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
  const isSharedPants=selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3));
- if(isSharedPants)root.append(h('small',{class:'stage-outfit-note',
+ const outfitNote=isSharedPants?h('small',{class:'stage-outfit-note',
   text:lang==='en'?'Armor and pants are occupied by one outfit. Choosing pants removes it.':
-   'Платье занимает броню и штаны. Выбор штанов снимет его.'}));
+   'Платье занимает броню и штаны. Выбор штанов снимет его.'}):null;
  const records=catalog.live&&Number.isInteger(state.race)&&Number.isInteger(state.job)?window.PandoraUIPlanner.planningEquippable(
   Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,
   window.PandoraStudioRules.equipment)
@@ -1300,7 +1300,9 @@ function renderStagePicker(focusSearch=false){
  };
  search.addEventListener('input',()=>{stageSlotQuery=search.value;stageSlotShown=48;draw()});
  more.addEventListener('click',()=>{stageSlotShown+=48;draw()});
- root.append(top,search,count,list,bottom);draw();
+ root.append(top);
+ if(outfitNote)root.append(outfitNote);
+ root.append(search,count,list,bottom);draw();
  if(focusSearch)search.focus({preventScroll:true});
 }
 function attributeSnapshot(){
