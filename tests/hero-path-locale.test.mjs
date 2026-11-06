@@ -16,11 +16,11 @@ test('Hero Path skill availability messages are translated by interface language
  const en=check('en');
  assert.equal(en.learned,false);
  for(const label of ['Unavailable to this class','Requires level 20',
-   'magic: potential 0/10','magic: mastery 0/10','Special learning method required'])
+   'magic : allocated 0/10','Special learning method required'])
   assert.ok(en.problems.includes(label),label);
  const ru=check('ru');
  for(const label of ['Не подходит профессии','Требуется уровень 20',
-   'magic: доступно 0/10','magic: мастерство 0/10','Особый способ изучения'])
+   'magic: вложено 0/10','Особый способ изучения'])
   assert.ok(ru.problems.includes(label),label);
 });
 test('skill detail fields and workspace labels translate without rewriting game data',()=>{
