@@ -15,6 +15,49 @@ function make(tag,attr={},children=[]){
  for(const v of children)e.append(typeof v==='string'?document.createTextNode(v):v);
  return e;
 }
+// Match the established Origin stat button behavior: one point per click,
+// continuous increments after holding 340 ms, repeat every 85 ms.
+// During a hold we update state in place; pointerup commits a single rerender.
+function bindPathHoldStep(button,step,commit){
+ let delay=null,interval=null,active=false,skipClick=false,changed=false;
+ const cleanup=()=>{
+  if(delay!==null){clearTimeout(delay);delay=null}
+  if(interval!==null){clearInterval(interval);interval=null}
+  active=false;button.classList.remove('is-repeating');
+ };
+ const finish=()=>{
+  const dirty=changed;changed=false;cleanup();
+  if(dirty)commit();
+ };
+ const run=()=>{
+  if(button.disabled||!button.isConnected){finish();return}
+  if(step())changed=true;
+  else if(active)finish();
+ };
+ button.addEventListener('pointerdown',event=>{
+  if(button.disabled||event.button!==0||event.isPrimary===false)return;
+  cleanup();active=true;changed=false;skipClick=true;run();
+  if(!active)return;
+  delay=setTimeout(()=>{
+   delay=null;
+   if(!active||button.disabled||!button.isConnected){finish();return}
+   button.classList.add('is-repeating');
+   interval=setInterval(run,85);
+  },340);
+ });
+ button.addEventListener('pointerup',finish);
+ button.addEventListener('pointercancel',finish);
+ button.addEventListener('pointerleave',finish);
+ button.addEventListener('lostpointercapture',finish);
+ button.addEventListener('blur',finish);
+ button.addEventListener('click',event=>{
+  if(event?.detail===0){skipClick=false;run();finish();return}
+  if(skipClick){skipClick=false;return}
+  run();finish();
+ });
+ button.addEventListener('keydown',event=>{if(event.key==='Escape')finish()});
+ button.setAttribute('aria-description','Click to change by 1; hold to repeat.');
+}
 // First matching ID wins, matching the original Array.find semantics.
 function indexSkills(skills){
  const byId=new Map();
@@ -374,11 +417,42 @@ function viewGrowth(target,api){
       input.value=String(M.branchMastery(state,key,innate,caps));
     });
     const controls=make('div',{class:'path-point-controls'});
+    const stepPotential=delta=>{
+     const before=M.potential(state,key);
+     update(before+delta,false);
+     return M.potential(state,key)!==before;
+    };
+    const stepMastery=delta=>{
+     if(state.masteryAuto!==false)return false;
+     const before=M.branchMastery(state,key,innate,caps),next=before+delta;
+     if(next<0||next>M.branchPotential(state,key,innate,caps)||
+      !api.onMastery(key,next,false))return false;
+     input.value=String(M.branchMastery(state,key,innate,caps));
+     groupCount.textContent=groupSummary();paint();
+     return M.branchMastery(state,key,innate,caps)!==before;
+    };
     const pointField=(name,help,field,mastery=false)=>{
-     const group=make('label',{class:'path-point-group'+(mastery?' path-point-mastery':'')});
-     const title=make('span',{class:'path-point-name',text:name,tabindex:'0',
-      'data-help':help,'aria-label':name+'. '+help});
-     group.append(title,field);return group;
+     const group=make('div',{class:'path-point-group'+(mastery?' path-point-mastery':'')});
+     field.id='path-'+key+(mastery?'-mastery':'-invested');
+     const title=make('label',{class:'path-point-name',for:field.id,text:name,
+      tabindex:'0','data-help':help,'aria-label':name+'. '+help});
+     const stepper=make('div',{class:'path-point-stepper'});
+     const minus=make('button',{type:'button',class:'path-point-step path-point-decrement',
+      text:'−',disabled:field.disabled,
+      'aria-label':tr(api,'Уменьшить ','Decrease ')+name+
+       tr(api,' на один',' by one')});
+     const plus=make('button',{type:'button',class:'path-point-step path-point-increment',
+      text:'+',disabled:field.disabled,
+      'aria-label':tr(api,'Увеличить ','Increase ')+name+
+       tr(api,' на один',' by one')});
+     const step=mastery?stepMastery:stepPotential;
+     const commit=mastery?
+      ()=>api.onMastery(key,M.branchMastery(state,key,innate,caps),true):
+      ()=>update(M.potential(state,key),true);
+     bindPathHoldStep(minus,()=>step(-1),commit);
+     bindPathHoldStep(plus,()=>step(1),commit);
+     stepper.append(minus,field,plus);group.append(title,stepper);
+     return group;
     };
     controls.append(
      pointField(root.PandoraUILocale?.text('exactPoints',api.lang)||tr(api,'Вложено','Spent'),
