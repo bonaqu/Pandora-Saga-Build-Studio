@@ -89,8 +89,9 @@ function readiness(skill,api,seen=new Set(),skillIndex){
     problems.push(name+tr(api,': порог недоступен для профессии (',': class limit cannot meet requirement (')+
      need+' > '+(Number.isInteger(cap)?cap:'?')+')');
   }
-  const points=M.potential(state,req.branch),green=M.trained(state,req.branch);
-  if(points<need)problems.push(name+tr(api,': вложено ',': spent ')+points+'/'+need);
+  const points=M.branchPotential(state,req.branch,api.innate);
+  const green=M.branchMastery(state,req.branch,api.innate);
+  if(points<need)problems.push(name+tr(api,': доступно ',' potential ')+points+'/'+need);
   if(green<need)problems.push(name+tr(api,': мастерство ',': mastery ')+green+'/'+need);
  }
  if(skill.prereq){
@@ -128,6 +129,7 @@ function nearestMilestone(marks,fraction){
 function viewGrowth(target,api){
  target.replaceChildren();
  const {state,groups,selectedGroup,expandedBranch,job,skillCatalog,budget}=api,auto=state.masteryAuto!==false;
+ const innate=api.innate||{};
  const skillIndex=indexSkills(skillCatalog),skillsByBranch=indexSkillsByBranch(skillCatalog,job);
  for(const group of groups){
   const branchKeys=group.branches.filter(key=>key!=='race');
@@ -136,15 +138,18 @@ function viewGrowth(target,api){
    'aria-expanded':String(selectedGroup===group.id),'data-path-group':group.id,
    onclick:()=>api.onGroup(group.id)});
   const groupSummary=()=>{
-   const total=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
-   return total+tr(api,' вложено',' spent');
+   const spent=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
+   const mastered=branchKeys.reduce((sum,key)=>sum+M.branchMastery(state,key,innate),0);
+   return mastered+tr(api,' освоено',' trained')+
+    (spent?tr(api,' · вложено ',' · spent ')+spent:'');
   };
   const groupCount=make('small',{text:groupSummary()});
   groupButton.append(make('strong',{text:api.lang==='en'?group.en:group.ru}),groupCount);
   wrap.append(groupButton);
   if(selectedGroup===group.id){
    for(const key of branchKeys){
-    const points=M.potential(state,key),trained=M.trained(state,key),cap=api.cap(key),isOpen=expandedBranch===key;
+    const points=M.potential(state,key),base=M.branchBase(innate,key),
+     trained=M.branchMastery(state,key,innate),cap=api.cap(key),isOpen=expandedBranch===key;
     const branch=make('button',{type:'button',
      class:'branch-row'+(isOpen?' active':'')+(cap===0?' disabled-branch':''),
      'aria-expanded':String(isOpen),'data-path-branch':key,
@@ -153,14 +158,18 @@ function viewGrowth(target,api){
     // Mastery is already displayed in its compact numeric input below the rail.
     // Duplicating it in the header adds/removes a whole line at zero -> one.
 
-    const branchCount=make('b',{class:'count',text:cap>0||points>0?points+' / '+cap:'—'});
+    const branchCount=make('b',{class:'count',
+     text:cap>0||points>0||base>0?trained+' / '+cap:'—',
+     'aria-label':tr(api,'Старт ','Innate ')+base+
+      tr(api,', вложено ', ', invested ')+points+
+      tr(api,', мастерство ', ', mastery ')+trained});
     info.append(make('strong',{text:api.branchName(key)}));
     branch.append(info,branchCount);wrap.append(branch);
     if(!isOpen)continue;
     const editor=make('div',{class:'inline-branch-editor'});
-    const available=budget.total!==null&&api.allocationReady&&(cap>0||points>0);
+    const available=budget.total!==null&&api.allocationReady&&(cap>base||points>0);
     const track=make('div',{class:'inline-mastery-track path-integrated-track','aria-label':tr(api,'Единая полоса вложенных очков и освоенного мастерства ','Shared spent-points and trained-mastery bar: ')+api.branchName(key)});
-    const visualMax=Math.max(90,cap,points);
+    const visualMax=Math.max(1,cap,base+points);
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
           locked=make('div',{class:'inline-mastery-locked',
@@ -181,13 +190,16 @@ function viewGrowth(target,api){
     const currentNotch=make('span',{class:'path-current-notch','aria-hidden':'true'});
     const milestonesOnTrack=[];
     const paint=()=>{
-     const invested=M.potential(state,key),mastery=M.trained(state,key);
+     const invested=M.potential(state,key),mastery=M.branchMastery(state,key,innate);
      const goldFraction=Math.max(0,Math.min(1,invested/visualMax));
      const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
      gold.style.width=widthOnRail(goldFraction);
      green.style.width=widthOnRail(greenFraction);
      currentNotch.style.left=positionOnRail(goldFraction);
-     range.setAttribute('aria-valuetext', invested+tr(api,' вложено, ',' spent, ')+mastery+tr(api,' освоено, предел ',' trained, class limit ')+cap);
+     range.setAttribute('aria-valuetext',base+
+      tr(api,' старт, ',' innate, ')+invested+
+      tr(api,' вложено, ',' invested, ')+mastery+
+      tr(api,' мастерство, предел ',' mastery, class limit ')+cap);
      for(const entry of milestonesOnTrack)
       entry.tick.classList.toggle('reached',
        !entry.locked&&entry.skills.some(skill=>readiness(skill,api,new Set(),skillIndex).learned));
@@ -212,10 +224,12 @@ function viewGrowth(target,api){
      const target=api.onAllocate(key,requested,final);
      if(!Number.isInteger(target)){restorePotential();return}
      range.value=String(target);numeric.value=String(target);
-     branchCount.textContent=cap>0||target>0?target+' / '+cap:'—';
+     branchCount.textContent=cap>0||base>0||target>0?
+      M.branchMastery(state,key,innate)+' / '+cap:'—';
 
      groupCount.textContent=groupSummary();
-     input.value=String(M.trained(state,key));input.max=String(target);
+     input.value=String(M.branchMastery(state,key,innate));
+     input.max=String(base+target);
      paint();
      // Committing rebuilds the UI so all branch totals stay synchronized.
     };
@@ -324,14 +338,16 @@ function viewGrowth(target,api){
      }
      unlockDetails.append(list);
     }
-    const input=make('input',{type:'number',min:'0',max:String(points),step:'1',
+    const input=make('input',{type:'number',min:String(base),
+     max:String(base+points),step:'1',
      value:String(trained),disabled:auto||!available,
      'aria-label':tr(api,'Мастерство ','Mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
     input.addEventListener('change',()=>{
      const raw=input.value.trim(),requested=raw===''?0:Number(raw);
-     if(!Number.isInteger(requested)||requested<0||
-      !api.onMastery(key,requested))input.value=String(M.trained(state,key));
+     if(!Number.isInteger(requested)||requested<base||
+      !api.onMastery(key,requested))
+      input.value=String(M.branchMastery(state,key,innate));
     });
     const controls=make('div',{class:'path-point-controls'});
     const pointField=(name,help,field,mastery=false)=>{
@@ -340,11 +356,14 @@ function viewGrowth(target,api){
       'data-help':help,'aria-label':name+'. '+help});
      group.append(title,field);return group;
     };
+    if(base>0)controls.append(make('span',{class:'path-innate-baseline',
+     text:tr(api,'Старт: ','Innate: ')+base,
+     'aria-label':tr(api,'Начальная прокачка класса: ','Class innate mastery: ')+base}));
     controls.append(
      pointField(root.PandoraUILocale?.text('exactPoints',api.lang)||tr(api,'Вложено','Spent'),
       tr(api,'Очки, распределённые в этой ветке. Меняются ползунком или точным вводом.','Points allocated to this branch. Adjust with the slider or number input.'),numeric),
      pointField(root.PandoraUILocale?.text('greenMastery',api.lang)||tr(api,'Мастерство','Mastery'),
-      tr(api,'Фактически освоенные очки ветки. При автоматическом режиме значение рассчитывается само.','Actually trained mastery in this branch. Automatic mode calculates it for you.'),input,true)
+      tr(api,'Начальные очки профессии плюс освоенные дополнительно. Стартовые очки нельзя удалить.','Innate class points plus further trained mastery. Innate points cannot be removed.'),input,true)
     );
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
@@ -425,9 +444,13 @@ function viewSkills(target,details,api){
    reqList.append(make('strong',{text:tr(api,'Требования по веткам','Branch requirements')}));
    for(const req of requirements){
     if(!req||!req.branch)continue;
-    const value=M.potential(api.state,req.branch),green=M.trained(api.state,req.branch);
+    const base=M.branchBase(api.innate,req.branch);
+    const value=M.branchPotential(api.state,req.branch,api.innate);
+    const green=M.branchMastery(api.state,req.branch,api.innate);
     reqList.append(make('p',{text:api.branchName(req.branch)+tr(api,' · порог ',' · threshold ')+req.amount+
-     tr(api,' · вложено ',' · spent ')+value+tr(api,' · освоено ',' · trained ')+green}));
+     tr(api,' · старт ',' · innate ')+base+
+     tr(api,' · доступно ',' · potential ')+value+
+     tr(api,' · освоено ',' · trained ')+green}));
    }
    details.append(reqList);
   }
