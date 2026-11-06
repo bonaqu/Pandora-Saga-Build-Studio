@@ -48,7 +48,7 @@ test('all four root classes preserve starting allocations but zero manual green'
    state.masteryAuto=false;
   }
  }
- assert.match(app,/mastery:\{\},masteryFormat:2,masteryAuto:false,stats:/);
+ assert.match(app,/mastery:\{\},masteryFormat:2,masteryAuto:true,stats:/);
 });
 
 test('actual game: branch start 5, manual green 0..5; each extra point extends both ceilings to 6',()=>{
