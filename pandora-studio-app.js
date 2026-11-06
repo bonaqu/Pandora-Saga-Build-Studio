@@ -97,7 +97,7 @@ inlineBranchId=bootView.groupTouched&&bootView.expandedBranch===''?'':(
 pathScrollRestored=false,
 stageSlotView=['choose','details','souls','gems'].includes(bootView.slotView)?bootView.slotView:'choose',
 stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,120):'',
-stageGemQuery='',gameTables=null,gameItemForth=null,
+stageSoulScrollTop=0,stageGemQuery='',gameTables=null,gameItemForth=null,
 stageAttributesPage=['summary','attack','defense','buffs','effects','recovery'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 // Current character changes remain a local draft until explicit user save.
@@ -332,6 +332,13 @@ function equipmentIssue(item,slot,snap=state){
   slot:slotKeys[slot],job:jobKeys[snap.job],level:snap.level
  });
  const missing=[...rules.missing];
+ // One-piece armor must never award a second pair of trouser stats,
+ // including if an old saved build has conflicting physical slots.
+ if(slot===5&&snap.equipment?.[3]){
+  const body=catalog.equipment?.[String(snap.equipment[3].id)];
+  if(window.PandoraUIPlanner.occupiesBodyAndLegs(body))
+   missing.push('Броня занимает также слот штанов');
+ }
  if(!window.PandoraUIPlanner.raceCompatible(item,snap.race,snap.gender))
   missing.push('Не подходит происхождению героя');
  if(item.isCostumeOverlay===true||String(item.kind||'').startsWith('DECO_'))
@@ -909,8 +916,8 @@ const value=state.equipment[slot];
 if(!value)return null;
 const rec=catalog.live?catalog.equipment?.[String(value.id)]||null:null;return itemWithOverrides(rec);
 }
-function slotVisual(slot){
-const item=state.equipment[slot],r=item&&equippedRecord(slot),icon=r?itemIcon(r):null; // Unknown/stale equipment ID: avoid unverified remote icon
+function slotVisual(slot,item=state.equipment?.[slot],sourceSlot=slot){
+const r=item&&equippedRecord(sourceSlot),icon=r?itemIcon(r):null; // Unknown/stale equipment ID: avoid unverified remote icon
 if(!icon)return h("span",{text:slots[slot][1],class:"slot-glyph"});
 const img=h("img",{class:"equipped-icon",src:icon,alt:""});
 img.onerror=()=>{img.onerror=null;img.replaceWith(h("span",{text:slots[slot][1],class:"slot-glyph"}))};
@@ -918,31 +925,51 @@ return img;
 }
 function renderSlotRails(){
  window.PandoraStageItemUI.dismissPreview();
- const plan=window.PandoraEquipmentPlan;
+ const plan=window.PandoraEquipmentPlan,ui=window.PandoraUIPlanner;
  for(const[id,indexes]of[['railLeft',[0,2,3,4,5,6]],['railRight',[1,7,8,9,10,11,12,13]]]){
   const container=$(id);container.replaceChildren();
   for(const i of indexes){
-   const item=state.equipment?.[i],source=item&&equippedRecord(i),cap=plan.socketCapacity(source);
-   const report=plan.socketReport(state.souls?.[i],cap);
-   const level=plan.canRefine(slotKeys[i])?plan.refinementValue(state.refinements,i,item):0;
-   const issue=source?equipmentIssue(source,i):[];
-   const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+(item&&plan.canSocket(slotKeys[i],source)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+(level?' · план заточки +'+level:'')+(issue.length?' · Не действует: '+issue.join(', '):'');
-   const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':'')+(issue.length?' unavailable':''),
+   const visual=ui.visualEquipment(state.equipment,i,catalog.equipment),
+    item=visual.item,source=item&&equippedRecord(visual.sourceSlot),shared=visual.shared;
+   const sourceSlot=visual.sourceSlot,key=slotKeys[sourceSlot],
+    cap=shared?0:plan.socketCapacity(source);
+   const report=shared?{count:0,excess:0}:plan.socketReport(state.souls?.[i],cap);
+   const level=plan.canRefine(key)?plan.refinementValue(state.refinements,sourceSlot,item):0;
+   const issue=source?equipmentIssue(source,sourceSlot):[];
+   const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+
+    (shared?' · Занято бронёй (одна вещь на два слота)':'')+
+    (!shared&&item&&plan.canSocket(slotKeys[i],source)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+
+    (level?' · план заточки +'+level:'')+
+    (issue.length?' · Не действует: '+issue.join(', '):'');
+   const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(shared?' shared-outfit':'')+
+    (selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':'')+(issue.length?' unavailable':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
-    'aria-label':tooltip,onclick:()=>{selectedSlot=i;selectedSocket=0;gearMode='equipment';stageSlotQuery='';stageSoulQuery='';stageSlotShown=48;stageSlotView=state.equipment?.[i]?'details':'choose';stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true)}});
-   button.append(slotVisual(i),h('small',{text:item?itemName(item):slots[i][0]}));
-   if(item&&plan.canSocket(slotKeys[i],source))button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
+    'aria-label':tooltip,onclick:()=>{
+     selectedSlot=i;selectedSocket=0;gearMode='equipment';
+     stageSlotQuery='';stageSoulQuery='';stageSoulScrollTop=0;stageSlotShown=48;
+     // A projected pants slot remains selectable: equipping pants removes
+     // the shared armor instead of locking the entire slot.
+     stageSlotView=shared?'choose':state.equipment?.[i]?'details':'choose';
+     stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
+    }});
+   button.append(slotVisual(i,item,sourceSlot),h('small',{text:item?itemName(item):slots[i][0]}));
+   if(shared)button.append(h('span',{class:'stage-shared-mark',text:'↔',
+    'aria-label':lang==='en'?'Armor and pants':'Броня и штаны'}));
+   if(!shared&&item&&plan.canSocket(slotKeys[i],source))
+    button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source){
-    const equippedGem=window.PandoraEnchantModel.normalizeForSlot(slotKeys[i],state.gems?.[plan.refinementKey(i,item)]);
-    const socketed=plan.asSocketArray(state.souls?.[i]).slice(0,cap??0)
+    const equippedGem=window.PandoraEnchantModel.normalizeForSlot(key,
+     state.gems?.[plan.refinementKey(sourceSlot,item)]);
+    const socketed=plan.asSocketArray(state.souls?.[sourceSlot]).slice(0,plan.socketCapacity(source)??0)
      .filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||(s.name?s:null)).filter(Boolean);
     window.PandoraStageItemUI.attachPreview(button,source,
      (rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'),
-     'item',{slot:slotKeys[i],refinement:level,gem:equippedGem,souls:socketed,capacity:cap,tables:gameTables});
+     'item',{slot:key,refinement:level,gem:equippedGem,souls:socketed,
+      capacity:plan.socketCapacity(source),tables:gameTables});
     const activeFire=window.PandoraConditionalItemBonuses?.activeFor?.({
      record:source,refinement:level,gem:equippedGem,issue});
-    if(activeFire?.phoenix)button.append(h('span',{
+    if(!shared&&activeFire?.phoenix)button.append(h('span',{
      class:'stage-elemental-proc',text:'✦',
      'aria-label':'Пламя феникса: +'+activeFire.phoenix.chance+'%'}));
    }
@@ -1108,6 +1135,8 @@ function renderStagePicker(focusSearch=false){
  const root=$('stagePicker');if(!root)return;
  const previousMode=root.dataset.view||'';
  const oldBodyScroll=root.querySelector('.stage-rich-body')?.scrollTop||0;
+ const previousSoulList=root.querySelector('.stage-rich-list');
+ if(previousMode==='souls'&&previousSoulList)stageSoulScrollTop=previousSoulList.scrollTop;
  const preserveScroll=stageSlotPickerOpen&&previousMode===stageSlotView;
  root.dataset.view=stageSlotView;
  const frame=root.closest('.portrait-frame');frame.classList.toggle('picking',stageSlotPickerOpen);
@@ -1129,7 +1158,7 @@ function renderStagePicker(focusSearch=false){
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
-   soulQuery:stageSoulQuery,onSoulQuery:value=>{stageSoulQuery=value;saveView()},
+   soulQuery:stageSoulQuery,onSoulQuery:value=>{stageSoulQuery=value;stageSoulScrollTop=0;saveView()},
    gems:window.PandoraEnchantModel.normalizeForSlot(key,state.gems?.[plan.refinementKey(selectedSlot,equipped)]),
    catalog,gameTables,close:()=>closeStagePicker(),
    changeMode:mode=>{
@@ -1172,6 +1201,13 @@ function renderStagePicker(focusSearch=false){
    const body=root.querySelector('.stage-rich-body');
    if(body)body.scrollTop=oldBodyScroll;
   }
+  if(stageSlotView==='souls'){
+   const soulList=root.querySelector('.stage-rich-list');
+   if(soulList){
+    soulList.scrollTop=stageSoulScrollTop;
+    soulList.addEventListener('scroll',()=>{stageSoulScrollTop=soulList.scrollTop},{passive:true});
+   }
+  }
   return;
  }
  const top=h('div',{class:'stage-picker-head'},[
@@ -1183,20 +1219,31 @@ function renderStagePicker(focusSearch=false){
  const count=h('small',{class:'stage-picker-count'});
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
- const remove=h('button',{type:'button',text:'Снять предмет',disabled:!equipped,onclick:()=>{
-  const removed=equippedRecord(selectedSlot);
-   delete state.equipment[selectedSlot];
-   if(selectedSlot===3&&window.PandoraUIPlanner.isAstirDress(removed)&&state.displacedLegwear){
-    state.equipment[5]=state.displacedLegwear;state.displacedLegwear=null;
+ const remove=h('button',{type:'button',text:'Снять предмет',
+  disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),onclick:()=>{
+   const removed=equippedRecord(selectedSlot),ui=window.PandoraUIPlanner;
+   if(selectedSlot===5&&ui.occupiesBodyAndLegs(equippedRecord(3))){
+    delete state.equipment[3];delete state.equipment[5];
+    if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
+    state.displacedLegwear=null;
+   }else{
+    delete state.equipment[selectedSlot];
+    if(selectedSlot===3&&ui.occupiesBodyAndLegs(removed)){
+     if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
+     state.displacedLegwear=null;
+    }
    }
    stageSlotView='choose';persist();render();
- }});
+  }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
+ const isSharedPants=selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3));
+ const outfitNote=isSharedPants?h('small',{class:'stage-outfit-note',
+  text:lang==='en'?'Armor and pants are occupied by one outfit. Choosing pants removes it.':
+   'Платье занимает броню и штаны. Выбор штанов снимет его.'}):null;
  const records=catalog.live&&Number.isInteger(state.race)&&Number.isInteger(state.job)?window.PandoraUIPlanner.planningEquippable(
   Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,
   window.PandoraStudioRules.equipment)
- .filter(rec=>window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender)&&
- !(key==='legs'&&window.PandoraUIPlanner.isAstirDress(equippedRecord(3))))
+ .filter(rec=>window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender))
  .sort((a,b)=>{
   const futureA=Number(a.level||1)>state.level?1:0;
   const futureB=Number(b.level||1)>state.level?1:0;
@@ -1212,17 +1259,26 @@ function renderStagePicker(focusSearch=false){
   else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))list.append(h('p',{class:'muted',text:lang==='en'?'Choose a race and class first.':'Сначала выберите расу и профессию.'}));
   else if(!matches.length)list.append(h('p',{class:'muted',text:'Нет совместимых предметов. Измени поиск или слот.'}));
   for(const rec of matches.slice(0,stageSlotShown)){
-   const selected=String(equipped?.id)===String(rec.id);
+   const selected=!isSharedPants&&String(equipped?.id)===String(rec.id);
    const future=Number(rec.level)>state.level;
-   const btn=h('button',{type:'button',
+   const btn=h('button',{type:'button','data-stage-choice':String(rec.id),
     class:'stage-picker-item'+(selected?' selected':'')+(future?' future':''),
     'aria-label':(future?'Запланировать: ':'Экипировать ')+itemName(rec)+
      (future?' · с '+rec.level+' уровня':''),onclick:()=>{
-     if(selectedSlot===3&&!window.PandoraUIPlanner.isAstirDress(rec)&&state.displacedLegwear){
-      state.equipment[5]=state.displacedLegwear;state.displacedLegwear=null;
+     const ui=window.PandoraUIPlanner,oldDress=ui.occupiesBodyAndLegs(equippedRecord(3));
+     if(selectedSlot===5&&oldDress){
+      // Selecting new pants replaces the whole one-piece armor.
+      delete state.equipment[3];state.displacedLegwear=null;
+     }else if(selectedSlot===3&&oldDress&&!ui.occupiesBodyAndLegs(rec)){
+      if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
+      state.displacedLegwear=null;
+     }
+     if(selectedSlot===3&&ui.occupiesBodyAndLegs(rec)){
+      // Swapping dresses retains the old stored trousers for later removal.
+      if(!oldDress)state.displacedLegwear=state.equipment[5]||null;
+      delete state.equipment[5];
      }
      state.equipment[selectedSlot]={id:rec.id,name:itemName(rec),level:rec.level??null,icon:rec.icon??null};
-     if(window.PandoraUIPlanner.isAstirDress(rec)){state.displacedLegwear=state.equipment[5]||null;delete state.equipment[5]}
      stageSlotView='details';persist();render();renderStagePicker();
     }});
    const src=itemIcon(rec);
@@ -1234,13 +1290,19 @@ function renderStagePicker(focusSearch=false){
    if(future)btn.append(h('span',{class:'stage-picker-future',text:'◷ '+rec.level+' ур.'}));
    if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
    list.append(btn);
+   window.PandoraStageItemUI.attachPreview(btn,rec,
+    (item,kind)=>itemIcon(item,kind==='soul'?'souls':'items'),
+    'item',{slot:key,refinement:selected?window.PandoraEquipmentPlan.refinementValue(
+     state.refinements,selectedSlot,equipped):0,tables:gameTables});
   }
   more.hidden=matches.length<=stageSlotShown;
   more.textContent='Показать ещё ('+Math.max(0,matches.length-stageSlotShown)+')';
  };
  search.addEventListener('input',()=>{stageSlotQuery=search.value;stageSlotShown=48;draw()});
  more.addEventListener('click',()=>{stageSlotShown+=48;draw()});
- root.append(top,search,count,list,bottom);draw();
+ root.append(top);
+ if(outfitNote)root.append(outfitNote);
+ root.append(search,count,list,bottom);draw();
  if(focusSearch)search.focus({preventScroll:true});
 }
 function attributeSnapshot(){

@@ -971,12 +971,15 @@ export async function runInlineMilestonesSmoke(browser,base){
    ['Вложено','Мастерство']);
   const inputHeights=await fields.locator('input[type=number]').evaluateAll(inputs=>
    inputs.map(input=>Math.round(input.getBoundingClientRect().height)));
-  assert.deepEqual(inputHeights,[28,28],'Both compact fields have equal height');
+  assert.deepEqual(inputHeights,[35,35],'Both redesigned numeric fields have equal height');
   const controlsPosition=await fields.locator('label.path-point-group').evaluateAll(labels=>
    labels.map(label=>({top:Math.round(label.getBoundingClientRect().top),
     bottom:Math.round(label.getBoundingClientRect().bottom)})));
-  assert.ok(controlsPosition.every(item=>item.top===controlsPosition[0].top),
-   'At desktop viewport, invested points and mastery share one horizontal row');
+  const controlsWidth=await fields.evaluate(el=>el.getBoundingClientRect().width);
+  assert.ok(controlsPosition.every(item=>item.top===controlsPosition[0].top)||
+   controlsWidth<197&&controlsPosition[1].top>controlsPosition[0].top,
+   'Two controls share a row when space allows, and stack otherwise; width '+
+   controlsWidth+' positions '+JSON.stringify(controlsPosition));
   // Exercise a genuinely narrow branch editor without changing the viewport
   // or forcing the whole site into an unrelated mobile layout.
   await fields.evaluate(element=>{element.style.width='175px'});

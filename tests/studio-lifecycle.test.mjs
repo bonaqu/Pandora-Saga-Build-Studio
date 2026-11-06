@@ -63,7 +63,7 @@ test('milestone link always reveals the selected skill despite stale gallery fil
 test('Soul query and selected-grade focus survive in-place equipment picker rerender',()=>{
  const app=read('pandora-studio-app.js');
  for(const phrase of ["soulQuery:stageSoulQuery",
-  "onSoulQuery:value=>{stageSoulQuery=value;saveView()}",
+  "onSoulQuery:value=>{stageSoulQuery=value;stageSoulScrollTop=0;saveView()}",
   "root.querySelector('[data-grade=\"'+n+'\"]')?.focus",
   "root.querySelector(restoreFocus)?.focus",
   "document.activeElement?.getAttribute?.('data-enchant-key')"])

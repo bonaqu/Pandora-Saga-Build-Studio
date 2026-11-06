@@ -63,7 +63,8 @@ test('one bar uses standard CSS calc and correctly centered milestone markers',(
  assert.match(ui,/locked\.style\.left=positionOnRail\(Math\.max\(0,Math\.min\(1,availablePotential\/visualMax\)\)\)/);
  assert.doesNotMatch(ui,/calc\(12px \+ \(100% - 24px\) \*/);
  assert.match(ui,/gold\.style\.width=widthOnRail\(goldFraction\)/);
- assert.match(ui,/green\.style\.width=widthOnRail\(greenFraction\)/);
+ assert.match(ui,/green\.style\.width=widthOnRail\(addedGreenFraction\)/);
+ assert.match(ui,/innateFill\.style\.width=widthOnRail\(innateFraction\)/);
  assert.match(ui,/tick\.style\.left=\(threshold\/visualMax\*100\)\.toFixed\(4\)/);
  assert.match(css,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?transform:translateX\(-50%\)/);
 });

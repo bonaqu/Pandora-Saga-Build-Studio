@@ -31,6 +31,23 @@ function isAstirDress(item){
  const part=family(item,astirSlots);
  return part?.group===126&&part.variant>=11&&part.variant<=18;
 }
+// A source-supported one-piece outfit occupies the armor and pants rails,
+// but is stored only in its actual BODY slot. Never create a second item
+// record, which would double its stats, refinement or Soul effects.
+function occupiesBodyAndLegs(item){
+ return item?.slot==='body'&&(isAstirDress(item)||
+  item.occupiesLegs===true||
+  Array.isArray(item.occupiedSlots)&&item.occupiedSlots.includes('body')&&item.occupiedSlots.includes('legs'));
+}
+function visualEquipment(equipment,slot,catalog){
+ if(Number(slot)===5&&equipment?.[3]){
+  const body=catalog?.[String(equipment[3].id)];
+  if(occupiesBodyAndLegs(body))
+   return {item:equipment[3],sourceSlot:3,shared:true};
+ }
+ const own=equipment?.[slot];
+ return {item:own||null,sourceSlot:slot,shared:false};
+}
 function isAstirMale(item){
  const part=family(item,astirSlots);
  return !!part&&part.variant>=1&&part.variant<=8;
@@ -78,5 +95,5 @@ function outfitWearers(item,lang='ru'){
   (requirement.gender===1?(en?' (M)':' (М)'):(en?' (F)':' (Ж)')):'';
  return [races[requirement.race]+gendered,kroll];
 }
-root.PandoraUIPlanner=Object.freeze({raceHasGender,normalizeGender,equippable,planningEquippable,isAstirDress,isAstirMale,raceCompatible,outfitWearers});
+root.PandoraUIPlanner=Object.freeze({raceHasGender,normalizeGender,equippable,planningEquippable,isAstirDress,occupiesBodyAndLegs,visualEquipment,isAstirMale,raceCompatible,outfitWearers});
 })(typeof window==='undefined'?globalThis:window);

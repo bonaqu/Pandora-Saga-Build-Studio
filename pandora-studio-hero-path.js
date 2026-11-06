@@ -183,6 +183,7 @@ function viewGrowth(target,api){
     const visualMax=Math.max(1,cap+Math.max(points,budget.total||0),base+points);
     const bed=make('div',{class:'inline-mastery-bed'}),gold=make('div',{class:'inline-mastery-fill'}),
           green=make('div',{class:'inline-mastery-green'}),
+          innateFill=make('div',{class:'path-innate-fill','aria-hidden':'true'}),
           locked=make('div',{class:'inline-mastery-locked',
            'aria-label':tr(api,'Потенциал ветки: ','Branch potential: ')+(cap+points)+
             tr(api,' из ',' of ')+visualMax});
@@ -209,9 +210,16 @@ function viewGrowth(target,api){
     const paint=()=>{
      const invested=M.potential(state,key),mastery=M.branchMastery(state,key,innate,caps);
      const goldFraction=Math.max(0,Math.min(1,invested/visualMax));
-     const greenFraction=Math.max(0,Math.min(1,mastery/visualMax));
+     const innateFraction=Math.max(0,Math.min(1,base/visualMax));
+     const addedGreenFraction=Math.max(0,Math.min(1,(mastery-base)/visualMax));
+     // Highlight immutable starting mastery separately. Only additional
+     // trained green occupies the vivid segment, so 5 innate + 10 trained
+     // appears as a TEN-point green segment, not fifteen earned points.
+     innateFill.style.width=widthOnRail(innateFraction);
      gold.style.width=widthOnRail(goldFraction);
-     green.style.width=widthOnRail(greenFraction);
+     green.style.left='calc(12px + '+(innateFraction*100).toFixed(6)+'% - '+
+      (42*innateFraction).toFixed(6)+'px)';
+     green.style.width=widthOnRail(addedGreenFraction);
      currentNotch.style.left=positionOnRail(goldFraction);
      setPotentialEdge(invested);
      range.setAttribute('aria-valuetext',base+
@@ -223,6 +231,7 @@ function viewGrowth(target,api){
        !entry.locked&&entry.skills.some(skill=>readiness(skill,api,new Set(),skillIndex).learned));
     };
     track.append(bed,gold,green,locked);
+    track.append(innateFill);
     track.append(currentNotch);
     const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
      value:String(points),disabled:!available,

@@ -80,6 +80,9 @@ function summary(record,icon,kind='item',context=null){
   for(const wearer of wearers)chips.append(el('span',{class:'stage-gear-wearer',text:wearer}));
   fit.append(chips);wrap.append(fit);
  }
+ if(kind==='item'&&root.PandoraUIPlanner?.occupiesBodyAndLegs?.(record))
+  wrap.append(el('small',{class:'stage-outfit-note',
+   text:tr('Броня + штаны · одна вещь','Armor + pants · one item')}));
  if(record.desc){const desc=el('p',{class:'stage-rich-desc',
   text:presenter?.description(record.desc)||record.desc});
   if(kind==='item')desc.dataset.editKey='itemdesc.'+record.id;

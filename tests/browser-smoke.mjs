@@ -11,6 +11,7 @@ import {runEquipmentLocaleSmoke} from './browser-equipment-locale.mjs';
 import {runItemHoverDelaySmoke} from './browser-item-hover-delay.mjs';
 import {runLegacySkillCapSmoke} from './browser-legacy-skill-cap.mjs';
 import {runTwoHandedSmoke} from './browser-two-handed.mjs';
+import {runOutfitSoulScrollSmoke} from './browser-outfit-soul-scroll-389.mjs';
 import {runFutureGearSmoke} from './browser-future-gear.mjs';
 import {runSavedAutosaveSmoke} from './browser-saved-autosave.mjs';
 import {runAccountSmoke} from './browser-account.mjs';
@@ -265,6 +266,7 @@ async function main(){
   ['legacy-class-cap',runLegacySkillCapSmoke],
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
   ['two-handed-gear',runTwoHandedSmoke],
+  ['one-piece-outfit-and-soul-scroll',runOutfitSoulScrollSmoke],
   ['future-level-gear',runFutureGearSmoke],
   ['manual-saved-overwrite',runSavedAutosaveSmoke],
   ['account-login',runAccountSmoke],
