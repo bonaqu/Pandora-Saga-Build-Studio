@@ -29,7 +29,7 @@ export async function runLegacySkillCapSmoke(browser,base){
   assert.equal(await exact.inputValue(),'12');
   assert.equal(await page.locator('[data-branch-control="slash:potential-range"]').inputValue(),'12');
   assert.match(await page.locator('.inline-branch-editor .budget-excess').innerText(),
-   /12 очков сверх текущего лимита 0/);
+   /Ветка недоступна для текущей профессии/);
   await exact.fill('8');await exact.press('Tab');
   assert.equal(await page.locator('[data-path-branch="slash"] .count').innerText(),'8 / 0');
   assert.equal(await page.locator('[data-branch-control="slash:potential-number"]').inputValue(),'8');
@@ -41,6 +41,6 @@ export async function runLegacySkillCapSmoke(browser,base){
    await page.locator('[data-path-group="melee"]').click();
   assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replace(/\s+/g,' '),'8 / 0');
   assert.deepEqual(errors,[]);
-  console.log('Chromium saved zero-class-cap skill smoke passed: 12/0, refund to 8/0, reload and no erased draft');
+  console.log('Chromium saved zero-potential skill smoke passed: old investments survive, refund and reload');
  }finally{await context.close()}
 }
