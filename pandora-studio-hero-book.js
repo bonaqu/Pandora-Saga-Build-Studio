@@ -211,7 +211,7 @@ const bookLineHeads=Object.freeze({
 });
 const bookLineFragments=Object.freeze({
  ' · Дальность ':' · Range ',' · Скорость ':' · Speed ',
- ' · Блок ':' · Block ',' · Гнёзда ':' · Soul sockets ',
+ ' · Блок ':' · Block ',' · Слоты ':' · Soul slots ',
  ' (база ':' (base ', ', бонусы ':', bonuses ',
  ', гильдия +':', guild +', ', снаряжение ':', equipment ',
  ', лечение +':', healing +', ', навыки +':', skills +',
