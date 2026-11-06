@@ -64,5 +64,5 @@ test('site shell has clean title/footer; counts remain grounded in loaded catalo
  assert.match(app,/data\.meta\.counts\.souls/);
  assert.ok(!app.includes("'Cloudflare D1 · актуальный опубликованный каталог'"));
  assert.match(app,/\$\('siteNotice'\)\.textContent=archive\?/);
- assert.match(html,/2026\.11\.06\.393/);
+ assert.match(html,/2026\.11\.06\.394/);
 });

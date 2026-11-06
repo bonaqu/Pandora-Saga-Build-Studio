@@ -2170,11 +2170,11 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  min-width:0;margin:4px 0;padding:7px 6px 8px
 }
 .stage-rich-body .stage-rich-sockets{
- display:flex;flex-wrap:wrap;align-items:stretch;gap:8px
+ display:flex;flex-wrap:wrap;align-items:stretch;gap:5px
 }
 .stage-rich-body .stage-rich-sockets button{
  display:flex;flex-direction:column;justify-content:center;align-items:center;
- width:108px;min-width:96px;min-height:78px;gap:5px;padding:9px 8px 6px;
+ width:60px;min-width:56px;min-height:54px;gap:2px;padding:4px 5px 3px;
  background:linear-gradient(150deg,#372819,#20160f);
  border:1px solid #9c7848;border-radius:5px;
  box-shadow:inset 0 1px 0 #ffffff0b;color:#ebce9e;
@@ -2188,13 +2188,13 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  border-color:#f6cb83;background:#5b3e24;
  box-shadow:0 0 0 1px #f6cb8344,inset 0 1px 0 #ffffff15
 }
-.stage-rich-body .stage-rich-sockets button img{width:38px;height:38px;object-fit:contain}
+.stage-rich-body .stage-rich-sockets button img{width:28px;height:28px;object-fit:contain}
 .stage-rich-body .stage-soul-slot-empty{
- display:grid;place-items:center;width:38px;height:38px;
- font:500 28px/1 Georgia,serif;color:#e6bb7e
+ display:grid;place-items:center;width:28px;height:28px;
+ font:500 23px/1 Georgia,serif;color:#e6bb7e
 }
 .stage-rich-body .stage-rich-sockets button small{
- position:static;font:600 11px/1.25 Manrope,Arial,sans-serif;
+ position:static;font:600 10px/1.2 Manrope,Arial,sans-serif;
  color:#d9ba8f;max-width:100%;white-space:nowrap
 }
 @media(max-width:380px){
