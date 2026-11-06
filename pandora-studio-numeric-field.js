@@ -18,15 +18,18 @@ const prepare=input=>{
  input.setAttribute('data-bwignore','true');
  input.setAttribute('data-form-type','other');
  input.setAttribute('data-game-numeric','true');
- // Block opportunistic filling of inactive numeric fields. Focus and actual
- // user interaction restore editing, preserving clicks, keyboard, +/-, and
- // automated fill used by the normal UI tests.
- input.readOnly=true;
- const enable=()=>{if(!input.disabled)input.readOnly=false};
- input.addEventListener('focus',enable);
- input.addEventListener('pointerdown',enable);
- input.addEventListener('keydown',enable);
- input.addEventListener('blur',()=>{input.readOnly=true});
+ // Yandex Browser has its own password/autofill overlay. Keep its inactive
+ // number fields read-only until an explicit gesture, then restore read-only
+ // when the user leaves. Chromium and other browsers retain normal editable
+ // inputs, including programmatic .fill() and accessibility integrations.
+ // No website can guarantee suppression of a browser-owned password popup.
+ if(/\\bYaBrowser\\/\\d/i.test(String(root.navigator?.userAgent||''))){
+  input.readOnly=true;
+  const enable=()=>{if(!input.disabled)input.readOnly=false};
+  input.addEventListener('pointerdown',enable);
+  input.addEventListener('keydown',enable);
+  input.addEventListener('blur',()=>{input.readOnly=true});
+ }
  return input;
 };
 root.PandoraNumericField=Object.freeze({prepare});
