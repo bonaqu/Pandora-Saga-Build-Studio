@@ -23,7 +23,7 @@ const prepare=input=>{
  // when the user leaves. Chromium and other browsers retain normal editable
  // inputs, including programmatic .fill() and accessibility integrations.
  // No website can guarantee suppression of a browser-owned password popup.
- if(/\\bYaBrowser\\/\\d/i.test(String(root.navigator?.userAgent||''))){
+ if(String(root.navigator?.userAgent||'').includes('YaBrowser/')){
   input.readOnly=true;
   const enable=()=>{if(!input.disabled)input.readOnly=false};
   input.addEventListener('pointerdown',enable);
