@@ -80,18 +80,18 @@ test('racial passive is applied to both Origin and character profile selections 
  assert.match(app,/state\.racialPassiveId=selected\?null:id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
  assert.match(app,/state\.racialPassiveId=id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
 });
-test('legacy class innate trained Adeptness is added exactly once before threshold rounding',()=>{
+test('live-game manually trained melee and Prayer exclude untrained class allocations',()=>{
  const tables=JSON.parse(read('data/os/tables.json'));
  const innate=tables.jobInit.WARRIOR.branches;
  const keys=['slash','thrust','brush','blow','defense'];
- const state={masteryAuto:false,points:{slash:35,thrust:15,brush:0,blow:0,defense:0},
+ const state={masteryFormat:2,masteryAuto:false,points:{slash:35,thrust:15,brush:0,blow:0,defense:0},
   mastery:{slash:8,thrust:7}};
  assert.equal(progress.groupAdeptness({points:{},masteryAuto:true},keys,innate),18);
- assert.equal(progress.groupAdeptness(state,keys,innate),33);
- assert.equal(pot({meleeMastery:33}).mastery,30);
+ assert.equal(progress.groupAdeptness(state,keys,innate),15);
+ assert.equal(pot({meleeMastery:15}).mastery,10);
  assert.equal(pot({meleeMastery:18}).mastery,10);
  const priest=progress.legacyPrayerSpirit('PRIEST',state,tables.jobInit.ACOLYTE.branches);
- assert.equal(priest,2,'innate prayer 15 yields +2 SPI at no invested prayer points');
+ assert.equal(priest,1,'untrained starting Prayer points cannot earn ten-green bonus');
  const app=read('pandora-studio-app.js');
  assert.match(app,/const initialBranches=innateBranches\(snap\)/);
  assert.match(app,/groupAdeptness\(/);
