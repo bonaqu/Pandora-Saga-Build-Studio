@@ -3,15 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const source=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
-const host={PandoraSkillProgression:{
- potential:(state,key)=>state.points?.[key]||0,
- trained:(state,key)=>state.mastery?.[key]||0
-}};
+const host={};Function('window',read('pandora-studio-skill-progression.js'))(host);
 Function('window','document',source)(host,{});
 const check=host.PandoraHeroPath.readiness;
 const skill=()=>({id:1234,name:'Fixture',classes:{CLERIC:1},charLevel:1,reqLevel:0,
  reqs:[{branch:'benevolence',amount:8}],learnable:true,prereq:null});
-const api={lang:'en',job:'CLERIC',state:{level:55,points:{benevolence:12},mastery:{benevolence:12}},
+const api={lang:'en',job:'CLERIC',state:{level:55,points:{benevolence:12},mastery:{benevolence:12},masteryAuto:false},
  skillCatalog:[],cap:key=>key==='benevolence'?90:0,branchName:key=>key};
 function verdict(s){return check(s,{...api,skillCatalog:[s]})}
 test('honest class eligibility rejects absent, disabled and corrupted class entries',()=>{
@@ -77,7 +74,7 @@ test('muted locked rail keeps a visible boundary and original pointer behavior',
  assert.doesNotMatch(rule,/#aa4b42|#d48c76/);
  assert.match(css,/\.inline-mastery-track \.inline-mastery-locked\{[^}]*pointer-events:none/);
  assert.match(css,/\.inline-mastery-track\.path-integrated-track \.path-unlock-notch\{/);
- assert.match(source,/const visualMax=Math.max\(90,cap,points\)/);
+ assert.match(source,/const visualMax=Math.max\(1,cap\+Math.max\(points,budget.total\|\|0\),base\+points\)/);
 });
 
 test('readiness rejects arrays, objects, non-decimal text and unsafe numbers in branch requirements',()=>{

@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
 function check(lang){
- const root={PandoraSkillProgression:{potential:()=>0,trained:()=>0}};
+ const root={};Function('window',readFileSync(new URL('../pandora-studio-skill-progression.js',import.meta.url),'utf8'))(root);
  Function('window','document',source)(root,{});
  const api={lang,job:'MAGE',state:{level:1},skillCatalog:[],branchName:id=>id};
  return root.PandoraHeroPath.readiness({
@@ -16,11 +16,11 @@ test('Hero Path skill availability messages are translated by interface language
  const en=check('en');
  assert.equal(en.learned,false);
  for(const label of ['Unavailable to this class','Requires level 20',
-   'magic: spent 0/10','magic: mastery 0/10','Special learning method required'])
+   'magic: potential 0/10','magic: mastery 0/10','Special learning method required'])
   assert.ok(en.problems.includes(label),label);
  const ru=check('ru');
  for(const label of ['Не подходит профессии','Требуется уровень 20',
-   'magic: вложено 0/10','magic: мастерство 0/10','Особый способ изучения'])
+   'magic: доступно 0/10','magic: мастерство 0/10','Особый способ изучения'])
   assert.ok(ru.problems.includes(label),label);
 });
 test('skill detail fields and workspace labels translate without rewriting game data',()=>{

@@ -21,8 +21,11 @@ test('rich item and soul previews have one deliberate mouse hover delay',()=>{
 
 test('hover lifecycle cancels stale previews and retains instant keyboard accessibility',()=>{
  const ui=read('pandora-studio-equipment-ui.js');
- for(const event of ['pointerleave','pointerdown','blur','click'])
+ for(const event of ['pointerleave','pointerdown','click'])
   assert.ok(ui.includes("target.addEventListener('"+event+"',remove)"),event);
+ assert.match(ui,/target\.addEventListener\('blur',\(\)=>\{focusPreviewToken\+\+;remove\(\)\}\)/);
+ assert.match(ui,/focusPreviewToken\+\+;\s*dismissPreview\(\)/,
+  'Escape cancels both displayed and next-frame preview');
  for(const event of ['hashchange','popstate','blur'])
   assert.ok(ui.includes("root.addEventListener?.('"+event+"',dismissPreview)"),event);
  assert.match(ui,/document\.addEventListener\?\.\('scroll',\(\)=>\{/);

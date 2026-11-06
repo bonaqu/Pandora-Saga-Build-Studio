@@ -72,7 +72,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryAuto:false,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
@@ -275,13 +275,19 @@ async function loadCloudBuilds(){
 
 function h(tag,attrs={},children=[]){const el=document.createElement(tag);
  if(tag==='input'||tag==='textarea'){
-  const credential=[attrs.name,attrs.id,attrs.placeholder,attrs['aria-label'],attrs.autocomplete]
-   .filter(x=>typeof x==='string').join(' ').toLowerCase();
+  const hint=String(attrs.autocomplete||'').toLowerCase();
+  // A search for a user/login is still SEARCH, not an authentication form.
+  // Password managers must only detect credential inputs explicitly marked
+  // as such; arbitrary Russian/English placeholder text is never proof.
   const isLogin=String(attrs.type||'').toLowerCase()==='password'||
-   /логин|username|login|sign.in|вход в аккаунт/.test(credential);
+   ['username','current-password','new-password'].includes(hint)||
+   attrs['data-auth-field']==='true';
   if(!isLogin){
-   attrs={autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true',
-    'data-bwignore':'true',autocapitalize:'off',spellcheck:'false',...attrs};
+   attrs={...attrs,autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true',
+    'data-bwignore':'true','data-form-type':'other',
+    autocapitalize:'off',spellcheck:'false'};
+   if(['text','search','email','url','tel'].includes(String(attrs.type||'text').toLowerCase()))
+    attrs['aria-autocomplete']='none';
   }
  }
 for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))el[k]=Boolean(v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
@@ -342,9 +348,14 @@ function equipmentIssue(item,slot,snap=state){
  }
  return missing;
 }
+function branchCapacities(snap=state){
+ const klass=catalog.classes?.[jobKeys[snap.job]];
+ return klass?.branchCaps||{};
+}
 function trainedBranchMasteries(innate={},snap=state){
+ const caps=branchCapacities(snap);
  return Object.fromEntries(branches.map(({id})=>[
-  id,window.PandoraSkillProgression.groupAdeptness(snap,[id],innate)
+  id,window.PandoraSkillProgression.branchMastery(snap,id,innate,caps)
  ]));
 }
 function previewBaseStats(snap=state){
@@ -371,28 +382,29 @@ function previewBaseStats(snap=state){
     records.push(['soul:'+soul.id,soul,grade]);
   }
  }
- const initialBranches=gameTables?.jobInit?.[baseClass]?.branches||{};
+ const initialBranches=innateBranches(snap);
  const weaponSelection=snap.equipment?.[0];
  const selectedWeapon=weaponSelection&&catalog.equipment?.[String(weaponSelection.id)]||null;
  const weapon=selectedWeapon&&!equipmentIssue(selectedWeapon,0,snap).length?selectedWeapon:null;
  const weaponGrade=weaponSelection&&weapon?
   window.PandoraEquipmentPlan.refinementValue(snap.refinements,0,weaponSelection):0;
+ const caps=branchCapacities(snap);
  const prayerSpirit=window.PandoraSkillProgression.legacyPrayerSpirit(
-  jobKeys[snap.job],snap,initialBranches);
+  jobKeys[snap.job],snap,initialBranches,caps);
  // Remaked Status.Skill[0][0] + [1]: innate branch green mastery
  // PLUS additionally trained green; exclude blue Potential from this sum.
- const masteries=window.PandoraSkillProgression.combatMasteries(snap,initialBranches);
+ const masteries=window.PandoraSkillProgression.combatMasteries(snap,initialBranches,caps);
  // Pass every trained branch to the OS skill gates; future catalog skills
  // may require more than the original Slash mastery.
  const branchMasteries=trainedBranchMasteries(initialBranches,snap);
- const ridingMastery=window.PandoraSkillProgression.groupAdeptness(snap,['riding'],initialBranches);
- const wardingMastery=window.PandoraSkillProgression.groupAdeptness(snap,['warding'],initialBranches);
+ const ridingMastery=window.PandoraSkillProgression.groupAdeptness(snap,['riding'],initialBranches,caps);
+ const wardingMastery=window.PandoraSkillProgression.groupAdeptness(snap,['warding'],initialBranches,caps);
  const meleeMastery=masteries.melee;
  const benevolenceMastery=window.PandoraSkillProgression.groupAdeptness(
-  snap,['benevolence'],initialBranches);
+  snap,['benevolence'],initialBranches,caps);
  const legacyBuffMasteries=Object.fromEntries(['blessing','hymn','alchemy']
   .map(branch=>[branch,window.PandoraSkillProgression.groupAdeptness(
-   snap,[branch],initialBranches)]));
+   snap,[branch],initialBranches,caps)]));
  const guildLevel=Number(snap.attributeBuffs?.guildLevel)||0;
  const unlocked=window.PandoraOSCalculator.guildPassiveAtLevel(guildLevel);
  const effectiveGuildBuffs={
@@ -598,10 +610,19 @@ function setAttributeBuff(key,value){
 function budgetSummary(){
  return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
 }
+function innateBranches(snap=state){
+ const jobKey=jobKeys[snap.job],baseClass=catalog.classes?.[jobKey]?.baseClass||jobKey;
+ // A branch has innate green points only when a profession is actually
+ // selected. The root-class row in the existing OS snapshot is the source.
+ return baseClass&&gameTables?.jobInit?.[baseClass]?.branches||{};
+}
 function allowedBranch(branch){
- const b=budgetSummary(),cap=branchCap(branch),current=window.PandoraSkillProgression.potential(state,branch);
- return b.total===null||!catalog.classes?.[jobKeys[state.job]]?current:
-  Math.max(0,Math.min(cap,b.total-b.spent+current));
+ const b=budgetSummary(),cap=branchCap(branch);
+ const current=window.PandoraSkillProgression.potential(state,branch);
+ // P is native potential, not the maximum free allocation:
+ // Remaked Status.Skill[i][2] + [3], never P - innate.
+ return b.total===null||!catalog.classes?.[jobKeys[state.job]]||cap===0?current:
+  Math.max(0,b.total-b.spent+current);
 }
 
 function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
@@ -1459,6 +1480,7 @@ function heroPathApi(){
  const groups=window.PandoraGameNavigation.groups,klass=jobKeys[state.job];
  return {
   state,groups,job:klass,lang,selectedGroup:selectedSkillGroup,expandedBranch:inlineBranchId,
+  innate:innateBranches(),branchCaps:branchCapacities(),
   skillCatalog:heroSkillRows(catalog.skills),catalogReady:!!catalog.skills,
   allocationReady:Boolean(gameTables?.abilityPoint&&catalog.classes?.[klass]),
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
@@ -1507,10 +1529,12 @@ function heroPathApi(){
    const model=window.PandoraSkillProgression,current=model.potential(state,key);
    if(!Number.isInteger(requested)||requested<0)return current;
    const target=requested<=current?Math.max(0,requested):Math.min(Math.max(0,requested),allowedBranch(key));
-   if(!model.canAllocate(gameTables?.abilityPoint,state.level,state.points,key,branchCap(key),target))
+   const available=branchCap(key)>0;
+   const allocationCap=available?Number.MAX_SAFE_INTEGER:0;
+   if(!model.canAllocate(gameTables?.abilityPoint,state.level,state.points,key,allocationCap,target))
     return current;
    const allocationChanged=target!==current,branchChanged=state.branch!==key;
-   if(allocationChanged)model.setPotential(state,key,target);
+   if(allocationChanged)model.setPotential(state,key,target,innateBranches(),branchCapacities());
    state.branch=key;
    // A capped slider may emit many input events that cannot change the build.
    // Do not rewrite the draft or rebuild the budget for those no-op inputs.
@@ -1526,8 +1550,12 @@ function heroPathApi(){
    return target;
   },
   onMastery:(key,requested)=>{
-   if(state.masteryAuto!==false||
-    !window.PandoraSkillProgression.setTrained(state,key,requested))return false;
+   // The editor displays full green mastery (innate + additional).
+   // Store only manually trained additional points in saved builds.
+   const base=window.PandoraSkillProgression.branchBase(innateBranches(),key);
+   if(state.masteryAuto!==false||!Number.isInteger(requested)||requested<base||
+    !window.PandoraSkillProgression.setTrained(state,key,requested-base,
+     innateBranches(),branchCapacities()))return false;
    const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
    persist();renderBranches();renderOriginStats();renderOriginVitals();
    if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
@@ -1773,6 +1801,9 @@ function guardEncyclopediaSearch(input){
  input.setAttribute('data-lpignore','true');
  input.setAttribute('data-1p-ignore','true');
  input.setAttribute('data-bwignore','true');
+ input.setAttribute('data-form-type','other');
+ input.setAttribute('aria-autocomplete','none');
+ input.setAttribute('spellcheck','false');
  input.addEventListener('focus',()=>{input.readOnly=false});
  input.addEventListener('pointerdown',()=>{input.readOnly=false});
  input.addEventListener('keydown',()=>{input.readOnly=false});
@@ -6685,10 +6716,12 @@ $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView
   saveView();
  };
  $('pathAutoMastery').onchange=e=>{
-  window.PandoraSkillProgression.setAuto(state,e.target.checked,branches.map(b=>b.id));
+  window.PandoraSkillProgression.setAuto(state,e.target.checked,branches.map(b=>b.id),
+   innateBranches(),branchCapacities());
   persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderOriginVitals();
  };
- $('pathSkillSearch').oninput=e=>{pathSkillQuery=e.target.value;pathSkillShown=24;renderPathSkills()};
+ guardEncyclopediaSearch($('pathSkillSearch')); // non-credential search, not account login
+$('pathSkillSearch').oninput=e=>{pathSkillQuery=e.target.value;pathSkillShown=24;renderPathSkills()};
  $('pathSkillStatus').onchange=e=>{pathSkillFilter=e.target.value;pathSkillShown=24;renderPathSkills()};
  $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;

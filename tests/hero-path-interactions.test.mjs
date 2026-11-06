@@ -50,15 +50,18 @@ function fixture(job='CLERIC',section='prayer',branch='benevolence'){
   state,job,groups:root.PandoraGameNavigation.groups,selectedGroup:section,
   expandedBranch:branch,skillCatalog:[],catalogReady:false,allocationReady:true,
   budget:budget(),lang:'ru',branchName:key=>key,
+  innate:tables.jobInit[classes[job].baseClass||job]?.branches||{},
+  branchCaps:classes[job].branchCaps,
   cap:key=>classes[job].branchCaps[key]??0,
   milestones:()=>[],icon:()=>null,hover:()=>{},
   onGroup:()=>{},onExpand:()=>{},onSkill:()=>{},onMastery:()=>{},
   onAllocate:(key,requested)=>{
    const current=points.potential(state,key),b=budget(),cap=classes[job].branchCaps[key]??0;
    const target=requested<=current?Math.max(0,requested):
-    Math.min(requested,Math.max(0,Math.min(cap,b.total-b.spent+current)));
-   if(!points.canAllocate(tables.abilityPoint,state.level,state.points,key,cap,target))return current;
-   points.setPotential(state,key,target);return target;
+    Math.min(requested,Math.max(0,cap>0?b.total-b.spent+current:0));
+   if(!points.canAllocate(tables.abilityPoint,state.level,state.points,key,
+    cap>0?Number.MAX_SAFE_INTEGER:0,target))return current;
+   points.setPotential(state,key,target,api.innate,api.branchCaps);return target;
   }
  };
  const target=new BrowserElement('root');
@@ -71,7 +74,7 @@ test('45-level Cleric with 104 available points has actually ENABLED skill range
  assert.equal(budget().remaining,104);assert.ok(range);
  assert.equal(range.disabled,false);
  assert.equal(Object.hasOwn(range.attributes,'disabled'),false);
- assert.equal(range.attributes.max,'90');
+ assert.equal(range.attributes.max,'194');
 });
 test('range input spends 10, 30 points and refunds all back to 104',()=>{
  const {range,state,budget}=fixture();
@@ -261,7 +264,7 @@ test('class-limited skills keep individual numbers in the separate details list'
  const options=walk(details).filter(x=>x.tag==='button');
  options[1].listeners.click();assert.equal(selected.id,981);
  const heading=walk(f.target).find(x=>String(x.className).includes('game-tree-head active'));
- assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent==='0 вложено'));
+ assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent.includes('освоено')));
 });
 
 test('requirements above 90 points remain accessible in list without rendering off-track',()=>{
@@ -276,8 +279,8 @@ test('requirements above 90 points remain accessible in list without rendering o
  const nodes=walk(f.target);
  const ticks=nodes.filter(x=>String(x.className).includes('path-unlock-notch'));
  const list=nodes.filter(x=>String(x.className).includes('path-unlock-skill'));
- assert.equal(ticks.length,1,'Only 0–90 thresholds are drawn on the rail');
- assert.equal(ticks[0].attributes['data-milestone-points'],'20');
+ assert.equal(ticks.length,2,'Potential can be extended past 90 by investing free points');
+ assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['20','95']);
  assert.equal(list.length,2,'Future source skills must remain discoverable');
  assert.equal(list[1].className.includes('unreachable'),true);
 });
@@ -288,17 +291,17 @@ test('skill milestones remain inside the bar and update their reached state afte
  assert.match(patch,/\.path-integrated-track \.path-integrated-milestones\{/);
  assert.match(patch,/pointer-events:none/);
  const f=fixture('CLERIC','prayer','benevolence');
- const skill={id:9099,name:'Skill at 8',branch:'benevolence',
-  classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:8}]};
+ const skill={id:9099,name:'Skill at 91',branch:'benevolence',
+  classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:91}]};
  f.api.skillCatalog=[skill];
- f.api.milestones=()=>[{threshold:8,skills:[skill],locked:false}];
+ f.api.milestones=()=>[{threshold:91,skills:[skill],locked:false}];
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const tick=walk(f.target).find(x=>String(x.className).includes('path-unlock-notch'));
  assert.ok(tick);
  assert.ok(!tick.className.includes('reached'));
  assert.ok(!Object.hasOwn(tick.style,'top'));
  const range=walk(f.target).find(x=>x.tag==='input'&&x.attributes.type==='range');
- range.value='8';range.listeners.input();
+ range.value='1';range.listeners.input();
  assert.ok(tick.className.includes('reached'),'green mastery unlocks the marker');
 });
 
@@ -315,8 +318,8 @@ test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch
   f.range.value=String(n);f.range.listeners.input();
   assert.equal(row.children.length,2,'stable heading structure at '+n);
   assert.equal(row.children[0].children.length,1,'no extra subtitle at '+n);
-  assert.equal(counter.textContent,n+' / 90','correct invested count at '+n);
-  assert.equal(mastery.value,String(n),'mastery value still updates at '+n);
+  assert.equal(counter.textContent,(90+n)+' / '+(90+n),'correct full green / potential count at '+n);
+  assert.equal(mastery.value,String(90+n),'automatic mastery follows native P plus spent points at '+n);
  }
  const css=read('pandora-studio-theme.css');
  assert.match(css,/\.game-tree-group \.branch-row>div>strong\{[\s\S]*?white-space:nowrap/);
@@ -351,21 +354,21 @@ test('empty manual green mastery is a deliberate reset, invalid entries remain s
  const f=fixture('CLERIC','prayer','benevolence');
  f.state.masteryAuto=false;f.state.points.benevolence=8;f.state.mastery.benevolence=6;
  const called=[];
- f.api.onMastery=(key,n)=>{called.push(n);return points.setTrained(f.state,key,n)};
+ f.api.onMastery=(key,n)=>{called.push(n);return points.setTrained(f.state,key,n-5,f.api.innate,f.api.branchCaps)};
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const field=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:mastery-number');
  for(const raw of ['-2','2.5']){
   field.value=raw;field.listeners.change();
-  assert.equal(field.value,'6','bad value restores previous mastery');
+  assert.equal(field.value,'11','bad value restores innate + trained mastery');
   assert.equal(points.trained(f.state,'benevolence'),6);
  }
  assert.deepEqual(called,[],'negative and fractional values do not reach the model');
  field.value='';field.listeners.change();
- assert.deepEqual(called,[0],'blank value commits actual zero to the mastery model');
+ assert.deepEqual(called,[5],'blank commits the immutable initial green mastery');
  assert.equal(points.trained(f.state,'benevolence'),0);
  assert.equal(f.state.points.benevolence,8,'blue allocated points stay put');
- field.value='4';field.listeners.change();
+ field.value='9';field.listeners.change();
  assert.equal(points.trained(f.state,'benevolence'),4);
- field.value='0';field.listeners.change();
+ field.value='5';field.listeners.change();
  assert.equal(points.trained(f.state,'benevolence'),0);
 });

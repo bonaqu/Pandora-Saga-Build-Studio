@@ -5,7 +5,7 @@ import {readFileSync} from 'node:fs';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const js=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
 const start=js.indexOf('    const railInset=21;');
-const end=js.indexOf('    const lockedFraction=',start);
+const end=js.indexOf('    const setPotentialEdge=',start);
 assert.ok(start>=0&&end>start,'Shared rail coordinate helpers must exist');
 const {positionOnRail,widthOnRail}=new Function(js.slice(start,end)+
  '\nreturn {positionOnRail,widthOnRail};')();
@@ -76,11 +76,11 @@ test('allocation semantics remain untouched across numeric clearing, hover and s
  for(const statement of [
   "const raw=numeric.value.trim();",
   "update(raw===''?0:Number(raw),true);",
-  "const raw=input.value.trim(),requested=raw===''?0:Number(raw);",
-  "const visualMax=Math.max(90,cap,points);",
+  "const raw=input.value.trim(),requested=raw===''?base:Number(raw);",
+  "const visualMax=Math.max(1,cap+Math.max(points,budget.total||0),base+points);",
   "tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';",
   "range.setAttribute('aria-valuetext'",
-  "const lockedFraction=Math.max(0,Math.min(1,cap/visualMax));",
-  "locked.style.left=positionOnRail(lockedFraction);"
+  "const setPotentialEdge=invested=>{",
+  "locked.style.left=positionOnRail(Math.max(0,Math.min(1,availablePotential/visualMax)));"
  ])assert.ok(js.includes(statement),statement);
 });

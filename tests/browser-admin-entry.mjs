@@ -870,7 +870,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   });
   const legend=page.locator('.path-track-legend').first();
   assert.ok(await legend.isVisible(),'Skill scale labels must be visible below the drag track');
-  assert.ok((await legend.innerText()).includes('Предел класса: '));
+  assert.ok((await legend.innerText()).includes('Потенциал: '));
   assert.ok((await legend.innerText()).includes('90'));
   assert.ok(result.geom.length>=3,'Expected several source-backed unlock thresholds');
   assert.ok(result.geom.every(x=>x.top>=result.barTop-1&&x.bottom<=result.barBottom+1),
@@ -915,9 +915,9 @@ export async function runInlineMilestonesSmoke(browser,base){
   const stable=[await measureBranch(),await drag(1),await drag(2),await drag(0)];
   assert.ok(stable.every(x=>x.duplicatePoints===0&&x.exactControls===2),
    'The duplicate points row is absent; both exact controls remain');
-  assert.ok(stable[0].points.includes('0 /'),'Test starts with an empty branch');
-  assert.ok(stable[1].points.includes('1 /')&&stable[2].points.includes('2 /'),
-   'Dragging must update actual invested branch points');
+  assert.ok(stable[0].points.includes('5 / 90'),'Cleric inherits 5 green on an unspent branch');
+  assert.ok(stable[1].points.includes('5 / 91')&&stable[2].points.includes('5 / 92'),
+   'Blue investment increases P while manually trained green stays at class baseline');
   assert.ok(stable.every(x=>Math.abs(x.height-stable[0].height)<=1),
    'Mastery changes must NOT increase the branch row height: '+JSON.stringify(stable));
   assert.ok(stable.every(x=>Math.abs(x.editorTop-stable[0].editorTop)<=1),
@@ -942,15 +942,15 @@ export async function runInlineMilestonesSmoke(browser,base){
   assert.equal(await exact.inputValue(),'0','Clearing and blurring precise field must refund points');
   assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'0');
   await drag(5);
-  assert.match(await page.locator('[data-path-branch="benevolence"] .count').innerText(),/5\s*\/\s*90/);
+  assert.match(await page.locator('[data-path-branch="benevolence"] .count').innerText(),/5\s*\/\s*95/);
   assert.equal(await page.locator('.inline-branch-value').count(),0);
   await page.locator('#pathAutoMastery').uncheck();
   const mastery=page.locator('[data-branch-control="benevolence:mastery-number"]');
   assert.equal(await mastery.isEnabled(),true,'manual mastery control must be editable');
-  await mastery.fill('3');await mastery.press('Tab');
-  assert.equal(await mastery.inputValue(),'3');
+  await mastery.fill('9');await mastery.press('Tab');
+  assert.equal(await mastery.inputValue(),'9');
   await mastery.fill('');await mastery.press('Tab');
-  assert.equal(await mastery.inputValue(),'0','Clearing and blurring manual mastery must reset green to zero');
+  assert.equal(await mastery.inputValue(),'5','Clearing manual mastery restores immutable innate green');
   assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'5',
    'Clearing manual green must not refund invested blue points');
   await drag(0);
@@ -959,7 +959,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   const range=page.locator('.path-integrated-track input[type=range]').first();
   const rect=await range.boundingBox();
   const travel=rect.width-18;
-  await page.mouse.move(rect.x+9+points/90*travel,rect.y+rect.height/2);
+  await page.mouse.move(rect.x+9+points/Number(await range.getAttribute('max'))*travel,rect.y+rect.height/2);
   await mark.locator('.path-milestone-tooltip').waitFor({state:'visible',timeout:4000});
   assert.ok((await mark.locator('.path-milestone-preview').count())>=1);
   assert.ok((await mark.locator('.path-milestone-cost').count())>=1,
@@ -994,7 +994,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#locale [data-locale="en"]')
    ?.getAttribute('aria-pressed')==='true'&&
    document.querySelector('#startupOverlay')?.hidden===true,null,{timeout:20000});
-  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Class limit:'));
+  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Potential:'));
   await page.locator('#pathSkillsTab').click();
   await page.locator('.path-skill-count').waitFor({state:'visible'});
   assert.match(await page.locator('.path-skill-count').innerText(),/skills/);

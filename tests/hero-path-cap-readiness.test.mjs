@@ -2,10 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../pandora-studio-hero-path.js',import.meta.url),'utf8');
-const root={PandoraSkillProgression:{
- potential:(state,key)=>state.points[key]||0,
- trained:(state,key)=>state.mastery[key]||0
-}};
+const root={};Function('window',readFileSync(new URL('../pandora-studio-skill-progression.js',import.meta.url),'utf8'))(root);
 Function('window','document',source)(root,{});
 const readiness=root.PandoraHeroPath.readiness;
 const catalog=Object.values(JSON.parse(readFileSync(new URL('../data/os/skills.json',import.meta.url),'utf8')));
@@ -13,15 +10,15 @@ const classes=JSON.parse(readFileSync(new URL('../data/os/classes.json',import.m
 const make=(id,reqs,prereq=null)=>({id,name:'Skill '+id,classes:{CLERIC:1},
  charLevel:1,reqs,prereq});
 function fixture(skills,cap=15){
- return {lang:'en',job:'CLERIC',state:{level:55,points:{brush:50},mastery:{brush:50}},
+ return {lang:'en',job:'CLERIC',state:{level:55,points:{brush:50},mastery:{brush:50},masteryAuto:false},
  skillCatalog:skills,branchName:key=>key,cap:key=>key==='brush'?cap:0};
 }
-test('profession change cannot unlock a skill requiring more mastery than its current class cap',()=>{
+test('a zero-potential class branch cannot unlock skills despite saved investment',()=>{
  const skill=make(11,[{branch:'brush',amount:41}]);
- const api=fixture([skill]);
+ const api=fixture([skill],0);
  const result=readiness(skill,api);
  assert.equal(result.learned,false);
- assert.ok(result.problems.some(p=>p.includes('class limit cannot meet requirement (41 > 15)')));
+ assert.ok(result.problems.some(p=>p.includes('unavailable to this class')));
  assert.equal(api.state.points.brush,50,'out-of-cap saved investment is preserved');
  assert.equal(api.state.mastery.brush,50,'manual mastery values remain unchanged');
  const valid=make(12,[{branch:'brush',amount:8}]);
@@ -31,7 +28,7 @@ test('profession change cannot unlock a skill requiring more mastery than its cu
 test('a prerequisite blocked by a class cap never makes its child available',()=>{
  const old=make(21,[{branch:'brush',amount:41}]);
  const next=make(22,[{branch:'brush',amount:8}],21);
- const api=fixture([old,next]);
+ const api=fixture([old,next],0);
  assert.equal(readiness(old,api).learned,false);
  const child=readiness(next,api);
  assert.equal(child.learned,false);
@@ -69,7 +66,7 @@ test('official 569-skill OS source contains no malformed branch requirement',()=
 
 test('marker readiness uses shared prerequisite index and dead spent subtotal is gone',()=>{
  assert.match(source,/const learned=skillsAt\.some\(skill=>readiness\(skill,api,new Set\(\),skillIndex\)\.learned\)/);
- assert.doesNotMatch(source,/const spent=branchKeys\.reduce/);
+ assert.match(source,/const mastered=branchKeys\.reduce/);
  assert.match(source,/entry\.skills\.some\(skill=>readiness\(skill,api,new Set\(\),skillIndex\)\.learned\)/);
 });
 

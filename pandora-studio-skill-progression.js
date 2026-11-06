@@ -17,27 +17,46 @@ function value(raw){
  return Number.isSafeInteger(n)&&n>0?n:0;
 }
 function potential(state,key){return value(state?.points?.[key])}
-function trained(state,key){
- const max=potential(state,key);
+// The innate (already trained) green points belong to the root profession
+// and exist even with ZERO free skill points on a new level-1 character.
+// They are not skill allocations and cannot be refunded.
+function branchBase(innate,key){return value(innate?.[key])}
+// Remaked Status.Skill[i] is [innate green, trained green, base potential,
+// invested free points]. The currently trainable limit is P + invested;
+// neither innate mastery nor base potential consumes level-up points.
+function branchPotential(state,key,innate={},caps={}){
+ const cap=Number(caps?.[key]);
+ return Number.isSafeInteger(cap)&&cap>=0&&caps&&Object.hasOwn(caps,key)?
+  (cap===0?0:cap+potential(state,key)):
+  branchBase(innate,key)+potential(state,key);
+}
+function trainedLimit(state,key,innate={},caps={}){
+ return Math.max(0,branchPotential(state,key,innate,caps)-branchBase(innate,key));
+}
+function trained(state,key,innate={},caps={}){
+ const max=trainedLimit(state,key,innate,caps);
  if(state?.masteryAuto!==false)return max;
  const raw=state?.mastery&&Object.hasOwn(state.mastery,key)?value(state.mastery[key]):0;
  return Math.min(max,raw);
 }
-function setPotential(state,key,n){
+function branchMastery(state,key,innate={},caps={}){
+ return branchBase(innate,key)+trained(state,key,innate,caps);
+}
+function setPotential(state,key,n,innate={},caps={}){
  if(!Number.isInteger(n)||n<0)return false;
  state.points??={};state.points[key]=n;
  if(state.masteryAuto===false&&state.mastery&&Object.hasOwn(state.mastery,key))
-  state.mastery[key]=Math.min(n,value(state.mastery[key]));
+  state.mastery[key]=Math.min(trainedLimit(state,key,innate,caps),value(state.mastery[key]));
  return true;
 }
-function setTrained(state,key,n){
- if(!Number.isInteger(n)||n<0||n>potential(state,key))return false;
+function setTrained(state,key,n,innate={},caps={}){
+ if(!Number.isInteger(n)||n<0||n>trainedLimit(state,key,innate,caps))return false;
  state.mastery??={};state.mastery[key]=n;return true;
 }
-function setAuto(state,on,keys){
+function setAuto(state,on,keys,innate={},caps={}){
  if(!on&&state.masteryAuto!==false){
   state.mastery??={};
-  for(const key of keys)state.mastery[key]=trained(state,key);
+  for(const key of keys)state.mastery[key]=trained(state,key,innate,caps);
  }
  state.masteryAuto=Boolean(on);
 }
@@ -45,20 +64,20 @@ function setAuto(state,on,keys){
 // Skill.D/baseClass; Status.Skill[i][1] is additionally trained green mastery.
 // BOTH contribute to derivative skill passives. Neither is the blue Potential.
 // OS tables.json jobInit.<baseClass>.branches matches legacy innate branch values.
-function groupAdeptness(state,branchKeys,innate={}){
- return branchKeys.reduce((sum,key)=>sum+value(innate?.[key])+trained(state,key),0);
+function groupAdeptness(state,branchKeys,innate={},caps={}){
+ return branchKeys.reduce((sum,key)=>sum+branchMastery(state,key,innate,caps),0);
 }
-function prayerAdeptness(state,innate={}){return groupAdeptness(state,PRAYER,innate)}
-function combatMasteries(state,innate={}){
- return {melee:groupAdeptness(state,MELEE,innate),
-  magic:groupAdeptness(state,MAGIC,innate),
-  techniqueInnate:TECHNIQUE.reduce((n,key)=>n+value(innate?.[key]),0),
-  techniqueTrained:TECHNIQUE.reduce((n,key)=>n+trained(state,key),0)};
+function prayerAdeptness(state,innate={},caps={}){return groupAdeptness(state,PRAYER,innate,caps)}
+function combatMasteries(state,innate={},caps={}){
+ return {melee:groupAdeptness(state,MELEE,innate,caps),
+  magic:groupAdeptness(state,MAGIC,innate,caps),
+  techniqueInnate:TECHNIQUE.reduce((n,key)=>n+branchBase(innate,key),0),
+  techniqueTrained:TECHNIQUE.reduce((n,key)=>n+trained(state,key,innate,caps),0)};
 }
 // Remaked Calc('SPR'): 1 + floor((innate prayer + trained prayer) / 10),
 // active only for Priest/Cleric/Enchanter. Current OS parity remains unverified.
-function legacyPrayerSpirit(job,state,innate={}){
- return INSPIRED.has(job)?1+Math.floor(prayerAdeptness(state,innate)/10):0;
+function legacyPrayerSpirit(job,state,innate={},caps={}){
+ return INSPIRED.has(job)?1+Math.floor(prayerAdeptness(state,innate,caps)/10):0;
 }
 // Remaked js/bonus.js BPt[level][1] is the source for spendable skill points.
 // The OS abilityPoint table has different values (e.g. L2=2 rather than 1),
@@ -87,7 +106,8 @@ function canAllocate(table,level,points,key,cap,amount){
   amount<=cap&&budget.spent-current+amount<=budget.total;
 }
 root.PandoraSkillProgression=Object.freeze({
- potential,trained,setPotential,setTrained,setAuto,skillGrant,spending,canAllocate,
+ potential,trained,branchBase,branchPotential,branchMastery,trainedLimit,
+ setPotential,setTrained,setAuto,skillGrant,spending,canAllocate,
  groupAdeptness,prayerAdeptness,legacyPrayerSpirit,combatMasteries,PRAYER,MAGIC,TECHNIQUE,MELEE
 });
 })(typeof window==='undefined'?globalThis:window);
