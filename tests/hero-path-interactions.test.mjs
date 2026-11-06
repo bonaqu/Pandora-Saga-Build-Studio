@@ -302,7 +302,13 @@ test('skill milestones remain inside the bar and update their reached state afte
  assert.ok(!Object.hasOwn(tick.style,'top'));
  const range=walk(f.target).find(x=>x.tag==='input'&&x.attributes.type==='range');
  range.value='1';range.listeners.input();
- assert.ok(tick.className.includes('reached'),'green mastery unlocks the marker');
+ assert.ok(!tick.className.includes('reached'),
+  'investing one point raises P to 91 but must not automatically train 91 mastery');
+ f.state.masteryAuto=false;
+ assert.equal(points.setTrained(f.state,'benevolence',86,f.api.innate,f.api.branchCaps),true);
+ range.listeners.input();
+ assert.ok(tick.className.includes('reached'),
+  'the real 91 mastery, not only native potential, unlocks the marker');
 });
 
 test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch header',()=>{
@@ -318,8 +324,8 @@ test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch
   f.range.value=String(n);f.range.listeners.input();
   assert.equal(row.children.length,2,'stable heading structure at '+n);
   assert.equal(row.children[0].children.length,1,'no extra subtitle at '+n);
-  assert.equal(counter.textContent,(90+n)+' / '+(90+n),'correct full green / potential count at '+n);
-  assert.equal(mastery.value,String(90+n),'automatic mastery follows native P plus spent points at '+n);
+  assert.equal(counter.textContent,(5+n)+' / '+(90+n),'only actually invested points increase automatic green at '+n);
+  assert.equal(mastery.value,String(5+n),'automatic mastery never promotes class P to trained green at '+n);
  }
  const css=read('pandora-studio-theme.css');
  assert.match(css,/\.game-tree-group \.branch-row>div>strong\{[\s\S]*?white-space:nowrap/);

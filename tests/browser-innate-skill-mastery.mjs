@@ -57,8 +57,23 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.equal(await green.getAttribute('min'),'5');
   assert.equal(await green.getAttribute('max'),'25');
   assert.match(await page.locator('.path-innate-baseline').first().innerText(),/Старт: 5/);
-  await green.fill('6');await green.press('Tab');
-  assert.equal(await green.inputValue(),'6');
+  // Persisted legacy auto=true is not an instruction to max every branch.
+  await page.locator('#pathAutoMastery').check();
+  assert.equal((await slash.locator('.count').innerText()).replaceAll(' ',''),'5/25');
+  assert.equal(await page.locator('[data-branch-control="slash:potential-number"]').inputValue(),'0');
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'5');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),null,{timeout:25000});
+  assert.equal(await page.locator('#pathAutoMastery').isChecked(),true);
+  assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replaceAll(' ',''),'5/25');
+  await page.locator('#pathAutoMastery').uncheck();
+  await page.locator('[data-branch-control="slash:mastery-number"]').fill('6');
+  await page.locator('[data-branch-control="slash:mastery-number"]').press('Tab');
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'6');
+  await page.locator('#pathAutoMastery').check();
+  assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replaceAll(' ',''),'6/25');
+  await page.locator('#pathAutoMastery').uncheck();
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'6');
   assert.equal(await spent.inputValue(),'0');
   assert.match(await page.locator('#budgetState').innerText(),/0[\s\S]*Вложено/);
 

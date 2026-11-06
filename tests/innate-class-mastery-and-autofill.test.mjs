@@ -73,16 +73,45 @@ test('Remaked P plus invested defines trainable green; no need to spend at first
  assert.equal(S.spending(tables.abilityPoint,2,state.points).remaining,1);
 });
 
-test('automatic training fills P+invested only when explicitly enabled',()=>{
+test('auto checkbox fills allocated mastery only, never native Potential',()=>{
  const innate=tables.jobInit.WARRIOR.branches,caps=classes.WARRIOR.branchCaps;
- const state={masteryAuto:false,points:{slash:1},mastery:{}};
- assert.equal(S.branchMastery(state,'slash',innate,caps),5);
+ const state={level:1,masteryAuto:false,points:{slash:0},mastery:{}};
+ assert.equal(S.branchPotential(state,'slash',innate,caps),25);
  S.setAuto(state,true,['slash'],innate,caps);
- assert.equal(S.branchMastery(state,'slash',innate,caps),26);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),5,'L1 starts at 5 even with auto enabled');
+ for(const [branch,base] of Object.entries(innate)){
+  assert.equal(S.branchMastery(state,branch,innate,caps),base,
+   branch+' must not be promoted to its untrained potential');
+ }
+ assert.equal(S.spending(tables.abilityPoint,1,state.points).spent,0);
  S.setAuto(state,false,['slash'],innate,caps);
- assert.equal(state.mastery.slash,21);
- assert.equal(S.setTrained(state,'slash',0,innate,caps),true);
  assert.equal(S.branchMastery(state,'slash',innate,caps),5);
+ state.level=2;
+ S.setPotential(state,'slash',1,innate,caps);
+ S.setAuto(state,true,['slash'],innate,caps);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),6,'one spent point trains at most one extra automatically');
+ assert.equal(S.branchPotential(state,'slash',innate,caps),26,'native potential stays independent');
+ S.setAuto(state,false,['slash'],innate,caps);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),5,'auto must not save synthetic mastery');
+ assert.equal(S.setTrained(state,'slash',8,innate,caps),true);
+ S.setAuto(state,true,['slash'],innate,caps);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),13,
+  'automatically computed value cannot erase manually earned green');
+ S.setAuto(state,false,['slash'],innate,caps);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),13);
+});
+
+test('all 28 careers auto-on L1 preserve innate levels and zero level-up spending',()=>{
+ for(const [job,cls] of Object.entries(classes)){
+  const innate=tables.jobInit[cls.baseClass||job]?.branches||{};
+  const state={level:1,masteryAuto:true,points:{},mastery:{}};
+  assert.equal(S.spending(tables.abilityPoint,1,state.points).spent,0,job);
+  for(const [branch,cap] of Object.entries(cls.branchCaps||{})){
+   const innateLevel=S.branchBase(innate,branch);
+   assert.equal(S.branchMastery(state,branch,innate,cls.branchCaps),innateLevel,
+    job+' '+branch+' should show class starting value, not '+cap);
+  }
+ }
 });
 
 test('skill unlocks count innate green and P, but reject unavailable branches',()=>{

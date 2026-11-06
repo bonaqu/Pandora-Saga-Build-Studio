@@ -35,8 +35,14 @@ function trainedLimit(state,key,innate={},caps={}){
 }
 function trained(state,key,innate={},caps={}){
  const max=trainedLimit(state,key,innate,caps);
- if(state?.masteryAuto!==false)return max;
  const raw=state?.mastery&&Object.hasOwn(state.mastery,key)?value(state.mastery[key]):0;
+ if(state?.masteryAuto!==false){
+  // The auto checkbox trains only the points a player has actually assigned
+  // to this branch. The native class Potential (P) is a CEILING, not
+  // already-spent branch points. Never treat P as automatically earned green.
+  // Existing explicitly trained mastery must not be discarded by a preview.
+  return Math.min(max,Math.max(raw,potential(state,key)));
+ }
  return Math.min(max,raw);
 }
 function branchMastery(state,key,innate={},caps={}){
@@ -53,11 +59,10 @@ function setTrained(state,key,n,innate={},caps={}){
  if(!Number.isInteger(n)||n<0||n>trainedLimit(state,key,innate,caps))return false;
  state.mastery??={};state.mastery[key]=n;return true;
 }
-function setAuto(state,on,keys,innate={},caps={}){
- if(!on&&state.masteryAuto!==false){
-  state.mastery??={};
-  for(const key of keys)state.mastery[key]=trained(state,key,innate,caps);
- }
+function setAuto(state,on){
+ // Automatic mastery is only a reversible presentation/calculation mode.
+ // Turning it off restores the manually trained amount, rather than storing
+ // the preview as if the player had earned all of those green points.
  state.masteryAuto=Boolean(on);
 }
 // Legacy js/create.js: Status.Skill[i][0] is innate base Adeptness from
