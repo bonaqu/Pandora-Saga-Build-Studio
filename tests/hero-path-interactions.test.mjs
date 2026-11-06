@@ -414,3 +414,20 @@ test('real Vнезапный выстрел threshold 21 aligns with 18 invested
  assert.ok(Math.abs(notchX-tickX)<0.01,
   'milestone and current notch stay on the exact same 0..90 rail');
 });
+
+test('Tactics shows 44 trained / 44 learned / 29 invested, then 0 trained but 44 learned when auto is off',()=>{
+ const f=fixture('SNIPER','tactics','assassin');
+ f.state.points.archery=11;
+ f.state.points.assassin=18;
+ f.api.budget=f.budget();
+ const count=()=>{
+  root.PandoraHeroPath.viewGrowth(f.target,f.api);
+  const head=walk(f.target).find(el=>el.attributes?.['data-path-group']==='tactics');
+  assert.ok(head,'Tactics header must exist');
+  return head.children.find(el=>el.tag==='small')?.textContent;
+ };
+ assert.equal(count(),'44 освоено · 44 изучено · вложено 29');
+ f.state.masteryAuto=false;
+ f.state.mastery={};
+ assert.equal(count(),'0 освоено · 44 изучено · вложено 29');
+});
