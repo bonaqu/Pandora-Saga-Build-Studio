@@ -40,14 +40,13 @@ function occupiesBodyAndLegs(item){
   Array.isArray(item.occupiedSlots)&&item.occupiedSlots.includes('body')&&item.occupiedSlots.includes('legs'));
 }
 function visualEquipment(equipment,slot,catalog){
- const own=equipment?.[slot];
- if(own)return {item:own,sourceSlot:slot,shared:false};
  if(Number(slot)===5&&equipment?.[3]){
   const body=catalog?.[String(equipment[3].id)];
   if(occupiesBodyAndLegs(body))
    return {item:equipment[3],sourceSlot:3,shared:true};
  }
- return {item:null,sourceSlot:slot,shared:false};
+ const own=equipment?.[slot];
+ return {item:own||null,sourceSlot:slot,shared:false};
 }
 function isAstirMale(item){
  const part=family(item,astirSlots);
