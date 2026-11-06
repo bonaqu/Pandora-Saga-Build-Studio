@@ -24,7 +24,7 @@ test('choice metadata gates Soul slot count by equipment slot type',()=>{
  assert.match(app,/levelText\+\(lang==='en'\?' · Slots: ':' · Слоты: '\)/);
  assert.match(app,/masteryAuto:true/);
  assert.match(app,/copyLabel:equipmentCopy,editLabel:equipmentCopyLabel/);
- assert.match(app,/saveGuidePatch\('book\.equipment\.'\+key/);
+ assert.match(app,/saveGuidePatch\('book\.'\+ownerCopyKey\(section,key\)/);
 });
 
 test('mastery group summary puts label before value in both locales',()=>{
