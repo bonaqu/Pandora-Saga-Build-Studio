@@ -71,7 +71,7 @@ test('45-level Cleric with 104 available points has actually ENABLED skill range
  assert.equal(budget().remaining,104);assert.ok(range);
  assert.equal(range.disabled,false);
  assert.equal(Object.hasOwn(range.attributes,'disabled'),false);
- assert.equal(range.attributes.max,'90');
+ assert.equal(range.attributes.max,'194');
 });
 test('range input spends 10, 30 points and refunds all back to 104',()=>{
  const {range,state,budget}=fixture();
@@ -261,7 +261,7 @@ test('class-limited skills keep individual numbers in the separate details list'
  const options=walk(details).filter(x=>x.tag==='button');
  options[1].listeners.click();assert.equal(selected.id,981);
  const heading=walk(f.target).find(x=>String(x.className).includes('game-tree-head active'));
- assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent==='0 вложено'));
+ assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent.includes('освоено')));
 });
 
 test('requirements above 90 points remain accessible in list without rendering off-track',()=>{
@@ -276,8 +276,8 @@ test('requirements above 90 points remain accessible in list without rendering o
  const nodes=walk(f.target);
  const ticks=nodes.filter(x=>String(x.className).includes('path-unlock-notch'));
  const list=nodes.filter(x=>String(x.className).includes('path-unlock-skill'));
- assert.equal(ticks.length,1,'Only 0–90 thresholds are drawn on the rail');
- assert.equal(ticks[0].attributes['data-milestone-points'],'20');
+ assert.equal(ticks.length,2,'Potential can be extended past 90 by investing free points');
+ assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['20','95']);
  assert.equal(list.length,2,'Future source skills must remain discoverable');
  assert.equal(list[1].className.includes('unreachable'),true);
 });
@@ -315,8 +315,8 @@ test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch
   f.range.value=String(n);f.range.listeners.input();
   assert.equal(row.children.length,2,'stable heading structure at '+n);
   assert.equal(row.children[0].children.length,1,'no extra subtitle at '+n);
-  assert.equal(counter.textContent,n+' / 90','correct invested count at '+n);
-  assert.equal(mastery.value,String(n),'mastery value still updates at '+n);
+  assert.equal(counter.textContent,(90+n)+' / '+(90+n),'correct full green / potential count at '+n);
+  assert.equal(mastery.value,String(90+n),'automatic mastery follows native P plus spent points at '+n);
  }
  const css=read('pandora-studio-theme.css');
  assert.match(css,/\.game-tree-group \.branch-row>div>strong\{[\s\S]*?white-space:nowrap/);
