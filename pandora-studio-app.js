@@ -1755,6 +1755,54 @@ function renderBranches(){
 function renderPathSkills(){
  window.PandoraHeroPath.viewSkills($('pathSkillGallery'),$('pathSkillDetails'),heroPathApi());
 }
+function renderPathCopyControls(){
+ const editing=Boolean(adminEditing&&adminToken);
+ const copy=(key,ru,en)=>ownerCopy('path',key,ru,en);
+ const labels=[
+  ['#pathGrowthPage .path-mastery-toggle span','autoMastery','Автоматически заполнять зелёное мастерство','Automatically fill green mastery'],
+  ['#pathGrowthPage .path-legend .potential','available','Свободно','Available'],
+  ['#pathGrowthPage .path-legend .invested','invested','Вложено','Invested'],
+  ['#pathGrowthPage .path-legend .trained','trained','Освоено','Trained']
+ ];
+ for(const [selector,key,ru,en] of labels){
+  const node=document.querySelector(selector);if(!node)continue;
+  if(!node.querySelector('.wiki-inline-input'))node.textContent=copy(key,ru,en);
+  node.classList.toggle('origin-copy-editable',editing);
+  if(!node.dataset.pathCopyBound){
+   node.dataset.pathCopyBound='1';
+   node.addEventListener('dblclick',event=>{
+    if(!adminEditing||!adminToken)return;
+    event.preventDefault();event.stopPropagation();
+    editWikiValue(node,copy(key,ru,en),{type:'text',
+     onCommit:next=>saveGuidePatch('book.path.'+key,{[lang]:next}),
+     onCommitted:next=>{node.textContent=next}});
+   });
+  }
+ }
+ for(const [id,key,ru,en,symbol] of [
+  ['pathGrowthTab','tabGrowth','Развитие','Growth','◈'],
+  ['pathSkillsTab','tabSkills','Умения','Skills','✦']
+ ]){
+  const button=$(id);if(!button)continue;
+  const label=copy(key,ru,en);
+  if(!editing){button.textContent=symbol+' '+label;continue}
+  const caption=h('span',{class:'path-tab-copy',text:label});
+  const pencil=h('span',{class:'path-tab-pencil',role:'button',tabindex:'0',text:'✎',
+   'aria-label':lang==='en'?'Edit '+label:'Редактировать '+label});
+  const edit=event=>{
+   event.preventDefault();event.stopPropagation();
+   editWikiValue(caption,copy(key,ru,en),{type:'text',
+    onCommit:next=>saveGuidePatch('book.path.'+key,{[lang]:next}),
+    onCommitted:next=>{caption.textContent=next}});
+  };
+  caption.addEventListener('dblclick',edit);
+  pencil.addEventListener('click',edit);
+  pencil.addEventListener('keydown',event=>{
+   if(event.key==='Enter'||event.key===' ')edit(event);
+  });
+  button.replaceChildren(h('span',{text:symbol}),caption,pencil);
+ }
+}
 function renderPathPages(){
  const grow=heroPathPage==='growth';
  $('pathGrowthPage').hidden=!grow;$('pathSkillsPage').hidden=grow;
@@ -1762,6 +1810,7 @@ function renderPathPages(){
   $(id).classList.toggle('chosen',on);
   $(id).setAttribute('aria-selected',String(on));
  }
+ renderPathCopyControls();
  if(!grow)renderPathSkills();
 }
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hasRace=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length;
@@ -6857,8 +6906,8 @@ document.addEventListener('dblclick',event=>{
  if(!editable||!/^(?:item|itemdesc|itemslots|skill|skilldesc)\./.test(editable.dataset.editKey))return;
  event.preventDefault();event.stopImmediatePropagation();inlineWikiText(editable);
 },true);
-$('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView()};
- $('pathSkillsTab').onclick=()=>{heroPathPage='skills';renderPathPages();saveView()};
+$('pathGrowthTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,.wiki-inline-input'))return;heroPathPage='growth';renderPathPages();saveView()};
+ $('pathSkillsTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,.wiki-inline-input'))return;heroPathPage='skills';renderPathPages();saveView()};
  $('pathResetPoints').onclick=()=>{
   const spent=budgetSummary().spent;
   if(!spent)return;
