@@ -935,7 +935,7 @@ function renderSlotRails(){
     cap=shared?0:plan.socketCapacity(source);
    const report=shared?{count:0,excess:0}:plan.socketReport(state.souls?.[i],cap);
    const level=plan.canRefine(key)?plan.refinementValue(state.refinements,sourceSlot,item):0;
-   const issue=source?(shared?[]:equipmentIssue(source,i)):[];
+   const issue=source?equipmentIssue(source,sourceSlot):[];
    const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+
     (shared?' · Занято бронёй (одна вещь на два слота)':'')+
     (!shared&&item&&plan.canSocket(slotKeys[i],source)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+
@@ -1259,9 +1259,9 @@ function renderStagePicker(focusSearch=false){
   else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))list.append(h('p',{class:'muted',text:lang==='en'?'Choose a race and class first.':'Сначала выберите расу и профессию.'}));
   else if(!matches.length)list.append(h('p',{class:'muted',text:'Нет совместимых предметов. Измени поиск или слот.'}));
   for(const rec of matches.slice(0,stageSlotShown)){
-   const selected=String(equipped?.id)===String(rec.id);
+   const selected=!isSharedPants&&String(equipped?.id)===String(rec.id);
    const future=Number(rec.level)>state.level;
-   const btn=h('button',{type:'button',
+   const btn=h('button',{type:'button','data-stage-choice':String(rec.id),
     class:'stage-picker-item'+(selected?' selected':'')+(future?' future':''),
     'aria-label':(future?'Запланировать: ':'Экипировать ')+itemName(rec)+
      (future?' · с '+rec.level+' уровня':''),onclick:()=>{
