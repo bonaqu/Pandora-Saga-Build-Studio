@@ -31,6 +31,14 @@ test('explicit source recheck is bounded and never downloads during dry-run',()=
  assert.equal(limited.retry404,true);
  assert.equal(limited.planned,12);
  assert.equal(limited.skippedKnown404,0);
+ assert.deepEqual(new Set(limited.firstPlanned.slice(0,4)),new Set([
+  'items/I_050011_00','items/I_900001_00',
+  'items/I_900002_00','items/I_900003_00'
+ ]));
+ assert.ok(limited.firstPlanned.slice(4,9).every(id=>
+  ['skills/skill_168051002','skills/skill_168052002',
+   'skills/skill_260003002','skills/skill_330002002',
+   'skills/skill_330003002'].includes(id)));
  assert.equal(limited.processed,0);
  assert.equal(limited.downloaded,0);
  const all=plan('--retry-404');
