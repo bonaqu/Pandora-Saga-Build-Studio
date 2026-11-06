@@ -304,8 +304,8 @@ function skillIcon(cat,idx,record=null){
  if(catalog.live&&record?.iconId){
   const stem='skill_'+record.iconId,path=iconManifest?.icons?.skills?.[stem];
   if(path)return path;
-  if(unavailableIconIds.has('skills/'+stem))return null;
-  return `${OS}/icons/skills/skill_${record.iconId}.webp?v=07682901`;
+  // A missing original stays a neutral glyph; do not request a confirmed 404.
+  return null;
  }
  return branchIcon(cat);
 }
@@ -318,8 +318,9 @@ function itemIcon(rec,kind='items'){
  const selfHostedSoul=soul?iconManifest?.icons?.souls?.[rec.icon]:null;
  const archived=selfHostedSoul||iconManifest?.icons?.[pathKind]?.[rec.icon];
  if(archived)return archived;
- if(unavailableIconIds.has(pathKind+'/'+rec.icon))return null;
- return `${OS}/icons/${pathKind}/${rec.icon}.webp?v=07682901`;
+ // Missing/unknown originals are never probed on every encyclopedia hover.
+ // The local verified artwork manifest is the only image authority.
+ return null;
 }
 function branchCap(branch){
  // No invented cap: when a game class is still loading, disable spending until real caps exist.
