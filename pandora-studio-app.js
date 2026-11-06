@@ -1530,7 +1530,7 @@ function heroPathApi(){
    if(!Number.isInteger(requested)||requested<0)return current;
    const target=requested<=current?Math.max(0,requested):Math.min(Math.max(0,requested),allowedBranch(key));
    const available=branchCap(key)>0;
-   const allocationCap=available?budgetSummary().total??0:0;
+   const allocationCap=available?Number.MAX_SAFE_INTEGER:0;
    if(!model.canAllocate(gameTables?.abilityPoint,state.level,state.points,key,allocationCap,target))
     return current;
    const allocationChanged=target!==current,branchChanged=state.branch!==key;
