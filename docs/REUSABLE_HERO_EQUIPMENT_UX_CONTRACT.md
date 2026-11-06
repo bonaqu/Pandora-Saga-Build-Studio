@@ -68,6 +68,18 @@ to credentials, passwords, checkboxes, ranges, or search. Autofill UI is owned
 by the browser; this is best effort, not a guarantee. Keep gameplay and
 manual changes functional even if browser autofill is globally enabled.
 
+## 0.392 — UX labels and compact equipment controls
+
+Hero Path group header **always** shows `mastered освоено · learned изучено · invested вложено`. Mastered is the sum of actual green mastery; learned is the sum of branchPotential (class starting points + spent); invested is the sum of manually allocated free points. Even zero manual green must not zero out learned branch points. Never combine mastery with free skill budget.
+
+Skill thresholds remain **absolute** on the 0–90 scale. Tooltip labels: `N оч. ветки`, `Начально (оч.): D · Вложено (оч.): max(0,N-D)`. The class-side legend uses `Лимит (оч.)` and `Начально (оч.)`. Both RU/EN texts must be updated consistently.
+
+A two-slot garment's visually mirrored pants slot is shaded/dimmed with a lock symbol, but remains an interactive **button**: clicking it lets the user replace the dress with pants and is not a disabled slot. The garment is never stored twice and never contributes double bonuses.
+
+Each equipment candidate row displays `Уровень L · Слоты: C` using `PandoraEquipmentPlan.socketCapacity(record)` and does not infer unknown source values (show `—` when null). Weapon refinement +0…+10 is an eleven-button one-line control; on very narrow screens, horizontal scroll rather than clipping or two rows. Element icons are presentation only, mapped by canonical OS element IDs and cannot alter `assignGem` payloads.
+
+The visible UI footer omits icon-load status and D1 technical names, but obtains counts from the loaded catalog. An archive warning persists in its dedicated notice. Project name subtitle is simply CHARACTER PLANNER.
+
 ## Hero Path visual and numeric semantics (live-game contract, 0.390)
 
 The current live OS game indicates that root profession's starting points (D)
