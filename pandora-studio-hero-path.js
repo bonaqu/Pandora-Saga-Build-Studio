@@ -250,7 +250,7 @@ function viewGrowth(target,api){
      groupCount.textContent=groupSummary();
      input.value=String(M.branchMastery(state,key,innate,caps));
      input.max=String(cap>0?cap+target:base);
-     const potentialCaption=editor.querySelector('.path-track-limit');
+     const potentialCaption=editor.querySelector('.path-track-limit-value');
      if(potentialCaption)potentialCaption.textContent=tr(api,'Потенциал: ','Potential: ')+(cap+target);
      paint();
      // Committing rebuilds the UI so all branch totals stay synchronized.
@@ -378,9 +378,6 @@ function viewGrowth(target,api){
       'data-help':help,'aria-label':name+'. '+help});
      group.append(title,field);return group;
     };
-    if(base>0)controls.append(make('span',{class:'path-innate-baseline',
-     text:tr(api,'Старт: ','Innate: ')+base,
-     'aria-label':tr(api,'Начальная прокачка класса: ','Class innate mastery: ')+base}));
     controls.append(
      pointField(root.PandoraUILocale?.text('exactPoints',api.lang)||tr(api,'Вложено','Spent'),
       tr(api,'Свободные очки умений, вложенные в увеличение потенциала. Не включают стартовое мастерство.','Free skill points invested into extending branch potential. Excludes innate mastery.'),numeric),
@@ -389,8 +386,13 @@ function viewGrowth(target,api){
     );
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
-     make('span',{class:'path-track-limit',text:api.lang==='en'?
-      'Potential: '+(cap+points):'Потенциал: '+(cap+points)}),
+     make('span',{class:'path-track-limit'},[
+      make('span',{class:'path-track-limit-value',text:api.lang==='en'?
+       'Potential: '+(cap+points):'Потенциал: '+(cap+points)}),
+      ...(base>0?[make('span',{class:'path-innate-baseline',
+       text:tr(api,'Старт: ','Innate: ')+base,
+       'aria-label':tr(api,'Начальная прокачка класса: ','Class innate mastery: ')+base})]:[])
+     ]),
      make('span',{text:String(visualMax)})
     ]);
     editor.append(track,legend);
