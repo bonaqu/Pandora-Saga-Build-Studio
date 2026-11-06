@@ -12,3 +12,18 @@
 .stage-item-tooltip .stage-gear-soul-info{min-width:0;display:grid;gap:2px}
 .stage-item-tooltip .stage-gear-soul-info>b{font-size:11px;color:#eac790}
 .stage-item-tooltip .stage-gear-soul-info>small{font-size:10px;line-height:1.45;color:#d5bea2;white-space:pre-line;overflow-wrap:anywhere}
+
+/* Hovering the red ! reveals the actual eligibility/socket failure.
+   Floating above the clipped equipment rails, on either screen edge. */
+.workspace .equipment-rail .stage-conflict{
+ pointer-events:auto;cursor:help;z-index:9
+}
+.stage-rail-warning-popover{
+ position:fixed;z-index:280;width:min(240px,calc(100vw - 16px));
+ max-width:calc(100vw - 16px);padding:9px 11px;
+ border:1px solid #e0b778;border-radius:6px;
+ background:linear-gradient(145deg,#342217,#1b130f);
+ color:#f2d7aa;box-shadow:0 8px 28px #000d;
+ font:500 11px/1.45 Manrope,Arial,sans-serif;
+ overflow-wrap:anywhere;pointer-events:none
+}
