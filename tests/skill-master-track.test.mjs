@@ -18,7 +18,7 @@ test('right side exposes free/spent/total budget and immediate branch allocation
  assert.match(ui,/onAllocate\(key,requested,final\)/);
  assert.match(app,/model\.canAllocate\(gameTables\?\.abilityPoint/);
  assert.match(ui,/const raw=input\.value\.trim\(\),requested=raw===''\?0:Number\(raw\)/);
- assert.match(ui,/!Number\.isInteger\(requested\)\|\|requested<0\|\|/);
+ assert.match(ui,/!Number\.isInteger\(requested\)\|\|requested<base\|\|/);
  assert.match(ui,/!api\.onMastery\(key,requested\)/);
 });
 test('path has gallery with available/grey skill cards and both pages',()=>{
@@ -37,12 +37,12 @@ test('blue, amber, green are the SAME track rather than a second green bar',()=>
  assert.match(css,/\.inline-mastery-fill\{[^}]*top:76px;height:6px/);
  assert.doesNotMatch(css,/\.inline-mastery-track \.inline-mastery-green\{[^}]*top:88px/);
  assert.match(ui,/track\.append\(bed,gold,green,locked\)/);
- assert.match(ui,/const invested=M\.potential\(state,key\),mastery=M\.trained\(state,key\)/);
+ assert.match(ui,/const invested=M\.potential\(state,key\),mastery=M\.branchMastery\(state,key,innate,caps\)/);
 });
 
 test('one class-capped 90-point skill bar shows an unavailable red segment',()=>{
  const ui=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css'),html=read('index.html'),app=read('pandora-studio-app.js');
- assert.match(ui,/const visualMax=Math\.max\(90,cap,points\)/);
+ assert.match(ui,/const visualMax=Math\.max\(1,cap\+Math\.max\(points,budget\.total\|\|0\),base\+points\)/);
  assert.match(ui,/class:'inline-mastery-locked'/);
  assert.match(ui,/track\.append\(bed,gold,green,locked\)/);
  assert.match(css,/\.inline-mastery-track \.inline-mastery-locked/);
@@ -60,7 +60,7 @@ test('skill-unlock icons use the full 90-point track scale even for low class ca
 test('one bar uses standard CSS calc and correctly centered milestone markers',()=>{
  const ui=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
  assert.match(ui,/const railInset=21/);
- assert.match(ui,/locked\.style\.left=positionOnRail\(lockedFraction\)/);
+ assert.match(ui,/locked\.style\.left=positionOnRail\(Math\.max\(0,Math\.min\(1,availablePotential\/visualMax\)\)\)/);
  assert.doesNotMatch(ui,/calc\(12px \+ \(100% - 24px\) \*/);
  assert.match(ui,/gold\.style\.width=widthOnRail\(goldFraction\)/);
  assert.match(ui,/green\.style\.width=widthOnRail\(greenFraction\)/);
@@ -81,7 +81,7 @@ test('skill details include source-backed mana, cast, cooldown and exact branch 
   'skill.element','skill.powerStat'])
   assert.ok(ui.includes(field),field);
  assert.match(ui,/Требования по веткам/);
- assert.match(ui,/tr\(api,' · вложено ',' · spent '\)\+value/);
+ assert.match(ui,/tr\(api,' · доступно ',' · potential '\)\+value/);
  assert.match(ui,/tr\(api,' · освоено ',' · trained '\)\+green/);
  assert.match(app,/skillWiki:skill=>wikiLink/);
  assert.match(ui,/api\.skillWiki\(skill\)/);
@@ -126,8 +126,8 @@ test('red locked region shows OS skills beyond the class skill cap',()=>{
 test('branch count, green mastery and group totals update on input, without a new header row',()=>{
  const ui=read('pandora-studio-hero-path.js');
  for(const part of ['groupCount.textContent=groupSummary()',
-  "branchCount.textContent=cap>0||target>0?target+' / '+cap:'—'",
-  'input.value=String(M.trained(state,key))'])
+  "branchCount.textContent=cap>0||base>0||target>0?",
+  'input.value=String(M.branchMastery(state,key,innate,caps))'])
   assert.ok(ui.includes(part),part);
 });
 
