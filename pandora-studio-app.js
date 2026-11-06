@@ -1135,6 +1135,8 @@ function renderStagePicker(focusSearch=false){
  const root=$('stagePicker');if(!root)return;
  const previousMode=root.dataset.view||'';
  const oldBodyScroll=root.querySelector('.stage-rich-body')?.scrollTop||0;
+ const previousSoulList=root.querySelector('.stage-rich-list');
+ if(previousMode==='souls'&&previousSoulList)stageSoulScrollTop=previousSoulList.scrollTop;
  const preserveScroll=stageSlotPickerOpen&&previousMode===stageSlotView;
  root.dataset.view=stageSlotView;
  const frame=root.closest('.portrait-frame');frame.classList.toggle('picking',stageSlotPickerOpen);
@@ -1156,7 +1158,7 @@ function renderStagePicker(focusSearch=false){
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
    souls:plan.asSocketArray(state.souls?.[selectedSlot]),
-   soulQuery:stageSoulQuery,onSoulQuery:value=>{stageSoulQuery=value;saveView()},
+   soulQuery:stageSoulQuery,onSoulQuery:value=>{stageSoulQuery=value;stageSoulScrollTop=0;saveView()},
    gems:window.PandoraEnchantModel.normalizeForSlot(key,state.gems?.[plan.refinementKey(selectedSlot,equipped)]),
    catalog,gameTables,close:()=>closeStagePicker(),
    changeMode:mode=>{
@@ -1198,6 +1200,13 @@ function renderStagePicker(focusSearch=false){
   if(preserveScroll){
    const body=root.querySelector('.stage-rich-body');
    if(body)body.scrollTop=oldBodyScroll;
+  }
+  if(stageSlotView==='souls'){
+   const soulList=root.querySelector('.stage-rich-list');
+   if(soulList){
+    soulList.scrollTop=stageSoulScrollTop;
+    soulList.addEventListener('scroll',()=>{stageSoulScrollTop=soulList.scrollTop},{passive:true});
+   }
   }
   return;
  }
