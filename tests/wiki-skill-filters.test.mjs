@@ -16,7 +16,11 @@ test('regular player skills require both learnability and a real class assignmen
  assert.equal(classified.counts.player,232);
  assert.equal(classified.group('161202001'),'player'); // Counterattack
  assert.equal(classified.group('161202050'),'variants'); // extra version with same name
- assert.equal(classified.group('260006002'),'other'); // learnable without classes
+ assert.equal(classified.counts.variants>100,true);
+ assert.equal(classified.counts.player,232);
+ assert.equal(classified.group('260006002'),'variants'); // legacy learnable flag, no assigned class
+ assert.equal(classified.group('310023002'),'variants'); // Temple triggered effect
+ assert.equal(classified.group('500000001'),'other'); // Sleep status, not player skill
  assert.equal(classifier.player(skills['260006002']),false);
  assert.equal(classifier.player(skills['260006001']),true);
 });
@@ -55,7 +59,8 @@ test('source records remain searchable with variants without rewriting their IDs
  assert.match(source,/const expanded=type==='skill'&&options\.includeVariants===true/);
  assert.match(source,/expanded\?Object\.entries\(chapters\[type\]\|\|\{\}\):entries\[type\]\|\|\[\]/);
  const app=read('pandora-studio-app.js');
- assert.match(app,/wikiSkillFilter='player'/);
+ assert.match(app,/wikiSkillFilter=\['player','guild','special'/);
+ assert.match(app,/includes\(bootView\.wikiSkillFilter\)\?bootView\.wikiSkillFilter:'player'/);
  assert.match(app,/wikiIndex\.search\(type,wikiSearch,id=>searchTerms\(type,id\),/);
  assert.match(app,/\{includeVariants:type==='skill'\}/);
  assert.match(app,/filterModel\.matches\(id,wikiSkillFilter\)/);

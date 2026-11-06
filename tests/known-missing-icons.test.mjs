@@ -8,7 +8,7 @@ assert.ok(begin>=0&&end>begin,'icon resolver source must exist');
 const source=app.slice(begin,end);
 const unknown='assets/skills/icons/skill_unknown.webp';
 
-function resolver(override={}){
+function resolver(override={},live=true){
  const archived={icons:{
   skills:{
    skill_100000501:'assets/skills/icons/skill_100000501.webp',
@@ -17,7 +17,7 @@ function resolver(override={}){
   items:{I_000001_00:'assets/items/icons/I_000001_00.webp'},
   souls:{I_101000_00:'assets/souls/icons/I_101000_00.webp'}},
   displayAliases:{skills:{skill_620002032:'skill_620002031'}}};
- const catalog={live:true,skills:{
+ const catalog={live,skills:{
   '620002031':{id:620002031,iconId:620002031,name:'Катапульта'},
   '100000501':{id:100000501,iconId:100000501,name:'Способность'},
   '900010':{id:900010,iconId:620002031,name:'Барьер'}
@@ -47,6 +47,14 @@ test('missing icon uses owner-approved display alias, then a game-client unknown
  assert.equal(itemIcon({id:900001,icon:'I_900001_00'}),null);
  assert.equal(skillIcon('slash',0,null),'branch:slash');
  assert.equal(itemIcon({id:123,icon:'I_unknown_01'}),null);
+});
+test('archive and live catalogs share identical local source icons and unknown fallback',()=>{
+ const {skillIcon}=resolver({},false);
+ assert.equal(skillIcon('special',0,{id:620002032,iconId:620002032,name:'Катапульта'}),
+  'assets/skills/icons/skill_620002031.webp');
+ assert.equal(skillIcon('slash',0,{id:500000001,iconId:500000001,name:'Сон'}),
+  unknown);
+ assert.equal(skillIcon('slash',0,null),'branch:slash');
 });
 test('runtime exact-name matching covers later D1-only records without extra HTTP',()=>{
  const {skillIcon}=resolver();

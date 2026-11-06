@@ -1,6 +1,6 @@
 {
   "name": "pandora-saga-build-studio",
-  "version": "0.402.0",
+  "version": "0.403.0",
   "private": true,
   "description": "Self-hosted Pandora Saga build planner, encyclopedia, and D1 catalog tools",
   "type": "module",
@@ -27,7 +27,8 @@
     "locales:audit": "node scripts/audit-os-localization.mjs",
     "assets:missing": "node scripts/report-missing-original-artwork.mjs",
     "assets:aliases:check": "node scripts/skill-icon-display-aliases.mjs",
-    "assets:aliases:refresh": "node scripts/skill-icon-display-aliases.mjs --write"
+    "assets:aliases:refresh": "node scripts/skill-icon-display-aliases.mjs --write",
+    "skills:duplicates": "node scripts/report-skill-identity-overlaps.mjs"
   },
-  "pandoraRelease": "2026.11.07.402"
+  "pandoraRelease": "2026.11.07.403"
 }

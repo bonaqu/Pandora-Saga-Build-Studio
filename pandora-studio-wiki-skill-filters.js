@@ -34,9 +34,14 @@ function build(records={},index=null,manifest=null,overrides={}){
   let group='other';
   if(guildOrSiege(skill))group='guild';
   else if(player(skill))group='player';
+  // Every secondary version of a confirmed character skill belongs in
+  // Variants, even if a legacy record has learnable=true but no classes.
+  // Skill IDs are never discarded or merged in the source catalog.
   else if((index&&index.canonical('skill',id)!==String(id))||
-   (skill?.learnable===false&&playableNames.has(name)))group='variants';
-  else if(assigned(skill)||skill?.branch==='race')group='special';
+   (name&&playableNames.has(name)))group='variants';
+  // The legacy "race" branch also contains status effects and system
+  // entries (Sleep, Stun, etc.). These are not learnable race passives.
+  else if(assigned(skill))group='special';
   groups.set(String(id),group);
   const override=overrides['visual.skill.'+id];
   const source=aliases[stem];
