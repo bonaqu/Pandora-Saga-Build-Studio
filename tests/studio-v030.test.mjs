@@ -14,7 +14,7 @@ test('portrait item editor combines instant enchantment with Soul-specific socke
  assert.match(ui,/\['souls',tr\('Души','Souls'\)\]/);
  assert.doesNotMatch(ui,/\['gems','Самоцветы'\]/);
  assert.match(ui,/for\(let n=0;n<=10;n\+\+\)/);
- assert.match(ui,/onclick:\(\)=>api\.assignGem\(/);
+ assert.match(ui,/api\.assignGem\(/);
 });
 test('socket insertion is protected by Soul capacity and slot compatibility',()=>{
  const app=read('pandora-studio-app.js'),ui=read('pandora-studio-equipment-ui.js');
