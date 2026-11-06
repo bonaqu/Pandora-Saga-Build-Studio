@@ -250,6 +250,7 @@ function make(tag,attrs={},children=[]){
 
  }
  for(const child of children)n.append(typeof child==='string'?document.createTextNode(bookText(child)):child);
+ if(tag==='input'&&attrs.type==='number')root.PandoraNumericField?.prepare(n);
  return n;
 }
 
