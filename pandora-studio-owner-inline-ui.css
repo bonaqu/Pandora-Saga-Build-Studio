@@ -48,3 +48,16 @@
   flex-basis:12px;width:12px;height:13px;font-size:9px;margin-left:0
  }
 }
+
+.stage-rich-result:has(.stage-control-pencil){
+ display:flex;align-items:center;gap:7px
+}
+.stage-rich-result .stage-soul-result-caption{
+ min-width:0;flex:1;text-align:left;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.stage-rich-result .stage-control-pencil{margin-left:auto;flex-shrink:0}
+.stage-soul-search-caption{
+ display:block;margin:5px 2px 0;
+ color:#cdb084;font:600 10px/1.25 Manrope,Arial,sans-serif
+}
