@@ -32,6 +32,19 @@ const known404=new Set((Array.isArray(prior?.missing)?prior.missing:[])
  .filter(row=>row?.error==='HTTP 404'&&['skills','items','souls'].includes(row.kind)&&
   /^[A-Za-z0-9_-]{1,120}$/.test(row.stem))
  .map(key));
+// Recheck high-impact original URLs first in bounded --retry-404 batches.
+// This never substitutes other images or changes the canonical manifest order.
+const skillByStem=new Map(Object.values(skills).filter(x=>x.iconId).map(
+ x=>['skill_'+safeIconStem(x.iconId),x]));
+const retryPriority=row=>{
+ if(row.kind==='items'||row.kind==='souls')return 0;
+ const skill=skillByStem.get(row.stem);
+ const hasClasses=Object.values(skill?.classes||{}).some(v=>v===1||v===true);
+ if(hasClasses&&Array.isArray(skill.reqs)&&skill.reqs.length>0)return 1;
+ if(hasClasses)return 2;
+ if(skill?.learnable===true)return 3;
+ return 4;
+};
 const available=new Map(),pending=[],failures=new Map();
 let skippedKnown404=0;
 for(const row of unique){
@@ -41,8 +54,10 @@ for(const row of unique){
   if(isWebP(bytes)){available.set(key(row),path);continue}
  }catch(error){if(error.code!=='ENOENT')throw error}
  if(known404.has(key(row))&&!retry404){skippedKnown404++;continue}
- if(pending.length<limit)pending.push(row);
+ pending.push(row);
 }
+if(retry404)pending.sort((a,b)=>retryPriority(a)-retryPriority(b));
+if(Number.isFinite(limit))pending.splice(limit);
 let index=0,downloaded=0;
 async function download(row){
  let failure=null;
@@ -102,5 +117,5 @@ if(!dry){
  await writeFile(manifestPath,JSON.stringify(manifest,null,2)+'\n');
 }
 console.log(JSON.stringify({dryRun:dry,retry404,skippedKnown404,downloaded,
- ...manifest.count}));
+ firstPlanned:pending.slice(0,12).map(key),...manifest.count}));
 if(failures.size&&!Number.isFinite(limit))process.exitCode=1;

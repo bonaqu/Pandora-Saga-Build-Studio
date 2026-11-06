@@ -16,6 +16,17 @@ for(const row of skillRows){
  if(!iconNames.has(key))iconNames.set(key,[]);
  iconNames.get(key).push(row);
 }
+// A triggered game effect is not proof of a separate learnable skill or shared artwork.
+const skillParents=new Map();
+for(const source of skillRows){
+ for(const effect of source.funcs||[]){
+  if(effect?.ep!=='EP_SKILL_EXEC')continue;
+  const target=Number(effect.fv1?.[3]);
+  if(!Number.isSafeInteger(target))continue;
+  if(!skillParents.has(target))skillParents.set(target,new Map());
+  skillParents.get(target).set(source.id,{id:source.id,name:source.name});
+ }
+}
 const queue=missing.map(row=>{
  const entries=row.kind==='skills'?
   skillRows.filter(skill=>'skill_'+skill.iconId===row.stem):
@@ -27,7 +38,20 @@ const queue=missing.map(row=>{
     Boolean(manifest.icons?.skills?.['skill_'+other.iconId]))
    .map(other=>({id:other.id,iconId:other.iconId,
     path:manifest.icons.skills['skill_'+other.iconId]})).slice(0,8):[];
+ const classAssignments=entries.some(entry=>
+  Object.values(entry.classes||{}).some(v=>v===1||v===true));
+ const masteryRequirements=entries.some(entry=>
+  Array.isArray(entry.reqs)&&entry.reqs.length>0);
+ const invokedBy=[...new Map(entries.flatMap(entry=>
+  [...(skillParents.get(Number(entry.id))?.values()||[])]).map(parent=>
+  [String(parent.id),parent])).values()];
  return {kind:row.kind,stem:row.stem,
+  skillContext:row.kind==='skills'?{
+   metadataLearnable:entries.some(entry=>entry.learnable===true),
+   hasClassAssignments:classAssignments,
+   hasMasteryRequirements:masteryRequirements,
+   invokedBySkills:invokedBy
+  }:null,
   originalUrl:'https://pandorasaga-os.com/icons/'+
    (row.kind==='souls'?'items':row.kind)+'/'+row.stem+'.webp',
   recordIds:entries.map(item=>item.id),
@@ -35,6 +59,7 @@ const queue=missing.map(row=>{
   status:'Original OS URL returned 404 when last mirrored',
   candidatesForManualVisualReview:iconCandidates};
 });
+const absentSkills=queue.filter(row=>row.kind==='skills');
 const report={
  source:'assets/os-icon-manifest.json',
  provenance:'Pandora Saga OS; alternatives require exact-game-image proof',
@@ -43,6 +68,15 @@ const report={
   queue.filter(row=>row.kind===k).length])),
  withSameNameLocalCandidate:queue.filter(row=>row.candidatesForManualVisualReview.length>0).length,
  automaticSubstitutions:0,
+ skillImpact:{
+  withClassAssignments:absentSkills.filter(row=>row.skillContext.hasClassAssignments).length,
+  withClassAndMasteryRequirements:absentSkills.filter(row=>
+   row.skillContext.hasClassAssignments&&row.skillContext.hasMasteryRequirements).length,
+  referencedByOtherSkills:absentSkills.filter(row=>
+   row.skillContext.invokedBySkills.length>0).length,
+  learnableWithClassAssignments:absentSkills.filter(row=>
+   row.skillContext.metadataLearnable&&row.skillContext.hasClassAssignments).length
+ },
  entries:queue
 };
 console.log(JSON.stringify(report,null,2));
