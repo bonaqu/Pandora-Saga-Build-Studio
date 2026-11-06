@@ -32,6 +32,10 @@ export async function runOutfitSoulScrollSmoke(browser,base){
  const first=await contextFor(browser,base,{3:{id:dress.id,name:dress.name}});
  try{
   const {page,errors}=first;
+  const loadedStyles=await page.evaluate(()=>[...document.styleSheets]
+   .map(sheet=>sheet.href?.split('?')[0].split('/').pop()).filter(Boolean));
+  assert.ok(loadedStyles.includes('pandora-studio-owner-inline-ui.css'),
+   'Owner pencil stylesheet must be loaded as a separate CSS resource: '+JSON.stringify(loadedStyles));
   await page.locator('[data-origin-tab="class"]').click();
   const wizardSteps=page.locator('.class-wizard-progress .class-wizard-step');
   assert.equal(await wizardSteps.count(),3,'Profession wizard has exactly three steps');
