@@ -245,7 +245,7 @@ function render(root,api){
   disabled:!record&&key!=='choose',onclick:()=>api.changeMode(key)}));
  root.append(tabs);
  if(!record){root.append(el('p',{class:'muted',text:'Сначала выбери предмет.'}));return}
- const body=el('div',{class:'stage-rich-body'});root.append(body);
+ const body=el('div',{class:'stage-rich-body'+(mode==='details'?' stage-rich-details':'')});root.append(body);
  if(mode==='details'){
   body.append(summary(record,icons,'item',{slot,refinement,gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),tables:gameTables}));
   if(refinable){
