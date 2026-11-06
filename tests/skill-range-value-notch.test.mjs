@@ -76,7 +76,7 @@ test('allocation semantics remain untouched across numeric clearing, hover and s
  for(const statement of [
   "const raw=numeric.value.trim();",
   "update(raw===''?0:Number(raw),true);",
-  "const raw=input.value.trim(),requested=raw===''?0:Number(raw);",
+  "const raw=input.value.trim(),requested=raw===''?base:Number(raw);",
   "const visualMax=Math.max(1,cap+Math.max(points,budget.total||0),base+points);",
   "tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';",
   "range.setAttribute('aria-valuetext'",
