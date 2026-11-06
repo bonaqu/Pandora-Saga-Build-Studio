@@ -7,8 +7,7 @@ const readinessStart=source.indexOf('function readiness(');
 const end=source.indexOf('function nearestMilestone(',readinessStart);
 assert.ok(indexStart>=0&&readinessStart>indexStart&&end>readinessStart);
 const getIndex=new Function(source.slice(indexStart,readinessStart)+'\nreturn indexSkills;')();
-const root={PandoraSkillProgression:{potential:(s,b)=>s.points[b]||0,
- trained:(s,b)=>s.mastery[b]||0}};
+const root={};Function('window',readFileSync(new URL('../pandora-studio-skill-progression.js',import.meta.url),'utf8'))(root);
 Function('window','document',source)(root,{});
 const available=root.PandoraHeroPath.readiness;
 const skill=(id,prereq)=>({id,name:'Skill '+id,
@@ -26,7 +25,7 @@ test('indexed prerequisites preserve multi-step requirements, missing skills and
  const first=skill(100,null),second=skill(101,100),third=skill(102,101);
  const broken=skill(103,999),loopA=skill(104,105),loopB=skill(105,104);
  const skills=[first,second,third,broken,loopA,loopB];
- const api={state:{level:55,points:{benevolence:1},mastery:{benevolence:1}},
+ const api={state:{level:55,points:{benevolence:1},mastery:{benevolence:1},masteryAuto:false},
   job:'CLERIC',lang:'en',skillCatalog:skills,branchName:k=>k};
  const index=getIndex(skills);
  for(const row of skills){
@@ -46,7 +45,7 @@ test('render-time catalog lookup prevents a separate full Array.find for each pr
   if(key==='find')throw Error('Unexpected linear skill-catalog lookup');
   return Reflect.get(target,key,receiver);
  }});
- const api={state:{level:55,points:{benevolence:1},mastery:{benevolence:1}},
+ const api={state:{level:55,points:{benevolence:1},mastery:{benevolence:1},masteryAuto:false},
   job:'CLERIC',lang:'en',skillCatalog:catalog,branchName:k=>k};
  assert.equal(available(second,api,new Set(),index).learned,true);
  assert.match(source,/const skillIndex=indexSkills\(skillCatalog\)/);
