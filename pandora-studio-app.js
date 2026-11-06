@@ -280,8 +280,11 @@ function h(tag,attrs={},children=[]){const el=document.createElement(tag);
   const isLogin=String(attrs.type||'').toLowerCase()==='password'||
    /логин|username|login|sign.in|вход в аккаунт/.test(credential);
   if(!isLogin){
-   attrs={autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true',
-    'data-bwignore':'true',autocapitalize:'off',spellcheck:'false',...attrs};
+   attrs={...attrs,autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true',
+    'data-bwignore':'true','data-form-type':'other',
+    autocapitalize:'off',spellcheck:'false'};
+   if(['text','search','email','url','tel'].includes(String(attrs.type||'text').toLowerCase()))
+    attrs['aria-autocomplete']='none';
   }
  }
 for(const[k,v]of Object.entries(attrs)){if(k==='class')el.className=v;else if(k==='text')el.textContent=v;else if(k==='html')throw Error('HTML injection prohibited');else if(k.startsWith('on'))el.addEventListener(k.slice(2),v);else if(['disabled','checked','selected','hidden','required','readOnly','multiple'].includes(k))el[k]=Boolean(v);else if(v!==undefined&&v!==null)el.setAttribute(k,String(v))}for(const c of [].concat(children))if(c!==null&&c!==undefined)el.append(typeof c==='string'?document.createTextNode(c):c);return el}
@@ -1795,6 +1798,9 @@ function guardEncyclopediaSearch(input){
  input.setAttribute('data-lpignore','true');
  input.setAttribute('data-1p-ignore','true');
  input.setAttribute('data-bwignore','true');
+ input.setAttribute('data-form-type','other');
+ input.setAttribute('aria-autocomplete','none');
+ input.setAttribute('spellcheck','false');
  input.addEventListener('focus',()=>{input.readOnly=false});
  input.addEventListener('pointerdown',()=>{input.readOnly=false});
  input.addEventListener('keydown',()=>{input.readOnly=false});
@@ -6711,7 +6717,8 @@ $('pathGrowthTab').onclick=()=>{heroPathPage='growth';renderPathPages();saveView
    innateBranches(),branchCapacities());
   persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderOriginVitals();
  };
- $('pathSkillSearch').oninput=e=>{pathSkillQuery=e.target.value;pathSkillShown=24;renderPathSkills()};
+ guardEncyclopediaSearch($('pathSkillSearch')); // non-credential search, not account login
+$('pathSkillSearch').oninput=e=>{pathSkillQuery=e.target.value;pathSkillShown=24;renderPathSkills()};
  $('pathSkillStatus').onchange=e=>{pathSkillFilter=e.target.value;pathSkillShown=24;renderPathSkills()};
  $('dockClose').onclick=closeWorkbench;
 $('studioBackdrop').onclick=closeWorkbench;
