@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
 const start=source.indexOf('  onAllocate:(key,requested,final)=>{');
-const end=source.indexOf('  onMastery:(key,requested)=>{',start);
+const end=source.indexOf('  onMastery:(key,requested,final=true)=>{',start);
 assert.ok(start>0&&end>start,'Expected existing Hero Path allocation API');
 const body=source.slice(start,end).trim().replace(/^onAllocate:/,'').replace(/,\s*$/,'');
 function fixture(){
@@ -13,7 +13,7 @@ function fixture(){
   potential:(s,k)=>s.points[k]||0,
   canAllocate:(_table,_level,_points,key,_cap,amount)=>Number.isInteger(amount)&&
    amount>=0&&(key==='slash'?amount<=15:amount<=10),
-  setPotential:(s,k,value)=>{count.set++;s.points[k]=value}
+  setPotential:(s,k,value)=>{count.set++;s.points[k]=value;return true}
  };
  const handler=Function('window','state','allowedBranch','gameTables','branchCap','innateBranches','branchCapacities',
   'persist','refreshBudgetLabel','renderBranches','renderOriginStats','renderOriginVitals',
