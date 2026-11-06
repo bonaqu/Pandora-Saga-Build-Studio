@@ -1219,20 +1219,31 @@ function renderStagePicker(focusSearch=false){
  const count=h('small',{class:'stage-picker-count'});
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
- const remove=h('button',{type:'button',text:'Снять предмет',disabled:!equipped,onclick:()=>{
-  const removed=equippedRecord(selectedSlot);
-   delete state.equipment[selectedSlot];
-   if(selectedSlot===3&&window.PandoraUIPlanner.isAstirDress(removed)&&state.displacedLegwear){
-    state.equipment[5]=state.displacedLegwear;state.displacedLegwear=null;
+ const remove=h('button',{type:'button',text:'Снять предмет',
+  disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),onclick:()=>{
+   const removed=equippedRecord(selectedSlot),ui=window.PandoraUIPlanner;
+   if(selectedSlot===5&&ui.occupiesBodyAndLegs(equippedRecord(3))){
+    delete state.equipment[3];delete state.equipment[5];
+    if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
+    state.displacedLegwear=null;
+   }else{
+    delete state.equipment[selectedSlot];
+    if(selectedSlot===3&&ui.occupiesBodyAndLegs(removed)){
+     if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
+     state.displacedLegwear=null;
+    }
    }
    stageSlotView='choose';persist();render();
- }});
+  }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
+ const isSharedPants=selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3));
+ if(isSharedPants)root.append(h('small',{class:'stage-outfit-note',
+  text:lang==='en'?'Armor and pants are occupied by one outfit. Choosing pants removes it.':
+   'Платье занимает броню и штаны. Выбор штанов снимет его.'}));
  const records=catalog.live&&Number.isInteger(state.race)&&Number.isInteger(state.job)?window.PandoraUIPlanner.planningEquippable(
   Object.values(catalog.equipment||{}),key,jobKeys[state.job],state.level,
   window.PandoraStudioRules.equipment)
- .filter(rec=>window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender)&&
- !(key==='legs'&&window.PandoraUIPlanner.isAstirDress(equippedRecord(3))))
+ .filter(rec=>window.PandoraUIPlanner.raceCompatible(rec,state.race,state.gender))
  .sort((a,b)=>{
   const futureA=Number(a.level||1)>state.level?1:0;
   const futureB=Number(b.level||1)>state.level?1:0;
@@ -1254,11 +1265,20 @@ function renderStagePicker(focusSearch=false){
     class:'stage-picker-item'+(selected?' selected':'')+(future?' future':''),
     'aria-label':(future?'Запланировать: ':'Экипировать ')+itemName(rec)+
      (future?' · с '+rec.level+' уровня':''),onclick:()=>{
-     if(selectedSlot===3&&!window.PandoraUIPlanner.isAstirDress(rec)&&state.displacedLegwear){
-      state.equipment[5]=state.displacedLegwear;state.displacedLegwear=null;
+     const ui=window.PandoraUIPlanner,oldDress=ui.occupiesBodyAndLegs(equippedRecord(3));
+     if(selectedSlot===5&&oldDress){
+      // Selecting new pants replaces the whole one-piece armor.
+      delete state.equipment[3];state.displacedLegwear=null;
+     }else if(selectedSlot===3&&oldDress&&!ui.occupiesBodyAndLegs(rec)){
+      if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
+      state.displacedLegwear=null;
+     }
+     if(selectedSlot===3&&ui.occupiesBodyAndLegs(rec)){
+      // Swapping dresses retains the old stored trousers for later removal.
+      if(!oldDress)state.displacedLegwear=state.equipment[5]||null;
+      delete state.equipment[5];
      }
      state.equipment[selectedSlot]={id:rec.id,name:itemName(rec),level:rec.level??null,icon:rec.icon??null};
-     if(window.PandoraUIPlanner.isAstirDress(rec)){state.displacedLegwear=state.equipment[5]||null;delete state.equipment[5]}
      stageSlotView='details';persist();render();renderStagePicker();
     }});
    const src=itemIcon(rec);
@@ -1270,6 +1290,10 @@ function renderStagePicker(focusSearch=false){
    if(future)btn.append(h('span',{class:'stage-picker-future',text:'◷ '+rec.level+' ур.'}));
    if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
    list.append(btn);
+   window.PandoraStageItemUI.attachPreview(btn,rec,
+    (item,kind)=>itemIcon(item,kind==='soul'?'souls':'items'),
+    'item',{slot:key,refinement:selected?window.PandoraEquipmentPlan.refinementValue(
+     state.refinements,selectedSlot,equipped):0,tables:gameTables});
   }
   more.hidden=matches.length<=stageSlotShown;
   more.textContent='Показать ещё ('+Math.max(0,matches.length-stageSlotShown)+')';
