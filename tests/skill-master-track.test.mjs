@@ -126,7 +126,7 @@ test('red locked region shows OS skills beyond the class skill cap',()=>{
 test('branch count, green mastery and group totals update on input, without a new header row',()=>{
  const ui=read('pandora-studio-hero-path.js');
  for(const part of ['groupCount.textContent=groupSummary()',
-  "branchCount.textContent=cap>0||base>0||target>0?",
+  "branchCount.textContent=cap>0?",
   'input.value=String(M.branchMastery(state,key,innate,caps))'])
   assert.ok(ui.includes(part),part);
 });
