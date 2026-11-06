@@ -32,6 +32,14 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   await page.locator('[data-wiki-record="161202050"]').click();
   assert.ok(page.url().includes('#wiki/skill/161202050'),
    'All-records view must open the original variant ID, not a guessed replacement');
+  assert.match(await page.locator('.wiki-page .wiki-description').innerText(),/Чучело \(контратака\)/,
+   'Linked source variant must show its own description instead of the playable record');
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('.wiki-page .wiki-description').waitFor({state:'visible',timeout:20000});
+  assert.match(await page.locator('.wiki-page .wiki-description').innerText(),/Чучело \(контратака\)/,
+   'A direct variant URL must retain source identity after reloading the catalog');
+  assert.equal(await filter.inputValue(),'all',
+   'The selected encyclopedia skill filter should survive a reload');
   await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.locator('#nav [data-tab="wiki"]').click();
