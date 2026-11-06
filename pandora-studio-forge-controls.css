@@ -12,7 +12,7 @@
  margin:0;padding:0;border:1px solid #815d36;border-right:0;
  border-radius:0;background:linear-gradient(#312419,#23190f);
  color:#e3c599;font:700 10px/1 Manrope,Arial,sans-serif;
- font-size:clamp(8px,2.5cqw,10px);letter-spacing:-.05em;
+ font-size:clamp(5.8px,2.5cqw,10px);letter-spacing:-.07em;
  white-space:nowrap;font-variant-numeric:tabular-nums;
  box-shadow:none
 }
