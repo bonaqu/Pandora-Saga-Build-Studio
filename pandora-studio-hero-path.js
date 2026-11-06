@@ -90,7 +90,7 @@ function readiness(skill,api,seen=new Set(),skillIndex){
   }
   const points=M.branchPotential(state,req.branch,api.innate,api.branchCaps);
   const green=M.branchMastery(state,req.branch,api.innate,api.branchCaps);
-  if(points<need)problems.push(name+tr(api,': доступно ',' potential ')+points+'/'+need);
+  if(points<need)problems.push(name+tr(api,': доступно ',': potential ')+points+'/'+need);
   if(green<need)problems.push(name+tr(api,': мастерство ',': mastery ')+green+'/'+need);
  }
  if(skill.prereq){
@@ -158,7 +158,7 @@ function viewGrowth(target,api){
     // Duplicating it in the header adds/removes a whole line at zero -> one.
 
     const branchCount=make('b',{class:'count',
-     text:cap>0||points>0||base>0?trained+' / '+(cap+points):'—',
+     text:cap>0?trained+' / '+(cap+points):points>0?points+' / 0':'—',
      'aria-label':tr(api,'Старт ','Innate ')+base+
       tr(api,', вложено ', ', invested ')+points+
       tr(api,', мастерство ', ', mastery ')+trained});
@@ -186,7 +186,7 @@ function viewGrowth(target,api){
     const widthOnRail=(fraction)=>
      'calc('+(fraction*100).toFixed(6)+'% - '+(2*railInset*fraction).toFixed(6)+'px)';
     const setPotentialEdge=invested=>{
-     const availablePotential=cap+invested;
+     const availablePotential=cap>0?cap+invested:0;
      locked.hidden=availablePotential>=visualMax;
      locked.style.left=positionOnRail(Math.max(0,Math.min(1,availablePotential/visualMax)));
      locked.setAttribute('aria-label',tr(api,'Потенциал ветки: ','Branch potential: ')+availablePotential);
@@ -231,12 +231,13 @@ function viewGrowth(target,api){
      const target=api.onAllocate(key,requested,final);
      if(!Number.isInteger(target)){restorePotential();return}
      range.value=String(target);numeric.value=String(target);
-     branchCount.textContent=cap>0||base>0||target>0?
-      M.branchMastery(state,key,innate,caps)+' / '+(cap+target):'—';
+     branchCount.textContent=cap>0?
+      M.branchMastery(state,key,innate,caps)+' / '+(cap+target):
+      target>0?target+' / 0':'—';
 
      groupCount.textContent=groupSummary();
      input.value=String(M.branchMastery(state,key,innate,caps));
-     input.max=String(cap+target);
+     input.max=String(cap>0?cap+target:base);
      const potentialCaption=editor.querySelector('.path-track-limit');
      if(potentialCaption)potentialCaption.textContent=tr(api,'Потенциал: ','Potential: ')+(cap+target);
      paint();
@@ -348,7 +349,7 @@ function viewGrowth(target,api){
      unlockDetails.append(list);
     }
     const input=make('input',{type:'number',min:String(base),
-     max:String(cap+points),step:'1',
+     max:String(cap>0?cap+points:base),step:'1',
      value:String(trained),disabled:auto||!available,
      'aria-label':tr(api,'Мастерство ','Mastery: ')+api.branchName(key),
      'data-branch-control':key+':mastery-number'});
