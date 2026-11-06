@@ -35,7 +35,7 @@ test('owner RU/EN labels are valid D1 book guides for all expanded UI regions',(
  const valid=ctx.PandoraHonorGuide.validOverride;
  for(const key of ['book.chapter.summary','book.equipment.tab.souls',
   'book.equipment.gem.element.fire','book.equipment.field.slots',
-  'book.path.group.combat','book.path.tabGrowth']){
+  'book.path.group.combat','book.path.tab-growth']){
   assert.equal(valid(key,JSON.stringify({ru:'Демо',en:'Demo'})),true,key);
  }
 });
