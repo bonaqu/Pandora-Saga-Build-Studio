@@ -371,7 +371,7 @@ function previewBaseStats(snap=state){
     records.push(['soul:'+soul.id,soul,grade]);
   }
  }
- const initialBranches=gameTables?.jobInit?.[baseClass]?.branches||{};
+ const initialBranches=innateBranches(snap);
  const weaponSelection=snap.equipment?.[0];
  const selectedWeapon=weaponSelection&&catalog.equipment?.[String(weaponSelection.id)]||null;
  const weapon=selectedWeapon&&!equipmentIssue(selectedWeapon,0,snap).length?selectedWeapon:null;
@@ -598,8 +598,16 @@ function setAttributeBuff(key,value){
 function budgetSummary(){
  return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
 }
+function innateBranches(snap=state){
+ const jobKey=jobKeys[snap.job],baseClass=catalog.classes?.[jobKey]?.baseClass||jobKey;
+ // A branch has innate green points only when a profession is actually
+ // selected. The root-class row in the existing OS snapshot is the source.
+ return baseClass&&gameTables?.jobInit?.[baseClass]?.branches||{};
+}
 function allowedBranch(branch){
- const b=budgetSummary(),cap=branchCap(branch),current=window.PandoraSkillProgression.potential(state,branch);
+ const b=budgetSummary(),base=window.PandoraSkillProgression.branchBase(innateBranches(),branch);
+ const cap=Math.max(0,branchCap(branch)-base);
+ const current=window.PandoraSkillProgression.potential(state,branch);
  return b.total===null||!catalog.classes?.[jobKeys[state.job]]?current:
   Math.max(0,Math.min(cap,b.total-b.spent+current));
 }
@@ -1459,7 +1467,7 @@ function heroPathApi(){
  const groups=window.PandoraGameNavigation.groups,klass=jobKeys[state.job];
  return {
   state,groups,job:klass,lang,selectedGroup:selectedSkillGroup,expandedBranch:inlineBranchId,
-  skillCatalog:heroSkillRows(catalog.skills),catalogReady:!!catalog.skills,
+  innate:innateBranches(),skillCatalog:heroSkillRows(catalog.skills),catalogReady:!!catalog.skills,
   allocationReady:Boolean(gameTables?.abilityPoint&&catalog.classes?.[klass]),
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
   shown:pathSkillShown,onMoreSkills:()=>{pathSkillShown+=24;renderPathSkills()},
@@ -1507,7 +1515,8 @@ function heroPathApi(){
    const model=window.PandoraSkillProgression,current=model.potential(state,key);
    if(!Number.isInteger(requested)||requested<0)return current;
    const target=requested<=current?Math.max(0,requested):Math.min(Math.max(0,requested),allowedBranch(key));
-   if(!model.canAllocate(gameTables?.abilityPoint,state.level,state.points,key,branchCap(key),target))
+   const spendableCap=Math.max(0,branchCap(key)-model.branchBase(innateBranches(),key));
+   if(!model.canAllocate(gameTables?.abilityPoint,state.level,state.points,key,spendableCap,target))
     return current;
    const allocationChanged=target!==current,branchChanged=state.branch!==key;
    if(allocationChanged)model.setPotential(state,key,target);
@@ -1526,8 +1535,11 @@ function heroPathApi(){
    return target;
   },
   onMastery:(key,requested)=>{
-   if(state.masteryAuto!==false||
-    !window.PandoraSkillProgression.setTrained(state,key,requested))return false;
+   // The editor displays full green mastery (innate + additional).
+   // Store only manually trained additional points in saved builds.
+   const base=window.PandoraSkillProgression.branchBase(innateBranches(),key);
+   if(state.masteryAuto!==false||!Number.isInteger(requested)||requested<base||
+    !window.PandoraSkillProgression.setTrained(state,key,requested-base))return false;
    const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
    persist();renderBranches();renderOriginStats();renderOriginVitals();
    if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
