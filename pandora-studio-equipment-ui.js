@@ -248,7 +248,7 @@ function render(root,api){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
     class:n===grade?'chosen':'','aria-pressed':String(n===grade),'data-grade':String(n),onclick:()=>api.updateGrade(n)}));
-   body.append(el('h4',{class:'stage-refine-heading',text:tr('Заточка','Refinement')}),buttons);
+   body.append(el('h4',{class:'stage-refine-heading',text:tr('Заточка: +0…+10','Refinement: +0…+10')}),buttons);
    // Item properties expose actual grade; inferred weapon math stays out of the editor.
    const model=globalThis.PandoraEnchantModel,choice=model.normalize(gems);
    const elementIcons={fire:'🔥',ice:'❄️',lightning:'⚡',poison:'☠️',
