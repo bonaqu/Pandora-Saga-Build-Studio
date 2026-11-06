@@ -130,6 +130,17 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   await page.locator('#stagePicker [data-stage-tab="souls"]').click();
   const soulTab=page.locator('#stagePicker .stage-rich-tabs').getByRole('button',{name:'Души'});
   assert.equal(await soulTab.getAttribute('aria-pressed'),'true');
+  const socketCards=page.locator('#stagePicker .stage-rich-sockets button');
+  const socketMetrics=await socketCards.evaluateAll(nodes=>nodes.map(node=>{
+   const rect=node.getBoundingClientRect();
+   return {width:rect.width,height:rect.height,label:node.getAttribute('aria-label')};
+  }));
+  assert.ok(socketMetrics.length>=2&&socketMetrics.every(card=>
+   card.width>=52&&card.width<=66&&card.height>=48&&card.height<=62),
+   'Soul slot cards must stay compact (about 60 × 54 px): '+JSON.stringify(socketMetrics));
+  assert.match(socketMetrics[0].label,/Слот души 1/);
+  assert.equal(await socketCards.first().getAttribute('aria-pressed'),'true',
+   'The active Soul slot remains visibly selected');
   const results=page.locator('#stagePicker .stage-rich-result');
   assert.ok(await results.count()>2,'Soul catalog is available in the first socket');
   const target=results.nth(Math.min(15,(await results.count())-1));
