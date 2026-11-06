@@ -131,9 +131,24 @@ test('stage rails expose grade and Souls count without title or duplicate labels
  assert.match(css,/\.equipment-rail \.stage-sockets\{[\s\S]*?bottom:1px/);
  assert.match(css,/\.equipment-rail \.stage-enhance\{[\s\S]*?top:1px/);
 });
-test('eligibility chips start at the left of item tooltip',()=>{
- assert.match(read('pandora-studio-equipment-tooltip.css'),
-  /\.stage-item-tooltip \.stage-gear-wearer-chips\{[^}]*justify-content:flex-start/);
+test('approved variant 02 displays wearable races as one normal stat row in tooltip and Properties',()=>{
+ const {api,window}=fixture();
+ window.PandoraUIPlanner={outfitWearers:()=>['Эльф (Ж)','Кролль']};
+ const summary=api.summary({id:1322,name:'Рассветный венец',slot:'head',
+  kind:'HEAD',level:20,AC:2,soulslot:0,desc:'Тест'},()=>null,'item',{slot:'head'});
+ const fields=walk(summary).filter(node=>node.tag==='dl'&&node.className==='stage-rich-fields');
+ assert.equal(fields.length,1);
+ const names=fields[0].children;
+ const label=names.find(node=>node.tag==='dt'&&node.textContent==='Подходит');
+ const value=names.find(node=>node.tag==='dd'&&node.className==='stage-gear-wearers-value');
+ assert.ok(label&&value,'Wearable text belongs to the same dl as Type and Level');
+ assert.deepEqual(value.children.filter(node=>node.tag==='span').map(node=>node.textContent),
+  ['Эльф (Ж)','Кролль']);
+ assert.equal(walk(summary).some(node=>node.className==='stage-gear-wearers'),false);
+ assert.equal(walk(summary).some(node=>node.className==='stage-gear-wearer-chips'),false);
+ const css=read('pandora-studio-equipment-tooltip.css');
+ assert.match(css,/\.stage-rich-summary \.stage-rich-fields>\.stage-gear-wearers-value\{/);
+ assert.doesNotMatch(css,/\.stage-rich-summary \.stage-gear-wearers\{/);
 });
 test('public item searches do not advertise or search raw database IDs',()=>{
  const app=read('pandora-studio-app.js'),picker=read('pandora-studio-equipment-ui.js');
