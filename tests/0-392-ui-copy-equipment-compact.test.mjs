@@ -55,7 +55,7 @@ test('approved joined forge bar and variant 5 element grid retain canonical choi
  assert.match(forgeCss,/\.stage-rich-body \.stage-enchant-options\.is-type-options\{\s*display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
  assert.match(equipment,/elementIcons=\{fire:'🔥',ice:'❄️',lightning:'⚡',poison:'☠️'/);
  assert.match(equipment,/light:'☀️',dark:'🌑',rainbow:'🌈'/);
- assert.match(equipment,/onclick:\(\)=>api\.assignGem\(\{type:key==='type'/);
+ assert.match(equipment,/api\.assignGem\(\{type:key==='type'/);
  assert.match(equipment,/aria-pressed/);
 });
 test('site shell has clean title/footer; counts remain grounded in loaded catalog and archive alert stays',()=>{
