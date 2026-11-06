@@ -291,17 +291,17 @@ test('skill milestones remain inside the bar and update their reached state afte
  assert.match(patch,/\.path-integrated-track \.path-integrated-milestones\{/);
  assert.match(patch,/pointer-events:none/);
  const f=fixture('CLERIC','prayer','benevolence');
- const skill={id:9099,name:'Skill at 8',branch:'benevolence',
-  classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:8}]};
+ const skill={id:9099,name:'Skill at 91',branch:'benevolence',
+  classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:91}]};
  f.api.skillCatalog=[skill];
- f.api.milestones=()=>[{threshold:8,skills:[skill],locked:false}];
+ f.api.milestones=()=>[{threshold:91,skills:[skill],locked:false}];
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const tick=walk(f.target).find(x=>String(x.className).includes('path-unlock-notch'));
  assert.ok(tick);
  assert.ok(!tick.className.includes('reached'));
  assert.ok(!Object.hasOwn(tick.style,'top'));
  const range=walk(f.target).find(x=>x.tag==='input'&&x.attributes.type==='range');
- range.value='8';range.listeners.input();
+ range.value='1';range.listeners.input();
  assert.ok(tick.className.includes('reached'),'green mastery unlocks the marker');
 });
 
@@ -354,21 +354,21 @@ test('empty manual green mastery is a deliberate reset, invalid entries remain s
  const f=fixture('CLERIC','prayer','benevolence');
  f.state.masteryAuto=false;f.state.points.benevolence=8;f.state.mastery.benevolence=6;
  const called=[];
- f.api.onMastery=(key,n)=>{called.push(n);return points.setTrained(f.state,key,n)};
+ f.api.onMastery=(key,n)=>{called.push(n);return points.setTrained(f.state,key,n-5,f.api.innate,f.api.branchCaps)};
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const field=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:mastery-number');
  for(const raw of ['-2','2.5']){
   field.value=raw;field.listeners.change();
-  assert.equal(field.value,'6','bad value restores previous mastery');
+  assert.equal(field.value,'11','bad value restores innate + trained mastery');
   assert.equal(points.trained(f.state,'benevolence'),6);
  }
  assert.deepEqual(called,[],'negative and fractional values do not reach the model');
  field.value='';field.listeners.change();
- assert.deepEqual(called,[0],'blank value commits actual zero to the mastery model');
+ assert.deepEqual(called,[5],'blank commits the immutable initial green mastery');
  assert.equal(points.trained(f.state,'benevolence'),0);
  assert.equal(f.state.points.benevolence,8,'blue allocated points stay put');
- field.value='4';field.listeners.change();
+ field.value='9';field.listeners.change();
  assert.equal(points.trained(f.state,'benevolence'),4);
- field.value='0';field.listeners.change();
+ field.value='5';field.listeners.change();
  assert.equal(points.trained(f.state,'benevolence'),0);
 });
