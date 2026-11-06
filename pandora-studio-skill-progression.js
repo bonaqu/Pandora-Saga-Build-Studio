@@ -27,7 +27,8 @@ function branchBase(innate,key){return value(innate?.[key])}
 function branchPotential(state,key,innate={},caps={}){
  const cap=Number(caps?.[key]);
  return Number.isSafeInteger(cap)&&cap>=0&&caps&&Object.hasOwn(caps,key)?
-  cap+potential(state,key):branchBase(innate,key)+potential(state,key);
+  (cap===0?0:cap+potential(state,key)):
+  branchBase(innate,key)+potential(state,key);
 }
 function trainedLimit(state,key,innate={},caps={}){
  return Math.max(0,branchPotential(state,key,innate,caps)-branchBase(innate,key));
