@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
-const host={};
+const host={navigator:{userAgent:'Mozilla/5.0 Chrome/154.0 YaBrowser/26.11.0.0'}};
 Function('window',read('pandora-studio-numeric-field.js'))(host);
 
 class Input {
@@ -22,7 +22,7 @@ test('number fields request Yandex no-autofill, gate idle edits, and restore man
   ['data-game-numeric','true']])
   assert.equal(input.getAttribute(key),value,key);
  input.fire('focus');
- assert.equal(input.readOnly,false,'manual focus still permits number editing');
+ assert.equal(input.readOnly,true,'browser focus alone does not unlock Yandex autofill');
  input.fire('blur');
  assert.equal(input.readOnly,true,'inactive field is autofill-resistant');
  input.fire('keydown');
@@ -30,6 +30,14 @@ test('number fields request Yandex no-autofill, gate idle edits, and restore man
  input.fire('blur');
  input.fire('pointerdown');
  assert.equal(input.readOnly,false,'pointer and press-hold controls stay usable');
+});
+test('standard Chromium number fields stay editable for direct manual typing and browser tests',()=>{
+ const chromium={navigator:{userAgent:'Mozilla/5.0 Chrome/154.0.0.0'}};
+ Function('window',read('pandora-studio-numeric-field.js'))(chromium);
+ const field=new Input('number');
+ chromium.PandoraNumericField.prepare(field);
+ assert.equal(field.getAttribute('autocomplete'),'none');
+ assert.equal(field.readOnly,false);
 });
 test('numeric guard never touches credentials or normal text/search controls',()=>{
  for(const type of ['password','text','search','checkbox','range']){
