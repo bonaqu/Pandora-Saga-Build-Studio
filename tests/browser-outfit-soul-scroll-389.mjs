@@ -235,6 +235,13 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   const popup=page.locator('.stage-rail-warning-popover');
   await popup.waitFor({state:'visible'});
   assert.match(await popup.innerText(),/Предмет не действует:/);
+  await page.waitForTimeout(850);
+  assert.equal(await page.locator('#stage-gear-tooltip').count(),0,
+   'Hovering the warning badge must NEVER open the full item description tooltip');
+  await page.locator('.equipment-slot[data-slot-index="0"] .equipped-icon').hover();
+  await page.locator('#stage-gear-tooltip').waitFor({state:'visible',timeout:3000});
+  assert.equal(await page.locator('.stage-rail-warning-popover').count(),0,
+   'Hovering the item icon should show only the rich item description');
   const bounds=await popup.boundingBox();
   assert.ok(bounds&&bounds.x>=0&&bounds.x+bounds.width<=1365,
    'Reason tooltip must not be clipped by the equipment icon or viewport');
