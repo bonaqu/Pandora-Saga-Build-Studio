@@ -17,58 +17,74 @@ function value(raw){
  return Number.isSafeInteger(n)&&n>0?n:0;
 }
 function potential(state,key){return value(state?.points?.[key])}
-// The innate (already trained) green points belong to the root profession
-// and exist even with ZERO free skill points on a new level-1 character.
-// They are not skill allocations and cannot be refunded.
-function branchBase(innate,key){return value(innate?.[key])}
-// Remaked Status.Skill[i] is [innate green, trained green, base potential,
-// invested free points]. The currently trainable limit is P + invested;
-// neither innate mastery nor base potential consumes level-up points.
+// OS jobInit.<root>.branches are STARTING BRANCH POINTS (D), not green mastery.
+// The live-game first-level Warrior has Slash 5, Thrust 2, Cleave 5,
+// Heavy 2, Defense 4, Archery 1, but zero trained green before using skills.
+// Modern/Legacy Remaked historically interpret Status.Skill[i][0] as innate
+// Adeptness. The live game observation takes precedence for Build Studio.
+const TRACK_MAX=90;
+function branchBase(innate,key){return Math.min(TRACK_MAX,value(innate?.[key]))}
+function classLimit(key,caps={}){
+ const n=Number(caps?.[key]);
+ return Number.isSafeInteger(n)&&n>=0&&Object.hasOwn(caps,key)?
+  Math.min(TRACK_MAX,n):null;
+}
+// Effective allocated branch value = class start D + level-up allocations.
+// Class cap is a HARD limit, not green mastery and not a free point grant.
 function branchPotential(state,key,innate={},caps={}){
- const cap=Number(caps?.[key]);
- return Number.isSafeInteger(cap)&&cap>=0&&caps&&Object.hasOwn(caps,key)?
-  (cap===0?0:cap+potential(state,key)):
-  branchBase(innate,key)+potential(state,key);
+ const base=branchBase(innate,key),added=potential(state,key);
+ const limit=classLimit(key,caps);
+ if(limit===0)return 0;
+ return Math.min(limit??TRACK_MAX,base+added);
 }
 function trainedLimit(state,key,innate={},caps={}){
- return Math.max(0,branchPotential(state,key,innate,caps)-branchBase(innate,key));
+ return branchPotential(state,key,innate,caps);
+}
+// Older (0.389 and earlier) saved *explicit* manual mastery fields contained
+// "additional green above innate". Convert those fields for display, but
+// absence of manual mastery now means true zero, not innate mastery.
+function storedManual(state,key,innate={},caps={}){
+ const raw=state?.mastery;
+ if(!raw||!Object.hasOwn(raw,key))return 0;
+ const saved=value(raw[key]);
+ const absolute=state?.masteryFormat===2?saved:saved+branchBase(innate,key);
+ return Math.min(trainedLimit(state,key,innate,caps),absolute);
 }
 function trained(state,key,innate={},caps={}){
  const max=trainedLimit(state,key,innate,caps);
- const raw=state?.mastery&&Object.hasOwn(state.mastery,key)?value(state.mastery[key]):0;
- if(state?.masteryAuto!==false){
-  // The auto checkbox trains only the points a player has actually assigned
-  // to this branch. The native class Potential (P) is a CEILING, not
-  // already-spent branch points. Never treat P as automatically earned green.
-  // Existing explicitly trained mastery must not be discarded by a preview.
-  return Math.min(max,Math.max(raw,potential(state,key)));
- }
- return Math.min(max,raw);
+ return state?.masteryAuto!==false?max:storedManual(state,key,innate,caps);
 }
 function branchMastery(state,key,innate={},caps={}){
- return branchBase(innate,key)+trained(state,key,innate,caps);
+ return trained(state,key,innate,caps);
+}
+function migrateMastery(state,innate={},caps={}){
+ if(state?.masteryFormat===2)return;
+ if(!state.mastery||typeof state.mastery!=='object'||Array.isArray(state.mastery))state.mastery={};
+ const prev=Object.fromEntries(Object.keys(state.mastery).map(key=>[
+  key,storedManual(state,key,innate,caps)]));
+ state.mastery=prev;state.masteryFormat=2;
 }
 function setPotential(state,key,n,innate={},caps={}){
  if(!Number.isInteger(n)||n<0)return false;
+ const limit=classLimit(key,caps),base=branchBase(innate,key);
+ if(n>TRACK_MAX-base||limit===0&&n>0||limit!==null&&n>Math.max(0,limit-base))return false;
+ migrateMastery(state,innate,caps);
  state.points??={};state.points[key]=n;
- if(state.masteryAuto===false&&state.mastery&&Object.hasOwn(state.mastery,key))
+ // On a refund trained green cannot remain above allocated branch level.
+ if(state.mastery&&Object.hasOwn(state.mastery,key))
   state.mastery[key]=Math.min(trainedLimit(state,key,innate,caps),value(state.mastery[key]));
  return true;
 }
 function setTrained(state,key,n,innate={},caps={}){
  if(!Number.isInteger(n)||n<0||n>trainedLimit(state,key,innate,caps))return false;
+ migrateMastery(state,innate,caps);
  state.mastery??={};state.mastery[key]=n;return true;
 }
-function setAuto(state,on){
- // Automatic mastery is only a reversible presentation/calculation mode.
- // Turning it off restores the manually trained amount, rather than storing
- // the preview as if the player had earned all of those green points.
+function setAuto(state,on,keys=[],innate={},caps={}){
+ migrateMastery(state,innate,caps);
  state.masteryAuto=Boolean(on);
 }
-// Legacy js/create.js: Status.Skill[i][0] is innate base Adeptness from
-// Skill.D/baseClass; Status.Skill[i][1] is additionally trained green mastery.
-// BOTH contribute to derivative skill passives. Neither is the blue Potential.
-// OS tables.json jobInit.<baseClass>.branches matches legacy innate branch values.
+// Only actual green mastery contributes to passive bonuses and skill effects.
 function groupAdeptness(state,branchKeys,innate={},caps={}){
  return branchKeys.reduce((sum,key)=>sum+branchMastery(state,key,innate,caps),0);
 }
@@ -76,11 +92,14 @@ function prayerAdeptness(state,innate={},caps={}){return groupAdeptness(state,PR
 function combatMasteries(state,innate={},caps={}){
  return {melee:groupAdeptness(state,MELEE,innate,caps),
   magic:groupAdeptness(state,MAGIC,innate,caps),
-  techniqueInnate:TECHNIQUE.reduce((n,key)=>n+branchBase(innate,key),0),
-  techniqueTrained:TECHNIQUE.reduce((n,key)=>n+trained(state,key,innate,caps),0)};
+  // Legacy ACC formula distinguishes an innate component. Current live-game
+  // starting allocations are NOT innate green: feed 0 and all real green
+  // through the trained /10 term instead.
+  techniqueInnate:0,techniqueTrained:groupAdeptness(state,TECHNIQUE,innate,caps)};
 }
-// Remaked Calc('SPR'): 1 + floor((innate prayer + trained prayer) / 10),
-// active only for Priest/Cleric/Enchanter. Current OS parity remains unverified.
+// Remaked includes a +1 class baseline for Inspiration, followed by +1 for
+// every ten real green Prayer points. Live OS parity of the baseline is
+// tracked separately; never count untrained starting branch points as green.
 function legacyPrayerSpirit(job,state,innate={},caps={}){
  return INSPIRED.has(job)?1+Math.floor(prayerAdeptness(state,innate,caps)/10):0;
 }
@@ -111,7 +130,7 @@ function canAllocate(table,level,points,key,cap,amount){
   amount<=cap&&budget.spent-current+amount<=budget.total;
 }
 root.PandoraSkillProgression=Object.freeze({
- potential,trained,branchBase,branchPotential,branchMastery,trainedLimit,
+ potential,trained,branchBase,branchPotential,branchMastery,trainedLimit,classLimit,migrateMastery,TRACK_MAX,
  setPotential,setTrained,setAuto,skillGrant,spending,canAllocate,
  groupAdeptness,prayerAdeptness,legacyPrayerSpirit,combatMasteries,PRAYER,MAGIC,TECHNIQUE,MELEE
 });
