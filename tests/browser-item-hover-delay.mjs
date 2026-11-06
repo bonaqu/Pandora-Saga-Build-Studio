@@ -113,6 +113,8 @@ export async function runItemHoverDelaySmoke(browser,base){
   assert.equal(await spata.getAttribute('aria-describedby'),'stage-gear-tooltip');
   await page.keyboard.press('Escape');
   assert.equal(await tooltip.count(),0,'Escape closes focused item preview');
+  await page.waitForTimeout(100);
+  assert.equal(await tooltip.count(),0,'Escape must cancel post-focus animation-frame preview too');
   assert.equal(await spata.getAttribute('aria-describedby'),null);
   assert.equal(await page.evaluate(()=>location.hash),'#wiki/item/1',
    'First Escape must preserve Spata article and navigation state');
