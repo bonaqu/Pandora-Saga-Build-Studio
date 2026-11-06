@@ -237,6 +237,8 @@ function viewGrowth(target,api){
      groupCount.textContent=groupSummary();
      input.value=String(M.branchMastery(state,key,innate,caps));
      input.max=String(cap+target);
+     const potentialCaption=editor.querySelector('.path-track-limit');
+     if(potentialCaption)potentialCaption.textContent=tr(api,'Потенциал: ','Potential: ')+(cap+target);
      paint();
      // Committing rebuilds the UI so all branch totals stay synchronized.
     };
@@ -247,7 +249,7 @@ function viewGrowth(target,api){
      update(raw===''?0:Number(raw),true);
     });
     const skills=skillsByBranch.get(key)||[];
-    const marks=api.milestones(skills,key,cap);
+    const marks=api.milestones(skills,key,cap+points);
     let unlockDetails=null;
     if(marks.length){
      const ticks=make('div',{class:'path-integrated-milestones'});
