@@ -948,7 +948,28 @@ const img=h("img",{class:"equipped-icon",src:icon,alt:""});
 img.onerror=()=>{img.onerror=null;img.replaceWith(h("span",{text:slots[slot][1],class:"slot-glyph"}))};
 return img;
 }
+// Warning details live outside the clipped equipment button and can be read
+// beside either equipment rail without intersecting the character portrait.
+let stageRailWarningPopover=null;
+function hideStageRailWarning(){
+ stageRailWarningPopover?.remove();
+ stageRailWarningPopover=null;
+}
+function showStageRailWarning(badge,message){
+ hideStageRailWarning();
+ if(!badge?.isConnected||!message)return;
+ const node=h('div',{class:'stage-rail-warning-popover',role:'tooltip',text:message});
+ document.body.append(node);
+ const marker=badge.getBoundingClientRect(),w=node.getBoundingClientRect().width;
+ const rightSide=Boolean(badge.closest('#railRight'));
+ const desiredLeft=rightSide?marker.left-w-8:marker.right+8;
+ const left=Math.max(8,Math.min(desiredLeft,window.innerWidth-w-8));
+ const top=Math.max(8,Math.min(marker.top,window.innerHeight-node.getBoundingClientRect().height-8));
+ node.style.left=left+'px';node.style.top=top+'px';
+ stageRailWarningPopover=node;
+}
 function renderSlotRails(){
+ hideStageRailWarning();
  window.PandoraStageItemUI.dismissPreview();
  const plan=window.PandoraEquipmentPlan,ui=window.PandoraUIPlanner;
  for(const[id,indexes]of[['railLeft',[0,2,3,4,5,6]],['railRight',[1,7,8,9,10,11,12,13]]]){
@@ -964,7 +985,7 @@ function renderSlotRails(){
    const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+
     (shared?' · Занято бронёй (одна вещь на два слота)':'')+
     (!shared&&item&&plan.canSocket(slotKeys[i],source)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+
-    (level?' · план заточки +'+level:'')+
+    (!shared&&level?' · план заточки +'+level:'')+
     (issue.length?' · Не действует: '+issue.join(', '):'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(shared?' shared-outfit':'')+
     (selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':'')+(issue.length?' unavailable':''),
@@ -983,7 +1004,7 @@ function renderSlotRails(){
     'data-shared-slots':'armor+pants'}));
    if(!shared&&item&&plan.canSocket(slotKeys[i],source))
     button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
-   if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
+   if(!shared&&item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source){
     const equippedGem=window.PandoraEnchantModel.normalizeForSlot(key,
      state.gems?.[plan.refinementKey(sourceSlot,item)]);
@@ -999,8 +1020,18 @@ function renderSlotRails(){
      class:'stage-elemental-proc',text:'✦',
      'aria-label':'Пламя феникса: +'+activeFire.phoenix.chance+'%'}));
    }
-   if(report.excess>0||issue.length)button.append(h('span',{class:'stage-conflict',text:'!',
-    'aria-label':issue.length?'Предмет временно недоступен':'Конфликт слотов душ'}));
+   if(!shared&&(report.excess>0||issue.length)){
+    const reasons=[];
+    if(issue.length)reasons.push('Предмет не действует: '+issue.join('; ')+'.');
+    if(report.excess>0)reasons.push('Слотов душ недостаточно: занято '+
+     report.count+', доступно '+(cap===null?'неизвестно':cap)+'.');
+    const message=reasons.join(' ');
+    const badge=h('span',{class:'stage-conflict',text:'!','aria-label':message,
+     'data-issue-tooltip':message,role:'img',
+     onpointerenter:()=>showStageRailWarning(badge,message),
+     onpointerleave:hideStageRailWarning});
+    button.append(badge);
+   }
    container.append(button);
   }
  }
@@ -1249,6 +1280,7 @@ function renderStagePicker(focusSearch=false){
  const remove=h('button',{type:'button',text:'Снять предмет',
   disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),onclick:()=>{
    const removed=equippedRecord(selectedSlot),ui=window.PandoraUIPlanner;
+   const previousEquipment={...state.equipment};
    if(selectedSlot===5&&ui.occupiesBodyAndLegs(equippedRecord(3))){
     delete state.equipment[3];delete state.equipment[5];
     if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
@@ -1260,6 +1292,7 @@ function renderStagePicker(focusSearch=false){
      state.displacedLegwear=null;
     }
    }
+   window.PandoraEquipmentPlan.clearChangedEquipmentSouls(state,previousEquipment);
    stageSlotView='choose';persist();render();
   }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
@@ -1295,6 +1328,7 @@ function renderStagePicker(focusSearch=false){
       'Будет доступен с '+rec.level+' уровня. Запланировать: '):
      (lang==='en'?'Equip ':'Экипировать '))+itemName(rec),onclick:()=>{
      const ui=window.PandoraUIPlanner,oldDress=ui.occupiesBodyAndLegs(equippedRecord(3));
+     const previousEquipment={...state.equipment};
      if(selectedSlot===5&&oldDress){
       // Selecting new pants replaces the whole one-piece armor.
       delete state.equipment[3];state.displacedLegwear=null;
@@ -1308,6 +1342,7 @@ function renderStagePicker(focusSearch=false){
       delete state.equipment[5];
      }
      state.equipment[selectedSlot]={id:rec.id,name:itemName(rec),level:rec.level??null,icon:rec.icon??null};
+     window.PandoraEquipmentPlan.clearChangedEquipmentSouls(state,previousEquipment);
      stageSlotView='details';persist();render();renderStagePicker();
     }});
    const src=itemIcon(rec);
