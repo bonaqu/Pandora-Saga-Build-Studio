@@ -302,11 +302,37 @@ function skillIcon(cat,idx,record=null){
  const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];
  if(custom)return custom;
  if(catalog.live&&record?.iconId){
-  const stem='skill_'+record.iconId,path=iconManifest?.icons?.skills?.[stem];
-  if(path)return path;
-  // A missing original stays a neutral glyph; do not request a confirmed 404.
-  return null;
+  const stem='skill_'+record.iconId,originals=iconManifest?.icons?.skills||{};
+  // Exact original always beats a display-only reuse.
+  if(originals[stem])return originals[stem];
+  const source=iconManifest?.displayAliases?.skills?.[stem];
+  if(source&&originals[source])return originals[source];
+  // For newer D1-only skill records absent from the checked-in snapshot,
+  // reuse art only when the displayed names match exactly. Memoize by source
+  // references so large encyclopedia lists do not rescan on every card.
+  const previous=skillIcon.nameIndex;
+  if(!previous||previous.catalog!==catalog.skills||
+     previous.wiki!==wikiData?.skills||previous.manifest!==iconManifest){
+   const byName=new Map();
+   for(const sourceSkills of [catalog.skills,wikiData?.skills]){
+    for(const candidate of Object.values(sourceSkills||{})){
+     const path=originals['skill_'+candidate?.iconId];
+     const key=String(candidate?.name||'').normalize('NFKC')
+      .trim().toLocaleLowerCase('ru').replace(/\s+/g,' ');
+     if(path&&key&&!byName.has(key))byName.set(key,path);
+    }
+   }
+   skillIcon.nameIndex={catalog:catalog.skills,wiki:wikiData?.skills,
+    manifest:iconManifest,byName};
+  }
+  const key=String(record.name||'').normalize('NFKC')
+   .trim().toLocaleLowerCase('ru').replace(/\s+/g,' ');
+  const match=skillIcon.nameIndex.byName.get(key);
+  if(match)return match;
  }
+ // An iconless skill uses the transparent, original-client question mark.
+ // This is a presentation fallback, NOT an original for its missing OS ID.
+ if(record&&catalog.live)return 'assets/skills/icons/skill_unknown.webp';
  return branchIcon(cat);
 }
 function itemIcon(rec,kind='items'){

@@ -42,10 +42,13 @@ const queue=missing.map(row=>{
   Object.values(entry.classes||{}).some(v=>v===1||v===true));
  const masteryRequirements=entries.some(entry=>
   Array.isArray(entry.reqs)&&entry.reqs.length>0);
+ const sharedFrom=row.kind==='skills'?manifest.displayAliases?.skills?.[row.stem]:null;
  const invokedBy=[...new Map(entries.flatMap(entry=>
   [...(skillParents.get(Number(entry.id))?.values()||[])]).map(parent=>
   [String(parent.id),parent])).values()];
  return {kind:row.kind,stem:row.stem,
+  displayReuse:sharedFrom?{originalSkillStem:sharedFrom,
+   originalIconPath:manifest.icons?.skills?.[sharedFrom]}:null,
   skillContext:row.kind==='skills'?{
    metadataLearnable:entries.some(entry=>entry.learnable===true),
    hasClassAssignments:classAssignments,
@@ -68,6 +71,10 @@ const report={
   queue.filter(row=>row.kind===k).length])),
  withSameNameLocalCandidate:queue.filter(row=>row.candidatesForManualVisualReview.length>0).length,
  automaticSubstitutions:0,
+ // Reuse is deliberately presentation-only. Nothing is considered recovered.
+ displaySharedCount:queue.filter(row=>row.displayReuse!==null).length,
+ displayUnknownFallbackCount:queue.filter(row=>
+  row.kind==='skills'&&row.displayReuse===null).length,
  skillImpact:{
   withClassAssignments:absentSkills.filter(row=>row.skillContext.hasClassAssignments).length,
   withClassAndMasteryRequirements:absentSkills.filter(row=>

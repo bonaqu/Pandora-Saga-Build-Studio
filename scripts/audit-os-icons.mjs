@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {dirname,resolve,join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {safeIconStem,isWebP} from './icon-utils.mjs';
+import {buildSkillDisplayAliases} from './skill-icon-display-aliases.mjs';
 const root=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const load=async key=>JSON.parse(await readFile(join(root,'data/os',key+'.json'),'utf8'));
 const [skills,items,souls]=await Promise.all(['skills','items','souls'].map(load));
@@ -69,6 +70,21 @@ if(manifest){
   issues.push('Manifest missing count differs from checked files');
  if(recordedPresent.size!==totals.present||recordedMissing.size!==totals.missing)
   issues.push('Manifest path sets do not match current disk state');
+ const aliases=manifest.displayAliases?.skills||{};
+ const expected=buildSkillDisplayAliases(skills,manifest.icons?.skills,manifest.missing);
+ if(JSON.stringify(aliases)!==JSON.stringify(expected))
+  issues.push('Skill display-only aliases differ from original catalog names and rank families');
+ for(const [target,donor] of Object.entries(aliases)){
+  if(!recordedMissing.has('assets/skills/icons/'+target+'.webp'))
+   issues.push('Display alias target is not a missing original: '+target);
+  if(!manifest.icons.skills?.[donor])
+   issues.push('Display alias points to missing original: '+target+' -> '+donor);
+ }
+ try{
+  if(!isWebP(await readFile(join(root,'assets/skills/icons/skill_unknown.webp'))))
+   issues.push('Unknown skill fallback is not a valid local WebP');
+ }catch{issues.push('Missing unknown skill fallback WebP')}
+
 }
 console.log(JSON.stringify({source:'data/os',...totals,groups,manifest:!!manifest,issues,examples:sample},null,2));
 if(issues.length||(process.argv.includes('--strict')&&(totals.missing||totals.corrupt)))process.exitCode=1;

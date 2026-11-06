@@ -5,6 +5,7 @@ import {readFile,writeFile,mkdir,rename} from 'node:fs/promises';
 import {join,dirname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {safeIconStem,isWebP,originalIconUrl} from './icon-utils.mjs';
+import {buildSkillDisplayAliases} from './skill-icon-display-aliases.mjs';
 const root=join(dirname(fileURLToPath(import.meta.url)),'..');
 const dry=process.argv.includes('--dry-run');
 const retry404=process.argv.includes('--retry-404');
@@ -112,6 +113,9 @@ for(const row of unique){
 }
 manifest.count={expected:unique.length,present:available.size,
  missing:manifest.missing.length,processed:dry?0:pending.length,planned:pending.length};
+// Presentation aliases are kept separate from verified originals and
+// automatically rebuilt when source icon coverage changes.
+manifest.displayAliases={skills:buildSkillDisplayAliases(skills,manifest.icons.skills,manifest.missing)};
 if(!dry){
  await mkdir(join(root,'assets'),{recursive:true});
  await writeFile(manifestPath,JSON.stringify(manifest,null,2)+'\n');
