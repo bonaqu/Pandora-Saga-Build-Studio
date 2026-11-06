@@ -95,28 +95,50 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   await page.locator('.equipment-slot[data-slot-index="0"]').click();
   const gradeButtons=page.locator('#stagePicker .stage-grade button');
   assert.equal(await gradeButtons.count(),11,'All forge levels +0…+10 must remain available');
-  const gradeLayout=await page.locator('#stagePicker .stage-grade').evaluate(container=>{
-   const bounds=container.getBoundingClientRect();
-   const cells=[...container.querySelectorAll('button')].map(el=>{
-    const r=el.getBoundingClientRect();
-    return {top:Math.round(r.top),left:r.left,right:r.right,width:r.width};
+  // Match approved concept 02 at actual site widths, including the 320px mobile layout.
+  for(const viewportWidth of [1365,900,620,430,360,320]){
+   await page.setViewportSize({width:viewportWidth,height:900});
+   const layout=await page.locator('#stagePicker .stage-grade').evaluate(container=>{
+    const bounds=container.getBoundingClientRect();
+    const cells=[...container.querySelectorAll('button')].map(el=>{
+     const r=el.getBoundingClientRect();
+     return {top:Math.round(r.top),left:r.left,right:r.right,
+      width:r.width,contentFits:el.scrollWidth<=el.clientWidth+1};
+    });
+    return {width:bounds.width,scroll:container.scrollWidth-container.clientWidth,
+     cells,inside:cells.every(c=>c.left>=bounds.left-1&&c.right<=bounds.right+1)};
    });
-   return {overflow:container.scrollWidth-container.clientWidth,
-    inside:cells.every(c=>c.left>=bounds.left-1&&c.right<=bounds.right+1),cells};
-  });
-  assert.equal(new Set(gradeLayout.cells.map(c=>c.top)).size,2,
-   'The eleven refinement buttons should wrap into two readable rows');
-  assert.ok(gradeLayout.overflow<=1&&gradeLayout.inside,
-   'Every refinement grade must be completely visible without horizontal clipping');
+   assert.equal(new Set(layout.cells.map(c=>c.top)).size,1,
+    'All 11 grades must share ONE joined row at '+viewportWidth+'px: '+JSON.stringify(layout));
+   assert.ok(layout.scroll<=1&&layout.inside&&layout.cells.every(c=>c.contentFits),
+    'Grade +10 and all others must fully fit at '+viewportWidth+'px: '+JSON.stringify(layout));
+  }
+  await page.setViewportSize({width:1365,height:900});
+  const types=page.locator('#stagePicker [data-enchant-key="type"]');
+  assert.equal(await types.count(),2);
+  const typeGeometry=await types.evaluateAll(nodes=>nodes.map(el=>{
+   const r=el.getBoundingClientRect();return {left:r.left,right:r.right,width:r.width,top:r.top};
+  }));
+  assert.ok(typeGeometry[0].width<=118&&typeGeometry[0].width>=75&&
+   Math.abs(typeGeometry[0].right-typeGeometry[1].left)<=1&&
+   Math.abs(typeGeometry[0].top-typeGeometry[1].top)<=1,
+   'Physical / Magical must form a small seamless two-segment switch');
   const elements=page.locator('#stagePicker [data-enchant-key="element"]');
   assert.equal(await elements.count(),7,'All seven source elements are still selectable');
-  const elementTops=await elements.evaluateAll(nodes=>
-   nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
-  assert.equal(new Set(elementTops).size,2,'Element selector uses two balanced rows');
-  const elementWidths=await elements.evaluateAll(nodes=>
-   nodes.map(el=>Math.round(el.getBoundingClientRect().width)));
-  assert.ok(elementWidths.slice(4).every(w=>w>elementWidths[0]),
-   'Three elements in the second row should fill the available width without a blank cell');
+  const elementGeometry=await elements.evaluateAll(nodes=>nodes.map(el=>{
+   const r=el.getBoundingClientRect();
+   return {top:Math.round(r.top),width:r.width,left:r.left,right:r.right};
+  }));
+  assert.equal(new Set(elementGeometry.map(c=>c.top)).size,2,
+   'The element selector must use exactly two rows');
+  assert.ok(elementGeometry.slice(0,4).every(c=>c.top===elementGeometry[0].top));
+  assert.ok(elementGeometry.slice(4).every(c=>c.top===elementGeometry[4].top));
+  assert.ok(elementGeometry.slice(0,6).every(c=>
+   Math.abs(c.width-elementGeometry[0].width)<=1),
+   'Previous concept 05: first six elements all have the same cell width');
+  assert.ok(Math.abs(elementGeometry[6].width-
+   (elementGeometry[0].width*2+5))<=2,
+   'Rainbow must span exactly two cells, with no blank space in row two');
   assert.match(await page.locator('#stagePicker [data-enchant-value="fire"]').innerText(),/🔥/);
   assert.match(await page.locator('#stagePicker [data-enchant-value="rainbow"]').innerText(),/🌈/);
   await page.locator('#stagePicker [data-enchant-key="element"][data-enchant-value="ice"]').click();

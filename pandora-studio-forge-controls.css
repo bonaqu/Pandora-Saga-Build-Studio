@@ -1,0 +1,92 @@
+/* Approved forge layout: concept 02 segmented bar + previous concept 05 elements.
+   Keep all eleven grade steps on ONE line without scroll/clipping, and preserve
+   the existing compact Soul slot layout and admin-editable captions. */
+.stage-rich-body .stage-grade{
+ display:grid;grid-template-columns:repeat(11,minmax(0,1fr));
+ gap:0;width:100%;max-width:100%;min-width:0;
+ padding:2px 0;overflow:visible;container-type:inline-size
+}
+.stage-rich-body .stage-grade button{
+ position:relative;display:grid;place-items:center;
+ width:100%;min-width:0;min-height:29px;height:29px;
+ margin:0;padding:0;border:1px solid #815d36;border-right:0;
+ border-radius:0;background:linear-gradient(#312419,#23190f);
+ color:#e3c599;font:700 10px/1 Manrope,Arial,sans-serif;
+ font-size:clamp(8px,2.5cqw,10px);letter-spacing:-.05em;
+ white-space:nowrap;font-variant-numeric:tabular-nums;
+ box-shadow:none
+}
+.stage-rich-body .stage-grade button:first-child{border-radius:4px 0 0 4px}
+.stage-rich-body .stage-grade button:last-child{
+ border-right:1px solid #815d36;border-radius:0 4px 4px 0
+}
+.stage-rich-body .stage-grade button:hover{
+ z-index:1;border-color:#e3ae70;background:#56402a;color:#fff1d6
+}
+.stage-rich-body .stage-grade button.chosen{
+ z-index:1;background:#76502d;border-color:#f0c27e;color:#fff1d6;
+ box-shadow:inset 0 0 0 1px #edbf79
+}
+.stage-rich-body .stage-grade button:focus-visible{
+ z-index:2;outline:2px solid #f5ce87;outline-offset:-2px
+}
+/* Concept 02: left-aligned, joined physical/magical switch (max 230px). */
+.stage-rich-body .stage-enchant-options.is-type-options{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ width:min(100%,230px);max-width:100%;min-width:0;gap:0
+}
+.stage-rich-body .stage-enchant-options.is-type-options button{
+ position:relative;width:100%;min-width:0;height:28px;min-height:28px;
+ padding:0 5px;border:1px solid #735235;
+ border-radius:0;background:#2c1e14;color:#cbb18a;
+ font:600 10.5px/1.2 Manrope,Arial,sans-serif;white-space:nowrap
+}
+.stage-rich-body .stage-enchant-options.is-type-options button:first-child{
+ border-radius:4px 0 0 4px
+}
+.stage-rich-body .stage-enchant-options.is-type-options button:last-child{
+ border-radius:0 4px 4px 0;border-left:0
+}
+.stage-rich-body .stage-enchant-options.is-type-options button.chosen{
+ z-index:1;border-color:#cca16c;background:#614328;color:#fff0d2;
+ box-shadow:inset 0 0 0 1px #edc88b
+}
+.stage-rich-body .stage-enchant-options.is-type-options button:hover{
+ z-index:1;border-color:#d3a063;background:#4c331f
+}
+.stage-rich-body .stage-enchant-options.is-type-options button:focus-visible{
+ z-index:2;outline:2px solid #f5ce87;outline-offset:-2px
+}
+/* Previous concept 05: four equal buttons on row one;
+   Свет and Тьма each take one cell; Радуга spans the final two cells. */
+.stage-rich-body .stage-enchant-options.is-element-options{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:5px;width:100%;max-width:100%;min-width:0
+}
+.stage-rich-body .stage-enchant-options.is-element-options button{
+ grid-column:span 1;display:flex;justify-content:center;align-items:center;
+ gap:3px;min-width:0;width:100%;min-height:33px;height:33px;
+ padding:4px 2px;border:1px solid #80603c;border-radius:5px;
+ background:linear-gradient(#3d2a1b,#2b1e15);color:#ead3a9;
+ font:600 10.5px/1.2 Manrope,Arial,sans-serif;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.stage-rich-body .stage-enchant-options.is-element-options button:nth-child(7){
+ grid-column:span 2
+}
+.stage-rich-body .stage-enchant-options.is-element-options button:hover{
+ border-color:#d8a66b;background:#4a3120
+}
+.stage-rich-body .stage-enchant-options.is-element-options button.chosen{
+ border-color:#e8bc78;background:#644228;color:#fff5dd;
+ box-shadow:inset 0 0 0 1px #edc47b66
+}
+.stage-rich-body .stage-enchant-options.is-element-options button:focus-visible{
+ outline:2px solid #f5ce87;outline-offset:-2px
+}
+.stage-rich-body .stage-enchant-fieldset{
+ min-width:0;margin:4px 0;padding:7px 7px 8px
+}
+.stage-rich-body .stage-enchant-element{
+ border-radius:8px;background:#21170f
+}

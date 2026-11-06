@@ -2138,37 +2138,6 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  margin:5px 0 0
 }
 
-/* 0.393: refinement and Soul slots — no clipped steps or phantom element cell. */
-.stage-rich-body .stage-grade{
- display:flex;flex-wrap:wrap;gap:5px;
- width:100%;max-width:100%;min-width:0;overflow:visible;padding:2px 0
-}
-.stage-rich-body .stage-grade button{
- flex:1 1 calc((100% - 25px)/6);min-width:34px;min-height:36px;
- padding:6px 2px;font:700 11px/1.25 Manrope,Arial,sans-serif;
- font-variant-numeric:tabular-nums;white-space:nowrap;
- border:1px solid #a17a50;background:#342216;color:#f3d6ac;
- box-shadow:inset 0 1px 0 #ffffff0b
-}
-.stage-rich-body .stage-grade button.chosen{
- background:#7a512c;border-color:#f5cc87;color:#fff7e4;
- box-shadow:inset 0 0 0 1px #f5cc8766
-}
-.stage-rich-body .stage-enchant-options.is-element-options{
- display:flex;flex-wrap:wrap;gap:5px;
- width:100%;max-width:100%;min-width:0
-}
-.stage-rich-body .stage-enchant-options.is-element-options button{
- flex:1 1 calc((100% - 15px)/4);min-width:0;min-height:38px;
- padding:6px 3px;font:600 11px/1.3 Manrope,Arial,sans-serif;
- white-space:normal;overflow-wrap:normal
-}
-.stage-rich-body .stage-enchant-options.is-type-options button{
- min-height:38px;font-size:11px
-}
-.stage-rich-body .stage-enchant-fieldset{
- min-width:0;margin:4px 0;padding:7px 6px 8px
-}
 .stage-rich-body .stage-rich-sockets{
  display:flex;flex-wrap:wrap;align-items:stretch;gap:5px
 }
@@ -2196,10 +2165,4 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-rich-body .stage-rich-sockets button small{
  position:static;font:600 10px/1.2 Manrope,Arial,sans-serif;
  color:#d9ba8f;max-width:100%;white-space:nowrap
-}
-@media(max-width:380px){
- .stage-rich-body .stage-grade button{flex-basis:calc((100% - 20px)/5)}
- .stage-rich-body .stage-enchant-options.is-element-options button{
-  flex-basis:calc((100% - 10px)/3)
- }
 }

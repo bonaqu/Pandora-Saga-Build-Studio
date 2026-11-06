@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-06 · **Latest source release:** 0.394.0 (`2026.11.06.394`)
+**Updated:** 2026-11-06 · **Latest source release:** 0.395.0 (`2026.11.06.395`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **0.389.0:** Source-backed two-slot outfits display in both armor/pants rails while storing one calculated item; pants selection replaces dresses. Shared rich equipment-choice previews and preserved Soul catalog scroll. Visual green split D vs extra training; Origin wizard alignment and compact numeric cards. Regression/production checks tracked independently.
@@ -14,6 +14,8 @@
 **0.393.0:** New builds start with auto green mastery; group captions lead with their labels. Equipment selector only shows Soul slots for supported categories; Soul tab uses consistent «Слоты» wording and larger cards. Refinement buttons wrap without clipping; seven element choices fill both rows. An owner can edit equipment captions separately in RU/EN using existing authenticated D1 guide overrides.
 
 **0.394.0:** Reduce Soul slot cards in the Hero appearance Souls tab to about 60×54 px while preserving their numbered labels, active glow and click behavior. Keep grade, type and element selectors unchanged until a design concept is approved. Chromium regression measures actual slot dimensions.
+
+**0.395.0:** Approved UI direction applied to the actual Properties equipment panel: concept #02's contiguous 11-step forge bar with responsive text sizing; joined compact physical/magical type control. Element buttons use prior demo #05's grid: 4 equal buttons above, equal Light/Dark cells and double-width Rainbow below. Forge CSS is isolated in `pandora-studio-forge-controls.css`; Souls tab unchanged. Browser regression verifies grades at multiple widths, type seam, element geometry, and saved selections.
 
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 

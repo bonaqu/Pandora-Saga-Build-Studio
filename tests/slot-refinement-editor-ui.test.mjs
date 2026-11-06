@@ -34,11 +34,11 @@ test('mastery group summary puts label before value in both locales',()=>{
  assert.match(path,/tr\(api,' · вложено ',' · invested '\)\+spent/);
 });
 
-test('refinement controls and elements wrap, while Souls use accessible slot labels',()=>{
- const css=source('pandora-studio-theme.css');
+test('approved segmented forge bar and compact Soul slots remain accessible',()=>{
+ const css=source('pandora-studio-forge-controls.css');
  const ui=source('pandora-studio-equipment-ui.js');
- assert.match(css,/\.stage-rich-body \.stage-grade\{\s*display:flex;flex-wrap:wrap/);
- assert.match(css,/\.stage-rich-body \.stage-enchant-options\.is-element-options\{\s*display:flex;flex-wrap:wrap/);
+ assert.match(css,/\.stage-rich-body \.stage-grade\{\s*display:grid;grid-template-columns:repeat\(11,minmax\(0,1fr\)\)/);
+ assert.match(css,/\.stage-rich-body \.stage-enchant-options\.is-element-options\{\s*display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(ui,/copy\('soulSlotsHeading','Слоты душ','Soul slots'\)/);
  assert.match(ui,/tr\('Слот ','Slot '\)\+\(i\+1\)/);
  assert.doesNotMatch(ui,/Гнёзд/);
