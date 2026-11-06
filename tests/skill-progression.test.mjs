@@ -28,7 +28,7 @@ test('auto green follows invested points and preserves manual mastery when toggl
  assert.equal(S.trained(s,'thrust'),3);
  assert.equal(s.mastery.slash,42);
  const untouched={masteryAuto:true,points:{slash:0},mastery:{}};
- assert.equal(S.trained(untouched,'slash', {slash:5},{slash:25}),0);
+ assert.equal(S.trained(untouched,'slash', {slash:5},{slash:25}),5);
  assert.equal(S.branchMastery(untouched,'slash',{slash:5},{slash:25}),5);
 });
 test('lowering allocated Potential clamps green, never consumes attribute or skill points',()=>{
@@ -60,21 +60,22 @@ test('Rapin Warrior 5/4/5/6/8/6: level points only from manual allocation',()=>{
  assert.equal(invested.spent,2);assert.equal(invested.remaining,4);
 });
 test('historical Remaked Inspiration receives trained prayer group, not spent points',()=>{
- const state={masteryAuto:false,points:{benevolence:45,blessing:0,exorcism:0,hymn:0},
+ const state={masteryFormat:2,masteryAuto:false,points:{benevolence:45,blessing:0,exorcism:0,hymn:0},
   mastery:{benevolence:42}};
  assert.equal(S.prayerAdeptness(state),42);
  assert.equal(S.legacyPrayerSpirit('CLERIC',state),5);
  assert.equal(S.legacyPrayerSpirit('SCOUT',state),0);
  // Acolyte innate priest lineage: 5 healing, 5 blessing, 5 exorcism, 0 hymn.
  const inborn=tables.jobInit.ACOLYTE.branches;
- assert.equal(S.prayerAdeptness(state,inborn),57);
- assert.equal(S.legacyPrayerSpirit('CLERIC',state,inborn),6);
+ assert.equal(S.prayerAdeptness(state,inborn),42,
+  'untrained class starting Prayer points must not add imaginary green');
+ assert.equal(S.legacyPrayerSpirit('CLERIC',state,inborn),5);
  assert.equal(S.legacyPrayerSpirit('SCOUT',state,inborn),0);
  const before=S.spending(tables.abilityPoint,45,state.points);
  S.setTrained(state,'benevolence',40);
  assert.deepEqual(S.spending(tables.abilityPoint,45,state.points),before);
 });
-test('skill gallery greys 45-potential/42-green threshold until training completes',()=>{
+test('skill gallery unlocks first ability using branch points without requiring green first',()=>{
  const scope={PandoraSkillProgression:S};
  const doc={createElement:tag=>({tag,children:[],append(){},setAttribute(){},addEventListener(){}}),
  createTextNode:text=>({textContent:text})};
@@ -85,7 +86,8 @@ test('skill gallery greys 45-potential/42-green threshold until training complet
   reqs:[{branch:'slash',amount:45}],prereq:11};
  const state={level:45,masteryAuto:false,points:{slash:45},mastery:{slash:42}};
  const api={state,job:'WARRIOR',skillCatalog:[base,upgrade],branchName:key=>key};
- assert.equal(scope.PandoraHeroPath.readiness(base,api).learned,false);
+ assert.equal(scope.PandoraHeroPath.readiness(base,api).learned,true,
+  '45 allocated branch points unlock the skill even at 42 green');
  S.setAuto(state,true,['slash']);
  assert.equal(scope.PandoraHeroPath.readiness(upgrade,api).learned,true);
 });

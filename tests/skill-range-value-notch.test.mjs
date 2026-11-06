@@ -44,8 +44,8 @@ test('current value indicator remains one compact noninteractive vertical tick',
  assert.match(js,/track\.append\(currentNotch\)/);
  assert.match(js,/currentNotch\.style\.left=positionOnRail\(goldFraction\)/);
  assert.match(js,/track\.append\(range\);paint\(\)/);
- assert.match(js,/range\.addEventListener\('input',\(\)=>update\(Number\(range.value\),false\)\)/);
- assert.match(js,/range\.addEventListener\('change',\(\)=>update\(Number\(range.value\),true\)\)/);
+ assert.match(js,/range\.addEventListener\('input',\(\)=>update\(Number\(range.value\)-base,false\)\)/);
+ assert.match(js,/range\.addEventListener\('change',\(\)=>update\(Number\(range.value\)-base,true\)\)/);
  assert.match(css,/\.inline-mastery-track\.path-integrated-track \.path-current-notch\{/);
  const startRule=css.indexOf('.inline-mastery-track.path-integrated-track .path-current-notch{');
  const rule=css.slice(startRule,css.indexOf('}',startRule));
@@ -76,11 +76,11 @@ test('allocation semantics remain untouched across numeric clearing, hover and s
  for(const statement of [
   "const raw=numeric.value.trim();",
   "update(raw===''?0:Number(raw),true);",
-  "const raw=input.value.trim(),requested=raw===''?base:Number(raw);",
-  "const visualMax=Math.max(1,cap+Math.max(points,budget.total||0),base+points);",
+  "const raw=input.value.trim(),requested=raw===''?0:Number(raw);",
+  "const visualMax=90;",
   "tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';",
   "range.setAttribute('aria-valuetext'",
-  "const setPotentialEdge=invested=>{",
-  "locked.style.left=positionOnRail(Math.max(0,Math.min(1,availablePotential/visualMax)));"
+  "const setPotentialEdge=()=>{",
+  "locked.style.left=positionOnRail(Math.max(0,Math.min(1,cap/visualMax)));"
  ])assert.ok(js.includes(statement),statement);
 });

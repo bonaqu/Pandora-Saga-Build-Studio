@@ -44,14 +44,16 @@ test('all 28 class previews keep innate D distinct from current P and spent poin
    assert.equal(skill.branchMastery(fresh,key,innate,caps),
     skill.branchBase(innate,key),job+' '+key+' auto-on baseline');
    assert.equal(skill.branchMastery(noAuto,key,innate,caps),
-    skill.branchBase(innate,key),job+' '+key+' auto-off baseline');
+    0,job+' '+key+' auto-off zero mastery');
    assert.equal(skill.potential(fresh,key),0,job+' '+key+' no free investments');
   }
   assert.equal(skill.spending(tables.abilityPoint,1,fresh.points).spent,0,job);
   const group=skill.combatMasteries(fresh,innate,caps);
   const expectedMelee=['slash','thrust','brush','blow','defense']
    .reduce((sum,key)=>sum+skill.branchBase(innate,key),0);
-  assert.equal(group.melee,expectedMelee,job+' aggregates real mastered melee only');
+  assert.equal(group.melee,expectedMelee,job+' auto mode previews learned melee');
+  assert.equal(skill.combatMasteries(noAuto,innate,caps).melee,0,
+   job+' manual untouched mastery must not award melee passives');
   const spirit=skill.legacyPrayerSpirit(job,fresh,innate,caps);
   const inspired=['PRIEST','CLERIC','ENCHANTER'].includes(job);
   assert.equal(spirit,inspired?1+Math.floor(skill.prayerAdeptness(fresh,innate,caps)/10):0,
@@ -67,16 +69,16 @@ test('all 28 class previews keep innate D distinct from current P and spent poin
  }
 });
 
-test('Hero Path green geometry counts ONLY mastery gained beyond innate baseline',()=>{
+test('Hero Path uses one green mastery band from zero and one absolute 90-point scale',()=>{
  const js=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
- assert.match(js,/const addedGreenFraction=Math\.max\(0,Math\.min\(1,\(mastery-base\)\/visualMax\)\)/);
- assert.match(js,/innateFill\.style\.width=widthOnRail\(innateFraction\)/);
- assert.match(js,/green\.style\.width=widthOnRail\(addedGreenFraction\)/);
- assert.match(js,/track\.append\(innateFill\)/);
- assert.match(css,/\.path-innate-fill\{/);
- const start=5,trained=10,max=66;
- assert.equal(Math.round((start+trained-start)/max*660),100,
-  'bright green represents only 10 extra points; innate 5 is separate');
+ assert.match(js,/const visualMax=90/);
+ assert.match(js,/green\.style\.width=widthOnRail\(greenFraction\)/);
+ assert.match(js,/gold\.style\.width=widthOnRail\(goldFraction\)/);
+ assert.doesNotMatch(js,/innateFill|addedGreenFraction/);
+ assert.doesNotMatch(css,/\.path-innate-fill\{/);
+ const start=5,extra=3,green=0,max=90;
+ assert.equal((start+extra)/max*900,80,'blue allocated level 8');
+ assert.equal(green/max*900,0,'manual green zero');
 });
 
 test('every equipment choice uses the shared rich hover and Soul list restores its own scroll',()=>{

@@ -74,7 +74,7 @@ test('muted locked rail keeps a visible boundary and original pointer behavior',
  assert.doesNotMatch(rule,/#aa4b42|#d48c76/);
  assert.match(css,/\.inline-mastery-track \.inline-mastery-locked\{[^}]*pointer-events:none/);
  assert.match(css,/\.inline-mastery-track\.path-integrated-track \.path-unlock-notch\{/);
- assert.match(source,/const visualMax=Math.max\(1,cap\+Math.max\(points,budget.total\|\|0\),base\+points\)/);
+ assert.match(source,/const visualMax=90/);
 });
 
 test('readiness rejects arrays, objects, non-decimal text and unsafe numbers in branch requirements',()=>{

@@ -53,9 +53,9 @@ export async function runInnateSkillMasterySmoke(browser,base){
   const spent=page.locator('[data-branch-control="slash:potential-number"]');
   const green=page.locator('[data-branch-control="slash:mastery-number"]');
   assert.equal(await spent.inputValue(),'0');
-  assert.equal(await green.inputValue(),'5');
-  assert.equal(await green.getAttribute('min'),'5');
-  assert.equal(await green.getAttribute('max'),'25');
+  assert.equal(await green.inputValue(),'0');
+  assert.equal(await green.getAttribute('min'),'0');
+  assert.equal(await green.getAttribute('max'),'5');
   assert.match(await page.locator('.path-innate-baseline').first().innerText(),/Старт: 5/);
   // Persisted legacy auto=true is not an instruction to max every branch.
   await page.locator('#pathAutoMastery').check();
@@ -67,13 +67,14 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.equal(await page.locator('#pathAutoMastery').isChecked(),true);
   assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replaceAll(' ',''),'5/25');
   await page.locator('#pathAutoMastery').uncheck();
-  await page.locator('[data-branch-control="slash:mastery-number"]').fill('6');
+  await page.locator('[data-branch-control="slash:mastery-number"]').fill('4');
   await page.locator('[data-branch-control="slash:mastery-number"]').press('Tab');
-  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'6');
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'4');
   await page.locator('#pathAutoMastery').check();
-  assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replaceAll(' ',''),'6/25');
+  assert.equal((await page.locator('[data-path-branch="slash"] .count').innerText()).replaceAll(' ',''),'5/25');
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'5');
   await page.locator('#pathAutoMastery').uncheck();
-  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'6');
+  assert.equal(await page.locator('[data-branch-control="slash:mastery-number"]').inputValue(),'4');
   assert.equal(await spent.inputValue(),'0');
   assert.match(await page.locator('#budgetState').innerText(),/0[\s\S]*Вложено/);
 
@@ -107,6 +108,41 @@ export async function runInnateSkillMasterySmoke(browser,base){
   await skillSearch.press('Tab');
   assert.equal(await skillSearch.evaluate(el=>el.readOnly),true,
    'Search returns to non-credential readOnly state after editing');
+  // Explicit UI acceptance for the exact-field steppers. A quick click
+  // advances one point, while holding repeats until the mastery/budget cap.
+  await page.locator('#pathGrowthTab').click();
+  const melee=page.locator('[data-path-group="melee"]');
+  if(await melee.getAttribute('aria-expanded')!=='true')await melee.click();
+  const cut=page.locator('[data-path-branch="slash"]');
+  if(await cut.getAttribute('aria-expanded')!=='true')await cut.click();
+  const manual=page.locator('[data-branch-control="slash:mastery-number"]');
+  assert.equal(await manual.inputValue(),'4');
+  await page.locator('.path-point-mastery .path-point-increment').click();
+  assert.equal(await manual.inputValue(),'5','Mastery + increments by exactly one');
+  await page.locator('.path-point-mastery .path-point-decrement').click();
+  assert.equal(await manual.inputValue(),'4','Mastery − decrements by exactly one');
+  const holdMinus=page.locator('.path-point-mastery .path-point-decrement');
+  await holdMinus.hover();
+  await page.mouse.down();
+  await page.waitForTimeout(650);
+  await page.mouse.up();
+  const repeated=Number(await manual.inputValue());
+  assert.ok(repeated>=0&&repeated<=2,
+   'Holding minus repeats by one, clamps at zero, got '+repeated);
+  await page.locator('#level').evaluate(el=>{
+   el.value='4';el.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='4');
+  const investPlus=page.locator('.path-point-group:not(.path-point-mastery) .path-point-increment');
+  await investPlus.click();
+  assert.equal(await page.locator('[data-branch-control="slash:potential-number"]').inputValue(),'1',
+   'Spent-point + consumes one available point');
+  await investPlus.hover();await page.mouse.down();
+  await page.waitForTimeout(600);await page.mouse.up();
+  const invested=Number(await page.locator('[data-branch-control="slash:potential-number"]').inputValue());
+  assert.ok(invested>=2&&invested<=3,'Investment hold clamps to L4 budget of 3, got '+invested);
+  assert.equal(Number(await page.locator('[data-branch-control="slash:potential-range"]').inputValue()),5+invested,
+   'The slider displays starting five plus invested points');
   assert.deepEqual(errors,[]);
   console.log('Chromium innate mastery passed: Warrior Enkidu L1 5/2/5/2/4 + archery1, no spent points, manual green training, non-login search');
  }finally{await context.close()}

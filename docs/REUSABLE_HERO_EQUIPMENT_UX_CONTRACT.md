@@ -41,17 +41,35 @@ socket or re-rendering the picker. A new textual search intentionally resets the
 list position to the top. Choosing another equipment slot resets the remembered
 Soul scroll because it is a different catalog context.
 
-## Hero Path visual and numeric semantics
+## Hero Path visual and numeric semantics (live-game contract, 0.390)
 
-`D` = immutable class-native green; `mastery` = additional trained green;
-`P` = class potential ceiling; `points` = invested level-up skill points.
-The underlying numeric formulas must not depend on CSS.
+The current live OS game indicates that root profession's starting points (D)
+are already ALLOCATED branch points, NOT green mastery. For example, a
+first-level Warrior starts with Cleave/Brush 5 allocated and **zero** green.
+This differs from older Remaked Legacy's interpretation of Skill[i][0]; it is
+an intentional parity correction for the observed live game.
 
-Render D with a subdued fixed green baseline, and render ONLY additional
-trained mastery with a vivid green band offset from D. The bright band is
-precisely `mastery - D` points long, even when the label displays
-`(D + extra) / (P + allocated)`. The gold invested range and current notch
-continue to refer only to invested free points. No fake maxed-out mastery.
+Allocated branch level = class-start D + manually invested free skill points,
+clamped by the class-specific cap. Caps are absolute and never grow when points
+are invested. The common track spans 0..90 and never expands beyond 90.
+
+Actual green mastery starts at 0 and ranges from zero through allocated level.
+When "auto green" is checked, it previews mastery == allocated branch level.
+With auto off, mastery is the user's independent manually trained value. Green
+does not consume free skill points. Enabling and then disabling auto preserves
+the last manually trained value. Skill unlock requirements use allocated branch
+points; passive scaling and effects use real green (to avoid circularly
+requiring green to unlock the skill that trains it).
+
+Draw one gold invested bar and the existing green mastery bar from zero on the
+same 0..90 rail. DO NOT introduce a split innate-green segment. Show D and the
+class cap as succinct labels in the existing editor.
+
+Both exact controls have single-step +/− buttons with press-hold repeating.
+During a hold update the bar and counts in place without dropping the pressed
+button; commit full stats and UI refresh on release. Keyboard input remains
+available. Save-version tagging distinguishes pre-0.390 explicit additional
+manual mastery from the new absolute green values.
 
 ## Origin profession steps and branch input cards
 

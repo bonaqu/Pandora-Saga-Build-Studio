@@ -2027,16 +2027,40 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  .path-point-controls{gap:5px}
  .path-point-controls .path-point-group{padding:6px;min-height:62px}
 }
-/* The immutable starting mastery is a separate, subdued layer. Bright green
-   spans only additionally trained points (not D + extra combined). */
-.inline-mastery-track.path-integrated-track .path-innate-fill{
- position:absolute;left:12px;top:20px;height:6px;max-width:calc(100% - 24px);
- z-index:2;background:linear-gradient(90deg,#617955,#83a476);
- box-shadow:inset 0 1px 0 #d0e3b633;border-radius:5px;pointer-events:none;opacity:.72
+/* Green is genuine trained mastery from 0. One identical 0..90 rail
+   carries gold branch points and the green overlay; no innate green band. */
+.path-point-controls .path-point-group{grid-template-rows:auto 35px}
+.path-point-stepper{
+ display:grid;grid-template-columns:25px minmax(30px,1fr) 25px;
+ gap:3px;align-items:center;min-width:0;width:100%
 }
-.inline-mastery-track.path-integrated-track .inline-mastery-green{
- z-index:3;background:linear-gradient(90deg,#57a965,#a1d882);
- border-radius:3px;box-shadow:inset 0 1px 1px #daf8bc44,0 0 4px #66bb5d33
+.path-point-controls .path-point-stepper input[type=number]{
+ width:100%;min-width:0;margin:0;padding:3px 1px;
+ -moz-appearance:textfield;appearance:textfield
+}
+.path-point-controls .path-point-stepper input[type=number]::-webkit-inner-spin-button,
+.path-point-controls .path-point-stepper input[type=number]::-webkit-outer-spin-button{
+ -webkit-appearance:none;margin:0
+}
+.path-point-controls .path-point-step{
+ display:grid;place-items:center;min-width:0;width:25px;height:35px;
+ padding:0;border:1px solid #927149;border-radius:4px;
+ background:linear-gradient(150deg,#4b3523,#2c1f16);
+ color:#eac891;font:700 17px/1 Manrope,Arial,sans-serif;
+ touch-action:none;user-select:none;transition:border-color .12s,background .12s
+}
+.path-point-controls .path-point-step:hover{border-color:#e8b778;background:#624528}
+.path-point-controls .path-point-step:disabled{opacity:.38;cursor:not-allowed}
+.path-point-controls .path-point-step.is-repeating{background:#73522d;border-color:#ffd58a}
+.path-point-controls .path-point-mastery .path-point-step{
+ border-color:#618355;background:linear-gradient(#33462a,#1c2a19);color:#c8ecb8
+}
+.path-point-controls .path-point-mastery .path-point-step:hover{
+ background:#49643a;border-color:#9ecc8a
+}
+@media(max-width:420px){
+ .path-point-stepper{grid-template-columns:23px minmax(28px,1fr) 23px;gap:2px}
+ .path-point-controls .path-point-step{width:23px}
 }
 /* One-piece armor is stored once, mirrored visually into pants. */
 .workspace .equipment-rail .equipment-slot.shared-outfit{border-style:double;border-color:#b19a74}

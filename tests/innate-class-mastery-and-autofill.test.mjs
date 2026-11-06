@@ -28,77 +28,68 @@ test('live-observed ENKIDU WARRIOR base stats and dual point budgets',()=>{
   'Archived table field is NOT the verified spendable skill budget');
 });
 
-test('all four root classes preserve source innate green values at level 1',()=>{
+test('all four root classes preserve starting allocations but zero manual green',()=>{
  const expected={
   WARRIOR:{slash:5,thrust:2,brush:5,blow:2,defense:4,archery:1},
   SCOUT:{slash:4,archery:5,alchemy:4,assassin:3,warding:3},
   ACOLYTE:{blow:2,defense:2,benevolence:5,blessing:5,exorcism:5},
   MAGE:{slash:2,blow:2,element:5,embody:5,charm:5}
  };
- for(const [job,inborn]of Object.entries(expected)){
-  assert.deepEqual(tables.jobInit[job].branches,inborn,job);
-  const state={level:1,masteryAuto:false,points:{},mastery:{}};
+ for(const [job,start] of Object.entries(expected)){
+  assert.deepEqual(tables.jobInit[job].branches,start,job);
+  const state={level:1,masteryFormat:2,masteryAuto:false,points:{},mastery:{}};
   assert.equal(S.spending(tables.abilityPoint,1,state.points).spent,0);
-  for(const [branch,base]of Object.entries(inborn)){
-   assert.equal(S.branchBase(inborn,branch),base);
-   assert.equal(S.branchMastery(state,branch,inborn,classes[job].branchCaps),base);
-   assert.equal(S.branchPotential(state,branch,inborn,classes[job].branchCaps),
-    classes[job].branchCaps[branch]);
+  for(const [branch,value]of Object.entries(start)){
+   assert.equal(S.branchBase(start,branch),value);
+   assert.equal(S.branchPotential(state,branch,start,classes[job].branchCaps),value);
+   assert.equal(S.branchMastery(state,branch,start,classes[job].branchCaps),0);
+   state.masteryAuto=true;
+   assert.equal(S.branchMastery(state,branch,start,classes[job].branchCaps),value);
+   state.masteryAuto=false;
   }
  }
- assert.match(app,/mastery:\{\},masteryAuto:false,stats:/,
-  'a new hero starts with only innate green, not artificially maximized mastery');
+ assert.match(app,/mastery:\{\},masteryFormat:2,masteryAuto:false,stats:/);
 });
 
-test('Remaked P plus invested defines trainable green; no need to spend at first level',()=>{
+test('actual game: branch start 5, manual green 0..5; each extra point extends both ceilings to 6',()=>{
  const innate=tables.jobInit.WARRIOR.branches,caps=classes.WARRIOR.branchCaps;
- const state={level:1,points:{slash:0},mastery:{},masteryAuto:false};
+ const state={level:1,masteryFormat:2,points:{slash:0},mastery:{},masteryAuto:false};
  assert.equal(S.branchBase(innate,'slash'),5);
- assert.equal(S.branchPotential(state,'slash',innate,caps),25);
- assert.equal(S.branchMastery(state,'slash',innate,caps),5);
- assert.equal(S.trainedLimit(state,'slash',innate,caps),20);
- assert.equal(S.setTrained(state,'slash',20,innate,caps),true,
-  'training can reach native P=25 without spending any free points');
- assert.equal(S.branchMastery(state,'slash',innate,caps),25);
- assert.equal(S.setTrained(state,'slash',21,innate,caps),false);
- assert.equal(S.spending(tables.abilityPoint,1,state.points).spent,0);
- state.level=2;S.setPotential(state,'slash',1,innate,caps);
- assert.equal(S.branchPotential(state,'slash',innate,caps),26);
- assert.equal(S.setTrained(state,'slash',21,innate,caps),true);
- assert.equal(S.branchMastery(state,'slash',innate,caps),26);
+ assert.equal(S.branchPotential(state,'slash',innate,caps),5);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),0);
+ assert.equal(S.trainedLimit(state,'slash',innate,caps),5);
+ assert.equal(S.setTrained(state,'slash',5,innate,caps),true);
+ assert.equal(S.setTrained(state,'slash',6,innate,caps),false);
+ state.level=2;
+ assert.equal(S.setPotential(state,'slash',1,innate,caps),true);
+ assert.equal(S.branchPotential(state,'slash',innate,caps),6);
+ assert.equal(S.setTrained(state,'slash',6,innate,caps),true);
  assert.equal(S.spending(tables.abilityPoint,2,state.points).remaining,0);
  S.setPotential(state,'slash',0,innate,caps);
- assert.equal(S.branchMastery(state,'slash',innate,caps),25,
-  'refund clamps trained mastery to class P, not to zero');
+ assert.equal(S.branchMastery(state,'slash',innate,caps),5,
+  'refunding reduces manual green only to the remaining branch level');
  assert.equal(S.spending(tables.abilityPoint,2,state.points).remaining,1);
 });
 
-test('auto checkbox fills allocated mastery only, never native Potential',()=>{
+test('auto green fills actual branch level; switching off restores manually trained zero or value',()=>{
  const innate=tables.jobInit.WARRIOR.branches,caps=classes.WARRIOR.branchCaps;
- const state={level:1,masteryAuto:false,points:{slash:0},mastery:{}};
- assert.equal(S.branchPotential(state,'slash',innate,caps),25);
+ const state={level:1,masteryFormat:2,masteryAuto:false,points:{slash:0},mastery:{}};
+ assert.equal(S.branchPotential(state,'slash',innate,caps),5);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),0);
  S.setAuto(state,true,['slash'],innate,caps);
- assert.equal(S.branchMastery(state,'slash',innate,caps),5,'L1 starts at 5 even with auto enabled');
- for(const [branch,base] of Object.entries(innate)){
-  assert.equal(S.branchMastery(state,branch,innate,caps),base,
-   branch+' must not be promoted to its untrained potential');
- }
- assert.equal(S.spending(tables.abilityPoint,1,state.points).spent,0);
+ for(const [branch,base] of Object.entries(innate))
+  assert.equal(S.branchMastery(state,branch,innate,caps),base,branch);
  S.setAuto(state,false,['slash'],innate,caps);
- assert.equal(S.branchMastery(state,'slash',innate,caps),5);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),0);
  state.level=2;
  S.setPotential(state,'slash',1,innate,caps);
+ S.setTrained(state,'slash',4,innate,caps);
  S.setAuto(state,true,['slash'],innate,caps);
- assert.equal(S.branchMastery(state,'slash',innate,caps),6,'one spent point trains at most one extra automatically');
- assert.equal(S.branchPotential(state,'slash',innate,caps),26,'native potential stays independent');
+ assert.equal(S.branchMastery(state,'slash',innate,caps),6);
+ assert.equal(S.branchPotential(state,'slash',innate,caps),6);
  S.setAuto(state,false,['slash'],innate,caps);
- assert.equal(S.branchMastery(state,'slash',innate,caps),5,'auto must not save synthetic mastery');
- assert.equal(S.setTrained(state,'slash',8,innate,caps),true);
- S.setAuto(state,true,['slash'],innate,caps);
- assert.equal(S.branchMastery(state,'slash',innate,caps),13,
-  'automatically computed value cannot erase manually earned green');
- S.setAuto(state,false,['slash'],innate,caps);
- assert.equal(S.branchMastery(state,'slash',innate,caps),13);
+ assert.equal(S.branchMastery(state,'slash',innate,caps),4);
+ assert.equal(S.setTrained(state,'slash',7,innate,caps),false);
 });
 
 test('all 28 careers auto-on L1 preserve innate levels and zero level-up spending',()=>{
@@ -114,58 +105,52 @@ test('all 28 careers auto-on L1 preserve innate levels and zero level-up spendin
  }
 });
 
-test('skill unlocks count innate green and P, but reject unavailable branches',()=>{
+test('skill learning checks branch points, never demands green before the first usable skill',()=>{
  const innate=tables.jobInit.WARRIOR.branches,caps=classes.WARRIOR.branchCaps;
- const state={level:1,masteryAuto:false,points:{slash:0},mastery:{}};
+ const state={level:1,masteryFormat:2,masteryAuto:false,points:{slash:0},mastery:{}};
  const api={state,innate,branchCaps:caps,job:'WARRIOR',lang:'ru',
   cap:k=>caps[k]??0,branchName:k=>k,skillCatalog:[]};
- const skill=amount=>({id:amount,name:'Проверка порога',classes:{WARRIOR:1},
+ const skill=amount=>({id:amount,name:'Порог',classes:{WARRIOR:1},
   charLevel:1,reqs:[{branch:'slash',amount}]});
- assert.equal(H.readiness(skill(5),api).learned,true,'innate first-level green meets 5');
+ assert.equal(H.readiness(skill(5),api).learned,true,'five starting branch points, no green');
  assert.equal(H.readiness(skill(6),api).learned,false);
- assert.equal(S.setTrained(state,'slash',1,innate,caps),true);
- assert.equal(H.readiness(skill(6),api).learned,true);
- assert.equal(H.readiness(skill(26),api).learned,false,'P=25, cannot reach 26 without points');
- S.setPotential(state,'slash',1,innate,caps);
- S.setTrained(state,'slash',21,innate,caps);
- assert.equal(H.readiness(skill(26),api).learned,true);
+ assert.equal(S.setPotential(state,'slash',1,innate,caps),true);
+ assert.equal(H.readiness(skill(6),api).learned,true,'six available even when green is zero');
+ assert.equal(H.readiness(skill(26),api).learned,false,'Warrior hard cap 25');
  assert.equal(H.readiness({...skill(1),reqs:[{branch:'element',amount:1}]},api).learned,false,
-  'a warrior cannot unlock a zero-potential Magic branch');
+  'a Warrior cannot unlock a blocked magic branch');
 });
 
-test('inspiration derives Spirit from full Prayer green each ten, not allocated points',()=>{
+test('Inspiration increments every 10 actual green Prayer, independent of initial branch points',()=>{
  const innate=tables.jobInit.ACOLYTE.branches,caps=classes.PRIEST.branchCaps;
- const state={masteryAuto:false,points:{benevolence:0},mastery:{}};
- assert.equal(S.prayerAdeptness(state,innate,caps),15);
- assert.equal(S.legacyPrayerSpirit('PRIEST',state,innate,caps),2);
- assert.equal(S.legacyPrayerSpirit('CLERIC',state,innate,caps),2);
+ const state={masteryFormat:2,masteryAuto:false,points:{benevolence:0},mastery:{}};
+ assert.equal(S.prayerAdeptness(state,innate,caps),0);
+ assert.equal(S.legacyPrayerSpirit('PRIEST',state,innate,caps),1);
  assert.equal(S.legacyPrayerSpirit('WARRIOR',state,innate,caps),0);
+ S.setPotential(state,'benevolence',5,innate,caps);
  S.setTrained(state,'benevolence',10,innate,caps);
- assert.equal(S.prayerAdeptness(state,innate,caps),25);
- assert.equal(S.legacyPrayerSpirit('PRIEST',state,innate,caps),3);
- assert.equal(S.spending(tables.abilityPoint,1,state.points).spent,0);
+ assert.equal(S.prayerAdeptness(state,innate,caps),10);
+ assert.equal(S.legacyPrayerSpirit('PRIEST',state,innate,caps),2);
 });
 
-test('Technique trained ten changes Archer accuracy by one, never universally',()=>{
+test('ten green Technique boosts Archer accuracy one point, not Warrior',()=>{
  const innate=tables.jobInit.SCOUT.branches,caps=classes.ARCHER.branchCaps;
- const state={masteryAuto:false,points:{archery:0},mastery:{}};
+ const state={masteryFormat:2,masteryAuto:false,points:{archery:0},mastery:{}};
  const first=S.combatMasteries(state,innate,caps);
- assert.equal(first.techniqueInnate,15);
+ assert.equal(first.techniqueInnate,0);
  assert.equal(first.techniqueTrained,0);
+ S.setPotential(state,'archery',5,innate,caps);
  S.setTrained(state,'archery',10,innate,caps);
  const second=S.combatMasteries(state,innate,caps);
- assert.equal(second.techniqueInnate,15);
+ assert.equal(second.techniqueInnate,0);
  assert.equal(second.techniqueTrained,10);
  const preview=(jobKey,technique)=>O.combatPreview({
   stats:{vit:10,str:10,agi:10,dex:10,spi:10,int:10},
   level:45,jobKey,techniqueInnate:technique.techniqueInnate,
   techniqueTrained:technique.techniqueTrained
  });
- const archer0=preview('ARCHER',first),archer10=preview('ARCHER',second);
- const warrior0=preview('WARRIOR',first),warrior10=preview('WARRIOR',second);
- assert.ok(archer0?.accuracy&&archer10?.accuracy&&warrior0?.accuracy&&warrior10?.accuracy);
- assert.equal(archer10.accuracy.known-archer0.accuracy.known,1);
- assert.equal(warrior10.accuracy.known-warrior0.accuracy.known,0);
+ assert.equal(preview('ARCHER',second).accuracy.known-preview('ARCHER',first).accuracy.known,1);
+ assert.equal(preview('WARRIOR',second).accuracy.known-preview('WARRIOR',first).accuracy.known,0);
 });
 
 test('hero skill search is never exposed as login, including static search input',()=>{

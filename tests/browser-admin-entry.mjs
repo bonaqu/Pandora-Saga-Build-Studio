@@ -870,7 +870,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   });
   const legend=page.locator('.path-track-legend').first();
   assert.ok(await legend.isVisible(),'Skill scale labels must be visible below the drag track');
-  assert.ok((await legend.innerText()).includes('Потенциал: '));
+  assert.ok((await legend.innerText()).includes('Предел: '));
   assert.ok((await legend.innerText()).includes('90'));
   assert.ok(result.geom.length>=3,'Expected several source-backed unlock thresholds');
   assert.ok(result.geom.every(x=>x.top>=result.barTop-1&&x.bottom<=result.barBottom+1),
@@ -912,12 +912,12 @@ export async function runInlineMilestonesSmoke(browser,base){
    await page.evaluate(()=>new Promise(requestAnimationFrame));
    return measureBranch();
   };
-  const stable=[await measureBranch(),await drag(1),await drag(2),await drag(0)];
+  const stable=[await measureBranch(),await drag(6),await drag(7),await drag(5)];
   assert.ok(stable.every(x=>x.duplicatePoints===0&&x.exactControls===2),
    'The duplicate points row is absent; both exact controls remain');
-  assert.ok(stable[0].points.includes('5 / 90'),'Cleric inherits 5 green on an unspent branch');
-  assert.ok(stable[1].points.includes('5 / 91')&&stable[2].points.includes('5 / 92'),
-   'Blue investment increases P while manually trained green stays at class baseline');
+  assert.ok(stable[0].points.includes('5 / 90'),'Cleric starts with five branch points, but no manual green');
+  assert.ok(stable[1].points.includes('6 / 90')&&stable[2].points.includes('7 / 90'),
+   'Blue branch level grows but the class limit remains 90');
   assert.ok(stable.every(x=>Math.abs(x.height-stable[0].height)<=1),
    'Mastery changes must NOT increase the branch row height: '+JSON.stringify(stable));
   assert.ok(stable.every(x=>Math.abs(x.editorTop-stable[0].editorTop)<=1),
@@ -933,16 +933,16 @@ export async function runInlineMilestonesSmoke(browser,base){
   // pointer hit testing, even though the value marker itself is only 4px wide.
   const arrowRange=page.locator('[data-branch-control="benevolence:potential-range"]');
   await arrowRange.focus();await page.keyboard.press('ArrowRight');
-  assert.equal(await arrowRange.inputValue(),'1','Keyboard allocation remains functional');
-  await drag(0);
+  assert.equal(await arrowRange.inputValue(),'6','Keyboard allocation remains functional');
+  await drag(5);
   const exact=page.locator('[data-branch-control="benevolence:potential-number"]');
-  await drag(2);
+  await drag(7);
   await exact.fill('');
   await exact.press('Tab');
   assert.equal(await exact.inputValue(),'0','Clearing and blurring precise field must refund points');
-  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'0');
-  await drag(5);
-  assert.match(await page.locator('[data-path-branch="benevolence"] .count').innerText(),/5\s*\/\s*95/);
+  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'5');
+  await drag(10);
+  assert.match(await page.locator('[data-path-branch="benevolence"] .count').innerText(),/10\s*\/\s*90/);
   assert.equal(await page.locator('.inline-branch-value').count(),0);
   await page.locator('#pathAutoMastery').uncheck();
   const mastery=page.locator('[data-branch-control="benevolence:mastery-number"]');
@@ -950,10 +950,10 @@ export async function runInlineMilestonesSmoke(browser,base){
   await mastery.fill('9');await mastery.press('Tab');
   assert.equal(await mastery.inputValue(),'9');
   await mastery.fill('');await mastery.press('Tab');
-  assert.equal(await mastery.inputValue(),'5','Clearing manual mastery restores immutable innate green');
-  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'5',
+  assert.equal(await mastery.inputValue(),'0','Clearing manual mastery resets to true zero');
+  assert.equal(await page.locator('[data-branch-control="benevolence:potential-range"]').inputValue(),'10',
    'Clearing manual green must not refund invested blue points');
-  await drag(0);
+  await drag(5);
   await page.locator('#pathAutoMastery').check();
   const points=Number(await mark.getAttribute('data-milestone-points'));
   const range=page.locator('.path-integrated-track input[type=range]').first();
@@ -967,12 +967,12 @@ export async function runInlineMilestonesSmoke(browser,base){
   assert.match(await mark.locator('.path-milestone-cost').first().innerText(),/Затрат ОМ: [0-9]+/);
   const fields=page.locator('.path-point-controls').first();
   await fields.waitFor({state:'visible'});
-  assert.deepEqual(await fields.locator('label.path-point-group .path-point-name').allTextContents(),
+  assert.deepEqual(await fields.locator('.path-point-group .path-point-name').allTextContents(),
    ['Вложено','Мастерство']);
   const inputHeights=await fields.locator('input[type=number]').evaluateAll(inputs=>
    inputs.map(input=>Math.round(input.getBoundingClientRect().height)));
   assert.deepEqual(inputHeights,[35,35],'Both redesigned numeric fields have equal height');
-  const controlsPosition=await fields.locator('label.path-point-group').evaluateAll(labels=>
+  const controlsPosition=await fields.locator('.path-point-group').evaluateAll(labels=>
    labels.map(label=>({top:Math.round(label.getBoundingClientRect().top),
     bottom:Math.round(label.getBoundingClientRect().bottom)})));
   const controlsWidth=await fields.evaluate(el=>el.getBoundingClientRect().width);
@@ -983,7 +983,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   // Exercise a genuinely narrow branch editor without changing the viewport
   // or forcing the whole site into an unrelated mobile layout.
   await fields.evaluate(element=>{element.style.width='175px'});
-  const narrow=await fields.locator('label.path-point-group').evaluateAll(labels=>
+  const narrow=await fields.locator('.path-point-group').evaluateAll(labels=>
    labels.map(label=>({top:Math.round(label.getBoundingClientRect().top),
     right:label.getBoundingClientRect().right})));
   assert.ok(narrow[1].top>narrow[0].top,
@@ -997,7 +997,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#locale [data-locale="en"]')
    ?.getAttribute('aria-pressed')==='true'&&
    document.querySelector('#startupOverlay')?.hidden===true,null,{timeout:20000});
-  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Potential:'));
+  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Limit:'));
   await page.locator('#pathSkillsTab').click();
   await page.locator('.path-skill-count').waitFor({state:'visible'});
   assert.match(await page.locator('.path-skill-count').innerText(),/skills/);

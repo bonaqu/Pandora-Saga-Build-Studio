@@ -42,15 +42,20 @@ test('MATK thresholds, mage and equipment weapon types',()=>{
  assert.equal(calc.magicAttackPreview({int:95,weapon:{kind:'STAFF',
   name:'Таинственный посох'}}).known,150.2);
 });
-test('Remaked innate and trained grouped passives do not double count potential',()=>{
+test('live-game combat passives use only mastered green, not class starting allocations',()=>{
+ const innate={slash:5,element:5,archery:5},caps={slash:90,element:90,archery:90};
  const st={points:{slash:20,element:20,archery:20},masteryAuto:false,
-  mastery:{slash:7,element:4,archery:3}};
- const g=progress.combatMasteries(st,{slash:5,element:5,archery:5});
- assert.deepEqual(g,{melee:12,magic:9,techniqueInnate:5,techniqueTrained:3});
- assert.equal(calc.combatPreview({stats,level:40,jobKey:'GLADIATOR',...g}).weaponPhysical,1);
- assert.equal(calc.combatPreview({stats,level:40,jobKey:'ARCHER',...g}).accuracy.passive,15);
- assert.equal(calc.combatPreview({stats,level:40,jobKey:'AGENT',...g}).dodge.passive,15);
+  masteryFormat:2,mastery:{slash:7,element:4,archery:3}};
+ const g=progress.combatMasteries(st,innate,caps);
+ assert.deepEqual(g,{melee:7,magic:4,techniqueInnate:0,techniqueTrained:3});
+ assert.equal(calc.combatPreview({stats,level:40,jobKey:'ARCHER',...g}).accuracy.passive,10);
+ assert.equal(calc.combatPreview({stats,level:40,jobKey:'AGENT',...g}).dodge.passive,10);
+ const auto={...st,masteryAuto:true};
+ const learned=progress.combatMasteries(auto,innate,caps);
+ assert.deepEqual(learned,{melee:25,magic:25,techniqueInnate:0,techniqueTrained:25});
+ assert.equal(calc.combatPreview({stats,level:40,jobKey:'ARCHER',...learned}).accuracy.passive,12);
 });
+
 test('critical Honor, back attack and INT cooldown remain independent',()=>{
  const x=calc.combatPreview({stats,level:40,honorTitle:8});
  assert.deepEqual([x.criticalIncoming,x.criticalIncomingDamage,
