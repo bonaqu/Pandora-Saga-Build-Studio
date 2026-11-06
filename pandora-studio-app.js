@@ -648,24 +648,26 @@ function originCopy(key,ru,en){
 
 // Editable, bilingual equipment captions share the existing D1 guide namespace.
 // These are display labels only; edit actions never touch item stats or saved builds.
-function equipmentCopy(key,ru,en){
- const entry=window.PandoraHonorGuide?.field(override,'equipment.'+key,ru,en);
+function ownerCopy(section,key,ru,en){
+ const entry=window.PandoraHonorGuide?.field(override,section+'.'+key,ru,en);
  return lang==='en'?(entry?.en||en):(entry?.ru||ru);
 }
-function equipmentCopyLabel(node,key,ru,en){
+function ownerCopyLabel(node,section,key,ru,en){
  if(!node||!adminEditing||!adminToken)return;
  node.classList.add('origin-copy-editable');
- node.title=lang==='en'?'Double-click to edit caption':'Двойной клик — изменить надпись';
  node.addEventListener('dblclick',event=>{
   if(!adminEditing||!adminToken)return;
   event.preventDefault();event.stopPropagation();
-  editWikiValue(node,equipmentCopy(key,ru,en),{
+  editWikiValue(node,ownerCopy(section,key,ru,en),{
    type:'text',
-   onCommit:next=>saveGuidePatch('book.equipment.'+key,{[lang]:next}),
+   onCommit:next=>saveGuidePatch('book.'+section+'.'+key,{[lang]:next}),
    onCommitted:next=>{node.textContent=next}
   });
  });
 }
+const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
+const equipmentCopyLabel=(node,key,ru,en)=>
+ ownerCopyLabel(node,'equipment',key,ru,en);
 const originFixedLabels=[
  ['.workspace>.left>.panel-heading h2','heading','Происхождение','Origin'],
  ['#originTabs [data-origin-tab="race"]','tabRace','Раса','Race'],
@@ -1208,6 +1210,7 @@ function renderStagePicker(focusSearch=false){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
    copyLabel:equipmentCopy,editLabel:equipmentCopyLabel,
+   canEdit:Boolean(adminEditing&&adminToken),
    record,item:equipped,slot:key,
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+
     (lang==='en'?['Weapon','Shield','Helmet','Armor','Gloves','Pants',
@@ -1626,6 +1629,9 @@ function heroPathApi(){
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
   shown:pathSkillShown,onMoreSkills:()=>{pathSkillShown+=24;renderPathSkills()},
   cap:branchCap,
+  canEdit:Boolean(adminEditing&&adminToken),
+  copyLabel:(key,ru,en)=>ownerCopy('path',key,ru,en),
+  editLabel:(node,key,ru,en)=>ownerCopyLabel(node,'path',key,ru,en),
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
   icon:(key,skill)=>skillIcon(key,skill?.id,skill),
   hover:(node,skill)=>skillHover(node,skill),
