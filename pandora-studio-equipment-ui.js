@@ -227,11 +227,17 @@ function render(root,api){
   el('strong',{text:api.slotLabel||'Слот: '+slot}),
   el('button',{type:'button',text:'✕',onclick:api.close,'aria-label':'Закрыть настройку'})
  ]);root.append(head);
- const tabs=el('nav',{class:'stage-rich-tabs',role:'group','aria-label':'Настройка предмета'});
- const sections=[['choose','Выбор'],['details','Свойства']];
- if(hasSouls)sections.push(['souls','Души']);
+ const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
+ const tabs=el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
+  role:'group','aria-label':tr('Настройка предмета','Item settings')});
+ const sections=[
+  ['choose',tr('Выбор','Choose')],
+  ['details',tr('Свойства','Properties')]
+ ];
+ if(hasSouls)sections.push(['souls',tr('Души','Souls')]);
  for(const [key,title]of sections)tabs.append(el('button',{type:'button',text:title,
   class:mode===key?'chosen':'','aria-pressed':String(mode===key),
+  'data-stage-tab':key,
   disabled:!record&&key!=='choose',onclick:()=>api.changeMode(key)}));
  root.append(tabs);
  if(!record){root.append(el('p',{class:'muted',text:'Сначала выбери предмет.'}));return}
@@ -242,22 +248,31 @@ function render(root,api){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,
     class:n===grade?'chosen':'','aria-pressed':String(n===grade),'data-grade':String(n),onclick:()=>api.updateGrade(n)}));
-   body.append(el('h4',{text:'Заточка: +0…+10'}),buttons);
+   body.append(el('h4',{class:'stage-refine-heading',text:tr('Заточка','Refinement')}),buttons);
    // Item properties expose actual grade; inferred weapon math stays out of the editor.
    const model=globalThis.PandoraEnchantModel,choice=model.normalize(gems);
+   const elementIcons={fire:'🔥',ice:'❄️',lightning:'⚡',poison:'☠️',
+    light:'☀️',dark:'🌑',rainbow:'🌈'};
    const group=(label,entries,key)=>{
-    const box=el('fieldset',{class:'stage-enchant-fieldset stage-enchant-inline'}),line=el('div',{class:'stage-enchant-options'});
+    const box=el('fieldset',{class:'stage-enchant-fieldset stage-enchant-inline stage-enchant-'+key});
+    const line=el('div',{class:'stage-enchant-options '+(key==='element'?'is-element-options':'is-type-options')});
     box.append(el('legend',{text:label}));
-    for(const option of entries)line.append(el('button',{type:'button',text:option.ru,
-     class:choice?.[key]===option.id?'chosen':'','aria-pressed':String(choice?.[key]===option.id),
-     'data-enchant-key':key,'data-enchant-value':option.id,
-     onclick:()=>api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
-      element:key==='element'?option.id:(choice?.element||'fire')})}));
+    for(const option of entries){
+     const name=english?option.en:option.ru;
+     line.append(el('button',{type:'button',
+      text:(key==='element'?(elementIcons[option.id]||'✦')+' ':'')+name,
+      class:choice?.[key]===option.id?'chosen':'',
+      'aria-label':label+': '+name,'aria-pressed':String(choice?.[key]===option.id),
+      'data-enchant-key':key,'data-enchant-value':option.id,
+      onclick:()=>api.assignGem({type:key==='type'?option.id:(choice?.type||'physical'),
+       element:key==='element'?option.id:(choice?.element||'fire')})}));
+    }
     box.append(line);return box;
    };
-   body.append(el('h4',{text:slot==='weapon'?'Тип и стихия улучшения':'Стихия улучшения'}));
-   if(slot==='weapon')body.append(group('Тип',model.types,'type'));
-   body.append(group('Стихия',model.elements,'element'));
+   body.append(el('h4',{class:'stage-enchant-heading',
+    text:slot==='weapon'?tr('Тип и стихия','Type and element'):tr('Стихия','Element')}));
+   if(slot==='weapon')body.append(group(tr('Тип','Type'),model.types,'type'));
+   body.append(group(tr('Стихия','Element'),model.elements,'element'));
   }
   // Souls are managed exclusively in the existing dedicated "Души" tab.
  }else if(mode==='souls'){
