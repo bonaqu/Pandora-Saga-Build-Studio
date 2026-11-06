@@ -93,6 +93,6 @@ test('legacy class innate trained Adeptness is added exactly once before thresho
  const priest=progress.legacyPrayerSpirit('PRIEST',state,tables.jobInit.ACOLYTE.branches);
  assert.equal(priest,2,'innate prayer 15 yields +2 SPI at no invested prayer points');
  const app=read('pandora-studio-app.js');
- assert.match(app,/const initialBranches=gameTables\?\.jobInit\?\.\[baseClass\]\?\.branches\|\|\{\}/);
+ assert.match(app,/const initialBranches=innateBranches\(snap\)/);
  assert.match(app,/groupAdeptness\(/);
 });
