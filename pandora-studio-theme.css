@@ -1965,4 +1965,92 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 }
 
 
-
+/* 0.389: balanced Origin steps and compact, legible branch controls. */
+.class-wizard-progress{align-items:stretch;gap:5px}
+.class-wizard-progress .class-wizard-step{
+ display:grid;grid-template-rows:13px minmax(22px,1fr);
+ align-content:center;justify-items:center;align-items:center;
+ min-height:51px;min-width:0;padding:6px 3px;gap:2px;
+ border-radius:4px;background:linear-gradient(145deg,#2b2117,#1b1510);
+ box-shadow:inset 0 1px 0 #be94621c;
+ line-height:1.24;overflow-wrap:anywhere;
+}
+.class-wizard-progress .class-wizard-step>span:first-child{
+ display:block;font:700 10px/1 Manrope,Arial,sans-serif;
+ color:#b49a76;font-variant-numeric:tabular-nums;
+}
+.class-wizard-progress .class-wizard-step>span:last-child{
+ display:grid;place-items:center;min-width:0;max-width:100%;
+ font:600 10px/1.22 Manrope,Arial,sans-serif;text-align:center;
+}
+.class-wizard-progress .class-wizard-step.current{
+ background:linear-gradient(145deg,#735031,#3d2919);border-color:#dcaf71
+}
+.class-wizard-progress .class-wizard-step.selected{
+ background:linear-gradient(145deg,#374d2c,#1d3020);border-color:#97be7e
+}
+.path-point-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin:8px 0 6px}
+.path-point-controls .path-point-group{
+ display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 35px;
+ align-items:center;gap:5px;width:100%;min-width:0;min-height:66px;
+ padding:7px 8px;border:1px solid #765537;border-radius:5px;
+ background:linear-gradient(135deg,#35261a,#21170f);
+ box-shadow:inset 0 1px 0 #ffffff0d;
+}
+.path-point-controls .path-point-mastery{
+ border-color:#53734b;background:linear-gradient(135deg,#27331f,#192017)
+}
+.path-point-controls .path-point-name{
+ display:block;min-width:0;max-width:100%;font-size:10.5px;line-height:1.25;
+ text-decoration:none;color:#e5c390;letter-spacing:.01em
+}
+.path-point-controls .path-point-mastery .path-point-name{color:#b8d8a6}
+.path-point-controls .path-point-name::before{
+ content:'?';display:inline-grid;place-items:center;margin-right:5px;
+ width:12px;height:12px;border:1px solid #967348;border-radius:50%;
+ color:#bd9e74;font-size:9px;vertical-align:middle
+}
+.path-point-controls .path-point-group input[type=number]{
+ display:block;flex:none;width:100%;height:35px;min-width:0;
+ padding:5px 6px;border-radius:4px;font-size:15px;font-weight:650;
+ background:#130f0b;color:#f0d2a4
+}
+.path-point-controls .path-point-mastery input[type=number]{
+ background:#111a11;border-color:#68865b;color:#c2ebb5
+}
+.path-point-controls .path-point-group input[type=number]:disabled{opacity:.62}
+.path-point-controls .path-point-group input[type=number]::-webkit-inner-spin-button,
+.path-point-controls .path-point-group input[type=number]::-webkit-outer-spin-button{opacity:.75}
+@media(max-width:420px){
+ .class-wizard-progress .class-wizard-step{min-height:54px;padding:5px 2px}
+ .class-wizard-progress .class-wizard-step>span:last-child{font-size:9px}
+ .path-point-controls{gap:5px}
+ .path-point-controls .path-point-group{padding:6px;min-height:62px}
+}
+/* The immutable starting mastery is a separate, subdued layer. Bright green
+   spans only additionally trained points (not D + extra combined). */
+.inline-mastery-track.path-integrated-track .path-innate-fill{
+ position:absolute;left:12px;top:20px;height:6px;max-width:calc(100% - 24px);
+ z-index:2;background:linear-gradient(90deg,#617955,#83a476);
+ box-shadow:inset 0 1px 0 #d0e3b633;border-radius:5px;pointer-events:none;opacity:.72
+}
+.inline-mastery-track.path-integrated-track .inline-mastery-green{
+ z-index:3;background:linear-gradient(90deg,#57a965,#a1d882);
+ border-radius:3px;box-shadow:inset 0 1px 1px #daf8bc44,0 0 4px #66bb5d33
+}
+/* One-piece armor is stored once, mirrored visually into pants. */
+.workspace .equipment-rail .equipment-slot.shared-outfit{border-style:double;border-color:#b19a74}
+.stage-shared-mark{
+ position:absolute;right:0;top:0;display:grid;place-items:center;
+ min-width:15px;height:14px;padding:0 2px;border-radius:0 0 0 4px;
+ border-left:1px solid #987c55;border-bottom:1px solid #987c55;
+ color:#c9b69a;background:#211b14eb;font:700 10px/1 Manrope,Arial,sans-serif;
+ pointer-events:none;z-index:2
+}
+.stage-outfit-note{
+ display:block;color:#ad9e8a;font:500 10px/1.35 Manrope,Arial,sans-serif;
+ margin:2px 1px 6px;overflow-wrap:anywhere
+}
+.stage-picker-item:focus-visible,.stage-rich-result:focus-visible{
+ outline:2px solid #f0c68e;outline-offset:1px
+}
