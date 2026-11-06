@@ -1268,8 +1268,10 @@ function renderStagePicker(focusSearch=false){
    const future=Number(rec.level)>state.level;
    const btn=h('button',{type:'button','data-stage-choice':String(rec.id),
     class:'stage-picker-item'+(selected?' selected':'')+(future?' future':''),
-    'aria-label':(future?'Запланировать: ':'Экипировать ')+itemName(rec)+
-     (future?' · с '+rec.level+' уровня':''),onclick:()=>{
+    'aria-label':(future?
+     (lang==='en'?'Available from level '+rec.level+'. Plan: ':
+      'Будет доступен с '+rec.level+' уровня. Запланировать: '):
+     (lang==='en'?'Equip ':'Экипировать '))+itemName(rec),onclick:()=>{
      const ui=window.PandoraUIPlanner,oldDress=ui.occupiesBodyAndLegs(equippedRecord(3));
      if(selectedSlot===5&&oldDress){
       // Selecting new pants replaces the whole one-piece armor.
