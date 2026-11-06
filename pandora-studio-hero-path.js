@@ -327,14 +327,26 @@ function viewGrowth(target,api){
       const lockedAt=at.every(mark=>mark.locked);
       const skillsAt=at.flatMap(mark=>mark.skills);
       const learned=skillsAt.some(skill=>readiness(skill,api,new Set(),skillIndex).learned);
+      // Milestones require total branch points, whereas "Spent" shows
+      // additional points after the class start. Keep their geometry shared.
+      const neededInvestment=Math.max(0,threshold-base);
+      const investmentHint=base>0?
+       tr(api,'Старт: ','Start: ')+base+
+       tr(api,' · Вложить: ',' · Invest: ')+neededInvestment:
+       tr(api,'Вложить: ','Invest: ')+neededInvestment;
       const tick=make('span',{class:'path-unlock-notch'+
        (lockedAt?' unreachable':learned?' reached':'')+
        (threshold/visualMax<.26?' edge-left':threshold/visualMax>.74?' edge-right':''),
-       'data-milestone-points':String(threshold),tabindex:'0',
-       'aria-label':threshold+tr(api,' очков: ',' points: ')+skillsAt.map(skill=>skill.name).join(', ')});
+       'data-milestone-points':String(threshold),
+       'data-milestone-invested':String(neededInvestment),tabindex:'0',
+       'aria-label':threshold+tr(api,' очков ветки. ',' branch points. ')+
+        investmentHint+'. '+skillsAt.map(skill=>skill.name).join(', ')});
       tick.style.left=(threshold/visualMax*100).toFixed(4)+'%';
       const preview=make('div',{class:'path-milestone-tooltip',role:'tooltip'});
-      preview.append(make('strong',{text:threshold+tr(api,' очков',' points')}));
+      preview.append(
+       make('strong',{text:threshold+tr(api,' очков ветки',' branch points')}),
+       make('small',{class:'path-milestone-investment',text:investmentHint})
+      );
       for(const skill of skillsAt){
        const row=make('div',{class:'path-milestone-preview'});
        const source=api.icon(skill.branch,skill);
@@ -457,9 +469,9 @@ function viewGrowth(target,api){
     };
     controls.append(
      pointField(root.PandoraUILocale?.text('exactPoints',api.lang)||tr(api,'Вложено','Spent'),
-      tr(api,'Очки умений, вложенные сверх начальной прокачки.','Skill points invested beyond the initial class allocation.'),numeric),
+      tr(api,'Свободные очки умений, распределённые вручную при развитии персонажа.','Skill points allocated manually as the character develops.'),numeric),
      pointField(root.PandoraUILocale?.text('greenMastery',api.lang)||tr(api,'Мастерство','Mastery'),
-      tr(api,'Освоено использованием навыков: от 0 до уровня прокачки ветки.','Earned by using skills: from zero to the allocated branch level.'),input,true)
+      tr(api,'Растёт при использовании умений и, для соответствующих веток, атаках подходящим оружием.','Increases by using skills and, for matching branches, attacking with suitable weapons.'),input,true)
     );
     const legend=make('div',{class:'path-track-legend','aria-hidden':'true'},[
      make('span',{text:'0'}),
@@ -468,7 +480,7 @@ function viewGrowth(target,api){
        'Limit: '+cap:'Предел: '+cap}),
       ...(base>0?[make('span',{class:'path-innate-baseline',
        text:tr(api,'Старт: ','Innate: ')+base,
-       'aria-label':tr(api,'Начальная прокачка класса: ','Class innate mastery: ')+base})]:[])
+       'aria-label':tr(api,'Начальная прокачка класса: ','Starting branch points: ')+base})]:[])
      ]),
      make('span',{text:String(visualMax)})
     ]);
