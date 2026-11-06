@@ -49,6 +49,16 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   assert.match(await pants.getAttribute('class'),/equipped/);
   assert.match(await pants.getAttribute('class'),/shared-outfit/);
   assert.match(await pants.getAttribute('aria-label'),/Занято бронёй/);
+  assert.equal(await pants.locator('.stage-shared-mark').innerText(),'🔒',
+   'Projected one-piece garment has an unobtrusive lock icon');
+  assert.equal(await pants.isEnabled(),true,
+   'The visual lock is not a disabled button; pants must remain replaceable');
+  const dimmed=await pants.locator('small').first().evaluate(el=>getComputedStyle(el).filter);
+  assert.match(dimmed,/brightness/,'Projected dress appearance must be visually subdued');
+  assert.match(await page.locator('#catalogStatus').innerText(),
+   /^Наша база данных состоит из: \d+ навыков · \d+ предметов · \d+ душ$/);
+  assert.equal(await page.locator('#iconStatus').isHidden(),true);
+  assert.equal(await page.locator('header a small').first().innerText(),'CHARACTER PLANNER');
   const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')).equipment);
   assert.equal(before[3].id,dress.id);
   assert.equal(before[5],undefined,'one outfit is stored once, not double counted');
@@ -58,6 +68,9 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   const choices=list.locator('.stage-picker-item');
   assert.ok(await choices.count()>0,'Pants remain selectable despite the dress');
   const selected=choices.first();
+  assert.match(await selected.locator('.stage-picker-item-label small').innerText(),
+   /^Уровень (?:\d+|—) · Слоты: (?:\d+|—)$/,
+   'Every equipment candidate exposes its exact source-backed socket capacity');
   await selected.hover();
   await page.locator('#stage-gear-tooltip').waitFor({state:'visible',timeout:5000});
   assert.ok((await page.locator('#stage-gear-tooltip').innerText()).trim().length>5,
@@ -80,8 +93,31 @@ export async function runOutfitSoulScrollSmoke(browser,base){
  try{
   const {page,errors}=second;
   await page.locator('.equipment-slot[data-slot-index="0"]').click();
+  const gradeButtons=page.locator('#stagePicker .stage-grade button');
+  assert.equal(await gradeButtons.count(),11,'All forge levels +0…+10 must remain available');
+  const gradeTops=await gradeButtons.evaluateAll(nodes=>
+   nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
+  assert.ok(gradeTops.every(top=>top===gradeTops[0]),
+   'All eleven forge grades remain on one horizontal row, not two');
+  const elements=page.locator('#stagePicker [data-enchant-key="element"]');
+  assert.equal(await elements.count(),7,'All seven source elements are still selectable');
+  const elementTops=await elements.evaluateAll(nodes=>
+   nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
+  assert.equal(new Set(elementTops).size,2,'Element selector is a compact 4+3 layout');
+  assert.match(await page.locator('#stagePicker [data-enchant-value="fire"]').innerText(),/🔥/);
+  assert.match(await page.locator('#stagePicker [data-enchant-value="rainbow"]').innerText(),/🌈/);
+  await gradeButtons.nth(4).click();
+  assert.equal(await page.locator('#stagePicker [data-grade="4"]').getAttribute('aria-pressed'),'true',
+   'Condensed grade controls must still change the actual selected grade');
+  const choose=page.locator('#stagePicker [data-stage-tab="choose"]');
+  assert.equal(await choose.count(),1);
+  await choose.click();
+  const selectedEquipment=page.locator('#stagePicker .stage-picker-item').first();
+  assert.match(await selectedEquipment.locator('.stage-picker-item-label small').innerText(),
+   /^Уровень (?:\d+|—) · Слоты: (?:\d+|—)$/);
+  await page.locator('#stagePicker [data-stage-tab="souls"]').click();
   const soulTab=page.locator('#stagePicker .stage-rich-tabs').getByRole('button',{name:'Души'});
-  await soulTab.click();
+  assert.equal(await soulTab.getAttribute('aria-pressed'),'true');
   const results=page.locator('#stagePicker .stage-rich-result');
   assert.ok(await results.count()>2,'Soul catalog is available in the first socket');
   const target=results.nth(Math.min(15,(await results.count())-1));
