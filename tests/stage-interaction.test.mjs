@@ -84,9 +84,9 @@ test('belt sockets are available; empty belt never invents a Soul tab',()=>{
 });
 test('Soul socket controls are in Souls only, not under properties',()=>{
  const props=makeApi('weapon','details');stage.PandoraStageItemUI.render(props.box,props.api);
- assert.equal(walk(props.box).find(x=>x.attributes['aria-label']?.startsWith('Гнездо 1')),undefined);
+ assert.equal(walk(props.box).find(x=>x.attributes['aria-label']?.startsWith('Слот души 1')),undefined);
  const souls=makeApi('weapon','souls');stage.PandoraStageItemUI.render(souls.box,souls.api);
- assert.ok(walk(souls.box).find(x=>x.attributes['aria-label']?.startsWith('Гнездо 1')));
+ assert.ok(walk(souls.box).find(x=>x.attributes['aria-label']?.startsWith('Слот души 1')));
 });
 
 test('Soul search state survives socket choice and selection, with no duplicate modal',()=>{
