@@ -38,9 +38,9 @@ test('duplicate requirements never duplicate skill cards and malformed records a
 });
 
 test('real Hero Path renders saved over-cap points instead of a misleading dash',()=>{
- const M={potential:(s,k)=>Number(s.points?.[k])||0,
-  trained:(s,k)=>Number(s.points?.[k])||0};
- const root={PandoraSkillProgression:M};
+ const M={};
+ Function('window',read('pandora-studio-skill-progression.js'))(M);
+ const root=M;
  const document={createElement:tag=>new Element(tag),createTextNode:text=>({textContent:text})};
  class Element{
   constructor(tag){this.tag=tag;this.children=[];this.style={};this.attrs={};this.value='';
@@ -66,7 +66,7 @@ test('real Hero Path renders saved over-cap points instead of a misleading dash'
  };
  assert.equal(render(0).label,'—');
  const old=render(12);
- assert.equal(old.label,'12 / 0');
+ assert.equal(old.label,'12 / 12');
  assert.equal(old.state.points.slash,12);
  assert.equal(old.editorCount,1);
 });
