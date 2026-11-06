@@ -23,6 +23,7 @@ const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak',
 function fixture(issue=()=>[]){
  const window={};
  Function('window',read('pandora-studio-equipment-plan.js'))(window);
+ Function('window',read('pandora-studio-ui-planner.js'))(window);
  Function('window',read('pandora-studio-item-presentation.js'))(window);
  Function('window',read('pandora-studio-enchantment.js'))(window);
  let dismiss=0,attached=0;
