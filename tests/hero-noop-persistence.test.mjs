@@ -15,11 +15,11 @@ function fixture(){
    amount>=0&&(key==='slash'?amount<=15:amount<=10),
   setPotential:(s,k,value)=>{count.set++;s.points[k]=value}
  };
- const handler=Function('window','state','allowedBranch','gameTables','branchCap',
+ const handler=Function('window','state','allowedBranch','gameTables','branchCap','innateBranches','branchCapacities',
   'persist','refreshBudgetLabel','renderBranches','renderOriginStats','renderOriginVitals',
   'saveView','document','heroPathPage','renderPathSkills','return ('+body+');')(
   {PandoraSkillProgression:progression},state,key=>key==='slash'?15:10,
-  {abilityPoint:{}},key=>key==='slash'?15:10,
+  {abilityPoint:{}},key=>key==='slash'?15:10,()=>({}),()=>({slash:15,brush:10}),
   ()=>count.persist++,()=>count.budget++,()=>count.render++,()=>count.stats++,
   ()=>count.vitals++,()=>count.save++,{activeElement:null,querySelector:()=>null},
   'growth',()=>{});
