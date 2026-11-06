@@ -916,8 +916,8 @@ export async function runInlineMilestonesSmoke(browser,base){
   assert.ok(stable.every(x=>x.duplicatePoints===0&&x.exactControls===2),
    'The duplicate points row is absent; both exact controls remain');
   assert.ok(stable[0].points.includes('5 / 90'),'Cleric starts with five branch points, but no manual green');
-  assert.ok(stable[1].points.includes('5 / 91')&&stable[2].points.includes('5 / 92'),
-   'Blue investment increases P while manually trained green stays at class baseline');
+  assert.ok(stable[1].points.includes('6 / 90')&&stable[2].points.includes('7 / 90'),
+   'Blue branch level grows but the class limit remains 90');
   assert.ok(stable.every(x=>Math.abs(x.height-stable[0].height)<=1),
    'Mastery changes must NOT increase the branch row height: '+JSON.stringify(stable));
   assert.ok(stable.every(x=>Math.abs(x.editorTop-stable[0].editorTop)<=1),
@@ -933,7 +933,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   // pointer hit testing, even though the value marker itself is only 4px wide.
   const arrowRange=page.locator('[data-branch-control="benevolence:potential-range"]');
   await arrowRange.focus();await page.keyboard.press('ArrowRight');
-  assert.equal(await arrowRange.inputValue(),'1','Keyboard allocation remains functional');
+  assert.equal(await arrowRange.inputValue(),'6','Keyboard allocation remains functional');
   await drag(0);
   const exact=page.locator('[data-branch-control="benevolence:potential-number"]');
   await drag(2);
@@ -972,7 +972,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   const inputHeights=await fields.locator('input[type=number]').evaluateAll(inputs=>
    inputs.map(input=>Math.round(input.getBoundingClientRect().height)));
   assert.deepEqual(inputHeights,[35,35],'Both redesigned numeric fields have equal height');
-  const controlsPosition=await fields.locator('label.path-point-group').evaluateAll(labels=>
+  const controlsPosition=await fields.locator('.path-point-group').evaluateAll(labels=>
    labels.map(label=>({top:Math.round(label.getBoundingClientRect().top),
     bottom:Math.round(label.getBoundingClientRect().bottom)})));
   const controlsWidth=await fields.evaluate(el=>el.getBoundingClientRect().width);
@@ -983,7 +983,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   // Exercise a genuinely narrow branch editor without changing the viewport
   // or forcing the whole site into an unrelated mobile layout.
   await fields.evaluate(element=>{element.style.width='175px'});
-  const narrow=await fields.locator('label.path-point-group').evaluateAll(labels=>
+  const narrow=await fields.locator('.path-point-group').evaluateAll(labels=>
    labels.map(label=>({top:Math.round(label.getBoundingClientRect().top),
     right:label.getBoundingClientRect().right})));
   assert.ok(narrow[1].top>narrow[0].top,
