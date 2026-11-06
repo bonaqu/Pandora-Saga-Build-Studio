@@ -19,6 +19,7 @@ import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs'
 import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
 import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
+import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
 import {runBuildComparisonSmoke} from './browser-build-comparison.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runChestRewardLayoutSmoke} from './browser-chest-reward.mjs';
@@ -262,6 +263,7 @@ async function main(){
   ['equipment-locale',runEquipmentLocaleSmoke],
   ['item-preview-delay',runItemHoverDelaySmoke],
   ['legacy-class-cap',runLegacySkillCapSmoke],
+  ['innate-l1-mastery',runInnateSkillMasterySmoke],
   ['two-handed-gear',runTwoHandedSmoke],
   ['future-level-gear',runFutureGearSmoke],
   ['manual-saved-overwrite',runSavedAutosaveSmoke],
@@ -276,7 +278,7 @@ async function main(){
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
- const quickCases=new Set(['share-link','equipment-locale','legacy-class-cap',
+ const quickCases=new Set(['share-link','equipment-locale','legacy-class-cap','innate-l1-mastery',
   'manual-saved-overwrite','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
