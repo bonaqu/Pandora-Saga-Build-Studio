@@ -1989,7 +1989,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .class-wizard-progress .class-wizard-step.selected{
  background:linear-gradient(145deg,#374d2c,#1d3020);border-color:#97be7e
 }
-.path-point-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,115px),1fr));gap:7px;margin:8px 0 6px}
+.path-point-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,95px),1fr));gap:7px;margin:8px 0 6px}
 .path-point-controls .path-point-group{
  display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:auto 35px;
  align-items:center;gap:5px;width:100%;min-width:0;min-height:66px;
@@ -2001,7 +2001,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  border-color:#53734b;background:linear-gradient(135deg,#27331f,#192017)
 }
 .path-point-controls .path-point-name{
- display:block;min-width:0;max-width:100%;font-size:10.5px;line-height:1.25;
+ display:block;min-width:0;max-width:100%;font-size:9.5px;line-height:1.25;
  text-decoration:none;color:#e5c390;letter-spacing:.01em
 }
 .path-point-controls .path-point-mastery .path-point-name{color:#b8d8a6}
