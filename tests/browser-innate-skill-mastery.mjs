@@ -82,7 +82,7 @@ export async function runInnateSkillMasterySmoke(browser,base){
   const racial=page.locator('#skillBranches [data-path-branch="race"]');
   assert.equal(await racial.isDisabled(),true);
   assert.match(await racial.innerText(),/Расовые/);
-  assert.equal(await page.locator('#skillBranches [data-path-branch="riding"]').isDisabled(),false);
+  assert.equal(await page.locator('#skillBranches [data-path-branch="riding"]').isDisabled(),true);
   assert.equal(await page.locator('#skillBranches [data-path-branch="riding"]').evaluate(node=>node.classList.contains('disabled-branch')),true);
   await page.locator('#pathSkillsTab').click();
   await skillSearch.click();
