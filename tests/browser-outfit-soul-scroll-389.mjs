@@ -95,15 +95,28 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   await page.locator('.equipment-slot[data-slot-index="0"]').click();
   const gradeButtons=page.locator('#stagePicker .stage-grade button');
   assert.equal(await gradeButtons.count(),11,'All forge levels +0…+10 must remain available');
-  const gradeTops=await gradeButtons.evaluateAll(nodes=>
-   nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
-  assert.ok(gradeTops.every(top=>top===gradeTops[0]),
-   'All eleven forge grades remain on one horizontal row, not two');
+  const gradeLayout=await page.locator('#stagePicker .stage-grade').evaluate(container=>{
+   const bounds=container.getBoundingClientRect();
+   const cells=[...container.querySelectorAll('button')].map(el=>{
+    const r=el.getBoundingClientRect();
+    return {top:Math.round(r.top),left:r.left,right:r.right,width:r.width};
+   });
+   return {overflow:container.scrollWidth-container.clientWidth,
+    inside:cells.every(c=>c.left>=bounds.left-1&&c.right<=bounds.right+1),cells};
+  });
+  assert.equal(new Set(gradeLayout.cells.map(c=>c.top)).size,2,
+   'The eleven refinement buttons should wrap into two readable rows');
+  assert.ok(gradeLayout.overflow<=1&&gradeLayout.inside,
+   'Every refinement grade must be completely visible without horizontal clipping');
   const elements=page.locator('#stagePicker [data-enchant-key="element"]');
   assert.equal(await elements.count(),7,'All seven source elements are still selectable');
   const elementTops=await elements.evaluateAll(nodes=>
    nodes.map(el=>Math.round(el.getBoundingClientRect().top)));
-  assert.equal(new Set(elementTops).size,2,'Element selector is a compact 4+3 layout');
+  assert.equal(new Set(elementTops).size,2,'Element selector uses two balanced rows');
+  const elementWidths=await elements.evaluateAll(nodes=>
+   nodes.map(el=>Math.round(el.getBoundingClientRect().width)));
+  assert.ok(elementWidths.slice(4).every(w=>w>elementWidths[0]),
+   'Three elements in the second row should fill the available width without a blank cell');
   assert.match(await page.locator('#stagePicker [data-enchant-value="fire"]').innerText(),/🔥/);
   assert.match(await page.locator('#stagePicker [data-enchant-value="rainbow"]').innerText(),/🌈/);
   await page.locator('#stagePicker [data-enchant-key="element"][data-enchant-value="ice"]').click();
