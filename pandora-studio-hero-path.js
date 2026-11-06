@@ -23,7 +23,7 @@ function bindPathHoldStep(button,step,commit){
  const cleanup=()=>{
   if(delay!==null){clearTimeout(delay);delay=null}
   if(interval!==null){clearInterval(interval);interval=null}
-  active=false;button.classList.remove('is-repeating');
+  active=false;button.classList?.remove?.('is-repeating');
  };
  const finish=()=>{
   const dirty=changed;changed=false;cleanup();
@@ -41,7 +41,7 @@ function bindPathHoldStep(button,step,commit){
   delay=setTimeout(()=>{
    delay=null;
    if(!active||button.disabled||!button.isConnected){finish();return}
-   button.classList.add('is-repeating');
+   button.classList?.add?.('is-repeating');
    interval=setInterval(run,85);
   },340);
  });
@@ -132,9 +132,9 @@ function readiness(skill,api,seen=new Set(),skillIndex){
     problems.push(name+tr(api,': недоступно для профессии',': unavailable to this class'));
   }
   const points=M.branchPotential(state,req.branch,api.innate,api.branchCaps);
-  const green=M.branchMastery(state,req.branch,api.innate,api.branchCaps);
-  if(points<need)problems.push(name+tr(api,': доступно ',': potential ')+points+'/'+need);
-  if(green<need)problems.push(name+tr(api,': мастерство ',': mastery ')+green+'/'+need);
+  // Unlocking a skill requires allocated branch points, not green proficiency:
+  // otherwise the first skill could never be used to start training green.
+  if(points<need)problems.push(name+tr(api,': вложено ',' : allocated ')+points+'/'+need);
  }
  if(skill.prereq){
   const previous=byId.get(String(skill.prereq));
@@ -271,11 +271,11 @@ function viewGrowth(target,api){
     track.append(currentNotch);
     const range=make('input',{type:'range',min:'0',max:String(visualMax),step:'1',
      value:String(level),disabled:!available,
-     'aria-label':tr(api,'Вложенные очки ','Spent branch points: ')+api.branchName(key),
+     'aria-label':tr(api,'Прокачка ветки ','Allocated branch level: ')+api.branchName(key),
      'data-branch-control':key+':potential-range'});
     track.append(range);paint();
     const numeric=make('input',{type:'number',min:'0',
-     max:String(Math.max(points,budget.total||0)),step:'1',
+     max:String(Math.max(points,Math.max(0,cap-base))),step:'1',
      value:String(points),class:'path-potential-number',disabled:!available,
      'aria-label':tr(api,'Точное количество вложенных очков ','Exact branch points: ')+api.branchName(key),
      'data-branch-control':key+':potential-number'});
