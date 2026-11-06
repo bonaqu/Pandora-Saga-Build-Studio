@@ -44,7 +44,7 @@ for(const path of ['pandora-studio-skill-progression.js','pandora-studio-navigat
 Function('window','document',sources['pandora-studio-hero-path.js'])(root,doc);
 const points=root.PandoraSkillProgression;
 function fixture(job='CLERIC',section='prayer',branch='benevolence'){
- const state={level:45,points:{},masteryAuto:true,mastery:{}};
+ const state={level:45,points:{},masteryAuto:true,mastery:{},masteryFormat:2};
  const budget=()=>points.spending(tables.abilityPoint,state.level,state.points);
  const api={
   state,job,groups:root.PandoraGameNavigation.groups,selectedGroup:section,
@@ -57,11 +57,12 @@ function fixture(job='CLERIC',section='prayer',branch='benevolence'){
   onGroup:()=>{},onExpand:()=>{},onSkill:()=>{},onMastery:()=>{},
   onAllocate:(key,requested)=>{
    const current=points.potential(state,key),b=budget(),cap=classes[job].branchCaps[key]??0;
+   const base=points.branchBase(api.innate,key);
    const target=requested<=current?Math.max(0,requested):
-    Math.min(requested,Math.max(0,cap>0?b.total-b.spent+current:0));
+    Math.min(requested,Math.max(0,cap>0?b.total-b.spent+current:0),Math.max(0,cap-base));
    if(!points.canAllocate(tables.abilityPoint,state.level,state.points,key,
     cap>0?Number.MAX_SAFE_INTEGER:0,target))return current;
-   points.setPotential(state,key,target,api.innate,api.branchCaps);return target;
+   return points.setPotential(state,key,target,api.innate,api.branchCaps)?target:current;
   }
  };
  const target=new BrowserElement('root');
@@ -74,15 +75,15 @@ test('45-level Cleric with 104 available points has actually ENABLED skill range
  assert.equal(budget().remaining,104);assert.ok(range);
  assert.equal(range.disabled,false);
  assert.equal(Object.hasOwn(range.attributes,'disabled'),false);
- assert.equal(range.attributes.max,'194');
+ assert.equal(range.attributes.max,'90');
 });
 test('range input spends 10, 30 points and refunds all back to 104',()=>{
  const {range,state,budget}=fixture();
- range.value='10';range.listeners.input();
+ range.value='15';range.listeners.input();
  assert.equal(state.points.benevolence,10);assert.equal(budget().remaining,94);
- range.value='30';range.listeners.input();
+ range.value='35';range.listeners.input();
  assert.equal(state.points.benevolence,30);assert.equal(budget().remaining,74);
- range.value='0';range.listeners.input();
+ range.value='5';range.listeners.input();
  assert.equal(state.points.benevolence,0);assert.equal(budget().remaining,104);
 });
 test('zero class-cap cannot be spent',()=>{
@@ -229,8 +230,8 @@ test('nearby skill thresholds remain individually inspectable without blocking t
  assert.equal(selected.id,901,'second skill remains separately selectable');
  options[2].listeners.click();
  assert.equal(selected.id,902,'last skill remains separately selectable');
- f.range.value='6';f.range.listeners.input();
- assert.equal(f.state.points.benevolence,6,'slider remains functional with visible thresholds');
+ f.range.value='11';f.range.listeners.input();
+ assert.equal(f.state.points.benevolence,6,'slider includes 5 initial + 6 invested');
 });
 
 test('skill progress slider does not show a duplicate native text tooltip',()=>{
@@ -267,7 +268,7 @@ test('class-limited skills keep individual numbers in the separate details list'
  assert.ok(walk(heading).some(x=>x.tag==='small'&&x.textContent.includes('освоено')));
 });
 
-test('requirements above 90 points remain accessible in list without rendering off-track',()=>{
+test('requirements above 90 are visible only in the accessible list, never off the fixed track',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
  const mk=(id,threshold)=>({id,name:'Skill '+id,branch:'benevolence',
   classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:threshold}]});
@@ -279,102 +280,97 @@ test('requirements above 90 points remain accessible in list without rendering o
  const nodes=walk(f.target);
  const ticks=nodes.filter(x=>String(x.className).includes('path-unlock-notch'));
  const list=nodes.filter(x=>String(x.className).includes('path-unlock-skill'));
- assert.equal(ticks.length,2,'Potential can be extended past 90 by investing free points');
- assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['20','95']);
- assert.equal(list.length,2,'Future source skills must remain discoverable');
+ assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['20']);
+ assert.equal(list.length,2);
  assert.equal(list[1].className.includes('unreachable'),true);
 });
-test('skill milestones remain inside the bar and update their reached state after allocating mastery',()=>{
+
+test('milestone at 90 responds to allocated branch points, even when manual mastery is zero',()=>{
  const css=read('pandora-studio-theme.css');
- const patch=css.slice(css.lastIndexOf('/* 0.195.0 — independent skill notches'));
- assert.match(patch,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?top:0/);
- assert.match(patch,/\.path-integrated-track \.path-integrated-milestones\{/);
- assert.match(patch,/pointer-events:none/);
+ assert.match(css,/\.path-integrated-track \.path-unlock-notch\{/);
  const f=fixture('CLERIC','prayer','benevolence');
- const skill={id:9099,name:'Skill at 91',branch:'benevolence',
-  classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:91}]};
+ f.state.masteryAuto=false;
+ const skill={id:9099,name:'Skill at 90',branch:'benevolence',
+  classes:{CLERIC:1},charLevel:1,reqs:[{branch:'benevolence',amount:90}]};
  f.api.skillCatalog=[skill];
- f.api.milestones=()=>[{threshold:91,skills:[skill],locked:false}];
+ f.api.milestones=()=>[{threshold:90,skills:[skill],locked:false}];
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const tick=walk(f.target).find(x=>String(x.className).includes('path-unlock-notch'));
- assert.ok(tick);
- assert.ok(!tick.className.includes('reached'));
- assert.ok(!Object.hasOwn(tick.style,'top'));
+ assert.ok(tick&&!tick.className.includes('reached'));
  const range=walk(f.target).find(x=>x.tag==='input'&&x.attributes.type==='range');
- range.value='1';range.listeners.input();
- assert.ok(!tick.className.includes('reached'),
-  'investing one point raises P to 91 but must not automatically train 91 mastery');
- f.state.masteryAuto=false;
- assert.equal(points.setTrained(f.state,'benevolence',86,f.api.innate,f.api.branchCaps),true);
- range.listeners.input();
+ range.value='90';range.listeners.input();
+ assert.equal(f.state.points.benevolence,85);
+ assert.equal(points.branchMastery(f.state,'benevolence',f.api.innate,f.api.branchCaps),0);
  assert.ok(tick.className.includes('reached'),
-  'the real 91 mastery, not only native potential, unlocks the marker');
+  'first skill uses allocated branch points, no circular green mastery requirement');
 });
 
-test('changing 0 -> 1 -> 2 -> 0 never inserts an extra mastery caption in branch header',()=>{
+test('invested 0,1,2,0 preserves compact header, auto green follows effective level',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
  const row=walk(f.target).find(x=>x.attributes?.['data-path-branch']==='benevolence');
- assert.ok(row,'expanded branch header exists');
- assert.equal(row.children.length,2,'branch title + invested/cap count only');
- assert.equal(row.children[0].children.length,1,'no dynamic mastery summary below branch title');
+ assert.ok(row);
+ assert.equal(row.children.length,2);
+ assert.equal(row.children[0].children.length,1);
  const counter=row.children[1];
  const mastery=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:mastery-number');
- assert.ok(mastery,'green mastery remains accessible in the dedicated field');
  for(const n of [0,1,2,0]){
-  f.range.value=String(n);f.range.listeners.input();
-  assert.equal(row.children.length,2,'stable heading structure at '+n);
-  assert.equal(row.children[0].children.length,1,'no extra subtitle at '+n);
-  assert.equal(counter.textContent,(5+n)+' / '+(90+n),'only actually invested points increase automatic green at '+n);
-  assert.equal(mastery.value,String(5+n),'automatic mastery never promotes class P to trained green at '+n);
+  f.range.value=String(5+n);f.range.listeners.input();
+  assert.equal(row.children.length,2);
+  assert.equal(row.children[0].children.length,1);
+  assert.equal(counter.textContent,(5+n)+' / 90');
+  assert.equal(mastery.value,String(5+n));
  }
  const css=read('pandora-studio-theme.css');
  assert.match(css,/\.game-tree-group \.branch-row>div>strong\{[\s\S]*?white-space:nowrap/);
  assert.match(css,/\.game-tree-group \.branch-row>\.count\{[\s\S]*?white-space:nowrap/);
 });
 
-test('clearing invested field then committing resets ONLY that branch to zero',()=>{
+test('clearing additional investment refunds only that branch; slider returns to its innate level',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
  const field=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:potential-number');
  f.state.points.blessing=4;
- f.range.value='7';f.range.listeners.input();
+ f.range.value='12';f.range.listeners.input();
  assert.equal(f.budget().spent,11);
  for(const raw of ['-1','1.5']){
   field.value=raw;field.listeners.change();
-  assert.equal(f.state.points.benevolence,7,'invalid entry rejected: '+raw);
+  assert.equal(f.state.points.benevolence,7);
   assert.equal(field.value,'7');
-  assert.equal(f.range.value,'7');
+  assert.equal(f.range.value,'12');
  }
  field.value='';field.listeners.change();
- assert.equal(f.state.points.benevolence,0,'blank committed input is an explicit refund');
- assert.equal(f.state.points.blessing,4,'other branches stay intact');
- assert.equal(f.budget().spent,4,'all seven invested points become available');
- assert.equal(field.value,'0','cleared field displays normalized zero');
- assert.equal(f.range.value,'0','slider synchronizes to empty committed input');
+ assert.equal(f.state.points.benevolence,0);
+ assert.equal(f.state.points.blessing,4);
+ assert.equal(f.budget().spent,4);
+ assert.equal(field.value,'0');
+ assert.equal(f.range.value,'5','the slider shows five class-start points');
  field.value='5';field.listeners.change();
- assert.equal(f.state.points.benevolence,5,'precise input still adds points');
+ assert.equal(f.state.points.benevolence,5);
  field.value='0';field.listeners.change();
- assert.equal(f.state.points.benevolence,0,'explicit zero remains valid');
+ assert.equal(f.state.points.benevolence,0);
 });
 
-test('empty manual green mastery is a deliberate reset, invalid entries remain safe',()=>{
+test('empty manually trained mastery is zero and independent from starting branch allocation',()=>{
  const f=fixture('CLERIC','prayer','benevolence');
- f.state.masteryAuto=false;f.state.points.benevolence=8;f.state.mastery.benevolence=6;
+ f.state.masteryAuto=false;f.state.points.benevolence=8;
+ f.state.masteryFormat=2;f.state.mastery.benevolence=6;
  const called=[];
- f.api.onMastery=(key,n)=>{called.push(n);return points.setTrained(f.state,key,n-5,f.api.innate,f.api.branchCaps)};
+ f.api.onMastery=(key,n)=>{
+  called.push(n);return points.setTrained(f.state,key,n,f.api.innate,f.api.branchCaps)
+ };
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const field=walk(f.target).find(x=>x.attributes?.['data-branch-control']==='benevolence:mastery-number');
  for(const raw of ['-2','2.5']){
   field.value=raw;field.listeners.change();
-  assert.equal(field.value,'11','bad value restores innate + trained mastery');
-  assert.equal(points.trained(f.state,'benevolence'),6);
+  assert.equal(field.value,'6');
+  assert.equal(points.trained(f.state,'benevolence',f.api.innate,f.api.branchCaps),6);
  }
- assert.deepEqual(called,[],'negative and fractional values do not reach the model');
+ assert.deepEqual(called,[]);
  field.value='';field.listeners.change();
- assert.deepEqual(called,[5],'blank commits the immutable initial green mastery');
- assert.equal(points.trained(f.state,'benevolence'),0);
- assert.equal(f.state.points.benevolence,8,'blue allocated points stay put');
+ assert.deepEqual(called,[0]);
+ assert.equal(points.trained(f.state,'benevolence',f.api.innate,f.api.branchCaps),0);
+ assert.equal(f.state.points.benevolence,8);
  field.value='9';field.listeners.change();
- assert.equal(points.trained(f.state,'benevolence'),4);
- field.value='5';field.listeners.change();
- assert.equal(points.trained(f.state,'benevolence'),0);
+ assert.equal(points.trained(f.state,'benevolence',f.api.innate,f.api.branchCaps),9);
+ field.value='0';field.listeners.change();
+ assert.equal(points.trained(f.state,'benevolence',f.api.innate,f.api.branchCaps),0);
 });
