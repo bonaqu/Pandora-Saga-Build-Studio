@@ -46,6 +46,8 @@ test('refinement stays one row and seven canonical game elements remain selectab
  assert.match(equipment,/for\(let n=0;n<=10;n\+\+\)/);
  assert.match(css,/\.stage-grade\{[\s\S]*?grid-template-columns:repeat\(11,minmax\(24px,1fr\)\)/);
  assert.match(css,/\.stage-enchant-options\.is-element-options\{[\s\S]*?repeat\(4,minmax\(0,1fr\)\)/);
+ assert.doesNotMatch(css,/\.stage-enchant-options\{display:flex;flex-wrap:wrap/,
+  'Legacy flex-wrap overrides actual 4+3 element grid');
  assert.match(equipment,/elementIcons=\{fire:'🔥',ice:'❄️',lightning:'⚡',poison:'☠️'/);
  assert.match(equipment,/light:'☀️',dark:'🌑',rainbow:'🌈'/);
  assert.match(equipment,/onclick:\(\)=>api\.assignGem\(\{type:key==='type'/);
