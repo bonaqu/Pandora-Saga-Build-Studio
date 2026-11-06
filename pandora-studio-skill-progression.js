@@ -67,7 +67,11 @@ function migrateMastery(state,innate={},caps={}){
 function setPotential(state,key,n,innate={},caps={}){
  if(!Number.isInteger(n)||n<0)return false;
  const limit=classLimit(key,caps),base=branchBase(innate,key);
- if(n>TRACK_MAX-base||limit===0&&n>0||limit!==null&&n>Math.max(0,limit-base))return false;
+ const previous=potential(state,key);
+ // Old saved builds can always refund, even if their allocation exceeds the
+ // new class cap. Never permit *new* allocations past 90 or class limit.
+ if(n>previous&&(n>TRACK_MAX-base||limit===0||limit!==null&&n>Math.max(0,limit-base)))
+  return false;
  migrateMastery(state,innate,caps);
  state.points??={};state.points[key]=n;
  // On a refund trained green cannot remain above allocated branch level.
