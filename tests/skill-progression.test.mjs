@@ -17,13 +17,19 @@ test('level skill budget is independent of green Adeptness',()=>{
  assert.deepEqual(S.spending(tables.abilityPoint,build.level,build.points),before);
  assert.equal(S.setTrained(build,'slash',46),false);
 });
-test('auto full green / disable auto freezes actual values per learned branch',()=>{
- const s={masteryAuto:true,points:{slash:45,thrust:12},mastery:{}};
+test('auto green follows invested points and preserves manual mastery when toggled',()=>{
+ const s={masteryAuto:false,points:{slash:45,thrust:12},mastery:{slash:42,thrust:3}};
+ assert.equal(S.trained(s,'slash'),42);
+ S.setAuto(s,true,['slash','thrust']);
  assert.equal(S.trained(s,'slash'),45);
+ assert.equal(S.trained(s,'thrust'),12);
  S.setAuto(s,false,['slash','thrust']);
- assert.equal(s.mastery.slash,45);assert.equal(s.mastery.thrust,12);
- S.setTrained(s,'slash',42);assert.equal(S.trained(s,'slash'),42);
- S.setAuto(s,true,['slash','thrust']);assert.equal(S.trained(s,'slash'),45);
+ assert.equal(S.trained(s,'slash'),42);
+ assert.equal(S.trained(s,'thrust'),3);
+ assert.equal(s.mastery.slash,42);
+ const untouched={masteryAuto:true,points:{slash:0},mastery:{}};
+ assert.equal(S.trained(untouched,'slash', {slash:5},{slash:25}),0);
+ assert.equal(S.branchMastery(untouched,'slash',{slash:5},{slash:25}),5);
 });
 test('lowering allocated Potential clamps green, never consumes attribute or skill points',()=>{
  const s={masteryAuto:false,points:{slash:45},mastery:{slash:42}},previous=S.spending(tables.abilityPoint,45,s.points).spent;
