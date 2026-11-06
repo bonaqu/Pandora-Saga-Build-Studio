@@ -1,0 +1,66 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
+const host={};
+Function('window',read('pandora-studio-numeric-field.js'))(host);
+
+class Input {
+ constructor(type='number'){this.type=type;this.attributes={};this.listeners={};this.readOnly=false;this.disabled=false}
+ setAttribute(key,value){this.attributes[key]=String(value)}
+ getAttribute(key){return this.attributes[key]??null}
+ addEventListener(key,fn){this.listeners[key]=fn}
+ fire(event){this.listeners[event]?.({type:event})}
+}
+test('number fields request Yandex no-autofill, gate idle edits, and restore manual focus/typing',()=>{
+ const input=new Input('number');
+ assert.equal(host.PandoraNumericField.prepare(input),input);
+ assert.equal(input.readOnly,true);
+ for(const [key,value]of [
+  ['autocomplete','none'],['aria-autocomplete','none'],['data-lpignore','true'],
+  ['data-1p-ignore','true'],['data-bwignore','true'],['data-form-type','other'],
+  ['data-game-numeric','true']])
+  assert.equal(input.getAttribute(key),value,key);
+ input.fire('focus');
+ assert.equal(input.readOnly,false,'manual focus still permits number editing');
+ input.fire('blur');
+ assert.equal(input.readOnly,true,'inactive field is autofill-resistant');
+ input.fire('keydown');
+ assert.equal(input.readOnly,false,'keyboard access remains usable');
+ input.fire('blur');
+ input.fire('pointerdown');
+ assert.equal(input.readOnly,false,'pointer and press-hold controls stay usable');
+});
+test('numeric guard never touches credentials or normal text/search controls',()=>{
+ for(const type of ['password','text','search','checkbox','range']){
+  const input=new Input(type);
+  host.PandoraNumericField.prepare(input);
+  assert.equal(input.readOnly,false,type);
+  assert.equal(input.getAttribute('autocomplete'),null,type);
+ }
+});
+test('numeric guard is shared by all Hero Path, Origin and Hero Book factories',()=>{
+ const html=read('index.html'),app=read('pandora-studio-app.js'),
+  path=read('pandora-studio-hero-path.js'),book=read('pandora-studio-hero-book.js');
+ assert.match(html,/src="pandora-studio-numeric-field\.js\?v=2026\.11\.06\.391"/);
+ assert.ok(html.indexOf('pandora-studio-numeric-field.js')<html.indexOf('pandora-studio-hero-book.js'));
+ assert.match(app,/PandoraNumericField\?\.prepare\(el\)/);
+ assert.match(path,/PandoraNumericField\?\.prepare\(e\)/);
+ assert.match(book,/PandoraNumericField\?\.prepare\(n\)/);
+ assert.match(app,/class:'origin-stat-input'/);
+ assert.match(path,/data-branch-control/);
+ assert.match(book,/data-book-setting/);
+ assert.match(app,/const isLogin=String\(attrs\.type\|\|''\)/);
+ assert.match(app,/autocomplete:'current-password'/);
+});
+test('milestone tooltip and two skill numeric descriptions are short, distinct and bilingual',()=>{
+ const path=read('pandora-studio-hero-path.js'),css=read('pandora-studio-theme.css');
+ assert.match(path,/data-milestone-invested/);
+ assert.match(path,/const neededInvestment=Math\.max\(0,threshold-base\)/);
+ assert.match(path,/path-milestone-investment/);
+ assert.match(css,/\.path-milestone-investment\{/);
+ assert.match(path,/Свободные очки умений, распределённые вручную при развитии персонажа/);
+ assert.match(path,/Растёт при использовании умений и, для соответствующих веток, атаках подходящим оружием/);
+ assert.match(path,/Skill points allocated manually as the character develops/);
+ assert.match(path,/attacking with suitable weapons/);
+});
