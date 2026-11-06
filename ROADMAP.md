@@ -1,9 +1,11 @@
 # Pandora Saga Build Studio — implementation roadmap
 
-**Updated:** 2026-11-06 · **Latest source release:** 0.389.0 (`2026.11.06.389`)
+**Updated:** 2026-11-06 · **Latest source release:** 0.390.0 (`2026.11.06.390`)
 
 Рефакторинг 0.302: 27 именованных runtime-модулей; 588 внутренних ссылок; 170 файлов с исправленными зависимостями; постоянный статический аудит графа подключений. Данные OS и D1 namespace неизменны. [Карта архитектуры](docs/STUDIO_ARCHITECTURE.md).
 **0.389.0:** Source-backed two-slot outfits display in both armor/pants rails while storing one calculated item; pants selection replaces dresses. Shared rich equipment-choice previews and preserved Soul catalog scroll. Visual green split D vs extra training; Origin wizard alignment and compact numeric cards. Regression/production checks tracked independently.
+
+**0.390.0:** Live game priority: initial branch points are not green mastery. Manual mastery 0..allocated, auto = allocated; absolute class cap and track 90; +/− hold actions. Legacy explicit manually saved green values are converted for backward compatibility.
 
 **Source branch:** `bonaqu_projects` · **Desktop-first:** 1920×1080, 2560×1440, 3840×2160 · responsive mobile
 
