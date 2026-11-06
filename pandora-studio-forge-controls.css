@@ -90,3 +90,18 @@
 .stage-rich-body .stage-enchant-element{
  border-radius:8px;background:#21170f
 }
+
+/* 0.396: uniform framed controls and comfortable scrollbar clearance. */
+.stage-rich-body.stage-rich-details{
+ box-sizing:border-box;padding:0 11px 0 0
+}
+.stage-rich-body .stage-enchant-fieldset.stage-refine-fieldset{
+ display:block;margin:4px 0;padding:7px 7px 8px
+}
+.stage-rich-body .stage-enchant-fieldset{
+ border:1px solid #906c43;border-radius:7px;
+ background:#21170f
+}
+.stage-rich-body .stage-enchant-fieldset legend{
+ color:#efcb91;padding:0 5px;max-width:100%;font-size:12px
+}
