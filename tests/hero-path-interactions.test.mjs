@@ -50,15 +50,18 @@ function fixture(job='CLERIC',section='prayer',branch='benevolence'){
   state,job,groups:root.PandoraGameNavigation.groups,selectedGroup:section,
   expandedBranch:branch,skillCatalog:[],catalogReady:false,allocationReady:true,
   budget:budget(),lang:'ru',branchName:key=>key,
+  innate:tables.jobInit[classes[job].baseClass||job]?.branches||{},
+  branchCaps:classes[job].branchCaps,
   cap:key=>classes[job].branchCaps[key]??0,
   milestones:()=>[],icon:()=>null,hover:()=>{},
   onGroup:()=>{},onExpand:()=>{},onSkill:()=>{},onMastery:()=>{},
   onAllocate:(key,requested)=>{
    const current=points.potential(state,key),b=budget(),cap=classes[job].branchCaps[key]??0;
    const target=requested<=current?Math.max(0,requested):
-    Math.min(requested,Math.max(0,Math.min(cap,b.total-b.spent+current)));
-   if(!points.canAllocate(tables.abilityPoint,state.level,state.points,key,cap,target))return current;
-   points.setPotential(state,key,target);return target;
+    Math.min(requested,Math.max(0,cap>0?b.total-b.spent+current:0));
+   if(!points.canAllocate(tables.abilityPoint,state.level,state.points,key,
+    cap>0?Number.MAX_SAFE_INTEGER:0,target))return current;
+   points.setPotential(state,key,target,api.innate,api.branchCaps);return target;
   }
  };
  const target=new BrowserElement('root');
