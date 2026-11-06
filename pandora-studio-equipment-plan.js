@@ -18,6 +18,23 @@ function socketReport(souls,capacity){
  const excess=capacity===null?count:all.slice(capacity).filter(Boolean).length;
  return {all,count,excess,capacity,unknown:capacity===null};
 }
+// Socket contents belong to the currently equipped physical item, never the
+// equipment position itself. A replacement (or removal) invalidates that item's Souls.
+// Preserve Souls when the selected catalog item ID has not actually changed.
+function clearChangedEquipmentSouls(state,beforeEquipment){
+ if(!state||typeof state!=='object')return [];
+ const previous=beforeEquipment&&typeof beforeEquipment==='object'?beforeEquipment:{};
+ const current=state.equipment&&typeof state.equipment==='object'?state.equipment:{};
+ const changed=[];
+ for(const slot of new Set([...Object.keys(previous),...Object.keys(current)])){
+  const oldId=previous[slot]?.id,nextId=current[slot]?.id;
+  if((oldId===null||oldId===undefined?'':String(oldId))===
+     (nextId===null||nextId===undefined?'':String(nextId)))continue;
+  changed.push(slot);
+  if(state.souls&&typeof state.souls==='object')delete state.souls[slot];
+ }
+ return changed;
+}
 function refinementKey(slot,item){return item&&typeof item.id!=="undefined"?String(slot)+":"+String(item.id):null}
 function refinementValue(refinements,slot,item){
  const key=refinementKey(slot,item),v=key==null?0:refinements?.[key];
@@ -38,5 +55,5 @@ function matchesEquipmentSlot(index,item,slotKeys){
 function occupiesOffhand(weapon,weaponEligible=true){
  return weaponEligible===true&&weapon?.slot==='weapon'&&weapon.twoHanded===true;
 }
-root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket,occupiesOffhand,matchesEquipmentSlot});
+root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,clearChangedEquipmentSouls,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket,occupiesOffhand,matchesEquipmentSlot});
 })(typeof window==='undefined'?globalThis:window);
