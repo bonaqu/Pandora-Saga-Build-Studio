@@ -59,6 +59,12 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.equal(await page.locator('#skillBranches [data-path-branch="alchemy"]')
    .evaluate(node=>node.classList.contains('disabled-branch')),true);
 
+  // The live client's Special section contains grey unavailable Racial
+  // mastery as well as Riding. Racial passives are chosen in Origin.
+  await page.locator('#skillBranches [data-path-group="special"]').click();
+  const racial=page.locator('#skillBranches [data-path-branch="race"]');
+  assert.equal(await racial.isDisabled(),true);
+  assert.match(await racial.innerText(),/Расовые/);
   await page.locator('#pathSkillsTab').click();
   await skillSearch.click();
   assert.equal(await skillSearch.evaluate(el=>el.readOnly),false);
