@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const path=read('pandora-studio-hero-path.js'),app=read('pandora-studio-app.js'),
  equipment=read('pandora-studio-equipment-ui.js'),css=read('pandora-studio-theme.css'),
- html=read('index.html');
+ html=read('index.html'),release=JSON.parse(read('site-version.json')).release;
 
 test('skill group displays independently calculated mastered, learned and manually invested totals',()=>{
  assert.match(path,/const mastered=branchKeys\.reduce\(\(sum,key\)=>sum\+M\.branchMastery\(state,key,innate,caps\),0\)/);
@@ -43,8 +43,8 @@ test('only compatible equipment rows show source-backed Soul slot counts',()=>{
 });
 test('approved joined forge bar and variant 5 element grid retain canonical choices',()=>{
  const forgeCss=read('pandora-studio-forge-controls.css');
- assert.match(html,/pandora-studio-forge-controls\.css\?v=2026\.11\.06\.400/);
- assert.match(html,/pandora-studio-owner-inline-ui\.css\?v=2026\.11\.06\.400/);
+ assert.ok(html.includes('pandora-studio-forge-controls.css?v='+release));
+ assert.ok(html.includes('pandora-studio-owner-inline-ui.css?v='+release));
  const host={};Function('window',read('pandora-studio-enchantment.js'))(host);
  assert.deepEqual(host.PandoraEnchantModel.elements.map(e=>e.id),
  ['fire','ice','lightning','poison','light','dark','rainbow']);
@@ -68,7 +68,7 @@ test('site shell has clean title/footer; counts remain grounded in loaded catalo
  assert.match(app,/data\.meta\.counts\.souls/);
  assert.ok(!app.includes("'Cloudflare D1 · актуальный опубликованный каталог'"));
  assert.match(app,/\$\('siteNotice'\)\.textContent=archive\?/);
- assert.match(html,/2026\.11\.06\.400/);
+ assert.ok(html.includes(release));
 });
 
 test('every stylesheet link is a complete standalone HTML tag',()=>{
@@ -77,5 +77,5 @@ test('every stylesheet link is a complete standalone HTML tag',()=>{
  const tags=[...head.matchAll(/<link\b[^<>]*>/g)].map(m=>m[0]);
  assert.equal(tags.length,all,'A nested or unclosed <link> tag swallows the following stylesheet');
  assert.ok(tags.every(x=>/href="[^"]+"/.test(x)));
- assert.match(head,/<link rel="stylesheet" href="pandora-studio-forge-controls\.css\?v=2026\.11\.06\.400"><link rel="stylesheet" href="pandora-studio-owner-inline-ui\.css\?v=2026\.11\.06\.400">/);
+ assert.ok(head.includes('<link rel="stylesheet" href="pandora-studio-forge-controls.css?v='+release+'"><link rel="stylesheet" href="pandora-studio-owner-inline-ui.css?v='+release+'">'));
 });
