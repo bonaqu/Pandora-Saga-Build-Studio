@@ -198,9 +198,16 @@ function attachPreview(target,record,icon,kind='item',context=null){
  target.addEventListener('pointerleave',remove);
  target.addEventListener('pointerdown',remove);
  target.addEventListener('focus',()=>{
-  // Pointer-initiated focus must not skip the mouse delay. Keyboard focus
-  // remains immediate and accessible via aria-describedby.
-  if(target.matches(':focus-visible'))show();
+  // Keyboard focus remains immediately accessible, but the browser may
+  // scroll the focused link into view after dispatching focus. A scroll
+  // dismisses all stale popups, so re-open on the next frame if the same
+  // keyboard-focused item is still active. Pointer focus is unaffected.
+  if(!target.matches(':focus-visible'))return;
+  show();
+  requestAnimationFrame(()=>{
+   if(target.isConnected&&document.activeElement===target&&
+    target.matches(':focus-visible')&&!livePreview)show();
+  });
  });
  target.addEventListener('blur',remove);
  target.addEventListener('click',remove);
