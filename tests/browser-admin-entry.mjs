@@ -870,7 +870,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   });
   const legend=page.locator('.path-track-legend').first();
   assert.ok(await legend.isVisible(),'Skill scale labels must be visible below the drag track');
-  assert.ok((await legend.innerText()).includes('Предел: '));
+  assert.ok((await legend.innerText()).includes('Лимит (оч.): '));
   assert.ok((await legend.innerText()).includes('90'));
   assert.ok(result.geom.length>=3,'Expected several source-backed unlock thresholds');
   assert.ok(result.geom.every(x=>x.top>=result.barTop-1&&x.bottom<=result.barBottom+1),
@@ -997,7 +997,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#locale [data-locale="en"]')
    ?.getAttribute('aria-pressed')==='true'&&
    document.querySelector('#startupOverlay')?.hidden===true,null,{timeout:20000});
-  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Limit:'));
+  assert.ok((await page.locator('.path-track-legend').first().innerText()).includes('Limit (pts):'));
   await page.locator('#pathSkillsTab').click();
   await page.locator('.path-skill-count').waitFor({state:'visible'});
   assert.match(await page.locator('.path-skill-count').innerText(),/skills/);

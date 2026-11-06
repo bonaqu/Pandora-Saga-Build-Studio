@@ -38,10 +38,11 @@ test('admin status still exists in header and only shows when editor active',()=
  assert.match(html,/<div class="header-actions"><span id="authState" class="owner-session-state" role="status" hidden>/);
  assert.match(css,/\.owner-session-state\[hidden\],\.notice\[hidden\]\{display:none!important\}/);
 });
-test('catalog status always distinguishes current D1 from an explicitly chosen archive',()=>{
- assert.match(app,/data\.meta\.counts\.skills\+' навыков/);
- assert.match(app,/Cloudflare D1 · актуальный опубликованный каталог/);
- assert.match(app,/Архивная копия — НЕ текущие данные/);
+test('catalog footer is natural-language while archive warning stays separate',()=>{
+ assert.match(app,/data\.meta\.counts\.skills/);
+  assert.match(app,/Наша база данных состоит из: /);
+ assert.doesNotMatch(app,/Cloudflare D1 · актуальный опубликованный каталог/);
+ assert.match(app,/Архивный режим: сведения могут быть устаревшими/);
  assert.match(app,/\$\('siteNotice'\)\.hidden=!archive/);
  assert.match(app,/archive:\['127\.0\.0\.1','localhost'\]\.includes\(location\.hostname\)/);
  assert.match(html,/id="startupOverlay"/);

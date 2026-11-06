@@ -957,8 +957,9 @@ function renderSlotRails(){
      stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
     }});
    button.append(slotVisual(i,item,sourceSlot),h('small',{text:item?itemName(item):slots[i][0]}));
-   if(shared)button.append(h('span',{class:'stage-shared-mark',text:'↔',
-    'aria-label':lang==='en'?'Armor and pants':'Броня и штаны'}));
+   if(shared)button.append(h('span',{class:'stage-shared-mark',text:'🔒',
+    'aria-hidden':'true',title:'',
+    'data-shared-slots':'armor+pants'}));
    if(!shared&&item&&plan.canSocket(slotKeys[i],source))
     button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
@@ -1267,8 +1268,10 @@ function renderStagePicker(focusSearch=false){
    const future=Number(rec.level)>state.level;
    const btn=h('button',{type:'button','data-stage-choice':String(rec.id),
     class:'stage-picker-item'+(selected?' selected':'')+(future?' future':''),
-    'aria-label':(future?'Запланировать: ':'Экипировать ')+itemName(rec)+
-     (future?' · с '+rec.level+' уровня':''),onclick:()=>{
+    'aria-label':(future?
+     (lang==='en'?'Available from level '+rec.level+'. Plan: ':
+      'Будет доступен с '+rec.level+' уровня. Запланировать: '):
+     (lang==='en'?'Equip ':'Экипировать '))+itemName(rec),onclick:()=>{
      const ui=window.PandoraUIPlanner,oldDress=ui.occupiesBodyAndLegs(equippedRecord(3));
      if(selectedSlot===5&&oldDress){
       // Selecting new pants replaces the whole one-piece armor.
@@ -1288,10 +1291,16 @@ function renderStagePicker(focusSearch=false){
    const src=itemIcon(rec);
    if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{class:'item-glyph',text:'⚔'}));btn.append(img)}
    else btn.append(h('span',{class:'item-glyph',text:'⚔'}));
+   const socketCount=window.PandoraEquipmentPlan.socketCapacity(rec);
+   const socketLabel=socketCount===null?'—':String(socketCount);
+   const itemLevel=Number(rec.level);
+   const meta=(lang==='en'?'Level ':'Уровень ')+
+    (Number.isFinite(itemLevel)&&itemLevel>=1?itemLevel:'—')+
+    (lang==='en'?' · Slots: ':' · Слоты: ')+socketLabel;
    btn.append(h('span',{class:'stage-picker-item-label'},[h('b',{text:itemName(rec)}),
-    h('small',{text:future?'Будет доступен с '+rec.level+' уровня':
-     rec.level?'Уровень '+rec.level:''})]));
-   if(future)btn.append(h('span',{class:'stage-picker-future',text:'◷ '+rec.level+' ур.'}));
+    h('small',{text:meta})]));
+   if(future)btn.append(h('span',{class:'stage-picker-future',
+    text:lang==='en'?'From '+rec.level+' Lv.':'С '+rec.level+' ур.'}));
    if(selected)btn.append(h('span',{class:'stage-picker-check',text:'✓'}));
    list.append(btn);
    window.PandoraStageItemUI.attachPreview(btn,rec,
@@ -6648,10 +6657,10 @@ async function loadCatalog({archive=false}={}){
  $('siteNotice').hidden=!archive;
  $('siteNotice').textContent=archive?
   'Архивный режим: сведения могут быть устаревшими. Подключись к D1 и обнови страницу для актуальных данных.':'';
- $('catalogStatus').textContent=
-  data.meta.counts.skills+' навыков · '+data.meta.counts.items+
-  ' предметов · '+data.meta.counts.souls+' душ · '+
-  (archive?'Архивная копия — НЕ текущие данные':'Cloudflare D1 · актуальный опубликованный каталог');
+ $('catalogStatus').textContent=(lang==='en'?'Our database contains: ':'Наша база данных состоит из: ')+
+  data.meta.counts.skills+(lang==='en'?' skills · ':' навыков · ')+
+  data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
+  data.meta.counts.souls+(lang==='en'?' souls':' душ');
  invalidateWikiCatalog({dropSnapshot:true});
  applyGameLocale();persist();
  return data;

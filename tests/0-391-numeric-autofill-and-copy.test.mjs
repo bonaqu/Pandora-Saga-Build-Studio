@@ -50,7 +50,7 @@ test('numeric guard never touches credentials or normal text/search controls',()
 test('numeric guard is shared by all Hero Path, Origin and Hero Book factories',()=>{
  const html=read('index.html'),app=read('pandora-studio-app.js'),
   path=read('pandora-studio-hero-path.js'),book=read('pandora-studio-hero-book.js');
- assert.match(html,/src="pandora-studio-numeric-field\.js\?v=2026\.11\.06\.391"><\/script>/,
+ assert.ok(html.includes('src="pandora-studio-numeric-field.js?v='+JSON.parse(read('site-version.json')).release+'"></script>'),
   'new helper must have its own closed script tag before loading Hero Book');
  assert.ok(html.indexOf('pandora-studio-numeric-field.js')<html.indexOf('pandora-studio-hero-book.js'));
  assert.match(app,/PandoraNumericField\?\.prepare\(el\)/);
@@ -68,8 +68,8 @@ test('milestone tooltip and two skill numeric descriptions are short, distinct a
  assert.match(path,/const neededInvestment=Math\.max\(0,threshold-base\)/);
  assert.match(path,/path-milestone-investment/);
  assert.match(css,/\.path-milestone-investment\{/);
- assert.match(path,/Свободные очки умений, распределённые вручную при развитии персонажа/);
- assert.match(path,/Растёт при использовании умений и, для соответствующих веток, атаках подходящим оружием/);
- assert.match(path,/Skill points allocated manually as the character develops/);
- assert.match(path,/attacking with suitable weapons/);
+ assert.match(path,/Очки умений, распределяемые при развитии персонажа/);
+ assert.match(path,/Растёт при использовании умений этой ветки, а также соответствующих типов атак или оружия/);
+ assert.match(path,/Skill points allocated as the character develops/);
+ assert.match(path,/corresponding attack or weapon types/);
 });

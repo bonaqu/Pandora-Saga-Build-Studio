@@ -63,6 +63,6 @@ test('gem type is slot-specific; canonical source item names stay unmodified by 
  assert.equal(model.equipmentName('Метеоритный нож','weapon',0,c('physical','fire')),
   'Метеоритный нож');
  const ui=read('pandora-studio-equipment-ui.js');
- assert.match(ui,/slot==='weapon'\)body.append\(group\('Тип'/);
- assert.match(ui,/group\('Стихия'/);
+ assert.match(ui,/slot==='weapon'\)body.append\(group\(tr\('Тип','Type'\)/);
+ assert.match(ui,/group\(tr\('Стихия','Element'\)/);
 });

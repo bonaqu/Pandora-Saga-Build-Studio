@@ -260,8 +260,8 @@ test('class-limited skills keep individual numbers in the separate details list'
  assert.deepEqual(ticks.map(x=>x.attributes['data-milestone-points']),['8','12']);
  const details=walk(f.target).find(x=>x.className==='path-unlock-details');
  const captions=walk(details).filter(x=>x.tag==='small').map(x=>x.textContent);
- assert.ok(captions.some(x=>x.includes('8 очков')));
- assert.ok(captions.some(x=>x.includes('12 очков')&&x.includes('выше лимита')));
+ assert.ok(captions.some(x=>x.includes('8 оч.')));
+ assert.ok(captions.some(x=>x.includes('12 оч.')&&x.includes('выше лимита')));
  const options=walk(details).filter(x=>x.tag==='button');
  options[1].listeners.click();assert.equal(selected.id,981);
  const heading=walk(f.target).find(x=>String(x.className).includes('game-tree-head active'));
@@ -403,8 +403,8 @@ test('real Vнезапный выстрел threshold 21 aligns with 18 invested
  assert.equal(range.value,'21','thumb displays total branch level');
  assert.equal(mastery.value,'21','automatic mastery follows branch level');
  assert.equal(tick.attributes['data-milestone-invested'],'18');
- assert.equal(caption.textContent,'Старт: 3 · Вложить: 18');
- assert.match(tick.attributes['aria-label'],/21 очков ветки.*Вложить: 18/);
+ assert.equal(caption.textContent,'Начально (оч.): 3 · Вложено (оч.): 18');
+ assert.match(tick.attributes['aria-label'],/21 оч\. ветки.*Вложено \(оч\.\): 18/);
  const fraction=21/90,container=390,usable=container-42;
  const tickX=21+usable*21/90;
  const match=/calc\((\d+(?:\.\d+)?)% ([+-]) (\d+(?:\.\d+)?)px\)/.exec(notch.style.left);
@@ -413,4 +413,21 @@ test('real Vнезапный выстрел threshold 21 aligns with 18 invested
   (match[2]==='-'?-1:1)*Number(match[3]);
  assert.ok(Math.abs(notchX-tickX)<0.01,
   'milestone and current notch stay on the exact same 0..90 rail');
+});
+
+test('Tactics shows 44 trained / 44 learned / 29 invested, then 0 trained but 44 learned when auto is off',()=>{
+ const f=fixture('SNIPER','tactics','assassin');
+ f.state.points.archery=11;
+ f.state.points.assassin=18;
+ f.api.budget=f.budget();
+ const count=()=>{
+  root.PandoraHeroPath.viewGrowth(f.target,f.api);
+  const head=walk(f.target).find(el=>el.attributes?.['data-path-group']==='tactics');
+  assert.ok(head,'Tactics header must exist');
+  return head.children.find(el=>el.tag==='small')?.textContent;
+ };
+ assert.equal(count(),'44 освоено · 44 изучено · вложено 29');
+ f.state.masteryAuto=false;
+ f.state.mastery={};
+ assert.equal(count(),'0 освоено · 44 изучено · вложено 29');
 });

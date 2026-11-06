@@ -20,7 +20,10 @@ export async function runFutureGearSmoke(browser,base){
   await search.fill('Рычащий меч');
   const future=page.locator('#stagePicker .stage-picker-item.future');
   await future.waitFor({state:'visible',timeout:20000});
-  assert.match(await future.innerText(),/Будет доступен с 53 уровня/);
+  assert.match(await future.getAttribute('aria-label'),/Будет доступен с 53 уровня/);
+  assert.match(await future.innerText(),/Уровень 53 · Слоты: 0/);
+  assert.match(await future.locator('.stage-picker-future').innerText(),/С 53 ур\./,
+   'Future equipment keeps a short but clear visible level requirement');
   await future.click();
   const weapon=page.locator('.equipment-slot[data-slot-index="0"]');
   await weapon.waitFor({state:'visible'});

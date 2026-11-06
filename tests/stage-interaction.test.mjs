@@ -57,7 +57,7 @@ test('equipped weapon shows working refinement, gem type and Soul socket handler
 test('gemstone editor chooses magic and rainbow rather than an inventory rune ID',()=>{
  const state=makeApi('weapon','details');
  stage.PandoraStageItemUI.render(state.box,state.api);
- byText(state.box,'Радуга').events.click();
+ byText(state.box,'🌈 Радуга').events.click();
  assert.deepEqual(state.calls.gem,[{type:'physical',element:'rainbow'}]);
 });
 

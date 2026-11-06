@@ -65,7 +65,7 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.equal(await green.inputValue(),'0');
   assert.equal(await green.getAttribute('min'),'0');
   assert.equal(await green.getAttribute('max'),'5');
-  assert.match(await page.locator('.path-innate-baseline').first().innerText(),/Старт: 5/);
+  assert.match(await page.locator('.path-innate-baseline').first().innerText(),/Начально \(оч\.\): 5/);
   // Persisted legacy auto=true is not an instruction to max every branch.
   await page.locator('#pathAutoMastery').check();
   assert.equal((await slash.locator('.count').innerText()).replaceAll(' ',''),'5/25');
