@@ -83,3 +83,25 @@ test('legacy excessive Souls are not truncated onto a smaller new item',()=>{
  p.reconcileSoulOwnership(current,items,souls);
  assert.equal(current.souls[3],undefined);
 });
+
+test('one Soul in a high-index slot is invalid after reducing socket capacity',()=>{
+ const state={
+  equipment:{0:{id:502}},souls:{0:[null,null,{id:7}]},soulOwners:{}
+ };
+ const equipment={502:{slot:'weapon',soulslot:1}};
+ const souls={7:{slots:['weapon']}};
+ assert.equal(p.socketReport(state.souls[0],1).excess,1);
+ assert.equal(p.reconcileSoulOwnership(state,equipment,souls),true);
+ assert.equal(state.souls[0],undefined);
+ assert.equal(state.soulOwners[0],undefined);
+});
+test('a sparse Soul array within actual socket limits retains slot placement',()=>{
+ const state={
+  equipment:{0:{id:502}},souls:{0:[null,{id:7}]},soulOwners:{}
+ };
+ const equipment={502:{slot:'weapon',soulslot:2}};
+ const souls={7:{slots:['weapon']}};
+ assert.equal(p.reconcileSoulOwnership(state,equipment,souls),true);
+ assert.equal(state.souls[0][1].id,7);
+ assert.equal(state.soulOwners[0],'502');
+});

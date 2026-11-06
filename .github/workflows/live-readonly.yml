@@ -1,9 +1,9 @@
 name: Live Pages and Worker readiness
 
 on:
-  push:
-    branches: [bonaqu_projects]
-    paths: ['site-version.json']
+  # Verify only after GitHub Pages reports a successful deployment.
+  # A concurrent push check used to fail after 2 minutes while Pages remained
+  # queued (and still served the previous release), creating false CI alarms.
   workflow_run:
     workflows: ["pages build and deployment"]
     types: [completed]
