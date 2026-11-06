@@ -27,3 +27,27 @@
  font:500 11px/1.45 Manrope,Arial,sans-serif;
  overflow-wrap:anywhere;pointer-events:none
 }
+
+/* Item summaries in Properties and hover previews share the SAME wearer chips.
+   Previously these styles were scoped only to hover tooltips and the text
+   collapsed into a visually unseparated sequence in the main Properties tab. */
+.stage-rich-summary .stage-gear-wearers{
+ margin:8px 0 7px;padding:8px 9px 9px;
+ background:linear-gradient(135deg,#312218,#241912);
+ border:1px solid #765636;border-radius:6px;
+ display:flex;flex-direction:column;align-items:flex-start;gap:6px
+}
+.stage-rich-summary .stage-gear-wearers-label{
+ display:block;color:#d9b57f;font:600 11px/1.25 Manrope,Arial,sans-serif
+}
+.stage-rich-summary .stage-gear-wearer-chips{
+ display:flex;align-items:center;flex-wrap:wrap;gap:5px 6px;
+ width:100%;min-width:0
+}
+.stage-rich-summary .stage-gear-wearer{
+ display:inline-flex;align-items:center;min-height:24px;
+ padding:4px 8px;border:1px solid #8d6e4a;border-radius:4px;
+ background:#3b291b;color:#f0d1a2;
+ font:600 10px/1.25 Manrope,Arial,sans-serif;
+ white-space:nowrap
+}
