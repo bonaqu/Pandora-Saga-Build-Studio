@@ -51,7 +51,7 @@ test('player summary uses item attributes and original description without datab
  const {api}=fixture(),node=api.summary(ring,()=>null);
  const labels=walk(node).filter(n=>n.tag==='dt').map(n=>n.textContent);
  const values=walk(node).filter(n=>n.tag==='dd').map(n=>n.textContent);
- assert.ok(labels.includes('Тип'));assert.ok(labels.includes('Гнёзда'));
+ assert.ok(labels.includes('Тип'));assert.ok(!labels.includes('Слоты'),'Rings must not show Soul slot counts');
  assert.ok(!labels.includes('ID'));assert.ok(!values.includes('19022'));
  assert.ok(walk(node).some(n=>String(n.textContent).includes('СИЛ -1')));
 });
