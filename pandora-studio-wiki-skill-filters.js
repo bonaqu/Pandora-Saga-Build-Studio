@@ -34,7 +34,7 @@ function build(records={},index=null,manifest=null,overrides={}){
   let group='other';
   if(guildOrSiege(skill))group='guild';
   else if(player(skill))group='player';
-  else if(index?.canonical('skill',id)!==String(id)||
+  else if((index&&index.canonical('skill',id)!==String(id))||
    (skill?.learnable===false&&playableNames.has(name)))group='variants';
   else if(assigned(skill)||skill?.branch==='race')group='special';
   groups.set(String(id),group);
