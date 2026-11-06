@@ -870,7 +870,7 @@ export async function runInlineMilestonesSmoke(browser,base){
   });
   const legend=page.locator('.path-track-legend').first();
   assert.ok(await legend.isVisible(),'Skill scale labels must be visible below the drag track');
-  assert.ok((await legend.innerText()).includes('Предел: '));
+  assert.ok((await legend.innerText()).includes('Лимит (оч.): '));
   assert.ok((await legend.innerText()).includes('90'));
   assert.ok(result.geom.length>=3,'Expected several source-backed unlock thresholds');
   assert.ok(result.geom.every(x=>x.top>=result.barTop-1&&x.bottom<=result.barBottom+1),
