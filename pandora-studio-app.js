@@ -648,8 +648,11 @@ function originCopy(key,ru,en){
 
 // Editable, bilingual equipment captions share the existing D1 guide namespace.
 // These are display labels only; edit actions never touch item stats or saved builds.
+function ownerCopyKey(section,key){
+ return section+'.'+String(key).replace(/[A-Z]/g,char=>'-'+char.toLowerCase());
+}
 function ownerCopy(section,key,ru,en){
- const entry=window.PandoraHonorGuide?.field(override,section+'.'+key,ru,en);
+ const entry=window.PandoraHonorGuide?.field(override,ownerCopyKey(section,key),ru,en);
  return lang==='en'?(entry?.en||en):(entry?.ru||ru);
 }
 function ownerCopyLabel(node,section,key,ru,en){
@@ -660,7 +663,7 @@ function ownerCopyLabel(node,section,key,ru,en){
   event.preventDefault();event.stopPropagation();
   editWikiValue(node,ownerCopy(section,key,ru,en),{
    type:'text',
-   onCommit:next=>saveGuidePatch('book.'+section+'.'+key,{[lang]:next}),
+   onCommit:next=>saveGuidePatch('book.'+ownerCopyKey(section,key),{[lang]:next}),
    onCommitted:next=>{node.textContent=next}
   });
  });
@@ -1031,7 +1034,7 @@ function renderSlotRails(){
     const message=reasons.join(' ');
     const badge=h('span',{class:'stage-conflict',text:'!','aria-label':message,
      'data-issue-tooltip':message,role:'img',
-     onpointerenter:event=>{event.stopPropagation();
+     onpointerenter:event=>{event?.stopPropagation?.();
       window.PandoraStageItemUI.dismissPreview();showStageRailWarning(badge,message)},
      onpointerleave:hideStageRailWarning});
     button.append(badge);
@@ -1774,7 +1777,7 @@ function renderPathCopyControls(){
     if(!adminEditing||!adminToken)return;
     event.preventDefault();event.stopPropagation();
     editWikiValue(node,copy(key,ru,en),{type:'text',
-     onCommit:next=>saveGuidePatch('book.path.'+key,{[lang]:next}),
+     onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
      onCommitted:next=>{node.textContent=next}});
    });
   }
@@ -1792,7 +1795,7 @@ function renderPathCopyControls(){
   const edit=event=>{
    event.preventDefault();event.stopPropagation();
    editWikiValue(caption,copy(key,ru,en),{type:'text',
-    onCommit:next=>saveGuidePatch('book.path.'+key,{[lang]:next}),
+    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
     onCommitted:next=>{caption.textContent=next}});
   };
   caption.addEventListener('dblclick',edit);
