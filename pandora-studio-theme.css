@@ -2078,3 +2078,10 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .stage-picker-item:focus-visible,.stage-rich-result:focus-visible{
  outline:2px solid #f0c68e;outline-offset:1px
 }
+
+/* Hero Path threshold is TOTAL branch points. The small second line gives
+   the additional investment needed after the profession's starting points. */
+.inline-mastery-track.path-integrated-track .path-milestone-investment{
+ display:block;margin:3px 0 7px;color:#bbcf9d;
+ font:500 10px/1.35 Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums
+}

@@ -24,7 +24,7 @@ test('unlock thresholds are narrow vertical ticks, never permanent diamonds',()=
  assert.doesNotMatch(hover.slice(0,320),/width:|height:|0 0 [2-9]px/);
 });
 test('source-backed tooltip includes ability name, description, required points and MP cost only when known',()=>{
- for(const fragment of ["text:threshold+tr(api,' очков',' points')",
+ for(const fragment of ["text:threshold+tr(api,' очков ветки',' branch points')",
   "text:skill.name||tr(api,'Умение','Skill')",
   "text:skill.desc||tr(api,'Описание отсутствует.','No description available.')",
   'Number.isFinite(skill.mana)&&skill.mana>=0',

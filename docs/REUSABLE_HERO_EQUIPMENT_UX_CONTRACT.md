@@ -41,6 +41,33 @@ socket or re-rendering the picker. A new textual search intentionally resets the
 list position to the top. Choosing another equipment slot resets the remembered
 Soul scroll because it is a different catalog context.
 
+## Milestone point labels vs invested free points (0.391)
+
+An OS skill requirement `{branch:'assassin',amount:21}` is an ABSOLUTE
+branch level. The class's starting allocation counts toward this requirement;
+the extra invested free points are stored separately. With SCOUT/SNIPER
+Assassin starting at 3, the "Внезапный выстрел" milestone at 21 requires
+18 free invested points, not 21. Its other threshold is Archery 50.
+The actual rail, gold fill, thumb, and tick always use absolute 0..90
+coordinates. **Never move tick 21 to slot 24 to match investment=21** or
+reinterpret the underlying game requirement. Instead show the player a short
+milestone note: "21 очков ветки · Старт: 3 · Вложить: 18".
+"Вложено" means manually allocated free points. Do not silently count
+starting points as spent budget.
+
+## Numeric inputs and browser autofill (0.391)
+
+Re-use `PandoraNumericField.prepare` in the existing DOM factories for Hero
+Path, Origin and Hero Book. It sets `autocomplete="none"` (Yandex's
+documented non-standard no-autofill hint), standard password-manager ignore
+attributes and no browser autocomplete. In Yandex only, inactive numeric
+inputs become read-only until explicit user pointer or keyboard interaction;
+ordinary Chromium inputs remain editable, preserving Playwright `fill`,
+accessibility navigation, and native number controls. Do NOT apply the guard
+to credentials, passwords, checkboxes, ranges, or search. Autofill UI is owned
+by the browser; this is best effort, not a guarantee. Keep gameplay and
+manual changes functional even if browser autofill is globally enabled.
+
 ## Hero Path visual and numeric semantics (live-game contract, 0.390)
 
 The current live OS game indicates that root profession's starting points (D)

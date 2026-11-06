@@ -374,3 +374,43 @@ test('empty manually trained mastery is zero and independent from starting branc
  field.value='0';field.listeners.change();
  assert.equal(points.trained(f.state,'benevolence',f.api.innate,f.api.branchCaps),0);
 });
+
+test('real Vнезапный выстрел threshold 21 aligns with 18 invested above 3 class-start points',()=>{
+ const skills=Object.values(JSON.parse(read('data/os/skills.json')));
+ const ability=skills.find(x=>x.name==='Внезапный выстрел'&&x.learnable===true);
+ assert.ok(ability,'official skill exists');
+ assert.deepEqual(ability.reqs,[{branch:'archery',amount:50},{branch:'assassin',amount:21}]);
+ const f=fixture('SNIPER','tactics','assassin');
+ assert.equal(f.api.innate.assassin,3);
+ assert.equal(points.setPotential(f.state,'assassin',18,f.api.innate,f.api.branchCaps),true);
+ assert.equal(points.setPotential(f.state,'archery',45,f.api.innate,f.api.branchCaps),true);
+ assert.equal(points.branchPotential(f.state,'assassin',f.api.innate,f.api.branchCaps),21);
+ assert.equal(points.potential(f.state,'assassin'),18);
+ assert.equal(root.PandoraHeroPath.readiness(ability,{...f.api,skillCatalog:[ability]}).learned,true,
+  'unlock is reached with 18 manually invested points + 3 starting points');
+ f.api.skillCatalog=[ability];
+ f.api.milestones=()=>[{threshold:21,skills:[ability],locked:false}];
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const all=walk(f.target);
+ const tick=all.find(node=>node.attributes?.['data-milestone-points']==='21');
+ const numeric=all.find(node=>node.attributes?.['data-branch-control']==='assassin:potential-number');
+ const mastery=all.find(node=>node.attributes?.['data-branch-control']==='assassin:mastery-number');
+ const range=all.find(node=>node.attributes?.['data-branch-control']==='assassin:potential-range');
+ const caption=walk(tick).find(node=>node.className==='path-milestone-investment');
+ const notch=all.find(node=>node.className==='path-current-notch');
+ assert.ok(tick&&numeric&&mastery&&caption&&notch);
+ assert.equal(numeric.value,'18','Spent field excludes class start');
+ assert.equal(range.value,'21','thumb displays total branch level');
+ assert.equal(mastery.value,'21','automatic mastery follows branch level');
+ assert.equal(tick.attributes['data-milestone-invested'],'18');
+ assert.equal(caption.textContent,'Старт: 3 · Вложить: 18');
+ assert.match(tick.attributes['aria-label'],/21 очков ветки.*Вложить: 18/);
+ const fraction=21/90,container=390,usable=container-42;
+ const tickX=21+usable*21/90;
+ const match=/calc\((\d+(?:\.\d+)?)% ([+-]) (\d+(?:\.\d+)?)px\)/.exec(notch.style.left);
+ assert.ok(match);
+ const notchX=container*Number(match[1])/100+
+  (match[2]==='-'?-1:1)*Number(match[3]);
+ assert.ok(Math.abs(notchX-tickX)<0.01,
+  'milestone and current notch stay on the exact same 0..90 rail');
+});
