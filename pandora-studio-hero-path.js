@@ -146,6 +146,18 @@ function viewGrowth(target,api){
   groupButton.append(make('strong',{text:api.lang==='en'?group.en:group.ru}),groupCount);
   wrap.append(groupButton);
   if(selectedGroup===group.id){
+   // The game client also shows the Racial line under Special, greyed out.
+   // Race passives are chosen in Origin and do not spend branch skill points.
+   if(group.branches.includes('race')){
+    const race=make('button',{type:'button',disabled:true,
+     class:'branch-row disabled-branch path-racial-unavailable',
+     'data-path-branch':'race',
+     'aria-label':tr(api,'Расовые навыки: не прокачиваются очками веток','Racial skills: no branch point allocation')});
+    const info=make('div');
+    info.append(make('strong',{text:tr(api,'Расовые','Racial')}));
+    race.append(info,make('b',{class:'count',text:'—'}));
+    wrap.append(race);
+   }
    for(const key of branchKeys){
     const points=M.potential(state,key),base=M.branchBase(innate,key),
      trained=M.branchMastery(state,key,innate,caps),cap=api.cap(key),isOpen=expandedBranch===key;
