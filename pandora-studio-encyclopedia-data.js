@@ -435,17 +435,20 @@ function build(data){
  // Normalize bilingual aliases once per chapter and live render, not on every keypress.
  // Weak callback keys let old view closures be collected after navigation.
  const translatedSearchTerms=new WeakMap();
- const search=(type,query,displayName)=>{
-  const all=entries[type]||[],q=normalizeSearch(query).split(' ').filter(Boolean);
+ const search=(type,query,displayName,options={})=>{
+  const expanded=type==='skill'&&options.includeVariants===true;
+  const all=expanded?Object.entries(chapters[type]||{}):entries[type]||[];
+  const q=normalizeSearch(query).split(' ').filter(Boolean);
   if(!q.length)return all;
   let localized=null;
   if(typeof displayName==='function'){
    let chapters=translatedSearchTerms.get(displayName);
    if(!chapters){chapters=new Map();translatedSearchTerms.set(displayName,chapters)}
-   localized=chapters.get(type);
+   const cacheKey=type+(expanded?':all':':primary');
+   localized=chapters.get(cacheKey);
    if(!localized){
     localized=new Map(all.map(([id,rec])=>[id,normalizeSearch(displayName(id,rec))]));
-    chapters.set(type,localized);
+    chapters.set(cacheKey,localized);
    }
   }
   return all.filter(([id])=>{

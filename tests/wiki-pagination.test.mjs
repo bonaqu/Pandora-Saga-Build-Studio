@@ -4,7 +4,8 @@ import {readFileSync} from 'node:fs';
 const root=new URL('../',import.meta.url),get=p=>readFileSync(new URL(p,root),'utf8');
 test('encyclopedia provides true counts and can progressively load all matches',()=>{
  const code=get('pandora-studio-app.js');
- assert.match(code,/results=wikiIndex\.search\(type,wikiSearch,id=>searchTerms\(type,id\)\)/);
+ assert.match(code,/results=wikiIndex\.search\(type,wikiSearch,id=>searchTerms\(type,id\),/);
+ assert.match(code,/\{includeVariants:type==='skill'\}/);
  assert.match(code,/wikiResultsCache\?\.index===wikiIndex/);
  assert.match(code,/const visible=selectedIndex>=wikiShown/);
  assert.match(code,/results\.slice\(0,wikiShown\)/);

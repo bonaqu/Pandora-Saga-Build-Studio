@@ -73,7 +73,7 @@ const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
-let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
+let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter='player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
 function restoreActiveBuildId(){
@@ -2089,7 +2089,18 @@ function renderWiki(root){
   if(wikiSearchTimer!==null)clearTimeout(wikiSearchTimer);
   wikiSearchTimer=null;
  };
- let wikiResultsCache=null;
+ let wikiResultsCache=null,wikiSkillModelCache=null;
+ const skillModel=()=>{
+  if(!wikiIndex)return null;
+  if(wikiSkillModelCache?.index!==wikiIndex||
+   wikiSkillModelCache?.manifest!==iconManifest||
+   wikiSkillModelCache?.overrides!==override){
+   wikiSkillModelCache={index:wikiIndex,manifest:iconManifest,overrides:override,
+    value:window.PandoraWikiSkillFilters.build(
+     wikiIndex.records('skill'),wikiIndex,iconManifest,override)};
+  }
+  return wikiSkillModelCache.value;
+ };
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],
   ['utility','Предметы эффектов','Effect items'],
@@ -2291,6 +2302,23 @@ function renderWiki(root){
    toolbar.append(picker);
   }
   controls.append(toolbar);
+ }
+ if(wikiSelection.type==='skill'){
+  const model=skillModel(),filter=h('select',{class:'wiki-effect-type wiki-skill-type',
+   'aria-label':wt('Категория навыков','Skill category'),
+   onchange:event=>{
+    wikiSkillFilter=event.target.value;wikiShown=100;
+    wikiSelection={...wikiSelection,id:null,highlight:null};
+    wikiResultsCache=null;draw();saveView();
+   }});
+  for(const [id,labels] of Object.entries(window.PandoraWikiSkillFilters.names)){
+   const count=model?.counts?.[id];
+   const name=lang==='en'?labels.en:labels.ru;
+   const option=h('option',{value:id,text:name+(count==null?'':' · '+count)});
+   if(wikiSkillFilter===id)option.selected=true;
+   filter.append(option);
+  }
+  controls.append(h('div',{class:'wiki-effect-toolbar wiki-skill-toolbar'},[filter]));
  }
  if(wikiSelection.type==='item'&&wikiItemType==='utility'){
   const hasReviewItems=Object.values(wikiIndex?.records('item')||{}).some(item=>
@@ -2890,16 +2918,25 @@ function renderWiki(root){
     if(picker)picker.value='all';
    }
   }
+  const filterModel=type==='skill'?skillModel():null;
+  if(type==='skill'&&wikiSelection.id!=null&&records?.[wikiSelection.id]&&
+   !filterModel.matches(wikiSelection.id,wikiSkillFilter)){
+   wikiSkillFilter=filterModel.group(wikiSelection.id);
+   const picker=controls.querySelector('.wiki-skill-type');
+   if(picker)picker.value=wikiSkillFilter;
+  }
   const resultKey=JSON.stringify([type,wikiSearch,wikiItemType,wikiEffectFilter,
-   wikiElementFilter,wikiItemEligibility,state.level,state.job,state.race,
+   wikiSkillFilter,wikiElementFilter,wikiItemEligibility,state.level,state.job,state.race,
    state.gender,lang]);
   let results=wikiResultsCache?.index===wikiIndex&&
    wikiResultsCache.equipment===catalog.equipment&&
    wikiResultsCache.english===officialEnglish&&
    wikiResultsCache.key===resultKey?wikiResultsCache.rows:null;
   if(!results){
-   results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id))
-    .filter(([,rec])=>{
+   results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id),
+    {includeVariants:type==='skill'})
+    .filter(([id,rec])=>{
+     if(type==='skill')return filterModel.matches(id,wikiSkillFilter);
      if(type!=='item')return true;
      if(!isVisibleItem(rec,wikiItemType))return false;
      return ['all','elemental','utility'].includes(wikiItemType)||wikiItemEligibility==='all'||
