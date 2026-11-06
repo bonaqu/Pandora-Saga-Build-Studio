@@ -161,7 +161,7 @@ function viewGrowth(target,api){
    for(const key of branchKeys){
     const points=M.potential(state,key),base=M.branchBase(innate,key),
      trained=M.branchMastery(state,key,innate,caps),cap=api.cap(key),isOpen=expandedBranch===key;
-    const branch=make('button',{type:'button',
+    const branch=make('button',{type:'button',disabled:cap===0&&points===0,
      class:'branch-row'+(isOpen?' active':'')+(cap===0?' disabled-branch':''),
      'aria-expanded':String(isOpen),'data-path-branch':key,
      onclick:()=>api.onExpand(key,isOpen)});
