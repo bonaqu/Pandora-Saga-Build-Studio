@@ -13,6 +13,7 @@ function make(tag,attr={},children=[]){
   else if(val!==undefined&&val!==null)e.setAttribute(key,String(val));
  }
  for(const v of children)e.append(typeof v==='string'?document.createTextNode(v):v);
+ if(tag==='input'&&attr.type==='number')root.PandoraNumericField?.prepare(e);
  return e;
 }
 // Match the established Origin stat button behavior: one point per click,
