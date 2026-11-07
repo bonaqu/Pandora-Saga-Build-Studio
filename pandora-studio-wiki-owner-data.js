@@ -249,20 +249,20 @@ function apply(data,overrides){
    own(data.maps,x.id):(data.instances||[]).some(i=>String(i.id)===String(x.id))))continue;
   const mob=Number(match[1]),wanted=new Set(rows.map(x=>x.type+':'+x.id));
   for(const [mapId,source] of Object.entries(data.maps||{})){
-   const original=(next.maps?.[mapId]?.mobs||source.mobs||[]).map(Number);
-   const was=original.includes(mob),want=wanted.has('map:'+mapId);
+   const original=next.maps?.[mapId]?.mobs||source.mobs||[];
+   const was=original.some(ref=>String(ref)===String(mob)),want=wanted.has('map:'+mapId);
    if(was===want)continue;
    const maps=mut('maps');
-   maps[mapId]={...maps[mapId],mobs:want?[...original,mob]:original.filter(n=>n!==mob)};
+   maps[mapId]={...maps[mapId],mobs:want?[...original,mob]:original.filter(ref=>String(ref)!==String(mob))};
   }
   for(const original of data.instances||[]){
    const entry=(next.instances||[]).find(x=>String(x.id)===String(original.id))||original;
-   const listed=(entry.mobs||[]).map(Number),was=listed.includes(mob),
+   const listed=entry.mobs||[],was=listed.some(ref=>String(ref)===String(mob)),
     want=wanted.has('instance:'+original.id);
    if(was===want)continue;
    clone();if(next.instances===data.instances)next.instances=[...data.instances];
    const index=next.instances.findIndex(x=>String(x.id)===String(original.id));
-   if(index>=0)next.instances[index]={...entry,mobs:want?[...listed,mob]:listed.filter(n=>n!==mob)};
+   if(index>=0)next.instances[index]={...entry,mobs:want?[...listed,mob]:listed.filter(ref=>String(ref)!==String(mob))};
   }
  }
  return next;
