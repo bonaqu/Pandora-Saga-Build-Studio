@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import vm from 'node:vm';
-import worker from '../worker/index.js';
+import realWorker from '../worker/index.js';
+import {withOwnerCasTestClient} from './helpers/owner-cas-compat.mjs';
+const worker=withOwnerCasTestClient(realWorker);
 
 const root=new URL('../',import.meta.url);
 const ctx={window:{}};
