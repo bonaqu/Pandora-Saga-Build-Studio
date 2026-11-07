@@ -5572,7 +5572,8 @@ function renderBuildComparison(host,onSelection=()=>{}){
      officialEnglish?.branches?.[id]||name]),
     slotLabels:slots.map(x=>x[0]),
     equipment:catalog.equipment||{},souls:catalog.souls||{},
-    skillCatalog:catalog.skills||{},enchant:window.PandoraEnchantModel,
+    skillCatalog:catalog.skills||{},englishSkills:officialEnglish?.skills||{},
+    enchant:window.PandoraEnchantModel,
     honorTitles:window.PandoraOSCalculator.honorTitles,
     refinement:(snap,i,item)=>window.PandoraEquipmentPlan.refinementValue(
      snap.refinements,i,item),
