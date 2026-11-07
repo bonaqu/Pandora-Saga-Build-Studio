@@ -118,8 +118,10 @@ async function main(){
  const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
  assert.equal(await guideLabels.count(),48,'43 result hints, four group headers and one editable caption');
  await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
+ await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:3000});
  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/Очки здоровья/);
  await page.locator('#stageBookPanel [data-guide-key="summary.23"]').hover();
+ await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:3000});
  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/атак в спину/);
  await page.locator('#stageBookPanel [data-guide-key="summary.23"]').focus();
  assert.equal(await page.locator('#stage-guide-tooltip').isVisible(),true);
@@ -204,6 +206,12 @@ async function main(){
  await page.locator('#stageBookPanel [data-book-setting="guildLevel"]').selectOption('10');
  assert.match(await page.locator('#stageBookPanel .stage-guild-level-effects').innerText(),/12%/);
  await page.locator('#stageBookPanel [data-book-setting="priestEnabled"]').check();
+ const priestRows=page.locator('#stageBookPanel .stage-legacy-buff-row');
+ if(await priestRows.count()){
+  assert.equal(await priestRows.first().getAttribute('title'),null,
+   'Priest effects explain themselves without browser-native titles');
+  assert.equal(await priestRows.first().locator('.stage-legacy-buff-copy small').count(),1);
+ }
  for(const [key,value] of [['priestSpi','134'],['priestBlessing','90'],['priestHymn','30']]){
   const control=page.locator('#stageBookPanel [data-book-setting="'+key+'"]');
   await control.fill(value);

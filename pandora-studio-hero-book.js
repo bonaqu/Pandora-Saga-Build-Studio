@@ -272,7 +272,7 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  const label=english?(info?.en||en):(info?.ru||ru);
  const hint=english?info?.hintEn:info?.hintRu;
  node.textContent=label;
- if(meaningfulGuideHint(hint))root.PandoraGuideTooltip?.attach(node,hint);
+ if(meaningfulGuideHint(hint))root.PandoraGuideTooltip?.attach(node,hint,{hoverDelay:650});
  node.setAttribute('data-guide-key',key);
  if(options.editable&&typeof options.onTextEdit==='function'){
   node.classList.add('stage-guide-editable');
@@ -453,8 +453,7 @@ function buffsPage(body,options){
  };
  const toggle=(parent,name,key,vital=false,allowed=true,skill=null)=>{
   const selected=(vital?vitalsBuffs:buffs)[key]===true;
-  const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':''),
-   ...(skill?.desc?{title:skill.desc}:{})});
+  const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':'')});
   const checkbox=make('input',{type:'checkbox','data-book-setting':key,
    checked:selected&&allowed,disabled:!allowed,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.checked)});
@@ -465,6 +464,8 @@ function buffsPage(body,options){
    node.append(img);
   }
   const info=make('span',{class:'stage-combat-buff-copy',text:name});
+  if(typeof skill?.desc==='string'&&skill.desc.trim())
+   root.PandoraGuideTooltip?.attach(info,skill.desc,{hoverDelay:650});
   if(skill&&!allowed)
    info.append(make('small',{text:skill.reason||'Недоступно для героя'}));
   else if(skill?.summary)info.append(make('small',{text:skill.summary}));
@@ -600,9 +601,11 @@ function buffsPage(body,options){
    const effect=modifiers.legacyBuffs[id];
    if(!effect||!Number.isFinite(effect.value))continue;
    const row=make('div',{class:'stage-legacy-buff-row'});
-   row.append(make('span',{text:english&&labelEn?labelEn:label}),make('strong',{text:
-    prefix+effect.value}));
-   row.setAttribute('title',kind);
+   const kindLabel=english&&kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':kind;
+   row.append(make('span',{class:'stage-legacy-buff-copy'},[
+    make('span',{text:english&&labelEn?labelEn:label}),
+    make('small',{text:kindLabel})
+   ]),make('strong',{text:prefix+effect.value}));
    rows.append(row);
   }
   details.append(rows);
@@ -665,9 +668,6 @@ function skillEffectsPage(body,{modifiers=null}={}){
       'Предпросмотр · '+(row.requires||'Требования не выполнены'))})
    ]));
   }
-  group.append(make('p',{class:'stage-attribute-note',text:en?
-   'Skill previews based on Remaked; live OS requirements and damage packets can differ.':
-   'Просмотр отдельных умений по Remaked; игровые условия OS и расчёт урона могут отличаться.'}));
   body.append(group);
  }
  const periodic=modifiers?.periodicRecovery?.rows||[];
