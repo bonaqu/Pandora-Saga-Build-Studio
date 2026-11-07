@@ -105,12 +105,18 @@ export async function runAccountSmoke(browser,base){
    /Пароли не совпадают/);
   const verifiedMe=page.waitForResponse(response=>
    response.url().endsWith('/api/account/me'));
+  // Closing the popover while /me is still in flight must not discard the
+  // passwords or the validation error from the same verified account.
+  await page.locator('#profileTrigger').click();
+  assert.equal(await page.locator('#accountPanel').isVisible(),false);
   releaseHeldMe();
   await verifiedMe;
   await page.evaluate(()=>new Promise(resolve=>
    requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026',
-   'Late /me verification must preserve the already filled form');
+   'Late /me verification must preserve the filled form even if its popover was closed');
   assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
    /Пароли не совпадают/,'Late /me must preserve confirmation feedback');
   assert.equal(calls.filter(c=>c.action==='password').length,0);
