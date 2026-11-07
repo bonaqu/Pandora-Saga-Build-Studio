@@ -5696,33 +5696,34 @@ let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
 // The browser secret is effectively a password for this account-free D1 library.
 // Reveal or switch it only after a deliberate user interaction.
 async function connectCloudLibrary(secret,feedback){
+ const tr=(ru,en)=>lang==='en'?en:ru;
  const trimmed=String(secret||'').trim().toLowerCase();
  if(window.PandoraAccountUI?.isLoggedIn()){
-  feedback.textContent='Выйдите из аккаунта, чтобы переключить библиотеку по старому коду.';
+  feedback.textContent=tr('Выйдите из аккаунта, чтобы переключить библиотеку по старому коду.','Sign out of your account to connect a library using a legacy code.');
   return false;
  }
  if(!/^[a-f0-9]{64}$/.test(trimmed)){
-  feedback.textContent='Код должен содержать 64 символа. Скопируйте его с другого устройства.';
+  feedback.textContent=tr('Код должен содержать 64 символа. Скопируйте его с другого устройства.','The transfer code must contain 64 characters. Copy it from your other device.');
   return false;
  }
  if(queuedDeletes().length){
-  feedback.textContent='Сначала синхронизируйте удаления с прежней библиотекой, чтобы старые ссылки перестали работать.';
+  feedback.textContent=tr('Сначала синхронизируйте удаления с прежней библиотекой, чтобы старые ссылки перестали работать.','Sync pending deletions in your previous library first so removed build links stop working.');
   return false;
  }
  const previousOwner=libraryScopeId();
  try{
   const response=await cloudLibraryRequest(null,trimmed);
   if(libraryScopeId()!==previousOwner||window.PandoraAccountUI?.isLoggedIn()){
-   feedback.textContent='Контекст библиотеки изменился. Проверьте текущий профиль.';
+   feedback.textContent=tr('Контекст библиотеки изменился. Проверьте текущий профиль.','The active library changed. Check your current profile.');
    return false;
   }
-  if(!Array.isArray(response.records))throw Error('Не удалось прочитать библиотеку');
+  if(!Array.isArray(response.records))throw Error(tr('Не удалось прочитать библиотеку','Could not read the library'));
   if(!response.records.some(record=>!record.deleted&&record.entry)){
-   feedback.textContent='По этому коду сохранённые билды не найдены. Проверьте, что код скопирован полностью.';
+   feedback.textContent=tr('По этому коду сохранённые билды не найдены. Проверьте, что код скопирован полностью.','No saved builds were found for this code. Check that you copied the entire code.');
    return false;
   }
   if(trimmed===tabGuestSecret){
-   feedback.textContent='Эта библиотека уже подключена.';
+   feedback.textContent=tr('Эта библиотека уже подключена.','This library is already connected.');
    return true;
   }
   const previousGuest=tabGuestSecret;
@@ -5731,46 +5732,51 @@ async function connectCloudLibrary(secret,feedback){
   activateLibraryScope({carry:true,
    carryFrom:window.PandoraBuildScope.owner(null,previousGuest)});
   selectActiveBuild(null);libraryChangeId++;
-  feedback.textContent='Подключено. Объединяем сохранения…';
+  feedback.textContent=tr('Подключено. Объединяем сохранения…','Connected. Merging saved builds…');
   void loadCloudBuilds();
   return true;
  }catch(error){
-  feedback.textContent='Не удалось подключить библиотеку: '+error.message;
+  feedback.textContent=tr('Не удалось подключить библиотеку: ','Could not connect the library: ')+error.message;
   return false;
  }
 }
 function buildLibraryTransfer(){
+ const tr=(ru,en)=>lang==='en'?en:ru;
  const panel=h('details',{class:'build-transfer'});
  const content=h('div',{class:'build-transfer-content'});
  const field=h('input',{type:'text',readOnly:true,value:'',class:'build-transfer-key',
-  'aria-label':'Личный код библиотеки',placeholder:'Код скрыт'});
+  'aria-label':tr('Личный код библиотеки','Personal library code'),
+  placeholder:tr('Код скрыт','Code hidden')});
  let codeVisible=false;
- const copy=h('button',{type:'button',class:'button-action',text:'Показать мой код',onclick:async()=>{
+ const copy=h('button',{type:'button',class:'button-action',text:tr('Показать мой код','Reveal my code'),onclick:async()=>{
   if(!codeVisible){
    field.value=tabGuestSecret;
    codeVisible=true;field.focus();field.select();
-   copy.textContent='Скопировать мой код';
+   copy.textContent=tr('Скопировать мой код','Copy my code');
    return;
   }
-  try{await navigator.clipboard.writeText(field.value);copy.textContent='✓ Код скопирован'}
-  catch{field.focus();field.select();copy.textContent='Скопируйте выделенный код'}
+  try{await navigator.clipboard.writeText(field.value);copy.textContent=tr('✓ Код скопирован','✓ Code copied')}
+  catch{field.focus();field.select();copy.textContent=tr('Скопируйте выделенный код','Copy the selected code')}
  }});
  const input=h('input',{type:'password',class:'build-transfer-key',maxLength:'64',
-  autocomplete:'off',placeholder:'Вставить код с другого устройства',
-  'aria-label':'Подключить библиотеку по коду'});
+  autocomplete:'off',placeholder:tr('Вставить код с другого устройства','Paste code from another device'),
+  'aria-label':tr('Подключить библиотеку по коду','Connect library by code')});
  const feedback=h('p',{class:'build-transfer-feedback',role:'status'});
  const join=h('button',{type:'button',class:'button-action primary',
-  text:'Подключить и объединить',onclick:async()=>{
+  text:tr('Подключить и объединить','Connect and merge'),onclick:async()=>{
    join.disabled=true;
    try{await connectCloudLibrary(input.value,feedback)}
    finally{join.disabled=false}
   }});
  content.append(h('p',{class:'library-key-warning',
-  text:'Сохраните личный код библиотеки до очистки данных браузера: без него восстановить ваши облачные билды не получится. Никому не передавайте этот код.'}),
+  text:tr('Сохраните личный код библиотеки до очистки данных браузера: без него восстановить ваши облачные билды не получится. Никому не передавайте этот код.',
+   'Save your personal library code before clearing browser data: without it, your cloud builds cannot be recovered. Never share this code.')}),
   h('div',{class:'build-transfer-row'},[field,copy]),
-  h('p',{text:'На другом устройстве вставьте ранее сохранённый код. Билды загрузятся из облака.'}),
+  h('p',{text:tr('На другом устройстве вставьте ранее сохранённый код. Билды загрузятся из облака.',
+   'On your other device, paste the code you saved earlier. Your builds will load from the cloud.')}),
   h('div',{class:'build-transfer-row'},[input,join]),feedback);
- panel.append(h('summary',{text:'Перенести или восстановить облачные билды'}),content);
+ panel.append(h('summary',{text:tr('Перенести или восстановить облачные билды',
+  'Transfer or recover cloud builds')}),content);
  return panel;
 }
 function renderBuilds(root){
