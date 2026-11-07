@@ -63,8 +63,9 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
    'Owner edit pencil must sit next to the compact select without overlap');
   await toggle.click();
   assert.equal(await toggle.getAttribute('aria-expanded'),'true');
-  assert.equal(await disclosure.locator('[data-skill-filter-label]').count(),7,
+  assert.equal(await disclosure.locator('[data-skill-filter-label]').count(),8,
    'Owner must be able to edit every filter without opening a native option');
+  assert.equal(await disclosure.locator('[data-skill-filter-label="racial"]').count(),1);
 
   const target=disclosure.locator('[data-skill-filter-label="unknown"]');
   await target.locator('.wiki-skill-label-edit').click();
