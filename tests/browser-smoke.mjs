@@ -99,7 +99,30 @@ async function main(){
  assert.ok(Number.isFinite(manaBefore),'MP cost must be calculated for a selected origin');
  await page.locator('#stageAttributes .stage-book-close').click();
  await page.locator('[data-origin-tab="race"]').click();
- await page.locator('#originPassives .origin-passive').first().click();
+ // Rich skill previews follow the shared delayed hover policy.
+ const firstPassive=page.locator('#originPassives .origin-passive').first();
+ const secondPassive=page.locator('#originPassives .origin-passive').nth(1);
+ const skillPreview=page.locator('#path-skill-hover-tooltip');
+ await page.mouse.move(1,1);
+ await firstPassive.hover();
+ await page.waitForTimeout(140);
+ assert.equal(await skillPreview.count(),0,'Rich skill preview opened immediately on pointer hover');
+ await skillPreview.waitFor({state:'visible',timeout:2500});
+ assert.equal(await firstPassive.getAttribute('aria-describedby'),'path-skill-hover-tooltip');
+ await secondPassive.hover();
+ assert.equal(await firstPassive.getAttribute('aria-describedby'),null,
+  'Switching skills must clear the previous owner\'s tooltip relationship');
+ assert.equal(await skillPreview.count(),0,'Previous skill must close before next delayed preview');
+ await skillPreview.waitFor({state:'visible',timeout:2500});
+ assert.equal(await secondPassive.getAttribute('aria-describedby'),'path-skill-hover-tooltip');
+ await page.mouse.move(1,1);
+ assert.equal(await skillPreview.count(),0);
+ await firstPassive.hover();
+ await page.waitForTimeout(90);
+ await page.mouse.move(1,1);
+ await page.waitForTimeout(740);
+ assert.equal(await skillPreview.count(),0,'Cancelled skill hover must not reopen after leaving');
+ await firstPassive.click();
  assert.equal(await page.locator('#originPassives .origin-passive.selected').count(),1);
  await page.locator('#hero').click();
  await page.locator('#stageAttributes').waitFor({state:'visible'});
