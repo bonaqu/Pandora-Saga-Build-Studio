@@ -2332,11 +2332,14 @@ function renderWiki(root){
   const model=skillModel(),filterNames=window.PandoraWikiSkillFilters.names;
   const localizedFilterLabel=(id,labels)=>wikiTitle('skillFilter',id,labels.ru,labels.en);
   const optionFor=new Map();
+  let skillLabelList=null,skillLabelToggle=null;
   const filter=h('select',{class:'wiki-effect-type wiki-skill-type',
    'aria-label':wt('Категория навыков','Skill category'),
    onchange:event=>{
     wikiSkillFilter=event.target.value;wikiShown=100;
     wikiSelection={...wikiSelection,id:null,highlight:null};
+    if(skillLabelList){skillLabelList.hidden=true;
+     skillLabelToggle?.setAttribute('aria-expanded','false')}
     wikiResultsCache=null;draw();saveView();
    }});
   for(const [id,labels] of Object.entries(filterNames)){
@@ -2358,6 +2361,7 @@ function renderWiki(root){
     'aria-controls':'wikiSkillLabelList','aria-expanded':'false',
     'aria-label':wt('Редактировать названия категорий',
      'Edit category names')});
+   skillLabelList=list;skillLabelToggle=toggle;
    toggle.onclick=()=>{
     list.hidden=!list.hidden;
     toggle.setAttribute('aria-expanded',String(!list.hidden));
