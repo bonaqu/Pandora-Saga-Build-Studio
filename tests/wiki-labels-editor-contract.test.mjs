@@ -48,6 +48,15 @@ test('editable bilingual labels preserve stable internal chapter and section key
  assert.match(view,/label\('chapter','honor','Честь','Honor'\)/);
 });
 
+test('skill filters reuse the compact native Encyclopedia filter layout',()=>{
+ const css=read('pandora-studio-wiki-polish.css');
+ const itemCss=read('pandora-studio-item-owner-editor.css');
+ assert.match(app,/class:'wiki-effect-toolbar wiki-skill-toolbar'/);
+ assert.match(itemCss,/\.wiki-effect-toolbar\{display:flex;gap:8px;align-items:center;flex-wrap:wrap\}/);
+ assert.match(css,/\.wiki-skill-toolbar>\.wiki-skill-type\{[^}]*flex:0 1 auto/);
+ assert.doesNotMatch(css,/\.wiki-skill-toolbar>\.wiki-skill-type\{[^}]*flex:1 1 auto/);
+});
+
 test('all 42 bilingual chapter, Honor and skill filter labels fit one validated owner patch',()=>{
  const all=Object.fromEntries([
   ...Object.entries(registry.chapter).flatMap(([id,names])=>[
