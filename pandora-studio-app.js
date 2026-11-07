@@ -2332,26 +2332,35 @@ function renderWiki(root){
    if(wikiSkillFilter===id)option.selected=true;
    optionFor.set(id,option);filter.append(option);
   }
+  // Reuse the native Encyclopedia filter and its established chapter-label
+  // editor pattern. The edit rows expand IN the page (not a new floating menu).
   const toolbar=h('div',{class:'wiki-effect-toolbar wiki-skill-toolbar'},[filter]);
   if(adminEditing&&adminToken){
-   // Native <option> elements cannot host editable inputs. Keep selection
-   // untouched; a single adjacent pencil exposes all stable category labels.
-   const editor=h('details',{class:'wiki-skill-label-editor'});
-   const summary=h('summary',{class:'wiki-skill-label-trigger',text:'✎',
-    title:wt('Редактировать названия фильтров','Edit filter labels'),
-    'aria-label':wt('Редактировать названия фильтров','Edit filter labels')});
-   const list=h('div',{class:'wiki-skill-label-list',role:'group',
-    'aria-label':wt('Названия фильтров навыков','Skill filter labels')});
+   const list=h('div',{class:'wiki-categories wiki-skill-edit-list',
+    id:'wikiSkillLabelList',hidden:true,
+    'aria-label':wt('Названия категорий навыков','Skill category labels')});
+   const toggle=h('button',{type:'button',
+    class:'wiki-category-edit wiki-skill-edit-toggle',text:'✎',
+    'aria-controls':'wikiSkillLabelList','aria-expanded':'false',
+    'aria-label':wt('Редактировать названия категорий',
+     'Edit category names')});
+   toggle.onclick=()=>{
+    list.hidden=!list.hidden;
+    toggle.setAttribute('aria-expanded',String(!list.hidden));
+   };
    for(const [id,labels] of Object.entries(filterNames)){
-    const row=h('div',{class:'wiki-skill-label-row','data-skill-filter-label':id});
-    const caption=h('span',{class:'wiki-skill-label-caption',
+    const row=h('div',{class:'wiki-category-line wiki-skill-edit-row',
+     'data-skill-filter-label':id});
+    const caption=h('span',{class:'wiki-category-text wiki-skill-label-caption',
      text:localizedFilterLabel(id,labels)});
-    const edit=h('button',{type:'button',class:'wiki-skill-label-edit',
-     text:'✎',
-     'aria-label':wt('Изменить: ','Edit: ')+caption.textContent});
+    const edit=h('button',{type:'button',class:'wiki-category-edit wiki-skill-label-edit',
+     text:'✎','aria-label':wt('Изменить: ','Edit: ')+caption.textContent});
     const startEdit=()=>{
-     if(!adminEditing||!adminToken)return;
-     editWikiValue(caption,caption.textContent,{type:'text',
+     if(row.querySelector('[data-owner-text-field]')||!adminEditing||!adminToken)return;
+     const name=caption.textContent,host=h('span',{
+      class:'wiki-category-edit-host wiki-skill-edit-host',text:name});
+     caption.hidden=true;edit.hidden=true;row.append(host);
+     editWikiValue(host,name,{type:'text',
       onCommit:value=>saveGuidePatch('wiki.labels',{
        [window.PandoraWikiLabels.key('skillFilter',id,lang)]:value
       }),
@@ -2360,18 +2369,17 @@ function renderWiki(root){
        edit.setAttribute('aria-label',wt('Изменить: ','Edit: ')+value);
        const count=model?.counts?.[id],option=optionFor.get(id);
        if(option)option.textContent=value+(count==null?'':' · '+count);
-      }
+      },
+      onFinished:()=>{caption.hidden=false;edit.hidden=false;host.remove()}
      });
     };
     edit.onclick=startEdit;
-    caption.addEventListener('dblclick',event=>{
-     event.preventDefault();startEdit();
-    });
+    caption.addEventListener('dblclick',event=>{event.preventDefault();startEdit()});
     row.append(caption,edit);list.append(row);
    }
-   editor.append(summary,list);toolbar.append(editor);
-  }
-  controls.append(toolbar);
+   toolbar.append(toggle);
+   controls.append(toolbar,list);
+  }else controls.append(toolbar);
  }
  if(wikiSelection.type==='item'&&wikiItemType==='utility'){
   const hasReviewItems=Object.values(wikiIndex?.records('item')||{}).some(item=>
