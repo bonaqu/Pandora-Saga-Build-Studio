@@ -23,14 +23,29 @@ function validate(input){
   throw Error('Неверный формат добычи локаций');
  if(!isRecord(data.chests)||!Array.isArray(data.chests.boxes))
   throw Error('Неверный формат сундуков');
- // The authoritative registry and every referenced skill share one D1 snapshot.
- if(!isRecord(data.racialPassives)||!Object.keys(data.racialPassives).length||
-  !Object.values(data.racialPassives).every(race=>
-   isRecord(race)&&Array.isArray(race.skills)&&race.skills.length>0&&
-   race.skills.every(id=>Number.isSafeInteger(id)&&
-    data.skills?.[String(id)]?.skillType==='PASSIVE'&&
-    data.skills?.[String(id)]?.branch==='race')))
-  throw Error('Нарушены связи расовых пассивок с каталогом навыков');
+ // All races and their skills are published in the same atomic D1 snapshot.
+ // A partially published registry must not masquerade as six valid races.
+ const expectedRaces=Number(data.meta.counts.racialPassives);
+ const races=isRecord(data.racialPassives)?Object.entries(data.racialPassives):[];
+ if(!Number.isSafeInteger(expectedRaces)||expectedRaces<1||
+    races.length<expectedRaces)
+  throw Error('Неполный каталог расовых пассивок');
+ const raceIds=new Set(),ownedPassives=new Set();
+ for(const [key,race] of races){
+  if(!isRecord(race)||race.key!==key||
+    !Number.isSafeInteger(race.raceId)||race.raceId<1||
+    raceIds.has(race.raceId)||!Array.isArray(race.skills)||
+    !race.skills.length)
+   throw Error('Нарушены связи расовых пассивок с каталогом навыков');
+  raceIds.add(race.raceId);
+  for(const id of race.skills){
+   const number=Number(id),skill=data.skills?.[String(id)];
+   if(!Number.isSafeInteger(id)||number<1||ownedPassives.has(number)||
+     skill?.skillType!=='PASSIVE'||skill?.branch!=='race')
+    throw Error('Нарушены связи расовых пассивок с каталогом навыков');
+   ownedPassives.add(number);
+  }
+ }
  for(const key of ['items','monsters','maps','instances','drops','trades','skills','souls']){
   const observed=Array.isArray(data[key])?data[key].length:
    key==='trades'?data.trades.trades.length:Object.keys(data[key]).length;
