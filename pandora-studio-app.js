@@ -6479,11 +6479,12 @@ async function undoOwnerEdit(){
 }
 function showOverrideManager(){
  if(!adminToken)return;
+ const tr=(ru,en)=>lang==='en'?en:ru;
  const body=h('div',{class:'owner-manager'});
  body.append(h('p',{class:'muted',text:
-  'Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.'}));
- const search=ownerPlainTextField({placeholder:'Найти предмет, NPC или изменённое поле…',
-  class:'owner-manager-search wiki-owner-search','aria-label':'Поиск среди ручных изменений'});
+  tr('Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.','Manual changes saved in Cloudflare D1. Every entry shows its section, field, original game-catalog value, and your edit. Unknown original values are marked.')}));
+ const search=ownerPlainTextField({placeholder:tr('Найти предмет, NPC или изменённое поле…','Find an item, NPC or edited field…'),
+  class:'owner-manager-search wiki-owner-search','aria-label':tr('Поиск среди ручных изменений','Search manual edits')});
  const count=h('p',{class:'owner-manager-summary',role:'status'});
  const list=h('div',{class:'owner-manager-list'});
  const draw=()=>{
@@ -6492,18 +6493,18 @@ function showOverrideManager(){
   const entries=Object.entries(override).map(([key,value])=>
    window.PandoraOwnerChangeReview.inspect(key,value,{
     base:wikiBaseData,items:wikiBaseData?.items||catalogSource?.items,
-    classes:catalog?.classes}))
+    classes:catalog?.classes,lang,englishBranches:officialEnglish?.branches||{}}))
    .filter(record=>!q||[record.key,record.title,...record.changes.flatMap(x=>
     [x.field,x.before,x.after])].join(' ').toLocaleLowerCase('ru').includes(q))
-   .sort((a,b)=>a.section.localeCompare(b.section,'ru')||a.title.localeCompare(b.title,'ru'));
-  count.textContent='Найдено '+entries.length+' из '+Object.keys(override).length+' ручных изменений';
+   .sort((a,b)=>a.section.localeCompare(b.section,lang)||a.title.localeCompare(b.title,lang));
+  count.textContent=tr('Найдено ','Found ')+entries.length+tr(' из ',' of ')+Object.keys(override).length+tr(' ручных изменений',' manual edits');
   if(!entries.length)list.append(h('p',{class:'muted',
-   text:'Не найдено правок по выбранному запросу.'}));
+   text:tr('Не найдено правок по выбранному запросу.','No edits match your search.')}));
   for(const record of entries){
    const row=h('section',{class:'owner-manager-row owner-review-row'});
    const head=h('div',{class:'owner-review-heading'},[
     h('strong',{text:record.title}),
-    h('small',{text:'Изменено полей: '+record.changes.length})
+    h('small',{text:tr('Изменено полей: ','Changed fields: ')+record.changes.length})
    ]);
    const edits=h('div',{class:'owner-review-changes'});
    for(const entry of record.changes){
@@ -6511,15 +6512,15 @@ function showOverrideManager(){
     change.append(h('strong',{class:'owner-review-field',text:entry.field}),
      h('div',{class:'owner-review-comparison'},[
       h('div',{class:'owner-review-before'},[
-       h('small',{text:'Было'}),h('p',{text:entry.before})]),
+       h('small',{text:tr('Было','Before')}),h('p',{text:entry.before})]),
       h('div',{class:'owner-review-after'},[
-       h('small',{text:'Стало'}),h('p',{text:entry.after})])
+       h('small',{text:tr('Стало','After')}),h('p',{text:entry.after})])
      ]));
     edits.append(change);
    }
    const actions=h('div',{class:'owner-review-actions'});
    if(record.target&&record.target.id&&wikiDataOrCatalogHasRecord(record.target)){
-    actions.append(h('button',{type:'button',text:'Открыть в энциклопедии',
+    actions.append(h('button',{type:'button',text:tr('Открыть в энциклопедии','Open in Encyclopedia'),
      onclick:()=>{
       $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
       openWiki(record.target.type,record.target.id);
@@ -6527,8 +6528,8 @@ function showOverrideManager(){
      }}));
    }
    actions.append(h('button',{type:'button',class:'owner-review-reset',
-    text:'Вернуть оригинал',onclick:async()=>{
-     if(!confirm('Вернуть исходные данные для «'+record.title+'»?'))return;
+    text:tr('Вернуть оригинал','Restore original'),onclick:async()=>{
+     if(!confirm(tr('Вернуть исходные данные для «','Restore original data for “')+record.title+tr('»?','”?')))return;
      const previous=activeOverride(record.key);
      try{
       await apiRequest('/api/admin/reset',{key:record.key});
@@ -6560,9 +6561,9 @@ function showOverrideManager(){
  search.addEventListener('input',draw);
  body.append(search,count,list);
  draw();
- modal('Все ручные правки',body);
+ modal(tr('Все ручные правки','All manual edits'),body);
  if(!wikiBaseData)void loadWiki().then(()=>{if(body.isConnected)draw()})
-  .catch(()=>{if(body.isConnected)showStudioToast('Исходный каталог временно недоступен','warning')});
+  .catch(()=>{if(body.isConnected)showStudioToast(tr('Исходный каталог временно недоступен','Game catalog temporarily unavailable'),'warning')});
 }
 
 function allowedArtwork(value){

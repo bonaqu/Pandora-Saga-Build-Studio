@@ -23,13 +23,43 @@ const labels={
  percent:'Шанс',p:'Шанс',str:'СИЛ',vit:'ВЫН',agi:'ПРВ',dex:'ЛВК',
  spi:'СД',int:'ИНТ'
 };
-const friendly=(key)=>labels[key]||key.replaceAll('_',' ');
+const labelsEn={
+ name:'Name',nameEn:'English name',desc:'Description',descEn:'English description',
+ service:'Service',serviceEn:'English service',grid:'Coordinates',
+ blurb:'Description',blurbRu:'Russian description',
+ level:'Level',W:'Attack',PEN:'Penetration',AC:'Defense',
+ atkspeed:'Attack speed',range:'Range',soulslot:'Soul sockets',
+ twoHanded:'Two-handed',kind:'Item type',classes:'Eligible classes',
+ effects:'Item bonuses',sourceNote:'Source note',price:'Catalog price',
+ slots:'Compatible slots',npcs:'Location NPCs',loot:'Loot',tags:'Location tags',
+ sections:'Location sections',extraSections:'Additional sections',
+ roster:'Monster positions',notesRu:'Russian notes',notesEn:'English notes',
+ cast:'Cast time',cooldown:'Cooldown',magicProtection:'Magic defense',
+ warding:'Warding',mobs:'Monsters',maps:'Locations',
+ reqs:'Branch requirements',prereq:'Prerequisite skill',resists:'Resistances',
+ life:'HP',mana:'MP',gold:'Gold',honor:'Honor',exp:'Experience',
+ npc:'NPC',i:'Reward item',mats:'Materials',d:'Normal drops',
+ s:'Special drops',rolls:'Chest contents',percent:'Chance',p:'Chance',
+ str:'STR',vit:'VIT',agi:'AGI',dex:'DEX',spi:'SPI',int:'INT'
+};
+const sectionEn={
+ 'Предмет':'Item','Монстр':'Monster','Локация':'Location',
+ 'NPC':'NPC','Подземелье':'Dungeon','Навык':'Skill','Душа':'Soul',
+ 'Энциклопедия':'Encyclopedia','Добыча монстра':'Monster drops',
+ 'Сундук':'Chest','Обмен NPC':'NPC exchange',
+ 'Источники получения':'Item sources','Появление монстра':'Monster locations',
+ 'Изображение сайта':'Site artwork','Оформление сайта':'Site appearance',
+ 'Другие настройки':'Other settings'
+};
+const friendly=(key,lang='ru')=>(lang==='en'?labelsEn:labels)[key]||
+ key.replaceAll('_',' ');
 const toObject=value=>{try{return JSON.parse(value)}catch{return null}};
 const preview=(value,max=650)=>{
  const str=typeof value==='string'?value:JSON.stringify(value);
  return !str?'—':str.length>max?str.slice(0,max)+'…':str;
 };
-function inspect(key,stored,{base=null,items=null,classes=null}={}){
+function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',englishBranches={}}={}){
+ const english=lang==='en',tr=(ru,en)=>english?en:ru;
  const raw=base||{},gameItems=items||raw.items||{},classNames=classes||{};
  const lookup=(kind,id)=>{
   const found=kind==='item'?gameItems?.[id]:
@@ -44,59 +74,66 @@ function inspect(key,stored,{base=null,items=null,classes=null}={}){
    kind==='chest'?[...(raw.chests?.boxes||[]),...(raw.chests?.npc||[])]
     .find(x=>String(x.i)===String(id)):
    null;
-  const name=typeof found==='string'?found:found?.name?.ru||found?.name;
+  const name=typeof found==='string'?found:(english?(found?.nameEn||found?.name?.en):null)||found?.name?.ru||found?.name;
   return typeof name==='string'&&name.trim()?name.trim():String(id);
  };
  const itemName=id=>lookup('item',id);
- const resistLabels={physical:'Физическое',fire:'Огонь',cold:'Лёд',
-  lightning:'Молния',poison:'Яд',charm:'Чары',magic:'Магия',
-  holy:'Свет',dark:'Тьма'};
- const sectionLabels={monsters:'Монстры',npcs:'NPC',loot:'Добыча',
-  tags:'Теги',notes:'Заметки',custom:'Дополнительные разделы'};
- const extraKinds={item:'Предметы',monster:'Монстры',npc:'NPC',text:'Текст'};
+ const resistLabels=english?
+  {physical:'Physical',fire:'Fire',cold:'Ice',lightning:'Lightning',
+   poison:'Poison',charm:'Charm',magic:'Magic',holy:'Holy',dark:'Dark'}:
+  {physical:'Физическое',fire:'Огонь',cold:'Лёд',lightning:'Молния',
+   poison:'Яд',charm:'Чары',magic:'Магия',holy:'Свет',dark:'Тьма'};
+ const sectionLabels=english?
+  {monsters:'Monsters',npcs:'NPCs',loot:'Loot',tags:'Tags',
+   notes:'Notes',custom:'Additional sections'}:
+  {monsters:'Монстры',npcs:'NPC',loot:'Добыча',
+   tags:'Теги',notes:'Заметки',custom:'Дополнительные разделы'};
+ const extraKinds=english?
+  {item:'Items',monster:'Monsters',npc:'NPCs',text:'Text'}:
+  {item:'Предметы',monster:'Монстры',npc:'NPC',text:'Текст'};
  const fmt=(value,field)=>{
-  if(value===undefined)return 'Не указано';
-  if(value===null)return 'Нет';
-  if(typeof value==='boolean')return value?'Да':'Нет';
+  if(value===undefined)return tr('Не указано','Not specified');
+  if(value===null)return tr('Нет','None');
+  if(typeof value==='boolean')return value?tr('Да','Yes'):tr('Нет','No');
   if(typeof value==='number'||typeof value==='string')return preview(String(value));
   if(Array.isArray(value)){
    if(field==='effects')return value.map(v=>{
-    const title=root.PandoraStudioItemOwnerEditor?.effectDisplayLabel?.(v.func)||v.func;
+    const title=root.PandoraStudioItemOwnerEditor?.effectDisplayLabel?.(v.func,lang)||v.func;
     return title+' '+(Number(v.a)>0?'+':'')+(v.a??'—');
-   }).join(' · ')||'Нет';
-   if(field==='mats')return value.map(v=>itemName(v.i)+' ×'+v.n).join(', ')||'Нет';
-   if(field==='loot')return value.map(v=>itemName(v)).join(', ')||'Нет';
-   if(field==='npcs')return value.map(v=>lookup('npc',v)).join(', ')||'Нет';
-   if(field==='tags')return value.map(v=>v.ru||v.en||'Тег').join(', ')||'Нет';
-   if(field==='sections')return value.map(v=>sectionLabels[v]||v).join(', ')||'Нет';
+   }).join(' · ')||tr('Нет','None');
+   if(field==='mats')return value.map(v=>itemName(v.i)+' ×'+v.n).join(', ')||tr('Нет','None');
+   if(field==='loot')return value.map(v=>itemName(v)).join(', ')||tr('Нет','None');
+   if(field==='npcs')return value.map(v=>lookup('npc',v)).join(', ')||tr('Нет','None');
+   if(field==='tags')return value.map(v=>english?(v.en||v.ru||'Tag'):(v.ru||v.en||'Тег')).join(', ')||tr('Нет','None');
+   if(field==='sections')return value.map(v=>sectionLabels[v]||v).join(', ')||tr('Нет','None');
    if(field==='extraSections')return value.map(v=>
-    (v.titleRu||v.titleEn||'Раздел')+' · '+(extraKinds[v.kind]||'Данные')
-   ).join(', ')||'Нет';
+    (english?v.titleEn||v.titleRu:v.titleRu||v.titleEn||'Раздел')+' · '+(extraKinds[v.kind]||tr('Данные','Data'))
+   ).join(', ')||tr('Нет','None');
    if(field==='roster')return value.map(v=>
-    (v.name||lookup('monster',v.monsterId))+
-    (Number.isInteger(v.level)?' · ур. '+v.level:'')
-   ).join(', ')||'Нет';
+    (english?v.nameEn||v.name:v.name||v.nameEn||lookup('monster',v.monsterId))+
+    (Number.isInteger(v.level)?tr(' · ур. ',' · lvl. ')+v.level:'')
+   ).join(', ')||tr('Нет','None');
    if(field==='reqs')return value.map(v=>
-    (raw.meta?.branchLabels?.[v.branch]||v.branch)+' ≥'+v.amount
-   ).join(', ')||'Нет';
+    ((english?englishBranches?.[v.branch]:null)||raw.meta?.branchLabels?.[v.branch]||v.branch)+' ≥'+v.amount
+   ).join(', ')||tr('Нет','None');
    if(field==='rolls')return value.map((group,i)=>'Розыгрыш '+(i+1)+': '+group.map(v=>
     (v.gold?'Золото':itemName(v.i))+
-    (v.n&&v.n!==1?' ×'+v.n:'')+(v.p!=null?' · '+v.p+'%':'')).join(', ')).join('\n')||'Нет';
-   if(field==='npc')return value.map(v=>lookup('npc',v)).join(', ')||'Нет';
-   if(field==='slots')return value.map(v=>root.PandoraItemPresentation?.slotLabel?.(v,'ru')||v).join(', ')||'Нет';
-   if(field==='maps')return value.map(v=>lookup('map',v)).join(', ')||'Нет';
-   if(field==='mobs')return value.map(v=>lookup('monster',v)).join(', ')||'Нет';
-   if(field==='d'||field==='s')return value.map(v=>itemName(v.i)+(v.n?' ×'+v.n:'')+(v.p!=null?' · '+v.p+'%':'')).join(', ')||'Нет';
-   if(field==='acquisitions')return value.map(v=>lookup(v.type,v.id)+(v.p!=null?' · '+v.p+'%':'')).join(', ')||'Нет';
-   if(field==='spawn')return value.map(v=>lookup(v.type,v.id)).join(', ')||'Нет';
-   return value.map(x=>typeof x==='object'?preview(x,80):String(x)).join(', ')||'Нет';
+    (v.n&&v.n!==1?' ×'+v.n:'')+(v.p!=null?' · '+v.p+'%':'')).join(', ')).join('\n')||tr('Нет','None');
+   if(field==='npc')return value.map(v=>lookup('npc',v)).join(', ')||tr('Нет','None');
+   if(field==='slots')return value.map(v=>root.PandoraItemPresentation?.slotLabel?.(v,'ru')||v).join(', ')||tr('Нет','None');
+   if(field==='maps')return value.map(v=>lookup('map',v)).join(', ')||tr('Нет','None');
+   if(field==='mobs')return value.map(v=>lookup('monster',v)).join(', ')||tr('Нет','None');
+   if(field==='d'||field==='s')return value.map(v=>itemName(v.i)+(v.n?' ×'+v.n:'')+(v.p!=null?' · '+v.p+'%':'')).join(', ')||tr('Нет','None');
+   if(field==='acquisitions')return value.map(v=>lookup(v.type,v.id)+(v.p!=null?' · '+v.p+'%':'')).join(', ')||tr('Нет','None');
+   if(field==='spawn')return value.map(v=>lookup(v.type,v.id)).join(', ')||tr('Нет','None');
+   return value.map(x=>typeof x==='object'?preview(x,80):String(x)).join(', ')||tr('Нет','None');
   }
   if(typeof value==='object'){
-   if(field==='classes')return Object.keys(value).filter(k=>value[k]).map(k=>classNames?.[k]?.name||k).join(', ')||'Нет';
+   if(field==='classes')return Object.keys(value).filter(k=>value[k]).map(k=>classNames?.[k]?.name||k).join(', ')||tr('Нет','None');
    if(field==='resists')return Object.entries(value).map(([k,v])=>
     (resistLabels[k]||k)+': '+(v>0?'+':'')+v
-   ).join(', ')||'Нет';
-   return Object.entries(value).map(([k,v])=>friendly(k)+': '+fmt(v,k)).join('; ')||'Нет';
+   ).join(', ')||tr('Нет','None');
+   return Object.entries(value).map(([k,v])=>friendly(k,lang)+': '+fmt(v,k)).join('; ')||tr('Нет','None');
   }
   return preview(value);
  };
@@ -115,7 +152,7 @@ function inspect(key,stored,{base=null,items=null,classes=null}={}){
    sub==='map'?(raw.maps?.[id]||raw.townMaps?.[id]||
     raw.trades?.mapNames?.[id]||root.PandoraAstirLocations?.district(id)):
    raw[({soul:'souls',skill:'skills',monster:'monsters'})[sub]]?.[id];
-  name=source?.name||lookup(sub,id);
+  name=lookup(sub,id);
   section=({soul:'Душа',skill:'Навык',npc:'NPC',monster:'Монстр',
    map:'Локация',instance:'Подземелье'})[sub]||'Энциклопедия';
   patch=toObject(stored);
@@ -158,12 +195,14 @@ function inspect(key,stored,{base=null,items=null,classes=null}={}){
  const changes=Object.entries(patch&&typeof patch==='object'&&!Array.isArray(patch)?patch:{value:stored})
   .map(([field,after])=>{
    const before=source?.[field];
-   const oldText=before===undefined?'Исходное значение неизвестно':fmt(before,field);
+   const oldText=before===undefined?tr('Исходное значение неизвестно','Original value unknown'):fmt(before,field);
    const newText=fmt(after,field);
-   return{field:friendly(field),before:oldText,after:newText,changed:before===undefined||oldText!==newText};
+   return{field:friendly(field,lang),before:oldText,after:newText,changed:before===undefined||oldText!==newText};
   }).filter(row=>row.changed);
- return{key,title:section+' · '+(name||key),section,target,
-  changes:changes.length?changes:[{field:'Сохранённое значение',before:'Исходное значение неизвестно',
+ const translatedSection=english?sectionEn[section]||section:section;
+ return{key,title:translatedSection+' · '+(name||key),section:translatedSection,target,
+  changes:changes.length?changes:[{field:tr('Сохранённое значение','Saved value'),
+   before:tr('Исходное значение неизвестно','Original value unknown'),
    after:preview(stored),changed:true}]};
 }
 root.PandoraOwnerChangeReview=Object.freeze({inspect});
