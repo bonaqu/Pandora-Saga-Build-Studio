@@ -155,6 +155,16 @@ function parse(value){try{return JSON.parse(value)}catch{return null}}
 function apply(data,overrides){
  let next=data;const clone=()=>{if(next===data)next={...data}};
  const mut=(type)=>{clone();if(next[type]===data[type])next[type]={...data[type]};return next[type]};
+ // A map-name edit and an NPC edit may arrive in either order in the same D1 snapshot.
+ // Clone the *specific* nested trade collection before its first write, even when
+ // a previous edit has already shallow-cloned the parent trades object.
+ const mutTradeCollection=(section)=>{
+  clone();
+  if(next.trades===data.trades)next.trades={...data.trades};
+  if(next.trades[section]===data.trades[section])
+   next.trades[section]={...data.trades[section]};
+  return next.trades[section];
+ };
  for(const [key,value] of Object.entries(overrides||{})){
   if(typeof value!=='string')continue;
   let m=/^wikiedit\.(map\.(?:astir-(?:union|empire|kingdom)|el-beht|astir-underground|custom-[a-z0-9-]{6,42})|npc\.(?:astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}|owner-npc-[a-f0-9]{16})|monster\.owner-monster-[a-z0-9]{12,24})$/.exec(key);
@@ -200,14 +210,13 @@ function apply(data,overrides){
     type==='skill'?'skills':type==='map'?'maps':'monsters';
    if(type==='npc'){
     if(!own(next.trades?.npcs,idValue))continue;
-    clone();if(next.trades===data.trades)next.trades={...data.trades,npcs:{...data.trades.npcs}};
-    next.trades.npcs[idValue]={...next.trades.npcs[idValue],...patch};
+    const npcs=mutTradeCollection('npcs');
+    npcs[idValue]={...npcs[idValue],...patch};
     continue;
    }
    if(type==='map'&&!own(next.maps,idValue)&&own(next.trades?.mapNames,idValue)){
-    clone();
-    if(next.trades===data.trades)next.trades={...data.trades,mapNames:{...data.trades.mapNames}};
-    next.trades.mapNames[idValue]={...next.trades.mapNames[idValue],...patch,
+    const maps=mutTradeCollection('mapNames');
+    maps[idValue]={...maps[idValue],...patch,
      ...('name' in patch?{ownerLabel:true}:{})};continue;
    }
    if(!own(next[collection],idValue))continue;
