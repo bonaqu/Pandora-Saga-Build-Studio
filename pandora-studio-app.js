@@ -127,8 +127,11 @@ if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length
 // Current character changes remain a local draft until explicit user save.
 function persist(){try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
  'ps-build-studio.v1',JSON.stringify(state))}catch{}}
-function persistBuilds(){try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
- 'ps-build-library.v1',JSON.stringify(builds))}catch{}}
+function persistBuilds(){
+ try{return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+  'ps-build-library.v1',JSON.stringify(builds))}
+ catch(error){console.warn('Build library could not be stored locally',error);return false}
+}
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
 const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
 let libraryChangeId=0;
@@ -286,7 +289,16 @@ async function loadCloudBuilds(){
    activeId:activeBuildId,newId,lang
   });
   const {outgoing,copies,unavailable}=reconciled;
-  builds=reconciled.merged;persistBuilds();
+  const beforeMerge=builds;
+  builds=reconciled.merged;
+  if(!persistBuilds()){
+   // Never announce recovered copies as durable or upload local revisions
+   // if the browser cannot commit the full reconciliation.
+   builds=beforeMerge;
+   reportCloudStatus('Не удалось сохранить облачные билды в браузере');
+   showStudioToast('Недостаточно места для сохранения библиотеки. Освободи место в браузере.','error');
+   return;
+  }
   if(reconciled.activeId!==activeBuildId)selectActiveBuild(reconciled.activeId);
   if(activeTab==='builds')renderDetails();
   reportCloudStatus(outgoing.length?'Синхронизируем локальные изменения…':
@@ -5873,9 +5885,15 @@ function renderBuilds(root){
    'Удалить локальную копию? Она ещё не сохранена в облаке.':
    'Удалить билд и отозвать все созданные ссылки?'}),
    h('button',{class:'button-action danger',type:'button',text:'Удалить билд',onclick:()=>{
-    builds=builds.filter(v=>v.id!==b.id);compareIds=compareIds.filter(id=>id!==b.id);
+    const beforeDelete=builds;
+    builds=builds.filter(v=>v.id!==b.id);
+    if(!persistBuilds()){
+     builds=beforeDelete;
+     showStudioToast('Не удалось удалить билд: браузер не сохранил изменения.','error');
+     return;
+    }
+    compareIds=compareIds.filter(id=>id!==b.id);
     if(activeBuildId===b.id)selectActiveBuild(null);
-    persistBuilds();
     if(b.localOnly===true){
      libraryChangeId++;
      reportCloudStatus('Локальная копия удалена');
@@ -6151,7 +6169,7 @@ function showStudioToast(message,tone='warning'){
  root.className='studio-toast '+tone;
  root.replaceChildren(h('div',{class:'studio-toast-content'},[
   h('strong',{text:window.PandoraUILocale?.ui(
-   tone==='success'?'Готово':tone==='error'?'Ссылка недоступна':'Уведомление',lang)}),
+   tone==='success'?'Готово':tone==='error'?'Ошибка':'Уведомление',lang)}),
   h('p',{text:window.PandoraUILocale?.ui(message,lang)||message})
  ]));
  const close=()=>{root.hidden=true;root.replaceChildren()};

@@ -143,3 +143,21 @@ test('cross-tab guest library transfer only carries the initiating guest, never 
  mod.transition(s,guest);
  assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Guest A');
 });
+
+test('quota failure while writing owner backup rolls back the primary saved-build slot',()=>{
+ const store=storage();mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Original',id:'a'.repeat(32)}]));
+ const before=store.getItem(keys[0]);
+ const fragile={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   if(key==='ps-build-scope-cache.v1:'+ownerA)throw Error('Quota exceeded on backup');
+   store.setItem(key,value);
+  }
+ };
+ assert.throws(()=>mod.setOwned(fragile,ownerA,keys[0],
+  JSON.stringify([{name:'New',id:'b'.repeat(32)}])),/Quota exceeded/);
+ assert.equal(store.getItem(keys[0]),before,
+  'Primary library must not change when the recovery snapshot write fails');
+});
