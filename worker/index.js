@@ -409,11 +409,20 @@ async function readCurrentGameFile(file){
     continue;
    }
    stage='response-body';
-   const raw=await response.text();
-   if(raw.length>1250000){
+   // Do not buffer an untrusted upstream response before enforcing its
+   // limit. 3 UTF-8 bytes per UTF-16 code unit cover the original 1.25M
+   // character ceiling, including Cyrillic and astral characters.
+   const upstream=await boundedTextBody(response,3750000,1250000);
+   if(upstream.tooLarge){
     attempts.push({host:new URL(host).hostname,code:'too-large'});
     continue;
    }
+   if(typeof upstream.raw!=='string'){
+    attempts.push({host:new URL(host).hostname,
+     code:controller.signal.aborted?'timeout':'invalid-body'});
+    continue;
+   }
+   const raw=upstream.raw;
    let data;
    try{data=JSON.parse(raw)}
    catch{attempts.push({host:new URL(host).hostname,code:'invalid-json'});continue}
