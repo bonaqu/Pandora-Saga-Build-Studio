@@ -20,23 +20,23 @@ function no(message,status=400){return json({error:message},status)}
 // Bound untrusted JSON by actual UTF-8 bytes, even when a caller omits or
 // understates Content-Length. The old request.json()/request.text() paths
 // could buffer unbounded input before checking its size.
-async function boundedJsonBody(request,maxBytes,maxChars=maxBytes){
+async function boundedTextBody(request,maxBytes,maxChars=maxBytes){
  const declared=request.headers.get('content-length');
- if(declared!==null&&(!/^[0-9]+$/.test(declared)||Number(declared)>maxBytes))
-  return null;
+ if(declared!==null&&!/^[0-9]+$/.test(declared))return {invalid:true};
+ if(declared!==null&&Number(declared)>maxBytes)return {tooLarge:true};
  const reader=request.body?.getReader?.();
- if(!reader)return null;
+ if(!reader)return {invalid:true};
  const chunks=[];
  let total=0;
  try{
   while(true){
    const {value,done}=await reader.read();
    if(done)break;
-   if(!(value instanceof Uint8Array))return null;
+   if(!(value instanceof Uint8Array))return {invalid:true};
    total+=value.byteLength;
    if(total>maxBytes){
     await reader.cancel().catch(()=>{});
-    return null;
+    return {tooLarge:true};
    }
    chunks.push(value);
   }
@@ -44,10 +44,15 @@ async function boundedJsonBody(request,maxBytes,maxChars=maxBytes){
   let offset=0;
   for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
   const raw=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
-  if(raw.length>maxChars)return null;
-  return JSON.parse(raw);
- }catch{return null}
+  return raw.length>maxChars?{tooLarge:true}:{raw};
+ }catch{return {invalid:true}}
  finally{reader.releaseLock()}
+}
+async function boundedJsonBody(request,maxBytes,maxChars=maxBytes){
+ const result=await boundedTextBody(request,maxBytes,maxChars);
+ if(typeof result.raw!=='string')return null;
+ try{return JSON.parse(result.raw)}
+ catch{return null}
 }
 async function body(request,limit=8192){return boundedJsonBody(request,limit)}
 const OWNER_EDIT_BODY_LIMIT=384*1024;
@@ -247,11 +252,11 @@ async function shareApi(request,env,path,ip){
  const bearer=request.headers.get('authorization')||'';
  if(!/^Bearer (?:[a-f0-9]{64}|[A-Za-z0-9_-]{43})$/.test(bearer))
   return no('Доступ к созданию ссылки требует владельца билда',401);
- if(Number(request.headers.get('content-length')||0)>48000)return no('Payload too large',413);
- const input=await request.text();
- if(input.length>48000)return no('Payload too large',413);
+ const input=await boundedTextBody(request,256*1024,48000);
+ if(input.tooLarge)return no('Payload too large',413);
+ if(typeof input.raw!=='string')return no('Invalid share payload',400);
  let payload;
- try{payload=JSON.parse(input)}catch{return no('Invalid share payload',400)}
+ try{payload=JSON.parse(input.raw)}catch{return no('Invalid share payload',400)}
  if(!payload||payload.schema!==1||payload.type!=='build'||!/^[a-f0-9]{32}$/.test(payload.buildId||''))
   return no('Можно поделиться только сохранённым билдом',400);
  const validate=entry=>entry&&typeof entry==='object'&&!Array.isArray(entry)&&
@@ -310,9 +315,10 @@ async function libraryApi(request,env){
    entry:r.deleted_at===null?JSON.parse(r.payload):null}))});
  }
  if(request.method!=='POST')return no('Method not allowed',405);
- if(Number(request.headers.get('content-length')||0)>45000)return no('Library entry too large',413);
- const raw=await request.text();if(raw.length>45000)return no('Library entry too large',413);
- let data;try{data=JSON.parse(raw)}catch{return no('Invalid JSON',400)}
+ const raw=await boundedTextBody(request,256*1024,45000);
+ if(raw.tooLarge)return no('Library entry too large',413);
+ if(typeof raw.raw!=='string')return no('Invalid JSON',400);
+ let data;try{data=JSON.parse(raw.raw)}catch{return no('Invalid JSON',400)}
  const id=data?.action==='put'?data?.entry?.id:data?.id;
  if(!/^[a-f0-9]{32}$/.test(id||''))return no('Invalid build ID',400);
  const now=Date.now();

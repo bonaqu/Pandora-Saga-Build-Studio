@@ -4,14 +4,14 @@ import {readFileSync} from 'node:fs';
 
 // Use the exact production parsers without making D1 calls.
 const worker=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
-const start=worker.indexOf('async function boundedJsonBody(');
+const start=worker.indexOf('async function boundedTextBody(');
 const stop=worker.indexOf('\nasync function auth(',start);
 const catalogStart=worker.indexOf('async function catalogBody(');
 const catalogStop=worker.indexOf('\nfunction isCostumeKind(',catalogStart);
 assert.ok(start>=0&&stop>start&&catalogStart>stop&&catalogStop>catalogStart);
 const parse=Function(worker.slice(start,stop)+'\n'+
  worker.slice(catalogStart,catalogStop)+
- '\nreturn {body,ownerEditBody,catalogBody}')( );
+ '\nreturn {body,ownerEditBody,catalogBody,boundedTextBody}')( );
 function request(raw,{declared=null}={}){
  return new Request('https://worker.example/test',{
   method:'POST',
@@ -63,4 +63,15 @@ test('bounded helpers are wired to the actual login, owner and catalog paths',()
  assert.match(worker,/const data=await catalogBody\(request\)/);
  assert.doesNotMatch(worker,/await request\.(json|text)\(\)/,
   'No remaining unbounded JSON reads should bypass the shared parser');
+});
+test('shared links and library POSTs use bounded transport before parsing',async()=>{
+ const oversized=await parse.boundedTextBody(request(JSON.stringify({
+  text:'🛡'.repeat(69000)
+ })),256*1024,48000);
+ assert.equal(oversized.tooLarge,true);
+ const malformed=await parse.boundedTextBody(request(new Uint8Array([0xff])),
+  256*1024,45000);
+ assert.equal(malformed.invalid,true);
+ assert.match(worker,/const input=await boundedTextBody\(request,256\*1024,48000\)/);
+ assert.match(worker,/const raw=await boundedTextBody\(request,256\*1024,45000\)/);
 });
