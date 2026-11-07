@@ -4,9 +4,10 @@
 // claims about which internal game effects currently run on the server.
 const names={
  player:{ru:'Умения персонажа',en:'Character skills'},
+ racial:{ru:'Расовая пассивка',en:'Racial passive'},
  guild:{ru:'Гильдия и осада',en:'Guild and siege'},
- special:{ru:'Особые умения',en:'Special skills'},
- variants:{ru:'Варианты навыков',en:'Skill variants'},
+ special:{ru:'Особое',en:'Special'},
+ variants:{ru:'Дубли навыков',en:'Duplicate skills'},
  other:{ru:'Другие навыки',en:'Other skills'},
  unknown:{ru:'Неуточнённые',en:'Unresolved'},
  all:{ru:'Все навыки',en:'All skills'}
@@ -19,8 +20,12 @@ const player=skill=>skill?.learnable===true&&assigned(skill)&&
  skill.branch!=='special'&&skill.branch!=='race';
 const guildOrSiege=skill=>skill?.branch==='special'&&
  /^(?:600|610|620)[0-9]{6}$/.test(String(skill.id||''));
-function build(records={},index=null,manifest=null,overrides={}){
+function build(records={},index=null,manifest=null,overrides={},racialPassives={}){
  const all=Object.entries(records),playableNames=new Set();
+ // race branch also contains Sleep/Stun/system entries. Only the source
+ // ownership registry may establish a learnable racial passive.
+ const raceIds=new Set(Object.values(racialPassives||{}).flatMap(race=>
+  Array.isArray(race?.skills)?race.skills.map(String):[]));
  const original=manifest?.icons?.skills||{},aliases=manifest?.displayAliases?.skills||{};
  const donorNames=new Set();
  for(const [,skill] of all){
@@ -32,7 +37,8 @@ function build(records={},index=null,manifest=null,overrides={}){
  for(const [id,skill] of all){
   const name=normalize(skill?.name),stem='skill_'+skill?.iconId;
   let group='other';
-  if(guildOrSiege(skill))group='guild';
+  if(raceIds.has(String(id)))group='racial';
+  else if(guildOrSiege(skill))group='guild';
   else if(player(skill))group='player';
   // Every secondary version of a confirmed character skill belongs in
   // Variants, even if a legacy record has learnable=true but no classes.
