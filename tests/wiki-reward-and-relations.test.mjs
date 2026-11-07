@@ -77,13 +77,13 @@ test('owner item source picker can create a real reverse-indexed monster loot ro
 });
 
 test('relation save rejects references to missing items or records before cloud write',async()=>{
- const start=source.indexOf('async function saveWikiRelationRows(');
+ const start=source.indexOf('function enqueueWikiOwnerListWrite(');
  const end=source.indexOf('\nfunction wikiOwnerNumeric(',start);
  assert.ok(start>=0&&end>start);
  const calls=[],edits=[],overrides={};
  const make=Function('wikiData','window','apiRequest','activeOverride',
   'ownerEdits','override','refreshOwnerCatalog','refreshOwnerUI',
-  "const adminEditing=true,adminToken='test';let editIsSaving=false;\n"+
+  "const adminEditing=true,adminToken='test';let editIsSaving=false;const wikiRecordWriteQueue=new Map();const wt=(ru,en)=>ru;\n"+
   source.slice(start,end)+'\nreturn saveWikiRelationRows;');
  const save=make({
    monsters:{600:{}},items:{1:{},3:{}}
