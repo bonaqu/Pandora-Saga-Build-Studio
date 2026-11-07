@@ -1661,6 +1661,7 @@ function renderOriginStats(){
 }
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
+ dismissSkillPreview();
  root.replaceChildren();
  const raceName=$('originRaceName');
  if(!Number.isInteger(state.race)||state.race<0||state.race>=races.length){
@@ -1794,9 +1795,11 @@ document.addEventListener('scroll',()=>{
   cancelPendingSkillPreview();
   if(button.isConnected&&button.matches(':hover'))queueSkillPreview(button,show);
  }
- if(activeSkillPreviewOwner?.isConnected)
-  positionSkillPreview(activeSkillPreviewOwner,activeSkillPreview);
- else if(activeSkillPreviewOwner)dismissSkillPreview();
+ if(activeSkillPreviewOwner?.isConnected){
+  if(!activeSkillPreviewOwner.matches(':hover')&&
+   !activeSkillPreviewOwner.matches(':focus-visible'))dismissSkillPreview();
+  else positionSkillPreview(activeSkillPreviewOwner,activeSkillPreview);
+ }else if(activeSkillPreviewOwner)dismissSkillPreview();
 },{capture:true,passive:true});
 document.addEventListener('visibilitychange',()=>{
  if(document.hidden)dismissSkillPreview();
