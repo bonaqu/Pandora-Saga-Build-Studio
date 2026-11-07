@@ -48,11 +48,12 @@ test('any changed skill mastery or item set invalidates the observed minimum',()
   .combat.attack.minimum,null);
  assert.equal(elfArcher({level:44}).combat.attack.minimum,null);
 });
-test('the +3 defense correction is limited to observed Iron Leggings 13041',()=>{
+test('the +1.2 defense rule applies to every eligible armor item, not only leggings',()=>{
  const observed=C.defensePreview({records:[item(13041,3)]});
- assert.deepEqual([observed.armor,observed.refinement,observed.known],[12,3,15]);
+ assert.deepEqual([observed.armor,observed.refinementRaw,observed.refinement,observed.known],
+  [12,3.6,3,15]);
  const old=C.defensePreview({records:[item(11001,3)]});
- assert.deepEqual([old.armor,old.refinement,old.known],[4,4,8]);
+ assert.deepEqual([old.armor,old.refinementRaw,old.refinement,old.known],[4,3.6,3,7]);
 });
 test('previous actual elf warrior level-1 short-sword attack remains 9–12',()=>{
  const data=C.base({classData:classes.WARRIOR,
