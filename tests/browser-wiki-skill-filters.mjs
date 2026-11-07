@@ -105,12 +105,16 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   // translated-name resolver must not lock the first query's results.
   const search=page.locator('.wiki-controls input[type="search"]');
   await search.fill('Гармония');
-  await page.locator('[data-wiki-record="900020001"]').waitFor({state:'visible'});
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-list [data-wiki-record]').length===1&&
+   !!document.querySelector('.wiki-list [data-wiki-record="900020001"]'));
   await search.fill('Бойцовский');
-  await page.locator('[data-wiki-record="900010001"]').waitFor({state:'visible'});
-  assert.equal(await page.locator('[data-wiki-record="900020001"]').count(),0);
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-list [data-wiki-record]').length===1&&
+   !!document.querySelector('.wiki-list [data-wiki-record="900010001"]'));
   await search.fill('');
-  await page.locator('[data-wiki-record="900020001"]').waitFor({state:'visible'});
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-list [data-wiki-record]').length===18);
   await page.locator('[data-wiki-record="900020001"]').click();
   assert.ok(await page.locator('.wiki-page .item-fields').getByText('Race',{exact:true}).count()>0);
   assert.ok(await page.locator('.wiki-page .item-fields').getByText('Elf',{exact:true}).count()>0);
