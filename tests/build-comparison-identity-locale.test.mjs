@@ -106,3 +106,15 @@ test('the A/B page shares visible Origin names without renaming stored keys',()=
  assert.match(app,/statLabels:ORIGIN_STAT_LABELS\.map\(\(\{name\}\)=>name\)/);
  assert.match(app,/\['Ловкость','Agility'\],\['Сноровка','Dexterity'\],\['Дух','Spirit'\]/);
 });
+
+test('legacy short comparison never prints unknown honor-title IDs',()=>{
+ const before={attributeBuffs:{honorTitle:999}};
+ const after={attributeBuffs:{honorTitle:998}};
+ for(const lang of ['ru','en']){
+  const messages=compare.describe(before,after,{lang,honorTitles:[]});
+  assert.equal(messages.length,1);
+  assert.equal(messages[0].includes('999'),false);
+  assert.equal(messages[0].includes('998'),false);
+  assert.match(messages[0],lang==='ru'?/Титул отсутствует в каталоге/:/Honor title unavailable/);
+ }
+});

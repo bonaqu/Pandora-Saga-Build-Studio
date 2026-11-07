@@ -116,7 +116,12 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
   x.attributeBuffs.honorTitle:(x?.attributeBuffs?.honorCuriosity===true?1:0);
  const at=titleId(a),bt=titleId(b);
  if(at!==bt){
-  const name=id=>honorTitles[id]?.[english?'en':'ru']||String(id);
+  const name=id=>{
+   const known=honorTitles[id]?.[english?'en':'ru'];
+   return typeof known==='string'&&known.trim()?known:
+    id===0?lbl('Без титула','None'):
+    lbl('Титул отсутствует в каталоге','Honor title unavailable');
+  };
   arrow(lbl('Титул чести','Honor title'),name(at),name(bt));
  }
  return rows;
@@ -321,20 +326,43 @@ function matrixRows(a={},b={},options={}){
   push('buffs',priest,'priest.'+key,ru,en,get(a),get(b),
    {kind:typeof fallback==='boolean'?'boolean':'number'});
  }
- const title=id=>honorTitles?.[id]?.[english?'en':'ru']||String(id);
+ const title=id=>{
+  const known=honorTitles?.[id]?.[english?'en':'ru'];
+  return typeof known==='string'&&known.trim()?known:
+   id===0?label('Без титула','None'):
+   label('Титул отсутствует в каталоге','Honor title unavailable');
+ };
  const honorId=s=>Number.isInteger(s.attributeBuffs?.honorTitle)?
   s.attributeBuffs.honorTitle:(s.attributeBuffs?.honorCuriosity===true?1:0);
+ const honorA=honorId(a),honorB=honorId(b);
  push('buffs',buffGroup,'honorTitle','Титул чести','Honor title',
-  title(honorId(a)),title(honorId(b)));
- const resistanceIds=s=>{
-  const ids=s.attributeBuffs?.resistanceSkillIds;
-  if(ids==null)return '';
-  if(!Array.isArray(ids))return null;
-  return [...new Set(ids.map(String).filter(id=>/^[0-9]+$/.test(id)))]
-   .sort((x,y)=>Number(x)-Number(y)).join(', ');
+  title(honorA),title(honorB),{identityA:String(honorA),identityB:String(honorB)});
+ // Never expose internal skill IDs in a player-visible saved-build comparison.
+ // Preserve identities separately: two missing source names can still differ.
+ const resistanceSkills=s=>{
+  const values=s.attributeBuffs?.resistanceSkillIds;
+  if(values==null)return {names:'',identity:''};
+  if(!Array.isArray(values))return {names:null,identity:null};
+  const ids=values.map(String);
+  if(ids.some(id=>!/^[1-9][0-9]*$/.test(id)||
+   !Number.isSafeInteger(Number(id))))return {names:null,identity:null};
+  const unique=[...new Set(ids)].sort((x,y)=>Number(x)-Number(y));
+  const names=unique.map(id=>{
+   const record=skillCatalog[id],official=englishSkills[id];
+   const candidates=english?
+    [record?.nameEn,official?.n,record?.name?.en,record?.names?.en,
+     record?.name?.ru,record?.name]:
+    [record?.name?.ru,record?.names?.ru,record?.name,record?.nameEn];
+   const found=candidates.find(v=>typeof v==='string'&&v.trim()&&
+    !/^[0-9]+$/.test(v.trim()));
+   return found?found.trim():label('Умение отсутствует в каталоге','Skill not in catalog');
+  });
+  return {names:names.join(' · '),identity:unique.join(',')};
  };
+ const resistanceA=resistanceSkills(a),resistanceB=resistanceSkills(b);
  push('buffs',buffGroup,'resistanceSkills','Умения сопротивления','Resistance skills',
-  resistanceIds(a),resistanceIds(b));
+  resistanceA.names,resistanceB.names,
+  {identityA:resistanceA.identity,identityB:resistanceB.identity});
  return rows;
 }
 

@@ -186,3 +186,37 @@ test('approved stat names in A/B are separate from legacy saved allocation keys'
  assert.equal(en.find(x=>x.key==='points.dex').label,'Dexterity');
  assert.equal(JSON.stringify([first,second]),original);
 });
+
+test('resistance skills compare readable RU/EN names instead of internal catalog IDs',()=>{
+ const left={attributeBuffs:{resistanceSkillIds:[310001,310002],honorTitle:9001}};
+ const right={attributeBuffs:{resistanceSkillIds:[310002,310003],honorTitle:9002}};
+ const skillCatalog={
+  310001:{name:'Огненная защита'},
+  310002:{name:'Ледяная защита',nameEn:'Ice protection'}};
+ const englishSkills={310001:{n:'Fire protection'}};
+ const options={...opts,skillCatalog,englishSkills,honorTitles:[]};
+ const key=(lang,id)=>comparison.matrixRows(left,right,{...options,lang}).find(x=>x.key===id);
+ const ru=key('ru','resistanceSkills'),en=key('en','resistanceSkills');
+ assert.equal(ru.a,'Огненная защита · Ледяная защита');
+ assert.equal(ru.b,'Ледяная защита · Умение отсутствует в каталоге');
+ assert.equal(en.a,'Fire protection · Ice protection');
+ assert.equal(en.b,'Ice protection · Skill not in catalog');
+ assert.equal(ru.equal,false);
+ assert.equal(en.equal,false);
+ const title=key('ru','honorTitle');
+ assert.equal(title.a,'Титул отсутствует в каталоге');
+ assert.equal(title.b,'Титул отсутствует в каталоге');
+ assert.equal(title.equal,false,'Two missing titles must remain distinguishable by identity');
+ const rendered=[ru.a,ru.b,en.a,en.b,title.a,title.b].join(' ');
+ for(const raw of ['310001','310002','310003','9001','9002'])
+  assert.equal(rendered.includes(raw),false,'An internal ID leaked: '+raw);
+ const same=comparison.matrixRows(left,structuredClone(left),options);
+ assert.equal(same.find(x=>x.key==='resistanceSkills').equal,true);
+ assert.equal(same.find(x=>x.key==='honorTitle').equal,true);
+});
+
+test('invalid resistance skill arrays do not silently discard corrupt identifiers',()=>{
+ const invalid={attributeBuffs:{resistanceSkillIds:[310001,'not-an-id']}};
+ const rows=comparison.matrixRows(invalid,first,{...opts,skillCatalog:{310001:{name:'Valid'}}});
+ assert.equal(rows.find(x=>x.key==='resistanceSkills').a,'—');
+});
