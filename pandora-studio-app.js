@@ -6468,7 +6468,18 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  if(type==='number')control.select();
  else if(type==='text')window.getSelection()?.selectAllChildren(control);
 }
+// Repeated blur saves of different labels must not race and overwrite each
+// other: construct each merged D1 patch only after the previous write finishes.
+let wikiLabelWriteQueue=Promise.resolve();
 async function saveGuidePatch(key,fields){
+ if(key==='wiki.labels'){
+  const write=wikiLabelWriteQueue.then(()=>saveGuidePatchNow(key,fields));
+  wikiLabelWriteQueue=write.catch(()=>{});
+  return write;
+ }
+ return saveGuidePatchNow(key,fields);
+}
+async function saveGuidePatchNow(key,fields){
  if(!adminEditing||!adminToken||!window.PandoraHonorGuide)
   throw Error('Редактор справочника недоступен');
  const overrideKey='guideedit.'+key,before=activeOverride(overrideKey);
