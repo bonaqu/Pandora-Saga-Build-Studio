@@ -2021,7 +2021,11 @@ function wikiBackButton(){
   }});
 }
 function wikiLink(text,type,id,highlight=null){
- const displayId=wikiIndex?.canonical?.(type,id)||String(id);
+ // A skill ID identifies a specific version with potentially different
+ // MP costs and effects. Preserve it in Wiki links, even if the canonical
+ // primary skill has the same name. Other chapters keep deduplication.
+ const displayId=type==='skill'?String(id):
+  wikiIndex?.canonical?.(type,id)||String(id);
  const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(displayId)+(highlight==null?'':'/'+encodeURIComponent(highlight));
  return h('a',{class:'wiki-link',href,text,onclick:event=>{
   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
@@ -3780,7 +3784,7 @@ function renderWiki(root){
     const prereqPane=h('div',{class:'wiki-prerequisite'});
     prereqPane.append(h('small',{text:wt('Предыдущее умение','Prerequisite skill')}));
     if(rec.prereq!=null&&wikiData.skills?.[rec.prereq]){
-     const prereq=wikiIndex.canonical('skill',rec.prereq);
+     const prereq=String(rec.prereq);
      const link=wikiLink(dataName('skill',prereq),'skill',prereq);
      prereqPane.append(withIcon(link,wikiIcon('skill',prereq,wikiData.skills[prereq]),'skill'));
     }
