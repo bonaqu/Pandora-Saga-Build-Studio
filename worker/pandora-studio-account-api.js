@@ -125,11 +125,15 @@ export async function accountApi(request,env,path,{ip='unknown',throttle,recordF
   const original=await hashPassword(data.currentPassword,row.salt);
   if(!same(original,row.password_hash))return error('Current password is incorrect',401);
   const salt=b64(random(24)),digest=await hashPassword(data.password,salt);
-  await db.prepare('UPDATE user_accounts SET salt=?,password_hash=? WHERE id=?')
-   .bind(salt,digest,user.id).run();
   const currentToken=(request.headers.get('authorization')||'').slice(7);
-  await db.prepare('DELETE FROM user_sessions WHERE account_id=? AND token_hash<>?')
-   .bind(user.id,await sha(currentToken)).run();
+  // A failed session revocation must not leave the password changed while
+  // older credentials remain active. D1 batch rolls both statements back.
+  await db.batch([
+   db.prepare('UPDATE user_accounts SET salt=?,password_hash=? WHERE id=?')
+    .bind(salt,digest,user.id),
+   db.prepare('DELETE FROM user_sessions WHERE account_id=? AND token_hash<>?')
+    .bind(user.id,await sha(currentToken))
+  ]);
   return json({ok:true});
  }
  if(kind==='register'){
