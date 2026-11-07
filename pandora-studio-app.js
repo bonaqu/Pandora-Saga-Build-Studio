@@ -2547,7 +2547,11 @@ function renderWiki(root){
  }
 
  const nameCache=new Map();
-  let lastWikiIndex=null;
+ // The Wiki search index caches translated terms by resolver identity.
+ // Keep one resolver while the data/locale is unchanged, but replace it
+ // whenever any of these sources change so stale EN/RU results cannot survive.
+ let lastWikiIndex=null,lastWikiEnglish=null,lastWikiLanguage=null;
+ let searchResolver=null;
  const dataName=(type,id)=>{
   if(type==='map'){
    const geo=window.PandoraAstirLocations;
@@ -2968,8 +2972,14 @@ function renderWiki(root){
   detail.append(add);
  };
  const draw=(detailOnly=false)=>{
-   if(lastWikiIndex!==wikiIndex){
-    nameCache.clear();searchCache.clear();lastWikiIndex=wikiIndex;
+   if(lastWikiIndex!==wikiIndex||lastWikiEnglish!==officialEnglish||
+    lastWikiLanguage!==lang){
+    nameCache.clear();searchCache.clear();wikiResultsCache=null;
+    lastWikiIndex=wikiIndex;lastWikiEnglish=officialEnglish;
+    lastWikiLanguage=lang;
+    // A new callback on EVERY keystroke defeats WikiData's WeakMap cache.
+    // This identity now persists until the catalog or language changes.
+    searchResolver=id=>searchTerms(wikiSelection.type,id);
    }
    const previousScroll=browse.scrollTop,previousDetailScroll=detail.scrollTop;
   window.PandoraStageItemUI?.dismissPreview();
@@ -3037,7 +3047,7 @@ function renderWiki(root){
    (type!=='skill'||wikiResultsCache.filterModel===filterModel)&&
    wikiResultsCache.key===resultKey?wikiResultsCache.rows:null;
   if(!results){
-   results=wikiIndex.search(type,wikiSearch,id=>searchTerms(type,id),
+   results=wikiIndex.search(type,wikiSearch,searchResolver,
     {includeVariants:type==='skill'})
     .filter(([id,rec])=>{
      if(type==='skill')return filterModel.matches(id,wikiSkillFilter);

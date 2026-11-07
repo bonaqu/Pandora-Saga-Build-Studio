@@ -101,6 +101,23 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   await filter.selectOption('racial');
   assert.deepEqual(await page.locator('.wiki-list .wiki-location-list-heading').allTextContents(),
    ['Human','Elf','Dwarf','Myrine','Enkidu','Lapin']);
+  // Exercise two successive queries in an unchanged EN view. The cached
+  // translated-name resolver must not lock the first query's results.
+  const search=page.locator('.wiki-controls input[type="search"]');
+  // The approved anti-password-autofill guard makes this readOnly until an
+  // actual pointer/focus gesture, as in normal player interaction.
+  await search.click();
+  await search.fill('Гармония');
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-list [data-wiki-record]').length===1&&
+   !!document.querySelector('.wiki-list [data-wiki-record="900020001"]'));
+  await search.fill('Бойцовский');
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-list [data-wiki-record]').length===1&&
+   !!document.querySelector('.wiki-list [data-wiki-record="900010001"]'));
+  await search.fill('');
+  await page.waitForFunction(()=>
+   document.querySelectorAll('.wiki-list [data-wiki-record]').length===18);
   await page.locator('[data-wiki-record="900020001"]').click();
   assert.ok(await page.locator('.wiki-page .item-fields').getByText('Race',{exact:true}).count()>0);
   assert.ok(await page.locator('.wiki-page .item-fields').getByText('Elf',{exact:true}).count()>0);
