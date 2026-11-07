@@ -146,7 +146,7 @@ export async function runWikiIconManifestFallbackSmoke(browser,base){
   // The first visible list may still be the pre-catalog placeholder.
   // Wait for the actual offline archive before choosing its filter.
   await page.waitForFunction(()=>
-   /\\d+ навыков · \\d+ предметов · \\d+ душ/.test(
+   /\d+ навыков · \d+ предметов · \d+ душ/.test(
     document.querySelector('#catalogStatus')?.textContent||''),
    null,{timeout:30000});
   await page.locator('#nav [data-tab="wiki"]').click();
