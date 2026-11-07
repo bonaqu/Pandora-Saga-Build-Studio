@@ -49,7 +49,8 @@ function cloud(){
 }
 
 test('all administrative writes send the current D1 value as a CAS precondition',async()=>{
- const remote=cloud(),a=instance(remote.fetchImpl,{
+ const remote=cloud();remote.values.set('itemdesc.5','Older description');
+ const a=instance(remote.fetchImpl,{
   values:{'itemdesc.5':'Older description'}
  });
  await a.request('/api/admin/override',{key:'itemdesc.5',value:'Updated'});
