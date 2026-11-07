@@ -43,6 +43,7 @@ test('owner editor is a fixed overlay with an accessible left-edge handle',()=>{
 
 test('admin hover hint is delayed and cancelled, while keyboard focus is immediate',()=>{
  const callbacks=new Map(),timeouts=[],cancelled=[];
+ let scroll;
  const makeElement=()=>({
   hidden:true,style:{},setAttribute(){},
   getBoundingClientRect(){return {width:200,height:60}},
@@ -50,7 +51,7 @@ test('admin hover hint is delayed and cancelled, while keyboard focus is immedia
  });
  const doc={
   body:{append(){}},createElement:makeElement,
-  addEventListener(){}
+  addEventListener(name,fn){if(name==='scroll')scroll=fn}
  };
  const win={innerWidth:1000,innerHeight:800,addEventListener(){}};
  const sandbox={window:win,document:doc,
@@ -58,29 +59,37 @@ test('admin hover hint is delayed and cancelled, while keyboard focus is immedia
   clearTimeout(id){cancelled.push(id)}};
  vm.runInNewContext(read('pandora-studio-guide-tooltips.js'),sandbox);
  const attrs={},classes=new Set();
- let focusVisible=false;
+ let focusVisible=false,hovered=false;
  const node={
   dataset:{},isConnected:true,classList:{add(v){classes.add(v)}},
   setAttribute(k,v){attrs[k]=v},getAttribute(k){return attrs[k]??null},
   removeAttribute(k){delete attrs[k]},
   addEventListener(name,fn){callbacks.set(name,fn)},
-  matches(selector){assert.equal(selector,':focus-visible');return focusVisible},
+  matches(selector){
+   if(selector===':hover')return hovered;
+   assert.equal(selector,':focus-visible');return focusVisible;
+  },
   closest(){return null},
   getBoundingClientRect(){return {left:100,top:200,bottom:220}}
  };
  win.PandoraGuideTooltip.attach(node,'Проверка', {hoverDelay:1000});
  assert.ok(classes.has('stage-guide-label'));
+ hovered=true;
  callbacks.get('pointerenter')({pointerType:'mouse'});
  assert.equal(timeouts[0].delay,1000);
  assert.equal(attrs['aria-describedby'],undefined);
- callbacks.get('pointerleave')();
+ hovered=false;callbacks.get('pointerleave')();
  assert.deepEqual(cancelled,[1]);
  // Re-entering starts a fresh timer rather than restoring the stale popup.
- callbacks.get('pointerenter')({pointerType:'mouse'});
+ hovered=true;callbacks.get('pointerenter')({pointerType:'mouse'});
  assert.equal(timeouts[1].delay,1000);
- timeouts[1].fn();
+ // Scroll cancels the old timer but restarts it if pointer stays on the label.
+ scroll();
+ assert.deepEqual(cancelled,[1,2]);
+ assert.equal(timeouts[2].delay,1000);
+ timeouts[2].fn();
  assert.equal(attrs['aria-describedby'],'stage-guide-tooltip');
- callbacks.get('pointerleave')();
+ hovered=false;callbacks.get('pointerleave')();
  assert.equal(attrs['aria-describedby'],undefined);
  callbacks.get('focus')();
  assert.equal(attrs['aria-describedby'],undefined,

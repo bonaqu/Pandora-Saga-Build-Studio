@@ -40,3 +40,21 @@ test('the book attaches only meaningful descriptions and retains the owner edito
  assert.match(code,/options\.editable&&typeof options\.onTextEdit==='function'/);
  assert.match(code,/guideLabel\(tile\.firstChild,'summary\.'/);
 });
+
+test('gameplay hints use the shared delayed tooltip and not browser title attributes',()=>{
+ const code=load('pandora-studio-hero-book.js');
+ assert.match(code,/PandoraGuideTooltip\?\.attach\(node,hint,\{hoverDelay:650\}\)/);
+ assert.match(code,/PandoraGuideTooltip\?\.attach\(info,skill\.desc,\{hoverDelay:650\}\)/);
+ assert.doesNotMatch(code,/\{title:skill\.desc\}/);
+ assert.doesNotMatch(code,/row\.setAttribute\('title',kind\)/);
+ assert.match(code,/class:'stage-legacy-buff-copy'/);
+ assert.doesNotMatch(code,/Просмотр отдельных умений по Remaked/);
+ assert.doesNotMatch(code,/Skill previews based on Remaked/);
+});
+
+test('scrolls reschedule hover help only while the element is still hovered',()=>{
+ const src=load('pandora-studio-guide-tooltips.js');
+ assert.match(src,/function scheduleHover\(node,show,delay\)/);
+ assert.match(src,/node\.isConnected&&node\.matches\(':hover'\)/);
+ assert.match(src,/if\(pending\)\{\s*const \{node,show,delay\}=pending/);
+});
