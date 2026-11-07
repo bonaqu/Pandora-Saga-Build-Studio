@@ -476,7 +476,7 @@ function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle
  return {known:Math.ceil(raw+honor),raw,unarmed:false,physical,
   weaponDamage:damage,refinement,strengthRate,honor,verified:false};
 }
-// Pandora Saga OS news #4: all forgeable armor and shields now gain +1.2
+// Current game's news #4: all forgeable armor and shields now gain +1.2
 // DEF per enhancement level, replacing the archival +1.5. Keep tenths as
 // integers until the equipped total is known; separately flooring each
 // piece would discard fractional contributions accumulated across items.
