@@ -240,6 +240,20 @@ function pending(values={}){
  }
  return output;
 }
+function value(values={},key){
+ const entry=curated[key],before=values?.[key];
+ if(!entry||typeof before!=='string')return before;
+ let patch;try{patch=JSON.parse(before)}catch{return before}
+ if(!plain(patch))return before;
+ let copy=null;
+ for(const [ruField,{ru,enField,en}] of Object.entries(entry.fields)){
+  if(patch[ruField]===ru&&!(typeof patch[enField]==='string'&&patch[enField].trim())){
+   if(!copy)copy={...patch};
+   copy[enField]=en;
+  }
+ }
+ return copy?JSON.stringify(copy):before;
+}
 function view(values={}){
  const changes=pending(values);
  if(!changes.length)return values;
@@ -247,5 +261,5 @@ function view(values={}){
  for(const edit of changes)copy[edit.key]=edit.value;
  return copy;
 }
-root.PandoraOwnerBilingual=Object.freeze({pending,view,curated});
+root.PandoraOwnerBilingual=Object.freeze({pending,view,value,curated});
 })(typeof window==='undefined'?globalThis:window);
