@@ -28,7 +28,23 @@ export async function runWikiOwnerEnglishSyncSmoke(browser,base){
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
   const json=data=>route.fulfill({status:200,headers,
    contentType:'application/json',body:JSON.stringify(data)});
-  if(url.endsWith('/api/overrides'))return json({values});
+  // The real app loads D1 catalog snapshots before applying owner overrides.
+  // Without this stub it deliberately starts in archive mode, and a successful
+  // default label would mask the missing D1 overlay under test.
+  const path=new URL(url).pathname;
+  if(path.startsWith('/api/catalog/')&&path.endsWith('.json')){
+   const key=path.split('/').pop().slice(0,-5);
+   const name=key==='stringsEn'?'strings.en':key;
+   if(key==='legacyLocale')return json({});
+   const content=JSON.parse(readFileSync(
+    new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
+   return route.fulfill({status:200,headers:{
+    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot',
+    'x-ps-catalog-snapshot':'ps-browser-snapshot'},
+    contentType:'application/json',body:JSON.stringify(content)});
+  }
+  if(path==='/api/library')return json({records:[]});
+  if(path==='/api/overrides')return json({values});
   if(url.endsWith('/api/admin/login'))
    return json({token:'a'.repeat(43),expires:Date.now()+600000});
   if(url.endsWith('/api/admin/override')){
