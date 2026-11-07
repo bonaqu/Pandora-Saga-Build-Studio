@@ -23,7 +23,7 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   assert.equal(await page.locator('[data-wiki-record="600000232"]').count(),1,
    'Different guild ranks remain distinct, even when they share artwork');
   assert.ok((await filter.locator('option[value="unknown"]').innerText())
-   .startsWith('На проверке'),
+   .startsWith('Неуточнённые'),
    'Review filter should use a neutral label without declaring skills inactive');
   await filter.selectOption('unknown');
   await page.locator('[data-wiki-record="500000001"]').waitFor({state:'visible'});
@@ -51,7 +51,7 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   assert.equal(await filter.locator('option[value="player"]').innerText()
    .then(text=>text.startsWith('Character skills')),true);
   assert.ok((await filter.locator('option[value="unknown"]').innerText())
-   .startsWith('Under review'),'English review label should be neutral');
+   .startsWith('Unresolved'),'English review label should be neutral');
   await page.setViewportSize({width:390,height:780});
   assert.ok((await filter.boundingBox())?.width>80,'Mobile filter remains usable');
   const overflow=await page.evaluate(()=>
