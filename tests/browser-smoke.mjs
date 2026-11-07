@@ -8,6 +8,7 @@ import {runCloudSaveFailureSmoke} from './browser-cloud-save-failure.mjs';
 import {runDeletedBuildRecoverySmoke} from './browser-deleted-recovery.mjs';
 import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs';
 import {runEquipmentLocaleSmoke} from './browser-equipment-locale.mjs';
+import {runRefinementTooltipSmoke} from './browser-refinement-tooltip.mjs';
 import {runItemHoverDelaySmoke} from './browser-item-hover-delay.mjs';
 import {runLegacySkillCapSmoke} from './browser-legacy-skill-cap.mjs';
 import {runTwoHandedSmoke} from './browser-two-handed.mjs';
@@ -266,6 +267,7 @@ async function main(){
   ['deleted-build-recovery',runDeletedBuildRecoverySmoke],
   ['equipment-eligibility',runEquipmentEligibilitySmoke],
   ['equipment-locale',runEquipmentLocaleSmoke],
+  ['equipment-forge-bonuses',runRefinementTooltipSmoke],
   ['item-preview-delay',runItemHoverDelaySmoke],
   ['legacy-class-cap',runLegacySkillCapSmoke],
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
@@ -289,7 +291,7 @@ async function main(){
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
- const quickCases=new Set(['share-link','equipment-locale','legacy-class-cap','innate-l1-mastery',
+ const quickCases=new Set(['share-link','equipment-locale','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery',
   'manual-saved-overwrite','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;

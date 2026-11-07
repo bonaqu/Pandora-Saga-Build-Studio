@@ -133,12 +133,12 @@ test('equipped item hover includes base and refinement defense plus socketed Sou
  assert.match(all,/1 \/ 1/);
  const grade4=stage.PandoraStageItemUI.summary({...rec,AC:13},()=>null,'item',
   {refinement:6,souls:[]});
- assert.match(walk(grade4).map(e=>e.textContent).join(' '),/13\+6/);
+ assert.match(walk(grade4).map(e=>e.textContent).join(' '),/13\+7/);
  const picker=stage.PandoraStageItemUI.summary(rec,()=>null);
  assert.doesNotMatch(walk(picker).map(e=>e.textContent).join(' '),/11\+3/);
 });
 
-test('game-like armor tooltip displays visible grade separately from Remaked calculated defense',()=>{
+test('armor tooltip displays the real bonus separately from the item refinement grade',()=>{
  const rec={id:12616,name:'Зеленое астирское платье',slot:'body',
   kind:'TORSO',AC:31,desc:'ПРВ +2',soulslot:3};
  const armour=stage.PandoraStageItemUI.summary(rec,()=>null,'item',
