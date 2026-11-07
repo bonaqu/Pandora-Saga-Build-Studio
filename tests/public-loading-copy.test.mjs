@@ -46,7 +46,7 @@ test('archive notices change language without exposing storage internals',()=>{
  const empty={hidden:false,textContent:'old'};
  factory(()=>empty,false,'ru')();
  assert.equal(empty.hidden,true);assert.equal(empty.textContent,'');
- assert.match(app,/renderArchiveNotice\(\);\s*renderOriginCopyLabels\(\)/);
+ assert.match(app,/renderArchiveNotice\(\);\s*renderCatalogStatus\(\);\s*renderOriginCopyLabels\(\)/);
 });
 test('loading overlay is bilingual even before scripts run and old quick comparison is removed',()=>{
  assert.match(html,/id="startupStatus"[^>]*><span data-boot-ru>/);

@@ -205,6 +205,7 @@ async function main(){
  // Switching site language must translate Hero Book navigation, accessibility
  // and summary without touching player-defined names or OS item IDs.
  await page.locator('#locale [data-locale="en"]').click();
+ await page.locator('#locale [data-locale="en"][aria-pressed="true"]').waitFor({state:'visible'});
  assert.match(await page.locator('#catalogStatus').innerText(),
   /^Encyclopedia: \d+ skills · \d+ items · \d+ souls$/);
  // The Origin area and selected racial passive stay readable in English.
@@ -263,6 +264,7 @@ async function main(){
  assert.ok(await page.locator('#stageBookPanel .stage-legacy-buff-previews').count()>=1);
  await page.locator('#stageAttributes .stage-book-close').click();
  await page.locator('#locale [data-locale="ru"]').click();
+ await page.locator('#locale [data-locale="ru"][aria-pressed="true"]').waitFor({state:'visible'});
  assert.match(await page.locator('#catalogStatus').innerText(),
   /^В энциклопедии: \d+ навыков · \d+ предметов · \d+ душ$/);
 
