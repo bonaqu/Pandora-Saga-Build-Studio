@@ -77,6 +77,8 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const picker=relations.locator('.wiki-owner-relation-picker');
   await picker.waitFor({state:'visible'});
   const lookup=picker.locator('.wiki-owner-search');
+  // Reuse the actual pointer unlock for the anti-autofill-protected field.
+  await lookup.click();
   await lookup.fill('Туманные холмы');
   await picker.locator('select').selectOption('2003301');
   await page.waitForFunction(()=>document.querySelector('.wiki-page')
