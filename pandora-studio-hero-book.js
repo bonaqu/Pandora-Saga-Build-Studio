@@ -256,6 +256,12 @@ function make(tag,attrs={},children=[]){
 
 // One visual metadata owner per chapter field. D1 changes affect copy only,
 // never IDs, numerical formulas, current equipment, or stored build settings.
+// A gameplay explanation deserves a hint; bare headings and editor placeholders do not.
+// Existing D1 overrides may still contain old boilerplate; ignore it in the public view.
+function meaningfulGuideHint(value){
+ if(typeof value!=='string'||!value.trim())return false;
+ return !/^(?:Описание параметра\.?|Параметр персонажа\.?|Название раздела Книги героя\.?|Описание раздела «[^»]+»\.?|Stat description\.?|Character statistic\.?|Hero Book chapter title\.?|Description of .+\.?)$/i.test(value.trim());
+}
 function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  if(!node)return node;
  const guide=root.PandoraHonorGuide;
@@ -266,7 +272,7 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
  const label=english?(info?.en||en):(info?.ru||ru);
  const hint=english?info?.hintEn:info?.hintRu;
  node.textContent=label;
- if(hint)root.PandoraGuideTooltip?.attach(node,hint);
+ if(meaningfulGuideHint(hint))root.PandoraGuideTooltip?.attach(node,hint);
  node.setAttribute('data-guide-key',key);
  if(options.editable&&typeof options.onTextEdit==='function'){
   node.classList.add('stage-guide-editable');
@@ -397,7 +403,8 @@ function buffsPage(body,options){
  const {buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],
   availability={},combatSkillCards={},resistanceSkillChoices=[],modifiers}=options;
  const english=document.documentElement?.lang==='en';
- body.append(make('p',{class:'stage-attribute-note',text:
+ body.append(make('p',{class:'stage-attribute-note',text:english?
+  'Settings apply to this build immediately. Values update in the other Hero Book chapters.':
   'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.'}));
  // Count selected effects, never mastery input numbers or a disabled priest.
  const guildSelected=Number(buffs.guildLevel)>0;
@@ -429,7 +436,7 @@ function buffsPage(body,options){
  const section=(name,stableId=null)=>{
   const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
   guideLabel(node.firstChild,stableId==='guild'?'buffs.guild':
-   'buffs.section.'+(stableId||sectionIndex++),name,name,options,name,name);
+   'buffs.section.'+(stableId||sectionIndex++),name,name,options);
   body.append(node);
   return node;
  };
@@ -437,7 +444,7 @@ function buffsPage(body,options){
   const field=make(compact?'div':'label',{class:'stage-book-field'+(compact?' stage-book-choice-only':'')},
    compact?[]:[make('span',{text:name})]);
   if(!compact)guideLabel(field.firstChild,'buffs.setting.'+key,
-   name,name,options,'Настройка усиления: '+name,'Enhancement setting: '+name);
+   name,name,options);
   const entry=make('select',{'aria-label':name,'data-book-setting':key,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
   const selected=(vital?vitalsBuffs:buffs)[key]??0;
@@ -996,7 +1003,7 @@ function decorateChapterCaptions(body,page,options){
    if(suffix)node.append(document.createTextNode(suffix));
   }
   guideLabel(label,section+'.caption.'+key,ru,en,options,
-   'Описание раздела «'+ru+'».','Description of '+en+'.');
+   );
  }
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
@@ -1027,22 +1034,22 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   'Книга героя. '+chapterTitle(chosen,bookPages[index][1])+'. Страница '+(index+1)+' из 6');
  const bookHeader=make('div',{class:'stage-attribute-head'},[
   make('button',{type:'button',class:'stage-book-arrow',text:'‹',
-   onclick:()=>onPage(prior),'aria-label':'Предыдущая страница'}),
+   onclick:()=>onPage(prior),'aria-label':document.documentElement?.lang==='en'?'Previous page':'Предыдущая страница'}),
   make('div',{class:'stage-book-heading'},[
    make('span',{text:(document.documentElement?.lang==='en'?'HERO BOOK':'КНИГА ГЕРОЯ')+' · '+(index+1)+' / 6'}),
    make('strong',{text:chapterTitle(chosen,bookPages[index][1])})]),
   make('button',{type:'button',class:'stage-book-arrow',text:'›',
-   onclick:()=>onPage(next),'aria-label':'Следующая страница'}),
+   onclick:()=>onPage(next),'aria-label':document.documentElement?.lang==='en'?'Next page':'Следующая страница'}),
   make('button',{type:'button',text:'✕',class:'stage-book-close',onclick:onClose,
-   'aria-label':'Вернуть портрет'})
+   'aria-label':document.documentElement?.lang==='en'?'Return to portrait':'Вернуть портрет'})
  ]);
  if(reusePanel)target.insertBefore(bookHeader,stablePanel);
  else target.append(bookHeader);
  const headingTitle=target.querySelector?.('.stage-book-heading strong');
  if(headingTitle)guideLabel(headingTitle,'chapter.'+chosen,
   bookPages[index][1],bookEnglish[bookPages[index][1]]||bookPages[index][1],
-  copyOptions,'Название раздела Книги героя.','Hero Book chapter title.');
- const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':'Разделы книги героя'});
+  copyOptions);
+ const nav=make('nav',{class:'stage-attribute-tabs',role:'tablist','aria-label':document.documentElement?.lang==='en'?'Hero Book chapters':'Разделы книги героя'});
  for(const [name,label] of bookPages){
   const button=make('button',{
    type:'button',role:'tab',text:chapterTitle(name,label),id:'stageBookTab_'+name,

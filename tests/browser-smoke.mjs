@@ -106,6 +106,15 @@ async function main(){
  const manaAfter=Number((await manaRow.locator('strong').innerText()).replace('%','').trim());
  assert.equal(manaAfter,manaBefore-15,'Selected Elf passive must change the Hero Book MP cost');
  assert.equal(await page.locator('#stageAttributes [data-book-page]').count(),6);
+ // Headings are not controls and must not offer generic editor tooltips.
+ assert.equal(await page.locator('#stageAttributes .stage-book-heading .stage-guide-label').count(),0);
+ assert.equal(await page.locator('#stageBookPanel .stage-result-section-head .stage-guide-label').count(),0);
+ assert.equal(await page.locator('#stageBookPanel .stage-result-intro .stage-guide-label').count(),0);
+ const groupHeading=page.locator('#stageBookPanel .stage-result-section-head strong').first();
+ assert.equal(await groupHeading.evaluate(el=>getComputedStyle(el).textDecorationLine),'none');
+ await groupHeading.hover();
+ assert.equal(await page.locator('#stage-guide-tooltip').isVisible(),false,
+  'Group heading must not display placeholder help');
  const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
  assert.equal(await guideLabels.count(),48,'43 result hints, four group headers and one editable caption');
  await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
@@ -122,6 +131,10 @@ async function main(){
   'Attack chapter must not repeat any of the 43 calculated results');
  assert.equal(await page.locator('#stageBookPanel [data-chapter-stat="weaponPhysical"]').count(),1,
   'Independent weapon damage belongs to Set.ATK, not total ATK');
+ assert.equal(await page.locator('#stageBookPanel [data-chapter-group] > strong.stage-guide-label').count(),0);
+ const weaponDamageLabel=page.locator('#stageBookPanel [data-chapter-stat="weaponPhysical"] span');
+ assert.equal(await weaponDamageLabel.getAttribute('tabindex'),null,
+  'Unexplained parameter must not become a fake keyboard control');
  assert.equal(await page.locator('#stageBookPanel .stage-combat-quick').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-active-elemental').count(),0,
   'Conditional weapon procs appear only if such a weapon is equipped');
@@ -172,7 +185,10 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel .stage-result-section-head button').count(),0);
  assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');
  assert.match(await page.locator('#stageAttributes').getAttribute('aria-label'),/Hero Book.*Chapter 1 of 6/);
+ assert.equal(await page.locator('#stageAttributes .stage-book-arrow').first().getAttribute('aria-label'),'Previous page');
+ assert.equal(await page.locator('#stageAttributes .stage-book-close').getAttribute('aria-label'),'Return to portrait');
  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
+ assert.match(await page.locator('#stageBookPanel .stage-attribute-note').first().innerText(),/Settings apply to this build/);
  assert.ok((await page.locator('#stageBookPanel').innerText()).includes('Guild'));
  assert.equal(await page.locator('#stageBookPanel .stage-honor-term').innerText(),'passive skill');
  assert.equal(await page.locator('#stageBookPanel .stage-book-honor-link').count(),0);

@@ -171,12 +171,12 @@ function book(overrides,key,defaults){
  return {...defaults,...patch};
 }
 function summary(overrides,index,ru,en){
- const hint=hints[ru]||['Параметр персонажа.','Character statistic.'];
+ const hint=hints[ru]||['',''];
  return book(overrides,'summary.'+index,{ru,en,hintRu:hint[0],hintEn:hint[1]});
 }
 function field(overrides,key,ru,en,hintRu='',hintEn=''){
  const desc=help[key]||[hintRu,hintEn];
- return book(overrides,key,{ru,en,hintRu:desc[0]||'Описание параметра.',hintEn:desc[1]||'Stat description.'});
+ return book(overrides,key,{ru,en,hintRu:desc[0]||'',hintEn:desc[1]||''});
 }
 function article(overrides){
  const overview={...intro,...(patchFor(overrides,'honor.overview')||{})};
