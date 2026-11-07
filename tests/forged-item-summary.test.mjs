@@ -31,7 +31,7 @@ function renderItem({slot='legs',grade=0,lang='ru',gem=null,AC=12,W=67}={}){
   description:text=>text
  };
  vm.runInNewContext(source('pandora-studio-equipment-ui.js'),ctx);
- const rec={id:13041,slot,name:'Железные поножи',AC,W,level:1,soulslot:2};
+ const rec={id:13041,slot,name:'Железные поножи',AC,W,level:1,soulslot:2,atkspeed:1,range:2};
  const tree=ctx.PandoraStageItemUI.summary(rec,()=>null,'item',{
   slot,refinement:grade,gem,tables,copyLabel:(key,ru,en)=>{
    labels.push({key,ru,en});return lang==='en'?en:ru;
