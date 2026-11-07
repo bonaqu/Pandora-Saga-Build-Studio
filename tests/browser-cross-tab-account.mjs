@@ -19,6 +19,8 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   if(path==='/api/account/me')
    return usernames[bearer]?send(200,{account:{username:usernames[bearer]}}):
     send(401,{error:'Sign in required'});
+  if(path==='/api/account/logout'&&method==='POST')
+   return send(200,{ok:true});
   if(path==='/api/library'){
    if(method==='GET')return send(200,{records:[]});
    const payload=request.postDataJSON();puts.push({bearer,payload});
@@ -118,6 +120,30 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   if(!await tabB.locator('.build-name-input').isVisible())
    await tabB.locator('#nav [data-tab="builds"]').click();
   assert.deepEqual(await tabB.locator('.build-card h3').allTextContents(),['Bob only']);
+  // The last login belonged to Bob and is currently stored by this origin.
+  // Alice's stale tab must never erase Bob's persisted session on logout.
+  await tabA.locator('#profileTrigger').click();
+  await tabA.getByRole('button',{name:'Выйти из аккаунта'}).click();
+  const sessionAfterAliceLogout=await tabB.evaluate(()=>
+   JSON.parse(localStorage.getItem('ps-account-session.v1')||'null'));
+  assert.equal(sessionAfterAliceLogout?.token,tokenB,
+   'A second account logout may not remove Bob’s persistent session');
+  await tabB.reload({waitUntil:'domcontentloaded'});
+  await tabB.locator('#profileTrigger').click();
+  await tabB.locator('.account-user').waitFor({state:'visible'});
+  assert.match(await tabB.locator('.account-user').innerText(),/bob_222/);
+  await tabB.locator('#profileTrigger').click();
+  // A second tab with Bob's SAME bearer must log out locally if the owner
+  // signs out. Unlike different account tabs, it shares a revoked token.
+  const tabC=await context.newPage();
+  tabC.on('pageerror',error=>errors.push(error.message));
+  await tabC.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await login(tabC,tokenB,'bob_222');
+  await tabB.locator('#profileTrigger').click();
+  await tabB.getByRole('button',{name:'Выйти из аккаунта'}).click();
+  await tabC.waitForFunction(()=>document.querySelector('#profileTrigger')
+   ?.title.includes('Войти или зарегистрироваться'));
+  assert.equal(await tabC.evaluate(()=>localStorage.getItem('ps-account-session.v1')),null);
   assert.deepEqual(errors,[]);
   console.log('Chromium concurrent tabs passed: A cannot overwrite B active localStorage, both caches survive');
  }finally{await context.close()}

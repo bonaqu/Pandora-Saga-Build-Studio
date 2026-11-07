@@ -166,3 +166,12 @@ test('a temporary network error does not sign out a session whose expiry is stil
  assert.equal(c.events.logout.length,0);
  assert.equal(c.api.token(),'b'.repeat(43));
 });
+
+test('an old account tab only clears its own persisted session',()=>{
+ const source=read('pandora-studio-account-ui.js');
+ assert.match(source,/const previousToken=session\?\.token\|\|null/);
+ assert.match(source,/saved\?\.token===previousToken/);
+ assert.match(source,/event\.newValue!==null/);
+ assert.match(source,/previous\?\.token!==session\.token/);
+ assert.match(source,/otherTab:true/);
+});
