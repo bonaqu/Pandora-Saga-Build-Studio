@@ -163,7 +163,8 @@ const validOverride=(key,value)=>{
 };
 function patchFor(overrides,key){
  const full='guideedit.'+key;
- return validOverride(key,overrides?.[full])?parse(overrides[full]):null;
+ const translated=root.PandoraOwnerBilingual?.value(overrides,full)??overrides?.[full];
+ return validOverride(key,translated)?parse(translated):null;
 }
 function book(overrides,key,defaults){
  const patch=patchFor(overrides,'book.'+key)||{};
