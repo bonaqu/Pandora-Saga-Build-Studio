@@ -206,7 +206,7 @@ async function main(){
  // and summary without touching player-defined names or OS item IDs.
  await page.locator('#locale [data-locale="en"]').click();
  assert.match(await page.locator('#catalogStatus').innerText(),
-  /^Encyclopedia: \\d+ skills · \\d+ items · \\d+ souls$/);
+  /^Encyclopedia: \d+ skills · \d+ items · \d+ souls$/);
  // The Origin area and selected racial passive stay readable in English.
  await page.locator('[data-origin-tab="stats"]').click();
  assert.match(await page.locator('#originStatSummary').innerText(),/Available: 0 \/ 0 · Spent: 0/);
@@ -264,7 +264,7 @@ async function main(){
  await page.locator('#stageAttributes .stage-book-close').click();
  await page.locator('#locale [data-locale="ru"]').click();
  assert.match(await page.locator('#catalogStatus').innerText(),
-  /^В энциклопедии: \\d+ навыков · \\d+ предметов · \\d+ душ$/);
+  /^В энциклопедии: \d+ навыков · \d+ предметов · \d+ душ$/);
 
  // The planner is future-ready for all 55 levels, independent of live server 45.
  await page.locator('[data-origin-tab="stats"]').click();
