@@ -476,18 +476,15 @@ function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle
  return {known:Math.ceil(raw+honor),raw,unarmed:false,physical,
   weaponDamage:damage,refinement,strengthRate,honor,verified:false};
 }
-// Remaked Legacy Calc('DEF'): raw equipped armor class contributes first;
-// all armor enhancement and active-skill multipliers remain outside this preview.
-// OS client 2026-11-07: Iron Leggings 13041 +3 with rainbow gem contributes
-// +3 defense in an unbuffed 45 elf archer gear snapshot (base AC44 -> 47).
-// This observation does not prove the refinement formula for other items.
-const observedArmorRefinement=Object.freeze({'13041':Object.freeze({'3':3})});
-const armorRefinementBonus=(record,grade)=>
- observedArmorRefinement[String(record?.id)]?.[String(grade)]??Math.floor(grade*1.5);
+// Pandora Saga OS news #4: all forgeable armor and shields now gain +1.2
+// DEF per enhancement level, replacing the archival +1.5. Keep tenths as
+// integers until the equipped total is known; separately flooring each
+// piece would discard fractional contributions accumulated across items.
+const ARMOR_REFINEMENT_TENTHS_PER_LEVEL=12;
 function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
  if(!Array.isArray(records)||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
- let armor=0,equipment=0,refinement=0,armorPieces=0;
+ let armor=0,equipment=0,refinementTenths=0,armorPieces=0;
  const percentage=[];
  const enhanceable=new Set(['shield','head','body','gloves','legs','feet']);
  for(const [source,record,grade] of records){
@@ -497,12 +494,12 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
   if(String(source).startsWith('item:')&&record.AC!=null){
    if(!Number.isFinite(record.AC))return null;
    armor+=record.AC;
-   // Exact Legacy equip.js Sh/He/To/Gl/Ku/Bo equipment rules.
-   // Only a literal legacy empty-name sentinel is excluded. Localized names
-   // MUST NOT change numerical calculations (RU/EN or punctuation).
+   // The six OS forgeable armor slots: shield, helmet, body, gloves,
+   // leggings, boots. Localized names must never influence numbers.
+   // Legacy '-' is an absent-piece sentinel, not equipped armor.
    if(enhanceable.has(record.slot)&&record.name!=='-'){
     if(!Number.isInteger(grade)||grade<0||grade>10)return null;
-    refinement+=armorRefinementBonus(record,grade);armorPieces++;
+    refinementTenths+=grade*ARMOR_REFINEMENT_TENTHS_PER_LEVEL;armorPieces++;
    }
   }
   for(const e of sourceEffects(source,record,grade,itemForth)){
@@ -514,12 +511,17 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
    else percentage.push({source,rate:e.a});
   }
  }
- const direct=armor+equipment+refinement;
- const percentParts=percentage.map(e=>({...e,bonus:Math.ceil(direct*e.rate/100)}));
+ const refinementRaw=refinementTenths/10;
+ const refinement=Math.floor(refinementTenths/10);
+ const directRaw=armor+equipment+refinementRaw;
+ // Keep fractional defense through the full assembly, then truncate.
+ const percentParts=percentage.map(e=>({...e,bonus:Math.ceil(directRaw*e.rate/100)}));
  const percentBonus=percentParts.reduce((sum,x)=>sum+x.bonus,0);
  const honor=honorTitle===11?5:0;
- return {armor,equipment,refinement,armorPieces,honor,percentParts,
-  percentBonus,known:direct+percentBonus+honor,
+ const raw=directRaw+percentBonus+honor;
+ return {armor,equipment,refinement,refinementRaw,refinementTenths,
+  directRaw,raw,armorPieces,honor,percentParts,
+  percentBonus,known:Math.floor(raw),
   verified:false,excluded:['other armor conditional multipliers',
    'Defender and Raging Soul active skills','OS server damage mitigation']};
 }
@@ -865,12 +867,13 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    Math.ceil(baseAtk*effect('warCry','EP_DAMAGERATE_SCALE')/100):0)+
   (actives.raging?Math.ceil(baseAtk*effect('raging','EP_DAMAGERATE_SCALE')/100):0)+
   (actives.defender?Math.floor(baseAtk*effect('defender','EP_DAMAGERATE_SCALE')/100):0);
- const directDef=defense.armor+defense.refinement+defense.equipment;
+ const directDef=defense.directRaw;
  const activeDef=(actives.raging?Math.ceil(directDef*effect('raging','EP_ARMORCLASS_SCALE')/100):0)+
   (actives.defender?Math.floor(directDef*effect('defender','EP_ARMORCLASS_SCALE')/100):0);
  const priestDefense=Math.max(0,Number(priestEffects?.lapisMedio)||0);
  const effectiveDefense={...defense,activeBonus:activeDef,
-  priestBonus:priestDefense,known:defense.known+activeDef+priestDefense};
+  priestBonus:priestDefense,raw:defense.raw+activeDef+priestDefense,
+  known:Math.floor(defense.raw+activeDef+priestDefense)};
  const atkPct=attack?equipped.attackPercent.map(e=>({
   ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
  const atkExtras=equipped.attackFlat+atkPct.reduce((sum,e)=>sum+e.bonus,0);
