@@ -34,8 +34,9 @@ function summary(record,icon,kind='item',context=null){
   ['shield','head','body','gloves','legs','feet'].includes(record.slot)&&
   Number.isInteger(grade)&&grade>=0&&grade<=10&&record.name!=='-'?
   grade:0;
- // The game client item window shows base + visible forge grade. The
- // calculator's separate Remaked defense contribution is intentionally unchanged.
+ // The game tooltip shows armor base + enhancement grade, e.g. 12+3.
+ // Actual DEF uses OS news #4 (+1.2 per grade, final rounded down), not
+ // the visible grade number or the old Legacy +1.5.
  const armorDisplay=context&&Number.isFinite(baseArmor)&&armorRefine>0?
   baseArmor+'+'+armorRefine:record.AC;
  const gem=kind==='item'&&context?
@@ -48,11 +49,15 @@ function summary(record,icon,kind='item',context=null){
   globalThis.PandoraEnchantModel?.weaponPreview?.(record.W,grade,context.tables?.weaponPlus):null;
  const attackDisplay=attackPlus&&attackPlus.increment>0?
   attackPlus.base+'+'+attackPlus.increment:record.W;
+ const magicPlus=kind==='item'&&context&&
+  (context.slot||record.slot)==='weapon'&&gem?.type==='magical'&&grade>0?
+  globalThis.PandoraEnchantModel?.magicPreview?.(grade,context.tables?.magicPlus):null;
  const rows=kind==='soul'?
  [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
  [[tr('Тип','Type'),presenter?.kind(record,locale)||tr('Предмет','Item')],
  [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),attackDisplay],
+ ...(magicPlus?[[tr('Магическая атака','Magic attack'),'+'+magicPlus.rate+'%']]:[]),
  [tr('Защита','Defense'),armorDisplay],
  ...(root.PandoraEquipmentPlan?.supportsSoulSlot?.(context?.slot||record.slot)?
   [[tr('Слоты','Slots'),record.soulslot]]:[]),
