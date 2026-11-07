@@ -1002,8 +1002,7 @@ function decorateChapterCaptions(body,page,options){
    node.append(label);
    if(suffix)node.append(document.createTextNode(suffix));
   }
-  guideLabel(label,section+'.caption.'+key,ru,en,options,
-   );
+  guideLabel(label,section+'.caption.'+key,ru,en,options);
  }
 }
 function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,

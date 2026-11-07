@@ -5660,6 +5660,8 @@ function renderBuildComparison(host,onSelection=()=>{}){
     lang,races,jobs,stats:[['Выносливость','Vitality'],['Сила','Strength'],
      ['Ловкость','Agility'],['Сноровка','Dexterity'],['Дух','Spirit'],
      ['Интеллект','Intelligence']],
+    // Canonical visible names, independent of stored legacy allocation keys.
+    statLabels:ORIGIN_STAT_LABELS.map(({name})=>name),
     branches:branches.map(({id,name})=>[id,name,
      officialEnglish?.branches?.[id]||name]),
     slotLabels:slots.map(x=>x[0]),

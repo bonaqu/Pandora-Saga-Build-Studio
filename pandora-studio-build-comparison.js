@@ -126,7 +126,7 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
    a modal. Every computed metric comes from the SAME Hero Book summary matrix.
    Missing game data is unknown, never fabricated as zero. */
 function matrixRows(a={},b={},options={}){
- const {lang='ru',races=[],jobs=[],stats=[],branches=[],slotLabels=[],
+ const {lang='ru',races=[],jobs=[],stats=[],statLabels=[],branches=[],slotLabels=[],
   equipment={},souls={},skillCatalog={},englishSkills={},
   englishItems={},englishSouls={},enchant=null,honorTitles=[],
   calcA=null,calcB=null,summaryA=[],summaryB=[],trained=null,
@@ -192,9 +192,12 @@ function matrixRows(a={},b={},options={}){
  const ability=section('Характеристики с бонусами','Effective attributes');
  const keys=['vit','str','agi','dex','spi','int'];
  for(let i=0;i<keys.length;i++){
-  const [ru,en]=stats[i]||[keys[i].toUpperCase(),keys[i].toUpperCase()];
-  const key=keys[i],from=savedNonnegativeInteger(a.stats?.[ru]),
-   to=savedNonnegativeInteger(b.stats?.[ru]);
+  // Keep legacy saved allocation keys; public labels may have changed.
+  // AGI is saved under «Ловкость», DEX under «Сноровка», SPI under «Дух».
+  const [storedRu,en]=stats[i]||[keys[i].toUpperCase(),keys[i].toUpperCase()];
+  const ru=statLabels[i]||storedRu;
+  const key=keys[i],from=savedNonnegativeInteger(a.stats?.[storedRu]),
+   to=savedNonnegativeInteger(b.stats?.[storedRu]);
   push('character',invested,'points.'+key,ru,en,from,to,{kind:'number'});
   const valueA=calcA?.stats?.[key],valueB=calcB?.stats?.[key];
   push('results',ability,'effective.'+key,ru,en,valueA,valueB,{kind:'number'});

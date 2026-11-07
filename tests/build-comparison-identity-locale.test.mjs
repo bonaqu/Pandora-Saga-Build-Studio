@@ -100,3 +100,9 @@ test('main A/B view supplies official English skills to its shared comparison mo
  assert.match(app,/englishSkills:officialEnglish\?\.skills\|\|\{\}/);
  assert.doesNotMatch(code,/['"]Проэлиум['"]/);
 });
+
+test('the A/B page shares visible Origin names without renaming stored keys',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ assert.match(app,/statLabels:ORIGIN_STAT_LABELS\.map\(\(\{name\}\)=>name\)/);
+ assert.match(app,/\['Ловкость','Agility'\],\['Сноровка','Dexterity'\],\['Дух','Spirit'\]/);
+});

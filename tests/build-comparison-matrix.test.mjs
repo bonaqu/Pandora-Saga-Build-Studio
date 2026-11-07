@@ -158,3 +158,31 @@ test('changes to a proven minimum remain visible even when maximum attack is the
  assert.equal(unknown.some(x=>x.key==='attack.range'),false,
   'Do not show speculative minima as authoritative data');
 });
+
+
+test('approved stat names in A/B are separate from legacy saved allocation keys',()=>{
+ const first={stats:{'Выносливость':2,'Сила':3,'Ловкость':4,'Сноровка':5,'Дух':6,'Интеллект':7}};
+ const second={stats:{...first.stats,'Выносливость':3,'Ловкость':9,'Дух':8}};
+ const storedStats=[['Выносливость','Vitality'],['Сила','Strength'],
+  ['Ловкость','Agility'],['Сноровка','Dexterity'],
+  ['Дух','Spirit'],['Интеллект','Intelligence']];
+ const statLabels=['Выносливость','Сила','Проворность',
+  'Ловкость','Сила духа','Интеллект'];
+ const original=JSON.stringify([first,second]);
+ const rows=comparison.matrixRows(first,second,{...opts,stats:storedStats,statLabels});
+ const get=key=>rows.find(row=>row.key===key);
+ assert.deepEqual([get('points.agi').label,get('points.agi').a,get('points.agi').b],
+  ['Проворность','4','9']);
+ assert.deepEqual([get('points.dex').label,get('points.dex').a,get('points.dex').b],
+  ['Ловкость','5','5']);
+ assert.deepEqual([get('points.spi').label,get('points.spi').a,get('points.spi').b],
+  ['Сила духа','6','8']);
+ assert.equal(get('points.agi').delta,'+5');
+ assert.equal(get('points.spi').delta,'+2');
+ assert.equal(get('effective.agi').label,'Проворность');
+ const en=comparison.matrixRows(first,second,{...opts,lang:'en',
+  stats:storedStats,statLabels});
+ assert.equal(en.find(x=>x.key==='points.agi').label,'Agility');
+ assert.equal(en.find(x=>x.key==='points.dex').label,'Dexterity');
+ assert.equal(JSON.stringify([first,second]),original);
+});
