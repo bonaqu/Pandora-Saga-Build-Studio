@@ -25,8 +25,8 @@ const skillFilter=Object.freeze({
  guild:['Гильдия и осада','Guild and siege'],
  special:['Особые умения','Special skills'],
  variants:['Варианты навыков','Skill variants'],
- other:['Прочие записи','Other records'],
- unknown:['На проверке','Under review'],
+ other:['Другие навыки','Other skills'],
+ unknown:['Неуточнённые','Unresolved'],
  all:['Все навыки','All skills']
 });
 const key=(group,id,lang)=>(group==='chapter'?'chapter_':
@@ -49,7 +49,9 @@ function value(overrides,group,id,lang='ru'){
  const defaults=group==='chapter'?chapter:
   group==='skillFilter'?skillFilter:honor;
  if(!Object.hasOwn(defaults,id))return '';
- const saved=parse(overrides)[key(group,id,lang)];
+ const raw=root.PandoraOwnerBilingual?.value(overrides,'guideedit.wiki.labels');
+ const entries=raw==null?parse(overrides):parse({'guideedit.wiki.labels':raw});
+ const saved=entries[key(group,id,lang)];
  return saved||defaults[id][lang==='en'?1:0];
 }
 root.PandoraWikiLabels=Object.freeze({

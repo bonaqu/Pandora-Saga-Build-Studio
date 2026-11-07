@@ -225,12 +225,15 @@
  border-radius:5px;max-width:100%;min-width:0}
 .wiki-categories .wiki-category-line:has(.wiki-category-edit)>[data-wiki-chapter]{
  border-radius:5px 0 0 5px}
-.wiki-categories .wiki-category-line .wiki-category-edit{
+.wiki-categories .wiki-category-line .wiki-category-edit,
+.wiki-skill-toolbar>.wiki-skill-edit-toggle{
  display:inline-grid;place-items:center;min-width:29px;width:29px;padding:3px;
  border-left:0;border-radius:0 5px 5px 0;background:#352419;color:#eac48f;
  font-size:12px;cursor:pointer}
 .wiki-categories .wiki-category-line .wiki-category-edit:hover,
-.wiki-categories .wiki-category-line .wiki-category-edit:focus-visible{
+.wiki-categories .wiki-category-line .wiki-category-edit:focus-visible,
+.wiki-skill-toolbar>.wiki-skill-edit-toggle:hover,
+.wiki-skill-toolbar>.wiki-skill-edit-toggle:focus-visible{
  background:#594027;outline:1px solid #e5bd7e}
 .wiki-category-edit-host{display:inline-flex;align-items:center;
  max-width:min(310px,80vw);min-height:34px;padding:4px 8px;
@@ -380,55 +383,35 @@
  .wiki-page .wiki-trade-card{transition:none}
 }
 
-
-/* Skill filter owner editing: native options remain accessible/selectable,
-   while an adjacent, in-place list edits every RU/EN label separately. */
-.wiki-skill-toolbar{display:flex;align-items:center;flex-wrap:nowrap;gap:7px;min-width:0}
-.wiki-skill-toolbar>.wiki-skill-type{flex:1 1 180px;min-width:0;max-width:100%}
-.wiki-skill-label-editor{position:relative;flex:0 0 35px;min-width:0;z-index:14}
-.wiki-skill-label-trigger{
- display:grid;place-items:center;box-sizing:border-box;
- width:35px;min-height:35px;padding:5px;
- border:1px solid #8f6946;border-radius:5px;cursor:pointer;
- background:linear-gradient(160deg,#342317,#1d150f);color:#edca94;
- font:600 15px/1 Manrope,Arial,sans-serif;
+/* Exactly the Encyclopedia chapter-label UI: native select for filtering,
+   a chapter-style pencil and the same inline text field for owners. */
+.wiki-skill-toolbar{display:flex;align-items:stretch;gap:6px;min-width:0}
+.wiki-skill-toolbar>.wiki-skill-type{flex:1 1 auto;min-width:0}
+.wiki-skill-toolbar>.wiki-skill-edit-toggle{
+ flex:0 0 35px;min-width:35px;min-height:35px;box-sizing:border-box;
+ border:1px solid #815f3d;border-radius:5px;
 }
-.wiki-skill-label-trigger::marker{content:''}
-.wiki-skill-label-trigger::-webkit-details-marker{display:none}
-.wiki-skill-label-trigger:hover,.wiki-skill-label-trigger:focus-visible,
-.wiki-skill-label-editor[open]>.wiki-skill-label-trigger{
- border-color:#d4a66a;background:#553722;color:#ffe3ad;outline-offset:2px;
+.wiki-skill-toolbar>.wiki-skill-edit-toggle[aria-expanded="true"]{
+ background:#594027;border-color:#d0a36b;
 }
-.wiki-skill-label-list{
- position:absolute;right:0;top:calc(100% + 6px);z-index:40;
- box-sizing:border-box;width:min(330px,calc(100vw - 42px));
- max-height:min(340px,60vh);overflow-y:auto;overscroll-behavior:contain;
- padding:8px;border:1px solid #99734b;border-radius:7px;
- background:linear-gradient(155deg,#302216,#19130f);
- box-shadow:0 12px 27px #0a0707d9,inset 0 1px #e5bc7b22;
+.wiki-categories.wiki-skill-edit-list{
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));
+ gap:6px;margin-top:0;margin-bottom:4px;
+ padding:8px;border:1px solid #7c5e3b;border-radius:5px;
+ background:#201811;
 }
-.wiki-skill-label-row{
- display:flex;align-items:center;gap:8px;min-width:0;
- padding:5px 6px;border-bottom:1px solid #76543155;
+.wiki-skill-edit-list[hidden]{display:none!important}
+.wiki-skill-edit-list .wiki-skill-edit-row{
+ display:flex;width:100%;max-width:none;min-width:0;min-height:35px;
 }
-.wiki-skill-label-row:last-child{border-bottom:0}
-.wiki-skill-label-caption{
- display:block;flex:1;min-width:0;color:#ead0a9;font-size:12px;
- line-height:1.35;overflow-wrap:anywhere;cursor:text;
+.wiki-skill-edit-row .wiki-skill-label-caption{
+ display:flex;align-items:center;flex:1 1 auto;min-width:0;
+ padding:5px 9px;overflow-wrap:anywhere;
+ border:1px solid #815f3d;border-radius:5px 0 0 5px;
+ background:#25190f;color:#dcb78d;font-size:12px;cursor:text;
 }
-.wiki-skill-label-edit{
- flex:0 0 29px;min-width:29px;min-height:29px;padding:4px;
- display:grid;place-items:center;border:1px solid #79583b;
- background:#392719;color:#e5bd83;border-radius:4px;cursor:pointer;
-}
-.wiki-skill-label-edit:hover,.wiki-skill-label-edit:focus-visible{
- background:#5e3c22;border-color:#dfad70;outline-offset:1px;
-}
-.wiki-skill-label-caption .wiki-inline-input{
- box-sizing:border-box;min-width:0;width:100%;max-width:100%;
- min-height:31px;padding:5px 7px;font-size:12px;
-}
-@media(max-width:440px){
- .wiki-skill-label-list{right:-1px}
- .wiki-skill-toolbar>.wiki-skill-type{flex-basis:130px}
+.wiki-skill-edit-row .wiki-skill-label-edit{flex:0 0 29px}
+.wiki-skill-edit-row .wiki-skill-edit-host{flex:1 1 auto;min-width:0;max-width:none}
+.wiki-skill-edit-row .wiki-inline-input{
+ min-width:0;width:100%;max-width:100%;padding:5px;font-size:12px;
 }

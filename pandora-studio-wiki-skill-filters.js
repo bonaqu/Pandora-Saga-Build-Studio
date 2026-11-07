@@ -7,8 +7,8 @@ const names={
  guild:{ru:'Гильдия и осада',en:'Guild and siege'},
  special:{ru:'Особые умения',en:'Special skills'},
  variants:{ru:'Варианты навыков',en:'Skill variants'},
- other:{ru:'Прочие записи',en:'Other records'},
- unknown:{ru:'На проверке',en:'Under review'},
+ other:{ru:'Другие навыки',en:'Other skills'},
+ unknown:{ru:'Неуточнённые',en:'Unresolved'},
  all:{ru:'Все навыки',en:'All skills'}
 };
 const normalize=name=>String(name||'').normalize('NFKC').trim()

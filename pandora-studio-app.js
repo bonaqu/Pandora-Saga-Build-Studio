@@ -298,11 +298,25 @@ function imageUrl(name){return `assets/${name}.webp`}
 const BRANCH_ICON_PATHS={"slash":"assets/skills/legacy/01-00.png","thrust":"assets/skills/legacy/02-00.png","brush":"assets/skills/legacy/03-00.png","blow":"assets/skills/legacy/04-00.png","defense":"assets/skills/legacy/05-00.png","archery":"assets/skills/legacy/07-00.png","alchemy":"assets/skills/legacy/08-00.png","assassin":"assets/skills/legacy/09-00.png","trap":"assets/skills/legacy/10-00.png","warding":"assets/skills/legacy/11-00.png","benevolence":"assets/skills/legacy/13-00.png","blessing":"assets/skills/legacy/14-00.png","exorcism":"assets/skills/legacy/15-00.png","hymn":"assets/skills/legacy/16-00.png","element":"assets/skills/legacy/18-00.png","embody":"assets/skills/legacy/19-00.png","darkness":"assets/skills/legacy/20-00.png","charm":"assets/skills/legacy/21-00.png","riding":"assets/skills/legacy/24-00.png"};
 let unavailableIconIds=new Set();
 function branchIcon(id){return typeof id==='string'&&Object.hasOwn(BRANCH_ICON_PATHS,id)?BRANCH_ICON_PATHS[id]:null}
+// Verified via user-provided client locale manifests and four PNGs:
+ // the two original race-skill drawings are intentionally swapped in RU/EN.
+ // Both drawings already exist locally, so no new game art is distributed.
+function localizedRaceSkillStem(stem,language){
+ if(language!=='ru')return stem;
+ if(stem==='skill_900050003')return 'skill_900060003';
+ if(stem==='skill_900060003')return 'skill_900050003';
+ return stem;
+}
 function skillIcon(cat,idx,record=null){
  const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];
  if(custom)return custom;
  if(record?.iconId){
   const stem='skill_'+record.iconId,originals=iconManifest?.icons?.skills||{};
+  // The client uses the opposite existing sprite for these two race
+  // passives in Russian. Owner-assigned visual.skill.* still wins above.
+  const localeStem=localizedRaceSkillStem(stem,lang);
+  if(localeStem!==stem&&originals[stem]&&originals[localeStem])
+   return originals[localeStem];
   // Exact original always beats a display-only reuse.
   if(originals[stem])return originals[stem];
   const source=iconManifest?.displayAliases?.skills?.[stem];
@@ -663,7 +677,16 @@ function allowedBranch(branch){
  return Math.max(current,Math.min(Math.max(0,cap-base),Math.max(0,b.total-b.spent+current)));
 }
 
-function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
+function editableValue(key,defaultValue){
+ if(!Object.hasOwn(override,key))return defaultValue;
+ // A legacy owner race override can equal the original Russian name
+ // exactly. That is not a request to replace its English translation.
+ if(lang==='en'&&/^race\.[0-5]$/.test(key)){
+  const id=Number(key.slice(5));
+  if(override[key]===races[id]?.[0])return defaultValue;
+ }
+ return override[key];
+}
 // Reuse the existing authenticated, bilingual D1 guide store. The established
 // book.origin.* namespace is Worker-compatible; no separate write API needed.
 function originGuideKey(key){return key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase())}
@@ -2318,11 +2341,14 @@ function renderWiki(root){
   const model=skillModel(),filterNames=window.PandoraWikiSkillFilters.names;
   const localizedFilterLabel=(id,labels)=>wikiTitle('skillFilter',id,labels.ru,labels.en);
   const optionFor=new Map();
+  let skillLabelList=null,skillLabelToggle=null;
   const filter=h('select',{class:'wiki-effect-type wiki-skill-type',
    'aria-label':wt('Категория навыков','Skill category'),
    onchange:event=>{
     wikiSkillFilter=event.target.value;wikiShown=100;
     wikiSelection={...wikiSelection,id:null,highlight:null};
+    if(skillLabelList){skillLabelList.hidden=true;
+     skillLabelToggle?.setAttribute('aria-expanded','false')}
     wikiResultsCache=null;draw();saveView();
    }});
   for(const [id,labels] of Object.entries(filterNames)){
@@ -2332,26 +2358,36 @@ function renderWiki(root){
    if(wikiSkillFilter===id)option.selected=true;
    optionFor.set(id,option);filter.append(option);
   }
+  // Reuse the native Encyclopedia filter and its established chapter-label
+  // editor pattern. The edit rows expand IN the page (not a new floating menu).
   const toolbar=h('div',{class:'wiki-effect-toolbar wiki-skill-toolbar'},[filter]);
   if(adminEditing&&adminToken){
-   // Native <option> elements cannot host editable inputs. Keep selection
-   // untouched; a single adjacent pencil exposes all stable category labels.
-   const editor=h('details',{class:'wiki-skill-label-editor'});
-   const summary=h('summary',{class:'wiki-skill-label-trigger',text:'✎',
-    title:wt('Редактировать названия фильтров','Edit filter labels'),
-    'aria-label':wt('Редактировать названия фильтров','Edit filter labels')});
-   const list=h('div',{class:'wiki-skill-label-list',role:'group',
-    'aria-label':wt('Названия фильтров навыков','Skill filter labels')});
+   const list=h('div',{class:'wiki-categories wiki-skill-edit-list',
+    id:'wikiSkillLabelList',hidden:true,
+    'aria-label':wt('Названия категорий навыков','Skill category labels')});
+   const toggle=h('button',{type:'button',
+    class:'wiki-category-edit wiki-skill-edit-toggle',text:'✎',
+    'aria-controls':'wikiSkillLabelList','aria-expanded':'false',
+    'aria-label':wt('Редактировать названия категорий',
+     'Edit category names')});
+   skillLabelList=list;skillLabelToggle=toggle;
+   toggle.onclick=()=>{
+    list.hidden=!list.hidden;
+    toggle.setAttribute('aria-expanded',String(!list.hidden));
+   };
    for(const [id,labels] of Object.entries(filterNames)){
-    const row=h('div',{class:'wiki-skill-label-row','data-skill-filter-label':id});
-    const caption=h('span',{class:'wiki-skill-label-caption',
+    const row=h('div',{class:'wiki-category-line wiki-skill-edit-row',
+     'data-skill-filter-label':id});
+    const caption=h('span',{class:'wiki-category-text wiki-skill-label-caption',
      text:localizedFilterLabel(id,labels)});
-    const edit=h('button',{type:'button',class:'wiki-skill-label-edit',
-     text:'✎',
-     'aria-label':wt('Изменить: ','Edit: ')+caption.textContent});
+    const edit=h('button',{type:'button',class:'wiki-category-edit wiki-skill-label-edit',
+     text:'✎','aria-label':wt('Изменить: ','Edit: ')+caption.textContent});
     const startEdit=()=>{
-     if(!adminEditing||!adminToken)return;
-     editWikiValue(caption,caption.textContent,{type:'text',
+     if(row.querySelector('[data-owner-text-field]')||!adminEditing||!adminToken)return;
+     const name=caption.textContent,host=h('span',{
+      class:'wiki-category-edit-host wiki-skill-edit-host',text:name});
+     caption.hidden=true;edit.hidden=true;row.append(host);
+     editWikiValue(host,name,{type:'text',
       onCommit:value=>saveGuidePatch('wiki.labels',{
        [window.PandoraWikiLabels.key('skillFilter',id,lang)]:value
       }),
@@ -2360,18 +2396,17 @@ function renderWiki(root){
        edit.setAttribute('aria-label',wt('Изменить: ','Edit: ')+value);
        const count=model?.counts?.[id],option=optionFor.get(id);
        if(option)option.textContent=value+(count==null?'':' · '+count);
-      }
+      },
+      onFinished:()=>{caption.hidden=false;edit.hidden=false;host.remove()}
      });
     };
     edit.onclick=startEdit;
-    caption.addEventListener('dblclick',event=>{
-     event.preventDefault();startEdit();
-    });
+    caption.addEventListener('dblclick',event=>{event.preventDefault();startEdit()});
     row.append(caption,edit);list.append(row);
    }
-   editor.append(summary,list);toolbar.append(editor);
-  }
-  controls.append(toolbar);
+   toolbar.append(toggle);
+   controls.append(toolbar,list);
+  }else controls.append(toolbar);
  }
  if(wikiSelection.type==='item'&&wikiItemType==='utility'){
   const hasReviewItems=Object.values(wikiIndex?.records('item')||{}).some(item=>
@@ -6082,6 +6117,14 @@ function refreshOwnerUI(){
   if(counter)counter.textContent=count+' '+(count===1?'запись':'записей')+' в D1';
   const recent=root.querySelector('[data-owner-recent]');
   if(recent)recent.textContent='За этот сеанс: '+ownerEdits.length;
+  const translations=root.querySelector('[data-owner-en-sync]');
+  if(translations){
+   const changes=window.PandoraOwnerBilingual?.pending(override)||[];
+   const count=changes.reduce((sum,item)=>sum+item.fields.length,0);
+   translations.hidden=count===0;
+   translations.disabled=!count||editIsSaving||ownerSaveState==='saving';
+   translations.textContent='EN-переводы · '+count;
+  }
   const state=root.querySelector('[data-owner-save-state]');
   if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
@@ -6157,6 +6200,9 @@ function refreshOwnerUI(){
    }}),
   h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport,
    title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
+  h('button',{type:'button',class:'owner-en-sync','data-owner-en-sync':'',
+   text:'EN-переводы',onclick:showOwnerEnglishReview,
+   title:'Проверить и записать готовые английские переводы русских правок'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
    onclick:()=>{
     if(ownerSaveState==='saving'||editIsSaving){
@@ -6186,6 +6232,7 @@ function refreshOwnerUI(){
   ['.owner-dock-actions button:nth-child(4)','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
   ['.owner-dock-actions button:nth-child(5)','Проверить временную запись и удаление D1 без затрагивания пользовательских данных.'],
   ['.owner-dock-actions button:nth-child(6)','Предложить уже сохранённые правки для проверки в GitHub.'],
+  ['[data-owner-en-sync]','Предварительно просмотреть английские переводы только уже существующих русских правок. Ничего не записывается до подтверждения.'],
   ['.owner-dock-finish','Выключить режим редактирования. Уже сохранённые данные D1 останутся на месте.']
  ];
  for(const [selector,message] of hints){
@@ -6728,6 +6775,62 @@ function inlineWikiText(el){
  }});
 }
 
+async function showOwnerEnglishReview(){
+ if(!adminEditing||!adminToken)return;
+ if(editIsSaving||ownerSaveState==='saving'){
+  showStudioToast('Сначала заверши текущее сохранение.','warning');return;
+ }
+ const helper=window.PandoraOwnerBilingual;
+ const planned=helper?.pending(override)||[];
+ if(!planned.length){
+  showStudioToast('Все подготовленные английские переводы уже сохранены.','success');return;
+ }
+ const fields=planned.reduce((sum,entry)=>sum+entry.fields.length,0);
+ const body=h('div',{class:'owner-manager'});
+ body.append(h('p',{class:'muted',text:
+  'Готовые переводы русских правок. Здесь только записи с подтверждённым исходным текстом. Уже сохранённые EN-названия не заменяются.'}));
+ const list=h('div',{class:'owner-manager-list'});
+ for(const row of planned){
+  const group=h('div',{class:'owner-manager-row'});
+  group.append(h('strong',{text:row.title}));
+  for(const field of row.fields){
+   group.append(h('p',{text:field.ru+' → '+field.en}));
+  }
+  list.append(group);
+ }
+ const status=h('p',{role:'status',class:'muted'});
+ const save=h('button',{type:'button',class:'button-action primary',
+  text:'Сохранить '+fields+' EN-перевода(ов)'});
+ save.onclick=async()=>{
+  save.disabled=true;editIsSaving=true;refreshOwnerUI();
+  let saved=0;
+  try{
+   // Refresh before changing D1: preserve newer changes from another editor.
+   const remote=(await apiRequest('/api/overrides',null,'')).values||{};
+   const current=helper.pending(remote);
+   if(current.length!==planned.length||
+    current.some((entry,i)=>entry.key!==planned[i].key||
+     entry.before!==planned[i].before||entry.value!==planned[i].value))
+    throw Error('Содержимое D1 изменилось. Закрой окно и проверь переводы заново.');
+   for(const change of current){
+    await apiRequest('/api/admin/override',{key:change.key,value:change.value});
+    const before=Object.hasOwn(override,change.key)?override[change.key]:null;
+    override[change.key]=change.value;
+    ownerEdits.push({key:change.key,before,after:change.value});
+    saved++;
+   }
+   status.textContent='Готово: '+fields+' переводов сохранены в D1.';
+   await refreshOwnerCatalog();
+   save.hidden=true;
+  }catch(error){
+   status.textContent='Сохранено '+saved+' из '+planned.length+
+    ' записей. '+error.message;
+   if(!saved)save.disabled=false;
+  }finally{editIsSaving=false;refreshOwnerUI()}
+ };
+ body.append(list,save,status);
+ modal('Английские переводы',body);
+}
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
  if(editIsSaving||ownerSaveState==='saving'){
