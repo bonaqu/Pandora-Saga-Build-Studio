@@ -82,3 +82,18 @@ test('RU and EN display labels never alter underlying numeric results',()=>{
  assert.equal(en[1].rows[0].en,'ATK');
  assert.equal(ru[3].rows[5].value,en[3].rows[5].value);
 });
+
+test('only directly verified client minima are displayed as physical attack ranges',()=>{
+ const stats=sample();
+ stats.combat.attack={known:74,minimum:50,minimumVerified:true};
+ const get=lang=>load(lang).summaryRows(stats).flatMap(group=>group.rows)
+  .find(row=>row.ru==='АТК');
+ assert.equal(get('ru').value,74,'Keep the maximum numeric for API and comparisons');
+ assert.equal(get('ru').display,'50–74');
+ assert.equal(get('en').display,'50–74');
+ stats.combat.attack.minimumVerified=false;
+ assert.equal(get('ru').display,null,'Unverified bounds must not appear as game values');
+ stats.combat.attack.minimum=80;
+ stats.combat.attack.minimumVerified=true;
+ assert.equal(get('ru').display,null,'Reject an impossible reversed range');
+});
