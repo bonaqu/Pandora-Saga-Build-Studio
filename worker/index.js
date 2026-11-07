@@ -577,6 +577,7 @@ function validTradeOwnerPatch(text,tradeId){
  if(!Array.isArray(rec.npc)||!rec.npc.length||rec.npc.length>24||
   rec.npc.some(n=>!positive(n))||new Set(rec.npc).size!==rec.npc.length)return false;
  if(!Array.isArray(rec.mats)||rec.mats.length>20||
+  new Set(rec.mats.map(row=>row?.i)).size!==rec.mats.length||
   rec.mats.some(row=>!row||typeof row!=='object'||Array.isArray(row)||
    Object.keys(row).some(k=>!['i','n'].includes(k))||
    !positive(row.i)||!capped(row.n,999999)||row.n===0))return false;
@@ -704,7 +705,8 @@ function validTownWikiPatch(text,type,id){
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
  if(type==='npc'&&ownerNpcId(id)&&
   (typeof patch.name!=='string'||typeof patch.nameEn!=='string'||
-   !patch.name.trim()||!patch.nameEn.trim()))return false;
+   !patch.name.trim()||!patch.nameEn.trim()||
+   !Array.isArray(patch.maps)||patch.maps.length!==1))return false;
  if(type==='map'&&id.startsWith('custom-')&&
   (typeof patch.name!=='string'||typeof patch.nameEn!=='string'||
    !patch.name.trim()||!patch.nameEn.trim()))return false;
