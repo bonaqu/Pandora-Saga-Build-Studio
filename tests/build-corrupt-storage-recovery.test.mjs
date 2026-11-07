@@ -31,7 +31,7 @@ function setup(library){
   'const render=()=>events.push("render");'+
   'const changeTab=tab=>events.push(tab);\n'+
   openerCode+
-  '\nreturn {open:openSavedBuild,state:()=>state,active:()=>activeBuildId};');
+  '\nreturn {open:openSavedBuild,state:()=>state,active:()=>activeBuildId};')(library,initial,selected,events,messages);
  return {...context,selected,events,messages,initial};
 }
 
