@@ -215,7 +215,8 @@ test('English encyclopedia indexes official names only and never reveals raw cla
  assert.match(app,/const searchTerms=\(type,id\)=>/);
  assert.match(app,/translated\?\.n/);
  assert.doesNotMatch(app,/Search by name or description|Поиск по названию или описанию/);
- assert.match(app,/id=>searchTerms\(type,id\)/);
+ assert.match(app,/wikiIndex\\.search\\(type,wikiSearch,searchResolver,/);
+ assert.match(app,/searchResolver=id=>searchTerms\\(wikiSelection\\.type,id\\)/);
  assert.match(app,/const classLabel=id=>/);
  assert.match(app,/const branchLabel=id=>/);
  assert.doesNotMatch(app,/names\.join\(', '\)/);
