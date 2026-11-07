@@ -14,7 +14,7 @@ function instance(fetchImpl,{lang='ru',values={}}={}){
   'closeInlineEditor','updateAdminHint','initialLang',
   'const API="https://ps-build-studio-cloud.bonaqu.workers.dev";'+
   'let adminToken='+JSON.stringify(validToken)+',adminEditing=true,'+
-  'ownerSaveState="ready",ownerSaveError="";const lang=initialLang;\n'+
+  'ownerSaveState="ready",ownerSaveError="",ownerWritePendingCount=0;const lang=initialLang;\n'+
   'function activeOverride(key){return Object.hasOwn(override,key)?override[key]:null}\n'+
   source+'\nreturn {request:apiRequest,status:()=>({ownerSaveState,ownerSaveError}),'+
   'auth:()=>({adminToken,adminEditing})};')(
@@ -140,4 +140,49 @@ test('an old-client rejection is localized and never reported as a successful sa
   error=>error.httpStatus===428&&/out of date/i.test(error.message));
  assert.equal(editor.status().ownerSaveState,'error');
  assert.ok(calls[0]&&Object.hasOwn(calls[0],'expectedValue'));
+});
+
+function deferredResponse(){
+ let resolve;
+ const promise=new Promise(yes=>{resolve=yes});
+ return {promise,resolve};
+}
+test('a successful owner write cannot erase a concurrent failed edit notification',async()=>{
+ const alice=deferredResponse(),bob=deferredResponse();
+ const editor=instance(async(_url,opts)=>{
+  const key=JSON.parse(opts.body).key;
+  return key==='itemdesc.1'?alice.promise:bob.promise;
+ });
+ const a=editor.request('/api/admin/override',{key:'itemdesc.1',value:'First'});
+ const b=editor.request('/api/admin/override',{key:'itemdesc.2',value:'Second'});
+ assert.equal(editor.status().ownerSaveState,'saving');
+ bob.resolve(respond({code:'OWNER_EDIT_CONFLICT',error:'Other editor changed it'},409));
+ await assert.rejects(b,error=>error.httpStatus===409);
+ assert.equal(editor.status().ownerSaveState,'saving',
+  'Another field is still being saved');
+ alice.resolve(respond({ok:true}));
+ await a;
+ assert.equal(editor.status().ownerSaveState,'error',
+  'Successful completion must not erase the other field conflict');
+ assert.match(editor.status().ownerSaveError,/другом окне/);
+
+});
+test('concurrent owner writes report saving until the last response and recover on a later success',async()=>{
+ const fast=deferredResponse(),slow=deferredResponse();
+ let mode='concurrent';
+ const editor=instance(async(_url,opts)=>{
+  if(mode==='retry')return respond({ok:true});
+  return JSON.parse(opts.body).key==='itemdesc.10'?fast.promise:slow.promise;
+ });
+ const a=editor.request('/api/admin/override',{key:'itemdesc.10',value:'A'});
+ const b=editor.request('/api/admin/override',{key:'itemdesc.11',value:'B'});
+ fast.resolve(respond({ok:true}));await a;
+ assert.equal(editor.status().ownerSaveState,'saving');
+ slow.resolve(respond({code:'OWNER_EDIT_CONFLICT',error:'Stale write'},409));
+ await assert.rejects(b,e=>e.httpStatus===409);
+ assert.equal(editor.status().ownerSaveState,'error');
+ mode='retry';
+ await editor.request('/api/admin/override',{key:'itemdesc.12',value:'C'});
+ assert.equal(editor.status().ownerSaveState,'saved');
+ assert.equal(editor.status().ownerSaveError,'');
 });
