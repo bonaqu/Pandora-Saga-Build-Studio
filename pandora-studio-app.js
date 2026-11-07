@@ -5668,6 +5668,11 @@ function renderBuildComparison(host,onSelection=()=>{}){
     honorTitles:window.PandoraOSCalculator.honorTitles,
     refinement:(snap,i,item)=>window.PandoraEquipmentPlan.refinementValue(
      snap.refinements,i,item),
+    socketCapacity:(snap,i,item)=>{
+     if(!item||!window.PandoraEquipmentPlan.supportsSoulSlot(slotKeys[i]))return null;
+     const rec=catalog.equipment?.[String(item.id)];
+     return rec?window.PandoraEquipmentPlan.equippedSocketCapacity(snap,i,item,rec):null;
+    },
     trained:(snap,id)=>window.PandoraSkillProgression.trained(snap,id),
     calcA,calcB,
     summaryA:calcA?window.PandoraStageAttributes.summaryRows(calcA):[],
