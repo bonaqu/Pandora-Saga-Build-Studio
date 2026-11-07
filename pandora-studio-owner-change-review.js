@@ -104,7 +104,7 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
    if(field==='mats')return value.map(v=>itemName(v.i)+' ×'+v.n).join(', ')||tr('Нет','None');
    if(field==='loot')return value.map(v=>itemName(v)).join(', ')||tr('Нет','None');
    if(field==='npcs')return value.map(v=>lookup('npc',v)).join(', ')||tr('Нет','None');
-   if(field==='tags')return value.map(v=>v.ru||v.en||'Тег').join(', ')||tr('Нет','None');
+   if(field==='tags')return value.map(v=>english?(v.en||v.ru||'Tag'):(v.ru||v.en||'Тег')).join(', ')||tr('Нет','None');
    if(field==='sections')return value.map(v=>sectionLabels[v]||v).join(', ')||tr('Нет','None');
    if(field==='extraSections')return value.map(v=>
     (english?v.titleEn||v.titleRu:v.titleRu||v.titleEn||'Раздел')+' · '+(extraKinds[v.kind]||tr('Данные','Data'))
