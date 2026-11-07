@@ -217,3 +217,21 @@ test('failure claiming the initial scope restores the previous absent marker',()
  mod.transition(s,guest);
  assert.equal(s.getItem(mod.MARKER),guest);
 });
+
+test('failure setting the new owner marker rolls back already-written primary data',()=>{
+ const s=storage();mod.transition(s,ownerA);put(s,'Alice owner',43);mod.sync(s);
+ mod.setOwned(s,ownerB,keys[0],JSON.stringify([{id:'Bob inactive',data:{level:55}}]));
+ const before=keys.map(key=>s.getItem(key));
+ let fail=true;
+ const fragile={getItem:key=>s.getItem(key),removeItem:key=>s.removeItem(key),
+  setItem:(key,value)=>{
+   if(key===mod.MARKER&&value===ownerB&&fail){
+    fail=false;throw Error('Marker write rejected after primary data');
+   }
+   s.setItem(key,value);
+  }};
+ assert.throws(()=>mod.transition(fragile,ownerB),/Marker write rejected/);
+ assert.deepEqual(keys.map(key=>s.getItem(key)),before);
+ assert.equal(s.getItem(mod.MARKER),ownerA);
+ assert.equal(JSON.parse(mod.getOwned(s,ownerB,keys[0]))[0].id,'Bob inactive');
+});
