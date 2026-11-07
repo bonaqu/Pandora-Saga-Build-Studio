@@ -5365,7 +5365,8 @@ function compareSnapshots(a,b){
  const rows=[];const lib=window.PandoraEquipmentPlan;
  const label=(ru,en)=>lang==='en'?en:ru;
  const name=(selected,kind)=>window.PandoraBuildComparison.savedItemName(selected,
-  kind==='soul'?catalog.souls:catalog.equipment,{lang,kind});
+  kind==='soul'?catalog.souls:catalog.equipment,{lang,kind,
+   englishNames:officialEnglish?.[kind==='soul'?'souls':'items']||{}});
  if(a.race!==b.race)
   rows.push(label('Раса','Race')+': '+(races[a.race]?.[lang==='en'?1:0]||'?')+
    ' → '+(races[b.race]?.[lang==='en'?1:0]||'?'));
@@ -5573,6 +5574,7 @@ function renderBuildComparison(host,onSelection=()=>{}){
     slotLabels:slots.map(x=>x[0]),
     equipment:catalog.equipment||{},souls:catalog.souls||{},
     skillCatalog:catalog.skills||{},englishSkills:officialEnglish?.skills||{},
+    englishItems:officialEnglish?.items||{},englishSouls:officialEnglish?.souls||{},
     enchant:window.PandoraEnchantModel,
     honorTitles:window.PandoraOSCalculator.honorTitles,
     refinement:(snap,i,item)=>window.PandoraEquipmentPlan.refinementValue(
