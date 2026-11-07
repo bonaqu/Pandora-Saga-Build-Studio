@@ -98,3 +98,22 @@ test('editable field names follow conditional rows in both languages and without
   }
  }
 });
+
+test('all official +1…+10 weapon grades drive the actual physical and magical tooltip rows',()=>{
+ const ratios=[0,2,4,6,8,10,12,15,18,21,25];
+ const flats=[0,2,4,6,8,11,15,19,23,27,32];
+ const magicRates=[0,1,3,5,8,11,15,19,23,27,32];
+ for(const lang of ['ru','en']){
+  for(let grade=1;grade<=10;grade++){
+   const attackLabel=lang==='ru'?'Атака':'Attack';
+   const magicLabel=lang==='ru'?'Магическая атака':'Magic attack';
+   const physical=renderItem({slot:'weapon',grade,lang,gem:{type:'physical',element:'ice'}}).rows;
+   const magical=renderItem({slot:'weapon',grade,lang,gem:{type:'magical',element:'ice'}}).rows;
+   assert.equal(get(physical,attackLabel),
+    '67+'+(Math.floor(67*ratios[grade]/100)+flats[grade]));
+   assert.equal(get(physical,magicLabel),undefined);
+   assert.equal(get(magical,attackLabel),'67');
+   assert.equal(get(magical,magicLabel),'+'+magicRates[grade]+'%');
+  }
+ }
+});
