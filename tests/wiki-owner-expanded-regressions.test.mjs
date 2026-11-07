@@ -146,3 +146,12 @@ test('monster origin editor supports safe single-write replacement',()=>{
  assert.match(app,/wanted\.delete\(oldKey\)/);
  assert.match(app,/await refreshOwnerCatalog\(\)/);
 });
+
+test('real Chromium suite exercises the single-write spawn replacement picker',()=>{
+ const main=readFileSync(new URL('../tests/browser-smoke.mjs',import.meta.url),'utf8');
+ const smoke=readFileSync(new URL('../tests/browser-wiki-spawn-replace.mjs',import.meta.url),'utf8');
+ assert.match(main,/runWikiSpawnReplacementSmoke/);
+ assert.match(smoke,/spawnedit\.13101/);
+ assert.match(smoke,/writes\.length,1/);
+ assert.match(smoke,/2003301/);
+});
