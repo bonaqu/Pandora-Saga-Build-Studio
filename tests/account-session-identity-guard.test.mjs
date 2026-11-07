@@ -29,14 +29,16 @@ function create({stored=null,clock=Date,fetchImpl=async()=>({ok:true,status:200,
  const doc={documentElement:{lang:'ru'},createElement:element,
   getElementById:id=>id==='profileTrigger'?trigger:id==='accountPanel'?panel:null,
   addEventListener(){}};
- const root={},ctx={window:root,localStorage:storage,document:doc,
+ const listeners={},root={addEventListener:(type,callback)=>{listeners[type]=callback}};
+ const ctx={window:root,localStorage:storage,document:doc,
   fetch:fetchImpl,Date:clock,console};
  vm.runInNewContext(script,ctx);
  const options={baseUrl:'https://example.invalid',
   onLogin:e=>events.login.push(e),onLogout:e=>events.logout.push(e),
   onGuest:e=>events.guest.push(e)};
  return {api:root.PandoraAccountUI,helper:root.__accountTest,events,
-  init:()=>root.PandoraAccountUI.init(options),storage,trigger};
+  init:()=>root.PandoraAccountUI.init(options),storage,trigger,
+  emitStorage:event=>listeners.storage?.(event)};
 }
 const session=(username='alice_01',token='a'.repeat(43))=>
  ({token,username,expires:Date.now()+3600000});
@@ -174,4 +176,28 @@ test('an old account tab only clears its own persisted session',()=>{
  assert.match(source,/event\.newValue!==null/);
  assert.match(source,/previous\?\.token!==session\.token/);
  assert.match(source,/otherTab:true/);
+});
+
+test('another tab revoking the same token signs out the current tab once',async()=>{
+ const alice=session();
+ const c=create({stored:alice});
+ await c.init();
+ c.storage.removeItem('ps-account-session.v1');
+ c.emitStorage({key:'ps-account-session.v1',
+  oldValue:JSON.stringify(alice),newValue:null});
+ assert.equal(c.api.token(),null);
+ assert.equal(c.events.logout.length,1);
+ assert.equal(c.events.logout[0].otherTab,true);
+ c.emitStorage({key:'ps-account-session.v1',
+  oldValue:JSON.stringify(alice),newValue:null});
+ assert.equal(c.events.logout.length,1);
+});
+test('logging out a different account in another tab does not sign out this owner',async()=>{
+ const alice=session(),bob=session('bob_222','b'.repeat(43));
+ const c=create({stored:alice});
+ await c.init();
+ c.emitStorage({key:'ps-account-session.v1',
+  oldValue:JSON.stringify(bob),newValue:null});
+ assert.equal(c.api.token(),alice.token);
+ assert.equal(c.events.logout.length,0);
 });
