@@ -129,7 +129,8 @@ function matrixRows(a={},b={},options={}){
  const {lang='ru',races=[],jobs=[],stats=[],branches=[],slotLabels=[],
   equipment={},souls={},skillCatalog={},englishSkills={},
   englishItems={},englishSouls={},enchant=null,honorTitles=[],
-  calcA=null,calcB=null,summaryA=[],summaryB=[],trained=null}=options;
+  calcA=null,calcB=null,summaryA=[],summaryB=[],trained=null,
+  socketCapacity=null}=options;
  const english=lang==='en',rows=[];
  const label=(ru,en)=>english?en:ru;
  const fmtNumber=value=>{
@@ -241,6 +242,13 @@ function matrixRows(a={},b={},options={}){
     'Refinement: '+EN_SLOTS[i],
     typeof options.refinement==='function'?options.refinement(a,i,x):0,
     typeof options.refinement==='function'?options.refinement(b,i,y):0,{kind:'number'});
+   // Compare the player's chosen physical copy, not catalog defaults alone.
+   const capacityA=typeof socketCapacity==='function'?socketCapacity(a,i,x):null;
+   const capacityB=typeof socketCapacity==='function'?socketCapacity(b,i,y):null;
+   if(capacityA!==null||capacityB!==null)
+    push('equipment',gearGroup,'socketCapacity.'+i,
+     'Слоты душ: '+slot,'Soul slots: '+EN_SLOTS[i],
+     capacityA,capacityB,{kind:'number'});
   }
   const soulA=Array.isArray(a.souls?.[i])?a.souls[i]:
    a.souls?.[i]?[a.souls[i]]:[];

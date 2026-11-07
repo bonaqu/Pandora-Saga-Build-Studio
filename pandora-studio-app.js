@@ -72,7 +72,7 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
-function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 // A damaged browser draft must not prevent the independent saved-build library
 // from loading. Keep the original storage untouched for manual recovery.
@@ -174,7 +174,8 @@ function restoreScopedDraft({initial=false}={}){
    {...base,...raw,points:{...base.points,...raw.points},
     masteryFormat:raw.masteryFormat===2?2:1,
     stats:{...base.stats,...raw.stats},equipment:{...base.equipment,...raw.equipment},
-    souls:{...base.souls,...raw.souls},soulOwners:{...base.soulOwners,...raw.soulOwners},refinements:{...base.refinements,...raw.refinements},
+    souls:{...base.souls,...raw.souls},soulOwners:{...base.soulOwners,...raw.soulOwners},
+    socketCapacities:{...base.socketCapacities,...raw.socketCapacities},refinements:{...base.refinements,...raw.refinements},
     gems:{...base.gems,...raw.gems},attributeBuffs:{...base.attributeBuffs,...raw.attributeBuffs},profile:{...base.profile,...raw.profile}}:base;
  }catch{state=fresh()}
  try{
@@ -491,7 +492,7 @@ function previewBaseStats(snap=state){
    snap.gems?.[window.PandoraEquipmentPlan.refinementKey(Number(slot),selection)]);
   if(gem)gemSelections.push({slot:item.slot,itemId:item.id,grade,gem});
   const souls=window.PandoraEquipmentPlan.asSocketArray(snap.souls?.[slot]);
-  const capacity=window.PandoraEquipmentPlan.socketCapacity(item);
+  const capacity=window.PandoraEquipmentPlan.equippedSocketCapacity(snap,Number(slot),selection,item);
   for(let i=0;i<(window.PandoraEquipmentPlan.supportsSoulSlot(slotKeys[Number(slot)])?(capacity??0):0);i++){
    const soul=souls[i]&&catalog.souls?.[String(souls[i].id)];
    if(soul&&window.PandoraEquipmentPlan.validSoul(soul,slotKeys[Number(slot)]))
@@ -1099,13 +1100,13 @@ function renderSlotRails(){
    const visual=ui.visualEquipment(state.equipment,i,catalog.equipment),
     item=visual.item,source=item&&equippedRecord(visual.sourceSlot),shared=visual.shared;
    const sourceSlot=visual.sourceSlot,key=slotKeys[sourceSlot],
-    cap=shared?0:plan.socketCapacity(source);
+    cap=shared?0:plan.equippedSocketCapacity(state,sourceSlot,item,source);
    const report=shared?{count:0,excess:0}:plan.socketReport(state.souls?.[i],cap);
    const level=plan.canRefine(key)?plan.refinementValue(state.refinements,sourceSlot,item):0;
    const issue=source?equipmentIssue(source,sourceSlot):[];
    const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+
     (shared?' · Занято бронёй (одна вещь на два слота)':'')+
-    (!shared&&item&&plan.canSocket(slotKeys[i],source)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+
+    (!shared&&item&&plan.canSocket(slotKeys[i],source,cap)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+
     (!shared&&level?' · план заточки +'+level:'')+
     (issue.length?' · Не действует: '+issue.join(', '):'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(shared?' shared-outfit':'')+
@@ -1123,18 +1124,18 @@ function renderSlotRails(){
    if(shared)button.append(h('span',{class:'stage-shared-mark',text:'🔒',
     'aria-hidden':'true',title:'',
     'data-shared-slots':'armor+pants'}));
-   if(!shared&&item&&plan.canSocket(slotKeys[i],source))
+   if(!shared&&item&&plan.canSocket(slotKeys[i],source,cap))
     button.append(h('span',{class:'stage-sockets',text:'◈ '+Math.min(report.count,cap)+'/'+cap}));
    if(!shared&&item&&level>0)button.append(h('span',{class:'stage-enhance',text:'+'+level}));
    if(source){
     const equippedGem=window.PandoraEnchantModel.normalizeForSlot(key,
      state.gems?.[plan.refinementKey(sourceSlot,item)]);
-    const socketed=plan.asSocketArray(state.souls?.[sourceSlot]).slice(0,plan.socketCapacity(source)??0)
+    const socketed=plan.asSocketArray(state.souls?.[sourceSlot]).slice(0,cap??0)
      .filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||(s.name?s:null)).filter(Boolean);
     window.PandoraStageItemUI.attachPreview(button,source,
      (rec,kind)=>itemIcon(rec,kind==='soul'?'souls':'items'),
      'item',{slot:key,refinement:level,gem:equippedGem,souls:socketed,
-      capacity:plan.socketCapacity(source),tables:gameTables});
+      capacity:cap,tables:gameTables});
     const activeFire=window.PandoraConditionalItemBonuses?.activeFor?.({
      record:source,refinement:level,gem:equippedGem,issue});
     if(!shared&&activeFire?.phoenix)button.append(h('span',{
@@ -1184,7 +1185,9 @@ function renderStageAttributes(){
    refinement:plan.refinementValue(state.refinements,Number(slot),entry),
     gem:window.PandoraEnchantModel.normalizeForSlot(rec.slot,
      state.gems?.[plan.refinementKey(Number(slot),entry)]),
-    souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
+    souls:plan.asSocketArray(state.souls?.[slot])
+     .slice(0,plan.equippedSocketCapacity(state,Number(slot),entry,rec)??0)
+     .filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
  });
  const cls=jobKeys[state.job],skillMap=catalog.skills||{};
  const jobBase=catalog.classes?.[cls]?.baseClass||cls;
@@ -1323,13 +1326,16 @@ function renderStagePicker(focusSearch=false){
  if(!stageSlotPickerOpen)return;
  const key=slotKeys[selectedSlot],equipped=state.equipment?.[selectedSlot];
  const record=equipped&&equippedRecord(selectedSlot);
- if(stageSlotView==='gems'||(stageSlotView==='souls'&&!window.PandoraEquipmentPlan.canSocket(key,record)))stageSlotView='details';
+ const capacity=window.PandoraEquipmentPlan.equippedSocketCapacity(
+  state,selectedSlot,equipped,record);
+ if(stageSlotView==='gems'||(stageSlotView==='souls'&&
+  !window.PandoraEquipmentPlan.canSocket(key,record,capacity)))stageSlotView='details';
  if(stageSlotView!=='choose'){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
    copyLabel:equipmentCopy,editLabel:equipmentCopyLabel,
    canEdit:Boolean(adminEditing&&adminToken),
-   record,item:equipped,slot:key,
+   record,item:equipped,slot:key,capacity,
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+
     (lang==='en'?['Weapon','Shield','Helmet','Armor','Gloves','Pants',
      'Boots','Cloak','Ring','Ring','Amulet','Belt','Earring','Earring'][selectedSlot]:
@@ -1344,7 +1350,7 @@ function renderStagePicker(focusSearch=false){
    catalog,gameTables,close:()=>closeStagePicker(),
    changeMode:mode=>{
     if(mode==='gems')mode='details';
-    if(mode==='souls'&&!plan.canSocket(key,record))mode='details';
+    if(mode==='souls'&&!plan.canSocket(key,record,capacity))mode='details';
     stageSlotView=mode;saveView();renderStagePicker(mode==='choose')
    },
    updateGrade:n=>{if(!plan.canRefine(key)||!Number.isInteger(n)||n<0||n>10)return;
@@ -1352,12 +1358,28 @@ function renderStagePicker(focusSearch=false){
     persist();renderSlotRails();renderStagePicker();renderOriginStats();renderOriginVitals();
     root.querySelector('[data-grade="'+n+'"]')?.focus({preventScroll:true});
    },
+   updateSocketCapacity:n=>{
+    if(!record||!equipped||!plan.supportsSoulSlot(key)||
+     !Number.isInteger(n)||n<0||n>3)return;
+    // Never silently destroy already inserted Souls when reducing sockets.
+    const positions=plan.asSocketArray(state.souls?.[selectedSlot]);
+    if(positions.slice(n).some(Boolean))return;
+    const id=plan.refinementKey(selectedSlot,equipped);
+    state.socketCapacities??={};
+    if(n===plan.socketCapacity(record))delete state.socketCapacities[id];
+    else state.socketCapacities[id]=n;
+    selectedSocket=Math.min(selectedSocket,Math.max(0,n-1));
+    if(n===0&&stageSlotView==='souls')stageSlotView='details';
+    persist();renderSlotRails();renderStagePicker();renderOriginStats();renderOriginVitals();
+    root.querySelector('[data-socket-capacity="'+n+'"]')?.focus({preventScroll:true});
+   },
    openSocket:i=>{selectedSocket=i;stageSlotView='souls';saveView();renderStagePicker();
     root.querySelector('[data-socket-index="'+i+'"]')?.focus({preventScroll:true});
    },
    assignSoul:entry=>{
-    const capacity=plan.socketCapacity(record);
-    if(!plan.canSocket(key,record)||capacity===null||selectedSocket<0||selectedSocket>=capacity)return;
+    const count=plan.equippedSocketCapacity(state,selectedSlot,equipped,record);
+    if(!plan.canSocket(key,record,count)||count===null||
+     selectedSocket<0||selectedSocket>=count)return;
     if(entry&&!plan.validSoul(entry,key))return;
     const next=plan.asSocketArray(state.souls?.[selectedSlot]);
     next[selectedSocket]=entry?{id:entry.id,name:entry.name,icon:entry.icon}:null;
@@ -5648,6 +5670,11 @@ function renderBuildComparison(host,onSelection=()=>{}){
     honorTitles:window.PandoraOSCalculator.honorTitles,
     refinement:(snap,i,item)=>window.PandoraEquipmentPlan.refinementValue(
      snap.refinements,i,item),
+    socketCapacity:(snap,i,item)=>{
+     if(!item||!window.PandoraEquipmentPlan.supportsSoulSlot(slotKeys[i]))return null;
+     const rec=catalog.equipment?.[String(item.id)];
+     return rec?window.PandoraEquipmentPlan.equippedSocketCapacity(snap,i,item,rec):null;
+    },
     trained:(snap,id)=>window.PandoraSkillProgression.trained(snap,id),
     calcA,calcB,
     summaryA:calcA?window.PandoraStageAttributes.summaryRows(calcA):[],
@@ -6042,6 +6069,10 @@ function sanitizeSharedState(original){
    if(copy.some(Boolean))safe.souls[slot]=copy;
   }
  }
+ for(const [key,value] of Object.entries(original.socketCapacities||{}).slice(0,100))
+  if(/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(key)&&
+   Number.isInteger(value)&&value>=0&&value<=3)
+   safe.socketCapacities[key]=value;
  for(const [key,value] of Object.entries(original.refinements||{}))
   if(/^(?:[0-9]|1[0-3]):[0-9]{1,20}$/.test(key)&&Number.isInteger(value)&&value>=0&&value<=10)
    safe.refinements[key]=value;

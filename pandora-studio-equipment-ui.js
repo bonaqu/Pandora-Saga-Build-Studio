@@ -60,7 +60,8 @@ function summary(record,icon,kind='item',context=null){
  [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),attackDisplay],
  ...(magicPlus?[[tr('Магическая атака','Magic attack'),'+'+magicPlus.rate+'%']]:[]),
  [tr('Защита','Defense'),armorDisplay],
- ...(showSoulSlots?[[tr('Слоты','Slots'),record.soulslot]]:[]),
+ ...(showSoulSlots?[[tr('Слоты','Slots'),
+  context?.capacity??record.soulslot]]:[]),
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
  if(gem&&grade>0){
@@ -265,8 +266,9 @@ function attachPreview(target,record,icon,kind='item',context=null){
 function render(root,api){
  const {record,slot,mode,icons,refinement,souls,gems,gameTables}=api;
  const plan=globalThis.PandoraEquipmentPlan;
- const refinable=plan.canRefine(slot),hasSouls=plan.canSocket(slot,record);
- const cap=hasSouls?plan.socketCapacity(record):0;
+ const refinable=plan.canRefine(slot);
+ const cap=Number.isInteger(api.capacity)?api.capacity:plan.socketCapacity(record);
+ const hasSouls=plan.canSocket(slot,record,cap);
  if(mode==='gems'||mode==='souls'&&!hasSouls){api.changeMode('details');return}
  const head=el('div',{class:'stage-picker-head'},[
   el('strong',{text:api.slotLabel||'Слот: '+slot}),
@@ -316,7 +318,29 @@ function render(root,api){
  if(!record){root.append(el('p',{class:'muted',text:'Сначала выбери предмет.'}));return}
  const body=el('div',{class:'stage-rich-body'+(mode==='details'?' stage-rich-details':'')});root.append(body);
  if(mode==='details'){
-  body.append(summary(record,icons,'item',{slot,refinement,gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),tables:gameTables,copyLabel:copy,editLabel:editable}));
+  body.append(summary(record,icons,'item',{slot,refinement,
+   gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),
+   capacity:cap,tables:gameTables,copyLabel:copy,editLabel:editable}));
+  if(plan.supportsSoulSlot(slot)&&typeof api.updateSocketCapacity==='function'){
+   const frame=el('fieldset',{class:'stage-enchant-fieldset stage-soul-capacity-fieldset'});
+   frame.append(editable(el('legend',{text:copy('socketCapacityHeading',
+    'Слоты душ','Soul slots')}),
+    'socketCapacityHeading','Слоты душ','Soul slots'));
+   const choices=el('div',{class:'stage-enchant-options is-element-options'});
+   for(let n=0;n<=3;n++){
+    const occupiedBeyond=plan.asSocketArray(souls).slice(n).some(Boolean);
+    const btn=el('button',{type:'button',text:String(n),
+     class:n===cap?'chosen':'','aria-pressed':String(n===cap),
+     'aria-label':tr('Слоты душ: ','Soul slots: ')+n,
+     'data-socket-capacity':String(n),
+     title:occupiedBeyond?tr('Сначала извлеките души из лишних слотов',
+      'Remove Souls from extra sockets first'):'',
+     disabled:occupiedBeyond,
+     onclick:()=>api.updateSocketCapacity(n)});
+    choices.append(btn);
+   }
+   frame.append(choices);body.append(frame);
+  }
   if(refinable){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
    for(let n=0;n<=10;n++)buttons.append(el('button',{type:'button',text:'+'+n,

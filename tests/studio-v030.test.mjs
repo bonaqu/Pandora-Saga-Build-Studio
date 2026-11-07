@@ -18,10 +18,10 @@ test('portrait item editor combines instant enchantment with Soul-specific socke
 });
 test('socket insertion is protected by Soul capacity and slot compatibility',()=>{
  const app=read('pandora-studio-app.js'),ui=read('pandora-studio-equipment-ui.js');
- assert.match(app,/const capacity=plan\.socketCapacity\(record\)/);
- assert.match(app,/!plan\.canSocket\(key,record\)/);
+ assert.match(app,/const count=plan\.equippedSocketCapacity\(state,selectedSlot,equipped,record\)/);
+ assert.match(app,/!plan\.canSocket\(key,record,count\)/);
  assert.match(app,/if\(entry&&!plan\.validSoul\(entry,key\)\)return/);
- assert.match(ui,/plan\.canSocket\(slot,record\)/);
+ assert.match(ui,/plan\.canSocket\(slot,record,cap\)/);
 });
 test('skill points, origin attributes and lost-state protection remain',()=>{
  const app=read('pandora-studio-app.js');
