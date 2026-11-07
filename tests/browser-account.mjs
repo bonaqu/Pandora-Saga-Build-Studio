@@ -61,6 +61,7 @@ export async function runAccountSmoke(browser,base){
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await page.locator('#profileTrigger').getAttribute('aria-label'),'Sign in or register');
@@ -124,6 +125,7 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await pendingChange.nth(2).inputValue(),'Different confirmation value');
   assert.match(await page.locator('#accountPanel .account-feedback').innerText(),/Passwords do not match/);
   await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
