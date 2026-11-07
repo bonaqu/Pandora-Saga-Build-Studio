@@ -25,8 +25,8 @@ const skillFilter=Object.freeze({
  guild:['Гильдия и осада','Guild and siege'],
  special:['Особые умения','Special skills'],
  variants:['Варианты навыков','Skill variants'],
- other:['Прочие записи','Other records'],
- unknown:['На проверке','Under review'],
+ other:['Другие навыки','Other skills']
+ unknown:['Неуточнённые','Unresolved']
  all:['Все навыки','All skills']
 });
 const key=(group,id,lang)=>(group==='chapter'?'chapter_':
