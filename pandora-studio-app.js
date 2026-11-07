@@ -212,7 +212,8 @@ async function cloudLibraryRequest(payload,secret=null){
 }
 function reportCloudStatus(message){
  cloudLibraryStatus=message;
- const node=document.querySelector('.cloud-library-status');if(node)node.textContent=message;
+ const node=document.querySelector('.cloud-library-status');
+ if(node)node.textContent=window.PandoraUILocale?.ui(message,lang)||message;
 }
 async function putCloudBuild(entry){
  // This guard also protects accidental call sites added in future changes.
@@ -271,7 +272,7 @@ async function loadCloudBuilds(){
   if(libraryChangeId!==generation){void loadCloudBuilds();return}
   const reconciled=window.PandoraBuildLibraryMerge.reconcile({
    local:builds,remote:response.records,pendingDeletes:queuedDeletes(),
-   activeId:activeBuildId,newId
+   activeId:activeBuildId,newId,lang
   });
   const {outgoing,copies}=reconciled;
   builds=reconciled.merged;persistBuilds();
@@ -5816,7 +5817,8 @@ function renderBuilds(root){
   }}),
   h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
- root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',text:cloudLibraryStatus}),
+ root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
+   text:window.PandoraUILocale?.ui(cloudLibraryStatus,lang)||cloudLibraryStatus}),
   ...(window.PandoraAccountUI?.isLoggedIn()?[]:[buildLibraryTransfer()]));
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
  root.append(comparisonSlot);
@@ -6130,8 +6132,9 @@ function showStudioToast(message,tone='warning'){
  clearTimeout(studioToastTimer);
  root.className='studio-toast '+tone;
  root.replaceChildren(h('div',{class:'studio-toast-content'},[
-  h('strong',{text:tone==='success'?'Готово':tone==='error'?'Ссылка недоступна':'Уведомление'}),
-  h('p',{text:message})
+  h('strong',{text:window.PandoraUILocale?.ui(
+   tone==='success'?'Готово':tone==='error'?'Ссылка недоступна':'Уведомление',lang)}),
+  h('p',{text:window.PandoraUILocale?.ui(message,lang)||message})
  ]));
  const close=()=>{root.hidden=true;root.replaceChildren()};
  root.append(h('button',{type:'button',class:'studio-toast-ok',text:'ОК',onclick:close}));
