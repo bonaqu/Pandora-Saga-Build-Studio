@@ -16,6 +16,12 @@ test('editable bilingual labels preserve stable internal chapter and section key
  assert.equal(registry.value({},'honor','gain','ru'),'Получение и потеря чести');
  assert.equal(registry.value({},'skillFilter','unknown','ru'),'Неуточнённые');
  assert.equal(registry.value({},'skillFilter','unknown','en'),'Unresolved');
+ assert.equal(registry.value({},'skillFilter','racial','ru'),'Расовая пассивка');
+ assert.equal(registry.value({},'skillFilter','racial','en'),'Racial passive');
+ assert.equal(registry.value({},'skillFilter','special','ru'),'Особое');
+ assert.equal(registry.value({},'skillFilter','special','en'),'Special');
+ assert.equal(registry.value({},'skillFilter','variants','ru'),'Дубли навыков');
+ assert.equal(registry.value({},'skillFilter','variants','en'),'Duplicate skills');
  const patch={chapter_honor_ru:'Честь и ранги',chapter_honor_en:'Honor and ranks',
   honor_gain_ru:'Получение и потеря чести',honor_gain_en:'Earning and losing Honor',
   skill_filter_unknown_ru:'На уточнении',skill_filter_unknown_en:'Needs review'};
@@ -34,6 +40,7 @@ test('editable bilingual labels preserve stable internal chapter and section key
   {chapter_honor_ru:' '},{chapter_honor_ru:'x'.repeat(91)},
   {chapter_honor_ru:'Вкладка\nОшибка'},
   {skill_filter_ghost_ru:'Служебное имя'},
+  {skill_filter_racial_en:' '},
   {skill_filter_unknown_en:''},
   {skill_filter_unknown_ru:'x'.repeat(91)}]){
   assert.equal(registry.validPatch(bad),false);
@@ -57,7 +64,22 @@ test('skill filters reuse the compact native Encyclopedia filter layout',()=>{
  assert.doesNotMatch(css,/\.wiki-skill-toolbar>\.wiki-skill-type\{[^}]*flex:1 1 auto/);
 });
 
-test('all 42 bilingual chapter, Honor and skill filter labels fit one validated owner patch',()=>{
+test('exact older default labels are updated while custom owner names survive',()=>{
+ const old={'guideedit.wiki.labels':JSON.stringify({
+  skill_filter_special_ru:'Особые умения',skill_filter_special_en:'Special skills',
+  skill_filter_variants_ru:'Варианты навыков',skill_filter_variants_en:'Skill variants'
+ })};
+ assert.equal(registry.value(old,'skillFilter','special','ru'),'Особое');
+ assert.equal(registry.value(old,'skillFilter','special','en'),'Special');
+ assert.equal(registry.value(old,'skillFilter','variants','ru'),'Дубли навыков');
+ assert.equal(registry.value(old,'skillFilter','variants','en'),'Duplicate skills');
+ const custom={'guideedit.wiki.labels':JSON.stringify({
+  skill_filter_special_ru:'Другая категория',skill_filter_variants_en:'Other variants'
+ })};
+ assert.equal(registry.value(custom,'skillFilter','special','ru'),'Другая категория');
+ assert.equal(registry.value(custom,'skillFilter','variants','en'),'Other variants');
+});
+test('all 44 bilingual chapter, Honor and skill filter labels fit one validated owner patch',()=>{
  const all=Object.fromEntries([
   ...Object.entries(registry.chapter).flatMap(([id,names])=>[
    [registry.key('chapter',id,'ru'),names[0]],
@@ -69,7 +91,7 @@ test('all 42 bilingual chapter, Honor and skill filter labels fit one validated 
    [registry.key('skillFilter',id,'ru'),names[0]],
    [registry.key('skillFilter',id,'en'),names[1]]])
  ]);
- assert.equal(Object.keys(all).length,42);
+ assert.equal(Object.keys(all).length,44);
  assert.equal(registry.validPatch(all),true);
  assert.equal(guide.validOverride('wiki.labels',JSON.stringify(all)),true);
  const overrides={'guideedit.wiki.labels':JSON.stringify(all)};
@@ -95,7 +117,8 @@ test('Worker stores only whitelisted source-independent label content',async()=>
   body:JSON.stringify({key:'guideedit.wiki.labels',value:JSON.stringify(patch)})
  }),{DB});
  const allowed={chapter_honor_ru:'Честь',honor_gain_en:'Earning and losing Honor',
-  skill_filter_unknown_ru:'На уточнении',skill_filter_unknown_en:'Needs review'};
+  skill_filter_unknown_ru:'На уточнении',skill_filter_unknown_en:'Needs review',
+  skill_filter_racial_ru:'Расовая пассивка',skill_filter_racial_en:'Racial passive'};
  const saved=await send(allowed);
  assert.equal(saved.status,200,await saved.clone().text());
  assert.deepEqual(JSON.parse(values.get('guideedit.wiki.labels')),allowed);
@@ -106,7 +129,7 @@ test('Worker stores only whitelisted source-independent label content',async()=>
   const denied=await send(bad);
   assert.equal(denied.status,400,await denied.clone().text());
  }
- // A full 42-label bilingual patch must pass the Worker validator as well.
+ // A full 44-label bilingual patch must pass the Worker validator as well.
  const large=Object.fromEntries([
   ...Object.entries(registry.chapter).flatMap(([id,n])=>[
    [registry.key('chapter',id,'ru'),n[0]],[registry.key('chapter',id,'en'),n[1]]]),

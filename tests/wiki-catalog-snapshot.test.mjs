@@ -20,7 +20,9 @@ function catalog(identity='local'){
   drops:{1:{d:[]}},trades:{trades:[{id:1,i:1,npc:[1]}],
    npcs:{1:{name:'Merchant'}},mapNames:{}},
   tables:{zoneDrops:[]},chests:{boxes:[{i:1,rolls:[[]]}]},
-  skills:{1:{id:1,name:'Skill'}},souls:{1:{id:1,name:'Soul',icon:'I_000001_00'}}
+  skills:{1:{id:1,name:'Racial Passive',skillType:'PASSIVE',branch:'race'}},
+  racialPassives:{HUMAN:{raceId:1,key:'HUMAN',skills:[1]}},
+  souls:{1:{id:1,name:'Soul',icon:'I_000001_00'}}
  };
 }
 function mockFetch(remote,local,{broken=null,snapshots=null,fail=null}={}){
@@ -36,6 +38,20 @@ function mockFetch(remote,local,{broken=null,snapshots=null,fail=null}={}){
  };
  return {fetcher,paths};
 }
+test('racial passive registry and skills must come from the same snapshot',async()=>{
+ const remote=catalog('remote'),local=catalog('archive');
+ const mock=mockFetch(remote,local);
+ const loaded=await loader.load({api:'https://worker.example',fetcher:mock.fetcher,strict:true});
+ assert.deepEqual(loaded.data.racialPassives,remote.racialPassives);
+ assert.ok(mock.paths.some(path=>path.endsWith('/racialPassives.json')));
+ const invalid=catalog('bad');invalid.racialPassives.HUMAN.skills=[999];
+ assert.throws(()=>loader.validate(invalid),/связи расовых пассивок/);
+ const wrongKind=catalog('wrong');wrongKind.skills[1].skillType='ENEMY';
+ assert.throws(()=>loader.validate(wrongKind),/связи расовых пассивок/);
+ const broken=mockFetch(invalid,local);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:broken.fetcher,strict:true}),/связи расовых пассивок/);
+});
 test('D1 snapshots are atomic and old object-shaped instances become iterable',async()=>{
  const current=catalog('online'),local=catalog('local');
  current.instances={'1':current.instances[0]};

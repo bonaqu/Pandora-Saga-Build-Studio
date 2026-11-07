@@ -41,6 +41,19 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   await page.locator('[data-wiki-record="161202001"]').waitFor({state:'visible'});
   assert.equal(await page.locator('[data-wiki-record="161202050"]').count(),0,
    'Extra Counterattack must not appear among playable character skills');
+  assert.ok((await filter.locator('option[value="racial"]').innerText()).startsWith('Расовая пассивка'));
+  assert.ok((await filter.locator('option[value="special"]').innerText()).startsWith('Особое'));
+  assert.ok((await filter.locator('option[value="variants"]').innerText()).startsWith('Дубли навыков'));
+  await filter.selectOption('racial');
+  await page.locator('[data-wiki-record="900050003"]').waitFor({state:'visible'});
+  assert.match(await filter.locator('option[value="racial"]').innerText(),/18$/);
+  assert.equal(await page.locator('.wiki-list [data-wiki-record]').count(),18);
+  for(const id of ['500000001','500000002','500000025'])
+   assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),0,
+    'System effect must not be a racial passive: '+id);
+  await page.locator('[data-wiki-record="900050003"]').click();
+  assert.ok(page.url().includes('#wiki/skill/900050003'));
+  assert.equal(await filter.inputValue(),'racial');
   await filter.selectOption('variants');
   await page.locator('[data-wiki-record="161202050"]').waitFor({state:'visible'});
   await filter.selectOption('guild');
@@ -77,6 +90,9 @@ export async function runWikiSkillFiltersSmoke(browser,base){
    .then(text=>text.startsWith('Character skills')),true);
   assert.ok((await filter.locator('option[value="unknown"]').innerText())
    .startsWith('Unresolved'),'English review label should be neutral');
+  assert.ok((await filter.locator('option[value="racial"]').innerText()).startsWith('Racial passive'));
+  assert.ok((await filter.locator('option[value="special"]').innerText()).startsWith('Special'));
+  assert.ok((await filter.locator('option[value="variants"]').innerText()).startsWith('Duplicate skills'));
   await page.setViewportSize({width:390,height:780});
   assert.ok((await filter.boundingBox())?.width>80,'Mobile filter remains usable');
   const overflow=await page.evaluate(()=>

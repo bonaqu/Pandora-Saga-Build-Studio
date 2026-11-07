@@ -738,7 +738,7 @@ function validGuideEdit(text,key){
  if(!plain(data))return false;
  if(key==='wiki.labels')return Object.keys(data).length>0&&
   Object.keys(data).length<=50&&Object.entries(data).every(([k,v])=>
-   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k)&&
+   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k)&&
    typeof v==='string'&&v.trim()&&v.length<=90&&
    Array.from(v).every(ch=>ch.charCodeAt(0)>=32));
  const allowed=key.startsWith('book.')?['ru','en','hintRu','hintEn']:

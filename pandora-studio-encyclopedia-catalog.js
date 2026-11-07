@@ -1,7 +1,7 @@
 (function(root){
 'use strict';
 const keys=Object.freeze([
- 'meta','items','monsters','maps','instances','drops','trades','tables','chests','skills','souls'
+ 'meta','items','monsters','maps','instances','drops','trades','tables','chests','skills','souls','racialPassives'
 ]);
 const isRecord=value=>value!==null&&typeof value==='object'&&!Array.isArray(value);
 function normalize(data){
@@ -23,6 +23,14 @@ function validate(input){
   throw Error('Неверный формат добычи локаций');
  if(!isRecord(data.chests)||!Array.isArray(data.chests.boxes))
   throw Error('Неверный формат сундуков');
+ // The authoritative registry and every referenced skill share one D1 snapshot.
+ if(!isRecord(data.racialPassives)||!Object.keys(data.racialPassives).length||
+  !Object.values(data.racialPassives).every(race=>
+   isRecord(race)&&Array.isArray(race.skills)&&race.skills.length>0&&
+   race.skills.every(id=>Number.isSafeInteger(id)&&
+    data.skills?.[String(id)]?.skillType==='PASSIVE'&&
+    data.skills?.[String(id)]?.branch==='race')))
+  throw Error('Нарушены связи расовых пассивок с каталогом навыков');
  for(const key of ['items','monsters','maps','instances','drops','trades','skills','souls']){
   const observed=Array.isArray(data[key])?data[key].length:
    key==='trades'?data.trades.trades.length:Object.keys(data[key]).length;

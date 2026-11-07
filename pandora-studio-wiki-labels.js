@@ -22,9 +22,10 @@ const honor=Object.freeze({
 });
 const skillFilter=Object.freeze({
  player:['Умения персонажа','Character skills'],
+ racial:['Расовая пассивка','Racial passive'],
  guild:['Гильдия и осада','Guild and siege'],
- special:['Особые умения','Special skills'],
- variants:['Варианты навыков','Skill variants'],
+ special:['Особое','Special'],
+ variants:['Дубли навыков','Duplicate skills'],
  other:['Другие навыки','Other skills'],
  unknown:['Неуточнённые','Unresolved'],
  all:['Все навыки','All skills']
@@ -32,7 +33,7 @@ const skillFilter=Object.freeze({
 const key=(group,id,lang)=>(group==='chapter'?'chapter_':
  group==='skillFilter'?'skill_filter_':'honor_')+id+
  (lang==='en'?'_en':'_ru');
-const validField=k=>/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k);
+const validField=k=>/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|racial|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k);
 const validPatch=patch=>patch&&typeof patch==='object'&&!Array.isArray(patch)&&
  Object.keys(patch).length>0&&Object.keys(patch).length<=50&&
  Object.entries(patch).every(([k,v])=>validField(k)&&typeof v==='string'&&
@@ -52,7 +53,13 @@ function value(overrides,group,id,lang='ru'){
  const raw=root.PandoraOwnerBilingual?.value(overrides,'guideedit.wiki.labels');
  const entries=raw==null?parse(overrides):parse({'guideedit.wiki.labels':raw});
  const saved=entries[key(group,id,lang)];
- return saved||defaults[id][lang==='en'?1:0];
+ // Saved exact previous defaults should not shadow the site-wide rename.
+ // Explicit custom owner labels are never overwritten or written to D1.
+ const legacy=group==='skillFilter'?
+  (id==='special'?['Особые умения','Special skills']:
+   id==='variants'?['Варианты навыков','Skill variants']:null):null;
+ const locale=lang==='en'?1:0;
+ return saved&&saved!==legacy?.[locale]?saved:defaults[id][locale];
 }
 root.PandoraWikiLabels=Object.freeze({
  chapter,honor,skillFilter,key,value,validField,validPatch
