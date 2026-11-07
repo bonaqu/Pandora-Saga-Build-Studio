@@ -9,6 +9,7 @@ const extract=(start,end)=>{
  return source.slice(from,to);
 };
 const spawns=extract('async function saveWikiSpawns(','\nasync function saveWikiRelationRows(');
+const listQueue=extract('function enqueueWikiOwnerListWrite(','\nasync function saveWikiRelationRows(');
 const relations=extract('async function saveWikiRelationRows(','\nfunction wikiOwnerNumeric(');
 const trade=extract('async function saveWikiTradeRecipe(','\nasync function saveWikiAcquisitions(');
 const acquisition=extract('async function saveWikiAcquisitions(','\nfunction inlineWikiText(');
@@ -35,7 +36,7 @@ test('single-key monster spawn write stays pending until encyclopedia refresh re
  const current=[{type:'map',id:'100'}];
  const save=Function('wikiData','wikiIndex','window','activeOverride',
   'apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI',
-  'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();\n'+spawns+
+  'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();const wt=(ru,en)=>ru;\n'+spawns+
   '\nreturn {save:saveWikiSpawns,isSaving:()=>editIsSaving};')(
   data,{locations:()=>current},{PandoraWikiOwnerData:{validSpawns:rows=>
    rows.every(row=>['map','instance'].includes(row.type)&&Boolean(row.id))}},
@@ -62,7 +63,7 @@ test('drop rows save finishes only after related item sources are refreshed',asy
  const data={monsters:{600:{}},items:{1:{},2:{}}};
  const save=Function('wikiData','window','activeOverride','apiRequest',
   'ownerEdits','override','refreshOwnerCatalog','refreshOwnerUI',
-  'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();\n'+relations+
+  'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();const wt=(ru,en)=>ru;\n'+listQueue+'\n'+relations+
   '\nreturn {save:saveWikiRelationRows,isSaving:()=>editIsSaving};')(
   data,{PandoraWikiOwnerData:{validDrops:row=>
    Array.isArray(row.d)&&Array.isArray(row.s),validChest:()=>true}},
@@ -92,7 +93,7 @@ test('NPC trade and item source writes also await a single completed Wiki refres
    ['wikiData','window','activeOverride','apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI']:
    ['wikiData','activeOverride','apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI'];
   const factory=Function(...args,
-   'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();\n'+definition+
+   'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();const wt=(ru,en)=>ru;\n'+listQueue+'\n'+definition+
    '\nreturn {save:'+(kind==='trade'?'saveWikiTradeRecipe':'saveWikiAcquisitions')+
    ',isSaving:()=>editIsSaving};');
   const common=[data];
@@ -128,7 +129,7 @@ test('game-monster spawn location replacement publishes one atomic override',asy
  const places=[{type:'map',id:100},{type:'instance',id:300}];
  const factory=Function('wikiData','wikiIndex','window','activeOverride',
   'apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI',
-  'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();\n'+spawns+
+  'const adminToken="test",adminEditing=true;let editIsSaving=false;const wikiRecordWriteQueue=new Map();const wt=(ru,en)=>ru;\n'+spawns+
   '\nreturn saveWikiSpawns;');
  const save=factory(source,{locations:()=>places},host,
   ()=>null,state.apiRequest,state.override,state.ownerEdits,
