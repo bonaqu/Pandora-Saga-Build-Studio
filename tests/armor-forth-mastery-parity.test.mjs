@@ -6,11 +6,12 @@ const win={};Function('window',read('pandora-os-character-calculator.js'))(win);
 const calc=win.PandoraOSCalculator,progress=win.PandoraSkillProgression;
 const forth=JSON.parse(read('data/os/itemForth.json')),items=JSON.parse(read('data/os/items.json'));
 const stats={vit:40,str:50,agi:70,dex:35,spi:30,int:50};
-test('Legacy armor +N applies floor(N*1.5) to six slots separately',()=>{
+test('current OS armor and shield +7 retain tenths until final DEF floor',()=>{
  const slots=['shield','head','body','gloves','legs','feet'];
  const rows=slots.map((slot,i)=>['item:'+i,{id:5000+i,slot,name:'Броня',AC:10},7]);
  const out=calc.defensePreview({records:rows,honorTitle:11});
- assert.deepEqual([out.armor,out.refinement,out.honor,out.known],[60,60,5,125]);
+ assert.deepEqual([out.armor,out.refinementRaw,out.refinement,out.honor,out.known],
+  [60,50.4,50,5,115]);
 });
 test('Legacy shields refine but jewelry, Souls and names with hyphen do not',()=>{
  const rows=[['item:1',{name:'Кольцо',slot:'ring',AC:4},10],
@@ -33,7 +34,7 @@ test('Forth contribution is applied to armor and attack effects',()=>{
   records:[['item:777',item,7]],itemForth:lookup});
  assert.equal(cm.attack.flatEquipment,5);
  assert.deepEqual([cm.defense.armor,cm.defense.refinement,
-  cm.defense.equipment,cm.defense.known],[9,10,2,21]);
+  cm.defense.equipment,cm.defense.known],[9,8,2,19]);
 });
 test('MATK thresholds, mage and equipment weapon types',()=>{
  const x=calc.magicAttackPreview({int:50,jobKey:'WIZARD',

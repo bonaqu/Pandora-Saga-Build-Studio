@@ -19,7 +19,8 @@ test('MATK source exclusions use canonical OS item ID regardless of localized na
 test('armor refinement never changes because RU/EN labels contain a hyphen',()=>{
  const ru=calc.defensePreview({records:[['item:1',{id:1,AC:13,slot:'body',name:'Кираса-3'},7]]});
  const en=calc.defensePreview({records:[['item:1',{id:1,AC:13,slot:'body',name:'Armor-3'},7]]});
- assert.equal(ru.refinement,10);assert.equal(ru.known,en.known);
+ assert.equal(ru.refinement,8);assert.equal(ru.refinementRaw,8.4);
+ assert.equal(ru.known,en.known);
  const empty=calc.defensePreview({records:[['item:1',{id:1,AC:13,slot:'body',name:'-'},7]]});
  assert.equal(empty.refinement,0);
 });
@@ -29,8 +30,10 @@ test('armor flat+percent Forth uses ceil once per enhancement effect, then adds 
   {func:'EP_ARMORCLASS_SCALE',a:10},
   {func:'EP_ARMORCLASS_SCALE',a:5}]}};
  const value=calc.defensePreview({records:[['item:777',item,7]],itemForth:forth,honorTitle:11});
- // Base 40 AC +10 refine +2 flat=52; percent ceil(5.2)+ceil(2.6)=6+3.
- assert.equal(value.percentBonus,9);assert.equal(value.known,66);
+ // OS: 40 AC +7*1.2 refinement +2 flat = 50.4; each percent
+ // contribution rounds separately, and only the final DEF truncates.
+ assert.equal(value.directRaw,50.4);
+ assert.equal(value.percentBonus,9);assert.equal(value.known,64);
  assert.deepEqual(value.percentParts.map(x=>x.bonus),[6,3]);
 });
 test('typed move, cast delay, spell damage and back attack effects remain distinct',()=>{

@@ -476,18 +476,15 @@ function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle
  return {known:Math.ceil(raw+honor),raw,unarmed:false,physical,
   weaponDamage:damage,refinement,strengthRate,honor,verified:false};
 }
-// Remaked Legacy Calc('DEF'): raw equipped armor class contributes first;
-// all armor enhancement and active-skill multipliers remain outside this preview.
-// OS client 2026-11-07: Iron Leggings 13041 +3 with rainbow gem contributes
-// +3 defense in an unbuffed 45 elf archer gear snapshot (base AC44 -> 47).
-// This observation does not prove the refinement formula for other items.
-const observedArmorRefinement=Object.freeze({'13041':Object.freeze({'3':3})});
-const armorRefinementBonus=(record,grade)=>
- observedArmorRefinement[String(record?.id)]?.[String(grade)]??Math.floor(grade*1.5);
+// Current game's news #4: all forgeable armor and shields now gain +1.2
+// DEF per enhancement level, replacing the archival +1.5. Keep tenths as
+// integers until the equipped total is known; separately flooring each
+// piece would discard fractional contributions accumulated across items.
+const ARMOR_REFINEMENT_TENTHS_PER_LEVEL=12;
 function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
  if(!Array.isArray(records)||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
- let armor=0,equipment=0,refinement=0,armorPieces=0;
+ let armor=0,equipment=0,refinementTenths=0,armorPieces=0;
  const percentage=[];
  const enhanceable=new Set(['shield','head','body','gloves','legs','feet']);
  for(const [source,record,grade] of records){
@@ -497,12 +494,12 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
   if(String(source).startsWith('item:')&&record.AC!=null){
    if(!Number.isFinite(record.AC))return null;
    armor+=record.AC;
-   // Exact Legacy equip.js Sh/He/To/Gl/Ku/Bo equipment rules.
-   // Only a literal legacy empty-name sentinel is excluded. Localized names
-   // MUST NOT change numerical calculations (RU/EN or punctuation).
+   // The six OS forgeable armor slots: shield, helmet, body, gloves,
+   // leggings, boots. Localized names must never influence numbers.
+   // Legacy '-' is an absent-piece sentinel, not equipped armor.
    if(enhanceable.has(record.slot)&&record.name!=='-'){
     if(!Number.isInteger(grade)||grade<0||grade>10)return null;
-    refinement+=armorRefinementBonus(record,grade);armorPieces++;
+    refinementTenths+=grade*ARMOR_REFINEMENT_TENTHS_PER_LEVEL;armorPieces++;
    }
   }
   for(const e of sourceEffects(source,record,grade,itemForth)){
@@ -514,12 +511,17 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
    else percentage.push({source,rate:e.a});
   }
  }
- const direct=armor+equipment+refinement;
- const percentParts=percentage.map(e=>({...e,bonus:Math.ceil(direct*e.rate/100)}));
+ const refinementRaw=refinementTenths/10;
+ const refinement=Math.floor(refinementTenths/10);
+ const directRaw=armor+equipment+refinementRaw;
+ // Keep fractional defense through the full assembly, then truncate.
+ const percentParts=percentage.map(e=>({...e,bonus:Math.ceil(directRaw*e.rate/100)}));
  const percentBonus=percentParts.reduce((sum,x)=>sum+x.bonus,0);
  const honor=honorTitle===11?5:0;
- return {armor,equipment,refinement,armorPieces,honor,percentParts,
-  percentBonus,known:direct+percentBonus+honor,
+ const raw=directRaw+percentBonus+honor;
+ return {armor,equipment,refinement,refinementRaw,refinementTenths,
+  directRaw,raw,armorPieces,honor,percentParts,
+  percentBonus,known:Math.floor(raw),
   verified:false,excluded:['other armor conditional multipliers',
    'Defender and Raging Soul active skills','OS server damage mitigation']};
 }
@@ -722,7 +724,8 @@ function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,lev
  }
  return result;
 }
-function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildArouse=0}={}){
+function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildArouse=0,
+ weaponGrade=0,weaponEnhancementType='physical',magicPlus=null}={}){
  if(!Number.isFinite(int)||int<0||
   !Number.isInteger(magicMastery)||magicMastery<0||
   !Number.isInteger(guildArouse)||guildArouse<0||guildArouse>3)return null;
@@ -733,9 +736,17 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
  const staffId=Number(weapon?.id);
  const staff=weapon?.kind==='WAND'?10:weapon?.kind==='STAFF'?
   (staffId===2841?20:(staffId===2802||staffId===2812)?0:15):0;
- const guild=[0,2,4,6][guildArouse],exact=100+step+passive+staff+guild;
- return {known:exact>=100?Math.floor(exact*10)/10:exact,
-  base:100,intelligence:step,passive,staff,guild,verified:false};
+ const guild=[0,2,4,6][guildArouse],baseExact=100+step+passive+staff+guild;
+ // OS news #4: magical weapon refinement adds MATK percent points from
+ // tables.magicPlus[grade].ratio. The source's additional "flat" column is
+ // a different undocumented field; never count it as a second MATK bonus.
+ const magical=weaponEnhancementType==='magical'&&weapon?.slot==='weapon'&&weaponGrade>0;
+ const tier=magical?magicPlus?.[String(weaponGrade)]:null;
+ const refinement=magical?(Number.isFinite(tier?.ratio)?tier.ratio:null):0;
+ const exact=refinement===null?null:baseExact+refinement;
+ return {known:exact===null?null:(exact>=100?Math.floor(exact*10)/10:exact),
+  base:100,intelligence:step,passive,staff,guild,refinement,
+  beforeRefinement:baseExact,verified:false};
 }
 // Strictly opt-in skill effects. Gate every buff by current OS class and
 // character level, not by the presence of an unchecked saved toggle.
@@ -805,7 +816,8 @@ function racialWeaponPreview({racialPassiveId=null,skillCatalog=null,weapon=null
    'magic and skill damage interactions','weapon class-specific exceptions']};
 }
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
- weapon=null,weaponGrade=0,weaponPlus=null,records=[],itemForth=null,
+ weapon=null,weaponGrade=0,weaponPlus=null,magicPlus=null,
+ weaponEnhancementType='physical',records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
  priestEffects={},branchMasteries={}}={}){
@@ -840,7 +852,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const racialRate={accuracy:racialPassiveId===900040002?10:0,
   dodge:racialPassiveId===900040003?5:0};
  const racialWeapon=racialWeaponPreview({racialPassiveId,skillCatalog,weapon});
- const attack=weaponAttackPreview({str:stats.str,weapon,grade:weaponGrade,
+ const attack=weaponAttackPreview({str:stats.str,weapon,
+  grade:weaponEnhancementType==='magical'?0:weaponGrade,
   weaponPlus,honorTitle});
  const defense=defensePreview({records,honorTitle,itemForth});
  const equipped=equippedCombatModifiers(records,itemForth);
@@ -865,12 +878,13 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    Math.ceil(baseAtk*effect('warCry','EP_DAMAGERATE_SCALE')/100):0)+
   (actives.raging?Math.ceil(baseAtk*effect('raging','EP_DAMAGERATE_SCALE')/100):0)+
   (actives.defender?Math.floor(baseAtk*effect('defender','EP_DAMAGERATE_SCALE')/100):0);
- const directDef=defense.armor+defense.refinement+defense.equipment;
+ const directDef=defense.directRaw;
  const activeDef=(actives.raging?Math.ceil(directDef*effect('raging','EP_ARMORCLASS_SCALE')/100):0)+
   (actives.defender?Math.floor(directDef*effect('defender','EP_ARMORCLASS_SCALE')/100):0);
  const priestDefense=Math.max(0,Number(priestEffects?.lapisMedio)||0);
  const effectiveDefense={...defense,activeBonus:activeDef,
-  priestBonus:priestDefense,known:defense.known+activeDef+priestDefense};
+  priestBonus:priestDefense,raw:defense.raw+activeDef+priestDefense,
+  known:Math.floor(defense.raw+activeDef+priestDefense)};
  const atkPct=attack?equipped.attackPercent.map(e=>({
   ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
  const atkExtras=equipped.attackFlat+atkPct.reduce((sum,e)=>sum+e.bonus,0);
@@ -908,7 +922,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   verified:false,excluded:['gear enhancement-dependent zero-valued effects',
    'conditional active skill discounts']};
  const magicAttack=magicAttackPreview({int:stats.int,jobKey,magicMastery,
-  weapon,guildArouse});
+  weapon,weaponGrade,weaponEnhancementType,magicPlus,guildArouse});
  // Current OS EP_ELEMENT_DAMAGE_SCALE often represents the same staff bonus
  // already counted as +10/+15 above. Expose it, never double-add it to MATK.
  const spellDamageEquipmentRate=equipped.elementDamageRate;
@@ -2199,11 +2213,19 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   lapisMedio:priestValid&&priest.blessing>=12&&attributeBuffs?.priestLapisMedio===true?
    legacyBuffs.lapisMedio.value:0
  }:{};
+ // Gem-type selection determines which weapon enhancement table is active.
+ // A saved older build without a chosen gem preserves the legacy physical
+ // fallback; a typed magical gem must not also receive physical weaponPlus.
+ const weaponGem=gemSelections.find(row=>row?.slot==='weapon'&&
+  row.itemId===combatContext.weapon?.id&&row.grade===combatContext.weaponGrade);
+ const weaponEnhancementType=weaponGem?.gem?.type||
+  combatContext.weaponEnhancementType||'physical';
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records:combinedRecords,itemForth,
   priestEffects,
   guildArouse:attributeBuffs?.guildArouse??0,
   combatBuffs:attributeBuffs,
-  honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,...combatContext});
+  honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,
+  ...combatContext,weaponEnhancementType});
  // An unavailable weapon/armor preview must NEVER erase otherwise valid HP/MP.
  if(!resistances||!regeneration)return null;
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,

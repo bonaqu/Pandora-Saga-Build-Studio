@@ -28,5 +28,14 @@ function weaponPreview(baseValue,level,table){
  const increment=Math.floor(value*step.ratio/100)+step.flat;
  return {base:value,increment,total:value+increment,source:'OS weaponPlus + legacy rounding assumption',verified:false};
 }
-root.PandoraEnchantModel=Object.freeze({types,elements,normalize,normalizeForSlot,equipmentName,label,weaponPreview});
+// Current OS news #4 publishes the *ratio* for magical weapon enhancement.
+// The server also carries a separate "flat" value; its meaning is not
+// established by the news and must not be silently added to MATK.
+function magicPreview(level,table){
+ const step=table?.[String(level)];
+ if(!Number.isInteger(level)||level<1||level>10||
+  !Number.isFinite(step?.ratio)||step.ratio<0)return null;
+ return {grade:level,rate:step.ratio,verified:false};
+}
+root.PandoraEnchantModel=Object.freeze({types,elements,normalize,normalizeForSlot,equipmentName,label,weaponPreview,magicPreview});
 })(typeof window==='undefined'?globalThis:window);
