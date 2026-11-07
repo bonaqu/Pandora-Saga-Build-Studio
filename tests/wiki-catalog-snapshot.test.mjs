@@ -10,7 +10,7 @@ const loader=host.PandoraWikiCatalog;
 
 function catalog(identity='local'){
  const ids=Object.fromEntries(['items','monsters','maps','instances','drops',
-  'trades','skills','souls'].map(key=>[key,1]));
+  'trades','skills','souls','racialPassives'].map(key=>[key,1]));
  return {
   meta:{schemaVersion:1,counts:ids},
   items:{1:{id:1,name:identity,icon:'I_000001_00'}},
@@ -51,6 +51,33 @@ test('racial passive registry and skills must come from the same snapshot',async
  const broken=mockFetch(invalid,local);
  await assert.rejects(loader.load({api:'https://worker.example',
   fetcher:broken.fetcher,strict:true}),/связи расовых пассивок/);
+});
+test('published race count, unique ownership and the registry key are validated',()=>{
+ const source=catalog('complete');
+ assert.doesNotThrow(()=>loader.validate(source));
+ const count=catalog('partial');
+ count.meta.counts.racialPassives=2;
+ assert.throws(()=>loader.validate(count),/Неполный каталог расовых пассивок/);
+ const noCount=catalog('missing count');
+ delete noCount.meta.counts.racialPassives;
+ assert.throws(()=>loader.validate(noCount),/Неполный каталог расовых пассивок/);
+ const duplicated=catalog('duplicated');
+ duplicated.meta.counts.racialPassives=2;
+ duplicated.racialPassives.ELF={raceId:2,key:'ELF',skills:[1]};
+ assert.throws(()=>loader.validate(duplicated),/связи расовых пассивок/,
+  'The same skill may not belong to two races');
+ const repeated=catalog('repeated skill');
+ repeated.racialPassives.HUMAN.skills=[1,1];
+ assert.throws(()=>loader.validate(repeated),/связи расовых пассивок/,
+  'Duplicate IDs within a race must not inflate its roster');
+ const mismatched=catalog('bad key');
+ mismatched.racialPassives.HUMAN.key='ELF';
+ assert.throws(()=>loader.validate(mismatched),/связи расовых пассивок/);
+ const duplicateRace=catalog('duplicate race ID');
+ duplicateRace.meta.counts.racialPassives=2;
+ duplicateRace.racialPassives.ELF={raceId:1,key:'ELF',skills:[2]};
+ duplicateRace.skills[2]={id:2,name:'Second passive',skillType:'PASSIVE',branch:'race'};
+ assert.throws(()=>loader.validate(duplicateRace),/связи расовых пассивок/);
 });
 test('D1 snapshots are atomic and old object-shaped instances become iterable',async()=>{
  const current=catalog('online'),local=catalog('local');
@@ -114,6 +141,10 @@ test('the bundled real OS snapshots satisfy the same schema and catalog counts',
  const checked=loader.validate(data);
  assert.equal(Object.keys(checked.items).length,checked.meta.counts.items);
  assert.equal(checked.instances.length,checked.meta.counts.instances);
+ assert.equal(Object.keys(checked.racialPassives).length,
+  checked.meta.counts.racialPassives);
+ assert.equal(new Set(Object.values(checked.racialPassives)
+  .flatMap(race=>race.skills)).size,18);
 });
 test('Cloudflare public instances endpoint returns an array and snapshot header',async()=>{
  const req=new Request('https://worker.example/api/catalog/instances.json',{
