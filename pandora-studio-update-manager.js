@@ -78,8 +78,9 @@
     later.textContent = updateCopy().later;
     later.type = 'button';
     later.addEventListener('click', () => {
-      // Dismiss only this release; the next publication must prompt again.
-      dismissedRelease = release;
+      // The banner may have been created for an older published release.
+      // Always dismiss the newest version actually offered to the user.
+      dismissedRelease = latest;
       banner.remove();
     });
     banner.append(message, apply, later);
@@ -98,7 +99,11 @@
       } finally { clearTimeout(timeout); }
       if (!response.ok) return;
       const manifest = await response.json();
-      if (newer(manifest?.release, version) && manifest.release !== dismissedRelease) {
+      // Visibility and periodic checks may overlap and finish out of order.
+      // Never downgrade the offered release to an older cached response.
+      if (newer(manifest?.release, version) &&
+          (!latest || !newer(latest, manifest.release)) &&
+          manifest.release !== dismissedRelease) {
         latest = manifest.release;
         showUpdate(latest);
       }
