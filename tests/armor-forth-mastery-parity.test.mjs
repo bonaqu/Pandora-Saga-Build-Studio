@@ -67,7 +67,7 @@ test('the portrait UI displays armor grade and class passive effects, not just r
  const view=read('pandora-studio-hero-book.js'),app=read('pandora-studio-app.js');
  assert.match(view,/row\('Защита','Defense',c.defense\?\.known\)/);
  assert.match(view,/row\('МАТК','MATK',c.magicAttack\?\.known/);
- assert.match(view,/row\('АТК','ATK',c.attack\?\.known\)/);
+ assert.match(view,/row\('АТК','ATK',c.attack\?\.known,'',clientAttack\)/);
  assert.match(view,/row\('Точность','Accuracy',c.accuracy\?\.known\)/);
  assert.match(app,/itemForth:gameItemForth/);
 });

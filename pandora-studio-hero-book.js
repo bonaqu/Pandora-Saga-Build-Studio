@@ -301,7 +301,11 @@ function summaryRows(calc){
  const num=value=>Number.isFinite(value)?value:null;
  const sum=(left,right)=>Number.isFinite(left)&&Number.isFinite(right)?
   left+right:null;
- const row=(ru,en,value,unit='')=>({ru,en,value:num(value),unit});
+ const row=(ru,en,value,unit='',display=null)=>({ru,en,value:num(value),unit,display});
+ const clientAttack=c.attack?.minimumVerified===true&&
+  Number.isFinite(c.attack?.minimum)&&Number.isFinite(c.attack?.known)&&
+  c.attack.minimum<=c.attack.known?
+  c.attack.minimum+'–'+c.attack.known:null;
  return [
   {ru:'Жизнь и восстановление',en:'Vitals and recovery',page:'buffs',symbol:'✧',rows:[
    row('ОЗ','HP',calc?.hp),row('ОМ','MP',calc?.mp),
@@ -309,7 +313,7 @@ function summaryRows(calc){
    row('Леч. умениями','Skill healing',calc?.healingSkill?.percent,'%'),
    row('Расход ОМ','MP cost',c.manaCost?.remaining,'%')]},
   {ru:'Атака',en:'Attack',page:'attack',symbol:'⚔',rows:[
-   row('АТК','ATK',c.attack?.known),
+   row('АТК','ATK',c.attack?.known,'',clientAttack),
    row('АТК спереди','Front ATK',c.frontAttack,'%'),
    row('АТК сзади','Back ATK',sum(c.backAttack,c.backAttackEquipmentRate),'%'),
    row('МАТК','MATK',c.magicAttack?.known,'%'),
@@ -376,7 +380,8 @@ function summaryPage(body,calc,options={}){
   guideLabel(heading.lastChild,'summary.group.'+summaryGroupIndex++,group.ru,group.en,options);
   const grid=make('div',{class:'stage-result-grid'});
   for(const result of group.rows){
-   const text=Number.isFinite(result.value)?format.format(result.value)+result.unit:'—';
+   const text=result.display??(Number.isFinite(result.value)?
+    format.format(result.value)+result.unit:'—');
    const tile=make('div',{class:'stage-result-tile'},[
     make('span',{text:en?result.en:result.ru}),
     make('strong',{text})

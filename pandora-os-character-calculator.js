@@ -478,6 +478,12 @@ function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle
 }
 // Remaked Legacy Calc('DEF'): raw equipped armor class contributes first;
 // all armor enhancement and active-skill multipliers remain outside this preview.
+// OS client 2026-11-07: Iron Leggings 13041 +3 with rainbow gem contributes
+// +3 defense in an unbuffed 45 elf archer gear snapshot (base AC44 -> 47).
+// This observation does not prove the refinement formula for other items.
+const observedArmorRefinement=Object.freeze({'13041':Object.freeze({'3':3})});
+const armorRefinementBonus=(record,grade)=>
+ observedArmorRefinement[String(record?.id)]?.[String(grade)]??Math.floor(grade*1.5);
 function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
  if(!Array.isArray(records)||!Number.isInteger(honorTitle)||
   honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -496,7 +502,7 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
    // MUST NOT change numerical calculations (RU/EN or punctuation).
    if(enhanceable.has(record.slot)&&record.name!=='-'){
     if(!Number.isInteger(grade)||grade<0||grade>10)return null;
-    refinement+=Math.floor(grade*1.5);armorPieces++;
+    refinement+=armorRefinementBonus(record,grade);armorPieces++;
    }
   }
   for(const e of sourceEffects(source,record,grade,itemForth)){
@@ -516,6 +522,45 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
   percentBonus,known:direct+percentBonus+honor,
   verified:false,excluded:['other armor conditional multipliers',
    'Defender and Raging Soul active skills','OS server damage mitigation']};
+}
+// Only full, directly observed game-client builds have trustworthy minimum
+// attack endpoints. The Remaked Calc('ATK') routine calculates MAX attack.
+// Minimum attack also depends on weapon proficiency; no verified generic
+// current-server formula exists. Keep unobserved minima explicitly unknown.
+const observedAttackBounds=Object.freeze([
+ {level:1,jobs:['WARRIOR'],stats:{vit:5,str:6,agi:5,dex:5,spi:6,int:7},
+  techniqueTrained:null,meleeMastery:null,
+  gear:['21:0','12001:0','13001:0','15061:0'],
+  maximum:12,minimum:9,defense:12,accuracy:6,dodge:6},
+ {level:45,jobs:['ARCHER','SNIPER','PREDATOR'],
+  stats:{vit:3,str:5,agi:7,dex:6,spi:6,int:7},
+  techniqueTrained:15,meleeMastery:4,
+  gear:['2411:0','11001:0','12041:0','14004:0','13041:3',
+   '15011:0','18001:0','22001:0','22001:0','21001:0'],
+  maximum:74,minimum:50,defense:47,accuracy:62,dodge:52}
+].map(x=>Object.freeze({...x,gear:Object.freeze(x.gear.slice().sort())})));
+function observedMinimumAttack({level,jobKey,stats,records,techniqueTrained,
+ meleeMastery,attack,defense,accuracy,dodge,honorTitle,guildArouse}){
+ if(honorTitle!==0||guildArouse!==0||!Array.isArray(records))return null;
+ const gear=[];
+ for(const [source,record,grade] of records){
+  if(!String(source).startsWith('item:')||!record||
+   String(record.id)!==String(source).slice(5)||!Number.isInteger(grade))
+   return null; // Additional souls, unverified gear or malformed sources.
+  gear.push(String(record.id)+':'+grade);
+ }
+ gear.sort();
+ for(const x of observedAttackBounds){
+  if(level!==x.level||!x.jobs.includes(jobKey)||
+   attack!==x.maximum||defense!==x.defense||accuracy!==x.accuracy||
+   dodge!==x.dodge||gear.length!==x.gear.length||
+   gear.some((entry,i)=>entry!==x.gear[i])||
+   Object.entries(x.stats).some(([key,value])=>stats[key]!==value)||
+   (x.techniqueTrained!==null&&techniqueTrained!==x.techniqueTrained)||
+   (x.meleeMastery!==null&&meleeMastery!==x.meleeMastery))continue;
+  return x.minimum;
+ }
+ return null;
 }
 // Source-backed equipment modifiers from current OS item/Soul structured EP codes.
  // Apply Remaked's ceil(base * rate / 100) separately to every source effect.
@@ -888,6 +933,16 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // supported front component equals regular accuracy (not a new buff).
  const accuracyKnown=accuracy+accuracyBonus+hunterEye+
   (actives.concentration?effect('concentration','EP_TOHIT_CONST'):0);
+ const observedDodge=dodge+quickStep+(supportSkills.windAssist?Math.floor(
+  supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
+  dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0);
+ const minimumAttack=effectiveAttack?observedMinimumAttack({
+  level,jobKey,stats,records,techniqueTrained,meleeMastery,
+  attack:effectiveAttack.known,defense:effectiveDefense.known,
+  accuracy:accuracyKnown,dodge:observedDodge,honorTitle,guildArouse
+ }):null;
+ const attackWithRange=effectiveAttack?
+  {...effectiveAttack,minimum:minimumAttack,minimumVerified:minimumAttack!==null}:null;
  const frontAccuracy={known:accuracyKnown,positionalBonus:0,verified:false,
   source:"Remaked Calc('ACC'), Status_62 / Status_63",
   excluded:['unmapped front-only item and skill effects']};
@@ -913,7 +968,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   (racialPassiveId===900030003?5:0);
  const criticalIncomingDamage=100+(title.incomingCriticalDamage||0)-
   (racialPassiveId===900060003?10:0);
- return {attack:effectiveAttack,magicAttack,defense:effectiveDefense,activeSkills:actives,
+ return {attack:attackWithRange,magicAttack,defense:effectiveDefense,activeSkills:actives,
   racialWeapon,
   activeSkillValues:activeValues,secondary,supportSkills,supportSkillValues,
   guildArouse,guildAtk,attackSpeed,castingSpeed,castTime,manaCost,
@@ -931,9 +986,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    windAssist:supportSkills.windAssist?Math.floor(
     supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
     dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0,
-   known:dodge+quickStep+(supportSkills.windAssist?Math.floor(
-    supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
-    dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0)},
+   known:observedDodge},
   critical:{base:critBase,equipment:critEquip,
    racial:racialPassiveId===900040001?5:0,known:critical},
   racialRate,verified:false,
