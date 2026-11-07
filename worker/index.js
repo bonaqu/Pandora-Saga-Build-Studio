@@ -487,7 +487,7 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.360.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit','wiki-label-edit'],
-  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true});
+  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerOverrideCAS:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
@@ -836,12 +836,41 @@ if(path==='/api/admin/override'&&method==='POST'){
  if(key.startsWith('spawnedit.')&&!validWikiSpawns(value))return no('Invalid monster spawn assignments',400);
  if(key.startsWith('visual.')&&!/^(?:assets\/[A-Za-z0-9_.-]+\.(?:png|webp|jpe?g)|https:\/\/pandorasaga-os\.com\/icons\/(?:items|souls|skills)\/[A-Za-z0-9_-]+\.webp(?:\?v=[0-9]{1,12})?)$/.test(value.trim()))return no('Unapproved image source',400);
  if(key.startsWith('itemslots.')&&!/^(?:[0-9]|[12][0-9]|3[0-2])$/.test(value.trim()))return no('Invalid socket count (0-32)',400);
+ // A conditional editor write is checked and committed atomically. Old clients
+ // still use the legacy endpoint until they are upgraded to include a precondition.
+ if(Object.hasOwn(data,'expectedValue')){
+  const expected=data.expectedValue;
+  if(expected!==null&&(typeof expected!=='string'||expected.length>24000))
+   return no('Invalid edit precondition',400);
+  const normalized=value.trim(),now=Date.now();
+  const statement=expected===null?
+   env.DB.prepare('INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO NOTHING')
+    .bind(key,normalized,now):
+   env.DB.prepare('UPDATE overrides SET value=?,updated_at=? WHERE key=? AND value=?')
+    .bind(normalized,now,key,expected);
+  const result=await statement.run();
+  if(result.meta?.changes!==1)
+   return json({error:'Edit changed in another session. Reload this entry and try again.',
+    code:'OWNER_EDIT_CONFLICT'},409);
+  return json({ok:true,key,value:normalized,conditional:true});
+ }
  await env.DB.prepare(`INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at`).bind(key,value.trim(),Date.now()).run();return json({ok:true,key,value:value.trim()})
 }
 if(path==='/api/admin/reset'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
  const data=await body(request),key=data?.key;
  if(typeof key!=='string'||!OWNER_EDITABLE_KEY_PATTERN.test(key))return no('Unsupported editable field');
+ if(Object.hasOwn(data,'expectedValue')){
+  const expected=data.expectedValue;
+  if(typeof expected!=='string'||expected.length>24000)
+   return no('Invalid reset precondition',400);
+  const result=await env.DB.prepare('DELETE FROM overrides WHERE key=? AND value=?')
+   .bind(key,expected).run();
+  if(result.meta?.changes!==1)
+   return json({error:'Edit changed in another session. Reload this entry and try again.',
+    code:'OWNER_EDIT_CONFLICT'},409);
+  return json({ok:true,key,deleted:true,conditional:true});
+ }
  const result=await env.DB.prepare('DELETE FROM overrides WHERE key=?').bind(key).run();
  return json({ok:true,key,deleted:(result.meta?.changes||0)>0});
 }
