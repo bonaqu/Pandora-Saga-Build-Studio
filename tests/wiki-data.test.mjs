@@ -166,3 +166,28 @@ test('bilingual search normalizes aliases once per render and invalidates on a n
  assert.equal(w.search('item','',english).length,3);
  assert.equal(calls,3,'empty query does not recompute translated aliases');
 });
+
+// Regression for the *real UI call site*: a fresh arrow passed to
+// wikiIndex.search for every keystroke would defeat WikiData's WeakMap cache.
+test('actual Encyclopedia reuses one search resolver until data or locale changes',()=>{
+ const source=fs.readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ assert.match(source,/let lastWikiIndex=null,lastWikiEnglish=null,lastWikiLanguage=null;/);
+ assert.match(source,/let searchResolver=null;/);
+ assert.match(source,/lastWikiIndex!==wikiIndex\|\|lastWikiEnglish!==officialEnglish\|\|/);
+ assert.match(source,/lastWikiLanguage!==lang/);
+ assert.match(source,/searchResolver=id=>searchTerms\(wikiSelection\.type,id\)/);
+ assert.match(source,/wikiIndex\.search\(type,wikiSearch,searchResolver,/);
+ assert.doesNotMatch(source,/wikiIndex\.search\(type,wikiSearch,id=>/);
+ const data={items:{a:{name:'Зелье'},b:{name:'Меч'}}};
+ const index=ctx.window.PandoraWikiData.build(data);
+ let scans=0;
+ const stable=id=>{scans++;return id==='a'?'Potion':'Sword'};
+ assert.equal(index.search('item','potion',stable).length,1);
+ assert.equal(index.search('item','sword',stable).length,1);
+ assert.equal(scans,2,'two keystrokes must not rescan all translated names');
+ const changed=id=>id==='a'?'Elixir':'Blade';
+ assert.equal(index.search('item','elixir',changed).length,1,
+  'language/catalog change must replace the cached resolver');
+ assert.equal(index.search('item','potion',changed).length,0,
+  'stale names must not persist after a locale refresh');
+});

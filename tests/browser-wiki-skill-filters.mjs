@@ -101,6 +101,16 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   await filter.selectOption('racial');
   assert.deepEqual(await page.locator('.wiki-list .wiki-location-list-heading').allTextContents(),
    ['Human','Elf','Dwarf','Myrine','Enkidu','Lapin']);
+  // Exercise two successive queries in an unchanged EN view. The cached
+  // translated-name resolver must not lock the first query's results.
+  const search=page.locator('.wiki-controls input[type="search"]');
+  await search.fill('Гармония');
+  await page.locator('[data-wiki-record="900020001"]').waitFor({state:'visible'});
+  await search.fill('Бойцовский');
+  await page.locator('[data-wiki-record="900010001"]').waitFor({state:'visible'});
+  assert.equal(await page.locator('[data-wiki-record="900020001"]').count(),0);
+  await search.fill('');
+  await page.locator('[data-wiki-record="900020001"]').waitFor({state:'visible'});
   await page.locator('[data-wiki-record="900020001"]').click();
   assert.ok(await page.locator('.wiki-page .item-fields').getByText('Race',{exact:true}).count()>0);
   assert.ok(await page.locator('.wiki-page .item-fields').getByText('Elf',{exact:true}).count()>0);
