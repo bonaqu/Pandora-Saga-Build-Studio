@@ -115,3 +115,40 @@ test('NPC trade and item source writes also await a single completed Wiki refres
   assert.equal(handler.isSaving(),false);
  }
 });
+
+// One D1 spawnedit key must replace a location without deleting unrelated
+// instance/source links or issuing two separate writes.
+test('game-monster spawn location replacement publishes one atomic override',async()=>{
+ const host={};
+ Function('window',readFileSync(new URL('../pandora-studio-wiki-owner-data.js',import.meta.url),'utf8'))(host);
+ const state=environment();
+ const source={monsters:{600:{}},maps:{
+  100:{id:100,mobs:[600]},200:{id:200,mobs:[]}
+ },instances:[{id:300,mobs:[600]}]};
+ const places=[{type:'map',id:100},{type:'instance',id:300}];
+ const factory=Function('wikiData','wikiIndex','window','activeOverride',
+  'apiRequest','override','ownerEdits','refreshOwnerCatalog','refreshOwnerUI',
+  'const adminToken="test",adminEditing=true;let editIsSaving=false;\n'+spawns+
+  '\nreturn saveWikiSpawns;');
+ const save=factory(source,{locations:()=>places},host,
+  ()=>null,state.apiRequest,state.override,state.ownerEdits,
+  state.refreshOwnerCatalog,()=>state.refreshOwnerUI());
+ const op=save(600,'map','200',true,'100');
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(state.writes.length,1,'One replacement equals one D1 write');
+ assert.equal(state.writes[0].payload.key,'spawnedit.600');
+ assert.deepEqual(JSON.parse(state.writes[0].payload.value),[
+  {type:'instance',id:'300'},{type:'map',id:'200'}]);
+ const changed=host.PandoraWikiOwnerData.apply(source,{
+  'spawnedit.600':state.writes[0].payload.value
+ });
+ assert.deepEqual(changed.maps[100].mobs,[]);
+ assert.deepEqual(changed.maps[200].mobs,[600]);
+ assert.deepEqual(changed.instances[0].mobs,[600]);
+ assert.deepEqual(source.maps[100].mobs,[600],
+  'The game source stays intact until the owner override is applied');
+ state.pending.resolve();await op;
+ assert.equal(state.ownerEdits.length,1,'Undo/redo tracks only one key');
+ await assert.rejects(save(600,'map','200',true,'999'),/больше не найдено/);
+ assert.equal(state.writes.length,1,'Stale replacement does not reach D1');
+});

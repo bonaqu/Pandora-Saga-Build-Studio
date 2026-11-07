@@ -2688,7 +2688,7 @@ function renderWiki(root){
   registerOutsidePicker(form);
   fill();search.focus();
  };
- function wikiOwnerEntityList({label,existing,kind,onChange,limit=1000,replaceable=true}){
+ function wikiOwnerEntityList({label,existing,kind,onChange,limit=1000,replaceable=true,replaceCandidate=null}){
  const container=h('div',{class:'wiki-owner-relations'});
  if(label)container.append(h('h4',{text:label}));
  const ids=[...new Set((existing||[]).map(String))];
@@ -2714,7 +2714,8 @@ function renderWiki(root){
   const fill=()=>{
    const q=wikiIndex.normalize(search.value);
    const choices=Object.entries(candidates||{}).filter(([key])=>
-    !ids.includes(key)&&(!q||wikiIndex.normalize(dataName(kind,key)).includes(q))
+    !ids.includes(key)&&(!replaceId||!replaceCandidate||replaceCandidate(key))&&
+    (!q||wikiIndex.normalize(dataName(kind,key)).includes(q))
    ).slice(0,90);
    select.replaceChildren(h('option',{value:'',text:choices.length?
     wt('Выбери запись','Choose entry'):wt('Ничего не найдено','No matches')}));
@@ -4100,7 +4101,15 @@ function renderWiki(root){
       const chosen=places.filter(x=>x.type===kind).map(x=>String(x.id));
       detail.append(wikiOwnerEntityList({label:kind==='map'?
        wt('Локации','Locations'):wt('Подземелья','Dungeons'),
-       kind,existing:chosen,replaceable:false,onChange:async next=>{
+       kind,existing:chosen,
+       // Source monsters on canonical game maps can replace one relation with
+       // a single spawnedit write. Virtual/custom maps still use add/remove.
+       replaceable:!rec.ownerCreated&&chosen.every(placeId=>
+        kind==='map'?Object.hasOwn(wikiData.maps||{},placeId):
+        (wikiData.instances||[]).some(x=>String(x.id)===placeId)),
+       replaceCandidate:placeId=>kind!=='map'||
+        Object.hasOwn(wikiData.maps||{},placeId),
+       onChange:async next=>{
         const updated=next.map(String);
         const added=updated.find(x=>!chosen.includes(x));
         const removed=chosen.find(x=>!updated.includes(x));
@@ -4110,6 +4119,13 @@ function renderWiki(root){
         if(!loc)throw Error(wt('Локация не найдена','Location not found'));
         const ownerLocation=kind==='map'&&(
          !Object.hasOwn(wikiData.maps||{},locationId)||loc.virtual);
+        if(added&&removed){
+         if(rec.ownerCreated||ownerLocation)
+          throw Error(wt('Эту связь можно изменить по одной',
+           'Change this link one at a time'));
+         await saveWikiSpawns(id,kind,added,true,removed);
+         return;
+        }
         if(rec.ownerCreated||ownerLocation){
          const current=(loc.mobs||[]).map(String);
          const desired=added?[...new Set([...current,String(id)])]:
@@ -6672,7 +6688,7 @@ async function saveWikiRecordField(type,id,field,value){
    [field.slice(8)]:value}}:{[field]:value};
  return saveWikiRecordPatch(type,id,patch);
 }
-async function saveWikiSpawns(monsterId,type,placeId,include){
+async function saveWikiSpawns(monsterId,type,placeId,include,replacesId=null){
  if(type==='map'&&!Object.hasOwn(wikiData?.maps||{},String(placeId)))
   throw Error('Нельзя разместить монстра: карта отсутствует в игровом каталоге.');
  if(type==='instance'&&!(wikiData?.instances||[]).some(x=>String(x.id)===String(placeId)))
@@ -6681,6 +6697,15 @@ async function saveWikiSpawns(monsterId,type,placeId,include){
  const current=wikiIndex.locations(monsterId).map(x=>({type:x.type,id:String(x.id)}));
  const wanted=new Map(current.map(x=>[x.type+':'+x.id,x]));
  const key=type+':'+placeId;
+ if(replacesId!=null){
+  const oldKey=type+':'+replacesId;
+  if(!include||!wanted.has(oldKey))
+   throw Error('Исходное место появления больше не найдено. Обнови список.');
+  if(oldKey===key)return;
+  // Remove and add in memory, then publish a SINGLE checked D1 override.
+  // No intermediate source index may contain only half of a replacement.
+  wanted.delete(oldKey);
+ }
  if(include)wanted.set(key,{type,id:String(placeId)});else wanted.delete(key);
  const rows=[...wanted.values()];
  if(!window.PandoraWikiOwnerData.validSpawns(rows))throw Error('Некорректные места появления');
