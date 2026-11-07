@@ -58,6 +58,9 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   assert.equal(await control.inputValue(),'player');
   const disclosure=page.locator('.wiki-skill-edit-list');
   const toggle=page.locator('.wiki-skill-edit-toggle');
+  const selectBox=await control.boundingBox(),editBox=await toggle.boundingBox();
+  assert.ok(selectBox&&editBox&&selectBox.x+selectBox.width<=editBox.x+1,
+   'Owner edit pencil must sit next to the compact select without overlap');
   await toggle.click();
   assert.equal(await toggle.getAttribute('aria-expanded'),'true');
   assert.equal(await disclosure.locator('[data-skill-filter-label]').count(),7,

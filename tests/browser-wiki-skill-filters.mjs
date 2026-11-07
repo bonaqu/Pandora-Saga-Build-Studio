@@ -13,6 +13,31 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   const filter=page.locator('.wiki-skill-type');
   await filter.waitFor({state:'visible',timeout:20000});
   assert.equal(await filter.inputValue(),'player');
+  // Exactly the same native compact selector as the effect-items chapter.
+  // A past CSS flex:1 regression made the skill selector span the full row.
+  const skillBox=await filter.boundingBox();
+  const toolbarBox=await page.locator('.wiki-skill-toolbar').boundingBox();
+  assert.ok(skillBox&&toolbarBox&&skillBox.width<toolbarBox.width-60,
+   'Skill category selector must not stretch across the entire desktop row');
+  assert.equal(await filter.evaluate(node=>getComputedStyle(node).flexGrow),'0');
+  const skillAppearance=await filter.evaluate(node=>{
+   const css=getComputedStyle(node);
+   return [css.backgroundColor,css.borderTopColor,css.borderTopStyle,
+    css.borderTopWidth,css.borderTopLeftRadius,css.paddingTop];
+  });
+  await page.locator('[data-wiki-chapter="utility"]').click();
+  const effectSelector=page.locator('.wiki-effect-type');
+  await effectSelector.waitFor({state:'visible'});
+  const effectAppearance=await effectSelector.evaluate(node=>{
+   const css=getComputedStyle(node);
+   return [css.backgroundColor,css.borderTopColor,css.borderTopStyle,
+    css.borderTopWidth,css.borderTopLeftRadius,css.paddingTop];
+  });
+  assert.deepEqual(skillAppearance,effectAppearance,
+   'Skill and effect-item filters must share the approved native select styling');
+  await page.locator('[data-wiki-chapter="skill"]').click();
+  await filter.waitFor({state:'visible'});
+  assert.equal(await filter.inputValue(),'player');
   await page.locator('[data-wiki-record="161202001"]').waitFor({state:'visible'});
   assert.equal(await page.locator('[data-wiki-record="161202050"]').count(),0,
    'Extra Counterattack must not appear among playable character skills');

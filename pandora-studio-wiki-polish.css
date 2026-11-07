@@ -385,8 +385,10 @@
 
 /* Exactly the Encyclopedia chapter-label UI: native select for filtering,
    a chapter-style pencil and the same inline text field for owners. */
-.wiki-skill-toolbar{display:flex;align-items:stretch;gap:6px;min-width:0}
-.wiki-skill-toolbar>.wiki-skill-type{flex:1 1 auto;min-width:0}
+/* Use the existing .wiki-effect-toolbar sizing instead of stretching the
+   skill select across the entire Encyclopedia control row. */
+.wiki-skill-toolbar{gap:8px;flex-wrap:wrap;min-width:0}
+.wiki-skill-toolbar>.wiki-skill-type{flex:0 1 auto;min-width:160px;max-width:100%}
 .wiki-skill-toolbar>.wiki-skill-edit-toggle{
  flex:0 0 35px;min-width:35px;min-height:35px;box-sizing:border-box;
  border:1px solid #815f3d;border-radius:5px;
