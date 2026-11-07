@@ -239,7 +239,10 @@ async function init(config){
  // Invalid/revoked identities still require an immediate forced rerender.
  let forceBootstrapRender=false;
  const finishBootstrap=()=>{
-  if(forceBootstrapRender||panel.hidden||!panel.hasChildNodes?.())render();
+  // A verified /me reply does not change the account. Do not discard edits
+  // merely because the popover was temporarily hidden while it was pending.
+  // Revoked/mismatched sessions still force a fresh guest panel.
+  if(forceBootstrapRender||!panel.hasChildNodes?.())render();
  };
  if(session){
   const bootstrapToken=session.token,expectedName=session.username;
