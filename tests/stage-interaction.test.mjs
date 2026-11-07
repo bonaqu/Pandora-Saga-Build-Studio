@@ -172,3 +172,34 @@ test('physical gemstone attack tooltip uses OS weaponPlus, not the visible grade
  assert.doesNotMatch(result(4,{type:'physical',element:'ice'},null),/53\+12/);
  assert.doesNotMatch(result(0,{type:'physical',element:'ice'},tables),/53\+/);
 });
+
+test('individual socket selector refuses to discard an occupied Soul slot',()=>{
+ const state=makeApi('legs','details');
+ state.api.record.slot='legs';
+ state.api.record.soulslot=1;
+ state.api.capacity=2;
+ state.api.souls=[null,{id:999}];
+ const selected=[];
+ state.api.updateSocketCapacity=n=>selected.push(n);
+ stage.PandoraStageItemUI.render(state.box,state.api);
+ assert.equal(byText(state.box,'0')?.disabled,true);
+ assert.equal(byText(state.box,'1')?.disabled,true);
+ assert.equal(byText(state.box,'2')?.disabled,false);
+ assert.equal(byText(state.box,'2')?.className,'chosen');
+ byText(state.box,'3')?.events.click();
+ assert.deepEqual(selected,[3]);
+});
+test('an individually upgraded zero-slot belt gains the Souls tab without editing catalog',()=>{
+ const base=makeApi('belt','details');
+ base.api.record.slot='belt';base.api.record.soulslot=0;
+ base.api.capacity=0;base.api.updateSocketCapacity=()=>{};
+ stage.PandoraStageItemUI.render(base.box,base.api);
+ assert.equal(byText(base.box,'Души'),undefined);
+ assert.equal(byText(base.box,'0')?.className,'chosen');
+ const selected=makeApi('belt','details');
+ selected.api.record.slot='belt';selected.api.record.soulslot=0;
+ selected.api.capacity=1;selected.api.updateSocketCapacity=()=>{};
+ stage.PandoraStageItemUI.render(selected.box,selected.api);
+ assert.ok(byText(selected.box,'Души'));
+ assert.equal(byText(selected.box,'1')?.className,'chosen');
+});
