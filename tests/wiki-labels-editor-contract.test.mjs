@@ -48,6 +48,26 @@ test('editable bilingual labels preserve stable internal chapter and section key
  assert.match(view,/label\('chapter','honor','Честь','Honor'\)/);
 });
 
+test('all 42 bilingual chapter, Honor and skill filter labels fit one validated owner patch',()=>{
+ const all=Object.fromEntries([
+  ...Object.entries(registry.chapter).flatMap(([id,names])=>[
+   [registry.key('chapter',id,'ru'),names[0]],
+   [registry.key('chapter',id,'en'),names[1]]]),
+  ...Object.entries(registry.honor).flatMap(([id,names])=>[
+   [registry.key('honor',id,'ru'),names[0]],
+   [registry.key('honor',id,'en'),names[1]]]),
+  ...Object.entries(registry.skillFilter).flatMap(([id,names])=>[
+   [registry.key('skillFilter',id,'ru'),names[0]],
+   [registry.key('skillFilter',id,'en'),names[1]]])
+ ]);
+ assert.equal(Object.keys(all).length,42);
+ assert.equal(registry.validPatch(all),true);
+ assert.equal(guide.validOverride('wiki.labels',JSON.stringify(all)),true);
+ const overrides={'guideedit.wiki.labels':JSON.stringify(all)};
+ assert.equal(registry.value(overrides,'skillFilter','unknown','ru'),'На проверке');
+ assert.equal(registry.value(overrides,'chapter','honor','ru'),'Честь');
+ assert.equal(registry.validPatch({...all,skill_filter_missing_ru:'Oops'}),false);
+});
 test('Worker stores only whitelisted source-independent label content',async()=>{
  const values=new Map(),calls=[];
  const DB={prepare(sql){let args=[];
@@ -77,7 +97,18 @@ test('Worker stores only whitelisted source-independent label content',async()=>
   const denied=await send(bad);
   assert.equal(denied.status,400,await denied.clone().text());
  }
- assert.equal(calls.filter(x=>x.sql.includes('INSERT INTO overrides')).length,1);
+ // A full 42-label bilingual patch must pass the Worker validator as well.
+ const large=Object.fromEntries([
+  ...Object.entries(registry.chapter).flatMap(([id,n])=>[
+   [registry.key('chapter',id,'ru'),n[0]],[registry.key('chapter',id,'en'),n[1]]]),
+  ...Object.entries(registry.honor).flatMap(([id,n])=>[
+   [registry.key('honor',id,'ru'),n[0]],[registry.key('honor',id,'en'),n[1]]]),
+  ...Object.entries(registry.skillFilter).flatMap(([id,n])=>[
+   [registry.key('skillFilter',id,'ru'),n[0]],[registry.key('skillFilter',id,'en'),n[1]]])
+ ]);
+ assert.equal((await send(large)).status,200);
+ assert.deepEqual(JSON.parse(values.get('guideedit.wiki.labels')),large);
+ assert.equal(calls.filter(x=>x.sql.includes('INSERT INTO overrides')).length,2);
 });
 
 test('location relation controls reuse one name-based picker and do not expose IDs',()=>{
