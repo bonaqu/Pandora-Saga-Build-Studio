@@ -134,3 +134,15 @@ test('admin owner PR bridge exposes no account/login/session data and guards eve
  assert.match(main,/if\(!await auth\(request,env\)\)return no\('Unauthorized',401\)/);
  assert.match(main,/path==='\/api\/runtime-capabilities'/);
 });
+
+// Do not offer the existing ✎ replacement as two D1 writes for a canonical
+// monster. Static source monsters use one spawnedit row; owner maps keep their
+// explicit per-location patch lifecycle.
+test('monster origin editor supports safe single-write replacement',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ assert.match(app,/saveWikiSpawns\(id,kind,added,true,removed\)/);
+ assert.match(app,/replaceCandidate:placeId=>kind!=='map'/);
+ assert.match(app,/if\(replacesId!=null\)/);
+ assert.match(app,/wanted\.delete\(oldKey\)/);
+ assert.match(app,/await refreshOwnerCatalog\(\)/);
+});

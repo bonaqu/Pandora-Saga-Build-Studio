@@ -144,7 +144,7 @@ test('Worker stores only whitelisted source-independent label content',async()=>
 });
 
 test('location relation controls reuse one name-based picker and do not expose IDs',()=>{
- assert.match(app,/function wikiOwnerEntityList\(\{label,existing,kind,onChange,limit=1000,replaceable=true\}\)/);
+ assert.match(app,/function wikiOwnerEntityList\(\{label,existing,kind,onChange,limit=1000,replaceable=true,replaceCandidate=null\}\)/);
  assert.match(app,/class:'wiki-owner-replace'/);
  assert.match(app,/const next=replaceId\?ids\.map\(id=>id===replaceId\?chosen:id\):\[\.\.\.ids,chosen\]/);
  assert.match(app,/!ids\.includes\(key\)/);
