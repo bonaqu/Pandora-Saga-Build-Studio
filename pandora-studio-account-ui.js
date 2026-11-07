@@ -244,16 +244,16 @@ async function init(config){
 // validation message in memory, but never carry them across account changes.
 function refresh(){
  const identity=session?.token||null,formMode=mode;
- const inputs=panel?Array.from(panel.querySelectorAll('.account-form input')):[];
+ const inputs=Array.from(panel?.querySelectorAll?.('.account-form input')||[]);
  const values=inputs.map(input=>input.value);
- const expanded=panel?.querySelector('.account-password-details')?.open;
+ const expanded=panel?.querySelector?.('.account-password-details')?.open;
  const message=errorLine?.dataset?.sourceMessage??null;
  render();
  if((session?.token||null)!==identity||mode!==formMode||!panel)return;
- const restored=Array.from(panel.querySelectorAll('.account-form input'));
+ const restored=Array.from(panel.querySelectorAll?.('.account-form input')||[]);
  if(restored.length!==values.length)return;
  for(let i=0;i<restored.length;i++)restored[i].value=values[i];
- const details=panel.querySelector('.account-password-details');
+ const details=panel.querySelector?.('.account-password-details');
  if(details&&expanded!==undefined)details.open=expanded;
  if(message!==null)info(message);
 }
