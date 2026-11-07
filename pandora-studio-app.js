@@ -6342,7 +6342,7 @@ async function undoOwnerEdit(){
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
     ownerEdits.pop();closeInlineEditor();
     if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
-    refreshOwnerCatalog();
+    await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
 }
@@ -6804,7 +6804,7 @@ async function saveWikiItemField(id,field,value){
    await apiRequest('/api/admin/override',{key,value:serialized});
    override[key]=serialized;ownerEdits.push({key,before:previous,after:serialized});
   }
-  refreshOwnerCatalog();
+  await refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveWikiTradeRecipe(recipe,changes=null){
