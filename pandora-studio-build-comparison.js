@@ -12,8 +12,10 @@ const BUFFS=[
  ['guildManaRecovery','Гильдия: восстановление ОМ','Guild: MP recovery',0],
  ['guildHealing','Гильдия: лечение','Guild: healing',0],
  ['guildArouse','Гильдия: пробуждение','Guild: arousal',0],
- ['proelium','Проэлиум','Proelium',false],
- ['proeliumPotency','Мощность Проэлиума','Proelium potency',0],
+ // Preserve older build fields for accurate A/B differences without showing
+ // an obsolete, non-current game term in either language.
+ ['proelium','Прочее усиление','Other enhancement',false],
+ ['proeliumPotency','Сила прочего усиления','Other enhancement strength',0],
  ['potionEffectsEnabled','Учитывать эффекты зелий','Include potion effects',false],
  ['combatWarCry','Боевой клич','War Cry',false],
  ['combatRage','Ярость','Rage',false],
@@ -38,7 +40,10 @@ function savedItemName(selection,records,{lang='ru',kind='item'}={}){
  if(typeof legacy==='string'&&legacy.trim()&&!/^\d+$/.test(legacy.trim()))
   return legacy.trim().slice(0,80);
  if(!numeric)return lang==='en'?'Unknown selection':'Неизвестный предмет';
- return (kind==='soul'?lang==='en'?'Soul #':'Душа №':lang==='en'?'Item #':'Предмет №')+id;
+ // No internal catalog IDs in the player-facing comparison. The IDs are
+ // still retained in saved data and used for detecting changed selections.
+ return kind==='soul'?(lang==='en'?'Soul not in catalog':'Душа отсутствует в каталоге'):
+  (lang==='en'?'Item not in catalog':'Предмет отсутствует в каталоге');
 }
 function asValue(v,defaultValue){
  return typeof defaultValue==='boolean'?v===true:
@@ -118,7 +123,7 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
    Missing game data is unknown, never fabricated as zero. */
 function matrixRows(a={},b={},options={}){
  const {lang='ru',races=[],jobs=[],stats=[],branches=[],slotLabels=[],
-  equipment={},souls={},skillCatalog={},enchant=null,honorTitles=[],
+  equipment={},souls={},skillCatalog={},englishSkills={},enchant=null,honorTitles=[],
   calcA=null,calcB=null,summaryA=[],summaryB=[],trained=null}=options;
  const english=lang==='en',rows=[];
  const label=(ru,en)=>english?en:ru;
@@ -136,14 +141,16 @@ function matrixRows(a={},b={},options={}){
   if(typeof value==='number'&&Number.isFinite(value))return fmtNumber(value);
   return '—';
  };
- const push=(section,group,key,ru,en,left,right,{kind='text',unit=''}={})=>{
+ const push=(section,group,key,ru,en,left,right,{kind='text',unit='',identityA,identityB}={})=>{
   const aText=readable(left,kind),bText=readable(right,kind);
   const number=kind==='number'&&typeof left==='number'&&typeof right==='number'&&
    Number.isFinite(left)&&Number.isFinite(right);
   const rawDelta=number?Math.round((right-left)*10000)/10000:null;
   const delta=number?(rawDelta>0?'+':'')+fmtNumber(rawDelta)+unit:null;
   rows.push({section,group,key,label:label(ru,en),a:aText+(aText==='—'?'':unit),
-   b:bText+(bText==='—'?'':unit),equal:aText===bText,delta,
+   b:bText+(bText==='—'?'':unit),
+   equal:aText===bText&&(identityA===undefined&&identityB===undefined||
+    identityA===identityB),delta,
    direction:rawDelta===null?'unavailable':
     rawDelta>0?'up':rawDelta<0?'down':'flat'});
  };
@@ -163,10 +170,18 @@ function matrixRows(a={},b={},options={}){
    String(a.profile?.[key]||'').slice(0,250),String(b.profile?.[key]||'').slice(0,250));
  const racialName=value=>{
   const id=value?.racialPassiveId;
-  return id==null?'—':String(skillCatalog[id]?.name||'№ '+id);
+  if(id==null)return '—';
+  const source=skillCatalog[id],englishName=englishSkills[String(id)]?.n;
+  const name=english?(source?.nameEn||englishName||source?.name?.en):
+   (source?.name?.ru||source?.name);
+  if(typeof name==='string'&&name.trim()&&!/^[0-9]+$/.test(name.trim()))
+   return name.trim();
+  return label('Расовая пассивка не найдена','Racial passive unavailable');
  };
  push('character',metadata,'racialPassiveId','Расовая пассивка','Racial passive',
-  racialName(a),racialName(b));
+  racialName(a),racialName(b),{
+   identityA:String(a?.racialPassiveId??''),identityB:String(b?.racialPassiveId??'')
+  });
  const invested=section('Распределённые характеристики','Allocated attributes');
  const ability=section('Характеристики с бонусами','Effective attributes');
  const keys=['vit','str','agi','dex','spi','int'];
@@ -212,7 +227,9 @@ function matrixRows(a={},b={},options={}){
  for(let i=0;i<14;i++){
   const slot=actualSlot(i),x=a.equipment?.[i],y=b.equipment?.[i];
   push('equipment',gearGroup,'gear.'+i,slot,EN_SLOTS[i],
-   savedItemName(x,equipment,{lang}),savedItemName(y,equipment,{lang}));
+   savedItemName(x,equipment,{lang}),savedItemName(y,equipment,{lang}),{
+    identityA:String(x?.id??''),identityB:String(y?.id??'')
+   });
   if(x||y){
    push('equipment',gearGroup,'refinement.'+i,'Заточка: '+slot,
     'Refinement: '+EN_SLOTS[i],
@@ -228,7 +245,9 @@ function matrixRows(a={},b={},options={}){
     slot+' · '+label('Душа ','Soul ')+(k+1),
     EN_SLOTS[i]+' · Soul '+(k+1),
     savedItemName(soulA[k],souls,{lang,kind:'soul'}),
-    savedItemName(soulB[k],souls,{lang,kind:'soul'}));
+    savedItemName(soulB[k],souls,{lang,kind:'soul'}),{
+     identityA:String(soulA[k]?.id??''),identityB:String(soulB[k]?.id??'')
+    });
   const gemLabel=v=>{
    if(!v)return '—';
    const t=enchant?.types?.find(x=>x.id===v.type);
