@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../worker/index.js';
+import realWorker from '../worker/index.js';
+import {withOwnerCasTestClient} from './helpers/owner-cas-compat.mjs';
+const worker=withOwnerCasTestClient(realWorker);
 import {readFileSync} from 'node:fs';
 
 // Test the actual HTTP handler with an isolated in-memory D1 adapter.
@@ -14,7 +16,9 @@ function fixture(){
    async first(){return {id:1}},
    async run(){
     calls.push({sql,args});
-    if(sql.includes('INSERT INTO overrides'))data.set(args[0],args[1]);
+    if(sql.includes('INSERT INTO overrides')){
+     data.set(args[0],args[1]);return {meta:{changes:1}};
+    }
     if(sql.includes('DELETE FROM overrides')){
      const had=data.delete(args[0]);
      return {meta:{changes:had?1:0}};
@@ -43,12 +47,13 @@ test('first owner edit of Wiki labels can be undone by deleting its D1 record',a
  assert.equal(data.get(key),value);
  const undo=await request('/api/admin/reset',{key});
  assert.equal(undo.status,200,await undo.clone().text());
- assert.deepEqual(await undo.json(),{ok:true,key,deleted:true});
+ assert.deepEqual(await undo.json(),{ok:true,key,deleted:true,conditional:true});
  assert.equal(data.has(key),false);
- // Idempotent fallback: no record to delete is not an error.
- const again=await request('/api/admin/reset',{key});
- assert.equal(again.status,200);
- assert.equal((await again.json()).deleted,false);
+ // A repeated reset against the old snapshot is now a conflict, not
+ // an unconditional idempotent DELETE that could erase a newer edit.
+ const again=await request('/api/admin/reset',{key,expectedValue:value});
+ assert.equal(again.status,409);
+ assert.equal((await again.json()).code,'OWNER_EDIT_CONFLICT');
 });
 test('reset still rejects unsupported key categories and unauthenticated attempts',async()=>{
  const {request,data}=fixture();

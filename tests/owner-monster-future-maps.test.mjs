@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import worker from '../worker/index.js';
+import realWorker from '../worker/index.js';
+import {withOwnerCasTestClient} from './helpers/owner-cas-compat.mjs';
+const worker=withOwnerCasTestClient(realWorker);
 import {previewOwnerOverrides} from '../worker/pandora-studio-github-catalog-pr.js';
 const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const win={};

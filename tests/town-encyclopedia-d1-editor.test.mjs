@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import worker from '../worker/index.js';
+import realWorker from '../worker/index.js';
+import {withOwnerCasTestClient} from './helpers/owner-cas-compat.mjs';
+const worker=withOwnerCasTestClient(realWorker);
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const root={window:{}};
 for(const file of ['pandora-studio-astir-locations.js',

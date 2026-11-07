@@ -2,7 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFileSync} from 'node:fs';
-import worker from '../worker/index.js';
+import realWorker from '../worker/index.js';
+import {withOwnerCasTestClient} from './helpers/owner-cas-compat.mjs';
+const worker=withOwnerCasTestClient(realWorker);
 
 const source=file=>readFileSync(new URL('../'+file,import.meta.url),'utf8');
 const isolated=file=>{

@@ -127,3 +127,17 @@ test('every UI edit path shares the protected API helper',()=>{
  assert.match(source,/expectedValue:activeOverride\(body\.key\)/);
  assert.match(source,/data\.code==='OWNER_EDIT_CONFLICT'/);
 });
+
+test('an old-client rejection is localized and never reported as a successful save',async()=>{
+ const calls=[];
+ const editor=instance(async(_url,opts)=>{
+  calls.push(JSON.parse(opts.body));
+  return respond({error:'Редактор устарел. Обновите страницу перед сохранением.',
+   code:'OWNER_CLIENT_UPDATE_REQUIRED'},428);
+ },{lang:'en'});
+ await assert.rejects(editor.request('/api/admin/override',
+  {key:'itemdesc.77',value:'New text'}),
+  error=>error.httpStatus===428&&/out of date/i.test(error.message));
+ assert.equal(editor.status().ownerSaveState,'error');
+ assert.ok(calls[0]&&Object.hasOwn(calls[0],'expectedValue'));
+});
