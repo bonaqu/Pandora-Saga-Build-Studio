@@ -19,8 +19,8 @@ function deferred(){
 const tick=()=>new Promise(resolve=>setImmediate(resolve));
 function environment({apiRequest,refreshOwnerCatalog,wikiData}={}){
  const override={},ownerEdits=[],writes=[],states=[],queue=new Map();
- const request=apiRequest||async(path,data)=>{writes.push({path,data})};
- const catalog=refreshOwnerCatalog||async()=>{};
+ const request=apiRequest||(async(path,data)=>{writes.push({path,data})});
+ const catalog=refreshOwnerCatalog||(async()=>{});
  const factory=Function('wikiRecordWriteQueue','window','override','ownerEdits',
   'activeOverride','apiRequest','refreshOwnerCatalog','refreshOwnerUI','wikiData',
   'const adminEditing=true,adminToken="test";let editIsSaving=false;\n'+source+
