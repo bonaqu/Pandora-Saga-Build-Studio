@@ -15,14 +15,14 @@ export async function runEncyclopediaPerformanceSmoke(browser,base,{environment=
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-list [data-wiki-record]').first()
    .waitFor({state:'visible',timeout:20000});
-  for(const chapter of ['item','monster','soul']){
+  for(const chapter of ['item','utility','monster','skill','soul']){
    await page.locator('[data-wiki-chapter="'+chapter+'"]').click();
    await page.locator('.wiki-list [data-wiki-record]').first()
     .waitFor({state:'visible',timeout:20000});
    const result=await page.evaluate(async()=>{
     const browse=document.querySelector('.wiki-list');
     const input=document.querySelector('.wiki-controls input[type="search"]');
-    const render=[],search=[];
+    const render=[],search=[],knownMatchSearch=[];
     let rowCount=browse.querySelectorAll('[data-wiki-record]').length;
     for(let i=0;i<5;i++){
      const more=browse.querySelector('.wiki-more');
@@ -31,7 +31,11 @@ export async function runEncyclopediaPerformanceSmoke(browser,base,{environment=
      render.push(+(performance.now()-start).toFixed(2));
      rowCount=Math.max(rowCount,browse.querySelectorAll('[data-wiki-record]').length);
     }
-    const measure=term=>new Promise((resolve,reject)=>{
+    // Focus unlocks the approved anti-autofill readOnly guard, just as a
+    // real user does before entering a query. The input event still measures
+    // the same debounced UI handler independent of keyboard typing speed.
+    input.focus();
+    const measure=(term,nonempty=false)=>new Promise((resolve,reject)=>{
      let done=false;
      const start=performance.now();
      const stop=(error)=>{
@@ -40,7 +44,7 @@ export async function runEncyclopediaPerformanceSmoke(browser,base,{environment=
      };
      const observer=new MutationObserver(()=>{
       const rows=browse.querySelectorAll('[data-wiki-record]').length;
-      if(term?rows===0:rows>0)stop();
+      if(nonempty?rows>0:rows===0)stop();
      });
      observer.observe(browse,{childList:true,subtree:true});
      const timeout=setTimeout(()=>stop(new Error('Wiki search UI did not settle')),3500);
@@ -49,10 +53,17 @@ export async function runEncyclopediaPerformanceSmoke(browser,base,{environment=
     });
     for(let i=0;i<3;i++){
      search.push(await measure('unlikely-encyclopedia-test-'+i));
-     search.push(await measure(''));
+     search.push(await measure('',true));
+    }
+    // An actual popular single-letter term exercises live matching and
+    // visible-row rendering, unlike only searching an impossible string.
+    for(let i=0;i<2;i++){
+     knownMatchSearch.push(await measure('а',true));
+     search.push(await measure('',true));
     }
     return {rowsExpanded:rowCount,expandedClicks:render.length,
-     expansionMs:render,searchMs:search,restored:browse.querySelectorAll('[data-wiki-record]').length};
+     expansionMs:render,searchMs:search,knownMatchSearchMs:knownMatchSearch,
+     restored:browse.querySelectorAll('[data-wiki-record]').length};
    });
    assert.ok(result.restored>0,chapter+' must restore results after searching');
    results.push({chapter,...result});
@@ -67,7 +78,10 @@ export async function runEncyclopediaPerformanceSmoke(browser,base,{environment=
    chapter:row.chapter,rowsExpanded:row.rowsExpanded,expandedClicks:row.expandedClicks,
    expansionMedianMs:quantile(row.expansionMs,0.5),expansionP95Ms:quantile(row.expansionMs,0.95),
    searchMedianMs:quantile(row.searchMs,0.5),searchP95Ms:quantile(row.searchMs,0.95),
-   samples:{expansion:row.expansionMs,search:row.searchMs}
+   knownMatchMedianMs:quantile(row.knownMatchSearchMs,0.5),
+   knownMatchP95Ms:quantile(row.knownMatchSearchMs,0.95),
+   samples:{expansion:row.expansionMs,search:row.searchMs,
+    matching:row.knownMatchSearchMs}
   }));
   const cpu=cpus()[0]?.model||'unavailable';
   console.log('Chromium encyclopedia performance: '+JSON.stringify({
