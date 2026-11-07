@@ -62,7 +62,8 @@ test('site shell has clean title/footer; counts remain grounded in loaded catalo
  assert.match(html,/BUILD STUDIO<small>CHARACTER PLANNER<\/small>/);
  assert.ok(!html.includes('VINTAGE · CHARACTER PLANNER'));
  assert.match(html,/<span id="iconStatus" hidden aria-hidden="true"><\/span>/);
- assert.match(app,/Наша база данных состоит из: /);
+ assert.match(app,/function renderCatalogStatus\(\)/);
+ assert.match(app,/В энциклопедии: /);
  assert.match(app,/data\.meta\.counts\.skills/);
  assert.match(app,/data\.meta\.counts\.items/);
  assert.match(app,/data\.meta\.counts\.souls/);

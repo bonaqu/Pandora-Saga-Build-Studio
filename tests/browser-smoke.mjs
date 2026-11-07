@@ -205,6 +205,9 @@ async function main(){
  // Switching site language must translate Hero Book navigation, accessibility
  // and summary without touching player-defined names or OS item IDs.
  await page.locator('#locale [data-locale="en"]').click();
+ await page.locator('#locale [data-locale="en"][aria-pressed="true"]').waitFor({state:'visible'});
+ assert.match(await page.locator('#catalogStatus').innerText(),
+  /^Encyclopedia: \d+ skills · \d+ items · \d+ souls$/);
  // The Origin area and selected racial passive stay readable in English.
  await page.locator('[data-origin-tab="stats"]').click();
  assert.match(await page.locator('#originStatSummary').innerText(),/Available: 0 \/ 0 · Spent: 0/);
@@ -261,6 +264,9 @@ async function main(){
  assert.ok(await page.locator('#stageBookPanel .stage-legacy-buff-previews').count()>=1);
  await page.locator('#stageAttributes .stage-book-close').click();
  await page.locator('#locale [data-locale="ru"]').click();
+ await page.locator('#locale [data-locale="ru"][aria-pressed="true"]').waitFor({state:'visible'});
+ assert.match(await page.locator('#catalogStatus').innerText(),
+  /^В энциклопедии: \d+ навыков · \d+ предметов · \d+ душ$/);
 
  // The planner is future-ready for all 55 levels, independent of live server 45.
  await page.locator('[data-origin-tab="stats"]').click();

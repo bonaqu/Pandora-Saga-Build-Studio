@@ -40,7 +40,8 @@ test('admin status still exists in header and only shows when editor active',()=
 });
 test('catalog footer is natural-language while archive warning stays separate',()=>{
  assert.match(app,/data\.meta\.counts\.skills/);
-  assert.match(app,/Наша база данных состоит из: /);
+  assert.match(app,/В энциклопедии: /);
+ assert.match(app,/Encyclopedia: /);
  assert.doesNotMatch(app,/Cloudflare D1 · актуальный опубликованный каталог/);
  assert.match(app,/Сохранённая копия игры может устареть/);
  assert.match(app,/Saved game data may be outdated/);

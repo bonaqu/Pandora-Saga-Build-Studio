@@ -60,7 +60,7 @@ export async function runOutfitSoulScrollSmoke(browser,base){
   const dimmed=await pants.locator('small').first().evaluate(el=>getComputedStyle(el).filter);
   assert.match(dimmed,/brightness/,'Projected dress appearance must be visually subdued');
   assert.match(await page.locator('#catalogStatus').innerText(),
-   /^Наша база данных состоит из: \d+ навыков · \d+ предметов · \d+ душ$/);
+   /^В энциклопедии: \d+ навыков · \d+ предметов · \d+ душ$/);
   assert.equal(await page.locator('#iconStatus').isHidden(),true);
   assert.equal(await page.locator('header a small').first().innerText(),'CHARACTER PLANNER');
   const before=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')).equipment);
