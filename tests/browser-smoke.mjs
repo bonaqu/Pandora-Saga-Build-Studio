@@ -23,7 +23,7 @@ import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry
 import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
 import {runBuildComparisonSmoke} from './browser-build-comparison.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
-import {runWikiSkillFiltersSmoke} from './browser-wiki-skill-filters.mjs';
+import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runChestRewardLayoutSmoke} from './browser-chest-reward.mjs';
 import {runEncyclopediaPerformanceSmoke} from './browser-encyclopedia-performance.mjs';
 
@@ -278,13 +278,14 @@ async function main(){
   ['build-comparison',runBuildComparisonSmoke],
   ['effect-items',runEffectItemsSmoke],
   ['wiki-skill-filters',runWikiSkillFiltersSmoke],
+  ['wiki-icons-offline',runWikiIconManifestFallbackSmoke],
   ['chest-reward-layout',runChestRewardLayoutSmoke],
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
  const quickCases=new Set(['share-link','equipment-locale','legacy-class-cap','innate-l1-mastery',
   'manual-saved-overwrite','account-isolation','inline-skill-milestones',
-  'build-comparison','chest-reward-layout','wiki-skill-filters']);
+  'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
  const report=await runIndependentSmokes(selected,browser,base,{concurrency});
  console.log('Chromium '+(quick?'quick':'full')+' suite: '+
