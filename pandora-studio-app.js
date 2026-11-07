@@ -6100,6 +6100,7 @@ const ownerEdits=[];
 let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=true;
 let activeInlineEditor=null;
 let editIsSaving=false;
+let wikiLabelPendingWrites=0;
 function closeInlineEditor(){
   if(activeInlineEditor){activeInlineEditor.remove();activeInlineEditor=null;}
 }
@@ -6108,7 +6109,7 @@ function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
  const count=Object.keys(override).length;
- const saveText=ownerSaveState==='saving'?'Сохраняю в Cloudflare D1…':
+ const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0)?'Сохраняю в Cloudflare D1…':
   ownerSaveState==='error'?'Не сохранено: '+(ownerSaveError||'ошибка сервера'):
   ownerSaveState==='saved'?'✓ Сохранено в Cloudflare D1':
   '✓ Подключено к Cloudflare D1 · сохранение автоматическое';
@@ -6122,13 +6123,13 @@ function refreshOwnerUI(){
    const changes=window.PandoraOwnerBilingual?.pending(override)||[];
    const count=changes.reduce((sum,item)=>sum+item.fields.length,0);
    translations.hidden=count===0;
-   translations.disabled=!count||editIsSaving||ownerSaveState==='saving';
+   translations.disabled=!count||editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving';
    translations.textContent='EN-переводы · '+count;
   }
   const state=root.querySelector('[data-owner-save-state]');
   if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
-   ownerSaveState==='saving';
+   wikiLabelPendingWrites>0||ownerSaveState==='saving';
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
   root.dataset.saveState=ownerSaveState;
   const panel=root.querySelector('.owner-dock-panel');
@@ -6185,7 +6186,7 @@ function refreshOwnerUI(){
    text:'Проверить запись D1',
    title:'Записать и удалить две случайные временные тестовые записи в D1',
    onclick:async function(){
-    if(editIsSaving||ownerSaveState==='saving')return;
+    if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving')return;
     this.disabled=true;
     try{
      const result=await apiRequest('/api/admin/catalog/test-write',{});
@@ -6205,7 +6206,7 @@ function refreshOwnerUI(){
    title:'Проверить и записать готовые английские переводы русских правок'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
    onclick:()=>{
-    if(ownerSaveState==='saving'||editIsSaving){
+    if(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0){
      showStudioToast('Дождись окончания сохранения в Cloudflare D1','warning');return}
     if(ownerSaveState==='error'){
      showStudioToast('Есть ошибка сохранения. Проверь поле и повтори изменение.','warning');return}
@@ -6252,7 +6253,7 @@ function refreshOwnerUI(){
  update(root);
 }
 async function undoOwnerEdit(){
-  if(!adminToken||!ownerEdits.length||editIsSaving)return;
+  if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0)return;
   const last=ownerEdits[ownerEdits.length-1];
   editIsSaving=true;refreshOwnerUI();
   try{
@@ -6520,9 +6521,16 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
 let wikiLabelWriteQueue=Promise.resolve();
 async function saveGuidePatch(key,fields){
  if(key==='wiki.labels'){
+  // Pending edits include jobs waiting in the queue, not just the current
+  // fetch. Undo/Finish/EN review must never run between two queued writes.
+  wikiLabelPendingWrites++;
+  refreshOwnerUI();
   const write=wikiLabelWriteQueue.then(()=>saveGuidePatchNow(key,fields));
   wikiLabelWriteQueue=write.catch(()=>{});
-  return write;
+  return write.finally(()=>{
+   wikiLabelPendingWrites=Math.max(0,wikiLabelPendingWrites-1);
+   refreshOwnerUI();
+  });
  }
  return saveGuidePatchNow(key,fields);
 }
@@ -6777,7 +6785,7 @@ function inlineWikiText(el){
 
 async function showOwnerEnglishReview(){
  if(!adminEditing||!adminToken)return;
- if(editIsSaving||ownerSaveState==='saving'){
+ if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
   showStudioToast('Сначала заверши текущее сохранение.','warning');return;
  }
  const helper=window.PandoraOwnerBilingual;
@@ -6833,7 +6841,7 @@ async function showOwnerEnglishReview(){
 }
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
- if(editIsSaving||ownerSaveState==='saving'){
+ if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
   showStudioToast('Дождись завершения сохранения в Cloudflare D1 перед созданием PR.','warning');
   return;
  }
