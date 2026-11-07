@@ -136,7 +136,7 @@ test('tooltip shares the same source tables as the calculator',()=>{
   for(let grade=0;grade<=10;grade++){
    const value=UI.armorPreview(12,grade,slot);
    assert.equal(value.increment,whole[grade],slot+' +'+grade);
-   assert.equal(value.rawIncrement,grade*1.2,slot+' raw +'+grade);
+   assert.equal(value.rawIncrement,grade*12/10,slot+' raw +'+grade);
    assert.equal(value.total,12+whole[grade],slot+' total +'+grade);
   }
  }
