@@ -25,6 +25,7 @@ import {runBuildComparisonSmoke} from './browser-build-comparison.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
+import {runWikiOwnerEnglishSyncSmoke} from './browser-wiki-owner-english-sync.mjs';
 import {runChestRewardLayoutSmoke} from './browser-chest-reward.mjs';
 import {runEncyclopediaPerformanceSmoke} from './browser-encyclopedia-performance.mjs';
 
@@ -280,6 +281,7 @@ async function main(){
   ['effect-items',runEffectItemsSmoke],
   ['wiki-skill-filters',runWikiSkillFiltersSmoke],
   ['wiki-skill-label-editor',runWikiSkillLabelEditorSmoke],
+  ['wiki-owner-english-sync',runWikiOwnerEnglishSyncSmoke],
   ['wiki-icons-offline',runWikiIconManifestFallbackSmoke],
   ['chest-reward-layout',runChestRewardLayoutSmoke],
   ['hidden-admin-entry',runAdminEntrySmoke],
@@ -287,7 +289,7 @@ async function main(){
  ];
  const quickCases=new Set(['share-link','equipment-locale','legacy-class-cap','innate-l1-mastery',
   'manual-saved-overwrite','account-isolation','inline-skill-milestones',
-  'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-icons-offline']);
+  'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-owner-english-sync','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
  const report=await runIndependentSmokes(selected,browser,base,{concurrency});
  console.log('Chromium '+(quick?'quick':'full')+' suite: '+
