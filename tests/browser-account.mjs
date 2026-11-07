@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 export async function runAccountSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev',token='t'.repeat(43);
  let calls=[],username=null,passwd=null,offlineMe=false,expiredMe=false,misidentifiedMe=false;
+ let holdNextMe=false,releaseHeldMe=null,notifyHeldMe=null;
  const context=await browser.newContext({viewport:{width:1280,height:900}});
  await context.route('**/*',async route=>{
   const url=route.request().url();
@@ -29,6 +30,10 @@ export async function runAccountSmoke(browser,base){
    }
    if(action==='logout')return send({ok:true});
    if(action==='me'){
+    if(holdNextMe){
+     holdNextMe=false;
+     await new Promise(resolve=>{releaseHeldMe=resolve;notifyHeldMe?.()});
+    }
     if(expiredMe)return send({error:'Sign in required'},401);
     if(offlineMe)return send({error:'Cloud temporarily unavailable'},503);
     if(misidentifiedMe)return send({account:{username:'bob_222'}});
@@ -82,9 +87,32 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await page.locator('.account-recovery').count(),0);
   assert.equal(calls.filter(x=>x.path==='/api/library'&&x.body).length,0,
    'Account creation may not auto-save an unsaved hero');
+  // Delayed session bootstrap must not erase an already-open password form.
+  holdNextMe=true;
+  const heldMe=new Promise(resolve=>{notifyHeldMe=resolve});
   await page.reload({waitUntil:'domcontentloaded'});
+  await heldMe;
   await page.locator('#profileTrigger').click();
   await page.locator('.account-user').waitFor({state:'visible'});
+  await page.locator('.account-password-toggle').click();
+  const pendingChange=page.locator('.account-password-details input');
+  await pendingChange.nth(0).fill('An unusually long phrase for my builds');
+  await pendingChange.nth(1).fill('An example new password 2026');
+  await pendingChange.nth(2).fill('Different confirmation value');
+  await page.locator('.account-password-details button.account-action.primary').click();
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
+   /Пароли не совпадают/);
+  const verifiedMe=page.waitForResponse(response=>
+   response.url().endsWith('/api/account/me'));
+  releaseHeldMe();
+  await verifiedMe;
+  await page.evaluate(()=>new Promise(resolve=>
+   requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026',
+   'Late /me verification must preserve the already filled form');
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
+   /Пароли не совпадают/,'Late /me must preserve confirmation feedback');
+  assert.equal(calls.filter(c=>c.action==='password').length,0);
   assert.equal((await page.locator('.account-user').innerText()).trim(),'@testplayer_01');
   await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
   await page.getByRole('button',{name:'Войти',exact:true}).first().click();
