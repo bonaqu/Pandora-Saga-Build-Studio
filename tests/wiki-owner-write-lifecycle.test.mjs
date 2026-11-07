@@ -161,7 +161,7 @@ test('item save keeps its busy state until the new Wiki item index is ready',asy
  const instance=Function('catalogSource','officialEnglish','window',
   'activeOverride','apiRequest','override','ownerEdits','refreshOwnerCatalog',
   'refreshOwnerUI',
-  'const adminEditing=true,adminToken="test";let editIsSaving=false;\n'+
+  'const adminEditing=true,adminToken="test";let editIsSaving=false;const wikiRecordWriteQueue=new Map();\n'+
   itemWrite+'\nreturn {save:saveWikiItemField,isSaving:()=>editIsSaving};')(
   {items:{1:{name:'Спата',slot:'weapon'}}},null,
   {PandoraStudioItemOwnerEditor:{ownPatch:()=>({})}},
