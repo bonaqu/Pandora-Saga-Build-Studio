@@ -7051,6 +7051,10 @@ async function loadCatalog({archive=false}={}){
   if(!Number.isSafeInteger(expected)||expected<1||actual<expected)
    throw Error('Неполный каталог '+name+': '+actual+' / '+expected);
  }
+ // The character calculator must reject the same invalid race ownership as
+ // the Wiki before any published D1 data is assigned to active catalog state.
+ window.PandoraWikiCatalog.validateRacialPassives(
+  data.racialPassives,data.skills,data.meta?.counts);
  if(!data.meta?.counts?.skills||!data.classes?.CLERIC||
     !data.tables?.abilityPoint||!data.tables?.weaponPlus||!data.tables?.forge||
     !data.itemForth||typeof data.itemForth!=='object'||Array.isArray(data.itemForth))
