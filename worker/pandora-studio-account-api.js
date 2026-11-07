@@ -55,6 +55,41 @@ async function newSession(db,id){
   .bind(await sha(token),id,expires).run();
  return {token,expires};
 }
+// Bound JSON requests by the real UTF-8 body size, not just Content-Length.
+// Preserve the original 4096-character contract; Unicode may need up to four
+// bytes per character, so the transport ceiling is 16 KiB.
+export async function parseAccountJson(request){
+ const maxBytes=16*1024,maxChars=4096;
+ const length=request.headers.get('content-length');
+ if(length!==null){
+  if(!/^[0-9]+$/.test(length))return {error:'invalid'};
+  if(Number(length)>maxBytes)return {error:'too_large'};
+ }
+ const reader=request.body?.getReader?.();
+ if(!reader)return {error:'invalid'};
+ const chunks=[];
+ let total=0;
+ try{
+  while(true){
+   const {value,done}=await reader.read();
+   if(done)break;
+   if(!(value instanceof Uint8Array))return {error:'invalid'};
+   total+=value.byteLength;
+   if(total>maxBytes){
+    await reader.cancel().catch(()=>{});
+    return {error:'too_large'};
+   }
+   chunks.push(value);
+  }
+  const bytes=new Uint8Array(total);
+  let offset=0;
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+  const raw=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  if(raw.length>maxChars)return {error:'too_large'};
+  return {data:JSON.parse(raw)};
+ }catch{return {error:'invalid'}}
+ finally{reader.releaseLock()}
+}
 const KINDS=new Set(['register','login','me','logout','password','recover']);
 export async function accountApi(request,env,path,{ip='unknown',throttle,recordFailed,clearFailed}={}){
  const kind=path.slice('/api/account/'.length);
@@ -62,11 +97,10 @@ export async function accountApi(request,env,path,{ip='unknown',throttle,recordF
  const db=env.DB;
  let data=null;
  if(request.method==='POST'){
-  const bytes=Number(request.headers.get('content-length')||0);
-  if(bytes>4096)return error('Request too large',413);
-  try{const raw=await request.text();if(raw.length>4096)return error('Request too large',413);
-   data=JSON.parse(raw);
-  }catch{return error('Invalid request')}
+  const parsed=await parseAccountJson(request);
+  if(parsed.error==='too_large')return error('Request too large',413);
+  if(parsed.error)return error('Invalid request');
+  data=parsed.data;
   if(!data||typeof data!=='object'||Array.isArray(data))return error('Invalid request');
  }
  if(kind==='me'){
