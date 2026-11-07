@@ -19,6 +19,27 @@ test('question-mark filter describes the artwork shown, without implying that a 
  assert.equal(model.missing('500000001'),true);
  assert.equal(model.matches('500000001','unknown'),true);
 });
+test('icon filter mirrors the question-mark fallback if the artwork manifest fails to load',()=>{
+ const offline=classifier.build(skills,null,null);
+ assert.equal(offline.counts.unknown,569);
+ assert.equal(offline.missing('161202001'),true,
+  'A known original is still rendered as question-mark when manifest is absent');
+ const owner=classifier.build(skills,null,null,{'visual.skill.500000001':'assets/custom.webp'});
+ assert.equal(owner.counts.unknown,568);
+ assert.equal(owner.missing('500000001'),false);
+});
+test('new D1 skill without iconId stays in the question-mark filter despite a namesake donor',()=>{
+ const snapshot={
+  '1':{id:1,name:'Test skill',iconId:100000501,classes:{WARRIOR:1},learnable:true,branch:'slash'},
+  '2':{id:2,name:'Test skill',iconId:null,classes:{},learnable:false,branch:'slash'}
+ };
+ const artifacts={icons:{skills:{skill_100000501:'assets/skills/icons/skill_100000501.webp'}},
+  displayAliases:{skills:{}}};
+ const model=classifier.build(snapshot,null,artifacts);
+ assert.equal(model.missing('1'),false);
+ assert.equal(model.missing('2'),true);
+ assert.equal(model.group('2'),'variants');
+});
 test('regular player skills require both learnability and a real class assignment',()=>{
  const classified=classifier.build(skills,null,manifest);
  assert.equal(classified.total,569);
