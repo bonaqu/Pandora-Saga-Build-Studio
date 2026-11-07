@@ -20,7 +20,7 @@
     }
     return false;
   };
-  let latest = '', lastActivity = Date.now(), deferred = false, applying = false;
+  let latest = '', lastActivity = Date.now(), dismissedRelease = '', applying = false;
   const onActivity = () => { lastActivity = Date.now(); };
   document.addEventListener('pointerdown', onActivity, { passive: true });
   document.addEventListener('keydown', onActivity, { passive: true });
@@ -40,29 +40,53 @@
     next.searchParams.set('ps-revision', latest);
     location.replace(next.toString()); // new HTML + versioned CSS/JS without Ctrl+F5
   }
+  const updateCopy = () => document.documentElement.lang === 'en' ? {
+    notice: 'A new version is available. Your current build and page position will be saved before updating.',
+    apply: 'Update', later: 'Later'
+  } : {
+    notice: 'Новая версия опубликована. Текущий билд и положение на странице будут сохранены перед обновлением.',
+    apply: 'Обновить', later: 'Позже'
+  };
+  function refreshUpdateLocale() {
+    const banner = document.getElementById('studio-update-banner');
+    if (!banner) return;
+    const strings = updateCopy();
+    const [message, apply, later] = banner.children;
+    message.textContent = strings.notice;
+    apply.textContent = strings.apply;
+    later.textContent = strings.later;
+  }
+  if (typeof MutationObserver === 'function') {
+    const observer = new MutationObserver(refreshUpdateLocale);
+    observer.observe(document.documentElement, {attributes:true,attributeFilter:['lang']});
+  }
   function showUpdate(release) {
-    if (document.getElementById('studio-update-banner')) return;
     latest = release;
+    if (document.getElementById('studio-update-banner')) {refreshUpdateLocale();return}
     const banner = document.createElement('aside');
     banner.id = 'studio-update-banner';
     banner.className = 'studio-update-banner';
     banner.setAttribute('role', 'status');
     banner.setAttribute('aria-live', 'polite');
     const message = document.createElement('span');
-    message.textContent = 'Новая версия опубликована. Текущий билд и положение на странице будут сохранены перед обновлением.';
+    message.textContent = updateCopy().notice;
     const apply = document.createElement('button');
-    apply.textContent = 'Обновить';
+    apply.textContent = updateCopy().apply;
     apply.type = 'button';
     apply.addEventListener('click', applyUpdate);
     const later = document.createElement('button');
-    later.textContent = 'Позже';
+    later.textContent = updateCopy().later;
     later.type = 'button';
-    later.addEventListener('click', () => { deferred = true; banner.remove(); });
+    later.addEventListener('click', () => {
+      // Dismiss only this release; the next publication must prompt again.
+      dismissedRelease = release;
+      banner.remove();
+    });
     banner.append(message, apply, later);
     document.body.appendChild(banner);
   }
   async function checkVersion() {
-    if (applying || deferred) return;
+    if (applying) return;
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 6000);
@@ -74,7 +98,7 @@
       } finally { clearTimeout(timeout); }
       if (!response.ok) return;
       const manifest = await response.json();
-      if (newer(manifest?.release, version)) {
+      if (newer(manifest?.release, version) && manifest.release !== dismissedRelease) {
         latest = manifest.release;
         showUpdate(latest);
       }
@@ -82,7 +106,8 @@
   }
   // Automatic reloading is limited to idle non-admin sessions without open forms.
   setInterval(() => {
-    if (latest && !deferred && !applying && Date.now() - lastActivity > 120000 && !busy()) applyUpdate();
+    if (latest && latest !== dismissedRelease && !applying &&
+      Date.now() - lastActivity > 120000 && !busy()) applyUpdate();
   }, 15000);
   setInterval(checkVersion, 60000);
   document.addEventListener('visibilitychange', () => {
