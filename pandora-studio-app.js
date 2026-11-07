@@ -6189,9 +6189,12 @@ async function apiRequest(path,body,token=adminToken) {
  const data=await response.json().catch(()=>({error:"Сервер вернул ответ без JSON"}));
  if(!response.ok){
   const conflict=response.status===409&&data.code==='OWNER_EDIT_CONFLICT';
+  const outdated=response.status===428&&data.code==='OWNER_CLIENT_UPDATE_REQUIRED';
   const message=conflict?(lang==='en'?
    'This entry was changed in another window. Refresh the page before trying again.':
    'Эту запись уже изменили в другом окне. Обнови страницу и повтори правку.'):
+   outdated?(lang==='en'?'This editor is out of date. Refresh the page before saving.':
+    'Редактор устарел. Обнови страницу перед сохранением.'):
    (data.error||("Ошибка сервера HTTP "+response.status));
   const error=new Error(message);
   error.httpStatus=response.status;error.reason=data.reason||data.code||null;

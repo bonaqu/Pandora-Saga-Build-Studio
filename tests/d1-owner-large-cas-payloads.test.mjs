@@ -115,10 +115,12 @@ test('corrupted JSON and an invalid precondition cannot mutate D1',async()=>{
  assert.equal(db.writes.length,0);
 });
 
-test('legacy small owner overrides still save without the optional precondition',async()=>{
+test('legacy small owner override is rejected without touching D1',async()=>{
  const db=mockD1();
  const response=await request(db,'/api/admin/override',
   {key:'itemdesc.1',value:'Small edit'});
- assert.equal(response.status,200,JSON.stringify(response.data));
- assert.equal(db.values.get('itemdesc.1'),'Small edit');
+ assert.equal(response.status,428,JSON.stringify(response.data));
+ assert.equal(response.data.code,'OWNER_CLIENT_UPDATE_REQUIRED');
+ assert.equal(db.values.size,0);
+ assert.equal(db.writes.length,0);
 });

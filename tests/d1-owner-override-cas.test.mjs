@@ -110,14 +110,19 @@ test('another tab changing the row between reset and write causes an explicit co
  else assert.equal(lock.values.get(key),'Edit after reset');
 });
 
-test('legacy requests remain compatible until old browser clients have upgraded',async()=>{
+test('stale browser clients cannot overwrite or reset a newer D1 record',async()=>{
  const cloud=env();
+ assert.equal((await edit(cloud,'Protected change',null)).status,200);
  const put=value=>send(cloud,'/api/admin/override',{key,value});
  const deleted=()=>send(cloud,'/api/admin/reset',{key});
- assert.equal((await put('Legacy A')).status,200);
- assert.equal((await put('Legacy B')).status,200);
- assert.equal(lock.values.get(key),'Legacy B');
- assert.equal((await deleted()).status,200);
+ for(const operation of [put('Old cached tab'),deleted()]){
+  const result=await operation;
+  assert.equal(result.status,428);
+  assert.equal(result.body.code,'OWNER_CLIENT_UPDATE_REQUIRED');
+ }
+ assert.equal(lock.values.get(key),'Protected change');
+ assert.equal((await edit(cloud,'Modern save','Protected change')).status,200);
+ assert.equal((await reset(cloud,'Modern save')).status,200);
  assert.equal(lock.values.has(key),false);
 });
 
@@ -140,5 +145,7 @@ test('untrusted preconditions and credentials fail closed without D1 mutations',
 test('runtime capabilities explicitly advertise compare-and-set support',async()=>{
  const response=await worker.fetch(new Request(domain+'/api/runtime-capabilities'),env());
  assert.equal(response.status,200);
- assert.equal((await response.json()).ownerOverrideCAS,true);
+ const capability=await response.json();
+ assert.equal(capability.ownerOverrideCAS,true);
+ assert.equal(capability.ownerOverrideCASRequired,true);
 });
