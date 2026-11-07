@@ -6090,6 +6090,14 @@ function refreshOwnerUI(){
   if(counter)counter.textContent=count+' '+(count===1?'запись':'записей')+' в D1';
   const recent=root.querySelector('[data-owner-recent]');
   if(recent)recent.textContent='За этот сеанс: '+ownerEdits.length;
+  const translations=root.querySelector('[data-owner-en-sync]');
+  if(translations){
+   const changes=window.PandoraOwnerBilingual?.pending(override)||[];
+   const count=changes.reduce((sum,item)=>sum+item.fields.length,0);
+   translations.hidden=count===0;
+   translations.disabled=!count||editIsSaving||ownerSaveState==='saving';
+   translations.textContent='EN-переводы · '+count;
+  }
   const state=root.querySelector('[data-owner-save-state]');
   if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
@@ -6165,6 +6173,9 @@ function refreshOwnerUI(){
    }}),
   h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport,
    title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
+  h('button',{type:'button',class:'owner-en-sync','data-owner-en-sync':'',
+   text:'EN-переводы',onclick:showOwnerEnglishReview,
+   title:'Проверить и записать готовые английские переводы русских правок'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
    onclick:()=>{
     if(ownerSaveState==='saving'||editIsSaving){
@@ -6194,6 +6205,7 @@ function refreshOwnerUI(){
   ['.owner-dock-actions button:nth-child(4)','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
   ['.owner-dock-actions button:nth-child(5)','Проверить временную запись и удаление D1 без затрагивания пользовательских данных.'],
   ['.owner-dock-actions button:nth-child(6)','Предложить уже сохранённые правки для проверки в GitHub.'],
+  ['[data-owner-en-sync]','Предварительно просмотреть английские переводы только уже существующих русских правок. Ничего не записывается до подтверждения.'],
   ['.owner-dock-finish','Выключить режим редактирования. Уже сохранённые данные D1 останутся на месте.']
  ];
  for(const [selector,message] of hints){
@@ -6736,6 +6748,62 @@ function inlineWikiText(el){
  }});
 }
 
+async function showOwnerEnglishReview(){
+ if(!adminEditing||!adminToken)return;
+ if(editIsSaving||ownerSaveState==='saving'){
+  showStudioToast('Сначала заверши текущее сохранение.','warning');return;
+ }
+ const helper=window.PandoraOwnerBilingual;
+ const planned=helper?.pending(override)||[];
+ if(!planned.length){
+  showStudioToast('Все подготовленные английские переводы уже сохранены.','success');return;
+ }
+ const fields=planned.reduce((sum,entry)=>sum+entry.fields.length,0);
+ const body=h('div',{class:'owner-manager'});
+ body.append(h('p',{class:'muted',text:
+  'Готовые переводы русских правок. Здесь только записи с подтверждённым исходным текстом. Уже сохранённые EN-названия не заменяются.'}));
+ const list=h('div',{class:'owner-manager-list'});
+ for(const row of planned){
+  const group=h('div',{class:'owner-manager-row'});
+  group.append(h('strong',{text:row.title}));
+  for(const field of row.fields){
+   group.append(h('p',{text:field.ru+' → '+field.en}));
+  }
+  list.append(group);
+ }
+ const status=h('p',{role:'status',class:'muted'});
+ const save=h('button',{type:'button',class:'button-action primary',
+  text:'Сохранить '+fields+' EN-перевода(ов)'});
+ save.onclick=async()=>{
+  save.disabled=true;editIsSaving=true;refreshOwnerUI();
+  let saved=0;
+  try{
+   // Refresh before changing D1: preserve newer changes from another editor.
+   const remote=(await apiRequest('/api/overrides',null,'')).values||{};
+   const current=helper.pending(remote);
+   if(current.length!==planned.length||
+    current.some((entry,i)=>entry.key!==planned[i].key||
+     entry.before!==planned[i].before||entry.value!==planned[i].value))
+    throw Error('Содержимое D1 изменилось. Закрой окно и проверь переводы заново.');
+   for(const change of current){
+    await apiRequest('/api/admin/override',{key:change.key,value:change.value});
+    const before=Object.hasOwn(override,change.key)?override[change.key]:null;
+    override[change.key]=change.value;
+    ownerEdits.push({key:change.key,before,after:change.value});
+    saved++;
+   }
+   status.textContent='Готово: '+fields+' переводов сохранены в D1.';
+   await refreshOwnerCatalog();
+   save.hidden=true;
+  }catch(error){
+   status.textContent='Сохранено '+saved+' из '+planned.length+
+    ' записей. '+error.message;
+   if(!saved)save.disabled=false;
+  }finally{editIsSaving=false;refreshOwnerUI()}
+ };
+ body.append(list,save,status);
+ modal('Английские переводы',body);
+}
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
  if(editIsSaving||ownerSaveState==='saving'){
