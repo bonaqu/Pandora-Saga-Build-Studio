@@ -31,6 +31,18 @@ function position(node){
  popup.style.left=x+'px';
  popup.style.top=Math.min(Math.max(pad,y),Math.max(pad,wh-box.height-pad))+'px';
 }
+// A scroll can cancel hover before its delay elapses. If the same element
+// remains under the pointer, restart the delay after the last scroll event.
+// Never show a tooltip after the pointer has left.
+function scheduleHover(node,show,delay){
+ cancelPending();
+ const timer=setTimeout(()=>{
+  if(pending?.node!==node)return;
+  pending=null;
+  if(node.isConnected&&node.matches(':hover'))show();
+ },delay);
+ pending={node,timer,show,delay};
+}
 function attach(node,text,{hoverDelay=0}={}){
  if(!node||typeof text!=='string'||!text.trim())return node;
  // Keep existing keyboard-focus behavior prompt; delay only cursor hover.
@@ -49,11 +61,7 @@ function attach(node,text,{hoverDelay=0}={}){
   if(event.pointerType==='touch')return;
   dismiss();
   if(!delay){show();return}
-  const timer=setTimeout(()=>{
-   if(pending?.node!==node)return;
-   pending=null;show();
-  },delay);
-  pending={node,timer};
+  scheduleHover(node,show,delay);
  });
  node.addEventListener('pointerleave',()=>{
   if(pending?.node===node||current===node)dismiss();
@@ -81,7 +89,11 @@ function attach(node,text,{hoverDelay=0}={}){
 }
 if(typeof document!=='undefined'){
  document.addEventListener('scroll',()=>{
-  if(pending)cancelPending();
+  if(pending){
+   const {node,show,delay}=pending;
+   cancelPending();
+   if(node.isConnected&&node.matches(':hover'))scheduleHover(node,show,delay);
+  }
   if(current)position(current);
  },{capture:true,passive:true});
  window.addEventListener('resize',()=>{

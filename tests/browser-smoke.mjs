@@ -118,6 +118,8 @@ async function main(){
  const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
  assert.equal(await guideLabels.count(),48,'43 result hints, four group headers and one editable caption');
  await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
+ // A scrolling chapter must not permanently cancel a delayed hover hint.
+ await page.locator('#stageBookPanel').evaluate(node=>{node.scrollTop+=1});
  await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:3000});
  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/Очки здоровья/);
  await page.locator('#stageBookPanel [data-guide-key="summary.23"]').hover();

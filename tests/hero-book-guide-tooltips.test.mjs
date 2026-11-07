@@ -51,3 +51,10 @@ test('gameplay hints use the shared delayed tooltip and not browser title attrib
  assert.doesNotMatch(code,/Просмотр отдельных умений по Remaked/);
  assert.doesNotMatch(code,/Skill previews based on Remaked/);
 });
+
+test('scrolls reschedule hover help only while the element is still hovered',()=>{
+ const src=load('pandora-studio-guide-tooltips.js');
+ assert.match(src,/function scheduleHover\(node,show,delay\)/);
+ assert.match(src,/node\.isConnected&&node\.matches\(':hover'\)/);
+ assert.match(src,/if\(pending\)\{\s*const \{node,show,delay\}=pending/);
+});
