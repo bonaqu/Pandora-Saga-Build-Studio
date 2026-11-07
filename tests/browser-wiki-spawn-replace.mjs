@@ -81,9 +81,21 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   // Reuse the actual pointer unlock for the anti-autofill-protected field.
   await lookup.click();
   await lookup.fill('Туманные холмы');
+  const persisted=page.waitForResponse(response=>
+   response.url()===api+'/api/admin/override'&&
+   response.request().method()==='POST'&&
+   response.request().postDataJSON()?.key==='spawnedit.13101',
+   {timeout:20000});
   await picker.locator('select').selectOption('2003301');
-  await page.waitForFunction(()=>document.querySelector('.wiki-page')
-   ?.textContent.includes('Туманные холмы'),null,{timeout:20000});
+  await persisted;
+  // The picker already contains the target text, so wait for the REAL
+  // refreshed chip list instead of matching text in a still-open dropdown.
+  await page.waitForFunction(()=>{
+   const relations=[...document.querySelectorAll('.wiki-owner-relations')];
+   return relations.some(group=>group.querySelector('h4')?.textContent==='Локации'&&
+    group.querySelector('.wiki-entity-flow')?.textContent.includes('Туманные холмы')&&
+    !group.querySelector('.wiki-entity-flow')?.textContent.includes('Северная дорога Ветров'));
+  },null,{timeout:20000});
   assert.equal(writes.length,1,'One pencil replacement must publish a single D1 override');
   assert.equal(writes[0].key,'spawnedit.13101');
   const links=JSON.parse(writes[0].value);
