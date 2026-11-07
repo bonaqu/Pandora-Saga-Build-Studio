@@ -213,6 +213,19 @@ function matrixRows(a={},b={},options={}){
     left?.en||right?.en||'',valueA,valueB,{kind:'number',unit});
   }
  }
+ // Hero Book displays a verified physical ATK interval (e.g. 50–74).
+ // Comparing only its numeric maximum hides changes to trained minimum ATK.
+ // Preserve the existing numeric maximum/delta, and add the full interval
+ // ONLY for directly verified game-client fixtures. No invented minima.
+ const verifiedAttackRange=calc=>{
+  const attack=calc?.combat?.attack,min=attack?.minimum,max=attack?.known;
+  return attack?.minimumVerified===true&&Number.isFinite(min)&&
+   Number.isFinite(max)&&min>=0&&min<=max?min+'–'+max:null;
+ };
+ const attackRangeA=verifiedAttackRange(calcA),attackRangeB=verifiedAttackRange(calcB);
+ if(attackRangeA!==null||attackRangeB!==null)
+  push('results',totals+' · '+label('Атака','Attack'),'attack.range',
+   'Диапазон АТК','ATK range',attackRangeA,attackRangeB);
  const skillGroup=section('Ветви и мастерство','Branches & mastery');
  push('skills',skillGroup,'masteryAuto','Автоматическое мастерство','Automatic mastery',
   a.masteryAuto!==false,b.masteryAuto!==false,{kind:'boolean'});
