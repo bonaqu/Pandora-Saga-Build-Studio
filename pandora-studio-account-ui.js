@@ -42,7 +42,14 @@ function field(placeholder,type='text',auto='off',max=128){
  input.setAttribute('aria-label',tr(placeholder));
  input.autocomplete=auto;return input;
 }
-function info(message){if(errorLine)errorLine.textContent=tr(message)}
+function info(message){
+ if(errorLine){
+  errorLine.textContent=tr(message);
+  // Keep the untranslated message only on the active DOM node, so a locale
+  // switch can restore the translated feedback. No persistent credential data.
+  errorLine.dataset.sourceMessage=String(message);
+ }
+}
 async function request(kind,data=null,auth=token()){
  const response=await fetch(options.baseUrl+'/api/account/'+kind,{
   method:data===null?'GET':'POST',
@@ -119,6 +126,9 @@ function render(){
    form.append(old,fresh,confirmFresh);
   const update=button('Изменить пароль',async()=>{
    if(fresh.value!==confirmFresh.value){info('Пароли не совпадают.');return}
+   // The action is type=button: unlike Enter/form submission, a direct
+   // click does not run native required/minLength validation automatically.
+   if(!form.reportValidity())return;
    update.disabled=true;info('Изменяем пароль…');
    try{await request('password',{currentPassword:old.value,password:fresh.value});
     old.value='';fresh.value='';confirmFresh.value='';
@@ -229,7 +239,25 @@ async function init(config){
  }else options.onGuest?.();
  finishBootstrap();
 }
+// A header RU/EN switch re-renders the profile even if its popover was
+// closed by the outside-click handler. Keep edits in the current form and its
+// validation message in memory, but never carry them across account changes.
+function refresh(){
+ const identity=session?.token||null,formMode=mode;
+ const inputs=Array.from(panel?.querySelectorAll?.('.account-form input')||[]);
+ const values=inputs.map(input=>input.value);
+ const expanded=panel?.querySelector?.('.account-password-details')?.open;
+ const message=errorLine?.dataset?.sourceMessage??null;
+ render();
+ if((session?.token||null)!==identity||mode!==formMode||!panel)return;
+ const restored=Array.from(panel.querySelectorAll?.('.account-form input')||[]);
+ if(restored.length!==values.length)return;
+ for(let i=0;i<restored.length;i++)restored[i].value=values[i];
+ const details=panel.querySelector?.('.account-password-details');
+ if(details&&expanded!==undefined)details.open=expanded;
+ if(message!==null)info(message);
+}
 root.PandoraAccountUI=Object.freeze({init,token,
  username:()=>activeSession()?session.username:null,
- refresh:render,isLoggedIn:()=>activeSession()});
+ refresh,isLoggedIn:()=>activeSession()});
 })(typeof window==='undefined'?globalThis:window);
