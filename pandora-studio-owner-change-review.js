@@ -31,16 +31,29 @@ const preview=(value,max=650)=>{
 };
 function inspect(key,stored,{base=null,items=null,classes=null}={}){
  const raw=base||{},gameItems=items||raw.items||{},classNames=classes||{};
- const lookup=(kind,id)=>String((kind==='item'?gameItems?.[id]:
-  kind==='monster'?raw.monsters?.[id]:
-  kind==='npc'?raw.trades?.npcs?.[id]:
-  kind==='soul'?raw.souls?.[id]:
-  kind==='skill'?raw.skills?.[id]:
-  kind==='map'?raw.maps?.[id]||raw.trades?.mapNames?.[id]:
-  kind==='instance'?(raw.instances||[]).find(x=>String(x.id)===String(id)):
-  kind==='chest'?[...(raw.chests?.boxes||[]),...(raw.chests?.npc||[])].find(x=>String(x.i)===String(id)):
-  null)?.name||id);
+ const lookup=(kind,id)=>{
+  const found=kind==='item'?gameItems?.[id]:
+   kind==='monster'?raw.monsters?.[id]:
+   kind==='npc'?(raw.trades?.npcs?.[id]||raw.townNpcs?.[id]||
+    root.PandoraAstirLocations?.npcRecords?.()?.[id]):
+   kind==='soul'?raw.souls?.[id]:
+   kind==='skill'?raw.skills?.[id]:
+   kind==='map'?(raw.maps?.[id]||raw.townMaps?.[id]||
+    raw.trades?.mapNames?.[id]||root.PandoraAstirLocations?.district?.(id)):
+   kind==='instance'?(raw.instances||[]).find(x=>String(x.id)===String(id)):
+   kind==='chest'?[...(raw.chests?.boxes||[]),...(raw.chests?.npc||[])]
+    .find(x=>String(x.i)===String(id)):
+   null;
+  const name=typeof found==='string'?found:found?.name?.ru||found?.name;
+  return typeof name==='string'&&name.trim()?name.trim():String(id);
+ };
  const itemName=id=>lookup('item',id);
+ const resistLabels={physical:'Физическое',fire:'Огонь',cold:'Лёд',
+  lightning:'Молния',poison:'Яд',charm:'Чары',magic:'Магия',
+  holy:'Свет',dark:'Тьма'};
+ const sectionLabels={monsters:'Монстры',npcs:'NPC',loot:'Добыча',
+  tags:'Теги',notes:'Заметки',custom:'Дополнительные разделы'};
+ const extraKinds={item:'Предметы',monster:'Монстры',npc:'NPC',text:'Текст'};
  const fmt=(value,field)=>{
   if(value===undefined)return 'Не указано';
   if(value===null)return 'Нет';
@@ -52,7 +65,20 @@ function inspect(key,stored,{base=null,items=null,classes=null}={}){
     return title+' '+(Number(v.a)>0?'+':'')+(v.a??'—');
    }).join(' · ')||'Нет';
    if(field==='mats')return value.map(v=>itemName(v.i)+' ×'+v.n).join(', ')||'Нет';
-   if(field==='reqs')return value.map(v=>v.branch+' ≥'+v.amount).join(', ')||'Нет';
+   if(field==='loot')return value.map(v=>itemName(v)).join(', ')||'Нет';
+   if(field==='npcs')return value.map(v=>lookup('npc',v)).join(', ')||'Нет';
+   if(field==='tags')return value.map(v=>v.ru||v.en||'Тег').join(', ')||'Нет';
+   if(field==='sections')return value.map(v=>sectionLabels[v]||v).join(', ')||'Нет';
+   if(field==='extraSections')return value.map(v=>
+    (v.titleRu||v.titleEn||'Раздел')+' · '+(extraKinds[v.kind]||'Данные')
+   ).join(', ')||'Нет';
+   if(field==='roster')return value.map(v=>
+    (v.name||lookup('monster',v.monsterId))+
+    (Number.isInteger(v.level)?' · ур. '+v.level:'')
+   ).join(', ')||'Нет';
+   if(field==='reqs')return value.map(v=>
+    (raw.meta?.branchLabels?.[v.branch]||v.branch)+' ≥'+v.amount
+   ).join(', ')||'Нет';
    if(field==='rolls')return value.map((group,i)=>'Розыгрыш '+(i+1)+': '+group.map(v=>
     (v.gold?'Золото':itemName(v.i))+
     (v.n&&v.n!==1?' ×'+v.n:'')+(v.p!=null?' · '+v.p+'%':'')).join(', ')).join('\n')||'Нет';
@@ -67,7 +93,9 @@ function inspect(key,stored,{base=null,items=null,classes=null}={}){
   }
   if(typeof value==='object'){
    if(field==='classes')return Object.keys(value).filter(k=>value[k]).map(k=>classNames?.[k]?.name||k).join(', ')||'Нет';
-   if(field==='resists')return Object.entries(value).map(([k,v])=>k+': '+(v>0?'+':'')+v).join(', ')||'Нет';
+   if(field==='resists')return Object.entries(value).map(([k,v])=>
+    (resistLabels[k]||k)+': '+(v>0?'+':'')+v
+   ).join(', ')||'Нет';
    return Object.entries(value).map(([k,v])=>friendly(k)+': '+fmt(v,k)).join('; ')||'Нет';
   }
   return preview(value);
