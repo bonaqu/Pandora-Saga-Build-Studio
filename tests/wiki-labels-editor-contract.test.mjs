@@ -14,8 +14,8 @@ test('editable bilingual labels preserve stable internal chapter and section key
  assert.equal(registry.value({},'chapter','honor','ru'),'Честь');
  assert.equal(registry.value({},'chapter','honor','en'),'Honor');
  assert.equal(registry.value({},'honor','gain','ru'),'Получение и потеря чести');
- assert.equal(registry.value({},'skillFilter','unknown','ru'),'На проверке');
- assert.equal(registry.value({},'skillFilter','unknown','en'),'Under review');
+ assert.equal(registry.value({},'skillFilter','unknown','ru'),'Неуточнённые');
+ assert.equal(registry.value({},'skillFilter','unknown','en'),'Unresolved');
  const patch={chapter_honor_ru:'Честь и ранги',chapter_honor_en:'Honor and ranks',
   honor_gain_ru:'Получение и потеря чести',honor_gain_en:'Earning and losing Honor',
   skill_filter_unknown_ru:'На уточнении',skill_filter_unknown_en:'Needs review'};
@@ -41,7 +41,7 @@ test('editable bilingual labels preserve stable internal chapter and section key
  }
  assert.match(app,/'data-wiki-chapter':key/);
  assert.match(app,/window\.PandoraWikiLabels\.key\('skillFilter',id,lang\)/);
- assert.match(app,/class:'wiki-skill-label-editor'/);
+ assert.match(app,/class:'wiki-categories wiki-skill-edit-list'/);
  assert.match(app,/saveGuidePatch\('wiki.labels',\{/);
  assert.match(app,/window\.PandoraWikiLabels\.key\('chapter',key,lang\)/);
  assert.match(view,/editLabel\(heading,'honor',id,name\)/);
@@ -64,7 +64,7 @@ test('all 42 bilingual chapter, Honor and skill filter labels fit one validated 
  assert.equal(registry.validPatch(all),true);
  assert.equal(guide.validOverride('wiki.labels',JSON.stringify(all)),true);
  const overrides={'guideedit.wiki.labels':JSON.stringify(all)};
- assert.equal(registry.value(overrides,'skillFilter','unknown','ru'),'На проверке');
+ assert.equal(registry.value(overrides,'skillFilter','unknown','ru'),'Неуточнённые');
  assert.equal(registry.value(overrides,'chapter','honor','ru'),'Честь');
  assert.equal(registry.validPatch({...all,skill_filter_missing_ru:'Oops'}),false);
 });
