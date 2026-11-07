@@ -61,7 +61,8 @@ test('app uses effective capacity in calculations, picker, tooltip and save-link
   'equippedSocketCapacity(state,selectedSlot,equipped,record)',
   'safe.socketCapacities[key]=value',
   'capacity:cap,tables:gameTables',
-  'updateSocketCapacity:n=>'
+  'updateSocketCapacity:n=>',
+  '.slice(0,plan.equippedSocketCapacity(state,Number(slot),entry,rec)??0)'
  ])assert.ok(app.includes(needle),'Missing socket-capacity integration: '+needle);
  const ui=load('pandora-studio-equipment-ui.js');
  assert.match(ui,/data-socket-capacity/);
