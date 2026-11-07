@@ -130,5 +130,16 @@ test('tooltip shares the same source tables as the calculator',()=>{
  const source=read('pandora-studio-equipment-ui.js');
  assert.match(source,/PandoraEnchantModel\?\.magicPreview\?\.\(grade,context\.tables\?\.magicPlus\)/);
  assert.match(source,/Магическая атака/);
- assert.match(source,/armorRefine>0/);
+ assert.match(source,/armorBonus\.increment>0/);
+ const whole=[0,1,2,3,4,6,7,8,9,10,12];
+ for(const slot of ['shield','head','body','gloves','legs','feet']){
+  for(let grade=0;grade<=10;grade++){
+   const value=UI.armorPreview(12,grade,slot);
+   assert.equal(value.increment,whole[grade],slot+' +'+grade);
+   assert.equal(value.rawIncrement,grade*1.2,slot+' raw +'+grade);
+   assert.equal(value.total,12+whole[grade],slot+' total +'+grade);
+  }
+ }
+ assert.equal(UI.armorPreview(12,10,'weapon'),null);
+ assert.equal(UI.armorPreview(12,10,'belt'),null);
 });
