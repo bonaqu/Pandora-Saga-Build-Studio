@@ -48,11 +48,16 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   await page.locator('[data-wiki-record="900050003"]').waitFor({state:'visible'});
   assert.match(await filter.locator('option[value="racial"]').innerText(),/18$/);
   assert.equal(await page.locator('.wiki-list [data-wiki-record]').count(),18);
+  assert.deepEqual(await page.locator('.wiki-list .wiki-location-list-heading').allTextContents(),
+   ['Человек','Эльф','Цверг','Мирина','Энкиду','Кролль'],
+   'Group the six races with the already approved compact section headings');
   for(const id of ['500000001','500000002','500000025'])
    assert.equal(await page.locator('[data-wiki-record="'+id+'"]').count(),0,
     'System effect must not be a racial passive: '+id);
   await page.locator('[data-wiki-record="900050003"]').click();
   assert.ok(page.url().includes('#wiki/skill/900050003'));
+  assert.ok(await page.locator('.wiki-page .item-fields').getByText('Раса',{exact:true}).count()>0);
+  assert.ok(await page.locator('.wiki-page .item-fields').getByText('Энкиду',{exact:true}).count()>0);
   assert.equal(await filter.inputValue(),'racial');
   await filter.selectOption('variants');
   await page.locator('[data-wiki-record="161202050"]').waitFor({state:'visible'});
@@ -93,6 +98,12 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   assert.ok((await filter.locator('option[value="racial"]').innerText()).startsWith('Racial passive'));
   assert.ok((await filter.locator('option[value="special"]').innerText()).startsWith('Special'));
   assert.ok((await filter.locator('option[value="variants"]').innerText()).startsWith('Duplicate skills'));
+  await filter.selectOption('racial');
+  assert.deepEqual(await page.locator('.wiki-list .wiki-location-list-heading').allTextContents(),
+   ['Human','Elf','Dwarf','Myrine','Enkidu','Lapin']);
+  await page.locator('[data-wiki-record="900020001"]').click();
+  assert.ok(await page.locator('.wiki-page .item-fields').getByText('Race',{exact:true}).count()>0);
+  assert.ok(await page.locator('.wiki-page .item-fields').getByText('Elf',{exact:true}).count()>0);
   await page.setViewportSize({width:390,height:780});
   assert.ok((await filter.boundingBox())?.width>80,'Mobile filter remains usable');
   const overflow=await page.evaluate(()=>

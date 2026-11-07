@@ -107,6 +107,9 @@ test('source records remain searchable with variants without rewriting their IDs
  assert.match(app,/\{includeVariants:type==='skill'\}/);
  assert.match(app,/filterModel\.matches\(id,wikiSkillFilter\)/);
  assert.match(app,/wikiData\?\.racialPassives/);
+ assert.match(app,/const wikiRaceOwner=id=>/);
+ assert.match(app,/class:'wiki-location-list-heading',text:owner\.name/);
+ assert.match(app,/h\('dt',\{text:wt\('Раса','Race'\)\}\)/);
  const html=read('index.html');
  assert.match(html,/pandora-studio-wiki-skill-filters\.js\?v=/);
  assert.ok(html.indexOf('pandora-studio-wiki-skill-filters.js')<
