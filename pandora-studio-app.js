@@ -6108,13 +6108,18 @@ async function restoreSharedHash(){
 function modal(title,content){const root=$('modalRoot');root.replaceChildren();root.hidden=false;const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});box.append(h('button',{class:'button-action close',text:'× Закрыть',onclick:()=>{root.hidden=true;root.replaceChildren()}}),h('h2',{text:title}),content);root.append(box);root.onclick=e=>{if(e.target===root){root.hidden=true;root.replaceChildren()}};return box}
 async function apiRequest(path,body,token=adminToken) {
  const editingWrite=Boolean(body)&&/^\/api\/admin\/(?:override|reset)$/.test(path);
+ // The last D1 snapshot read by this editor is the precondition for every
+ // owner write, including inline edits, list edits, deletion and Undo.
+ // Never derive it from the new patch; remote changes must cause HTTP 409.
+ const requestBody=editingWrite&&typeof body.key==='string'?
+  {...body,expectedValue:activeOverride(body.key)}:body;
  if(editingWrite){ownerSaveState='saving';ownerSaveError='';refreshOwnerUI()}
  let response;
  try {
   response=await fetch(API+path,{
    method:body?"POST":"GET",
    headers:{"Content-Type":"application/json",...(token?{"Authorization":"Bearer "+token}:{})},
-   ...(body?{body:JSON.stringify(body)}:{})
+   ...(requestBody?{body:JSON.stringify(requestBody)}:{})
   });
  } catch {
   if(editingWrite){ownerSaveState='error';ownerSaveError='Cloudflare Worker недоступен';refreshOwnerUI()}
@@ -6122,7 +6127,12 @@ async function apiRequest(path,body,token=adminToken) {
  }
  const data=await response.json().catch(()=>({error:"Сервер вернул ответ без JSON"}));
  if(!response.ok){
-  const error=new Error(data.error||("Ошибка сервера HTTP "+response.status));
+  const conflict=response.status===409&&data.code==='OWNER_EDIT_CONFLICT';
+  const message=conflict?(lang==='en'?
+   'This entry was changed in another window. Refresh the page before trying again.':
+   'Эту запись уже изменили в другом окне. Обнови страницу и повтори правку.'):
+   (data.error||("Ошибка сервера HTTP "+response.status));
+  const error=new Error(message);
   error.httpStatus=response.status;error.reason=data.reason||data.code||null;
   error.sourceDataset=data.sourceDataset||null;
   if(editingWrite){ownerSaveState='error';ownerSaveError=error.message;refreshOwnerUI()}
