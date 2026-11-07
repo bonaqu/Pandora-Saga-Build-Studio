@@ -6770,6 +6770,8 @@ function enqueueWikiOwnerListWrite(key,expectedBefore,apply){
 async function saveWikiRelationRows(kind,id,rows){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
  if(kind!=='drop'&&kind!=='chest')throw Error('Неизвестный тип связи');
+ if(!(kind==='drop'?window.PandoraWikiOwnerData.validDrops(rows):
+   window.PandoraWikiOwnerData.validChest(rows)))throw Error('Проверь список и числа');
  const key=kind+'edit.'+id,expectedBefore=activeOverride(key);
  const value=JSON.stringify(rows);
  return enqueueWikiOwnerListWrite(key,expectedBefore,async()=>{
@@ -6893,6 +6895,8 @@ async function saveWikiTradeRecipe(recipe,changes=null){
 async function saveWikiAcquisitions(itemId,rows){
  if(!adminToken||!adminEditing||!wikiData?.items?.[itemId])
   throw Error('Редактирование источников недоступно');
+ if(!Array.isArray(rows)||rows.length>24||rows.some(row=>
+  !row||typeof row!=='object'))throw Error('Некорректная ссылка на NPC или монстра');
  // Preserve the exact requested list while waiting for any earlier same-key save.
  const normalized=[...new Map((rows||[]).map(row=>[row.type+':'+row.id,
   {type:row.type,id:String(row.id),
