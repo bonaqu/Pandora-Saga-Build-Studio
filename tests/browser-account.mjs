@@ -223,8 +223,12 @@ export async function runAccountSmoke(browser,base){
   await passwordSent;
   await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
   await page.locator('.account-tabs').waitFor({state:'visible'});
+  // Register the listener BEFORE releasing the held reply to avoid an
+  // intermittent missed-response timeout on faster CI runners.
+  const passwordResponse=page.waitForResponse(response=>
+   response.url().endsWith('/api/account/password'));
   releaseHeldPassword();
-  await page.waitForResponse(response=>response.url().endsWith('/api/account/password'));
+  await passwordResponse;
   assert.doesNotMatch(await page.locator('#accountPanel .account-feedback').innerText(),
    /Пароль обновлён/,'Late password success must not leak into guest account');
   await page.getByRole('button',{name:'Войти',exact:true}).click();
