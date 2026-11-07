@@ -48,8 +48,10 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   const control=page.locator('.wiki-skill-type');
   await control.waitFor({state:'visible',timeout:20000});
   assert.equal(await control.inputValue(),'player');
-  const disclosure=page.locator('.wiki-skill-label-editor');
-  await disclosure.locator('summary').click();
+  const disclosure=page.locator('.wiki-skill-edit-list');
+  const toggle=page.locator('.wiki-skill-edit-toggle');
+  await toggle.click();
+  assert.equal(await toggle.getAttribute('aria-expanded'),'true');
   assert.equal(await disclosure.locator('[data-skill-filter-label]').count(),7,
    'Owner must be able to edit every filter without opening a native option');
 
@@ -87,13 +89,14 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
 
   await control.selectOption('unknown');
   assert.equal(await control.inputValue(),'unknown');
-  await disclosure.locator('summary').click();
+  assert.equal(await disclosure.isVisible(),false,
+   'Changing a category should close the inline editor without leaving an overlay');
   await page.setViewportSize({width:390,height:780});
   const overflow=await page.evaluate(()=>Math.max(
    document.documentElement.scrollWidth,document.body.scrollWidth)-
    document.documentElement.clientWidth);
   assert.ok(overflow<=15,'Owner editing controls overflow mobile width: '+overflow);
   assert.deepEqual(errors,[]);
-  console.log('Chromium skill label owner editing passed: 7 categories, autosave, stable selection, mobile');
+  console.log('Chromium skill labels: reused Encyclopedia category UI, 7 editable labels, autosave, stable selection, mobile');
  }finally{await context.close()}
 }
