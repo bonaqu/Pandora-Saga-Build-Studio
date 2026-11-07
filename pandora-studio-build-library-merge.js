@@ -6,7 +6,18 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
  if(!Array.isArray(local)||!Array.isArray(remote)||typeof newId!=='function')
   throw Error('Invalid library merge inputs');
  const pending=new Set(Array.isArray(pendingDeletes)?pendingDeletes:[]);
- const originals=new Map(local.filter(x=>x&&ID.test(x.id)).map(x=>[x.id,x]));
+ // Historical imports and previous browser bugs can create two distinct local
+ // snapshots with one ID. Keep the newer revision as the original and recover
+ // the remaining variants as local-only copies; never silently discard data.
+ const originals=new Map(),duplicates=[];
+ for(const entry of local){
+  if(!entry||!ID.test(entry.id))continue;
+  const previous=originals.get(entry.id);
+  if(!previous){originals.set(entry.id,entry);continue}
+  if((Number(entry.at)||0)>(Number(previous.at)||0)){
+   duplicates.push(previous);originals.set(entry.id,entry);
+  }else duplicates.push(entry);
+ }
  const known=new Set([...originals.keys(),
   ...remote.filter(x=>x&&ID.test(x.id)).map(x=>x.id)]);
  const remoteIds=new Set(),merged=[],outgoing=[];
@@ -47,6 +58,19 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
   try{return a.name===b.name&&equivalent(a.data,b.data)}
   catch{return false}
  };
+ const recoveredVariants=new Map();
+ for(const duplicate of duplicates){
+  if(pending.has(duplicate.id)||same(duplicate,originals.get(duplicate.id)))
+   continue;
+  // A matching healthy cloud record already preserves this edition.
+  const remotelySaved=remote.some(row=>row?.id===duplicate.id&&!row.deleted&&
+   row.entry&&same(duplicate,row.entry));
+  if(remotelySaved)continue;
+  const variants=recoveredVariants.get(duplicate.id)||[];
+  if(variants.some(previous=>same(previous,duplicate)))continue;
+  variants.push(duplicate);recoveredVariants.set(duplicate.id,variants);
+  copy(duplicate,'local');
+ }
  for(const record of remote){
   if(!record||!ID.test(record.id)||remoteIds.has(record.id))continue;
   if(record.deleted){
@@ -86,7 +110,7 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
    if(selected===record.id)selected=copyId;
   }
  }
- for(const entry of local){
+ for(const entry of originals.values()){
   if(!entry||!ID.test(entry.id)||remoteIds.has(entry.id)||
    pending.has(entry.id))continue;
   if(known.has(entry.id)&&merged.some(x=>x.id===entry.id))continue;

@@ -154,3 +154,48 @@ test('unavailable remote builds cannot be overwritten and do not block healthy n
  assert.deepEqual(empty.merged,[]);
  assert.deepEqual(empty.outgoing,[]);
 });
+
+test('two historical local revisions sharing an ID keep the newest original and recover the older as browser-only',()=>{
+ const earlier=mk(A,101,54),later=mk(A,202,55);
+ const r=reconcile({local:[earlier,later],remote:[],activeId:A,newId:()=>B,lang:'en'});
+ assert.equal(r.copies,1);
+ assert.deepEqual(r.merged.find(x=>x.id===A),later);
+ assert.equal(r.merged.find(x=>x.id===B).data.level,54);
+ assert.equal(r.merged.find(x=>x.id===B).localOnly,true);
+ assert.equal(r.merged.find(x=>x.id===B).name,'Hero · local copy');
+ assert.deepEqual(r.outgoing,[later],'Only the newest explicit save may sync');
+ assert.equal(r.activeId,A);
+ assert.deepEqual(earlier,mk(A,101,54),'Source records are not rewritten');
+ assert.deepEqual(later,mk(A,202,55),'Source records are not rewritten');
+ const again=reconcile({local:r.merged,remote:[],activeId:A,newId:()=>C});
+ assert.equal(again.copies,0);
+ assert.deepEqual(again.outgoing,[later]);
+});
+test('cloud merge preserves distinct local editions without copying an already-clouded edition',()=>{
+ const oldest=mk(A,100,51),middle=mk(A,200,52),latest=mk(A,300,55);
+ const cloud=mk(A,100,51);
+ let index=0,ids=[B,C,D];
+ const r=reconcile({local:[oldest,middle,latest],remote:[{id:A,entry:cloud}],
+  activeId:A,newId:()=>ids[index++]});
+ assert.equal(r.copies,2,'Middle and latest differ, old variant already lives in D1');
+ assert.deepEqual(r.merged.find(x=>x.id===A),cloud);
+ assert.deepEqual(new Set(r.merged.filter(x=>x.localOnly).map(x=>x.data.level)),
+  new Set([52,55]));
+ assert.deepEqual(r.outgoing,[],'No automatic upload of recovered copies');
+ assert.notEqual(r.activeId,A,'Selected newer local edition remains available');
+});
+test('identical duplicate snapshots do not create phantom conflict copies',()=>{
+ const first={...mk(A,100,55),data:{race:1,job:16,level:55,stats:{vit:2,str:3}}};
+ const second={...mk(A,200,55),data:{stats:{str:3,vit:2},level:55,job:16,race:1}};
+ const r=reconcile({local:[first,second],remote:[],newId:()=>B});
+ assert.equal(r.copies,0);
+ assert.equal(r.merged.length,1);
+ assert.deepEqual(r.outgoing,[second]);
+});
+test('locally queued deletion suppresses every historical duplicate and recovery',()=>{
+ const r=reconcile({local:[mk(A,100,53),mk(A,200,55)],
+  remote:[{id:A,deleted:true}],pendingDeletes:[A],newId:()=>B});
+ assert.equal(r.copies,0);
+ assert.deepEqual(r.merged,[]);
+ assert.deepEqual(r.outgoing,[]);
+});
