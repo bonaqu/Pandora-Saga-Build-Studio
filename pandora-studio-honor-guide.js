@@ -151,8 +151,8 @@ const validOverride=(key,value)=>{
  if(typeof key!=='string'||typeof value!=='string'||value.length>8000)return false;
  const data=parse(value);
  if(key==='wiki.labels')return plain(data)&&Object.keys(data).length>0&&
-  Object.keys(data).length<=28&&Object.entries(data).every(([k,v])=>
-   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly))_(?:ru|en)$/.test(k)&&
+  Object.keys(data).length<=50&&Object.entries(data).every(([k,v])=>
+   /^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k)&&
    typeof v==='string'&&v.trim()&&v.length<=90&&
    Array.from(v).every(ch=>ch.charCodeAt(0)>=32));
  if(validBookKey(key))return cleanPatch(data,fields,360)!==null;

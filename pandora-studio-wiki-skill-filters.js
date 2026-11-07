@@ -8,7 +8,7 @@ const names={
  special:{ru:'Особые умения',en:'Special skills'},
  variants:{ru:'Варианты навыков',en:'Skill variants'},
  other:{ru:'Прочие записи',en:'Other records'},
- unknown:{ru:'С иконкой «?»',en:'With “?” icon'},
+ unknown:{ru:'На проверке',en:'Under review'},
  all:{ru:'Все навыки',en:'All skills'}
 };
 const normalize=name=>String(name||'').normalize('NFKC').trim()
