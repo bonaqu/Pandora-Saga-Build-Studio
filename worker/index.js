@@ -308,6 +308,15 @@ async function shareApi(request,env,path,ip){
 }
 
 /* Private, account-free D1 library using a browser-held random secret. */
+function validPrivateBuildEntry(entry,id){
+ return entry&&typeof entry==='object'&&!Array.isArray(entry)&&
+  entry.id===id&&typeof entry.name==='string'&&entry.name.trim()&&
+  entry.name.length<=70&&Number.isSafeInteger(entry.at)&&entry.at>=0&&
+  entry.data&&typeof entry.data==='object'&&!Array.isArray(entry.data)&&
+  Number.isInteger(entry.data.race)&&entry.data.race>=0&&entry.data.race<=5&&
+  Number.isInteger(entry.data.job)&&entry.data.job>=0&&entry.data.job<28&&
+  Number.isInteger(entry.data.level)&&entry.data.level>=1&&entry.data.level<=55;
+}
 async function libraryApi(request,env){
  const exists=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='private_builds'").all();
  if(!(exists.results||[]).length){
@@ -329,13 +338,7 @@ async function libraryApi(request,env){
    if(r.deleted_at!==null)return {id:r.build_id,deleted:true,entry:null};
    let entry;
    try{entry=JSON.parse(r.payload)}catch{}
-   const valid=entry&&typeof entry==='object'&&!Array.isArray(entry)&&
-    entry.id===r.build_id&&typeof entry.name==='string'&&entry.name.trim()&&
-    entry.name.length<=70&&Number.isSafeInteger(entry.at)&&entry.at>=0&&
-    entry.data&&typeof entry.data==='object'&&!Array.isArray(entry.data)&&
-    Number.isInteger(entry.data.race)&&entry.data.race>=0&&entry.data.race<=5&&
-    Number.isInteger(entry.data.job)&&entry.data.job>=0&&entry.data.job<28&&
-    Number.isInteger(entry.data.level)&&entry.data.level>=1&&entry.data.level<=55;
+   const valid=validPrivateBuildEntry(entry,r.build_id);
    return valid?{id:r.build_id,deleted:false,entry}:
     {id:r.build_id,deleted:false,entry:null,unavailable:true};
   });
@@ -379,14 +382,44 @@ async function libraryApi(request,env){
  }
  // Atomic revision/tombstone condition: a delayed request cannot replace a newer
  // character or restore an original deleted after the preliminary SELECT.
- const result=await env.DB.prepare("INSERT INTO private_builds(owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,?,?,NULL) ON CONFLICT(owner_hash,build_id) DO UPDATE SET payload=excluded.payload,updated_at=excluded.updated_at WHERE private_builds.deleted_at IS NULL AND (CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)<excluded.updated_at OR (CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)=excluded.updated_at AND private_builds.payload=excluded.payload))")
+ // A stored malformed JSON row must remain quarantined. Guard every
+ // json_extract/json_type with CASE so SQLite never evaluates invalid JSON,
+ // and keep the character schema identical to GET's validation boundary.
+ const result=await env.DB.prepare(`INSERT INTO private_builds
+ (owner_hash,build_id,payload,updated_at,deleted_at) VALUES(?,?,?,?,NULL)
+ ON CONFLICT(owner_hash,build_id) DO UPDATE SET
+  payload=excluded.payload,updated_at=excluded.updated_at
+ WHERE private_builds.deleted_at IS NULL AND
+  CASE WHEN json_valid(private_builds.payload) THEN (
+   json_extract(private_builds.payload,'$.id')=private_builds.build_id
+   AND json_type(private_builds.payload,'$.name')='text'
+   AND length(trim(json_extract(private_builds.payload,'$.name'))) BETWEEN 1 AND 70
+   AND json_type(private_builds.payload,'$.at')='integer'
+   AND json_extract(private_builds.payload,'$.at')>=0
+   AND json_type(private_builds.payload,'$.data')='object'
+   AND json_type(private_builds.payload,'$.data.race')='integer'
+   AND json_extract(private_builds.payload,'$.data.race') BETWEEN 0 AND 5
+   AND json_type(private_builds.payload,'$.data.job')='integer'
+   AND json_extract(private_builds.payload,'$.data.job') BETWEEN 0 AND 27
+   AND json_type(private_builds.payload,'$.data.level')='integer'
+   AND json_extract(private_builds.payload,'$.data.level') BETWEEN 1 AND 55
+   AND (CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)<excluded.updated_at
+    OR (CAST(json_extract(private_builds.payload,'$.at') AS INTEGER)=excluded.updated_at
+      AND private_builds.payload=excluded.payload))
+  ) ELSE 0 END`)
   .bind(owner,id,payload,item.at).run();
  if(!result.meta?.changes){
   const row=await env.DB.prepare('SELECT payload,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,id).first();
-  let sameRevision=false;
-  try{sameRevision=JSON.parse(row?.payload||'{}').at===item.at}catch{}
+  let sameRevision=false,unavailable=false;
+  try{
+   const stored=JSON.parse(row?.payload||'{}');
+   unavailable=!validPrivateBuildEntry(stored,id);
+   sameRevision=!unavailable&&stored.at===item.at;
+  }catch{unavailable=true}
   return json(row?.deleted_at!=null?
    {error:'Билд уже удалён',reason:'deleted'}:
+   unavailable?
+   {error:'Исходная облачная запись повреждена. Сохраните отдельную копию.',reason:'unavailable'}:
    sameRevision?
    {error:'В облаке другая редакция с таким же временем сохранения',reason:'conflict'}:
    {error:'В облаке сохранена более новая версия',reason:'stale'},409);
