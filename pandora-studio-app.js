@@ -6155,7 +6155,7 @@ let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=true;
 let activeInlineEditor=null;
 let editIsSaving=false;
 let wikiLabelPendingWrites=0;
-// Serialize writes to the same Wiki record before constructing its D1 patch.
+// Serialize writes to the same Wiki or item record before constructing its D1 patch.
 // Different records remain independent; failed writes never poison the queue.
 const wikiRecordWriteQueue=new Map();
 function closeInlineEditor(){
@@ -6803,27 +6803,40 @@ function wikiOwnerText(node,type,id,field,{multiline=false}={}){
 }
 async function saveWikiItemField(id,field,value){
  if(!adminEditing||!adminToken||!catalogSource?.items?.[id])throw Error('Редактирование недоступно');
- const base=catalogSource.items[id],key='itemedit.'+id,previous=activeOverride(key);
+ const base=catalogSource.items[id],key='itemedit.'+id;
  const baseValue=field==='nameEn'?(base.nameEn||officialEnglish?.items?.[id]?.n||base.name):
   field==='descEn'?(base.descEn??officialEnglish?.items?.[id]?.d??base.desc):base[field];
- const patch={...window.PandoraStudioItemOwnerEditor.ownPatch(override,id)};
- if(value===baseValue||(value===null&&baseValue==null))delete patch[field];
- else patch[field]=value;
- if(field==='kind'&&/^[12]H_/.test(value))patch.twoHanded=value.startsWith('2H_');
- const serialized=JSON.stringify(patch);
- if(serialized===JSON.stringify(window.PandoraStudioItemOwnerEditor.ownPatch(override,id)))return;
- editIsSaving=true;
- try{
+ const previous=wikiRecordWriteQueue.get(key);
+ // Match the Wiki record editor: prepare the next patch after the previous
+ // write and catalog refresh so a second fast field edit cannot erase the first.
+ const writing=(previous?previous.catch(()=>{}):Promise.resolve()).then(async()=>{
+  const before=activeOverride(key);
+  const current=window.PandoraStudioItemOwnerEditor.ownPatch(override,id);
+  const patch={...current};
+  if(value===baseValue||(value===null&&baseValue==null))delete patch[field];
+  else patch[field]=value;
+  if(field==='kind'&&/^[12]H_/.test(value))patch.twoHanded=value.startsWith('2H_');
+  const serialized=JSON.stringify(patch);
+  if(serialized===JSON.stringify(current))return;
   if(!Object.keys(patch).length){
-   if(previous===null)return;
+   if(before===null)return;
    await apiRequest('/api/admin/reset',{key});delete override[key];
-   ownerEdits.push({key,before:previous,after:null});
+   ownerEdits.push({key,before,after:null});
   }else{
    await apiRequest('/api/admin/override',{key,value:serialized});
-   override[key]=serialized;ownerEdits.push({key,before:previous,after:serialized});
+   override[key]=serialized;ownerEdits.push({key,before,after:serialized});
   }
   await refreshOwnerCatalog();
- }finally{editIsSaving=false;refreshOwnerUI()}
+ });
+ wikiRecordWriteQueue.set(key,writing);
+ editIsSaving=true;
+ try{
+  return await writing;
+ }finally{
+  if(wikiRecordWriteQueue.get(key)===writing)wikiRecordWriteQueue.delete(key);
+  if(!wikiRecordWriteQueue.size)editIsSaving=false;
+  refreshOwnerUI();
+ }
 }
 async function saveWikiTradeRecipe(recipe,changes=null){
  if(!adminToken||!adminEditing||!wikiData?.trades)throw Error('Редактор обменов недоступен');
