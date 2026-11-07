@@ -60,6 +60,15 @@ export async function runWikiOwnerEnglishSyncSmoke(browser,base){
  page.on('pageerror',error=>errors.push(error.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // Localhost correctly defaults to offline-archive mode. Switch this
+  // isolated test to the real application's live-D1 retry path, where every
+  // remote response is intercepted above. This is not a production backdoor.
+  await page.evaluate(()=>document.querySelector('#startupRetry')?.click());
+  await page.waitForFunction(()=>
+   document.querySelector('.workspace>.left>.panel-heading h2')?.textContent
+    ==='Происхождение героя' &&
+   document.querySelector('#startupOverlay')?.hidden===true,
+   null,{timeout:20000});
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="skill"]').click();
   const filter=page.locator('.wiki-skill-type');
