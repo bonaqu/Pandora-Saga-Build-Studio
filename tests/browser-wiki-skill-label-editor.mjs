@@ -70,6 +70,21 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   assert.equal(JSON.parse(writes[0].value).skill_filter_unknown_ru,
    'Дополнительные навыки');
 
+  const playerRow=disclosure.locator('[data-skill-filter-label="player"]');
+  await playerRow.locator('.wiki-skill-label-edit').click();
+  const playerField=playerRow.locator('[contenteditable]');
+  await playerField.waitFor({state:'visible'});
+  await playerField.fill('Умения героев');
+  await playerField.press('Enter');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-skill-type option[value="player"]')
+    ?.textContent.startsWith('Умения героев'),null,{timeout:10000});
+  assert.equal(writes.length,2);
+  assert.deepEqual(JSON.parse(writes[1].value),{
+   skill_filter_unknown_ru:'Дополнительные навыки',
+   skill_filter_player_ru:'Умения героев'
+  },'Subsequent inline saves must merge the previous changes');
+
   await control.selectOption('unknown');
   assert.equal(await control.inputValue(),'unknown');
   await disclosure.locator('summary').click();
