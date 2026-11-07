@@ -72,7 +72,18 @@ function setSession(result){
  session=next;
  pendingRecoveryCode=recovery;
 }
-function clearSession(){session=null;pendingRecoveryCode=null;localStorage.removeItem(KEY)}
+function clearSession(){
+ const previousToken=session?.token||null;
+ session=null;pendingRecoveryCode=null;
+ // Another tab may have signed in as a different account since this tab
+ // started. Never erase that other account's active persisted session.
+ if(previousToken){
+  try{
+   const saved=JSON.parse(localStorage.getItem(KEY)||'null');
+   if(saved?.token===previousToken)localStorage.removeItem(KEY);
+  }catch{}
+ }
+}
 function render(){
  if(!panel||!trigger)return;
  activeSession();
@@ -199,6 +210,18 @@ async function init(config){
  trigger=document.getElementById('profileTrigger');
  panel=document.getElementById('accountPanel');
  if(!trigger||!panel)throw Error('Missing account UI elements');
+ // A logout in another tab revokes this tab too when both use the SAME
+ // token. Switching to a DIFFERENT account in another tab must never
+ // silently switch or sign out the current tab's independent owner.
+ root.addEventListener('storage',event=>{
+  if(event.key!==KEY||event.newValue!==null||!session)return;
+  let previous;
+  try{previous=JSON.parse(event.oldValue||'null')}catch{return}
+  if(previous?.token!==session.token)return;
+  clearSession();
+  options?.onLogout?.({otherTab:true});
+  render();
+ });
  trigger.addEventListener('click',()=>{
   const previous=session?.token||null;
   activeSession();
