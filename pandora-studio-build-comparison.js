@@ -27,13 +27,17 @@ const BUFFS=[
 ];
 const EN_SLOTS=['Weapon','Shield','Helmet','Armor','Gloves','Pants','Boots','Cloak',
  'Ring I','Ring II','Amulet','Belt','Earring I','Earring II'];
-function savedItemName(selection,records,{lang='ru',kind='item'}={}){
+function savedItemName(selection,records,{lang='ru',kind='item',englishNames={}}={}){
  if(!selection||selection.id===undefined||selection.id===null)return lang==='en'?'empty':'пусто';
  const id=String(selection.id),numeric=/^[1-9][0-9]{0,14}$/.test(id);
  const record=numeric?records?.[id]:null;
  // The official catalog takes precedence over obsolete names embedded in saved builds.
- const candidate=record?.name?.[lang]||record?.names?.[lang]||record?.name?.ru||
-  record?.names?.ru||record?.name;
+ // Prefer actual RU/EN source fields. The published English dictionary is
+ // verified game data; the saved snapshot's old copied name is last resort.
+ const candidate=lang==='en'?(record?.nameEn||englishNames?.[id]?.n||
+  record?.name?.en||record?.names?.en||record?.name?.ru||record?.names?.ru||
+  record?.name):(record?.name?.ru||record?.names?.ru||record?.name||
+  record?.nameEn);
  if(typeof candidate==='string'&&candidate.trim()&&!/^\d+$/.test(candidate.trim()))
   return candidate.trim();
  const legacy=selection?.name;
@@ -123,7 +127,8 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
    Missing game data is unknown, never fabricated as zero. */
 function matrixRows(a={},b={},options={}){
  const {lang='ru',races=[],jobs=[],stats=[],branches=[],slotLabels=[],
-  equipment={},souls={},skillCatalog={},englishSkills={},enchant=null,honorTitles=[],
+  equipment={},souls={},skillCatalog={},englishSkills={},
+  englishItems={},englishSouls={},enchant=null,honorTitles=[],
   calcA=null,calcB=null,summaryA=[],summaryB=[],trained=null}=options;
  const english=lang==='en',rows=[];
  const label=(ru,en)=>english?en:ru;
@@ -227,7 +232,8 @@ function matrixRows(a={},b={},options={}){
  for(let i=0;i<14;i++){
   const slot=actualSlot(i),x=a.equipment?.[i],y=b.equipment?.[i];
   push('equipment',gearGroup,'gear.'+i,slot,EN_SLOTS[i],
-   savedItemName(x,equipment,{lang}),savedItemName(y,equipment,{lang}),{
+   savedItemName(x,equipment,{lang,englishNames:englishItems}),
+   savedItemName(y,equipment,{lang,englishNames:englishItems}),{
     identityA:String(x?.id??''),identityB:String(y?.id??'')
    });
   if(x||y){
@@ -244,8 +250,8 @@ function matrixRows(a={},b={},options={}){
    push('equipment',soulGroup,'soul.'+i+'.'+k,
     slot+' · '+label('Душа ','Soul ')+(k+1),
     EN_SLOTS[i]+' · Soul '+(k+1),
-    savedItemName(soulA[k],souls,{lang,kind:'soul'}),
-    savedItemName(soulB[k],souls,{lang,kind:'soul'}),{
+    savedItemName(soulA[k],souls,{lang,kind:'soul',englishNames:englishSouls}),
+    savedItemName(soulB[k],souls,{lang,kind:'soul',englishNames:englishSouls}),{
      identityA:String(soulA[k]?.id??''),identityB:String(soulB[k]?.id??'')
     });
   const gemLabel=v=>{
