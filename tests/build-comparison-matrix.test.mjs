@@ -127,3 +127,34 @@ test('one failed calculation cannot suppress the other saved build',()=>{
  assert.deepEqual(comparison.calculatePair(first,second,()=>({hp:9}),false),
   [null,null],'Unavailable catalog must not fabricate a calculation');
 });
+
+test('comparison preserves the verified 50–74 ATK range rather than showing max only',()=>{
+ const observed={combat:{attack:{minimum:50,known:74,minimumVerified:true}}};
+ const other={combat:{attack:{minimum:null,known:74,minimumVerified:false}}};
+ const ru=comparison.matrixRows(first,second,{...opts,calcA:observed,calcB:other});
+ const row=ru.find(x=>x.key==='attack.range');
+ assert.ok(row);
+ assert.equal(row.label,'Диапазон АТК');
+ assert.equal(row.a,'50–74');
+ assert.equal(row.b,'—');
+ assert.equal(row.equal,false);
+ assert.equal(row.delta,null,'Unknown minimum cannot produce a fake numeric delta');
+ const en=comparison.matrixRows(first,second,{...opts,lang:'en',
+  calcA:observed,calcB:other}).find(x=>x.key==='attack.range');
+ assert.equal(en.label,'ATK range');
+ assert.equal(en.a,'50–74');
+ assert.equal(en.b,'—');
+});
+test('changes to a proven minimum remain visible even when maximum attack is the same',()=>{
+ const a={combat:{attack:{minimum:50,known:74,minimumVerified:true}}};
+ const b={combat:{attack:{minimum:54,known:74,minimumVerified:true}}};
+ const row=comparison.matrixRows(first,second,{...opts,calcA:a,calcB:b})
+  .find(x=>x.key==='attack.range');
+ assert.deepEqual([row.a,row.b,row.equal,row.delta],
+  ['50–74','54–74',false,null]);
+ const unknown=comparison.matrixRows(first,second,{...opts,
+  calcA:{combat:{attack:{minimum:50,known:74,minimumVerified:false}}},
+  calcB:{combat:{attack:{known:74,minimumVerified:false}}}});
+ assert.equal(unknown.some(x=>x.key==='attack.range'),false,
+  'Do not show speculative minima as authoritative data');
+});
