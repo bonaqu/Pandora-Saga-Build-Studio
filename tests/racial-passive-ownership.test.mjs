@@ -9,6 +9,24 @@ Function('window',read('pandora-studio-navigation.js'))(root);
 const nav=root.PandoraGameNavigation;
 const idx=key=>nav.raceKeys.indexOf(key);
 
+test('Hero loader and Encyclopedia share the same race integrity validator',()=>{
+ const wiki={};
+ Function('window',read('pandora-studio-encyclopedia-catalog.js'))(wiki);
+ const validate=wiki.PandoraWikiCatalog.validateRacialPassives;
+ const skills=JSON.parse(read('data/os/skills.json'));
+ const meta=JSON.parse(read('data/os/meta.json'));
+ assert.equal(validate(catalog,skills,meta.counts),true);
+ const missing=structuredClone(catalog);
+ delete missing.MYLIN;
+ assert.throws(()=>validate(missing,skills,meta.counts),/Неполный каталог/);
+ const borrowed=structuredClone(catalog);
+ borrowed.ELF.skills[0]=borrowed.HUMAN.skills[0];
+ assert.throws(()=>validate(borrowed,skills,meta.counts),/связи расовых пассивок/);
+ const app=read('pandora-studio-app.js');
+ assert.match(app,/window\.PandoraWikiCatalog\.validateRacialPassives\(\s*data\.racialPassives,data\.skills,data\.meta\?\.counts\)/);
+ const wikiSource=read('pandora-studio-encyclopedia-catalog.js');
+ assert.match(wikiSource,/validateRacialPassives\(data\.racialPassives,data\.skills,data\.meta\.counts\)/);
+});
 test('each of the six source races owns only its three skill IDs',()=>{
  assert.equal(Object.keys(catalog).length,6);
  for(const [race,entry] of Object.entries(catalog)){

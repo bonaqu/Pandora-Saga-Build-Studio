@@ -8,6 +8,32 @@ function normalize(data){
  if(isRecord(data?.instances))return {...data,instances:Object.values(data.instances)};
  return data;
 }
+function validateRacialPassives(racialPassives,skills,counts){
+ // Shared source integrity boundary for both Origin/builds and Encyclopedia.
+ // Do not accept a partial D1 race registry or duplicated passive ownership.
+ const expectedRaces=Number(counts?.racialPassives);
+ const races=isRecord(racialPassives)?Object.entries(racialPassives):[];
+ if(!Number.isSafeInteger(expectedRaces)||expectedRaces<1||
+    races.length<expectedRaces)
+  throw Error('Неполный каталог расовых пассивок');
+ const raceIds=new Set(),ownedPassives=new Set();
+ for(const [key,race] of races){
+  if(!isRecord(race)||race.key!==key||
+    !Number.isSafeInteger(race.raceId)||race.raceId<1||
+    raceIds.has(race.raceId)||!Array.isArray(race.skills)||
+    !race.skills.length)
+   throw Error('Нарушены связи расовых пассивок с каталогом навыков');
+  raceIds.add(race.raceId);
+  for(const id of race.skills){
+   const number=Number(id),skill=skills?.[String(id)];
+   if(!Number.isSafeInteger(id)||number<1||ownedPassives.has(number)||
+     skill?.skillType!=='PASSIVE'||skill?.branch!=='race')
+    throw Error('Нарушены связи расовых пассивок с каталогом навыков');
+   ownedPassives.add(number);
+  }
+ }
+ return true;
+}
 function validate(input){
  const data=normalize(input);
  if(!isRecord(data)||!isRecord(data.meta)||!isRecord(data.meta.counts))
@@ -23,29 +49,8 @@ function validate(input){
   throw Error('Неверный формат добычи локаций');
  if(!isRecord(data.chests)||!Array.isArray(data.chests.boxes))
   throw Error('Неверный формат сундуков');
- // All races and their skills are published in the same atomic D1 snapshot.
- // A partially published registry must not masquerade as six valid races.
- const expectedRaces=Number(data.meta.counts.racialPassives);
- const races=isRecord(data.racialPassives)?Object.entries(data.racialPassives):[];
- if(!Number.isSafeInteger(expectedRaces)||expectedRaces<1||
-    races.length<expectedRaces)
-  throw Error('Неполный каталог расовых пассивок');
- const raceIds=new Set(),ownedPassives=new Set();
- for(const [key,race] of races){
-  if(!isRecord(race)||race.key!==key||
-    !Number.isSafeInteger(race.raceId)||race.raceId<1||
-    raceIds.has(race.raceId)||!Array.isArray(race.skills)||
-    !race.skills.length)
-   throw Error('Нарушены связи расовых пассивок с каталогом навыков');
-  raceIds.add(race.raceId);
-  for(const id of race.skills){
-   const number=Number(id),skill=data.skills?.[String(id)];
-   if(!Number.isSafeInteger(id)||number<1||ownedPassives.has(number)||
-     skill?.skillType!=='PASSIVE'||skill?.branch!=='race')
-    throw Error('Нарушены связи расовых пассивок с каталогом навыков');
-   ownedPassives.add(number);
-  }
- }
+ // Keep one source-backed ownership check for both the current hero and Wiki.
+ validateRacialPassives(data.racialPassives,data.skills,data.meta.counts);
  for(const key of ['items','monsters','maps','instances','drops','trades','skills','souls']){
   const observed=Array.isArray(data[key])?data[key].length:
    key==='trades'?data.trades.trades.length:Object.keys(data[key]).length;
@@ -194,5 +199,5 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   })}
  }
 }
-root.PandoraWikiCatalog=Object.freeze({keys,normalize,validate,load});
+root.PandoraWikiCatalog=Object.freeze({keys,normalize,validateRacialPassives,validate,load});
 })(typeof window==='undefined'?globalThis:window);
