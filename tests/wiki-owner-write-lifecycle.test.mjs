@@ -189,7 +189,7 @@ test('Undo cannot clear busy state until edited Wiki data has refreshed',async()
  const instance=Function('apiRequest','ownerEdits','override',
   'closeInlineEditor','refreshVisibleWikiLabels','refreshOwnerCatalog',
   'refreshOwnerUI','alert',
-  'const adminToken="test";let editIsSaving=false,wikiLabelPendingWrites=0;\n'+
+  'const adminToken="test";let editIsSaving=false,wikiLabelPendingWrites=0;const wikiRecordWriteQueue=new Map();\n'+
   undoWrite+'\nreturn {undo:undoOwnerEdit,isSaving:()=>editIsSaving};')(
   state.apiRequest,state.ownerEdits,state.override,()=>{},()=>{},
   state.refreshOwnerCatalog,()=>state.refreshOwnerUI(),m=>alerts.push(m));

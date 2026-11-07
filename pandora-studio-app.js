@@ -6155,6 +6155,9 @@ let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=true;
 let activeInlineEditor=null;
 let editIsSaving=false;
 let wikiLabelPendingWrites=0;
+// Serialize writes to the same Wiki record before constructing its D1 patch.
+// Different records remain independent; failed writes never poison the queue.
+const wikiRecordWriteQueue=new Map();
 function closeInlineEditor(){
   if(activeInlineEditor){activeInlineEditor.remove();activeInlineEditor=null;}
 }
@@ -6190,7 +6193,7 @@ function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
  const count=Object.keys(override).length;
- const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0)?'Сохраняю в Cloudflare D1…':
+ const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?'Сохраняю в Cloudflare D1…':
   ownerSaveState==='error'?'Не сохранено: '+(ownerSaveError||'ошибка сервера'):
   ownerSaveState==='saved'?'✓ Сохранено в Cloudflare D1':
   '✓ Подключено к Cloudflare D1 · сохранение автоматическое';
@@ -6334,7 +6337,7 @@ function refreshOwnerUI(){
  update(root);
 }
 async function undoOwnerEdit(){
-  if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0)return;
+  if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)return;
   const last=ownerEdits[ownerEdits.length-1];
   editIsSaving=true;refreshOwnerUI();
   try{
@@ -6664,29 +6667,44 @@ async function saveGuideList(key,rows){
 async function saveWikiRecordPatch(type,id,updates){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
  const key='wikiedit.'+type+'.'+id;
- let current={};
- try{current=JSON.parse(override[key]||'{}')}catch{}
- const patch={...current,...updates};
- if(!/^[0-9]+$/.test(String(id))){
-  if(!window.PandoraWikiOwnerData.validTownPatch(type,id,patch))
-   throw Error('Некорректное значение специального справочника');
- }else if(!window.PandoraWikiOwnerData.validPatch(type,patch))
-  throw Error('Некорректное значение поля');
- const before=activeOverride(key),after=JSON.stringify(patch);
- if(before===after)return;
- editIsSaving=true;
- try{
+ const previous=wikiRecordWriteQueue.get(key);
+ // Build the patch only AFTER the previous write and its catalog reindex.
+ // Otherwise two quick edits to one record race, and the last one silently
+ // overwrites unrelated fields already saved by the first.
+ const writing=(previous?previous.catch(()=>{}):Promise.resolve()).then(async()=>{
+  let current={};
+  try{current=JSON.parse(override[key]||'{}')}catch{}
+  const changes=typeof updates==='function'?updates(current):updates;
+  const patch={...current,...changes};
+  if(!/^[0-9]+$/.test(String(id))){
+   if(!window.PandoraWikiOwnerData.validTownPatch(type,id,patch))
+    throw Error('Некорректное значение специального справочника');
+  }else if(!window.PandoraWikiOwnerData.validPatch(type,patch))
+   throw Error('Некорректное значение поля');
+  const before=activeOverride(key),after=JSON.stringify(patch);
+  if(before===after)return;
   await apiRequest('/api/admin/override',{key,value:after});
   ownerEdits.push({key,before,after});override[key]=after;
   await refreshOwnerCatalog();
- }finally{editIsSaving=false;refreshOwnerUI()}
+ });
+ wikiRecordWriteQueue.set(key,writing);
+ editIsSaving=true;
+ try{
+  return await writing;
+ }finally{
+  // Only the latest queued operation may release the record's busy state.
+  if(wikiRecordWriteQueue.get(key)===writing)wikiRecordWriteQueue.delete(key);
+  if(!wikiRecordWriteQueue.size)editIsSaving=false;
+  refreshOwnerUI();
+ }
 }
 async function saveWikiRecordField(type,id,field,value){
- const patch=field.startsWith('resists.')?
-  {resists:{...(wikiData?.monsters?.[id]?.resists||{}),
-   ...JSON.parse(override['wikiedit.'+type+'.'+id]||'{}').resists,
-   [field.slice(8)]:value}}:{[field]:value};
- return saveWikiRecordPatch(type,id,patch);
+ if(field.startsWith('resists.'))
+  return saveWikiRecordPatch(type,id,current=>({
+   resists:{...(wikiData?.monsters?.[id]?.resists||{}),
+    ...(current.resists||{}),[field.slice(8)]:value}
+  }));
+ return saveWikiRecordPatch(type,id,{[field]:value});
 }
 async function saveWikiSpawns(monsterId,type,placeId,include,replacesId=null){
  if(type==='map'&&!Object.hasOwn(wikiData?.maps||{},String(placeId)))
