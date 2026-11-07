@@ -143,7 +143,8 @@ function validTownPatch(type,key,patch){
  }
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
  if(type==='map'&&customMapId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)))return false;
- if(type==='npc'&&ownerNpcId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)))return false;
+ if(type==='npc'&&ownerNpcId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)||
+  !Array.isArray(patch.maps)||patch.maps.length!==1))return false;
  return keys.every(k=>mapExtraKeys.includes(k)?validMapExtra(k,patch[k]):
   k==='mobs'?checkMonsterList(patch.mobs,120):k==='maps'?
   Array.isArray(patch.maps)&&patch.maps.length===1&&virtualMapId(patch.maps[0]):
@@ -171,15 +172,15 @@ function apply(data,overrides){
      rows[idValue]={...(rows[idValue]||{source:'owner',ownerCreated:true}),
       ...patch,virtual:true,ownerCreated:customMapId(idValue)};
     }else{
-     if(!next.townMaps)next.townMaps={};
+     if(next.townMaps===data.townMaps)next.townMaps={...(data.townMaps||{})};
      next.townMaps[idValue]={...(next.townMaps[idValue]||{}),...patch,virtual:true};
     }
    }else{
-    if(!next.townNpcs)next.townNpcs={};
+    if(next.townNpcs===data.townNpcs)next.townNpcs={...(data.townNpcs||{})};
     const original=root.PandoraAstirLocations?.npcRecords?.()[idValue];
     const existing=next.townNpcs[idValue]||original;
     if(!existing&&!patch.name)continue;
-    next.townNpcs[idValue]={...(existing||{id:idValue,name:patch.name,maps:[homeFromId(idValue)],
+    next.townNpcs[idValue]={...(existing||{id:idValue,name:patch.name,maps:ownerNpcId(idValue)?patch.maps:[homeFromId(idValue)],
      source:'owner',virtual:true}),...patch,virtual:true,
      ownerCreated:ownerNpcId(idValue)};
    }
