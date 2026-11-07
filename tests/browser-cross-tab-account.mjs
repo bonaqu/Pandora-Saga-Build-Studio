@@ -122,6 +122,8 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   assert.deepEqual(await tabB.locator('.build-card h3').allTextContents(),['Bob only']);
   // The last login belonged to Bob and is currently stored by this origin.
   // Alice's stale tab must never erase Bob's persisted session on logout.
+  if(await tabA.locator('#detailPanel').evaluate(node=>node.classList.contains('is-open')))
+   await tabA.locator('#dockClose').click();
   await tabA.locator('#profileTrigger').click();
   await tabA.getByRole('button',{name:'Выйти из аккаунта'}).click();
   const sessionAfterAliceLogout=await tabB.evaluate(()=>
@@ -129,6 +131,8 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   assert.equal(sessionAfterAliceLogout?.token,tokenB,
    'A second account logout may not remove Bob’s persistent session');
   await tabB.reload({waitUntil:'domcontentloaded'});
+  if(await tabB.locator('#detailPanel').evaluate(node=>node.classList.contains('is-open')))
+   await tabB.locator('#dockClose').click();
   await tabB.locator('#profileTrigger').click();
   await tabB.locator('.account-user').waitFor({state:'visible'});
   assert.match(await tabB.locator('.account-user').innerText(),/bob_222/);
