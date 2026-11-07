@@ -61,9 +61,9 @@ test('saved gear and Soul identities use OS names instead of falsely saying empt
  const souls=JSON.parse(readFileSync(new URL('../data/os/souls.json',import.meta.url),'utf8'));
  assert.equal(name({id:1},equipment),equipment['1'].name);
  assert.equal(name({id:103013},souls,{kind:'soul'}),souls['103013'].name);
- assert.equal(name({id:987654},equipment),'Предмет №987654');
+ assert.equal(name({id:987654},equipment),'Предмет отсутствует в каталоге');
  assert.equal(name(null,equipment),'пусто');
- assert.equal(name({id:987654},equipment,{lang:'en'}),'Item #987654');
+ assert.equal(name({id:987654},equipment,{lang:'en'}),'Item not in catalog');
  assert.equal(name({id:1,name:'Obsolete copied name'},equipment),equipment['1'].name);
  assert.equal(name({id:'not-an-id',name:'Old custom gear'},equipment),'Old custom gear');
 });
