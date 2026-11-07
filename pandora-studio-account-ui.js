@@ -188,7 +188,7 @@ async function init(config){
  // Invalid/revoked identities still require an immediate forced rerender.
  let forceBootstrapRender=false;
  const finishBootstrap=()=>{
-  if(forceBootstrapRender||panel.hidden||!panel.hasChildNodes())render();
+  if(forceBootstrapRender||panel.hidden||!panel.hasChildNodes?.())render();
  };
  if(session){
   const bootstrapToken=session.token,expectedName=session.username;
