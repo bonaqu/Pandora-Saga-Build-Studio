@@ -113,6 +113,8 @@ export async function runAccountSmoke(browser,base){
   await verifiedMe;
   await page.evaluate(()=>new Promise(resolve=>
    requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026',
+   'Background /me must not replace the DOM of a temporarily hidden form');
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026',
