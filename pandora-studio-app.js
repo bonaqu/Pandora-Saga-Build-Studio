@@ -3528,7 +3528,10 @@ function renderWiki(root){
      [wt('Защита','Defense'),rec.AC,'AC'],
      [wt('Скорость атаки','Attack speed'),rec.atkspeed,'atkspeed'],
      [wt('Дальность','Range'),rec.range,'range'],
-     [wt('Слоты душ','Soul slots'),rec.soulslot,'soulslot']
+     // Cloaks, earrings, rings and amulets do not possess Soul sockets.
+     // Reuse the exact same eligibility rule as equipment selection/tooltips.
+     ...(window.PandoraEquipmentPlan.supportsSoulSlot(rec.slot)?
+      [[wt('Слоты душ','Soul slots'),rec.soulslot,'soulslot']]:[])
     ];
     const hints={kind:'Игровая категория предмета',level:'Уровень предмета',W:'Показатель атаки оружия',PEN:'Показатель пробития оружия',AC:'Защита предмета',atkspeed:'Скорость атаки',range:'Дальность действия',soulslot:'Слоты душ: от 0 до 3'};
     for(const [label,value,key]of itemFields)if(value!=null){
