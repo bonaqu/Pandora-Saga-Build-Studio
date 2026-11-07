@@ -152,7 +152,7 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
    sub==='map'?(raw.maps?.[id]||raw.townMaps?.[id]||
     raw.trades?.mapNames?.[id]||root.PandoraAstirLocations?.district(id)):
    raw[({soul:'souls',skill:'skills',monster:'monsters'})[sub]]?.[id];
-  name=source?.name||lookup(sub,id);
+  name=lookup(sub,id);
   section=({soul:'Душа',skill:'Навык',npc:'NPC',monster:'Монстр',
    map:'Локация',instance:'Подземелье'})[sub]||'Энциклопедия';
   patch=toObject(stored);
