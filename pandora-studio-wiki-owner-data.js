@@ -143,7 +143,8 @@ function validTownPatch(type,key,patch){
  }
  if(!keys.length||keys.some(k=>!allowed.includes(k)))return false;
  if(type==='map'&&customMapId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)))return false;
- if(type==='npc'&&ownerNpcId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)))return false;
+ if(type==='npc'&&ownerNpcId(key)&&(!localized(patch.name,240)||!localized(patch.nameEn,240)||
+  !Array.isArray(patch.maps)||patch.maps.length!==1))return false;
  return keys.every(k=>mapExtraKeys.includes(k)?validMapExtra(k,patch[k]):
   k==='mobs'?checkMonsterList(patch.mobs,120):k==='maps'?
   Array.isArray(patch.maps)&&patch.maps.length===1&&virtualMapId(patch.maps[0]):
@@ -171,15 +172,15 @@ function apply(data,overrides){
      rows[idValue]={...(rows[idValue]||{source:'owner',ownerCreated:true}),
       ...patch,virtual:true,ownerCreated:customMapId(idValue)};
     }else{
-     if(!next.townMaps)next.townMaps={};
+     if(next.townMaps===data.townMaps)next.townMaps={...(data.townMaps||{})};
      next.townMaps[idValue]={...(next.townMaps[idValue]||{}),...patch,virtual:true};
     }
    }else{
-    if(!next.townNpcs)next.townNpcs={};
+    if(next.townNpcs===data.townNpcs)next.townNpcs={...(data.townNpcs||{})};
     const original=root.PandoraAstirLocations?.npcRecords?.()[idValue];
     const existing=next.townNpcs[idValue]||original;
     if(!existing&&!patch.name)continue;
-    next.townNpcs[idValue]={...(existing||{id:idValue,name:patch.name,maps:[homeFromId(idValue)],
+    next.townNpcs[idValue]={...(existing||{id:idValue,name:patch.name,maps:ownerNpcId(idValue)?patch.maps:[homeFromId(idValue)],
      source:'owner',virtual:true}),...patch,virtual:true,
      ownerCreated:ownerNpcId(idValue)};
    }
@@ -248,20 +249,20 @@ function apply(data,overrides){
    own(data.maps,x.id):(data.instances||[]).some(i=>String(i.id)===String(x.id))))continue;
   const mob=Number(match[1]),wanted=new Set(rows.map(x=>x.type+':'+x.id));
   for(const [mapId,source] of Object.entries(data.maps||{})){
-   const original=(next.maps?.[mapId]?.mobs||source.mobs||[]).map(Number);
-   const was=original.includes(mob),want=wanted.has('map:'+mapId);
+   const original=next.maps?.[mapId]?.mobs||source.mobs||[];
+   const was=original.some(ref=>String(ref)===String(mob)),want=wanted.has('map:'+mapId);
    if(was===want)continue;
    const maps=mut('maps');
-   maps[mapId]={...maps[mapId],mobs:want?[...original,mob]:original.filter(n=>n!==mob)};
+   maps[mapId]={...maps[mapId],mobs:want?[...original,mob]:original.filter(ref=>String(ref)!==String(mob))};
   }
   for(const original of data.instances||[]){
    const entry=(next.instances||[]).find(x=>String(x.id)===String(original.id))||original;
-   const listed=(entry.mobs||[]).map(Number),was=listed.includes(mob),
+   const listed=entry.mobs||[],was=listed.some(ref=>String(ref)===String(mob)),
     want=wanted.has('instance:'+original.id);
    if(was===want)continue;
    clone();if(next.instances===data.instances)next.instances=[...data.instances];
    const index=next.instances.findIndex(x=>String(x.id)===String(original.id));
-   if(index>=0)next.instances[index]={...entry,mobs:want?[...listed,mob]:listed.filter(n=>n!==mob)};
+   if(index>=0)next.instances[index]={...entry,mobs:want?[...listed,mob]:listed.filter(ref=>String(ref)!==String(mob))};
   }
  }
  return next;
