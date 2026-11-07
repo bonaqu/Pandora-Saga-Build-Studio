@@ -10,7 +10,7 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
  const known=new Set([...originals.keys(),
   ...remote.filter(x=>x&&ID.test(x.id)).map(x=>x.id)]);
  const remoteIds=new Set(),merged=[],outgoing=[];
- let selected=activeId,copies=0;
+ let selected=activeId,copies=0,unavailable=0;
  const copy=(source,origin)=>{
   let id=null;
   for(let n=0;n<12;n++){
@@ -21,6 +21,7 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
   known.add(id);copies++;
   const english=lang==='en';
   const suffix=origin==='deleted'?(english?' · deleted build copy':' · копия удалённого билда'):
+   origin==='unavailable'?(english?' · recovered local copy':' · восстановленная локальная копия'):
    origin==='local'?(english?' · local copy':' · локальная копия'):
    (english?' · cloud copy':' · облачная копия');
   const duplicate={...source,id,name:String(source.name||(english?'Build':'Билд')).slice(0,70-suffix.length)+suffix,
@@ -60,8 +61,18 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
    continue;
   }
   const cloud=record.entry;
-  if(!cloud||cloud.id!==record.id||!Number.isSafeInteger(cloud.at)||
-    !cloud.data||typeof cloud.data!=='object'||Array.isArray(cloud.data))continue;
+  if(record.unavailable===true||!cloud||cloud.id!==record.id||
+   !Number.isSafeInteger(cloud.at)||!cloud.data||
+   typeof cloud.data!=='object'||Array.isArray(cloud.data)){
+   // The original cloud ID is reserved. NEVER retry PUT against it.
+   remoteIds.add(record.id);unavailable++;
+   const offline=originals.get(record.id);
+   if(offline&&!pending.has(record.id)){
+    const recovered=copy(offline,'unavailable');
+    if(selected===record.id)selected=recovered;
+   }
+   continue;
+  }
   remoteIds.add(record.id);
   if(pending.has(record.id))continue;
   const browser=originals.get(record.id);
@@ -86,7 +97,7 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
  }
  merged.sort((a,b)=>(b.at||0)-(a.at||0));
  if(selected&&!merged.some(x=>x.id===selected))selected=null;
- return {merged,outgoing,activeId:selected,copies};
+ return {merged,outgoing,activeId:selected,copies,unavailable};
 }
 root.PandoraBuildLibraryMerge=Object.freeze({reconcile});
 })(typeof window==='undefined'?globalThis:window);

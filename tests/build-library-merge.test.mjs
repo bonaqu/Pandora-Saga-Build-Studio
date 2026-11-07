@@ -67,8 +67,12 @@ test('a locally queued delete never generates a recovery copy',()=>{
 test('malformed cloud payload cannot delete valid local save; ID collisions cannot erase copies',()=>{
  const local=mk(A,100,55),remote=[{id:A,entry:{id:'wrong',at:101,data:{}}}];
  const valid=reconcile({local:[local],remote,activeId:A,newId:()=>B});
- assert.deepEqual(valid.merged,[local]);
- assert.deepEqual(valid.outgoing,[local]);
+ assert.equal(valid.unavailable,1);
+ assert.equal(valid.merged.find(x=>x.id===B).data.level,55);
+ assert.equal(valid.merged.find(x=>x.id===B).localOnly,true);
+ assert.equal(valid.merged.some(x=>x.id===A),false);
+ assert.equal(valid.activeId,B);
+ assert.deepEqual(valid.outgoing,[],'Never overwrite an unavailable D1 record');
  let i=0;
  const both=reconcile({local:[local],remote:[{id:A,entry:mk(A,101,54)}],
   newId:()=>++i===1?A:B});
@@ -127,4 +131,26 @@ test('actual equipment, level or array order changes still preserve distinct edi
  const s=reconcile({local:[listLocal],remote:[{id:A,entry:listRemote}],
   newId:()=>B});
  assert.equal(s.copies,1);
+});
+
+test('unavailable remote builds cannot be overwritten and do not block healthy neighbors',()=>{
+ const remote=[{id:A,deleted:false,entry:null,unavailable:true},
+  {id:B,deleted:false,entry:mk(B,200,52)}];
+ const first=reconcile({local:[mk(A,100,55),mk(C,90,51)],remote,
+  activeId:A,newId:()=>D,lang:'en'});
+ assert.equal(first.unavailable,1);
+ assert.deepEqual(first.merged.find(x=>x.id===B),mk(B,200,52));
+ assert.equal(first.merged.find(x=>x.id===D).name,'Hero · recovered local copy');
+ assert.equal(first.activeId,D);
+ assert.deepEqual(first.outgoing.map(x=>x.id),[C]);
+ assert.ok(!first.merged.some(x=>x.id===A));
+ const again=reconcile({local:first.merged,remote,activeId:D,newId:()=>A,lang:'en'});
+ assert.equal(again.copies,0,'Repeated refresh does not create another recovery');
+ assert.equal(again.unavailable,1);
+ assert.equal(again.activeId,D);
+ assert.deepEqual(again.outgoing.map(x=>x.id),[C]);
+ const empty=reconcile({local:[],remote:[remote[0]],newId:()=>D});
+ assert.equal(empty.unavailable,1);
+ assert.deepEqual(empty.merged,[]);
+ assert.deepEqual(empty.outgoing,[]);
 });

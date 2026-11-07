@@ -7,7 +7,9 @@ const key='a'.repeat(64),other='b'.repeat(64);
 const ORIGIN='https://bonaqu.github.io';
 function database(){
  const rows=new Map();
- return {prepare(sql){
+ return {seed(owner,id,payload,deleted_at=null){
+  rows.set(owner+':'+id,{build_id:id,payload,deleted_at});
+ },prepare(sql){
   if(sql.includes('FROM sqlite_master'))return {all:async()=>({
    results:sql.includes("name='shared_build_sources'")?[]:[{name:'private_builds'}]
   })};
@@ -123,4 +125,25 @@ test('equal timestamp concurrent writes are idempotent only for identical snapsh
  assert.deepEqual((await current.json()).records.find(x=>x.id===id).entry,entry);
  const newer=await send({...entry,name:'Version B',at:501});
  assert.equal(newer.status,200);
+});
+
+test('one broken D1 record cannot hide healthy saves or leak the corrupt payload',async()=>{
+ const DB=database(),owner=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key))
+  .then(bytes=>Buffer.from(bytes).toString('base64url'));
+ const badId='1'.repeat(32),invalidId='2'.repeat(32),goodId='3'.repeat(32);
+ const good={id:goodId,name:'Valid save',at:123,
+  data:{race:1,job:3,level:55}};
+ DB.seed(owner,badId,'{bad JSON');
+ DB.seed(owner,invalidId,JSON.stringify({...good,id:'wrong'}));
+ DB.seed(owner,goodId,JSON.stringify(good));
+ const response=await worker.fetch(request('GET'),{DB});
+ assert.equal(response.status,200);
+ const data=(await response.json()).records;
+ assert.deepEqual(data.find(x=>x.id===goodId),
+  {id:goodId,deleted:false,entry:good});
+ for(const id of [badId,invalidId]){
+  assert.deepEqual(data.find(x=>x.id===id),
+   {id,deleted:false,entry:null,unavailable:true});
+ }
+ assert.equal(JSON.stringify(data).includes('bad JSON'),false);
 });

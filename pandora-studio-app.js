@@ -274,7 +274,7 @@ async function loadCloudBuilds(){
    local:builds,remote:response.records,pendingDeletes:queuedDeletes(),
    activeId:activeBuildId,newId,lang
   });
-  const {outgoing,copies}=reconciled;
+  const {outgoing,copies,unavailable}=reconciled;
   builds=reconciled.merged;persistBuilds();
   if(reconciled.activeId!==activeBuildId)selectActiveBuild(reconciled.activeId);
   if(activeTab==='builds')renderDetails();
@@ -292,6 +292,11 @@ async function loadCloudBuilds(){
    reportCloudStatus('Облачная версия основная · локальные отличия сохранены отдельной копией');
    showStudioToast('Обнаружены разные версии билда. Обе сохранены отдельно в библиотеке.','warning');
   }
+  if(unavailable&&libraryChangeId===generation)
+   reportCloudStatus((lang==='en'?
+    'Some cloud builds are unavailable · original records are preserved':
+    'Некоторые облачные билды недоступны · исходные записи сохранены')+
+    ' ('+unavailable+')');
  }catch(error){
   console.warn('Cloud library unavailable',error);
   if(libraryChangeId===generation)

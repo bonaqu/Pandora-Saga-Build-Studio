@@ -86,6 +86,7 @@ const english=Object.freeze({
  'Подключаем облачную библиотеку…':'Connecting to cloud library…',
  'Синхронизируем локальные изменения…':'Syncing local changes…',
  'Облачная библиотека подключена':'Cloud library connected',
+ 'Некоторые облачные билды недоступны · исходные записи сохранены':'Some cloud builds are unavailable · original records are preserved',
  'Облачная версия основная · локальные отличия сохранены отдельной копией':'Cloud version kept · local differences saved as a separate copy',
  'Локальные билды доступны · облако пока недоступно':'Local builds available · cloud is currently unavailable',
  'В облаке другая редакция · обновите библиотеку для сохранения обеих версий':'A different cloud revision exists · refresh your library to keep both versions',
