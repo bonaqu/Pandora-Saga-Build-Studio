@@ -74,7 +74,31 @@ const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
 function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
-try{const saved=localStorage.getItem('ps-build-studio.v1');if(saved){const parsed=JSON.parse(saved);state={...fresh(),...parsed,points:{...fresh().points,...parsed.points},stats:{...fresh().stats,...parsed.stats},refinements:{...fresh().refinements,...parsed.refinements},attributeBuffs:{...fresh().attributeBuffs,...parsed.attributeBuffs},profile:{...fresh().profile,...parsed.profile}}} builds=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')}catch(e){console.warn('Saved data skipped',e)}
+// A damaged browser draft must not prevent the independent saved-build library
+// from loading. Keep the original storage untouched for manual recovery.
+function safeStoredBuildRows(value){
+ return Array.isArray(value)?value.filter(row=>
+  row&&typeof row==='object'&&!Array.isArray(row)&&
+  typeof row.id==='string'&&row.id.length>0&&
+  row.data&&typeof row.data==='object'&&!Array.isArray(row.data)):[];
+}
+try{
+ const saved=localStorage.getItem('ps-build-studio.v1');
+ if(saved){
+  const parsed=JSON.parse(saved);
+  if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)){
+   const base=fresh();
+   state={...base,...parsed,
+    points:{...base.points,...parsed.points},stats:{...base.stats,...parsed.stats},
+    refinements:{...base.refinements,...parsed.refinements},
+    attributeBuffs:{...base.attributeBuffs,...parsed.attributeBuffs},
+    profile:{...base.profile,...parsed.profile}};
+  }
+ }
+}catch(error){console.warn('Character draft could not be restored',error)}
+try{
+ builds=safeStoredBuildRows(JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]'));
+}catch(error){builds=[];console.warn('Saved build list could not be parsed',error)}
 const ACTIVE_BUILD_KEY='ps-active-build-id.v1';
 function restoreActiveBuildId(){
  let id=null;
@@ -144,7 +168,7 @@ function restoreScopedDraft({initial=false}={}){
  }catch{state=fresh()}
  try{
   const rows=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]');
-  builds=Array.isArray(rows)?rows:[];
+  builds=safeStoredBuildRows(rows);
  }catch{builds=[]}
  activeBuildId=restoreActiveBuildId();
  compareIds=[];
@@ -5623,20 +5647,40 @@ function restoreLoadedBuildUI(){
  stageSlotPickerOpen=false;stageSlotQuery='';stageSlotShown=48;
 }
 function openSavedBuild(b){
- // Resolve the newest stored snapshot after save-and-open; rendered cards may be stale.
+ // Resolve the latest snapshot, but never change the active character until
+ // that saved record has been cloned and structurally prepared successfully.
+ if(!b||typeof b!=='object')return false;
  const latest=builds.find(record=>record.id===b.id)||b;
+ if(!latest.data||typeof latest.data!=='object'||Array.isArray(latest.data)){
+  showStudioToast(lang==='en'?'This saved build cannot be opened. Its data is incomplete.':
+   'Не удалось открыть билд: его сохранённые данные повреждены.','warning');
+  return false;
+ }
+ let next;
+ try{
+  const draft=structuredClone(latest.data),base=fresh();
+  const record=value=>value&&typeof value==='object'?value:{};
+  next={...base,...draft,
+   points:{...base.points,...record(draft.points)},
+   mastery:{...base.mastery,...record(draft.mastery)},
+   stats:{...base.stats,...record(draft.stats)},
+   equipment:{...base.equipment,...record(draft.equipment)},
+   souls:{...base.souls,...record(draft.souls)},
+   soulOwners:{...base.soulOwners,...record(draft.soulOwners)},
+   refinements:{...base.refinements,...record(draft.refinements)},
+   gems:{...base.gems,...record(draft.gems)},
+   vitalsBuffs:{...base.vitalsBuffs,...record(draft.vitalsBuffs)},
+   attributeBuffs:{...base.attributeBuffs,...record(draft.attributeBuffs)},
+   profile:{...base.profile,...record(draft.profile)}};
+ }catch(error){
+  showStudioToast(lang==='en'?'This saved build could not be restored.':
+   'Не удалось восстановить сохранённый билд.','warning');
+  return false;
+ }
  selectActiveBuild(latest.id);
- const draft=structuredClone(latest.data),base=fresh();
-    state={...base,...draft,
-     points:{...base.points,...draft.points},stats:{...base.stats,...draft.stats},
-     equipment:{...base.equipment,...draft.equipment},
-     souls:{...base.souls,...draft.souls},soulOwners:{...base.soulOwners,...draft.soulOwners},
-     refinements:{...base.refinements,...draft.refinements},
-     gems:{...base.gems,...draft.gems},
-     attributeBuffs:{...base.attributeBuffs,...draft.attributeBuffs},
-     profile:{...base.profile,...draft.profile}};
-    restoreLoadedBuildUI();persist();render();changeTab('character');
-
+ state=next;
+ restoreLoadedBuildUI();persist();render();changeTab('character');
+ return true;
 }
 function unsavedBuild(){
  const s=JSON.stringify(state);

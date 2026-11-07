@@ -145,7 +145,7 @@ test('new hero preloads an editable priest and legacy snapshots merge missing va
  const app=source('pandora-studio-app.js'),book=source('pandora-studio-hero-book.js');
  assert.match(app,/priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30/);
  assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.raw\.attributeBuffs\}/);
- assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.draft\.attributeBuffs\}/);
+ assert.match(app,/attributeBuffs:\{\.\.\.base\.attributeBuffs,\.\.\.record\(draft\.attributeBuffs\)\}/);
  assert.match(app,/typeof rawAttributes\.priestEnabled==='boolean'/);
  assert.match(book,/\['priestSpi','СД жреца','Priest SPR'\]/);
  assert.match(book,/disabled:buffs\.priestEnabled!==true/);
