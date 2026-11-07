@@ -311,8 +311,24 @@ async function libraryApi(request,env){
  if(!owner)return no('Library key or account session required',401);
  if(request.method==='GET'){
   const rows=await env.DB.prepare('SELECT build_id,payload,deleted_at FROM private_builds WHERE owner_hash=? ORDER BY (deleted_at IS NOT NULL), updated_at DESC').bind(owner).all();
-  return json({records:(rows.results||[]).map(r=>({id:r.build_id,deleted:r.deleted_at!==null,
-   entry:r.deleted_at===null?JSON.parse(r.payload):null}))});
+  // Isolate a malformed saved row instead of failing the entire library.
+  // Never expose its raw payload or silently treat the row as absent:
+  // that could cause the browser to reupload a stale snapshot under this ID.
+  const records=(rows.results||[]).map(r=>{
+   if(r.deleted_at!==null)return {id:r.build_id,deleted:true,entry:null};
+   let entry;
+   try{entry=JSON.parse(r.payload)}catch{}
+   const valid=entry&&typeof entry==='object'&&!Array.isArray(entry)&&
+    entry.id===r.build_id&&typeof entry.name==='string'&&entry.name.trim()&&
+    entry.name.length<=70&&Number.isSafeInteger(entry.at)&&entry.at>=0&&
+    entry.data&&typeof entry.data==='object'&&!Array.isArray(entry.data)&&
+    Number.isInteger(entry.data.race)&&entry.data.race>=0&&entry.data.race<=5&&
+    Number.isInteger(entry.data.job)&&entry.data.job>=0&&entry.data.job<28&&
+    Number.isInteger(entry.data.level)&&entry.data.level>=1&&entry.data.level<=55;
+   return valid?{id:r.build_id,deleted:false,entry}:
+    {id:r.build_id,deleted:false,entry:null,unavailable:true};
+  });
+  return json({records});
  }
  if(request.method!=='POST')return no('Method not allowed',405);
  const raw=await boundedTextBody(request,256*1024,45000);
