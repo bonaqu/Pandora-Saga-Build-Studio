@@ -34,8 +34,8 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="skill"]').click();
   await page.locator('.wiki-skill-type').waitFor({state:'visible',timeout:20000});
-  assert.equal(await page.locator('.wiki-skill-label-editor').count(),0,
-   'Public readers must not see editing controls');
+  assert.equal(await page.locator('.wiki-skill-edit-toggle,.wiki-skill-edit-list').count(),0,
+   'Public readers must not see editable category controls');
 
   // Exercise the actual password-protected owner path in an isolated
   // network-stubbed browser. No test backdoor is added to production code.
