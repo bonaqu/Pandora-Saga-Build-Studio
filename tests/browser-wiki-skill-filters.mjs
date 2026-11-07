@@ -143,13 +143,25 @@ export async function runWikiIconManifestFallbackSmoke(browser,base){
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // The first visible list may still be the pre-catalog placeholder.
+  // Wait for the actual offline archive before choosing its filter.
+  await page.waitForFunction(()=>
+   /\\d+ навыков · \\d+ предметов · \\d+ душ/.test(
+    document.querySelector('#catalogStatus')?.textContent||''),
+   null,{timeout:30000});
   await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('[data-wiki-chapter="skill"]').click();
   const filter=page.locator('.wiki-skill-type');
   await filter.waitFor({state:'visible',timeout:20000});
   await filter.selectOption('unknown');
-  await page.locator('.wiki-list [data-wiki-record]').first()
-   .waitFor({state:'visible',timeout:20000});
+  // The selector label and rendered rows must refer to the SAME completed
+  // icon-manifest fallback, not the short static option shown during loading.
+  await page.waitForFunction(()=>{
+   const select=document.querySelector('.wiki-skill-type');
+   const label=select?.querySelector('option[value="unknown"]')?.textContent||'';
+   return select?.value==='unknown'&&/569$/.test(label)&&
+    document.querySelectorAll('.wiki-list [data-wiki-record]').length>0;
+  },null,{timeout:20000});
   assert.match(await filter.locator('option[value="unknown"]').innerText(),/569$/,
    'With unavailable manifest all 569 archive skills render with question-mark art');
   assert.equal(await page.locator('.wiki-list [data-wiki-record]').first()
