@@ -11,7 +11,9 @@ function boot(lang){
  const status={textContent:''},document={getElementById:id=>
   id==='startupOverlay'?overlay:id==='startupStatus'?status:null};
  return Function('document','console','lang',prefix+
-  'return {startupMessage,startupError,overlay,status};')(
+  'return {startupMessage,startupError,'+
+   'overlay:document.getElementById("startupOverlay"),'+
+   'status:document.getElementById("startupStatus")};')(
   document,{warn(){}},lang);
 }
 test('startup error hides raw backend exceptions and offers working UI actions',()=>{
