@@ -78,7 +78,9 @@ let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','bui
 // from loading. Keep the original storage untouched for manual recovery.
 function safeStoredBuildRows(value){
  return Array.isArray(value)?value.filter(row=>
-  row&&typeof row==='object'&&!Array.isArray(row)):[];
+  row&&typeof row==='object'&&!Array.isArray(row)&&
+  typeof row.id==='string'&&row.id.length>0&&
+  row.data&&typeof row.data==='object'&&!Array.isArray(row.data)):[];
 }
 try{
  const saved=localStorage.getItem('ps-build-studio.v1');
