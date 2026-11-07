@@ -11,8 +11,8 @@ const classifier=context.PandoraWikiSkillFilters;
 const records=Object.values(skills);
 
 test('question-mark filter describes the artwork shown, without implying that a skill is unused',()=>{
- assert.equal(classifier.names.unknown.ru,'На проверке');
- assert.equal(classifier.names.unknown.en,'Under review');
+ assert.equal(classifier.names.unknown.ru,'Неуточнённые');
+ assert.equal(classifier.names.unknown.en,'Unresolved');
  assert.equal(classifier.names.player.ru,'Умения персонажа');
  const model=classifier.build(skills,null,manifest);
  assert.equal(model.counts.unknown,59);
