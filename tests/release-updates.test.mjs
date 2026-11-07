@@ -134,7 +134,7 @@ test('out-of-order version checks cannot downgrade the current update target',as
  page.resolveCheck(0,'2026.11.07.442');
  await older;
  page.banner.children[1].listeners.click();
- assert.match(page.navigated,/ps-revision=2026\\.11\\.07\\.443/,
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]07[.]443/,
   'The most recently published release must remain the update target');
  assert.equal(page.saved,1);
 });
