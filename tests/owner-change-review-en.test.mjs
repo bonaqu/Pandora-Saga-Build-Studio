@@ -22,7 +22,7 @@ test('EN review resolves names and field captions without rewriting original Rus
  assert.equal(after(result,'Location NPCs'),'Alchemist');
  assert.equal(after(result,'Loot'),'Key');
  assert.equal(after(result,'Location sections'),'NPCs, Loot');
- assert.equal(after(result,'Location tags'),'Опасно');
+ assert.equal(after(result,'Location tags'),'Danger');
  assert.equal(after(result,'Additional sections'),'Secrets · Items');
  assert.doesNotMatch(JSON.stringify(result),/section-a|owner-npc/);
 });
