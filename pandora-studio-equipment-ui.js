@@ -29,29 +29,30 @@ function summary(record,icon,kind='item',context=null){
 
  wrap.append(head);
  // IDs are internal database keys, never player-facing data.
- const baseArmor=Number(record.AC);
- const armorRefine=kind==='item'&&context&&
-  ['shield','head','body','gloves','legs','feet'].includes(record.slot)&&
-  Number.isInteger(grade)&&grade>=0&&grade<=10&&record.name!=='-'?
-  grade:0;
- // The game tooltip shows armor base + enhancement grade, e.g. 12+3.
- // Actual DEF uses OS news #4 (+1.2 per grade, final rounded down), not
- // the visible grade number or the old Legacy +1.5.
- const armorDisplay=context&&Number.isFinite(baseArmor)&&armorRefine>0?
-  baseArmor+'+'+armorRefine:record.AC;
+ // The visible item's Armor "12+X" uses the WHOLE bonus from +1.2 DEF
+ // per refinement grade. This is distinct from the "+N" in the item name.
+ // Character DEF still accumulates fractional tenths from all armor pieces.
+ const armorBonus=kind==='item'&&context&&record.name!=='-'?
+  root.PandoraEnchantModel?.armorPreview?.(record.AC,grade,context.slot||record.slot):null;
+ const armorDisplay=armorBonus&&armorBonus.increment>0?
+  armorBonus.base+'+'+armorBonus.increment:record.AC;
  const gem=kind==='item'&&context?
   globalThis.PandoraEnchantModel?.normalizeForSlot?.(context.slot||record.slot,context.gem):null;
  const gemElement=gem&&globalThis.PandoraEnchantModel?.elements?.find(e=>e.id===gem.element);
  const gemType=gem&&globalThis.PandoraEnchantModel?.types?.find(e=>e.id===gem.type);
- // Physical gemstone weapon damage comes from the current OS weaponPlus table.
+ // Physical weaponPlus is also the calculation's backward-compatible
+ // default when an older saved build has a grade but no gemstone selected.
+ // A magical gemstone instead selects only the magicPlus table.
  const attackPlus=kind==='item'&&context&&
-  (context.slot||record.slot)==='weapon'&&gem?.type==='physical'&&grade>0?
+  (context.slot||record.slot)==='weapon'&&gem?.type!=='magical'&&grade>0?
   globalThis.PandoraEnchantModel?.weaponPreview?.(record.W,grade,context.tables?.weaponPlus):null;
  const attackDisplay=attackPlus&&attackPlus.increment>0?
   attackPlus.base+'+'+attackPlus.increment:record.W;
  const magicPlus=kind==='item'&&context&&
   (context.slot||record.slot)==='weapon'&&gem?.type==='magical'&&grade>0?
   globalThis.PandoraEnchantModel?.magicPreview?.(grade,context.tables?.magicPlus):null;
+ const showSoulSlots=kind==='item'&&Boolean(
+  root.PandoraEquipmentPlan?.supportsSoulSlot?.(context?.slot||record.slot));
  const rows=kind==='soul'?
  [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
@@ -59,8 +60,7 @@ function summary(record,icon,kind='item',context=null){
  [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),attackDisplay],
  ...(magicPlus?[[tr('Магическая атака','Magic attack'),'+'+magicPlus.rate+'%']]:[]),
  [tr('Защита','Defense'),armorDisplay],
- ...(root.PandoraEquipmentPlan?.supportsSoulSlot?.(context?.slot||record.slot)?
-  [[tr('Слоты','Slots'),record.soulslot]]:[]),
+ ...(showSoulSlots?[[tr('Слоты','Slots'),record.soulslot]]:[]),
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
  if(gem&&grade>0){
@@ -72,12 +72,17 @@ function summary(record,icon,kind='item',context=null){
  if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
   rows.push([tr('Вставлено душ','Socketed Souls'),
    (context.souls?.length||0)+' / '+context.capacity]);
+ // Keep per-row translation/editor keys aligned with dynamically inserted
+ // magical refinements and hidden Soul slots. Index drift formerly assigned
+ // Defense the "Slots" editor key on magically enhanced weapons.
  const fieldNames=kind==='soul'?
   [['soulCompatible','Подходящие слоты','Compatible slots']]:
   [['type','Тип','Type'],['level','Уровень','Level'],
-   ['attack','Атака','Attack'],['defense','Защита','Defense'],
-   ['slots','Слоты','Slots'],['speed','Скорость','Speed'],
-   ['range','Дальность','Range']];
+   ['attack','Атака','Attack'],
+   ...(magicPlus?[['magicAttack','Магическая атака','Magic attack']]:[]),
+   ['defense','Защита','Defense'],
+   ...(showSoulSlots?[['slots','Слоты','Slots']]:[]),
+   ['speed','Скорость','Speed'],['range','Дальность','Range']];
  if(gem&&grade>0){
   if((context.slot||record.slot)==='weapon'&&gemType)
    fieldNames.push(['gemType','Тип самоцвета','Gemstone type']);
