@@ -2138,6 +2138,17 @@ function renderWiki(root){
   }
   return wikiSkillModelCache.value;
  };
+ // A racial skill's owner comes from the same published catalog registry as
+ // the Origin tab, never from the broad technical branch or its name.
+ const wikiRaceOwner=id=>{
+  const target=String(id);
+  for(const [index,key] of window.PandoraGameNavigation.raceKeys.entries()){
+   const known=wikiData?.racialPassives?.[key]?.skills||[];
+   if(known.some(skill=>String(skill)===target))
+    return {index,name:races[index]?.[lang==='en'?1:0]||key};
+  }
+  return null;
+ };
  let wikiSourceShown=80,wikiUsageShown=80,wikiSourceRecord='';
  for(const [key,ru,en]of[['item','Экипировка','Equipment'],
   ['utility','Предметы эффектов','Effect items'],
@@ -3035,6 +3046,9 @@ function renderWiki(root){
      return ['all','elemental','utility'].includes(wikiItemType)||wikiItemEligibility==='all'||
       heroCompatible(rec,state.level);
     });
+   if(type==='skill'&&wikiSkillFilter==='racial'&&!wikiSearch)
+    results.sort((a,b)=>(wikiRaceOwner(a[0])?.index??99)-
+     (wikiRaceOwner(b[0])?.index??99));
    if(type==='map'&&!wikiSearch){
     const geo=window.PandoraAstirLocations;
     const rank=new Map([...(geo?.districtIds||[]),...(geo?.countryIds||[])]
@@ -3058,8 +3072,15 @@ function renderWiki(root){
   if(!detailOnly){
    const batch=document.createDocumentFragment();
    batch.append(h('p',{class:'muted',text:lang==='en'?'Showing '+visible.length+' of '+results.length+' entries':'Показано '+visible.length+' из '+results.length+' записей'}));
-   let lastPlaceGroup=null;
+   let lastPlaceGroup=null,lastRacialGroup=null;
    for(const [id,rec]of visible){
+    if(type==='skill'&&wikiSkillFilter==='racial'&&!wikiSearch){
+     const owner=wikiRaceOwner(id);
+     if(owner&&owner.name!==lastRacialGroup){
+      batch.append(h('h4',{class:'wiki-location-list-heading',text:owner.name}));
+      lastRacialGroup=owner.name;
+     }
+    }
     if(type==='map'&&!wikiSearch){
      const geo=window.PandoraAstirLocations;
      const group=geo?.district(id)?'city':geo?.country(id)?'nation':'other';
@@ -3785,6 +3806,9 @@ function renderWiki(root){
      [wt('Дальность','Range'),rec.range,'range']
     ];
     const dl=h('dl',{class:'item-fields'});
+    const racialOwner=wikiRaceOwner(id);
+    if(racialOwner)dl.append(h('dt',{text:wt('Раса','Race')}),
+     h('dd',{text:racialOwner.name}));
     for(const [label,value,key] of skillFields)if(value!=null)
      dl.append(h('dt',{text:label}),wikiOwnerNumeric(h('dd',{text:String(value)}),
       value,'skill',id,key,{integer:key==='charLevel'}));
