@@ -56,7 +56,7 @@ export async function runWikiOwnerEnglishSyncSmoke(browser,base){
   await filter.waitFor({state:'visible'});
   assert.ok((await filter.locator('option[value="unknown"]').innerText())
    .startsWith('Unresolved'),
-   'EN category should reflect user's exact RU-only override before any D1 write');
+   'EN category should reflect the exact RU-only override before any D1 write');
   assert.equal(Object.keys(JSON.parse(values['guideedit.wiki.labels'])).length,2,
    'Display translations must never silently modify D1');
   await page.keyboard.press('Control+Alt+Shift+P');
