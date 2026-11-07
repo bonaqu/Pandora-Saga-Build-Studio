@@ -33,7 +33,7 @@ function summary(record,icon,kind='item',context=null){
  // per refinement grade. This is distinct from the "+N" in the item name.
  // Character DEF still accumulates fractional tenths from all armor pieces.
  const armorBonus=kind==='item'&&context&&record.name!=='-'?
-  root.PandoraEnchantModel?.armorPreview?.(record.AC,grade,context.slot||record.slot):null;
+  globalThis.PandoraEnchantModel?.armorPreview?.(record.AC,grade,context.slot||record.slot):null;
  const armorDisplay=armorBonus&&armorBonus.increment>0?
   armorBonus.base+'+'+armorBonus.increment:record.AC;
  const gem=kind==='item'&&context?
