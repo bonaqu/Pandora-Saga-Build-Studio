@@ -136,3 +136,27 @@ test('Cloudflare Worker mirrors new NPC location and trade material validation',
   assert.equal(written.has(key),true);
  }
 });
+
+test('changing a game spawn never coerces curated owner-monster references into NaN',()=>{
+ const ownerMonster='owner-monster-0123456789abcdef';
+ const source={
+  maps:{
+   100:{mobs:['600',ownerMonster]},
+   200:{mobs:[ownerMonster,701]}
+  },
+  instances:[{id:300,mobs:[600,ownerMonster]}],
+  monsters:{600:{id:600}}
+ };
+ const pristine=JSON.stringify(source);
+ const next=owner.apply(source,{
+  'spawnedit.600':JSON.stringify([{type:'map',id:'200'}])
+ });
+ assert.deepEqual(next.maps[100].mobs,[ownerMonster]);
+ assert.deepEqual(next.maps[200].mobs,[ownerMonster,701,600]);
+ assert.deepEqual(next.instances[0].mobs,[ownerMonster]);
+ assert.equal(JSON.stringify(source),pristine);
+ for(const record of [next.maps[100],next.maps[200],next.instances[0]]){
+  assert.equal(record.mobs.includes(ownerMonster),true);
+  assert.equal(record.mobs.some(Number.isNaN),false);
+ }
+});
