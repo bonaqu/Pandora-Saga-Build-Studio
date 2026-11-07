@@ -2354,7 +2354,8 @@ function renderWiki(root){
   for(const [id,labels] of Object.entries(filterNames)){
    const count=model?.counts?.[id];
    const name=localizedFilterLabel(id,labels);
-   const option=h('option',{value:id,text:name+(count==null?'':' · '+count)});
+   const option=h('option',{value:id,text:name+(count==null?'':' · '+count),
+    'data-label-count':count==null?'':String(count)});
    if(wikiSkillFilter===id)option.selected=true;
    optionFor.set(id,option);filter.append(option);
   }
@@ -6105,6 +6106,33 @@ function closeInlineEditor(){
   if(activeInlineEditor){activeInlineEditor.remove();activeInlineEditor=null;}
 }
 function activeOverride(key){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:null}
+// Saving, undoing and importing Wiki labels must update the current controls
+// without remounting the Encyclopedia and losing its selection or scroll.
+function refreshVisibleWikiLabels(){
+ const labels=window.PandoraWikiLabels,filters=window.PandoraWikiSkillFilters?.names;
+ if(!labels)return;
+ for(const node of document.querySelectorAll('.wiki-category-line [data-wiki-chapter]')){
+  const id=node.dataset.wikiChapter,caption=node.querySelector('.wiki-category-text');
+  if(caption)caption.textContent=labels.value(override,'chapter',id,lang);
+ }
+ for(const option of document.querySelectorAll('.wiki-skill-type option')){
+  const id=option.value;
+  if(!filters||!Object.hasOwn(filters,id))continue;
+  const name=labels.value(override,'skillFilter',id,lang);
+  const count=option.dataset.labelCount;
+  option.textContent=name+(count?' · '+count:'');
+ }
+ for(const row of document.querySelectorAll('.wiki-skill-edit-list [data-skill-filter-label]')){
+  if(row.querySelector('.wiki-skill-edit-host'))continue;
+  const id=row.dataset.skillFilterLabel;
+  if(!filters||!Object.hasOwn(filters,id))continue;
+  const name=labels.value(override,'skillFilter',id,lang);
+  const caption=row.querySelector('.wiki-skill-label-caption');
+  const edit=row.querySelector('.wiki-skill-label-edit');
+  if(caption)caption.textContent=name;
+  if(edit)edit.setAttribute('aria-label',(lang==='en'?'Edit: ':'Изменить: ')+name);
+ }
+}
 function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
@@ -6259,7 +6287,9 @@ async function undoOwnerEdit(){
   try{
     if(last.before===null){await apiRequest('/api/admin/reset',{key:last.key});delete override[last.key];}
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
-    ownerEdits.pop();closeInlineEditor();refreshOwnerCatalog();
+    ownerEdits.pop();closeInlineEditor();
+    if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
+    refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
 }
@@ -6548,12 +6578,7 @@ async function saveGuidePatchNow(key,fields){
  try{
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
-  if(key==='wiki.labels'&&window.PandoraWikiLabels){
-   for(const node of document.querySelectorAll('.wiki-category-line [data-wiki-chapter]')){
-    const id=node.dataset.wikiChapter,caption=node.querySelector('.wiki-category-text');
-    if(caption)caption.textContent=window.PandoraWikiLabels.value(override,'chapter',id,lang);
-   }
-  }
+  if(key==='wiki.labels')refreshVisibleWikiLabels();
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
@@ -6827,6 +6852,7 @@ async function showOwnerEnglishReview(){
     ownerEdits.push({key:change.key,before,after:change.value});
     saved++;
    }
+   refreshVisibleWikiLabels();
    status.textContent='Готово: '+fields+' переводов сохранены в D1.';
    await refreshOwnerCatalog();
    save.hidden=true;
@@ -7049,6 +7075,7 @@ async function refreshOwnerCatalog(){
 async function loadOverrides({strict=false}={}){try{
  const response=await apiRequest('/api/overrides',null,'');
  override=response.values||{};
+ refreshVisibleWikiLabels();
  await refreshOwnerCatalog();
 }catch(error){
  if(strict)throw Error('Правки каталога D1 недоступны: '+error.message);
