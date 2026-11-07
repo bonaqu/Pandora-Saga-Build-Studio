@@ -161,3 +161,77 @@ test('quota failure while writing owner backup rolls back the primary saved-buil
  assert.equal(store.getItem(keys[0]),before,
   'Primary library must not change when the recovery snapshot write fails');
 });
+
+test('a partially failed owner switch restores every old primary key and marker',()=>{
+ const s=storage();mod.transition(s,ownerA);
+ put(s,'Alice preserved',42,'["'+ 'c'.repeat(32)+'"]');
+ s.setItem(keys[3],'a'.repeat(32));mod.sync(s);
+ mod.setOwned(s,ownerB,keys[0],JSON.stringify([{id:'Bob future',data:{level:55}}]));
+ mod.setOwned(s,ownerB,keys[1],JSON.stringify({level:55,name:'Bob future'}));
+ const before=keys.map(key=>s.getItem(key)),marker=s.getItem(mod.MARKER);
+ let fail=true;
+ const fragile={getItem:key=>s.getItem(key),removeItem:key=>s.removeItem(key),
+  setItem:(key,value)=>{
+   if(key===keys[2]&&fail){fail=false;throw Error('Simulated quota during owner switch')}
+   s.setItem(key,value);
+  }};
+ assert.throws(()=>mod.transition(fragile,ownerB),/Simulated quota/);
+ assert.deepEqual(keys.map(key=>s.getItem(key)),before);
+ assert.equal(s.getItem(mod.MARKER),marker);
+ assert.equal(JSON.parse(mod.getOwned(s,ownerA,keys[0]))[0].id,'Alice preserved');
+ mod.transition(s,ownerB);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Bob future');
+ mod.transition(s,ownerA);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Alice preserved');
+});
+
+test('failed destination recovery-cache sync also rolls back owner switch',()=>{
+ const s=storage();mod.transition(s,ownerA);put(s,'Alice kept',44);mod.sync(s);
+ mod.setOwned(s,ownerB,keys[0],JSON.stringify([{id:'Bob cached',data:{level:55}}]));
+ const before=keys.map(key=>s.getItem(key)),marker=s.getItem(mod.MARKER);
+ let fail=true;
+ const fragile={getItem:key=>s.getItem(key),removeItem:key=>s.removeItem(key),
+  setItem:(key,value)=>{
+   if(key==='ps-build-scope-cache.v1:'+ownerB&&fail){
+    fail=false;throw Error('Simulated quota on destination backup');
+   }
+   s.setItem(key,value);
+  }};
+ assert.throws(()=>mod.transition(fragile,ownerB),/Simulated quota/);
+ assert.deepEqual(keys.map(key=>s.getItem(key)),before);
+ assert.equal(s.getItem(mod.MARKER),marker);
+ assert.equal(JSON.parse(mod.getOwned(s,ownerB,keys[0]))[0].id,'Bob cached');
+});
+
+test('failure claiming the initial scope restores the previous absent marker',()=>{
+ const s=storage();put(s,'Guest initial',20);
+ let fail=true;
+ const fragile={getItem:key=>s.getItem(key),removeItem:key=>s.removeItem(key),
+  setItem:(key,value)=>{
+   if(key===mod.MARKER&&fail){fail=false;throw Error('Marker storage denied')}
+   s.setItem(key,value);
+  }};
+ assert.throws(()=>mod.transition(fragile,guest),/Marker storage denied/);
+ assert.equal(s.getItem(mod.MARKER),null);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Guest initial');
+ mod.transition(s,guest);
+ assert.equal(s.getItem(mod.MARKER),guest);
+});
+
+test('failure setting the new owner marker rolls back already-written primary data',()=>{
+ const s=storage();mod.transition(s,ownerA);put(s,'Alice owner',43);mod.sync(s);
+ mod.setOwned(s,ownerB,keys[0],JSON.stringify([{id:'Bob inactive',data:{level:55}}]));
+ const before=keys.map(key=>s.getItem(key));
+ let fail=true;
+ const fragile={getItem:key=>s.getItem(key),removeItem:key=>s.removeItem(key),
+  setItem:(key,value)=>{
+   if(key===mod.MARKER&&value===ownerB&&fail){
+    fail=false;throw Error('Marker write rejected after primary data');
+   }
+   s.setItem(key,value);
+  }};
+ assert.throws(()=>mod.transition(fragile,ownerB),/Marker write rejected/);
+ assert.deepEqual(keys.map(key=>s.getItem(key)),before);
+ assert.equal(s.getItem(mod.MARKER),ownerA);
+ assert.equal(JSON.parse(mod.getOwned(s,ownerB,keys[0]))[0].id,'Bob inactive');
+});
