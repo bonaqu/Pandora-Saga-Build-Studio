@@ -38,10 +38,10 @@ function setup(library){
 test('one invalid localStorage list entry does not hide valid stored builds',()=>{
  const safe=Function(rowsCode+'\nreturn safeStoredBuildRows')();
  const good={id,data:{level:55}},bad={id:other,data:null};
- const rows=[null,'old invalid text',false,good,bad,[],undefined];
+ const rows=[null,'old invalid text',false,good,bad,[],{id:other,data:[]},undefined];
  const untouched=rows.slice();
  const result=safe(rows);
- assert.deepEqual(result,[good,bad],
+ assert.deepEqual(result,[good],
   'Damaged entries are excluded from the view without rewriting storage');
  assert.deepEqual(rows,untouched);
  assert.deepEqual(safe({oops:true}),[]);
