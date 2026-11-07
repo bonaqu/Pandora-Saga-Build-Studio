@@ -12,6 +12,7 @@ function recipeValid(rec,items,npcs){
   new Set(rec.npc).size!==rec.npc.length||
   rec.npc.some(n=>!id(n)||!own(npcs||{},String(n))))return false;
  if(!Array.isArray(rec.mats)||rec.mats.length>20||
+  new Set(rec.mats.map(row=>row?.i)).size!==rec.mats.length||
   rec.mats.some(row=>!row||typeof row!=='object'||Array.isArray(row)||
    Object.keys(row).some(k=>!['i','n'].includes(k))||
    !id(row.i)||!own(items||{},String(row.i))||!amount(row.n,999999)||row.n===0))return false;
