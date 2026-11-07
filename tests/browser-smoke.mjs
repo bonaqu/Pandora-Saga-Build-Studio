@@ -182,6 +182,17 @@ async function main(){
  // Switching site language must translate Hero Book navigation, accessibility
  // and summary without touching player-defined names or OS item IDs.
  await page.locator('#locale [data-locale="en"]').click();
+ // The Origin area and selected racial passive stay readable in English.
+ await page.locator('[data-origin-tab="stats"]').click();
+ assert.match(await page.locator('#originStatSummary').innerText(),/Available: 0 \/ 0 · Spent: 0/);
+ const enAgility=page.locator('#originStats .origin-stat-row').nth(2);
+ assert.match(await enAgility.locator('.origin-stat-title').innerText(),/AGI[\s\S]*Agility/);
+ assert.match(await enAgility.locator('.origin-stat-result small').innerText(),/Total|bonus/);
+ assert.match(await enAgility.locator('.origin-stat-input').getAttribute('aria-label'),/Agility.*excluding equipment/);
+ assert.match(await enAgility.locator('.stat-step-increment').getAttribute('aria-label'),/Increase Agility/);
+ await page.locator('[data-origin-tab="race"]').click();
+ assert.match(await page.locator('#originPassives .origin-passive.selected small').innerText(),/Selected/);
+ assert.match(await page.locator('#originPassives .origin-passive.selected').getAttribute('aria-label'),/selected/);
  await page.locator('#hero').click();
  await page.locator('#stageAttributes [data-book-page="summary"]').waitFor({state:'visible'});
  assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Calculated results'),true);
