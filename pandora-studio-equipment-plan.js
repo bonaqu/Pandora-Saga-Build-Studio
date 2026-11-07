@@ -5,10 +5,20 @@ function asSocketArray(value){
  if(value&&typeof value==="object"&&typeof value.id!=="undefined")return [value];
  return [];
 }
-function socketCapacity(record){
- if(!record||record.soulslot===null||record.soulslot===undefined)return null;
+// The catalog defines a DEFAULT capacity, not necessarily the capacity of
+// the specific physical copy in a player's inventory. A per-equipped-item
+// selection may override it without changing source game data.
+function socketCapacity(record,override=null){
+ if(!record)return null;
+ if(record.slot&&!supportsSoulSlot(record.slot))return 0;
+ if(Number.isInteger(override)&&override>=0&&override<=3)return override;
+ if(record.soulslot===null||record.soulslot===undefined)return null;
  const n=Number(record.soulslot);
- return Number.isInteger(n)&&n>=0&&n<=32?(record.slot&&!supportsSoulSlot(record.slot)?0:n):null;
+ return Number.isInteger(n)&&n>=0&&n<=32?n:null;
+}
+function equippedSocketCapacity(state,slot,equipment,record){
+ const key=refinementKey(slot,equipment);
+ return socketCapacity(record,key===null?null:state?.socketCapacities?.[key]);
 }
 function validSoul(soul,slot){
  return supportsSoulSlot(slot)&&Boolean(soul&&Array.isArray(soul.slots)&&soul.slots.includes(slot));
@@ -54,7 +64,7 @@ function reconcileSoulOwnership(state,equipmentCatalog,soulCatalog){
    if(id==null){delete state.souls[slot];delete state.soulOwners[slot];changed=true}
    continue;
   }
-  const cap=socketCapacity(item);
+  const cap=equippedSocketCapacity(state,Number(slot),equipment,item);
   const owner=state.soulOwners[slot];
   // The index matters: one Soul in slot 3 is still invalid for a
   // replacement item that has only one slot, despite count===1.
@@ -82,7 +92,9 @@ function refinementValue(refinements,slot,item){
 const FORGE_SLOTS=Object.freeze(new Set(['weapon','shield','head','body','gloves','legs','feet']));
 const SOUL_SLOTS=Object.freeze(new Set(['weapon','shield','head','body','gloves','legs','feet','belt']));
 function supportsSoulSlot(slot){return SOUL_SLOTS.has(slot)}
-function canSocket(slot,record){return supportsSoulSlot(slot)&&socketCapacity(record)>0}
+function canSocket(slot,record,override=null){
+ return supportsSoulSlot(slot)&&socketCapacity(record,override)>0;
+}
 function canRefine(slot){return FORGE_SLOTS.has(slot)}
 // A two-handed weapon occupies the shield/offhand. Never erase a saved shield:
 // simply defer its effects while a usable two-handed weapon is equipped.
@@ -94,5 +106,5 @@ function matchesEquipmentSlot(index,item,slotKeys){
 function occupiesOffhand(weapon,weaponEligible=true){
  return weaponEligible===true&&weapon?.slot==='weapon'&&weapon.twoHanded===true;
 }
-root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,validSoul,socketReport,clearChangedEquipmentSouls,reconcileSoulOwnership,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket,occupiesOffhand,matchesEquipmentSlot});
+root.PandoraEquipmentPlan=Object.freeze({asSocketArray,socketCapacity,equippedSocketCapacity,validSoul,socketReport,clearChangedEquipmentSouls,reconcileSoulOwnership,refinementKey,refinementValue,canRefine,supportsSoulSlot,canSocket,occupiesOffhand,matchesEquipmentSlot});
 })(typeof window==='undefined'?globalThis:window);
