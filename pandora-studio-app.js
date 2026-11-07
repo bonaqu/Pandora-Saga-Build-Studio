@@ -6176,7 +6176,20 @@ async function apiRequest(path,body,token=adminToken) {
  // Never derive it from the new patch; remote changes must cause HTTP 409.
  const requestBody=editingWrite&&typeof body.key==='string'?
   {...body,expectedValue:activeOverride(body.key)}:body;
- if(editingWrite){ownerSaveState='saving';ownerSaveError='';refreshOwnerUI()}
+ const finishOwnerWrite=(message='')=>{
+  if(!editingWrite)return;
+  ownerWritePendingCount=Math.max(0,ownerWritePendingCount-1);
+  if(message)ownerSaveError=message;
+  // Never let a late successful write hide another failed field.
+  ownerSaveState=ownerWritePendingCount>0?'saving':
+   ownerSaveError?'error':'saved';
+  refreshOwnerUI();
+ };
+ if(editingWrite){
+  if(ownerWritePendingCount===0)ownerSaveError='';
+  ownerWritePendingCount++;
+  ownerSaveState='saving';refreshOwnerUI();
+ }
  let response;
  try {
   response=await fetch(API+path,{
@@ -6185,7 +6198,7 @@ async function apiRequest(path,body,token=adminToken) {
    ...(requestBody?{body:JSON.stringify(requestBody)}:{})
   });
  } catch {
-  if(editingWrite){ownerSaveState='error';ownerSaveError='Cloudflare Worker недоступен';refreshOwnerUI()}
+  finishOwnerWrite('Cloudflare Worker недоступен')
   throw new Error("Нет соединения с Cloudflare Worker. Проверь Builds и /api/health. Пароль ещё не проверялся сервером.");
  }
  const data=await response.json().catch(()=>({error:"Сервер вернул ответ без JSON"}));
@@ -6201,7 +6214,7 @@ async function apiRequest(path,body,token=adminToken) {
   const error=new Error(message);
   error.httpStatus=response.status;error.reason=data.reason||data.code||null;
   error.sourceDataset=data.sourceDataset||null;
-  if(editingWrite){ownerSaveState='error';ownerSaveError=error.message;refreshOwnerUI()}
+  finishOwnerWrite(error.message)
   if(response.status===401&&token&&token===adminToken&&path.startsWith('/api/admin/')){
    // The editor session is invalid. A player account uses a different token
    // and must never be signed out by this administrator-only failure.
@@ -6210,7 +6223,7 @@ async function apiRequest(path,body,token=adminToken) {
   }
   throw error;
  }
- if(editingWrite){ownerSaveState='saved';ownerSaveError='';refreshOwnerUI()}
+ finishOwnerWrite()
  return data;
 }
 function showAdmin(){const body=h('div');body.append(h('p',{class:'muted',text:adminToken?'Режим редактора подтверждён сервером. Изменения сохраняются в Cloudflare D1.':'Вход администратора защищён сервером Cloudflare Worker. Никаких паролей в GitHub Pages нет.'}));if(adminToken){body.append(h('button',{class:'button-action',text:'Игровой каталог',onclick:showCatalogImport}));body.append(h('button',{class:'button-action',text:'Синхронизировать ручные правки с GitHub',onclick:showOwnerGitHubExport}));body.append(h('button',{class:'button-action primary',text:adminEditing?'Выключить редактирование':'Включить редактирование',onclick:()=>{adminEditing=!adminEditing;$('modalRoot').hidden=true;render();updateAdminHint()}}),h('button',{class:'button-action',text:'Выйти',onclick:async()=>{try{await apiRequest('/api/admin/logout',{})}catch{}adminToken='';adminEditing=false;ownerEdits.length=0;closeInlineEditor();$('modalRoot').hidden=true;render();updateAdminHint()}}));modal('Управление сайтом',body);return}
@@ -6227,7 +6240,8 @@ function updateAdminHint(){
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
 const ownerEdits=[];
-let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=true;
+let ownerSaveState='ready',ownerSaveError='',ownerWritePendingCount=0,
+ ownerDockCollapsed=true;
 let activeInlineEditor=null;
 let editIsSaving=false;
 let wikiLabelPendingWrites=0;
