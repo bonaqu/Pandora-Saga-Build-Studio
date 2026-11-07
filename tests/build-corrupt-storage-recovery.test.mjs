@@ -1,0 +1,113 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const source=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+const extract=(from,to)=>{
+ const start=source.indexOf(from),end=source.indexOf(to,start+from.length);
+ assert.ok(start>=0&&end>start,'Expected actual app source '+from);
+ return source.slice(start,end);
+};
+const rowsCode=extract('function safeStoredBuildRows(value){','\ntry{\n const saved=');
+const openerCode=extract('function openSavedBuild(b){','\nfunction unsavedBuild(){');
+const id='a'.repeat(32),other='b'.repeat(32);
+const baseState=()=>({
+ level:1,points:{slash:0},mastery:{slash:0},stats:{vit:0},
+ equipment:{},souls:{},soulOwners:{},refinements:{},gems:{},
+ vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},
+ attributeBuffs:{guildAll:0},profile:{guild:''}
+});
+function setup(library){
+ const selected=[],events=[],messages=[];
+ const initial=baseState();
+ const context=Function('records','initial','selected','events','messages',
+  'let builds=records,state=structuredClone(initial),activeBuildId='+JSON.stringify(other)+';'+
+  'const lang="ru";'+
+  'const selectActiveBuild=id=>{activeBuildId=id;selected.push(id)};'+
+  'const showStudioToast=(message,status)=>messages.push({message,status});'+
+  'const fresh=()=>structuredClone(initial);'+
+  'const restoreLoadedBuildUI=()=>events.push("restore");'+
+  'const persist=()=>events.push("persist");'+
+  'const render=()=>events.push("render");'+
+  'const changeTab=tab=>events.push(tab);\n'+
+  openerCode+
+  '\nreturn {open:openSavedBuild,state:()=>state,active:()=>activeBuildId};');
+ return {...context,selected,events,messages,initial};
+}
+
+test('one invalid localStorage list entry does not hide valid stored builds',()=>{
+ const safe=Function(rowsCode+'\nreturn safeStoredBuildRows')();
+ const good={id,data:{level:55}},bad={id:other,data:null};
+ const rows=[null,'old invalid text',false,good,bad,[],undefined];
+ const untouched=rows.slice();
+ const result=safe(rows);
+ assert.deepEqual(result,[good,bad],
+  'Damaged entries are excluded from the view without rewriting storage');
+ assert.deepEqual(rows,untouched);
+ assert.deepEqual(safe({oops:true}),[]);
+ assert.deepEqual(safe(null),[]);
+});
+
+test('opening a malformed saved snapshot does not select it or lose current hero',()=>{
+ const saved={id,data:null},ctx=setup([saved]);
+ const original=structuredClone(ctx.state());
+ assert.equal(ctx.open(saved),false);
+ assert.equal(ctx.active(),other);
+ assert.deepEqual(ctx.state(),original);
+ assert.deepEqual(ctx.selected,[]);
+ assert.deepEqual(ctx.events,[]);
+ assert.match(ctx.messages[0].message,/повреждены/);
+});
+
+test('a clone failure cannot partially activate a saved hero',()=>{
+ const saved={id,data:{level:48,someUnserializable:()=>{}}};
+ const ctx=setup([saved]);
+ const original=structuredClone(ctx.state());
+ assert.equal(ctx.open(saved),false);
+ assert.equal(ctx.active(),other);
+ assert.deepEqual(ctx.state(),original);
+ assert.deepEqual(ctx.selected,[]);
+ assert.deepEqual(ctx.events,[]);
+ assert.equal(ctx.messages[0].status,'warning');
+});
+
+test('older incomplete build gets safe nested defaults without changing saved data',()=>{
+ const saved={id,data:{level:55,name:'Старый герой',points:{slash:15},
+  stats:{vit:8},vitalsBuffs:{guildHp:5},attributeBuffs:{guildAll:2}}};
+ const previous=structuredClone(saved.data);
+ const ctx=setup([saved]);
+ assert.equal(ctx.open(saved),true);
+ assert.equal(ctx.active(),id);
+ assert.equal(ctx.state().level,55);
+ assert.equal(ctx.state().points.slash,15);
+ assert.equal(ctx.state().stats.vit,8);
+ assert.equal(ctx.state().vitalsBuffs.guildHp,5);
+ assert.equal(ctx.state().vitalsBuffs.guildMp,0);
+ assert.equal(ctx.state().vitalsBuffs.lifeSign,false);
+ assert.deepEqual(ctx.state().mastery,{slash:0});
+ assert.deepEqual(ctx.state().profile,{guild:''});
+ assert.deepEqual(ctx.events,['restore','persist','render','character']);
+ assert.deepEqual(saved.data,previous,'Opening must not rewrite saved records');
+});
+
+test('saving multiple historical nested versions does not let malformed fields corrupt defaults',()=>{
+ const saved={id,data:{equipment:'invalid',souls:null,profile:[],points:7,
+  attributeBuffs:{guildAll:3}}};
+ const ctx=setup([saved]);
+ assert.equal(ctx.open(saved),true);
+ assert.deepEqual(ctx.state().equipment,{});
+ assert.deepEqual(ctx.state().souls,{});
+ assert.deepEqual(ctx.state().profile,{guild:''});
+ assert.deepEqual(ctx.state().points,{slash:0});
+ assert.equal(ctx.state().attributeBuffs.guildAll,3);
+});
+
+test('initial local draft parse and saved list parse are independent',()=>{
+ const i=source.indexOf('function safeStoredBuildRows(value){');
+ const p=source.indexOf("localStorage.getItem('ps-build-studio.v1')",i);
+ const q=source.indexOf("localStorage.getItem('ps-build-library.v1')",p);
+ assert.ok(i<p&&p<q);
+ const split=source.slice(p,q);
+ assert.match(split,/catch\(error\)\{console\.warn\('Character draft could not be restored'/);
+ assert.match(source,/builds=safeStoredBuildRows\(rows\)/);
+});
