@@ -1707,19 +1707,52 @@ function renderOriginPassives(){
   skillHover(btn,skill);
  }
 }
-let activeSkillPreview=null;
+// One controller for all rich skill previews (Origin and Hero Path).
+// The item preview has its own game-item renderer; reuse its 650ms policy.
+const SKILL_PREVIEW_HOVER_DELAY_MS=650;
+let activeSkillPreview=null,activeSkillPreviewOwner=null,pendingSkillPreview=null;
+function cancelPendingSkillPreview(){
+ if(pendingSkillPreview){clearTimeout(pendingSkillPreview.timer);pendingSkillPreview=null}
+}
+function dismissSkillPreview(){
+ cancelPendingSkillPreview();
+ activeSkillPreview?.remove();
+ activeSkillPreviewOwner?.removeAttribute('aria-describedby');
+ activeSkillPreview=null;activeSkillPreviewOwner=null;
+}
+function positionSkillPreview(button,tip){
+ if(!button?.isConnected||!tip?.isConnected)return;
+ const box=button.getBoundingClientRect(),panel=button.closest('.right')?.getBoundingClientRect();
+ const vw=document.documentElement.clientWidth,vh=innerHeight;
+ const desired=Math.min(300,vw-16,panel?.width?panel.width-18:300);
+ tip.style.width=Math.max(160,desired)+'px';
+ tip.style.maxHeight=Math.max(100,Math.min(270,vh-16))+'px';
+ const width=tip.getBoundingClientRect().width,height=tip.getBoundingClientRect().height;
+ const minLeft=Math.max(8,(panel?.left??0)+8);
+ const maxLeft=Math.min(vw-width-8,(panel?.right??vw)-width-8);
+ tip.style.left=(maxLeft>=minLeft?Math.max(minLeft,Math.min(maxLeft,
+  box.left+box.width/2-width/2)):Math.max(8,vw-width-8))+'px';
+ tip.style.top=Math.max(8,Math.min(vh-height-8,
+  box.top-height-8>=8?box.top-height-8:box.bottom+8))+'px';
+}
+function queueSkillPreview(button,show){
+ dismissSkillPreview();
+ const timer=setTimeout(()=>{
+  if(pendingSkillPreview?.button!==button)return;
+  pendingSkillPreview=null;
+  if(button.isConnected&&button.matches(':hover'))show();
+ },SKILL_PREVIEW_HOVER_DELAY_MS);
+ pendingSkillPreview={button,timer,show};
+}
 function skillHover(button,skill){
  button.removeAttribute('title');
- const skills=Array.isArray(skill)?skill:[skill];let tip;
- const clear=()=>{
-  if(activeSkillPreview===tip)activeSkillPreview=null;
-  tip?.remove();tip=null;button.removeAttribute('aria-describedby');
- };
+ const skills=Array.isArray(skill)?skill:[skill];
  const show=()=>{
-  if(tip?.isConnected)return;
-  activeSkillPreview?.remove();
-  tip=h('aside',{id:'path-skill-hover-tooltip',class:'stage-hover-preview path-skill-preview',role:'tooltip'});
-  activeSkillPreview=tip;
+  if(!button.isConnected)return;
+  if(activeSkillPreviewOwner===button&&activeSkillPreview?.isConnected)return;
+  dismissSkillPreview();
+  const tip=h('aside',{id:'path-skill-hover-tooltip',
+   class:'stage-hover-preview path-skill-preview',role:'tooltip'});
   for(const entry of skills.slice(0,3)){
    const row=h('div',{class:'path-skill-preview-item'}),src=skillIcon(entry.branch,entry.id,entry);
    if(src){const img=h('img',{src,alt:''});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));row.append(img)}
@@ -1732,22 +1765,44 @@ function skillHover(button,skill){
    (skills.length-3)+' more skills — select the marker to view them':
    'Ещё '+(skills.length-3)+' навыков — нажмите на отметку'}));
   document.body.append(tip);
+  activeSkillPreview=tip;activeSkillPreviewOwner=button;
   button.setAttribute('aria-describedby',tip.id);
-  const box=button.getBoundingClientRect(),panel=button.closest('.right')?.getBoundingClientRect();
-  const vw=document.documentElement.clientWidth,vh=innerHeight;
-  const desired=Math.min(300,vw-16,panel?.width?panel.width-18:300);
-  tip.style.width=Math.max(160,desired)+'px';
-  tip.style.maxHeight=Math.max(100,Math.min(270,vh-16))+'px';
-  const width=tip.getBoundingClientRect().width,height=tip.getBoundingClientRect().height;
-  const minLeft=Math.max(8,(panel?.left??0)+8);
-  const maxLeft=Math.min(vw-width-8,(panel?.right??vw)-width-8);
-  tip.style.left=(maxLeft>=minLeft?Math.max(minLeft,Math.min(maxLeft,box.left+box.width/2-width/2)):Math.max(8,vw-width-8))+'px';
-  tip.style.top=Math.max(8,Math.min(vh-height-8,
-   box.top-height-8>=8?box.top-height-8:box.bottom+8))+'px';
+  positionSkillPreview(button,tip);
  };
- button.addEventListener('mouseenter',show);button.addEventListener('focus',show);
- button.addEventListener('mouseleave',clear);button.addEventListener('blur',clear);button.addEventListener('click',clear);
+ const clear=()=>{
+  if(pendingSkillPreview?.button===button||activeSkillPreviewOwner===button)
+   dismissSkillPreview();
+ };
+ button.addEventListener('pointerenter',event=>{
+  if(event.pointerType==='touch')return;
+  queueSkillPreview(button,show);
+ });
+ button.addEventListener('pointerleave',clear);
+ button.addEventListener('focus',()=>{if(button.matches(':focus-visible'))show()});
+ button.addEventListener('blur',clear);
+ button.addEventListener('pointerdown',clear);
+ button.addEventListener('click',clear);
+ button.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||pendingSkillPreview?.button!==button&&activeSkillPreviewOwner!==button)return;
+  event.preventDefault();event.stopPropagation();clear();
+ });
 }
+// One global listener, not one scroll listener for every skill button.
+document.addEventListener('scroll',()=>{
+ if(pendingSkillPreview){
+  const {button,show}=pendingSkillPreview;
+  cancelPendingSkillPreview();
+  if(button.isConnected&&button.matches(':hover'))queueSkillPreview(button,show);
+ }
+ if(activeSkillPreviewOwner?.isConnected)
+  positionSkillPreview(activeSkillPreviewOwner,activeSkillPreview);
+ else if(activeSkillPreviewOwner)dismissSkillPreview();
+},{capture:true,passive:true});
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden)dismissSkillPreview();
+});
+for(const event of ['blur','popstate','hashchange'])
+ window.addEventListener(event,dismissSkillPreview);
 function refreshBudgetLabel(){
  const data=budgetSummary(),root=$('budgetState');if(!root)return;
  const heading=root.querySelector('.path-overview-head');
