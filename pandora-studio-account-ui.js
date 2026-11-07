@@ -153,12 +153,18 @@ function render(){
    // The action is type=button: unlike Enter/form submission, a direct
    // click does not run native required/minLength validation automatically.
    if(!form.reportValidity())return;
+   const owner=session?.token;
+   if(!owner)return;
    update.disabled=true;info('Изменяем пароль…');
-   try{await request('password',{currentPassword:old.value,password:fresh.value});
+   try{await request('password',{currentPassword:old.value,password:fresh.value},owner);
+    // A slow password response from account A must not mutate forms,
+    // feedback or identity after the user signed out or switched accounts.
+    if(session?.token!==owner)return;
     old.value='';fresh.value='';confirmFresh.value='';
     details.open=false;
     info('Пароль обновлён. Другие сеансы завершены.');
-   }catch(e){info(e.message)}finally{update.disabled=false}
+   }catch(e){if(session?.token===owner)info(e.message)}
+   finally{update.disabled=false}
   },'primary');
    form.append(update);
    form.addEventListener('submit',e=>{e.preventDefault();update.click()});
@@ -166,7 +172,12 @@ function render(){
   panel.append(details);
   const footer=node('div','account-profile-footer');
   footer.append(button('Выйти из аккаунта',async()=>{
-   try{await request('logout',{},session.token)}catch{}
+   const owner=session?.token;
+   if(!owner)return;
+   try{await request('logout',{},owner)}catch{}
+   // Do not sign out a new account whose login finished during a delayed
+   // logout response from a previous session.
+   if(session?.token!==owner)return;
    clearSession();options.onLogout?.();render();
   },'account-signout'));
   panel.append(footer,errorLine);return;
