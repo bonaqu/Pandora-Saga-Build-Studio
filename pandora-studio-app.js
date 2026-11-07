@@ -1185,7 +1185,9 @@ function renderStageAttributes(){
    refinement:plan.refinementValue(state.refinements,Number(slot),entry),
     gem:window.PandoraEnchantModel.normalizeForSlot(rec.slot,
      state.gems?.[plan.refinementKey(Number(slot),entry)]),
-    souls:plan.asSocketArray(state.souls?.[slot]).filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
+    souls:plan.asSocketArray(state.souls?.[slot])
+     .slice(0,plan.equippedSocketCapacity(state,Number(slot),entry,rec)??0)
+     .filter(Boolean).map(s=>catalog.souls?.[String(s.id)]||s)};
  });
  const cls=jobKeys[state.job],skillMap=catalog.skills||{};
  const jobBase=catalog.classes?.[cls]?.baseClass||cls;
