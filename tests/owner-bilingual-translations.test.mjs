@@ -83,5 +83,6 @@ test('unchanged Russian legacy race override no longer replaces English Human',(
  assert.equal(resolve(values,'ru')('race.0','Человек'),'Человек');
  assert.equal(resolve(values,'en')('race.0','Human'),'Human');
  assert.equal(resolve({'race.0':'Неофициальное название'},'en')('race.0','Human'),
+  'Неофициальное название',
   'No invented translation is applied to a changed custom RU race name');
 });
