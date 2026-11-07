@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
-const begin=app.indexOf('function skillIcon('),end=app.indexOf('function branchCap(',begin);
+const begin=app.indexOf('function localizedRaceSkillStem('),end=app.indexOf('function branchCap(',begin);
 assert.ok(begin>=0&&end>begin,'icon resolver source must exist');
 const source=app.slice(begin,end);
 const unknown='assets/skills/icons/skill_unknown.webp';
@@ -26,9 +26,9 @@ function resolver(override={},live=true){
   '620002041':{id:620002041,iconId:620002041,name:'Катапульта'}
  }};
  const missing=new Set(['skills/skill_620002032','items/I_900001_00']);
- return Function('override','catalog','iconManifest','unavailableIconIds','OS','branchIcon','wikiData',
+ return Function('override','catalog','iconManifest','unavailableIconIds','OS','branchIcon','wikiData','lang',
   source+';return {skillIcon,itemIcon};')(override,catalog,archived,missing,
-  'https://pandorasaga-os.com',id=>'branch:'+id,wikiData);
+  'https://pandorasaga-os.com',id=>'branch:'+id,wikiData,'ru');
 }
 test('verified exact artwork and original Soul icon take priority',()=>{
  const {skillIcon,itemIcon}=resolver();
