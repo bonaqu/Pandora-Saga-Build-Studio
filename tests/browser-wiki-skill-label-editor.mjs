@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 
 export async function runWikiSkillLabelEditorSmoke(browser,base){
  const context=await browser.newContext({viewport:{width:1040,height:780}});
- const writes=[],errors=[];
+ const writes=[],resets=[],values={},errors=[];
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  await context.route('**/*',route=>{
   const url=route.request().url(),method=route.request().method();
@@ -22,9 +22,17 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
    const post=route.request().postDataJSON();
    writes.push(post);
+   values[post.key]=post.value;
    return json({ok:true,key:post.key,value:post.value});
   }
-  if(url.endsWith('/api/overrides'))return json({values:{}});
+  if(url.endsWith('/api/admin/reset')){
+   const post=route.request().postDataJSON();
+   resets.push(post);
+   const deleted=Object.hasOwn(values,post.key);
+   delete values[post.key];
+   return json({ok:true,key:post.key,deleted});
+  }
+  if(url.endsWith('/api/overrides'))return json({values});
   return route.abort();
  });
  const page=await context.newPage();
@@ -96,6 +104,28 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
    document.documentElement.scrollWidth,document.body.scrollWidth)-
    document.documentElement.clientWidth);
   assert.ok(overflow<=15,'Owner editing controls overflow mobile width: '+overflow);
+
+  // The first edit creates guideedit.wiki.labels, so Undo must eventually
+  // DELETE it rather than leaving a stale row in D1. The immediately
+  // preceding edit must restore the previous JSON without losing RU labels.
+  const dock=page.locator('#ownerDock');
+  if(await dock.locator('[data-owner-collapse]').getAttribute('aria-expanded')==='false')
+   await dock.locator('[data-owner-collapse]').click();
+  const undo=dock.locator('[data-owner-undo]');
+  await undo.click();
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-skill-type option[value="player"]')?.textContent
+   .startsWith('Умения персонажа'),null,{timeout:10000});
+  assert.deepEqual(JSON.parse(values['guideedit.wiki.labels']),{
+   skill_filter_unknown_ru:'Дополнительные навыки'
+  });
+  await undo.click();
+  await page.waitForFunction(()=>document.querySelector(
+   '.wiki-skill-type option[value="unknown"]')?.textContent
+   .startsWith('Неуточнённые'),null,{timeout:10000});
+  assert.equal(Object.hasOwn(values,'guideedit.wiki.labels'),false,
+   'Undo of the first owner label change must delete the new override');
+  assert.deepEqual(resets,[{key:'guideedit.wiki.labels'}]);
   assert.deepEqual(errors,[]);
   console.log('Chromium skill labels: reused Encyclopedia category UI, 7 editable labels, autosave, stable selection, mobile');
  }finally{await context.close()}

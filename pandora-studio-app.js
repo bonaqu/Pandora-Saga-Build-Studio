@@ -2354,7 +2354,8 @@ function renderWiki(root){
   for(const [id,labels] of Object.entries(filterNames)){
    const count=model?.counts?.[id];
    const name=localizedFilterLabel(id,labels);
-   const option=h('option',{value:id,text:name+(count==null?'':' · '+count)});
+   const option=h('option',{value:id,text:name+(count==null?'':' · '+count),
+    'data-label-count':count==null?'':String(count)});
    if(wikiSkillFilter===id)option.selected=true;
    optionFor.set(id,option);filter.append(option);
   }
@@ -6100,15 +6101,43 @@ const ownerEdits=[];
 let ownerSaveState='ready',ownerSaveError='',ownerDockCollapsed=true;
 let activeInlineEditor=null;
 let editIsSaving=false;
+let wikiLabelPendingWrites=0;
 function closeInlineEditor(){
   if(activeInlineEditor){activeInlineEditor.remove();activeInlineEditor=null;}
 }
 function activeOverride(key){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:null}
+// Saving, undoing and importing Wiki labels must update the current controls
+// without remounting the Encyclopedia and losing its selection or scroll.
+function refreshVisibleWikiLabels(){
+ const labels=window.PandoraWikiLabels,filters=window.PandoraWikiSkillFilters?.names;
+ if(!labels)return;
+ for(const node of document.querySelectorAll('.wiki-category-line [data-wiki-chapter]')){
+  const id=node.dataset.wikiChapter,caption=node.querySelector('.wiki-category-text');
+  if(caption)caption.textContent=labels.value(override,'chapter',id,lang);
+ }
+ for(const option of document.querySelectorAll('.wiki-skill-type option')){
+  const id=option.value;
+  if(!filters||!Object.hasOwn(filters,id))continue;
+  const name=labels.value(override,'skillFilter',id,lang);
+  const count=option.dataset.labelCount;
+  option.textContent=name+(count?' · '+count:'');
+ }
+ for(const row of document.querySelectorAll('.wiki-skill-edit-list [data-skill-filter-label]')){
+  if(row.querySelector('.wiki-skill-edit-host'))continue;
+  const id=row.dataset.skillFilterLabel;
+  if(!filters||!Object.hasOwn(filters,id))continue;
+  const name=labels.value(override,'skillFilter',id,lang);
+  const caption=row.querySelector('.wiki-skill-label-caption');
+  const edit=row.querySelector('.wiki-skill-label-edit');
+  if(caption)caption.textContent=name;
+  if(edit)edit.setAttribute('aria-label',(lang==='en'?'Edit: ':'Изменить: ')+name);
+ }
+}
 function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
  const count=Object.keys(override).length;
- const saveText=ownerSaveState==='saving'?'Сохраняю в Cloudflare D1…':
+ const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0)?'Сохраняю в Cloudflare D1…':
   ownerSaveState==='error'?'Не сохранено: '+(ownerSaveError||'ошибка сервера'):
   ownerSaveState==='saved'?'✓ Сохранено в Cloudflare D1':
   '✓ Подключено к Cloudflare D1 · сохранение автоматическое';
@@ -6122,13 +6151,13 @@ function refreshOwnerUI(){
    const changes=window.PandoraOwnerBilingual?.pending(override)||[];
    const count=changes.reduce((sum,item)=>sum+item.fields.length,0);
    translations.hidden=count===0;
-   translations.disabled=!count||editIsSaving||ownerSaveState==='saving';
+   translations.disabled=!count||editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving';
    translations.textContent='EN-переводы · '+count;
   }
   const state=root.querySelector('[data-owner-save-state]');
   if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
-   ownerSaveState==='saving';
+   wikiLabelPendingWrites>0||ownerSaveState==='saving';
   root.classList.toggle('owner-dock-collapsed',ownerDockCollapsed);
   root.dataset.saveState=ownerSaveState;
   const panel=root.querySelector('.owner-dock-panel');
@@ -6185,7 +6214,7 @@ function refreshOwnerUI(){
    text:'Проверить запись D1',
    title:'Записать и удалить две случайные временные тестовые записи в D1',
    onclick:async function(){
-    if(editIsSaving||ownerSaveState==='saving')return;
+    if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving')return;
     this.disabled=true;
     try{
      const result=await apiRequest('/api/admin/catalog/test-write',{});
@@ -6205,7 +6234,7 @@ function refreshOwnerUI(){
    title:'Проверить и записать готовые английские переводы русских правок'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
    onclick:()=>{
-    if(ownerSaveState==='saving'||editIsSaving){
+    if(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0){
      showStudioToast('Дождись окончания сохранения в Cloudflare D1','warning');return}
     if(ownerSaveState==='error'){
      showStudioToast('Есть ошибка сохранения. Проверь поле и повтори изменение.','warning');return}
@@ -6252,13 +6281,15 @@ function refreshOwnerUI(){
  update(root);
 }
 async function undoOwnerEdit(){
-  if(!adminToken||!ownerEdits.length||editIsSaving)return;
+  if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0)return;
   const last=ownerEdits[ownerEdits.length-1];
   editIsSaving=true;refreshOwnerUI();
   try{
     if(last.before===null){await apiRequest('/api/admin/reset',{key:last.key});delete override[last.key];}
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
-    ownerEdits.pop();closeInlineEditor();refreshOwnerCatalog();
+    ownerEdits.pop();closeInlineEditor();
+    if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
+    refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
 }
@@ -6520,9 +6551,16 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
 let wikiLabelWriteQueue=Promise.resolve();
 async function saveGuidePatch(key,fields){
  if(key==='wiki.labels'){
+  // Pending edits include jobs waiting in the queue, not just the current
+  // fetch. Undo/Finish/EN review must never run between two queued writes.
+  wikiLabelPendingWrites++;
+  refreshOwnerUI();
   const write=wikiLabelWriteQueue.then(()=>saveGuidePatchNow(key,fields));
   wikiLabelWriteQueue=write.catch(()=>{});
-  return write;
+  return write.finally(()=>{
+   wikiLabelPendingWrites=Math.max(0,wikiLabelPendingWrites-1);
+   refreshOwnerUI();
+  });
  }
  return saveGuidePatchNow(key,fields);
 }
@@ -6540,12 +6578,7 @@ async function saveGuidePatchNow(key,fields){
  try{
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
-  if(key==='wiki.labels'&&window.PandoraWikiLabels){
-   for(const node of document.querySelectorAll('.wiki-category-line [data-wiki-chapter]')){
-    const id=node.dataset.wikiChapter,caption=node.querySelector('.wiki-category-text');
-    if(caption)caption.textContent=window.PandoraWikiLabels.value(override,'chapter',id,lang);
-   }
-  }
+  if(key==='wiki.labels')refreshVisibleWikiLabels();
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
@@ -6777,7 +6810,7 @@ function inlineWikiText(el){
 
 async function showOwnerEnglishReview(){
  if(!adminEditing||!adminToken)return;
- if(editIsSaving||ownerSaveState==='saving'){
+ if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
   showStudioToast('Сначала заверши текущее сохранение.','warning');return;
  }
  const helper=window.PandoraOwnerBilingual;
@@ -6819,6 +6852,7 @@ async function showOwnerEnglishReview(){
     ownerEdits.push({key:change.key,before,after:change.value});
     saved++;
    }
+   refreshVisibleWikiLabels();
    status.textContent='Готово: '+fields+' переводов сохранены в D1.';
    await refreshOwnerCatalog();
    save.hidden=true;
@@ -6833,7 +6867,7 @@ async function showOwnerEnglishReview(){
 }
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
- if(editIsSaving||ownerSaveState==='saving'){
+ if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
   showStudioToast('Дождись завершения сохранения в Cloudflare D1 перед созданием PR.','warning');
   return;
  }
@@ -7041,6 +7075,7 @@ async function refreshOwnerCatalog(){
 async function loadOverrides({strict=false}={}){try{
  const response=await apiRequest('/api/overrides',null,'');
  override=response.values||{};
+ refreshVisibleWikiLabels();
  await refreshOwnerCatalog();
 }catch(error){
  if(strict)throw Error('Правки каталога D1 недоступны: '+error.message);
