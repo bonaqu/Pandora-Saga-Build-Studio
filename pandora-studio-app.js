@@ -7260,9 +7260,20 @@ function renderArchiveNotice(){
   'Saved game data may be outdated. Reload the page to try the current game catalog again.':
   'Сохранённая копия игры может устареть. Обнови страницу, чтобы снова попробовать загрузить актуальные данные.';
 }
+function renderCatalogStatus(){
+ const target=$('catalogStatus'),data=catalogSource;
+ if(!target||!data?.meta?.counts)return;
+ // Counts come from the current selected catalog snapshot, never a hard-coded
+ // number. Re-evaluate the user-facing text after every locale change.
+ target.textContent=(lang==='en'?'Encyclopedia: ':'В энциклопедии: ')+
+  data.meta.counts.skills+(lang==='en'?' skills · ':' навыков · ')+
+  data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
+  data.meta.counts.souls+(lang==='en'?' Souls':' душ');
+}
 function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.apply(lang);
  renderArchiveNotice();
+ renderCatalogStatus();
  renderOriginCopyLabels();
  window.PandoraAccountUI?.refresh?.();
  syncLocaleControls();
@@ -7394,10 +7405,6 @@ async function loadCatalog({archive=false}={}){
  if(lang==='en')await ensureEnglishCatalog();
  if(version!==catalogLoadVersion)return;
  renderArchiveNotice();
- $('catalogStatus').textContent=(lang==='en'?'Our database contains: ':'Наша база данных состоит из: ')+
-  data.meta.counts.skills+(lang==='en'?' skills · ':' навыков · ')+
-  data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
-  data.meta.counts.souls+(lang==='en'?' souls':' душ');
  invalidateWikiCatalog({dropSnapshot:true});
  applyGameLocale();persist();
  return data;
