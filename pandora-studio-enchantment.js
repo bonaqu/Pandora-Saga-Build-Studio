@@ -37,5 +37,18 @@ function magicPreview(level,table){
   !Number.isFinite(step?.ratio)||step.ratio<0)return null;
  return {grade:level,rate:step.ratio,verified:false};
 }
-root.PandoraEnchantModel=Object.freeze({types,elements,normalize,normalizeForSlot,equipmentName,label,weaponPreview,magicPreview});
+// The item "Defense A+B" label shows the integer bonus from the CURRENT
+// +1.2-per-level table; B is NOT the forge grade. The character calculator
+// retains tenths across multiple equipped items before final truncation.
+// Keep the two independent display stages distinct and test their parity.
+const ARMOR_TENTHS_PER_GRADE=12;
+const ARMOR_SLOTS=Object.freeze(new Set(['shield','head','body','gloves','legs','feet']));
+function armorPreview(base,grade,slot){
+ if(!ARMOR_SLOTS.has(slot)||!Number.isFinite(base)||base<0||
+  !Number.isInteger(grade)||grade<0||grade>10)return null;
+ const tenths=grade*ARMOR_TENTHS_PER_GRADE;
+ const increment=Math.floor(tenths/10);
+ return {base,grade,increment,rawIncrement:tenths/10,total:base+increment};
+}
+root.PandoraEnchantModel=Object.freeze({types,elements,normalize,normalizeForSlot,equipmentName,label,weaponPreview,magicPreview,armorPreview});
 })(typeof window==='undefined'?globalThis:window);
