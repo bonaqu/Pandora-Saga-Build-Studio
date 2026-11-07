@@ -42,8 +42,9 @@ test('catalog footer is natural-language while archive warning stays separate',(
  assert.match(app,/data\.meta\.counts\.skills/);
   assert.match(app,/Наша база данных состоит из: /);
  assert.doesNotMatch(app,/Cloudflare D1 · актуальный опубликованный каталог/);
- assert.match(app,/Архивный режим: сведения могут быть устаревшими/);
- assert.match(app,/\$\('siteNotice'\)\.hidden=!archive/);
+ assert.match(app,/Сохранённая копия игры может устареть/);
+ assert.match(app,/Saved game data may be outdated/);
+ assert.match(app,/notice\.hidden=!catalogArchived/);
  assert.match(app,/archive:\['127\.0\.0\.1','localhost'\]\.includes\(location\.hostname\)/);
  assert.match(html,/id="startupOverlay"/);
  assert.match(html,/id="startupRetry"/);

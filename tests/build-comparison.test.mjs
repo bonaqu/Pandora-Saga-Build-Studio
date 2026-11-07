@@ -52,7 +52,7 @@ test('the comparison helper is loaded before the main app and included in saved 
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  assert.ok(html.indexOf('pandora-studio-build-comparison.js?v=')<html.indexOf('src="pandora-studio-app.js?v='));
- assert.match(app,/PandoraBuildComparison\.describe\(a,b/);
+ assert.match(app,/PandoraBuildComparison\.matrixRows\(a\.data,b\.data/);
 });
 
 test('saved gear and Soul identities use OS names instead of falsely saying empty',()=>{
@@ -67,15 +67,17 @@ test('saved gear and Soul identities use OS names instead of falsely saying empt
  assert.equal(name({id:1,name:'Obsolete copied name'},equipment),equipment['1'].name);
  assert.equal(name({id:'not-an-id',name:'Old custom gear'},equipment),'Old custom gear');
 });
-test('main build diff now compares race and resolves equipment/Soul names from the source catalogs',()=>{
+test('real inline A/B comparison owns saved item and Soul name resolution',()=>{
  const code=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
- const from=code.indexOf('function compareSnapshots(a,b){');
- const to=code.indexOf('function restoreLoadedBuildUI(){',from);
- assert.ok(from>0&&to>from);
- const part=code.slice(from,to);
- assert.match(part,/races\[a\.race\]/);
- assert.match(part,/PandoraBuildComparison\.savedItemName/);
- assert.match(part,/kind==='soul'\?catalog\.souls:catalog\.equipment/);
- assert.doesNotMatch(part,/x\?\.name\|\|'пусто'/);
- assert.doesNotMatch(part,/xa\[s\]\?\.name\|\|'пусто'/);
+ const start=code.indexOf('function renderBuildComparison(');
+ const end=code.indexOf('function restoreLoadedBuildUI(){',start);
+ assert.ok(start>=0&&end>start);
+ const section=code.slice(start,end);
+ assert.match(section,/PandoraBuildComparison\.matrixRows\(a\.data,b\.data/);
+ assert.match(section,/equipment:catalog\.equipment\|\|\{\},souls:catalog\.souls\|\|\{\}/);
+ assert.match(section,/englishItems:officialEnglish\?\.items\|\|\{\}/);
+ assert.match(section,/englishSouls:officialEnglish\?\.souls\|\|\{\}/);
+ assert.match(section,/data-compare-row/);
+ assert.doesNotMatch(code,/function compareSnapshots\(/,
+  'The old unused quick comparison must not mislead future implementations');
 });

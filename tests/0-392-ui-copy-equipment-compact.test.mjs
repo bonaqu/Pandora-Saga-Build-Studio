@@ -67,7 +67,8 @@ test('site shell has clean title/footer; counts remain grounded in loaded catalo
  assert.match(app,/data\.meta\.counts\.items/);
  assert.match(app,/data\.meta\.counts\.souls/);
  assert.ok(!app.includes("'Cloudflare D1 · актуальный опубликованный каталог'"));
- assert.match(app,/\$\('siteNotice'\)\.textContent=archive\?/);
+ assert.match(app,/function renderArchiveNotice\(\)/);
+ assert.match(app,/notice\.hidden=!catalogArchived/);
  assert.ok(html.includes(release));
 });
 

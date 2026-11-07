@@ -9,6 +9,7 @@ function startupMessage(ru,en,locale=lang){
  startupOverlay.classList.remove('is-finished');
  startupOverlay.dataset.state='loading';
  startupOverlay.dataset.language=locale;
+ startupOverlay.setAttribute('aria-label',locale==='en'?'Loading game data':'Загрузка игровых данных');
  $('startupStatus').textContent=locale==='en'?en:ru;
 }
 function startupDone(){
@@ -23,9 +24,10 @@ function startupError(error){
  console.warn('Build Studio startup failed',error);
  startupOverlay.hidden=false;startupOverlay.classList.remove('is-finished');
  startupOverlay.dataset.state='error';
- const prefix=lang==='en'?'Could not load the current D1 catalog: ':
-  'Не удалось получить актуальные данные D1: ';
- $('startupStatus').textContent=prefix+String(error?.message||error).slice(0,220);
+ startupOverlay.setAttribute('aria-label',lang==='en'?'Game data unavailable':'Игровые данные недоступны');
+ $('startupStatus').textContent=lang==='en'?
+  'Could not load game data. Try again or open the saved copy.':
+  'Не удалось загрузить игровые данные. Повтори загрузку или открой сохранённую копию.';
 }
 const VIEW_KEY='ps-studio-navigation.v2';
 function readView(){try{return JSON.parse(sessionStorage.getItem(VIEW_KEY)||'{}')||{}}catch{return{}}}
@@ -864,7 +866,9 @@ function renderRaces(){
  const frame=h('div',{class:'race-slide-frame'+(chosen?' selected':''),'aria-live':'polite'});
  const img=editAttr(h('img',{src:raceSource(i,gender),alt:races[i][0]+((i===0||i===1)?(gender?' · мужчина':' · женщина'):''),loading:'eager'}),
   'visual.race.'+i+'.'+(gender?'m':'f'));
- img.onerror=()=>{img.onerror=null;img.alt='Изображение '+races[i][0]+' временно недоступно'};
+ img.onerror=()=>{img.onerror=null;img.alt=lang==='en'?
+   'Portrait of '+races[i][1]+' is currently unavailable':
+   'Изображение '+races[i][0]+' временно недоступно'};
  const arrow=(text,step,alt)=>h('button',{type:'button',class:'race-slide-arrow '+(step<0?'previous':'next'),text,'aria-label':alt,
   onclick:()=>{racePreviewIndex=(racePreviewIndex+step+portraitOptions.length)%portraitOptions.length;renderRaces();
     grid.querySelector('.race-slide-arrow.'+(step<0?'previous':'next'))?.focus({preventScroll:true})}});
@@ -5527,52 +5531,6 @@ function renderStats(root){
  });
  root.append(grid);refresh();
 }
-function compareSnapshots(a,b){
- const rows=[];const lib=window.PandoraEquipmentPlan;
- const label=(ru,en)=>lang==='en'?en:ru;
- const name=(selected,kind)=>window.PandoraBuildComparison.savedItemName(selected,
-  kind==='soul'?catalog.souls:catalog.equipment,{lang,kind,
-   englishNames:officialEnglish?.[kind==='soul'?'souls':'items']||{}});
- if(a.race!==b.race)
-  rows.push(label('Раса','Race')+': '+(races[a.race]?.[lang==='en'?1:0]||'?')+
-   ' → '+(races[b.race]?.[lang==='en'?1:0]||'?'));
- if(a.job!==b.job)
-  rows.push(label('Профессия','Class')+': '+(jobs[a.job]||'?')+' → '+(jobs[b.job]||'?'));
- if(a.level!==b.level)
-  rows.push(label('Уровень','Level')+': '+(a.level??'?')+' → '+(b.level??'?'));
- for(const branch of branches){const p=a.points?.[branch.id]||0,q=b.points?.[branch.id]||0;if(p!==q)rows.push((catalog.meta?.branchLabels?.[branch.id]||branch.name)+': '+p+' → '+q)}
- for(const stat of STATS){const p=a.stats?.[stat]||0,q=b.stats?.[stat]||0;if(p!==q)rows.push((ORIGIN_STAT_LABELS[STATS.indexOf(stat)]?.name||stat)+': '+p+' → '+q)}
- if((a.masteryAuto!==false)!==(b.masteryAuto!==false))rows.push('Автозаполнение мастерства: '+(a.masteryAuto!==false?'вкл':'выкл')+' → '+(b.masteryAuto!==false?'вкл':'выкл'));
- for(const branch of branches){
-  const p=window.PandoraSkillProgression.trained(a,branch.id),q=window.PandoraSkillProgression.trained(b,branch.id);
-  if(p!==q)rows.push('Мастерство '+branch.name+': '+p+' → '+q);
- }
- for(let i=0;i<slots.length;i++){
-  const x=a.equipment?.[i],y=b.equipment?.[i];
-  if(String(x?.id??'')!==String(y?.id??''))
-   rows.push((lang==='en'?['Weapon','Shield','Helmet','Armor','Gloves','Pants','Boots',
-    'Cloak','Ring I','Ring II','Amulet','Belt','Earring I','Earring II'][i]:slots[i][0])+
-    ': '+name(x,'item')+' → '+name(y,'item'));
-  const xp=lib.refinementValue(a.refinements,i,x),yp=lib.refinementValue(b.refinements,i,y);
-  if(xp!==yp)rows.push('Заточка '+slots[i][0]+': +'+xp+' → +'+yp);
-  const xa=lib.asSocketArray(a.souls?.[i]),ya=lib.asSocketArray(b.souls?.[i]);
-  for(let s=0;s<Math.max(xa.length,ya.length);s++)
-   if(String(xa[s]?.id??'')!==String(ya[s]?.id??''))
-    rows.push(label('Душа ','Soul ')+slots[i][0]+' / '+(s+1)+
-     ': '+name(xa[s],'soul')+' → '+name(ya[s],'soul'));
- }
- for(const field of ['guild','nation','rank','about']){
-  const before=String(a.profile?.[field]||''),after=String(b.profile?.[field]||'');
-  if(before!==after)rows.push('Профиль · '+field+': '+before.slice(0,50)+' → '+after.slice(0,50));
- }
- if(String(a.racialPassiveId||'')!==String(b.racialPassiveId||''))rows.push('Расовая пассивка: '+(a.racialPassiveId||'—')+' → '+(b.racialPassiveId||'—'));
- rows.push(...window.PandoraBuildComparison.describe(a,b,{
-  lang,slotLabels:slots.map(x=>x[0]),enchant:window.PandoraEnchantModel,
-  honorTitles:window.PandoraOSCalculator.honorTitles
- }));
- return rows;
-}
-
 let comparisonOpen=false,comparisonMode='changes',comparisonCategory='all',comparisonQuery='';
 function renderBuildComparison(host,onSelection=()=>{}){
  host.replaceChildren();
@@ -7294,8 +7252,17 @@ function syncLocaleControls(){
   button.setAttribute('aria-pressed',String(active));
  }
 }
+function renderArchiveNotice(){
+ const notice=$('siteNotice');
+ if(!notice)return;
+ notice.hidden=!catalogArchived;
+ notice.textContent=!catalogArchived?'':lang==='en'?
+  'Saved game data may be outdated. Reload the page to try the current game catalog again.':
+  'Сохранённая копия игры может устареть. Обнови страницу, чтобы снова попробовать загрузить актуальные данные.';
+}
 function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.apply(lang);
+ renderArchiveNotice();
  renderOriginCopyLabels();
  window.PandoraAccountUI?.refresh?.();
  syncLocaleControls();
@@ -7426,9 +7393,7 @@ async function loadCatalog({archive=false}={}){
   selectedSkillGroup=window.PandoraGameNavigation.branchGroup(state.branch)?.id||'melee';
  if(lang==='en')await ensureEnglishCatalog();
  if(version!==catalogLoadVersion)return;
- $('siteNotice').hidden=!archive;
- $('siteNotice').textContent=archive?
-  'Архивный режим: сведения могут быть устаревшими. Подключись к D1 и обнови страницу для актуальных данных.':'';
+ renderArchiveNotice();
  $('catalogStatus').textContent=(lang==='en'?'Our database contains: ':'Наша база данных состоит из: ')+
   data.meta.counts.skills+(lang==='en'?' skills · ':' навыков · ')+
   data.meta.counts.items+(lang==='en'?' items · ':' предметов · ')+
@@ -7728,8 +7693,8 @@ let startupAttempt=0;
 async function startStudio({archive=false}={}){
  const attempt=++startupAttempt;
  startupMessage(
-  archive?'Открываем сохранённую копию каталога…':'Загружаем текущий каталог из Cloudflare D1…',
-  archive?'Opening saved game catalog archive…':'Loading current catalog from Cloudflare D1…');
+  archive?'Открываем сохранённую копию игры…':'Загружаем игровые данные…',
+  archive?'Opening saved game data…':'Loading game data…');
  try{
   const loaded=await loadCatalog({archive});
   if(attempt!==startupAttempt||!loaded)return;

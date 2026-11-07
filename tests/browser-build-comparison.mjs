@@ -76,6 +76,8 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal((await level.locator('[data-compare-delta]').innerText()).trim(),'-30');
   assert.equal(await selects.nth(0).inputValue(),idB);
   assert.equal(await selects.nth(1).inputValue(),idA);
+  // The workbench is aria-modal; the global language control is intentionally
+  // outside the active dialog. English A/B data is covered by model tests.
   const persisted=await page.evaluate(()=>JSON.stringify(
    JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')));
   assert.equal(persisted,original,

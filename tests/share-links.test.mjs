@@ -79,5 +79,6 @@ test('public share preserves separate blue Potential and green Adeptness',()=>{
  assert.match(s,/safe\.masteryAuto=original\.masteryAuto!==false/);
  assert.match(s,/safe\.mastery\[key\]=Math\.min\(level,90\)/);
  assert.match(s,/safe\.masteryFormat=original\.masteryFormat===2\?2:1/);
- assert.match(s,/Мастерство '\+branch\.name/);
+ assert.match(s,/trained:\(snap,id\)=>window\.PandoraSkillProgression\.trained\(snap,id\)/,
+  'The active A/B comparison still reads trained green mastery from snapshots');
 });
