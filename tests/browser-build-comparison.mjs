@@ -5,11 +5,11 @@ import assert from 'node:assert/strict';
 export async function runBuildComparisonSmoke(browser,base){
  const idA='a'.repeat(32),idB='b'.repeat(32),secret='c'.repeat(64);
  const first={race:1,job:16,gender:0,level:10,
-  name:'Витальный жрец',points:{slash:1},stats:{Выносливость:0},
+  name:'Витальный жрец',points:{slash:1},stats:{Выносливость:0,Ловкость:2,Сноровка:3,Дух:4},
   equipment:{},souls:{},refinements:{},gems:{},
   vitalsBuffs:{guildHp:0,guildMp:0},attributeBuffs:{guildAll:0,priestEnabled:false}};
  const second={...structuredClone(first),level:40,name:'Жрец 40-го уровня',
-  points:{slash:10},stats:{Выносливость:20},
+  points:{slash:10},stats:{Выносливость:20,Ловкость:7,Сноровка:3,Дух:5},
   vitalsBuffs:{guildHp:10,guildMp:20},attributeBuffs:{guildAll:3,priestEnabled:true}};
  const library=[{id:idA,name:'Жрец A',at:100,data:first},
   {id:idB,name:'Жрец B',at:101,data:second}];
@@ -42,6 +42,19 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal((await level.locator('[data-compare-b]').innerText()).trim(),'40');
   assert.equal((await level.locator('[data-compare-delta]').innerText()).trim(),'+30');
   assert.equal(await panel.locator('.build-compare-table').isVisible(),true);
+  // Saved snapshots still use AGI=Ловкость, DEX=Сноровка, SPI=Дух.
+  // Player-facing comparison must instead share Origin's corrected RU names.
+  const agility=panel.locator('[data-compare-row="points.agi"]');
+  assert.equal((await agility.locator('th').innerText()).trim(),'Проворность');
+  assert.equal((await agility.locator('[data-compare-a]').innerText()).trim(),'2');
+  assert.equal((await agility.locator('[data-compare-b]').innerText()).trim(),'7');
+  assert.equal((await agility.locator('[data-compare-delta]').innerText()).trim(),'+5');
+  const dexterity=panel.locator('[data-compare-row="points.dex"]');
+  assert.equal((await dexterity.locator('th').innerText()).trim(),'Ловкость');
+  assert.equal((await dexterity.locator('[data-compare-a]').innerText()).trim(),'3');
+  const spirit=panel.locator('[data-compare-row="points.spi"]');
+  assert.equal((await spirit.locator('th').innerText()).trim(),'Сила духа');
+  assert.equal((await spirit.locator('[data-compare-a]').innerText()).trim(),'4');
   assert.match(await panel.locator('.build-compare-summary').innerText(),/Отличаются/);
   const diff=panel.locator('[data-compare-differences]');
   assert.equal(await diff.isChecked(),true,'Differences should be default');
