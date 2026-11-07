@@ -66,7 +66,7 @@ test('app uses effective capacity in calculations, picker, tooltip and save-link
  const ui=load('pandora-studio-equipment-ui.js');
  assert.match(ui,/data-socket-capacity/);
  assert.match(ui,/context\?\.capacity\?\?record\.soulslot/);
- assert.match(ui,/positions\.slice\(n\)\.some\(Boolean\)/);
+ assert.match(app,/positions\.slice\(n\)\.some\(Boolean\)/);
 });
 test('A/B comparison can show changed effective sockets on same selected item',()=>{
  const cmp={};vm.runInNewContext(load('pandora-studio-build-comparison.js'),cmp);
