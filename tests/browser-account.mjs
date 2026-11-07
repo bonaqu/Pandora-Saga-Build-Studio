@@ -3,6 +3,7 @@ export async function runAccountSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev',token='t'.repeat(43);
  let calls=[],username=null,passwd=null,offlineMe=false,expiredMe=false,misidentifiedMe=false;
  let holdNextMe=false,releaseHeldMe=null,notifyHeldMe=null;
+ let holdNextPassword=false,releaseHeldPassword=null,notifyHeldPassword=null;
  const context=await browser.newContext({viewport:{width:1280,height:900}});
  await context.route('**/*',async route=>{
   const url=route.request().url();
@@ -44,7 +45,13 @@ export async function runAccountSmoke(browser,base){
       send({account:{username},token,expires:Date.now()+7200000}):
       send({error:'Invalid credentials'},401);
    }
-   if(action==='password'){passwd=body.password;return send({ok:true})}
+   if(action==='password'){
+    if(holdNextPassword){
+     holdNextPassword=false;
+     await new Promise(resolve=>{releaseHeldPassword=resolve;notifyHeldPassword?.()});
+    }
+    passwd=body.password;return send({ok:true});
+   }
    if(action==='recover'){
     if(body.recoveryCode!=='r'.repeat(43)||body.username.toLowerCase()!==username)
      return send({error:'Invalid recovery code'},401);
@@ -202,6 +209,30 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-recovery input').waitFor({state:'visible'});
   assert.equal(await page.locator('.account-recovery input').inputValue(),'s'.repeat(43));
   assert.equal(calls.filter(c=>c.action==='recover').length,1);
+  // Delayed password responses belong to the session that submitted them:
+  // a subsequent sign-out must never display stale success to a guest.
+  holdNextPassword=true;
+  const passwordSent=new Promise(resolve=>{notifyHeldPassword=resolve});
+  await page.locator('.account-recovery input').waitFor({state:'visible'});
+  await page.locator('.account-password-toggle').click();
+  const delayed=page.locator('.account-password-details input');
+  await delayed.nth(0).fill('Yet another long secret for recovery!');
+  await delayed.nth(1).fill('Delayed password for isolated race 2026!');
+  await delayed.nth(2).fill('Delayed password for isolated race 2026!');
+  await page.locator('.account-password-details button.account-action.primary').click();
+  await passwordSent;
+  await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
+  await page.locator('.account-tabs').waitFor({state:'visible'});
+  releaseHeldPassword();
+  await page.waitForResponse(response=>response.url().endsWith('/api/account/password'));
+  assert.doesNotMatch(await page.locator('#accountPanel .account-feedback').innerText(),
+   /Пароль обновлён/,'Late password success must not leak into guest account');
+  await page.getByRole('button',{name:'Войти',exact:true}).click();
+  const afterRace=page.locator('#accountPanel .account-form input');
+  await afterRace.nth(0).fill('testplayer_01');
+  await afterRace.nth(1).fill('Delayed password for isolated race 2026!');
+  await page.locator('#accountPanel .account-form button[type=submit]').click();
+  await page.locator('.account-user').waitFor({state:'visible'});
   // A valid bearer that unexpectedly resolves to a different owner must not
   // be allowed to keep that token while attaching the saved-build guest scope.
   expiredMe=false;misidentifiedMe=true;
