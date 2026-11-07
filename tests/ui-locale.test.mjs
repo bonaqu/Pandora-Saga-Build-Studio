@@ -76,3 +76,11 @@ test('English equipment labels retain original source text solely for numeric fa
  assert.match(app,/souls:translate\(ownerGameData\.souls,en\?\.souls\)/);
  assert.match(calc,/const description=record\?\.sourceDesc\?\?record\?\.desc/);
 });
+
+test('password editor validates clicks just like native form submission',()=>{
+ const account=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
+ assert.match(account,/if\(!form\.reportValidity\(\)\)return/);
+ assert.match(account,/fresh\.value!==confirmFresh\.value/);
+ assert.match(account,/\.account-form input/);
+ assert.match(account,/if\(message!==null\)info\(message\)/);
+});

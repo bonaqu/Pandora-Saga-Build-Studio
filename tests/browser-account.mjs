@@ -61,6 +61,7 @@ export async function runAccountSmoke(browser,base){
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await page.locator('#profileTrigger').getAttribute('aria-label'),'Sign in or register');
@@ -114,6 +115,21 @@ export async function runAccountSmoke(browser,base){
    /Пароли не совпадают/,'Late /me must preserve confirmation feedback');
   assert.equal(calls.filter(c=>c.action==='password').length,0);
   assert.equal((await page.locator('.account-user').innerText()).trim(),'@testplayer_01');
+  // Switching RU/EN in the header used to recreate the profile and erase
+  // password inputs plus feedback, even though the account had not changed.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await page.locator('.account-password-details').getAttribute('open'),'');
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
+  assert.equal(await pendingChange.nth(2).inputValue(),'Different confirmation value');
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),/Passwords do not match/);
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),/Пароли не совпадают/);
   await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
   await page.getByRole('button',{name:'Войти',exact:true}).first().click();
   const login=page.locator('#accountPanel .account-form input');
@@ -130,12 +146,14 @@ export async function runAccountSmoke(browser,base){
   await change.nth(0).fill('An unusually long phrase for my builds');
   await change.nth(1).fill('A new long and secure passphrase 2026!');
   await change.nth(2).fill('Different confirmation phrase 2026!');
-  await page.getByRole('button',{name:'Изменить пароль'}).click();
+  await page.locator('.account-password-details button.account-action.primary').click();
+  await page.waitForFunction(()=>document.querySelector('#accountPanel .account-feedback')
+   ?.textContent.includes('Пароли не совпадают.'));
   assert.match(await page.locator('#accountPanel .account-feedback').innerText(),/Пароли не совпадают/);
   assert.equal(calls.filter(c=>c.action==='password').length,0,
     'Mismatched password confirmation must not send an API call');
   await change.nth(2).fill('A new long and secure passphrase 2026!');
-  await page.getByRole('button',{name:'Изменить пароль'}).click();
+  await page.locator('.account-password-details button.account-action.primary').click();
   await page.waitForFunction(()=>document.querySelector('.account-feedback')?.textContent.includes('Пароль обновлён'));
   assert.equal(calls.filter(c=>c.action==='password').length,1);
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
