@@ -9,6 +9,10 @@ test('production Worker deployment requires explicit branch and target confirmat
  assert.match(workflow,/workflow_dispatch:/);
  assert.match(workflow,/push:/);
  assert.match(workflow,/paths:/);
+ assert.match(workflow,/- 'worker\/\*\.js'/,
+  'Changes to account and other imported Worker modules must redeploy production');
+ assert.doesNotMatch(workflow,/worker\/migrations\/\*\*/,
+  'Deploying code must not automatically apply database migrations');
  assert.match(workflow,/sourceEgressProbe:true/);
  assert.match(workflow,/github\.ref == 'refs\/heads\/bonaqu_projects'/);
  assert.match(workflow,/DEPLOY-0\.360-TO-ps-build-studio-cloud/);
