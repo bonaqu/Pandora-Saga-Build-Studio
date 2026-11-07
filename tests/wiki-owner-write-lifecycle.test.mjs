@@ -152,3 +152,58 @@ test('game-monster spawn location replacement publishes one atomic override',asy
  await assert.rejects(save(600,'map','200',true,'999'),/больше не найдено/);
  assert.equal(state.writes.length,1,'Stale replacement does not reach D1');
 });
+
+const itemWrite=extract('async function saveWikiItemField(','\nasync function saveWikiTradeRecipe(');
+const undoWrite=extract('async function undoOwnerEdit(','\nfunction showOverrideManager(');
+
+test('item save keeps its busy state until the new Wiki item index is ready',async()=>{
+ const state=environment();
+ const instance=Function('catalogSource','officialEnglish','window',
+  'activeOverride','apiRequest','override','ownerEdits','refreshOwnerCatalog',
+  'refreshOwnerUI',
+  'const adminEditing=true,adminToken="test";let editIsSaving=false;\n'+
+  itemWrite+'\nreturn {save:saveWikiItemField,isSaving:()=>editIsSaving};')(
+  {items:{1:{name:'Спата',slot:'weapon'}}},null,
+  {PandoraStudioItemOwnerEditor:{ownPatch:()=>({})}},
+  ()=>null,state.apiRequest,state.override,state.ownerEdits,
+  state.refreshOwnerCatalog,()=>state.refreshOwnerUI());
+ let complete=false;
+ const operation=instance.save(1,'name','Прочная спата').then(()=>{complete=true});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(state.writes.length,1);
+ assert.equal(state.writes[0].payload.key,'itemedit.1');
+ assert.equal(state.refreshes(),1);
+ assert.equal(instance.isSaving(),true);
+ assert.equal(complete,false);
+ state.pending.resolve();await operation;
+ assert.equal(complete,true);
+ assert.equal(instance.isSaving(),false);
+ assert.equal(state.ownerEdits.length,1);
+});
+
+test('Undo cannot clear busy state until edited Wiki data has refreshed',async()=>{
+ const state=environment(),alerts=[];
+ state.ownerEdits.push({key:'itemedit.1',before:null,
+  after:'{"name":"Прочная спата"}'});
+ state.override['itemedit.1']='{"name":"Прочная спата"}';
+ const instance=Function('apiRequest','ownerEdits','override',
+  'closeInlineEditor','refreshVisibleWikiLabels','refreshOwnerCatalog',
+  'refreshOwnerUI','alert',
+  'const adminToken="test";let editIsSaving=false,wikiLabelPendingWrites=0;\n'+
+  undoWrite+'\nreturn {undo:undoOwnerEdit,isSaving:()=>editIsSaving};')(
+  state.apiRequest,state.ownerEdits,state.override,()=>{},()=>{},
+  state.refreshOwnerCatalog,()=>state.refreshOwnerUI(),m=>alerts.push(m));
+ let finished=false;
+ const operation=instance.undo().then(()=>{finished=true});
+ await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(state.writes.length,1);
+ assert.equal(state.writes[0].path,'/api/admin/reset');
+ assert.equal(state.refreshes(),1);
+ assert.equal(instance.isSaving(),true);
+ assert.equal(finished,false);
+ state.pending.resolve();await operation;
+ assert.equal(instance.isSaving(),false);
+ assert.equal(finished,true);
+ assert.equal(state.ownerEdits.length,0);
+ assert.deepEqual(alerts,[]);
+});
