@@ -6707,34 +6707,47 @@ async function saveWikiRecordField(type,id,field,value){
  return saveWikiRecordPatch(type,id,{[field]:value});
 }
 async function saveWikiSpawns(monsterId,type,placeId,include,replacesId=null){
- if(type==='map'&&!Object.hasOwn(wikiData?.maps||{},String(placeId)))
-  throw Error('Нельзя разместить монстра: карта отсутствует в игровом каталоге.');
- if(type==='instance'&&!(wikiData?.instances||[]).some(x=>String(x.id)===String(placeId)))
-  throw Error('Подземелье отсутствует в игровом каталоге.');
- if(!wikiData?.monsters?.[monsterId])throw Error('Монстр не найден в каталоге.');
- const current=wikiIndex.locations(monsterId).map(x=>({type:x.type,id:String(x.id)}));
- const wanted=new Map(current.map(x=>[x.type+':'+x.id,x]));
- const key=type+':'+placeId;
- if(replacesId!=null){
-  const oldKey=type+':'+replacesId;
-  if(!include||!wanted.has(oldKey))
-   throw Error('Исходное место появления больше не найдено. Обнови список.');
-  if(oldKey===key)return;
-  // Remove and add in memory, then publish a SINGLE checked D1 override.
-  // No intermediate source index may contain only half of a replacement.
-  wanted.delete(oldKey);
- }
- if(include)wanted.set(key,{type,id:String(placeId)});else wanted.delete(key);
- const rows=[...wanted.values()];
- if(!window.PandoraWikiOwnerData.validSpawns(rows))throw Error('Некорректные места появления');
- const recordKey='spawnedit.'+monsterId,before=activeOverride(recordKey),after=JSON.stringify(rows);
- if(before===after)return;
- editIsSaving=true;
- try{
+ if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
+ const recordKey='spawnedit.'+monsterId;
+ const previous=wikiRecordWriteQueue.get(recordKey);
+ // One monster owns one authoritative spawn override. Each operation must
+ // read the refreshed relation index AFTER the earlier save has finished.
+ const writing=(previous?previous.catch(()=>{}):Promise.resolve()).then(async()=>{
+  if(type==='map'&&!Object.hasOwn(wikiData?.maps||{},String(placeId)))
+   throw Error('Нельзя разместить монстра: карта отсутствует в игровом каталоге.');
+  if(type==='instance'&&!(wikiData?.instances||[]).some(x=>String(x.id)===String(placeId)))
+   throw Error('Подземелье отсутствует в игровом каталоге.');
+  if(!wikiData?.monsters?.[monsterId])throw Error('Монстр не найден в каталоге.');
+  const current=wikiIndex.locations(monsterId).map(x=>({type:x.type,id:String(x.id)}));
+  const wanted=new Map(current.map(x=>[x.type+':'+x.id,x]));
+  const key=type+':'+placeId;
+  if(replacesId!=null){
+   const oldKey=type+':'+replacesId;
+   if(!include||!wanted.has(oldKey))
+    throw Error('Исходное место появления больше не найдено. Обнови список.');
+   if(oldKey===key)return;
+   // Remove and add in memory, then publish ONE checked D1 override.
+   wanted.delete(oldKey);
+  }
+  if(include)wanted.set(key,{type,id:String(placeId)});else wanted.delete(key);
+  const rows=[...wanted.values()];
+  if(!window.PandoraWikiOwnerData.validSpawns(rows))
+   throw Error('Некорректные места появления');
+  const before=activeOverride(recordKey),after=JSON.stringify(rows);
+  if(before===after)return;
   await apiRequest('/api/admin/override',{key:recordKey,value:after});
   override[recordKey]=after;ownerEdits.push({key:recordKey,before,after});
   await refreshOwnerCatalog();
- }finally{editIsSaving=false;refreshOwnerUI()}
+ });
+ wikiRecordWriteQueue.set(recordKey,writing);
+ editIsSaving=true;
+ try{
+  return await writing;
+ }finally{
+  if(wikiRecordWriteQueue.get(recordKey)===writing)wikiRecordWriteQueue.delete(recordKey);
+  if(!wikiRecordWriteQueue.size)editIsSaving=false;
+  refreshOwnerUI();
+ }
 }
 async function saveWikiRelationRows(kind,id,rows){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
