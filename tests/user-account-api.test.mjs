@@ -124,3 +124,30 @@ test('registration has enforced daily IP cap, and malformed password is rejected
  const sixth=await call(db,'register',{username:'testplayerextra',password:pw});
  assert.equal(sixth.status,429);
 });
+
+test('password change commits the hash and other-session revocation in one D1 batch',async()=>{
+ const db=database();
+ const registered=(await call(db,'register',
+  {username:'batch_owner',password:pw})).data;
+ const other=(await call(db,'login',{username:'batch_owner',password:pw})).data;
+ const baseline={...db.byName.get('batch_owner')};
+ const beforeSessions=new Map(db.sessions);
+ let batchedStatements=0;
+ db.batch=async statements=>{
+  batchedStatements=statements.length;
+  // Emulate a failed transaction before commit (real D1 rolls the whole
+  // batch back on SQL failure): no statement may have run separately.
+  throw Error('simulated D1 revoke failure');
+ };
+ await assert.rejects(
+  call(db,'password',{currentPassword:pw,
+   password:'A much stronger temporary password 2026!'},registered.token),
+  /simulated D1 revoke failure/
+ );
+ assert.equal(batchedStatements,2,'Hash update and revocation must be in one batch');
+ assert.deepEqual(db.byName.get('batch_owner'),baseline,
+  'Password hash and salt must still be the old credentials');
+ assert.deepEqual(db.sessions,beforeSessions,
+  'Other sessions must not be silently changed on failed transaction');
+ assert.equal((await call(db,'me',undefined,other.token)).status,200);
+});
