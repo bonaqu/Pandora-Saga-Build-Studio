@@ -4,7 +4,9 @@ on:
   push:
     branches: [bonaqu_projects]
     paths:
-      - worker/index.js
+      # Any imported Worker runtime module must trigger a fresh production deploy.
+      # Do not auto-run migrations: only JavaScript source changes deploy.
+      - 'worker/*.js'
       - .github/workflows/deploy-worker-manual.yml
   workflow_dispatch:
     inputs:
