@@ -547,6 +547,7 @@ function previewBaseStats(snap=state){
    catalog.racialPassives,snap.race,snap.racialPassiveId),
    jobKey:jobKeys[snap.job],meleeMastery},
   combatContext:{weapon,weaponGrade,weaponPlus:gameTables?.weaponPlus,
+   magicPlus:gameTables?.magicPlus,
    jobKey:jobKeys[snap.job],benevolenceMastery,legacyBuffMasteries,ridingMastery,wardingMastery,
    skillCatalog:catalog.skills||{},branchMasteries,
    externalPriest:{enabled:snap.attributeBuffs?.priestEnabled===true,
