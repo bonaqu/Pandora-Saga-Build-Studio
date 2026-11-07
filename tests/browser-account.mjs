@@ -138,6 +138,14 @@ export async function runAccountSmoke(browser,base){
   await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026');
   assert.match(await page.locator('#accountPanel .account-feedback').innerText(),/Пароли не совпадают/);
+  // A same-owner forced panel remount must keep confirmation feedback even
+  // when the previous feedback DOM node has already been discarded.
+  await page.locator('#accountPanel').evaluate(panel=>panel.replaceChildren());
+  await page.locator('#profileTrigger').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.match(await page.locator('#accountPanel .account-feedback').innerText(),
+   /Пароли не совпадают/,'Same-identity remount preserves feedback');
   await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
   await page.getByRole('button',{name:'Войти',exact:true}).first().click();
   const login=page.locator('#accountPanel .account-form input');
