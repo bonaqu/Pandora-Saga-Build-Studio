@@ -160,8 +160,13 @@ function libraryScopeId(){
  return window.PandoraBuildScope.owner(window.PandoraAccountUI?.username(),tabGuestSecret);
 }
 function restoreScopedDraft({initial=false}={}){
+ // Another tab can switch the shared primary keys between transition()
+ // and restoration. Read the requested owner's independent recovery cache
+ // whenever those keys currently belong to a different account.
+ const readOwned=key=>window.PandoraBuildScope.getOwned(
+  localStorage,libraryScopeId(),key);
  try{
-  const raw=JSON.parse(localStorage.getItem('ps-build-studio.v1')||'null');
+  const raw=JSON.parse(readOwned('ps-build-studio.v1')||'null');
   const base=fresh();state=raw&&typeof raw==='object'&&!Array.isArray(raw)?
    {...base,...raw,points:{...base.points,...raw.points},
     masteryFormat:raw.masteryFormat===2?2:1,
@@ -170,10 +175,12 @@ function restoreScopedDraft({initial=false}={}){
     gems:{...base.gems,...raw.gems},attributeBuffs:{...base.attributeBuffs,...raw.attributeBuffs},profile:{...base.profile,...raw.profile}}:base;
  }catch{state=fresh()}
  try{
-  const rows=JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]');
+  const rows=JSON.parse(readOwned('ps-build-library.v1')||'[]');
   builds=safeStoredBuildRows(rows);
  }catch{builds=[]}
- activeBuildId=restoreActiveBuildId();
+ const ownedActive=readOwned(ACTIVE_BUILD_KEY);
+ activeBuildId=/^[a-f0-9]{32}$/.test(ownedActive||'')&&
+  builds.some(row=>row.id===ownedActive)?ownedActive:null;
  compareIds=[];
  if(!initial)buildSearchQuery='';
 }
