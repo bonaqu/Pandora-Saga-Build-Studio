@@ -7,12 +7,12 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const source=read('pandora-studio-update-manager.js');
 function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru'){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
- let currentRemote=remote,holdResponses=false;
+ let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
  const heldRequests=[];
  const document={
   documentElement:{lang:locale},
   querySelector:selector=>selector==='meta[name="ps-studio-release"]'?{content:local}:null,
-  addEventListener(){},dispatchEvent(){saved++;return true},getElementById(id){return id==='studio-update-banner'&&!banner?.removed?banner:null},
+  addEventListener(){},dispatchEvent(event){saved++;lastEventCancelable=event.cancelable;return saveAllowed},getElementById(id){return id==='studio-update-banner'&&!banner?.removed?banner:null},
   createElement:tag=>({
    tag,children:[],listeners:{},setAttribute(){},
    addEventListener(name,fn){this.listeners[name]=fn},
@@ -25,7 +25,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  const history={state:null,replaceState:(_state,_title,url)=>{normalized=url}};
  runInNewContext(source,{
   window:{},document,location,history,URL,AbortController,Date,
-  Event:class Event{},console,
+  Event:class Event{constructor(_type,options){this.cancelable=!!options?.cancelable}},console,
   MutationObserver:class MutationObserver {
    constructor(fn){languageChanged=fn}observe(){}
   },
@@ -39,6 +39,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  return{
   check:()=>check(),
   setRemote:release=>{currentRemote=release},
+  setSaveAllowed:value=>{saveAllowed=value},
   holdChecks:()=>{holdResponses=true},
   heldCount:()=>heldRequests.length,
   resolveCheck:(index,release)=>heldRequests[index]({
@@ -46,7 +47,8 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
   }),
   setLocale:language=>{document.documentElement.lang=language;languageChanged?.()},
   get banner(){return banner},get normalized(){return normalized},
-  get navigated(){return navigated},get saved(){return saved}
+  get navigated(){return navigated},get saved(){return saved},
+  get lastEventCancelable(){return lastEventCancelable}
  };
 }
 test('cache-busted navigation restores canonical URL without a second fetch',()=>{
@@ -137,4 +139,19 @@ test('out-of-order version checks cannot downgrade the current update target',as
  assert.match(page.navigated,/ps-revision=2026[.]11[.]07[.]443/,
   'The most recently published release must remain the update target');
  assert.equal(page.saved,1);
+});
+
+test('a failed local save cancels the update without hiding the retry action',async()=>{
+ const page=boot('2026.11.07.452','2026.11.07.453');
+ await page.check();
+ page.setSaveAllowed(false);
+ page.banner.children[1].listeners.click();
+ assert.equal(page.navigated,null,'Do not navigate when the save hook vetoes');
+ assert.equal(page.lastEventCancelable,true,'The save hook must be cancelable');
+ assert.equal(page.saved,1);
+ assert.equal(page.banner.removed,undefined,'Keep the banner for an explicit retry');
+ page.setSaveAllowed(true);
+ page.banner.children[1].listeners.click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]07[.]453/);
+ assert.equal(page.saved,2,'A user may retry the update after restoring storage');
 });

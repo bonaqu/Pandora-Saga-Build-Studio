@@ -125,8 +125,11 @@ stageSoulScrollTop=0,stageGemQuery='',gameTables=null,gameItemForth=null,
 stageAttributesPage=['summary','attack','defense','buffs','effects','recovery'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
 // Current character changes remain a local draft until explicit user save.
-function persist(){try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
- 'ps-build-studio.v1',JSON.stringify(state))}catch{}}
+function persist(){
+ try{return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+  'ps-build-studio.v1',JSON.stringify(state))}
+ catch(error){console.warn('Draft could not be stored locally',error);return false}
+}
 function persistBuilds(){
  try{return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
   'ps-build-library.v1',JSON.stringify(builds))}
@@ -7504,7 +7507,16 @@ document.addEventListener('keydown',event=>{
 
 // Save the exact current user state before any update, and never auto-reload during admin sessions.
 window.PandoraStudioAdminActive=()=>Boolean(adminToken);
-document.addEventListener('pandora:before-update',()=>{persist();persistBuilds()});
+function saveBeforeUpdate(event){
+ const draftSaved=persist(),librarySaved=persistBuilds();
+ if(draftSaved&&librarySaved)return;
+ event.preventDefault();
+ showStudioToast(lang==='en'?
+  'Update cancelled: could not save your draft or build library. Free some browser storage and try again.':
+  'Обновление отменено: не удалось сохранить черновик или библиотеку билдов. Освободите место в браузере и повторите попытку.',
+  'error');
+}
+document.addEventListener('pandora:before-update',saveBeforeUpdate);
 // Restore deep links on refresh without requiring credentials or losing the current build.
 function restoreWikiHash(){
  // On F5 respect the last *visible* view; on explicit navigation honor an incoming wiki deep link.
