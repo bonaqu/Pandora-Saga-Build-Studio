@@ -20,11 +20,21 @@ const honor=Object.freeze({
  ranks:['Ранги и привилегии','Ranks and privileges'],
  monthly:['Ежемесячные звания','Monthly titles']
 });
-const key=(group,id,lang)=>(group==='chapter'?'chapter_':'honor_')+id+
+const skillFilter=Object.freeze({
+ player:['Умения персонажа','Character skills'],
+ guild:['Гильдия и осада','Guild and siege'],
+ special:['Особые умения','Special skills'],
+ variants:['Варианты навыков','Skill variants'],
+ other:['Прочие записи','Other records'],
+ unknown:['На проверке','Under review'],
+ all:['Все навыки','All skills']
+});
+const key=(group,id,lang)=>(group==='chapter'?'chapter_':
+ group==='skillFilter'?'skill_filter_':'honor_')+id+
  (lang==='en'?'_en':'_ru');
-const validField=k=>/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly))_(?:ru|en)$/.test(k);
+const validField=k=>/^(?:chapter_(?:item|utility|monster|map|honor|npc|chest|instance|skill|soul)|honor_(?:overview|gain|ranks|monthly)|skill_filter_(?:player|guild|special|variants|other|unknown|all))_(?:ru|en)$/.test(k);
 const validPatch=patch=>patch&&typeof patch==='object'&&!Array.isArray(patch)&&
- Object.keys(patch).length>0&&Object.keys(patch).length<=28&&
+ Object.keys(patch).length>0&&Object.keys(patch).length<=50&&
  Object.entries(patch).every(([k,v])=>validField(k)&&typeof v==='string'&&
  v.trim().length>0&&v.length<=90&&
  Array.from(v).every(ch=>ch.charCodeAt(0)>=32));
@@ -36,12 +46,13 @@ const parse=(overrides)=>{
  }catch{return {}}
 };
 function value(overrides,group,id,lang='ru'){
- const defaults=group==='chapter'?chapter:honor;
+ const defaults=group==='chapter'?chapter:
+  group==='skillFilter'?skillFilter:honor;
  if(!Object.hasOwn(defaults,id))return '';
  const saved=parse(overrides)[key(group,id,lang)];
  return saved||defaults[id][lang==='en'?1:0];
 }
 root.PandoraWikiLabels=Object.freeze({
- chapter,honor,key,value,validField,validPatch
+ chapter,honor,skillFilter,key,value,validField,validPatch
 });
 })(typeof window==='undefined'?globalThis:window);
