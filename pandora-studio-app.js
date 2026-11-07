@@ -677,7 +677,16 @@ function allowedBranch(branch){
  return Math.max(current,Math.min(Math.max(0,cap-base),Math.max(0,b.total-b.spent+current)));
 }
 
-function editableValue(key,defaultValue){return Object.prototype.hasOwnProperty.call(override,key)?override[key]:defaultValue}
+function editableValue(key,defaultValue){
+ if(!Object.hasOwn(override,key))return defaultValue;
+ // A legacy owner race override can equal the original Russian name
+ // exactly. That is not a request to replace its English translation.
+ if(lang==='en'&&/^race\.[0-5]$/.test(key)){
+  const id=Number(key.slice(5));
+  if(override[key]===races[id]?.[0])return defaultValue;
+ }
+ return override[key];
+}
 // Reuse the existing authenticated, bilingual D1 guide store. The established
 // book.origin.* namespace is Worker-compatible; no separate write API needed.
 function originGuideKey(key){return key.replace(/[A-Z]/g,char=>'-'+char.toLowerCase())}
