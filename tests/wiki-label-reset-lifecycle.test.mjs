@@ -16,7 +16,9 @@ function fixture(){
    async first(){return {id:1}},
    async run(){
     calls.push({sql,args});
-    if(sql.includes('INSERT INTO overrides'))data.set(args[0],args[1]);
+    if(sql.includes('INSERT INTO overrides')){
+     data.set(args[0],args[1]);return {meta:{changes:1}};
+    }
     if(sql.includes('DELETE FROM overrides')){
      const had=data.delete(args[0]);
      return {meta:{changes:had?1:0}};
