@@ -1582,12 +1582,12 @@ function setAttributePoints(index,added){
  state.stats[STATS[index]]=added;persist();renderOriginVitals();return true;
 }
 const ORIGIN_STAT_LABELS=[
- {short:'ВЫН',name:'Выносливость',code:'vit'},
- {short:'СИЛ',name:'Сила',code:'str'},
- {short:'ПРВ',name:'Проворность',code:'agi'},
- {short:'ЛВК',name:'Ловкость',code:'dex'},
- {short:'СД',name:'Сила духа',code:'spi'},
- {short:'ИНТ',name:'Интеллект',code:'int'}
+ {short:'ВЫН',name:'Выносливость',nameEn:'Vitality',code:'vit'},
+ {short:'СИЛ',name:'Сила',nameEn:'Strength',code:'str'},
+ {short:'ПРВ',name:'Проворность',nameEn:'Agility',code:'agi'},
+ {short:'ЛВК',name:'Ловкость',nameEn:'Dexterity',code:'dex'},
+ {short:'СД',name:'Сила духа',nameEn:'Spirit',code:'spi'},
+ {short:'ИНТ',name:'Интеллект',nameEn:'Intelligence',code:'int'}
 ];
 // Legacy save keys remain unchanged: AGI was stored under «Ловкость», DEX under «Сноровка».
 function renderOriginStats(){
@@ -1595,12 +1595,15 @@ function renderOriginStats(){
  if(!root||!summary)return;
  root.replaceChildren();
  const list=h('div',{class:'origin-stat-list'}),entries=[];
+ const tr=(ru,en)=>lang==='en'?en:ru;
  // Saved stats remain invested-only. The input is the absolute race/class baseline + investment.
  function refresh(){
   const snap=attributeSnapshot(),estimate=previewBaseStats();
-  summary.textContent=snap?'Свободно: '+snap.remaining+' / '+snap.total+' · Потрачено: '+snap.spent:
-  (lang==='en'?'Choose a race and class · ':'Выберите расу и профессию · ')+
-  (lang==='en'?'Level budget: ':'Бюджет уровня: ')+(window.PandoraAttributeProgression.budget(state.level)??'—');
+  summary.textContent=snap?
+   tr('Свободно: ','Available: ')+snap.remaining+' / '+snap.total+
+    tr(' · Потрачено: ',' · Spent: ')+snap.spent:
+   tr('Выберите расу и профессию · ','Choose a race and class · ')+
+    tr('Бюджет уровня: ','Level budget: ')+(window.PandoraAttributeProgression.budget(state.level)??'—');
   summary.classList.toggle('over-budget',!!snap?.overBudget);
   for(const row of entries){
    const base=snap?.base[row.i],spent=Number(state.stats[STATS[row.i]]||0);
@@ -1613,24 +1616,31 @@ function renderOriginStats(){
    const shown=Number.isFinite(effective)?effective:allocated;
    row.result.textContent=shown===null?'—':String(shown);
    const delta=shown===null||allocated===null?0:shown-allocated;
-   row.caption.textContent=delta?(delta>0?'+':'')+delta+' бонус':'Итог';
-   row.result.setAttribute('aria-label','База '+(base??'—')+' + очки '+spent+
-    ' + известные бонусы '+delta+' = '+row.result.textContent);
+   row.caption.textContent=delta?(delta>0?'+':'')+delta+tr(' бонус',' bonus'):
+    tr('Итог','Total');
+   row.result.setAttribute('aria-label',tr('База ','Base ')+(base??'—')+
+    tr(' + очки ',' + allocated points ')+spent+
+    tr(' + известные бонусы ',' + known bonuses ')+delta+' = '+row.result.textContent);
    row.minus.disabled=!snap||spent<=0;
    row.plus.disabled=!window.PandoraAttributeProgression.allowed(snap,row.i,spent+1);
-   row.plus.setAttribute('aria-label','Увеличить '+ORIGIN_STAT_LABELS[row.i].name+'. Стоимость: '+(window.PandoraAttributeProgression.nextCost(snap,row.i)??'максимум'));
+   row.plus.setAttribute('aria-label',tr('Увеличить ','Increase ')+row.name+
+    tr('. Стоимость: ','. Cost: ')+(window.PandoraAttributeProgression.nextCost(snap,row.i)??tr('максимум','maximum')));
   }
  }
  ORIGIN_STAT_LABELS.forEach((info,i)=>{
+  const name=tr(info.name,info.nameEn),short=lang==='en'?info.code.toUpperCase():info.short;
   const wrap=h('div',{class:'origin-stat-row'});
   const title=h('div',{class:'origin-stat-title'},[
-   h('b',{text:info.short}),h('span',{text:info.name})]);
-  const minus=h('button',{type:'button',class:'stat-step-decrement',text:'−','aria-label':'Уменьшить '+info.name});
+   h('b',{text:short}),h('span',{text:name})]);
+  const minus=h('button',{type:'button',class:'stat-step-decrement',text:'−',
+   'aria-label':tr('Уменьшить ','Decrease ')+name});
   const input=h('input',{type:'number',min:'0',max:'99',step:'1',class:'origin-stat-input',
-   'aria-label':info.name+' — без бонусов снаряжения и умений'});
-  const plus=h('button',{type:'button',class:'stat-step-increment',text:'+','aria-label':'Увеличить '+info.name});
+   'aria-label':name+tr(' — без бонусов снаряжения и умений',
+    ' — excluding equipment and skill bonuses')});
+  const plus=h('button',{type:'button',class:'stat-step-increment',text:'+',
+   'aria-label':tr('Увеличить ','Increase ')+name});
   const box=h('div',{class:'origin-stat-result'}),result=h('strong',{text:'—'}),
-   caption=h('small',{text:'Итог'});
+   caption=h('small',{text:tr('Итог','Total')});
   box.append(result,caption);
   const commit=absolute=>{
    const snap=attributeSnapshot();
@@ -1645,7 +1655,7 @@ function renderOriginStats(){
   bindHoldStep(plus,()=>commit((attributeSnapshot()?.values[i]??0)+1));
   input.addEventListener('change',()=>commit(input.value));
   wrap.append(title,minus,input,plus,box);
-  list.append(wrap);entries.push({i,input,result,caption,minus,plus});
+  list.append(wrap);entries.push({i,input,result,caption,minus,plus,name});
  });
  root.append(list);refresh();
 }
@@ -1666,12 +1676,16 @@ function renderOriginPassives(){
   state.racialPassiveId=null;persist();
  }
  if(raceName)raceName.textContent=races[state.race][lang==='en'?1:0];
- if(!ids.length){root.append(h('p',{class:'muted',text:'Расовые способности появятся после загрузки каталога.'}));return}
+ if(!ids.length){root.append(h('p',{class:'muted',text:lang==='en'?
+  'Racial passives will appear when the game catalog loads.':
+  'Расовые способности появятся после загрузки каталога.'}));return}
  for(const id of ids){
   const skill=catalog.skills?.[String(id)];if(!skill)continue;
   const selected=String(state.racialPassiveId)===String(id);
   const btn=h('button',{type:'button',class:'origin-passive'+(selected?' selected':''),'aria-pressed':String(selected),
-   'aria-label':skill.name+(selected?' — выбрано':' — выбрать'),
+   'aria-label':skill.name+(selected?
+    (lang==='en'?' — selected':' — выбрано'):
+    (lang==='en'?' — select':' — выбрать')),
    onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();
     renderOriginVitals();renderOriginStats();if(stageAttributesPage)renderStageAttributes();
     if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
@@ -1681,7 +1695,8 @@ function renderOriginPassives(){
   const label=h('b',{text:skill.name,
     ...(adminEditing&&lang==='ru'?{'data-edit-key':'skill.race.'+id}:{})});
   btn.append(h('span',{},[label,
-    h('small',{text:selected?'✓ Выбрано':'Выбрать'})]));
+    h('small',{text:selected?(lang==='en'?'✓ Selected':'✓ Выбрано'):
+      (lang==='en'?'Select':'Выбрать')})]));
   if(adminEditing&&lang==='ru'){
     const edit=h('button',{type:'button',class:'owner-race-passive-edit',
       title:'Редактировать название пассивной способности',
@@ -1708,12 +1723,14 @@ function skillHover(button,skill){
   for(const entry of skills.slice(0,3)){
    const row=h('div',{class:'path-skill-preview-item'}),src=skillIcon(entry.branch,entry.id,entry);
    if(src){const img=h('img',{src,alt:''});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));row.append(img)}
-   const copy=h('div');copy.append(h('strong',{text:entry.name||'Умение'}));
-   if(entry.charLevel)copy.append(h('small',{text:'Уровень '+entry.charLevel}));
+   const copy=h('div');copy.append(h('strong',{text:entry.name||(lang==='en'?'Skill':'Умение')}));
+   if(entry.charLevel)copy.append(h('small',{text:(lang==='en'?'Level ':'Уровень ')+entry.charLevel}));
    if(entry.desc)copy.append(h('p',{text:entry.desc}));
    row.append(copy);tip.append(row);
   }
-  if(skills.length>3)tip.append(h('small',{class:'path-preview-more',text:'Ещё '+(skills.length-3)+' навыков — нажмите на отметку'}));
+  if(skills.length>3)tip.append(h('small',{class:'path-preview-more',text:lang==='en'?
+   (skills.length-3)+' more skills — select the marker to view them':
+   'Ещё '+(skills.length-3)+' навыков — нажмите на отметку'}));
   document.body.append(tip);
   button.setAttribute('aria-describedby',tip.id);
   const box=button.getBoundingClientRect(),panel=button.closest('.right')?.getBoundingClientRect();
@@ -5396,7 +5413,7 @@ function itemName(r){return window.PandoraItemPresentation.displayName(
  r,lang==='en'?'Unnamed item':'Предмет без названия',lang)}
 function renderStats(root){
  const tr=(ru,en)=>lang==='en'?en:ru;
- const statName=i=>lang==='en'?['Vitality','Strength','Agility','Dexterity','Spirit','Intelligence'][i]:ORIGIN_STAT_LABELS[i].name;
+ const statName=i=>lang==='en'?ORIGIN_STAT_LABELS[i].nameEn:ORIGIN_STAT_LABELS[i].name;
  const icons=['♥','⚔','➶','✥','✦','❂'];
  const overview=h('div',{class:'stat-editor-overview'}),header=h('h3',{text:tr('Характеристики','Attributes')});
  const points=h('div',{class:'stat-total'},[h('strong',{text:'—'}),h('span',{text:tr('Свободные очки','Available points')})]);
