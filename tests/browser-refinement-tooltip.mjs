@@ -42,6 +42,9 @@ export async function runRefinementTooltipSmoke(browser,base){
   // Even for +3, the exact character defense is 15.6 and displays 15,
   // while the item shows 12+3. No premature per-piece rounding assumptions.
   await panel.locator('[data-grade="3"]').click();
+  // The portrait is intentionally hidden while the in-place equipment
+  // picker is open. Close the Properties panel exactly as a user would.
+  await panel.locator('.stage-picker-head button[aria-label="Закрыть настройку"]').click();
   await page.locator('#hero').click();
   await page.locator('#stageAttributes').waitFor({state:'visible'});
   const def=page.locator('#stageBookPanel .stage-result-tile').filter({hasText:'Защита'});
