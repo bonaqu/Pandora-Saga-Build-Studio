@@ -298,11 +298,25 @@ function imageUrl(name){return `assets/${name}.webp`}
 const BRANCH_ICON_PATHS={"slash":"assets/skills/legacy/01-00.png","thrust":"assets/skills/legacy/02-00.png","brush":"assets/skills/legacy/03-00.png","blow":"assets/skills/legacy/04-00.png","defense":"assets/skills/legacy/05-00.png","archery":"assets/skills/legacy/07-00.png","alchemy":"assets/skills/legacy/08-00.png","assassin":"assets/skills/legacy/09-00.png","trap":"assets/skills/legacy/10-00.png","warding":"assets/skills/legacy/11-00.png","benevolence":"assets/skills/legacy/13-00.png","blessing":"assets/skills/legacy/14-00.png","exorcism":"assets/skills/legacy/15-00.png","hymn":"assets/skills/legacy/16-00.png","element":"assets/skills/legacy/18-00.png","embody":"assets/skills/legacy/19-00.png","darkness":"assets/skills/legacy/20-00.png","charm":"assets/skills/legacy/21-00.png","riding":"assets/skills/legacy/24-00.png"};
 let unavailableIconIds=new Set();
 function branchIcon(id){return typeof id==='string'&&Object.hasOwn(BRANCH_ICON_PATHS,id)?BRANCH_ICON_PATHS[id]:null}
+// Verified via user-provided client locale manifests and four PNGs:
+ // the two original race-skill drawings are intentionally swapped in RU/EN.
+ // Both drawings already exist locally, so no new game art is distributed.
+function localizedRaceSkillStem(stem,language){
+ if(language!=='ru')return stem;
+ if(stem==='skill_900050003')return 'skill_900060003';
+ if(stem==='skill_900060003')return 'skill_900050003';
+ return stem;
+}
 function skillIcon(cat,idx,record=null){
  const custom=override['visual.skill.'+(record?.id??(cat+'.'+idx))];
  if(custom)return custom;
  if(record?.iconId){
   const stem='skill_'+record.iconId,originals=iconManifest?.icons?.skills||{};
+  // The client uses the opposite existing sprite for these two race
+  // passives in Russian. Owner-assigned visual.skill.* still wins above.
+  const localeStem=localizedRaceSkillStem(stem,lang);
+  if(localeStem!==stem&&originals[stem]&&originals[localeStem])
+   return originals[localeStem];
   // Exact original always beats a display-only reuse.
   if(originals[stem])return originals[stem];
   const source=iconManifest?.displayAliases?.skills?.[stem];
