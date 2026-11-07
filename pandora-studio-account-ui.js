@@ -184,13 +184,19 @@ async function init(config){
   if(!panel.hidden&&!panel.contains(event.target)&&!trigger.contains(event.target))
    panel.hidden=true;
  });
+ // An open password/account form must survive a late /me response.
+ // Invalid/revoked identities still require an immediate forced rerender.
+ let forceBootstrapRender=false;
+ const finishBootstrap=()=>{
+  if(forceBootstrapRender||panel.hidden||!panel.hasChildNodes?.())render();
+ };
  if(session){
   const bootstrapToken=session.token,expectedName=session.username;
   try{
    const data=await request('me',null,bootstrapToken);
    // A login or logout may complete while a previous /me is in flight.
    // Never allow its late answer to switch or clear the new account.
-   if(session?.token!==bootstrapToken){render();return}
+   if(session?.token!==bootstrapToken){finishBootstrap();return}
    const verified=validName(data?.account?.username);
    if(!verified||verified!==expectedName){
     const invalid=new Error('Некорректный владелец аккаунта');
@@ -199,9 +205,10 @@ async function init(config){
    session.username=verified;
    options.onLogin?.({register:false,bootstrap:true});
   }catch(error){
-   if(session?.token!==bootstrapToken){render();return}
+   if(session?.token!==bootstrapToken){finishBootstrap();return}
    if(error?.httpStatus===401||error?.httpStatus===403){
     clearSession();
+    forceBootstrapRender=true;
     options.onLogout?.({bootstrap:true});
    }else{
     // Keep an unexpired account session on temporary network / Worker outages.
@@ -210,7 +217,7 @@ async function init(config){
    }
   }
  }else options.onGuest?.();
- render();
+ finishBootstrap();
 }
 root.PandoraAccountUI=Object.freeze({init,token,username:()=>session?.username||null,
  refresh:render,isLoggedIn:()=>Boolean(session)});
