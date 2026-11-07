@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker/index.js';
+import {readFileSync} from 'node:fs';
 
 // Test the actual HTTP handler with an isolated in-memory D1 adapter.
 // No requests, credentials, or writes reach the production Worker.
@@ -56,4 +57,31 @@ test('reset still rejects unsupported key categories and unauthenticated attempt
  const noToken=await request('/api/admin/reset',{key:'guideedit.wiki.labels'},'');
  assert.equal(noToken.status,401);
  assert.equal(data.size,0);
+});
+
+test('Save and Reset reuse the same allowlist for all owner-editable key families',()=>{
+ const source=readFileSync(new URL('../worker/index.js',import.meta.url),'utf8');
+ const prefix='const OWNER_EDITABLE_KEY_PATTERN=/';
+ const start=source.indexOf(prefix);
+ assert.ok(start>=0,'Shared owner key allowlist must exist');
+ const end=source.indexOf('$/;',start);
+ assert.ok(end>start,'Allowlist should have a closing anchor');
+ const raw=source.slice(start+prefix.length,end+1);
+ const pattern=new RegExp(raw);
+ for(const key of [
+  'site.title','race.0','job.15','branch.slash','item.armor',
+  'itemdesc.123','itemslots.123','itemedit.123','acquireedit.123',
+  'tradeedit.123','wikiedit.monster.123','wikiedit.map.astir-union',
+  'wikiedit.map.custom-abc123','wikiedit.npc.owner-npc-1234567890abcdef',
+  'wikiedit.monster.owner-monster-abcdefgh1234',
+  'guideedit.book.origin.heading','guideedit.honor.overview',
+  'guideedit.honor.rank.10','guideedit.honor.wars','guideedit.wiki.labels',
+  'dropedit.123','chestedit.123','spawnedit.123','soul.foo',
+  'skill.abc.123','skilldesc.abc.123','visual.logo',
+  'visual.race.0.f','visual.skill.X1','visual.item.123','visual.soul.123'
+ ])assert.ok(pattern.test(key),'Missing owner Save/Reset family '+key);
+ for(const key of ['guideedit.wiki.invalid','guideedit.fake','visual.skill.','random.secret'])
+  assert.equal(pattern.test(key),false,'Disallowed owner key '+key);
+ assert.equal((source.match(/OWNER_EDITABLE_KEY_PATTERN\.test\(key\)/g)||[]).length,2,
+  'The exact same key allowlist must be used for Save and Reset');
 });
