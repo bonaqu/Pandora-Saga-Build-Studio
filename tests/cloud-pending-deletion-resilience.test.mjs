@@ -28,7 +28,7 @@ function scenario({pending=[A,B],fail=[A],remote=[]}={}){
    return {ok:true};
   },
   id=>{const i=queue.indexOf(id);if(i>=0)queue.splice(i,1)},
-  world,()=>saves++,()=>{},message=>messages.push(message),async()=>true,
+  world,()=>{saves++;return true},()=>{},message=>messages.push(message),async()=>true,
   ()=>{},()=>C,{warn:(...args)=>warnings.push(args)}
  );
  return {...run,queue,failIds,calls,messages,warnings,saves:()=>saves};
