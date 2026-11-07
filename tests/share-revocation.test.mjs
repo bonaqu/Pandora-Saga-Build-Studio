@@ -7,7 +7,7 @@ const OWNER='a'.repeat(64),OTHER='b'.repeat(64),ORIGIN='https://bonaqu.github.io
 function db(){
  const builds=new Map(),links=new Map(),sources=new Map();
  const tables=new Set(['private_builds','shared_builds','shared_build_limits','shared_build_sources']);
- return {peekLink:id=>links.get(id),prepare(sql){
+ return {peekLink:id=>links.get(id),replaceLink:(id,payload)=>links.set(id,payload),prepare(sql){
   if(sql.includes('FROM sqlite_master'))return {all:async()=>({results:[...tables].map(name=>({name}))})};
   return {bind(...v){
    const one=async()=>{
@@ -121,4 +121,31 @@ test('revocation toast and link creation remain inline; server has no destructiv
  assert.match(sql,/CREATE TABLE IF NOT EXISTS shared_build_sources/);
  assert.doesNotMatch(sql,/DROP TABLE/i);
  assert.match(app,/После удаления оригинального билда она перестанет работать/);
+});
+
+test('invalid public share payload is isolated without deleting any other valid link',async()=>{
+ const DB=db(),character={race:3,job:0,level:55};
+ const id='d'.repeat(32),other='e'.repeat(32);
+ for(const buildId of [id,other]){
+  const saved=await call(DB,'/api/library','POST',
+   {action:'put',entry:{id:buildId,name:'Saved',at:123,data:character}},OWNER);
+  assert.equal(saved.status,200);
+ }
+ const first=await call(DB,'/api/shared','POST',
+  {schema:1,type:'build',buildId:id},OWNER);
+ const second=await call(DB,'/api/shared','POST',
+  {schema:1,type:'build',buildId:other},OWNER);
+ assert.equal(first.status,201);assert.equal(second.status,201);
+ for(const broken of ['{not-json',JSON.stringify({schema:9,type:'build',data:character}),
+  JSON.stringify({schema:1,type:'build',data:{race:3,job:0,level:56}})]){
+  DB.replaceLink(first.data.id,broken);
+  const response=await call(DB,'/api/shared/'+first.data.id);
+  assert.equal(response.status,410);
+  assert.equal(response.data.reason,'invalid');
+  assert.equal(JSON.stringify(response.data).includes(broken),false);
+  assert.equal(DB.peekLink(first.data.id),broken,'No implicit D1 repair');
+  const healthy=await call(DB,'/api/shared/'+second.data.id);
+  assert.equal(healthy.status,200,'Unrelated share stays valid');
+  assert.deepEqual(healthy.data.share.data,character);
+ }
 });
