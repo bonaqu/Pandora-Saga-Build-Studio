@@ -62,3 +62,31 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   console.log('Chromium skill filters passed: playable, variants, guild ranks, unknown, links, RU/EN and mobile');
  }finally{await context.close()}
 }
+
+export async function runWikiIconManifestFallbackSmoke(browser,base){
+ const context=await browser.newContext({viewport:{width:1120,height:820}});
+ await context.route('**/*',route=>{
+  const url=route.request().url();
+  if(url===base+'/assets/os-icon-manifest.json')return route.abort();
+  return url.startsWith(base+'/')?route.continue():route.abort();
+ });
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ try{
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#nav [data-tab="wiki"]').click();
+  await page.locator('[data-wiki-chapter="skill"]').click();
+  const filter=page.locator('.wiki-skill-type');
+  await filter.waitFor({state:'visible',timeout:20000});
+  await filter.selectOption('unknown');
+  await page.locator('.wiki-list [data-wiki-record]').first()
+   .waitFor({state:'visible',timeout:20000});
+  assert.match(await filter.locator('option[value="unknown"]').innerText(),/569$/,
+   'With unavailable manifest all 569 archive skills render with question-mark art');
+  assert.equal(await page.locator('.wiki-list [data-wiki-record]').first()
+   .locator('img[src*="skill_unknown.webp"]').count(),1,
+   'Visible rows must agree with question-mark selection');
+  assert.deepEqual(errors,[]);
+  console.log('Chromium icon manifest outage passed: truthful question-mark filter and no page errors');
+ }finally{await context.close()}
+}
