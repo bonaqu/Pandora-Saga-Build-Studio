@@ -4,6 +4,11 @@
 const KEY='ps-account-session.v1';
 let session=null,options=null,trigger=null,panel=null,mode='login',errorLine=null;
 let pendingRecoveryCode=null;
+// Feedback survives same-account form remounts (bootstrap/locale) without
+// persisting passwords or messages in localStorage. It must never leak into
+// another account, another form mode, or a guest session.
+let feedbackSource=null,feedbackToken=null,feedbackMode=null;
+const resetFeedback=()=>{feedbackSource=null;feedbackToken=null;feedbackMode=null};
 const TOKEN=/^[A-Za-z0-9_-]{43}$/;
 const USERNAME=/^[a-z][a-z0-9_]{2,19}$/;
 const validName=value=>typeof value==='string'&&USERNAME.test(value.toLowerCase())?
@@ -43,11 +48,12 @@ function field(placeholder,type='text',auto='off',max=128){
  input.autocomplete=auto;return input;
 }
 function info(message){
+ feedbackSource=String(message);
+ feedbackToken=session?.token||null;
+ feedbackMode=mode;
  if(errorLine){
-  errorLine.textContent=tr(message);
-  // Keep the untranslated message only on the active DOM node, so a locale
-  // switch can restore the translated feedback. No persistent credential data.
-  errorLine.dataset.sourceMessage=String(message);
+  errorLine.textContent=tr(feedbackSource);
+  errorLine.dataset.sourceMessage=feedbackSource;
  }
 }
 async function request(kind,data=null,auth=token()){
@@ -71,10 +77,12 @@ function setSession(result){
  localStorage.setItem(KEY,JSON.stringify(next));
  session=next;
  pendingRecoveryCode=recovery;
+ resetFeedback();
 }
 function clearSession(){
  const previousToken=session?.token||null;
  session=null;pendingRecoveryCode=null;
+ resetFeedback();
  // Another tab may have signed in as a different account since this tab
  // started. Never erase that other account's active persisted session.
  if(previousToken){
@@ -97,6 +105,11 @@ function render(){
   'Логин и пароль — для доступа к сохранённым облачным билдам.');
  panel.append(sub);
  errorLine=node('p','account-feedback');errorLine.setAttribute('role','status');
+ if(feedbackSource!==null&&feedbackToken===(session?.token||null)&&
+  feedbackMode===mode){
+  errorLine.textContent=tr(feedbackSource);
+  errorLine.dataset.sourceMessage=feedbackSource;
+ }else resetFeedback();
  if(session){
   const identity=node('div','account-identity');
   const avatar=node('span','account-avatar');avatar.setAttribute('aria-hidden','true');
@@ -159,9 +172,9 @@ function render(){
   panel.append(footer,errorLine);return;
  }
  const tabs=node('div','account-tabs');
- tabs.append(button('Войти',()=>{mode='login';render()},mode==='login'?'selected':''),
-  button('Регистрация',()=>{mode='register';render()},mode==='register'?'selected':''),
-  button('Восстановить',()=>{mode='recover';render()},mode==='recover'?'selected':''));
+ tabs.append(button('Войти',()=>{resetFeedback();mode='login';render()},mode==='login'?'selected':''),
+  button('Регистрация',()=>{resetFeedback();mode='register';render()},mode==='register'?'selected':''),
+  button('Восстановить',()=>{resetFeedback();mode='recover';render()},mode==='recover'?'selected':''));
  panel.append(tabs);
  const form=node('form','account-form'),username=field('Логин (3–20, a-z, 0-9, _)','text','username',20);
  username.minLength=3;username.required=true;username.spellcheck=false;
