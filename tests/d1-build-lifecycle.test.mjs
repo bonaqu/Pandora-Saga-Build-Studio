@@ -35,9 +35,17 @@ function database(){
      }else{
       const [owner,id,payload,time]=values;
       const previous=rows.get(owner+':'+id);
-      if(previous&&(previous.deleted_at!==null||
-        Number(JSON.parse(previous.payload).at)>time||
-        (Number(JSON.parse(previous.payload).at)===time&&previous.payload!==payload)))
+      let stored=null;
+      try{stored=previous?JSON.parse(previous.payload):null}catch{}
+      const valid=stored&&stored.id===id&&typeof stored.name==='string'&&
+       stored.name.trim()&&stored.name.length<=70&&
+       Number.isSafeInteger(stored.at)&&stored.at>=0&&
+       stored.data&&typeof stored.data==='object'&&!Array.isArray(stored.data)&&
+       Number.isInteger(stored.data.race)&&stored.data.race>=0&&stored.data.race<=5&&
+       Number.isInteger(stored.data.job)&&stored.data.job>=0&&stored.data.job<28&&
+       Number.isInteger(stored.data.level)&&stored.data.level>=1&&stored.data.level<=55;
+      if(previous&&(previous.deleted_at!==null||!valid||
+        stored.at>time||(stored.at===time&&previous.payload!==payload)))
         return{meta:{changes:0}};
       rows.set(owner+':'+id,{build_id:id,payload,updated_at:time,deleted_at:null});
      }
@@ -146,4 +154,29 @@ test('one broken D1 record cannot hide healthy saves or leak the corrupt payload
    {id,deleted:false,entry:null,unavailable:true});
  }
  assert.equal(JSON.stringify(data).includes('bad JSON'),false);
+});
+
+test('a malformed or incompatible D1 row cannot be replaced by a later PUT',async()=>{
+ const DB=database();
+ const owner=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(key))
+  .then(bytes=>Buffer.from(bytes).toString('base64url'));
+ for(const [id,stored] of [
+  ['8'.repeat(32),'{broken JSON'],
+  ['9'.repeat(32),JSON.stringify({
+   id:'wrong',name:'Wrong identity',at:20,data:{race:1,job:16,level:45}})],
+  ['7'.repeat(32),JSON.stringify({
+   id:'7'.repeat(32),name:'Invalid class',at:20,data:{race:1,job:99,level:45}})]
+ ]){
+  DB.seed(owner,id,stored);
+  const incoming={id,name:'Future hero',at:300,
+   data:{race:1,job:16,level:55}};
+  const rejected=await worker.fetch(request('POST',{action:'put',entry:incoming}),{DB});
+  assert.equal(rejected.status,409,id);
+  const body=await rejected.json();
+  assert.equal(body.reason,'unavailable');
+  assert.equal(JSON.stringify(body).includes(stored),false,'No raw D1 payload disclosure');
+  const after=await worker.fetch(request('GET'),{DB});
+  assert.deepEqual((await after.json()).records.find(row=>row.id===id),
+   {id,deleted:false,entry:null,unavailable:true},id);
+ }
 });

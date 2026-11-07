@@ -71,6 +71,7 @@ const english=Object.freeze({
  'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»':'Local copy · open it and select “Overwrite” to save it to cloud',
  'Удалить локальную копию? Она ещё не сохранена в облаке.':'Delete this local copy? It has not been saved to cloud.',
  'Облако подключено · локальные копии ещё не сохранены':'Cloud connected · local copies are not yet saved',
+ 'Сохранено в браузере · исходная облачная запись недоступна':'Saved in browser · original cloud record is unavailable',
  'Библиотека загружена · удаление некоторых ссылок ещё не подтверждено':'Builds loaded · some shared links are still awaiting revocation',
  'Локальная копия удалена':'Local copy deleted',
  'Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».':'Open this local copy and explicitly save it with “Overwrite” first.',

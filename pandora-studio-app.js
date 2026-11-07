@@ -228,6 +228,8 @@ async function putCloudBuild(entry){
   if(libraryScopeId()===owner)reportCloudStatus(
    error.reason==='stale'||error.reason==='conflict'?
     'В облаке другая редакция · обновите библиотеку для сохранения обеих версий':
+    error.reason==='unavailable'?
+     'Сохранено в браузере · исходная облачная запись недоступна':
     error.reason==='deleted'?
      'Сохранено в браузере · исходный билд в облаке уже удалён':
      'Сохранено в браузере · облако недоступно');
