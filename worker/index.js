@@ -17,36 +17,47 @@ function same(a,b){a=String(a||'');b=String(b||'');let d=a.length^b.length;for(l
 function json(body,status=200,headers={}){return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}})}
 function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Expose-Headers':'X-PS-Catalog-Snapshot','Vary':'Origin'}:{}}
 function no(message,status=400){return json({error:message},status)}
-async function body(request,limit=8192){try{if(Number(request.headers.get('content-length')||0)>limit)throw Error('Request too large');return await request.json()}catch{return null}}
-const OWNER_EDIT_BODY_LIMIT=384*1024;
-// An owner CAS request contains both the old and the new JSON value.
-// Enforce the actual UTF-8 byte count, including requests with no
-// Content-Length, rather than rejecting valid 24 KB chest records.
-async function ownerEditBody(request){
- const given=request.headers.get('content-length');
- if(given!==null&&(!/^[0-9]+$/.test(given)||Number(given)>OWNER_EDIT_BODY_LIMIT))
-  return null;
+// Bound untrusted JSON by actual UTF-8 bytes, even when a caller omits or
+// understates Content-Length. The old request.json()/request.text() paths
+// could buffer unbounded input before checking its size.
+async function boundedTextBody(request,maxBytes,maxChars=maxBytes){
+ const declared=request.headers.get('content-length');
+ if(declared!==null&&!/^[0-9]+$/.test(declared))return {invalid:true};
+ if(declared!==null&&Number(declared)>maxBytes)return {tooLarge:true};
  const reader=request.body?.getReader?.();
- if(!reader)return null;
+ if(!reader)return {invalid:true};
  const chunks=[];
  let total=0;
  try{
   while(true){
    const {value,done}=await reader.read();
    if(done)break;
-   if(!(value instanceof Uint8Array))return null;
+   if(!(value instanceof Uint8Array))return {invalid:true};
    total+=value.byteLength;
-   if(total>OWNER_EDIT_BODY_LIMIT){
+   if(total>maxBytes){
     await reader.cancel().catch(()=>{});
-    return null;
+    return {tooLarge:true};
    }
    chunks.push(value);
   }
-  const all=new Uint8Array(total);
+  const bytes=new Uint8Array(total);
   let offset=0;
-  for(const chunk of chunks){all.set(chunk,offset);offset+=chunk.byteLength}
-  return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(all));
- }catch{return null}
+  for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+  const raw=new TextDecoder('utf-8',{fatal:true}).decode(bytes);
+  return raw.length>maxChars?{tooLarge:true}:{raw};
+ }catch{return {invalid:true}}
+ finally{reader.releaseLock()}
+}
+async function boundedJsonBody(request,maxBytes,maxChars=maxBytes){
+ const result=await boundedTextBody(request,maxBytes,maxChars);
+ if(typeof result.raw!=='string')return null;
+ try{return JSON.parse(result.raw)}
+ catch{return null}
+}
+async function body(request,limit=8192){return boundedJsonBody(request,limit)}
+const OWNER_EDIT_BODY_LIMIT=384*1024;
+async function ownerEditBody(request){
+ return boundedJsonBody(request,OWNER_EDIT_BODY_LIMIT);
 }
 async function auth(request,env){const header=request.headers.get('authorization')||'';if(!header.startsWith('Bearer '))return false;const token=header.slice(7);if(!/^[A-Za-z0-9_-]{40,60}$/.test(token))return false;const hash=await sha(token),now=Date.now();const row=await env.DB.prepare('SELECT id FROM sessions WHERE token_hash=? AND expires>?').bind(hash,now).first();return !!row}
 async function throttle(env,ip){const key=await sha(ip);const now=Date.now();const result=await env.DB.prepare('SELECT attempts,reset_at FROM login_attempts WHERE ip_hash=?').bind(key).first();return result&&result.reset_at>now&&result.attempts>=5}
@@ -64,9 +75,9 @@ const SEED_SCHEMA=[
  'CREATE TABLE IF NOT EXISTS catalog_current(id INTEGER PRIMARY KEY CHECK(id=1),snapshot TEXT NOT NULL,published_at INTEGER NOT NULL,expected_counts TEXT NOT NULL)'
 ];
 async function catalogBody(request){
- const length=Number(request.headers.get('content-length')||0);
- if(length>65000)return null;
- try{const raw=await request.text();if(raw.length>65000)return null;return JSON.parse(raw)}catch{return null}
+ // Keep the historical 65,000-character import limit, plus a hard 256 KiB
+ // UTF-8 transport ceiling (Cyrillic JSON may need multiple bytes per char).
+ return boundedJsonBody(request,256*1024,65000);
 }
 function isCostumeKind(kind){return typeof kind==='string'&&kind.startsWith('DECO_')}
 async function activeCatalog(env){
@@ -241,11 +252,11 @@ async function shareApi(request,env,path,ip){
  const bearer=request.headers.get('authorization')||'';
  if(!/^Bearer (?:[a-f0-9]{64}|[A-Za-z0-9_-]{43})$/.test(bearer))
   return no('Доступ к созданию ссылки требует владельца билда',401);
- if(Number(request.headers.get('content-length')||0)>48000)return no('Payload too large',413);
- const input=await request.text();
- if(input.length>48000)return no('Payload too large',413);
+ const input=await boundedTextBody(request,256*1024,48000);
+ if(input.tooLarge)return no('Payload too large',413);
+ if(typeof input.raw!=='string')return no('Invalid share payload',400);
  let payload;
- try{payload=JSON.parse(input)}catch{return no('Invalid share payload',400)}
+ try{payload=JSON.parse(input.raw)}catch{return no('Invalid share payload',400)}
  if(!payload||payload.schema!==1||payload.type!=='build'||!/^[a-f0-9]{32}$/.test(payload.buildId||''))
   return no('Можно поделиться только сохранённым билдом',400);
  const validate=entry=>entry&&typeof entry==='object'&&!Array.isArray(entry)&&
@@ -304,9 +315,10 @@ async function libraryApi(request,env){
    entry:r.deleted_at===null?JSON.parse(r.payload):null}))});
  }
  if(request.method!=='POST')return no('Method not allowed',405);
- if(Number(request.headers.get('content-length')||0)>45000)return no('Library entry too large',413);
- const raw=await request.text();if(raw.length>45000)return no('Library entry too large',413);
- let data;try{data=JSON.parse(raw)}catch{return no('Invalid JSON',400)}
+ const raw=await boundedTextBody(request,256*1024,45000);
+ if(raw.tooLarge)return no('Library entry too large',413);
+ if(typeof raw.raw!=='string')return no('Invalid JSON',400);
+ let data;try{data=JSON.parse(raw.raw)}catch{return no('Invalid JSON',400)}
  const id=data?.action==='put'?data?.entry?.id:data?.id;
  if(!/^[a-f0-9]{32}$/.test(id||''))return no('Invalid build ID',400);
  const now=Date.now();
