@@ -50,9 +50,10 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
  page.on('pageerror',error=>errors.push(error.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
-  // On localhost the public site starts with an offline archive; use the
-  // real retry action to load the private mocked D1 snapshot above.
-  await page.locator('#startupRetry').click();
+  // A fast mocked D1 may finish on first launch. Retry only if the public
+  // startup dialog actually offers it, never click a hidden retry button.
+  const retry=page.locator('#startupRetry');
+  if(await retry.isVisible())await retry.click();
   await page.waitForFunction(()=>document.querySelector('#startupOverlay')?.hidden===true,
    null,{timeout:20000});
   await page.keyboard.press('Control+Alt+Shift+P');
