@@ -10,6 +10,15 @@ Function('window',read('pandora-studio-wiki-skill-filters.js'))(context);
 const classifier=context.PandoraWikiSkillFilters;
 const records=Object.values(skills);
 
+test('question-mark filter describes the artwork shown, without implying that a skill is unused',()=>{
+ assert.equal(classifier.names.unknown.ru,'С иконкой «?»');
+ assert.equal(classifier.names.unknown.en,'With “?” icon');
+ assert.equal(classifier.names.player.ru,'Умения персонажа');
+ const model=classifier.build(skills,null,manifest);
+ assert.equal(model.counts.unknown,59);
+ assert.equal(model.missing('500000001'),true);
+ assert.equal(model.matches('500000001','unknown'),true);
+});
 test('regular player skills require both learnability and a real class assignment',()=>{
  const classified=classifier.build(skills,null,manifest);
  assert.equal(classified.total,569);
