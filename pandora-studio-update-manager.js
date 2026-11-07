@@ -20,8 +20,8 @@
     }
     return false;
   };
-  let latest = '', lastActivity = Date.now(), dismissedRelease = '', applying = false;
-  const onActivity = () => { lastActivity = Date.now(); };
+  let latest = '', lastActivity = Date.now(), dismissedRelease = '', applying = false, blockedAutoUpdate = false;
+  const onActivity = () => { lastActivity = Date.now(); blockedAutoUpdate = false; };
   document.addEventListener('pointerdown', onActivity, { passive: true });
   document.addEventListener('keydown', onActivity, { passive: true });
   document.addEventListener('input', onActivity, { passive: true });
@@ -35,7 +35,12 @@
   function applyUpdate() {
     if (applying || !valid(latest)) return;
     applying = true;
-    try { document.dispatchEvent(new Event('pandora:before-update')); } catch (e) { console.warn('Save before update failed', e); applying = false; return; }
+    try {
+      // A browser quota failure must veto navigation, not silently discard the
+      // latest draft or cloud-library conflict copies during an update.
+      const safe = document.dispatchEvent(new Event('pandora:before-update', { cancelable: true }));
+      if (!safe) { applying = false; blockedAutoUpdate = true; return; }
+    } catch (e) { console.warn('Save before update failed', e); applying = false; blockedAutoUpdate = true; return; }
     const next = new URL(location.href);
     next.searchParams.set('ps-revision', latest);
     location.replace(next.toString()); // new HTML + versioned CSS/JS without Ctrl+F5
@@ -111,7 +116,7 @@
   }
   // Automatic reloading is limited to idle non-admin sessions without open forms.
   setInterval(() => {
-    if (latest && latest !== dismissedRelease && !applying &&
+    if (latest && latest !== dismissedRelease && !applying && !blockedAutoUpdate &&
       Date.now() - lastActivity > 120000 && !busy()) applyUpdate();
   }, 15000);
   setInterval(checkVersion, 60000);
