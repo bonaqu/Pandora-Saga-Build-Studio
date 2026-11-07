@@ -246,7 +246,18 @@ async function shareApi(request,env,path,ip){
   if(!source)return json({error:'Эта старая ссылка больше не поддерживается. Попросите владельца создать новую.',reason:'legacy'},410);
   const original=await env.DB.prepare('SELECT deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(source.owner_hash,source.build_id).first();
   if(!original||original.deleted_at!==null)return json({error:'Владелец удалил исходный билд. Ссылка больше недействительна.',reason:'deleted'},410);
-  return json({schema:1,share:JSON.parse(row.payload)});
+  // A damaged public snapshot must not turn one link into HTTP 500.
+  // Do not expose corrupted D1 JSON or rewrite the stored snapshot.
+  let share;
+  try{share=JSON.parse(row.payload)}catch{}
+  const data=share?.data;
+  if(share?.schema!==1||share?.type!=='build'||!data||
+   typeof data!=='object'||Array.isArray(data)||
+   !Number.isInteger(data.race)||data.race<0||data.race>5||
+   !Number.isInteger(data.job)||data.job<0||data.job>=28||
+   !Number.isInteger(data.level)||data.level<1||data.level>55)
+   return json({error:'Ссылка на билд повреждена.',reason:'invalid'},410);
+  return json({schema:1,share});
  }
  if(request.method!=='POST'||path!=='/api/shared')return no('Not found',404);
  const bearer=request.headers.get('authorization')||'';

@@ -112,6 +112,7 @@ const english=Object.freeze({
  'Ссылка на билд уже создана.':'Build link already exists.',
  'Скопировать ссылку':'Copy link','✓ Скопировано':'✓ Copied',
  'Ссылка на билд':'Build link',
+ 'Ссылка на билд повреждена. Попросите владельца создать новую.':'This build link is damaged. Ask the owner to create a new one.',
  'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.':'The link preserves a snapshot. Deleting the original build revokes the link.'
 });
 function text(key,lang='ru'){return strings[key]?.[lang==='en'?1:0]||key}
