@@ -6749,31 +6749,50 @@ async function saveWikiSpawns(monsterId,type,placeId,include,replacesId=null){
   refreshOwnerUI();
  }
 }
+// Whole-list editor payloads are snapshots, not independent field patches.
+// Never let a stale edit overwrite a newer result for the same D1 key.
+function enqueueWikiOwnerListWrite(key,expectedBefore,apply){
+ const earlier=wikiRecordWriteQueue.get(key);
+ const writing=(earlier?earlier.catch(()=>{}):Promise.resolve()).then(async()=>{
+  if(activeOverride(key)!==expectedBefore)
+   throw Error(wt('Список уже изменён. Открой запись заново и повтори правку.',
+    'This list has changed. Reopen the entry and try again.'));
+  return apply();
+ });
+ wikiRecordWriteQueue.set(key,writing);
+ editIsSaving=true;
+ return writing.finally(()=>{
+  if(wikiRecordWriteQueue.get(key)===writing)wikiRecordWriteQueue.delete(key);
+  if(!wikiRecordWriteQueue.size)editIsSaving=false;
+  refreshOwnerUI();
+ });
+}
 async function saveWikiRelationRows(kind,id,rows){
  if(!adminToken||!adminEditing)throw Error('Недостаточно прав');
  if(kind!=='drop'&&kind!=='chest')throw Error('Неизвестный тип связи');
- const key=kind+'edit.'+id,valid=kind==='drop'?
-  window.PandoraWikiOwnerData.validDrops(rows):
-  window.PandoraWikiOwnerData.validChest(rows);
- if(!valid)throw Error('Проверь список и числа');
- // Reject orphaned references before sending an override to D1. The client
- // cannot claim a successful relation if the local overlay would discard it.
- if(kind==='drop'&&(!Object.hasOwn(wikiData?.monsters||{},String(id))||
-  !['d','s'].every(group=>rows[group].every(row=>
-   Object.hasOwn(wikiData?.items||{},String(row.i))))))
-  throw Error('Монстр или один из предметов отсутствует в каталоге');
- if(kind==='chest'&&(!Object.hasOwn(wikiData?.items||{},String(id))||
-  !rows.every(group=>group.every(row=>
-   Object.hasOwn(wikiData?.items||{},String(row.i))))))
-  throw Error('Сундук или одна из наград отсутствует в каталоге');
- const before=activeOverride(key),after=JSON.stringify(rows);
- if(before===after)return;
- editIsSaving=true;
- try{
-  await apiRequest('/api/admin/override',{key,value:after});
-  ownerEdits.push({key,before,after});override[key]=after;
+ const key=kind+'edit.'+id,expectedBefore=activeOverride(key);
+ const value=JSON.stringify(rows);
+ return enqueueWikiOwnerListWrite(key,expectedBefore,async()=>{
+  const saved=JSON.parse(value);
+  const valid=kind==='drop'?
+   window.PandoraWikiOwnerData.validDrops(saved):
+   window.PandoraWikiOwnerData.validChest(saved);
+  if(!valid)throw Error('Проверь список и числа');
+  // Reject orphaned refs instead of claiming a successful ignored overlay.
+  if(kind==='drop'&&(!Object.hasOwn(wikiData?.monsters||{},String(id))||
+   !['d','s'].every(group=>saved[group].every(row=>
+    Object.hasOwn(wikiData?.items||{},String(row.i))))))
+   throw Error('Монстр или один из предметов отсутствует в каталоге');
+  if(kind==='chest'&&(!Object.hasOwn(wikiData?.items||{},String(id))||
+   !saved.every(group=>group.every(row=>
+    Object.hasOwn(wikiData?.items||{},String(row.i))))))
+   throw Error('Сундук или одна из наград отсутствует в каталоге');
+  const before=activeOverride(key);
+  if(before===value)return;
+  await apiRequest('/api/admin/override',{key,value});
+  ownerEdits.push({key,before,after:value});override[key]=value;
   await refreshOwnerCatalog();
- }finally{editIsSaving=false;refreshOwnerUI()}
+ });
 }
 function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000000000}={}){
  if(!adminToken||!adminEditing)return node;
@@ -6852,49 +6871,53 @@ async function saveWikiItemField(id,field,value){
  }
 }
 async function saveWikiTradeRecipe(recipe,changes=null){
- if(!adminToken||!adminEditing||!wikiData?.trades)throw Error('Редактор обменов недоступен');
+ if(!adminToken||!adminEditing||!wikiData?.trades)
+  throw Error('Редактор обменов недоступен');
  const normalized={id:Number(recipe.id),i:Number(recipe.i),
-  npc:(recipe.npc||[]).map(Number),mats:(recipe.mats||[]).map(row=>({i:Number(row.i),n:Number(row.n)})),
+  npc:(recipe.npc||[]).map(Number),
+  mats:(recipe.mats||[]).map(row=>({i:Number(row.i),n:Number(row.n)})),
   gold:Number(recipe.gold||0),honor:Number(recipe.honor||0),exp:Number(recipe.exp||0)};
- const key='tradeedit.'+normalized.id,previous=activeOverride(key);
- const patch=changes||{recipe:normalized};
- if(changes===null&&!window.PandoraStudioTradeOwnerData.recipeValid(
-  normalized,wikiData.items,wikiData.trades.npcs))
-  throw Error('Проверь выбранные предметы, NPC и стоимость обмена');
- const value=JSON.stringify(patch);
- editIsSaving=true;
- try{
+ const key='tradeedit.'+normalized.id,expectedBefore=activeOverride(key);
+ const value=JSON.stringify(changes||{recipe:normalized});
+ return enqueueWikiOwnerListWrite(key,expectedBefore,async()=>{
+  if(changes===null&&!window.PandoraStudioTradeOwnerData.recipeValid(
+   normalized,wikiData.items,wikiData.trades.npcs))
+   throw Error('Проверь выбранные предметы, NPC и стоимость обмена');
+  const before=activeOverride(key);
+  if(before===value)return;
   await apiRequest('/api/admin/override',{key,value});
-  override[key]=value;ownerEdits.push({key,before:previous,after:value});
+  override[key]=value;ownerEdits.push({key,before,after:value});
   await refreshOwnerCatalog();
- }finally{editIsSaving=false;refreshOwnerUI()}
+ });
 }
 async function saveWikiAcquisitions(itemId,rows){
  if(!adminToken||!adminEditing||!wikiData?.items?.[itemId])
   throw Error('Редактирование источников недоступно');
- if(!Array.isArray(rows)||rows.length>24||rows.some(row=>
-  !['npc','monster'].includes(row.type)||!/^[1-9][0-9]{0,14}$/.test(String(row.id))||
-  (row.p!=null&&(!Number.isFinite(row.p)||row.p<0||row.p>100||row.type!=='monster'))||
-  !(row.type==='npc'?wikiData.trades?.npcs?.[row.id]:wikiData.monsters?.[row.id])))
-  throw Error('Некорректная ссылка на NPC или монстра');
- const normalized=[...new Map(rows.map(row=>[row.type+':'+row.id,
-   {type:row.type,id:String(row.id),
-    ...(row.type==='monster'&&Number.isFinite(row.p)?{p:row.p}:{})}])).values()];
- const key='acquireedit.'+itemId,previous=activeOverride(key);
- if(JSON.stringify(normalized)===JSON.stringify(wikiData.ownerAcquisitions?.[itemId]||[]))return;
- editIsSaving=true;
- try{
+ // Preserve the exact requested list while waiting for any earlier same-key save.
+ const normalized=[...new Map((rows||[]).map(row=>[row.type+':'+row.id,
+  {type:row.type,id:String(row.id),
+   ...(row.type==='monster'&&Number.isFinite(row.p)?{p:row.p}:{})}
+ ])).values()];
+ const key='acquireedit.'+itemId,expectedBefore=activeOverride(key);
+ const value=JSON.stringify(normalized);
+ return enqueueWikiOwnerListWrite(key,expectedBefore,async()=>{
+  if(!Array.isArray(rows)||rows.length>24||rows.some(row=>
+   !['npc','monster'].includes(row.type)||!/^[1-9][0-9]{0,14}$/.test(String(row.id))||
+   (row.p!=null&&(!Number.isFinite(row.p)||row.p<0||row.p>100||row.type!=='monster'))||
+   !(row.type==='npc'?wikiData.trades?.npcs?.[row.id]:wikiData.monsters?.[row.id])))
+   throw Error('Некорректная ссылка на NPC или монстра');
+  const before=activeOverride(key);
+  if(value===JSON.stringify(wikiData.ownerAcquisitions?.[itemId]||[]))return;
   if(!normalized.length){
-   if(previous===null)return;
+   if(before===null)return;
    await apiRequest('/api/admin/reset',{key});delete override[key];
-   ownerEdits.push({key,before:previous,after:null});
+   ownerEdits.push({key,before,after:null});
   }else{
-   const value=JSON.stringify(normalized);
    await apiRequest('/api/admin/override',{key,value});
-   override[key]=value;ownerEdits.push({key,before:previous,after:value});
+   override[key]=value;ownerEdits.push({key,before,after:value});
   }
   await refreshOwnerCatalog();
- }finally{editIsSaving=false;refreshOwnerUI()}
+ });
 }
 function inlineWikiText(el){
  const key=el?.dataset?.editKey;
