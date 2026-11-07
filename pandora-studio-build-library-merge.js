@@ -2,7 +2,7 @@
 'use strict';
 // Keep conflicting local and cloud snapshots: a timestamp is not an edit history.
 const ID=/^[a-f0-9]{32}$/;
-function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}){
+function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lang='ru'}={}){
  if(!Array.isArray(local)||!Array.isArray(remote)||typeof newId!=='function')
   throw Error('Invalid library merge inputs');
  const pending=new Set(Array.isArray(pendingDeletes)?pendingDeletes:[]);
@@ -19,9 +19,11 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId}={}
   }
   if(!id)throw Error('Unable to reserve unique local conflict copy ID');
   known.add(id);copies++;
-  const suffix=origin==='deleted'?' · копия удалённого билда':
-   origin==='local'?' · локальная копия':' · облачная копия';
-  const duplicate={...source,id,name:String(source.name||'Билд').slice(0,70-suffix.length)+suffix,
+  const english=lang==='en';
+  const suffix=origin==='deleted'?(english?' · deleted build copy':' · копия удалённого билда'):
+   origin==='local'?(english?' · local copy':' · локальная копия'):
+   (english?' · cloud copy':' · облачная копия');
+  const duplicate={...source,id,name:String(source.name||(english?'Build':'Билд')).slice(0,70-suffix.length)+suffix,
    at:Math.max(Date.now(),Number(source.at)||0),localOnly:true};
   merged.push(duplicate); // A conflict copy stays local until explicitly saved.
   return id;
