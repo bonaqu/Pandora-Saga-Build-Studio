@@ -76,6 +76,13 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal((await level.locator('[data-compare-delta]').innerText()).trim(),'-30');
   assert.equal(await selects.nth(0).inputValue(),idB);
   assert.equal(await selects.nth(1).inputValue(),idA);
+  // Language switches must preserve the two selected saved records and filters.
+  await page.locator('#locale [data-locale="en"]').click();
+  assert.match(await panel.locator('.build-compare-summary').innerText(),/Different:/);
+  assert.equal((await panel.locator('[data-compare-row="level"] th').innerText()).trim(),'Level');
+  assert.equal(await selects.nth(0).inputValue(),idB);
+  await page.locator('#locale [data-locale="ru"]').click();
+  assert.equal(await selects.nth(1).inputValue(),idA);
   const persisted=await page.evaluate(()=>JSON.stringify(
    JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')));
   assert.equal(persisted,original,

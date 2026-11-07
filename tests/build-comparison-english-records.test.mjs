@@ -52,15 +52,14 @@ test('A/B matrix uses verified English items and souls while preserving Russian 
  assert.equal(a.equipment[0].id,1);assert.equal(b.souls[0][0].id,32);
 });
 
-test('official English is passed to both saved build difference renderers',()=>{
+test('official English is passed to the actual active A/B matrix renderer',()=>{
  const app=read('pandora-studio-app.js');
- const old=app.slice(app.indexOf('function compareSnapshots(a,b){'),
-  app.indexOf('function restoreLoadedBuildUI(){'));
- assert.match(old,/englishNames:officialEnglish\?\.\[kind==='soul'\?'souls':'items'\]\|\|\{\}/);
  const start=app.indexOf('PandoraBuildComparison.matrixRows(');
  const end=app.indexOf('let current=null;',start);
  assert.ok(start>=0&&end>start,'The full A/B invocation must exist');
  const matrix=app.slice(start,end);
  assert.match(matrix,/englishItems:officialEnglish\?\.items\|\|\{\}/);
  assert.match(matrix,/englishSouls:officialEnglish\?\.souls\|\|\{\}/);
+ assert.match(matrix,/englishSkills:officialEnglish\?\.skills\|\|\{\}/);
+ assert.doesNotMatch(app,/function compareSnapshots\(/);
 });
