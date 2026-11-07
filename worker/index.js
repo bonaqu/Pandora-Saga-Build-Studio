@@ -18,6 +18,36 @@ function json(body,status=200,headers={}){return new Response(JSON.stringify(bod
 function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Expose-Headers':'X-PS-Catalog-Snapshot','Vary':'Origin'}:{}}
 function no(message,status=400){return json({error:message},status)}
 async function body(request,limit=8192){try{if(Number(request.headers.get('content-length')||0)>limit)throw Error('Request too large');return await request.json()}catch{return null}}
+const OWNER_EDIT_BODY_LIMIT=384*1024;
+// An owner CAS request contains both the old and the new JSON value.
+// Enforce the actual UTF-8 byte count, including requests with no
+// Content-Length, rather than rejecting valid 24 KB chest records.
+async function ownerEditBody(request){
+ const given=request.headers.get('content-length');
+ if(given!==null&&(!/^[0-9]+$/.test(given)||Number(given)>OWNER_EDIT_BODY_LIMIT))
+  return null;
+ const reader=request.body?.getReader?.();
+ if(!reader)return null;
+ const chunks=[];
+ let total=0;
+ try{
+  while(true){
+   const {value,done}=await reader.read();
+   if(done)break;
+   if(!(value instanceof Uint8Array))return null;
+   total+=value.byteLength;
+   if(total>OWNER_EDIT_BODY_LIMIT){
+    await reader.cancel().catch(()=>{});
+    return null;
+   }
+   chunks.push(value);
+  }
+  const all=new Uint8Array(total);
+  let offset=0;
+  for(const chunk of chunks){all.set(chunk,offset);offset+=chunk.byteLength}
+  return JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(all));
+ }catch{return null}
+}
 async function auth(request,env){const header=request.headers.get('authorization')||'';if(!header.startsWith('Bearer '))return false;const token=header.slice(7);if(!/^[A-Za-z0-9_-]{40,60}$/.test(token))return false;const hash=await sha(token),now=Date.now();const row=await env.DB.prepare('SELECT id FROM sessions WHERE token_hash=? AND expires>?').bind(hash,now).first();return !!row}
 async function throttle(env,ip){const key=await sha(ip);const now=Date.now();const result=await env.DB.prepare('SELECT attempts,reset_at FROM login_attempts WHERE ip_hash=?').bind(key).first();return result&&result.reset_at>now&&result.attempts>=5}
 async function recordFailed(env,ip){const key=await sha(ip),now=Date.now();await env.DB.prepare(`INSERT INTO login_attempts (ip_hash,attempts,reset_at) VALUES (?,1,?) ON CONFLICT(ip_hash) DO UPDATE SET attempts=CASE WHEN reset_at<? THEN 1 ELSE attempts+1 END,reset_at=CASE WHEN reset_at<? THEN excluded.reset_at ELSE reset_at END`).bind(key,now+900000,now,now).run()}
@@ -818,7 +848,7 @@ function validAcquisitionOverride(text){
 }
 if(path==='/api/admin/override'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
- const data=await body(request,32768);const key=data?.key,value=data?.value;
+ const data=await ownerEditBody(request);const key=data?.key,value=data?.value;
  if(typeof key!=='string'||!OWNER_EDITABLE_KEY_PATTERN.test(key)||typeof value!=='string'||!value.trim()||value.length>(key.startsWith('itemedit.')?12000:key.startsWith('acquireedit.')?1800:key.startsWith('tradeedit.')?6000:(key.startsWith('wikiedit.')||key.startsWith('guideedit.'))?8000:key.startsWith('spawnedit.')?6000:(key.startsWith('dropedit.')||key.startsWith('chestedit.'))?24000:(key.startsWith('skilldesc.')||key.startsWith('itemdesc.'))?2000:240))return no('Unsupported editable field');
  if(key.startsWith('itemedit.')&&!validItemOwnerPatch(value))return no('Invalid structured item edit',400);
  if(key.startsWith('acquireedit.')&&!validAcquisitionOverride(value))return no('Invalid acquisition relations',400);
@@ -858,7 +888,7 @@ if(path==='/api/admin/override'&&method==='POST'){
 }
 if(path==='/api/admin/reset'&&method==='POST'){
  if(!await auth(request,env))return no('Unauthorized',401);
- const data=await body(request),key=data?.key;
+ const data=await ownerEditBody(request),key=data?.key;
  if(typeof key!=='string'||!OWNER_EDITABLE_KEY_PATTERN.test(key))return no('Unsupported editable field');
  if(Object.hasOwn(data,'expectedValue')){
   const expected=data.expectedValue;
