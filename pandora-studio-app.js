@@ -6690,7 +6690,7 @@ async function saveWikiSpawns(monsterId,type,placeId,include){
  try{
   await apiRequest('/api/admin/override',{key:recordKey,value:after});
   override[recordKey]=after;ownerEdits.push({key:recordKey,before,after});
-  refreshOwnerCatalog();
+  await refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveWikiRelationRows(kind,id,rows){
@@ -6715,7 +6715,8 @@ async function saveWikiRelationRows(kind,id,rows){
  editIsSaving=true;
  try{
   await apiRequest('/api/admin/override',{key,value:after});
-  ownerEdits.push({key,before,after});override[key]=after;refreshOwnerCatalog();
+  ownerEdits.push({key,before,after});override[key]=after;
+  await refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 function wikiOwnerNumeric(node,value,type,id,field,{integer=false,min=0,max=1000000000}={}){
@@ -6796,7 +6797,7 @@ async function saveWikiTradeRecipe(recipe,changes=null){
  try{
   await apiRequest('/api/admin/override',{key,value});
   override[key]=value;ownerEdits.push({key,before:previous,after:value});
-  refreshOwnerCatalog();
+  await refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 async function saveWikiAcquisitions(itemId,rows){
@@ -6823,7 +6824,7 @@ async function saveWikiAcquisitions(itemId,rows){
    await apiRequest('/api/admin/override',{key,value});
    override[key]=value;ownerEdits.push({key,before:previous,after:value});
   }
-  refreshOwnerCatalog();
+  await refreshOwnerCatalog();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
 function inlineWikiText(el){
