@@ -15,7 +15,16 @@ try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');
  if(validSession(raw))session={token:raw.token,expires:raw.expires,
   username:validName(raw.username)};
 }catch{}
-function token(){return session?.token||null}
+// A tab may stay open beyond the server-issued expiry. Stop using the old
+// owner identity before any cloud request or account-dependent UI lookup.
+function activeSession(){
+ if(!session)return false;
+ if(validSession(session))return true;
+ clearSession();
+ options?.onLogout?.({expired:true});
+ return false;
+}
+function token(){return activeSession()?session.token:null}
 const tr=value=>root.PandoraUILocale?.ui(value,document.documentElement.lang)||value;
 function node(tag,cls='',text=''){
  const el=document.createElement(tag);
@@ -59,6 +68,7 @@ function setSession(result){
 function clearSession(){session=null;pendingRecoveryCode=null;localStorage.removeItem(KEY)}
 function render(){
  if(!panel||!trigger)return;
+ activeSession();
  panel.replaceChildren();
  trigger.classList.toggle('active',Boolean(session));
  trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
@@ -219,6 +229,7 @@ async function init(config){
  }else options.onGuest?.();
  finishBootstrap();
 }
-root.PandoraAccountUI=Object.freeze({init,token,username:()=>session?.username||null,
- refresh:render,isLoggedIn:()=>Boolean(session)});
+root.PandoraAccountUI=Object.freeze({init,token,
+ username:()=>activeSession()?session.username:null,
+ refresh:render,isLoggedIn:()=>activeSession()});
 })(typeof window==='undefined'?globalThis:window);

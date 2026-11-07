@@ -13,7 +13,7 @@ function deferred(){
  let resolve;const promise=new Promise(r=>{resolve=r});
  return {promise,resolve};
 }
-function create({stored=null,fetchImpl=async()=>({ok:true,status:200,
+function create({stored=null,clock=Date,fetchImpl=async()=>({ok:true,status:200,
  json:async()=>({account:{username:'alice_01'}})})}={}){
  const map=new Map();
  if(stored!==null)map.set('ps-account-session.v1',JSON.stringify(stored));
@@ -30,7 +30,7 @@ function create({stored=null,fetchImpl=async()=>({ok:true,status:200,
   getElementById:id=>id==='profileTrigger'?trigger:id==='accountPanel'?panel:null,
   addEventListener(){}};
  const root={},ctx={window:root,localStorage:storage,document:doc,
-  fetch:fetchImpl,Date,console};
+  fetch:fetchImpl,Date:clock,console};
  vm.runInNewContext(script,ctx);
  const options={baseUrl:'https://example.invalid',
   onLogin:e=>events.login.push(e),onLogout:e=>events.logout.push(e),
@@ -120,4 +120,49 @@ test('late /me failure never signs out a newer login and late /me success cannot
   assert.equal(c.events.login.length,0);
   assert.equal(JSON.parse(c.storage.getItem('ps-account-session.v1')).username,'bob_222');
  }
+});
+
+test('an already-open tab signs out exactly once when account session expires',async()=>{
+ let now=Date.now();
+ class Clock extends Date{static now(){return now}}
+ const record={token:'a'.repeat(43),username:'alice_01',expires:now+30000};
+ const c=create({stored:record,clock:Clock});
+ await c.init();
+ assert.equal(c.api.token(),record.token);
+ assert.equal(c.api.username(),'alice_01');
+ assert.equal(c.api.isLoggedIn(),true);
+ now+=30001;
+ assert.equal(c.api.token(),null,'No expired credential may be sent to the Worker');
+ assert.equal(c.api.username(),null,'Do not reuse an expired account as owner scope');
+ assert.equal(c.api.isLoggedIn(),false);
+ assert.equal(c.storage.getItem('ps-account-session.v1'),null);
+ assert.equal(c.events.logout.length,1);
+ assert.equal(c.events.logout[0].expired,true);
+ c.api.refresh();
+ assert.equal(c.events.logout.length,1,'Repeated renders do not repeat logout');
+});
+
+test('refreshing the profile after expiry also clears the owner before rendering',async()=>{
+ let now=Date.now();
+ class Clock extends Date{static now(){return now}}
+ const c=create({stored:{token:'b'.repeat(43),username:'alice_01',
+  expires:now+1500},clock:Clock});
+ await c.init();
+ now+=2000;
+ c.api.refresh();
+ assert.equal(c.api.isLoggedIn(),false);
+ assert.equal(c.events.logout.length,1);
+ assert.equal(c.storage.getItem('ps-account-session.v1'),null);
+});
+
+test('a temporary network error does not sign out a session whose expiry is still valid',async()=>{
+ let now=Date.now();
+ class Clock extends Date{static now(){return now}}
+ const c=create({stored:{token:'b'.repeat(43),username:'alice_01',
+  expires:now+100000},clock:Clock,fetchImpl:async()=>reply({},503)});
+ await c.init();
+ now+=90000;
+ assert.equal(c.api.isLoggedIn(),true);
+ assert.equal(c.events.logout.length,0);
+ assert.equal(c.api.token(),'b'.repeat(43));
 });
