@@ -199,7 +199,15 @@ async function init(config){
  trigger=document.getElementById('profileTrigger');
  panel=document.getElementById('accountPanel');
  if(!trigger||!panel)throw Error('Missing account UI elements');
- trigger.addEventListener('click',()=>{panel.hidden=!panel.hidden;if(!panel.hidden)render()});
+ trigger.addEventListener('click',()=>{
+  const previous=session?.token||null;
+  activeSession();
+  panel.hidden=!panel.hidden;
+  // Closing/reopening the popover does not mean the owner wanted to discard
+  // password edits. Refresh only when its identity changed or no UI exists.
+  if(!panel.hidden&&((session?.token||null)!==previous||!panel.hasChildNodes?.()))
+   render();
+ });
  document.addEventListener('pointerdown',event=>{
   if(!panel.hidden&&!panel.contains(event.target)&&!trigger.contains(event.target))
    panel.hidden=true;
