@@ -724,7 +724,8 @@ function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,lev
  }
  return result;
 }
-function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildArouse=0}={}){
+function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildArouse=0,
+ weaponGrade=0,weaponEnhancementType='physical',magicPlus=null}={}){
  if(!Number.isFinite(int)||int<0||
   !Number.isInteger(magicMastery)||magicMastery<0||
   !Number.isInteger(guildArouse)||guildArouse<0||guildArouse>3)return null;
@@ -735,9 +736,17 @@ function magicAttackPreview({int,jobKey=null,magicMastery=0,weapon=null,guildAro
  const staffId=Number(weapon?.id);
  const staff=weapon?.kind==='WAND'?10:weapon?.kind==='STAFF'?
   (staffId===2841?20:(staffId===2802||staffId===2812)?0:15):0;
- const guild=[0,2,4,6][guildArouse],exact=100+step+passive+staff+guild;
- return {known:exact>=100?Math.floor(exact*10)/10:exact,
-  base:100,intelligence:step,passive,staff,guild,verified:false};
+ const guild=[0,2,4,6][guildArouse],baseExact=100+step+passive+staff+guild;
+ // OS news #4: magical weapon refinement adds MATK percent points from
+ // tables.magicPlus[grade].ratio. The source's additional "flat" column is
+ // a different undocumented field; never count it as a second MATK bonus.
+ const magical=weaponEnhancementType==='magical'&&weapon?.slot==='weapon'&&weaponGrade>0;
+ const tier=magical?magicPlus?.[String(weaponGrade)]:null;
+ const refinement=magical?(Number.isFinite(tier?.ratio)?tier.ratio:null):0;
+ const exact=refinement===null?null:baseExact+refinement;
+ return {known:exact===null?null:(exact>=100?Math.floor(exact*10)/10:exact),
+  base:100,intelligence:step,passive,staff,guild,refinement,
+  beforeRefinement:baseExact,verified:false};
 }
 // Strictly opt-in skill effects. Gate every buff by current OS class and
 // character level, not by the presence of an unchecked saved toggle.
@@ -807,7 +816,8 @@ function racialWeaponPreview({racialPassiveId=null,skillCatalog=null,weapon=null
    'magic and skill damage interactions','weapon class-specific exceptions']};
 }
 function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiveId=null,
- weapon=null,weaponGrade=0,weaponPlus=null,records=[],itemForth=null,
+ weapon=null,weaponGrade=0,weaponPlus=null,magicPlus=null,
+ weaponEnhancementType='physical',records=[],itemForth=null,
  jobKey=null,meleeMastery=0,magicMastery=0,techniqueInnate=0,
  techniqueTrained=0,guildArouse=0,combatBuffs={},skillCatalog=null,
  priestEffects={},branchMasteries={}}={}){
@@ -842,7 +852,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const racialRate={accuracy:racialPassiveId===900040002?10:0,
   dodge:racialPassiveId===900040003?5:0};
  const racialWeapon=racialWeaponPreview({racialPassiveId,skillCatalog,weapon});
- const attack=weaponAttackPreview({str:stats.str,weapon,grade:weaponGrade,
+ const attack=weaponAttackPreview({str:stats.str,weapon,
+  grade:weaponEnhancementType==='magical'?0:weaponGrade,
   weaponPlus,honorTitle});
  const defense=defensePreview({records,honorTitle,itemForth});
  const equipped=equippedCombatModifiers(records,itemForth);
@@ -911,7 +922,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
   verified:false,excluded:['gear enhancement-dependent zero-valued effects',
    'conditional active skill discounts']};
  const magicAttack=magicAttackPreview({int:stats.int,jobKey,magicMastery,
-  weapon,guildArouse});
+  weapon,weaponGrade,weaponEnhancementType,magicPlus,guildArouse});
  // Current OS EP_ELEMENT_DAMAGE_SCALE often represents the same staff bonus
  // already counted as +10/+15 above. Expose it, never double-add it to MATK.
  const spellDamageEquipmentRate=equipped.elementDamageRate;
@@ -2202,11 +2213,19 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   lapisMedio:priestValid&&priest.blessing>=12&&attributeBuffs?.priestLapisMedio===true?
    legacyBuffs.lapisMedio.value:0
  }:{};
+ // Gem-type selection determines which weapon enhancement table is active.
+ // A saved older build without a chosen gem preserves the legacy physical
+ // fallback; a typed magical gem must not also receive physical weaponPlus.
+ const weaponGem=gemSelections.find(row=>row?.slot==='weapon'&&
+  row.itemId===combatContext.weapon?.id&&row.grade===combatContext.weaponGrade);
+ const weaponEnhancementType=weaponGem?.gem?.type||
+  combatContext.weaponEnhancementType||'physical';
  const combat=combatPreview({stats,level,bonuses:effects.bonuses,records:combinedRecords,itemForth,
   priestEffects,
   guildArouse:attributeBuffs?.guildArouse??0,
   combatBuffs:attributeBuffs,
-  honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,...combatContext});
+  honorTitle:extra.honor.id,racialPassiveId:potionContext?.racialPassiveId,
+  ...combatContext,weaponEnhancementType});
  // An unavailable weapon/armor preview must NEVER erase otherwise valid HP/MP.
  if(!resistances||!regeneration)return null;
  return {hp:hpBase+hpBonus.total,mp:mpBase+mpBonus.total,
