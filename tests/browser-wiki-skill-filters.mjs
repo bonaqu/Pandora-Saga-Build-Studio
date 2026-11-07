@@ -104,6 +104,9 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   // Exercise two successive queries in an unchanged EN view. The cached
   // translated-name resolver must not lock the first query's results.
   const search=page.locator('.wiki-controls input[type="search"]');
+  // The approved anti-password-autofill guard makes this readOnly until an
+  // actual pointer/focus gesture, as in normal player interaction.
+  await search.click();
   await search.fill('Гармония');
   await page.waitForFunction(()=>
    document.querySelectorAll('.wiki-list [data-wiki-record]').length===1&&
