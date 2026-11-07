@@ -7,7 +7,8 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const source=read('pandora-studio-update-manager.js');
 function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru'){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
- let currentRemote=remote;
+ let currentRemote=remote,holdResponses=false;
+ const heldRequests=[];
  const document={
   documentElement:{lang:locale},
   querySelector:selector=>selector==='meta[name="ps-studio-release"]'?{content:local}:null,
@@ -28,13 +29,21 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
   MutationObserver:class MutationObserver {
    constructor(fn){languageChanged=fn}observe(){}
   },
-  fetch:async()=>({ok:true,json:async()=>({release:currentRemote})}),
+  fetch:async()=>{
+   if(holdResponses)return new Promise(resolve=>heldRequests.push(resolve));
+   return {ok:true,json:async()=>({release:currentRemote})};
+  },
   setInterval:()=>0,setTimeout:(fn,delay)=>{if(delay===3000)check=fn;return 1},
   clearTimeout:()=>{}
  });
  return{
   check:()=>check(),
   setRemote:release=>{currentRemote=release},
+  holdChecks:()=>{holdResponses=true},
+  heldCount:()=>heldRequests.length,
+  resolveCheck:(index,release)=>heldRequests[index]({
+   ok:true,json:async()=>({release})
+  }),
   setLocale:language=>{document.documentElement.lang=language;languageChanged?.()},
   get banner(){return banner},get normalized(){return normalized},
   get navigated(){return navigated},get saved(){return saved}
@@ -97,4 +106,35 @@ test('the update prompt respects EN and live language changes without a page rel
  assert.equal(page.banner.children[2].textContent,'Позже');
  page.setLocale('en');
  assert.equal(page.banner.children[1].textContent,'Update');
+});
+
+test('Later dismisses the newest release even when the original banner is older',async()=>{
+ const page=boot('2026.11.07.440','2026.11.07.441');
+ await page.check();
+ const original=page.banner;
+ page.setRemote('2026.11.07.442');
+ await page.check();
+ assert.equal(page.banner,original,'Keep the existing banner rather than duplicate it');
+ original.children[2].listeners.click();
+ assert.equal(original.removed,true);
+ await page.check();
+ assert.equal(page.banner,original,'Do not immediately re-prompt the dismissed latest');
+ page.setRemote('2026.11.07.443');
+ await page.check();
+ assert.notEqual(page.banner,original,'A third publication still offers an update');
+});
+test('out-of-order version checks cannot downgrade the current update target',async()=>{
+ const page=boot('2026.11.07.440','2026.11.07.441');
+ page.holdChecks();
+ const older=page.check(),newer=page.check();
+ assert.equal(page.heldCount(),2);
+ page.resolveCheck(1,'2026.11.07.443');
+ await newer;
+ assert.ok(page.banner);
+ page.resolveCheck(0,'2026.11.07.442');
+ await older;
+ page.banner.children[1].listeners.click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]07[.]443/,
+  'The most recently published release must remain the update target');
+ assert.equal(page.saved,1);
 });
