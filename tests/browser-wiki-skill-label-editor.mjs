@@ -21,16 +21,20 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   if(url.endsWith('/api/admin/override')){
    assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
    const post=route.request().postDataJSON();
+   assert.equal(post.expectedValue,Object.hasOwn(values,post.key)?values[post.key]:null,
+    'Every owner field save must use the current D1 value as a precondition');
    writes.push(post);
    values[post.key]=post.value;
-   return json({ok:true,key:post.key,value:post.value});
+   return json({ok:true,key:post.key,value:post.value,conditional:true});
   }
   if(url.endsWith('/api/admin/reset')){
    const post=route.request().postDataJSON();
+   assert.equal(post.expectedValue,Object.hasOwn(values,post.key)?values[post.key]:null,
+    'Undo must not delete another browser’s newer owner edit');
    resets.push(post);
    const deleted=Object.hasOwn(values,post.key);
    delete values[post.key];
-   return json({ok:true,key:post.key,deleted});
+   return json({ok:true,key:post.key,deleted,conditional:true});
   }
   if(url.endsWith('/api/overrides'))return json({values});
   return route.abort();
@@ -129,7 +133,8 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
    .startsWith('Неуточнённые'),null,{timeout:10000});
   assert.equal(Object.hasOwn(values,'guideedit.wiki.labels'),false,
    'Undo of the first owner label change must delete the new override');
-  assert.deepEqual(resets,[{key:'guideedit.wiki.labels'}]);
+  assert.deepEqual(resets,[{key:'guideedit.wiki.labels',
+   expectedValue:JSON.stringify({skill_filter_unknown_ru:'Дополнительные навыки'})}]);
   assert.deepEqual(errors,[]);
   console.log('Chromium skill labels: reused Encyclopedia category UI, 7 editable labels, autosave, stable selection, mobile');
  }finally{await context.close()}
