@@ -3,15 +3,29 @@ import assert from 'node:assert/strict';
 export async function runWikiSkillLabelEditorSmoke(browser,base){
  const context=await browser.newContext({viewport:{width:1040,height:780}});
  const writes=[],errors=[];
+ const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  await context.route('**/*',route=>{
-  const url=route.request().url();
+  const url=route.request().url(),method=route.request().method();
+  if(url.startsWith(base+'/'))return route.continue();
+  if(!url.startsWith(api+'/'))return route.abort();
+  const headers={'access-control-allow-origin':'*',
+   'access-control-allow-headers':'Content-Type,Authorization',
+   'access-control-allow-methods':'GET,POST,OPTIONS'};
+  if(method==='OPTIONS')return route.fulfill({status:204,headers});
+  const json=value=>route.fulfill({status:200,headers,
+   contentType:'application/json',body:JSON.stringify(value)});
+  if(url.endsWith('/api/admin/login')){
+   assert.equal(route.request().postDataJSON().password,'Correct admin password!');
+   return json({token:'a'.repeat(43),expires:Date.now()+600000});
+  }
   if(url.endsWith('/api/admin/override')){
+   assert.equal(route.request().headers().authorization,'Bearer '+'a'.repeat(43));
    const post=route.request().postDataJSON();
    writes.push(post);
-   return route.fulfill({status:200,contentType:'application/json',
-    body:JSON.stringify({ok:true})});
+   return json({ok:true,key:post.key,value:post.value});
   }
-  return url.startsWith(base+'/')?route.continue():route.abort();
+  if(url.endsWith('/api/overrides'))return json({values:{}});
+  return route.abort();
  });
  const page=await context.newPage();
  page.on('pageerror',error=>errors.push(error.message));
@@ -23,13 +37,14 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   assert.equal(await page.locator('.wiki-skill-label-editor').count(),0,
    'Public readers must not see editing controls');
 
-  // Set only this isolated browser's test session to owner mode. All external
-  // network writes are captured by the route above; production D1 is untouched.
-  await page.evaluate(()=>{
-   adminToken='fake-local-test-token';
-   adminEditing=true;
-   renderDetails();
-  });
+  // Exercise the actual password-protected owner path in an isolated
+  // network-stubbed browser. No test backdoor is added to production code.
+  await page.keyboard.press('Control+Alt+Shift+P');
+  await page.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
+  await page.locator('input[placeholder="Пароль администратора"]')
+   .fill('Correct admin password!');
+  await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
+  await page.locator('#ownerDock').waitFor({state:'visible'});
   const control=page.locator('.wiki-skill-type');
   await control.waitFor({state:'visible',timeout:20000});
   assert.equal(await control.inputValue(),'player');
