@@ -44,8 +44,20 @@ function setOwned(storage,scope,key,value){
  if(!validScope(scope)||!KEYS.includes(key))throw Error('Invalid owner or storage key');
  const index=KEYS.indexOf(key),next=value==null?DEFAULTS[index]:String(value);
  if(storage.getItem(MARKER)===scope){
-  if(next==='')storage.removeItem(key);else storage.setItem(key,next);
-  sync(storage);
+  const previous=storage.getItem(key);
+  try{
+   if(next==='')storage.removeItem(key);else storage.setItem(key,next);
+   sync(storage);
+  }catch(error){
+   // A quota error can happen on the recovery-cache write AFTER the
+   // primary slot was changed. Restore that primary value before reporting
+   // the save as failed, so a confirmed deletion cannot be only half-saved.
+   try{
+    if(previous===null)storage.removeItem(key);
+    else storage.setItem(key,previous);
+   }catch{}
+   throw error;
+  }
  }else{
   const values=storedSnapshot(storage,scope);
   values[index]=next;
