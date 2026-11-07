@@ -22,6 +22,9 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   await page.locator('[data-wiki-record="600000231"]').waitFor({state:'visible'});
   assert.equal(await page.locator('[data-wiki-record="600000232"]').count(),1,
    'Different guild ranks remain distinct, even when they share artwork');
+  assert.ok((await filter.locator('option[value="unknown"]').innerText())
+   .startsWith('С иконкой «?»'),
+   'Question-mark filter should describe its visual cue, not call it missing artwork');
   await filter.selectOption('unknown');
   await page.locator('[data-wiki-record="500000001"]').waitFor({state:'visible'});
   const sleep=page.locator('[data-wiki-record="500000001"]');
@@ -47,6 +50,8 @@ export async function runWikiSkillFiltersSmoke(browser,base){
   await filter.waitFor({state:'visible'});
   assert.equal(await filter.locator('option[value="player"]').innerText()
    .then(text=>text.startsWith('Character skills')),true);
+  assert.ok((await filter.locator('option[value="unknown"]').innerText())
+   .startsWith('With “?” icon'),'English label should match the same icon');
   await page.setViewportSize({width:390,height:780});
   assert.ok((await filter.boundingBox())?.width>80,'Mobile filter remains usable');
   const overflow=await page.evaluate(()=>
