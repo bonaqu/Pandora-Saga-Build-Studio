@@ -45,8 +45,12 @@ function build(records={},index=null,manifest=null,overrides={}){
   groups.set(String(id),group);
   const override=overrides['visual.skill.'+id];
   const source=aliases[stem];
-  if(manifest?.icons&&!override&&!original[stem]&&
-   !(source&&original[source])&&!donorNames.has(name))missing.add(String(id));
+  // Mirror the rendered question-mark fallback. If the icon manifest is
+  // unavailable, every skill without an owner icon currently displays '?'.
+  // A new D1 row with no iconId cannot borrow a same-named original, either.
+  if(!override&&(!manifest?.icons||(!original[stem]&&
+   !(source&&original[source])&&!(skill?.iconId&&donorNames.has(name)))))
+   missing.add(String(id));
  }
  const counts=Object.fromEntries(Object.keys(names).map(key=>[key,
   key==='unknown'?missing.size:key==='all'?all.length:
