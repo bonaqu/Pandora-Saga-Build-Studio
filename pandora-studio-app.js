@@ -259,12 +259,21 @@ async function deleteCloudBuild(id){
 }
 async function loadCloudBuilds(){
  const generation=libraryChangeId;
+ let pendingDeleteFailures=0;
  try{
   for(const id of queuedDeletes()){
    if(libraryChangeId!==generation)return;
-   await cloudLibraryRequest({action:'delete',id});
-   if(libraryChangeId!==generation)return;
-   acknowledgeDelete(id);
+   try{
+    await cloudLibraryRequest({action:'delete',id});
+    if(libraryChangeId!==generation)return;
+    acknowledgeDelete(id);
+   }catch(error){
+    if(libraryChangeId!==generation)return;
+    // A failed revocation must remain queued, but must not hide every
+    // other healthy cloud build. The pending ID is filtered by reconcile().
+    pendingDeleteFailures++;
+    console.warn('Pending cloud deletion will be retried',error);
+   }
   }
   const response=await cloudLibraryRequest();
   if(!Array.isArray(response.records))throw Error('Некорректная библиотека');
@@ -297,6 +306,8 @@ async function loadCloudBuilds(){
     'Some cloud builds are unavailable · original records are preserved':
     'Некоторые облачные билды недоступны · исходные записи сохранены')+
     ' ('+unavailable+')');
+  if(pendingDeleteFailures&&libraryChangeId===generation)
+   reportCloudStatus('Библиотека загружена · удаление некоторых ссылок ещё не подтверждено');
  }catch(error){
   console.warn('Cloud library unavailable',error);
   if(libraryChangeId===generation)
