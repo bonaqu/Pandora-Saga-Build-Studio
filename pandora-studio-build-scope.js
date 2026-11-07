@@ -78,8 +78,13 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
  // A pre-upgrade cache is attributed to its former owner before switching.
  if(!raw||previous===next)syncWithOwner(storage,previous);
  if(previous===next){
-  storage.setItem(MARKER,next);
-  sync(storage);return {changed:false,owner:next,previous};
+  try{storage.setItem(MARKER,next);sync(storage)}
+  catch(error){
+   // An initial, same-owner claim must not leave an incorrect marker behind.
+   try{if(raw===null)storage.removeItem(MARKER);else storage.setItem(MARKER,raw)}catch{}
+   throw error;
+  }
+  return {changed:false,owner:next,previous};
  }
  // Do not accidentally overwrite a newer saved context on a second tab.
  syncWithOwner(storage,previous);
@@ -94,14 +99,41 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
    if(Array.isArray(restored)&&restored.length===KEYS.length)saved=restored;
   }catch{}
  }
- write(storage,saved||DEFAULTS);
- storage.setItem(MARKER,next);sync(storage);
+ const before=KEYS.map(key=>storage.getItem(key));
+ try{
+  write(storage,saved||DEFAULTS);
+  storage.setItem(MARKER,next);
+  sync(storage);
+ }catch(error){
+  // Avoid half-switched owner data if any write or final backup fails.
+  if(!restorePrimary(storage,before,raw))
+   throw Error('Could not restore local library after failed owner switch',{cause:error});
+  throw error;
+ }
  return {changed:true,owner:next,previous};
 }
 function snapshotBeforeSwitch(storage){return snapshot(storage)}
 function syncWithOwner(storage,current){
  if(!validScope(current))return;
  storage.setItem(slot(current),JSON.stringify(snapshot(storage)));
+}
+// localStorage is not transactional. If switching owners fails halfway through
+// (quota, browser storage restrictions), restore every original primary slot
+// and the scope marker. Use raw nulls, not the fallback [] defaults, so a
+// previously missing key stays missing after rollback.
+function restorePrimary(storage,values,marker){
+ let restored=true;
+ for(let i=0;i<KEYS.length;i++){
+  try{
+   if(values[i]===null)storage.removeItem(KEYS[i]);
+   else storage.setItem(KEYS[i],values[i]);
+  }catch{restored=false}
+ }
+ try{
+  if(marker===null)storage.removeItem(MARKER);
+  else storage.setItem(MARKER,marker);
+ }catch{restored=false}
+ return restored;
 }
 // Releases before 0.197 kept the guest's saved builds in a separate backup when
 // signing into an account. Import it once into the GUEST cache without touching
