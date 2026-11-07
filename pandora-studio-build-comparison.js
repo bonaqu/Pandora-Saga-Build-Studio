@@ -174,7 +174,7 @@ function matrixRows(a={},b={},options={}){
   const source=skillCatalog[id],englishName=englishSkills[String(id)]?.n;
   const name=english?(source?.nameEn||englishName||source?.name?.en):
    (source?.name?.ru||source?.name);
-  if(typeof name==='string'&&name.trim()&&!/^\\d+$/.test(name.trim()))
+  if(typeof name==='string'&&name.trim()&&!/^[0-9]+$/.test(name.trim()))
    return name.trim();
   return label('Расовая пассивка не найдена','Racial passive unavailable');
  };
