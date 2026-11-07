@@ -218,3 +218,49 @@ test('production-style full source probe checks 17 allowlisted datasets without 
   assert.equal(visited.length,17,'Deep source probe must be throttled per isolate');
  }finally{globalThis.fetch=original}
 });
+
+test('a streaming upstream response beyond 3.75 MB is cancelled before full buffering',async()=>{
+ const original=globalThis.fetch;
+ let fetched=0,pulls=0,cancelled=false;
+ globalThis.fetch=async()=>{
+  fetched++;
+  if(fetched===2)return new Response(JSON.stringify({source:'fallback'}),
+   {status:200});
+  return new Response(new ReadableStream({
+   pull(controller){
+    pulls++;
+    controller.enqueue(new Uint8Array(65536).fill(120));
+    if(pulls>120)controller.close();
+   },
+   cancel(){cancelled=true}
+  }),{status:200});
+ };
+ try{
+  const response=await worker.fetch(request('meta',true),env);
+  assert.equal(response.status,200);
+  assert.deepEqual(await response.json(),{source:'fallback'});
+  assert.equal(fetched,2);
+  assert.equal(cancelled,true,'Oversized stream must be cancelled');
+  assert.ok(pulls<70,'Fetch should stop at the bounded byte limit');
+ }finally{globalThis.fetch=original}
+});
+test('false Content-Length and invalid upstream UTF-8 fail over without leaking credentials',async()=>{
+ const original=globalThis.fetch;
+ for(const body of [
+  new Response('{"data":1}',{status:200,headers:{'content-length':'99999999'}}),
+  new Response(new Uint8Array([0xff,0xfe]),{status:200})
+ ]){
+  let attempts=0;
+  globalThis.fetch=async(_url,options)=>{
+   attempts++;
+   assert.equal(options.headers.authorization,undefined);
+   return attempts===1?body:new Response(JSON.stringify({source:'ok'}),{status:200});
+  };
+  try{
+   const response=await worker.fetch(request('meta',true),env);
+   assert.equal(response.status,200);
+   assert.deepEqual(await response.json(),{source:'ok'});
+   assert.equal(attempts,2);
+  }finally{globalThis.fetch=original}
+ }
+});
