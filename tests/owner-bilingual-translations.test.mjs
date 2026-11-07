@@ -68,3 +68,20 @@ test('explicit EN edits and new RU wording always win over curated matches',()=>
   ru:'Происхождение героя',en:'My hero title'})};
  assert.equal(guide.field(preserved,'origin.heading','X','Y').en,'My hero title');
 });
+
+test('unchanged Russian legacy race override no longer replaces English Human',()=>{
+ const app=read('pandora-studio-app.js');
+ const begin=app.indexOf('function editableValue(');
+ const end=app.indexOf('// Reuse the existing authenticated, bilingual',begin);
+ assert.ok(begin>=0&&end>begin);
+ const source=app.slice(begin,end);
+ const races=[['Человек','Human'],['Эльф','Elf']];
+ const resolve=(values,lang)=>
+  Function('override','lang','races',source+'return editableValue;')
+   (values,lang,races);
+ const values={'race.0':'Человек'};
+ assert.equal(resolve(values,'ru')('race.0','Человек'),'Человек');
+ assert.equal(resolve(values,'en')('race.0','Human'),'Human');
+ assert.equal(resolve({'race.0':'Неофициальное название'},'en')('race.0','Human'),
+  'No invented translation is applied to a changed custom RU race name');
+});
