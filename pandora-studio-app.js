@@ -2315,21 +2315,63 @@ function renderWiki(root){
   controls.append(toolbar);
  }
  if(wikiSelection.type==='skill'){
-  const model=skillModel(),filter=h('select',{class:'wiki-effect-type wiki-skill-type',
+  const model=skillModel(),filterNames=window.PandoraWikiSkillFilters.names;
+  const localizedFilterLabel=(id,labels)=>wikiTitle('skillFilter',id,labels.ru,labels.en);
+  const optionFor=new Map();
+  const filter=h('select',{class:'wiki-effect-type wiki-skill-type',
    'aria-label':wt('Категория навыков','Skill category'),
    onchange:event=>{
     wikiSkillFilter=event.target.value;wikiShown=100;
     wikiSelection={...wikiSelection,id:null,highlight:null};
     wikiResultsCache=null;draw();saveView();
    }});
-  for(const [id,labels] of Object.entries(window.PandoraWikiSkillFilters.names)){
+  for(const [id,labels] of Object.entries(filterNames)){
    const count=model?.counts?.[id];
-   const name=lang==='en'?labels.en:labels.ru;
+   const name=localizedFilterLabel(id,labels);
    const option=h('option',{value:id,text:name+(count==null?'':' · '+count)});
    if(wikiSkillFilter===id)option.selected=true;
-   filter.append(option);
+   optionFor.set(id,option);filter.append(option);
   }
-  controls.append(h('div',{class:'wiki-effect-toolbar wiki-skill-toolbar'},[filter]));
+  const toolbar=h('div',{class:'wiki-effect-toolbar wiki-skill-toolbar'},[filter]);
+  if(adminEditing&&adminToken){
+   // Native <option> elements cannot host editable inputs. Keep selection
+   // untouched; a single adjacent pencil exposes all stable category labels.
+   const editor=h('details',{class:'wiki-skill-label-editor'});
+   const summary=h('summary',{class:'wiki-skill-label-trigger',text:'✎',
+    title:wt('Редактировать названия фильтров','Edit filter labels'),
+    'aria-label':wt('Редактировать названия фильтров','Edit filter labels')});
+   const list=h('div',{class:'wiki-skill-label-list',role:'group',
+    'aria-label':wt('Названия фильтров навыков','Skill filter labels')});
+   for(const [id,labels] of Object.entries(filterNames)){
+    const row=h('div',{class:'wiki-skill-label-row','data-skill-filter-label':id});
+    const caption=h('span',{class:'wiki-skill-label-caption',
+     text:localizedFilterLabel(id,labels)});
+    const edit=h('button',{type:'button',class:'wiki-skill-label-edit',
+     text:'✎',
+     'aria-label':wt('Изменить: ','Edit: ')+caption.textContent});
+    const startEdit=()=>{
+     if(!adminEditing||!adminToken)return;
+     editWikiValue(caption,caption.textContent,{type:'text',
+      onCommit:value=>saveGuidePatch('wiki.labels',{
+       [window.PandoraWikiLabels.key('skillFilter',id,lang)]:value
+      }),
+      onCommitted:value=>{
+       caption.textContent=value;
+       edit.setAttribute('aria-label',wt('Изменить: ','Edit: ')+value);
+       const count=model?.counts?.[id],option=optionFor.get(id);
+       if(option)option.textContent=value+(count==null?'':' · '+count);
+      }
+     });
+    };
+    edit.onclick=startEdit;
+    caption.addEventListener('dblclick',event=>{
+     event.preventDefault();startEdit();
+    });
+    row.append(caption,edit);list.append(row);
+   }
+   editor.append(summary,list);toolbar.append(editor);
+  }
+  controls.append(toolbar);
  }
  if(wikiSelection.type==='item'&&wikiItemType==='utility'){
   const hasReviewItems=Object.values(wikiIndex?.records('item')||{}).some(item=>
