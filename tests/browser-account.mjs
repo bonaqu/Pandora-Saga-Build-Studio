@@ -100,7 +100,10 @@ export async function runAccountSmoke(browser,base){
   const heldMe=new Promise(resolve=>{notifyHeldMe=resolve});
   await page.reload({waitUntil:'domcontentloaded'});
   await heldMe;
+  // Verification is informative, not a lock on the saved account form.
+  assert.equal(await page.locator('#profileTrigger').getAttribute('data-account-bootstrap'),'pending');
   await page.locator('#profileTrigger').click();
+  await page.locator('.account-bootstrap-pending').waitFor({state:'visible'});
   await page.locator('.account-user').waitFor({state:'visible'});
   await page.locator('.account-password-toggle').click();
   const pendingChange=page.locator('.account-password-details input');
@@ -118,6 +121,8 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await page.locator('#accountPanel').isVisible(),false);
   releaseHeldMe();
   await verifiedMe;
+  await page.locator('.account-bootstrap-pending').waitFor({state:'detached'});
+  assert.equal(await page.locator('#profileTrigger').getAttribute('data-account-bootstrap'),'verified');
   await page.evaluate(()=>new Promise(resolve=>
    requestAnimationFrame(()=>requestAnimationFrame(resolve))));
   assert.equal(await pendingChange.nth(1).inputValue(),'An example new password 2026',

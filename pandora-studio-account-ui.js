@@ -111,13 +111,11 @@ function render(){
  panel.replaceChildren();
  trigger.classList.toggle('active',Boolean(session));
  trigger.setAttribute('data-account-bootstrap',bootstrapPhase);
- if(bootstrapPhase==='pending'&&session){
-  trigger.title=tr('Проверяем учётную запись…');
-  trigger.setAttribute('aria-label',trigger.title);
+ // The saved owner may edit the profile while its /me check is in flight.
+ // Only its verification hint is transient; never discard same-owner inputs.
+ if(bootstrapPhase==='pending'&&session)
   panel.append(node('p','account-lead account-bootstrap-pending',
    'Проверяем учётную запись…'));
-  return;
- }
  trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
  trigger.setAttribute('aria-label',trigger.title);
  const title=node('h3','account-title',session?'Профиль':'Аккаунт');
@@ -289,8 +287,9 @@ async function init(config){
   // A verified /me reply does not change the account. Do not discard edits
   // merely because the popover was temporarily hidden while it was pending.
   // Revoked/mismatched sessions still force a fresh guest panel.
-  if(forceBootstrapRender||panel.querySelector?.('.account-bootstrap-pending')||
-   !panel.hasChildNodes?.())render();
+  // Remove the temporary hint without replacing live password inputs.
+  panel.querySelector?.('.account-bootstrap-pending')?.remove();
+  if(forceBootstrapRender||!panel.hasChildNodes?.())render();
  };
  if(session){
   const bootstrapToken=session.token,expectedName=session.username;
