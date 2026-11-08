@@ -234,3 +234,12 @@ test('account requests have a deadline and network timeout does not revoke the a
  assert.match(original,/if\(error\?\.httpStatus===401\|\|error\?\.httpStatus===403\)/);
  assert.match(original,/setBootstrapPhase\('offline'\)/);
 });
+
+test('password completion is bound to a session revision and the live profile form',()=>{
+ assert.match(original,/sessionRevision\+\+/);
+ assert.match(original,/const sameSession=\(\)=>session\?\.token===owner&&sessionRevision===revision/);
+ assert.match(original,/passwordRequest\?\.revision===sessionRevision/);
+ assert.match(original,/const currentDetails=panel\?\.querySelector\?\.\('.account-password-details'\)/);
+ assert.match(original,/for\(const input of currentDetails\?\.querySelectorAll\?\.\('input'\)\|\|\[\]\)input\.value=''/);
+ assert.match(original,/if\(currentDetails\)currentDetails\.open=false/);
+});

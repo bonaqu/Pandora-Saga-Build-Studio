@@ -185,6 +185,38 @@ export async function runAccountSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('.account-feedback')?.textContent.includes('Пароль обновлён'));
   assert.equal(calls.filter(c=>c.action==='password').length,1);
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
+  // The pending change finishes after a RU -> EN locale rerender, which
+  // creates new password inputs. Its success must scrub the LIVE form.
+  holdNextPassword=true;
+  const localePasswordSent=new Promise(resolve=>{notifyHeldPassword=resolve});
+  await page.locator('.account-password-toggle').click();
+  const changing=page.locator('.account-password-details input');
+  await changing.nth(0).fill('A new long and secure passphrase 2026!');
+  await changing.nth(1).fill('After account language change 2026!');
+  await changing.nth(2).fill('After account language change 2026!');
+  await page.locator('.account-password-details button.account-action.primary').click();
+  await localePasswordSent;
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await page.locator('.account-password-details').getAttribute('open'),'');
+  const remounted=page.locator('.account-password-details input');
+  assert.equal(await remounted.nth(1).inputValue(),'After account language change 2026!');
+  const inFlightButton=page.locator('.account-password-details button.account-action.primary');
+  assert.equal(await inFlightButton.isDisabled(),true,
+   'A remounted form cannot launch a second in-flight password change');
+  const localePasswordResponse=page.waitForResponse(response=>
+   response.url().endsWith('/api/account/password'));
+  releaseHeldPassword();
+  await localePasswordResponse;
+  await page.waitForFunction(()=>document.querySelector('.account-feedback')
+   ?.textContent.includes('Password updated.'));
+  assert.equal(await page.locator('.account-password-details').getAttribute('open'),null,
+   'Success must close the current remounted password form');
+  assert.deepEqual(await remounted.evaluateAll(inputs=>inputs.map(x=>x.value)),['','',''],
+   'Current password inputs must be cleared after the delayed success');
+  assert.equal(await inFlightButton.isDisabled(),false);
+  await page.locator('#locale [data-locale="ru"]').click();
   // A transient outage must not erase a valid saved session from this browser.
   offlineMe=true;
   await page.reload({waitUntil:'domcontentloaded'});
