@@ -61,7 +61,7 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
    },username,{timeout:25000});
   }catch(error){
    const diagnostic=await page.evaluate(()=>({
-    owner:localStorage.getItem('ps-build-owner-scope.v1'),
+    ownerType:(localStorage.getItem('ps-build-owner-scope.v1')||'').split(':',1)[0]||'none',
     raceCount:document.querySelector('#raceGrid')?.children.length||0,
     hasHero:!!document.querySelector('#hero')?.getAttribute('src'),
     profile:document.querySelector('#profileTrigger')?.title||'',
@@ -154,7 +154,40 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   const tabC=await context.newPage();
   tabC.on('pageerror',error=>errors.push(error.message));
   await tabC.goto(base+'/',{waitUntil:'domcontentloaded'});
-  await login(tabC,tokenB,'bob_222');
+  // The original intermittent failure happened while the third tab restored
+  // Bob, and the shared session was already persisted by a different tab.
+  // Hold /me deterministically to prove it remains an account (not guest)
+  // while authentication is pending. No extra retries or larger timeouts.
+  let releaseMe;
+  const heldMe=new Promise(resolve=>{releaseMe=resolve});
+  let delayedMeTriggered=false,guestLibraryBeforeMe=0;
+  const countGuest=request=>{
+   if(request.url().startsWith(api+'/api/library')&&
+    request.headers().authorization!=='Bearer '+tokenB)guestLibraryBeforeMe++;
+  };
+  tabC.on('request',countGuest);
+  await tabC.route('**/api/account/me',async route=>{
+   if(delayedMeTriggered)return route.continue();
+   delayedMeTriggered=true;
+   await heldMe;
+   return route.fulfill({status:200,contentType:'application/json',
+    headers:{'access-control-allow-origin':'*'},
+    body:JSON.stringify({account:{username:'bob_222'}})});
+  });
+  const thirdLogin=login(tabC,tokenB,'bob_222');
+  try{
+   await tabC.waitForFunction(()=>{
+    const profile=document.querySelector('#profileTrigger');
+    return profile?.dataset.accountBootstrap==='pending'&&
+     profile.title.includes('bob_222');
+   },null,{timeout:20000});
+   assert.equal(delayedMeTriggered,true,'Third-tab /me must actually be gated');
+   assert.equal(guestLibraryBeforeMe,0,
+    'Pending verified owner must not request the guest library');
+  }finally{releaseMe();}
+  await thirdLogin;
+  tabC.off('request',countGuest);
+  await tabC.unroute('**/api/account/me');
   await tabB.locator('#profileTrigger').click();
   await tabB.getByRole('button',{name:'Выйти из аккаунта'}).click();
   try{
@@ -166,7 +199,7 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
     profile:document.querySelector('#profileTrigger')?.title||'',
     bootstrap:document.querySelector('#profileTrigger')?.dataset.accountBootstrap||'',
     sessionStored:localStorage.getItem('ps-account-session.v1')!==null,
-    owner:localStorage.getItem('ps-build-owner-scope.v1')||null
+    ownerType:(localStorage.getItem('ps-build-owner-scope.v1')||'').split(':',1)[0]||'none'
    }));
    throw Error('Same-owner logout did not propagate to third tab: '+
     JSON.stringify(detail)+'; '+error.message);
