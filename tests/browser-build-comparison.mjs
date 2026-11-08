@@ -6,13 +6,13 @@ export async function runBuildComparisonSmoke(browser,base){
  const idA='a'.repeat(32),idB='b'.repeat(32),idC='d'.repeat(32);
  const secret='c'.repeat(64);
  const first={race:1,job:16,gender:0,level:10,name:'Витальный жрец',
-  points:{slash:1},stats:{Выносливость:0,Ловкость:2,Сноровка:3,Дух:4},
+  points:{benevolence:1},stats:{Выносливость:0,Ловкость:2,Сноровка:3,Дух:4},
   equipment:{},souls:{},refinements:{},gems:{},
   vitalsBuffs:{guildHp:0,guildMp:0},
   attributeBuffs:{guildAll:0,priestEnabled:false}};
  const second={...structuredClone(first),level:40,name:'Жрец 40-го уровня',
-  points:{slash:10},stats:{Выносливость:20,Ловкость:7,Сноровка:3,Дух:5},
-  vitalsBuffs:{guildHp:10,guildMp:20},
+  points:{benevolence:10},stats:{Выносливость:20,Ловкость:7,Сноровка:3,Дух:5},
+  vitalsBuffs:{guildHp:5,guildMp:4},
   attributeBuffs:{guildAll:3,priestEnabled:true}};
  const library=[
   {id:idA,name:'Жрец A',at:100,data:first},
