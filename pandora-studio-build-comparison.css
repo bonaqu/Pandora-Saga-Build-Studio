@@ -39,8 +39,11 @@
 .build-compare-table tbody tr:last-child th,.build-compare-table tbody tr:last-child td{
  border-bottom:0}
 .build-compare-table tbody tr:hover{background:rgba(184,137,74,.09)}
-.build-compare-table td[data-direction="up"]{color:#b2dfac;font-weight:700}
-.build-compare-table td[data-direction="down"]{color:#edb7a0;font-weight:700}
+/* A positive numerical delta is not always a gameplay improvement (for
+   example: incoming damage). Show direction through the +/- value, not
+   misleading green/red success colors. */
+.build-compare-table td[data-direction="up"],
+.build-compare-table td[data-direction="down"]{color:#e7c38e;font-weight:700}
 .build-compare-table td[data-direction="unavailable"]{color:#ad9d86}
 .build-card:has(input[aria-label^="Сравнить "]:checked),
 .build-card:has(input[aria-label^="Compare "]:checked){border-color:#cc9b59;

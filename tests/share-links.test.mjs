@@ -53,8 +53,9 @@ test('skill and stat editing remain in one screen',()=>{
 
 test('opening a local named build keeps all old and future fields; shared Astir builds keep displaced legwear',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/const draft=structuredClone\(latest\.data\),base=fresh\(\)/);
- assert.match(app,/next=\{\.\.\.base,\.\.\.draft,/);
+ assert.match(app,/function prepareSavedBuildSnapshot\(raw\)/);
+ assert.match(app,/const draft=structuredClone\(raw\),base=fresh\(\)/);
+ assert.match(app,/next=prepareSavedBuildSnapshot\(latest\.data\)/);
  assert.match(app,/state=next;/);
  assert.match(app,/const previousLegwear=item\(original\.displacedLegwear\)/);
  assert.match(app,/safe\.displacedLegwear=previousLegwear/);

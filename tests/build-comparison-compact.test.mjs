@@ -59,3 +59,26 @@ test('UI is compact and embedded in My Builds, without inventory/options matrix'
  assert.doesNotMatch(read('pandora-studio-build-comparison.css'),
   /\.build-compare-categories|\.build-compare-note/);
 });
+
+test('a positive delta cannot be styled as universally beneficial',()=>{
+ const css=read('pandora-studio-build-comparison.css');
+ assert.match(css,/\.build-compare-table td\[data-direction="up"\],\s*\.build-compare-table td\[data-direction="down"\]\{color:#e7c38e/);
+ assert.doesNotMatch(css,/data-direction="up"\]\{color:#b2dfac/);
+ assert.doesNotMatch(css,/data-direction="down"\]\{color:#edb7a0/);
+ const a=pack([['Получ. крит. урон','Incoming critical damage',10,'%']]);
+ const b=pack([['Получ. крит. урон','Incoming critical damage',20,'%']]);
+ assert.deepEqual(compare(a,b).map(x=>[x.delta,x.direction]),[['+10%','up']]);
+});
+
+test('waiting for game data is distinct from a malformed saved build',()=>{
+ const source=read('pandora-studio-app.js');
+ const begin=source.indexOf('function renderBuildComparison(');
+ const end=source.indexOf('function restoreLoadedBuildUI(){',begin);
+ const ui=source.slice(begin,end);
+ const check=ui.indexOf('if(!catalog.live||!gameTables)');
+ const calculation=ui.indexOf('PandoraBuildComparison.calculatePair(');
+ assert.ok(check>=0&&calculation>check);
+ assert.match(ui,/Итоговые характеристики появятся после загрузки игровых данных/);
+ assert.match(ui,/Calculated stats will appear once game data have loaded/);
+ assert.match(ui,/Не удалось рассчитать один из билдов\. Сохранения не изменены/);
+});

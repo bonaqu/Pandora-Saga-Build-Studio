@@ -5677,9 +5677,16 @@ function renderBuildComparison(host,onSelection=()=>{}){
    wrap.hidden=true;
    return;
   }
+  // Loading the validated D1 snapshot is not a broken saved build.
+  if(!catalog.live||!gameTables){
+   summary.textContent=translate(
+    'Итоговые характеристики появятся после загрузки игровых данных.',
+    'Calculated stats will appear once game data have loaded.');
+   wrap.hidden=true;
+   return;
+  }
   const [calcA,calcB]=window.PandoraBuildComparison.calculatePair(
-   a.data,b.data,snap=>previewBaseStats(prepareSavedBuildSnapshot(snap)),
-   Boolean(catalog.live&&gameTables));
+   a.data,b.data,snap=>previewBaseStats(prepareSavedBuildSnapshot(snap)));
   if(!calcA||!calcB){
    summary.textContent=translate(
     'Не удалось рассчитать один из билдов. Сохранения не изменены.',
@@ -5755,21 +5762,7 @@ function openSavedBuild(b){
  }
  let next;
  try{
-  const draft=structuredClone(latest.data),base=fresh();
-  const record=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
-  next={...base,...draft,
-   points:{...base.points,...record(draft.points)},
-   mastery:{...base.mastery,...record(draft.mastery)},
-   stats:{...base.stats,...record(draft.stats)},
-   equipment:{...base.equipment,...record(draft.equipment)},
-   souls:{...base.souls,...record(draft.souls)},
-   soulOwners:{...base.soulOwners,...record(draft.soulOwners)},
-   socketCapacities:{...base.socketCapacities,...record(draft.socketCapacities)},
-   refinements:{...base.refinements,...record(draft.refinements)},
-   gems:{...base.gems,...record(draft.gems)},
-   vitalsBuffs:{...base.vitalsBuffs,...record(draft.vitalsBuffs)},
-   attributeBuffs:{...base.attributeBuffs,...record(draft.attributeBuffs)},
-   profile:{...base.profile,...record(draft.profile)}};
+  next=prepareSavedBuildSnapshot(latest.data);
  }catch(error){
   showStudioToast(lang==='en'?'This saved build could not be restored.':
    'Не удалось восстановить сохранённый билд.','warning');
