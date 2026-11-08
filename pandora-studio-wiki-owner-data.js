@@ -102,12 +102,23 @@ function validDrops(rows){
 }
 function validChest(rolls){
  return Array.isArray(rolls)&&rolls.length<=50&&rolls.every(group=>
-  Array.isArray(group)&&group.length<=100&&group.every(row=>
-   record(row)&&id(row.i)&&Object.keys(row).every(k=>['i','n','p','plus','soul'].includes(k))&&
-   (row.p==null||number(row.p)&&row.p>=0&&row.p<=100)&&
-   (row.n==null||Number.isInteger(row.n)&&row.n>=1&&row.n<=999999)&&
-   (row.plus==null||Number.isInteger(row.plus)&&row.plus>=0&&row.plus<=20)&&
-   (row.soul==null||Number.isInteger(row.soul)&&row.soul>=0&&row.soul<=3)));
+  Array.isArray(group)&&group.length<=100&&group.every(row=>{
+   if(!record(row))return false;
+   // Source NPC rolls include actual gold ranges with no item ID.
+   // Do not force these into a fabricated item or silently discard them.
+   const itemReward=id(row.i)&&!own(row,'gold')&&
+    Object.keys(row).every(k=>['i','n','p','plus','soul'].includes(k))&&
+    (row.n==null||Number.isInteger(row.n)&&row.n>=1&&row.n<=999999)&&
+    (row.plus==null||Number.isInteger(row.plus)&&row.plus>=0&&row.plus<=20)&&
+    (row.soul==null||Number.isInteger(row.soul)&&row.soul>=0&&row.soul<=3);
+   const goldReward=!own(row,'i')&&
+    Object.keys(row).every(k=>['gold','p'].includes(k))&&
+    Array.isArray(row.gold)&&row.gold.length===2&&
+    row.gold.every(n=>Number.isSafeInteger(n)&&n>=0)&&
+    row.gold[0]<=row.gold[1];
+   return (itemReward||goldReward)&&
+    (row.p==null||number(row.p)&&row.p>=0&&row.p<=100);
+  }));
 }
 function validSpawns(rows){
  if(!Array.isArray(rows)||rows.length>120)return false;
@@ -234,7 +245,8 @@ function apply(data,overrides){
   m=/^chestedit\.([0-9]{1,15})$/.exec(key);
   if(m){
    const rolls=parse(value);
-   if(!own(data.items,m[1])||!validChest(rolls)||!rolls.every(g=>g.every(row=>own(data.items,row.i))))continue;
+   if(!own(data.items,m[1])||!validChest(rolls)||
+    !rolls.every(g=>g.every(row=>!own(row,'i')||own(data.items,row.i))))continue;
    clone();
    if(next.chests===data.chests)next.chests={...data.chests};
    const isNpc=(data.chests?.npc||[]).some(x=>String(x.i)===m[1]);
