@@ -243,3 +243,23 @@ test('password completion is bound to a session revision and the live profile fo
  assert.match(original,/for\(const input of currentDetails\?\.querySelectorAll\?\.\('input'\)\|\|\[\]\)input\.value=''/);
  assert.match(original,/if\(currentDetails\)currentDetails\.open=false/);
 });
+
+test('late bootstrap 401 cannot sign out a fresh login that reused the same bearer',async()=>{
+ const gate=deferred();
+ const old=session('alice_01','a'.repeat(43));
+ const c=create({stored:old,fetchImpl:()=>gate.promise});
+ const waiting=c.init();
+ c.helper.clearSession();
+ c.helper.setSession({account:{username:'alice_01'},
+  token:old.token,expires:Date.now()+3600000});
+ gate.resolve(reply({},401));
+ await waiting;
+ assert.equal(c.api.username(),'alice_01');
+ assert.equal(c.api.token(),old.token);
+ assert.equal(c.events.logout.length,0,'Old /me must not revoke a new local session');
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'verified');
+});
+test('logout checks the revision as well as the token before clearing state',()=>{
+ assert.match(original,/session\?\.token!==owner\|\|sessionRevision!==revision/);
+ assert.match(original,/session\?\.token!==bootstrapToken\|\|sessionRevision!==bootstrapRevision/);
+});

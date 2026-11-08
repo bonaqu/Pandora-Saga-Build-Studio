@@ -211,12 +211,12 @@ function render(){
   panel.append(details);
   const footer=node('div','account-profile-footer');
   footer.append(button('Выйти из аккаунта',async()=>{
-   const owner=session?.token;
+   const owner=session?.token,revision=sessionRevision;
    if(!owner)return;
    try{await request('logout',{},owner)}catch{}
-   // Do not sign out a new account whose login finished during a delayed
-   // logout response from a previous session.
-   if(session?.token!==owner)return;
+   // A delayed logout belongs to one local session, not merely to a bearer
+   // string that a later (mocked or real) login could have reused.
+   if(session?.token!==owner||sessionRevision!==revision)return;
    clearSession();options.onLogout?.();render();
   },'account-signout'));
   panel.append(footer,errorLine);return;
@@ -312,12 +312,13 @@ async function init(config){
   if(forceBootstrapRender||!panel.hasChildNodes?.())render();
  };
  if(session){
-  const bootstrapToken=session.token,expectedName=session.username;
+  const bootstrapToken=session.token,expectedName=session.username,
+   bootstrapRevision=sessionRevision;
   try{
    const data=await request('me',null,bootstrapToken);
    // A login or logout may complete while a previous /me is in flight.
    // Never allow its late answer to switch or clear the new account.
-   if(session?.token!==bootstrapToken){finishBootstrap();return}
+   if(session?.token!==bootstrapToken||sessionRevision!==bootstrapRevision){finishBootstrap();return}
    const verified=validName(data?.account?.username);
    if(!verified||verified!==expectedName){
     const invalid=new Error('Некорректный владелец аккаунта');
@@ -327,7 +328,7 @@ async function init(config){
    setBootstrapPhase('verified');
    options.onLogin?.({register:false,bootstrap:true});
   }catch(error){
-   if(session?.token!==bootstrapToken){finishBootstrap();return}
+   if(session?.token!==bootstrapToken||sessionRevision!==bootstrapRevision){finishBootstrap();return}
    if(error?.httpStatus===401||error?.httpStatus===403){
     clearSession();
     forceBootstrapRender=true;
