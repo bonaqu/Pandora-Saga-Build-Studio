@@ -14,7 +14,7 @@ function deferred(){
  return {promise,resolve};
 }
 function create({stored=null,clock=Date,fetchImpl=async()=>({ok:true,status:200,
- json:async()=>({account:{username:'alice_01'}})})}={}){
+ json:async()=>({account:{username:'alice_01'}})}),onBootstrapLogin=null}={}){
  const map=new Map();
  if(stored!==null)map.set('ps-account-session.v1',JSON.stringify(stored));
  const storage={getItem:key=>map.get(key)??null,
@@ -36,7 +36,8 @@ function create({stored=null,clock=Date,fetchImpl=async()=>({ok:true,status:200,
   fetch:fetchImpl,Date:clock,console};
  vm.runInNewContext(script,ctx);
  const options={baseUrl:'https://example.invalid',
-  onLogin:e=>events.login.push(e),onLogout:e=>events.logout.push(e),
+  onLogin:e=>{events.login.push(e);onBootstrapLogin?.(e)},
+  onLogout:e=>events.logout.push(e),
   onGuest:e=>events.guest.push(e)};
  return {api:root.PandoraAccountUI,helper:root.__accountTest,events,
   init:()=>root.PandoraAccountUI.init(options),storage,trigger,
@@ -428,4 +429,31 @@ test('account update guard protects the one-time code without exposing it',()=>{
  assert.notEqual(c.api.updateGuard(),'r'.repeat(43));
  c.helper.clearSession();
  assert.equal(c.api.updateGuard(),null);
+});
+
+test('successful /me cannot be relabeled offline or replay local owner callback',async()=>{
+ let activations=0;
+ const c=create({stored:session(),
+  fetchImpl:async()=>reply({username:'alice_01'}),
+  onBootstrapLogin:()=>{activations++;throw Error('Local scope transition rejected')}});
+ await assert.rejects(c.init(),/Local scope transition rejected/);
+ assert.equal(activations,1,'Owner transition must not be invoked twice');
+ assert.equal(c.events.login.length,1);
+ assert.equal(c.events.logout.length,0);
+ assert.equal(c.events.guest.length,0);
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'verified',
+  'LocalStorage failure is not a network /me failure');
+ assert.equal(c.api.username(),'alice_01');
+});
+
+test('offline /me invokes the owner callback only once even if local scope fails',async()=>{
+ let activations=0;
+ const c=create({stored:session(),fetchImpl:async()=>reply({},503),
+  onBootstrapLogin:()=>{activations++;throw Error('Local scope transition rejected')}});
+ await assert.rejects(c.init(),/Local scope transition rejected/);
+ assert.equal(activations,1);
+ assert.equal(c.events.login.length,1);
+ assert.equal(c.events.logout.length,0);
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'offline');
+ assert.equal(c.api.username(),'alice_01');
 });

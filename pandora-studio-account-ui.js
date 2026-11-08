@@ -392,7 +392,7 @@ async function init(config){
    }
    session.username=verified;
    setBootstrapPhase('verified');
-   options.onLogin?.({register:false,bootstrap:true});
+   
   }catch(error){
    if(session?.token!==bootstrapToken||sessionRevision!==bootstrapRevision){finishBootstrap();return}
    if(error?.httpStatus===401||error?.httpStatus===403){
@@ -403,9 +403,14 @@ async function init(config){
     setBootstrapPhase('offline');
     // Keep an unexpired account session on temporary network / Worker outages.
     // A failed availability check is not evidence of revoked credentials.
-    options.onLogin?.({register:false,bootstrap:true});
+    
    }
   }
+  // Local owner activation is not part of /me verification. Local storage
+  // failures must not relabel valid credentials as offline or retry a
+  // potentially stateful account switch twice.
+  if(session?.token===bootstrapToken&&sessionRevision===bootstrapRevision)
+   options.onLogin?.({register:false,bootstrap:true});
  }else options.onGuest?.();
  finishBootstrap();
 }
