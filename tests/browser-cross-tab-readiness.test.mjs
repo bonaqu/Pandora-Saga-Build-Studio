@@ -25,3 +25,16 @@ test('cross-tab account timeout reports non-secret UI state',()=>{
   code.indexOf('throw Error(\'Cross-tab account bootstrap'));
  assert.doesNotMatch(section,/ps-account-session|ps-build-library-secret|\\.token\\b|authorization/i);
 });
+
+
+test('late account session race is exercised in a paused-module Chromium flow',()=>{
+ const runner=readFileSync(new URL('../tests/browser-smoke.mjs',import.meta.url),'utf8');
+ const late=readFileSync(new URL('../tests/browser-account-late-bootstrap.mjs',import.meta.url),'utf8');
+ const source=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
+ assert.match(runner,/account-late-bootstrap/);
+ assert.match(late,/page\.route\('\*\*\/pandora-studio-app\.js\*'/);
+ assert.match(late,/stats\.guestLibrary,0/);
+ assert.match(late,/stats\.me,1/);
+ assert.match(source,/if\(!session\)try\{/);
+ assert.match(source,/const latest=JSON\.parse\(localStorage\.getItem\(KEY\)/);
+});
