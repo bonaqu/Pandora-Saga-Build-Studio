@@ -160,7 +160,7 @@ function dismissPreview(){
  liveRemovalObserver?.disconnect();
  liveRemovalObserver=null;
  livePreview?.remove();
- liveTarget?.removeAttribute('aria-describedby');
+ root.PandoraGuideTooltip.unlinkDescription(liveTarget,livePreview?.id);
  livePreview=null;liveTarget=null;
 }
 function queuePreview(target,show){
@@ -217,7 +217,7 @@ function attachPreview(target,record,icon,kind='item',context=null){
    role:'tooltip'},[summary(record,icon,kind,context)]);
   livePreview=tip;liveTarget=target;
   document.body.append(tip);
-  target.setAttribute('aria-describedby',tip.id);
+  root.PandoraGuideTooltip.linkDescription(target,tip.id);
   const box=target.getBoundingClientRect(),vw=document.documentElement.clientWidth,
    vh=window.innerHeight||innerHeight;
   tip.style.maxWidth=Math.max(180,Math.min(380,vw-16))+'px';
