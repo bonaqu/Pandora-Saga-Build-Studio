@@ -415,7 +415,17 @@ function refresh(){
  if(details&&expanded!==undefined)details.open=expanded;
  if(message!==null)info(message);
 }
-root.PandoraAccountUI=Object.freeze({init,token,
+// The release manager must never discard the only recovery code or an
+// unfinished account request. Expose state, never the token or secret itself.
+// Unsaved password input remains private even when its popover is hidden.
+function updateGuard(){
+ if(pendingRecoveryCode)return 'recovery';
+ if(guestAuthRequest||passwordRequest)return 'request';
+ if(Array.from(panel?.querySelectorAll?.('input[type="password"]')||[])
+  .some(input=>Boolean(input.value)))return 'draft';
+ return null;
+}
+root.PandoraAccountUI=Object.freeze({init,token,updateGuard,
  username:()=>activeSession()?session.username:null,
  refresh,isLoggedIn:()=>activeSession()});
 })(typeof window==='undefined'?globalThis:window);

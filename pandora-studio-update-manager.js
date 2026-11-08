@@ -20,7 +20,7 @@
     }
     return false;
   };
-  let latest = '', lastActivity = Date.now(), dismissedRelease = '', applying = false, blockedAutoUpdate = false;
+  let latest = '', lastActivity = Date.now(), dismissedRelease = '', applying = false, blockedAutoUpdate = false, blockedReason = null;
   const onActivity = () => { lastActivity = Date.now(); blockedAutoUpdate = false; };
   document.addEventListener('pointerdown', onActivity, { passive: true });
   document.addEventListener('keydown', onActivity, { passive: true });
@@ -28,12 +28,24 @@
   const busy = () => {
     const el = document.activeElement;
     return document.visibilityState !== 'visible' ||
-      !!document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), .inline-owner-editor') ||
+      !!document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), .inline-owner-editor, #accountPanel:not([hidden])') ||
+      !!window.PandoraAccountUI?.updateGuard?.() ||
       !!(el && el.matches && el.matches('input, textarea, select, [contenteditable="true"]')) ||
       !!window.PandoraStudioAdminActive?.();
   };
   function applyUpdate() {
     if (applying || !valid(latest)) return;
+    // The recovery code is shown only once. Do not destroy it through an
+    // idle refresh or an explicit update, even if the profile is collapsed.
+    // Likewise protect an in-flight password change or a filled sign-in form.
+    const accountReason = window.PandoraAccountUI?.updateGuard?.();
+    if (accountReason) {
+      blockedReason = accountReason;
+      blockedAutoUpdate = true;
+      refreshUpdateLocale();
+      return;
+    }
+    blockedReason = null;
     applying = true;
     try {
       // A browser quota failure must veto navigation, not silently discard the
@@ -47,9 +59,15 @@
   }
   const updateCopy = () => document.documentElement.lang === 'en' ? {
     notice: 'A new version is available. Your current build and page position will be saved before updating.',
+    recovery: 'Save and acknowledge your one-time account recovery code before updating.',
+    request: 'Finish the account request before updating.',
+    draft: 'Finish or clear the account password form before updating.',
     apply: 'Update', later: 'Later'
   } : {
     notice: 'Новая версия опубликована. Текущий билд и положение на странице будут сохранены перед обновлением.',
+    recovery: 'Перед обновлением сохрани и подтверди резервный код аккаунта — повторно его не покажут.',
+    request: 'Сначала дождись завершения запроса аккаунта.',
+    draft: 'Сначала заверши или очисти поля пароля в форме аккаунта.',
     apply: 'Обновить', later: 'Позже'
   };
   function refreshUpdateLocale() {
@@ -57,7 +75,7 @@
     if (!banner) return;
     const strings = updateCopy();
     const [message, apply, later] = banner.children;
-    message.textContent = strings.notice;
+    message.textContent = strings[blockedReason] || strings.notice;
     apply.textContent = strings.apply;
     later.textContent = strings.later;
   }
@@ -74,7 +92,7 @@
     banner.setAttribute('role', 'status');
     banner.setAttribute('aria-live', 'polite');
     const message = document.createElement('span');
-    message.textContent = updateCopy().notice;
+    message.textContent = updateCopy()[blockedReason] || updateCopy().notice;
     const apply = document.createElement('button');
     apply.textContent = updateCopy().apply;
     apply.type = 'button';
@@ -86,6 +104,7 @@
       // The banner may have been created for an older published release.
       // Always dismiss the newest version actually offered to the user.
       dismissedRelease = latest;
+      blockedReason = null;
       banner.remove();
     });
     banner.append(message, apply, later);

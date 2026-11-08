@@ -368,3 +368,14 @@ test('both logout and verified bootstrap revocation invalidate matching owners',
  assert.match(original,/clearSession\(\{revokeMatchingOwner:true\}\);options\.onLogout/);
  assert.match(original,/clearSession\(\{revokeMatchingOwner:true\}\);\s*forceBootstrapRender=true/);
 });
+
+test('account update guard protects the one-time code without exposing it',()=>{
+ const c=create();
+ assert.equal(c.api.updateGuard(),null);
+ c.helper.setSession({account:{username:'alice_01'},token:'a'.repeat(43),
+  expires:Date.now()+3600000,recoveryCode:'r'.repeat(43)});
+ assert.equal(c.api.updateGuard(),'recovery');
+ assert.notEqual(c.api.updateGuard(),'r'.repeat(43));
+ c.helper.clearSession();
+ assert.equal(c.api.updateGuard(),null);
+});
