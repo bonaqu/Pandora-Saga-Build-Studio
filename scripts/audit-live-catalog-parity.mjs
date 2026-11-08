@@ -68,6 +68,44 @@ export function compareCatalog(staticData,remoteData,dataset){
   d1Count:remoteData.length};
 }
 
+// Safe CI-only drift summary: counts and schema field labels, no catalog
+// values, player information, credentials or raw record identifiers in logs.
+export function describeCatalogDifference(local,remote,dataset){
+ const records=value=>{
+  if(dataset==='instances'&&Array.isArray(value))
+   return new Map(value.map((row,index)=>[String(row?.id??index),row]));
+  if(Array.isArray(value))
+   return new Map(value.map((row,index)=>[String(index),row]));
+  if(value&&typeof value==='object')return new Map(Object.entries(value));
+  return null;
+ };
+ const a=records(local),b=records(remote);
+ if(!a||!b)return 'incompatible JSON structure';
+ let missing=0,extra=0,changed=0;
+ const changedFields=new Set();
+ for(const [key,value] of a){
+  if(!b.has(key)){missing++;continue}
+  const current=b.get(key);
+  if(same(value,current))continue;
+  changed++;
+  // Disclose names of ordinary schema fields, never gameplay text or IDs.
+  if(changedFields.size<6&&value&&current&&
+   typeof value==='object'&&!Array.isArray(value)&&
+   typeof current==='object'&&!Array.isArray(current)){
+   for(const field of new Set([...Object.keys(value),...Object.keys(current)])){
+    if(changedFields.size>=6)break;
+    if(/^[A-Za-z][A-Za-z0-9_]{0,35}$/.test(field)&&
+     !same(value[field],current[field]))changedFields.add(field);
+   }
+  }
+ }
+ for(const key of b.keys())if(!a.has(key))extra++;
+ const fields=changedFields.size?', fields: '+[...changedFields].join(', '):'';
+ return 'local '+a.size+', D1 '+b.size+
+  '; missing in D1 '+missing+', extra in D1 '+extra+
+  ', changed records '+changed+fields;
+}
+
 async function run({strictRu=false,fetcher=fetch}={}){
  let snapshot=null,failures=0,translations=0;
  for(const dataset of DATASETS){
@@ -86,9 +124,11 @@ async function run({strictRu=false,fetcher=fetch}={}){
    if(snapshot!==null&&snapshot!==observed)
     throw Error('D1 snapshot changed during read-only audit');
    snapshot=observed;
-   const report=compareCatalog(local,await response.json(),dataset);
+   const remote=await response.json();
+   const report=compareCatalog(local,remote,dataset);
    if(!report.equal){
-    failures++;console.error('FAIL '+dataset+': source records differ');
+    failures++;console.error('FAIL '+dataset+': source records differ — '+
+     describeCatalogDifference(local,remote,dataset));
    }else if(report.missingRu){
     translations+=report.missingRu;
     console.log('WARN '+dataset+': '+report.missingRu+

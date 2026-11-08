@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DATASETS,compareCatalog} from '../scripts/audit-live-catalog-parity.mjs';
+import {DATASETS,compareCatalog,describeCatalogDifference} from '../scripts/audit-live-catalog-parity.mjs';
 
 test('read-only audit includes every player-facing D1 catalog dataset',()=>{
  assert.deepEqual(DATASETS,['items','skills','souls','monsters','drops','maps',
@@ -43,4 +43,24 @@ test('a NEW missing RU instance description fails rather than extending the exce
  const source=[{id:999999,blurb:'Unverified new text',blurbRu:'Новый перевод'}];
  const remote=[{id:999999,blurb:'Unverified new text'}];
  assert.equal(compareCatalog(source,remote,'instances').equal,false);
+});
+
+test('live drift diagnostics report counts and safe schema field labels only',()=>{
+ const local={123:{name:'Private local label',attrs:{atk:9}},456:{name:'Same'}};
+ const remote={123:{name:'Hidden remote label',attrs:{atk:9}},999:{name:'New'}};
+ const original=JSON.stringify([local,remote]);
+ const message=describeCatalogDifference(local,remote,'items');
+ assert.match(message,/local 2, D1 2/);
+ assert.match(message,/missing in D1 1, extra in D1 1, changed records 1/);
+ assert.match(message,/fields: name/);
+ for(const forbidden of ['Private local label','Hidden remote label','123','456','999'])
+  assert.equal(message.includes(forbidden),false,'Do not leak game values or record IDs');
+ assert.equal(JSON.stringify([local,remote]),original);
+});
+
+test('live drift diagnostics handle scalar dictionary values and invalid structures',()=>{
+ const local={'A':'red','B':'same'},remote={'A':'blue','B':'same'};
+ assert.match(describeCatalogDifference(local,remote,'stringsEn'),/changed records 1/);
+ assert.doesNotMatch(describeCatalogDifference(local,remote,'stringsEn'),/red|blue/);
+ assert.equal(describeCatalogDifference(null,remote,'items'),'incompatible JSON structure');
 });
