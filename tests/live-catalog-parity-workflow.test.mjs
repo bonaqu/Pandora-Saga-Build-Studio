@@ -24,3 +24,16 @@ test('parity command runs a read-only script, not a production D1 mutation',()=>
  assert.doesNotMatch(source,/Authorization:|Bearer |method:\s*['"]POST|method:\s*['"]PUT/);
  assert.match(source,/x-ps-catalog-snapshot/);
 });
+
+test('Pages dynamic deployments also trigger monitoring via source branch pushes',()=>{
+ const workflow=read('.github/workflows/live-readonly.yml');
+ const wait=read('scripts/wait-live-release.mjs');
+ assert.match(workflow,/push:\s*\n\s*branches: \[bonaqu_projects\]/);
+ assert.match(workflow,/group: live-readonly-bonaqu_projects/);
+ assert.match(workflow,/cancel-in-progress: true/);
+ assert.match(workflow,/workflow_run:/);
+ assert.match(workflow,/github\.event_name != 'workflow_run' \|\| github\.event\.workflow_run\.conclusion == 'success'/);
+ assert.match(wait,/const max=60;/);
+ assert.match(wait,/if\(current===expected\)/);
+ assert.doesNotMatch(workflow,/wrangler d1|Authorization|catalog:review|--write/);
+});
