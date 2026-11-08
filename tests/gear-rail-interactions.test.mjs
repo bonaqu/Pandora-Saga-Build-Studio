@@ -56,7 +56,8 @@ function fixture(issue=()=>[],language='ru'){
  };
  const labels=Function('slots','lang',localeSource+
   '\nreturn {gearSlotName,gearIssueLabel};')(slots,language);
- const render=Function('window','state','
+ const render=Function('window','state','$','slots','slotKeys','h',
+  'gearSlotName','gearIssueLabel','lang','slotVisual',
   'equippedRecord','equipmentIssue','itemIcon','itemName','selectedSlot','stageSlotPickerOpen',
   'selectedSocket','gearMode','stageSlotQuery','stageSoulQuery','stageSlotShown',
   'stageSlotView','renderStagePicker','catalog','gameTables',

@@ -23,8 +23,9 @@ test('two explicit RU/EN buttons keep the selected language accessible',()=>{
 test('item dialog header shows localized slot type, not duplicated item name',()=>{
  const source=read('pandora-studio-equipment-ui.js'),app=read('pandora-studio-app.js');
  assert.match(source,/api\.slotLabel\|\|'Слот: '\+slot/);
- assert.match(app,/\['Оружие','Щит','Шлем','Броня','Перчатки','Штаны','Обувь','Плащ'/);
- assert.match(app,/\['Weapon','Shield','Helmet','Armor','Gloves','Pants'/);
+ assert.match(app,/const slots=\[\['Оружие','⚔'\]/);
+ assert.match(app,/const englishGearSlots=\['Weapon','Shield','Helmet','Armor','Gloves','Pants'/);
+ assert.match(app,/slotLabel:\(lang==='en'\?'Slot: ':'Слот: '\)\+gearSlotName\(selectedSlot\)/);
 });
 test('skill markers keep tooltips in one shared bar and never block the slider',()=>{
  const css=read('pandora-studio-theme.css'),hero=read('pandora-studio-hero-path.js');
