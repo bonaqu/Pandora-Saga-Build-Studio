@@ -68,6 +68,25 @@ function savedNonnegativeInteger(raw){
  const value=Number(raw);
  return Number.isSafeInteger(value)&&value>=0?value:null;
 }
+// A malformed saved grade must never impersonate legitimate +0 in A/B.
+// Historical builds without an explicit grade are unrefined (+0).
+// Identity stays internal: two different damaged values remain different in
+// "Differences only", while the player sees only a neutral dash.
+function savedRefinement(snap,slot,item,calculate){
+ if(!item||item.id==null||typeof calculate!=='function')
+  return {value:null,identity:null};
+ const key=slot+':'+String(item.id),raw=snap?.refinements?.[key];
+ if(raw!==undefined&&(!Number.isInteger(raw)||raw<0||raw>10)){
+  let original;
+  try{original=JSON.stringify(raw)}catch{original='unreadable'}
+  return {value:null,identity:'invalid:'+String(original)};
+ }
+ let grade=null;
+ try{grade=calculate(snap,slot,item)}catch{}
+ return Number.isInteger(grade)&&grade>=0&&grade<=10?
+  {value:grade,identity:'grade:'+grade}:
+  {value:null,identity:'unavailable'};
+}
 // Each saved build must retain its own calculation even if the other fails.
 function calculatePair(a,b,calculate,ready=true){
  if(!ready||typeof calculate!=='function')return [null,null];
@@ -266,10 +285,11 @@ function matrixRows(a={},b={},options={}){
     identityA:String(x?.id??''),identityB:String(y?.id??'')
    });
   if(x||y){
+   const gradeA=savedRefinement(a,i,x,options.refinement),
+    gradeB=savedRefinement(b,i,y,options.refinement);
    push('equipment',gearGroup,'refinement.'+i,'Заточка: '+slot,
-    'Refinement: '+EN_SLOTS[i],
-    x&&typeof options.refinement==='function'?options.refinement(a,i,x):null,
-    y&&typeof options.refinement==='function'?options.refinement(b,i,y):null,{kind:'number'});
+    'Refinement: '+EN_SLOTS[i],gradeA.value,gradeB.value,
+    {kind:'number',identityA:gradeA.identity,identityB:gradeB.identity});
    // Compare the player's chosen physical copy, not catalog defaults alone.
    const capacityA=typeof socketCapacity==='function'?socketCapacity(a,i,x):null;
    const capacityB=typeof socketCapacity==='function'?socketCapacity(b,i,y):null;

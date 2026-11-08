@@ -313,3 +313,45 @@ test('damaged enhancement values remain unknown, never fake zero or Off',()=>{
  assert.equal(english.find(x=>x.key==='buff.combatWarCry').a,'—');
  assert.equal(english.find(x=>x.key==='buff.combatWarCry').b,'Off');
 });
+
+test('damaged saved refinement stays unknown instead of masquerading as +0',()=>{
+ const refine=(snap,i,item)=>{
+  const value=snap.refinements?.[i+':'+item.id];
+  return Number.isInteger(value)&&value>=0&&value<=10?value:0;
+ };
+ const a={...structuredClone(first),refinements:{'0:1':'broken'}};
+ const b={...structuredClone(first),refinements:{'0:1':0}};
+ const original=JSON.stringify(a);
+ const find=(left,right,lang='ru')=>comparison.matrixRows(left,right,{
+  ...opts,lang,refinement:refine
+ }).find(x=>x.key==='refinement.0');
+ const row=find(a,b);
+ assert.equal(row.a,'—');assert.equal(row.b,'0');
+ assert.equal(row.delta,null);assert.equal(row.equal,false);
+ assert.equal(find(a,b,'en').label,'Refinement: Weapon');
+ assert.equal(JSON.stringify(a),original,'Comparison must not rewrite invalid grade');
+ for(const value of [-1,11,99,null,'3',{},Infinity]){
+  const damaged={...structuredClone(first),refinements:{'0:1':value}};
+  assert.equal(find(damaged,b).a,'—','Explicit invalid grade '+String(value));
+ }
+ const missing={...structuredClone(first),refinements:{}};
+ assert.equal(find(missing,b).a,'0','Unspecified old grade means unrefined');
+ assert.equal(find(missing,b).equal,true);
+ const plus={...structuredClone(first),refinements:{'0:1':7}};
+ assert.deepEqual([find(plus,b).a,find(plus,b).b,find(plus,b).delta],
+  ['7','0','-7']);
+});
+
+test('two distinct invalid grades remain different without revealing raw values',()=>{
+ const a={...structuredClone(first),refinements:{'0:1':'broken-A'}};
+ const b={...structuredClone(first),refinements:{'0:1':'broken-B'}};
+ const options={...opts,refinement:()=>0};
+ const row=comparison.matrixRows(a,b,options).find(x=>x.key==='refinement.0');
+ assert.deepEqual([row.a,row.b,row.delta,row.equal],['—','—',null,false]);
+ const same=comparison.matrixRows(a,structuredClone(a),options)
+  .find(x=>x.key==='refinement.0');
+ assert.equal(same.equal,true);
+ const crashed=comparison.matrixRows(a,b,{...opts,refinement:()=>{throw Error('Grade unavailable')}})
+  .find(x=>x.key==='refinement.0');
+ assert.equal(crashed.a,'—');assert.equal(crashed.b,'—');
+});
