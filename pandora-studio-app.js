@@ -5596,20 +5596,16 @@ function renderStats(root){
  });
  root.append(grid);refresh();
 }
-let comparisonOpen=false,comparisonMode='changes',comparisonCategory='all',comparisonQuery='';
+let comparisonOpen=false;
 function renderBuildComparison(host,onSelection=()=>{}){
  host.replaceChildren();
  host.className='build-compare-panel';
  host.setAttribute('data-build-compare','');
  const translate=(ru,en)=>lang==='en'?en:ru;
  const header=h('div',{class:'build-compare-header'});
- const title=h('div',{class:'build-compare-heading'},[
-  h('span',{class:'build-compare-emblem','aria-hidden':'true',text:'⚖'}),
-  h('div',{},[h('h3',{text:translate('Сравнение билдов','Build comparison')}),
-   h('small',{text:translate('Два сохранённых героя · без изменения самих билдов',
-    'Two saved characters · read-only comparison')})])
- ]);
- const badge=h('span',{class:'build-compare-picks',text:''});
+ const title=h('h3',{class:'build-compare-title',
+  text:translate('Сравнение билдов','Build comparison')});
+ const content=h('div',{class:'build-compare-content',hidden:!comparisonOpen});
  const collapse=h('button',{type:'button',class:'build-compare-expand',
   'aria-expanded':String(comparisonOpen),
   text:comparisonOpen?translate('Скрыть сравнение','Collapse'):
@@ -5621,34 +5617,32 @@ function renderBuildComparison(host,onSelection=()=>{}){
    collapse.textContent=comparisonOpen?translate('Скрыть сравнение','Collapse'):
     translate('Развернуть сравнение','Expand');
   }});
- header.append(title,badge,collapse);
- const content=h('div',{class:'build-compare-content',hidden:!comparisonOpen});
+ header.append(title,collapse);
  const controls=h('div',{class:'build-compare-controls'});
  const pick=(letter,index)=>{
   const select=h('select',{class:'build-compare-select',
    'aria-label':translate('Билд ','Build ')+letter,
    'data-compare-select':letter});
   const field=h('label',{class:'build-compare-select-label'},[
-   h('span',{text:translate('Билд ','Build ')+letter}),select
-  ]);
+   h('span',{text:translate('Билд ','Build ')+letter}),select]);
   const options=()=>{
    select.replaceChildren(h('option',{value:'',text:translate(
     'Выбери сохранённый билд','Choose a saved build')}));
-   for(const build of builds){
-    const opt=h('option',{value:build.id,text:build.name});
-    select.append(opt);
-   }
+   for(const build of builds)
+    select.append(h('option',{value:build.id,text:build.name}));
    select.value=compareIds[index]||'';
   };
-  options();
   select.onchange=()=>{
-   const oldA=compareIds[0]||'',oldB=compareIds[1]||'',id=select.value;
-   let next=index===0?[id,oldB]:[oldA,id];
-   if(id&&next[1-index]===id)next[index===0?1:0]=index===0?oldA:oldB;
-   if(next[0]&&next[0]===next[1])next[index===0?1:0]='';
-   compareIds=next;onSelection();update();
+   const other=index===0?1:0,id=select.value;
+   const next=[compareIds[0]||'',compareIds[1]||''];
+   // A and B must represent two distinct saved builds.
+   if(id&&next[other]===id)next[other]=next[index];
+   next[index]=id;
+   if(next[0]&&next[0]===next[1])next[other]='';
+   compareIds=next;
+   onSelection();update();
   };
-  return {field,select,options};
+  return {field,options};
  };
  const A=pick('A',0),B=pick('B',1);
  const swap=h('button',{type:'button',class:'build-compare-swap',
@@ -5657,155 +5651,61 @@ function renderBuildComparison(host,onSelection=()=>{}){
   onclick:()=>{compareIds=[compareIds[1]||'',compareIds[0]||''];
    onSelection();update()}});
  controls.append(A.field,swap,B.field);
- const options=h('div',{class:'build-compare-options'});
- const tabs=h('div',{class:'build-compare-categories',role:'group',
-  'aria-label':translate('Раздел сравнения','Comparison category')});
- const categories=[
-  ['all',translate('Все разделы','All')],
-  ['results',translate('Расчёт','Calculated')],
-  ['character',translate('Персонаж','Character')],
-  ['equipment',translate('Снаряжение','Gear')],
-  ['skills',translate('Навыки','Skills')],
-  ['buffs',translate('Усиления','Buffs')]
- ];
- const categoryButtons=[];
- for(const [key,label]of categories){
-  const button=h('button',{type:'button','data-compare-category':key,text:label});
-  button.onclick=()=>{comparisonCategory=key;applyFilter()};
-  tabs.append(button);categoryButtons.push({key,button});
- }
- const mode=h('label',{class:'build-compare-differences'},[
-  h('input',{type:'checkbox','data-compare-differences':'',
-   'aria-label':translate('Только отличия','Differences only')}),
-  h('span',{text:translate('Только отличия','Differences only')})
- ]);
- const modeInput=mode.querySelector('input');
- modeInput.checked=comparisonMode==='changes';
- modeInput.onchange=()=>{comparisonMode=modeInput.checked?'changes':'all';applyFilter()};
- const search=h('input',{type:'search',class:'build-compare-search',
-  value:comparisonQuery,placeholder:translate('Найти характеристику…','Find a stat…'),
-  'aria-label':translate('Поиск по сравнительным характеристикам','Search comparison metrics')});
- search.addEventListener('input',()=>{comparisonQuery=search.value;applyFilter()});
- options.append(tabs,h('div',{class:'build-compare-options-row'},[mode,search]));
- const summary=h('div',{class:'build-compare-summary',role:'status','aria-live':'polite'});
- const note=h('p',{class:'build-compare-note',text:translate(
-  'Δ = билд B минус билд A. Плюс не всегда лучше. Числа берутся из Книги героя; неподтверждённые параметры показаны как «—».',
-  'Δ = Build B minus Build A. Positive is not always better. Values use Hero Book calculations; unknown metrics are shown as “—”.')});
+ const summary=h('p',{class:'build-compare-summary',role:'status','aria-live':'polite'});
  const wrap=h('div',{class:'build-compare-table-wrap'});
  const table=h('table',{class:'build-compare-table','aria-label':translate(
-  'Сравнение двух сохранённых билдов','Saved build A/B comparison')});
- const thead=h('thead');
- thead.append(h('tr',{},[
+  'Различающиеся итоговые характеристики билдов','Different calculated stats of saved builds')});
+ const head=h('thead');
+ head.append(h('tr',{},[
   h('th',{scope:'col',text:translate('Характеристика','Stat')}),
-  h('th',{scope:'col',text:translate('Билд A','Build A')}),
-  h('th',{scope:'col',text:translate('Билд B','Build B')}),
-  h('th',{scope:'col',text:'Δ (B − A)'})
+  h('th',{scope:'col',text:'A'}),
+  h('th',{scope:'col',text:'B'}),
+  h('th',{scope:'col',text:translate('Разница','Difference')})
  ]));
- const tbody=h('tbody');table.append(thead,tbody);wrap.append(table);
- content.append(controls,options,summary,wrap,note);
+ const tbody=h('tbody');table.append(head,tbody);wrap.append(table);
+ content.append(controls,summary,wrap);
  host.append(header,content);
- let groups=[];
- function applyFilter(){
-  const q=comparisonQuery.trim().toLocaleLowerCase('ru');
-  let shown=0,changed=0,total=0;
-  for(const row of groups){
-   let visible=0;
-   for(const entry of row.entries){
-    total++;
-    if(!entry.data.equal)changed++;
-    const matchCategory=comparisonCategory==='all'||
-     entry.data.section===comparisonCategory;
-    const matchQuery=!q||[entry.data.label,entry.data.a,entry.data.b,row.name]
-     .join(' ').toLocaleLowerCase('ru').includes(q);
-    const ok=matchCategory&&matchQuery&&
-     (comparisonMode==='all'||!entry.data.equal);
-    entry.node.hidden=!ok;
-    if(ok){visible++;shown++}
-   }
-   row.heading.hidden=!visible;
-  }
-  for(const {key,button}of categoryButtons){
-   button.classList.toggle('chosen',comparisonCategory===key);
-   button.setAttribute('aria-pressed',String(comparisonCategory===key));
-  }
-  modeInput.checked=comparisonMode==='changes';
-  const a=compareIds[0]&&builds.find(x=>x.id===compareIds[0]);
-  const b=compareIds[1]&&builds.find(x=>x.id===compareIds[1]);
-  if(!a||!b){
-   summary.textContent=builds.length<2?
-    translate('Сохрани хотя бы два билда, чтобы сравнить характеристики.',
-     'Save at least two builds to compare metrics.'):
-    translate('Выбери разные сохранённые билды A и B.','Choose two distinct saved builds A and B.');
-   wrap.hidden=true;options.hidden=true;note.hidden=true;return;
-  }
-  wrap.hidden=false;options.hidden=false;note.hidden=false;
-  summary.textContent=translate('Отличаются: ','Different: ')+changed+
-   translate(' · Совпадают: ',' · Equal: ')+(total-changed)+
-   translate(' · Показано: ',' · Showing: ')+shown;
-  const empty=tbody.querySelector('.build-compare-empty');
-  if(empty)empty.hidden=shown>0;
- }
  function update(){
-  A.options();B.options();
-  badge.textContent=[compareIds[0],compareIds[1]].filter(id=>
-   id&&builds.some(b=>b.id===id)).length+' / 2';
-  tbody.replaceChildren();groups=[];
+  A.options();B.options();tbody.replaceChildren();
   const [a,b]=compareIds.map(id=>builds.find(x=>x.id===id));
-  if(a&&b&&a.id!==b.id){
-   const [calcA,calcB]=window.PandoraBuildComparison.calculatePair(
-    a.data,b.data,previewBaseStats,Boolean(catalog.live&&gameTables));
-   const rows=window.PandoraBuildComparison.matrixRows(a.data,b.data,{
-    lang,races,jobs,stats:[['Выносливость','Vitality'],['Сила','Strength'],
-     ['Ловкость','Agility'],['Сноровка','Dexterity'],['Дух','Spirit'],
-     ['Интеллект','Intelligence']],
-    // Canonical visible names, independent of stored legacy allocation keys.
-    statLabels:ORIGIN_STAT_LABELS.map(({name})=>name),
-    branches:branches.map(({id,name})=>[id,name,
-     officialEnglish?.branches?.[id]||name]),
-    slotLabels:slots.map(x=>x[0]),
-    equipment:catalog.equipment||{},souls:catalog.souls||{},
-    skillCatalog:catalog.skills||{},englishSkills:officialEnglish?.skills||{},
-    englishItems:officialEnglish?.items||{},englishSouls:officialEnglish?.souls||{},
-    enchant:window.PandoraEnchantModel,
-    honorTitles:window.PandoraOSCalculator.honorTitles,
-    refinement:(snap,i,item)=>window.PandoraEquipmentPlan.refinementValue(
-     snap.refinements,i,item),
-    socketCapacity:(snap,i,item)=>{
-     if(!item||!window.PandoraEquipmentPlan.supportsSoulSlot(slotKeys[i]))return null;
-     const rec=catalog.equipment?.[String(item.id)];
-     return rec?window.PandoraEquipmentPlan.equippedSocketCapacity(snap,i,item,rec):null;
-    },
-    trained:(snap,id)=>window.PandoraSkillProgression.trained(snap,id),
-    calcA,calcB,
-    summaryA:calcA?window.PandoraStageAttributes.summaryRows(calcA):[],
-    summaryB:calcB?window.PandoraStageAttributes.summaryRows(calcB):[]
-   });
-   let current=null;
-   for(const item of rows){
-    if(!current||current.name!==item.group){
-     current={name:item.group,entries:[],heading:h('tr',{class:'build-compare-group'})};
-     current.heading.append(h('th',{scope:'rowgroup',colspan:'4',text:item.group}));
-     tbody.append(current.heading);groups.push(current);
-    }
-    const node=h('tr',{'data-compare-row':item.key,
-     'data-compare-equal':String(item.equal),
-     'data-compare-section':item.section});
-    node.append(
-     h('th',{scope:'row',text:item.label}),
-     h('td',{'data-compare-a':'',text:item.a}),
-     h('td',{'data-compare-b':'',text:item.b}),
-     h('td',{'data-compare-delta':'','data-direction':item.direction,
-      text:item.delta??(item.equal?'—':translate('Изменено','Changed'))})
-    );
-    current.entries.push({node,data:item});tbody.append(node);
-   }
-   const empty=h('tr',{class:'build-compare-empty',hidden:true});
-   empty.append(h('td',{colspan:'4',text:translate(
-    'В выбранном разделе отличий нет. Отключи «Только отличия», чтобы увидеть все значения.',
-    'No differences in this category. Turn off “Differences only” to see all values.')}));
-   tbody.append(empty);
+  if(!a||!b||a.id===b.id){
+   summary.textContent=builds.length<2?
+    translate('Сохрани хотя бы два билда для сравнения.',
+     'Save at least two builds to compare them.'):
+    translate('Выбери два разных сохранённых билда.',
+     'Select two different saved builds.');
+   wrap.hidden=true;
+   return;
   }
-  applyFilter();
+  const [calcA,calcB]=window.PandoraBuildComparison.calculatePair(
+   a.data,b.data,previewBaseStats,Boolean(catalog.live&&gameTables));
+  if(!calcA||!calcB){
+   summary.textContent=translate(
+    'Не удалось рассчитать один из билдов. Сохранения не изменены.',
+    'One of the builds could not be calculated. Saved builds were not changed.');
+   wrap.hidden=true;
+   return;
+  }
+  // Same calculated Hero Book values as Remaked, not a second simulation.
+  const rows=window.PandoraBuildComparison.compactResults(
+   window.PandoraStageAttributes.summaryRows(calcA),
+   window.PandoraStageAttributes.summaryRows(calcB),{lang});
+  summary.textContent=rows.length?
+   translate('Отличий: ','Differences: ')+rows.length:
+   translate('Среди рассчитанных характеристик отличий нет.',
+    'No differences in the calculated stats.');
+  wrap.hidden=!rows.length;
+  for(const item of rows){
+   const node=h('tr',{'data-compare-row':item.key,'data-compare-equal':'false'});
+   node.append(
+    h('th',{scope:'row',text:item.label}),
+    h('td',{'data-compare-a':'',text:item.a}),
+    h('td',{'data-compare-b':'',text:item.b}),
+    h('td',{'data-compare-delta':'','data-direction':item.direction,
+     text:item.delta})
+   );
+   tbody.append(node);
+  }
  }
  update();
  return {update};
