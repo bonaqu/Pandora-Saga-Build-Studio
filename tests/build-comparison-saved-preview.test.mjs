@@ -41,6 +41,14 @@ test('malformed builds fail before opening/calculating without editing their pay
 });
 test('A/B calls shared read-only preparation instead of calculating incomplete saved data',()=>{
  assert.match(app,/a\.data,b\.data,snap=>previewBaseStats\(prepareSavedBuildSnapshot\(snap\)\)/);
- assert.match(app,/next=\{\.\.\.base,\.\.\.draft/);
+ assert.match(app,/next=prepareSavedBuildSnapshot\(latest\.data\)/);
  assert.match(app,/PandoraBuildComparison\.compactResults\(/);
+});
+
+test('opening and comparison use exactly one shared snapshot materializer',()=>{
+ const open=app.slice(app.indexOf('function openSavedBuild(b){'),
+  app.indexOf('function unsavedBuild(){'));
+ assert.match(open,/next=prepareSavedBuildSnapshot\(latest\.data\)/);
+ assert.doesNotMatch(open,/const draft=structuredClone\(latest\.data\)/);
+ assert.equal((app.match(/function prepareSavedBuildSnapshot\(raw\)/g)||[]).length,1);
 });

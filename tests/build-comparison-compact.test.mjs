@@ -59,3 +59,13 @@ test('UI is compact and embedded in My Builds, without inventory/options matrix'
  assert.doesNotMatch(read('pandora-studio-build-comparison.css'),
   /\.build-compare-categories|\.build-compare-note/);
 });
+
+test('a positive delta cannot be styled as universally beneficial',()=>{
+ const css=read('pandora-studio-build-comparison.css');
+ assert.match(css,/\.build-compare-table td\[data-direction="up"\],\s*\.build-compare-table td\[data-direction="down"\]\{color:#e7c38e/);
+ assert.doesNotMatch(css,/data-direction="up"\]\{color:#b2dfac/);
+ assert.doesNotMatch(css,/data-direction="down"\]\{color:#edb7a0/);
+ const a=pack([['Получ. крит. урон','Incoming critical damage',10,'%']]);
+ const b=pack([['Получ. крит. урон','Incoming critical damage',20,'%']]);
+ assert.deepEqual(compare(a,b).map(x=>[x.delta,x.direction]),[['+10%','up']]);
+});

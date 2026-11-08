@@ -10,5 +10,5 @@ test('switching saved builds preserves unsaved editor changes via an inline choi
  assert.match(source,/onclick:\(\)=>openSavedBuild\(b\)/);
  assert.match(source,/openChoice\.hidden=true/);
  assert.match(source,/const latest=builds\.find\(record=>record\.id===b\.id\)\|\|b/);
- assert.match(source,/const draft=structuredClone\(latest\.data\),base=fresh\(\)/);
+ assert.match(source,/next=prepareSavedBuildSnapshot\(latest\.data\)/);
 });
