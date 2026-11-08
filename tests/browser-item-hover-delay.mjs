@@ -23,6 +23,36 @@ export async function runItemHoverDelaySmoke(browser,base){
    throw new Error('Hover '+step+' failed '+JSON.stringify(state)+'; '+error.message);
   }
  };
+ // Observe the actual hover and first DOM insertion in the SAME browser
+ // clock. A 140ms Playwright wait can take >650ms on a busy CI runner and
+ // falsely accuse the site of opening an instant tooltip.
+ const timedHover=async(locator,step)=>{
+  await clearPointer();
+  assert.equal(await tooltip.count(),0,'No tooltip before '+step+' pointerenter');
+  await locator.evaluate(node=>{
+   const sample={entered:null,shown:null};
+   window.__itemHoverClock=sample;
+   node.addEventListener('pointerenter',()=>{sample.entered=performance.now()},
+    {capture:true,once:true});
+   const watch=new MutationObserver(()=>{
+    if(sample.shown!==null)return;
+    if(document.querySelector('#stage-gear-tooltip')){
+     sample.shown=performance.now();
+     watch.disconnect();
+    }
+   });
+   watch.observe(document.body,{childList:true,subtree:true});
+  });
+  await hover(locator,step);
+  await tooltip.waitFor({state:'visible',timeout:2500});
+  const elapsed=await page.evaluate(()=>{
+   const probe=window.__itemHoverClock;
+   return probe?.entered!=null&&probe?.shown!=null?
+    probe.shown-probe.entered:null;
+  });
+  assert.ok(typeof elapsed==='number'&&elapsed>=550,
+   step+' should wait for the shared 650ms hover delay; observed '+elapsed);
+ };
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.waitForFunction(()=>/\d+ навыков · \d+ предметов · \d+ душ/.test(
@@ -35,12 +65,7 @@ export async function runItemHoverDelaySmoke(browser,base){
    .filter({hasText:'Прочная спата'}).first();
   await spata.waitFor({state:'visible',timeout:20000});
   await spata.scrollIntoViewIfNeeded();
-  await clearPointer();
-  await hover(spata,'Spata NPC trade');
-  await page.waitForTimeout(140);
-  assert.equal(await tooltip.count(),0,
-   'Item preview must not appear immediately upon hovering a trade reward');
-  await tooltip.waitFor({state:'visible',timeout:2500});
+  await timedHover(spata,'Spata NPC trade');
   assert.match(await tooltip.locator('.stage-rich-head strong').innerText(),
    /Прочная спата/);
   const owner=await page.evaluate(()=>{
@@ -144,11 +169,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   const loot=page.locator('.wiki-loot-chip a.wiki-link').first();
   await loot.waitFor({state:'visible',timeout:20000});
   await loot.scrollIntoViewIfNeeded();
-  await clearPointer();
-  await hover(loot,'monster loot');
-  await page.waitForTimeout(140);
-  assert.equal(await tooltip.count(),0,'Monster loot uses the same hover delay');
-  await tooltip.waitFor({state:'visible',timeout:2500});
+  await timedHover(loot,'monster loot');
   await clearPointer();
   assert.equal(await tooltip.count(),0);
 
@@ -159,11 +180,7 @@ export async function runItemHoverDelaySmoke(browser,base){
   const cloak=page.locator('.wiki-honor-cloak-link').first();
   await cloak.waitFor({state:'visible',timeout:20000});
   await cloak.scrollIntoViewIfNeeded();
-  await clearPointer();
-  await hover(cloak,'Honor cloak');
-  await page.waitForTimeout(140);
-  assert.equal(await tooltip.count(),0,'Honor cloak uses the same hover delay');
-  await tooltip.waitFor({state:'visible',timeout:2500});
+  await timedHover(cloak,'Honor cloak');
   // A rebuild can detach the hovered link without dispatching pointerleave.
   await cloak.evaluate(node=>node.remove());
   await tooltip.waitFor({state:'detached',timeout:2000});
