@@ -167,11 +167,17 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   };
   tabC.on('request',countGuest);
   await tabC.route('**/api/account/me',async route=>{
-   if(delayedMeTriggered)return route.continue();
+   // CORS OPTIONS belongs to the context's regular 204 preflight handler.
+   // Intercept ONLY the authenticated GET. Otherwise the browser rejects
+   // the preflight and no /me response ever reaches the page.
+   if(route.request().method()==='OPTIONS'||delayedMeTriggered)
+    return route.fallback();
    delayedMeTriggered=true;
    await heldMe;
    return route.fulfill({status:200,contentType:'application/json',
-    headers:{'access-control-allow-origin':'*'},
+    headers:{'access-control-allow-origin':'*',
+     'access-control-allow-headers':'Content-Type,Authorization',
+     'access-control-allow-methods':'GET,POST,OPTIONS'},
     body:JSON.stringify({account:{username:'bob_222'}})});
   });
   const thirdLogin=login(tabC,tokenB,'bob_222');
