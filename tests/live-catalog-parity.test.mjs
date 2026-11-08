@@ -38,3 +38,9 @@ test('missing non-translated data, extra instances and translated D1 divergence 
  assert.equal(compareCatalog(source,[{id:1,blurb:'Same',extra:true}],
   'instances').equal,false);
 });
+
+test('a NEW missing RU instance description fails rather than extending the exception',()=>{
+ const source=[{id:999999,blurb:'Unverified new text',blurbRu:'Новый перевод'}];
+ const remote=[{id:999999,blurb:'Unverified new text'}];
+ assert.equal(compareCatalog(source,remote,'instances').equal,false);
+});
