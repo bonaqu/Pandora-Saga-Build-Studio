@@ -120,7 +120,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.match(await page.locator('.wiki-item-wearers').innerText(),/Мирина[\s\S]*Кролль/);
   await page.locator('.wiki-controls input[type="search"]').click();
   await page.locator('.wiki-controls input[type="search"]').fill('');
-  // The reference tooltip in the game separates lore, parameters and upgrade conditions.
+  // Original game-authored breaks separate lore, parameters and upgrades without inventing new blank paragraphs.
   await page.locator('.wiki-controls input[type="search"]').click();
   await page.locator('.wiki-controls input[type="search"]').fill('Алые астирские штаны');
   const redAstirPants=rows.filter({hasText:'Алые астирские штаны'}).first();
@@ -129,7 +129,7 @@ export async function runEquipmentLocaleSmoke(browser,base){
   const description=page.locator('.wiki-page .wiki-description');
   await description.waitFor({state:'visible'});
   assert.match(await description.textContent(),
-   /Астира\.\n\nЛВК \+1, ОЗ \+30\n\nЗа каждые 2 единицы улучшения:\nАтака \+1%/);
+   /Астира\.\n\nЛВК \+1, ОЗ \+30\nЗа каждые 2 единицы улучшения:\nАтака \+1%/);
   assert.equal(await description.evaluate(el=>getComputedStyle(el).whiteSpace),'pre-wrap');
   // A linked potion/material is not equipment, but still needs a visible record.
   await page.goto(base+'/#wiki/item/50011',{waitUntil:'domcontentloaded'});
