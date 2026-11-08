@@ -5678,7 +5678,8 @@ function renderBuildComparison(host,onSelection=()=>{}){
    return;
   }
   const [calcA,calcB]=window.PandoraBuildComparison.calculatePair(
-   a.data,b.data,previewBaseStats,Boolean(catalog.live&&gameTables));
+   a.data,b.data,snap=>previewBaseStats(prepareSavedBuildSnapshot(snap)),
+   Boolean(catalog.live&&gameTables));
   if(!calcA||!calcB){
    summary.textContent=translate(
     'Не удалось рассчитать один из билдов. Сохранения не изменены.',
@@ -5718,9 +5719,31 @@ function restoreLoadedBuildUI(){
  selectedSkill=null;inlineBranchId=null;selectedSlot=0;selectedSocket=0;
  stageSlotPickerOpen=false;stageSlotQuery='';stageSlotShown=48;
 }
+// One read-only materialization contract for BOTH opening a legacy save and
+// previewing it in A/B. Missing nested objects inherit the same defaults.
+// Neither operation mutates the persisted record; opening still saves only
+// after the player explicitly chooses a build to open.
+function prepareSavedBuildSnapshot(raw){
+ if(!raw||typeof raw!=='object'||Array.isArray(raw))
+  throw TypeError('Invalid saved build');
+ const draft=structuredClone(raw),base=fresh();
+ const record=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+ return {...base,...draft,
+  points:{...base.points,...record(draft.points)},
+  mastery:{...base.mastery,...record(draft.mastery)},
+  stats:{...base.stats,...record(draft.stats)},
+  equipment:{...base.equipment,...record(draft.equipment)},
+  souls:{...base.souls,...record(draft.souls)},
+  soulOwners:{...base.soulOwners,...record(draft.soulOwners)},
+  socketCapacities:{...base.socketCapacities,...record(draft.socketCapacities)},
+  refinements:{...base.refinements,...record(draft.refinements)},
+  gems:{...base.gems,...record(draft.gems)},
+  vitalsBuffs:{...base.vitalsBuffs,...record(draft.vitalsBuffs)},
+  attributeBuffs:{...base.attributeBuffs,...record(draft.attributeBuffs)},
+  profile:{...base.profile,...record(draft.profile)}
+ };
+}
 function openSavedBuild(b){
- // Resolve the latest snapshot, but never change the active character until
- // that saved record has been cloned and structurally prepared successfully.
  if(!b||typeof b!=='object')return false;
  const latest=builds.find(record=>record.id===b.id)||b;
  if(!latest.data||typeof latest.data!=='object'||Array.isArray(latest.data)){
@@ -5729,23 +5752,8 @@ function openSavedBuild(b){
   return false;
  }
  let next;
- try{
-  const draft=structuredClone(latest.data),base=fresh();
-  const record=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
-  next={...base,...draft,
-   points:{...base.points,...record(draft.points)},
-   mastery:{...base.mastery,...record(draft.mastery)},
-   stats:{...base.stats,...record(draft.stats)},
-   equipment:{...base.equipment,...record(draft.equipment)},
-   souls:{...base.souls,...record(draft.souls)},
-   soulOwners:{...base.soulOwners,...record(draft.soulOwners)},
-   socketCapacities:{...base.socketCapacities,...record(draft.socketCapacities)},
-   refinements:{...base.refinements,...record(draft.refinements)},
-   gems:{...base.gems,...record(draft.gems)},
-   vitalsBuffs:{...base.vitalsBuffs,...record(draft.vitalsBuffs)},
-   attributeBuffs:{...base.attributeBuffs,...record(draft.attributeBuffs)},
-   profile:{...base.profile,...record(draft.profile)}};
- }catch(error){
+ try{next=prepareSavedBuildSnapshot(latest.data)}
+ catch(error){
   showStudioToast(lang==='en'?'This saved build could not be restored.':
    'Не удалось восстановить сохранённый билд.','warning');
   return false;
