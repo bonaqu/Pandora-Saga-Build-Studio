@@ -37,3 +37,5 @@ jobs:
         run: node scripts/wait-live-release.mjs
       - name: Check Pages version, Worker health, D1 catalog and CORS (read-only)
         run: npm run connection:check:full
+      - name: Compare 16 published gameplay datasets against the same D1 snapshot (read-only)
+        run: npm run catalog:parity:live

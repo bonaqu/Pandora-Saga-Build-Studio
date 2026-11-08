@@ -10,6 +10,12 @@ export const DATASETS=Object.freeze([
  'unison','expertise','stringsEn'
 ]);
 const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/';
+// Known D1 publication debt from the direct 2026-11-08 audit. Do not
+// normalize NEW missing translations as harmless: require explicit review.
+export const KNOWN_MISSING_RU_INSTANCE_IDS=Object.freeze([
+ 20030040,20030070,20030080,20030090,20030100,20030110
+]);
+const knownMissingRu=new Set(KNOWN_MISSING_RU_INSTANCE_IDS.map(String));
 const canon=value=>Array.isArray(value)?value.map(canon):
  value&&typeof value==='object'?Object.fromEntries(
   Object.keys(value).filter(k=>value[k]!==undefined).sort()
@@ -53,7 +59,7 @@ export function compareCatalog(staticData,remoteData,dataset){
      !Object.hasOwn(current,'blurbRu')&&
      typeof source.blurb==='string'&&source.blurb===current.blurb){
    const {blurbRu:_translation,...other}=source;
-   if(same(other,current)){missingRu++;continue}
+   if(same(other,current)&&knownMissingRu.has(id)){missingRu++;continue}
   }
   return {equal:false,missingRu,staticCount:staticData.length,
    d1Count:remoteData.length};
