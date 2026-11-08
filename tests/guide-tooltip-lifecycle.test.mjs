@@ -161,3 +161,33 @@ test('switching guide hints removes only their own description token',()=>{
  assert.equal(second.attribute('aria-describedby'),'second-help');
  assert.equal(x.popup.hidden,true);
 });
+
+test('one shared ARIA policy supports item, Soul and skill tooltip lifecycles',()=>{
+ const x=mount(),item=x.node();
+ item.setAttribute('aria-describedby','existing-help');
+ for(const id of ['stage-guide-tooltip','stage-gear-tooltip','path-skill-hover-tooltip']){
+  x.api.linkDescription(item,id);
+  x.api.linkDescription(item,id);
+  assert.equal(item.attribute('aria-describedby').split(' ').filter(x=>x===id).length,1,
+   'Description must not be repeated on subsequent opening');
+ }
+ x.api.unlinkDescription(item,'stage-gear-tooltip');
+ assert.equal(item.attribute('aria-describedby'),
+  'existing-help stage-guide-tooltip path-skill-hover-tooltip');
+ x.api.unlinkDescription(item,'stage-guide-tooltip');
+ x.api.unlinkDescription(item,'path-skill-hover-tooltip');
+ assert.equal(item.attribute('aria-describedby'),'existing-help');
+ x.api.unlinkDescription(item,'not-present');
+ assert.equal(item.attribute('aria-describedby'),'existing-help');
+});
+
+test('shared tooltip ARIA cleanup removes only its own last ID',()=>{
+ const x=mount(),item=x.node();
+ x.api.linkDescription(item,'stage-gear-tooltip');
+ assert.equal(item.attribute('aria-describedby'),'stage-gear-tooltip');
+ x.api.unlinkDescription(item,'stage-gear-tooltip');
+ assert.equal(item.attribute('aria-describedby'),null,
+  'An absent original description must stay absent after the hint closes');
+ x.api.unlinkDescription(item,'stage-gear-tooltip');
+ assert.equal(item.attribute('aria-describedby'),null);
+});
