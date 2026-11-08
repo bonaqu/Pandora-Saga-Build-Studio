@@ -62,7 +62,10 @@ function formattedDescription(s){
   .replace(/[ \t]*\n[ \t]*/g,'\n');
  // A game-authored line break is authoritative: do not inject extra heuristic
  // paragraphs that would change the structure seen in the source description.
- if(hasSourceBreaks)return normalized.replace(/\n{3,}/g,'\n\n').trim();
+ // All authored <br> tags are part of the source, including trailing
+ // breaks and three-or-more consecutive breaks. Strip only horizontal
+ // padding at the outer edges; trim() would silently delete real newlines.
+ if(hasSourceBreaks)return normalized.replace(/^[ \t]+|[ \t]+$/g,'');
  return normalized
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+stats+')(?:\\s|[+-]|\\d))','gi'),'$1\n\n')
   .replace(new RegExp('([.!?]["»]?)[ \\t]*(?=(?:'+conditions+'))','gi'),'$1\n\n')
