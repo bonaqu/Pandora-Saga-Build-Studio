@@ -119,6 +119,7 @@ const english=Object.freeze({
  'Пароль · минимум 8 символов':'Password · at least 8 characters',
  'Сохранено в облаке':'Saved to cloud',
  'Сохранено в браузере · облако недоступно':'Saved in browser · cloud unavailable',
+ 'Аккаунт изменился · синхронизация остановлена':'Account changed · sync stopped',
  'Билд перезаписан по вашему запросу.':'Build overwritten at your request.',
  'Сохранено в браузере. Проверяем запись в облаке…':'Saved in this browser. Checking cloud storage…',
  'Проверяем сохранение билда…':'Checking saved build…',
