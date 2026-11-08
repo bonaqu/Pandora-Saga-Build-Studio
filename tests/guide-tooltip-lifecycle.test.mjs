@@ -129,3 +129,35 @@ test('clicking outside cancels pending guide hint before hover timeout',async()=
  assert.equal(x.popup.hidden,true);
  assert.equal(item.attribute('aria-describedby'),null);
 });
+
+test('game hint preserves existing screen-reader descriptions after dismissal',()=>{
+ const x=mount(),item=x.node();
+ item.setAttribute('aria-describedby','character-help control-help');
+ x.api.attach(item,'ОЗ — Очки здоровья');
+ item.events.pointerenter({pointerType:'mouse'});
+ assert.equal(item.attribute('aria-describedby'),
+  'character-help control-help stage-guide-tooltip');
+ // An accessibility description added while the hint is open also survives.
+ item.setAttribute('aria-describedby',
+  'character-help control-help stage-guide-tooltip new-help');
+ x.api.dismiss();
+ assert.equal(item.attribute('aria-describedby'),
+  'character-help control-help new-help');
+ assert.equal(x.popup.hidden,true);
+});
+
+test('switching guide hints removes only their own description token',()=>{
+ const x=mount(),first=x.node(),second=x.node();
+ first.setAttribute('aria-describedby','first-help');
+ second.setAttribute('aria-describedby','second-help');
+ x.api.attach(first,'ОЗ — Очки здоровья');
+ x.api.attach(second,'ОМ — Очки маны');
+ first.events.pointerenter({pointerType:'mouse'});
+ assert.equal(first.attribute('aria-describedby'),'first-help stage-guide-tooltip');
+ second.events.pointerenter({pointerType:'mouse'});
+ assert.equal(first.attribute('aria-describedby'),'first-help');
+ assert.equal(second.attribute('aria-describedby'),'second-help stage-guide-tooltip');
+ x.winEvents.hashchange();
+ assert.equal(second.attribute('aria-describedby'),'second-help');
+ assert.equal(x.popup.hidden,true);
+});
