@@ -263,3 +263,13 @@ test('logout checks the revision as well as the token before clearing state',()=
  assert.match(original,/session\?\.token!==owner\|\|sessionRevision!==revision/);
  assert.match(original,/session\?\.token!==bootstrapToken\|\|sessionRevision!==bootstrapRevision/);
 });
+
+test('registration and recovery use one in-flight request across locale remounts',()=>{
+ assert.match(original,/let sessionRevision=0,passwordRequest=null,guestAuthRequest=null/);
+ assert.match(original,/const guestPending=guestAuthRequest\?\.revision===sessionRevision/);
+ assert.match(original,/for\(const tab of tabButtons\)tab\.disabled=guestPending/);
+ assert.match(original,/if\(guestAuthRequest\?\.revision===sessionRevision\)return/);
+ assert.match(original,/const sameRequest=\(\)=>guestAuthRequest===ticket&&/);
+ assert.match(original,/if\(!sameRequest\(\)\)return;/);
+ assert.match(original,/if\(guestAuthRequest===ticket\)guestAuthRequest=null/);
+});
