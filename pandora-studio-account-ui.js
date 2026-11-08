@@ -4,6 +4,7 @@
 const KEY='ps-account-session.v1';
 let session=null,options=null,trigger=null,panel=null,mode='login',errorLine=null;
 let bootstrapPhase='guest';
+let sessionRevision=0,passwordRequest=null;
 const setBootstrapPhase=value=>{
  bootstrapPhase=value;
  trigger?.setAttribute('data-account-bootstrap',value);
@@ -87,6 +88,7 @@ function setSession(result){
   result.recoveryCode:null;
  localStorage.setItem(KEY,JSON.stringify(next));
  session=next;
+ sessionRevision++;
  setBootstrapPhase('verified');
  pendingRecoveryCode=recovery;
  resetFeedback();
@@ -94,6 +96,7 @@ function setSession(result){
 function clearSession(){
  const previousToken=session?.token||null;
  session=null;pendingRecoveryCode=null;
+ sessionRevision++;
  setBootstrapPhase('guest');
  resetFeedback();
  // Another tab may have signed in as a different account since this tab
@@ -168,35 +171,52 @@ function render(){
   const form=node('form','account-form');
    form.append(old,fresh,confirmFresh);
   const update=button('Изменить пароль',async()=>{
+   // A locale remount creates a new button; only one in-flight password
+   // change is allowed for this local account session.
+   if(passwordRequest?.revision===sessionRevision)return;
    if(fresh.value!==confirmFresh.value){info('Пароли не совпадают.');return}
-   // The action is type=button: unlike Enter/form submission, a direct
-   // click does not run native required/minLength validation automatically.
+   // Unlike Enter/form submission, this type=button action must explicitly
+   // validate required and minLength controls before contacting the Worker.
    if(!form.reportValidity())return;
-   const owner=session?.token;
+   const owner=session?.token,revision=sessionRevision;
    if(!owner)return;
+   const sameSession=()=>session?.token===owner&&sessionRevision===revision;
+   passwordRequest={token:owner,revision};
    update.disabled=true;info('Изменяем пароль…');
    try{await request('password',{currentPassword:old.value,password:fresh.value},owner);
-    // A slow password response from account A must not mutate forms,
-    // feedback or identity after the user signed out or switched accounts.
-    if(session?.token!==owner)return;
+    // A delayed reply from a signed-out session is stale even if another
+    // login happens to receive exactly the same bearer value.
+    if(!sameSession())return;
     old.value='';fresh.value='';confirmFresh.value='';
-    details.open=false;
+    const currentDetails=panel?.querySelector?.('.account-password-details');
+    for(const input of currentDetails?.querySelectorAll?.('input')||[])input.value='';
+    if(currentDetails)currentDetails.open=false;
     info('Пароль обновлён. Другие сеансы завершены.');
-   }catch(e){if(session?.token===owner)info(e.message)}
-   finally{update.disabled=false}
+   }catch(e){if(sameSession())info(e.message)}
+   finally{
+    if(passwordRequest?.revision===revision&&passwordRequest?.token===owner)
+     passwordRequest=null;
+    update.disabled=false;
+    if(sameSession()){
+     const currentButton=panel?.querySelector?.(
+      '.account-password-details button.account-action.primary');
+     if(currentButton)currentButton.disabled=false;
+    }
+   }
   },'primary');
+  update.disabled=passwordRequest?.revision===sessionRevision;
    form.append(update);
    form.addEventListener('submit',e=>{e.preventDefault();update.click()});
    details.append(form);
   panel.append(details);
   const footer=node('div','account-profile-footer');
   footer.append(button('Выйти из аккаунта',async()=>{
-   const owner=session?.token;
+   const owner=session?.token,revision=sessionRevision;
    if(!owner)return;
    try{await request('logout',{},owner)}catch{}
-   // Do not sign out a new account whose login finished during a delayed
-   // logout response from a previous session.
-   if(session?.token!==owner)return;
+   // A delayed logout belongs to one local session, not merely to a bearer
+   // string that a later (mocked or real) login could have reused.
+   if(session?.token!==owner||sessionRevision!==revision)return;
    clearSession();options.onLogout?.();render();
   },'account-signout'));
   panel.append(footer,errorLine);return;
@@ -292,12 +312,13 @@ async function init(config){
   if(forceBootstrapRender||!panel.hasChildNodes?.())render();
  };
  if(session){
-  const bootstrapToken=session.token,expectedName=session.username;
+  const bootstrapToken=session.token,expectedName=session.username,
+   bootstrapRevision=sessionRevision;
   try{
    const data=await request('me',null,bootstrapToken);
    // A login or logout may complete while a previous /me is in flight.
    // Never allow its late answer to switch or clear the new account.
-   if(session?.token!==bootstrapToken){finishBootstrap();return}
+   if(session?.token!==bootstrapToken||sessionRevision!==bootstrapRevision){finishBootstrap();return}
    const verified=validName(data?.account?.username);
    if(!verified||verified!==expectedName){
     const invalid=new Error('Некорректный владелец аккаунта');
@@ -307,7 +328,7 @@ async function init(config){
    setBootstrapPhase('verified');
    options.onLogin?.({register:false,bootstrap:true});
   }catch(error){
-   if(session?.token!==bootstrapToken){finishBootstrap();return}
+   if(session?.token!==bootstrapToken||sessionRevision!==bootstrapRevision){finishBootstrap();return}
    if(error?.httpStatus===401||error?.httpStatus===403){
     clearSession();
     forceBootstrapRender=true;

@@ -185,6 +185,38 @@ export async function runAccountSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('.account-feedback')?.textContent.includes('Пароль обновлён'));
   assert.equal(calls.filter(c=>c.action==='password').length,1);
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
+  // The pending change finishes after a RU -> EN locale rerender, which
+  // creates new password inputs. Its success must scrub the LIVE form.
+  holdNextPassword=true;
+  const localePasswordSent=new Promise(resolve=>{notifyHeldPassword=resolve});
+  await page.locator('.account-password-toggle').click();
+  const changing=page.locator('.account-password-details input');
+  await changing.nth(0).fill('A new long and secure passphrase 2026!');
+  await changing.nth(1).fill('After account language change 2026!');
+  await changing.nth(2).fill('After account language change 2026!');
+  await page.locator('.account-password-details button.account-action.primary').click();
+  await localePasswordSent;
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await page.locator('.account-password-details').getAttribute('open'),'');
+  const remounted=page.locator('.account-password-details input');
+  assert.equal(await remounted.nth(1).inputValue(),'After account language change 2026!');
+  const inFlightButton=page.locator('.account-password-details button.account-action.primary');
+  assert.equal(await inFlightButton.isDisabled(),true,
+   'A remounted form cannot launch a second in-flight password change');
+  const localePasswordResponse=page.waitForResponse(response=>
+   response.url().endsWith('/api/account/password'));
+  releaseHeldPassword();
+  await localePasswordResponse;
+  await page.waitForFunction(()=>document.querySelector('.account-feedback')
+   ?.textContent.includes('Password updated.'));
+  assert.equal(await page.locator('.account-password-details').getAttribute('open'),null,
+   'Success must close the current remounted password form');
+  assert.deepEqual(await remounted.evaluateAll(inputs=>inputs.map(x=>x.value)),['','',''],
+   'Current password inputs must be cleared after the delayed success');
+  assert.equal(await inFlightButton.isDisabled(),false);
+  await page.locator('#locale [data-locale="ru"]').click();
   // A transient outage must not erase a valid saved session from this browser.
   offlineMe=true;
   await page.reload({waitUntil:'domcontentloaded'});
@@ -214,8 +246,9 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-recovery input').waitFor({state:'visible'});
   assert.equal(await page.locator('.account-recovery input').inputValue(),'s'.repeat(43));
   assert.equal(calls.filter(c=>c.action==='recover').length,1);
-  // Delayed password responses belong to the session that submitted them:
-  // a subsequent sign-out must never display stale success to a guest.
+  // A delayed password reply is bound to the login that sent it. A sign-out
+  // followed by a NEW login must make that reply stale even if the mock
+  // returns exactly the same bearer token for both sessions.
   holdNextPassword=true;
   const passwordSent=new Promise(resolve=>{notifyHeldPassword=resolve});
   await page.locator('.account-recovery input').waitFor({state:'visible'});
@@ -228,20 +261,29 @@ export async function runAccountSmoke(browser,base){
   await passwordSent;
   await page.getByRole('button',{name:'Выйти из аккаунта'}).click();
   await page.locator('.account-tabs').waitFor({state:'visible'});
-  // Register the listener BEFORE releasing the held reply to avoid an
-  // intermittent missed-response timeout on faster CI runners.
+  await page.getByRole('button',{name:'Войти',exact:true}).click();
+  const afterRace=page.locator('#accountPanel .account-form input');
+  await afterRace.nth(0).fill('testplayer_01');
+  // The server has not finished rotating the password, so the old secret
+  // still authenticates this separate session with the same mock bearer.
+  await afterRace.nth(1).fill('Yet another long secret for recovery!');
+  await page.locator('#accountPanel .account-form button[type=submit]').click();
+  await page.locator('.account-user').waitFor({state:'visible'});
+  await page.locator('.account-password-toggle').click();
+  const newSessionPassword=page.locator('.account-password-details input');
+  await newSessionPassword.nth(1).fill('New account draft must survive');
+  // Install the response listener before releasing the held request.
   const passwordResponse=page.waitForResponse(response=>
    response.url().endsWith('/api/account/password'));
   releaseHeldPassword();
   await passwordResponse;
+  assert.match(await page.locator('.account-user').innerText(),/testplayer_01/);
+  assert.equal(await page.locator('.account-password-details').getAttribute('open'),'',
+   'Late old-session success may not close the new session form');
+  assert.equal(await newSessionPassword.nth(1).inputValue(),
+   'New account draft must survive','Old response must not scrub another login');
   assert.doesNotMatch(await page.locator('#accountPanel .account-feedback').innerText(),
-   /Пароль обновлён/,'Late password success must not leak into guest account');
-  await page.getByRole('button',{name:'Войти',exact:true}).click();
-  const afterRace=page.locator('#accountPanel .account-form input');
-  await afterRace.nth(0).fill('testplayer_01');
-  await afterRace.nth(1).fill('Delayed password for isolated race 2026!');
-  await page.locator('#accountPanel .account-form button[type=submit]').click();
-  await page.locator('.account-user').waitFor({state:'visible'});
+   /Пароль обновлён/,'Old response must not announce success in a new session');
   // A valid bearer that unexpectedly resolves to a different owner must not
   // be allowed to keep that token while attaching the saved-build guest scope.
   expiredMe=false;misidentifiedMe=true;
