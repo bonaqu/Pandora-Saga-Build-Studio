@@ -1149,8 +1149,12 @@ function renderSlotRails(){
    if(!shared&&(report.excess>0||issue.length)){
     const reasons=[];
     if(issue.length)reasons.push('Предмет не действует: '+issue.join('; ')+'.');
-    if(report.excess>0)reasons.push('Слотов душ недостаточно: занято '+
-     report.count+', доступно '+(cap===null?'неизвестно':cap)+'.');
+    if(report.excess>0)reasons.push(lang==='en'?
+     'Not enough Soul slots: '+report.count+' saved, '+
+      (cap===null?'unknown':cap)+' available. Extra Souls are kept but inactive.':
+     'Слотов душ недостаточно: сохранено '+report.count+
+      ', доступно '+(cap===null?'неизвестно':cap)+
+      '. Лишние души сохранены, но не действуют.');
     const message=reasons.join(' ');
     const badge=h('span',{class:'stage-conflict',text:'!','aria-label':message,
      'data-issue-tooltip':message,role:'img',
