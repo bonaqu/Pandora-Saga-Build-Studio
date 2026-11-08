@@ -39,8 +39,9 @@ export async function runWikiOwnerEnglishSyncSmoke(browser,base){
    const content=JSON.parse(readFileSync(
     new URL('../data/os/'+name+'.json',import.meta.url),'utf8'));
    return route.fulfill({status:200,headers:{
-    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot',
-    'x-ps-catalog-snapshot':'ps-browser-snapshot'},
+    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot, X-PS-Catalog',
+    'x-ps-catalog-snapshot':'ps-browser-snapshot',
+    'x-ps-catalog':'d1'},
     contentType:'application/json',body:JSON.stringify(content)});
   }
   if(path==='/api/library')return json({records:[]});
