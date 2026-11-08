@@ -13,3 +13,7 @@
 Служебные `legacyLocale` и `tradeMeta` не имеют самостоятельного одноимённого JSON в архиве; последний включён в общий ресурс `trades`, который сверяется полностью. Метаданные `meta` специально исключены из строгого сравнения: D1-представление содержит curated-сведения, а локальная копия — источник `sha`; одинаковая структура этих двух документов не гарантируется. Рабочие метаданные проверяются отдельной командой `npm run connection:check:full`.
 
 Ресурсы: [D1 meta](https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/meta.json), [Pages meta](https://bonaqu.github.io/Pandora-Saga-Build-Studio/data/os/meta.json), [D1 instances](https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/instances.json), [Pages instances](https://bonaqu.github.io/Pandora-Saga-Build-Studio/data/os/instances.json).
+
+## Автоматическая проверка (0.492.0)
+
+В `.github/workflows/live-readonly.yml` добавлен шаг `npm run catalog:parity:live`. Триггеры уже существующего workflow: успешное завершение GitHub Pages deployment, ежедневная проверка и ручной запуск. Перед аудитом ждём опубликованную версию и проверяем `/api/health`, CORS и готовность публичного каталога. Никакие токены или действия записи не нужны. Режим `--strict-ru` остаётся ручным до штатного исправления описаний в D1.
