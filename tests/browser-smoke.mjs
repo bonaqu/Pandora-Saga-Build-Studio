@@ -208,6 +208,22 @@ async function main(){
  await page.locator('#locale [data-locale="en"][aria-pressed="true"]').waitFor({state:'visible'});
  assert.match(await page.locator('#catalogStatus').innerText(),
   /^Encyclopedia: \d+ skills · \d+ items · \d+ souls$/);
+ // The class wizard's accessible names follow the selected language too.
+ await page.locator('[data-origin-tab="class"]').click();
+ assert.equal(await page.locator('#classGrid .class-wizard-progress').getAttribute('aria-label'),
+  'Class selection stages');
+ const classCrumbs=page.locator('#classGrid .class-wizard-breadcrumbs');
+ await classCrumbs.waitFor({state:'visible'});
+ assert.equal(await classCrumbs.getAttribute('aria-label'),
+  'Return to a previous class selection stage');
+ await classCrumbs.locator('button').first().click();
+ const enChoices=await page.locator('#classGrid .class-wizard-choice').evaluateAll(
+  nodes=>nodes.map(node=>node.getAttribute('aria-label')));
+ assert.ok(enChoices.length>=4,'The class wizard must offer game class routes');
+ assert.ok(enChoices.some(label=>label.includes('selected specialization')));
+ assert.ok(enChoices.some(label=>label.includes('view specializations')));
+ assert.equal(enChoices.some(label=>/выбран|специализац|профессию/.test(label)),false,
+  'English class accessible names must not mix languages');
  // The Origin area and selected racial passive stay readable in English.
  await page.locator('[data-origin-tab="stats"]').click();
  assert.match(await page.locator('#originStatSummary').innerText(),/Available: 0 \/ 0 · Spent: 0/);
