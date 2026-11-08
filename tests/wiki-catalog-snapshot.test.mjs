@@ -314,3 +314,38 @@ test('D1 rejects duplicate IDs across normal and NPC chest lists before Wiki ind
  brokenGroups.chests.npc[0].rolls=[null];
  assert.throws(()=>loader.validate(brokenGroups),/группа наград сундука/);
 });
+
+test('duplicate or missing dungeon IDs must not silently replace an Encyclopedia page',async()=>{
+ const valid=catalog('valid');
+ const extra={id:2,name:'Second dungeon',mobs:[1]};
+ valid.instances.push(extra);
+ valid.meta.counts.instances=2;
+ assert.doesNotThrow(()=>loader.validate(valid));
+
+ const duplicate=structuredClone(valid);
+ duplicate.instances[1].id=duplicate.instances[0].id;
+ assert.throws(()=>loader.validate(duplicate),/ID подземелья/,
+  'A matching count with repeated ID is not a complete catalog');
+
+ const missing=structuredClone(valid);
+ delete missing.instances[1].id;
+ assert.throws(()=>loader.validate(missing),/ID подземелья/);
+
+ for(const invalid of ['not-a-number',-1,0,1.5,'01']){
+  const damaged=structuredClone(valid);
+  damaged.instances[1].id=invalid;
+  assert.throws(()=>loader.validate(damaged),/ID подземелья/,String(invalid));
+ }
+ const stringSource=structuredClone(valid);
+ stringSource.instances[1].id='2';
+ assert.doesNotThrow(()=>loader.validate(stringSource),
+  'Numeric string IDs from older JSON object snapshots remain supported');
+
+ const remote=mockFetch(duplicate,valid);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:remote.fetcher,strict:true}),/ID подземелья/);
+ const fallback=mockFetch(duplicate,valid);
+ const loaded=await loader.load({api:'https://worker.example',fetcher:fallback.fetcher});
+ assert.equal(loaded.source,'local');
+ assert.deepEqual(loaded.data.instances.map(row=>row.id),[1,2]);
+});
