@@ -29,6 +29,7 @@ const strings={
 };
 const english=Object.freeze({
  'Профиль':'Profile','Аккаунт':'Account','Войти или зарегистрироваться':'Sign in or register',
+ 'Проверяем учётную запись…':'Checking your account…',
  'Профиль ·':'Profile ·','Профиль и вход':'Profile and sign in',
  'УЧЁТНАЯ ЗАПИСЬ':'ACCOUNT',
  'Облачные билды привязаны к вашему профилю':'Cloud builds belong to your account',

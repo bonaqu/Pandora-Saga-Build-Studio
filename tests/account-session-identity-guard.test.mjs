@@ -25,7 +25,9 @@ function create({stored=null,clock=Date,fetchImpl=async()=>({ok:true,status:200,
   classList:{toggle(){}},addEventListener(){},replaceChildren(){},
   append(){},setAttribute(){},contains(){return false}
  });
- const trigger=element(),panel=element();
+ const trigger=element(),panel=element(),triggerAttrs=new Map();
+ trigger.setAttribute=(name,value)=>{triggerAttrs.set(name,String(value))};
+ trigger.getAttribute=name=>triggerAttrs.get(name)||null;
  const doc={documentElement:{lang:'ru'},createElement:element,
   getElementById:id=>id==='profileTrigger'?trigger:id==='accountPanel'?panel:null,
   addEventListener(){}};
@@ -200,4 +202,35 @@ test('logging out a different account in another tab does not sign out this owne
   oldValue:JSON.stringify(bob),newValue:null});
  assert.equal(c.api.token(),alice.token);
  assert.equal(c.events.logout.length,0);
+});
+
+
+test('restored account displays pending until its matching /me reply completes',async()=>{
+ const gate=deferred();
+ const c=create({stored:session(),fetchImpl:()=>gate.promise});
+ const pending=c.init();
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'pending');
+ assert.equal(c.events.logout.length,0,'Pending verification must not clear an owner');
+ gate.resolve(reply({username:'alice_01'}));
+ await pending;
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'verified');
+ assert.equal(c.api.username(),'alice_01');
+});
+
+test('temporary account check failure is visible without losing ownership',async()=>{
+ const c=create({stored:session(),fetchImpl:async()=>reply({},503)});
+ await c.init();
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'offline');
+ assert.equal(c.api.username(),'alice_01');
+ assert.equal(c.events.logout.length,0);
+ const revoked=create({stored:session(),fetchImpl:async()=>reply({},401)});
+ await revoked.init();
+ assert.equal(revoked.trigger.getAttribute('data-account-bootstrap'),'guest');
+ assert.equal(revoked.api.isLoggedIn(),false);
+});
+
+test('account requests have a deadline and network timeout does not revoke the account',()=>{
+ assert.match(original,/AbortSignal\.timeout\(kind==='me'\?12000:20000\)/);
+ assert.match(original,/if\(error\?\.httpStatus===401\|\|error\?\.httpStatus===403\)/);
+ assert.match(original,/setBootstrapPhase\('offline'\)/);
 });

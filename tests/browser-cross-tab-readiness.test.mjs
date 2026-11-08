@@ -9,6 +9,7 @@ test('cross-tab account smoke waits for real editor and account readiness, not l
  assert.match(code,/document\.querySelector\('#raceGrid'\)\?\.children\.length>0/);
  assert.match(code,/document\.querySelector\('#hero'\)\?\.getAttribute\('src'\)/);
  assert.match(code,/profile\.includes\(expected\)/);
+ assert.match(code,/accountBootstrap==='verified'/);
  assert.doesNotMatch(code,/\/\\d\+ навыков/,
   'do not make an account test depend on Russian catalog counter text');
 });
@@ -18,6 +19,8 @@ test('cross-tab account timeout reports non-secret UI state',()=>{
  assert.match(code,/raceCount:/);
  assert.match(code,/hasHero:/);
  assert.match(code,/catalogStatus:/);
+ assert.match(code,/accountBootstrap:/);
+ assert.match(code,/diagnostic\.meStatuses=/);
  const section=code.slice(code.indexOf('const diagnostic=await page.evaluate('),
   code.indexOf('throw Error(\'Cross-tab account bootstrap'));
  assert.doesNotMatch(section,/ps-account-session|ps-build-library-secret|\\.token\\b|authorization/i);
