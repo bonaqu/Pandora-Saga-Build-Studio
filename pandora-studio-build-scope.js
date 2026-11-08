@@ -44,18 +44,50 @@ function setOwned(storage,scope,key,value){
  if(!validScope(scope)||!KEYS.includes(key))throw Error('Invalid owner or storage key');
  const index=KEYS.indexOf(key),next=value==null?DEFAULTS[index]:String(value);
  if(storage.getItem(MARKER)===scope){
+  // A different tab may claim the shared primary slots at ANY storage
+  // operation. Capture this owner's complete state before writing anything.
+  const values=snapshot(storage);
+  if(storage.getItem(MARKER)!==scope){
+   // The other tab has already switched ownership: never mirror into its
+   // active keys. Its transition has saved our previous state in our cache.
+   const own=storedSnapshot(storage,scope);
+   own[index]=next;
+   storage.setItem(slot(scope),JSON.stringify(own));
+   return true;
+  }
+  const previousBackup=storage.getItem(slot(scope));
+  values[index]=next;
+  // Commit the independent owner recovery copy FIRST. If this hits quota,
+  // not even one shared primary key is changed.
+  storage.setItem(slot(scope),JSON.stringify(values));
+  // A concurrent switch may copy the OLD primary snapshot over our freshly
+  // stored cache. Reapply this ONE key after the switch using the recovered
+  // owner snapshot, rather than overwriting the other owner's active keys.
+  if(storage.getItem(MARKER)!==scope){
+   const own=storedSnapshot(storage,scope);
+   own[index]=next;
+   storage.setItem(slot(scope),JSON.stringify(own));
+   return true;
+  }
   const previous=storage.getItem(key);
   try{
    if(next==='')storage.removeItem(key);else storage.setItem(key,next);
-   sync(storage);
   }catch(error){
-   // A quota error can happen on the recovery-cache write AFTER the
-   // primary slot was changed. Restore that primary value before reporting
-   // the save as failed, so a confirmed deletion cannot be only half-saved.
-   try{
+   // The primary write failed. Restore the old recovery copy so the app
+   // cannot report this edit as durable when the primary slot stayed stale.
+   // Do not roll back a key now owned by another browser tab.
+   if(storage.getItem(MARKER)===scope)try{
     if(previous===null)storage.removeItem(key);
     else storage.setItem(key,previous);
    }catch{}
+   try{
+    if(previousBackup===null)storage.removeItem(slot(scope));
+    else storage.setItem(slot(scope),previousBackup);
+   }catch(rollbackError){
+    throw Error('Could not roll back owner-scoped save after primary failure',{
+     cause:rollbackError
+    });
+   }
    throw error;
   }
  }else{
