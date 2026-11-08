@@ -31,5 +31,17 @@ function chance(value,language='ru'){
   maximumFractionDigits:3
  }).format(value)+'%';
 }
-root.PandoraStudioChestPresentation=Object.freeze({analyze,chance});
+// NPC chest rolls also award a source-listed interval of gold instead of
+// an item. Show its exact range without inventing an item link or quantity.
+function goldLabel(row,language='ru'){
+ const values=row?.gold;
+ if(!Array.isArray(values)||values.length!==2||
+   !values.every(x=>Number.isSafeInteger(x)&&x>=0)||
+   values[1]<values[0])return null;
+ const fmt=new Intl.NumberFormat(language==='en'?'en-US':'ru-RU');
+ const amount=fmt.format(values[0])+(values[1]===values[0]?
+  '':'–'+fmt.format(values[1]));
+ return (language==='en'?'Gold: ':'Золото: ')+amount;
+}
+root.PandoraStudioChestPresentation=Object.freeze({analyze,chance,goldLabel});
 })(typeof window==='undefined'?globalThis:window);
