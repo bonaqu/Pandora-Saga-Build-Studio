@@ -23,7 +23,15 @@ function dismiss(){
  removalObserver?.disconnect();
  removalObserver=null;
  if(popup)popup.hidden=true;
- if(current){current.removeAttribute('aria-describedby');current=null}
+ if(current){
+  // The host can have its own screen-reader descriptions. Remove only the
+  // transient tooltip ID; never erase unrelated accessibility links.
+  const links=(current.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean)
+   .filter(id=>id!==popup?.id);
+  if(links.length)current.setAttribute('aria-describedby',links.join(' '));
+  else current.removeAttribute('aria-describedby');
+  current=null;
+ }
 }
 function position(node){
  if(!popup)return;
@@ -59,7 +67,9 @@ function attach(node,text,{hoverDelay=0}={}){
   if(!node.isConnected||node.closest('#ownerDock.owner-dock-collapsed .owner-dock-panel'))return;
   dismiss();ensure();
   current=node;popup.textContent=text;popup.hidden=false;
-  node.setAttribute('aria-describedby',popup.id);
+  const links=(node.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
+  if(!links.includes(popup.id))links.push(popup.id);
+  node.setAttribute('aria-describedby',links.join(' '));
   position(node);
   if(typeof MutationObserver==='function'&&document.body){
    removalObserver=new MutationObserver(()=>{
