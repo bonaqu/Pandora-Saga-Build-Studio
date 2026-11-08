@@ -63,6 +63,17 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   await openSlot(11);
   assert.equal(await cap(1).getAttribute('aria-pressed'),'true');
   assert.equal(await cap(1).getAttribute('aria-label'),'Soul slots: 1');
+  const emptyWeapon=page.locator('.equipment-slot[data-slot-index="0"]');
+  assert.match(await emptyWeapon.getAttribute('aria-label'),/^Weapon · Empty$/);
+  assert.equal((await emptyWeapon.locator('small').innerText()).trim(),'Weapon');
+  assert.match(await page.locator('.equipment-slot[data-slot-index="11"]')
+   .getAttribute('aria-label'),/^Belt · /);
+  await openSlot(0);
+  assert.equal((await props.locator('.stage-picker-head strong').innerText()).trim(),'Choose: Weapon');
+  assert.equal(await props.locator('input[type="search"]').getAttribute('placeholder'),'Search by name');
+  assert.equal(await props.locator('.stage-picker-head button[aria-label="Close item picker"]').count(),1);
+  assert.equal((await props.locator('.stage-picker-foot button').first().innerText()).trim(),'Unequip item');
+  assert.match(await props.locator('.stage-picker-count').innerText(),/matching · \d+ shown/);
   assert.deepEqual(errors,[]);
   console.log('Chromium per-equipped Soul capacity passed: pants 2, belt 1, change, reload, RU/EN');
  }finally{await context.close();}
