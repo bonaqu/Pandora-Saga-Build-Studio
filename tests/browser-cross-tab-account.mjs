@@ -109,12 +109,12 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   await save(tabA,'Alice second',tokenA);
   const bob=await tabB.evaluate(()=>{
    return {
-    owner:localStorage.getItem('ps-build-owner-scope.v1'),
+    correctOwner:localStorage.getItem('ps-build-owner-scope.v1')==='account:bob_222',
     rows:JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]'),
     draft:JSON.parse(localStorage.getItem('ps-build-studio.v1')||'{}')
    };
   });
-  assert.equal(bob.owner,'account:bob_222');
+  assert.equal(bob.correctOwner,true,'Bob must retain his owner-scoped primary keys');
   assert.deepEqual(bob.rows.map(x=>x.name),['Bob only']);
   const aliceBackup=await tabA.evaluate(()=>
    JSON.parse(localStorage.getItem('ps-build-scope-cache.v1:account:alice_01')));
