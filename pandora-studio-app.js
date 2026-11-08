@@ -5750,6 +5750,25 @@ function prepareSavedBuildSnapshot(raw){
   profile:{...base.profile,...record(draft.profile)}
  };
 }
+// A storage-quota failure must never replace a usable local draft or
+// change its active saved-build identity. Commit the draft before UI changes.
+function switchActiveDraft(snapshot,id){
+ const previous=state;
+ state=snapshot;
+ // Preserve the same gender normalization as opening a save, without
+ // altering the cached historical record.
+ state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);
+ if(!persist()){
+  state=previous;
+  showStudioToast(lang==='en'?
+   'Could not open the build: this browser could not save the new draft. Free up storage and try again.':
+   'Не удалось открыть билд: браузер не сохранил новый черновик. Освободи место и повтори.','error');
+  return false;
+ }
+ selectActiveBuild(id);
+ restoreLoadedBuildUI();
+ return true;
+}
 function openSavedBuild(b){
  // Resolve the latest snapshot, but never change the active character until
  // that saved record has been cloned and structurally prepared successfully.
@@ -5768,9 +5787,8 @@ function openSavedBuild(b){
    'Не удалось восстановить сохранённый билд.','warning');
   return false;
  }
- selectActiveBuild(latest.id);
- state=next;
- restoreLoadedBuildUI();persist();render();changeTab('character');
+ if(!switchActiveDraft(next,latest.id))return false;
+ render();changeTab('character');
  return true;
 }
 function unsavedBuild(){
@@ -5778,10 +5796,12 @@ function unsavedBuild(){
  return s!==JSON.stringify(fresh())&&!builds.some(b=>JSON.stringify(b.data)===s);
 }
 function newBlankBuild(){
- selectActiveBuild(null);state=fresh();originActive='race';jobPathKey=null;classTreeTouched=false;
+ if(!switchActiveDraft(fresh(),null))return false;
+ originActive='race';jobPathKey=null;classTreeTouched=false;
  newBuildPromptOpen=false;newBuildDraftName=null;
- expandedClassKeys=new Set();restoreLoadedBuildUI();persist();render();renderOriginTabs();
+ expandedClassKeys=new Set();render();renderOriginTabs();
  changeTab('character');saveView();
+ return true;
 }
 let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
 // The browser secret is effectively a password for this account-free D1 library.
@@ -6216,9 +6236,12 @@ function openSharedSnapshot(share){
  view.append(h('p',{text:'Открыть чужой билд «'+incoming.name+'»? Несохранённые изменения текущего персонажа будут заменены.'}),
   h('p',{class:'muted',text:'Сохранённые в «Мои билды» записи при этом не удаляются.'}));
  const apply=()=>{
-  selectActiveBuild(null);state=incoming;restoreLoadedBuildUI();persist();
+  // Do not dismiss the preview or discard the previous hero when the new
+  // draft cannot be saved (for example, browser storage quota exhaustion).
+  if(!switchActiveDraft(incoming,null))return false;
   $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
   clear();render();changeTab('character');
+  return true;
  };
  view.append(h('button',{class:'button-action primary',text:'Сохранить текущий и открыть',
    onclick:()=>{if(saveBuild())apply()}}),
