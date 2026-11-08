@@ -8,10 +8,14 @@ const source=read('pandora-studio-update-manager.js');
 function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru'){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
+ let guard=null,accountPanelOpen=false,now=Date.now();
+ const intervals=[];
+ class Clock extends Date{static now(){return now}}
  const heldRequests=[];
  const document={
   documentElement:{lang:locale},
-  querySelector:selector=>selector==='meta[name="ps-studio-release"]'?{content:local}:null,
+  querySelector:selector=>selector==='meta[name="ps-studio-release"]'?{content:local}:
+   selector.includes('#accountPanel:not([hidden])')&&accountPanelOpen?{}:null,
   addEventListener(){},dispatchEvent(event){saved++;lastEventCancelable=event.cancelable;return saveAllowed},getElementById(id){return id==='studio-update-banner'&&!banner?.removed?banner:null},
   createElement:tag=>({
    tag,children:[],listeners:{},setAttribute(){},
@@ -24,7 +28,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
  const location={href,replace:url=>{navigated=url}};
  const history={state:null,replaceState:(_state,_title,url)=>{normalized=url}};
  runInNewContext(source,{
-  window:{},document,location,history,URL,AbortController,Date,
+  window:{PandoraAccountUI:{updateGuard:()=>guard}},document,location,history,URL,AbortController,Date:Clock,
   Event:class Event{constructor(_type,options){this.cancelable=!!options?.cancelable}},console,
   MutationObserver:class MutationObserver {
    constructor(fn){languageChanged=fn}observe(){}
@@ -33,13 +37,18 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
    if(holdResponses)return new Promise(resolve=>heldRequests.push(resolve));
    return {ok:true,json:async()=>({release:currentRemote})};
   },
-  setInterval:()=>0,setTimeout:(fn,delay)=>{if(delay===3000)check=fn;return 1},
+  setInterval:(fn,ms)=>{intervals.push({fn,ms});return intervals.length},
+  setTimeout:(fn,delay)=>{if(delay===3000)check=fn;return 1},
   clearTimeout:()=>{}
  });
  return{
   check:()=>check(),
   setRemote:release=>{currentRemote=release},
   setSaveAllowed:value=>{saveAllowed=value},
+  setAccountGuard:value=>{guard=value},
+  setAccountPanelOpen:value=>{accountPanelOpen=value},
+  advance:ms=>{now+=ms},
+  checkAuto:()=>intervals.find(x=>x.ms===15000)?.fn(),
   holdChecks:()=>{holdResponses=true},
   heldCount:()=>heldRequests.length,
   resolveCheck:(index,release)=>heldRequests[index]({
@@ -154,4 +163,40 @@ test('a failed local save cancels the update without hiding the retry action',as
  page.banner.children[1].listeners.click();
  assert.match(page.navigated,/ps-revision=2026[.]11[.]07[.]453/);
  assert.equal(page.saved,2,'A user may retry the update after restoring storage');
+});
+
+test('a one-time recovery code blocks manual and idle updates until acknowledged',async()=>{
+ const page=boot('2026.11.08.488','2026.11.08.489');
+ await page.check();
+ page.setAccountGuard('recovery');
+ page.banner.children[1].listeners.click();
+ assert.equal(page.navigated,null,'Recovery code must survive an explicit update');
+ assert.equal(page.saved,0,'No draft save should be initiated while a secret is at risk');
+ assert.match(page.banner.children[0].textContent,/резервный код/);
+ page.setLocale('en');
+ assert.match(page.banner.children[0].textContent,/recovery code/);
+ page.advance(121000);
+ page.checkAuto();
+ assert.equal(page.navigated,null,'Idle reload must not consume an unacknowledged code');
+ page.setAccountGuard(null);
+ page.banner.children[1].listeners.click();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]08[.]489/);
+ assert.equal(page.saved,1);
+});
+test('account requests, password drafts, and open account panels block idle upgrade',async()=>{
+ const page=boot('2026.11.08.488','2026.11.08.489');
+ await page.check();
+ page.advance(121000);
+ for(const guard of ['request','draft']){
+  page.setAccountGuard(guard);
+  page.checkAuto();
+  assert.equal(page.navigated,null);
+ }
+ page.setAccountGuard(null);
+ page.setAccountPanelOpen(true);
+ page.checkAuto();
+ assert.equal(page.navigated,null,'Open account profile must block silent reload');
+ page.setAccountPanelOpen(false);
+ page.checkAuto();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]08[.]489/);
 });
