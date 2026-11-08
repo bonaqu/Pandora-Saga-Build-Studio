@@ -100,15 +100,24 @@ function setOwned(storage,scope,key,value){
 function sync(storage){
  const current=storage.getItem(MARKER);
  if(!validScope(current))return false;
- storage.setItem(slot(current),JSON.stringify(snapshot(storage)));
- return true;
+ const values=snapshot(storage);
+ // The primary keys may change owner while another tab copies them. Never
+ // put a mixed-owner snapshot into the old owner's independent recovery cache.
+ if(storage.getItem(MARKER)!==current)return false;
+ storage.setItem(slot(current),JSON.stringify(values));
+ return storage.getItem(MARKER)===current;
 }
 function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={}){
  if(!validScope(next))throw Error('Invalid library owner context');
  const raw=storage.getItem(MARKER);
  const previous=validScope(raw)?raw:validScope(legacyOwner)?legacyOwner:next;
+ const ensureUnchanged=()=>{
+  if(storage.getItem(MARKER)!==raw)
+   throw Error('Library owner changed in another tab; retry the switch');
+ };
  // A pre-upgrade cache is attributed to its former owner before switching.
  if(!raw||previous===next)syncWithOwner(storage,previous);
+ ensureUnchanged();
  if(previous===next){
   try{storage.setItem(MARKER,next);sync(storage)}
   catch(error){
@@ -120,6 +129,7 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
  }
  // Do not accidentally overwrite a newer saved context on a second tab.
  syncWithOwner(storage,previous);
+ ensureUnchanged();
  let saved=null;
  if(carry){
   // A different tab may currently own the shared top-level keys. Carry only
@@ -132,6 +142,7 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
   }catch{}
  }
  const before=KEYS.map(key=>storage.getItem(key));
+ ensureUnchanged();
  try{
   write(storage,saved||DEFAULTS);
   storage.setItem(MARKER,next);
@@ -146,8 +157,13 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
 }
 function snapshotBeforeSwitch(storage){return snapshot(storage)}
 function syncWithOwner(storage,current){
- if(!validScope(current))return;
- storage.setItem(slot(current),JSON.stringify(snapshot(storage)));
+ if(!validScope(current))return false;
+ const marker=storage.getItem(MARKER);
+ if(validScope(marker)&&marker!==current)return false;
+ const values=snapshot(storage);
+ if(storage.getItem(MARKER)!==marker)return false;
+ storage.setItem(slot(current),JSON.stringify(values));
+ return storage.getItem(MARKER)===marker;
 }
 // localStorage is not transactional. If switching owners fails halfway through
 // (quota, browser storage restrictions), restore every original primary slot
