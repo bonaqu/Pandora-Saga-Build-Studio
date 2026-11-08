@@ -29,6 +29,10 @@ export async function runBuildComparisonSmoke(browser,base){
   route.request().url().startsWith(base+'/')?route.continue():route.abort());
  const page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
+ page.on('console',message=>{
+  if(message.type()==='warning'&&message.text().includes('Build comparison'))
+   console.log('CALCULATOR DIAGNOSTIC:',message.text());
+ });
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   // The compact comparison requires the validated calculator tables, unlike
