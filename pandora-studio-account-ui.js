@@ -300,7 +300,16 @@ function render(){
    setSession(result);
    render();
    if(pendingRecoveryCode)info('Сохраните код: после обновления страницы его нельзя будет повторно показать.');
-   await options.onLogin?.({register:current==='register',bootstrap:false});
+   // Authentication has succeeded. A local storage error cannot be reported
+   // by the guest-form catch below because sameRequest() now returns false.
+   // Warn only the still-current owner and never retry a stateful switch.
+   const acceptedToken=session.token,acceptedRevision=sessionRevision;
+   try{
+    await options.onLogin?.({register:current==='register',bootstrap:false});
+   }catch(localError){
+    if(session?.token===acceptedToken&&sessionRevision===acceptedRevision)
+     info('Вход выполнен, но билды не открылись. Проверь свободное место в браузере и обнови страницу.');
+   }
   }catch(ex){if(sameRequest())info(ex.message)}
   finally{
    if(guestAuthRequest===ticket)guestAuthRequest=null;
