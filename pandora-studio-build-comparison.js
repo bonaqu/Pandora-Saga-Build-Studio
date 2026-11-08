@@ -50,8 +50,15 @@ function savedItemName(selection,records,{lang='ru',kind='item',englishNames={}}
   (lang==='en'?'Item not in catalog':'Предмет отсутствует в каталоге');
 }
 function asValue(v,defaultValue){
- return typeof defaultValue==='boolean'?v===true:
-  Number.isFinite(v)&&Number.isInteger(v)&&v>=0?v:defaultValue;
+ // Absent optional fields inherit their documented legacy defaults.
+ // Damaged saved fields must stay unknown rather than silently becoming zero
+ // or "Off" in the read-only comparison. Normalize exact decimal strings
+ // kept by older select controls without changing the saved snapshot.
+ if(v===undefined||v===null||v==='')return defaultValue;
+ if(typeof defaultValue==='boolean')return typeof v==='boolean'?v:null;
+ const normalized=typeof v==='string'&&/^(0|[1-9][0-9]*)$/.test(v.trim())?
+  Number(v):v;
+ return Number.isSafeInteger(normalized)&&normalized>=0?normalized:null;
 }
 // Legacy snapshots may lack fields; malformed numeric payloads stay unknown.
 function savedNonnegativeInteger(raw){
@@ -90,7 +97,7 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
  const english=lang==='en',rows=[];
  const lbl=(ru,en)=>english?en:ru;
  const arrow=(name,x,y)=>rows.push(name+': '+x+' → '+y);
- const fmt=v=>typeof v==='boolean'?lbl(v?'вкл':'выкл',v?'on':'off'):String(v);
+ const fmt=v=>v===null?'—':typeof v==='boolean'?lbl(v?'вкл':'выкл',v?'on':'off'):String(v);
  const gender=value=>value?.gender===1?1:0;
  if(gender(a)!==gender(b))arrow(lbl('Пол персонажа','Character gender'),
   gender(a)===1?lbl('мужской','male'):lbl('женский','female'),
