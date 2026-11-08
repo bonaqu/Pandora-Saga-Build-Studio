@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.502.0 — 2026.11.08.502 · Два HP боссов и SHA монстров приведены к текущему игровому OS
+
+- Сверены все 702 монстра по текущему официальному /gamedata/monsters.json и публичному D1. Активный D1 полностью совпал с игровым источником; резервный GitHub-архив ошибался лишь по двум HP.
+- В резервном каталоге исправлены: Восставший король (43650) 5 000 000 → 1 250 000; Хранитель тлена (43732) 1 600 000 → 1 350 000. SHA файла monster/monster.csv обновлён до официального f637f83a84a49c74.
+- Прочие OS source-хэши, D1, Worker, формулы и пользовательские билды не менялись. Добавлены регрессии на HP и сохранение остальных полей.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.501.0 — 2026.11.08.501 · Автоматическая read-only проверка D1 после публикации GitHub Pages
 
 - Live-readonly check is triggered on bonaqu_projects push because the built-in GitHub Pages dynamic deployment did not emit observable workflow_run events.
