@@ -15,7 +15,7 @@ async function sha(bytes){return b64(await crypto.subtle.digest('SHA-256',typeof
 async function passwordHash(password,salt){const key=await crypto.subtle.importKey('raw',enc.encode(password),'PBKDF2',false,['deriveBits']);return b64(await crypto.subtle.deriveBits({name:'PBKDF2',salt:enc.encode(salt),iterations:100000,hash:'SHA-256'},key,256))}
 function same(a,b){a=String(a||'');b=String(b||'');let d=a.length^b.length;for(let i=0;i<Math.max(a.length,b.length);i++)d|=(a.charCodeAt(i)||0)^(b.charCodeAt(i)||0);return d===0}
 function json(body,status=200,headers={}){return new Response(JSON.stringify(body),{status,headers:{'content-type':'application/json;charset=utf-8','cache-control':'no-store','x-content-type-options':'nosniff',...headers}})}
-function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Expose-Headers':'X-PS-Catalog-Snapshot','Vary':'Origin'}:{}}
+function originHeaders(request){const o=request.headers.get('Origin');return o===ORIGIN||o==='http://localhost:8788'?{'Access-Control-Allow-Origin':o,'Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Methods':'GET, POST, OPTIONS','Access-Control-Expose-Headers':'X-PS-Catalog-Snapshot, X-PS-Catalog','Vary':'Origin'}:{}}
 function no(message,status=400){return json({error:message},status)}
 // Bound untrusted JSON by actual UTF-8 bytes, even when a caller omits or
 // understates Content-Length. The old request.json()/request.text() paths
@@ -179,6 +179,14 @@ async function adminCatalog(request,env,path){
   return json({ok:true,received:data.records.length,dataset:data.dataset});
  }
  if(path==='/api/admin/catalog/publish'){
+  // A stale or older client cannot bypass the catalog's atomic pointer lease.
+  // Check the expectation BEFORE any D1 catalog rows are read or published.
+  if(!Object.hasOwn(data,'expectedActive'))
+   return no('Expected active catalog snapshot required',428);
+  if(data.expectedActive!==null&&
+   (typeof data.expectedActive!=='string'||
+    !/^[a-z0-9-]{8,64}$/.test(data.expectedActive)))
+   return no('Invalid expected snapshot',400);
   const result=await env.DB.prepare("SELECT payload FROM catalog_entries WHERE snapshot=? AND dataset='meta' AND record_key='all'").bind(data.snapshot).first();
   if(!result)return no('Meta snapshot missing',409);
   if(!Number.isInteger(Number(data?.extraCounts?.legacyLocale))||Number(data.extraCounts.legacyLocale)<1000||Number(data.extraCounts.legacyLocale)>10000)return no('Expected localization count required',400);
@@ -206,18 +214,12 @@ async function adminCatalog(request,env,path){
   const costumes=await env.DB.prepare("SELECT COUNT(*) AS c FROM catalog_entries WHERE snapshot=? AND dataset='items' AND is_costume_overlay=1").bind(data.snapshot).first();
   // Prevent stale admin reviews from overwriting a newer D1 snapshot.
   // The guarded pointer switch is a single atomic D1 statement.
-  if(Object.hasOwn(data,'expectedActive')){
-   const previous=data.expectedActive;
-   if(previous!==null&&(typeof previous!=='string'||!/^[a-z0-9-]{8,64}$/.test(previous)))return no('Invalid expected snapshot',400);
-   const statement=previous===null?
-    env.DB.prepare('INSERT OR IGNORE INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?)').bind(data.snapshot,Date.now(),JSON.stringify(counts)):
-    env.DB.prepare('UPDATE catalog_current SET snapshot=?,published_at=?,expected_counts=? WHERE id=1 AND snapshot=?').bind(data.snapshot,Date.now(),JSON.stringify(counts),previous);
-   const published=await statement.run();
-   if(Number(published.meta?.changes)!==1)return no('Published catalog changed during review',409);
-  }else{
-   // Preserve explicit publishing for existing clients without an active lease.
-   await env.DB.prepare('INSERT INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?) ON CONFLICT(id) DO UPDATE SET snapshot=excluded.snapshot,published_at=excluded.published_at,expected_counts=excluded.expected_counts').bind(data.snapshot,Date.now(),JSON.stringify(counts)).run();
-  }
+  const previous=data.expectedActive;
+  const statement=previous===null?
+   env.DB.prepare('INSERT OR IGNORE INTO catalog_current(id,snapshot,published_at,expected_counts) VALUES(1,?,?,?)').bind(data.snapshot,Date.now(),JSON.stringify(counts)):
+   env.DB.prepare('UPDATE catalog_current SET snapshot=?,published_at=?,expected_counts=? WHERE id=1 AND snapshot=?').bind(data.snapshot,Date.now(),JSON.stringify(counts),previous);
+  const published=await statement.run();
+  if(Number(published.meta?.changes)!==1)return no('Published catalog changed during review',409);
   return json({ok:true,active:data.snapshot,counts,costumeItems:costumes.c});
  }
  return no('Unknown catalog operation',404);
@@ -595,10 +597,10 @@ if(method==='GET'&&path.startsWith('/api/admin/catalog/source/')){
 if(method==='POST'&&path.startsWith('/api/admin/catalog/'))return adminCatalog(request,env,path);
 
 if(path==='/api/runtime-capabilities'&&method==='GET')
- return json({codeRelease:'0.360.0',ownerEditors:[
+ return json({codeRelease:'0.361.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit','wiki-label-edit'],
-  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true});
+  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));

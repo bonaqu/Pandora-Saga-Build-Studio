@@ -15,8 +15,8 @@ test('production Worker deployment requires explicit branch and target confirmat
   'Deploying code must not automatically apply database migrations');
  assert.match(workflow,/sourceEgressProbe:true/);
  assert.match(workflow,/github\.ref == 'refs\/heads\/bonaqu_projects'/);
- assert.match(workflow,/DEPLOY-0\.360-TO-ps-build-studio-cloud/);
- assert.match(workflow,/test "\$CONFIRM" = 'DEPLOY-0\.360-TO-ps-build-studio-cloud'/);
+ assert.match(workflow,/DEPLOY-0\.361-TO-ps-build-studio-cloud/);
+ assert.match(workflow,/test "\$CONFIRM" = 'DEPLOY-0\.361-TO-ps-build-studio-cloud'/);
  assert.match(workflow,/secrets\.CLOUDFLARE_API_TOKEN/);
  assert.match(workflow,/PS_D1_DATABASE_ID:/);
  assert.match(workflow,/node scripts\/prepare-config\.mjs/);
@@ -28,7 +28,7 @@ test('production Worker deployment requires explicit branch and target confirmat
 
 test('manual deployment verifies new Worker marker and existing D1 after publish',()=>{
  const worker=read('worker/index.js');
- assert.match(worker,/codeRelease:'0\.360\.0'/);
+ assert.match(worker,/codeRelease:'0\.361\.0'/);
  assert.match(worker,/'bilingual-item-text'/);
  assert.match(workflow,/api\/runtime-capabilities/);
  assert.match(workflow,/api\/health/);
@@ -39,5 +39,8 @@ test('manual deployment verifies new Worker marker and existing D1 after publish
  assert.match(workflow,/caps\?\.sourceEgressProbe===true/);
  assert.match(workflow,/caps\?\.sourceInstancesArray===true/);
  assert.match(workflow,/source-health\?scope=all/);
+ assert.match(workflow,/catalogPublishCASRequired===true/);
+ assert.match(workflow,/catalogProvenanceCors===true/);
+ assert.match(workflow,/access-control-expose-headers/);
  assert.match(read('scripts/check-live-connections.mjs'),/Live English item editing in D1/);
 });

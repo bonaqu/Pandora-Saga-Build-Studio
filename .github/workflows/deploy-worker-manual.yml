@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       confirmation:
-        description: 'Type DEPLOY-0.360-TO-ps-build-studio-cloud'
+        description: 'Type DEPLOY-0.361-TO-ps-build-studio-cloud'
         required: true
         type: string
 
@@ -43,17 +43,17 @@ jobs:
           node-version: '22'
       - name: Verify explicit deployment confirmation, target and source fields
         env:
-          CONFIRM: ${{ github.event_name == 'push' && 'DEPLOY-0.360-TO-ps-build-studio-cloud' || inputs.confirmation }}
+          CONFIRM: ${{ github.event_name == 'push' && 'DEPLOY-0.361-TO-ps-build-studio-cloud' || inputs.confirmation }}
         run: |
-          test "$CONFIRM" = 'DEPLOY-0.360-TO-ps-build-studio-cloud'
+          test "$CONFIRM" = 'DEPLOY-0.361-TO-ps-build-studio-cloud'
           test -n "$CLOUDFLARE_API_TOKEN"
           test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
           test "$PS_D1_DATABASE_ID" = '0f8fbcd8-be06-414c-844b-a2091fdf6784'
           node --input-type=module -e '
             import {readFileSync} from "node:fs";
             const code=readFileSync("index.js","utf8");
-            for(const marker of ["codeRelease:\x270.360.0\x27",
-              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "sourceEgressProbe:true", "sourceInstancesArray:true", "sourceFullProbe:true", "key===\x27nameEn\x27", "key===\x27descEn\x27", "honorExtendedEditing:true", "wikiLabelEditing:true"])
+            for(const marker of ["codeRelease:\x270.361.0\x27",
+              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "sourceEgressProbe:true", "sourceInstancesArray:true", "sourceFullProbe:true", "catalogPublishCASRequired:true", "catalogProvenanceCors:true", "key===\x27nameEn\x27", "key===\x27descEn\x27", "honorExtendedEditing:true", "wikiLabelEditing:true"])
               if(!code.includes(marker))throw Error("Missing expected reviewed Worker code: "+marker);
           '
       - name: Generate exact existing D1 config without secrets
@@ -84,18 +84,25 @@ jobs:
               const healthy=await fetch(url+"/api/health",
                 {cache:"no-store",signal:AbortSignal.timeout(15000)});
               const health=await healthy.json().catch(()=>null);
-              if(response.ok&&caps?.codeRelease==="0.360.0"&&
+              const provenance=await fetch(url+"/api/catalog/meta.json",{
+                cache:"no-store",headers:{Origin:"https://bonaqu.github.io"},
+                signal:AbortSignal.timeout(15000)});
+              const exposed=provenance.headers.get("access-control-expose-headers")||"";
+              const provenanceOK=provenance.ok&&provenance.headers.get("x-ps-catalog")==="d1"&&
+                /(?:^|,)\s*X-PS-Catalog\s*(?:,|$)/i.test(exposed);
+              if(provenanceOK&&response.ok&&caps?.codeRelease==="0.361.0"&&
                 caps?.ownerEditors?.includes("bilingual-item-text")&&
                 caps?.adminD1WriteCheck==="catalog-and-overrides"&&
                 caps?.catalogSourceFailover===true&&caps?.honorExtendedEditing===true&&caps?.wikiLabelEditing===true&&caps?.sourceEgressProbe===true&&
                 caps?.sourceInstancesArray===true&&caps?.sourceFullProbe===true&&
+                caps?.catalogPublishCASRequired===true&&caps?.catalogProvenanceCors===true&&
                 healthy.ok&&health?.storage==="d1"&&health?.features?.catalog===true){
-                console.log("Verified live Worker 0.360.0, English item editing and the same D1 catalog");
+                console.log("Verified live Worker 0.361.0, English item editing and the same D1 catalog");
                 process.exit(0);
               }
               if(attempt<7)await new Promise(resolve=>setTimeout(resolve,4000));
             }
-            throw Error("Worker not yet serving 0.360.0 with bilingual-item-text and healthy D1");
+            throw Error("Worker not yet serving 0.361.0 with bilingual-item-text and healthy D1");
           '
 
       - name: Probe Worker egress to public game metadata (read-only, no auth, no D1 writes)
