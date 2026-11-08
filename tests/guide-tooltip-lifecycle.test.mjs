@@ -93,3 +93,39 @@ test('a click elsewhere or a hash change closes a visible guide tooltip',()=>{
  assert.equal(x.popup.hidden,true);
  assert.equal(x.watchers.filter(observer=>observer.active).length,0);
 });
+
+test('Escape cancels pending guide hints before chapter-level navigation',async()=>{
+ const x=mount(),item=x.node();
+ x.api.attach(item,'ОЗ — Очки здоровья',{hoverDelay:25});
+ item.events.pointerenter({pointerType:'mouse'});
+ let prevented=0,stopped=0;
+ x.docEvents.keydown({key:'Escape',preventDefault(){prevented++},
+  stopImmediatePropagation(){stopped++}});
+ await new Promise(resolve=>setTimeout(resolve,50));
+ assert.equal(x.popup.hidden,true);
+ assert.equal(item.attribute('aria-describedby'),null);
+ assert.equal(prevented,1);
+ assert.equal(stopped,1);
+});
+
+test('Escape dismisses an open guide hint but leaves later Escape for the workbench',()=>{
+ const x=mount(),item=x.node();
+ display(x,item);
+ let stopped=0;
+ const e={key:'Escape',preventDefault(){},stopImmediatePropagation(){stopped++}};
+ x.docEvents.keydown(e);
+ assert.equal(x.popup.hidden,true);
+ assert.equal(item.attribute('aria-describedby'),null);
+ x.docEvents.keydown(e);
+ assert.equal(stopped,1,'The next Escape is available for normal chapter navigation');
+});
+
+test('clicking outside cancels pending guide hint before hover timeout',async()=>{
+ const x=mount(),item=x.node();
+ x.api.attach(item,'ОМ — Очки маны',{hoverDelay:25});
+ item.events.pointerenter({pointerType:'mouse'});
+ x.docEvents.pointerdown({target:{}});
+ await new Promise(resolve=>setTimeout(resolve,50));
+ assert.equal(x.popup.hidden,true);
+ assert.equal(item.attribute('aria-describedby'),null);
+});
