@@ -7,6 +7,7 @@ class Element{
   this.tag=tag;this.children=[];this.dataset={};this.style={};this.attrs={};this.listeners={};
   this.textContent='';this.className='';this.isConnected=false;this.id='';this.title='';
  }
+ getAttribute(key){return Object.hasOwn(this.attrs,key)?this.attrs[key]:null}
  setAttribute(key,value){this.attrs[key]=String(value);if(key==='id')this.id=String(value);if(key==='title')this.title=String(value)}
  removeAttribute(key){delete this.attrs[key];if(key==='title')this.title=''}
  addEventListener(event,fn){this.listeners[event]=fn}
@@ -29,7 +30,7 @@ function fixture(admin=false){
   body:new Element('body'),documentElement:{clientWidth:1024},
   addEventListener:(name,listener)=>{listeners[name]=listener}};
  document.body.isConnected=true;
- const window={innerHeight:768,PandoraStudioAdminActive:()=>admin};
+ const window={innerHeight:768,PandoraStudioAdminActive:()=>admin,addEventListener(){}};
  const timers=new Map();
  let timerId=0;
  const setTimer=(callback,delay)=>{
@@ -41,6 +42,9 @@ function fixture(admin=false){
   for(const row of pending)row.callback();
  };
  Function('window',read('pandora-studio-item-presentation.js'))(window);
+ // Item previews now use the same accessible ARIA helper as Hero Book hints.
+ Function('window','document','setTimeout','clearTimeout',
+  read('pandora-studio-guide-tooltips.js'))(window,document,setTimer,clearTimer);
  Function('window','document','setTimeout','clearTimeout',
   read('pandora-studio-equipment-ui.js'))(window,document,setTimer,clearTimer);
  return {window,document,api:window.PandoraStageItemUI,timers,runTimers,listeners};
@@ -65,6 +69,7 @@ test('rich hover delay does not flash while crossing items; keyboard focus stays
  const button=new Element('button');
  document.body.append(button);
  button.setAttribute('title','Native item tooltip');
+ button.setAttribute('aria-describedby','original-item-help');
  api.attachPreview(button,ring,()=>null);
  assert.equal(button.title,'');
  assert.equal(Object.hasOwn(button.attrs,'title'),false);
@@ -81,12 +86,12 @@ test('rich hover delay does not flash while crossing items; keyboard focus stays
  assert.equal(document.body.children.length,2);
  const tip=document.body.children[1];
  assert.equal(tip.id,'stage-gear-tooltip');
- assert.equal(button.attrs['aria-describedby'],tip.id);
+ assert.equal(button.attrs['aria-describedby'],'original-item-help '+tip.id);
  assert.equal(tip.isConnected,true);
  button.hovered=false;
  button.listeners.pointerleave();
  assert.equal(tip.isConnected,false);
- assert.equal(button.attrs['aria-describedby'],undefined);
+ assert.equal(button.attrs['aria-describedby'],'original-item-help');
  button.hovered=true;
  button.listeners.pointerenter({pointerType:'mouse'});
  button.hovered=false;
@@ -106,7 +111,7 @@ test('rich hover delay does not flash while crossing items; keyboard focus stays
  assert.equal(event.prevented,true);
  assert.equal(event.stopped,true,'Escape must not bubble to Wiki workbench');
  assert.equal(focusTip.isConnected,false);
- assert.equal(button.attrs['aria-describedby'],undefined);
+ assert.equal(button.attrs['aria-describedby'],'original-item-help');
  const emptyEvent={key:'Escape',prevented:false,stopped:false,
   preventDefault(){this.prevented=true},
   stopImmediatePropagation(){this.stopped=true}};

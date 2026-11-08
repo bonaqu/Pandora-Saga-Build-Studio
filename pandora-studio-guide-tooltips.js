@@ -2,6 +2,21 @@
 'use strict';
 // Read-only game-style tooltips; never evaluate server-provided text as HTML.
 let popup=null,current=null,pending=null,removalObserver=null;
+// Keep other screen-reader descriptions when a transient tooltip opens/closes.
+function linkDescription(node,id){
+ if(!node||!id)return;
+ const links=(node.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
+ if(!links.includes(id))links.push(id);
+ node.setAttribute('aria-describedby',links.join(' '));
+}
+function unlinkDescription(node,id){
+ if(!node||!id)return;
+ const raw=node.getAttribute('aria-describedby');
+ if(raw===null)return;
+ const links=raw.split(/\s+/).filter(value=>value&&value!==id);
+ if(links.length)node.setAttribute('aria-describedby',links.join(' '));
+ else node.removeAttribute('aria-describedby');
+}
 function ensure(){
  if(!popup){
   popup=document.createElement('div');
@@ -24,12 +39,7 @@ function dismiss(){
  removalObserver=null;
  if(popup)popup.hidden=true;
  if(current){
-  // The host can have its own screen-reader descriptions. Remove only the
-  // transient tooltip ID; never erase unrelated accessibility links.
-  const links=(current.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean)
-   .filter(id=>id!==popup?.id);
-  if(links.length)current.setAttribute('aria-describedby',links.join(' '));
-  else current.removeAttribute('aria-describedby');
+  unlinkDescription(current,popup?.id);
   current=null;
  }
 }
@@ -67,9 +77,7 @@ function attach(node,text,{hoverDelay=0}={}){
   if(!node.isConnected||node.closest('#ownerDock.owner-dock-collapsed .owner-dock-panel'))return;
   dismiss();ensure();
   current=node;popup.textContent=text;popup.hidden=false;
-  const links=(node.getAttribute('aria-describedby')||'').split(/\s+/).filter(Boolean);
-  if(!links.includes(popup.id))links.push(popup.id);
-  node.setAttribute('aria-describedby',links.join(' '));
+  linkDescription(node,popup.id);
   position(node);
   if(typeof MutationObserver==='function'&&document.body){
    removalObserver=new MutationObserver(()=>{
@@ -136,5 +144,5 @@ if(typeof document!=='undefined'){
  window.addEventListener('blur',dismiss);
  document.addEventListener('visibilitychange',()=>{if(document.hidden)dismiss()});
 }
-root.PandoraGuideTooltip=Object.freeze({attach,dismiss});
+root.PandoraGuideTooltip=Object.freeze({attach,dismiss,linkDescription,unlinkDescription});
 })(typeof window==='undefined'?globalThis:window);
