@@ -61,9 +61,9 @@ test('all English source descriptions are stable when formatted twice',()=>{
 test('live screenshot examples keep lore sentences together and separate enhancement paragraphs',()=>{
  const records=JSON.parse(readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
  const pants=p.description(records['13602'].desc);
- assert.match(pants,/цвета зари\. Такие любят носить мужчины Астира\.\n\nЛВК \+1, ОЗ \+30\n\nЗа каждые 2 единицы улучшения:\nАтака \+1%/);
+ assert.match(pants,/цвета зари\. Такие любят носить мужчины Астира\.\n\nЛВК \+1, ОЗ \+30\nЗа каждые 2 единицы улучшения:\nАтака \+1%/);
  const dress=p.description(records['12612'].desc);
- assert.match(dress,/платье цвета зари\. Такие любят носить женщины Астира\.\n\nСИЛ \+1/);
+ assert.match(dress,/платье цвета зари\.\nТакие любят носить женщины Астира\.\n\nСИЛ \+1/);
  const dagger=p.description(records['1862'].desc);
  assert.match(dagger,/начиная с \+7 и за каждый уровень:\nМагическая атака огнем \+1%/);
  assert.match(dagger,/Пламя феникса\n\nПламя феникса:/);
