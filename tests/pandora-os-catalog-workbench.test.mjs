@@ -160,3 +160,14 @@ test('source text breaks are offered next to publish instead of hidden behind ma
  const css=readFileSync(new URL('pandora-os-catalog-workbench.css',root),'utf8');
  assert.match(css,/\.os-sync-formatting-review\[hidden\]\{display:none\}/);
 });
+
+test('missing reviewed RU dungeon blurbs require an explicit checkbox and CAS publication',()=>{
+ assert.match(workbench,/const russianReview=h\('div',\{class:'os-sync-formatting-review',hidden:true\}/);
+ assert.match(workbench,/russianReview\.hidden=!reviewing\|\|mode!=='server'\|\|!verifiedRussian\.length/);
+ assert.match(workbench,/review\.sourceMatchedRussianInstances\(/);
+ assert.match(workbench,/russianToggle\.checked&&verifiedRussian\.length>0/);
+ assert.match(workbench,/\{syncFormatting,syncRussianInstances,localInstances\}/);
+ assert.match(workbench,/Русские описания — проверенная копия проекта/);
+ assert.match(workbench,/expectedActive:activeSnapshot/);
+ assert.match(workbench,/russianToggle\.addEventListener\('change',refreshActions\)/);
+});

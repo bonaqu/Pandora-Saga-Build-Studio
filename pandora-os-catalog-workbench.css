@@ -163,6 +163,11 @@
 /* Explicit formatting sync is not a gameplay change; keep it visually secondary. */
 .os-sync-formatting-review[hidden]{display:none}
 .os-sync-formatting-review{margin-top:9px}
+.os-sync-russian-preview{margin:6px 9px 0;color:#e5be88;font-size:12px}
+.os-sync-russian-preview>summary{cursor:pointer}
+.os-sync-russian-list{display:grid;gap:3px;margin-top:7px}
+.os-sync-russian-row{margin:0!important;padding:5px 0!important;border-top:1px solid #493828;color:#d5bf9d}
+.os-sync-russian-row strong{color:#f2d5a7}
 .os-sync-formatting-option{display:flex;align-items:center;gap:9px;cursor:pointer;
  margin:8px 0 2px;padding:10px 12px;border:1px solid #725134;
  border-radius:4px;background:#251a13;color:#e6c18b;font-size:12px}
