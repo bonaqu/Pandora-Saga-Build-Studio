@@ -13,7 +13,7 @@ const openerCode=extract('function openSavedBuild(b){','\nfunction unsavedBuild(
 const id='a'.repeat(32),other='b'.repeat(32);
 const baseState=()=>({
  level:1,points:{slash:0},mastery:{slash:0},stats:{vit:0},
- equipment:{},souls:{},soulOwners:{},refinements:{},gems:{},
+ equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},
  vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},
  attributeBuffs:{guildAll:0},profile:{guild:''}
 });
@@ -110,4 +110,24 @@ test('initial local draft parse and saved list parse are independent',()=>{
  const split=source.slice(p,q);
  assert.match(split,/catch\(error\)\{console\.warn\('Character draft could not be restored'/);
  assert.match(source,/builds=safeStoredBuildRows\(rows\)/);
+});
+
+test('saved copy retains its own Soul capacity; damaged nested records stay isolated',()=>{
+ const saved={id,data:{level:45,equipment:{5:{id:13041}},
+  socketCapacities:{'5:13041':2},souls:{5:[{id:103001},{id:103002}]},
+  soulOwners:{5:'13041'}}};
+ const original=structuredClone(saved.data),ctx=setup([saved]);
+ assert.equal(ctx.open(saved),true);
+ assert.equal(ctx.state().socketCapacities['5:13041'],2);
+ assert.equal(ctx.state().souls[5].length,2);
+ assert.deepEqual(saved.data,original,'Opening cannot rewrite the original');
+ const broken={id,data:{level:45,socketCapacities:'broken',mastery:[4],
+  vitalsBuffs:[],gems:'bad',soulOwners:[]}};
+ const recovered=setup([broken]);
+ assert.equal(recovered.open(broken),true);
+ assert.deepEqual(recovered.state().socketCapacities,{});
+ assert.deepEqual(recovered.state().mastery,{slash:0});
+ assert.deepEqual(recovered.state().vitalsBuffs,{guildHp:0,guildMp:0,lifeSign:false});
+ assert.deepEqual(recovered.state().gems,{});
+ assert.deepEqual(recovered.state().soulOwners,{});
 });
