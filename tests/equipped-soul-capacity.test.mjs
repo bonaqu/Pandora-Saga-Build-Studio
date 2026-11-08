@@ -44,12 +44,54 @@ test('two real Souls remain in 2-slot equipped leggings even if catalog snapshot
  assert.equal(P.socketReport(state.souls[5],P.equippedSocketCapacity(
   state,5,state.equipment[5],legs)).excess,0);
 });
-test('bad legacy data cannot give souls to unsupported categories or silently overfill',()=>{
- const state={equipment:{5:{id:13041}},socketCapacities:{'5:13041':2},
-  souls:{5:[{id:201},{id:202},{id:203}]},soulOwners:{5:'13041'}};
- assert.equal(P.reconcileSoulOwnership(state,{'13041':legs},
-  {'201':{slots:['legs']},'202':{slots:['legs']},'203':{slots:['legs']}}),true);
- assert.equal(state.souls[5],undefined);
+test('valid excess Souls survive a catalog capacity mismatch but remain inactive',()=>{
+ const state={equipment:{5:{id:13041}},souls:{5:[{id:201},{id:202}]},
+  soulOwners:{5:'13041'},socketCapacities:{}};
+ const source={'13041':legs},souls={'201':{slots:['legs']},'202':{slots:['legs']}};
+ const original=JSON.stringify(state.souls);
+ assert.equal(P.reconcileSoulOwnership(state,source,souls),false);
+ assert.equal(JSON.stringify(state.souls),original,'No Soul may disappear');
+ const report=P.socketReport(state.souls[5],P.equippedSocketCapacity(
+  state,5,state.equipment[5],legs));
+ assert.equal(report.count,2);assert.equal(report.excess,1);
+ // Combat calculation uses only the configured capacity; second Soul is
+ // preserved in the snapshot but not included as an effective modifier.
+ assert.equal(P.asSocketArray(state.souls[5]).slice(report.capacity).length,1);
+ state.socketCapacities['5:13041']=2;
+ assert.equal(P.reconcileSoulOwnership(state,source,souls),false);
+ assert.equal(P.socketReport(state.souls[5],P.equippedSocketCapacity(
+  state,5,state.equipment[5],legs)).excess,0);
+ assert.equal(state.souls[5][1].id,202);
+});
+
+test('untracked legacy Souls cannot be attached to a different item by guessing its capacity',()=>{
+ const state={equipment:{5:{id:13041}},souls:{5:[{id:201},{id:202}]},soulOwners:{}};
+ const catalog={'13041':legs},souls={'201':{slots:['legs']},'202':{slots:['legs']}};
+ assert.equal(P.reconcileSoulOwnership(state,catalog,souls),true);
+ assert.equal(state.souls[5],undefined,
+  'Without an old equipment owner marker, over-capacity assignment is unsafe');
+ assert.equal(state.soulOwners[5],undefined);
+});
+test('trusted owner marker retains an over-capacity Soul at a sparse higher position',()=>{
+ const state={equipment:{5:{id:13041}},souls:{5:[null,null,{id:201}]},
+  soulOwners:{5:'13041'}};
+ const source={'13041':legs},souls={'201':{slots:['legs']}};
+ assert.equal(P.reconcileSoulOwnership(state,source,souls),false);
+ assert.equal(state.souls[5][2].id,201);
+ assert.equal(P.socketReport(state.souls[5],1).excess,1);
+});
+
+test('changing gear ID or inserting incompatible Soul still rejects stale ownership',()=>{
+ const mismatch={equipment:{5:{id:13041}},souls:{5:[{id:201},{id:202}]},
+  soulOwners:{5:'13042'}};
+ assert.equal(P.reconcileSoulOwnership(mismatch,{'13041':legs},
+  {'201':{slots:['legs']},'202':{slots:['legs']}}),true);
+ assert.equal(mismatch.souls[5],undefined);
+ const incompatible={equipment:{5:{id:13041}},souls:{5:[{id:201}]},
+  soulOwners:{5:'13041'}};
+ assert.equal(P.reconcileSoulOwnership(incompatible,{'13041':legs},
+  {'201':{slots:['weapon']}}),true);
+ assert.equal(incompatible.souls[5],undefined);
 });
 test('app uses effective capacity in calculations, picker, tooltip and save-link recovery',()=>{
  const app=load('pandora-studio-app.js');

@@ -64,19 +64,25 @@ function reconcileSoulOwnership(state,equipmentCatalog,soulCatalog){
    if(id==null){delete state.souls[slot];delete state.soulOwners[slot];changed=true}
    continue;
   }
-  const cap=equippedSocketCapacity(state,Number(slot),equipment,item);
-  const owner=state.soulOwners[slot];
-  // The index matters: one Soul in slot 3 is still invalid for a
-  // replacement item that has only one slot, despite count===1.
-  const compatible=cap!=null&&cap>0&&existing.length<=cap&&
-   positions.slice(cap).every(entry=>!entry)&&
-   existing.every(entry=>{
-    const soul=soulCatalog[String(entry.id)];
-    return !soul||validSoul(soul,item.slot);
-   });
-  if(!compatible||(owner!=null&&String(owner)!==String(id))){
+  const owner=state.soulOwners[slot],cap=equippedSocketCapacity(
+   state,Number(slot),equipment,item);
+  const validTypes=supportsSoulSlot(item.slot)&&existing.every(entry=>{
+   const soul=soulCatalog[String(entry.id)];
+   return !soul||validSoul(soul,item.slot);
+  });
+  // Older files predate soulOwners and cannot prove which physical item
+  // received their Souls. Keep their original strict capacity gate to avoid
+  // moving stale Souls onto another item merely because their slot matches.
+  const legacyFits=cap!=null&&cap>0&&existing.length<=cap&&
+   positions.slice(cap).every(entry=>!entry);
+  if(!validTypes||(owner!=null&&String(owner)!==String(id))||
+   (owner==null&&!legacyFits)){
    delete state.souls[slot];delete state.soulOwners[slot];changed=true;continue;
   }
+  // An explicitly tracked SAME item can have more sockets than the catalog
+  // default. Do not erase excess Souls when its selected capacity is lower:
+  // the combat calculation reads only the allowed positions; socketReport()
+  // warns about inactive extras. Raising the copy capacity reactivates them.
   if(owner==null){state.soulOwners[slot]=String(id);changed=true}
  }
  for(const slot of Object.keys(state.soulOwners)){
