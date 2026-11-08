@@ -25,7 +25,7 @@ function catalog(identity='local'){
   souls:{1:{id:1,name:'Soul',icon:'I_000001_00'}}
  };
 }
-function mockFetch(remote,local,{broken=null,snapshots=null,fail=null}={}){
+function mockFetch(remote,local,{broken=null,snapshots=null,fail=null,provenance='d1'}={}){
  const paths=[],snapshotFor=key=>snapshots?.[key]||'snapshot-a';
  const fetcher=async(url)=>{
   paths.push(url);
@@ -34,7 +34,8 @@ function mockFetch(remote,local,{broken=null,snapshots=null,fail=null}={}){
   const value=structuredClone((isRemote?remote:local)[key]);
   if(isRemote&&key===broken)delete value?.id;
   return {ok:true,status:200,headers:{get:name=>name==='x-ps-catalog-snapshot'?
-   (isRemote?snapshotFor(key):null):null},json:async()=>value};
+   (isRemote?snapshotFor(key):null):
+   name==='x-ps-catalog'&&isRemote?provenance:null},json:async()=>value};
  };
  return {fetcher,paths};
 }
@@ -222,4 +223,17 @@ test('the read-only Russian dungeon translation bridge remains source-matched',a
  const unchanged=await loader.load({api:'https://worker.example',fetcher:second.fetcher});
  assert.equal(unchanged.data.instances[0].blurbRu,undefined,
   'Never borrow a translation for a different original description');
+});
+
+
+test('encyclopedia rejects a forged D1 provenance despite matching snapshot IDs',async()=>{
+ const remote=catalog('forged'),safe=catalog('safe');
+ const fake=mockFetch(remote,safe,{provenance:'archive'});
+ const loaded=await loader.load({api:'https://worker.example',fetcher:fake.fetcher});
+ assert.equal(loaded.source,'local');
+ assert.equal(loaded.data.items['1'].name,'safe');
+ const strict=mockFetch(remote,safe,{provenance:'archive'});
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:strict.fetcher,strict:true}),/не подтвердил источник D1/);
+ assert.equal(strict.paths.filter(path=>path.startsWith('./data/os/')).length,0);
 });

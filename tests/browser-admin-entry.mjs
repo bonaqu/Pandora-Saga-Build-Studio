@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 export async function runAdminEntrySmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const calls=[],townOverrides=new Map();
- let sourceUnavailable=false;
+ let sourceUnavailable=false,d1SourceSpoofed=false;
  const context=await browser.newContext({viewport:{width:1280,height:860}});
  await context.route('**/*',async route=>{
   const url=route.request().url();
@@ -55,8 +55,9 @@ export async function runAdminEntrySmoke(browser,base){
     }
    }
    return route.fulfill({status:200,headers:{
-    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot',
-    'x-ps-catalog-snapshot':'ps-browser-snapshot'},
+    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot, X-PS-Catalog',
+    'x-ps-catalog-snapshot':'ps-browser-snapshot',
+     'x-ps-catalog':d1SourceSpoofed?'archive':'d1'},
     contentType:'application/json',body:JSON.stringify(rows)});
   }
   if(path.startsWith('/api/catalog/')&&path.endsWith('.json')){
@@ -66,8 +67,9 @@ export async function runAdminEntrySmoke(browser,base){
    // One item differs in D1; the OS archive is the authoritative local test source.
    if(name==='items')content['1'].name='Старое название из D1';
    return route.fulfill({status:200,headers:{
-    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot',
-    'x-ps-catalog-snapshot':'ps-browser-snapshot'},
+    ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot, X-PS-Catalog',
+    'x-ps-catalog-snapshot':'ps-browser-snapshot',
+     'x-ps-catalog':d1SourceSpoofed?'archive':'d1'},
     contentType:'application/json',body:JSON.stringify(content)});
   }
   if(path==='/api/admin/reset'&&method==='POST'){
@@ -483,6 +485,14 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.getByRole('button',{name:/Все · 2/}).click();
   // The exact failure reported by an administrator must NOT suggest a live
   // comparison succeeded. The archived comparison stays explicitly separate.
+  // A catalog with a forged source header may not become the admin baseline.
+  d1SourceSpoofed=true;
+  await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
+  await page.waitForFunction(()=>document.querySelector('.os-sync-status')
+    ?.textContent?.includes('Сверка не завершена.'),null,{timeout:15000});
+  assert.equal(await dialog.locator('.os-sync-review-steps').isHidden(),true,
+   'A forged provenance must disable catalog publication');
+  d1SourceSpoofed=false;
   sourceUnavailable=true;
   await dialog.getByRole('button',{name:'Проверить изменения в текущей игре'}).click();
   await page.waitForFunction(()=>document.querySelector('.os-sync-status')?.textContent

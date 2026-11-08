@@ -617,6 +617,8 @@
           const response=await fetch(apiBase+'/api/catalog/'+alias+'.json',
             {cache:'no-store',signal:AbortSignal.timeout(15000)});
           if (!response.ok) throw Error('Активная D1 '+name+': HTTP '+response.status);
+          if(response.headers.get('x-ps-catalog')!=='d1')
+            throw Error('Не подтверждён источник D1 для '+name+'. Обнови страницу и повтори сверку.');
           const snapshot=response.headers.get('x-ps-catalog-snapshot');
           if (!snapshot) throw Error('D1 не сообщает версию каталога');
           versions.add(snapshot);
@@ -626,6 +628,8 @@
         const localeResponse=await fetch(apiBase+'/api/catalog/legacyLocale.json',
           {cache:'no-store',signal:AbortSignal.timeout(15000)});
         if (!localeResponse.ok) throw Error('Не получен текущий перевод D1');
+        if(localeResponse.headers.get('x-ps-catalog')!=='d1')
+          throw Error('Не подтверждён источник D1 для локализации. Публикация остановлена.');
         const localeSnapshot=localeResponse.headers.get('x-ps-catalog-snapshot');
         if (!localeSnapshot) throw Error('Нет версии локализации D1');
         versions.add(localeSnapshot);
