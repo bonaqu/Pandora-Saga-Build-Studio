@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.503.0 — 2026.11.08.503 · Original Pandora Saga OS descriptions RU/EN
+
+- Restore OS-authored descriptions to the GitHub fallback archive: 832 items, 13 souls, 833 EN item descriptions and 20 EN soul descriptions, only description fields.
+- A complete read-only comparison verified that the source game JSON matches production D1 before taking text: original line breaks, formatting and item links remain authoritative.
+- No changes to combat formulas, source IDs, equipment stats, names, Worker or production D1. Other source SHA entries are deliberately untouched.
+- Node/Chromium regression checks and live parity are required; a successful PR check alone does not certify deployment.
+
+
 ## 0.502.0 — 2026.11.08.502 · Два HP боссов и SHA монстров приведены к текущему игровому OS
 
 - Сверены все 702 монстра по текущему официальному /gamedata/monsters.json и публичному D1. Активный D1 полностью совпал с игровым источником; резервный GitHub-архив ошибался лишь по двум HP.
