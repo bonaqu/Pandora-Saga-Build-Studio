@@ -52,6 +52,6 @@ test('loading overlay is bilingual even before scripts run and old quick compari
  assert.match(html,/id="startupStatus"[^>]*><span data-boot-ru>/);
  assert.match(html,/<span data-boot-en>Loading game data…<\/span>/);
  assert.doesNotMatch(app,/function compareSnapshots\(/);
- assert.match(app,/PandoraBuildComparison\.matrixRows\(a\.data,b\.data/);
+ assert.match(app,/PandoraBuildComparison\.compactResults\(/);
  assert.match(app,/Portrait of '\+races\[i\]\[1\]/);
 });

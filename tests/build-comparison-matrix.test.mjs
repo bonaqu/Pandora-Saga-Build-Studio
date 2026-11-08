@@ -84,7 +84,7 @@ test('comparison renders within saved builds instead of a modal, with familiar s
  assert.match(app,/a\.data,b\.data,previewBaseStats/);
  assert.match(app,/data-compare-row/);
  assert.match(app,/data-compare-select/);
- assert.match(app,/data-compare-differences/);
+ assert.doesNotMatch(app,/data-compare-differences/);
  assert.match(app,/comparisonSlot\.querySelector/);
  assert.doesNotMatch(app,/modal\('Сравнение билдов'/);
  assert.match(style,/build-compare-table-wrap/);
