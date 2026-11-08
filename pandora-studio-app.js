@@ -7350,6 +7350,8 @@ async function ensureEnglishCatalog(){
  englishCatalogPending=(async()=>{
   const response=await fetch(source,{cache:'no-cache',signal:AbortSignal.timeout(16000)});
   if(!response.ok)throw Error('Английский каталог: HTTP '+response.status);
+  if(!catalogArchived&&response.headers.get('x-ps-catalog')!=='d1')
+   throw Error('Английский каталог: источник D1 не подтверждён');
   if(!catalogArchived&&response.headers.get('x-ps-catalog-snapshot')!==snapshot)
    throw Error('Версия английского перевода не совпадает с текущей D1');
   const data=await response.json(),expected=catalogSource?.meta?.localeCounts?.en||{};
@@ -7374,6 +7376,10 @@ async function loadCatalog({archive=false}={}){
    cache:archive?'default':'no-cache',signal:AbortSignal.timeout(14000)});
   if(!response.ok)throw Error(name+' HTTP '+response.status);
   if(!archive){
+   // Confirm both the published snapshot and its D1 origin for every
+   // character-calculation dataset, not just Wiki and admin review.
+   if(response.headers.get('x-ps-catalog')!=='d1')
+    throw Error('Игровой каталог '+name+': источник D1 не подтверждён');
    const snapshot=response.headers.get('x-ps-catalog-snapshot');
    if(snapshot)snapshots.add(snapshot);else unknown.push(name);
   }
