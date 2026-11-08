@@ -58,6 +58,7 @@ const english=Object.freeze({
   'Я сохранил код':'I have saved the code','Резервный код скрыт.':'Recovery code hidden.',
   'Сохраните код: после обновления страницы его нельзя будет повторно показать.':'Save the code: it cannot be shown again after refreshing the page.',
  'Без электронной почты и СМС. После регистрации сохраните резервный код.':'No email or SMS. Save your recovery code after registering.',
+ 'Браузер не сохранил вход. После обновления страницы потребуется войти снова. Сохраните резервный код, если он показан.':'The browser could not save this sign-in. You will need to sign in again after refreshing. Save the recovery code if it is shown.',
  'Название билда':'Build name','Название сохраняемого черновика':'Draft build name',
  'Текущий персонаж ещё не сохранён.':'This character has not been saved yet.',
  'Сохранить и создать':'Save and create','Создать без сохранения':'Create without saving',

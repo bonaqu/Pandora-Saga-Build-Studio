@@ -6,7 +6,7 @@ import vm from 'node:vm';
 const original=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta.url),'utf8');
 const script=original.replace(
  'root.PandoraAccountUI=Object.freeze(',
- 'root.__accountTest=Object.freeze({setSession,clearSession});root.PandoraAccountUI=Object.freeze(');
+ 'root.__accountTest=Object.freeze({setSession,clearSession,recoveryCode:()=>pendingRecoveryCode,storageFailed:()=>sessionStorageFailed});root.PandoraAccountUI=Object.freeze(');
 assert.notEqual(script,original,'Test-only helper exposure must match the public module');
 
 function deferred(){
@@ -124,6 +124,30 @@ test('malformed login responses cannot replace a valid session or recovery secre
  c.helper.setSession(good);
  assert.equal(c.api.username(),'bob_222');
  assert.equal(JSON.parse(c.storage.getItem('ps-account-session.v1')).username,'bob_222');
+});
+
+test('a quota failure during registration does not lose the one-time recovery code',()=>{
+ const c=create();
+ const originalSet=c.storage.setItem;
+ c.storage.setItem=(key,value)=>{
+  if(key==='ps-account-session.v1')throw Error('QuotaExceededError');
+  return originalSet(key,value);
+ };
+ const result={account:{username:'alice_01'},token:'a'.repeat(43),
+  expires:Date.now()+3600000,recoveryCode:'r'.repeat(43)};
+ assert.doesNotThrow(()=>c.helper.setSession(result));
+ assert.equal(c.api.username(),'alice_01');
+ assert.equal(c.helper.recoveryCode(),'r'.repeat(43));
+ assert.equal(c.helper.storageFailed(),true);
+ assert.equal(c.storage.getItem('ps-account-session.v1'),null);
+ c.api.refresh();
+ assert.equal(c.helper.recoveryCode(),'r'.repeat(43),
+  'A profile redraw must not discard the only recovery code');
+ assert.equal(c.api.isLoggedIn(),true,
+  'The authenticated tab should remain usable until it is refreshed');
+ c.helper.clearSession();
+ assert.equal(c.helper.storageFailed(),false);
+ assert.equal(c.helper.recoveryCode(),null);
 });
 
 test('late /me failure never signs out a newer login and late /me success cannot switch it',async()=>{

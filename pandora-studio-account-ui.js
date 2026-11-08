@@ -5,6 +5,7 @@ const KEY='ps-account-session.v1';
 let session=null,options=null,trigger=null,panel=null,mode='login',errorLine=null;
 let bootstrapPhase='guest';
 let sessionRevision=0,passwordRequest=null,guestAuthRequest=null;
+let sessionStorageFailed=false;
 const setBootstrapPhase=value=>{
  bootstrapPhase=value;
  trigger?.setAttribute('data-account-bootstrap',value);
@@ -86,7 +87,11 @@ function setSession(result){
  // session, active owner scope or recovery code.
  const recovery=typeof result.recoveryCode==='string'&&TOKEN.test(result.recoveryCode)?
   result.recoveryCode:null;
- localStorage.setItem(KEY,JSON.stringify(next));
+ // A full/locked storage area must not swallow a one-time recovery code
+ // returned by successful registration. Keep this tab's session in memory
+ // and tell the owner that a refresh will require signing in again.
+ try{localStorage.setItem(KEY,JSON.stringify(next));sessionStorageFailed=false}
+ catch{sessionStorageFailed=true}
  session=next;
  sessionRevision++;
  setBootstrapPhase('verified');
@@ -96,7 +101,7 @@ function setSession(result){
 function clearSession({revokeMatchingOwner=false}={}){
  const previousToken=session?.token||null,
   previousName=session?.username||null,previousExpires=session?.expires??null;
- session=null;pendingRecoveryCode=null;
+ session=null;pendingRecoveryCode=null;sessionStorageFailed=false;
  sessionRevision++;
  setBootstrapPhase('guest');
  resetFeedback();
@@ -133,6 +138,12 @@ function render(){
  const sub=node('p','account-lead',session?'Сохранённые билды доступны после входа на другом устройстве.':
   'Логин и пароль — для доступа к сохранённым облачным билдам.');
  panel.append(sub);
+ if(session&&sessionStorageFailed){
+  const warning=node('p','account-lead account-storage-warning',
+   'Браузер не сохранил вход. После обновления страницы потребуется войти снова. Сохраните резервный код, если он показан.');
+  warning.setAttribute('role','status');
+  panel.append(warning);
+ }
  errorLine=node('p','account-feedback');errorLine.setAttribute('role','status');
  if(feedbackSource!==null&&feedbackToken===(session?.token||null)&&
   feedbackMode===mode){
