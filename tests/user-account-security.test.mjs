@@ -39,7 +39,8 @@ test('signed-in profile keeps password editor closed until requested',()=>{
  assert.match(ui,/node\('details','account-password-details'\)/);
  assert.match(ui,/node\('summary','account-password-toggle'/);
  assert.match(ui,/details\.append\(form\)/);
- assert.match(ui,/details\.open=false/);
+ assert.match(ui,/if\(currentDetails\)currentDetails\.open=false/);
+ assert.match(ui,/const currentDetails=panel\?\.querySelector\?\.\('.account-password-details'\)/);
  assert.match(ui,/class='account-identity'|node\('div','account-identity'\)/);
  assert.match(css,/\.account-session-note/);
  assert.match(css,/\.account-password-details/);
