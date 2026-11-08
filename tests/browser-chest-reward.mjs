@@ -68,7 +68,7 @@ export async function runChestRewardLayoutSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await openNpcChest();
   const ruGold=(await page.locator('.wiki-chest-gold-reward').first().innerText())
-   .replace(/\\s/g,' ');
+   .replace(/\s/g,' ');
   assert.equal(ruGold,'Золото: 60 000–100 000');
   assert.deepEqual(errors,[],'Browser JS error in scout or NPC chests');
   console.log('Chromium chest rewards passed: scout level 15 and NPC gold ranges in RU/EN');
