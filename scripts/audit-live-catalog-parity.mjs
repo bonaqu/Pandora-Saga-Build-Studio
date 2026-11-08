@@ -136,14 +136,35 @@ export function describeDescriptionDrift(local,remote,dataset){
  return counts;
 }
 
+// A game <item N> marker becomes a link only when its destination exists.
+// Validate public D1 and checked-in archive without echoing names or IDs to CI.
+export function validateDescriptionReferences({items={},souls={},stringsEn={}}={}){
+ const existing=new Set(Object.keys(items||{}));
+ let total=0,unresolved=0;
+ const scan=(rows,field)=>{
+  for(const record of Object.values(rows||{})){
+   if(typeof record?.[field]!=='string')continue;
+   for(const match of record[field].matchAll(/<item\b([^>]*)>/gi)){
+    total++;
+    const id=/^\s*(\d{1,12})\s*\/?\s*$/.exec(match[1])?.[1]||null;
+    if(!id||!existing.has(id))unresolved++;
+   }
+  }
+ };
+ scan(items,'desc');scan(souls,'desc');
+ scan(stringsEn?.items,'d');scan(stringsEn?.souls,'d');
+ return {total,unresolved};
+}
 async function run({strictRu=false,fetcher=fetch}={}){
- let snapshot=null,failures=0,translations=0;
+ let snapshot=null,failures=0,translations=0,checked=0;
+ const archive={},published={};
  for(const dataset of DATASETS){
   try{
    // D1 uses stringsEn while the checked-in original is strings.en.json.
    const localFile=dataset==='stringsEn'?'strings.en.json':dataset+'.json';
    const local=JSON.parse(readFileSync(new URL('../data/os/'+localFile,
     import.meta.url),'utf8'));
+   if(['items','souls','stringsEn'].includes(dataset))archive[dataset]=local;
    const response=await fetcher(endpoint+dataset+'.json',{
     cache:'no-store',signal:AbortSignal.timeout(15000)});
    if(!response.ok)throw Error('HTTP '+response.status);
@@ -155,6 +176,8 @@ async function run({strictRu=false,fetcher=fetch}={}){
     throw Error('D1 snapshot changed during read-only audit');
    snapshot=observed;
    const remote=await response.json();
+   checked++;
+   if(['items','souls','stringsEn'].includes(dataset))published[dataset]=remote;
    const report=compareCatalog(local,remote,dataset);
    if(!report.equal){
     const drift=describeDescriptionDrift(local,remote,dataset);
@@ -170,9 +193,20 @@ async function run({strictRu=false,fetcher=fetch}={}){
     ' source records match D1');
   }catch(error){failures++;console.error('FAIL '+dataset+': '+error.message)}
  }
+ // Check links in both sets; a missing target is a separate integrity defect
+ // even if two copies of the same broken description happen to match.
+ for(const [label,source] of [['archived',archive],['published D1',published]]){
+  if(!source.items||!source.souls||!source.stringsEn)continue;
+  const refs=validateDescriptionReferences(source);
+  if(refs.unresolved){
+   failures++;console.error('FAIL '+label+' description references: '+
+    refs.unresolved+' unresolved of '+refs.total+' (no IDs disclosed)');
+  }else console.log('OK   '+label+' description references: '+refs.total+
+   ' verified destinations');
+ }
  if(strictRu&&translations)failures++;
- console.log('Read-only parity: '+(DATASETS.length-failures)+
-  ' of '+DATASETS.length+' datasets checked; '+translations+
+ console.log('Read-only parity: '+checked+' of '+DATASETS.length+
+  ' dataset responses checked; '+translations+
   ' missing RU blurbs; '+failures+' blocking failures. No writes performed.');
  return failures===0;
 }
