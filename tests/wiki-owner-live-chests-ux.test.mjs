@@ -83,3 +83,51 @@ test('admin text and search editors use contenteditable, not username inputs',()
  assert.match(app,/window\.PandoraOwnerChangeReview\.inspect/);
  assert.doesNotMatch(app,/const search=h\('input',\{type:'search',class:'wiki-inline-input'/);
 });
+
+test('all game-source NPC chest item and gold rows pass the owner editor schema',()=>{
+ const data=JSON.parse(file('data/os/chests.json'));
+ const valid=root.PandoraWikiOwnerData.validChest;
+ for(const box of [...data.boxes,...data.npc])
+  assert.equal(valid(box.rolls),true,'Game chest '+box.i+' should be editable');
+ const npc=data.npc.find(row=>row.i===52002);
+ assert.ok(npc?.rolls.flat().some(row=>Array.isArray(row.gold)));
+});
+
+test('NPC chest chance edit preserves every source gold range and its key',()=>{
+ const chests=JSON.parse(file('data/os/chests.json'));
+ const items=JSON.parse(file('data/os/items.json'));
+ const base={items,monsters:{},drops:{},maps:{},instances:[],
+  trades:{trades:[],npcs:{}},chests};
+ const npc=chests.npc.find(row=>row.i===52002);
+ const original=JSON.stringify(npc);
+ const draft=structuredClone(npc.rolls);
+ const goldIndex=draft[0].findIndex(row=>Array.isArray(row.gold));
+ assert.ok(goldIndex>=0);
+ const previous=draft[0][goldIndex].p;
+ draft[0][goldIndex].p=4.5;
+ const changed=root.PandoraWikiOwnerData.apply(base,{
+  'chestedit.52002':JSON.stringify(draft)
+ });
+ const updated=changed.chests.npc.find(row=>row.i===52002);
+ assert.equal(updated.rolls[0][goldIndex].p,4.5);
+ assert.deepEqual(Array.from(updated.rolls[0][goldIndex].gold),draft[0][goldIndex].gold,
+  'The VM-owned result preserves both numeric gold endpoints');
+ assert.equal(updated.key,npc.key);
+ assert.equal(changed.chests.boxes,chests.boxes,'Normal chests stay untouched');
+ assert.equal(JSON.stringify(npc),original,'Source D1 game data must be immutable');
+ assert.notEqual(previous,4.5);
+});
+
+test('NPC chest gold editor rejects malformed ranges and bogus item references',()=>{
+ const valid=root.PandoraWikiOwnerData.validChest;
+ const allowed=[{i:50002,n:30,p:30},{gold:[60000,100000],p:3}];
+ assert.equal(valid([allowed]),true);
+ for(const row of [
+  {gold:[100000,60000],p:3},{gold:[-1,1000],p:3},
+  {gold:['60000',100000],p:3},{gold:[1000],p:3},
+  {i:50002,gold:[1,2],p:3},{gold:[1,2],n:1,p:3},
+  {gold:[1,2],p:101}
+ ])assert.equal(valid([[row]]),false,JSON.stringify(row));
+ const app=file('pandora-studio-app.js');
+ assert.match(app,/!Object\.hasOwn\(row,'i'\)\|\|/);
+});

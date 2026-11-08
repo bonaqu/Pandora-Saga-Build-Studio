@@ -7044,6 +7044,7 @@ async function saveWikiRelationRows(kind,id,rows){
    throw Error('Монстр или один из предметов отсутствует в каталоге');
   if(kind==='chest'&&(!Object.hasOwn(wikiData?.items||{},String(id))||
    !saved.every(group=>group.every(row=>
+    !Object.hasOwn(row,'i')||
     Object.hasOwn(wikiData?.items||{},String(row.i))))))
    throw Error('Сундук или одна из наград отсутствует в каталоге');
   const before=activeOverride(key);
