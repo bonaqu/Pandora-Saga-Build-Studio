@@ -186,11 +186,24 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   // instead of crashing Node with an unhandled page.evaluate rejection.
   void thirdLogin.catch(()=>{});
   try{
-   await tabC.waitForFunction(()=>{
-    const profile=document.querySelector('#profileTrigger');
-    return profile?.dataset.accountBootstrap==='pending'&&
-     profile.title.includes('bob_222');
-   },null,{timeout:20000});
+   try{
+    await tabC.waitForFunction(()=>{
+     const profile=document.querySelector('#profileTrigger');
+     return profile?.dataset.accountBootstrap==='pending'&&
+      profile.title.includes('bob_222');
+    },null,{timeout:20000});
+   }catch(error){
+    // Only type/presence/status is logged. Never dump guest keys or bearers.
+    const diagnostics=await tabC.evaluate(()=>({
+     bootstrap:document.querySelector('#profileTrigger')?.dataset.accountBootstrap||'absent',
+     ownerType:(localStorage.getItem('ps-build-owner-scope.v1')||'').split(':',1)[0]||'none',
+     profileIsBob:(document.querySelector('#profileTrigger')?.title||'').includes('bob_222'),
+     page:document.readyState
+    })).catch(()=>({page:'unavailable'}));
+    throw Error('Delayed third-tab account check did not remain pending: '+
+     JSON.stringify({requested:delayedMeTriggered,guestLibraryBeforeMe,diagnostics})+
+     '; '+error.message);
+   }
    assert.equal(delayedMeTriggered,true,'Third-tab /me must actually be gated');
    assert.equal(guestLibraryBeforeMe,0,
     'Pending verified owner must not request the guest library');
