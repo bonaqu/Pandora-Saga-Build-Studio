@@ -58,3 +58,11 @@ test('scrolls reschedule hover help only while the element is still hovered',()=
  assert.match(src,/node\.isConnected&&node\.matches\(':hover'\)/);
  assert.match(src,/if\(pending\)\{\s*const \{node,show,delay\}=pending/);
 });
+
+test('short guide tooltip Escape is handled before the workbench, including pending hover',()=>{
+ const src=load('pandora-studio-guide-tooltips.js');
+ assert.match(src,/document\.addEventListener\('keydown',event=>\{/);
+ assert.match(src,/event\.stopImmediatePropagation\(\)/);
+ assert.match(src,/if\(event\.key!=='Escape'\|\|\(!current&&!pending\)\)return/);
+ assert.match(src,/pending&&!pending\.node\.contains\(event\.target\)/);
+});

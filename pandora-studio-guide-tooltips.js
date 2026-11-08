@@ -85,11 +85,6 @@ function attach(node,text,{hoverDelay=0}={}){
  node.addEventListener('blur',()=>{
   if(pending?.node===node||current===node)dismiss();
  });
- node.addEventListener('keydown',event=>{
-  if(event.key==='Escape'&&(pending?.node===node||current===node)){
-   dismiss();event.stopPropagation();
-  }
- });
  node.addEventListener('pointerdown',event=>{
   if(event.pointerType==='touch'){
    if(current===node)dismiss();else show();
@@ -101,8 +96,18 @@ function attach(node,text,{hoverDelay=0}={}){
 if(typeof document!=='undefined'){
  // A click outside a tooltip's source and chapter navigation both invalidate
  // the currently displayed explanation, including keyboard-created ones.
+ // A click elsewhere must cancel a scheduled tooltip too, not only an open one.
  document.addEventListener('pointerdown',event=>{
-  if(current&&!current.contains(event.target))dismiss();
+  if((current&&!current.contains(event.target))||
+     (pending&&!pending.node.contains(event.target)))dismiss();
+ },{capture:true});
+ // Dismiss the guide hint before the host workbench interprets Escape as
+ // navigation/close, including when pointer hover has not yet opened it.
+ document.addEventListener('keydown',event=>{
+  if(event.key!=='Escape'||(!current&&!pending))return;
+  dismiss();
+  event.preventDefault();
+  event.stopImmediatePropagation();
  },{capture:true});
  window.addEventListener('hashchange',dismiss);
  window.addEventListener('popstate',dismiss);
