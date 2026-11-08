@@ -17,7 +17,7 @@ function scenario({pending=[A,B],fail=[A],remote=[]}={}){
  const run=Function('queuedDeletes','cloudLibraryRequest','acknowledgeDelete','window',
   'persistBuilds','renderDetails','reportCloudStatus','putCloudBuild','showStudioToast',
   'newId','console',
-  'let libraryChangeId=0,builds=[],activeBuildId=null,activeTab="builds",lang="ru";'+
+  'let libraryChangeId=0,cloudLoadRequestId=0,builds=[],activeBuildId=null,activeTab="builds",lang="ru";'+
   loader+'\nreturn {load:loadCloudBuilds,builds:()=>builds,active:()=>activeBuildId};')(
   ()=>queue.slice(),
   async payload=>{
