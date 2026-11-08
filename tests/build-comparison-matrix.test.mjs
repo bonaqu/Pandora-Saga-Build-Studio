@@ -220,3 +220,51 @@ test('invalid resistance skill arrays do not silently discard corrupt identifier
  const rows=comparison.matrixRows(invalid,first,{...opts,skillCatalog:{310001:{name:'Valid'}}});
  assert.equal(rows.find(x=>x.key==='resistanceSkills').a,'—');
 });
+
+
+test('empty equipment is unknown rather than a fabricated +0 refinement',()=>{
+ const empty={...structuredClone(first),equipment:{}};
+ const equipped={...structuredClone(first),equipment:{0:{id:1}}};
+ const rows=comparison.matrixRows(empty,equipped,{...opts,
+  refinement:(snap,i,item)=>item?0:99});
+ const grade=rows.find(x=>x.key==='refinement.0');
+ assert.equal(grade.a,'—','Absent gear has no refinement');
+ assert.equal(grade.b,'0');
+ assert.equal(grade.equal,false);
+ const withoutGrade=comparison.matrixRows(empty,equipped,{...opts,refinement:null});
+ const unknown=withoutGrade.find(x=>x.key==='refinement.0');
+ assert.equal(unknown.a,'—');
+ assert.equal(unknown.b,'—','Unknown refinement must not be replaced by zero');
+});
+test('invalid saved gems are distinguished from empty gems and from each other',()=>{
+ const base={...structuredClone(first),equipment:{0:{id:1}},gems:{}};
+ const one={...structuredClone(base),gems:{'0:1':{type:'unknown-A',element:'ice'}}};
+ const two={...structuredClone(base),gems:{'0:1':{type:'unknown-B',element:'ice'}}};
+ const lookup=({a,b,lang})=>comparison.matrixRows(a,b,{...opts,lang,
+  enchant:{normalize:()=>null,types:[],elements:[]}})
+  .find(x=>x.key==='gem.0');
+ const ru=lookup({a:one,b:two,lang:'ru'});
+ assert.equal(ru.a,'Самоцвет не распознан');
+ assert.equal(ru.b,'Самоцвет не распознан');
+ assert.equal(ru.equal,false,'Differences-only must retain two distinct unknown choices');
+ assert.equal(lookup({a:base,b:one,lang:'ru'}).a,'—');
+ assert.equal(lookup({a:base,b:one,lang:'ru'}).equal,false);
+ const en=lookup({a:one,b:two,lang:'en'});
+ assert.equal(en.a,'Unrecognized gem');
+ assert.equal(en.equal,false);
+ assert.equal(lookup({a:one,b:structuredClone(one),lang:'en'}).equal,true);
+ assert.equal(one.gems['0:1'].type,'unknown-A','Comparison must not mutate a saved choice');
+});
+test('missing locale records must not hide distinct valid elemental gems',()=>{
+ const a={...structuredClone(first),gems:{'0:1':{type:'physical',element:'fire'}}};
+ const b={...structuredClone(first),gems:{'0:1':{type:'physical',element:'ice'}}};
+ const enchant={
+  normalize:v=>v&&typeof v==='object'?{type:v.type,element:v.element}:null,
+  types:[],elements:[]
+ };
+ const rows=comparison.matrixRows(a,b,{...opts,enchant});
+ const gem=rows.find(x=>x.key==='gem.0');
+ assert.equal(gem.a,'Самоцвет не распознан');
+ assert.equal(gem.b,'Самоцвет не распознан');
+ assert.equal(gem.equal,false);
+});
