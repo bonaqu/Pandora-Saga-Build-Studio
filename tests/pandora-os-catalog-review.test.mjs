@@ -227,5 +227,7 @@ test('BR variants and consecutive source paragraphs are preserved literally with
  assert.equal(approved.items['1'].desc,after.items['1'].desc);
  assert.equal(approved['strings.en'].items['1'].d,after['strings.en'].items['1'].d);
  assert.equal(before.items['1'].desc,'Описание.ОЗ +15');
- assert.equal(approved.meta.curated,true);
+ assert.deepEqual(plain(approved.meta.sha),plain(after.meta.sha),
+  'an exact published game snapshot retains verified source fingerprints');
+ assert.equal(approved.meta.curated,undefined);
 });
