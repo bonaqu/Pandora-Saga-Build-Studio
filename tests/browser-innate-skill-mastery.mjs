@@ -153,6 +153,17 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.ok(invested>=2&&invested<=3,'Investment hold clamps to L4 budget of 3, got '+invested);
   assert.equal(Number(await page.locator('[data-branch-control="slash:potential-range"]').inputValue()),5+invested,
    'The slider displays starting five plus invested points');
+  // Detaching a rich racial-passive button cannot leave its preview floating.
+  await page.locator('[data-origin-tab="race"]').click();
+  const passive=page.locator('#originPassives .origin-passive').first();
+  await passive.waitFor({state:'visible',timeout:12000});
+  await page.mouse.move(1,1);
+  await passive.hover();
+  const richSkill=page.locator('#path-skill-hover-tooltip');
+  await richSkill.waitFor({state:'visible',timeout:3000});
+  await passive.evaluate(node=>node.remove());
+  await richSkill.waitFor({state:'detached',timeout:2000});
+  assert.equal(await richSkill.count(),0,'Detached passive must not retain a rich preview');
   assert.deepEqual(errors,[]);
   console.log('Chromium innate mastery passed: Warrior Enkidu L1 5/2/5/2/4 + archery1, no spent points, manual green training, non-login search');
  }finally{await context.close()}

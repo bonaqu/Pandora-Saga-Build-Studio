@@ -164,8 +164,10 @@ export async function runItemHoverDelaySmoke(browser,base){
   await page.waitForTimeout(140);
   assert.equal(await tooltip.count(),0,'Honor cloak uses the same hover delay');
   await tooltip.waitFor({state:'visible',timeout:2500});
-  await clearPointer();
-  assert.equal(await tooltip.count(),0);
+  // A rebuild can detach the hovered link without dispatching pointerleave.
+  await cloak.evaluate(node=>node.remove());
+  await tooltip.waitFor({state:'detached',timeout:2000});
+  assert.equal(await tooltip.count(),0,'Removed cloak source must close rich preview');
   assert.deepEqual(errors,[]);
   console.log('Chromium item tooltip timing: Spata NPC trade, loot, Honor cloak, keyboard, Escape and navigation');
  }finally{await context.close()}

@@ -1715,12 +1715,15 @@ function renderOriginPassives(){
 // One controller for all rich skill previews (Origin and Hero Path).
 // The item preview has its own game-item renderer; reuse its 650ms policy.
 const SKILL_PREVIEW_HOVER_DELAY_MS=650;
-let activeSkillPreview=null,activeSkillPreviewOwner=null,pendingSkillPreview=null;
+let activeSkillPreview=null,activeSkillPreviewOwner=null,pendingSkillPreview=null,
+ activeSkillRemovalObserver=null;
 function cancelPendingSkillPreview(){
  if(pendingSkillPreview){clearTimeout(pendingSkillPreview.timer);pendingSkillPreview=null}
 }
 function dismissSkillPreview(){
  cancelPendingSkillPreview();
+ activeSkillRemovalObserver?.disconnect();
+ activeSkillRemovalObserver=null;
  activeSkillPreview?.remove();
  activeSkillPreviewOwner?.removeAttribute('aria-describedby');
  activeSkillPreview=null;activeSkillPreviewOwner=null;
@@ -1773,6 +1776,12 @@ function skillHover(button,skill){
   activeSkillPreview=tip;activeSkillPreviewOwner=button;
   button.setAttribute('aria-describedby',tip.id);
   positionSkillPreview(button,tip);
+  if(typeof MutationObserver==='function'&&document.body){
+   activeSkillRemovalObserver=new MutationObserver(()=>{
+    if(activeSkillPreviewOwner===button&&!button.isConnected)dismissSkillPreview();
+   });
+   activeSkillRemovalObserver.observe(document.body,{childList:true,subtree:true});
+  }
  };
  const clear=()=>{
   if(pendingSkillPreview?.button===button||activeSkillPreviewOwner===button)
