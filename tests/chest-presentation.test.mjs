@@ -58,3 +58,32 @@ test('edit UI keeps the native group index and does not rewrite source arrays',(
  assert.match(app,/wiki-chest-reward-nested/);
  assert.match(app,/const nextChest=chestIds.has\(String\(row.i\)\)/);
 });
+
+test('NPC chest gold-only rewards retain exact source currency ranges in RU and EN',()=>{
+ const chest=catalog.npc.find(row=>row.i===52002);
+ assert.ok(chest,'Actual current NPC chest source is available');
+ const before=JSON.stringify(chest);
+ const gold=chest.rolls.flat().filter(row=>Array.isArray(row.gold));
+ assert.ok(gold.length>=2);
+ const displayed=model.goldLabel(gold[0],'ru').replace(/\s/g,' ');
+ assert.equal(displayed,'Золото: 60 000–100 000');
+ assert.equal(model.goldLabel(gold[0],'en'),'Gold: 60,000–100,000');
+ assert.equal(model.goldLabel({gold:[500,500]},'en'),'Gold: 500');
+ assert.equal(JSON.stringify(chest),before,'The presentation must not mutate source rolls');
+});
+
+test('missing or malformed gold range is not presented as a fabricated item or amount',()=>{
+ for(const range of [undefined,[],[100],[200,100],[0,-5],['100',200],[NaN,100],[1.4,10]]){
+  assert.equal(model.goldLabel({gold:range},'ru'),null,String(range));
+ }
+ const app=readFileSync(new URL('pandora-studio-app.js',root),'utf8');
+ const first=app.indexOf("const goldReward=Array.isArray(row.gold);");
+ const second=app.indexOf("if(nextChest)rewardMain.append(",first);
+ assert.ok(first>=0&&second>first);
+ const body=app.slice(first,second);
+ assert.match(body,/row\.i!=null\?itemLink/);
+ assert.match(body,/goldLabel\(row,lang\)/);
+ assert.match(body,/Награда не указана/);
+ assert.match(app,/if\(adminEditing&&adminToken&&row\.i!=null\)/,
+  'A gold-only reward has no editable item quantity');
+});
