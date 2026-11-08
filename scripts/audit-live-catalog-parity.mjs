@@ -124,17 +124,18 @@ export function describeDescriptionDrift(local,remote,dataset){
    if(typeof source!=='string'||typeof live!=='string'){
     counts.otherText++;continue;
    }
-   const noBreaks=live.replace(/<br\\s*\\/?>/gi,'');
+   const noBreaks=live.replace(/<br\s*\/?>/gi,'');
    if(source===noBreaks)counts.lineBreaks++;
-   else if(source===noBreaks.replace(/<\\/?b>/gi,''))counts.inlineMarkup++;
-   else if(/<item\\s+[1-9][0-9]{0,11}\\s*\\/?>/i.test(live)&&
-    !/<item\\s+[1-9][0-9]{0,11}\\s*\\/?>/i.test(source))
+   else if(source===noBreaks.replace(/<\/?b>/gi,''))counts.inlineMarkup++;
+   else if(/<item\s+[1-9][0-9]{0,11}\s*\/?>/i.test(live)&&
+    !/<item\s+[1-9][0-9]{0,11}\s*\/?>/i.test(source))
     counts.itemReferences++;
    else counts.otherText++;
   }
  }
  return counts;
 }
+
 async function run({strictRu=false,fetcher=fetch}={}){
  let snapshot=null,failures=0,translations=0;
  for(const dataset of DATASETS){
