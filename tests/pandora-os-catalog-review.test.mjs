@@ -237,7 +237,7 @@ test('only six verified project RU dungeon translations can be proposed',()=>{
  const stripped=source.map(({blurbRu,...row})=>row);
  const found=review.sourceMatchedRussianInstances(stripped,stripped,source);
  assert.equal(found.length,6);
- assert.deepEqual(found.map(x=>x.name),source.map(x=>x.name));
+ assert.deepEqual(plain(found.map(x=>x.name)),source.map(x=>x.name));
  assert.equal(review.sourceMatchedRussianInstances(stripped,stripped,[]).length,0);
  const modified=plain(stripped);modified[0].mobs.push(123);
  const verified=review.sourceMatchedRussianInstances(modified,stripped,source);
