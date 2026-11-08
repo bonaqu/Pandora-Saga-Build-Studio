@@ -59,6 +59,18 @@ function validate(input){
   if(!Number.isSafeInteger(expected)||expected<1||observed<expected)
    throw Error('Неполный каталог '+key+': '+observed+' из '+expected);
  }
+ // Wiki indexes dungeons by String(row.id) with Object.fromEntries().
+ // Two source rows with the same ID silently overwrite one dungeon card,
+ // while a missing/non-numeric ID creates an invalid deep link. Check these
+ // BEFORE declaring a D1 snapshot complete, regardless of matching counts.
+ const seenInstances=new Set();
+ for(const instance of data.instances){
+  const raw=instance.id,id=String(raw);
+  if(!/^[1-9][0-9]{0,14}$/.test(id)||
+   !Number.isSafeInteger(Number(id))||seenInstances.has(id))
+   throw Error('Повторный или некорректный ID подземелья в игровом каталоге');
+  seenInstances.add(id);
+ }
  const exists=(records,id)=>id!=null&&Object.hasOwn(records,String(id));
  const item=id=>exists(data.items,id)||exists(data.souls,id);
  const monster=id=>exists(data.monsters,id);
