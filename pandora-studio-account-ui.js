@@ -3,6 +3,11 @@
 // A tiny account surface. Passwords and recovery codes are never written to storage.
 const KEY='ps-account-session.v1';
 let session=null,options=null,trigger=null,panel=null,mode='login',errorLine=null;
+let bootstrapPhase='guest';
+const setBootstrapPhase=value=>{
+ bootstrapPhase=value;
+ trigger?.setAttribute('data-account-bootstrap',value);
+};
 let pendingRecoveryCode=null;
 // Feedback survives same-account form remounts (bootstrap/locale) without
 // persisting passwords or messages in localStorage. It must never leak into
@@ -20,6 +25,7 @@ try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');
  if(validSession(raw))session={token:raw.token,expires:raw.expires,
   username:validName(raw.username)};
 }catch{}
+bootstrapPhase=session?'pending':'guest';
 // A tab may stay open beyond the server-issued expiry. Stop using the old
 // owner identity before any cloud request or account-dependent UI lookup.
 function activeSession(){
@@ -57,7 +63,12 @@ function info(message){
  }
 }
 async function request(kind,data=null,auth=token()){
+ // Bound account checks: a temporary network timeout is not revocation.
+ const signal=typeof AbortSignal!=='undefined'&&
+  typeof AbortSignal.timeout==='function'?
+  AbortSignal.timeout(kind==='me'?12000:20000):null;
  const response=await fetch(options.baseUrl+'/api/account/'+kind,{
+  ...(signal?{signal}:{}),
   method:data===null?'GET':'POST',
   headers:{'Content-Type':'application/json',...(auth?{Authorization:'Bearer '+auth}:{})},
   ...(data===null?{}:{body:JSON.stringify(data)})
@@ -76,12 +87,14 @@ function setSession(result){
   result.recoveryCode:null;
  localStorage.setItem(KEY,JSON.stringify(next));
  session=next;
+ setBootstrapPhase('verified');
  pendingRecoveryCode=recovery;
  resetFeedback();
 }
 function clearSession(){
  const previousToken=session?.token||null;
  session=null;pendingRecoveryCode=null;
+ setBootstrapPhase('guest');
  resetFeedback();
  // Another tab may have signed in as a different account since this tab
  // started. Never erase that other account's active persisted session.
@@ -97,6 +110,14 @@ function render(){
  activeSession();
  panel.replaceChildren();
  trigger.classList.toggle('active',Boolean(session));
+ trigger.setAttribute('data-account-bootstrap',bootstrapPhase);
+ if(bootstrapPhase==='pending'&&session){
+  trigger.title=tr('Проверяем учётную запись…');
+  trigger.setAttribute('aria-label',trigger.title);
+  panel.append(node('p','account-lead account-bootstrap-pending',
+   'Проверяем учётную запись…'));
+  return;
+ }
  trigger.title=session?tr('Профиль')+' · '+session.username:tr('Войти или зарегистрироваться');
  trigger.setAttribute('aria-label',trigger.title);
  const title=node('h3','account-title',session?'Профиль':'Аккаунт');
@@ -234,6 +255,8 @@ async function init(config){
  trigger=document.getElementById('profileTrigger');
  panel=document.getElementById('accountPanel');
  if(!trigger||!panel)throw Error('Missing account UI elements');
+ setBootstrapPhase(session?'pending':'guest');
+ render();
  // A logout in another tab revokes this tab too when both use the SAME
  // token. Switching to a DIFFERENT account in another tab must never
  // silently switch or sign out the current tab's independent owner.
@@ -266,7 +289,8 @@ async function init(config){
   // A verified /me reply does not change the account. Do not discard edits
   // merely because the popover was temporarily hidden while it was pending.
   // Revoked/mismatched sessions still force a fresh guest panel.
-  if(forceBootstrapRender||!panel.hasChildNodes?.())render();
+  if(forceBootstrapRender||panel.querySelector?.('.account-bootstrap-pending')||
+   !panel.hasChildNodes?.())render();
  };
  if(session){
   const bootstrapToken=session.token,expectedName=session.username;
@@ -281,6 +305,7 @@ async function init(config){
     invalid.httpStatus=403;throw invalid;
    }
    session.username=verified;
+   setBootstrapPhase('verified');
    options.onLogin?.({register:false,bootstrap:true});
   }catch(error){
    if(session?.token!==bootstrapToken){finishBootstrap();return}
@@ -289,6 +314,7 @@ async function init(config){
     forceBootstrapRender=true;
     options.onLogout?.({bootstrap:true});
    }else{
+    setBootstrapPhase('offline');
     // Keep an unexpired account session on temporary network / Worker outages.
     // A failed availability check is not evidence of revoked credentials.
     options.onLogin?.({register:false,bootstrap:true});
