@@ -1,6 +1,6 @@
 # Pandora Saga Build Studio — CHANGELOG
 
-## 0.503.0 — 2026.11.08.503 · Original Pandora Saga OS descriptions RU/EN
+## 0.503.0 — 2026.11.08.503 · Original game-source descriptions RU/EN
 
 - Restore OS-authored descriptions to the GitHub fallback archive: 832 items, 13 souls, 833 EN item descriptions and 20 EN soul descriptions, only description fields.
 - A complete read-only comparison verified that the source game JSON matches production D1 before taking text: original line breaks, formatting and item links remain authoritative.
