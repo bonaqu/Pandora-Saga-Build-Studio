@@ -261,8 +261,8 @@ function matrixRows(a={},b={},options={}){
   if(x||y){
    push('equipment',gearGroup,'refinement.'+i,'Заточка: '+slot,
     'Refinement: '+EN_SLOTS[i],
-    typeof options.refinement==='function'?options.refinement(a,i,x):0,
-    typeof options.refinement==='function'?options.refinement(b,i,y):0,{kind:'number'});
+    x&&typeof options.refinement==='function'?options.refinement(a,i,x):null,
+    y&&typeof options.refinement==='function'?options.refinement(b,i,y):null,{kind:'number'});
    // Compare the player's chosen physical copy, not catalog defaults alone.
    const capacityA=typeof socketCapacity==='function'?socketCapacity(a,i,x):null;
    const capacityB=typeof socketCapacity==='function'?socketCapacity(b,i,y):null;
@@ -283,19 +283,29 @@ function matrixRows(a={},b={},options={}){
     savedItemName(soulB[k],souls,{lang,kind:'soul',englishNames:englishSouls}),{
      identityA:String(soulA[k]?.id??''),identityB:String(soulB[k]?.id??'')
     });
-  const gemLabel=v=>{
-   if(!v)return '—';
-   const t=enchant?.types?.find(x=>x.id===v.type);
-   const e=enchant?.elements?.find(x=>x.id===v.element);
-   if(!t||!e)return '—';
-   return (english?(t.en||t.id):t.ru)+' · '+(english?e.en:e.ru);
+  const unrecognized=label('Самоцвет не распознан','Unrecognized gem');
+  const readGem=(snap,item)=>{
+   if(item?.id===undefined||item?.id===null)return {text:'—',identity:''};
+   const raw=snap?.gems?.[i+':'+item.id];
+   if(raw===undefined||raw===null)return {text:'—',identity:''};
+   const gem=enchant?.normalize?.(raw)||null;
+   const type=gem&&enchant?.types?.find(value=>value.id===gem.type);
+   const element=gem&&enchant?.elements?.find(value=>value.id===gem.element);
+   if(type&&element)return {text:(english?(type.en||type.id):type.ru)+
+    ' · '+(english?element.en:element.ru),
+    identity:gem.type+':'+gem.element};
+   // Old or damaged selections are not empty sockets. Keep their internal
+   // differences discoverable while never displaying raw IDs or payloads.
+   let signature;
+   try{signature=JSON.stringify(raw)}catch{signature='unreadable'};
+   return {text:unrecognized,identity:'unknown:'+String(signature)};
   };
-  const getGem=(snap,item)=>{
-   if(!item?.id)return null;
-   return enchant?.normalize?.(snap.gems?.[i+':'+item.id])||null;
-  };
-  if(x||y)push('equipment',gemGroup,'gem.'+i,'Самоцвет: '+slot,
-   'Gem: '+EN_SLOTS[i],gemLabel(getGem(a,x)),gemLabel(getGem(b,y)));
+  if(x||y){
+   const gemA=readGem(a,x),gemB=readGem(b,y);
+   push('equipment',gemGroup,'gem.'+i,'Самоцвет: '+slot,
+    'Gem: '+EN_SLOTS[i],gemA.text,gemB.text,
+    {identityA:gemA.identity,identityB:gemB.identity});
+  }
  }
  const buffGroup=section('Усиления и гильдия','Buffs & guild');
  for(const [key,ru,en,fallback]of VITALS){
