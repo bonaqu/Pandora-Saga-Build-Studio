@@ -57,6 +57,13 @@ export async function runAccountLateBootstrapSmoke(browser,base){
     token,username,expires:Date.now()+3600000
    }));
   },{token,username});
+  // Register before releasing the deferred module: profile verification
+  // can finish one task earlier than its async cloud-library GET. Waiting for
+  // the actual successful response avoids a flaky stats-counter race.
+  const accountLibraryLoaded=page.waitForResponse(response=>
+   response.url().startsWith(api+'/api/library')&&response.ok()&&
+   response.request().headers().authorization==='Bearer '+token,
+   {timeout:20000});
   releaseEntry();
   await navigation;
   await page.waitForFunction(expected=>
@@ -65,6 +72,7 @@ export async function runAccountLateBootstrapSmoke(browser,base){
    localStorage.getItem('ps-build-owner-scope.v1')==='account:'+expected&&
    document.querySelector('#raceGrid')?.children.length>0,
    username,{timeout:25000});
+  await accountLibraryLoaded;
   assert.equal(stats.me,1,'The late session must be checked via /me');
   assert.equal(stats.guestLibrary,0,
    'A newly persisted account may not bootstrap an unrelated guest library');
