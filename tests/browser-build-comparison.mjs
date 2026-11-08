@@ -31,6 +31,9 @@ export async function runBuildComparisonSmoke(browser,base){
  page.on('pageerror',e=>errors.push(e.message));
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  // The compact comparison requires the validated calculator tables, unlike
+  // the retired snapshot-input comparison that could render while booting.
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('.build-card').first().waitFor({state:'visible',timeout:20000});
   assert.equal(await page.locator('.build-card').count(),3);
@@ -42,6 +45,12 @@ export async function runBuildComparisonSmoke(browser,base){
   await selects.nth(0).selectOption(idA);
   await selects.nth(1).selectOption(idB);
   const hp=panel.locator('[data-compare-row="stat.hp"]');
+  await page.waitForTimeout(500);
+  console.log('COMPARISON DIAGNOSTIC:',JSON.stringify({
+   status:await panel.locator('.build-compare-summary').innerText(),
+   rows:await panel.locator('[data-compare-row]').count(),
+   selected:await selects.evaluateAll(xs=>xs.map(x=>x.value))
+  }));
   await hp.waitFor({state:'visible',timeout:20000});
   assert.equal((await hp.locator('th').innerText()).trim(),'ОЗ');
   const hpA=(await hp.locator('[data-compare-a]').innerText()).trim();
