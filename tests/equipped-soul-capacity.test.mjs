@@ -97,7 +97,8 @@ test('app uses effective capacity in calculations, picker, tooltip and save-link
  const app=load('pandora-studio-app.js');
  for(const needle of [
   'socketCapacities:{}',
-  'socketCapacities:{...base.socketCapacities,...raw.socketCapacities}',
+  'socketCapacities:{...base.socketCapacities,...record(raw.socketCapacities)}',
+   'socketCapacities:{...base.socketCapacities,...record(draft.socketCapacities)}',
   'equippedSocketCapacity(snap,Number(slot),selection,item)',
   'equippedSocketCapacity(state,sourceSlot,item,source)',
   'equippedSocketCapacity(state,selectedSlot,equipped,record)',
