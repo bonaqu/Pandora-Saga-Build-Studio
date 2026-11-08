@@ -1,7 +1,7 @@
 (function(root){
 'use strict';
 // Read-only game-style tooltips; never evaluate server-provided text as HTML.
-let popup=null,current=null,pending=null;
+let popup=null,current=null,pending=null,removalObserver=null;
 function ensure(){
  if(!popup){
   popup=document.createElement('div');
@@ -18,11 +18,16 @@ function cancelPending(){
 }
 function dismiss(){
  cancelPending();
+ // Watch only while one tooltip is visible. Replacing its source DOM must
+ // never leave an orphaned tooltip floating over the new chapter.
+ removalObserver?.disconnect();
+ removalObserver=null;
  if(popup)popup.hidden=true;
  if(current){current.removeAttribute('aria-describedby');current=null}
 }
 function position(node){
- if(!popup||!node?.isConnected)return;
+ if(!popup)return;
+ if(!node?.isConnected){dismiss();return}
  const box=popup.getBoundingClientRect(),rect=node.getBoundingClientRect();
  const pad=8,ww=window.innerWidth,wh=window.innerHeight;
  let x=Math.min(Math.max(pad,rect.left),Math.max(pad,ww-box.width-pad));
@@ -56,6 +61,12 @@ function attach(node,text,{hoverDelay=0}={}){
   current=node;popup.textContent=text;popup.hidden=false;
   node.setAttribute('aria-describedby',popup.id);
   position(node);
+  if(typeof MutationObserver==='function'&&document.body){
+   removalObserver=new MutationObserver(()=>{
+    if(current===node&&!node.isConnected)dismiss();
+   });
+   removalObserver.observe(document.body,{childList:true,subtree:true});
+  }
  };
  node.addEventListener('pointerenter',event=>{
   if(event.pointerType==='touch')return;
@@ -88,6 +99,13 @@ function attach(node,text,{hoverDelay=0}={}){
  return node;
 }
 if(typeof document!=='undefined'){
+ // A click outside a tooltip's source and chapter navigation both invalidate
+ // the currently displayed explanation, including keyboard-created ones.
+ document.addEventListener('pointerdown',event=>{
+  if(current&&!current.contains(event.target))dismiss();
+ },{capture:true});
+ window.addEventListener('hashchange',dismiss);
+ window.addEventListener('popstate',dismiss);
  document.addEventListener('scroll',()=>{
   if(pending){
    const {node,show,delay}=pending;
