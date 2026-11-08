@@ -64,14 +64,21 @@ test('valid excess Souls survive a catalog capacity mismatch but remain inactive
  assert.equal(state.souls[5][1].id,202);
 });
 
-test('legacy ownerless Souls over the default can be recovered after choosing copy capacity',()=>{
+test('untracked legacy Souls cannot be attached to a different item by guessing its capacity',()=>{
  const state={equipment:{5:{id:13041}},souls:{5:[{id:201},{id:202}]},soulOwners:{}};
  const catalog={'13041':legs},souls={'201':{slots:['legs']},'202':{slots:['legs']}};
- assert.equal(P.reconcileSoulOwnership(state,catalog,souls),true,
-  'Restore a verified per-item ownership marker only');
- assert.equal(state.soulOwners[5],'13041');
- assert.equal(state.souls[5].length,2);
- assert.equal(P.reconcileSoulOwnership(state,catalog,souls),false,'Second refresh is stable');
+ assert.equal(P.reconcileSoulOwnership(state,catalog,souls),true);
+ assert.equal(state.souls[5],undefined,
+  'Without an old equipment owner marker, over-capacity assignment is unsafe');
+ assert.equal(state.soulOwners[5],undefined);
+});
+test('trusted owner marker retains an over-capacity Soul at a sparse higher position',()=>{
+ const state={equipment:{5:{id:13041}},souls:{5:[null,null,{id:201}]},
+  soulOwners:{5:'13041'}};
+ const source={'13041':legs},souls={'201':{slots:['legs']}};
+ assert.equal(P.reconcileSoulOwnership(state,source,souls),false);
+ assert.equal(state.souls[5][2].id,201);
+ assert.equal(P.socketReport(state.souls[5],1).excess,1);
 });
 
 test('changing gear ID or inserting incompatible Soul still rejects stale ownership',()=>{

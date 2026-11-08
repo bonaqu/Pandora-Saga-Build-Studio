@@ -64,21 +64,25 @@ function reconcileSoulOwnership(state,equipmentCatalog,soulCatalog){
    if(id==null){delete state.souls[slot];delete state.soulOwners[slot];changed=true}
    continue;
   }
-  const owner=state.soulOwners[slot];
-  // The saved Soul identity must belong to the SAME physical equipment ID.
-  // Source-verified incompatible slot types cannot be reassigned as valid.
-  const compatible=existing.every(entry=>{
+  const owner=state.soulOwners[slot],cap=equippedSocketCapacity(
+   state,Number(slot),equipment,item);
+  const validTypes=supportsSoulSlot(item.slot)&&existing.every(entry=>{
    const soul=soulCatalog[String(entry.id)];
    return !soul||validSoul(soul,item.slot);
   });
-  if(!compatible||(owner!=null&&String(owner)!==String(id))){
+  // Older files predate soulOwners and cannot prove which physical item
+  // received their Souls. Keep their original strict capacity gate to avoid
+  // moving stale Souls onto another item merely because their slot matches.
+  const legacyFits=cap!=null&&cap>0&&existing.length<=cap&&
+   positions.slice(cap).every(entry=>!entry);
+  if(!validTypes||(owner!=null&&String(owner)!==String(id))||
+   (owner==null&&!legacyFits)){
    delete state.souls[slot];delete state.soulOwners[slot];changed=true;continue;
   }
-  // A valid equipment instance can have more sockets than the catalog's
-  // default. Never destroy its extra Souls on snapshot refresh: the combat
-  // pipeline reads only the first equippedSocketCapacity() entries, and the
-  // existing socketReport() warns the player about inactive extra Souls.
-  // Increasing the copy's capacity restores them without requiring reinsert.
+  // An explicitly tracked SAME item can have more sockets than the catalog
+  // default. Do not erase excess Souls when its selected capacity is lower:
+  // the combat calculation reads only the allowed positions; socketReport()
+  // warns about inactive extras. Raising the copy capacity reactivates them.
   if(owner==null){state.soulOwners[slot]=String(id);changed=true}
  }
  for(const slot of Object.keys(state.soulOwners)){
