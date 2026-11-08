@@ -161,6 +161,8 @@
 
 
 /* Explicit formatting sync is not a gameplay change; keep it visually secondary. */
+.os-sync-formatting-review[hidden]{display:none}
+.os-sync-formatting-review{margin-top:9px}
 .os-sync-formatting-option{display:flex;align-items:center;gap:9px;cursor:pointer;
  margin:8px 0 2px;padding:10px 12px;border:1px solid #725134;
  border-radius:4px;background:#251a13;color:#e6c18b;font-size:12px}

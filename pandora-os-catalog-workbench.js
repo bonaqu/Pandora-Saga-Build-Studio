@@ -73,11 +73,14 @@
       text:'Доступно после сверки с игровым сайтом. Не изменяет характеристики, названия или эффекты. Действие выполняется только после подтверждения публикации.'});
     const formattingOption=h('label',{class:'os-sync-formatting-option'},
       [formattingToggle,formattingLabel]);
+    const formattingReview=h('div',{class:'os-sync-formatting-review',hidden:true},
+      [formattingOption,formattingInfo]);
+    reviewSteps.append(formattingReview);
     const metaStatus=h('p',{class:'muted os-sync-meta-status',
       text:'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.'});
     const advanced=h('details',{class:'os-sync-advanced'},[
       h('summary',{text:'Дополнительные инструменты'}),
-      formattingOption,formattingInfo,metaStatus,
+      metaStatus,
       h('p',{text:'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.'}),
       h('div',{class:'os-sync-advanced-actions'},[testWrite,github,exportButton])
     ]);
@@ -168,8 +171,8 @@
       formattingLabel.textContent='Привести переносы строк в описаниях к виду игрового сайта'+
         (formattingCount?' · '+formattingCount:'');
       formattingInfo.textContent=formattingCount
-        ?'Это '+formattingCount+' записей с описаниями, отличающимися только переносами строк. Игровые характеристики не меняются. По умолчанию выключено; для сохранения потребуется подтверждение.'
-        :'Отличий только в переносах нет. Отдельное обновление оформления не требуется.';
+        ?'В '+formattingCount+' описаниях можно восстановить оригинальные переносы игрового текста. Другие поля не меняются. Понадобятся галочка и подтверждение публикации.'
+        :'Оригинальные переносы игровых описаний уже совпадают.';
       acceptAll.disabled = busy || !changes.some(safe);
       declineAll.disabled = busy || !changes.length;
       publish.disabled = !ready;
@@ -178,6 +181,7 @@
       testWrite.disabled = busy;
       const reviewing=Boolean(baseline);
       reviewSteps.hidden=!reviewing||(!changes.length&&!formattingCount);
+      formattingReview.hidden=!reviewing||mode!=='server'||!formattingCount;
       for(const element of [filters,overview,search,results])element.hidden=!reviewing;
       const byKind={
         all:changes.length,added:changes.filter(row=>row.kind==='added').length,
