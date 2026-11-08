@@ -70,14 +70,31 @@ test('restored session is trusted only with canonical owner, token, future finit
  assert.equal(valid.events.login.length,1);
 });
 
-test('successful /me cannot silently rewrite the owner from Alice to Bob or guest',async()=>{
- for(const account of [{username:'bob_222'},{username:null},{},null]){
-  const c=create({stored:session(),fetchImpl:async()=>reply(account)});
+test('successful /me must reject a different verified owner',async()=>{
+ const c=create({stored:session(),fetchImpl:async()=>reply({username:'bob_222'})});
+ await c.init();
+ assert.equal(c.api.token(),null);
+ assert.equal(c.events.login.length,0);
+ assert.equal(c.events.logout.length,1);
+ assert.equal(c.storage.getItem('ps-account-session.v1'),null);
+});
+
+test('incomplete or unreadable HTTP 200 /me is offline, not credential revocation',async()=>{
+ const responses=[
+  async()=>reply({username:null}),
+  async()=>reply({}),
+  async()=>reply(null),
+  async()=>({ok:true,status:200,json:async()=>{throw Error('Invalid JSON')}})
+ ];
+ for(const fetchImpl of responses){
+  const c=create({stored:session(),fetchImpl});
   await c.init();
-  assert.equal(c.api.token(),null);
-  assert.equal(c.events.login.length,0);
-  assert.equal(c.events.logout.length,1);
-  assert.equal(c.storage.getItem('ps-account-session.v1'),null);
+  assert.equal(c.api.username(),'alice_01');
+  assert.equal(c.api.token(),'a'.repeat(43));
+  assert.equal(c.events.login.length,1);
+  assert.equal(c.events.logout.length,0);
+  assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'offline');
+  assert.equal(JSON.parse(c.storage.getItem('ps-account-session.v1')).username,'alice_01');
  }
 });
 

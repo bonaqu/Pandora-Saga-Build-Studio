@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 export async function runAccountSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev',token='t'.repeat(43);
- let calls=[],username=null,passwd=null,offlineMe=false,expiredMe=false,misidentifiedMe=false;
+ let calls=[],username=null,passwd=null,offlineMe=false,malformedMe=false,expiredMe=false,misidentifiedMe=false;
  let holdNextMe=false,releaseHeldMe=null,notifyHeldMe=null;
  let holdNextRegister=false,releaseHeldRegister=null,notifyHeldRegister=null;
  let holdNextPassword=false,releaseHeldPassword=null,notifyHeldPassword=null;
@@ -42,6 +42,7 @@ export async function runAccountSmoke(browser,base){
     }
     if(expiredMe)return send({error:'Sign in required'},401);
     if(offlineMe)return send({error:'Cloud temporarily unavailable'},503);
+    if(malformedMe)return send({account:{}});
     if(misidentifiedMe)return send({account:{username:'bob_222'}});
     return send({account:{username}});
    }
@@ -248,8 +249,21 @@ export async function runAccountSmoke(browser,base){
   await page.locator('.account-user').waitFor({state:'visible'});
   assert.equal((await page.locator('.account-user').innerText()).trim(),'@testplayer_01');
   assert.equal(await page.evaluate(()=>Boolean(localStorage.getItem('ps-account-session.v1'))),true);
+  // Some proxies return HTTP 200 with incomplete JSON while recovering.
+  // That is not evidence that this account's bearer has been revoked.
+  offlineMe=false;malformedMe=true;
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>
+   document.querySelector('#profileTrigger')?.dataset.accountBootstrap==='offline',
+   null,{timeout:15000});
+  assert.equal(await page.evaluate(()=>
+   JSON.parse(localStorage.getItem('ps-account-session.v1'))?.username),
+   'testplayer_01','Incomplete /me must not erase a persisted owner');
+  await page.locator('#profileTrigger').click();
+  await page.locator('.account-user').waitFor({state:'visible'});
+  assert.match(await page.locator('.account-user').innerText(),/testplayer_01/);
   // A confirmed server-side 401 must still clear the revoked session.
-  offlineMe=false;expiredMe=true;
+  malformedMe=false;expiredMe=true;
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#profileTrigger').click();
   await page.locator('.account-tabs').waitFor({state:'visible'});
@@ -320,6 +334,6 @@ export async function runAccountSmoke(browser,base){
   assert.equal(calls.filter(c=>c.path==='/api/library'&&c.body).length,cloudWritesBefore,
    'Mismatched /me identity must not create a new cross-owner saved-build PUT');
   assert.deepEqual(errors,[]);
-  console.log('Chromium account UI passed: registration, recovery rotation, transient 503 retention, 401 logout, mismatched 200 identity rejection');
+  console.log('Chromium account UI passed: registration, recovery rotation, 503/incomplete-200 retention, 401 logout, mismatched 200 identity rejection');
  }finally{await context.close()}
 }

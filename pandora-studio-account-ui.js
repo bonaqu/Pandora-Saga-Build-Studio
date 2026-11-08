@@ -359,7 +359,11 @@ async function init(config){
    // Never allow its late answer to switch or clear the new account.
    if(session?.token!==bootstrapToken||sessionRevision!==bootstrapRevision){finishBootstrap();return}
    const verified=validName(data?.account?.username);
-   if(!verified||verified!==expectedName){
+   // An incomplete HTTP 200 response does not prove credentials were
+   // revoked. Preserve the account as temporarily unverified, just like
+   // a transient network failure. A *different valid owner* is unsafe.
+   if(!verified)throw Error('Неполный ответ проверки аккаунта');
+   if(verified!==expectedName){
     const invalid=new Error('Некорректный владелец аккаунта');
     invalid.httpStatus=403;throw invalid;
    }
