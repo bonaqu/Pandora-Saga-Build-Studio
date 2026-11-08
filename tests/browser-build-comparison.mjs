@@ -29,10 +29,6 @@ export async function runBuildComparisonSmoke(browser,base){
   route.request().url().startsWith(base+'/')?route.continue():route.abort());
  const page=await context.newPage(),errors=[];
  page.on('pageerror',e=>errors.push(e.message));
- page.on('console',message=>{
-  if(message.type()==='warning'&&message.text().includes('Build comparison'))
-   console.log('CALCULATOR DIAGNOSTIC:',message.text());
- });
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   // The compact comparison requires the validated calculator tables, unlike
@@ -49,18 +45,6 @@ export async function runBuildComparisonSmoke(browser,base){
   await selects.nth(0).selectOption(idA);
   await selects.nth(1).selectOption(idB);
   const hp=panel.locator('[data-compare-row="stat.hp"]');
-  await page.waitForTimeout(500);
-  console.log('COMPARISON DIAGNOSTIC:',JSON.stringify({
-   status:await panel.locator('.build-compare-summary').innerText(),
-   rows:await panel.locator('[data-compare-row]').count(),
-   selected:await selects.evaluateAll(xs=>xs.map(x=>x.value)),
-   debug:await page.evaluate(()=>{
-    let live,verified,levels,probe;
-    try{live=window.eval('catalog.live');verified=window.eval('Boolean(gameTables)');levels=window.eval('races.length+":"+jobKeys.length');}catch(e){live=e.message}
-    try{probe=window.eval('previewBaseStats({race:1,job:16,level:10,stats:{},equipment:{},souls:{},refinements:{},gems:{},points:{},mastery:{},attributeBuffs:{},vitalsBuffs:{}})')?.hp??null}catch(e){probe=e.message}
-    return {live,verified,levels,probe};
-   })
-  }));
   await hp.waitFor({state:'visible',timeout:20000});
   assert.equal((await hp.locator('th').innerText()).trim(),'ОЗ');
   const hpA=(await hp.locator('[data-compare-a]').innerText()).trim();

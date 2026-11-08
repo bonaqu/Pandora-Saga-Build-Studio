@@ -5677,8 +5677,6 @@ function renderBuildComparison(host,onSelection=()=>{}){
    wrap.hidden=true;
    return;
   }
-  console.warn('Build comparison readiness',Boolean(catalog.live),Boolean(gameTables),
-   a.data?.race,a.data?.job,b.data?.race,b.data?.job);
   const [calcA,calcB]=window.PandoraBuildComparison.calculatePair(
    a.data,b.data,snap=>previewBaseStats(prepareSavedBuildSnapshot(snap)),
    Boolean(catalog.live&&gameTables));
