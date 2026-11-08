@@ -17,6 +17,7 @@ import {runOutfitSoulScrollSmoke} from './browser-outfit-soul-scroll-389.mjs';
 import {runFutureGearSmoke} from './browser-future-gear.mjs';
 import {runSavedAutosaveSmoke} from './browser-saved-autosave.mjs';
 import {runAccountSmoke} from './browser-account.mjs';
+import {runAccountLocalRecoveryFailureSmoke} from './browser-account-local-recovery.mjs';
 import {runAccountLateBootstrapSmoke} from './browser-account-late-bootstrap.mjs';
 import {runAccountLibraryIsolationSmoke} from './browser-account-isolation.mjs';
 import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs';
@@ -362,6 +363,7 @@ async function main(){
   ['future-level-gear',runFutureGearSmoke],
   ['manual-saved-overwrite',runSavedAutosaveSmoke],
   ['account-login',runAccountSmoke],
+  ['account-local-recovery',runAccountLocalRecoveryFailureSmoke],
   ['account-late-bootstrap',runAccountLateBootstrapSmoke],
   ['account-isolation',runAccountLibraryIsolationSmoke],
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
