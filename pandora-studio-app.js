@@ -1790,7 +1790,7 @@ function dismissSkillPreview(){
  activeSkillRemovalObserver?.disconnect();
  activeSkillRemovalObserver=null;
  activeSkillPreview?.remove();
- activeSkillPreviewOwner?.removeAttribute('aria-describedby');
+ window.PandoraGuideTooltip.unlinkDescription(activeSkillPreviewOwner,activeSkillPreview?.id);
  activeSkillPreview=null;activeSkillPreviewOwner=null;
 }
 function positionSkillPreview(button,tip){
@@ -1839,7 +1839,7 @@ function skillHover(button,skill){
    'Ещё '+(skills.length-3)+' навыков — нажмите на отметку'}));
   document.body.append(tip);
   activeSkillPreview=tip;activeSkillPreviewOwner=button;
-  button.setAttribute('aria-describedby',tip.id);
+  window.PandoraGuideTooltip.linkDescription(button,tip.id);
   positionSkillPreview(button,tip);
   if(typeof MutationObserver==='function'&&document.body){
    activeSkillRemovalObserver=new MutationObserver(()=>{
