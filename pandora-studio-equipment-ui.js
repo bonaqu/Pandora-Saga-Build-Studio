@@ -147,7 +147,7 @@ function summary(record,icon,kind='item',context=null){
 // loot and equipment links from opening a large item tooltip every time.
 // All item and Soul previews use this single controller and timing.
 const ITEM_PREVIEW_HOVER_DELAY_MS=650;
-let livePreview=null,liveTarget=null,pendingPreview=null;
+let livePreview=null,liveTarget=null,pendingPreview=null,liveRemovalObserver=null;
 function cancelPendingPreview(){
  if(!pendingPreview)return;
  clearTimeout(pendingPreview.timer);
@@ -156,6 +156,9 @@ function cancelPendingPreview(){
 let focusPreviewToken=0;
 function dismissPreview(){
  cancelPendingPreview();
+ // As with short Hero Book tooltips, observe only while rich preview exists.
+ liveRemovalObserver?.disconnect();
+ liveRemovalObserver=null;
  livePreview?.remove();
  liveTarget?.removeAttribute('aria-describedby');
  livePreview=null;liveTarget=null;
@@ -231,6 +234,12 @@ function attachPreview(target,record,icon,kind='item',context=null){
    Math.max(8,Math.min(vw-w-8,box.left+box.width/2-w/2));
   const y=Math.max(8,Math.min(vh-h-8,box.top));
   tip.style.left=x+'px';tip.style.top=y+'px';
+  if(typeof MutationObserver==='function'&&document.body){
+   liveRemovalObserver=new MutationObserver(()=>{
+    if(liveTarget===target&&!target.isConnected)dismissPreview();
+   });
+   liveRemovalObserver.observe(document.body,{childList:true,subtree:true});
+  }
  };
  const remove=()=>{
   if(liveTarget===target||pendingPreview?.target===target)dismissPreview();

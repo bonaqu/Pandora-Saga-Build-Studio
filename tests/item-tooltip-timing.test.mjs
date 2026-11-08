@@ -55,3 +55,17 @@ test('trade, loot, Honor cloak and equipped slot share the exact same preview co
  const css=read('pandora-studio-theme.css');
  assert.match(css,/\.stage-hover-preview\{position:fixed;[^}]*pointer-events:none/);
 });
+
+test('both rich previews dispose their DOM observers after source removal',()=>{
+ const item=read('pandora-studio-equipment-ui.js');
+ const app=read('pandora-studio-app.js');
+ for(const [source,observer,dismiss] of [
+  [item,'liveRemovalObserver','dismissPreview'],
+  [app,'activeSkillRemovalObserver','dismissSkillPreview']]){
+  assert.ok(source.includes(observer+'?.disconnect()'),dismiss+' must disconnect');
+  assert.match(source,/typeof MutationObserver==='function'&&document\.body/);
+  assert.match(source,/\.observe\(document\.body,\{childList:true,subtree:true\}\)/);
+ }
+ assert.match(item,/if\(liveTarget===target&&!target\.isConnected\)dismissPreview\(\)/);
+ assert.match(app,/if\(activeSkillPreviewOwner===button&&!button\.isConnected\)dismissSkillPreview\(\)/);
+});
