@@ -111,3 +111,26 @@ test('game item links and all trailing authored line breaks survive together',()
   'Дозор выдаёт Билет испытаний.\n\n\n');
  assert.equal(presenter.descriptionText(source,lookup,'ru').endsWith('\n\n\n'),true);
 });
+
+test('unchanged author description with repeated item links remains editable and byte-for-byte intact',()=>{
+ const source='Билет: <item 300001> и ещё <item 300001>.<br><br>Получено дважды.';
+ const visible=presenter.descriptionText(source,lookup,'ru');
+ assert.equal(visible,'Билет: Билет испытаний и ещё Билет испытаний.\n\nПолучено дважды.');
+ assert.equal(presenter.restoreReferences(visible,source,lookup,'ru'),source,
+  'Owner double-click save must not reject repeated source-linked items');
+});
+
+test('unchanged editor content never erases original markup or source line breaks',()=>{
+ const source='История.<br><b>Особая награда</b>: <item 300001>.<br><br><br>';
+ const visible=presenter.descriptionText(source,lookup,'ru');
+ assert.equal(visible,'История.\nОсобая награда: Билет испытаний.\n\n\n');
+ assert.equal(presenter.restoreReferences(visible,source,lookup,'ru'),source);
+});
+
+test('changed ambiguous item mentions still cannot be silently assigned to a wrong ID',()=>{
+ const source='Выдают <item 300001>, затем ещё <item 300001>.';
+ const visible=presenter.descriptionText(source,lookup,'ru');
+ assert.throws(()=>presenter.restoreReferences(visible+' Теперь доступно.',source,lookup,'ru'),
+  /встречается несколько раз/,
+  'A real edit requires disambiguation rather than guessing source linkage');
+});
