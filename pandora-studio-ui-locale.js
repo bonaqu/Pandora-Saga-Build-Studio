@@ -30,6 +30,12 @@ const strings={
 const english=Object.freeze({
  'Профиль':'Profile','Аккаунт':'Account','Войти или зарегистрироваться':'Sign in or register',
  'Профиль ·':'Profile ·','Профиль и вход':'Profile and sign in',
+ 'УЧЁТНАЯ ЗАПИСЬ':'ACCOUNT',
+ 'Облачные билды привязаны к вашему профилю':'Cloud builds belong to your account',
+ 'Выйти из аккаунта':'Sign out of account',
+ 'Некорректный ответ авторизации':'Invalid sign-in response',
+ 'Некорректный владелец аккаунта':'Account identity mismatch',
+ 'Ошибка сервера':'Server error',
  'Сохранённые билды доступны после входа на другом устройстве.':'Saved builds are available after signing in on another device.',
  'Логин и пароль — для доступа к сохранённым облачным билдам.':'Your username and password give access to your saved cloud builds.',
  'Текущий пароль':'Current password','Новый пароль · от 15 символов':'New password · at least 15 characters',
