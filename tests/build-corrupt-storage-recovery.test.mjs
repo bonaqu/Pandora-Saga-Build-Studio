@@ -9,7 +9,8 @@ const extract=(from,to)=>{
  return source.slice(start,end);
 };
 const rowsCode=extract('function safeStoredBuildRows(value){','\ntry{\n const saved=');
-const preparationCode=extract('function prepareSavedBuildSnapshot(raw){','\nfunction openSavedBuild(b){');
+const preparationCode=extract('function prepareSavedBuildSnapshot(raw){','\nfunction switchActiveDraft(snapshot,id){');
+const transitionCode=extract('function switchActiveDraft(snapshot,id){','\nfunction openSavedBuild(b){');
 const openerCode=extract('function openSavedBuild(b){','\nfunction unsavedBuild(){');
 const id='a'.repeat(32),other='b'.repeat(32);
 const baseState=()=>({
@@ -18,21 +19,22 @@ const baseState=()=>({
  vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},
  attributeBuffs:{guildAll:0},profile:{guild:''}
 });
-function setup(library){
+function setup(library,{canPersist=true}={}){
  const selected=[],events=[],messages=[];
  const initial=baseState();
- const context=Function('records','initial','selected','events','messages',
+ const context=Function('records','initial','selected','events','messages','canPersist',
   'let builds=records,state=structuredClone(initial),activeBuildId='+JSON.stringify(other)+';'+
-  'const lang="ru";'+
+  'const lang="ru",races=[];'+
+  'const window={PandoraUIPlanner:{normalizeGender:(_r,_race,gender)=>gender}};'+
   'const selectActiveBuild=id=>{activeBuildId=id;selected.push(id)};'+
   'const showStudioToast=(message,status)=>messages.push({message,status});'+
   'const fresh=()=>structuredClone(initial);'+
   'const restoreLoadedBuildUI=()=>events.push("restore");'+
-  'const persist=()=>events.push("persist");'+
+  'const persist=()=>{events.push("persist");return canPersist};'+
   'const render=()=>events.push("render");'+
   'const changeTab=tab=>events.push(tab);\n'+
-  preparationCode+'\n'+openerCode+
-  '\nreturn {open:openSavedBuild,state:()=>state,active:()=>activeBuildId};')(library,initial,selected,events,messages);
+  preparationCode+'\n'+transitionCode+'\n'+openerCode+
+  '\nreturn {open:openSavedBuild,state:()=>state,active:()=>activeBuildId};')(library,initial,selected,events,messages,canPersist);
  return {...context,selected,events,messages,initial};
 }
 
@@ -87,7 +89,7 @@ test('older incomplete build gets safe nested defaults without changing saved da
  assert.equal(ctx.state().vitalsBuffs.lifeSign,false);
  assert.deepEqual(ctx.state().mastery,{slash:0});
  assert.deepEqual(ctx.state().profile,{guild:''});
- assert.deepEqual(ctx.events,['restore','persist','render','character']);
+ assert.deepEqual(ctx.events,['persist','restore','render','character']);
  assert.deepEqual(saved.data,previous,'Opening must not rewrite saved records');
 });
 
@@ -131,4 +133,17 @@ test('saved copy retains its own Soul capacity; damaged nested records stay isol
  assert.deepEqual(recovered.state().vitalsBuffs,{guildHp:0,guildMp:0,lifeSign:false});
  assert.deepEqual(recovered.state().gems,{});
  assert.deepEqual(recovered.state().soulOwners,{});
+});
+
+test('quota failure opening a saved build retains current draft and active selection',()=>{
+ const saved={id,data:{level:55,name:'Recovered local build',stats:{vit:7}}};
+ const ctx=setup([saved],{canPersist:false});
+ const prior=structuredClone(ctx.state());
+ assert.equal(ctx.open(saved),false);
+ assert.deepEqual(ctx.state(),prior,'In-memory hero must remain unchanged');
+ assert.equal(ctx.active(),other,'Failed activation must not alter the active ID');
+ assert.deepEqual(ctx.selected,[],'No active ID write can occur before persisting');
+ assert.deepEqual(ctx.events,['persist'],'No redraw should discard the current editor');
+ assert.equal(ctx.messages[0].status,'error');
+ assert.match(ctx.messages[0].message,/черновик/);
 });

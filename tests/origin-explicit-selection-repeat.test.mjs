@@ -14,7 +14,7 @@ const os=JSON.parse(read('data/os/tables.json'));
 
 test('a clean character and New Build require explicit race/class selection',()=>{
  assert.match(app,/function fresh\(\)\{return\{race:null,gender:0,job:null,level:1/);
- assert.match(app,/function newBlankBuild\(\)\{\s*selectActiveBuild\(null\);state=fresh\(\)/);
+ assert.match(app,/function newBlankBuild\(\)\{\s*if\(!switchActiveDraft\(fresh\(\),null\)\)return false/);
  assert.match(app,/function previewBaseStats\(snap=state\)\{[\s\S]*?return null;/);
  assert.match(app,/function attributeSnapshot\(\)\{\s*if\(!Number\.isInteger\(state\.race\)\|\|!Number\.isInteger\(state\.job\)\)return null/);
  assert.match(app,/originCopyLabel\(select,chosen\?'raceChosen':'raceChoose'/);
