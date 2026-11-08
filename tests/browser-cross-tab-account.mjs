@@ -180,12 +180,18 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
      'access-control-allow-methods':'GET,POST,OPTIONS'},
     body:JSON.stringify({account:{username:'bob_222'}})});
   });
+  // A profile can show "pending" before fetch reaches Playwright routing.
+  // Observe the actual GET first, then assert the intermediate UI state.
+  const meStarted=tabC.waitForRequest(request=>
+   request.method()==='GET'&&request.url().startsWith(api+'/api/account/me'),
+   {timeout:20000});
   const thirdLogin=login(tabC,tokenB,'bob_222');
   // Observe rejection immediately. A failed pending-state assertion may close
   // the context before login() finishes; preserve the first useful failure
   // instead of crashing Node with an unhandled page.evaluate rejection.
   void thirdLogin.catch(()=>{});
   try{
+   await meStarted;
    try{
     await tabC.waitForFunction(()=>{
      const profile=document.querySelector('#profileTrigger');
@@ -204,7 +210,6 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
      JSON.stringify({requested:delayedMeTriggered,guestLibraryBeforeMe,diagnostics})+
      '; '+error.message);
    }
-   assert.equal(delayedMeTriggered,true,'Third-tab /me must actually be gated');
    assert.equal(guestLibraryBeforeMe,0,
     'Pending verified owner must not request the guest library');
   }finally{releaseMe();}
