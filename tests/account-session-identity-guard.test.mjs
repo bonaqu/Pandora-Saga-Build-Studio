@@ -37,7 +37,7 @@ function create({stored=null,clock=Date,fetchImpl=async()=>({ok:true,status:200,
   fetch:fetchImpl,Date:clock,console};
  vm.runInNewContext(script,ctx);
  const options={baseUrl:'https://example.invalid',
-  onLogin:e=>{events.login.push(e);onBootstrapLogin?.(e)},
+  onLogin:e=>{events.login.push(e);return onBootstrapLogin?.(e)},
   onLogout:e=>events.logout.push(e),
   onGuest:e=>{events.guest.push(e);return onBootstrapGuest?.(e)}};
  return {api:root.PandoraAccountUI,helper:root.__accountTest,events,
