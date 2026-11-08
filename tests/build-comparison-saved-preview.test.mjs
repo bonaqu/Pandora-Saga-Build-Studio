@@ -41,6 +41,6 @@ test('malformed builds fail before opening/calculating without editing their pay
 });
 test('A/B calls shared read-only preparation instead of calculating incomplete saved data',()=>{
  assert.match(app,/a\.data,b\.data,snap=>previewBaseStats\(prepareSavedBuildSnapshot\(snap\)\)/);
- assert.match(app,/next=prepareSavedBuildSnapshot\(latest\.data\)/);
+ assert.match(app,/next=\{\.\.\.base,\.\.\.draft/);
  assert.match(app,/PandoraBuildComparison\.compactResults\(/);
 });

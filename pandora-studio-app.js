@@ -5744,6 +5744,8 @@ function prepareSavedBuildSnapshot(raw){
  };
 }
 function openSavedBuild(b){
+ // Resolve the latest snapshot, but never change the active character until
+ // that saved record has been cloned and structurally prepared successfully.
  if(!b||typeof b!=='object')return false;
  const latest=builds.find(record=>record.id===b.id)||b;
  if(!latest.data||typeof latest.data!=='object'||Array.isArray(latest.data)){
@@ -5752,8 +5754,23 @@ function openSavedBuild(b){
   return false;
  }
  let next;
- try{next=prepareSavedBuildSnapshot(latest.data)}
- catch(error){
+ try{
+  const draft=structuredClone(latest.data),base=fresh();
+  const record=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+  next={...base,...draft,
+   points:{...base.points,...record(draft.points)},
+   mastery:{...base.mastery,...record(draft.mastery)},
+   stats:{...base.stats,...record(draft.stats)},
+   equipment:{...base.equipment,...record(draft.equipment)},
+   souls:{...base.souls,...record(draft.souls)},
+   soulOwners:{...base.soulOwners,...record(draft.soulOwners)},
+   socketCapacities:{...base.socketCapacities,...record(draft.socketCapacities)},
+   refinements:{...base.refinements,...record(draft.refinements)},
+   gems:{...base.gems,...record(draft.gems)},
+   vitalsBuffs:{...base.vitalsBuffs,...record(draft.vitalsBuffs)},
+   attributeBuffs:{...base.attributeBuffs,...record(draft.attributeBuffs)},
+   profile:{...base.profile,...record(draft.profile)}};
+ }catch(error){
   showStudioToast(lang==='en'?'This saved build could not be restored.':
    'Не удалось восстановить сохранённый билд.','warning');
   return false;
