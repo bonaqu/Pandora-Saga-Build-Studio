@@ -101,3 +101,13 @@ test('reviewed Halloween archive descriptions retain real game item links',()=>{
   assert.doesNotMatch(segments.map(piece=>piece.text).join(''),/<item|<br/);
  }
 });
+
+
+test('game item links and all trailing authored line breaks survive together',()=>{
+ const source='Дозор выдаёт <item 300001>.<br><br><br>';
+ const pieces=presenter.descriptionSegments(source,lookup,'ru');
+ assert.equal(pieces.find(p=>p.type==='item')?.text,'Билет испытаний');
+ assert.equal(pieces.map(piece=>piece.text).join(''),
+  'Дозор выдаёт Билет испытаний.\n\n\n');
+ assert.equal(presenter.descriptionText(source,lookup,'ru').endsWith('\n\n\n'),true);
+});

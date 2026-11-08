@@ -88,3 +88,27 @@ test('localized item names prefer the active language without translating origin
  assert.equal(item.id,19022);
  assert.deepEqual(item.name,{ru:'Кольцо метели',en:'Blizzard Ring'});
 });
+
+
+test('every game-authored source break survives, including trailing and triple breaks',()=>{
+ const raw='Первая строка<br>Вторая<br/><br><BR />Третья<BR><br>';
+ const shown='Первая строка\nВторая\n\n\nТретья\n\n';
+ assert.equal(p.description(raw),shown);
+ assert.equal(p.description(shown),shown);
+ const windows='First\r\n\r\nSecond<BR />Third<br/>Fourth\n\n\nFifth';
+ assert.equal(p.description(windows),'First\n\nSecond\nThird\nFourth\n\n\nFifth');
+});
+
+test('actual RU/EN game source keeps terminal breaks from items and souls',()=>{
+ const items=JSON.parse(readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+ const souls=JSON.parse(readFileSync(new URL('../data/os/souls.json',import.meta.url),'utf8'));
+ const en=JSON.parse(readFileSync(new URL('../data/os/strings.en.json',import.meta.url),'utf8'));
+ assert.match(items['422'].desc,/<br>$/);
+ assert.equal(p.description(items['422'].desc).endsWith('\n'),true);
+ assert.match(items['2841'].desc,/<br><br>$/);
+ assert.equal(p.description(items['2841'].desc).endsWith('\n\n'),true);
+ assert.match(souls['101004'].desc,/<br>$/);
+ assert.equal(p.description(souls['101004'].desc).endsWith('\n'),true);
+ assert.match(en.items['2841'].d,/<br><br>$/);
+ assert.equal(p.description(en.items['2841'].d).endsWith('\n\n'),true);
+});
