@@ -253,7 +253,21 @@ window.PandoraBuildScope.migrateLegacyGuest(localStorage,tabGuestSecret);
 // Claim existing pre-upgrade local records for their former owner without losing them.
 activateLibraryScope({initial:true});
 async function cloudLibraryRequest(payload,secret=null){
- const bearer=secret||window.PandoraAccountUI?.token()||tabGuestSecret;
+ let bearer=secret;
+ if(!bearer){
+  // token() may expire the session and synchronously invoke onLogout().
+  // Never redirect an account's cloud request to its unrelated guest key.
+  const expectedOwner=tabOwnerScope;
+  const credential=window.PandoraAccountUI?.token()||null;
+  if(!expectedOwner||tabOwnerScope!==expectedOwner||
+   libraryScopeId()!==expectedOwner||
+   expectedOwner.startsWith('account:')&&!credential){
+   const error=new Error('Владелец библиотеки изменился: облачный запрос не отправлен');
+   error.reason='owner_changed';
+   throw error;
+  }
+  bearer=credential||tabGuestSecret;
+ }
  // An unreachable Worker must not leave "Checking cloud" spinning forever.
  const signal=typeof AbortSignal!=='undefined'&&
   typeof AbortSignal.timeout==='function'?AbortSignal.timeout(payload?25000:20000):null;
@@ -290,6 +304,8 @@ async function putCloudBuild(entry){
      'Сохранено в браузере · исходная облачная запись недоступна':
     error.reason==='deleted'?
      'Сохранено в браузере · исходный билд в облаке уже удалён':
+    error.reason==='owner_changed'?
+     'Аккаунт изменился · синхронизация остановлена':
      'Сохранено в браузере · облако недоступно');
   return false;
  }
