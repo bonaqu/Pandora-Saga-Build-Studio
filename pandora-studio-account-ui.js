@@ -373,6 +373,7 @@ async function init(config){
   panel.querySelector?.('.account-bootstrap-pending')?.remove();
   if(forceBootstrapRender||!panel.hasChildNodes?.())render();
  };
+ try{
  if(session){
   const bootstrapToken=session.token,expectedName=session.username,
    bootstrapRevision=sessionRevision;
@@ -410,9 +411,14 @@ async function init(config){
   // failures must not relabel valid credentials as offline or retry a
   // potentially stateful account switch twice.
   if(session?.token===bootstrapToken&&sessionRevision===bootstrapRevision)
-   options.onLogin?.({register:false,bootstrap:true});
- }else options.onGuest?.();
- finishBootstrap();
+   await options.onLogin?.({register:false,bootstrap:true});
+ }else await options.onGuest?.();
+ }finally{
+  // Local library callbacks are not the /me HTTP result. Even if a
+  // concurrent tab or full browser storage interrupts owner activation,
+  // the profile must not keep a stale "checking account" message.
+  finishBootstrap();
+ }
 }
 // A header RU/EN switch re-renders the profile even if its popover was
 // closed by the outside-click handler. Keep edits in the current form and its
