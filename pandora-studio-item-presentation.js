@@ -107,6 +107,10 @@ const description=source=>descriptionText(source,defaultItemLookup,defaultLangua
 // edits the description. Ambiguous names are never silently bound to an ID.
 function restoreReferences(edited,source,lookupItem,lang='ru'){
  let result=String(edited);
+ // No visual text changed: keep every original authored <br>, <b> and
+ // <item N> reference verbatim. Searching visible item names otherwise
+ // falsely rejects even an unchanged description with repeated links.
+ if(result===descriptionText(source,lookupItem,lang))return String(source);
  const references=descriptionSegments(source,lookupItem,lang)
   .filter(part=>part.type==='item'&&part.exists);
  for(const reference of references){
