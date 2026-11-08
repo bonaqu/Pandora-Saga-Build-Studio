@@ -19,7 +19,7 @@ function catalog(identity='local'){
   instances:[{id:1,name:'Dungeon',mobs:[1]}],
   drops:{1:{d:[]}},trades:{trades:[{id:1,i:1,npc:[1]}],
    npcs:{1:{name:'Merchant'}},mapNames:{}},
-  tables:{zoneDrops:[]},chests:{boxes:[{i:1,rolls:[[]]}]},
+  tables:{zoneDrops:[]},chests:{boxes:[{i:1,rolls:[[]]}],npc:[]},
   skills:{1:{id:1,name:'Racial Passive',skillType:'PASSIVE',branch:'race'}},
   racialPassives:{HUMAN:{raceId:1,key:'HUMAN',skills:[1]}},
   souls:{1:{id:1,name:'Soul',icon:'I_000001_00'}}
@@ -236,4 +236,39 @@ test('encyclopedia rejects a forged D1 provenance despite matching snapshot IDs'
  await assert.rejects(loader.load({api:'https://worker.example',
   fetcher:strict.fetcher,strict:true}),/не подтвердил источник D1/);
  assert.equal(strict.paths.filter(path=>path.startsWith('./data/os/')).length,0);
+});
+
+test('NPC chest links, exchange keys and gold-only rewards are validated like regular chests',async()=>{
+ const catalogGood=catalog('good');
+ catalogGood.chests.npc=[{i:1,key:1,rolls:[[
+  {i:1,n:1,p:80},{gold:[100,200],p:20}
+ ]]}];
+ catalogGood.chests.masterKey=1;
+ assert.doesNotThrow(()=>loader.validate(catalogGood),
+  'Gold reward has no item ref; source item/key links are valid');
+
+ const missingNpcShape=structuredClone(catalogGood);
+ delete missingNpcShape.chests.npc;
+ assert.throws(()=>loader.validate(missingNpcShape),/Неверный формат сундуков/);
+
+ const brokenKey=structuredClone(catalogGood);
+ brokenKey.chests.npc[0].key=999;
+ assert.throws(()=>loader.validate(brokenKey),/ключ сундука/);
+
+ const brokenReward=structuredClone(catalogGood);
+ brokenReward.chests.npc[0].rolls[0][0].i=999;
+ assert.throws(()=>loader.validate(brokenReward),/награда сундука/);
+
+ const brokenMaster=structuredClone(catalogGood);
+ brokenMaster.chests.masterKey=999;
+ assert.throws(()=>loader.validate(brokenMaster),/универсальный ключ/);
+
+ const remote=mockFetch(brokenReward,catalogGood);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:remote.fetcher,strict:true}),/награда сундука/,
+  'A broken D1 NPC chest must not be silently accepted as healthy');
+ const fallback=mockFetch(brokenReward,catalogGood);
+ const result=await loader.load({api:'https://worker.example',fetcher:fallback.fetcher});
+ assert.equal(result.source,'local');
+ assert.equal(result.data.chests.npc[0].rolls[0][0].i,1);
 });
