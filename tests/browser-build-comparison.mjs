@@ -53,7 +53,13 @@ export async function runBuildComparisonSmoke(browser,base){
   console.log('COMPARISON DIAGNOSTIC:',JSON.stringify({
    status:await panel.locator('.build-compare-summary').innerText(),
    rows:await panel.locator('[data-compare-row]').count(),
-   selected:await selects.evaluateAll(xs=>xs.map(x=>x.value))
+   selected:await selects.evaluateAll(xs=>xs.map(x=>x.value)),
+   debug:await page.evaluate(()=>{
+    let live,verified,levels,probe;
+    try{live=window.eval('catalog.live');verified=window.eval('Boolean(gameTables)');levels=window.eval('races.length+":"+jobKeys.length');}catch(e){live=e.message}
+    try{probe=window.eval('previewBaseStats({race:1,job:16,level:10,stats:{},equipment:{},souls:{},refinements:{},gems:{},points:{},mastery:{},attributeBuffs:{},vitalsBuffs:{}})')?.hp??null}catch(e){probe=e.message}
+    return {live,verified,levels,probe};
+   })
   }));
   await hp.waitFor({state:'visible',timeout:20000});
   assert.equal((await hp.locator('th').innerText()).trim(),'ОЗ');
