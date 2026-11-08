@@ -84,7 +84,9 @@ test('approved Pages origin can read both D1 provenance and snapshot headers',as
 });
 
 test('read-only capabilities disclose required catalog precondition',async()=>{
- const response=await worker.fetch(new Request(API+'/api/runtime-capabilities'),{});
+ const response=await worker.fetch(new Request(API+'/api/runtime-capabilities'),{
+  DB:{prepare(){throw Error('Capabilities must not query D1')}}
+ });
  assert.equal(response.status,200);
  const flags=await response.json();
  assert.equal(flags.codeRelease,'0.361.0');
