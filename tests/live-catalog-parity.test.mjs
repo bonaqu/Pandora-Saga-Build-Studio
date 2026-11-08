@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DATASETS,compareCatalog,describeCatalogDifference} from '../scripts/audit-live-catalog-parity.mjs';
+import {DATASETS,compareCatalog,describeCatalogDifference,describeDescriptionDrift} from '../scripts/audit-live-catalog-parity.mjs';
 
 test('read-only audit includes every player-facing D1 catalog dataset',()=>{
  assert.deepEqual(DATASETS,['items','skills','souls','monsters','drops','maps',
@@ -63,4 +63,29 @@ test('live drift diagnostics handle scalar dictionary values and invalid structu
  assert.match(describeCatalogDifference(local,remote,'stringsEn'),/changed records 1/);
  assert.doesNotMatch(describeCatalogDifference(local,remote,'stringsEn'),/red|blue/);
  assert.equal(describeCatalogDifference(null,remote,'items'),'incompatible JSON structure');
+});
+
+test('description drift separates line breaks, rich text, links and content',()=>{
+ const a={1:{desc:'Sword.ATK +1'},2:{desc:'Fancy.'},
+  3:{desc:'Contains .'},4:{desc:'ATK +2'}};
+ const b={1:{desc:'Sword.<br>ATK +1'},2:{desc:'<b>Fancy.</b>'},
+  3:{desc:'Contains <item 300001>.'},4:{desc:'ATK +5'}};
+ const old=JSON.stringify([a,b]);
+ assert.deepEqual(describeDescriptionDrift(a,b,'items'),{
+  lineBreaks:1,inlineMarkup:1,itemReferences:1,otherText:1
+ });
+ assert.equal(compareCatalog(a,b,'items').equal,false,
+  'Formatting differences must not be hidden from strict parity');
+ assert.equal(JSON.stringify([a,b]),old);
+});
+
+test('English nested locale descriptions are classified without leaking translations',()=>{
+ const source={items:{1:{n:'Sword',d:'Cut.+2'}},souls:{3:{n:'Soul',d:'HP +1'}}};
+ const live={items:{1:{n:'Sword',d:'Cut.<br>+2'}},souls:{3:{n:'Soul',d:'HP +9'}}};
+ assert.deepEqual(describeDescriptionDrift(source,live,'stringsEn'),{
+  lineBreaks:1,inlineMarkup:0,itemReferences:0,otherText:1
+ });
+ assert.equal(compareCatalog(source,live,'stringsEn').equal,false);
+ const summary=JSON.stringify(describeDescriptionDrift(source,live,'stringsEn'));
+ assert.doesNotMatch(summary,/Sword|Cut|Soul|HP/);
 });
