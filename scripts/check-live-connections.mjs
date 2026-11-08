@@ -1,6 +1,7 @@
 /* Read-only diagnostic of Pages <-> Cloudflare Worker <-> D1.
    No secrets, account login, database mutation or GitHub Actions. Node 20+. */
 import {readFileSync} from 'node:fs';
+import {classifyGameSource} from './source-egress-status.mjs';
 const site='https://bonaqu.github.io/Pandora-Saga-Build-Studio/';
 const worker='https://ps-build-studio-cloud.bonaqu.workers.dev';
 const origin='https://bonaqu.github.io';
@@ -95,6 +96,21 @@ try{
 }catch(error){
  console.log('WARN Worker runtime capability marker — '+error.message);
 }
+
+ // A published D1 catalog may work even if the Worker cannot reach the
+ // external game source right now. Probe egress, not merely API capability.
+try{
+ const {response,payload}=await read(worker+'/api/source-health',{cors:true});
+ const signal=classifyGameSource(response.status,payload);
+ console.log((signal.healthy?'OK  ':'WARN')+
+  ' Worker to current-game source — '+
+  (signal.healthy?'game source reachable':'upstream temporarily unavailable; D1 checked separately')+
+  ' / HTTP '+response.status+
+  (signal.healthy?'':' / '+signal.reason));
+}catch(error){
+ console.log('WARN Worker to current-game source — probe unavailable; D1 checked separately');
+}
+
 try{
  const {response}=await read(worker+'/api/health',{method:'OPTIONS',cors:true});
  check(response.status===204&&response.headers.get('access-control-allow-origin')===origin,
