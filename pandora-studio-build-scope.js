@@ -74,6 +74,15 @@ function setOwned(storage,scope,key,value){
    return true;
   }
   const previous=storage.getItem(key);
+  // The other tab may claim the shared primary keys on the value read above,
+  // AFTER the earlier marker check. Persist to Alice's own recovery cache
+  // instead of writing her new record into Bob's currently active slots.
+  if(storage.getItem(MARKER)!==scope){
+   const own=storedSnapshot(storage,scope);
+   own[index]=next;
+   storage.setItem(slot(scope),JSON.stringify(own));
+   return true;
+  }
   try{
    if(next==='')storage.removeItem(key);else storage.setItem(key,next);
   }catch(error){

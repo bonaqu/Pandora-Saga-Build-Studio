@@ -403,3 +403,48 @@ test('getOwned never returns a different account primary key after a tab switch'
  assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob saved');
  assert.equal(store.getItem(mod.MARKER),ownerB);
 });
+
+test('a second tab cannot steal shared primary writes when owner changes on last value read',()=>{
+ const values=[
+  [keys[0],JSON.stringify([{name:'Alice library'}]),
+   JSON.stringify([{name:'Bob library'}]),JSON.stringify([{name:'Alice updated library'}])],
+  [keys[1],JSON.stringify({name:'Alice draft'}),
+   JSON.stringify({name:'Bob draft'}),JSON.stringify({name:'Alice updated draft'})],
+  [keys[2],JSON.stringify(['a'.repeat(32)]),
+   JSON.stringify(['b'.repeat(32)]),JSON.stringify(['c'.repeat(32)])],
+  [keys[3],'a'.repeat(32),'b'.repeat(32),'c'.repeat(32)]
+ ];
+ for(const [key,alice,bob,updated] of values){
+  const store=storage();
+  mod.transition(store,ownerA);
+  mod.setOwned(store,ownerA,key,alice);
+  mod.setOwned(store,ownerB,key,bob);
+  let reads=0,switched=false;
+  const interleaved={
+   getItem:name=>{
+    // First read belongs to snapshot(), second to the final previous-value
+    // lookup. Bob's switch must happen exactly BETWEEN the marker check
+    // and the old unconditional primary write.
+    if(name===key&&++reads===2){
+     switched=true;
+     mod.transition(store,ownerB);
+    }
+    return store.getItem(name);
+   },
+   setItem:(name,value)=>store.setItem(name,value),
+   removeItem:name=>store.removeItem(name)
+  };
+  assert.equal(mod.setOwned(interleaved,ownerA,key,updated),true);
+  assert.equal(switched,true,key);
+  assert.equal(store.getItem(mod.MARKER),ownerB);
+  assert.equal(store.getItem(key),bob,
+   key+' must retain Bob primary slot, not Alice incoming value');
+  assert.equal(mod.getOwned(store,ownerA,key),updated,
+   'Alice edit belongs only to Alice recovery slot: '+key);
+  assert.equal(mod.getOwned(store,ownerB,key),bob);
+  mod.transition(store,ownerA);
+  assert.equal(store.getItem(key),updated);
+  mod.transition(store,ownerB);
+  assert.equal(store.getItem(key),bob);
+ }
+});
