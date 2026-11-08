@@ -235,3 +235,89 @@ test('failure setting the new owner marker rolls back already-written primary da
  assert.equal(s.getItem(mod.MARKER),ownerA);
  assert.equal(JSON.parse(mod.getOwned(s,ownerB,keys[0]))[0].id,'Bob inactive');
 });
+
+
+test('cross-tab owner switch during a draft save preserves both recovery copies',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[1],JSON.stringify({name:'Alice original',level:45}));
+ mod.setOwned(store,ownerB,keys[1],JSON.stringify({name:'Bob own',level:55}));
+ const newDraft=JSON.stringify({name:'Alice edited',level:46});
+ let switched=false;
+ const interleaved={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   store.setItem(key,value);
+   // Model an actual second browser tab switching the shared owner while
+   // the first tab is committing its owner-specific recovery snapshot.
+   if(key==='ps-build-scope-cache.v1:'+ownerA&&!switched){
+    switched=true;
+    mod.transition(store,ownerB);
+   }
+  }
+ };
+ assert.equal(mod.setOwned(interleaved,ownerA,keys[1],newDraft),true);
+ assert.equal(switched,true);
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+ assert.equal(JSON.parse(store.getItem(keys[1])).name,'Bob own',
+  'Alice may not overwrite Bob active primary draft after the owner switches');
+ assert.equal(JSON.parse(mod.getOwned(store,ownerA,keys[1])).name,'Alice edited',
+  'The concurrent switch must not erase Alice just-saved recovery draft');
+ assert.equal(JSON.parse(mod.getOwned(store,ownerB,keys[1])).name,'Bob own');
+ mod.transition(store,ownerA);
+ assert.equal(JSON.parse(store.getItem(keys[1])).name,'Alice edited');
+ mod.transition(store,ownerB);
+ assert.equal(JSON.parse(store.getItem(keys[1])).name,'Bob own');
+});
+
+test('owner marker changing while gathering the primary snapshot selects scoped cache',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Alice original'}]));
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob original'}]));
+ let markerReads=0,switched=false;
+ const interleaved={
+  getItem:key=>{
+   if(key===mod.MARKER&&++markerReads===2){
+    mod.transition(store,ownerB);
+    switched=true;
+   }
+   return store.getItem(key);
+  },
+  setItem:(key,value)=>store.setItem(key,value),
+  removeItem:key=>store.removeItem(key)
+ };
+ const saved=JSON.stringify([{name:'Alice saved'}]);
+ mod.setOwned(interleaved,ownerA,keys[0],saved);
+ assert.equal(switched,true);
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob original');
+ assert.equal(JSON.parse(mod.getOwned(store,ownerA,keys[0]))[0].name,'Alice saved');
+});
+
+test('failure mirroring to primary rolls back newly saved scoped backup',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Alice original'}]));
+ const previousPrimary=store.getItem(keys[0]);
+ const backupKey='ps-build-scope-cache.v1:'+ownerA;
+ const previousBackup=store.getItem(backupKey);
+ let failed=false;
+ const fragile={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   if(key===keys[0]&&!failed){
+    failed=true;
+    throw Error('Simulated failure mirroring current owner to primary');
+   }
+   store.setItem(key,value);
+  }
+ };
+ assert.throws(()=>mod.setOwned(fragile,ownerA,keys[0],
+  JSON.stringify([{name:'Alice unsaved'}])),/Simulated failure mirroring/);
+ assert.equal(failed,true);
+ assert.equal(store.getItem(keys[0]),previousPrimary);
+ assert.equal(store.getItem(backupKey),previousBackup,
+  'Failed primary write must not commit a newer recovery version');
+});
