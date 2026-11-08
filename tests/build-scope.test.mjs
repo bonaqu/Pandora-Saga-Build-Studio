@@ -378,3 +378,28 @@ test('transition aborts if another tab takes ownership while reading old keys',(
  assert.equal(mod.getOwned(store,ownerA,keys[1]),aliceBefore);
  assert.equal(JSON.parse(mod.getOwned(store,ownerB,keys[1])).name,'Bob draft');
 });
+
+test('getOwned never returns a different account primary key after a tab switch',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Alice saved'}]));
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob saved'}]));
+ let switched=false;
+ const interleaved={
+  getItem:key=>{
+   if(key===keys[0]&&!switched){
+    switched=true;
+    mod.transition(store,ownerB);
+   }
+   return store.getItem(key);
+  },
+  setItem:(key,value)=>store.setItem(key,value),
+  removeItem:key=>store.removeItem(key)
+ };
+ const read=JSON.parse(mod.getOwned(interleaved,ownerA,keys[0]));
+ assert.equal(switched,true);
+ assert.equal(read[0].name,'Alice saved',
+  'Alice reader must use Alice backup after Bob claims primary keys');
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob saved');
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+});
