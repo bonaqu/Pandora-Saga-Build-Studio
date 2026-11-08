@@ -9,7 +9,7 @@ const extract=(from,to)=>{
  return source.slice(start,end);
 };
 const rowsCode=extract('function safeStoredBuildRows(value){','\ntry{\n const saved=');
-const preparationCode=extract('function prepareSavedBuildSnapshot(raw){','\nfunction openSavedBuild(b){');
+const preparationCode=extract('function prepareSavedBuildSnapshot(raw){','\nfunction switchActiveDraft(snapshot,id){');
 const transitionCode=extract('function switchActiveDraft(snapshot,id){','\nfunction openSavedBuild(b){');
 const openerCode=extract('function openSavedBuild(b){','\nfunction unsavedBuild(){');
 const id='a'.repeat(32),other='b'.repeat(32);

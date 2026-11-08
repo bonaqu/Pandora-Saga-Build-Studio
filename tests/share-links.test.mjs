@@ -57,7 +57,7 @@ test('opening a local named build keeps all old and future fields; shared Astir 
  assert.match(app,/const draft=structuredClone\(raw\),base=fresh\(\)/);
  assert.match(app,/next=prepareSavedBuildSnapshot\(latest\.data\)/);
  assert.match(app,/if\(!switchActiveDraft\(next,latest\.id\)\)return false/);
- assert.match(app,/state=next;/);
+ assert.match(app,/state=snapshot;/);
  assert.match(app,/const previousLegwear=item\(original\.displacedLegwear\)/);
  assert.match(app,/safe\.displacedLegwear=previousLegwear/);
 });
