@@ -36,8 +36,12 @@ function storedSnapshot(storage,scope){
 function getOwned(storage,scope,key){
  if(!validScope(scope)||!KEYS.includes(key))throw Error('Invalid owner or storage key');
  const index=KEYS.indexOf(key);
- return storage.getItem(MARKER)===scope?
-  storage.getItem(key)??DEFAULTS[index]:
+ if(storage.getItem(MARKER)!==scope)
+  return storedSnapshot(storage,scope)[index]??DEFAULTS[index];
+ const value=storage.getItem(key);
+ // Another tab can claim the primary slots after the marker read but before
+ // our value read. Fall back to this owner's independent backup instead.
+ return storage.getItem(MARKER)===scope?value??DEFAULTS[index]:
   storedSnapshot(storage,scope)[index]??DEFAULTS[index];
 }
 function setOwned(storage,scope,key,value){
