@@ -321,3 +321,85 @@ test('failure mirroring to primary rolls back newly saved scoped backup',()=>{
  assert.equal(store.getItem(backupKey),previousBackup,
   'Failed primary write must not commit a newer recovery version');
 });
+
+test('sync refuses a mixed owner snapshot when another tab switches mid-read',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Alice saved'}]));
+ mod.setOwned(store,ownerA,keys[1],JSON.stringify({name:'Alice draft'}));
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob saved'}]));
+ mod.setOwned(store,ownerB,keys[1],JSON.stringify({name:'Bob draft'}));
+ const originalDraft=mod.getOwned(store,ownerA,keys[1]);
+ let switched=false;
+ const interleaved={
+  getItem:key=>{
+   if(key===keys[1]&&!switched){
+    switched=true;
+    mod.transition(store,ownerB);
+   }
+   return store.getItem(key);
+  },
+  setItem:(key,value)=>store.setItem(key,value),
+  removeItem:key=>store.removeItem(key)
+ };
+ assert.equal(mod.sync(interleaved),false);
+ assert.equal(switched,true);
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+ assert.equal(mod.getOwned(store,ownerA,keys[1]),originalDraft,
+  'Bob draft must not replace Alice owner-specific recovery draft');
+ assert.equal(JSON.parse(mod.getOwned(store,ownerB,keys[1])).name,'Bob draft');
+});
+
+test('transition aborts if another tab takes ownership while reading old keys',()=>{
+ const store=storage(),ownerC=mod.owner('charlie_03','a'.repeat(64));
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Alice saved'}]));
+ mod.setOwned(store,ownerA,keys[1],JSON.stringify({name:'Alice draft'}));
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob saved'}]));
+ mod.setOwned(store,ownerB,keys[1],JSON.stringify({name:'Bob draft'}));
+ const aliceBefore=mod.getOwned(store,ownerA,keys[1]);
+ let switched=false;
+ const interleaved={
+  getItem:key=>{
+   if(key===keys[1]&&!switched){
+    switched=true;
+    mod.transition(store,ownerB);
+   }
+   return store.getItem(key);
+  },
+  setItem:(key,value)=>store.setItem(key,value),
+  removeItem:key=>store.removeItem(key)
+ };
+ assert.throws(()=>mod.transition(interleaved,ownerC),
+  /Library owner changed in another tab/);
+ assert.equal(switched,true);
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob saved');
+ assert.equal(mod.getOwned(store,ownerA,keys[1]),aliceBefore);
+ assert.equal(JSON.parse(mod.getOwned(store,ownerB,keys[1])).name,'Bob draft');
+});
+
+test('getOwned never returns a different account primary key after a tab switch',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Alice saved'}]));
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob saved'}]));
+ let switched=false;
+ const interleaved={
+  getItem:key=>{
+   if(key===keys[0]&&!switched){
+    switched=true;
+    mod.transition(store,ownerB);
+   }
+   return store.getItem(key);
+  },
+  setItem:(key,value)=>store.setItem(key,value),
+  removeItem:key=>store.removeItem(key)
+ };
+ const read=JSON.parse(mod.getOwned(interleaved,ownerA,keys[0]));
+ assert.equal(switched,true);
+ assert.equal(read[0].name,'Alice saved',
+  'Alice reader must use Alice backup after Bob claims primary keys');
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob saved');
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+});
