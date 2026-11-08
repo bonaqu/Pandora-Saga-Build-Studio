@@ -67,3 +67,18 @@ test('active selection is not inherited from another account when no owned build
  assert.deepEqual(runtime.builds(),[]);
  assert.equal(runtime.state().level,1);
 });
+
+test('owner-scoped draft isolates damaged nested capacities without rewriting the cache',()=>{
+ const s=storage();scope.transition(s,alice);
+ const damaged={level:45,socketCapacities:'broken',mastery:[],
+  gems:'bad',vitalsBuffs:[3],profile:{guild:'Guild A'}};
+ scope.setOwned(s,alice,'ps-build-studio.v1',JSON.stringify(damaged));
+ const original=s.getItem('ps-build-studio.v1');
+ const runtime=make(s,{current:alice});runtime.restore();
+ assert.deepEqual(runtime.state().socketCapacities,{});
+ assert.deepEqual(runtime.state().mastery,{});
+ assert.deepEqual(runtime.state().gems,{});
+ assert.deepEqual(runtime.state().vitalsBuffs,{});
+ assert.equal(runtime.state().profile.guild,'Guild A');
+ assert.equal(s.getItem('ps-build-studio.v1'),original);
+});

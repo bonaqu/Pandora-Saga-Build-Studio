@@ -89,12 +89,21 @@ try{
  if(saved){
   const parsed=JSON.parse(saved);
   if(parsed&&typeof parsed==='object'&&!Array.isArray(parsed)){
-   const base=fresh();
+   const base=fresh(),record=value=>value&&typeof value==='object'&&
+    !Array.isArray(value)?value:{};
    state={...base,...parsed,
-    points:{...base.points,...parsed.points},stats:{...base.stats,...parsed.stats},
-    refinements:{...base.refinements,...parsed.refinements},
-    attributeBuffs:{...base.attributeBuffs,...parsed.attributeBuffs},
-    profile:{...base.profile,...parsed.profile}};
+    points:{...base.points,...record(parsed.points)},
+    mastery:{...base.mastery,...record(parsed.mastery)},
+    stats:{...base.stats,...record(parsed.stats)},
+    equipment:{...base.equipment,...record(parsed.equipment)},
+    souls:{...base.souls,...record(parsed.souls)},
+    soulOwners:{...base.soulOwners,...record(parsed.soulOwners)},
+    socketCapacities:{...base.socketCapacities,...record(parsed.socketCapacities)},
+    refinements:{...base.refinements,...record(parsed.refinements)},
+    gems:{...base.gems,...record(parsed.gems)},
+    vitalsBuffs:{...base.vitalsBuffs,...record(parsed.vitalsBuffs)},
+    attributeBuffs:{...base.attributeBuffs,...record(parsed.attributeBuffs)},
+    profile:{...base.profile,...record(parsed.profile)}};
   }
  }
 }catch(error){console.warn('Character draft could not be restored',error)}
@@ -172,13 +181,22 @@ function restoreScopedDraft({initial=false}={}){
   localStorage,libraryScopeId(),key);
  try{
   const raw=JSON.parse(readOwned('ps-build-studio.v1')||'null');
-  const base=fresh();state=raw&&typeof raw==='object'&&!Array.isArray(raw)?
-   {...base,...raw,points:{...base.points,...raw.points},
+  const base=fresh(),record=value=>value&&typeof value==='object'&&
+   !Array.isArray(value)?value:{};
+  state=raw&&typeof raw==='object'&&!Array.isArray(raw)?
+   {...base,...raw,points:{...base.points,...record(raw.points)},
+    mastery:{...base.mastery,...record(raw.mastery)},
     masteryFormat:raw.masteryFormat===2?2:1,
-    stats:{...base.stats,...raw.stats},equipment:{...base.equipment,...raw.equipment},
-    souls:{...base.souls,...raw.souls},soulOwners:{...base.soulOwners,...raw.soulOwners},
-    socketCapacities:{...base.socketCapacities,...raw.socketCapacities},refinements:{...base.refinements,...raw.refinements},
-    gems:{...base.gems,...raw.gems},attributeBuffs:{...base.attributeBuffs,...raw.attributeBuffs},profile:{...base.profile,...raw.profile}}:base;
+    stats:{...base.stats,...record(raw.stats)},
+    equipment:{...base.equipment,...record(raw.equipment)},
+    souls:{...base.souls,...record(raw.souls)},
+    soulOwners:{...base.soulOwners,...record(raw.soulOwners)},
+    socketCapacities:{...base.socketCapacities,...record(raw.socketCapacities)},
+    refinements:{...base.refinements,...record(raw.refinements)},
+    gems:{...base.gems,...record(raw.gems)},
+    vitalsBuffs:{...base.vitalsBuffs,...record(raw.vitalsBuffs)},
+    attributeBuffs:{...base.attributeBuffs,...record(raw.attributeBuffs)},
+    profile:{...base.profile,...record(raw.profile)}}:base;
  }catch{state=fresh()}
  try{
   const rows=JSON.parse(readOwned('ps-build-library.v1')||'[]');
@@ -5779,7 +5797,7 @@ function openSavedBuild(b){
  let next;
  try{
   const draft=structuredClone(latest.data),base=fresh();
-  const record=value=>value&&typeof value==='object'?value:{};
+  const record=value=>value&&typeof value==='object'&&!Array.isArray(value)?value:{};
   next={...base,...draft,
    points:{...base.points,...record(draft.points)},
    mastery:{...base.mastery,...record(draft.mastery)},
@@ -5787,6 +5805,7 @@ function openSavedBuild(b){
    equipment:{...base.equipment,...record(draft.equipment)},
    souls:{...base.souls,...record(draft.souls)},
    soulOwners:{...base.soulOwners,...record(draft.soulOwners)},
+   socketCapacities:{...base.socketCapacities,...record(draft.socketCapacities)},
    refinements:{...base.refinements,...record(draft.refinements)},
    gems:{...base.gems,...record(draft.gems)},
    vitalsBuffs:{...base.vitalsBuffs,...record(draft.vitalsBuffs)},

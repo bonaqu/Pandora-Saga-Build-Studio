@@ -8,7 +8,7 @@ import {runCloudSaveFailureSmoke} from './browser-cloud-save-failure.mjs';
 import {runDeletedBuildRecoverySmoke} from './browser-deleted-recovery.mjs';
 import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs';
 import {runEquipmentLocaleSmoke} from './browser-equipment-locale.mjs';
-import {runEquippedSoulCapacitySmoke} from './browser-equipped-soul-capacity.mjs';
+import {runEquippedSoulCapacitySmoke,runSavedSocketRecoverySmoke} from './browser-equipped-soul-capacity.mjs';
 import {runRefinementTooltipSmoke} from './browser-refinement-tooltip.mjs';
 import {runItemHoverDelaySmoke} from './browser-item-hover-delay.mjs';
 import {runLegacySkillCapSmoke} from './browser-legacy-skill-cap.mjs';
@@ -335,6 +335,7 @@ async function main(){
   ['equipment-eligibility',runEquipmentEligibilitySmoke],
   ['equipment-locale',runEquipmentLocaleSmoke],
   ['per-item-soul-capacity',runEquippedSoulCapacitySmoke],
+  ['saved-copy-socket-recovery',runSavedSocketRecoverySmoke],
   ['equipment-forge-bonuses',runRefinementTooltipSmoke],
   ['item-preview-delay',runItemHoverDelaySmoke],
   ['legacy-class-cap',runLegacySkillCapSmoke],

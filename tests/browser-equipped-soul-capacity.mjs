@@ -118,3 +118,42 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   console.log('Chromium Soul recovery: two saved leg Souls survive one-socket catalog and activate with item override');
  }finally{await old.close()}
 }
+
+export async function runSavedSocketRecoverySmoke(browser,base){
+ const context=await browser.newContext({viewport:{width:1366,height:900}});
+ const saved={id:'c'.repeat(32),name:'Старый билд со слотами',
+  data:{race:1,gender:0,job:7,level:45,name:'Старый билд со слотами',
+   equipment:{5:{id:13041,name:'Железные поножи'}},
+   socketCapacities:'invalid'}};
+ await context.addInitScript(saved=>{
+  localStorage.setItem('ps-build-library-secret.v1','e'.repeat(64));
+  localStorage.setItem('ps-build-library.v1',JSON.stringify([saved]));
+ },saved);
+ await context.route('**/*',route=>route.request().url().startsWith(base+'/')?
+  route.continue():route.abort());
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ try{
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.waitForFunction(()=>document.querySelector('#catalogStatus')
+   ?.textContent?.includes('предметов'),null,{timeout:25000});
+  await page.locator('#nav [data-tab="builds"]').click();
+  const card=page.locator('.build-card').first();
+  await card.waitFor({state:'visible'});
+  await card.getByRole('button',{name:'Открыть',exact:true}).click();
+  const choice=card.locator('.build-open-choice');
+  if(await choice.isVisible())
+   await choice.getByRole('button',{name:'Открыть без сохранения'}).click();
+  await page.waitForFunction(()=>document.querySelector('#levelOut')?.textContent==='45');
+  await page.locator('.equipment-slot[data-slot-index="5"]').click();
+  const option=page.locator('#stagePicker [data-socket-capacity="2"]');
+  await option.waitFor({state:'visible'});
+  await option.click();
+  assert.equal(await option.getAttribute('aria-pressed'),'true');
+  const draft=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
+  assert.equal(draft.socketCapacities['5:13041'],2,
+   'Opening malformed data must permit setting copy capacity');
+  assert.deepEqual(errors,[]);
+  console.log('Chromium saved build: invalid socket data can be corrected via UI');
+ }finally{await context.close()}
+}
