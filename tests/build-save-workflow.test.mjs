@@ -27,7 +27,7 @@ test('saved build identity survives closing and reopening the browser',()=>{
  assert.match(src,/PandoraBuildScope\.setOwned\(localStorage,libraryScopeId\(\),ACTIVE_BUILD_KEY,id\)/);
  assert.match(src,/builds\.some\(b=>b\.id===id\)\?id:null/);
  assert.match(src,/function newBlankBuild\(\)\{\s*if\(!switchActiveDraft\(fresh\(\),null\)\)return false/);
- assert.match(src,/selectActiveBuild\(null\);state=incoming/);
+ assert.match(src,/if\(!switchActiveDraft\(incoming,null\)\)return false/);
 });
 
 test('new-build confirmation survives a background library rerender and retains draft input',()=>{
