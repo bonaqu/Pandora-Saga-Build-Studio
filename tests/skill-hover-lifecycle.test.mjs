@@ -16,7 +16,8 @@ test('skill previews have one 650ms hover policy without instant mouseenter',()=
 test('rich skill preview cleans up aria and avoids dead timers when navigating',()=>{
  assert.match(controller,/window\.PandoraGuideTooltip\.unlinkDescription\(activeSkillPreviewOwner,activeSkillPreview\?\.id\)/);
  assert.match(controller,/if\(pendingSkillPreview\?\.button===button\|\|activeSkillPreviewOwner===button\)/);
- assert.match(controller,/window\.PandoraGuideTooltip\.linkDescription\(button,tip\.id\)/);\n assert.match(controller,/button\.addEventListener\('pointerleave',clear\)/);
+ assert.match(controller,/window\.PandoraGuideTooltip\.linkDescription\(button,tip\.id\)/);
+ assert.match(controller,/button\.addEventListener\('pointerleave',clear\)/);
  assert.match(controller,/button\.addEventListener\('pointerdown',clear\)/);
  assert.match(controller,/button\.addEventListener\('click',clear\)/);
  assert.match(controller,/event\.key!=='Escape'/);
