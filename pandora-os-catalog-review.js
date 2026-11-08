@@ -59,9 +59,59 @@
     return plain(value) ? value : {};
   }
 
+
+  // Localized dungeon copy is a project-authored extension, not an OS game stat.
+  // Only the six previously reviewed quest translations may be imported.
+  const approvedRuInstanceIds=new Set([
+    20030040,20030070,20030080,20030090,20030100,20030110
+  ]);
+  function indexedInstances(rows){
+    if(!Array.isArray(rows))return null;
+    const map=new Map();
+    for(const row of rows){
+      if(!plain(row)||!Number.isSafeInteger(row.id)||row.id<1||map.has(row.id))
+        return null;
+      map.set(row.id,row);
+    }
+    return map;
+  }
+  // Never overwrite a D1 translation or reinterpret an outdated archived
+  // quest. Every other field must match BOTH D1 and current official OS.
+  function sourceMatchedRussianInstances(published,current,archive){
+    const old=indexedInstances(published);
+    const live=indexedInstances(current);
+    const saved=indexedInstances(archive);
+    if(!old||!live||!saved||old.size!==live.size)return [];
+    const verified=[];
+    for(const [id,row] of old){
+      if(!approvedRuInstanceIds.has(id)||Object.hasOwn(row,'blurbRu'))continue;
+      const game=live.get(id),archived=saved.get(id);
+      if(!game||!archived||Object.hasOwn(game,'blurbRu'))continue;
+      const {blurbRu,...sourceRow}=archived;
+      if(typeof blurbRu!=='string'||!blurbRu.trim()||
+         !strictEqual(row,game)||!strictEqual(row,sourceRow))continue;
+      verified.push({id,name:row.name,blurbRu});
+    }
+    return verified;
+  }
+  // Official OS may omit the project's RU localization entirely. Keep an
+  // existing authored RU description when its English source has not changed.
+  function preserveRussianInstances(published,current){
+    const old=indexedInstances(published);
+    if(!old||!Array.isArray(current))return current;
+    return current.map(row=>{
+      const prior=old.get(row?.id);
+      if(!plain(row)||!prior||Object.hasOwn(row,'blurbRu')||
+         typeof prior.blurbRu!=='string'||!prior.blurbRu.trim()||
+         prior.blurb!==row.blurb)return row;
+      return {...row,blurbRu:prior.blurbRu};
+    });
+  }
+
   function changes(dataset, previous, current) {
     const oldRecords = entries(dataset, previous);
-    const newRecords = entries(dataset, current);
+    const newRecords = entries(dataset, dataset==='instances'?
+      preserveRussianInstances(previous,current):current);
     const result = [];
     for (const key of new Set([...Object.keys(oldRecords), ...Object.keys(newRecords)])) {
       if (equal(oldRecords[key], newRecords[key])) continue;
@@ -132,7 +182,8 @@
     }
   }
 
-  function compose(previous, current, accepted, sourceFiles, {syncFormatting=false}={}) {
+  function compose(previous, current, accepted, sourceFiles,
+    {syncFormatting=false,syncRussianInstances=false,localInstances=null}={}) {
     if (!plain(previous?.meta) || !plain(current?.meta) || !Array.isArray(sourceFiles)) {
       throw Error('Incomplete OS catalog sources');
     }
@@ -155,6 +206,19 @@
         for(const change of formattingChanges(dataset,previous[dataset],current[dataset]))
           putRecord(output,change);
       }
+    }
+    if(syncRussianInstances){
+      const verified=sourceMatchedRussianInstances(
+        previous.instances,current.instances,localInstances);
+      if(!verified.length)throw Error('Нет подтверждённых русских описаний для публикации');
+      const original=indexedInstances(previous.instances);
+      const additions=new Map(verified.map(row=>[row.id,row.blurbRu]));
+      output.instances=output.instances.map(row=>{
+        if(!additions.has(row?.id))return row;
+        if(!strictEqual(row,original?.get(row.id)))
+          throw Error('Для подземелья выбраны несовместимые игровые изменения');
+        return {...row,blurbRu:additions.get(row.id)};
+      });
     }
     // Server metadata may change independently of equipment or skills.
     // Never auto-apply its cap/version/hash without the owner's selection.
@@ -207,6 +271,8 @@
   }
 
   root.PandoraOSCatalogReview = Object.freeze({
-    atomicDatasets, labels, id, changes, formattingChanges, compose, retainLegacyRows, equal, strictEqual, metadataOnlyTechnical
+    atomicDatasets, labels, id, changes, formattingChanges, compose,
+    sourceMatchedRussianInstances, preserveRussianInstances,
+    retainLegacyRows, equal, strictEqual, metadataOnlyTechnical
   });
 })(typeof window === 'undefined' ? globalThis : window);

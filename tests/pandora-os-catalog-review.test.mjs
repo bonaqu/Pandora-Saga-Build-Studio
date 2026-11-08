@@ -231,3 +231,52 @@ test('BR variants and consecutive source paragraphs are preserved literally with
   'an exact published game snapshot retains verified source fingerprints');
  assert.equal(approved.meta.curated,undefined);
 });
+
+test('only six verified project RU dungeon translations can be proposed',()=>{
+ const source=JSON.parse(readFileSync(new URL('data/os/instances.json',root),'utf8'));
+ const stripped=source.map(({blurbRu,...row})=>row);
+ const found=review.sourceMatchedRussianInstances(stripped,stripped,source);
+ assert.equal(found.length,6);
+ assert.deepEqual(plain(found.map(x=>x.name)),source.map(x=>x.name));
+ assert.equal(review.sourceMatchedRussianInstances(stripped,stripped,[]).length,0);
+ const modified=plain(stripped);modified[0].mobs.push(123);
+ const verified=review.sourceMatchedRussianInstances(modified,stripped,source);
+ assert.equal(verified.length,5,'a changed monster relation cannot inherit an archived translation');
+ const edited=plain(stripped);edited[1].blurbRu='Текст администратора';
+ assert.equal(review.sourceMatchedRussianInstances(edited,stripped,source).length,5,
+  'never replace an existing admin translation');
+ const badArchive=plain(source);badArchive[2].blurb+=' (old)';
+ assert.equal(review.sourceMatchedRussianInstances(stripped,stripped,badArchive).length,5,
+  'different English originals cannot authorize copying RU text');
+});
+test('reviewed source-matched RU translations use staged composition, preserving gameplay and IDs',()=>{
+ const archived=JSON.parse(readFileSync(new URL('data/os/instances.json',root),'utf8'));
+ const published=snapshot(),game=snapshot();
+ const withoutRu=archived.map(({blurbRu,...row})=>row);
+ published.instances=plain(withoutRu);game.instances=plain(withoutRu);
+ const selected=review.compose(published,game,new Set(),files,
+  {syncRussianInstances:true,localInstances:archived});
+ assert.deepEqual(plain(selected.instances),archived);
+ assert.equal(selected.meta.curated,true);
+ assert.equal(selected.meta.sha,undefined,'a locally translated snapshot cannot claim official source SHA');
+ assert.deepEqual(plain(published.instances),withoutRu,'read-only baseline must not be changed');
+ assert.throws(()=>review.compose(published,game,new Set(),files,
+  {syncRussianInstances:true,localInstances:[]}),/Нет подтверждённых/);
+ const gameChanged=plain(game);gameChanged.instances[0].blurb+=' changed';
+ assert.equal(review.sourceMatchedRussianInstances(published.instances,gameChanged.instances,archived).length,5);
+});
+test('published RU descriptions stay in D1 when official OS omits them',()=>{
+ const archived=JSON.parse(readFileSync(new URL('data/os/instances.json',root),'utf8'));
+ const published=snapshot(),game=snapshot();
+ published.instances=plain(archived);
+ game.instances=archived.map(({blurbRu,...row})=>row);
+ assert.equal(review.changes('instances',published.instances,game.instances).length,0);
+ const result=review.compose(published,game,new Set(),files);
+ assert.deepEqual(plain(result.instances),archived);
+ const gameplayChanged=plain(game);gameplayChanged.instances[0].blurb+=' (updated)';
+ const changes=review.changes('instances',published.instances,gameplayChanged.instances);
+ assert.equal(changes.length,1);
+ assert.equal(changes[0].kind,'changed');
+ assert.equal(changes[0].after[1].blurbRu,archived[1].blurbRu,
+  'unrelated localized scenario must survive a selected game update');
+});
