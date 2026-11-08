@@ -110,7 +110,7 @@ test('comparison uses visible results without exposing historical allocation key
  const view=app.slice(begin,end);
  assert.match(view,/PandoraStageAttributes\.summaryRows\(calcB\)/);
  assert.doesNotMatch(view,/statLabels:|Ловкость','Agility|Сноровка','Dexterity/);
- assert.match(code,/ORIGIN_STAT_LABELS/);
+ assert.match(app,/ORIGIN_STAT_LABELS/);
 });
 
 test('legacy short comparison never prints unknown honor-title IDs',()=>{
