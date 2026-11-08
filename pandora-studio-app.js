@@ -5863,10 +5863,22 @@ async function connectCloudLibrary(secret,feedback){
    return true;
   }
   const previousGuest=tabGuestSecret;
-  localStorage.setItem(CLOUD_TOKEN_KEY,trimmed);
   tabGuestSecret=trimmed;
-  activateLibraryScope({carry:true,
-   carryFrom:window.PandoraBuildScope.owner(null,previousGuest)});
+  try{
+   activateLibraryScope({carry:true,
+    carryFrom:window.PandoraBuildScope.owner(null,previousGuest)});
+   // Persist the new secret LAST. A failed owner switch must not make next
+   // reload silently select a different library and strand the old one.
+   localStorage.setItem(CLOUD_TOKEN_KEY,trimmed);
+  }catch(error){
+   tabGuestSecret=previousGuest;
+   // The previous durable secret remains untouched. Restore the old visible
+   // scope too; if browser storage stays broken, a reload still finds the
+   // original key rather than the uncommitted transfer key.
+   try{activateLibraryScope()}
+   catch(rollbackError){console.warn('Previous library recovery failed',rollbackError)}
+   throw error;
+  }
   selectActiveBuild(null);libraryChangeId++;
   feedback.textContent=tr('Подключено. Объединяем сохранения…','Connected. Merging saved builds…');
   void loadCloudBuilds();

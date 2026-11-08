@@ -111,7 +111,8 @@ test('English cloud transfer keeps existing owner/secret safety checks and repor
  const ctx=connectHarness('en',{records:library}),feedback={textContent:''};
  assert.equal(await ctx.connect(otherSecret,feedback),true);
  assert.match(feedback.textContent,/Connected\. Merging saved builds/);
- assert.deepEqual(ctx.actions,['store','scope','selected:null','refresh']);
+ assert.deepEqual(ctx.actions,['scope','store','selected:null','refresh'],
+  'Guest transfer must commit its durable key only after owner activation');
  assert.equal(ctx.store.get('ps-build-library-secret.v1'),otherSecret);
  assert.equal(ctx.secret(),otherSecret);
  assert.equal(ctx.changeId(),1);
