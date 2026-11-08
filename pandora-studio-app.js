@@ -955,7 +955,7 @@ function renderJobs(){
  const selectedProfession=byKey.get(jobKeys[state.job])||null;
  const selectedCurrent=Boolean(current&&state.job===current.i);
  for(let k=jobKeys[state.job];k&&byKey.has(k);k=parentOf(k))activeAncestors.add(k);
- const progress=h('div',{class:'class-wizard-progress','aria-label':'Этап выбора профессии'});
+ const progress=h('div',{class:'class-wizard-progress','aria-label':tr('Этап выбора профессии','Class selection stages')});
  const stepNames=[['stepDirection','Направление','Direction'],
   ['stepProfession','Профессия','Profession'],
   ['stepSpecialization','Специализация','Specialization']];
@@ -981,7 +981,7 @@ function renderJobs(){
   text:originCopy('classSelectedPrefix','✓ Выбрано: ','✓ Selected: ')+selectedProfession.name}));
  grid.append(top);
  if(path.length){
-  const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':'Вернуться на предыдущий уровень'});
+  const crumbs=h('div',{class:'class-wizard-breadcrumbs','aria-label':tr('Вернуться на предыдущий уровень','Return to a previous class selection stage')});
   crumbs.append(h('button',{type:'button',text:tr('Все направления','All directions'),onclick:()=>{jobPathKey=null;renderJobs();saveView()}}));
   for(const node of path)crumbs.append(h('button',{type:'button',text:node.name,
    class:selectedProfession?.key===node.key?'selected':'','aria-current':node.key===jobPathKey?'step':null,
@@ -1005,13 +1005,17 @@ function renderJobs(){
    selectedOnPath?'✓ '+selectedProfession.name:
    hasChildren?originCopy('classSpecializations','Специализации ›','Specializations ›'):
    originCopy('classChoose','Выбрать','Select');
+  const choiceExplanation=selectedOnPath?
+   tr(' — выбранная специализация ',' — selected specialization ')+selectedProfession.name:
+   state.job===node.i?tr(' — выбрано',' — selected'):
+   hasChildren?tr(' — перейти к специализациям',' — view specializations'):
+   tr(' — выбрать профессию',' — select class');
   const specialties=Object.entries(catalog.classes?.[node.key]?.branchCaps||{})
    .filter(([,cap])=>Number(cap)>0).sort((a,b)=>Number(b[1])-Number(a[1]))
    .slice(0,2).map(([key])=>catalog.meta?.branchLabels?.[key]||key);
   choices.append(h('button',{type:'button',class:'class-wizard-choice'+(state.job===node.i?' active':'')+
     (activeAncestors.has(node.key)?' on-path':''),
-    'aria-label':node.name+(selectedOnPath?' — выбранная специализация '+selectedProfession.name:
-     state.job===node.i?' — выбрано':hasChildren?' — перейти к специализациям':' — выбрать профессию'),
+    'aria-label':node.name+choiceExplanation,
     'aria-pressed':String(state.job===node.i),
     onclick:()=>{
      if(hasChildren){jobPathKey=node.key;renderJobs();saveView();return}

@@ -22,3 +22,17 @@ test('Origin and shared skill previews translate UI controls while preserving ga
  assert.match(origin,/Racial passives will appear when the game catalog loads/);
  assert.match(code,/const STATS=/);
 });
+
+test('class wizard screen-reader labels follow RU and EN language state',()=>{
+ const start=code.indexOf('function renderJobs(){');
+ const end=code.indexOf('let workbenchReturnFocus=',start);
+ assert.ok(start>=0&&end>start);
+ const ui=code.slice(start,end);
+ for(const value of [
+  "class:'class-wizard-progress','aria-label':tr('Этап выбора профессии','Class selection stages')",
+  "class:'class-wizard-breadcrumbs','aria-label':tr('Вернуться на предыдущий уровень','Return to a previous class selection stage')",
+  "tr(' — выбранная специализация ',' — selected specialization ')",
+  "tr(' — перейти к специализациям',' — view specializations')",
+  "'aria-label':node.name+choiceExplanation"
+ ])assert.ok(ui.includes(value),'Missing localized accessibility text: '+value);
+});
