@@ -186,3 +186,40 @@ test('strict production Wiki refuses a broken D1 snapshot instead of silently lo
   /souls HTTP 503/);
  assert.equal(mock.paths.filter(url=>url.startsWith('./data/os/')).length,0);
 });
+
+test('obsolete source hashes cannot rewrite D1 gameplay stats using a stale archive',async()=>{
+ const remote=catalog('remote'),archive=catalog('archive');
+ const oldD1={ 'monster/monster.csv':'e1fd89f70113314a',
+  'monster/monster_dropitem.csv':'685de58dcd1e1758',
+  'monster/spdrop_item.csv':'1ab5e9493f456a2f'};
+ const oldArchive={'monster/monster.csv':'b99edf06cb49f754',
+  'monster/monster_dropitem.csv':'db74bd36aa98c301',
+  'monster/spdrop_item.csv':'e2b35f9dad68f0f3'};
+ remote.meta.sha=oldD1;archive.meta.sha=oldArchive;
+ remote.meta.counts.monsters=2;archive.meta.counts.monsters=2;
+ remote.monsters['43650']={id:43650,name:'Boss',life:3000000,resists:{physical:20}};
+ archive.monsters['43650']={id:43650,name:'Boss',life:5000000,resists:{physical:10}};
+ const mock=mockFetch(remote,archive);
+ const loaded=await loader.load({api:'https://worker.example',fetcher:mock.fetcher,strict:true});
+ assert.equal(loaded.source,'d1');
+ assert.equal(loaded.data.monsters['43650'].life,3000000);
+ assert.equal(loaded.data.monsters['43650'].resists.physical,20);
+ assert.equal(loaded.overlay,undefined);
+ assert.equal(mock.paths.filter(x=>x.startsWith('./data/os/')).length,0,
+  'A valid D1 snapshot must not trigger hidden monster/loot archive GETs');
+});
+test('the read-only Russian dungeon translation bridge remains source-matched',async()=>{
+ const remote=catalog('remote'),archive=catalog('archive');
+ remote.instances[0].blurb='Current English game description';
+ archive.instances[0].blurb='Current English game description';
+ archive.instances[0].blurbRu='Подтверждённый русский перевод';
+ const first=mockFetch(remote,archive);
+ const corrected=await loader.load({api:'https://worker.example',fetcher:first.fetcher});
+ assert.equal(corrected.data.instances[0].blurbRu,archive.instances[0].blurbRu);
+ assert.equal(corrected.data.instances[0].blurb,remote.instances[0].blurb);
+ archive.instances[0].blurb='Different historic game text';
+ const second=mockFetch(remote,archive);
+ const unchanged=await loader.load({api:'https://worker.example',fetcher:second.fetcher});
+ assert.equal(unchanged.data.instances[0].blurbRu,undefined,
+  'Never borrow a translation for a different original description');
+});
