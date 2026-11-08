@@ -4,7 +4,7 @@
 const KEY='ps-account-session.v1';
 let session=null,options=null,trigger=null,panel=null,mode='login',errorLine=null;
 let bootstrapPhase='guest';
-let sessionRevision=0,passwordRequest=null;
+let sessionRevision=0,passwordRequest=null,guestAuthRequest=null;
 const setBootstrapPhase=value=>{
  bootstrapPhase=value;
  trigger?.setAttribute('data-account-bootstrap',value);
@@ -222,9 +222,17 @@ function render(){
   panel.append(footer,errorLine);return;
  }
  const tabs=node('div','account-tabs');
- tabs.append(button('Войти',()=>{resetFeedback();mode='login';render()},mode==='login'?'selected':''),
-  button('Регистрация',()=>{resetFeedback();mode='register';render()},mode==='register'?'selected':''),
-  button('Восстановить',()=>{resetFeedback();mode='recover';render()},mode==='recover'?'selected':''));
+ // Registration can issue a one-time recovery code. Do not abandon its reply
+ // or start a second login/recovery simply because RU/EN recreated the form.
+ const guestPending=guestAuthRequest?.revision===sessionRevision;
+ const switchMode=next=>{if(guestPending)return;resetFeedback();mode=next;render()};
+ const tabButtons=[
+  button('Войти',()=>switchMode('login'),mode==='login'?'selected':''),
+  button('Регистрация',()=>switchMode('register'),mode==='register'?'selected':''),
+  button('Восстановить',()=>switchMode('recover'),mode==='recover'?'selected':'')
+ ];
+ for(const tab of tabButtons)tab.disabled=guestPending;
+ tabs.append(...tabButtons);
  panel.append(tabs);
  const form=node('form','account-form'),username=field('Логин (3–20, a-z, 0-9, _)','text','username',20);
  username.minLength=3;username.required=true;username.spellcheck=false;
@@ -243,26 +251,47 @@ function render(){
  }
  const submit=node('button','account-action primary',mode==='register'?'Создать аккаунт':
   mode==='recover'?'Восстановить пароль':'Войти');
- submit.type='submit';form.append(submit);
+ submit.type='submit';
+ submit.disabled=guestPending;
+ form.append(submit);
  form.addEventListener('submit',async e=>{
   e.preventDefault();
-  if((mode==='register'||mode==='recover')&&pass.value!==confirm.value){
+  // A detached form can still have a pending event while a locale refresh
+  // rendered another instance. Exactly one guest authentication per session.
+  if(guestAuthRequest?.revision===sessionRevision)return;
+  const current=mode;
+  if((current==='register'||current==='recover')&&pass.value!==confirm.value){
    info('Пароли не совпадают.');return;
   }
+  if(!form.reportValidity())return;
+  const revision=sessionRevision,ticket={revision,mode:current};
+  guestAuthRequest=ticket;
+  const sameRequest=()=>guestAuthRequest===ticket&&
+   sessionRevision===revision&&!session;
+  for(const tab of tabButtons)tab.disabled=true;
   submit.disabled=true;info('Проверяем…');
   try{
-   const current=mode;
    const result=await request(current,current==='register'?
     {username:username.value,password:pass.value,legacyKey:options.legacyKey?.()}:
     current==='recover'?{username:username.value,password:pass.value,
      recoveryCode:recovery.value.trim()}:
     {username:username.value,password:pass.value},null);
+   // A late reply must not switch a newer authenticated owner or reuse an
+   // obsolete form. This also protects the one-time registration code.
+   if(!sameRequest())return;
    setSession(result);
    render();
    if(pendingRecoveryCode)info('Сохраните код: после обновления страницы его нельзя будет повторно показать.');
    await options.onLogin?.({register:current==='register',bootstrap:false});
-  }catch(ex){info(ex.message)}
-  finally{submit.disabled=false}
+  }catch(ex){if(sameRequest())info(ex.message)}
+  finally{
+   if(guestAuthRequest===ticket)guestAuthRequest=null;
+   submit.disabled=false;
+   if(sessionRevision===revision&&!session){
+    panel?.querySelector?.('.account-form button[type=submit]')?.removeAttribute?.('disabled');
+    for(const tab of panel?.querySelectorAll?.('.account-tabs button')||[])tab.disabled=false;
+   }
+  }
  });
  panel.append(form,errorLine);
  panel.append(node('p','account-small','Без электронной почты и СМС. После регистрации сохраните резервный код.'));

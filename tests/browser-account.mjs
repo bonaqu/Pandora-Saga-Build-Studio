@@ -3,6 +3,7 @@ export async function runAccountSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev',token='t'.repeat(43);
  let calls=[],username=null,passwd=null,offlineMe=false,expiredMe=false,misidentifiedMe=false;
  let holdNextMe=false,releaseHeldMe=null,notifyHeldMe=null;
+ let holdNextRegister=false,releaseHeldRegister=null,notifyHeldRegister=null;
  let holdNextPassword=false,releaseHeldPassword=null,notifyHeldPassword=null;
  const context=await browser.newContext({viewport:{width:1280,height:900}});
  await context.route('**/*',async route=>{
@@ -26,6 +27,10 @@ export async function runAccountSmoke(browser,base){
    if(action==='register'){
     username=body.username.toLowerCase();passwd=body.password;
     assert.match(body.legacyKey,/^[a-f0-9]{64}$/);
+    if(holdNextRegister){
+     holdNextRegister=false;
+     await new Promise(resolve=>{releaseHeldRegister=resolve;notifyHeldRegister?.()});
+    }
     return send({account:{username},token,expires:Date.now()+7200000,
       recoveryCode:'r'.repeat(43)},201);
    }
@@ -82,7 +87,26 @@ export async function runAccountSmoke(browser,base){
   await inputs.nth(0).fill('TestPlayer_01');
   await inputs.nth(1).fill('An unusually long phrase for my builds');
   await inputs.nth(2).fill('An unusually long phrase for my builds');
+  holdNextRegister=true;
+  const registerSent=new Promise(resolve=>{notifyHeldRegister=resolve});
   await page.getByRole('button',{name:'Создать аккаунт'}).click();
+  await registerSent;
+  // A slow registration cannot lose its one-time recovery secret when the
+  // user switches language. New buttons must not submit a second request.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal(await page.getByRole('button',{name:'Register',exact:true}).isDisabled(),true);
+  assert.equal(await page.getByRole('button',{name:'Sign in',exact:true}).isDisabled(),true);
+  assert.equal(await page.locator('#accountPanel .account-form button[type=submit]').isDisabled(),true);
+  assert.equal(await inputs.nth(0).inputValue(),'TestPlayer_01');
+  assert.equal(calls.filter(c=>c.action==='register').length,1);
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  const registerResponse=page.waitForResponse(response=>response.url().endsWith('/api/account/register'));
+  releaseHeldRegister();
+  await registerResponse;
   await page.locator('.account-recovery input').waitFor({state:'visible',timeout:15000});
   assert.equal(await page.locator('.account-recovery input').inputValue(),'r'.repeat(43));
   assert.match(await page.locator('.account-user').innerText(),/testplayer_01/);
