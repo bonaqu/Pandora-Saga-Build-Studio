@@ -87,3 +87,17 @@ test('description UI avoids raw HTML injection and still retains in-place owner 
  assert.match(app,/visibleNodes=\[\.\.\.node\.childNodes\]/);
  assert.match(css,/\.wiki-description\{white-space:pre-wrap/);
 });
+
+test('reviewed Halloween archive descriptions retain real game item links',()=>{
+ const cases=[['51060','80100','Тыква'],['80100','300001','Билет испытаний']];
+ for(const [sourceId,targetId,label]of cases){
+  const row=items[sourceId];
+  assert.ok(row&&row.desc.includes('<item '+targetId+'>'));
+  const segments=presenter.descriptionSegments(row.desc,lookup,'ru');
+  const link=segments.find(piece=>piece.type==='item'&&piece.id===targetId);
+  assert.equal(link?.exists,true);
+  assert.equal(link?.text,label);
+  assert.match(segments.map(piece=>piece.text).join(''),/\n/);
+  assert.doesNotMatch(segments.map(piece=>piece.text).join(''),/<item|<br/);
+ }
+});

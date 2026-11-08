@@ -106,6 +106,36 @@ export function describeCatalogDifference(local,remote,dataset){
   ', changed records '+changed+fields;
 }
 
+// Explain rich-text drift without treating it as verified gameplay parity.
+// D1 can intentionally retain <br>, <b> and <item> tokens missing from an
+// older flattened archive. Never discard those tags or silence a real drift.
+export function describeDescriptionDrift(local,remote,dataset){
+ const counts={lineBreaks:0,inlineMarkup:0,itemReferences:0,otherText:0};
+ const sections=dataset==='stringsEn'?['items','souls']:
+  ['items','souls'].includes(dataset)?[null]:[];
+ for(const section of sections){
+  const a=section?local?.[section]:local,b=section?remote?.[section]:remote;
+  if(!a||!b||typeof a!=='object'||typeof b!=='object')continue;
+  for(const [id,record] of Object.entries(a)){
+   if(!Object.hasOwn(b,id))continue;
+   const source=section?record?.d:record?.desc;
+   const live=section?b[id]?.d:b[id]?.desc;
+   if(source===live)continue;
+   if(typeof source!=='string'||typeof live!=='string'){
+    counts.otherText++;continue;
+   }
+   const noBreaks=live.replace(/<br\s*\/?>/gi,'');
+   if(source===noBreaks)counts.lineBreaks++;
+   else if(source===noBreaks.replace(/<\/?b>/gi,''))counts.inlineMarkup++;
+   else if(/<item\s+[1-9][0-9]{0,11}\s*\/?>/i.test(live)&&
+    !/<item\s+[1-9][0-9]{0,11}\s*\/?>/i.test(source))
+    counts.itemReferences++;
+   else counts.otherText++;
+  }
+ }
+ return counts;
+}
+
 async function run({strictRu=false,fetcher=fetch}={}){
  let snapshot=null,failures=0,translations=0;
  for(const dataset of DATASETS){
@@ -127,8 +157,11 @@ async function run({strictRu=false,fetcher=fetch}={}){
    const remote=await response.json();
    const report=compareCatalog(local,remote,dataset);
    if(!report.equal){
+    const drift=describeDescriptionDrift(local,remote,dataset);
+    const details=Object.values(drift).some(Boolean)?
+     '; description drift: '+JSON.stringify(drift):'';
     failures++;console.error('FAIL '+dataset+': source records differ — '+
-     describeCatalogDifference(local,remote,dataset));
+     describeCatalogDifference(local,remote,dataset)+details);
    }else if(report.missingRu){
     translations+=report.missingRu;
     console.log('WARN '+dataset+': '+report.missingRu+
