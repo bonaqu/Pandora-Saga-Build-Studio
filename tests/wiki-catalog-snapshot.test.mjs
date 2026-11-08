@@ -240,7 +240,9 @@ test('encyclopedia rejects a forged D1 provenance despite matching snapshot IDs'
 
 test('NPC chest links, exchange keys and gold-only rewards are validated like regular chests',async()=>{
  const catalogGood=catalog('good');
- catalogGood.chests.npc=[{i:1,key:1,rolls:[[
+ catalogGood.items[2]={id:2,name:'NPC Chest'};
+ catalogGood.meta.counts.items=2;
+ catalogGood.chests.npc=[{i:2,key:1,rolls:[[
   {i:1,n:1,p:80},{gold:[100,200],p:20}
  ]]}];
  catalogGood.chests.masterKey=1;
@@ -271,4 +273,44 @@ test('NPC chest links, exchange keys and gold-only rewards are validated like re
  const result=await loader.load({api:'https://worker.example',fetcher:fallback.fetcher});
  assert.equal(result.source,'local');
  assert.equal(result.data.chests.npc[0].rolls[0][0].i,1);
+});
+
+test('D1 rejects inverted and malformed gold intervals before displaying NPC chest',async()=>{
+ const good=catalog('verified gold');
+ good.items[2]={id:2,name:'NPC Chest'};good.meta.counts.items=2;
+ good.chests.npc=[{i:2,key:1,rolls:[[{gold:[60000,100000],p:3}]]}];
+ assert.doesNotThrow(()=>loader.validate(good));
+ for(const interval of [[100000,60000],[-1,1000],['60000',100000],
+  [10000],[1,2,3],[1.5,2],null]){
+  const broken=structuredClone(good);broken.chests.npc[0].rolls[0][0].gold=interval;
+  assert.throws(()=>loader.validate(broken),/диапазон золота сундука/,
+   'Reject invalid source gold values: '+JSON.stringify(interval));
+ }
+ const both=structuredClone(good);both.chests.npc[0].rolls[0][0].i=1;
+ assert.throws(()=>loader.validate(both),/тип награды сундука/);
+ const empty=structuredClone(good);empty.chests.npc[0].rolls[0][0]={p:3};
+ assert.throws(()=>loader.validate(empty),/тип награды сундука/);
+ const broken=structuredClone(good);broken.chests.npc[0].rolls[0][0].gold=[99,1];
+ const remote=mockFetch(broken,good);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:remote.fetcher,strict:true}),/диапазон золота сундука/);
+ const fallback=mockFetch(broken,good);
+ const restored=await loader.load({api:'https://worker.example',fetcher:fallback.fetcher});
+ assert.equal(restored.source,'local');
+ assert.deepEqual(restored.data.chests.npc[0].rolls[0][0].gold,[60000,100000]);
+});
+
+test('D1 rejects duplicate IDs across normal and NPC chest lists before Wiki index overwrites cards',()=>{
+ const data=catalog('distinct');
+ data.chests.npc=[{i:1,key:1,rolls:[[]]}];
+ assert.throws(()=>loader.validate(data),/повторный сундук/);
+ data.chests.npc[0].i=2;
+ data.items[2]={id:2,name:'NPC Chest'};data.meta.counts.items=2;
+ assert.doesNotThrow(()=>loader.validate(data));
+ const doubleNpc=structuredClone(data);
+ doubleNpc.chests.npc.push({...doubleNpc.chests.npc[0]});
+ assert.throws(()=>loader.validate(doubleNpc),/повторный сундук/);
+ const brokenGroups=structuredClone(data);
+ brokenGroups.chests.npc[0].rolls=[null];
+ assert.throws(()=>loader.validate(brokenGroups),/группа наград сундука/);
 });
