@@ -154,7 +154,7 @@ test('source text breaks are offered next to publish instead of hidden behind ma
  assert.match(workbench,/reviewSteps\.append\(formattingReview\)/);
  assert.match(workbench,/formattingReview\.hidden=!reviewing\|\|mode!=='server'\|\|!formattingCount/);
  assert.match(workbench,/syncFormatting=mode==='server'&&formattingToggle\.checked&&formattingCount>0/);
- assert.match(workbench,/\{syncFormatting\}/);
+ assert.match(workbench,/\{syncFormatting,syncRussianInstances,localInstances\}/);
  assert.match(workbench,/Другие поля не меняются\. Понадобятся галочка и подтверждение публикации/);
  assert.doesNotMatch(workbench,/h\('summary',\{text:'Дополнительные инструменты'\}\),\s*formattingOption/);
  const css=readFileSync(new URL('pandora-os-catalog-workbench.css',root),'utf8');
