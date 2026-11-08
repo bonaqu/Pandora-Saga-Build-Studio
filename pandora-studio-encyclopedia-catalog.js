@@ -112,6 +112,9 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
    const response=await fetcher(url,init);
    if(!response?.ok)throw Error(key+' HTTP '+(response?.status??'network'));
    if(remote){
+    // A backup JSON with plausible headers must not impersonate D1.
+    if(response.headers?.get?.('x-ps-catalog')!=='d1')
+     throw Error('Игровой каталог не подтвердил источник D1: '+key);
     const snapshot=response.headers?.get?.('x-ps-catalog-snapshot')||null;
     if(snapshot)snapshots.add(snapshot);else missingSnapshot.push(key);
    }

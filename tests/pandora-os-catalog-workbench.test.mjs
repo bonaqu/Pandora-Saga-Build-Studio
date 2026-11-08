@@ -171,3 +171,11 @@ test('missing reviewed RU dungeon blurbs require an explicit checkbox and CAS pu
  assert.match(workbench,/expectedActive:activeSnapshot/);
  assert.match(workbench,/russianToggle\.addEventListener\('change',refreshActions\)/);
 });
+
+
+test('admin review rejects any D1 response without verified provenance, including translations',()=>{
+ assert.match(workbench,/response\.headers\.get\('x-ps-catalog'\)!=='d1'/);
+ assert.match(workbench,/localeResponse\.headers\.get\('x-ps-catalog'\)!=='d1'/);
+ assert.match(workbench,/Не подтверждён источник D1/);
+ assert.match(workbench,/Публикация остановлена/);
+});
