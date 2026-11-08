@@ -120,6 +120,7 @@ const english=Object.freeze({
  'Сохранено в облаке':'Saved to cloud',
  'Сохранено в браузере · облако недоступно':'Saved in browser · cloud unavailable',
  'Аккаунт изменился · синхронизация остановлена':'Account changed · sync stopped',
+ 'Вход выполнен, но билды не открылись. Проверь свободное место в браузере и обнови страницу.':'Signed in, but your builds could not be opened. Free up browser storage and reload the page.',
  'Билд перезаписан по вашему запросу.':'Build overwritten at your request.',
  'Сохранено в браузере. Проверяем запись в облаке…':'Saved in this browser. Checking cloud storage…',
  'Проверяем сохранение билда…':'Checking saved build…',
