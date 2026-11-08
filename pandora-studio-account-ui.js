@@ -94,7 +94,8 @@ function setSession(result){
  resetFeedback();
 }
 function clearSession(){
- const previousToken=session?.token||null;
+ const previousToken=session?.token||null,
+  previousName=session?.username||null,previousExpires=session?.expires??null;
  session=null;pendingRecoveryCode=null;
  sessionRevision++;
  setBootstrapPhase('guest');
@@ -104,7 +105,10 @@ function clearSession(){
  if(previousToken){
   try{
    const saved=JSON.parse(localStorage.getItem(KEY)||'null');
-   if(saved?.token===previousToken)localStorage.removeItem(KEY);
+   // A newer login on another tab may reuse the bearer string. Never
+   // erase a different owner or a newer expiry just because it matches.
+   if(saved?.token===previousToken&&validName(saved?.username)===previousName&&
+    saved?.expires===previousExpires)localStorage.removeItem(KEY);
   }catch{}
  }
 }
@@ -311,7 +315,10 @@ async function init(config){
   if(event.key!==KEY||event.newValue!==null||!session)return;
   let previous;
   try{previous=JSON.parse(event.oldValue||'null')}catch{return}
-  if(previous?.token!==session.token)return;
+  // The storage event may belong to another owner that happened to reuse
+  // the same token value; independent tabs must not sign out each other.
+  if(previous?.token!==session.token||
+   validName(previous?.username)!==session.username)return;
   clearSession();
   options?.onLogout?.({otherTab:true});
   render();
