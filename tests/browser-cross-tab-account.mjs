@@ -157,8 +157,20 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   await login(tabC,tokenB,'bob_222');
   await tabB.locator('#profileTrigger').click();
   await tabB.getByRole('button',{name:'Выйти из аккаунта'}).click();
-  await tabC.waitForFunction(()=>document.querySelector('#profileTrigger')
-   ?.title.includes('Войти или зарегистрироваться'));
+  try{
+   await tabC.waitForFunction(()=>document.querySelector('#profileTrigger')
+    ?.title.includes('Войти или зарегистрироваться'),null,{timeout:15000});
+  }catch(error){
+   // Never disclose bearer/header contents in CI diagnostics.
+   const detail=await tabC.evaluate(()=>({
+    profile:document.querySelector('#profileTrigger')?.title||'',
+    bootstrap:document.querySelector('#profileTrigger')?.dataset.accountBootstrap||'',
+    sessionStored:localStorage.getItem('ps-account-session.v1')!==null,
+    owner:localStorage.getItem('ps-build-owner-scope.v1')||null
+   }));
+   throw Error('Same-owner logout did not propagate to third tab: '+
+    JSON.stringify(detail)+'; '+error.message);
+  }
   assert.equal(await tabC.evaluate(()=>localStorage.getItem('ps-account-session.v1')),null);
   assert.deepEqual(errors,[]);
   console.log('Chromium concurrent tabs passed: A cannot overwrite B active localStorage, both caches survive');

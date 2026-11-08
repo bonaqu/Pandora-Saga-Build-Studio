@@ -273,3 +273,57 @@ test('registration and recovery use one in-flight request across locale remounts
  assert.match(original,/if\(!sameRequest\(\)\)return;/);
  assert.match(original,/if\(guestAuthRequest===ticket\)guestAuthRequest=null/);
 });
+
+test('stale tab logout cannot delete another owner with a reused bearer',async()=>{
+ const same='s'.repeat(43),alice=session('alice_01',same),
+  bob=session('bob_222',same);
+ const c=create({stored:alice});
+ await c.init();
+ c.storage.setItem('ps-account-session.v1',JSON.stringify(bob));
+ c.helper.clearSession();
+ assert.equal(JSON.parse(c.storage.getItem('ps-account-session.v1')).username,'bob_222');
+ assert.equal(c.api.token(),null,'Only the stale local session was cleared');
+});
+test('stale same-owner session may not delete a fresher expiry with the same token',async()=>{
+ const alice=session();
+ const c=create({stored:alice});await c.init();
+ c.storage.setItem('ps-account-session.v1',
+  JSON.stringify({...alice,expires:alice.expires+600000}));
+ c.helper.clearSession();
+ assert.equal(JSON.parse(c.storage.getItem('ps-account-session.v1')).expires,
+  alice.expires+600000);
+});
+test('cross-tab removal of another username with coincidentally same bearer is ignored',async()=>{
+ const same='s'.repeat(43),alice=session('alice_01',same),
+  bob=session('bob_222',same);
+ const c=create({stored:alice});await c.init();
+ c.emitStorage({key:'ps-account-session.v1',
+  oldValue:JSON.stringify(bob),newValue:null});
+ assert.equal(c.api.username(),'alice_01');
+ assert.equal(c.events.logout.length,0);
+ c.emitStorage({key:'ps-account-session.v1',
+  oldValue:JSON.stringify(alice),newValue:null});
+ assert.equal(c.api.isLoggedIn(),false);
+ assert.equal(c.events.logout.length,1,
+  'Matching owner and bearer still propagate revocation');
+});
+
+test('explicit sign-out revokes a same-owner bearer even with a newer expiry',async()=>{
+ const alice=session(),c=create({stored:alice});await c.init();
+ c.storage.setItem('ps-account-session.v1',
+  JSON.stringify({...alice,expires:alice.expires+600000}));
+ c.helper.clearSession({revokeMatchingOwner:true});
+ assert.equal(c.storage.getItem('ps-account-session.v1'),null);
+});
+test('revocation cannot remove another user that reused the mock bearer',async()=>{
+ const token='s'.repeat(43),alice=session('alice_01',token),
+  bob=session('bob_222',token),c=create({stored:alice});
+ await c.init();
+ c.storage.setItem('ps-account-session.v1',JSON.stringify(bob));
+ c.helper.clearSession({revokeMatchingOwner:true});
+ assert.equal(JSON.parse(c.storage.getItem('ps-account-session.v1')).username,'bob_222');
+});
+test('both logout and verified bootstrap revocation invalidate matching owners',()=>{
+ assert.match(original,/clearSession\(\{revokeMatchingOwner:true\}\);options\.onLogout/);
+ assert.match(original,/clearSession\(\{revokeMatchingOwner:true\}\);\s*forceBootstrapRender=true/);
+});
