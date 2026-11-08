@@ -209,3 +209,25 @@ test('explicit typography-only publication restores source breaks without alteri
  assert.equal(ready.meta.sha,undefined,'do not reuse original upstream CSV checksum');
  assert.equal(ready.meta.curated,true);
 });
+
+
+test('BR variants and consecutive source paragraphs are preserved literally with explicit approval',()=>{
+ const before=snapshot(),after=snapshot();
+ before.items['1'].desc='Описание.ОЗ +15';
+ after.items['1'].desc='Описание.<BR /><br/>ОЗ +15';
+ before['strings.en'].items['1'].d='Sword.ATK +1';
+ after['strings.en'].items['1'].d='Sword.<br><br>ATK +1';
+ assert.equal(review.changes('items',before.items,after.items).length,0);
+ assert.equal(review.changes('strings.en',before['strings.en'],after['strings.en']).length,0);
+ assert.equal(review.formattingChanges('items',before.items,after.items).length,1);
+ assert.equal(review.formattingChanges('strings.en',before['strings.en'],after['strings.en']).length,1);
+ const unapproved=review.compose(before,after,new Set(),files);
+ assert.equal(unapproved.items['1'].desc,'Описание.ОЗ +15');
+ const approved=review.compose(before,after,new Set(),files,{syncFormatting:true});
+ assert.equal(approved.items['1'].desc,after.items['1'].desc);
+ assert.equal(approved['strings.en'].items['1'].d,after['strings.en'].items['1'].d);
+ assert.equal(before.items['1'].desc,'Описание.ОЗ +15');
+ assert.deepEqual(plain(approved.meta.sha),plain(after.meta.sha),
+  'an exact published game snapshot retains verified source fingerprints');
+ assert.equal(approved.meta.curated,undefined);
+});

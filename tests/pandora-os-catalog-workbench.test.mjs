@@ -147,3 +147,16 @@ test('catalog admin review interprets source data and excludes raw data from def
  assert.match(workbench,/changes\.filter\(safe\)/);
  assert.match(workbench,/sourceBanner\.textContent=from===/);
 });
+
+
+test('source text breaks are offered next to publish instead of hidden behind maintenance tools',()=>{
+ assert.match(workbench,/const formattingReview=h\('div',\{class:'os-sync-formatting-review',hidden:true\}/);
+ assert.match(workbench,/reviewSteps\.append\(formattingReview\)/);
+ assert.match(workbench,/formattingReview\.hidden=!reviewing\|\|mode!=='server'\|\|!formattingCount/);
+ assert.match(workbench,/syncFormatting=mode==='server'&&formattingToggle\.checked&&formattingCount>0/);
+ assert.match(workbench,/\{syncFormatting\}/);
+ assert.match(workbench,/Другие поля не меняются\. Понадобятся галочка и подтверждение публикации/);
+ assert.doesNotMatch(workbench,/h\('summary',\{text:'Дополнительные инструменты'\}\),\s*formattingOption/);
+ const css=readFileSync(new URL('pandora-os-catalog-workbench.css',root),'utf8');
+ assert.match(css,/\.os-sync-formatting-review\[hidden\]\{display:none\}/);
+});
