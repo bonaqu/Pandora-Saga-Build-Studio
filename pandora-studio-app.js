@@ -168,7 +168,7 @@ function persistBuilds(){
 }
 const CLOUD_TOKEN_KEY='ps-build-library-secret.v1';
 const CLOUD_DELETES_KEY='ps-build-library-pending-deletes.v1';
-let libraryChangeId=0;
+let libraryChangeId=0,cloudLoadRequestId=0;
 function queuedDeletes(){
  try{return JSON.parse(window.PandoraBuildScope.getOwned(localStorage,libraryScopeId(),
   CLOUD_DELETES_KEY)).filter(v=>/^[a-f0-9]{32}$/.test(v))}
@@ -254,8 +254,12 @@ window.PandoraBuildScope.migrateLegacyGuest(localStorage,tabGuestSecret);
 activateLibraryScope({initial:true});
 async function cloudLibraryRequest(payload,secret=null){
  const bearer=secret||window.PandoraAccountUI?.token()||tabGuestSecret;
+ // An unreachable Worker must not leave "Checking cloud" spinning forever.
+ const signal=typeof AbortSignal!=='undefined'&&
+  typeof AbortSignal.timeout==='function'?AbortSignal.timeout(payload?25000:20000):null;
  const response=await fetch(API+'/api/library',{method:payload?'POST':'GET',
   headers:{'Content-Type':'application/json',Authorization:'Bearer '+bearer},
+  ...(signal?{signal}:{}),
   ...(payload?{body:JSON.stringify(payload)}:{})});
  let data;try{data=await response.json()}catch{throw Error('Нет ответа облачного сервера')}
  if(!response.ok){
@@ -314,17 +318,18 @@ async function deleteCloudBuild(id){
  }
 }
 async function loadCloudBuilds(){
- const generation=libraryChangeId;
+ const generation=libraryChangeId,requestId=++cloudLoadRequestId;
+ const latest=()=>requestId===cloudLoadRequestId;
  let pendingDeleteFailures=0;
  try{
   for(const id of queuedDeletes()){
-   if(libraryChangeId!==generation)return;
+   if(libraryChangeId!==generation||!latest())return;
    try{
     await cloudLibraryRequest({action:'delete',id});
-    if(libraryChangeId!==generation)return;
+    if(libraryChangeId!==generation||!latest())return;
     acknowledgeDelete(id);
    }catch(error){
-    if(libraryChangeId!==generation)return;
+    if(libraryChangeId!==generation||!latest())return;
     // A failed revocation must remain queued, but must not hide every
     // other healthy cloud build. The pending ID is filtered by reconcile().
     pendingDeleteFailures++;
@@ -332,6 +337,9 @@ async function loadCloudBuilds(){
    }
   }
   const response=await cloudLibraryRequest();
+  // A manual refresh can overtake an older request for the same owner:
+  // only the newest GET is allowed to reconcile the visible library.
+  if(!latest())return;
   if(!Array.isArray(response.records))throw Error('Некорректная библиотека');
   // A click while GET was in flight must not bring back a deleted or old character.
   if(libraryChangeId!==generation){void loadCloudBuilds();return}
@@ -358,24 +366,25 @@ async function loadCloudBuilds(){
     'Облачная библиотека подключена');
   for(const entry of outgoing){
    if(libraryChangeId!==generation)break;
+   if(!latest())break;
    const current=builds.find(x=>x.id===entry.id);
    if(!current||current.at!==entry.at||queuedDeletes().includes(entry.id))continue;
    await putCloudBuild(entry);
   }
-  if(copies&&libraryChangeId===generation){
+  if(copies&&libraryChangeId===generation&&latest()){
    reportCloudStatus('Облачная версия основная · локальные отличия сохранены отдельной копией');
    showStudioToast('Обнаружены разные версии билда. Обе сохранены отдельно в библиотеке.','warning');
   }
-  if(unavailable&&libraryChangeId===generation)
+  if(unavailable&&libraryChangeId===generation&&latest())
    reportCloudStatus((lang==='en'?
     'Some cloud builds are unavailable · original records are preserved':
     'Некоторые облачные билды недоступны · исходные записи сохранены')+
     ' ('+unavailable+')');
-  if(pendingDeleteFailures&&libraryChangeId===generation)
+  if(pendingDeleteFailures&&libraryChangeId===generation&&latest())
    reportCloudStatus('Библиотека загружена · удаление некоторых ссылок ещё не подтверждено');
  }catch(error){
   console.warn('Cloud library unavailable',error);
-  if(libraryChangeId===generation)
+  if(libraryChangeId===generation&&latest())
    reportCloudStatus('Локальные билды доступны · облако пока недоступно');
  }
 }

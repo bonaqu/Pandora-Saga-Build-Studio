@@ -33,3 +33,15 @@ test('monotonic timestamps and atomic SQLite compare prevent late or same-timest
  assert.match(worker,/reason:'stale'/);
  assert.match(worker,/reason:'deleted'/);
 });
+
+test('parallel cloud refreshes must not replay an older response over the newest one',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('async function loadCloudBuilds(){');
+ const end=app.indexOf('\nfunction h(tag,attrs={}',start);
+ const loader=app.slice(start,end);
+ assert.match(app,/let libraryChangeId=0,cloudLoadRequestId=0/);
+ assert.match(loader,/const generation=libraryChangeId,requestId=\+\+cloudLoadRequestId/);
+ assert.match(loader,/if\(!latest\(\)\)return;/);
+ assert.match(loader,/if\(libraryChangeId===generation&&latest\(\)\)/);
+ assert.match(app,/AbortSignal\.timeout\(payload\?25000:20000\)/);
+});
