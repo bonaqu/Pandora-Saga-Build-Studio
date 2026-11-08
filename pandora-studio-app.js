@@ -2897,8 +2897,8 @@ function renderWiki(root){
   if(previous){previous.remove();return}
   const form=h('div',{class:'wiki-owner-source-picker wiki-owner-item-choice'});
   const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
-   placeholder:'Название предмета…',autocomplete:'off','aria-label':'Найти предмет'});
-  const target=h('select',{class:'wiki-inline-select','aria-label':'Выбери предмет'});
+   placeholder:wt('Название предмета…','Item name…'),autocomplete:'off','aria-label':wt('Найти предмет','Find item')});
+  const target=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери предмет','Choose item')});
   const feedback=h('small',{class:'inline-owner-error',role:'status'});
   form.append(search,target,feedback);container.append(form);
   const items=Object.entries(wikiData.items||{});
@@ -2906,7 +2906,7 @@ function renderWiki(root){
    const q=wikiIndex.normalize(search.value);
    const matches=items.filter(([id])=>!q||wikiIndex.normalize(dataName('item',id)).includes(q)).slice(0,80);
    target.replaceChildren(h('option',{value:'',
-    text:matches.length?'Выбери предмет':'Предметы не найдены'}));
+    text:matches.length?wt('Выбери предмет','Choose item'):wt('Предметы не найдены','No items found')}));
    for(const [id]of matches)target.append(h('option',{value:id,text:dataName('item',id)}));
    target.disabled=!matches.length;
   };
@@ -3638,16 +3638,16 @@ function renderWiki(root){
       h('span',{text:name})
     ]);
     if(manage)chip.append(h('button',{type:'button',class:'wiki-owner-remove',
-     text:'×','aria-label':'Убрать класс '+name,
+     text:'×','aria-label':wt('Убрать класс ','Remove class ')+name,
      onclick:()=>void saveClasses(Object.fromEntries(keys.filter(x=>x!==key).map(x=>[x,1])))
      .catch(error=>showStudioToast(error.message,'warning'))}));
     tags.append(chip);
    }
    if(manage&&keys.length<jobKeys.length){
     const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+',
-     'aria-label':'Добавить доступный класс'});
+     'aria-label':wt('Добавить доступный класс','Add eligible class')});
     plus.onclick=()=>{
-     const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери класс'});
+     const select=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери класс','Choose class')});
      select.append(h('option',{value:'',text:'Выбери класс'}));
      for(const key of jobKeys.filter(x=>!keys.includes(x)))
       select.append(h('option',{value:key,text:classLabel(key)||key}));
@@ -3830,14 +3830,14 @@ function renderWiki(root){
       list.append(row);
      }
      if(adminEditing&&adminToken){
-      const plus=h('button',{type:'button',class:'wiki-owner-plus',text:'+ Добавить эффект'});
+      const plus=h('button',{type:'button',class:'wiki-owner-plus',text:wt('+ Добавить эффект','+ Add effect')});
       plus.onclick=()=>{
        if(list.querySelector('.wiki-owner-effect-picker'))return;
        const panel=h('div',{class:'wiki-owner-source-picker wiki-owner-effect-picker'});
        const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
-        'aria-label':'Поиск эффекта',placeholder:'Найти игровой эффект…'});
+        'aria-label':wt('Поиск эффекта','Search effects'),placeholder:'Найти игровой эффект…'});
        
-       const chooser=h('select',{class:'wiki-inline-select','aria-label':'Выбери эффект'});
+       const chooser=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери эффект','Choose effect')});
        const error=h('small',{class:'inline-owner-error',role:'status'});
        const fill=()=>{
         const q=wikiIndex.normalize(search.value);
@@ -4108,7 +4108,7 @@ function renderWiki(root){
          rec.reqs.map((x,i)=>i===index?{...x,amount}:x))});
       };
       chip.append(h('button',{type:'button',class:'wiki-owner-remove',text:'×',
-       'aria-label':'Удалить требование '+branchLabel(req.branch),
+       'aria-label':wt('Удалить требование ','Remove requirement ')+branchLabel(req.branch),
        onclick:()=>void saveWikiRecordField('skill',id,'reqs',
         rec.reqs.filter((_,i)=>i!==index)).catch(e=>showStudioToast(e.message,'warning'))}));
      }
@@ -4116,9 +4116,9 @@ function renderWiki(root){
     }
     if(adminEditing&&adminToken&&(rec.reqs||[]).length<20){
      const add=h('button',{type:'button',class:'wiki-owner-plus wiki-add-source',
-      text:'+ Требование ветки',onclick:()=>{
+      text:wt('+ Требование ветки','+ Branch requirement'),onclick:()=>{
        if(reqs.querySelector('.wiki-inline-select'))return;
-       const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери ветку'});
+       const select=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери ветку','Choose branch')});
        select.append(h('option',{value:'',text:'Выбери ветку'}));
        for(const branch of branches.filter(x=>!(rec.reqs||[]).some(req=>req.branch===x.id)))
         select.append(h('option',{value:branch.id,text:branchLabel(branch.id)}));
@@ -4141,21 +4141,21 @@ function renderWiki(root){
     }
     if(adminEditing&&adminToken){
      const add=h('button',{type:'button',class:'wiki-owner-plus',
-      text:rec.prereq==null?'+ Выбрать умение':'✎ Изменить',
+      text:rec.prereq==null?wt('+ Выбрать умение','+ Choose skill'):wt('✎ Изменить','✎ Edit'),
       onclick:()=>{
        const prior=prereqPane.querySelector('.wiki-owner-source-picker');
        if(prior){prior.remove();return}
        const panel=h('div',{class:'wiki-owner-source-picker'});
        const search=ownerPlainTextField({class:'wiki-inline-input wiki-owner-search',
-        placeholder:'Поиск предыдущего умения…','aria-label':'Найти умение'});
+        placeholder:wt('Поиск предыдущего умения…','Search prerequisite skill…'),'aria-label':wt('Найти умение','Find skill')});
        
-       const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери предыдущее умение'});
+       const select=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери предыдущее умение','Choose prerequisite skill')});
        const fill=()=>{
         const q=wikiIndex.normalize(search.value);
         const matches=Object.entries(wikiData.skills||{}).filter(([skillId])=>
          String(skillId)!==String(id)&&(!q||
           wikiIndex.normalize(dataName('skill',skillId)).includes(q))).slice(0,90);
-        select.replaceChildren(h('option',{value:'',text:'Выбери умение'}));
+        select.replaceChildren(h('option',{value:'',text:wt('Выбери умение','Choose skill')}));
         for(const [skillId] of matches)
          select.append(h('option',{value:skillId,text:dataName('skill',skillId)}));
        };
@@ -4189,18 +4189,18 @@ function renderWiki(root){
     for(const slot of rec.slots||[]){
      const chip=h('span',{class:'wiki-owner-mat',text:slotLabel(slot)});
      if(adminEditing&&adminToken)chip.append(h('button',{type:'button',
-      class:'wiki-owner-remove',text:'×','aria-label':'Убрать слот '+slotLabel(slot),
+      class:'wiki-owner-remove',text:'×','aria-label':wt('Убрать слот ','Remove slot ')+slotLabel(slot),
       onclick:()=>void saveWikiRecordField('soul',id,'slots',rec.slots.filter(x=>x!==slot))
        .catch(error=>showStudioToast(error.message,'warning'))}));
      slots.append(chip);
     }
     if(adminEditing&&adminToken){
-     const add=h('button',{type:'button',class:'wiki-owner-plus',text:'+ Слот'});
+     const add=h('button',{type:'button',class:'wiki-owner-plus',text:wt('+ Слот','+ Slot')});
      add.onclick=()=>{
       const choices=['weapon','shield','head','body','gloves','legs','feet',
        'cloak','ring','neck','belt','ear','accessory'].filter(x=>!(rec.slots||[]).includes(x));
-      const select=h('select',{class:'wiki-inline-select','aria-label':'Выбери слот'});
-      select.append(h('option',{value:'',text:'Выбери слот'}));
+      const select=h('select',{class:'wiki-inline-select','aria-label':wt('Выбери слот','Choose slot')});
+      select.append(h('option',{value:'',text:wt('Выбери слот','Choose slot')}));
       for(const slot of choices)select.append(h('option',{value:slot,text:slotLabel(slot)}));
       add.replaceWith(select);
       select.onchange=()=>{if(select.value)void saveWikiRecordField('soul',id,'slots',
