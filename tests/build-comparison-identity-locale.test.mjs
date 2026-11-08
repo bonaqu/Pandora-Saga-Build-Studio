@@ -95,16 +95,22 @@ test('legacy saved enhancement flags remain comparable but retired naming stays 
  assert.equal(JSON.stringify(changed),after);
 });
 
-test('main A/B view supplies official English skills to its shared comparison model',()=>{
+test('compact A/B reads localized Hero Book results, not internal skill IDs',()=>{
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
- assert.match(app,/englishSkills:officialEnglish\?\.skills\|\|\{\}/);
+ assert.match(app,/PandoraBuildComparison\.compactResults\(/);
+ assert.match(app,/PandoraStageAttributes\.summaryRows\(calcA\)/);
  assert.doesNotMatch(code,/['"]Проэлиум['"]/);
 });
 
-test('the A/B page shares visible Origin names without renaming stored keys',()=>{
+test('comparison uses visible results without exposing historical allocation key labels',()=>{
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
- assert.match(app,/statLabels:ORIGIN_STAT_LABELS\.map\(\(\{name\}\)=>name\)/);
- assert.match(app,/\['Ловкость','Agility'\],\['Сноровка','Dexterity'\],\['Дух','Spirit'\]/);
+ const begin=app.indexOf('function renderBuildComparison(');
+ const end=app.indexOf('function restoreLoadedBuildUI(){',begin);
+ assert.ok(begin>=0&&end>begin);
+ const view=app.slice(begin,end);
+ assert.match(view,/PandoraStageAttributes\.summaryRows\(calcB\)/);
+ assert.doesNotMatch(view,/statLabels:|Ловкость','Agility|Сноровка','Dexterity/);
+ assert.match(app,/ORIGIN_STAT_LABELS/);
 });
 
 test('legacy short comparison never prints unknown honor-title IDs',()=>{

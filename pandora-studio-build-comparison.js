@@ -441,5 +441,76 @@ function matrixRows(a={},b={},options={}){
  return rows;
 }
 
-root.PandoraBuildComparison=Object.freeze({describe,savedItemName,matrixRows,calculatePair});
+
+// Remaked-style comparison: only the principal calculated results.
+// Equipment, skills, allocations and buffs are inputs, not extra table rows.
+// The detailed matrixRows API remains available without affecting the UI.
+const COMPACT_METRICS=Object.freeze([
+ ['hp','ОЗ','HP'],['mp','ОМ','MP'],['attack','АТК','ATK'],
+ ['magicAttack','МАТК','MATK'],['defense','Защита','Defense'],
+ ['physicalResist','Сопр. физ (%)','Physical damage change'],
+ ['magicDamageResist','Сопр. маг. урону','Magic damage change'],
+ ['accuracy','Точность','Accuracy'],['dodge','Уклонение','Evasion'],
+ ['crit','Шанс крита','Critical chance'],
+ ['critResist','Сопр. криту','Critical resistance'],
+ ['critDamage','Крит. урон','Critical damage'],
+ ['critDamageResist','Получ. крит. урон','Incoming critical damage'],
+ ['attackSpeed','Скор. атаки','Attack speed'],
+ ['moveSpeed','Скор. движения','Movement speed'],
+ ['castSpeed','Скор. каста','Casting speed'],
+ ['castTime','Сокрщ. времени каста','Cast time'],
+ ['cooldown','Откат','Cooldown'],
+ ['fire','Сопр. огню','Fire resistance'],['ice','Сопр. льду','Ice resistance'],
+ ['lightning','Сопр. молниям','Lightning resistance'],
+ ['poison','Сопр. яду','Poison resistance'],
+ ['charm','Сопр. чарам','Charm resistance'],
+ ['light','Сопр. свету','Light resistance'],
+ ['dark','Сопр. тьме','Dark resistance'],
+ ['magic','Сопр. магии','Magic resistance']
+]);
+function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
+ const english=lang==='en';
+ const byName=groups=>{
+  const map=new Map();
+  for(const group of Array.isArray(groups)?groups:[])
+   for(const row of Array.isArray(group?.rows)?group.rows:[])
+    if(typeof row?.ru==='string'&&!map.has(row.ru))map.set(row.ru,row);
+  return map;
+ };
+ const first=byName(summaryA),second=byName(summaryB);
+ const format=new Intl.NumberFormat(english?'en-US':'ru-RU',
+  {maximumFractionDigits:4});
+ const rounded=value=>Math.round(value*10000)/10000;
+ const numeric=row=>typeof row?.value==='number'&&Number.isFinite(row.value)?
+  rounded(row.value):null;
+ const range=row=>typeof row?.display==='string'&&
+  /^[0-9]+(?:\.[0-9]+)?–[0-9]+(?:\.[0-9]+)?$/.test(row.display)?
+   row.display:null;
+ const shown=(row,value,key,unit)=>value===null?'—':
+  key==='attack'&&range(row)?range(row):format.format(value)+unit;
+ const changes=[];
+ for(const [key,ru,en] of COMPACT_METRICS){
+  const a=first.get(ru),b=second.get(ru),left=numeric(a),right=numeric(b);
+  // Two unavailable readings are not meaningful differences.
+  if(left===null&&right===null)continue;
+  const unitA=a?.unit||'',unitB=b?.unit||'';
+  const verifiedRangesDiffer=key==='attack'&&range(a)&&range(b)&&
+   range(a)!==range(b);
+  if(left===right&&unitA===unitB&&!verifiedRangesDiffer)continue;
+  const both=left!==null&&right!==null&&unitA===unitB;
+  // A difference in the verified minimum cannot be misreported as Δ=0.
+  const delta=both&&!(verifiedRangesDiffer&&left===right)?
+   rounded(right-left):null;
+  changes.push({
+   key:'stat.'+key,label:english?en:ru,
+   a:shown(a,left,key,unitA),b:shown(b,right,key,unitB),
+   delta:delta===null?'—':(delta>0?'+':'')+format.format(delta)+unitA,
+   direction:delta===null?'unavailable':
+    delta>0?'up':delta<0?'down':'flat'
+  });
+ }
+ return changes;
+}
+
+root.PandoraBuildComparison=Object.freeze({describe,savedItemName,matrixRows,compactResults,calculatePair});
 })(typeof window==='undefined'?globalThis:window);

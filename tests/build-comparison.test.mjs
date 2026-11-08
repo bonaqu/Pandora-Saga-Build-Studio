@@ -52,7 +52,7 @@ test('the comparison helper is loaded before the main app and included in saved 
  const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
  assert.ok(html.indexOf('pandora-studio-build-comparison.js?v=')<html.indexOf('src="pandora-studio-app.js?v='));
- assert.match(app,/PandoraBuildComparison\.matrixRows\(a\.data,b\.data/);
+ assert.match(app,/PandoraBuildComparison\.compactResults\(/);
 });
 
 test('saved gear and Soul identities use OS names instead of falsely saying empty',()=>{
@@ -73,10 +73,10 @@ test('real inline A/B comparison owns saved item and Soul name resolution',()=>{
  const end=code.indexOf('function restoreLoadedBuildUI(){',start);
  assert.ok(start>=0&&end>start);
  const section=code.slice(start,end);
- assert.match(section,/PandoraBuildComparison\.matrixRows\(a\.data,b\.data/);
- assert.match(section,/equipment:catalog\.equipment\|\|\{\},souls:catalog\.souls\|\|\{\}/);
- assert.match(section,/englishItems:officialEnglish\?\.items\|\|\{\}/);
- assert.match(section,/englishSouls:officialEnglish\?\.souls\|\|\{\}/);
+ assert.match(section,/PandoraBuildComparison\.compactResults\(/);
+ assert.doesNotMatch(section,/equipment:catalog\.equipment\|\|\{\},souls:catalog\.souls\|\|\{\}/);
+ assert.doesNotMatch(section,/englishItems:officialEnglish\?\.items\|\|\{\}/);
+ assert.doesNotMatch(section,/englishSouls:officialEnglish\?\.souls\|\|\{\}/);
  assert.match(section,/data-compare-row/);
  assert.doesNotMatch(code,/function compareSnapshots\(/,
   'The old unused quick comparison must not mislead future implementations');

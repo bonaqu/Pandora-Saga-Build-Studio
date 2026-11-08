@@ -1,104 +1,60 @@
-
-/* Native build-library comparison: same dark parchment, copper dividers and
-   rounded gold controls as the surrounding Pandora Saga hero workspace. */
-.build-compare-panel{margin:15px 0 18px;border:1px solid #896641;border-radius:10px;
- background:linear-gradient(145deg,#332418,#211810 60%,#17120e);
- box-shadow:inset 0 1px rgba(246,199,122,.13);min-width:0;color:#f1d8b3}
-.build-compare-header{display:flex;align-items:center;flex-wrap:wrap;gap:10px;
- padding:13px 15px;border-bottom:1px solid rgba(194,155,100,.26)}
-.build-compare-heading{display:flex;align-items:center;gap:11px;flex:1 1 240px;min-width:0}
-.build-compare-emblem{display:flex;align-items:center;justify-content:center;
- width:37px;height:37px;flex:0 0 37px;border:1px solid #98734a;border-radius:9px;
- background:linear-gradient(150deg,#5c4024,#2c2118);color:#f0c786;font-size:22px}
-.build-compare-heading h3{font:700 23px/1.05 'Cormorant Garamond',Georgia,serif;
- margin:0 0 5px;color:#f8ddaf}
-.build-compare-heading small{display:block;color:#c5a984;font:11px/1.4 Manrope,Arial,sans-serif}
-.build-compare-picks{border:1px solid #866642;background:#21180f;border-radius:15px;
- padding:4px 9px;color:#e3bc82;font:700 11px Manrope,Arial,sans-serif}
-.build-compare-expand,.build-compare-swap{
- min-height:34px;border-radius:6px;border:1px solid #99774b;background:#422d1d;
- color:#f1d4a0;cursor:pointer;font:650 11px Manrope,Arial,sans-serif;
- padding:8px 11px}
-.build-compare-expand:hover,.build-compare-swap:hover{border-color:#e0b574;
- background:#624329}
+/* Compact, Remaked-style result comparison inside My Builds.
+   Reuse the existing bronze/ink palette without additional card layers. */
+.build-compare-panel{margin:10px 0 14px;min-width:0;color:#f1d8b3;
+ border:1px solid #896641;border-radius:9px;background:#241a12}
+.build-compare-header{display:flex;align-items:center;justify-content:space-between;
+ gap:9px;padding:9px 12px}
+.build-compare-title{margin:0;color:#f8ddaf;
+ font:700 20px/1.15 'Cormorant Garamond',Georgia,serif}
+.build-compare-expand,.build-compare-swap{min-height:34px;
+ border:1px solid #977248;border-radius:6px;background:#422d1d;color:#f1d4a0;
+ font:650 11px Manrope,Arial,sans-serif;cursor:pointer;padding:7px 10px}
+.build-compare-expand:hover,.build-compare-swap:hover{border-color:#e0b574;background:#624329}
 .build-compare-expand:focus-visible,.build-compare-swap:focus-visible,
-.build-compare-controls select:focus-visible,.build-compare-options button:focus-visible,
-.build-compare-search:focus-visible{outline:2px solid #e8c288;outline-offset:2px}
-.build-compare-content{padding:15px;display:grid;gap:13px;min-width:0}
-.build-compare-content[hidden],.build-compare-table-wrap[hidden],
-.build-compare-options[hidden],.build-compare-note[hidden]{display:none!important}
-.build-compare-controls{display:grid;grid-template-columns:minmax(0,1fr)auto minmax(0,1fr);
- align-items:end;gap:10px}
-.build-compare-select-label{display:grid;gap:6px;min-width:0;font:650 11px Manrope,Arial,sans-serif;
- color:#dbc39a;letter-spacing:.02em}
-.build-compare-select{width:100%;min-width:0;min-height:41px;box-sizing:border-box;
- color:#ffe4b9;background:#201711;border:1px solid #957149;border-radius:7px;
- padding:10px;font:12px Manrope,Arial,sans-serif}
+.build-compare-select:focus-visible{outline:2px solid #e8c288;outline-offset:2px}
+.build-compare-content{display:grid;gap:10px;padding:0 12px 12px;min-width:0}
+.build-compare-content[hidden],.build-compare-table-wrap[hidden]{display:none!important}
+.build-compare-controls{display:grid;grid-template-columns:minmax(0,1fr) 36px minmax(0,1fr);
+ align-items:end;gap:8px;min-width:0}
+.build-compare-select-label{display:grid;gap:4px;min-width:0;
+ font:650 11px Manrope,Arial,sans-serif;color:#dbc39a}
+.build-compare-select{width:100%;min-width:0;min-height:35px;
+ color:#ffe4b9;background:#201711;border:1px solid #957149;border-radius:6px;
+ padding:6px;font:11px Manrope,Arial,sans-serif;box-sizing:border-box}
 .build-compare-select option{background:#21180f;color:#f7d9ae}
-.build-compare-swap{min-width:40px;min-height:41px;font-size:20px}
-.build-compare-options{display:grid;gap:9px}
-.build-compare-categories{display:flex;flex-wrap:wrap;gap:5px}
-.build-compare-categories button{padding:8px 10px;border:1px solid #78593c;
- border-radius:6px;color:#ccb18b;background:#2d2016;cursor:pointer;
- font:650 10px Manrope,Arial,sans-serif}
-.build-compare-categories button.chosen,.build-compare-categories button[aria-pressed="true"]{
- border-color:#d0a266;background:#5a3b22;color:#fff0cd;
- box-shadow:inset 0 1px rgba(255,228,176,.1)}
-.build-compare-categories button:hover{border-color:#cd9e63;color:#f7d3a0}
-.build-compare-options-row{display:flex;align-items:center;justify-content:space-between;
- flex-wrap:wrap;gap:10px}
-.build-compare-differences{display:flex;align-items:center;gap:7px;
- font:12px Manrope,Arial,sans-serif;color:#e0c29c;cursor:pointer}
-.build-compare-differences input{width:17px;height:17px;accent-color:#c99a53}
-.build-compare-search{flex:1 1 170px;max-width:370px;width:100%;min-height:35px;
- box-sizing:border-box;color:#ffe2b5;background:#1e160f;border:1px solid #876842;
- border-radius:5px;padding:8px 10px;font:11px Manrope,Arial,sans-serif}
-.build-compare-summary{font:600 11px/1.5 Manrope,Arial,sans-serif;
- border-left:3px solid #b68e55;padding:8px 11px;background:#2c2116;color:#e5c9a0}
-.build-compare-table-wrap{max-width:100%;overflow:auto;border:1px solid #785939;
- border-radius:8px;background:#201810;scrollbar-color:#836343 #211810;
+.build-compare-swap{min-width:36px;min-height:35px;padding:4px;font-size:19px}
+.build-compare-summary{margin:0;color:#c8ad86;font:11px/1.4 Manrope,Arial,sans-serif}
+.build-compare-table-wrap{max-width:100%;min-width:0;overflow-x:auto;
+ border:1px solid #785939;border-radius:7px;background:#201810;
  -webkit-overflow-scrolling:touch}
-.build-compare-table{min-width:570px;width:100%;border-collapse:collapse;
- font:12px/1.45 Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums;
- table-layout:fixed;color:#ecd7b6}
-.build-compare-table thead th{position:sticky;top:0;z-index:2;background:#47301f;
- border-bottom:1px solid #a37e4d;color:#fad6a3;padding:11px 10px;
- text-align:right;font-size:11px;white-space:normal}
-.build-compare-table thead th:first-child{text-align:left;width:38%}
-.build-compare-table thead th:nth-child(2),
-.build-compare-table thead th:nth-child(3){width:22%}
-.build-compare-table thead th:last-child{width:18%}
-.build-compare-table tbody th,.build-compare-table tbody td{
- border-bottom:1px solid rgba(183,146,97,.14);
- padding:8px 10px;overflow-wrap:anywhere;text-align:right}
-.build-compare-table tbody th{text-align:left;font-weight:570}
-.build-compare-table tbody tr:not(.build-compare-group):not(.build-compare-empty):hover{
- background:rgba(184,137,74,.11)}
-.build-compare-table .build-compare-group th{background:#352519;
- border-top:1px solid #775638;border-bottom:1px solid #755638;
- padding:10px 11px;color:#e9b976;font-weight:750;font-size:11px;
- text-transform:uppercase;letter-spacing:.035em}
-.build-compare-table tr[hidden],.build-compare-table .build-compare-empty[hidden]{
- display:none!important}
-.build-compare-table tr[data-compare-equal="true"]{color:#ab9981}
-.build-compare-table td[data-direction="up"]{color:#b2dfac;font-weight:750}
-.build-compare-table td[data-direction="down"]{color:#edb7a0;font-weight:750}
-.build-compare-table td[data-direction="flat"]{color:#ad9d86}
-.build-compare-table .build-compare-empty td{text-align:left;padding:17px;
- color:#cbb99b;font-size:11px}
-.build-compare-note{margin:0;font:10px/1.5 Manrope,Arial,sans-serif;
- color:#bdab94}
+.build-compare-table{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed;
+ color:#ecd7b6;font:12px/1.35 Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums}
+.build-compare-table th,.build-compare-table td{padding:7px 8px;
+ border-bottom:1px solid rgba(183,146,97,.15);overflow-wrap:anywhere;
+ text-align:right;vertical-align:middle}
+.build-compare-table thead th{color:#f5d6a4;background:#443021;font-size:11px}
+.build-compare-table th:first-child{text-align:left;width:43%}
+.build-compare-table thead th:last-child{width:20%}
+.build-compare-table tbody th{font-weight:550}
+.build-compare-table tbody tr:last-child th,.build-compare-table tbody tr:last-child td{
+ border-bottom:0}
+.build-compare-table tbody tr:hover{background:rgba(184,137,74,.09)}
+.build-compare-table td[data-direction="up"]{color:#b2dfac;font-weight:700}
+.build-compare-table td[data-direction="down"]{color:#edb7a0;font-weight:700}
+.build-compare-table td[data-direction="unavailable"]{color:#ad9d86}
 .build-card:has(input[aria-label^="Сравнить "]:checked),
 .build-card:has(input[aria-label^="Compare "]:checked){border-color:#cc9b59;
  box-shadow:0 0 0 1px rgba(215,164,89,.22)}
 @media(max-width:700px){
- .build-compare-header{padding:11px}
- .build-compare-heading h3{font-size:20px}
- .build-compare-content{padding:11px}
+ .build-compare-header{padding:8px 10px}
+ .build-compare-title{font-size:19px}
+ .build-compare-content{padding:0 9px 9px}
  .build-compare-controls{grid-template-columns:minmax(0,1fr) 32px minmax(0,1fr);gap:5px}
- .build-compare-select{font-size:11px;padding:6px;min-height:40px}
- .build-compare-swap{min-width:32px;padding:5px}
- .build-compare-categories button{flex:1 1 auto;padding:8px}
- .build-compare-table{min-width:490px;font-size:11px}
+ .build-compare-select{font-size:10px;padding:5px}
+ .build-compare-swap{min-width:32px;padding:4px}
+ .build-compare-table{font-size:10px}
+ .build-compare-table th,.build-compare-table td{padding:6px 4px}
 }
-@media(prefers-reduced-motion:reduce){.build-compare-panel *{scroll-behavior:auto!important}}
+@media(prefers-reduced-motion:reduce){
+ .build-compare-panel *{scroll-behavior:auto!important}
+}

@@ -52,14 +52,14 @@ test('A/B matrix uses verified English items and souls while preserving Russian 
  assert.equal(a.equipment[0].id,1);assert.equal(b.souls[0][0].id,32);
 });
 
-test('official English is passed to the actual active A/B matrix renderer',()=>{
+test('compact result comparison uses translated Hero Book outcomes',()=>{
  const app=read('pandora-studio-app.js');
- const start=app.indexOf('PandoraBuildComparison.matrixRows(');
- const end=app.indexOf('let current=null;',start);
- assert.ok(start>=0&&end>start,'The full A/B invocation must exist');
- const matrix=app.slice(start,end);
- assert.match(matrix,/englishItems:officialEnglish\?\.items\|\|\{\}/);
- assert.match(matrix,/englishSouls:officialEnglish\?\.souls\|\|\{\}/);
- assert.match(matrix,/englishSkills:officialEnglish\?\.skills\|\|\{\}/);
- assert.doesNotMatch(app,/function compareSnapshots\(/);
+ const start=app.indexOf('PandoraBuildComparison.compactResults(');
+ const end=app.indexOf('summary.textContent=rows.length',start);
+ assert.ok(start>=0&&end>start,'Active compact renderer');
+ const snippet=app.slice(start,end);
+ assert.match(snippet,/PandoraStageAttributes\.summaryRows\(calcA\)/);
+ assert.match(snippet,/PandoraStageAttributes\.summaryRows\(calcB\)/);
+ assert.match(snippet,/\{lang\}/);
+ assert.doesNotMatch(snippet,/englishItems:|englishSouls:|englishSkills:/);
 });
