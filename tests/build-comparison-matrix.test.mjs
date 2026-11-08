@@ -268,3 +268,48 @@ test('missing locale records must not hide distinct valid elemental gems',()=>{
  assert.equal(gem.b,'Самоцвет не распознан');
  assert.equal(gem.equal,false);
 });
+
+test('A/B legacy numeric buff strings remain readable without changing saved data',()=>{
+ const a={...structuredClone(first),attributeBuffs:{guildAll:'5',priestSpi:'134'},
+  vitalsBuffs:{guildHp:'3'}};
+ const b={...structuredClone(a),attributeBuffs:{guildAll:5,priestSpi:134},
+  vitalsBuffs:{guildHp:3}};
+ const before=JSON.stringify(a);
+ const rows=comparison.matrixRows(a,b,opts);
+ for(const [key,value] of [['buff.guildAll','5'],['priest.priestSpi','134'],
+  ['vital.guildHp','3']]){
+  const row=rows.find(row=>row.key===key);
+  assert.equal(row.a,value);
+  assert.equal(row.b,value);
+  assert.equal(row.equal,true);
+  assert.equal(row.delta,'0');
+ }
+ assert.equal(JSON.stringify(a),before,'Legacy saved payload must not be normalized in-place');
+});
+
+test('damaged enhancement values remain unknown, never fake zero or Off',()=>{
+ const a={...structuredClone(first),
+  vitalsBuffs:{guildHp:'not-a-number',lifeSign:'broken'},
+  attributeBuffs:{guildAll:-1,priestSpi:Infinity,combatWarCry:'true'}};
+ const b={...structuredClone(first),
+  vitalsBuffs:{guildHp:3,lifeSign:false},
+  attributeBuffs:{guildAll:2,priestSpi:30,combatWarCry:false}};
+ const rows=comparison.matrixRows(a,b,opts),find=key=>rows.find(x=>x.key===key);
+ for(const [key,expected] of [
+  ['vital.guildHp','3'],['vital.lifeSign','Выкл'],
+  ['buff.guildAll','2'],['priest.priestSpi','30'],
+  ['buff.combatWarCry','Выкл']]){
+  const row=find(key);
+  assert.equal(row.a,'—','Bad saved '+key+' may not be displayed as a real value');
+  assert.equal(row.b,expected);
+  assert.equal(row.delta,null);
+  assert.equal(row.equal,false,'Only differences must reveal corrupt '+key);
+ }
+ const messages=comparison.describe(a,b,{lang:'ru'});
+ assert.ok(messages.some(s=>s.includes('Гильдия: ОЗ: — → 3')),
+  'Short descriptions should not leak JavaScript null or invent a zero');
+ assert.ok(messages.some(s=>s.includes('Боевой клич: — → выкл')));
+ const english=comparison.matrixRows(a,b,{...opts,lang:'en'});
+ assert.equal(english.find(x=>x.key==='buff.combatWarCry').a,'—');
+ assert.equal(english.find(x=>x.key==='buff.combatWarCry').b,'Off');
+});
