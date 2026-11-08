@@ -88,7 +88,16 @@ function validate(input){
   for(const row of [...(group.d||[]),...(group.s||[])])
    if(row.i!=null)requireRef(item(row.i),'предмет добычи монстра');
  }
+ // NPC trade lists preserve recipes individually. A duplicate or absent
+ // source recipe ID creates indistinguishable offers despite valid item/NPC
+ // links and can survive a simple published-row count check.
+ const seenTrades=new Set();
  for(const recipe of data.trades.trades){
+  const id=String(recipe?.id);
+  requireRef(isRecord(recipe)&&/^[1-9][0-9]{0,14}$/.test(id)&&
+   Number.isSafeInteger(Number(id))&&!seenTrades.has(id),
+   'повторный или некорректный обмен NPC');
+  seenTrades.add(id);
   requireRef(item(recipe.i),'награда обмена NPC');
   for(const material of recipe.mats||[])
    requireRef(item(material.i),'материал обмена NPC');

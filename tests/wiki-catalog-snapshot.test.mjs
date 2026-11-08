@@ -349,3 +349,36 @@ test('duplicate or missing dungeon IDs must not silently replace an Encyclopedia
  assert.equal(loaded.source,'local');
  assert.deepEqual(loaded.data.instances.map(row=>row.id),[1,2]);
 });
+
+test('D1 exchange recipes must have distinct valid IDs even when NPC and item match',async()=>{
+ const clean=catalog('same reward');
+ // Two recipes for the SAME NPC and item are legitimate when their own IDs
+ // differ. Never deduplicate merely because the displayed rewards match.
+ clean.trades.trades.push({id:2,i:1,npc:[1],mats:[{i:1,n:2}]});
+ clean.meta.counts.trades=2;
+ assert.doesNotThrow(()=>loader.validate(clean));
+
+ const duplicate=structuredClone(clean);
+ duplicate.trades.trades[1].id=1;
+ assert.throws(()=>loader.validate(duplicate),/обмен NPC/);
+
+ for(const invalid of [undefined,null,0,-2,'wrong','01',1.5]){
+  const broken=structuredClone(clean);
+  if(invalid===undefined)delete broken.trades.trades[1].id;
+  else broken.trades.trades[1].id=invalid;
+  assert.throws(()=>loader.validate(broken),/обмен NPC/,String(invalid));
+ }
+ const legacy=structuredClone(clean);
+ legacy.trades.trades[1].id='2';
+ assert.doesNotThrow(()=>loader.validate(legacy),
+  'Valid numeric recipe IDs serialized as strings remain supported');
+
+ const badRemote=mockFetch(duplicate,clean);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:badRemote.fetcher,strict:true}),/обмен NPC/);
+ const backup=mockFetch(duplicate,clean);
+ const result=await loader.load({api:'https://worker.example',fetcher:backup.fetcher});
+ assert.equal(result.source,'local');
+ assert.equal(result.data.trades.trades.length,2);
+ assert.deepEqual(result.data.trades.trades.map(row=>row.id),[1,2]);
+});
