@@ -4,7 +4,8 @@ import {DATASETS,compareCatalog} from '../scripts/audit-live-catalog-parity.mjs'
 
 test('read-only audit includes every player-facing D1 catalog dataset',()=>{
  assert.deepEqual(DATASETS,['items','skills','souls','monsters','drops','maps',
-  'instances','trades','tables','chests','racialPassives']);
+  'instances','trades','tables','chests','racialPassives','classes',
+  'itemForth','unison','expertise','stringsEn']);
 });
 test('the same gameplay records compare without rewriting either input',()=>{
  const a={1:{id:1,name:'Меч',attrs:{atk:4,agi:1}}};

@@ -6,7 +6,8 @@ import {pathToFileURL} from 'node:url';
 
 export const DATASETS=Object.freeze([
  'items','skills','souls','monsters','drops','maps','instances',
- 'trades','tables','chests','racialPassives'
+ 'trades','tables','chests','racialPassives','classes','itemForth',
+ 'unison','expertise','stringsEn'
 ]);
 const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/';
 const canon=value=>Array.isArray(value)?value.map(canon):
@@ -65,7 +66,9 @@ async function run({strictRu=false,fetcher=fetch}={}){
  let snapshot=null,failures=0,translations=0;
  for(const dataset of DATASETS){
   try{
-   const local=JSON.parse(readFileSync(new URL('../data/os/'+dataset+'.json',
+   // D1 uses stringsEn while the checked-in original is strings.en.json.
+   const localFile=dataset==='stringsEn'?'strings.en.json':dataset+'.json';
+   const local=JSON.parse(readFileSync(new URL('../data/os/'+localFile,
     import.meta.url),'utf8'));
    const response=await fetcher(endpoint+dataset+'.json',{
     cache:'no-store',signal:AbortSignal.timeout(15000)});
