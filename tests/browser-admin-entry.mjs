@@ -489,7 +489,10 @@ export async function runAdminEntrySmoke(browser,base){
     ?.includes('Cloudflare Worker не смог установить соединение с сайтом игры'),null,{timeout:15000});
   await dialog.locator('.os-sync-diagnostics>summary').click();
   assert.match(await dialog.locator('.os-sync-diagnostics').innerText(),/Причина: network/);
-  assert.match(await dialog.locator('.os-sync-diagnostics').innerText(),/meta[.]json/);
+  // Game-source requests are parallel: the first failed data file is
+  // not always meta.json. Preserve the source, HTTP and network checks.
+  assert.match(await dialog.locator('.os-sync-diagnostics').innerText(),
+   /Этап: [a-zA-Z0-9_-]+[.]json · Ответ Worker: 502/);
   assert.equal(await dialog.locator('.os-sync-archive-choice').getAttribute('open'),'');
   assert.equal(await dialog.locator('.os-sync-review-steps').isHidden(),true,
     'a failed game-source check cannot leave publishing enabled');

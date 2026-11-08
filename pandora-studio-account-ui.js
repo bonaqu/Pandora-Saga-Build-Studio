@@ -93,7 +93,7 @@ function setSession(result){
  pendingRecoveryCode=recovery;
  resetFeedback();
 }
-function clearSession(){
+function clearSession({revokeMatchingOwner=false}={}){
  const previousToken=session?.token||null,
   previousName=session?.username||null,previousExpires=session?.expires??null;
  session=null;pendingRecoveryCode=null;
@@ -107,8 +107,11 @@ function clearSession(){
    const saved=JSON.parse(localStorage.getItem(KEY)||'null');
    // A newer login on another tab may reuse the bearer string. Never
    // erase a different owner or a newer expiry just because it matches.
+   // A revoked bearer must sign out every tab of the same owner, even if
+   // another tab refreshed its expiry. Passive expiration instead protects
+   // any newer saved login with a different expiry.
    if(saved?.token===previousToken&&validName(saved?.username)===previousName&&
-    saved?.expires===previousExpires)localStorage.removeItem(KEY);
+    (revokeMatchingOwner||saved?.expires===previousExpires))localStorage.removeItem(KEY);
   }catch{}
  }
 }
@@ -221,7 +224,7 @@ function render(){
    // A delayed logout belongs to one local session, not merely to a bearer
    // string that a later (mocked or real) login could have reused.
    if(session?.token!==owner||sessionRevision!==revision)return;
-   clearSession();options.onLogout?.();render();
+   clearSession({revokeMatchingOwner:true});options.onLogout?.();render();
   },'account-signout'));
   panel.append(footer,errorLine);return;
  }
@@ -366,7 +369,7 @@ async function init(config){
   }catch(error){
    if(session?.token!==bootstrapToken||sessionRevision!==bootstrapRevision){finishBootstrap();return}
    if(error?.httpStatus===401||error?.httpStatus===403){
-    clearSession();
+    clearSession({revokeMatchingOwner:true});
     forceBootstrapRender=true;
     options.onLogout?.({bootstrap:true});
    }else{
