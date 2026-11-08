@@ -23,7 +23,7 @@ import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
 import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
-import {runBuildComparisonSmoke} from './browser-build-comparison.mjs';
+import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build-comparison.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
@@ -350,6 +350,7 @@ async function main(){
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
   ['honor-guide',runHonorGuideSmoke],
   ['build-comparison',runBuildComparisonSmoke],
+  ['saved-builds-english',runSavedBuildEnglishSmoke],
   ['effect-items',runEffectItemsSmoke],
   ['wiki-skill-filters',runWikiSkillFiltersSmoke],
   ['wiki-skill-label-editor',runWikiSkillLabelEditorSmoke],

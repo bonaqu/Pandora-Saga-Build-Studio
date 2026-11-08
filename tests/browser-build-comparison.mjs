@@ -97,3 +97,56 @@ export async function runBuildComparisonSmoke(browser,base){
   console.log('Chromium inline build comparison passed: A/B, real delta, all/diff/filter, swap and responsive UI');
  }finally{await context.close()}
 }
+
+export async function runSavedBuildEnglishSmoke(browser,base){
+ const secret='c'.repeat(64);
+ const library=Array.from({length:6},(_,i)=>({
+  id:(i+1).toString(16).repeat(32),
+  name:i===5?'Сияние героя':'Build '+(i+1),at:100+i,
+  data:{race:1,gender:0,job:16,level:10+i,name:'Сияние героя'}
+ }));
+ const original=JSON.stringify(library);
+ const context=await browser.newContext({viewport:{width:1280,height:860}});
+ await context.addInitScript(({secret,library})=>{
+  localStorage.setItem('ps-build-library-secret.v1',secret);
+  localStorage.setItem('ps-build-library.v1',JSON.stringify(library));
+ },{secret,library});
+ await context.route('**/*',route=>route.request().url().startsWith(base+'/')?
+  route.continue():route.abort());
+ const page=await context.newPage(),errors=[];
+ page.on('pageerror',error=>errors.push(error.message));
+ try{
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  await page.locator('#nav [data-tab="builds"]').click();
+  const cards=page.locator('.build-card');
+  await cards.first().waitFor({state:'visible',timeout:20000});
+  assert.equal(await cards.count(),6,'Six saved builds must be present');
+  const hero=cards.filter({has:page.getByRole('heading',{name:'Сияние героя'})});
+  assert.equal(await hero.count(),1,'Player-authored names are never translated');
+  assert.match(await hero.locator('p').first().innerText(),/^Elf · /);
+  const search=page.locator('.build-library-search');
+  assert.equal(await search.getAttribute('placeholder'),'Search by name, class or level…');
+  await search.fill('Elf');
+  assert.equal(await page.locator('.build-card:visible').count(),6);
+  await search.fill('Эльф');
+  assert.equal(await page.locator('.build-card:visible').count(),6);
+  await search.fill('Human');
+  assert.equal(await page.locator('.build-card:visible').count(),0);
+  assert.match(await page.locator('.build-grid + .muted').innerText(),
+   /No builds match this search/);
+  await search.fill('');
+  await hero.getByRole('button',{name:'↻ Save to this build'}).click();
+  const warning=await hero.locator('.build-overwrite-choice p').innerText();
+  assert.match(warning,/^Overwrite saved build “Сияние героя”/);
+  assert.match(warning,/cannot be restored\.$/);
+  assert.doesNotMatch(warning,/Перезаписать|Предыдущую/);
+  assert.equal(await hero.getByRole('button',{name:'Confirm overwrite'}).isVisible(),true);
+  const persisted=await page.evaluate(()=>
+   JSON.stringify(JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')));
+  assert.equal(persisted,original,'Previewing overwrite must not change saved data');
+  assert.deepEqual(errors,[]);
+  console.log('Chromium saved-build EN passed: localized race, bilingual search, dynamic prompt');
+ }finally{await context.close()}
+}

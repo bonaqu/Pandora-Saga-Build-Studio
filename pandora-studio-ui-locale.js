@@ -70,6 +70,7 @@ const english=Object.freeze({
  'Сохранить текущий и открыть':'Save current and open','Открыть без сохранения':'Open without saving',
  'Удалить билд и отозвать все созданные ссылки?':'Delete this build and revoke all its links?',
  'Удалить билд':'Delete build','Открыть':'Open','↻ Перезаписать':'↻ Overwrite',
+ '↻ Сохранить в этот билд':'↻ Save to this build',
  'Перезаписать этот сохранённый билд текущими локальными изменениями?':'Overwrite this saved build with your current local changes?',
  'Подтвердить перезапись':'Confirm overwrite',
  '🔗 Поделиться':'🔗 Share','Удалить':'Delete',
