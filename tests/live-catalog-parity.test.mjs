@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {DATASETS,compareCatalog,describeCatalogDifference,describeDescriptionDrift} from '../scripts/audit-live-catalog-parity.mjs';
+import {DATASETS,compareCatalog,describeCatalogDifference,describeDescriptionDrift,validateDescriptionReferences} from '../scripts/audit-live-catalog-parity.mjs';
 
 test('read-only audit includes every player-facing D1 catalog dataset',()=>{
  assert.deepEqual(DATASETS,['items','skills','souls','monsters','drops','maps',
@@ -88,4 +88,25 @@ test('English nested locale descriptions are classified without leaking translat
  assert.equal(compareCatalog(source,live,'stringsEn').equal,false);
  const summary=JSON.stringify(describeDescriptionDrift(source,live,'stringsEn'));
  assert.doesNotMatch(summary,/Sword|Cut|Soul|HP/);
+});
+
+test('description item references resolve only to real catalog records',()=>{
+ const input={items:{'80100':{desc:'Используется <item 300001>.'},
+  '300001':{desc:'Билет'}},souls:{1:{desc:'Ссылка <item 80100>'}},
+  stringsEn:{items:{1:{d:'No link'}},souls:{}}};
+ assert.deepEqual(validateDescriptionReferences(input),{total:2,unresolved:0});
+ const bad=structuredClone(input);
+ bad.items['80100'].desc+=' <item 999999> <item invalid>';
+ assert.deepEqual(validateDescriptionReferences(bad),{total:4,unresolved:2});
+ assert.equal(input.items['80100'].desc,'Используется <item 300001>.');
+});
+test('current GitHub archive has no dangling description references',()=>{
+ const data={
+  items:JSON.parse(read('data/os/items.json')),
+  souls:JSON.parse(read('data/os/souls.json')),
+  stringsEn:JSON.parse(read('data/os/strings.en.json'))
+ };
+ const result=validateDescriptionReferences(data);
+ assert.ok(result.total>=2,'Archive must keep the verified Halloween references');
+ assert.equal(result.unresolved,0,'No source-backed item marker may point to an absent item');
 });
