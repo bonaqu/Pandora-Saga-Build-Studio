@@ -1,7 +1,8 @@
 import {readFileSync} from 'node:fs';
 const expected=JSON.parse(readFileSync(new URL('../site-version.json',import.meta.url),'utf8')).release;
 const site='https://bonaqu.github.io/Pandora-Saga-Build-Studio/site-version.json';
-const max=24;
+// Wait for queued Pages deployments; a later push cancels older checks.
+const max=60;
 for(let i=1;i<=max;i++){
  let current='unavailable';
  try{

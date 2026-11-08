@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.501.0 — 2026.11.08.501 · Автоматическая read-only проверка D1 после публикации GitHub Pages
+
+- Live-readonly check is triggered on bonaqu_projects push because the built-in GitHub Pages dynamic deployment did not emit observable workflow_run events.
+- The check waits for the public version (up to 60 attempts at 5-second intervals) before verifying Worker, CORS and D1; a newer release cancels the old check.
+- Schedule, manual dispatch and workflow_run are retained. No D1 writes or credentials. Verify an actual post-merge run before claiming the trigger operational.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.500.0 — 2026.11.08.500 · Проверка реальных ссылок предметов и честный отчёт целостности D1
 
 - Read-only сверка архивных и опубликованных описаний RU/EN проверяет каждую ссылку <item N> по реальному каталогу ID и не допускает висячих ссылок даже при идентичных исходниках.
