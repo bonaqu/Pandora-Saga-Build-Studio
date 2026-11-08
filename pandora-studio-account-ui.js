@@ -316,6 +316,18 @@ function render(){
 
 }
 async function init(config){
+ // This classic script can run long before the deferred main app initializes.
+ // A different tab may sign in during that gap. Do not freeze an earlier guest
+ // observation: claim a newly persisted *valid* session before owner bootstrap.
+ // Never replace an already-active in-memory account with another tab's owner.
+ if(!session)try{
+  const latest=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(validSession(latest)){
+   session={token:latest.token,expires:latest.expires,
+    username:validName(latest.username)};
+   sessionRevision++;
+  }
+ }catch{}
  options=config;
  trigger=document.getElementById('profileTrigger');
  panel=document.getElementById('accountPanel');

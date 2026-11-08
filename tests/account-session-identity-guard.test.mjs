@@ -70,6 +70,56 @@ test('restored session is trusted only with canonical owner, token, future finit
  assert.equal(valid.events.login.length,1);
 });
 
+
+test('a session persisted after script load but before init is restored, not treated as guest',async()=>{
+ // The account classic script is evaluated by create() with empty storage.
+ // A separate tab then signs in while the deferred app bundle is still loading.
+ let sent=0;
+ const c=create({fetchImpl:async(url,options)=>{
+  sent++;
+  assert.match(url,/\/api\/account\/me$/);
+  assert.equal(options.headers.Authorization,'Bearer '+'a'.repeat(43));
+  return reply({username:'alice_01'});
+ }});
+ assert.equal(c.api.isLoggedIn(),false);
+ c.storage.setItem('ps-account-session.v1',JSON.stringify(session()));
+ await c.init();
+ assert.equal(sent,1,'Newly persisted account must be verified through /me');
+ assert.equal(c.api.username(),'alice_01');
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'verified');
+ assert.equal(c.events.login.length,1);
+ assert.equal(c.events.guest.length,0,
+  'No guest library request when a valid account arrived before initialization');
+});
+
+test('late account discovery keeps network outages as offline account, not guest',async()=>{
+ const gate=deferred();
+ const c=create({fetchImpl:()=>gate.promise});
+ c.storage.setItem('ps-account-session.v1',JSON.stringify(session()));
+ const boot=c.init();
+ assert.equal(c.api.username(),'alice_01');
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'pending');
+ assert.equal(c.events.guest.length,0);
+ gate.resolve(reply({},503));
+ await boot;
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'offline');
+ assert.equal(c.events.login.length,1);
+ assert.equal(c.events.guest.length,0);
+ assert.equal(c.api.username(),'alice_01');
+});
+
+test('init never replaces a tab-local existing owner with a newer login in another tab',async()=>{
+ const alice=session();
+ const c=create({stored:alice});
+ c.storage.setItem('ps-account-session.v1',
+  JSON.stringify(session('bob_222','b'.repeat(43))));
+ await c.init();
+ assert.equal(c.api.username(),'alice_01');
+ assert.equal(c.events.login.length,1);
+ assert.equal(c.events.guest.length,0);
+ assert.equal(JSON.parse(c.storage.getItem('ps-account-session.v1')).username,'bob_222');
+});
+
 test('successful /me must reject a different verified owner',async()=>{
  const c=create({stored:session(),fetchImpl:async()=>reply({username:'bob_222'})});
  await c.init();
