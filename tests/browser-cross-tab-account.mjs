@@ -69,7 +69,7 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
     catalogStatus:document.querySelector('#catalogStatus')?.textContent||'',
     readyState:document.readyState
    }));
-   // Only HTTP status codes, never authorization headers or token values.
+   // Diagnostic contains HTTP status codes only, never secret-bearing headers.
    diagnostic.meStatuses=meStatuses.slice(-5);
    // No session tokens, passwords or private keys in CI logs.
    throw Error('Cross-tab account bootstrap for '+username+
