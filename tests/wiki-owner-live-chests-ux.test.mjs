@@ -110,7 +110,8 @@ test('NPC chest chance edit preserves every source gold range and its key',()=>{
  });
  const updated=changed.chests.npc.find(row=>row.i===52002);
  assert.equal(updated.rolls[0][goldIndex].p,4.5);
- assert.deepEqual(updated.rolls[0][goldIndex].gold,draft[0][goldIndex].gold);
+ assert.deepEqual(Array.from(updated.rolls[0][goldIndex].gold),draft[0][goldIndex].gold,
+  'The VM-owned result preserves both numeric gold endpoints');
  assert.equal(updated.key,npc.key);
  assert.equal(changed.chests.boxes,chests.boxes,'Normal chests stay untouched');
  assert.equal(JSON.stringify(npc),original,'Source D1 game data must be immutable');
