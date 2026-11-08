@@ -72,6 +72,29 @@ function savedNonnegativeInteger(raw){
 // Historical builds without an explicit grade are unrefined (+0).
 // Identity stays internal: two different damaged values remain different in
 // "Differences only", while the player sees only a neutral dash.
+// Historical missing values keep their defaults; invalid explicit fields
+// stay unknown rather than impersonating a genuine user choice.
+function savedGender(snap){
+ const raw=snap?.gender;
+ if(raw===undefined||raw===null||raw==='')return 0;
+ if(raw===0||raw===1)return raw;
+ if(typeof raw==='string'&&/^[01]$/.test(raw.trim()))return Number(raw.trim());
+ return null;
+}
+function savedMasteryAuto(snap){
+ const raw=snap?.masteryAuto;
+ return raw===undefined||raw===null?true:typeof raw==='boolean'?raw:null;
+}
+function savedHonorTitle(snap){
+ const buffs=snap?.attributeBuffs,raw=buffs?.honorTitle;
+ if(raw===undefined||raw===null||raw==='')return buffs?.honorCuriosity===true?1:0;
+ const value=typeof raw==='string'&&/^(0|[1-9][0-9]*)$/.test(raw.trim())?
+  Number(raw.trim()):raw;
+ return Number.isSafeInteger(value)&&value>=0?value:null;
+}
+function identityOf(value){
+ try{return JSON.stringify(value)}catch{return 'unreadable'}
+}
 function savedRefinement(snap,slot,item,calculate){
  if(!item||item.id==null||typeof calculate!=='function')
   return {value:null,identity:null};
@@ -117,10 +140,11 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
  const lbl=(ru,en)=>english?en:ru;
  const arrow=(name,x,y)=>rows.push(name+': '+x+' → '+y);
  const fmt=v=>v===null?'—':typeof v==='boolean'?lbl(v?'вкл':'выкл',v?'on':'off'):String(v);
- const gender=value=>value?.gender===1?1:0;
+ const gender=value=>savedGender(value);
+ const genderName=value=>value===null?'—':value===1?
+  lbl('мужской','male'):lbl('женский','female');
  if(gender(a)!==gender(b))arrow(lbl('Пол персонажа','Character gender'),
-  gender(a)===1?lbl('мужской','male'):lbl('женский','female'),
-  gender(b)===1?lbl('мужской','male'):lbl('женский','female'));
+  genderName(gender(a)),genderName(gender(b)));
  for(let i=0;i<14;i++){
   const before=gemAt(a,i,enchant),after=gemAt(b,i,enchant);
   if(JSON.stringify(before)===JSON.stringify(after))continue;
@@ -138,11 +162,11 @@ function describe(a,b,{lang='ru',slotLabels=[],enchant=null,honorTitles=[]}={}){
    after=asValue(b?.attributeBuffs?.[field],fallback);
   if(before!==after)arrow(lbl(ru,en),fmt(before),fmt(after));
  }
- const titleId=x=>Number.isInteger(x?.attributeBuffs?.honorTitle)?
-  x.attributeBuffs.honorTitle:(x?.attributeBuffs?.honorCuriosity===true?1:0);
+ const titleId=savedHonorTitle;
  const at=titleId(a),bt=titleId(b);
  if(at!==bt){
   const name=id=>{
+   if(id===null)return '—';
    const known=honorTitles[id]?.[english?'en':'ru'];
    return typeof known==='string'&&known.trim()?known:
     id===0?lbl('Без титула','None'):
@@ -194,17 +218,26 @@ function matrixRows(a={},b={},options={}){
  const section=(ru,en)=>label(ru,en);
  const metadata=section('Персонаж','Character');
  push('character',metadata,'race','Раса','Race',
-  races[a.race]?.[english?1:0],races[b.race]?.[english?1:0]);
- push('character',metadata,'gender','Пол','Gender',a.gender===1?
-  label('Мужской','Male'):label('Женский','Female'),
-  b.gender===1?label('Мужской','Male'):label('Женский','Female'));
- push('character',metadata,'job','Профессия','Class',jobs[a.job],jobs[b.job]);
+  races[a.race]?.[english?1:0],races[b.race]?.[english?1:0],
+  {identityA:String(a.race??''),identityB:String(b.race??'')});
+ const genderName=value=>value===null?null:value===1?
+  label('Мужской','Male'):label('Женский','Female');
+ const genderA=savedGender(a),genderB=savedGender(b);
+ push('character',metadata,'gender','Пол','Gender',
+  genderName(genderA),genderName(genderB),{
+   identityA:genderA===null?'invalid:'+identityOf(a.gender):String(genderA),
+   identityB:genderB===null?'invalid:'+identityOf(b.gender):String(genderB)
+  });
+ push('character',metadata,'job','Профессия','Class',jobs[a.job],jobs[b.job],
+  {identityA:String(a.job??''),identityB:String(b.job??'')});
  push('character',metadata,'level','Уровень','Level',a.level,b.level,{kind:'number'});
  const profile=section('Профиль','Profile');
+ const profileText=value=>value===undefined||value===null?'':typeof value==='string'?
+  value.slice(0,250):null;
  for(const [key,ru,en] of [['guild','Гильдия','Guild'],['nation','Нация','Nation'],
   ['rank','Ранг','Rank'],['about','О герое','About']])
   push('character',profile,'profile.'+key,ru,en,
-   String(a.profile?.[key]||'').slice(0,250),String(b.profile?.[key]||'').slice(0,250));
+   profileText(a.profile?.[key]),profileText(b.profile?.[key]));
  const racialName=value=>{
   const id=value?.racialPassiveId;
   if(id==null)return '—';
@@ -261,8 +294,11 @@ function matrixRows(a={},b={},options={}){
   push('results',totals+' · '+label('Атака','Attack'),'attack.range',
    'Диапазон АТК','ATK range',attackRangeA,attackRangeB);
  const skillGroup=section('Ветви и мастерство','Branches & mastery');
+ const autoA=savedMasteryAuto(a),autoB=savedMasteryAuto(b);
  push('skills',skillGroup,'masteryAuto','Автоматическое мастерство','Automatic mastery',
-  a.masteryAuto!==false,b.masteryAuto!==false,{kind:'boolean'});
+  autoA,autoB,{kind:'boolean',
+   identityA:autoA===null?'invalid:'+identityOf(a.masteryAuto):String(autoA),
+   identityB:autoB===null?'invalid:'+identityOf(b.masteryAuto):String(autoB)});
  for(const branch of branches){
   const [id,ru,en]=branch;
   push('skills',skillGroup,'branch.'+id,ru,en,
@@ -364,25 +400,27 @@ function matrixRows(a={},b={},options={}){
    {kind:typeof fallback==='boolean'?'boolean':'number'});
  }
  const title=id=>{
+  if(id===null)return null;
   const known=honorTitles?.[id]?.[english?'en':'ru'];
   return typeof known==='string'&&known.trim()?known:
    id===0?label('Без титула','None'):
    label('Титул отсутствует в каталоге','Honor title unavailable');
  };
- const honorId=s=>Number.isInteger(s.attributeBuffs?.honorTitle)?
-  s.attributeBuffs.honorTitle:(s.attributeBuffs?.honorCuriosity===true?1:0);
- const honorA=honorId(a),honorB=honorId(b);
+ const honorA=savedHonorTitle(a),honorB=savedHonorTitle(b);
  push('buffs',buffGroup,'honorTitle','Титул чести','Honor title',
-  title(honorA),title(honorB),{identityA:String(honorA),identityB:String(honorB)});
+  title(honorA),title(honorB),{
+   identityA:honorA===null?'invalid:'+identityOf(a.attributeBuffs?.honorTitle):String(honorA),
+   identityB:honorB===null?'invalid:'+identityOf(b.attributeBuffs?.honorTitle):String(honorB)
+  });
  // Never expose internal skill IDs in a player-visible saved-build comparison.
  // Preserve identities separately: two missing source names can still differ.
  const resistanceSkills=s=>{
   const values=s.attributeBuffs?.resistanceSkillIds;
   if(values==null)return {names:'',identity:''};
-  if(!Array.isArray(values))return {names:null,identity:null};
+  if(!Array.isArray(values))return {names:null,identity:'invalid:'+identityOf(values)};
   const ids=values.map(String);
   if(ids.some(id=>!/^[1-9][0-9]*$/.test(id)||
-   !Number.isSafeInteger(Number(id))))return {names:null,identity:null};
+   !Number.isSafeInteger(Number(id))))return {names:null,identity:'invalid:'+identityOf(values)};
   const unique=[...new Set(ids)].sort((x,y)=>Number(x)-Number(y));
   const names=unique.map(id=>{
    const record=skillCatalog[id],official=englishSkills[id];
