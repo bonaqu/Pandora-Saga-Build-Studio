@@ -7,6 +7,10 @@ const start=app.indexOf('function renderSlotRails(){');
 const end=app.indexOf('\nfunction renderStageAttributes(){',start);
 assert.ok(start>0&&end>start);
 const source=app.slice(start,end);
+const labelStart=app.indexOf('const englishGearSlots=');
+const labelEnd=app.indexOf('\nfunction fresh()',labelStart);
+assert.ok(labelStart>=0&&labelEnd>labelStart,'Find the production gear translations');
+const localeSource=app.slice(labelStart,labelEnd);
 class Element{
  constructor(tag){this.tag=tag;this.children=[];this.attributes={};this.listeners={};
   this.className='';this.textContent='';this.dataset={};this.style={}}
@@ -20,7 +24,7 @@ const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Наг
  ['Серьга I','✧'],['Серьга II','✧']];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak',
  'ring','ring','neck','belt','ear','ear'];
-function fixture(issue=()=>[]){
+function fixture(issue=()=>[],language='ru'){
  const window={};
  Function('window',read('pandora-studio-equipment-plan.js'))(window);
  Function('window',read('pandora-studio-ui-planner.js'))(window);
@@ -50,12 +54,16 @@ function fixture(issue=()=>[]){
   }
   e.append(...children);return e;
  };
- const render=Function('window','state','$','slots','slotKeys','h','slotVisual',
+ const labels=Function('slots','lang',localeSource+
+  '\nreturn {gearSlotName,gearIssueLabel};')(slots,language);
+ const render=Function('window','state','$','slots','slotKeys','h',
+  'gearSlotName','gearIssueLabel','lang','slotVisual',
   'equippedRecord','equipmentIssue','itemIcon','itemName','selectedSlot','stageSlotPickerOpen',
   'selectedSocket','gearMode','stageSlotQuery','stageSoulQuery','stageSlotShown',
   'stageSlotView','renderStagePicker','catalog','gameTables',
   'hideStageRailWarning','showStageRailWarning',source+'\nreturn renderSlotRails;')(
-  window,state,$,slots,slotKeys,h,i=>h('span',{class:'slot-glyph',text:slots[i][1]}),
+  window,state,$,slots,slotKeys,h,labels.gearSlotName,labels.gearIssueLabel,language,
+  i=>h('span',{class:'slot-glyph',text:slots[i][1]}),
   i=>records[i]||null,issue,()=>null,
   r=>window.PandoraItemPresentation.displayName(r),0,false,0,'equipment','','',48,
   'choose',()=>{},{souls:{
@@ -96,4 +104,17 @@ test('persisted incompatible item keeps slot and receives a game-like inactive m
  assert.match(badge.attributes['data-issue-tooltip'],/Предмет не действует: Требуется уровень 40/);
  badge.listeners.pointerenter();
  assert.match(f.warning,/Требуется уровень 40/);
+});
+
+test('English gear rail shows shared source-backed labels and requirement text',()=>{
+ const f=fixture((record,slot)=>slot===0?['Требуется уровень 40']:[],'en');
+ const all=[...f.left.children,...f.right.children];
+ const weapon=all.find(x=>x.attributes['data-slot-index']==='0');
+ const empty=all.find(x=>x.attributes['data-slot-index']==='11');
+ assert.match(weapon.attributes['aria-label'],/Inactive: Requires level 40/);
+ assert.match(weapon.attributes['aria-label'],/Souls 2\/2/);
+ assert.equal(empty.attributes['aria-label'],'Belt · Empty');
+ assert.equal(empty.children.find(x=>x.tag==='small')?.textContent,'Belt');
+ assert.match(weapon.children.find(x=>x.className==='stage-conflict')
+  .attributes['aria-label'],/Item inactive: Requires level 40/);
 });

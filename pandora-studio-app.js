@@ -74,6 +74,26 @@ let heroPathPage=bootView.pathPage==='skills'?'skills':'growth',pathSkillQuery='
 const jobKeys=['WARRIOR','GLADIATOR','JUGGERNAUT','DRAGOON','KNIGHT','GENERAL','PALADIN','SCOUT','ARCHER','SNIPER','PREDATOR','AGENT','ASSASSIN','DISTURBANCE','ACOLYTE','PRIEST','CLERIC','ENCHANTER','ASCETIC','MONK','EXORCIST','MAGE','WIZARD','WARLOCK','CONJURER','DARKROAR','JESTER','CALAMITY'];
 const slotKeys=['weapon','shield','head','body','gloves','legs','feet','cloak','ring','ring','neck','belt','ear','ear'];
 const slots=[['Оружие','⚔'],['Щит','◈'],['Шлем','♜'],['Броня','♟'],['Перчатки','♧'],['Штаны','♙'],['Обувь','♧'],['Плащ','❧'],['Кольцо I','◉'],['Кольцо II','◉'],['Амулет','✥'],['Пояс','♢'],['Серьга I','✧'],['Серьга II','✧']];
+const englishGearSlots=['Weapon','Shield','Helmet','Armor','Gloves','Pants','Boots','Cloak',
+ 'Ring I','Ring II','Amulet','Belt','Earring I','Earring II'];
+const gearSlotName=index=>lang==='en'?englishGearSlots[index]:slots[index][0];
+// Game rule codes remain unchanged; localize their public explanation only.
+function gearIssueLabel(message){
+ if(lang!=='en')return message;
+ const en={
+  'Выберите расу и профессию':'Choose a race and class',
+  'Предмет отсутствует в каталоге':'Item is missing from the catalog',
+  'Предмет не подходит этому слоту':'Item cannot be equipped in this slot',
+  'Броня занимает также слот штанов':'Armor also occupies the pants slot',
+  'Не подходит происхождению героя':'Race requirement is not met',
+  'Это декоративный предмет':'Cosmetic equipment',
+  'Двуручное оружие занимает обе руки':'Two-handed weapon occupies both hands',
+  'Нет данных':'Item data unavailable','Другой слот':'Different equipment slot',
+  'Не подходит классу':'Class requirement is not met'
+ };
+ const value=String(message||'');
+ return en[value]||value.replace(/^Требуется уровень (\d+)$/,'Requires level $1');
+}
 function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 // A damaged browser draft must not prevent the independent saved-build library
@@ -1126,11 +1146,15 @@ function renderSlotRails(){
    const report=shared?{count:0,excess:0}:plan.socketReport(state.souls?.[i],cap);
    const level=plan.canRefine(key)?plan.refinementValue(state.refinements,sourceSlot,item):0;
    const issue=source?equipmentIssue(source,sourceSlot):[];
-   const tooltip=slots[i][0]+' · '+(item?itemName(item):'Пусто')+
-    (shared?' · Занято бронёй (одна вещь на два слота)':'')+
-    (!shared&&item&&plan.canSocket(slotKeys[i],source,cap)?' · души '+Math.min(report.count,cap)+'/'+cap:'')+
-    (!shared&&level?' · план заточки +'+level:'')+
-    (issue.length?' · Не действует: '+issue.join(', '):'');
+   const tooltip=gearSlotName(i)+' · '+
+    (item?itemName(item):(lang==='en'?'Empty':'Пусто'))+
+    (shared?(lang==='en'?' · Occupied by armor (one piece uses two slots)':
+     ' · Занято бронёй (одна вещь на два слота)'):'')+
+    (!shared&&item&&plan.canSocket(slotKeys[i],source,cap)?
+     (lang==='en'?' · Souls ':' · души ')+Math.min(report.count,cap)+'/'+cap:'')+
+    (!shared&&level?(lang==='en'?' · planned refinement +':' · план заточки +')+level:'')+
+    (issue.length?(lang==='en'?' · Inactive: ':' · Не действует: ')+
+     issue.map(gearIssueLabel).join(', '):'');
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(shared?' shared-outfit':'')+
     (selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':'')+(issue.length?' unavailable':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
@@ -1142,7 +1166,7 @@ function renderSlotRails(){
      stageSlotView=shared?'choose':state.equipment?.[i]?'details':'choose';
      stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
     }});
-   button.append(slotVisual(i,item,sourceSlot),h('small',{text:item?itemName(item):slots[i][0]}));
+   button.append(slotVisual(i,item,sourceSlot),h('small',{text:item?itemName(item):gearSlotName(i)}));
    if(shared)button.append(h('span',{class:'stage-shared-mark',text:'🔒',
     'aria-hidden':'true',title:'',
     'data-shared-slots':'armor+pants'}));
@@ -1162,11 +1186,13 @@ function renderSlotRails(){
      record:source,refinement:level,gem:equippedGem,issue});
     if(!shared&&activeFire?.phoenix)button.append(h('span',{
      class:'stage-elemental-proc',text:'✦',
-     'aria-label':'Пламя феникса: +'+activeFire.phoenix.chance+'%'}));
+     'aria-label':(lang==='en'?'Phoenix Flame: +':'Пламя феникса: +')+
+      activeFire.phoenix.chance+'%'}));
    }
    if(!shared&&(report.excess>0||issue.length)){
     const reasons=[];
-    if(issue.length)reasons.push('Предмет не действует: '+issue.join('; ')+'.');
+    if(issue.length)reasons.push((lang==='en'?'Item inactive: ':'Предмет не действует: ')+
+     issue.map(gearIssueLabel).join('; ')+'.');
     if(report.excess>0)reasons.push(lang==='en'?
      'Not enough Soul slots: '+report.count+' saved, '+
       (cap===null?'unknown':cap)+' available. Extra Souls are kept but inactive.':
@@ -1362,11 +1388,7 @@ function renderStagePicker(focusSearch=false){
    copyLabel:equipmentCopy,editLabel:equipmentCopyLabel,
    canEdit:Boolean(adminEditing&&adminToken),
    record,item:equipped,slot:key,capacity,
-   slotLabel:(lang==='en'?'Slot: ':'Слот: ')+
-    (lang==='en'?['Weapon','Shield','Helmet','Armor','Gloves','Pants',
-     'Boots','Cloak','Ring','Ring','Amulet','Belt','Earring','Earring'][selectedSlot]:
-     ['Оружие','Щит','Шлем','Броня','Перчатки','Штаны','Обувь','Плащ',
-      'Кольцо','Кольцо','Амулет','Пояс','Серьга','Серьга'][selectedSlot]),
+   slotLabel:(lang==='en'?'Slot: ':'Слот: ')+gearSlotName(selectedSlot),
    slotIndex:selectedSlot,selectedSocket,mode:stageSlotView,
    icons:(entry,kind)=>itemIcon(entry,kind==='soul'?'souls':'items'),
    refinement:plan.refinementValue(state.refinements,selectedSlot,equipped),
@@ -1444,15 +1466,19 @@ function renderStagePicker(focusSearch=false){
   return;
  }
  const top=h('div',{class:'stage-picker-head'},[
-  h('strong',{text:'Выбор: '+slots[selectedSlot][0]}),
-  h('button',{type:'button',text:'Свойства →',disabled:!record,onclick:()=>{stageSlotView='details';renderStagePicker()}}),
-  h('button',{type:'button',text:'✕','aria-label':'Закрыть выбор',onclick:()=>closeStagePicker()})
+  h('strong',{text:(lang==='en'?'Choose: ':'Выбор: ')+gearSlotName(selectedSlot)}),
+  h('button',{type:'button',text:lang==='en'?'Details →':'Свойства →',
+   disabled:!record,onclick:()=>{stageSlotView='details';renderStagePicker()}}),
+  h('button',{type:'button',text:'✕','aria-label':lang==='en'?'Close item picker':'Закрыть выбор',
+   onclick:()=>closeStagePicker()})
  ]);
- const search=h('input',{type:'search',value:stageSlotQuery,placeholder:'Поиск по названию','aria-label':'Поиск предмета для '+slots[selectedSlot][0]});
+ const search=h('input',{type:'search',value:stageSlotQuery,
+  placeholder:lang==='en'?'Search by name':'Поиск по названию',
+  'aria-label':(lang==='en'?'Search equipment for ':'Поиск предмета для ')+gearSlotName(selectedSlot)});
  const count=h('small',{class:'stage-picker-count'});
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
- const remove=h('button',{type:'button',text:'Снять предмет',
+ const remove=h('button',{type:'button',text:lang==='en'?'Unequip item':'Снять предмет',
   disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),onclick:()=>{
    const removed=equippedRecord(selectedSlot),ui=window.PandoraUIPlanner;
    const previousEquipment={...state.equipment};
@@ -1483,16 +1509,19 @@ function renderStagePicker(focusSearch=false){
   const futureA=Number(a.level||1)>state.level?1:0;
   const futureB=Number(b.level||1)>state.level?1:0;
   return futureA-futureB||Number(a.level||1)-Number(b.level||1)||
-   itemName(a).localeCompare(itemName(b),'ru');
+   itemName(a).localeCompare(itemName(b),lang==='en'?'en':'ru');
  }):[];
  const draw=()=>{
   list.replaceChildren();
   const query=stageSlotQuery.trim().toLocaleLowerCase('ru');
   const matches=records.filter(rec=>itemName(rec).toLocaleLowerCase('ru').includes(query));
-  count.textContent=matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
-  if(!catalog.live)list.append(h('p',{class:'muted',text:'Каталог ещё не загружен.'}));
+  count.textContent=lang==='en'?
+   matches.length+' matching · '+Math.min(matches.length,stageSlotShown)+' shown':
+   matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
+  if(!catalog.live)list.append(h('p',{class:'muted',text:lang==='en'?'The catalog is still loading.':'Каталог ещё не загружен.'}));
   else if(!Number.isInteger(state.race)||!Number.isInteger(state.job))list.append(h('p',{class:'muted',text:lang==='en'?'Choose a race and class first.':'Сначала выберите расу и профессию.'}));
-  else if(!matches.length)list.append(h('p',{class:'muted',text:'Нет совместимых предметов. Измени поиск или слот.'}));
+  else if(!matches.length)list.append(h('p',{class:'muted',text:lang==='en'?'No compatible items. Try another search or slot.':
+   'Нет совместимых предметов. Измени поиск или слот.'}));
   for(const rec of matches.slice(0,stageSlotShown)){
    const selected=!isSharedPants&&String(equipped?.id)===String(rec.id);
    const future=Number(rec.level)>state.level;
@@ -1543,7 +1572,8 @@ function renderStagePicker(focusSearch=false){
      state.refinements,selectedSlot,equipped):0,tables:gameTables});
   }
   more.hidden=matches.length<=stageSlotShown;
-  more.textContent='Показать ещё ('+Math.max(0,matches.length-stageSlotShown)+')';
+  more.textContent=(lang==='en'?'Show more (':'Показать ещё (')+
+   Math.max(0,matches.length-stageSlotShown)+')';
  };
  search.addEventListener('input',()=>{stageSlotQuery=search.value;stageSlotShown=48;draw()});
  more.addEventListener('click',()=>{stageSlotShown+=48;draw()});
