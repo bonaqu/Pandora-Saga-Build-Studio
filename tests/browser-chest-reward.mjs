@@ -50,7 +50,27 @@ export async function runChestRewardLayoutSmoke(browser,base){
   await page.locator('#locale [data-locale="en"]').click();
   await openChest();
   await verify('en');
-  assert.deepEqual(errors,[],'Browser JS error in scout chest');
-  console.log('Chromium scout chest passed: stacked reward info, desktop/mobile, RU/EN');
+  // Source NPC chest 52002 includes real gold-only reward ranges (no item
+  // ID). These must not become ghost item links or hidden "undefined" rows.
+  const openNpcChest=async()=>{
+   if(await page.locator('#dockClose').isVisible())
+    await page.locator('#dockClose').click();
+   await page.locator('#nav [data-tab="wiki"]').click();
+   await page.locator('[data-wiki-chapter="chest"]').click();
+   await page.locator('[data-wiki-record="52002"]').click();
+   await page.locator('.wiki-chest-gold-reward').first()
+    .waitFor({state:'visible',timeout:20000});
+  };
+  await openNpcChest();
+  assert.equal(await page.locator('.wiki-chest-gold-reward').first().innerText(),
+   'Gold: 60,000–100,000');
+  await page.locator('#dockClose').click();
+  await page.locator('#locale [data-locale="ru"]').click();
+  await openNpcChest();
+  const ruGold=(await page.locator('.wiki-chest-gold-reward').first().innerText())
+   .replace(/\s/g,' ');
+  assert.equal(ruGold,'Золото: 60 000–100 000');
+  assert.deepEqual(errors,[],'Browser JS error in scout or NPC chests');
+  console.log('Chromium chest rewards passed: scout level 15 and NPC gold ranges in RU/EN');
  }finally{await context.close()}
 }

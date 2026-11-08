@@ -5273,7 +5273,8 @@ function renderWiki(root){
         (group.length>1?wt('Возможные награды','Possible rewards'):
          wt('Награда','Reward'))}),
       h('small',{text:group.length===1?(listedSingle?
-       '100%':wt('1 предмет','1 item')):
+       '100%':group[0]?.gold?wt('1 награда','1 reward'):
+        wt('1 предмет','1 item')):
        wt('Вариантов: ','Options: ')+group.length}),
       h('span',{class:'wiki-chest-chevron','aria-hidden':'true',text:'⌄'})
      ]);
@@ -5284,14 +5285,20 @@ function renderWiki(root){
        (nextChest?' wiki-chest-reward-nested':'')+
        (wikiSelection.highlight===String(row.i)?' highlighted':''),
        'data-roll-group':String(i+1)});
+      const goldReward=Array.isArray(row.gold);
       const rewardMain=h('div',{class:'wiki-chest-reward-main'},[
-       itemLink(row.i,dataName('item',row.i),id)
+       row.i!=null?itemLink(row.i,dataName('item',row.i),id):
+        h('span',{class:goldReward?'wiki-chest-gold-reward':'wiki-chest-unlisted-reward',
+         text:goldReward?
+          (window.PandoraStudioChestPresentation.goldLabel(row,lang)||
+           wt('Золото · сумма не указана','Gold · amount not listed')):
+          wt('Награда не указана','Reward not listed')})
       ]);
       if(nextChest)rewardMain.append(h('small',{class:'wiki-chest-nested-note',
        text:wt('↳ Следующая шкатулка','↳ Next chest')}));
       option.append(rewardMain);
       const rewardMeta=h('div',{class:'wiki-chest-reward-meta'});
-      if(adminEditing&&adminToken){
+      if(adminEditing&&adminToken&&row.i!=null){
        const quantity=h('span',{class:'wiki-reward-quantity wiki-edit-value',
         text:'×'+(row.n??1),
         'aria-label':wt('Количество. Двойной клик — изменить',
@@ -5326,7 +5333,8 @@ function renderWiki(root){
        };
        rewardMeta.append(chance);
        rewardMeta.append(h('button',{type:'button',class:'wiki-owner-remove',
-        text:'×','aria-label':'Удалить предмет из сундука',
+        text:'×','aria-label':wt('Удалить награду из сундука',
+         'Remove chest reward'),
         onclick:()=>void changeChest(groups.map((g,gi)=>gi!==i?g:
          g.filter((_,ri)=>ri!==rowIndex)))
          .catch(e=>showStudioToast(e.message,'warning'))}));
