@@ -181,6 +181,10 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
     body:JSON.stringify({account:{username:'bob_222'}})});
   });
   const thirdLogin=login(tabC,tokenB,'bob_222');
+  // Observe rejection immediately. A failed pending-state assertion may close
+  // the context before login() finishes; preserve the first useful failure
+  // instead of crashing Node with an unhandled page.evaluate rejection.
+  void thirdLogin.catch(()=>{});
   try{
    await tabC.waitForFunction(()=>{
     const profile=document.querySelector('#profileTrigger');
