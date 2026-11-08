@@ -47,7 +47,8 @@ function validate(input){
   throw Error('Неверный формат обменов NPC');
  if(!isRecord(data.tables)||!Array.isArray(data.tables.zoneDrops))
   throw Error('Неверный формат добычи локаций');
- if(!isRecord(data.chests)||!Array.isArray(data.chests.boxes))
+ if(!isRecord(data.chests)||!Array.isArray(data.chests.boxes)||
+    !Array.isArray(data.chests.npc))
   throw Error('Неверный формат сундуков');
  // Keep one source-backed ownership check for both the current hero and Wiki.
  validateRacialPassives(data.racialPassives,data.skills,data.meta.counts);
@@ -83,11 +84,17 @@ function validate(input){
  }
  for(const row of Object.values(data.trades.npcs))
   for(const id of row.maps||[])requireRef(map(id),'расположение NPC');
- for(const chest of data.chests.boxes){
-  requireRef(item(chest.i),'сундук');
+ // The Encyclopedia displays both regular chests and NPC exchange chests.
+ // Validate them with the same source-backed item links; a reward consisting
+ // only of gold has no item ID and must remain valid.
+ for(const chest of [...data.chests.boxes,...data.chests.npc]){
+  requireRef(isRecord(chest)&&item(chest.i),'сундук');
+  if(chest.key!=null)requireRef(item(chest.key),'ключ сундука');
   for(const group of chest.rolls||[])for(const row of group||[])
    if(row.i!=null)requireRef(item(row.i),'награда сундука');
  }
+ if(data.chests.masterKey!=null)
+  requireRef(item(data.chests.masterKey),'универсальный ключ сундука');
  for(const zone of data.tables.zoneDrops){
   requireRef(map(zone.map),'место добычи');
   for(const group of zone.rows||[]){
