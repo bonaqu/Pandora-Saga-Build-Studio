@@ -6012,7 +6012,9 @@ function renderBuilds(root){
    h('button',{type:'button',class:'button-action',text:'Отмена',
     onclick:()=>{openChoice.hidden=true}}));
   const overwriteChoice=h('div',{class:'build-overwrite-choice',hidden:true});
-   overwriteChoice.append(h('p',{text:'Перезаписать сохранённый билд «'+b.name+'» текущим персонажем? Предыдущую версию этого билда восстановить будет нельзя.'}),
+   overwriteChoice.append(h('p',{text:lang==='en'?
+    'Overwrite saved build “'+b.name+'” with your current character? The previous version of this build cannot be restored.':
+    'Перезаписать сохранённый билд «'+b.name+'» текущим персонажем? Предыдущую версию этого билда восстановить будет нельзя.'}),
    h('button',{type:'button',class:'button-action primary',text:'Подтвердить перезапись',onclick:()=>{
     if(saveBuild(activeBuildId===b.id?state.name:b.name,b.id))showStudioToast(window.PandoraUILocale.ui(
      'Сохранено в браузере. Проверяем запись в облаке…',lang),'warning');
@@ -6056,7 +6058,8 @@ function renderBuilds(root){
    ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
     text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
    h('p',{
-   text:(races[b.data?.race]?.[0]||'?')+' · '+(jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
+   text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
+    (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
    h('label',{},[check,' Сравнить']),
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
     if(!unsavedBuild()){openSavedBuild(b);return}
@@ -6074,7 +6077,7 @@ function renderBuilds(root){
   box.append(overwriteChoice);
   box.append(shareSlot);
   grid.append(box);
-  searchable.push({box,build:b,check,searchText:[b.name,races[b.data?.race]?.[0],jobs[b.data?.job],
+  searchable.push({box,build:b,check,searchText:[b.name,races[b.data?.race]?.[0],races[b.data?.race]?.[1],jobs[b.data?.job],
    (lang==='en'?'Lv. ':'ур. ')+(b.data?.level??'')].filter(Boolean).join(' ').toLocaleLowerCase()});
  }
  root.append(grid);
