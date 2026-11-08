@@ -84,14 +84,33 @@ function validate(input){
  }
  for(const row of Object.values(data.trades.npcs))
   for(const id of row.maps||[])requireRef(map(id),'расположение NPC');
- // The Encyclopedia displays both regular chests and NPC exchange chests.
- // Validate them with the same source-backed item links; a reward consisting
- // only of gold has no item ID and must remain valid.
+ // The Encyclopedia merges ordinary and NPC chests by item ID.
+ // Duplicate IDs overwrite one card without warning, while a malformed
+ // gold-only reward becomes "reward not listed" despite a real source row.
+ // Reject BOTH defects before accepting a D1 snapshot as authoritative.
+ const seenChests=new Set();
  for(const chest of [...data.chests.boxes,...data.chests.npc]){
   requireRef(isRecord(chest)&&item(chest.i),'сундук');
+  const chestId=String(chest.i);
+  requireRef(!seenChests.has(chestId),'повторный сундук');
+  seenChests.add(chestId);
   if(chest.key!=null)requireRef(item(chest.key),'ключ сундука');
-  for(const group of chest.rolls||[])for(const row of group||[])
-   if(row.i!=null)requireRef(item(row.i),'награда сундука');
+  requireRef(Array.isArray(chest.rolls),'группы наград сундука');
+  for(const group of chest.rolls){
+   requireRef(Array.isArray(group),'группа наград сундука');
+   for(const row of group){
+    requireRef(isRecord(row),'награда сундука');
+    const hasItem=row.i!=null,hasGold=Object.hasOwn(row,'gold');
+    requireRef(hasItem!==hasGold,'тип награды сундука');
+    if(hasItem)requireRef(item(row.i),'награда сундука');
+    if(hasGold){
+     const gold=row.gold;
+     requireRef(Array.isArray(gold)&&gold.length===2&&
+      gold.every(value=>Number.isSafeInteger(value)&&value>=0)&&
+      gold[0]<=gold[1],'диапазон золота сундука');
+    }
+   }
+  }
  }
  if(data.chests.masterKey!=null)
   requireRef(item(data.chests.masterKey),'универсальный ключ сундука');
