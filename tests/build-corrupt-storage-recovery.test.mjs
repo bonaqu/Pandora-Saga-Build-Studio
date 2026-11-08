@@ -9,6 +9,7 @@ const extract=(from,to)=>{
  return source.slice(start,end);
 };
 const rowsCode=extract('function safeStoredBuildRows(value){','\ntry{\n const saved=');
+const preparationCode=extract('function prepareSavedBuildSnapshot(raw){','\nfunction openSavedBuild(b){');
 const openerCode=extract('function openSavedBuild(b){','\nfunction unsavedBuild(){');
 const id='a'.repeat(32),other='b'.repeat(32);
 const baseState=()=>({
@@ -30,7 +31,7 @@ function setup(library){
   'const persist=()=>events.push("persist");'+
   'const render=()=>events.push("render");'+
   'const changeTab=tab=>events.push(tab);\n'+
-  openerCode+
+  preparationCode+'\n'+openerCode+
   '\nreturn {open:openSavedBuild,state:()=>state,active:()=>activeBuildId};')(library,initial,selected,events,messages);
  return {...context,selected,events,messages,initial};
 }

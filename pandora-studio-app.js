@@ -5677,9 +5677,16 @@ function renderBuildComparison(host,onSelection=()=>{}){
    wrap.hidden=true;
    return;
   }
+  // Loading the validated D1 snapshot is not a broken saved build.
+  if(!catalog.live||!gameTables){
+   summary.textContent=translate(
+    'Итоговые характеристики появятся после загрузки игровых данных.',
+    'Calculated stats will appear once game data have loaded.');
+   wrap.hidden=true;
+   return;
+  }
   const [calcA,calcB]=window.PandoraBuildComparison.calculatePair(
-   a.data,b.data,snap=>previewBaseStats(prepareSavedBuildSnapshot(snap)),
-   Boolean(catalog.live&&gameTables));
+   a.data,b.data,snap=>previewBaseStats(prepareSavedBuildSnapshot(snap)));
   if(!calcA||!calcB){
    summary.textContent=translate(
     'Не удалось рассчитать один из билдов. Сохранения не изменены.',
