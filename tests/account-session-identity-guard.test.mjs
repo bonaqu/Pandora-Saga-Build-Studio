@@ -14,7 +14,8 @@ function deferred(){
  return {promise,resolve};
 }
 function create({stored=null,clock=Date,fetchImpl=async()=>({ok:true,status:200,
- json:async()=>({account:{username:'alice_01'}})}),onBootstrapLogin=null}={}){
+ json:async()=>({account:{username:'alice_01'}})}),onBootstrapLogin=null,
+ onBootstrapGuest=null}={}){
  const map=new Map();
  if(stored!==null)map.set('ps-account-session.v1',JSON.stringify(stored));
  const storage={getItem:key=>map.get(key)??null,
@@ -38,9 +39,9 @@ function create({stored=null,clock=Date,fetchImpl=async()=>({ok:true,status:200,
  const options={baseUrl:'https://example.invalid',
   onLogin:e=>{events.login.push(e);onBootstrapLogin?.(e)},
   onLogout:e=>events.logout.push(e),
-  onGuest:e=>events.guest.push(e)};
+  onGuest:e=>{events.guest.push(e);return onBootstrapGuest?.(e)}};
  return {api:root.PandoraAccountUI,helper:root.__accountTest,events,
-  init:()=>root.PandoraAccountUI.init(options),storage,trigger,
+  init:()=>root.PandoraAccountUI.init(options),storage,trigger,panel,
   emitStorage:event=>listeners.storage?.(event)};
 }
 const session=(username='alice_01',token='a'.repeat(43))=>
@@ -456,4 +457,44 @@ test('offline /me invokes the owner callback only once even if local scope fails
  assert.equal(c.events.logout.length,0);
  assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'offline');
  assert.equal(c.api.username(),'alice_01');
+});
+
+test('verified account clears the pending profile hint even if local owner recovery throws',async()=>{
+ const c=create({stored:session(),onBootstrapLogin:()=>{
+  throw Error('Owner cache is unavailable');
+ }});
+ let removed=0;
+ c.panel.querySelector=selector=>selector==='.account-bootstrap-pending'?
+  {remove(){removed++}}:null;
+ c.panel.hasChildNodes=()=>true;
+ await assert.rejects(c.init(),/Owner cache is unavailable/);
+ assert.equal(removed,1,'The finalization path must run after failed owner activation');
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'verified');
+ assert.equal(c.events.login.length,1,'The failed callback must not be retried');
+ assert.equal(c.events.logout.length,0);
+});
+
+test('offline account clears the pending profile hint after async owner failure',async()=>{
+ const c=create({stored:session(),fetchImpl:async()=>reply({},503),
+  onBootstrapLogin:async()=>{throw Error('Quota on account recovery')}});
+ let removed=0;
+ c.panel.querySelector=selector=>selector==='.account-bootstrap-pending'?
+  {remove(){removed++}}:null;
+ c.panel.hasChildNodes=()=>true;
+ await assert.rejects(c.init(),/Quota on account recovery/);
+ assert.equal(removed,1);
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'offline');
+ assert.equal(c.events.login.length,1);
+});
+
+test('failed guest-library initialization also completes profile cleanup',async()=>{
+ const c=create({onBootstrapGuest:()=>{throw Error('Guest cache unavailable')}});
+ let finalizations=0;
+ c.panel.querySelector=selector=>selector==='.account-bootstrap-pending'?
+  {remove(){finalizations++}}:null;
+ c.panel.hasChildNodes=()=>true;
+ await assert.rejects(c.init(),/Guest cache unavailable/);
+ assert.equal(finalizations,1);
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'guest');
+ assert.equal(c.events.guest.length,1);
 });
