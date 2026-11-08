@@ -31,6 +31,13 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
  const tabA=await context.newPage(),tabB=await context.newPage(),errors=[];
  for(const page of [tabA,tabB])page.on('pageerror',err=>errors.push(err.message));
  async function login(page,token,username){
+  const meStatuses=[];
+  const onMeResponse=response=>{
+   if(response.url().startsWith(api+'/api/account/me'))
+    meStatuses.push(response.status());
+  };
+  page.on('response',onMeResponse);
+  try{
   await page.evaluate(({token,username,guestKey})=>{
    localStorage.setItem('ps-build-library-secret.v1',guestKey);
    localStorage.setItem('ps-account-session.v1',JSON.stringify({
@@ -49,7 +56,8 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
     return localStorage.getItem('ps-build-owner-scope.v1')==='account:'+expected&&
      document.querySelector('#raceGrid')?.children.length>0&&
      !!document.querySelector('#hero')?.getAttribute('src')&&
-     profile.includes(expected);
+     profile.includes(expected)&&
+     document.querySelector('#profileTrigger')?.dataset.accountBootstrap==='verified';
    },username,{timeout:25000});
   }catch(error){
    const diagnostic=await page.evaluate(()=>({
@@ -57,13 +65,17 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
     raceCount:document.querySelector('#raceGrid')?.children.length||0,
     hasHero:!!document.querySelector('#hero')?.getAttribute('src'),
     profile:document.querySelector('#profileTrigger')?.title||'',
+    accountBootstrap:document.querySelector('#profileTrigger')?.dataset.accountBootstrap||'unknown',
     catalogStatus:document.querySelector('#catalogStatus')?.textContent||'',
     readyState:document.readyState
    }));
+   // Only HTTP status codes, never authorization headers or token values.
+   diagnostic.meStatuses=meStatuses.slice(-5);
    // No session tokens, passwords or private keys in CI logs.
    throw Error('Cross-tab account bootstrap for '+username+
     ' did not complete: '+JSON.stringify(diagnostic)+'; '+error.message);
   }
+  }finally{page.off('response',onMeResponse)}
  }
  async function save(page,name,expectedToken){
   if(!await page.locator('.build-name-input').isVisible())
