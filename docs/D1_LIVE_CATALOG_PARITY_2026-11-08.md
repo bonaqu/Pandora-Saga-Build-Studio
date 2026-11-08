@@ -43,3 +43,15 @@
 GitHub Actions API для этого репозитория не показал запусков Live Pages and Worker readiness с событием workflow_run: встроенные успешные Pages deployments (например 0.499.0, run 42501896096) имеют событие dynamic. Последняя зафиксированная live-readonly проверка 0.492.0 запускалась по schedule; ранее после новых релизов мониторинг автоматически не подтверждался.
 
 Добавлен push-триггер по bonaqu_projects с ожиданием соответствующей публичной site-version (до 60 проверок через 5 с), единая отменяющая конкуренция для новых релизов. Условия по Worker/D1 остаются read-only, доступ к секретам не требуется. Сохранены workflow_run, schedule и ручной запуск. Требуется проверить **реальный run после merge**: статические тесты не доказывают, что GitHub сгенерировал событие.
+
+## Подтверждение актуального источника двух боссов (0.502.0)
+
+После того как мониторинг 0.501.0 [run #42503012161](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/42503012161) обнаружил две разницы `monsters.life`, **8 ноября 2026 года** выполнено независимое GET-сравнение:
+
+- [Текущая официальная игровая таблица Pandora Saga OS](https://pandorasaga-os.com/gamedata/monsters.json): 702 записи.
+- [Активный D1-каталог](https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/monsters.json): 702 записи, **все записи полностью совпадают с официальной игровой таблицей**, включая вложенные сопротивления.
+- [Предыдущий резервный архив GitHub](https://bonaqu.github.io/Pandora-Saga-Build-Studio/data/os/monsters.json): 702 записи, **две неверные величины life**: ID 43650 (5 000 000 вместо 1 250 000), ID 43732 (1 600 000 вместо 1 350 000).
+
+Первичный источник [meta.json Pandora Saga OS](https://pandorasaga-os.com/gamedata/meta.json) содержит SHA игрового файла `monster/monster.csv = f637f83a84a49c74`, тогда как старый архив хранил `b99edf06cb49f754`. В релизе 0.502.0 только эти **две величины** в резервном `data/os/monsters.json` и **один** исходный SHA в `data/os/meta.json` синхронизированы с текущим официальным OS. Остальные отличающиеся source SHA (`shared/base.json`, `event/*.csv`) без проверки влияющих данных **не менялись**. D1 вообще не записывался, клиентские формулы не тронуты.
+
+Условие production-приёмки: после Pages 0.502.0 read-only `catalog:parity:live` должен показать `monsters: 702 source records match D1`. Оставшиеся текстовые различия предметов, душ и EN остаются отдельной задачей #284 и не маскируются.
