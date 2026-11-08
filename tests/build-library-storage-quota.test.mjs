@@ -23,7 +23,7 @@ test('failed browser-storage reconciliation never overwrites the working local l
   'cloudLibraryRequest','reportCloudStatus','showStudioToast','putCloudBuild',
   'newId','console','renderDetails','selectActiveBuild',
   'let builds=[JSON.parse(JSON.stringify('+JSON.stringify(first)+'))],'+
-  'activeBuildId=null,libraryChangeId=0,lang="ru",activeTab="builds";\n'+
+  'activeBuildId=null,libraryChangeId=0,cloudLoadRequestId=0,lang="ru",activeTab="builds";\n'+
   persistent+'\n'+loader+'\nreturn {load:loadCloudBuilds,builds:()=>builds};')(
   scope,{},()=> 'account:alice_01',()=>[],
   async value=>{requests.push(value||null);return {records:[{id:remote.id,entry:remote}]}},

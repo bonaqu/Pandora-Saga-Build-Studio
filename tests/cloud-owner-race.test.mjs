@@ -66,5 +66,5 @@ test('old guest-key transfer response does not overwrite a newly logged-in accou
  assert.match(connecting,/const previousOwner=libraryScopeId\(\)/);
  assert.match(connecting,/if\(libraryScopeId\(\)!==previousOwner\|\|window\.PandoraAccountUI\?\.isLoggedIn\(\)\)/);
  assert.match(extract('async function loadCloudBuilds(){','function h(tag,attrs={}'),
-  /if\(libraryChangeId===generation\)/);
+  /if\(libraryChangeId===generation&&latest\(\)\)/);
 });
