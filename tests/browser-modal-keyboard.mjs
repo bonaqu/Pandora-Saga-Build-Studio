@@ -25,14 +25,13 @@ export async function runModalKeyboardSmoke(browser,base){
    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0,
     null,{timeout:30000});
-   const opener=page.locator('#nav [data-tab="builds"]');
-   await opener.click();
-   await page.locator('.build-signin-gate').waitFor({state:'visible'});
+   // Open from the normal editor, not from the separate My Builds backdrop:
+   // a header control remains focusable while the link dialog is shown.
+   const opener=page.locator('#profileTrigger');
+   await opener.waitFor({state:'visible'});
    const savedBefore=await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1'));
-   // A URL hashchange has no clicked invoker of its own. Focus the stable
-   // navigation control explicitly to test real focus restoration.
    await opener.focus();
-   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('data-tab')),'builds');
+   assert.equal(await page.evaluate(()=>document.activeElement?.id),'profileTrigger');
    await page.evaluate(()=>{location.hash='#b/A1234567890'});
    const dialog=page.getByRole('dialog',{name:'Вход для открытия билда'});
    await dialog.waitFor({state:'visible'});
@@ -48,8 +47,8 @@ export async function runModalKeyboardSmoke(browser,base){
    assert.match(await page.evaluate(()=>document.activeElement?.textContent),/Войти/);
    await page.keyboard.press('Escape');
    await dialog.waitFor({state:'hidden'});
-   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('data-tab')),'builds',
-    'Esc returns focus to the navigation control that was focused before link dialog');
+   assert.equal(await page.evaluate(()=>document.activeElement?.id),'profileTrigger',
+    'Esc returns focus to the original visible header control');
    assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1')),savedBefore,
     'Keyboard cancellation must not replace or save the current character');
    assert.equal(await page.evaluate(()=>location.hash),'#b/A1234567890',
