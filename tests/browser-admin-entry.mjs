@@ -687,7 +687,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('.wiki-categories [data-wiki-chapter="map"]').click();
   await page.locator('.wiki-map-create').waitFor({state:'visible'});
   await page.locator('.wiki-map-create').click();
-  await page.locator('.wiki-map-create-form [aria-label="Название локации на русском"]')
+  await page.locator('.wiki-map-create-form [aria-label="Location name in Russian"]')
    .fill('Тестовая локация');
   await page.locator('.wiki-map-create-form [aria-label="Location name in English"]')
    .fill('Smoke location');
@@ -709,7 +709,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.deepEqual(JSON.parse(townOverrides.get(customMapKeys[0])).tags,
    [{ru:'Государство',en:'Nation'}]);
   await page.locator('.wiki-map-add-section').click();
-  await page.locator('.wiki-map-custom-form [aria-label="Название раздела RU"]')
+  await page.locator('.wiki-map-custom-form [aria-label="Section title RU"]')
    .fill('История');
   await page.locator('.wiki-map-custom-form [aria-label="Section title EN"]')
    .fill('History');
@@ -783,9 +783,9 @@ export async function runAdminEntrySmoke(browser,base){
   // Create a genuine administrator-owned NPC from the same confirmed map.
   await elBeht.locator('.wiki-map-create-npc').click();
   const npcForm=elBeht.locator('.wiki-map-create-npc-form');
-  await npcForm.locator('[aria-label="Название нового NPC RU"]').fill('Мастер арены Алиса');
+  await npcForm.locator('[aria-label="New NPC name RU"]').fill('Мастер арены Алиса');
   await npcForm.locator('[aria-label="New NPC name EN"]').fill('Arena Master Alice');
-  await npcForm.locator('[aria-label="Назначение нового NPC"]').fill('Управляет ареной');
+  await npcForm.locator('[aria-label="New NPC service"]').fill('Управляет ареной');
   const savedNpc=page.waitForResponse(response=>{
    if(!response.url().endsWith('/api/admin/override'))return false;
    try{return /^wikiedit\.npc\.owner-npc-/.test(response.request().postDataJSON().key)}
