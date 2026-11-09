@@ -282,10 +282,17 @@ async function cloudLibraryRequest(payload,secret=null){
  }
  return data;
 }
+function cloudStatusText(message){
+ // A cloud-connected guest is not signed in to an account library.
+ const label=!window.PandoraAccountUI?.isLoggedIn()&&
+  message==='Облачная библиотека подключена'?
+  'Гостевая облачная библиотека подключена':message;
+ return window.PandoraUILocale?.ui(label,lang)||label;
+}
 function reportCloudStatus(message){
  cloudLibraryStatus=message;
  const node=document.querySelector('.cloud-library-status');
- if(node)node.textContent=window.PandoraUILocale?.ui(message,lang)||message;
+ if(node)node.textContent=cloudStatusText(message);
 }
 async function putCloudBuild(entry){
  // This guard also protects accidental call sites added in future changes.
@@ -6010,7 +6017,7 @@ function renderBuilds(root){
   ])
  ]);
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
-   text:window.PandoraUILocale?.ui(cloudLibraryStatus,lang)||cloudLibraryStatus}),
+   text:cloudStatusText(cloudLibraryStatus)}),
   ...(signedIn?[]:[accountReminder,buildLibraryTransfer()]));
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
  root.append(comparisonSlot);
@@ -6111,12 +6118,15 @@ function renderBuilds(root){
   root.append(none);
   const apply=()=>{
    let visible=0;
-   const query=buildSearchQuery.trim().toLocaleLowerCase();
+   // Multiple terms may match different fields: "Elf 40" finds an Elf
+   // even when the profession label appears between race and level.
+   const tokens=buildSearchQuery.trim().toLocaleLowerCase()
+    .split(/\s+/).filter(Boolean);
    for(const row of searchable){
-    row.box.hidden=!row.searchText.includes(query);
+    row.box.hidden=!tokens.every(token=>row.searchText.includes(token));
     if(!row.box.hidden)visible++;
    }
-   none.hidden=!query||visible>0;
+   none.hidden=!tokens.length||visible>0;
   };
   search.addEventListener('input',()=>{buildSearchQuery=search.value;apply()});
   apply();
