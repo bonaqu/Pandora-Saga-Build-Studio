@@ -261,27 +261,21 @@ function activateLibraryScope({carry=false,carryFrom=null,initial=false}={}){
 window.PandoraBuildScope.migrateLegacyGuest(localStorage,tabGuestSecret);
 // Claim existing pre-upgrade local records for their former owner without losing them.
 activateLibraryScope({initial:true});
-async function cloudLibraryRequest(payload,secret=null){
- // Legacy transfer access remains isolated from normal account operations.
- if(!secret&&!window.PandoraAccountUI?.isLoggedIn()){
-  const e=new Error('Войдите в аккаунт, чтобы работать с билдами');
-  e.reason='sign_in_required';throw e;
+async function cloudLibraryRequest(payload){
+ if(!window.PandoraAccountUI?.isLoggedIn()){
+  const error=new Error('Войдите в аккаунт, чтобы работать с билдами');
+  error.reason='sign_in_required';throw error;
  }
- let bearer=secret;
- if(!bearer){
-  // token() may expire the session and synchronously invoke onLogout().
-  // Never redirect an account's cloud request to its unrelated guest key.
-  const expectedOwner=tabOwnerScope;
-  const credential=window.PandoraAccountUI?.token()||null;
-  if(!expectedOwner||tabOwnerScope!==expectedOwner||
-   libraryScopeId()!==expectedOwner||
-   expectedOwner.startsWith('account:')&&!credential){
-   const error=new Error('Владелец библиотеки изменился: облачный запрос не отправлен');
-   error.reason='owner_changed';
-   throw error;
-  }
-  bearer=credential||tabGuestSecret;
+ // A switching owner or revoked session must never redirect a request into
+ // another account or to an obsolete guest-key library.
+ const expectedOwner=tabOwnerScope;
+ const credential=window.PandoraAccountUI?.token()||null;
+ if(!expectedOwner||!expectedOwner.startsWith('account:')||
+  tabOwnerScope!==expectedOwner||libraryScopeId()!==expectedOwner||!credential){
+  const error=new Error('Владелец библиотеки изменился: облачный запрос не отправлен');
+  error.reason='owner_changed';throw error;
  }
+ const bearer=credential;
  // An unreachable Worker must not leave "Checking cloud" spinning forever.
  const signal=typeof AbortSignal!=='undefined'&&
   typeof AbortSignal.timeout==='function'?AbortSignal.timeout(payload?25000:20000):null;
@@ -8094,12 +8088,8 @@ void window.PandoraAccountUI.init({
 // Return to a saved library after network loss; an unsaved draft is never uploaded.
 let lastCloudReconnect=0;
 function resumeCloudLibrary(){
- // An authenticated account may have ALL its saved builds only in D1 (new
- // browser, cleared cache, or an initial GET that failed while offline).
- // Empty local storage is not evidence of an empty remote account library.
- // Keep the old guest guard: never make background empty-guest D1 requests.
- const signedIn=window.PandoraAccountUI?.isLoggedIn()===true;
- if(!signedIn&&!builds.length&&!queuedDeletes().length)return;
+ // An account's builds may exist exclusively in D1 even when the local cache is empty.
+ if(!window.PandoraAccountUI?.isLoggedIn())return;
  if(Date.now()-lastCloudReconnect<20000)return;
  lastCloudReconnect=Date.now();
  void loadCloudBuilds();
