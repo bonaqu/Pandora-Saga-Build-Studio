@@ -74,6 +74,9 @@ export async function runAccountLateBootstrapSmoke(browser,base){
    username,{timeout:25000});
   await accountLibraryLoaded;
   assert.equal(stats.me,1,'The old dormant session must be checked via /me');
+  await page.locator('#nav [data-tab="builds"]').click();
+  assert.equal(await page.locator('.build-account-reminder').count(),0,
+   'An authenticated old account must not see the guest login prompt');
   assert.ok(await page.evaluate(()=>JSON.parse(
    localStorage.getItem('ps-account-session.v1')).expires<Date.now()));
   assert.equal(stats.guestLibrary,0,
