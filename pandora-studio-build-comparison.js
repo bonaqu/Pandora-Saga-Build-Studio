@@ -481,6 +481,8 @@ const COMPACT_METRICS=Object.freeze([
  ['mentalConditions','Сопр. аном. дух.','Mental conditions'],
  ['magic','Сопр. магии','Magic resistance']
 ]);
+// For damage taken and cooldown modifiers a smaller percentage is favorable.
+const LOWER_IS_BETTER=new Set(['physicalResist','magicDamageResist','critDamageResist','cooldown']);
 function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
  const english=lang==='en';
  const byName=groups=>{
@@ -514,9 +516,22 @@ function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
   // A difference in the verified minimum cannot be misreported as Δ=0.
   const delta=both&&!(verifiedRangesDiffer&&left===right)?
    rounded(right-left):null;
+  // A/B emphasis depends on the meaning of the stat, not the sign of B-A.
+  // Missing or non-comparable readings do not claim an advantage.
+  let advantage=null;
+  if(both&&left!==right){
+   const firstBetter=LOWER_IS_BETTER.has(key)?left<right:left>right;
+   advantage=firstBetter?'a':'b';
+  }else if(both&&verifiedRangesDiffer&&left===right){
+   // Equal maximum ATK still allows a verified, stronger minimum.
+   const minA=Number(range(a).split('–')[0]);
+   const minB=Number(range(b).split('–')[0]);
+   if(minA!==minB)advantage=minA>minB?'a':'b';
+  }
   changes.push({
    key:'stat.'+key,label:english?en:ru,
    a:shown(a,left,key,unitA),b:shown(b,right,key,unitB),
+   advantage,
    delta:delta===null?'—':(delta>0?'+':'')+format.format(delta)+unitA,
    direction:delta===null?'unavailable':
     delta>0?'up':delta<0?'down':'flat'
