@@ -5981,7 +5981,12 @@ function renderBuilds(root){
    'Сохраняли билды в аккаунте? Войдите, чтобы они загрузились.'}),
   h('button',{type:'button',class:'button-action',
    text:lang==='en'?'Sign in':'Войти в аккаунт',
-   onclick:()=>document.getElementById('profileTrigger')?.click()})
+   onclick:()=>{
+    // The saved-build workbench is a modal above the sticky header. Close it
+    // before opening the existing profile; otherwise login fields are covered.
+    closeWorkbench();
+    document.getElementById('profileTrigger')?.click();
+   }})
  ]);
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
    text:window.PandoraUILocale?.ui(cloudLibraryStatus,lang)||cloudLibraryStatus}),

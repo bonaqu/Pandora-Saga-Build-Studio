@@ -40,9 +40,9 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.match(await reminder.innerText(),/Сохраняли билды в аккаунте/);
   await reminder.getByRole('button',{name:'Войти в аккаунт'}).click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
-  // Close through the same existing popover handler: the unrelated detail
-  // overlay can intercept a physical click on the sticky header in CI.
-  await page.locator('#profileTrigger').evaluate(button=>button.click());
+  assert.equal(await page.locator('#detailPanel').getAttribute('aria-modal'),null,
+   'The modal build drawer must close so account fields are accessible');
+  await page.locator('#profileTrigger').click();
   assert.equal(await page.locator('#accountPanel').isVisible(),false);
   assert.equal(await page.locator('.build-card').count(),3);
   const panel=page.locator('[data-build-compare]');
