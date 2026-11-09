@@ -6346,8 +6346,12 @@ async function createShared(build,host){
   const field=h('input',{type:'text',readOnly:true,value:url,'aria-label':'Ссылка на билд'});
   const copy=h('button',{type:'button',class:'button-action primary',text:'Скопировать ссылку',
    onclick:async()=>{
-    try{await navigator.clipboard.writeText(url);copy.textContent='✓ Скопировано'}
-    catch{field.focus();field.select();copy.textContent='Ссылка выделена — скопируй через меню или Ctrl+C'}
+    try{await navigator.clipboard.writeText(url);
+     copy.textContent=window.PandoraUILocale?.ui('✓ Скопировано',lang)||'✓ Скопировано';
+    }catch{field.focus();field.select();
+     copy.textContent=window.PandoraUILocale?.ui(
+      'Ссылка выделена — скопируй через меню или Ctrl+C',lang)||
+      'Ссылка выделена — скопируй через меню или Ctrl+C';}
    }});
   message.append(h('p',{text:response.reused?'Ссылка на билд уже создана.':'Ссылка на билд создана.'}),
    field,copy,h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));
