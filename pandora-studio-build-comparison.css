@@ -27,24 +27,25 @@
 .build-compare-table-wrap{max-width:100%;min-width:0;overflow-x:auto;
  border:1px solid #785939;border-radius:7px;background:#201810;
  -webkit-overflow-scrolling:touch}
-.build-compare-table{width:100%;min-width:0;border-collapse:collapse;table-layout:fixed;
+.build-compare-table{width:100%;min-width:650px;border-collapse:collapse;table-layout:fixed;
  color:#ecd7b6;font:12px/1.35 Manrope,Arial,sans-serif;font-variant-numeric:tabular-nums}
 .build-compare-table th,.build-compare-table td{padding:7px 8px;
  border-bottom:1px solid rgba(183,146,97,.15);overflow-wrap:anywhere;
  text-align:right;vertical-align:middle}
 .build-compare-table thead th{color:#f5d6a4;background:#443021;font-size:11px}
-.build-compare-table th:first-child{text-align:left;width:43%}
-.build-compare-table thead th:last-child{width:20%}
+.build-compare-table th:nth-child(1),.build-compare-table th:nth-child(4){text-align:left;width:32%}
+.build-compare-table thead th:nth-child(2),.build-compare-table thead th:nth-child(3),
+.build-compare-table thead th:nth-child(5),.build-compare-table thead th:nth-child(6){width:9%}
+.build-compare-table th:nth-child(4){border-left:1px solid rgba(183,146,97,.28);padding-left:11px}
 .build-compare-table tbody th{font-weight:550}
 .build-compare-table tbody tr:last-child th,.build-compare-table tbody tr:last-child td{
  border-bottom:0}
 .build-compare-table tbody tr:hover{background:rgba(184,137,74,.09)}
-/* A positive numerical delta is not always a gameplay improvement (for
-   example: incoming damage). Show direction through the +/- value, not
-   misleading green/red success colors. */
-.build-compare-table td[data-direction="up"],
-.build-compare-table td[data-direction="down"]{color:#e7c38e;font-weight:700}
-.build-compare-table td[data-direction="unavailable"]{color:#ad9d86}
+/* Only the genuinely favorable reading is bold. No delta column or
+   red/green "better" claim for unavailable and incompatible readings. */
+.build-compare-table td[data-compare-advantage]{color:#ffe5b5;font-weight:800}
+.build-compare-table td:not([data-compare-advantage]){font-weight:500}
+.build-compare-table td:empty{background:transparent}
 .build-card:has(input[aria-label^="Сравнить "]:checked),
 .build-card:has(input[aria-label^="Compare "]:checked){border-color:#cc9b59;
  box-shadow:0 0 0 1px rgba(215,164,89,.22)}
