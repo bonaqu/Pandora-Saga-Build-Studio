@@ -448,3 +448,82 @@ test('a second tab cannot steal shared primary writes when owner changes on last
   assert.equal(store.getItem(key),bob);
  }
 });
+
+
+test('failed cross-owner switch must not roll back another tab active library',()=>{
+ const store=storage(),ownerC=mod.owner('charlie_03','a'.repeat(64));
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Alice library'}]));
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob library'}]));
+ mod.setOwned(store,ownerB,keys[1],JSON.stringify({name:'Bob draft'}));
+ mod.setOwned(store,ownerC,keys[0],JSON.stringify([{name:'Charlie future'}]));
+ let switched=false;
+ const interleaved={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   store.setItem(key,value);
+   if(key===keys[0]&&!switched){
+    switched=true;
+    mod.transition(store,ownerB);
+    throw Error('Simulated storage failure after another tab switched');
+   }
+  }
+ };
+ assert.throws(()=>mod.transition(interleaved,ownerC),
+  /Library owner changed in another tab/);
+ assert.equal(switched,true);
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob library');
+ assert.equal(JSON.parse(store.getItem(keys[1])).name,'Bob draft');
+ assert.equal(JSON.parse(mod.getOwned(store,ownerB,keys[0]))[0].name,'Bob library');
+});
+
+test('cross-owner transition rechecks the marker after all four primary writes',()=>{
+ const store=storage(),ownerC=mod.owner('charlie_03','a'.repeat(64));
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob library'}]));
+ mod.setOwned(store,ownerC,keys[0],JSON.stringify([{name:'Charlie future'}]));
+ let switched=false;
+ const switchAtFinalWrite=key=>{
+  if(key===keys[3]&&!switched){
+   switched=true;
+   mod.transition(store,ownerB);
+  }
+ };
+ const interleaved={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>{store.removeItem(key);switchAtFinalWrite(key)},
+  setItem:(key,value)=>{store.setItem(key,value);switchAtFinalWrite(key)}
+ };
+ assert.throws(()=>mod.transition(interleaved,ownerC),
+  /Library owner changed in another tab/);
+ assert.equal(switched,true);
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob library',
+  'Charlie must not overwrite Bob owner marker after Bob takes the primary keys');
+});
+
+test('failed same-owner scope sync cannot reset another tab owner marker',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob library'}]));
+ let switched=false;
+ const interleaved={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   store.setItem(key,value);
+   if(key===mod.MARKER&&value===ownerA&&!switched){
+    switched=true;
+    mod.transition(store,ownerB);
+    throw Error('Another tab claimed the library during same-owner sync');
+   }
+  }
+ };
+ assert.throws(()=>mod.transition(interleaved,ownerA),
+  /Another tab claimed the library/);
+ assert.equal(switched,true);
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob library');
+});

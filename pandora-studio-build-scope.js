@@ -134,8 +134,15 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
  if(previous===next){
   try{storage.setItem(MARKER,next);sync(storage)}
   catch(error){
-   // An initial, same-owner claim must not leave an incorrect marker behind.
-   try{if(raw===null)storage.removeItem(MARKER);else storage.setItem(MARKER,raw)}catch{}
+   // A different tab may have claimed another owner while sync() failed.
+   // Never undo its marker as part of our same-owner error handling.
+   try{
+    const current=storage.getItem(MARKER);
+    if(current===raw||current===next){
+     if(raw===null)storage.removeItem(MARKER);
+     else storage.setItem(MARKER,raw);
+    }
+   }catch{}
    throw error;
   }
   return {changed:false,owner:next,previous};
@@ -156,12 +163,24 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
  }
  const before=KEYS.map(key=>storage.getItem(key));
  ensureUnchanged();
+ let claimed=false;
  try{
   write(storage,saved||DEFAULTS);
+  // A separate tab can claim the common slots while we are writing them.
+  // Never overwrite its marker with our intended owner after that switch.
+  ensureUnchanged();
   storage.setItem(MARKER,next);
-  sync(storage);
+  claimed=true;
+  if(!sync(storage))
+   throw Error('Library owner changed in another tab; retry the switch');
  }catch(error){
-  // Avoid half-switched owner data if any write or final backup fails.
+  const marker=storage.getItem(MARKER);
+  // Rollback is safe only while we still own the original marker, or while
+  // our own successful marker write is current. Otherwise restoring all
+  // primary slots would overwrite a different tab's newly active library.
+  if(marker!==raw&&(!claimed||marker!==next))
+   throw Error('Library owner changed in another tab; retry the switch',
+    {cause:error});
   if(!restorePrimary(storage,before,raw))
    throw Error('Could not restore local library after failed owner switch',{cause:error});
   throw error;
