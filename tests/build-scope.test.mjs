@@ -485,16 +485,16 @@ test('cross-owner transition rechecks the marker after all four primary writes',
  mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob library'}]));
  mod.setOwned(store,ownerC,keys[0],JSON.stringify([{name:'Charlie future'}]));
  let switched=false;
+ const switchAtFinalWrite=key=>{
+  if(key===keys[3]&&!switched){
+   switched=true;
+   mod.transition(store,ownerB);
+  }
+ };
  const interleaved={
   getItem:key=>store.getItem(key),
-  removeItem:key=>store.removeItem(key),
-  setItem:(key,value)=>{
-   store.setItem(key,value);
-   if(key===keys[3]&&!switched){
-    switched=true;
-    mod.transition(store,ownerB);
-   }
-  }
+  removeItem:key=>{store.removeItem(key);switchAtFinalWrite(key)},
+  setItem:(key,value)=>{store.setItem(key,value);switchAtFinalWrite(key)}
  };
  assert.throws(()=>mod.transition(interleaved,ownerC),
   /Library owner changed in another tab/);
