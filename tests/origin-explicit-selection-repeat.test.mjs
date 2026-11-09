@@ -122,5 +122,5 @@ test('holding repeatedly adds points until release, leave, or a disabled cap',()
 });
 test('race passive selection flows to the book calculator, not only the visual checkmark',()=>{
  assert.match(app,/potionContext:\{racialPassiveId:window\.PandoraGameNavigation\.canonicalRacialPassiveId\(/);
- assert.match(app,/state\.racialPassiveId=selected\?null:id;persist\(\);renderOriginPassives\(\);\s*renderOriginVitals\(\);renderOriginStats\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
+ assert.match(app,/state\.racialPassiveId=selected\?null:id;persist\(\);renderOriginPassives\(\);\s*renderOriginVitals\(\);renderOriginStats\(\)/);
 });

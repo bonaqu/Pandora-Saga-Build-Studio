@@ -673,6 +673,9 @@ function renderOriginVitals(){
   holder.setAttribute('aria-label',notice);
   holder.title=''; // Never show a second browser tooltip above game UI.
  }
+ // Derived values are never frozen while the Hero Book is visible.
+ // All character editing paths already refresh Origin vitals.
+ refreshOpenHeroBook();
 }
 
 function renderVitalsEnhancements(){
@@ -755,7 +758,7 @@ function setVitalsEnhancement(key,value){
   current[key]=n;
  }
  state.vitalsBuffs=current;persist();renderOriginVitals();renderVitalsEnhancements();
- if(stageAttributesPage)renderStageAttributes();
+ 
 }
 function setAttributeBuff(key,value){
  const current={guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,
@@ -807,7 +810,7 @@ function setAttributeBuff(key,value){
  }else return;
  state.attributeBuffs=current;
  persist();renderOriginStats();renderOriginVitals();renderVitalsEnhancements();
- if(stageAttributesPage)renderStageAttributes();
+ 
 }
 function budgetSummary(){
  return window.PandoraSkillProgression.spending(gameTables?.abilityPoint,state.level,state.points);
@@ -1410,6 +1413,11 @@ function renderStageAttributes(){
   root.querySelector('[role="tab"][aria-selected="true"]')?.focus({preventScroll:true});
  }
 }
+// The Hero Book is a live calculation, not a snapshot captured on open.
+// Re-render preserves the active chapter, scroll position and setting focus.
+function refreshOpenHeroBook(){
+ if(stageAttributesPage&&!stageSlotPickerOpen)renderStageAttributes();
+}
 function focusSelectedSlot(){
  document.querySelector('.equipment-rail .equipment-slot[data-slot-index="'+selectedSlot+'"]')?.focus({preventScroll:true});
 }
@@ -1500,7 +1508,7 @@ function renderStagePicker(focusSearch=false){
     const choice=window.PandoraEnchantModel.normalizeForSlot(key,entry);
     if(choice)state.gems[id]=choice;else delete state.gems[id];
     stageSlotView='details';persist();renderStagePicker();
-    renderOriginVitals();if(stageAttributesPage)renderStageAttributes();
+    renderOriginVitals();
     if(focusKey&&focusValue)root.querySelector('[data-enchant-key="'+focusKey+
       '"][data-enchant-value="'+focusValue+'"]')?.focus({preventScroll:true});
    }
@@ -1798,7 +1806,7 @@ function renderOriginPassives(){
     (lang==='en'?' — selected':' — выбрано'):
     (lang==='en'?' — select':' — выбрать')),
    onclick:()=>{state.racialPassiveId=selected?null:id;persist();renderOriginPassives();
-    renderOriginVitals();renderOriginStats();if(stageAttributesPage)renderStageAttributes();
+    renderOriginVitals();renderOriginStats();
     if(activeTab==='character'&&characterPanelTab==='character')renderDetails()}});
   const src=skillIcon('race',id,skill);
   if(src){const img=h('img',{src,alt:'',loading:'lazy'});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));btn.append(img)}
@@ -2031,6 +2039,8 @@ function heroPathApi(){
    // A capped slider may emit many input events that cannot change the build.
    // Do not rewrite the draft or rebuild the budget for those no-op inputs.
    if(allocationChanged||branchChanged){persist();refreshBudgetLabel()}
+   // Show automatic-mastery impact during a drag without remounting its slider.
+   if(allocationChanged&&!final)refreshOpenHeroBook();
    if(final){
     const activeControl=document.activeElement?.getAttribute?.('data-branch-control');
     renderBranches();renderOriginStats();renderOriginVitals();
@@ -2049,6 +2059,7 @@ function heroPathApi(){
    persist();
    // Hold-to-repeat updates the existing rail without removing the pressed
    // button. The final pointerup/keyboard commit refreshes all derived stats.
+   if(!final)refreshOpenHeroBook();
    if(final){
     renderBranches();renderOriginStats();renderOriginVitals();
     if(activeControl)document.querySelector('[data-branch-control="'+activeControl+'"]')
@@ -5590,7 +5601,7 @@ function renderCharacter(root){
     if(!skill)continue;
     const button=h('button',{class:'race-passive-choice'+(selected?' selected':''),'aria-pressed':String(selected),
       onclick:()=>{state.racialPassiveId=id;persist();renderOriginPassives();
-       renderOriginVitals();if(stageAttributesPage)renderStageAttributes();renderDetails()}});
+       renderOriginVitals();renderDetails()}});
     const src=skillIcon('race',id,skill);
     const image=src?h('img',{src,alt:'',loading:'lazy'}):
      h('span',{text:'✦',class:'skill-fallback'});

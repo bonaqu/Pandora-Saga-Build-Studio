@@ -26,6 +26,7 @@ import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
 import {runHonorGuideSmoke} from './browser-honor-guide.mjs';
 import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry.mjs';
 import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
+import {runHeroBookLiveRecalcSmoke} from './browser-hero-book-live-recalc.mjs';
 import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build-comparison.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
@@ -359,6 +360,7 @@ async function main(){
   ['item-preview-delay',runItemHoverDelaySmoke],
   ['legacy-class-cap',runLegacySkillCapSmoke],
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
+  ['hero-book-live-recalc',runHeroBookLiveRecalcSmoke],
   ['two-handed-gear',runTwoHandedSmoke],
   ['one-piece-outfit-and-soul-scroll',runOutfitSoulScrollSmoke],
   ['future-level-gear',runFutureGearSmoke],
@@ -383,7 +385,7 @@ async function main(){
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
- const quickCases=new Set(['share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery',
+ const quickCases=new Set(['share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc',
   'manual-saved-overwrite','account-late-bootstrap','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;

@@ -21,8 +21,8 @@ test('HP/MP are calculated integers and coverage limitations remain transparent'
   originVitals:{attributes:{},setAttribute(key,value){this.attributes[key]=value},title:'old'}
  };
  let calc={hp:2066,mp:543};
- const render=Function('$','previewBaseStats','renderPotionPreview','lang',code+'\nreturn renderOriginVitals;')(
-  k=>nodes[k],()=>calc,()=>{},'ru');
+ const render=Function('$','previewBaseStats','renderPotionPreview','lang','refreshOpenHeroBook',code+'\nreturn renderOriginVitals;')(
+  k=>nodes[k],()=>calc,()=>{},'ru',()=>{});
  render();
  assert.equal(nodes.originHp.textContent,'2066');
  assert.equal(nodes.originMp.textContent,'543');

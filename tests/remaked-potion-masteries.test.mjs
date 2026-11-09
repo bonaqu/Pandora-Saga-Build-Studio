@@ -77,8 +77,8 @@ test('exact Remaked approved RU labels are mapped to 18 current OS racial skill 
 });
 test('racial passive is applied to both Origin and character profile selections immediately',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/state\.racialPassiveId=selected\?null:id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
- assert.match(app,/state\.racialPassiveId=id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\);if\(stageAttributesPage\)renderStageAttributes\(\)/);
+ assert.match(app,/state\.racialPassiveId=selected\?null:id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\)/);
+ assert.match(app,/state\.racialPassiveId=id;persist\(\);renderOriginPassives\(\);[\s\S]*?renderOriginVitals\(\)/);
 });
 test('live-game manually trained melee and Prayer exclude untrained class allocations',()=>{
  const tables=JSON.parse(read('data/os/tables.json'));
