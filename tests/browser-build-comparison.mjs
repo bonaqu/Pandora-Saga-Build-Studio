@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 // Cloudflare writes. The A/B table is inside the builds workbench, not a dialog.
 export async function runBuildComparisonSmoke(browser,base){
  const idA='a'.repeat(32),idB='b'.repeat(32),idC='d'.repeat(32);
- const secret='c'.repeat(64);
+ const secret='c'.repeat(64),token='t'.repeat(43),username='comparison_user';
  const first={race:1,job:16,gender:0,level:10,name:'Витальный жрец',
   points:{benevolence:1},stats:{Выносливость:0,Ловкость:2,Сноровка:3,Дух:4},
   equipment:{},souls:{},refinements:{},gems:{},
@@ -21,10 +21,12 @@ export async function runBuildComparisonSmoke(browser,base){
  ];
  const original=JSON.stringify(library);
  const context=await browser.newContext({viewport:{width:1240,height:850}});
- await context.addInitScript(({secret,library})=>{
+ await context.addInitScript(({secret,library,token,username})=>{
   localStorage.setItem('ps-build-library-secret.v1',secret);
+  localStorage.setItem('ps-account-session.v1',JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
+  localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
   localStorage.setItem('ps-build-library.v1',JSON.stringify(library));
- },{secret,library});
+ },{secret,library,token,username});
  await context.route('**/*',route=>
   route.request().url().startsWith(base+'/')?route.continue():route.abort());
  const page=await context.newPage(),errors=[];
@@ -36,27 +38,8 @@ export async function runBuildComparisonSmoke(browser,base){
   await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('.build-card').first().waitFor({state:'visible',timeout:20000});
-  const reminder=page.locator('.build-account-reminder');
-  assert.match(await reminder.innerText(),/Сохраняйте билды в своём аккаунте/);
-  assert.match(await reminder.innerText(),/гостевая библиотека/);
-  await reminder.getByRole('link',{name:'Зарегистрироваться'}).click();
-  await page.locator('#accountPanel').waitFor({state:'visible'});
-  assert.equal(await page.locator('#detailPanel').getAttribute('aria-modal'),null,
-   'The saved-build drawer must close before the header registration form opens');
-  assert.equal((await page.locator('#accountPanel .account-action.selected').innerText()).trim(),
-   'Регистрация','Guest registration link must select the registration form');
-  await page.locator('#profileTrigger').click();
-  assert.equal(await page.locator('#accountPanel').isVisible(),false);
-  await page.locator('#nav [data-tab="builds"]').click();
-  await page.locator('.build-account-reminder').getByRole('link',{name:'Войти'}).click();
-  await page.locator('#accountPanel').waitFor({state:'visible'});
-  assert.equal((await page.locator('#accountPanel .account-action.selected').innerText()).trim(),
-   'Войти','Guest sign-in link must select the login form');
-  assert.equal(await page.locator('#profileTrigger').getAttribute('aria-expanded'),'true');
-  await page.locator('#profileTrigger').click();
-  assert.equal(await page.locator('#profileTrigger').getAttribute('aria-expanded'),'false');
-  await page.locator('#nav [data-tab="builds"]').click();
-  await page.locator('.build-card').first().waitFor({state:'visible'});
+  assert.equal(await page.locator('.build-signin-gate').count(),0,
+   'An authenticated owner sees the actual comparison library');
   assert.equal(await page.locator('.build-card').count(),3);
   const panel=page.locator('[data-build-compare]');
   await panel.waitFor({state:'visible'});
@@ -122,7 +105,7 @@ export async function runBuildComparisonSmoke(browser,base){
 }
 
 export async function runSavedBuildEnglishSmoke(browser,base){
- const secret='c'.repeat(64);
+ const secret='c'.repeat(64),token='u'.repeat(43),username='english_user';
  const library=Array.from({length:6},(_,i)=>({
   id:(i+1).toString(16).repeat(32),
   name:i===5?'Сияние героя':i===4?'Тёмный герой':'Build '+(i+1),at:100+i,
@@ -130,10 +113,12 @@ export async function runSavedBuildEnglishSmoke(browser,base){
  }));
  const original=JSON.stringify(library);
  const context=await browser.newContext({viewport:{width:1280,height:860}});
- await context.addInitScript(({secret,library})=>{
+ await context.addInitScript(({secret,library,token,username})=>{
   localStorage.setItem('ps-build-library-secret.v1',secret);
+  localStorage.setItem('ps-account-session.v1',JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
+  localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
   localStorage.setItem('ps-build-library.v1',JSON.stringify(library));
- },{secret,library});
+ },{secret,library,token,username});
  await context.route('**/*',route=>route.request().url().startsWith(base+'/')?
   route.continue():route.abort());
  const page=await context.newPage(),errors=[];
@@ -170,10 +155,8 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   const cards=page.locator('.build-card');
   await cards.first().waitFor({state:'visible',timeout:20000});
   assert.equal(await cards.count(),6,'Six saved builds must be present');
-  const guestNote=page.locator('.build-account-reminder');
-  assert.match(await guestNote.innerText(),/separate guest library/);
-  assert.equal(await guestNote.getByRole('link',{name:'Sign in'}).count(),1);
-  assert.equal(await guestNote.getByRole('link',{name:'Register'}).count(),1);
+  assert.equal(await page.locator('.build-signin-gate').count(),0);
+  assert.match(await page.locator('.build-transfer summary').innerText(),/Import older builds/);
   const hero=cards.filter({has:page.getByRole('heading',{name:'Сияние героя'})});
   assert.equal(await hero.count(),1,'Player-authored names are never translated');
   assert.match(await hero.locator('p').first().innerText(),/^Elf · /);
