@@ -4,6 +4,7 @@ import {runIndependentSmokes} from './browser-runner.mjs';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
 import {runBuildAuthGateSmoke} from './browser-build-auth-gate.mjs';
 import {runSharedLibraryImportSmoke} from './browser-shared-library-import.mjs';
+import {runDraftPersistenceWarningSmoke} from './browser-draft-persistence-warning.mjs';
 import {runGuestDraftContinuitySmoke} from './browser-guest-draft-continuity.mjs';
 import {runLegacyImportSmoke} from './browser-legacy-import.mjs';
 import {runLayoutAudit} from './browser-layout.mjs';
@@ -356,6 +357,7 @@ async function main(){
  const scenarios=[
   ['build-account-gate',runBuildAuthGateSmoke],
   ['shared-library-import',runSharedLibraryImportSmoke],
+  ['draft-persistence-warning',runDraftPersistenceWarningSmoke],
   ['guest-draft-continuity',runGuestDraftContinuitySmoke],
   ['legacy-build-import',runLegacyImportSmoke],
   ['share-link',runShareLinkSmoke],
@@ -397,7 +399,7 @@ async function main(){
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
- const quickCases=new Set(['build-account-gate','shared-library-import','guest-draft-continuity','share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
+ const quickCases=new Set(['build-account-gate','shared-library-import','draft-persistence-warning','guest-draft-continuity','share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
