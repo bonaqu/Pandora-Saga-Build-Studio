@@ -5689,11 +5689,14 @@ function renderBuildComparison(host,onSelection=()=>{}){
  const table=h('table',{class:'build-compare-table','aria-label':translate(
   'Различающиеся итоговые характеристики билдов','Different calculated stats of saved builds')});
  const head=h('thead');
+ // Two stat/A/B groups use the available drawer width without a delta column.
  head.append(h('tr',{},[
   h('th',{scope:'col',text:translate('Характеристика','Stat')}),
   h('th',{scope:'col',text:'A'}),
   h('th',{scope:'col',text:'B'}),
-  h('th',{scope:'col',text:translate('Разница','Difference')})
+  h('th',{scope:'col',text:translate('Характеристика','Stat')}),
+  h('th',{scope:'col',text:'A'}),
+  h('th',{scope:'col',text:'B'})
  ]));
  const tbody=h('tbody');table.append(head,tbody);wrap.append(table);
  content.append(controls,summary,wrap);
@@ -5736,16 +5739,23 @@ function renderBuildComparison(host,onSelection=()=>{}){
    translate('Среди рассчитанных характеристик отличий нет.',
     'No differences in the calculated stats.');
   wrap.hidden=!rows.length;
-  for(const item of rows){
-   const node=h('tr',{'data-compare-row':item.key,'data-compare-equal':'false'});
-   node.append(
-    h('th',{scope:'row',text:item.label}),
-    h('td',{'data-compare-a':'',text:item.a}),
-    h('td',{'data-compare-b':'',text:item.b}),
-    h('td',{'data-compare-delta':'','data-direction':item.direction,
-     text:item.delta})
-   );
-   tbody.append(node);
+  // Every metric has exactly one A/B pair, even when an odd number of
+  // differences leaves the last cell group empty. Only favorable values
+  // get emphasis; the two input builds and their saves stay untouched.
+  const metricCells=item=>!item?[
+   h('th',{scope:'row',text:''}),h('td',{}),h('td',{})
+  ]:[
+   h('th',{scope:'row','data-compare-row':item.key,text:item.label}),
+   h('td',{'data-compare-a':item.key,text:item.a,
+    ...(item.advantage==='a'?{'data-compare-advantage':''}:{})}),
+   h('td',{'data-compare-b':item.key,text:item.b,
+    ...(item.advantage==='b'?{'data-compare-advantage':''}:{})})
+  ];
+  const half=Math.ceil(rows.length/2);
+  for(let i=0;i<half;i++){
+   tbody.append(h('tr',{},[
+    ...metricCells(rows[i]),...metricCells(rows[i+half])
+   ]));
   }
  }
  update();
@@ -5975,18 +5985,29 @@ function renderBuilds(root){
  // Player accounts are optional, but a guest must immediately understand why
  // their *account* cloud builds have not loaded after a cleared browser login.
  const signedIn=Boolean(window.PandoraAccountUI?.isLoggedIn());
- const accountReminder=signedIn?null:h('div',{class:'build-account-reminder'},[
-  h('span',{text:lang==='en'?
-   'Saved builds in an account? Sign in to load them.':
-   'Сохраняли билды в аккаунте? Войдите, чтобы они загрузились.'}),
-  h('button',{type:'button',class:'button-action',
-   text:lang==='en'?'Sign in':'Войти в аккаунт',
-   onclick:()=>{
-    // The saved-build workbench is a modal above the sticky header. Close it
-    // before opening the existing profile; otherwise login fields are covered.
-    closeWorkbench();
-    document.getElementById('profileTrigger')?.click();
-   }})
+ const openAccount=mode=>event=>{
+  event.preventDefault();
+  // Close the library drawer first: the existing profile form lives in the
+  // header beneath it. Keep guest saves separate until explicit registration.
+  closeWorkbench();
+  if(!window.PandoraAccountUI?.open?.(mode))
+   document.getElementById('profileTrigger')?.click();
+ };
+ const accountReminder=signedIn?null:h('aside',{
+  class:'build-account-reminder',role:'note',
+  'aria-label':lang==='en'?'Cloud build saving':'Облачное сохранение билдов'
+ },[
+  h('strong',{class:'build-account-reminder-title',text:lang==='en'?
+   'Keep your builds in your account':'Сохраняйте билды в своём аккаунте'}),
+  h('p',{class:'build-account-reminder-copy',text:lang==='en'?
+   'Sign in or register to sync your saved builds with your account in the cloud. They will be available when you return or use another device. Until you sign in, this is a separate guest library.':
+   'Войдите или зарегистрируйтесь, чтобы синхронизировать сохранённые билды с вашим аккаунтом в облаке. Они будут доступны при следующем посещении и с другого устройства. Без входа здесь открыта отдельная гостевая библиотека.'}),
+  h('div',{class:'build-account-reminder-links'},[
+   h('a',{href:'#accountPanel',text:lang==='en'?'Sign in':'Войти',
+    onclick:openAccount('login')}),
+   h('a',{href:'#accountPanel',text:lang==='en'?'Register':'Зарегистрироваться',
+    onclick:openAccount('register')})
+  ])
  ]);
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
    text:window.PandoraUILocale?.ui(cloudLibraryStatus,lang)||cloudLibraryStatus}),
@@ -7817,6 +7838,7 @@ void window.PandoraAccountUI.init({
   // account never transfers another owner's cached saves.
   activateLibraryScope({carry:Boolean(register)});
   libraryChangeId++;
+  reportCloudStatus('Подключаем облачную библиотеку…');
   void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
  },
@@ -7824,6 +7846,7 @@ void window.PandoraAccountUI.init({
   // Restore the previous guest's own saves and draft, not a different account's.
   activateLibraryScope();
   libraryChangeId++;
+  reportCloudStatus('Подключаем облачную библиотеку…');
   void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
  },

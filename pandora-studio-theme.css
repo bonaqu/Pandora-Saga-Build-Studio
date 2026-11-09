@@ -2169,9 +2169,15 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  color:#d9ba8f;max-width:100%;white-space:nowrap
 }
 
-/* Optional sign-in prompt only in My Builds. Guest libraries remain usable. */
-.build-account-reminder{display:flex;align-items:center;justify-content:space-between;
- gap:9px;flex-wrap:wrap;padding:8px 11px;margin:0 0 10px;border:1px solid #705434;
- border-radius:4px;background:#211911;color:#dac9ac;font:12px/1.45 Manrope,Arial,sans-serif}
-.build-account-reminder .button-action{margin:0;padding:6px 11px;flex:0 0 auto}
-@media(max-width:600px){.build-account-reminder .button-action{margin-left:auto}}
+/* Only in My Builds when signed out: prominent, but not an interrupting modal. */
+.build-account-reminder{display:grid;gap:7px;padding:12px 14px;margin:0 0 12px;
+ border:1px solid #b88b52;border-left:3px solid #dab16c;border-radius:6px;
+ background:linear-gradient(110deg,#342618,#211911);color:#e9d2ae;
+ font:12px/1.5 Manrope,Arial,sans-serif}
+.build-account-reminder-title{color:#ffe2ac;font-weight:750;font-size:13px}
+.build-account-reminder-copy{margin:0;color:#ead4b4;max-width:74ch}
+.build-account-reminder-links{display:flex;flex-wrap:wrap;gap:8px 18px}
+.build-account-reminder-links a{color:#f6c989;text-decoration:underline;
+ text-underline-offset:3px;font-weight:700;cursor:pointer}
+.build-account-reminder-links a:hover{color:#ffe5ad}
+.build-account-reminder-links a:focus-visible{outline:2px solid #ffdf98;outline-offset:3px}

@@ -338,6 +338,23 @@ function render(){
  panel.append(node('p','account-small','Без электронной почты и СМС. После регистрации сохраните резервный код.'));
 
 }
+// Explicit entry point for links in My Builds. The library drawer is closed
+// by the caller before this popover is opened; no synthetic trigger clicks.
+function open(preferredMode='login'){
+ if(!panel||!trigger)return false;
+ activeSession();
+ if(!session&&['login','register'].includes(preferredMode)&&
+  mode!==preferredMode){
+  mode=preferredMode;
+  resetFeedback();
+  render();
+ }
+ if(!panel.hasChildNodes?.())render();
+ panel.hidden=false;
+ trigger.setAttribute('aria-expanded','true');
+ panel.querySelector?.('.account-form input')?.focus?.({preventScroll:true});
+ return true;
+}
 async function init(config){
  // This classic script can run long before the deferred main app initializes.
  // A different tab may sign in during that gap. Do not freeze an earlier guest
@@ -357,6 +374,7 @@ async function init(config){
  if(!trigger||!panel)throw Error('Missing account UI elements');
  setBootstrapPhase(session?'pending':'guest');
  render();
+ trigger.setAttribute('aria-expanded',String(!panel.hidden));
  // A logout in another tab revokes this tab too when both use the SAME
  // token. Switching to a DIFFERENT account in another tab must never
  // silently switch or sign out the current tab's independent owner.
@@ -376,14 +394,17 @@ async function init(config){
   const previous=session?.token||null;
   activeSession();
   panel.hidden=!panel.hidden;
+  trigger.setAttribute('aria-expanded',String(!panel.hidden));
   // Closing/reopening the popover does not mean the owner wanted to discard
   // password edits. Refresh only when its identity changed or no UI exists.
   if(!panel.hidden&&((session?.token||null)!==previous||!panel.hasChildNodes?.()))
    render();
  });
  document.addEventListener('pointerdown',event=>{
-  if(!panel.hidden&&!panel.contains(event.target)&&!trigger.contains(event.target))
+  if(!panel.hidden&&!panel.contains(event.target)&&!trigger.contains(event.target)){
    panel.hidden=true;
+   trigger.setAttribute('aria-expanded','false');
+  }
  });
  // An open password/account form must survive a late /me response.
  // Invalid/revoked identities still require an immediate forced rerender.
@@ -471,7 +492,7 @@ function updateGuard(){
   .some(input=>Boolean(input.value)))return 'draft';
  return null;
 }
-root.PandoraAccountUI=Object.freeze({init,token,updateGuard,
+root.PandoraAccountUI=Object.freeze({init,token,open,updateGuard,
  username:()=>activeSession()?session.username:null,
  refresh,isLoggedIn:()=>activeSession()});
 })(typeof window==='undefined'?globalThis:window);
