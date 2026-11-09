@@ -6137,14 +6137,17 @@ function finishBuildAccountEntry(){
  if(!returnToBuildsAfterAuth&&!shared&&!pendingGuestDraft)return;
  const returnToBuilds=returnToBuildsAfterAuth;
  returnToBuildsAfterAuth=false;
+ const guest=pendingGuestDraft;
+ pendingGuestDraft=null;
  if(shared){
+  // Preserve the guest's unfinished hero before showing an incoming build.
+  if(guest?.owner.startsWith('guest:')&&
+   JSON.stringify(state)===JSON.stringify(fresh())&&
+   switchActiveDraft(structuredClone(guest.snapshot),null))render();
   window.PandoraAccountUI?.dismiss?.();
-  pendingGuestDraft=null;
   void restoreSharedHash();
   return;
  }
- const guest=pendingGuestDraft;
- pendingGuestDraft=null;
  if(guest&&guest.owner.startsWith('guest:')&&
   JSON.stringify(guest.snapshot)!==JSON.stringify(state)){
   // An empty account draft needs no conflicting-draft choice. The guest
@@ -8082,7 +8085,7 @@ void window.PandoraAccountUI.init({
  onLogin:({register})=>{
   // Header login, like the build-gate login, must preserve an unsaved guest
   // hero before the account owner switch replaces the visible draft.
-  if(!register&&!pendingGuestDraft&&tabOwnerScope?.startsWith('guest:')&&unsavedBuild())
+  if(!register&&tabOwnerScope?.startsWith('guest:')&&unsavedBuild())
    pendingGuestDraft={snapshot:structuredClone(state),owner:tabOwnerScope};
   if(register)pendingGuestDraft=null;
   // New registration adopts the guest library because its existing D1 owner hash
