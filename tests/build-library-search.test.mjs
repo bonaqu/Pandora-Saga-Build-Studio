@@ -5,7 +5,8 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('large libraries can be filtered by character name, profession and level',()=>{
  const src=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(src,/let buildSearchQuery=''/);
- assert.match(src,/builds\.length>5\?h\('input',\{type:'search'/);
+ assert.match(src,/builds\.length>5\|\|Boolean\(buildSearchQuery\.trim\(\)\)/,
+  'An active query must retain its search control even when a deletion leaves five builds');
  assert.match(src,/searchText:\[b\.name,races\[b\.data\?\.race\]\?\.\[0\],races\[b\.data\?\.race\]\?\.\[1\],jobs\[b\.data\?\.job\]/);
  assert.match(src,/races\[b\.data\?\.race\]\?\.\[lang==='en'\?1:0\]/);
  assert.match(src,/row\.box\.hidden=!searchWords\(row\.searchText,query\)/,
