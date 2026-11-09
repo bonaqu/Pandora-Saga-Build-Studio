@@ -7,7 +7,7 @@ test('restoring builds synchronizes the race preview and branch group',()=>{
  assert.match(source,/function restoreLoadedBuildUI\(\)/);
  assert.match(source,/racePreviewIndex=selectedPortraitIndex\(state\.race,state\.gender\)/);
  assert.match(source,/next=prepareSavedBuildSnapshot\(latest\.data\)/);
- assert.match(source,/if\(!switchActiveDraft\(incoming,null\)\)return false/);
+ assert.match(source,/if\(!requireBuildAccount\(\{shared:true\}\)\|\|!switchActiveDraft\(incoming,null\)\)return false/);
 });
 test('inventory picker focuses search and restores slot focus',()=>{
  const source=read('pandora-studio-app.js');
