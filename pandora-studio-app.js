@@ -6196,15 +6196,14 @@ function renderBuilds(root){
   root.append(none);
   const apply=()=>{
    let visible=0;
-   // Multiple terms may match different fields: "Elf 40" finds an Elf
-   // even when the profession label appears between race and level.
-   const tokens=buildSearchQuery.trim().toLocaleLowerCase()
-    .split(/\s+/).filter(Boolean);
+   // Use the SAME RU/EN, ё/е, Unicode and unordered-word search behavior
+   // as equipment and encyclopedia pickers, including player build names.
+   const query=buildSearchQuery.trim();
    for(const row of searchable){
-    row.box.hidden=!tokens.every(token=>row.searchText.includes(token));
+    row.box.hidden=!searchWords(row.searchText,query);
     if(!row.box.hidden)visible++;
    }
-   none.hidden=!tokens.length||visible>0;
+   none.hidden=!query||visible>0;
   };
   search.addEventListener('input',()=>{buildSearchQuery=search.value;apply()});
   apply();
