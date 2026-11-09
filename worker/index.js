@@ -155,6 +155,67 @@ async function adminCatalog(request,env,path){
   return json({ok:true,readback,cleaned,overrideReadback,overrideCleaned,
    activeCatalogUnchanged});
  }
+ if(path==='/api/admin/catalog/test-owner-cas'){
+  // Called only after owner confirms a manual QA action in the editor.
+  // Reserved random keys never overlap real editable fields or game records.
+  const before=await activeCatalog(env),nonce=crypto.randomUUID().replaceAll('-','');
+  const primary='__qa.cas.'+nonce,other='__qa.peer.'+nonce,
+   initial='qa-first-'+nonce,updated='qa-second-'+nonce,peer='qa-peer-'+nonce;
+  const isOne=r=>Number(r?.meta?.changes)===1;
+  const isZero=r=>Number(r?.meta?.changes)===0;
+  let pass=false,cleaned=false,catalogUnchanged=false;
+  try{
+   const inserted=await env.DB.prepare(
+    'INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO NOTHING'
+   ).bind(primary,initial,Date.now()).run();
+   const neighbor=await env.DB.prepare(
+    'INSERT INTO overrides(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO NOTHING'
+   ).bind(other,peer,Date.now()).run();
+   if(!isOne(inserted)||!isOne(neighbor))throw Error('QA creation failed');
+   const staleEdit=await env.DB.prepare(
+    'UPDATE overrides SET value=?,updated_at=? WHERE key=? AND value=?'
+   ).bind('qa-stale-'+nonce,Date.now(),primary,'not-expected-'+nonce).run();
+   const goodEdit=await env.DB.prepare(
+    'UPDATE overrides SET value=?,updated_at=? WHERE key=? AND value=?'
+   ).bind(updated,Date.now(),primary,initial).run();
+   const staleReset=await env.DB.prepare(
+    'DELETE FROM overrides WHERE key=? AND value=?'
+   ).bind(primary,initial).run();
+   const afterEdit=await env.DB.prepare('SELECT value FROM overrides WHERE key=?')
+    .bind(primary).first();
+   const neighborBefore=await env.DB.prepare('SELECT value FROM overrides WHERE key=?')
+    .bind(other).first();
+   if(!isZero(staleEdit)||!isOne(goodEdit)||!isZero(staleReset)||
+    afterEdit?.value!==updated||neighborBefore?.value!==peer)
+    throw Error('QA update conflict failed');
+   const reset=await env.DB.prepare('DELETE FROM overrides WHERE key=? AND value=?')
+    .bind(primary,updated).run();
+   const repeated=await env.DB.prepare('DELETE FROM overrides WHERE key=? AND value=?')
+    .bind(primary,updated).run();
+   const afterReset=await env.DB.prepare('SELECT value FROM overrides WHERE key=?')
+    .bind(primary).first();
+   const neighborAfter=await env.DB.prepare('SELECT value FROM overrides WHERE key=?')
+    .bind(other).first();
+   pass=isOne(reset)&&isZero(repeated)&&!afterReset&&neighborAfter?.value===peer;
+  }catch{
+   pass=false;
+  }finally{
+   // Unconditionally clean only our own freshly randomized QA namespace.
+   // Clean even after a database driver throws *after* an applied insert.
+   await env.DB.prepare('DELETE FROM overrides WHERE key=?').bind(primary).run();
+   await env.DB.prepare('DELETE FROM overrides WHERE key=?').bind(other).run();
+   const leftoverPrimary=await env.DB.prepare('SELECT value FROM overrides WHERE key=?')
+    .bind(primary).first();
+   const leftoverOther=await env.DB.prepare('SELECT value FROM overrides WHERE key=?')
+    .bind(other).first();
+   cleaned=!leftoverPrimary&&!leftoverOther;
+   const after=await activeCatalog(env);
+   catalogUnchanged=JSON.stringify(before||null)===JSON.stringify(after||null);
+  }
+  if(!pass||!cleaned||!catalogUnchanged)
+   return no('Isolated D1 CAS QA failed; verify temporary cleanup and catalog state',502);
+  return json({ok:true,casVerified:true,qaCleaned:true,activeCatalogUnchanged:true});
+ }
  if(path==='/api/admin/catalog/status'){
   const current=await activeCatalog(env);
   return json({active:current?.snapshot||null,counts:current?JSON.parse(current.expected_counts):null});

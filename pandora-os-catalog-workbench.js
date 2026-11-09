@@ -41,6 +41,8 @@
     const testWrite = h('button',{type:'button',class:'button-action',
       text:'Проверить сохранение правок',
       disabled:false});
+    const testCAS=h('button',{type:'button',class:'button-action',
+      text:'Проверить конфликты правок',disabled:false});
     const github = h('button',{type:'button',class:'button-action',
       text:'Создать PR в GitHub',disabled:true});
     const search = h('input', {type:'search',class:'os-sync-search',
@@ -96,13 +98,14 @@
       h('summary',{text:'Дополнительные инструменты'}),
       metaStatus,
       h('p',{text:'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.'}),
-      h('div',{class:'os-sync-advanced-actions'},[testWrite,github,exportButton])
+      h('div',{class:'os-sync-advanced-actions'},[testWrite,testCAS,github,exportButton])
     ]);
     for(const [node,description] of [
       [acceptAll,'Выбрать только изменения, которые удалось расшифровать, исключив непонятные параметры и служебные сведения. Это не публикация.'],
       [declineAll,'Снять галочки со всех изменений. Уже опубликованный каталог D1 останется прежним.'],
       [publish,'После подтверждения сохранить только выбранные изменения как новую версию каталога в Cloudflare D1. Это меняет данные на сайте, но не файлы игры на ПК.'],
       [testWrite,'Проверить временную запись, чтение и удаление в Cloudflare D1. Опубликованные предметы и билды не меняются.'],
+      [testCAS,'Проверить конфликты на двух случайных временных записях. Запись только после подтверждения, без изменения игрового каталога и билдов.'],
       [github,'Создать предложение изменений в репозитории GitHub из уже опубликованной версии D1. Автоматического принятия изменений не будет.'],
       [exportButton,'Скачать файл с выбранными изменениями для ручного обновления GitHub. Ничего не публикует.'],
       [search,'Найти изменения по названиям игровых объектов. Поиск не меняет выбор и не публикует данные.'],
@@ -830,6 +833,22 @@
         status.textContent=error.httpStatus===401
           ? 'Сеанс администратора завершился. Войди заново.'
           : 'Проверка записи D1 не пройдена: '+error.message;
+      }finally{setBusy(false)}
+    };
+    testCAS.onclick=async()=>{
+      if(busy)return;
+      if(!confirm('Проверить конфликты правок? Будут временно записаны и удалены только две случайные тестовые записи D1. Игровые данные и билды не меняются.'))return;
+      setBusy(true);
+      try{
+        const result=await request('/api/admin/catalog/test-owner-cas',{});
+        if(result.ok!==true||result.casVerified!==true||result.qaCleaned!==true||
+           result.activeCatalogUnchanged!==true)
+          throw Error('Не подтверждены конфликты, очистка и неизменность каталога');
+        status.textContent='Проверка пройдена: устаревшие правки отклоняются, обе тестовые записи удалены, игровой каталог не изменился.';
+      }catch(error){
+        status.textContent=error.httpStatus===401
+          ?'Сеанс администратора закончился. Войди заново.'
+          :'Проверка конфликтов D1 не пройдена: '+error.message;
       }finally{setBusy(false)}
     };
     github.onclick=async()=>{
