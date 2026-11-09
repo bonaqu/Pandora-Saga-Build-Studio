@@ -6732,7 +6732,41 @@ async function restoreSharedHash(){
    history.replaceState(history.state,'',location.pathname+location.search);
  }
 }
-function modal(title,content){const root=$('modalRoot');root.replaceChildren();root.hidden=false;const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});box.append(h('button',{class:'button-action close',text:sharedText('× Закрыть','× Close'),onclick:()=>{root.hidden=true;root.replaceChildren()}}),h('h2',{text:title}),content);root.append(box);root.onclick=e=>{if(e.target===root){root.hidden=true;root.replaceChildren()}};return box}
+function modal(title,content){
+ const root=$('modalRoot'),origin=document.activeElement;
+ root.replaceChildren();root.hidden=false;
+ const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});
+ const close=()=>{
+  root.hidden=true;root.replaceChildren();
+  if(origin?.isConnected&&typeof origin.focus==='function')
+   origin.focus({preventScroll:true});
+ };
+ const heading=h('h2',{text:title,tabindex:'-1'});
+ box.append(h('button',{type:'button',class:'button-action close',
+  text:sharedText('× Закрыть','× Close'),onclick:close}),heading,content);
+ root.append(box);
+ root.onclick=e=>{if(e.target===root)close()};
+ box.addEventListener('keydown',event=>{
+  if(event.key==='Escape'){
+   event.preventDefault();event.stopPropagation();close();return;
+  }
+  if(event.key!=='Tab')return;
+  const controls=[...box.querySelectorAll(
+   'button:not(:disabled),input:not(:disabled),select:not(:disabled),'+
+   'textarea:not(:disabled),a[href],[tabindex]:not([tabindex="-1"])'
+  )].filter(node=>!node.hidden&&node.getClientRects().length>0);
+  if(!controls.length){event.preventDefault();heading.focus();return}
+  const first=controls[0],last=controls[controls.length-1],active=document.activeElement;
+  if(event.shiftKey&&(active===first||active===heading)){
+   event.preventDefault();last.focus({preventScroll:true});
+  }else if(!event.shiftKey&&(active===last||active===heading)){
+   event.preventDefault();first.focus({preventScroll:true});
+  }
+ });
+ // Focus a non-action heading, not a destructive confirmation button.
+ heading.focus({preventScroll:true});
+ return box;
+}
 async function apiRequest(path,body,token=adminToken) {
  const editingWrite=Boolean(body)&&/^\/api\/admin\/(?:override|reset)$/.test(path);
  // The last D1 snapshot read by this editor is the precondition for every
