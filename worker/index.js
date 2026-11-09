@@ -391,9 +391,11 @@ function mapPrivateBuildRow(row){
 // authenticate as an account owner AND prove possession of the old browser key.
 // Read-only preview: no old or new owner data are modified here.
 async function legacyBuildPreview(request,env){
- if(request.method!=='POST')return no('Method not allowed',405);
+ // Account ownership is mandatory even for unsupported methods. The read-only
+ // release probe must never expose the legacy migration endpoint to guests.
  const principal=await accountPrincipal(request,env);
  if(!principal)return no('Sign in to import older builds',401);
+ if(request.method!=='POST')return no('Method not allowed',405);
  const body=await boundedJsonBody(request,4096,1024);
  if(!body||!/^[a-f0-9]{64}$/.test(body.legacyKey||''))
   return no('Invalid previous library code',400);

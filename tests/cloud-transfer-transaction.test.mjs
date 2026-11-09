@@ -40,7 +40,11 @@ test('the preview requires real account login, denies legacy and absent bearer',
  assert.equal((await worker.fetch(request({bearer:null}),{DB})).status,401);
  assert.equal((await worker.fetch(request({bearer:guest}),{DB})).status,401);
  assert.equal((await worker.fetch(request({key:'bad'}),{DB})).status,400);
- assert.equal((await worker.fetch(request({method:'GET'}),{DB})).status,405);
+ assert.equal((await worker.fetch(request({method:'GET'}),{DB})).status,401,
+  'An anonymous legacy preview request must require an account before method checks');
+ assert.equal((await worker.fetch(request({method:'GET',bearer:guest}),{DB})).status,401);
+ assert.equal((await worker.fetch(request({method:'GET',bearer:token}),{DB})).status,405,
+  'An authenticated caller still cannot use unsupported GET previews');
  assert.deepEqual(DB.reads,[]);
  assert.deepEqual(DB.writes,[]);
 });
