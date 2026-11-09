@@ -81,6 +81,9 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.evaluate(token=>{
    localStorage.setItem('ps-build-library-secret.v1',token);
+   // Seed the previous record under the SAME guest owner before reload.
+   // A different marker would correctly treat that primary key as another user's.
+   localStorage.setItem('ps-build-owner-scope.v1','guest:'+token);
    localStorage.setItem('ps-build-library.v1',JSON.stringify([{
     id:'c'.repeat(32),name:'Guest only',at:99,data:{race:1,job:16,level:45}
    }]));
