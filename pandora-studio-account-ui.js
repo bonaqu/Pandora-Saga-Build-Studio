@@ -403,6 +403,10 @@ async function init(config){
  trigger=document.getElementById('profileTrigger');
  panel=document.getElementById('accountPanel');
  if(!trigger||!panel)throw Error('Missing account UI elements');
+ panel.addEventListener('animationend',event=>{
+  if(event.target===panel&&event.animationName==='account-panel-enter')
+   panel.classList.remove('is-opening');
+ });
  setBootstrapPhase(session?'pending':'guest');
  render();
  trigger.setAttribute('aria-expanded',String(!panel.hidden));
