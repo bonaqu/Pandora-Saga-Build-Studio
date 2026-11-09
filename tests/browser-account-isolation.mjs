@@ -63,9 +63,13 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
     (!username||profile.includes(username));
   },{owner:token?'account:'+username:'guest:'+guestToken,
     username:token?username:null},{timeout:30000});
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
   if(token)await openManager();
   else{
-   await page.locator('#nav [data-tab="builds"]').click();
+   // The previous workbench can be restored already open after sign-out.
+   // Never click the main navigation through its modal overlay.
+   if(!await page.locator('.build-signin-gate').isVisible())
+    await page.locator('#nav [data-tab="builds"]').click();
    await page.locator('.build-signin-gate').waitFor({state:'visible'});
   }
  }
