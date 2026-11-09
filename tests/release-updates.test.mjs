@@ -8,14 +8,15 @@ const source=read('pandora-studio-update-manager.js');
 function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Studio/',locale='ru'){
  let banner=null,check=null,normalized=null,navigated=null,saved=0,languageChanged=null;
  let currentRemote=remote,holdResponses=false,saveAllowed=true,lastEventCancelable=null;
- let guard=null,accountPanelOpen=false,now=Date.now();
+ let guard=null,accountPanelOpen=false,heroBookOpen=false,now=Date.now();
  const intervals=[];
  class Clock extends Date{static now(){return now}}
  const heldRequests=[];
  const document={
   documentElement:{lang:locale},
   querySelector:selector=>selector==='meta[name="ps-studio-release"]'?{content:local}:
-   selector.includes('#accountPanel:not([hidden])')&&accountPanelOpen?{}:null,
+   (selector.includes('#accountPanel:not([hidden])')&&accountPanelOpen||
+   selector.includes('#stageAttributes:not([hidden])')&&heroBookOpen)?{}:null,
   addEventListener(){},dispatchEvent(event){saved++;lastEventCancelable=event.cancelable;return saveAllowed},getElementById(id){return id==='studio-update-banner'&&!banner?.removed?banner:null},
   createElement:tag=>({
    tag,children:[],listeners:{},setAttribute(){},
@@ -47,6 +48,7 @@ function boot(local,remote,href='https://bonaqu.github.io/Pandora-Saga-Build-Stu
   setSaveAllowed:value=>{saveAllowed=value},
   setAccountGuard:value=>{guard=value},
   setAccountPanelOpen:value=>{accountPanelOpen=value},
+  setHeroBookOpen:value=>{heroBookOpen=value},
   advance:ms=>{now+=ms},
   checkAuto:()=>intervals.find(x=>x.ms===15000)?.fn(),
   holdChecks:()=>{holdResponses=true},
@@ -199,4 +201,19 @@ test('account requests, password drafts, and open account panels block idle upgr
  page.setAccountPanelOpen(false);
  page.checkAuto();
  assert.match(page.navigated,/ps-revision=2026[.]11[.]08[.]489/);
+});
+
+test('idle update waits until an open Hero Book is closed',async()=>{
+ const page=boot('2026.11.09.580','2026.11.09.581');
+ await page.check();
+ assert.ok(page.banner,'New release remains available to apply manually');
+ page.advance(121000);
+ page.setHeroBookOpen(true);
+ page.checkAuto();
+ assert.equal(page.navigated,null,'Reading Hero Book must not trigger silent reload');
+ assert.equal(page.saved,0,'Reading does not perform an unnecessary draft save');
+ page.setHeroBookOpen(false);
+ page.checkAuto();
+ assert.match(page.navigated,/ps-revision=2026[.]11[.]09[.]581/);
+ assert.equal(page.saved,1,'Existing before-update save still runs after closing');
 });
