@@ -110,8 +110,34 @@ function validate(input){
   requireRef(monster(id)&&isRecord(group),'таблица добычи монстра');
   for(const row of [...list(group.d,'обычной добычи'),
     ...list(group.s,'добычи душ')]){
-   requireRef(isRecord(row),'запись добычи монстра');
-   if(row.i!=null)requireRef(item(row.i),'предмет добычи монстра');
+   requireRef(isRecord(row)&&item(row.i),'предмет добычи монстра');
+   // Monster loot is displayed as source-backed chance, quantity, refine
+   // and possible Soul roll. Reject corrupt numbers; never round a made-up
+   // probability or silently drop a broken Soul relation.
+   if(row.p!=null)
+    requireRef(typeof row.p==='number'&&Number.isFinite(row.p)&&
+     row.p>=0&&row.p<=100,'шанс добычи монстра');
+   if(row.n!=null)
+    requireRef(Number.isSafeInteger(row.n)&&row.n>=1&&row.n<=999999,
+     'количество добычи монстра');
+   if(row.slotAdd!=null)
+    requireRef(Number.isSafeInteger(row.slotAdd)&&row.slotAdd>=0&&
+     row.slotAdd<=3,'слоты душ добычи монстра');
+   for(const boundary of ['lo','hi'])
+    if(row[boundary]!=null)
+     requireRef(Number.isSafeInteger(row[boundary])&&
+      row[boundary]>=0&&row[boundary]<=1000,
+      'границы улучшения добычи монстра');
+   if(row.souls!=null){
+    requireRef(Array.isArray(row.souls)&&row.souls.length<=20,
+     'список душ добычи монстра');
+    for(const pair of row.souls)
+     requireRef(Array.isArray(pair)&&pair.length===2&&
+      Number.isSafeInteger(pair[0])&&pair[0]>0&&
+      Object.hasOwn(data.souls,String(pair[0]))&&
+      typeof pair[1]==='number'&&Number.isFinite(pair[1])&&
+      pair[1]>=0&&pair[1]<=100,'душа добычи монстра');
+   }
   }
  }
  // NPC trade lists preserve recipes individually. A duplicate or absent
