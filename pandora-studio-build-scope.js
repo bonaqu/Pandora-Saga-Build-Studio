@@ -92,9 +92,16 @@ function setOwned(storage,scope,key,value){
    // that still match THIS operation, and only while we own the marker.
    // If the owner switched, keep our recovery copy for a safe later retry.
    if(storage.getItem(MARKER)===scope)try{
-    if(storage.getItem(key)===next){
-     if(previous===null)storage.removeItem(key);
-     else storage.setItem(key,previous);
+    // Another same-owner tab may already have committed a newer cache
+    // version. An older failed deletion must not resurrect its stale draft.
+    if(storage.getItem(slot(scope))===attemptedBackup){
+     // After a partially applied removeItem, getItem() returns null, NOT
+     // the requested empty string. The prior code missed this rollback.
+     const observed=storage.getItem(key);
+     if(observed===(next===''?null:next)){
+      if(previous===null)storage.removeItem(key);
+      else storage.setItem(key,previous);
+     }
     }
    }catch{}
    try{

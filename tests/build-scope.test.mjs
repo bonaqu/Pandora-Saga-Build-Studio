@@ -654,3 +654,56 @@ test('failed partially-applied primary write restores own old value and backup',
  assert.equal(store.getItem(keys[0]),original);
  assert.equal(store.getItem(backupKey),before);
 });
+
+
+test('partially applied draft deletion restores the previous owner copy on error',()=>{
+ const store=storage();mod.transition(store,ownerA);
+ const original=JSON.stringify({level:45,name:'Alice preserved'});
+ mod.setOwned(store,ownerA,keys[1],original);
+ const backupKey='ps-build-scope-cache.v1:'+ownerA,
+  beforeBackup=store.getItem(backupKey);
+ let deleted=false;
+ const partial={
+  getItem:key=>store.getItem(key),
+  setItem:(key,value)=>store.setItem(key,value),
+  removeItem:key=>{
+   store.removeItem(key);
+   if(key===keys[1]&&!deleted){
+    deleted=true;
+    throw Error('Draft removal applied before browser failure');
+   }
+  }
+ };
+ assert.throws(()=>mod.setOwned(partial,ownerA,keys[1],''),
+  /Draft removal applied/);
+ assert.equal(deleted,true);
+ assert.equal(store.getItem(keys[1]),original,
+  'A failed deletion must not silently discard the active draft');
+ assert.equal(store.getItem(backupKey),beforeBackup,
+  'The independent owner recovery copy must also roll back');
+});
+
+test('failed draft deletion cannot resurrect stale values after a newer same-owner edit',()=>{
+ const store=storage();mod.transition(store,ownerA);
+ const old=JSON.stringify({level:35,name:'Old draft'});
+ const newer=JSON.stringify({level:55,name:'Newer edit'});
+ mod.setOwned(store,ownerA,keys[1],old);
+ let interleaved=false;
+ const partial={
+  getItem:key=>store.getItem(key),
+  setItem:(key,value)=>store.setItem(key,value),
+  removeItem:key=>{
+   store.removeItem(key);
+   if(key===keys[1]&&!interleaved){
+    interleaved=true;
+    mod.setOwned(store,ownerA,keys[1],newer);
+    throw Error('Earlier deletion failed after a later owner save');
+   }
+  }
+ };
+ assert.throws(()=>mod.setOwned(partial,ownerA,keys[1],''),
+  /Earlier deletion failed/);
+ assert.equal(store.getItem(mod.MARKER),ownerA);
+ assert.equal(store.getItem(keys[1]),newer);
+ assert.equal(mod.getOwned(store,ownerA,keys[1]),newer);
+});
