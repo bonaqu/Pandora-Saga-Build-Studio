@@ -517,26 +517,19 @@ function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
   // A difference in the verified minimum cannot be misreported as Δ=0.
   const delta=both&&!(verifiedRangesDiffer&&left===right)?
    rounded(right-left):null;
-  // A/B emphasis depends on dominance, not just the sign of B-A.
-  // E.g. 20–100 and 30–90 physical ATK have no unambiguous winner.
+  // Player-approved priority for physical ATK: highest MAX wins first.
+  // A verified minimum is a tie-breaker ONLY when maximum values match.
+  // Crossing ranges such as 20–100 vs 30–90 therefore favor 20–100.
   let advantage=null;
-  if(both&&key==='attack'&&(rangeA||rangeB)){
-   if(rangeA&&rangeB){
-    const [minA,maxA]=rangeA.split('–').map(Number);
-    const [minB,maxB]=rangeB.split('–').map(Number);
-    if([minA,maxA,minB,maxB].every(Number.isFinite)&&
-     maxA===left&&maxB===right){
-     const aDominates=minA>=minB&&maxA>=maxB&&
-      (minA>minB||maxA>maxB);
-     const bDominates=minB>=minA&&maxB>=maxA&&
-      (minB>minA||maxB>maxA);
-     advantage=aDominates?'a':bDominates?'b':null;
-    }
-   }
-   // If only one build has a verified range, don't guess its minimum.
-  }else if(both&&left!==right){
+  if(both&&left!==right){
    const firstBetter=LOWER_IS_BETTER.has(key)?left<right:left>right;
    advantage=firstBetter?'a':'b';
+  }else if(both&&key==='attack'&&verifiedRangesDiffer&&left===right){
+   const [minA,maxA]=rangeA.split('–').map(Number);
+   const [minB,maxB]=rangeB.split('–').map(Number);
+   if([minA,maxA,minB,maxB].every(Number.isFinite)&&
+    maxA===left&&maxB===right&&minA!==minB)
+    advantage=minA>minB?'a':'b';
   }
   changes.push({
    key:'stat.'+key,label:english?en:ru,

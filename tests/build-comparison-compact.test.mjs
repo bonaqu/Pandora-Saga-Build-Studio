@@ -51,23 +51,27 @@ test('verified minimum attack difference remains visible without fake zero delta
   'The stronger verified minimum ATK is emphasized when maximum ATK is equal');
  assert.deepEqual(compare(left,pack([['АТК','ATK',74]])),[]);
 });
-test('verified physical ATK ranges show a winner only if both endpoints dominate',()=>{
+test('player-approved physical ATK comparison prioritizes maximum before minimum',()=>{
  const make=(min,max)=>pack([['АТК','ATK',max,'',min+'–'+max]]);
- const a=make(20,100),b=make(30,90);
- const x=compare(a,b)[0];
- assert.ok(x,'Crossing damage ranges must still be reported as different');
- assert.equal(x.advantage,null,'Higher maximum with lower minimum is not an unambiguous win');
- assert.equal(compare(b,a)[0].advantage,null,'Swapping cannot create an advantage');
+ const crossingA=make(20,100),crossingB=make(30,90);
+ assert.equal(compare(crossingA,crossingB)[0].advantage,'a',
+  '20–100 wins over 30–90 because maximum ATK has priority');
+ assert.equal(compare(crossingB,crossingA)[0].advantage,'b',
+  'Reversing builds preserves the same winner');
  assert.equal(compare(make(20,90),make(30,100))[0].advantage,'b');
  assert.equal(compare(make(30,100),make(20,90))[0].advantage,'a');
  assert.equal(compare(make(30,100),make(30,90))[0].advantage,'a');
  assert.equal(compare(make(30,90),make(30,100))[0].advantage,'b');
- assert.equal(compare(make(20,100),pack([['АТК','ATK',95]]))[0].advantage,null,
-  'No minimum is known for B, so do not guess which damage range is better');
- assert.equal(compare(pack([['АТК','ATK',90]]),make(20,100))[0].advantage,null);
+ assert.equal(compare(make(50,100),make(60,100))[0].advantage,'b',
+  'Only if maxima tie, the higher verified minimum wins');
+ assert.equal(compare(make(60,100),make(50,100))[0].advantage,'a');
+ assert.equal(compare(make(20,100),pack([['АТК','ATK',95]]))[0].advantage,'a',
+  'Higher maximum remains preferred even without the other minimum');
+ assert.equal(compare(pack([['АТК','ATK',90]]),make(20,100))[0].advantage,'b');
  assert.equal(compare(pack([['АТК','ATK',100]]),
-  pack([['АТК','ATK',90]]))[0].advantage,'a',
-  'Preserve the existing max ATK comparison when no ranges are known');
+  pack([['АТК','ATK',90]]))[0].advantage,'a');
+ // Unknown minimum on the same maximum is not a reason to invent a winner.
+ assert.deepEqual(compare(make(20,100),pack([['АТК','ATK',100]])),[]);
 });
 
 test('UI is compact and embedded in My Builds, without inventory/options matrix',()=>{
