@@ -11,7 +11,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
   profile:{guild:'Guests'}};
  const account={race:1,gender:0,job:8,level:33,
   name:'Existing account draft',points:{archery:9}};
- async function check({register=false,accountDraft=false,viaBuilds=false,link=false}={}){
+ async function check({register=false,accountDraft=false,viaBuilds=false,link=false,keepAccount=false}={}){
   const context=await browser.newContext({viewport:{width:1280,height:900}});
   const writes=[],errors=[];
   await context.route('**/*',route=>{
@@ -96,23 +96,31 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     await chooser.waitFor({state:'visible'});
     assert.equal(JSON.parse(await page.evaluate(()=>
      localStorage.getItem('ps-build-studio.v1'))).name,account.name);
-    await chooser.getByRole('button',{name:'Продолжить гостевого героя'}).click();
+    await chooser.getByRole('button',{name:keepAccount?
+     'Оставить черновик аккаунта':'Продолжить гостевого героя'}).click();
    }
-   await page.waitForFunction(name=>{
+   await page.waitForFunction(({name,expected})=>{
     const raw=localStorage.getItem('ps-build-studio.v1');
     if(!raw||localStorage.getItem('ps-build-owner-scope.v1')!=='account:'+name)
      return false;
-    try{return JSON.parse(raw).name==='Guest progress'}catch{return false}
-   },username,{timeout:20000});
+    try{return JSON.parse(raw).name===expected}catch{return false}
+   },{name:username,expected:keepAccount?account.name:guest.name},{timeout:20000});
    const active=JSON.parse(await page.evaluate(()=>
     localStorage.getItem('ps-build-studio.v1')));
-   for(const property of ['race','job','level','branch','name'])
-    assert.equal(active[property],guest[property],property);
-   assert.equal(active.points.archery,21);
-   assert.equal(active.mastery.archery,8);
-   assert.equal(active.stats['Сноровка'],13);
-   assert.equal(active.profile.guild,'Guests');
-   assert.equal(await page.locator('#levelOut').textContent(),'27');
+   if(keepAccount){
+    assert.equal(active.name,account.name);
+    assert.equal(active.level,33);
+    assert.equal(active.points.archery,9);
+    assert.equal(await page.locator('#levelOut').textContent(),'33');
+   }else{
+    for(const property of ['race','job','level','branch','name'])
+     assert.equal(active[property],guest[property],property);
+    assert.equal(active.points.archery,21);
+    assert.equal(active.mastery.archery,8);
+    assert.equal(active.stats['Сноровка'],13);
+    assert.equal(active.profile.guild,'Guests');
+    assert.equal(await page.locator('#levelOut').textContent(),'27');
+   }
    assert.equal(await page.evaluate(()=>
     localStorage.getItem('ps-active-build-id.v1')),null,
     'Guest character is a draft, not an automatically saved library entry');
@@ -131,8 +139,9 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     await preview.waitFor({state:'visible'});
     await preview.getByRole('button',{name:'Отмена'}).click();
     assert.equal((await page.evaluate(()=>JSON.parse(
-     localStorage.getItem('ps-build-studio.v1')).name)),'Guest progress',
-     'Rejecting a friend link must keep the guest draft after sign-in');
+     localStorage.getItem('ps-build-studio.v1')).name)),
+     keepAccount?account.name:guest.name,
+     'Rejecting a friend link must retain the explicitly selected draft');
    }
    if(!viaBuilds&&!accountDraft&&!link){
     assert.equal(await page.locator('#profileTrigger')
@@ -152,6 +161,8 @@ export async function runGuestDraftContinuitySmoke(browser,base){
  await check(); // Header login: empty account automatically continues guest.
  await check({accountDraft:true,viaBuilds:true}); // Choice protects existing work.
  await check({register:true}); // Registration keeps the guest working draft.
- await check({link:true}); // Friend link is previewed without losing the guest hero.
- console.log('Chromium guest draft continuity: header, conflicts, registration and friend link passed');
+ await check({link:true}); // Friend link preserves the guest hero.
+ await check({accountDraft:true,link:true}); // Choose guest, then preview friend link.
+ await check({accountDraft:true,link:true,keepAccount:true}); // Choose account draft instead.
+ console.log('Chromium guest draft continuity: header, conflicts, registration and shared links passed');
 }

@@ -6131,36 +6131,30 @@ function requireBuildAccount({shared=false}={}){
 function finishBuildAccountEntry(){
  if(!window.PandoraAccountUI?.isLoggedIn()||
   window.PandoraAccountUI?.hasRecoveryPending?.())return;
- // Header sign-in must resume an unfinished guest character as well.
- // When there is no pending action, leave the ordinary profile open.
  const shared=/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash);
  if(!returnToBuildsAfterAuth&&!shared&&!pendingGuestDraft)return;
  const returnToBuilds=returnToBuildsAfterAuth;
  returnToBuildsAfterAuth=false;
  const guest=pendingGuestDraft;
  pendingGuestDraft=null;
- if(shared){
-  // Preserve the guest's unfinished hero before showing an incoming build.
-  if(guest?.owner.startsWith('guest:')&&
-   JSON.stringify(state)===JSON.stringify(fresh())&&
-   switchActiveDraft(structuredClone(guest.snapshot),null))render();
+ const openIncoming=()=>{
   window.PandoraAccountUI?.dismiss?.();
   void restoreSharedHash();
-  return;
- }
+ };
  if(guest&&guest.owner.startsWith('guest:')&&
   JSON.stringify(guest.snapshot)!==JSON.stringify(state)){
-  // An empty account draft needs no conflicting-draft choice. The guest
-  // hero becomes this account's current UNSAVED draft, never a library save.
+  // Resume the guest's current UNSAVED hero before opening the friend's link.
+  // A separate nonempty account draft must NEVER be replaced silently.
   if(JSON.stringify(state)===JSON.stringify(fresh())){
-   if(switchActiveDraft(structuredClone(guest.snapshot),null)){
-    render();
+   if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
+   render();
+   if(shared)openIncoming();
+   else{
     changeTab(returnToBuilds?'builds':'character');
+    if(returnToBuilds)window.PandoraAccountUI?.dismiss?.();
    }
-   if(returnToBuilds)window.PandoraAccountUI?.dismiss?.();
    return;
   }
-  // Never silently overwrite the existing owner's nonempty draft.
   window.PandoraAccountUI?.dismiss?.();
   const content=h('div');
   content.append(h('p',{text:lang==='en'?
@@ -6170,13 +6164,15 @@ function finishBuildAccountEntry(){
   content.append(h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
     text:lang==='en'?'Continue guest character':'Продолжить гостевого героя',
-    onclick:()=>{if(switchActiveDraft(guest.snapshot,null)){close();render();changeTab('character')}}}),
+    onclick:()=>{if(!switchActiveDraft(guest.snapshot,null))return;
+     close();render();if(shared)openIncoming();else changeTab('character')}}),
    h('button',{type:'button',class:'button-action',
     text:lang==='en'?'Keep account draft':'Оставить черновик аккаунта',
-    onclick:()=>{close();if(returnToBuilds)changeTab('builds')}})
+    onclick:()=>{close();if(shared)openIncoming();else if(returnToBuilds)changeTab('builds')}})
   ]));
   modal(lang==='en'?'Continue your character?':'Продолжить персонажа?',content);
- }else if(returnToBuilds){
+ }else if(shared)openIncoming();
+ else if(returnToBuilds){
   window.PandoraAccountUI?.dismiss?.();
   changeTab('builds');
  }
