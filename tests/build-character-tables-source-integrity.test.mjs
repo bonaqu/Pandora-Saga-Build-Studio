@@ -1,0 +1,50 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
+const root={};
+Function('window',read('pandora-studio-encyclopedia-catalog.js'))(root);
+const validate=root.PandoraWikiCatalog.validateCharacterTables;
+const original=JSON.parse(read('data/os/tables.json'));
+const fixture=()=>structuredClone(original);
+const corrupt=change=>{const value=fixture();change(value);return value};
+
+test('verified archive tables pass without rejecting signed forge rates',()=>{
+ assert.equal(validate(fixture()),true);
+ assert.equal(Object.keys(original.raceInit).length,6);
+ assert.equal(Object.keys(original.jobInit).length,4);
+ assert.equal(Object.keys(original.weaponPlus).length,10);
+ assert.equal(Object.keys(original.magicPlus).length,10);
+ assert.ok(original.forge.rates.some(row=>row.weapon<0),
+  'Actual OS forge entries are signed and must not be treated as 0–100 chances');
+ assert.match(read('pandora-studio-app.js'),
+  /PandoraWikiCatalog\.validateCharacterTables\(data\.tables\)/);
+});
+
+test('malformed class/race starting stats and progression cannot become game facts',()=>{
+ const bad=[
+  [x=>{x.raceInit.ELF.vit='2'},/начальные характеристики/],
+  [x=>{x.jobInit.WARRIOR.branches.slash='5'},/стартовое мастерство/],
+  [x=>{x.abilityPoint['2']='2'},/таблица очков мастерства/],
+  [x=>{x.exp['2'].skill=-1},/прогрессия персонажа/],
+  [x=>{x.exp['2'].expReq='50'},/прогрессия персонажа/],
+  [x=>{x.levelCap=0},/серверный лимит/]
+ ];
+ for(const [make,reason] of bad)
+  assert.throws(()=>validate(corrupt(make)),reason);
+});
+
+test('invalid physical/magical enhancement figures are source failures',()=>{
+ const bad=[
+  [x=>{x.weaponPlus['1'].flat='2'},/таблица бонусов заточки/],
+  [x=>{x.magicPlus['2'].ratio=Infinity},/таблица бонусов заточки/],
+  [x=>{x.magicPlus['11']={ratio:100,flat:0}},/таблица бонусов заточки/],
+  [x=>{x.forge.rates[0].weapon='80'},/ставки кузницы/],
+  [x=>{x.forge.rates[1].plus=1},/ставки кузницы/],
+  [x=>{x.forge.gemTiers[0].cost=-100},/уровни самоцветов/],
+  [x=>{x.forge.rework.durabilityMax='100'},/ремонта и заточки/],
+  [x=>{x.forge.hammers[0].effect=''},/молот кузницы/]
+ ];
+ for(const [make,reason] of bad)
+  assert.throws(()=>validate(corrupt(make)),reason);
+});

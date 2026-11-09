@@ -215,6 +215,82 @@ function validateCharacterExtras(data){
  }
  return true;
 }
+// Game tables that drive origin and the Hero Book need explicit source
+// integrity checks. Bounds validate JSON structure, NOT undocumented game
+// mechanics: signed forge rates and large enhancement constants are valid.
+function validateCharacterTables(tables){
+ if(!isRecord(tables)||!isRecord(tables.raceInit)||
+  !isRecord(tables.jobInit)||!isRecord(tables.abilityPoint)||
+  !isRecord(tables.exp)||!isRecord(tables.weaponPlus)||
+  !isRecord(tables.magicPlus)||!isRecord(tables.forge))
+  throw Error('Неверный формат расчётных таблиц');
+ const integer=(value,min=0)=>Number.isSafeInteger(value)&&value>=min;
+ const finite=value=>typeof value==='number'&&Number.isFinite(value);
+ const attrs=['vit','str','agi','dex','spi','int'];
+ for(const [kind,entries] of [['раса',tables.raceInit],
+  ['профессия',tables.jobInit]]){
+  if(!Object.keys(entries).length)throw Error('Пустая таблица: '+kind);
+  for(const row of Object.values(entries)){
+   if(!isRecord(row)||!attrs.every(key=>integer(row[key])))
+    throw Error('Некорректные начальные характеристики: '+kind);
+   if(kind==='профессия'&&(!isRecord(row.branches)||
+    !Object.values(row.branches).every(value=>integer(value))))
+    throw Error('Некорректное стартовое мастерство профессии');
+  }
+ }
+ const numericKey=key=>/^[1-9][0-9]{0,2}$/.test(key);
+ for(const [lv,points] of Object.entries(tables.abilityPoint))
+  if(!numericKey(lv)||!integer(points))
+   throw Error('Некорректная таблица очков мастерства');
+ for(const [lv,record] of Object.entries(tables.exp)){
+  if(!numericKey(lv)||!isRecord(record)||
+   !['ability','skill','skillLimit','expReq'].every(field=>integer(record[field])))
+   throw Error('Некорректная прогрессия персонажа');
+ }
+ for(const kind of ['weaponPlus','magicPlus'])
+  for(const [grade,row] of Object.entries(tables[kind])){
+   if(!/^(10|[1-9])$/.test(grade)||!isRecord(row)||
+    !finite(row.ratio)||row.ratio<0||!finite(row.flat)||row.flat<0)
+    throw Error('Некорректная таблица бонусов заточки');
+  }
+ const forge=tables.forge;
+ if(!Array.isArray(forge.rates)||!Array.isArray(forge.gemTiers)||
+  !Array.isArray(forge.hammers)||!isRecord(forge.rework))
+  throw Error('Некорректная структура кузницы');
+ const grades=new Set();
+ for(const row of forge.rates){
+  if(!isRecord(row)||!integer(row.plus,1)||row.plus>10||
+   grades.has(row.plus)||!finite(row.weapon)||!finite(row.armor))
+   throw Error('Некорректные ставки кузницы');
+  grades.add(row.plus);
+ }
+ const tiers=new Set();
+ for(const row of forge.gemTiers){
+  if(!isRecord(row)||!integer(row.tier,1)||tiers.has(row.tier)||
+   !finite(row.rate)||!integer(row.cost))
+   throw Error('Некорректные уровни самоцветов');
+  tiers.add(row.tier);
+  for(const field of ['colors','sample'])
+   if(row[field]!=null&&!integer(row[field]))
+    throw Error('Некорректные параметры самоцвета');
+ }
+ for(const hammer of forge.hammers){
+  if(!isRecord(hammer)||!integer(hammer.id,1)||
+   typeof hammer.effect!=='string'||!hammer.effect.trim())
+   throw Error('Некорректный молот кузницы');
+  for(const field of ['limit','factor'])
+   if(hammer[field]!=null&&!finite(hammer[field]))
+    throw Error('Некорректный параметр молота кузницы');
+ }
+ for(const field of ['pityPerFail','pityCap','durabilityMax',
+  'durabilityFallback','repairRestore','repairFee'])
+  if(forge.rework[field]!=null&&(!finite(forge.rework[field])||
+   forge.rework[field]<0))
+   throw Error('Некорректные параметры ремонта и заточки');
+ if(tables.levelCap!=null&&!integer(tables.levelCap,1))
+  throw Error('Некорректный текущий серверный лимит');
+ return true;
+}
 function validate(input){
  const data=normalize(input);
  if(!isRecord(data)||!isRecord(data.meta)||!isRecord(data.meta.counts))
@@ -531,5 +607,5 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   })}
  }
 }
-root.PandoraWikiCatalog=Object.freeze({keys,normalize,validateRacialPassives,validateCharacterCatalog,validateCharacterExtras,validate,load});
+root.PandoraWikiCatalog=Object.freeze({keys,normalize,validateRacialPassives,validateCharacterCatalog,validateCharacterExtras,validateCharacterTables,validate,load});
 })(typeof window==='undefined'?globalThis:window);
