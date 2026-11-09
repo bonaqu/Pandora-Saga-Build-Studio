@@ -158,6 +158,10 @@ export async function runSavedBuildEnglishSmoke(browser,base){
    'Next portrait');
   assert.equal(await page.locator('#pathSkillSearch').getAttribute('aria-label'),'Search skills');
   assert.equal(await page.locator('#pathSkillStatus').getAttribute('aria-label'),'Skill filter');
+  await page.locator('[data-origin-tab="stats"]').click();
+  assert.deepEqual(await page.locator('#originVitals .origin-vital span').allTextContents(),
+   ['HP','MP']);
+  assert.match(await page.locator('#originVitals').getAttribute('aria-label'),/^HP/);
   await page.locator('#nav [data-tab="builds"]').click();
   assert.equal((await page.locator('#detailPanel .eyebrow').innerText()).trim(),
    'Character workshop');
