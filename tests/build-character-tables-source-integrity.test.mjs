@@ -17,6 +17,10 @@ test('verified archive tables pass without rejecting signed forge rates',()=>{
  assert.equal(Object.keys(original.magicPlus).length,10);
  assert.ok(original.forge.rates.some(row=>row.weapon<0),
   'Actual OS forge entries are signed and must not be treated as 0–100 chances');
+ // OS contains non-integral XP requirements at levels 60–69. Do NOT round
+ // these authoritative source values or reject the whole valid dataset.
+ assert.ok(!Number.isInteger(original.exp['60'].expReq));
+ assert.equal(fixture().exp['60'].expReq,original.exp['60'].expReq);
  assert.match(read('pandora-studio-app.js'),
   /PandoraWikiCatalog\.validateCharacterTables\(data\.tables\)/);
 });
@@ -28,6 +32,8 @@ test('malformed class/race starting stats and progression cannot become game fac
   [x=>{x.abilityPoint['2']='2'},/таблица очков мастерства/],
   [x=>{x.exp['2'].skill=-1},/прогрессия персонажа/],
   [x=>{x.exp['2'].expReq='50'},/прогрессия персонажа/],
+  [x=>{x.exp['60'].expReq=NaN},/прогрессия персонажа/],
+  [x=>{x.exp['60'].expReq=-0.5},/прогрессия персонажа/],
   [x=>{x.levelCap=0},/серверный лимит/]
  ];
  for(const [make,reason] of bad)

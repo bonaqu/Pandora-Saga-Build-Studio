@@ -244,7 +244,8 @@ function validateCharacterTables(tables){
    throw Error('Некорректная таблица очков мастерства');
  for(const [lv,record] of Object.entries(tables.exp)){
   if(!numericKey(lv)||!isRecord(record)||
-   !['ability','skill','skillLimit','expReq'].every(field=>integer(record[field])))
+   !['ability','skill','skillLimit'].every(field=>integer(record[field]))||
+   !finite(record.expReq)||record.expReq<0)
    throw Error('Некорректная прогрессия персонажа');
  }
  for(const kind of ['weaponPlus','magicPlus'])
