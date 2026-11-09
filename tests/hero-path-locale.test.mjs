@@ -31,3 +31,19 @@ test('skill detail fields and workspace labels translate without rewriting game 
  assert.ok(app.includes('Hero Workshop'));
  assert.ok(app.includes('Full encyclopedia entry'));
 });
+
+
+test('Hero Path uses Origin-approved attribute translations, not bare powerStat codes',()=>{
+ const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
+ const pairs=[
+  ["code:'vit'","nameEn:'Vitality'"],["code:'str'","nameEn:'Strength'"],
+  ["code:'agi'","nameEn:'Agility'"],["code:'dex'","nameEn:'Dexterity'"],
+  ["code:'spi'","nameEn:'Spirit'"],["code:'int'","nameEn:'Intelligence'"]
+ ];
+ for(const [code,name]of pairs)assert.ok(app.includes(code)&&app.includes(name),
+  'Canonical attribute name missing: '+code);
+ assert.match(app,/attributeLabel:raw=>\{/);
+ assert.match(app,/ORIGIN_STAT_LABELS\.find\(row=>row\.code===String\(raw\)\.toLowerCase\(\)\)/);
+ assert.match(source,/api\.attributeLabel\(skill\.powerStat\)/);
+ assert.doesNotMatch(source,/field\(tr\(api,'Характеристика','Attribute'\),skill\.powerStat\)/);
+});
