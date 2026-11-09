@@ -42,7 +42,7 @@ test('disabled preview does not calculate or invent unknown recovery',()=>{
 });
 test('player UI never labels historical slots as real current items',()=>{
  const a=app.indexOf('function renderPotionPreview(calculated){');
- const b=app.indexOf('\nfunction renderOriginVitals(){',a);
+ const b=app.indexOf('\nfunction renderOriginVitals(calculated=undefined){',a);
  assert.ok(a>0&&b>a);
  const fragment=app.slice(a,b);
  const root={children:[],replaceChildren(){this.children=[]},append(x){this.children.push(x)}};

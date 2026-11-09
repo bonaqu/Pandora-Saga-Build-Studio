@@ -38,7 +38,7 @@ test('compact labels map to original saved keys, preserving legacy builds',()=>{
   assert.match(code,new RegExp("short:'"+short+"'"));
  assert.match(code,/ORIGIN_STAT_LABELS\.forEach\(\(info,i\)=>/);
  assert.match(code,/function renderOriginStats\(/);
- assert.match(code,/renderOriginPassives\(\);renderOriginStats\(\)/);
+ assert.match(code,/renderOriginPassives\(\);\s*const calculated=previewBaseStats\(\);\s*renderOriginStats\(calculated\)/);
  for(const key of ['race','class','stats'])
   assert.match(html,new RegExp('data-origin-tab="'+key+'"'));
  assert.doesNotMatch(html,/data-origin-tab="passive"/);

@@ -16,8 +16,8 @@ test('unused hero HUD, dummy name and experience disappear from the actual page'
 });
 
 test('HP and MP render in the Origin area and refresh when allocation/equipment changes',()=>{
- const first=app.indexOf('function renderOriginVitals(){');
- const last=app.indexOf('\nfunction renderVitalsEnhancements(){',first);
+ const first=app.indexOf('function renderOriginVitals(calculated=undefined){');
+ const last=app.indexOf('\nfunction renderVitalsEnhancements(calculated=undefined){',first);
  assert.ok(first>0&&last>first);
  const fn=app.slice(first,last);
  const fake={
@@ -39,7 +39,7 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
  assert.equal(fake.originHp.textContent,'—');
  assert.equal(fake.originMp.textContent,'—');
  assert.match(app,/function setAttributePoints\([\s\S]*?persist\(\);renderOriginVitals\(\)/);
- assert.match(app,/function render\(\)[\s\S]*?renderOriginVitals\(\);renderVitalsEnhancements\(\);renderOriginCopyLabels\(\);updateAdminHint\(\)/);
+ assert.match(app,/function render\(\)[\s\S]*?renderOriginVitals\(calculated\);\s*renderVitalsEnhancements\(calculated\);renderOriginCopyLabels\(\);updateAdminHint\(\)/);
 });
 
 test('skill tick overlay is passive, not a drag-blocking button',()=>{

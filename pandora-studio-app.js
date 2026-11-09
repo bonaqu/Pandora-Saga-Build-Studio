@@ -654,10 +654,11 @@ function renderPotionPreview(calculated){
   ]));
  }
 }
-function renderOriginVitals(){
+function renderOriginVitals(calculated=undefined){
  // The supported calculator returns rounded numeric totals. Parity with all server
  // buffs, sets and conditional effects is still unverified; don't imply otherwise.
- const calculated=previewBaseStats(),hp=$('originHp'),mp=$('originMp');
+ if(calculated===undefined)calculated=previewBaseStats();
+ const hp=$('originHp'),mp=$('originMp');
  const hpReady=calculated&&Number.isFinite(calculated.hp);
  const mpReady=calculated&&Number.isFinite(calculated.mp);
  if(hp)hp.textContent=hpReady?String(calculated.hp):'—';
@@ -678,7 +679,7 @@ function renderOriginVitals(){
  refreshOpenHeroBook(calculated);
 }
 
-function renderVitalsEnhancements(){
+function renderVitalsEnhancements(calculated=undefined){
  const guildLevel=Number(state.attributeBuffs?.guildLevel)||0;
  const guildAuto=guildLevel>0?
   window.PandoraOSCalculator?.guildPassiveAtLevel?.(guildLevel):null;
@@ -733,7 +734,8 @@ function renderVitalsEnhancements(){
   honor.value=String(Number.isInteger(preferred)?preferred:
    state.attributeBuffs?.honorCuriosity===true?1:0);
  }
- const calculated=previewBaseStats(),potion=$('originPotionRecovery');
+ if(calculated===undefined)calculated=previewBaseStats();
+ const potion=$('originPotionRecovery');
  renderPotionPreview(calculated);
  if(potion)potion.textContent=calculated?.potion?.percent==null?'—':
   String(calculated.potion.percent)+'%';
@@ -757,7 +759,9 @@ function setVitalsEnhancement(key,value){
   if(!Number.isInteger(n)||n<0||n>6)return;
   current[key]=n;
  }
- state.vitalsBuffs=current;persist();renderOriginVitals();renderVitalsEnhancements();
+ state.vitalsBuffs=current;persist();
+ const calculated=previewBaseStats();
+ renderOriginVitals(calculated);renderVitalsEnhancements(calculated);
  
 }
 function setAttributeBuff(key,value){
@@ -809,7 +813,10 @@ function setAttributeBuff(key,value){
   current[key]=n;
  }else return;
  state.attributeBuffs=current;
- persist();renderOriginStats();renderOriginVitals();renderVitalsEnhancements();
+ persist();
+ const calculated=previewBaseStats();
+ renderOriginStats(calculated);renderOriginVitals(calculated);
+ renderVitalsEnhancements(calculated);
  
 }
 function budgetSummary(){
@@ -1710,15 +1717,17 @@ const ORIGIN_STAT_LABELS=[
  {short:'ИНТ',name:'Интеллект',nameEn:'Intelligence',code:'int'}
 ];
 // Legacy save keys remain unchanged: AGI was stored under «Ловкость», DEX under «Сноровка».
-function renderOriginStats(){
+function renderOriginStats(calculated=undefined){
  const root=$('originStats'),summary=$('originStatSummary');
  if(!root||!summary)return;
  root.replaceChildren();
  const list=h('div',{class:'origin-stat-list'}),entries=[];
  const tr=(ru,en)=>lang==='en'?en:ru;
  // Saved stats remain invested-only. The input is the absolute race/class baseline + investment.
- function refresh(){
-  const snap=attributeSnapshot(),estimate=previewBaseStats();
+ function refresh(known=undefined){
+  // Interactive handlers call refresh() without a snapshot so edits always
+  // recompute; only a caller-owned, same-state initial render may reuse one.
+  const snap=attributeSnapshot(),estimate=known===undefined?previewBaseStats():known;
   summary.textContent=snap?
    tr('Свободно: ','Available: ')+snap.remaining+' / '+snap.total+
     tr(' · Потрачено: ',' · Spent: ')+snap.spent:
@@ -1777,7 +1786,7 @@ function renderOriginStats(){
   wrap.append(title,minus,input,plus,box);
   list.append(wrap);entries.push({i,input,result,caption,minus,plus,name});
  });
- root.append(list);refresh();
+ root.append(list);refresh(calculated);
 }
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
@@ -2181,7 +2190,11 @@ function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,sta
 $('hero').removeAttribute('data-edit-key');$('hero').classList.remove('admin-edit');
 $('hero').alt=hasRace?races[state.race][lang==='en'?1:0]:(lang==='en'?'Race not selected':'Раса не выбрана');
 $('raceTitle').textContent=hasRace?editableValue('race.'+state.race,races[state.race][lang==='en'?1:0]):(lang==='en'?'Choose a race':'Выберите расу');
-$('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job]):(lang==='en'?'Choose a class':'Выберите профессию');$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();renderOriginCopyLabels();updateAdminHint()}
+$('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job]):(lang==='en'?'Choose a class':'Выберите профессию');$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderOriginPassives();
+ const calculated=previewBaseStats();
+ renderOriginStats(calculated);renderBranches();refreshBudgetLabel();
+ renderPathPages();renderDetails();renderOriginVitals(calculated);
+ renderVitalsEnhancements(calculated);renderOriginCopyLabels();updateAdminHint()}
 let wikiOutsideCleanup=null;
 function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 

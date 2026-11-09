@@ -61,8 +61,8 @@ test('all six base stat investments affect their supported final computed output
 });
 test('Origin and trained/allocated skill changes must invalidate the OPEN Book',()=>{
  const app=read('pandora-studio-app.js');
- const start=app.indexOf('function renderOriginVitals(){');
- const end=app.indexOf('function renderVitalsEnhancements(){',start);
+ const start=app.indexOf('function renderOriginVitals(calculated=undefined){');
+ const end=app.indexOf('function renderVitalsEnhancements(calculated=undefined){',start);
  assert.ok(start>=0&&end>start);
  assert.match(app.slice(start,end),/refreshOpenHeroBook\(calculated\);/);
  assert.match(app,/function refreshOpenHeroBook\(calculated=undefined\)\{\s*if\(stageAttributesPage&&!stageSlotPickerOpen\)renderStageAttributes\(calculated\)/);

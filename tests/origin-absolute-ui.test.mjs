@@ -9,8 +9,8 @@ const tables=JSON.parse(read('data/os/tables.json'));
 const names=['Выносливость','Сила','Ловкость','Сноровка','Дух','Интеллект'];
 const labels=['vit','str','agi','dex','spi','int'].map((code,i)=>({code,name:names[i],short:code}));
 const app=read('pandora-studio-app.js');
-const code=app.slice(app.indexOf('function renderOriginStats(){'),app.indexOf('\nfunction renderOriginPassives(){'));
-assert.ok(code.startsWith('function renderOriginStats(){'),'origin renderer must exist');
+const code=app.slice(app.indexOf('function renderOriginStats(calculated=undefined){'),app.indexOf('\nfunction renderOriginPassives(){'));
+assert.ok(code.startsWith('function renderOriginStats(calculated=undefined){'),'origin renderer must exist');
 class Element{
  constructor(tag){
   this.tag=tag;this.children=[];this.listeners={};this.value='';this.textContent='';
