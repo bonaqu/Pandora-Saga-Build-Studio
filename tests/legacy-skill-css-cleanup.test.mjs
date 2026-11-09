@@ -48,13 +48,15 @@ test('cross-tab acceptance requires scope, profile and complete OS catalog befor
    "'Alice second',tokenA"])assert.ok(c.includes(expected),expected);
 });
 
-test('guest tabs also wait for their actual owner and current OS catalog before saving',()=>{
+test('guest tabs preserve former owner backups but cannot access account-only libraries',()=>{
  const guest=read('tests/browser-cross-tab-guest.mjs');
- assert.match(guest,/async function loaded\(page,expectedKey\)/);
- assert.match(guest,/localStorage\.getItem\('ps-build-owner-scope\.v1'\)==='guest:'\+expected/);
- assert.match(guest,/document\.querySelector\('#catalogStatus'\)/);
- assert.match(guest,/await loaded\(tabA,keyA\)/);
- assert.match(guest,/await loaded\(tabB,keyB\)/);
- assert.match(guest,/await nameInput\.inputValue\(\),name/);
- assert.match(guest,/request\.headers\(\)\.authorization==='Bearer '\+expectedKey/);
+ assert.match(guest,/async function ready\(page,secret\)/);
+ assert.match(guest,/localStorage\.getItem\('ps-build-owner-scope\.v1'\)==='guest:'\+key/);
+ assert.match(guest,/document\.querySelector\('#raceGrid'\)\?\.children\.length>0/);
+ assert.match(guest,/await ready\(first,firstKey\)/);
+ assert.match(guest,/await ready\(second,secondKey\)/);
+ assert.match(guest,/assert\.equal\(requests\.length,0/);
+ assert.match(guest,/ps-build-scope-cache\.v1:guest:/);
+ assert.match(guest,/\.build-signin-gate/);
+ assert.doesNotMatch(guest,/await save\(/);
 });
