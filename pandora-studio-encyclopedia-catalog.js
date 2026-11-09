@@ -243,6 +243,8 @@ function validate(input){
      requireRef(Number.isSafeInteger(row[boundary])&&
       row[boundary]>=0&&row[boundary]<=1000,
       'границы улучшения добычи монстра');
+   if(row.lo!=null&&row.hi!=null)
+    requireRef(row.lo<=row.hi,'диапазон улучшения добычи монстра');
    if(row.souls!=null){
     requireRef(Array.isArray(row.souls)&&row.souls.length<=20,
      'список душ добычи монстра');
@@ -273,8 +275,12 @@ function validate(input){
    if(recipe[currency]!=null)
     requireRef(Number.isSafeInteger(recipe[currency])&&recipe[currency]>=0,
      'стоимость обмена NPC');
+  const seenMaterials=new Set();
   for(const material of list(recipe.mats,'материалов обмена')){
    requireRef(isRecord(material)&&item(material.i),'материал обмена NPC');
+   const materialId=String(material.i);
+   requireRef(!seenMaterials.has(materialId),'повторный материал обмена NPC');
+   seenMaterials.add(materialId);
    if(material.n!=null)
     requireRef(Number.isSafeInteger(material.n)&&material.n>=1,
      'количество материала обмена NPC');
@@ -284,7 +290,12 @@ function validate(input){
     Number.isSafeInteger(recipe.limit.n)&&recipe.limit.n>=1&&
     ['daily','weekly','lifetime'].includes(recipe.limit.period),
     'ограничение обмена NPC');
-  for(const id of list(recipe.npc,'NPC обмена'))requireRef(npc(id),'NPC обмена');
+  const seenRecipeNpc=new Set();
+  for(const id of list(recipe.npc,'NPC обмена')){
+   requireRef(npc(id),'NPC обмена');
+   requireRef(!seenRecipeNpc.has(String(id)),'повторный NPC обмена');
+   seenRecipeNpc.add(String(id));
+  }
  }
  for(const row of Object.values(data.trades.npcs)){
   requireRef(isRecord(row)&&typeof row.name==='string'&&row.name.trim(),
