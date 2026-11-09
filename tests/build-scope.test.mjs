@@ -707,3 +707,49 @@ test('failed draft deletion cannot resurrect stale values after a newer same-own
  assert.equal(store.getItem(keys[1]),newer);
  assert.equal(mod.getOwned(store,ownerA,keys[1]),newer);
 });
+
+test('corrupt cached records cannot become stringified active builds or erase backups',()=>{
+ const s=storage();mod.transition(s,ownerA);
+ put(s,'Alice intact',45);mod.sync(s);
+ const primary=keys.map(key=>s.getItem(key));
+ const invalid=JSON.stringify([{name:'not a storage string'},'','[]','']);
+ const backupKey='ps-build-scope-cache.v1:'+ownerB;
+ s.setItem(backupKey,invalid);
+ assert.equal(mod.getOwned(s,ownerB,keys[0]),'[]',
+  'A foreign backup containing objects may not be returned as a build string');
+ assert.throws(()=>mod.setOwned(s,ownerB,keys[1],JSON.stringify({level:55})),
+  /Corrupted owner backup/);
+ assert.throws(()=>mod.transition(s,ownerB),/Corrupted owner backup/);
+ assert.equal(s.getItem(backupKey),invalid,
+  'The only bad recovery payload must remain unmodified for diagnosis');
+ assert.equal(s.getItem(mod.MARKER),ownerA);
+ assert.deepEqual(keys.map(key=>s.getItem(key)),primary);
+});
+
+test('valid legacy four-string owner backup still switches without losing saved builds',()=>{
+ const s=storage();mod.transition(s,ownerA);
+ put(s,'Alice',45);mod.sync(s);
+ const bob=JSON.stringify([{name:'Bob restored',id:'b'.repeat(32),data:{level:55}}]);
+ s.setItem('ps-build-scope-cache.v1:'+ownerB,JSON.stringify([
+  bob,JSON.stringify({level:55}),'[]','b'.repeat(32)
+ ]));
+ mod.transition(s,ownerB);
+ assert.equal(s.getItem(keys[0]),bob);
+ assert.equal(JSON.parse(s.getItem(keys[1])).level,55);
+ mod.transition(s,ownerA);
+ assert.equal(JSON.parse(s.getItem(keys[0]))[0].id,'Alice');
+});
+
+test('invalid guest handoff recovery payload is preserved rather than silently imported',()=>{
+ const s=storage();mod.transition(s,ownerA);
+ put(s,'Current owner',35);mod.sync(s);
+ const backupKey='ps-build-scope-cache.v1:'+guest;
+ const bad=JSON.stringify(['[]',null,'[]','']);
+ s.setItem(backupKey,bad);
+ const old=keys.map(key=>s.getItem(key));
+ assert.throws(()=>mod.transition(s,ownerB,{carry:true,carryFrom:guest}),
+  /Corrupted owner backup/);
+ assert.equal(s.getItem(backupKey),bad);
+ assert.equal(s.getItem(mod.MARKER),ownerA);
+ assert.deepEqual(keys.map(key=>s.getItem(key)),old);
+});

@@ -24,11 +24,25 @@ function write(storage,values){
  }
 }
 const slot=scope=>PREFIX+scope;
-function storedSnapshot(storage,scope){
+// All owner backups contain four storage *strings*, never nested objects.
+// An invalid snapshot must be preserved verbatim until safe recovery, not
+// stringified into "[object Object]" and silently committed as a build.
+function parseSnapshot(raw){
  try{
-  const value=JSON.parse(storage.getItem(slot(scope))||'null');
-  return Array.isArray(value)&&value.length===KEYS.length?value:DEFAULTS.slice();
- }catch{return DEFAULTS.slice()}
+  const value=JSON.parse(raw||'null');
+  return Array.isArray(value)&&value.length===KEYS.length&&
+   value.every(row=>typeof row==='string')?value:null;
+ }catch{return null}
+}
+function storedSnapshot(storage,scope){
+ return parseSnapshot(storage.getItem(slot(scope)))||DEFAULTS.slice();
+}
+function writableSnapshot(storage,scope){
+ const raw=storage.getItem(slot(scope));
+ if(raw===null)return DEFAULTS.slice();
+ const value=parseSnapshot(raw);
+ if(!value)throw Error('Corrupted owner backup; original preserved for recovery');
+ return value;
 }
 // Multiple tabs can be signed into different accounts while sharing localStorage.
 // A tab may only write the generic active keys if those keys belong to its owner.
@@ -54,7 +68,7 @@ function setOwned(storage,scope,key,value){
   if(storage.getItem(MARKER)!==scope){
    // The other tab has already switched ownership: never mirror into its
    // active keys. Its transition has saved our previous state in our cache.
-   const own=storedSnapshot(storage,scope);
+   const own=writableSnapshot(storage,scope);
    own[index]=next;
    storage.setItem(slot(scope),JSON.stringify(own));
    return true;
@@ -69,7 +83,7 @@ function setOwned(storage,scope,key,value){
   // stored cache. Reapply this ONE key after the switch using the recovered
   // owner snapshot, rather than overwriting the other owner's active keys.
   if(storage.getItem(MARKER)!==scope){
-   const own=storedSnapshot(storage,scope);
+   const own=writableSnapshot(storage,scope);
    own[index]=next;
    storage.setItem(slot(scope),JSON.stringify(own));
    return true;
@@ -79,7 +93,7 @@ function setOwned(storage,scope,key,value){
   // AFTER the earlier marker check. Persist to Alice's own recovery cache
   // instead of writing her new record into Bob's currently active slots.
   if(storage.getItem(MARKER)!==scope){
-   const own=storedSnapshot(storage,scope);
+   const own=writableSnapshot(storage,scope);
    own[index]=next;
    storage.setItem(slot(scope),JSON.stringify(own));
    return true;
@@ -120,7 +134,7 @@ function setOwned(storage,scope,key,value){
    throw error;
   }
  }else{
-  const values=storedSnapshot(storage,scope);
+  const values=writableSnapshot(storage,scope);
   values[index]=next;
   storage.setItem(slot(scope),JSON.stringify(values));
  }
@@ -177,11 +191,13 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
   // A different tab may currently own the shared top-level keys. Carry only
   // the initiating tab's guest records, never that other tab's active records.
   const source=validScope(carryFrom)?carryFrom:previous;
-  saved=source===previous?snapshotBeforeSwitch(storage):storedSnapshot(storage,source);
+  saved=source===previous?snapshotBeforeSwitch(storage):writableSnapshot(storage,source);
  }else{
-  try{const restored=JSON.parse(storage.getItem(slot(next))||'null');
-   if(Array.isArray(restored)&&restored.length===KEYS.length)saved=restored;
-  }catch{}
+  // Do not overwrite a malformed owner backup on login. Keeping its raw
+  // bytes is safer than accepting arbitrary objects or discarding the only
+  // local copy. The app may still use its independent cloud library.
+  const rawBackup=storage.getItem(slot(next));
+  if(rawBackup!==null)saved=writableSnapshot(storage,next);
  }
  const before=KEYS.map(key=>storage.getItem(key));
  ensureUnchanged();
