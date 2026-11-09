@@ -6131,6 +6131,11 @@ function requireBuildAccount({shared=false}={}){
   buildSignInCard({shared}));
  return false;
 }
+function notifyGuestDraftUnsaved(){
+ showStudioToast(lang==='en'?
+  'Your guest character is ready to continue. It is not yet in your library. Open My Builds and choose “Save new build” to keep it in your account.':
+  'Гостевой герой готов к продолжению, но ещё не в библиотеке. Открой «Мои билды» и нажми «Сохранить новый билд», чтобы сохранить его в аккаунте.','warning');
+}
 function finishBuildAccountEntry(){
  if(!window.PandoraAccountUI?.isLoggedIn()||
   window.PandoraAccountUI?.hasRecoveryPending?.())return;
@@ -6150,7 +6155,7 @@ function finishBuildAccountEntry(){
   // A separate nonempty account draft must NEVER be replaced silently.
   if(JSON.stringify(state)===JSON.stringify(fresh())){
    if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
-   render();
+   render();notifyGuestDraftUnsaved();
    if(shared)openIncoming();
    else{
     changeTab(returnToBuilds?'builds':'character');
@@ -6186,7 +6191,8 @@ function finishBuildAccountEntry(){
    // unsaved account draft before its browser copy has been committed.
    if(!accountWasSaved&&!saveBuild(state.name))return;
    if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
-   close();render();if(shared)openIncoming();else changeTab('character');
+   close();render();notifyGuestDraftUnsaved();
+   if(shared)openIncoming();else changeTab('character');
   };
   content.append(h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
