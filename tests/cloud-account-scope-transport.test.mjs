@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
-const begin=source.indexOf('async function cloudLibraryRequest(payload,secret=null){');
+const begin=source.indexOf('async function cloudLibraryRequest(payload){');
 const end=source.indexOf('\nfunction reportCloudStatus(',begin);
 assert.ok(begin>=0&&end>begin,'Use the production cloud request, not a copy');
 const requestSource=source.slice(begin,end);
@@ -23,7 +23,7 @@ function setup({owner=accountOwner,liveOwner=owner,token=()=>account}={}){
    sent.push({url,authorization:options.headers.Authorization});
    return {ok:true,json:async()=>({records:[]})};
   },'https://example.invalid',guest,()=>currentOwner,owner);
- return {send:(secret=null)=>request({action:'put',entry:{id:'f'.repeat(32)}},secret),
+ return {send:()=>request({action:'put',entry:{id:'f'.repeat(32)}}),
   sent,owner:()=>currentOwner};
 }
 
@@ -60,12 +60,10 @@ test('guest cloud requests reject before any network without exposing their lega
  assert.deepEqual(c.sent,[]);
 });
 
-test('explicit guest library lookup keeps its supplied secret without account fallback',async()=>{
- const code='b'.repeat(64);
- const c=setup({token:()=>{throw Error('Account token must not be touched')}});
- await c.send(code);
- assert.equal(c.sent.length,1);
- assert.equal(c.sent[0].authorization,'Bearer '+code);
+test('legacy guest secret never becomes a cloud bearer, even when the caller supplies one',async()=>{
+ const c=setup({owner:guestOwner,token:()=>{throw Error('Guest token must not be used')}});
+ await assert.rejects(c.send('b'.repeat(64)),error=>error?.reason==='sign_in_required');
+ assert.deepEqual(c.sent,[]);
 });
 
 test('account-change cloud warning has a localized English counterpart',()=>{
