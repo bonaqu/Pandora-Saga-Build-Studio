@@ -83,8 +83,34 @@ export async function runAccountSmoke(browser,base){
   // Choosing a language outside the account popover intentionally closes it.
   await page.locator('#profileTrigger').click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
+  // A queued Enter/autofill submit on a detached login form must not be
+  // interpreted as registration after mode switches. The old handler used
+  // global mode with stale local fields, which could throw or send a request.
+  const guestForm=page.locator('#accountPanel .account-form');
+  const oldLoginForm=await guestForm.elementHandle();
+  await guestForm.locator('input').nth(0).fill('TestPlayer_01');
+  await guestForm.locator('input').nth(1).fill('An unusually long phrase for my builds');
   await page.getByRole('button',{name:'Регистрация',exact:true}).click();
+  await oldLoginForm.evaluate(el=>el.dispatchEvent(
+   new Event('submit',{bubbles:true,cancelable:true})));
+  await oldLoginForm.dispose();
+  assert.equal(calls.filter(c=>['login','register','recover'].includes(c.action)).length,0,
+   'Detached login must not submit to the new registration mode');
+  assert.deepEqual(errors,[],'Detached login must not access a missing confirmation input');
+
   const inputs=page.locator('#accountPanel .account-form input');
+  await inputs.nth(0).fill('TestPlayer_01');
+  await inputs.nth(1).fill('An unusually long phrase for my builds');
+  await inputs.nth(2).fill('An unusually long phrase for my builds');
+  const oldRegisterForm=await guestForm.elementHandle();
+  await page.getByRole('button',{name:'Войти',exact:true}).first().click();
+  await oldRegisterForm.evaluate(el=>el.dispatchEvent(
+   new Event('submit',{bubbles:true,cancelable:true})));
+  await oldRegisterForm.dispose();
+  await page.waitForTimeout(120);
+  assert.equal(calls.filter(c=>['login','register','recover'].includes(c.action)).length,0,
+   'Detached registration must not send credentials to the login API');
+  await page.getByRole('button',{name:'Регистрация',exact:true}).click();
   await inputs.nth(0).fill('TestPlayer_01');
   await inputs.nth(1).fill('An unusually long phrase for my builds');
   await inputs.nth(2).fill('An unusually long phrase for my builds');
