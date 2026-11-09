@@ -11,7 +11,9 @@ export async function runGuestDraftContinuitySmoke(browser,base){
   profile:{guild:'Guests'}};
  const account={race:1,gender:0,job:8,level:33,
   name:'Existing account draft',points:{archery:9}};
- async function check({register=false,accountDraft=false,viaBuilds=false,link=false,keepAccount=false,quotaFail=false}={}){
+ async function check({register=false,accountDraft=false,viaBuilds=false,link=false,keepAccount=false,quotaFail=false,unnamedAccount=false}={}){
+  const currentAccount=unnamedAccount?{...account,name:''}:account;
+  const savedAccountName=currentAccount.name||'Новый герой';
   const context=await browser.newContext({viewport:{width:1280,height:900}});
   const writes=[],errors=[];
   await context.route('**/*',route=>{
@@ -60,7 +62,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     localStorage.setItem('ps-build-studio.v1',JSON.stringify(guest));
     if(account)localStorage.setItem('ps-build-scope-cache.v1:account:alice_01',
      JSON.stringify(['[]',JSON.stringify(account),'[]','']));
-   },{key:guestKey,guest,account:accountDraft?account:null});
+   },{key:guestKey,guest,account:accountDraft?currentAccount:null});
    await page.reload({waitUntil:'domcontentloaded'});
    await page.waitForFunction(key=>
     localStorage.getItem('ps-build-owner-scope.v1')==='guest:'+key&&
@@ -95,10 +97,11 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     const chooser=page.getByRole('dialog',{name:'Продолжить персонажа?'});
     await chooser.waitFor({state:'visible'});
     assert.equal(JSON.parse(await page.evaluate(()=>
-     localStorage.getItem('ps-build-studio.v1'))).name,account.name);
+     localStorage.getItem('ps-build-studio.v1'))).name,currentAccount.name);
     assert.match(await chooser.innerText(),/Гостевой|гостевого|аккаунта/);
     assert.match(await chooser.innerText(),/Guest progress/);
-    assert.match(await chooser.innerText(),/Existing account draft/);
+    if(!unnamedAccount)assert.match(await chooser.innerText(),/Existing account draft/);
+    else assert.match(await chooser.innerText(),/Герой аккаунта/);
     if(quotaFail){
      await page.evaluate(()=>{
       window.__restoreDraftSetItem=Storage.prototype.setItem;
@@ -112,7 +115,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     const savedResponse=accountDraft&&!keepAccount&&!quotaFail?
      page.waitForResponse(response=>response.url().endsWith('/api/library')&&
       response.request().method()==='POST'&&
-      response.request().postDataJSON()?.entry?.name===account.name):null;
+      response.request().postDataJSON()?.entry?.name===savedAccountName):null;
     await chooser.getByRole('button',{name:keepAccount?
      'Оставить героя аккаунта':'Сохранить героя аккаунта и продолжить гостевого'}).click();
     if(quotaFail){
@@ -120,7 +123,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
      await toast.waitFor({state:'visible'});
      assert.match(await toast.innerText(),/Билд не сохранён/);
      assert.equal(await page.evaluate(()=>JSON.parse(
-      localStorage.getItem('ps-build-studio.v1')).name),account.name,
+      localStorage.getItem('ps-build-studio.v1')).name),currentAccount.name,
       'Failed save must not replace the account character');
      assert.equal(await chooser.isVisible(),true,
       'Keep both choices visible when a save fails');
@@ -137,11 +140,11 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     if(!raw||localStorage.getItem('ps-build-owner-scope.v1')!=='account:'+name)
      return false;
     try{return JSON.parse(raw).name===expected}catch{return false}
-   },{name:username,expected:keepAccount||quotaFail?account.name:guest.name},{timeout:20000});
+   },{name:username,expected:keepAccount||quotaFail?currentAccount.name:guest.name},{timeout:20000});
    const active=JSON.parse(await page.evaluate(()=>
     localStorage.getItem('ps-build-studio.v1')));
    if(keepAccount||quotaFail){
-    assert.equal(active.name,account.name);
+    assert.equal(active.name,currentAccount.name);
     assert.equal(active.level,33);
     assert.equal(active.points.archery,9);
     assert.equal(await page.locator('#levelOut').textContent(),'33');
@@ -163,11 +166,11 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     'The original guest draft remains available on this device');
    if(accountDraft&&!keepAccount&&!quotaFail){
     assert.equal(writes.length,1,'Explicit draft choice saves one account build');
-    assert.equal(writes[0].entry.name,account.name);
+    assert.equal(writes[0].entry.name,savedAccountName);
     const saved=JSON.parse(await page.evaluate(()=>
      localStorage.getItem('ps-build-library.v1')||'[]'));
-    assert.equal(saved.filter(row=>row.name===account.name).length,1);
-    assert.equal(saved.find(row=>row.name===account.name).data.level,33);
+    assert.equal(saved.filter(row=>row.name===savedAccountName).length,1);
+    assert.equal(saved.find(row=>row.name===savedAccountName).data.level,33);
    }else assert.deepEqual(writes,[],
     'Signing in, registration and choosing the existing draft cannot auto-save');
    if(register){
@@ -181,7 +184,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     await preview.getByRole('button',{name:'Отмена'}).click();
     assert.equal((await page.evaluate(()=>JSON.parse(
      localStorage.getItem('ps-build-studio.v1')).name)),
-     keepAccount||quotaFail?account.name:guest.name,
+     keepAccount||quotaFail?currentAccount.name:guest.name,
      'Rejecting a friend link must retain the explicitly selected draft');
    }
    if(!viaBuilds&&!accountDraft&&!link){
@@ -206,5 +209,6 @@ export async function runGuestDraftContinuitySmoke(browser,base){
  await check({accountDraft:true,link:true}); // Choose guest, then preview friend link.
  await check({accountDraft:true,link:true,keepAccount:true}); // Choose account draft instead.
  await check({accountDraft:true,quotaFail:true}); // Full storage never replaces an unsaved account hero.
+ await check({accountDraft:true,unnamedAccount:true}); // Unnamed account hero is saved with a readable default title.
  console.log('Chromium guest draft continuity: explicit save, quota failure, registration and shared links passed');
 }
