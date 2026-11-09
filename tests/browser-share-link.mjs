@@ -117,6 +117,16 @@ export async function runShareLinkSmoke(browser,base){
    assert.equal(await incoming.locator('#levelOut').textContent(),'55',
     'accepting the shared build loads its full planning level');
    assert.equal(await incoming.evaluate(()=>location.hash),'');
+   // English receiver: the entire standalone shared-build dialog must be localized,
+   // while preserving the original user build and all saved build data.
+   await incoming.locator('#locale [data-locale="en"]').click();
+   await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
+   const englishDialog=incoming.getByRole('dialog',{name:'Open build from link?'});
+   await englishDialog.waitFor({state:'visible',timeout:20000});
+   assert.match(await englishDialog.innerText(),/unsaved changes will be replaced/i);
+   await englishDialog.getByRole('button',{name:'Cancel'}).click();
+   assert.equal(await incoming.locator('#levelOut').textContent(),'55');
+   await incoming.locator('#locale [data-locale="ru"]').click();
    revoked=true;
    await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
    const toast=incoming.locator('#studioToast');
