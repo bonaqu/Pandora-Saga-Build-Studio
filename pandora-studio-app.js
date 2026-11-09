@@ -6759,7 +6759,7 @@ function modal(title,content){
   const first=controls[0],last=controls[controls.length-1],active=document.activeElement;
   if(event.shiftKey&&(active===first||active===heading)){
    event.preventDefault();last.focus({preventScroll:true});
-  }else if(!event.shiftKey&&active===last){
+  }else if(!event.shiftKey&&(active===last||active===heading)){
    event.preventDefault();first.focus({preventScroll:true});
   }
  });
