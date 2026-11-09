@@ -139,7 +139,7 @@ export async function runAccountSmoke(browser,base){
   assert.match(await page.locator('.account-user').innerText(),/testplayer_01/);
   // One-time secret is not lost on popover close and can be dismissed by its owner.
   await page.locator('#profileTrigger').click();
-  assert.equal(await page.locator('#accountPanel').isVisible(),false);
+  await page.locator('#accountPanel').waitFor({state:'hidden'});
   await page.locator('#profileTrigger').click();
   assert.equal(await page.locator('.account-recovery input').inputValue(),'r'.repeat(43));
   await page.getByRole('button',{name:'Я сохранил код'}).click();
@@ -169,7 +169,7 @@ export async function runAccountSmoke(browser,base){
   // Closing the popover while /me is still in flight must not discard the
   // passwords or the validation error from the same verified account.
   await page.locator('#profileTrigger').click();
-  assert.equal(await page.locator('#accountPanel').isVisible(),false);
+  await page.locator('#accountPanel').waitFor({state:'hidden'});
   releaseHeldMe();
   await verifiedMe;
   await page.locator('.account-bootstrap-pending').waitFor({state:'detached'});
