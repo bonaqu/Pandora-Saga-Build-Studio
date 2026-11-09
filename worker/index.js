@@ -681,7 +681,9 @@ if(path==='/api/runtime-capabilities'&&method==='GET')
  return json({codeRelease:'0.361.0',ownerEditors:[
   'itemedit','tradeedit','acquireedit','wikiedit','dropedit','chestedit','spawnedit',
    'virtual-town-wiki','bilingual-item-text','historical-map-wiki','owner-map-create','owner-map-sections','owner-monster-create','future-map-roster','owner-npc-create','admin-save-feedback','owner-record-delete','bilingual-wiki','guideedit','honor-lists','honor-extended-edit','wiki-label-edit'],
-  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true});
+  githubOwnerExport:true,honorExtendedEditing:true,wikiLabelEditing:true,ownerOverrideCAS:true,ownerOverrideCASRequired:true,catalogPublishCASRequired:true,catalogProvenanceCors:true,adminD1WriteCheck:'catalog-and-overrides',catalogSourceFailover:true,sourceEgressProbe:true,sourceProbeDetail:true,sourceInstancesArray:true,sourceFullProbe:true,
+  buildLibraryRequiresAccount:true,sharedPreviewRequiresAccount:true,
+  legacyAccountImportPreview:true});
 if(path==='/api/health'&&method==='GET'){
  const tables=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('admins','sessions','overrides','login_attempts','shared_builds','shared_build_limits','shared_build_sources','private_builds','user_accounts','user_sessions','user_registration_limits')").all();
  const found=new Set((tables.results||[]).map(row=>row.name));
