@@ -5,6 +5,7 @@ export async function runShareLinkSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const shareId='A1234567890',stored=new Map();
  let mismatched=false,revoked=false,created=0,readbacks=0,sharedGets=0;
+ let holdNextSharedRead=false,releaseStaleRead=null,notifyStaleRead=null;
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  await context.grantPermissions(['clipboard-read','clipboard-write']);
  const mockWorkerRoute=async route=>{
@@ -40,6 +41,12 @@ export async function runShareLinkSmoke(browser,base){
   }
   if(path==='/api/shared/'+shareId&&method==='GET'){
    sharedGets++;
+   if(holdNextSharedRead){
+    holdNextSharedRead=false;
+    notifyStaleRead?.();
+    await new Promise(resolve=>{releaseStaleRead=resolve});
+    return json({error:'Old deleted-link response',reason:'deleted'},410);
+   }
    if(revoked)return json({error:'Владелец удалил билд',reason:'deleted'},410);
    const entry=[...stored.values()].at(-1);
    if(!entry)return json({error:'Missing'},404);
@@ -140,11 +147,34 @@ export async function runShareLinkSmoke(browser,base){
    await incoming.locator('#locale [data-locale="ru"]').click();
    await incoming.waitForFunction(()=>document.documentElement.lang==='ru',
     null,{timeout:15000});
+   // Older GET for the SAME ID must not override a successful second visit.
+   // A stale 410 used to remove the new hash and display a false deleted toast.
+   const staleStarted=new Promise(resolve=>{notifyStaleRead=resolve});
+   holdNextSharedRead=true;
+   await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
+   await staleStarted;
+   await incoming.evaluate(()=>{location.hash=''});
+   await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
+   await dialog.waitFor({state:'visible',timeout:20000});
+   assert.equal(sharedGets,7,'same-link reentry opens a second request');
+   const staleResponse=incoming.waitForResponse(response=>
+    response.url().endsWith('/api/shared/'+shareId)&&response.status()===410);
+   releaseStaleRead();
+   await staleResponse;
+   await incoming.evaluate(()=>new Promise(resolve=>
+    requestAnimationFrame(()=>requestAnimationFrame(resolve))));
+   assert.equal(await incoming.evaluate(()=>location.hash),'#b/'+shareId,
+    'stale 410 must not erase a newer visit to the same URL');
+   assert.equal(await incoming.locator('#studioToast').isVisible(),false,
+    'stale 410 must not produce a deleted-link warning for a successful revisit');
+   assert.equal(await dialog.isVisible(),true,
+    'newer shared-build confirmation must remain open');
+   await dialog.getByRole('button',{name:'Отмена'}).click();
    revoked=true;
    await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const toast=incoming.locator('#studioToast');
    await toast.waitFor({state:'visible',timeout:20000});
-   assert.equal(sharedGets,6,'revoked link must issue one shared GET');
+   assert.equal(sharedGets,8,'revoked link must issue one shared GET');
    assert.match(await toast.innerText(),/Владелец удалил этот билд/);
    assert.equal(await incoming.locator('#levelOut').textContent(),'55');
    assert.equal(await incoming.evaluate(()=>location.hash),'');
