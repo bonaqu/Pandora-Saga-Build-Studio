@@ -238,6 +238,21 @@ function validateCharacterTables(tables){
     throw Error('Некорректное стартовое мастерство профессии');
   }
  }
+ // An incomplete but otherwise well-typed table must not be silently
+ // interpreted as a legitimate zero bonus or missing level-up. Keep the
+ // approved planner range 1–55 regardless of today's server level cap.
+ for(const key of ['HUMAN','ELF','DWARF','MYLIN','ENKIDU','RAPIN'])
+  if(!Object.hasOwn(tables.raceInit,key))
+   throw Error('Неполная таблица начальных характеристик рас');
+ for(const key of ['WARRIOR','SCOUT','ACOLYTE','MAGE'])
+  if(!Object.hasOwn(tables.jobInit,key))
+   throw Error('Неполная таблица начальных характеристик профессий');
+ for(let level=2;level<=55;level++)
+  if(!Object.hasOwn(tables.abilityPoint,String(level)))
+   throw Error('Неполная таблица очков мастерства');
+ for(let level=1;level<=55;level++)
+  if(!Object.hasOwn(tables.exp,String(level)))
+   throw Error('Неполная таблица прогрессии персонажа');
  const numericKey=key=>/^[1-9][0-9]{0,2}$/.test(key);
  for(const [lv,points] of Object.entries(tables.abilityPoint))
   if(!numericKey(lv)||!integer(points))
@@ -254,6 +269,10 @@ function validateCharacterTables(tables){
     !finite(row.ratio)||row.ratio<0||!finite(row.flat)||row.flat<0)
     throw Error('Некорректная таблица бонусов заточки');
   }
+ for(const kind of ['weaponPlus','magicPlus'])
+  for(let grade=1;grade<=10;grade++)
+   if(!Object.hasOwn(tables[kind],String(grade)))
+    throw Error('Неполная таблица бонусов заточки');
  const forge=tables.forge;
  if(!Array.isArray(forge.rates)||!Array.isArray(forge.gemTiers)||
   !Array.isArray(forge.hammers)||!isRecord(forge.rework))
@@ -265,6 +284,8 @@ function validateCharacterTables(tables){
    throw Error('Некорректные ставки кузницы');
   grades.add(row.plus);
  }
+ for(let grade=1;grade<=10;grade++)
+  if(!grades.has(grade))throw Error('Неполная таблица ставок кузницы');
  const tiers=new Set();
  for(const row of forge.gemTiers){
   if(!isRecord(row)||!integer(row.tier,1)||tiers.has(row.tier)||
@@ -275,6 +296,8 @@ function validateCharacterTables(tables){
    if(row[field]!=null&&!integer(row[field]))
     throw Error('Некорректные параметры самоцвета');
  }
+ for(let tier=1;tier<=4;tier++)
+  if(!tiers.has(tier))throw Error('Неполная таблица уровней самоцветов');
  for(const hammer of forge.hammers){
   if(!isRecord(hammer)||!integer(hammer.id,1)||
    typeof hammer.effect!=='string'||!hammer.effect.trim())
