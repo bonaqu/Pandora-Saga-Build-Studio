@@ -657,8 +657,10 @@ function renderOriginVitals(){
  const holder=$('originVitals');
  if(holder){
   const notice=hpReady&&mpReady?
-   'ОЗ '+calculated.hp+', ОМ '+calculated.mp:
-   'ОЗ и ОМ появятся после загрузки игровых данных.';
+   (lang==='en'?'HP '+calculated.hp+', MP '+calculated.mp:
+    'ОЗ '+calculated.hp+', ОМ '+calculated.mp):
+   (lang==='en'?'HP and MP will appear when game data have loaded.':
+    'ОЗ и ОМ появятся после загрузки игровых данных.');
   holder.setAttribute('aria-label',notice);
   holder.title=''; // Never show a second browser tooltip above game UI.
  }
