@@ -20,6 +20,7 @@ test('only differing core computed stats appear, not duplicated build internals'
  assert.deepEqual([ru[0].label,ru[0].a,ru[0].b,ru[0].delta],
   ['ОЗ','300','400','+100']);
  assert.equal(ru[1].delta,'+6');
+ assert.deepEqual(ru.map(x=>x.advantage),['b','b']);
  assert.deepEqual(compare(a,b,{lang:'en'}).map(x=>x.label),['HP','ATK']);
  assert.equal(JSON.stringify([a,b]),before);
 });
@@ -30,6 +31,7 @@ test('delta is B minus A, reverses on swap and preserves units',()=>{
   ['Скор. атаки','Attack speed',5,'%']]);
  assert.deepEqual(compare(a,b).map(x=>[x.key,x.delta]),[['stat.fire','+15%']]);
  assert.deepEqual(compare(b,a).map(x=>[x.key,x.delta]),[['stat.fire','-15%']]);
+ assert.equal(compare(b,a)[0].advantage,'a');
 });
 test('identical or entirely unknown outcomes do not create false differences',()=>{
  const same=pack([['ОЗ','HP',300],['Защита','Defense',null]]);
@@ -37,6 +39,7 @@ test('identical or entirely unknown outcomes do not create false differences',()
  const difference=compare(pack([['ОЗ','HP',null]]),pack([['ОЗ','HP',200]]));
  assert.deepEqual([difference[0].a,difference[0].b,difference[0].delta],
   ['—','200','—']);
+ assert.equal(difference[0].advantage,null,'Missing values cannot win comparison');
  assert.deepEqual(compare(pack([['АТК','ATK',null]]),pack([['АТК','ATK',null]])),[]);
 });
 test('verified minimum attack difference remains visible without fake zero delta',()=>{
@@ -44,6 +47,8 @@ test('verified minimum attack difference remains visible without fake zero delta
  const right=pack([['АТК','ATK',74,'','54–74']]);
  assert.deepEqual([compare(left,right)[0].a,compare(left,right)[0].b,
   compare(left,right)[0].delta],['50–74','54–74','—']);
+ assert.equal(compare(left,right)[0].advantage,'b',
+  'The stronger verified minimum ATK is emphasized when maximum ATK is equal');
  assert.deepEqual(compare(left,pack([['АТК','ATK',74]])),[]);
 });
 test('UI is compact and embedded in My Builds, without inventory/options matrix',()=>{
@@ -55,19 +60,35 @@ test('UI is compact and embedded in My Builds, without inventory/options matrix'
  assert.match(ui,/PandoraBuildComparison\.compactResults\(/);
  assert.match(ui,/data-compare-select/);
  assert.match(ui,/data-compare-row/);
- assert.doesNotMatch(ui,/matrixRows\(|data-compare-category|data-compare-differences|build-compare-search/);
+ assert.doesNotMatch(ui,/matrixRows\(|data-compare-category|data-compare-differences|build-compare-search|data-compare-delta/);
+ assert.match(ui,/const half=Math\.ceil\(rows\.length\/2\)/);
+ assert.match(ui,/\.\.\.metricCells\(rows\[i\]\),\.\.\.metricCells\(rows\[i\+half\]\)/);
  assert.doesNotMatch(read('pandora-studio-build-comparison.css'),
   /\.build-compare-categories|\.build-compare-note/);
 });
 
-test('a positive delta cannot be styled as universally beneficial',()=>{
+test('the beneficial A/B reading is bold without a delta column',()=>{
  const css=read('pandora-studio-build-comparison.css');
- assert.match(css,/\.build-compare-table td\[data-direction="up"\],\s*\.build-compare-table td\[data-direction="down"\]\{color:#e7c38e/);
- assert.doesNotMatch(css,/data-direction="up"\]\{color:#b2dfac/);
- assert.doesNotMatch(css,/data-direction="down"\]\{color:#edb7a0/);
- const a=pack([['Получ. крит. урон','Incoming critical damage',10,'%']]);
- const b=pack([['Получ. крит. урон','Incoming critical damage',20,'%']]);
- assert.deepEqual(compare(a,b).map(x=>[x.delta,x.direction]),[['+10%','up']]);
+ assert.match(css,/\.build-compare-table td\[data-compare-advantage\]/);
+ assert.doesNotMatch(css,/td\[data-direction="up"\]|td\[data-direction="down"\]/);
+ const stronger=compare(pack([['ОЗ','HP',350]]),pack([['ОЗ','HP',300]]));
+ assert.equal(stronger[0].advantage,'a','B must not win just because it is on the right');
+ const incoming=compare(
+  pack([['Получ. крит. урон','Incoming critical damage',10,'%']]),
+  pack([['Получ. крит. урон','Incoming critical damage',20,'%']])
+ );
+ assert.deepEqual(incoming.map(x=>[x.delta,x.direction,x.advantage]),
+  [['+10%','up','a']],'More incoming damage is not an advantage');
+ const physical=compare(
+  pack([['Сопр. физ (%)','Physical damage change',-10,'%']]),
+  pack([['Сопр. физ (%)','Physical damage change',-5,'%']])
+ );
+ assert.equal(physical[0].advantage,'a','Less damage taken is preferable');
+ const speed=compare(
+  pack([['Сокрщ. времени каста','Cast time',10,'%']]),
+  pack([['Сокрщ. времени каста','Cast time',20,'%']])
+ );
+ assert.equal(speed[0].advantage,'b','Greater cast-time reduction is preferable');
 });
 
 test('waiting for game data is distinct from a malformed saved build',()=>{
