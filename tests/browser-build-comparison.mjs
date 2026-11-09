@@ -37,15 +37,24 @@ export async function runBuildComparisonSmoke(browser,base){
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('.build-card').first().waitFor({state:'visible',timeout:20000});
   const reminder=page.locator('.build-account-reminder');
-  assert.match(await reminder.innerText(),/Сохраняли билды в аккаунте/);
-  await reminder.getByRole('button',{name:'Войти в аккаунт'}).click();
+  assert.match(await reminder.innerText(),/Сохраняйте билды в своём аккаунте/);
+  assert.match(await reminder.innerText(),/гостевая библиотека/);
+  await reminder.getByRole('link',{name:'Зарегистрироваться'}).click();
   await page.locator('#accountPanel').waitFor({state:'visible'});
   assert.equal(await page.locator('#detailPanel').getAttribute('aria-modal'),null,
-   'The modal build drawer must close so account fields are accessible');
+   'The saved-build drawer must close before the header registration form opens');
+  assert.equal((await page.locator('#accountPanel .account-action.selected').innerText()).trim(),
+   'Регистрация','Guest registration link must select the registration form');
   await page.locator('#profileTrigger').click();
   assert.equal(await page.locator('#accountPanel').isVisible(),false);
-  // Sign-in intentionally returns to the normal page so the profile fields
-  // are unobscured; visitors can then reopen the saved-build workbench.
+  await page.locator('#nav [data-tab="builds"]').click();
+  await page.locator('.build-account-reminder').getByRole('link',{name:'Войти'}).click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  assert.equal((await page.locator('#accountPanel .account-action.selected').innerText()).trim(),
+   'Войти','Guest sign-in link must select the login form');
+  assert.equal(await page.locator('#profileTrigger').getAttribute('aria-expanded'),'true');
+  await page.locator('#profileTrigger').click();
+  assert.equal(await page.locator('#profileTrigger').getAttribute('aria-expanded'),'false');
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('.build-card').first().waitFor({state:'visible'});
   assert.equal(await page.locator('.build-card').count(),3);
@@ -58,15 +67,22 @@ export async function runBuildComparisonSmoke(browser,base){
   await selects.nth(1).selectOption(idB);
   const hp=panel.locator('[data-compare-row="stat.hp"]');
   await hp.waitFor({state:'visible',timeout:20000});
-  assert.equal((await hp.locator('th').innerText()).trim(),'ОЗ');
-  const hpA=(await hp.locator('[data-compare-a]').innerText()).trim();
-  const hpB=(await hp.locator('[data-compare-b]').innerText()).trim();
-  assert.notEqual(hpA,hpB,'Different calculated health must be visible');
-  const delta=(await hp.locator('[data-compare-delta]').innerText()).trim();
-  assert.match(delta,/^[+-][0-9]/);
+  assert.equal((await hp.innerText()).trim(),'ОЗ');
+  const hpA=panel.locator('[data-compare-a="stat.hp"]');
+  const hpB=panel.locator('[data-compare-b="stat.hp"]');
+  const firstA=(await hpA.innerText()).trim();
+  const firstB=(await hpB.innerText()).trim();
+  assert.notEqual(firstA,firstB,'Different calculated health must be visible');
+  assert.equal(await hpB.getAttribute('data-compare-advantage'),'',
+   'Higher HP in B should be bold');
+  assert.equal(await hpA.getAttribute('data-compare-advantage'),null);
+  assert.equal(await panel.locator('.build-compare-table thead th').count(),6);
+  assert.equal(await panel.locator('[data-compare-delta]').count(),0);
   assert.match(await panel.locator('.build-compare-summary').innerText(),/Отличий:/);
   const rows=panel.locator('[data-compare-row]'),count=await rows.count();
   assert.ok(count>=1&&count<=26,'Only main Remaked-style stats: '+count);
+  assert.equal(await panel.locator('.build-compare-table tbody tr').count(),
+   Math.ceil(count/2),'Two distinct stat/A/B groups must share each table row');
   assert.equal(await panel.locator('[data-compare-equal="true"]').count(),0);
   assert.equal(await panel.locator('.build-compare-group').count(),0);
   assert.equal(await panel.locator('[data-compare-category]').count(),0);
@@ -75,10 +91,11 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal(await panel.locator('[data-compare-row^="gear."]').count(),0);
   assert.equal(await panel.locator('[data-compare-row^="branch."]').count(),0);
   await panel.getByRole('button',{name:'Поменять билды A и B местами'}).click();
-  assert.equal((await hp.locator('[data-compare-a]').innerText()).trim(),hpB);
-  assert.equal((await hp.locator('[data-compare-b]').innerText()).trim(),hpA);
-  assert.equal((await hp.locator('[data-compare-delta]').innerText()).trim(),
-   delta.startsWith('+')?'-'+delta.slice(1):'+'+delta.slice(1));
+  assert.equal((await hpA.innerText()).trim(),firstB);
+  assert.equal((await hpB.innerText()).trim(),firstA);
+  assert.equal(await hpA.getAttribute('data-compare-advantage'),'',
+   'Swapping builds must move the bold reading to A');
+  assert.equal(await hpB.getAttribute('data-compare-advantage'),null);
   assert.equal(await selects.nth(0).inputValue(),idB);
   assert.equal(await selects.nth(1).inputValue(),idA);
   await selects.nth(0).selectOption(idC);
@@ -129,6 +146,10 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   const cards=page.locator('.build-card');
   await cards.first().waitFor({state:'visible',timeout:20000});
   assert.equal(await cards.count(),6,'Six saved builds must be present');
+  const guestNote=page.locator('.build-account-reminder');
+  assert.match(await guestNote.innerText(),/separate guest library/);
+  assert.equal(await guestNote.getByRole('link',{name:'Sign in'}).count(),1);
+  assert.equal(await guestNote.getByRole('link',{name:'Register'}).count(),1);
   const hero=cards.filter({has:page.getByRole('heading',{name:'Сияние героя'})});
   assert.equal(await hero.count(),1,'Player-authored names are never translated');
   assert.match(await hero.locator('p').first().innerText(),/^Elf · /);
