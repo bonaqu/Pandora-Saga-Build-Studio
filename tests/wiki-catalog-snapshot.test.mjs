@@ -733,3 +733,65 @@ test('older skill records with unspecified optional costs remain valid',()=>{
  assert.equal(Object.hasOwn(good.skills[1],'mana'),false);
  assert.equal(Object.hasOwn(good.skills[1],'charLevel'),false);
 });
+
+
+test('all 702 live-source monster stats preserve legitimate negative resistances',()=>{
+ const monsters=JSON.parse(readFileSync(new URL('../data/os/monsters.json',import.meta.url),'utf8'));
+ const rows=Object.values(monsters);
+ assert.equal(rows.length,702);
+ assert.equal(rows.filter(row=>Number.isSafeInteger(row.life)&&row.life>0&&
+  Number.isSafeInteger(row.level)&&row.level>=0).length,702);
+ assert.ok(rows.some(row=>Object.values(row.resists).some(value=>value<0)),
+  'Game-source weaknesses must not be treated as invalid resistance data');
+ const before=JSON.stringify(monsters);
+ const data={};
+ for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
+  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(JSON.stringify(data.monsters),before);
+});
+
+test('corrupt D1 monster HP, defense and resistance values reject the complete snapshot',async()=>{
+ const good=catalog('monsters source');
+ Object.assign(good.monsters[1],{life:1250,ac:12,vit:8,str:7,agi:6,
+  dex:5,spi:4,int:3,warding:13,magicProtection:25,
+  resists:{physical:0,fire:-25,cold:25,magic:50},lvMod:0});
+ assert.doesNotThrow(()=>loader.validate(good));
+ const failures=[
+  ['name missing',d=>{d.monsters[1].name=''},/название монстра/],
+  ['life zero',d=>{d.monsters[1].life=0},/характеристики монстра/],
+  ['life negative',d=>{d.monsters[1].life=-10},/характеристики монстра/],
+  ['life string',d=>{d.monsters[1].life='1250'},/характеристики монстра/],
+  ['life Infinity',d=>{d.monsters[1].life=Infinity},/характеристики монстра/],
+  ['level fractional',d=>{d.monsters[1].level=1.5},/характеристики монстра/],
+  ['negative armor',d=>{d.monsters[1].ac=-2},/характеристики монстра/],
+  ['non-numeric vit',d=>{d.monsters[1].vit='8'},/характеристики монстра/],
+  ['invalid magic defense',d=>{d.monsters[1].magicProtection=NaN},/характеристики монстра/],
+  ['lvMod string',d=>{d.monsters[1].lvMod='0'},/модификация уровня/],
+  ['resistances as list',d=>{d.monsters[1].resists=[0,25]},/сопротивления монстра/],
+  ['resistances as text',d=>{d.monsters[1].resists='fire:25'},/сопротивления монстра/],
+  ['unknown element',d=>{d.monsters[1].resists.unverified=10},/сопротивления монстра/],
+  ['string resist',d=>{d.monsters[1].resists.fire='-25'},/сопротивления монстра/],
+  ['oversized resist',d=>{d.monsters[1].resists.magic=1001},/сопротивления монстра/]
+ ];
+ for(const [name,damage,reason] of failures){
+  const corrupted=structuredClone(good);damage(corrupted);
+  assert.throws(()=>loader.validate(corrupted),reason,name);
+ }
+ const damaged=structuredClone(good);damaged.monsters[1].life=-500;
+ const mock=mockFetch(damaged,good);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:mock.fetcher,strict:true}),/характеристики монстра/);
+ const fallback=await loader.load({api:'https://worker.example',fetcher:mock.fetcher});
+ assert.equal(fallback.source,'local');
+ assert.equal(fallback.data.monsters[1].life,1250);
+ assert.equal(fallback.data.monsters[1].resists.fire,-25);
+});
+
+test('unknown optional monster fields remain absent, not fabricated as zeros',()=>{
+ const d=catalog();
+ delete d.monsters[1].level;
+ assert.doesNotThrow(()=>loader.validate(d));
+ assert.equal(Object.hasOwn(d.monsters[1],'life'),false);
+ assert.equal(Object.hasOwn(d.monsters[1],'level'),false);
+});
