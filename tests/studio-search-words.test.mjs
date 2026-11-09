@@ -23,19 +23,28 @@ test('search matches reordered words, flexible whitespace, case and NFKC',()=>{
 test('all player and owner pickers reuse the exact same search semantics',()=>{
  const stage=source.slice(source.indexOf('const draw=()=>{',source.indexOf('function renderStagePicker')),
   source.indexOf('count.textContent=lang===',source.indexOf('function renderStagePicker')));
- assert.ok(stage.includes('searchWords(itemName(rec),stageSlotQuery)'),
-  'The equipped-item chooser must not require contiguous search phrases');
+ assert.ok(stage.includes('searchWords([itemName(rec),'),
+  'The equipped-item chooser must include both language names');
+ assert.ok(stage.includes('catalogSource?.items?.[String(rec.id)]?.name'));
+ assert.ok(stage.includes('officialEnglish?.items?.[String(rec.id)]?.n'));
  for(const candidate of [
-  "searchWords(dataName('item',id),q)",
-  'searchWords(dataName(kind,key),q)',
-  "searchWords(dataName(isMonster?'monster':'npc',key),q)",
-  "searchWords(dataName('npc',npcId),q)",
-  "searchWords(dataName('skill',skillId),q)",
-  "searchWords(dataName('npc',key),q)",
+  "searchWords(searchTerms('item',id),q)",
+  'searchWords(searchTerms(kind,key),q)',
+  "searchWords(searchTerms(isMonster?'monster':'npc',key),q)",
+  "searchWords(searchTerms('npc',npcId),q)",
+  "searchWords(searchTerms('skill',skillId),q)",
+  "searchWords(searchTerms('npc',key),q)",
   "searchWords(row.label+' '+row.value,q)"
  ])assert.ok(source.includes(candidate),'Editor picker diverged: '+candidate);
  assert.match(source,/const matchesWords=searchWords;/,
   'Regular wiki and its editor must use one search rule');
  assert.doesNotMatch(source,/wikiIndex\.normalize\(dataName\([^\n]+\.includes\(q\)/,
   'An editor relation picker still uses contiguous-only matching');
+});
+
+test('bilingual wiki index keeps exact Russian source names in English display mode',()=>{
+ assert.match(source,/const originalName=typeof original\?\.name==='string'\?original\.name:null;/);
+ assert.match(source,/const value=\[dataName\(type,id\),originalName,translated\?\.n/);
+ assert.equal(matches('Спата Kris','Kris спата'),true);
+ assert.equal(matches('Спата Kris','посох staff'),false);
 });
