@@ -13,7 +13,7 @@ function database(){
    async first(){
     if(sql.startsWith('SELECT a.id,a.username,a.owner_hash FROM user_accounts')){
      const s=sessions.get(args[0]),u=users.get(s?.account_id);
-     return s&&s.expires_at>args[1]&&u?{id:u.id,username:u.username,owner_hash:u.owner_hash}:null;
+     return s&&u?{id:u.id,username:u.username,owner_hash:u.owner_hash}:null;
     }
     if(sql.startsWith('SELECT id,username,salt,password_hash,recovery_hash FROM user_accounts'))
      return byName.get(args[0])||null;
@@ -150,4 +150,17 @@ test('password change commits the hash and other-session revocation in one D1 ba
  assert.deepEqual(db.sessions,beforeSessions,
   'Other sessions must not be silently changed on failed transaction');
  assert.equal((await call(db,'me',undefined,other.token)).status,200);
+});
+
+test('a dormant saved-build account outlives its old expiry yet logout still revokes',async()=>{
+ const db=database();
+ const registered=(await call(db,'register',{username:'persistent_01',password:pw})).data;
+ assert.equal(registered.expires,Number.MAX_SAFE_INTEGER);
+ const old=db.sessions.get(sha(registered.token));
+ assert.ok(old);
+ old.expires_at=Date.now()-90*86400000;
+ assert.equal((await call(db,'me',undefined,registered.token)).status,200);
+ assert.equal((await principal(make('me',undefined,registered.token),{DB:db})).username,'persistent_01');
+ assert.equal((await call(db,'logout',{},registered.token)).status,200);
+ assert.equal((await call(db,'me',undefined,registered.token)).status,401);
 });
