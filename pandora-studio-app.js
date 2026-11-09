@@ -327,6 +327,23 @@ async function putCloudBuild(entry){
   return false;
  }
 }
+// A batch must report the result of ALL records. An earlier failed PUT
+// cannot be hidden by a later successful response from the same import.
+async function uploadSharedBuildBatch(entries,owner,generation){
+ let confirmed=0;
+ for(const entry of entries){
+  if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
+  if(await putCloudBuild(entry))confirmed++;
+ }
+ if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
+ reportCloudStatus(confirmed===entries.length?
+  (lang==='en'?'All imported builds saved to cloud':'Все добавленные билды сохранены в облаке'):
+  (lang==='en'?
+   'Saved to cloud: '+confirmed+' of '+entries.length+
+    '. Other builds remain in this browser. Refresh your library to retry.':
+   'Сохранено в облаке: '+confirmed+' из '+entries.length+
+    '. Остальные пока только в браузере. Обнови библиотеку для повторной попытки.'));
+}
 async function deleteCloudBuild(id){
  if(!window.PandoraAccountUI?.isLoggedIn())return false;
  const owner=libraryScopeId();
@@ -6596,11 +6613,12 @@ function openSharedSnapshot(share){
        return;
       }
       builds=next;libraryChangeId++;
-      for(const entry of added)void putCloudBuild(entry);
+      const batchOwner=libraryScopeId(),batchGeneration=libraryChangeId;
       $('modalRoot').hidden=true;clear();changeTab('builds');
       reportCloudStatus(sharedText(
        'Новые билды сохранены в браузере · проверяем облако…',
        'New builds saved in this browser · checking cloud…'));
+      void uploadSharedBuildBatch(added,batchOwner,batchGeneration);
      }}),
     h('button',{type:'button',class:'button-action',
      text:sharedText('Отмена','Cancel'),onclick:()=>{
