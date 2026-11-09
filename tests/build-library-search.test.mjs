@@ -10,7 +10,7 @@ test('large libraries can be filtered by character name, profession and level',(
  assert.match(src,/races\[b\.data\?\.race\]\?\.\[lang==='en'\?1:0\]/);
  assert.match(src,/tokens\.every\(token=>row\.searchText\.includes\(token\)\)/);
  assert.match(src,/\.split\(\/\\s\+\/\)\.filter\(Boolean\)/);
- assert.match(src,/none\.hidden=!query\|\|visible>0/);
+ assert.match(src,/none\.hidden=!tokens\.length\|\|visible>0/);
  assert.match(css,/\.build-card\[hidden\]\{display:none!important\}/);
  assert.doesNotMatch(src,/Поделиться всей библиотекой/);
 });
