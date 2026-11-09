@@ -132,16 +132,25 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
 
 export async function runSavedSocketRecoverySmoke(browser,base){
  const context=await browser.newContext({viewport:{width:1366,height:900}});
+ const token='t'.repeat(43),username='socket_recovery';
  const saved={id:'c'.repeat(32),name:'Старый билд со слотами',
   data:{race:1,gender:0,job:7,level:45,name:'Старый билд со слотами',
    equipment:{5:{id:13041,name:'Железные поножи'}},
    socketCapacities:'invalid'}};
- await context.addInitScript(saved=>{
+ await context.addInitScript(({saved,token,username})=>{
   localStorage.setItem('ps-build-library-secret.v1','e'.repeat(64));
   localStorage.setItem('ps-build-library.v1',JSON.stringify([saved]));
- },saved);
- await context.route('**/*',route=>route.request().url().startsWith(base+'/')?
-  route.continue():route.abort());
+  localStorage.setItem('ps-account-session.v1',JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
+  localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
+ },{saved,token,username});
+ await context.route('**/*',route=>{
+  if(route.request().url().startsWith(base+'/'))return route.continue();
+  const url=new URL(route.request().url());
+  if(url.pathname==='/api/account/me')return route.fulfill({status:200,
+   contentType:'application/json',
+   headers:{'access-control-allow-origin':'*'},body:JSON.stringify({account:{username}})});
+  return route.abort();
+ });
  const page=await context.newPage(),errors=[];
  page.on('pageerror',error=>errors.push(error.message));
  try{
