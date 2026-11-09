@@ -199,3 +199,59 @@ test('locally queued deletion suppresses every historical duplicate and recovery
  assert.deepEqual(r.merged,[]);
  assert.deepEqual(r.outgoing,[]);
 });
+
+
+test('duplicate cloud IDs never silently select the first remote build or auto-upload',()=>{
+ const local=mk(A,300,55),remote=[
+  {id:A,entry:mk(A,180,45)},
+  {id:A,entry:mk(A,240,50)},
+  {id:B,entry:mk(B,260,48)}
+ ];
+ const before=JSON.stringify([local,remote]);
+ const r=reconcile({local:[local],remote,activeId:A,newId:()=>C});
+ assert.equal(r.unavailable,1,'One corrupted remote identity is reported once');
+ assert.equal(r.copies,1);
+ assert.equal(r.activeId,C);
+ assert.equal(r.merged.some(x=>x.id===A),false,
+  'Neither conflicting remote version is claimed authoritative');
+ assert.equal(r.merged.find(x=>x.id===C).data.level,55);
+ assert.equal(r.merged.find(x=>x.id===C).localOnly,true);
+ assert.deepEqual(r.merged.find(x=>x.id===B),mk(B,260,48),
+  'Unrelated healthy cloud records remain visible');
+ assert.deepEqual(r.outgoing,[],
+  'Never put the recovered original back to the corrupted cloud ID');
+ assert.equal(JSON.stringify([local,remote]),before,
+  'Reconciliation does not mutate source snapshots');
+ const repeat=reconcile({local:r.merged,remote,activeId:C,newId:()=>D});
+ assert.equal(repeat.copies,0,'Refresh must not clone the same recovery twice');
+ assert.equal(repeat.unavailable,1);
+ assert.equal(repeat.activeId,C);
+ assert.deepEqual(repeat.outgoing,[]);
+});
+
+test('conflicting remote tombstone and live record preserve only a local recovery',()=>{
+ const remote=[{id:A,deleted:true,entry:null},{id:A,entry:mk(A,300,55)}];
+ const r=reconcile({local:[mk(A,200,54)],remote,activeId:A,newId:()=>B});
+ assert.equal(r.unavailable,1);
+ assert.equal(r.copies,1);
+ assert.equal(r.activeId,B);
+ assert.equal(r.merged.find(x=>x.id===B).data.level,54);
+ assert.equal(r.merged.some(x=>x.id===A),false);
+ assert.deepEqual(r.outgoing,[]);
+ const queued=reconcile({local:[mk(A,200,54)],remote,
+  pendingDeletes:[A],activeId:A,newId:()=>B});
+ assert.equal(queued.unavailable,1);
+ assert.equal(queued.copies,0);
+ assert.deepEqual(queued.merged,[]);
+ assert.deepEqual(queued.outgoing,[]);
+});
+
+test('repeated cloud records with no offline backup remain unavailable, not invented',()=>{
+ const duplicate={id:A,entry:mk(A,100,45)};
+ const result=reconcile({local:[],remote:[duplicate,{...duplicate}],
+  newId:()=>B});
+ assert.equal(result.unavailable,1);
+ assert.equal(result.copies,0);
+ assert.deepEqual(result.merged,[]);
+ assert.deepEqual(result.outgoing,[]);
+});
