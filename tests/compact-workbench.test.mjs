@@ -26,8 +26,8 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
   originVitals:{attrs:{},setAttribute(k,v){this.attrs[k]=v}}
  };
  let estimate={hp:1630,mp:420};
- const render=Function('$','previewBaseStats','renderPotionPreview',fn+'\nreturn renderOriginVitals;')(
-  name=>fake[name]||null,()=>estimate,()=>{});
+ const render=Function('$','previewBaseStats','renderPotionPreview','lang',fn+'\nreturn renderOriginVitals;')(
+  name=>fake[name]||null,()=>estimate,()=>{},'ru');
  render();
  assert.equal(fake.originHp.textContent,'1630');
  assert.equal(fake.originMp.textContent,'420');

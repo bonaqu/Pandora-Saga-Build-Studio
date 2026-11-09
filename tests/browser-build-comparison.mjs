@@ -142,7 +142,31 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  // A fully bilingual interface includes screen-reader controls as well as
+  // visible labels. Game record/player-provided names are not translated.
+  assert.equal((await page.locator('main h1').innerText()).trim(),
+   'Pandora Saga Build Studio — character planner');
+  assert.equal(await page.locator('#workspace').getAttribute('aria-label'),
+   'Character planner workspace');
+  assert.equal(await page.locator('#raceGrid').getAttribute('aria-label'),
+   'Race portrait carousel');
+  assert.match(await page.locator('#raceGrid img').getAttribute('aria-label'),/^Choose /);
+  assert.doesNotMatch(await page.locator('#raceGrid img').getAttribute('alt'),/Человек|мужчина|женщина/);
+  assert.equal(await page.locator('#raceGrid .race-slide-arrow.previous').getAttribute('aria-label'),
+   'Previous portrait');
+  assert.equal(await page.locator('#raceGrid .race-slide-arrow.next').getAttribute('aria-label'),
+   'Next portrait');
+  assert.equal(await page.locator('#pathSkillSearch').getAttribute('aria-label'),'Search skills');
+  assert.equal(await page.locator('#pathSkillStatus').getAttribute('aria-label'),'Skill filter');
+  await page.locator('[data-origin-tab="stats"]').click();
+  assert.deepEqual(await page.locator('#originVitals .origin-vital span').allTextContents(),
+   ['HP','MP']);
+  assert.match(await page.locator('#originVitals').getAttribute('aria-label'),/^HP/);
   await page.locator('#nav [data-tab="builds"]').click();
+  assert.equal((await page.locator('#detailPanel .eyebrow').innerText()).trim(),
+   'Character workshop');
+  assert.equal(await page.locator('#dockClose').getAttribute('aria-label'),
+   'Close workbench');
   const cards=page.locator('.build-card');
   await cards.first().waitFor({state:'visible',timeout:20000});
   assert.equal(await cards.count(),6,'Six saved builds must be present');

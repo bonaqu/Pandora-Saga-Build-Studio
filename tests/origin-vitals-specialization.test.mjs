@@ -6,8 +6,8 @@ const html=read('index.html'),app=read('pandora-studio-app.js'),css=read('pandor
 const classes=JSON.parse(read('data/os/classes.json'));
 
 test('Origin labels show only ОЗ/ОМ, no icons or approximation marks',()=>{
- assert.match(html,/<span>ОЗ<\/span><strong id="originHp">/);
- assert.match(html,/<span>ОМ<\/span><strong id="originMp">/);
+ assert.match(html,/<span data-i18n="hpShort">ОЗ<\/span><strong id="originHp">/);
+ assert.match(html,/<span data-i18n="mpShort">ОМ<\/span><strong id="originMp">/);
  assert.doesNotMatch(html,/♥ ОЗ|✦ ОМ|Выбери облик/);
  assert.match(html,/data-origin-copy-static="race">Раса<\/span> <span[^>]*>Выбери расу<\/span>/);
  assert.match(css,/\.origin-vital\{[\s\S]*?min-height:66px/);
@@ -21,8 +21,8 @@ test('HP/MP are calculated integers and coverage limitations remain transparent'
   originVitals:{attributes:{},setAttribute(key,value){this.attributes[key]=value},title:'old'}
  };
  let calc={hp:2066,mp:543};
- const render=Function('$','previewBaseStats','renderPotionPreview',code+'\nreturn renderOriginVitals;')(
-  k=>nodes[k],()=>calc,()=>{});
+ const render=Function('$','previewBaseStats','renderPotionPreview','lang',code+'\nreturn renderOriginVitals;')(
+  k=>nodes[k],()=>calc,()=>{},'ru');
  render();
  assert.equal(nodes.originHp.textContent,'2066');
  assert.equal(nodes.originMp.textContent,'543');

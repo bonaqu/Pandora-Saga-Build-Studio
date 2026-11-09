@@ -657,8 +657,10 @@ function renderOriginVitals(){
  const holder=$('originVitals');
  if(holder){
   const notice=hpReady&&mpReady?
-   'ОЗ '+calculated.hp+', ОМ '+calculated.mp:
-   'ОЗ и ОМ появятся после загрузки игровых данных.';
+   (lang==='en'?'HP '+calculated.hp+', MP '+calculated.mp:
+    'ОЗ '+calculated.hp+', ОМ '+calculated.mp):
+   (lang==='en'?'HP and MP will appear when game data have loaded.':
+    'ОЗ и ОМ появятся после загрузки игровых данных.');
   holder.setAttribute('aria-label',notice);
   holder.title=''; // Never show a second browser tooltip above game UI.
  }
@@ -934,7 +936,11 @@ function renderRaces(){
  const option=portraitOptions[racePreviewIndex]||portraitOptions[0],i=option.race,gender=option.gender;
  const chosen=state.race===i&&window.PandoraUIPlanner.normalizeGender(races,i,state.gender)===gender;
  const frame=h('div',{class:'race-slide-frame'+(chosen?' selected':''),'aria-live':'polite'});
- const img=editAttr(h('img',{src:raceSource(i,gender),alt:races[i][0]+((i===0||i===1)?(gender?' · мужчина':' · женщина'):''),loading:'eager'}),
+ const raceName=races[i][lang==='en'?1:0];
+ const sexSuffix=(i===0||i===1)?
+  (gender?(lang==='en'?' · male':' · мужчина'):
+   (lang==='en'?' · female':' · женщина')):'';
+ const img=editAttr(h('img',{src:raceSource(i,gender),alt:raceName+sexSuffix,loading:'eager'}),
   'visual.race.'+i+'.'+(gender?'m':'f'));
  img.onerror=()=>{img.onerror=null;img.alt=lang==='en'?
    'Portrait of '+races[i][1]+' is currently unavailable':
@@ -942,14 +948,16 @@ function renderRaces(){
  const arrow=(text,step,alt)=>h('button',{type:'button',class:'race-slide-arrow '+(step<0?'previous':'next'),text,'aria-label':alt,
   onclick:()=>{racePreviewIndex=(racePreviewIndex+step+portraitOptions.length)%portraitOptions.length;renderRaces();
     grid.querySelector('.race-slide-arrow.'+(step<0?'previous':'next'))?.focus({preventScroll:true})}});
- frame.append(img,arrow('❮',-1,'Предыдущий портрет'),arrow('❯',1,'Следующий портрет'));
+ frame.append(img,arrow('❮',-1,lang==='en'?'Previous portrait':'Предыдущий портрет'),
+  arrow('❯',1,lang==='en'?'Next portrait':'Следующий портрет'));
  const chooseRace=()=>{
   if(chosen)return;
   state=window.PandoraOriginModel.selectRace(state,i,gender);
   selectedSkill=null;stageSlotPickerOpen=false;stageAttributesPage=null;
   persist();render();saveView();
  };
- img.tabIndex=0;img.setAttribute('role','button');img.setAttribute('aria-label','Выбрать '+img.alt);
+ img.tabIndex=0;img.setAttribute('role','button');
+ img.setAttribute('aria-label',(lang==='en'?'Choose ':'Выбрать ')+img.alt);
  img.addEventListener('click',chooseRace);
  img.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();chooseRace()}});
  const actions=h('div',{class:'race-slide-actions'});
