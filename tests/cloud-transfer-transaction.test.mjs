@@ -47,7 +47,7 @@ test('the preview requires real account login, denies legacy and absent bearer',
 test('signed-in preview reads only the requested legacy owner and preserves malformed rows',async()=>{
  const DB=mockDb();
  const response=await worker.fetch(request(),{DB});
- assert.equal(response.status,200,await response.text());
+ assert.equal(response.status,200,await response.clone().text());
  const body=await response.json();
  assert.deepEqual(body.records,[
   {id,deleted:false,entry:good},
