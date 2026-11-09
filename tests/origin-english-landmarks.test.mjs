@@ -18,6 +18,8 @@ test('important static player landmarks and controls are translated on RU/EN cha
   ['heroPathPages','Hero Path pages'],
   ['searchSkills','Search skills'],
   ['skillFilter','Skill filter'],
+  ['hpShort','HP'],
+  ['mpShort','MP'],
   ['closeWorkbench','Close workbench']
  ];
  for(const [key,en] of cases){
@@ -40,4 +42,15 @@ test('EN race image and portrait arrow descriptions follow the chosen race/gende
  assert.match(races,/lang==='en'\?'Next portrait':'Следующий портрет'/);
  assert.match(races,/lang==='en'\?'Choose ':'Выбрать '/);
  assert.match(app,/window\.PandoraUILocale\.apply\(lang\)/);
+});
+
+test('calculated origin vitals use locale-specific HP/MP announcements',()=>{
+ const from=app.indexOf('function renderOriginVitals(){');
+ const to=app.indexOf('\nfunction renderVitalsEnhancements(){',from);
+ assert.ok(from>=0&&to>from);
+ const code=app.slice(from,to);
+ assert.match(code,/lang==='en'\?'HP '\+calculated\.hp/);
+ assert.match(code,/lang==='en'\?'HP and MP will appear when game data have loaded\.'/);
+ assert.match(html,/<span data-i18n="hpShort">ОЗ<\/span>/);
+ assert.match(html,/<span data-i18n="mpShort">ОМ<\/span>/);
 });
