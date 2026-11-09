@@ -13,8 +13,8 @@ test('Origin labels show only ОЗ/ОМ, no icons or approximation marks',()=>{
  assert.match(css,/\.origin-vital\{[\s\S]*?min-height:66px/);
 });
 test('HP/MP are calculated integers and coverage limitations remain transparent',()=>{
- const a=app.indexOf('function renderOriginVitals(){');
- const b=app.indexOf('\nfunction renderVitalsEnhancements(){',a);
+ const a=app.indexOf('function renderOriginVitals(calculated=undefined){');
+ const b=app.indexOf('\nfunction renderVitalsEnhancements(calculated=undefined){',a);
  assert.ok(a>=0&&b>a);
  const code=app.slice(a,b),nodes={
   originHp:{textContent:''},originMp:{textContent:''},
