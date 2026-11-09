@@ -1478,13 +1478,27 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 
 .header-actions{position:relative;align-items:center}
 .profile-trigger{display:grid;place-items:center;min-width:42px;min-height:42px;color:#e7bd83;
- background:linear-gradient(#33241b,#1a120e);border:1px solid #917047;border-radius:4px}
+ background:linear-gradient(#33241b,#1a120e);border:1px solid #917047;border-radius:4px;
+ transition:color .16s ease,border-color .16s ease,background .16s ease}
 .profile-trigger:hover,.profile-trigger.active,.profile-trigger:focus-visible{color:#ffe5b6;border-color:#ebbe80}
 .account-panel{position:absolute;z-index:120;right:0;top:calc(100% + 12px);
  width:min(360px,calc(100vw - 24px));max-height:min(80vh,710px);overflow-y:auto;
  padding:16px;border:1px solid #ad8250;background:linear-gradient(140deg,#302116,#18110d);
  box-shadow:0 20px 44px #060302dd, inset 0 0 0 3px #221810;border-radius:6px}
 .account-panel[hidden]{display:none!important}
+@keyframes account-panel-enter{
+ from{opacity:0;transform:translateY(-7px) scale(.985)}
+ to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes account-panel-exit{
+ from{opacity:1;transform:translateY(0) scale(1)}
+ to{opacity:0;transform:translateY(-5px) scale(.99)}
+}
+.account-panel.is-opening{animation:account-panel-enter .18s cubic-bezier(.2,.7,.25,1) both}
+.account-panel.is-closing{animation:account-panel-exit .15s ease-in both;pointer-events:none}
+@media(prefers-reduced-motion:reduce){
+ .account-panel.is-opening,.account-panel.is-closing{animation:none}
+}
 .account-title{font:600 27px Georgia,serif;color:#f4d4a3}
 .account-lead,.account-small{font:12px/1.5 Manrope,Arial,sans-serif;color:#c8af8e;margin:8px 0}
 .account-small{font-size:10px}
