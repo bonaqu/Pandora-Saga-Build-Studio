@@ -134,3 +134,40 @@ test('changed ambiguous item mentions still cannot be silently assigned to a wro
   /встречается несколько раз/,
   'A real edit requires disambiguation rather than guessing source linkage');
 });
+
+
+test('editing text around an item never binds a substring of a longer word',()=>{
+ const source='Награда: <item 300001>.';
+ const edited='Награда: Билет испытаний. ПромоБилет испытаний недоступен.';
+ const restored=presenter.restoreReferences(edited,source,lookup,'ru');
+ assert.equal(restored,
+  'Награда: <item 300001>. ПромоБилет испытаний недоступен.');
+ const replacement='Награда: СуперБилет испытаний.';
+ assert.equal(presenter.restoreReferences(replacement,source,lookup,'ru'),
+  replacement,'An intentionally renamed item mention must remain plain text');
+});
+
+test('whole-name restoration is stable with multiple linked items and an unrelated compound',()=>{
+ const localLookup=id=>({'1':'Спата','2':'Лук'}[id]||null);
+ const source='Выбери <item 1>, затем <item 2>.';
+ const edited='Сначала Лук, потом Спата и АнтиСпата.';
+ const restored=presenter.restoreReferences(edited,source,localLookup,'ru');
+ assert.equal(restored,'Сначала <item 2>, потом <item 1> и АнтиСпата.');
+ assert.equal(presenter.descriptionText(restored,localLookup,'ru'),edited);
+});
+
+test('Unicode letters before an item name cannot be interpreted as a word boundary',()=>{
+ const source='Take <item 1>.',localLookup=id=>id==='1'?'Ring':null;
+ const edited='A𐐀Ring and Ring.';
+ assert.equal(presenter.restoreReferences(edited,source,localLookup,'en'),
+  'A𐐀Ring and <item 1>.');
+});
+
+test('overlapping linked names do not produce nested or reassigned item tokens',()=>{
+ const localLookup=id=>({'1':'Билет','2':'Билет испытаний'}[id]||null);
+ const source='Награды: <item 1> и <item 2>.';
+ assert.throws(()=>presenter.restoreReferences(
+  'Теперь награды: Билет и Билет испытаний.',source,localLookup,'ru'),
+  /встречается несколько раз|пересекаются/,
+  'A shorter item name appearing within another must not be assigned speculatively');
+});
