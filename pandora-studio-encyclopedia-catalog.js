@@ -151,9 +151,24 @@ function validate(input){
    'повторный или некорректный обмен NPC');
   seenTrades.add(id);
   requireRef(item(recipe.i),'награда обмена NPC');
+  // An untrusted published snapshot must not display fractional/negative
+  // costs as official gameplay requirements. Missing fields remain unknown
+  // to support older source snapshots rather than inventing a price of zero.
+  for(const currency of ['exp','gold','honor'])
+   if(recipe[currency]!=null)
+    requireRef(Number.isSafeInteger(recipe[currency])&&recipe[currency]>=0,
+     'стоимость обмена NPC');
   for(const material of list(recipe.mats,'материалов обмена')){
    requireRef(isRecord(material)&&item(material.i),'материал обмена NPC');
+   if(material.n!=null)
+    requireRef(Number.isSafeInteger(material.n)&&material.n>=1,
+     'количество материала обмена NPC');
   }
+  if(recipe.limit!=null)
+   requireRef(isRecord(recipe.limit)&&
+    Number.isSafeInteger(recipe.limit.n)&&recipe.limit.n>=1&&
+    ['daily','weekly','lifetime'].includes(recipe.limit.period),
+    'ограничение обмена NPC');
   for(const id of list(recipe.npc,'NPC обмена'))requireRef(npc(id),'NPC обмена');
  }
  for(const row of Object.values(data.trades.npcs)){
