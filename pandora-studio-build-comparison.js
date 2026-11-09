@@ -448,15 +448,26 @@ function matrixRows(a={},b={},options={}){
 const COMPACT_METRICS=Object.freeze([
  ['hp','ОЗ','HP'],['mp','ОМ','MP'],['attack','АТК','ATK'],
  ['magicAttack','МАТК','MATK'],['defense','Защита','Defense'],
+ // These are already calculated by Hero Book. Omitting them would report
+ // two genuinely different result sets as identical in compact A/B.
+ ['frontAttack','АТК спереди','Front ATK'],
+ ['backAttack','АТК сзади','Back ATK'],
+ ['meleeRange','Дальн. АТК ближ. боя','Melee range (base)'],
+ ['rangedRange','Дальн. АТК дальн. боя','Ranged range (base)'],
+ ['physicalFlat','Сопр. физ (ед.)','Physical mitigation (flat)'],
  ['physicalResist','Сопр. физ (%)','Physical damage change'],
  ['magicDamageResist','Сопр. маг. урону','Magic damage change'],
- ['accuracy','Точность','Accuracy'],['dodge','Уклонение','Evasion'],
+ ['accuracy','Точность','Accuracy'],
+ ['frontAccuracy','Точн. спереди','Front accuracy'],
+ ['dodge','Уклонение','Evasion'],
+ ['rangedEvasion','Укл. дальн. атак','Ranged evasion'],
  ['crit','Шанс крита','Critical chance'],
  ['critResist','Сопр. криту','Critical resistance'],
  ['critDamage','Крит. урон','Critical damage'],
  ['critDamageResist','Получ. крит. урон','Incoming critical damage'],
  ['attackSpeed','Скор. атаки','Attack speed'],
  ['moveSpeed','Скор. движения','Movement speed'],
+ ['townSpeed','Скор. в городе','Town movement speed'],
  ['castSpeed','Скор. каста','Casting speed'],
  ['castTime','Сокрщ. времени каста','Cast time'],
  ['cooldown','Откат','Cooldown'],
@@ -466,6 +477,8 @@ const COMPACT_METRICS=Object.freeze([
  ['charm','Сопр. чарам','Charm resistance'],
  ['light','Сопр. свету','Light resistance'],
  ['dark','Сопр. тьме','Dark resistance'],
+ ['physicalConditions','Сопр. аном. тел.','Physical conditions'],
+ ['mentalConditions','Сопр. аном. дух.','Mental conditions'],
  ['magic','Сопр. магии','Magic resistance']
 ]);
 function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
