@@ -188,7 +188,13 @@ function render(){
   fresh.minLength=8;confirmFresh.minLength=8;
   const form=node('form','account-form');
    form.append(old,fresh,confirmFresh);
+  const renderedOwner=session.token,renderedRevision=sessionRevision;
+  const livePasswordForm=()=>form.isConnected!==false&&
+   session?.token===renderedOwner&&sessionRevision===renderedRevision;
   const update=button('Изменить пароль',async()=>{
+   // An old click/Enter on a DOM form discarded by locale refresh or logout
+   // must never send private fields to a newly active account.
+   if(!livePasswordForm())return;
    // A locale remount creates a new button; only one in-flight password
    // change is allowed for this local account session.
    if(passwordRequest?.revision===sessionRevision)return;
@@ -224,7 +230,11 @@ function render(){
   },'primary');
   update.disabled=passwordRequest?.revision===sessionRevision;
    form.append(update);
-   form.addEventListener('submit',e=>{e.preventDefault();update.click()});
+   form.addEventListener('submit',e=>{
+    e.preventDefault();
+    if(!livePasswordForm())return;
+    update.click();
+   });
    details.append(form);
   panel.append(details);
   const footer=node('div','account-profile-footer');
