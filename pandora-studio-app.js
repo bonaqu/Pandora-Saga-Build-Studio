@@ -7820,7 +7820,7 @@ function restoreWikiHash(){
  renderDetails();showWorkbench();
 }
 window.addEventListener('hashchange',()=>{
- if(location.hash.startsWith('#b/')){restoreSharedHash();return}
+ if(/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash)){void restoreSharedHash();return}
  if(location.hash.startsWith('#wiki/')){
   const match=location.hash.match(/^#wiki\/(item|monster|map|npc|chest|skill|soul|instance|honor)\/([0-9]{1,15}|astir-(?:union|empire|kingdom)|astir-npc-(?:union|empire|kingdom)-[a-z0-9-]{1,32}|war-[a-z][a-z0-9-]{0,35})(?:\/([0-9]{1,15}))?$/);
   if(match){
@@ -7984,11 +7984,8 @@ if(bootView.open&&bootView.tab!=='wiki'&&!String(location.hash).startsWith('#wik
 }
 if(bootView.slotOpen&&!bootView.open){stageSlotPickerOpen=true;renderSlotRails();renderStagePicker()}
 requestAnimationFrame(()=>window.scrollTo({top:Math.max(0,Number(bootView.page)||0),behavior:'instant'}));
-// A pasted/shared URL in an already loaded SPA is a same-document hash
-// navigation. Initial boot's restoreSharedHash() does not run again then.
-window.addEventListener('hashchange',()=>{
- if(/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash))void restoreSharedHash();
-});
+// Same-document shared-build links are handled by the unified hashchange
+// listener above, alongside wiki links. Do not add a second fetch listener.
 window.addEventListener('pagehide',saveView);
 document.addEventListener('pandora:before-update',saveView);
 document.addEventListener('scroll',saveView,{passive:true});

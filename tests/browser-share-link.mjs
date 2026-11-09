@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 export async function runShareLinkSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const shareId='A1234567890',stored=new Map();
- let mismatched=false,revoked=false,created=0,readbacks=0;
+ let mismatched=false,revoked=false,created=0,readbacks=0,sharedGets=0;
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  await context.grantPermissions(['clipboard-read','clipboard-write']);
  const mockWorkerRoute=async route=>{
@@ -39,6 +39,7 @@ export async function runShareLinkSmoke(browser,base){
    created++;return json({ok:true,id:shareId});
   }
   if(path==='/api/shared/'+shareId&&method==='GET'){
+   sharedGets++;
    if(revoked)return json({error:'Владелец удалил билд',reason:'deleted'},410);
    const entry=[...stored.values()].at(-1);
    if(!entry)return json({error:'Missing'},404);
@@ -80,6 +81,7 @@ export async function runShareLinkSmoke(browser,base){
   assert.equal(link,base+'/#b/'+shareId);
   assert.equal(created,1);
   assert.equal(readbacks,1,'must verify public GET before displaying link');
+  assert.equal(sharedGets,1,'sharing should issue one verification GET');
   await status.getByRole('button',{name:'Скопировать ссылку'}).click();
   assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),link);
   mismatched=true;
@@ -89,6 +91,7 @@ export async function runShareLinkSmoke(browser,base){
   assert.match(await error.innerText(),/не подтвердила выбранный билд/);
   assert.equal(await page.locator('.build-share-slot .share-result').count(),0);
   assert.equal(readbacks,2);
+  assert.equal(sharedGets,2,'repeat verification must issue one GET');
   assert.deepEqual(errors,[]);
   mismatched=false;
   const receiver=await browser.newContext({viewport:{width:1365,height:850}});
@@ -108,12 +111,14 @@ export async function runShareLinkSmoke(browser,base){
    await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const dialog=incoming.getByRole('dialog',{name:'Открыть билд по ссылке?'});
    await dialog.waitFor({state:'visible',timeout:20000});
+   assert.equal(sharedGets,3,'one same-tab hashchange must issue exactly one shared GET');
    await dialog.getByRole('button',{name:'Отмена'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'22',
     'rejecting an imported build preserves the recipient draft');
    assert.equal(await incoming.evaluate(()=>location.hash),'');
    await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    await dialog.waitFor({state:'visible',timeout:20000});
+   assert.equal(sharedGets,4,'a second navigation must not duplicate its GET');
    await dialog.getByRole('button',{name:'Открыть без сохранения'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'55',
     'accepting the shared build loads its full planning level');
@@ -128,6 +133,7 @@ export async function runShareLinkSmoke(browser,base){
    await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const englishDialog=incoming.getByRole('dialog',{name:'Open build from link?'});
    await englishDialog.waitFor({state:'visible',timeout:20000});
+   assert.equal(sharedGets,5,'EN navigation must issue one shared GET');
    assert.match(await englishDialog.innerText(),/unsaved changes will be replaced/i);
    await englishDialog.getByRole('button',{name:'Cancel'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'55');
@@ -138,6 +144,7 @@ export async function runShareLinkSmoke(browser,base){
    await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const toast=incoming.locator('#studioToast');
    await toast.waitFor({state:'visible',timeout:20000});
+   assert.equal(sharedGets,6,'revoked link must issue one shared GET');
    assert.match(await toast.innerText(),/Владелец удалил этот билд/);
    assert.equal(await incoming.locator('#levelOut').textContent(),'55');
    assert.equal(await incoming.evaluate(()=>location.hash),'');
