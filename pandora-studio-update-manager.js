@@ -28,7 +28,7 @@
   const busy = () => {
     const el = document.activeElement;
     return document.visibilityState !== 'visible' ||
-      !!document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), .inline-owner-editor, #accountPanel:not([hidden])') ||
+      !!document.querySelector('#modalRoot:not([hidden]), #detailPanel.is-open, #stagePicker:not([hidden]), #stageAttributes:not([hidden]), .inline-owner-editor, #accountPanel:not([hidden])') ||
       !!window.PandoraAccountUI?.updateGuard?.() ||
       !!(el && el.matches && el.matches('input, textarea, select, [contenteditable="true"]')) ||
       !!window.PandoraStudioAdminActive?.();
