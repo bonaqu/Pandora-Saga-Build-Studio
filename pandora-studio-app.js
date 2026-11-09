@@ -6549,24 +6549,59 @@ function openSharedSnapshot(share){
  if(!requireBuildAccount({shared:true}))return;
  if(!share||share.schema!==1||!['build','library'].includes(share.type))throw Error('Неподдерживаемая ссылка');
  const clear=()=>{if(location.hash.startsWith('#b/'))history.replaceState(history.state,'',location.pathname+location.search)};
+ // Bind the confirmation to the original signed-in owner.
+ const viewerToken=window.PandoraAccountUI.token(),viewerOwner=libraryScopeId();
+ const sameViewer=()=>window.PandoraAccountUI?.token()===viewerToken&&
+  libraryScopeId()===viewerOwner;
+ const verifyViewer=()=>{
+  if(sameViewer())return true;
+  showStudioToast(sharedText(
+   'Аккаунт изменился. Открой ссылку снова, чтобы выбрать нужный аккаунт.',
+   'Your account changed. Open the link again to select the correct account.'),'warning');
+  return false;
+ };
  if(share.type==='library'){
   if(!Array.isArray(share.data)||!share.data.length||share.data.length>30)throw Error('Неверная библиотека');
   const added=share.data.map(v=>({id:newId(),name:String(v.name||'Билд').slice(0,70),
    data:sanitizeSharedState(v.data),at:Date.now()}));
   const view=h('div');
   view.append(h('p',{text:sharedText('Билдов по ссылке: ','Builds in link: ')+
-   added.length+'. '+sharedText('Текущие билды и активный черновик останутся без изменений.',
-    'Your saved builds and current draft stay unchanged.')}),
-   h('button',{class:'button-action primary',
-   text:sharedText('Добавить в мою библиотеку','Add to my builds'),onclick:()=>{
-    const next=[...added,...builds];
-    try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
-     'ps-build-library.v1',JSON.stringify(next))}
-    catch(e){alert(sharedText('Не удалось сохранить библиотеку: ',
-     'Could not save the library: ')+e.message);return}
-    builds=next;for(const entry of added)void putCloudBuild(entry);$('modalRoot').hidden=true;clear();changeTab('builds');
-   }}));
-  modal(sharedText('Импорт общей библиотеки','Import shared library'),view);return;
+   added.length+'. '+sharedText(
+    'Текущий герой и сохранённые билды не изменятся. Новые копии добавятся в «Мои билды».',
+    'Your current character and saved builds will not change. New copies will be added to My Builds.')}),
+   h('div',{class:'build-signin-actions'},[
+    h('button',{type:'button',class:'button-action primary',
+     text:sharedText('Добавить в мои билды','Add to My Builds'),onclick:()=>{
+      if(!verifyViewer())return;
+      if(builds.length+added.length>200){
+       showStudioToast(sharedText(
+        'В библиотеке может быть до 200 билдов. Удали ненужные и повтори.',
+        'Your library holds up to 200 builds. Delete unused builds and try again.'),'warning');
+       return;
+      }
+      const next=[...added,...builds];
+      try{
+       window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+        'ps-build-library.v1',JSON.stringify(next));
+      }catch{
+       showStudioToast(sharedText(
+        'Не удалось добавить билды: браузер не сохранил их. Освободи место и повтори.',
+        'Could not add builds: the browser could not save them. Free up space and retry.'),'error');
+       return;
+      }
+      builds=next;libraryChangeId++;
+      for(const entry of added)void putCloudBuild(entry);
+      $('modalRoot').hidden=true;clear();changeTab('builds');
+      reportCloudStatus(sharedText(
+       'Новые билды сохранены в браузере · проверяем облако…',
+       'New builds saved in this browser · checking cloud…'));
+     }}),
+    h('button',{type:'button',class:'button-action',
+     text:sharedText('Отмена','Cancel'),onclick:()=>{
+      $('modalRoot').hidden=true;clear();
+     }})
+   ]));
+  modal(sharedText('Добавить билды по ссылке?','Add builds from link?'),view);return;
  }
  const incoming=sanitizeSharedState(share.data);
  const view=h('div');
@@ -6578,7 +6613,8 @@ function openSharedSnapshot(share){
  const apply=()=>{
   // Do not dismiss the preview or discard the previous hero when the new
   // draft cannot be saved (for example, browser storage quota exhaustion).
-  if(!requireBuildAccount({shared:true})||!switchActiveDraft(incoming,null))return false;
+  if(!verifyViewer()||!requireBuildAccount({shared:true})||
+   !switchActiveDraft(incoming,null))return false;
   $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
   clear();render();changeTab('character');
   return true;
