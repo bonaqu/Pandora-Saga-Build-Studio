@@ -149,3 +149,46 @@ test('runtime capabilities explicitly advertise compare-and-set support',async()
  assert.equal(capability.ownerOverrideCAS,true);
  assert.equal(capability.ownerOverrideCASRequired,true);
 });
+
+
+test('parallel admin CAS operations on independent keys never conflict or overwrite neighbors',async()=>{
+ const cloud=env(),alpha='itemdesc.123',beta='itemdesc.124';
+ const put=(key,value,expectedValue)=>send(cloud,'/api/admin/override',
+  {key,value,expectedValue});
+ const del=(key,expectedValue)=>send(cloud,'/api/admin/reset',
+  {key,expectedValue});
+ // Two independent owner fields must both be allowed through CAS.
+ const created=await Promise.all([
+  put(alpha,'Initial alpha',null),put(beta,'Initial beta',null)
+ ]);
+ assert.deepEqual(created.map(x=>x.status),[200,200]);
+ assert.equal(lock.values.size,2);
+ // A stale edit of alpha and a valid edit of beta happen concurrently.
+ const edits=await Promise.all([
+  put(alpha,'Stale alpha','Wrong prior text'),
+  put(beta,'Updated beta','Initial beta')
+ ]);
+ assert.deepEqual(edits.map(x=>x.status),[409,200]);
+ assert.equal(edits[0].body.code,'OWNER_EDIT_CONFLICT');
+ assert.equal(lock.values.get(alpha),'Initial alpha');
+ assert.equal(lock.values.get(beta),'Updated beta');
+ // A valid undo of alpha leaves beta intact; a second reset cannot delete
+ // anything newly written by another editor and returns an explicit 409.
+ assert.equal((await del(alpha,'Initial alpha')).status,200);
+ assert.equal((await del(alpha,'Initial alpha')).status,409);
+ assert.equal(lock.values.has(alpha),false);
+ assert.equal(lock.values.get(beta),'Updated beta');
+ assert.equal((await del(beta,'Updated beta')).status,200);
+ assert.equal(lock.values.size,0,'Every isolated temporary override is cleaned');
+});
+
+test('wrong-owner credentials cannot reset even an unrelated valid override',async()=>{
+ const cloud=env();
+ assert.equal((await edit(cloud,'Private description',null)).status,200);
+ const forbidden=await send(cloud,'/api/admin/reset',
+  {key,expectedValue:'Private description'},'not-a-valid-bearer');
+ assert.equal(forbidden.status,401);
+ assert.equal(lock.values.get(key),'Private description');
+ assert.equal((await reset(cloud,'Private description')).status,200);
+ assert.equal(lock.values.size,0);
+});
