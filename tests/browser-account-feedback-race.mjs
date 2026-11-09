@@ -53,10 +53,14 @@ export async function runAccountFeedbackRaceSmoke(browser,base){
   for(let i=0;i<3;i++){
    gate={started:deferred(),released:deferred()};
    const held=gate;
+   const meObserved=page.waitForRequest(req=>
+    req.method()==='GET'&&req.url().startsWith(api+'/api/account/me'),
+    {timeout:20000});
    const nav=i===0?page.goto(base+'/',{waitUntil:'domcontentloaded'}):
     page.reload({waitUntil:'domcontentloaded'});
    try{
     await nav;
+    await meObserved;
     await held.started.promise;
     assert.equal(await page.locator('#profileTrigger')
      .getAttribute('data-account-bootstrap'),'pending');
