@@ -490,7 +490,7 @@ test('Hero Path detail omits zero character-level threshold rather than claiming
  const rows=Object.values(JSON.parse(read('data/os/skills.json')));
  const noLevel=rows.find(skill=>skill.charLevel===0&&skill.learnable===true&&
   skill.classes?.WARRIOR===1&&skill.prereq==null&&
-  Array.isArray(skill.reqs)&&skill.reqs.length===0);
+  Array.isArray(skill.reqs)&&skill.reqs.length>0);
  const levelFive=rows.find(skill=>skill.charLevel===5&&
   skill.classes?.WARRIOR===1&&skill.learnable===true);
  assert.ok(noLevel,'Test needs a real learnable level-zero Warrior skill');
