@@ -6131,22 +6131,37 @@ function requireBuildAccount({shared=false}={}){
 function finishBuildAccountEntry(){
  if(!window.PandoraAccountUI?.isLoggedIn()||
   window.PandoraAccountUI?.hasRecoveryPending?.())return;
- // Opening a profile from the header must not silently dismiss it on login.
- // Only a requested build action or unsaved guest draft resumes the workbench.
- if(!returnToBuildsAfterAuth&&
-  !/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash))return;
+ // Header sign-in must resume an unfinished guest character as well.
+ // When there is no pending action, leave the ordinary profile open.
+ const shared=/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash);
+ if(!returnToBuildsAfterAuth&&!shared&&!pendingGuestDraft)return;
  const returnToBuilds=returnToBuildsAfterAuth;
  returnToBuildsAfterAuth=false;
- window.PandoraAccountUI?.dismiss?.();
- if(/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash)){
-  pendingGuestDraft=null;
+ const guest=pendingGuestDraft;
+ pendingGuestDraft=null;
+ if(shared){
+  // Preserve the guest's unfinished hero before showing an incoming build.
+  if(guest?.owner.startsWith('guest:')&&
+   JSON.stringify(state)===JSON.stringify(fresh())&&
+   switchActiveDraft(structuredClone(guest.snapshot),null))render();
+  window.PandoraAccountUI?.dismiss?.();
   void restoreSharedHash();
   return;
  }
- const guest=pendingGuestDraft;
- pendingGuestDraft=null;
  if(guest&&guest.owner.startsWith('guest:')&&
   JSON.stringify(guest.snapshot)!==JSON.stringify(state)){
+  // An empty account draft needs no conflicting-draft choice. The guest
+  // hero becomes this account's current UNSAVED draft, never a library save.
+  if(JSON.stringify(state)===JSON.stringify(fresh())){
+   if(switchActiveDraft(structuredClone(guest.snapshot),null)){
+    render();
+    changeTab(returnToBuilds?'builds':'character');
+   }
+   if(returnToBuilds)window.PandoraAccountUI?.dismiss?.();
+   return;
+  }
+  // Never silently overwrite the existing owner's nonempty draft.
+  window.PandoraAccountUI?.dismiss?.();
   const content=h('div');
   content.append(h('p',{text:lang==='en'?
    'You started a character before signing in. Which draft would you like to continue? Your previous guest copy stays on this device.':
@@ -6161,7 +6176,10 @@ function finishBuildAccountEntry(){
     onclick:()=>{close();if(returnToBuilds)changeTab('builds')}})
   ]));
   modal(lang==='en'?'Continue your character?':'Продолжить персонажа?',content);
- }else if(returnToBuilds)changeTab('builds');
+ }else if(returnToBuilds){
+  window.PandoraAccountUI?.dismiss?.();
+  changeTab('builds');
+ }
 }
 
 function renderBuilds(root){
@@ -8067,7 +8085,7 @@ void window.PandoraAccountUI.init({
  onLogin:({register})=>{
   // Header login, like the build-gate login, must preserve an unsaved guest
   // hero before the account owner switch replaces the visible draft.
-  if(!register&&!pendingGuestDraft&&tabOwnerScope?.startsWith('guest:')&&unsavedBuild())
+  if(!register&&tabOwnerScope?.startsWith('guest:')&&unsavedBuild())
    pendingGuestDraft={snapshot:structuredClone(state),owner:tabOwnerScope};
   if(register)pendingGuestDraft=null;
   // New registration adopts the guest library because its existing D1 owner hash

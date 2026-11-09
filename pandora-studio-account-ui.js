@@ -341,6 +341,37 @@ function render(){
 }
 // Explicit entry point for links in My Builds. The library drawer is closed
 // by the caller before this popover is opened; no synthetic trigger clicks.
+// Keep the exit motion visible but make the closing form inert immediately.
+let panelCloseTimer=null;
+const panelIsOpen=()=>Boolean(panel&&!panel.hidden&&
+ !panel.classList.contains('is-closing'));
+const reducedMotion=()=>root.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true;
+function setPanelOpen(visible){
+ if(!panel||!trigger)return;
+ if(!visible&&!panelIsOpen())return;
+ const entering=panel.hidden||panel.classList.contains('is-closing');
+ if(panelCloseTimer!==null){clearTimeout(panelCloseTimer);panelCloseTimer=null}
+ panel.classList.remove('is-opening','is-closing');
+ trigger.setAttribute('aria-expanded',String(visible));
+ if(visible){
+  panel.hidden=false;panel.inert=false;panel.removeAttribute('aria-hidden');
+  if(entering&&!reducedMotion()){
+   void panel.offsetWidth;
+   panel.classList.add('is-opening');
+  }
+ }else if(reducedMotion()){
+  panel.hidden=true;panel.inert=false;panel.removeAttribute('aria-hidden');
+ }else{
+  panel.inert=true;panel.setAttribute('aria-hidden','true');
+  panel.classList.add('is-closing');
+  panelCloseTimer=setTimeout(()=>{
+   panel.hidden=true;
+   panel.classList.remove('is-closing');
+   panel.inert=false;panel.removeAttribute('aria-hidden');
+   panelCloseTimer=null;
+  },170);
+ }
+}
 function open(preferredMode='login'){
  if(!panel||!trigger)return false;
  activeSession();
@@ -351,8 +382,7 @@ function open(preferredMode='login'){
   render();
  }
  if(!panel.hasChildNodes?.())render();
- panel.hidden=false;
- trigger.setAttribute('aria-expanded','true');
+ setPanelOpen(true);
  panel.querySelector?.('.account-form input')?.focus?.({preventScroll:true});
  return true;
 }
@@ -373,6 +403,10 @@ async function init(config){
  trigger=document.getElementById('profileTrigger');
  panel=document.getElementById('accountPanel');
  if(!trigger||!panel)throw Error('Missing account UI elements');
+ panel.addEventListener('animationend',event=>{
+  if(event.target===panel&&event.animationName==='account-panel-enter')
+   panel.classList.remove('is-opening');
+ });
  setBootstrapPhase(session?'pending':'guest');
  render();
  trigger.setAttribute('aria-expanded',String(!panel.hidden));
@@ -394,18 +428,16 @@ async function init(config){
  trigger.addEventListener('click',()=>{
   const previous=session?.token||null;
   activeSession();
-  panel.hidden=!panel.hidden;
-  trigger.setAttribute('aria-expanded',String(!panel.hidden));
+  const opening=!panelIsOpen();
+  setPanelOpen(opening);
   // Closing/reopening the popover does not mean the owner wanted to discard
   // password edits. Refresh only when its identity changed or no UI exists.
-  if(!panel.hidden&&((session?.token||null)!==previous||!panel.hasChildNodes?.()))
+  if(opening&&((session?.token||null)!==previous||!panel.hasChildNodes?.()))
    render();
  });
  document.addEventListener('pointerdown',event=>{
-  if(!panel.hidden&&!panel.contains(event.target)&&!trigger.contains(event.target)){
-   panel.hidden=true;
-   trigger.setAttribute('aria-expanded','false');
-  }
+  if(panelIsOpen()&&!panel.contains(event.target)&&!trigger.contains(event.target))
+   setPanelOpen(false);
  });
  // An open password/account form must survive a late /me response.
  // Invalid/revoked identities still require an immediate forced rerender.
@@ -495,7 +527,7 @@ function updateGuard(){
 }
 root.PandoraAccountUI=Object.freeze({init,token,open,updateGuard,
  hasRecoveryPending:()=>Boolean(pendingRecoveryCode),
- dismiss:()=>{if(panel){panel.hidden=true;trigger?.setAttribute('aria-expanded','false')}},
+ dismiss:()=>setPanelOpen(false),
  username:()=>activeSession()?session.username:null,
  refresh,isLoggedIn:()=>activeSession()});
 })(typeof window==='undefined'?globalThis:window);
