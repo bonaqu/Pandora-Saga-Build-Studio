@@ -26,40 +26,7 @@ test('HP and MP render in the Origin area and refresh when allocation/equipment 
   originVitals:{attrs:{},setAttribute(k,v){this.attrs[k]=v}}
  };
  let estimate={hp:1630,mp:420};
- const render=Function('
- render();
- assert.equal(fake.originHp.textContent,'1630');
- assert.equal(fake.originMp.textContent,'420');
- assert.match(fake.originVitals.attrs['aria-label'],/1630/);
- estimate={hp:1810,mp:490};render();
- assert.equal(fake.originHp.textContent,'1810');
- assert.equal(fake.originMp.textContent,'490');
- estimate=null;render();
- assert.equal(fake.originHp.textContent,'—');
- assert.equal(fake.originMp.textContent,'—');
- assert.match(app,/function setAttributePoints\([\s\S]*?persist\(\);renderOriginVitals\(\)/);
- assert.match(app,/function render\(\)[\s\S]*?renderOriginVitals\(\);renderVitalsEnhancements\(\);renderOriginCopyLabels\(\);updateAdminHint\(\)/);
-});
-
-test('skill tick overlay is passive, not a drag-blocking button',()=>{
- assert.match(hero,/const ticks=make\('div',\{class:'path-integrated-milestones'\}\)/);
- assert.match(hero,/const tick=make\('span',\{class:'path-unlock-notch'/);
- assert.doesNotMatch(hero,/class:'inline-milestone path-milestone-pin'/);
- const current=css.slice(css.lastIndexOf('/* 0.195.0'));
- assert.match(current,/\.path-integrated-track \.path-integrated-milestones\{[\s\S]*?pointer-events:none/);
- assert.match(current,/\.path-integrated-track \.path-unlock-notch\{[\s\S]*?pointer-events:none/);
- assert.match(current,/\.path-integrated-track input\[type=range\]\{[\s\S]*?z-index:12/);
-});
-
-test('both equipment rails share the same sizing at desktop/tablet/mobile breakpoints',()=>{
- const block=css.slice(css.indexOf('Override the older per-slot custom property'));
- assert.ok(block.length>0);
- for(const size of ['clamp(48px,5.5vh,60px)','clamp(42px,5.5vw,52px)','clamp(37px,9vw,44px)']){
-  assert.ok(block.includes(size));
- }
- assert.match(block,/\.left-rail \.equipment-slot,\s*\.workspace \.stage-inner \.right-rail \.equipment-slot/);
-});
-,'previewBaseStats','renderPotionPreview','lang',fn+'\nreturn renderOriginVitals;')(
+ const render=Function('$','previewBaseStats','renderPotionPreview','lang',fn+'\nreturn renderOriginVitals;')(
   name=>fake[name]||null,()=>estimate,()=>{},'ru');
  render();
  assert.equal(fake.originHp.textContent,'1630');
