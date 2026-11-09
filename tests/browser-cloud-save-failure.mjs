@@ -1,19 +1,22 @@
 import assert from 'node:assert/strict';
 
 export async function runCloudSaveFailureSmoke(browser,base){
- const API='https://ps-build-studio-cloud.bonaqu.workers.dev',secret='6'.repeat(64);
+ const API='https://ps-build-studio-cloud.bonaqu.workers.dev',secret='6'.repeat(64),
+  token='t'.repeat(43),username='offline_user';
  const id='c'.repeat(32),entry={id,at:101,name:'Offline Hero',
   data:{race:1,gender:0,job:16,level:45,name:'Offline Hero'}};
  const writes=[];
  const context=await browser.newContext({viewport:{width:1365,height:850}});
- await context.addInitScript(({entry,secret})=>{
+ await context.addInitScript(({entry,secret,token,username})=>{
   if(sessionStorage.getItem('ps-save-failure-seeded'))return;
   sessionStorage.setItem('ps-save-failure-seeded','1');
   localStorage.setItem('ps-build-library-secret.v1',secret);
+  localStorage.setItem('ps-account-session.v1',JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
+  localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
   localStorage.setItem('ps-build-library.v1',JSON.stringify([entry]));
   localStorage.setItem('ps-build-studio.v1',JSON.stringify(entry.data));
   localStorage.setItem('ps-active-build-id.v1',entry.id);
- },{entry,secret});
+ },{entry,secret,token,username});
  await context.route('**/*',route=>{
   const url=route.request().url();
   if(url.startsWith(base+'/'))return route.continue();
@@ -25,7 +28,9 @@ export async function runCloudSaveFailureSmoke(browser,base){
    return route.fulfill({status:204,headers});
   const reply=(status,body)=>route.fulfill({status,headers,
    contentType:'application/json',body:JSON.stringify(body)});
+  if(new URL(url).pathname==='/api/account/me')return reply(200,{account:{username}});
   if(new URL(url).pathname!=='/api/library')return route.abort();
+  assert.equal(route.request().headers().authorization,'Bearer '+token);
   if(route.request().method()==='GET')
    return reply(200,{records:[{id,entry,deleted:false}]});
   writes.push(route.request().postDataJSON());

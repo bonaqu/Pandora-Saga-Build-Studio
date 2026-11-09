@@ -2,6 +2,22 @@
 'use strict';
 // Keep conflicting local and cloud snapshots: a timestamp is not an edit history.
 const ID=/^[a-f0-9]{32}$/;
+// Name and character data are compared structurally; object key order is not an edit.
+const equivalent=(a,b)=>{
+  if(a===b)return true;
+  if(a===null||b===null||typeof a!=='object'||typeof b!=='object')return false;
+  if(Array.isArray(a)!==Array.isArray(b))return false;
+  const aKeys=Object.keys(a),bKeys=Object.keys(b);
+  if(aKeys.length!==bKeys.length)return false;
+  for(const key of aKeys){
+   if(!Object.hasOwn(b,key)||!equivalent(a[key],b[key]))return false;
+  }
+  return true;
+ };
+ const same=(a,b)=>{
+  try{return a.name===b.name&&equivalent(a.data,b.data)}
+  catch{return false}
+ };
 function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lang='ru'}={}){
  if(!Array.isArray(local)||!Array.isArray(remote)||typeof newId!=='function')
   throw Error('Invalid library merge inputs');
@@ -52,21 +68,6 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
  // JSON object key insertion order is not character progress. D1, browser
  // migrations and historical imports may serialize identical snapshots
  // differently. Arrays and actual values must still compare exactly.
- const equivalent=(a,b)=>{
-  if(a===b)return true;
-  if(a===null||b===null||typeof a!=='object'||typeof b!=='object')return false;
-  if(Array.isArray(a)!==Array.isArray(b))return false;
-  const aKeys=Object.keys(a),bKeys=Object.keys(b);
-  if(aKeys.length!==bKeys.length)return false;
-  for(const key of aKeys){
-   if(!Object.hasOwn(b,key)||!equivalent(a[key],b[key]))return false;
-  }
-  return true;
- };
- const same=(a,b)=>{
-  try{return a.name===b.name&&equivalent(a.data,b.data)}
-  catch{return false}
- };
  const recoveredVariants=new Map();
  for(const duplicate of duplicates){
   if(pending.has(duplicate.id)||same(duplicate,originals.get(duplicate.id)))
@@ -141,5 +142,5 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
  if(selected&&!merged.some(x=>x.id===selected))selected=null;
  return {merged,outgoing,activeId:selected,copies,unavailable};
 }
-root.PandoraBuildLibraryMerge=Object.freeze({reconcile});
+root.PandoraBuildLibraryMerge=Object.freeze({reconcile,same});
 })(typeof window==='undefined'?globalThis:window);

@@ -1,19 +1,22 @@
 import assert from 'node:assert/strict';
 export async function runSavedAutosaveSmoke(browser,base){
  const API='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const id='d'.repeat(32),token='e'.repeat(64);
+ const id='d'.repeat(32),guestKey='e'.repeat(64),token='t'.repeat(43),
+  username='autosave_user';
  const data={race:1,gender:0,job:0,level:45,name:'Cloud Hero'};
  const original={id,name:'Cloud Hero',at:100,data};
  const online=new Map([[id,original]]),writes=[];
  const context=await browser.newContext({viewport:{width:1365,height:850}});
- await context.addInitScript(({original,token})=>{
+ await context.addInitScript(({original,guestKey,token,username})=>{
   if(sessionStorage.getItem('ps-autosave-seeded'))return;
   sessionStorage.setItem('ps-autosave-seeded','1');
-  localStorage.setItem('ps-build-library-secret.v1',token);
+  localStorage.setItem('ps-build-library-secret.v1',guestKey);
+  localStorage.setItem('ps-account-session.v1',JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
+  localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
   localStorage.setItem('ps-build-library.v1',JSON.stringify([original]));
   localStorage.setItem('ps-build-studio.v1',JSON.stringify(original.data));
   localStorage.setItem('ps-active-build-id.v1',original.id);
- },{original,token});
+ },{original,guestKey,token,username});
  await context.route('**/*',route=>{
   const url=route.request().url();
   if(url.startsWith(base+'/'))return route.continue();
@@ -24,7 +27,9 @@ export async function runSavedAutosaveSmoke(browser,base){
     'access-control-allow-methods':'GET,POST,OPTIONS'}});
   const respond=(data,status=200)=>route.fulfill({status,contentType:'application/json',
    headers:{'access-control-allow-origin':'*'},body:JSON.stringify(data)});
+  if(new URL(url).pathname==='/api/account/me')return respond({account:{username}});
   if(new URL(url).pathname!=='/api/library')return route.abort();
+  assert.equal(route.request().headers().authorization,'Bearer '+token);
   if(route.request().method()==='GET')
    return respond({records:[...online.values()].map(entry=>({id:entry.id,entry,deleted:false}))});
   const payload=route.request().postDataJSON();

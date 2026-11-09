@@ -63,7 +63,15 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
     (!username||profile.includes(username));
   },{owner:token?'account:'+username:'guest:'+guestToken,
     username:token?username:null},{timeout:30000});
-  await openManager();
+  await page.locator('#startupOverlay').waitFor({state:'hidden',timeout:30000});
+  if(token)await openManager();
+  else{
+   // The previous workbench can be restored already open after sign-out.
+   // Never click the main navigation through its modal overlay.
+   if(!await page.locator('.build-signin-gate').isVisible())
+    await page.locator('#nav [data-tab="builds"]').click();
+   await page.locator('.build-signin-gate').waitFor({state:'visible'});
+  }
  }
  async function named(){
   // The Build Manager is already open; its modal captures clicks outside itself.
@@ -71,7 +79,15 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
  }
  try{
   await page.goto(base+'/',{waitUntil:'domcontentloaded'});
-  await page.evaluate(token=>localStorage.setItem('ps-build-library-secret.v1',token),guestToken);
+  await page.evaluate(token=>{
+   localStorage.setItem('ps-build-library-secret.v1',token);
+   // Seed the previous record under the SAME guest owner before reload.
+   // A different marker would correctly treat that primary key as another user's.
+   localStorage.setItem('ps-build-owner-scope.v1','guest:'+token);
+   localStorage.setItem('ps-build-library.v1',JSON.stringify([{
+    id:'c'.repeat(32),name:'Guest only',at:99,data:{race:1,job:16,level:45}
+   }]));
+  },guestToken);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.waitForFunction(expected=>
    document.querySelector('#raceGrid')?.children.length>0&&
@@ -79,8 +95,10 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
    /\d+ навыков · \d+ предметов · \d+ душ/.test(
     document.querySelector('#catalogStatus')?.textContent||''),
    guestToken,{timeout:30000});
-  await saveNamed('Guest only');
-  assert.ok((await named()).includes('Guest only'));
+  await page.locator('#nav [data-tab="builds"]').click();
+  await page.locator('.build-signin-gate').waitFor({state:'visible'});
+  assert.deepEqual(await named(),[],'Guests cannot open even their old local builds');
+  assert.equal(await page.locator('.build-name-input').count(),0);
   await setAccount(alice,'alice_01');
   assert.deepEqual(await named(),[],'Alice cannot see guest saves');
   assert.equal(await page.locator('#levelOut').textContent(),'1');
@@ -91,7 +109,11 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   await setAccount(alice,'alice_01');
   assert.deepEqual(await named(),['Alice only']);
   await setAccount(null,null);
-  assert.deepEqual(await named(),['Guest only']);
+  assert.deepEqual(await named(),[],'Signing out returns to the account-entry gate');
+  const guestBackup=await page.evaluate(key=>
+   localStorage.getItem('ps-build-scope-cache.v1:guest:'+key),guestToken);
+  assert.ok(guestBackup,'Original guest saves must remain available for explicit import');
+  assert.deepEqual(JSON.parse(JSON.parse(guestBackup)[0]).map(row=>row.name),['Guest only']);
   assert.ok(writes.some(x=>x.bearer===alice&&x.body?.entry?.name==='Alice only'));
   assert.ok(writes.some(x=>x.bearer===bob&&x.body?.entry?.name==='Bob only'));
   assert.ok(!writes.some(x=>x.bearer===bob&&x.body?.entry?.name!=='Bob only'),
@@ -99,6 +121,6 @@ export async function runAccountLibraryIsolationSmoke(browser,base){
   assert.ok(!writes.some(x=>x.bearer===alice&&x.body?.entry?.name==='Guest only'),
    'Existing-account login must never upload guest saves');
   assert.deepEqual(exceptions,[]);
-  console.log('Chromium account switching passed: isolated guest, Alice and Bob saved builds; no cross-owner D1 PUT');
+  console.log('Chromium account switching passed: guests gated, Alice/Bob isolated, old guest backup preserved');
  }finally{await context.close()}
 }

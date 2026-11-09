@@ -19,6 +19,7 @@ test('failed browser-storage reconciliation never overwrites the working local l
   PandoraBuildLibraryMerge:{reconcile(){
    return {merged:[remote],outgoing:[remote],activeId:null,copies:1,unavailable:0};
   }}};
+ scope.PandoraAccountUI={isLoggedIn:()=>true};
  const app=Function('window','localStorage','libraryScopeId','queuedDeletes',
   'cloudLibraryRequest','reportCloudStatus','showStudioToast','putCloudBuild',
   'newId','console','renderDetails','selectActiveBuild',

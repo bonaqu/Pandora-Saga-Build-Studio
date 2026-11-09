@@ -3,11 +3,12 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import worker from '../worker/index.js';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const OWNER='a'.repeat(64),OTHER='b'.repeat(64),ORIGIN='https://bonaqu.github.io';
+const OWNER='a'.repeat(43),OTHER='b'.repeat(43),GUEST='f'.repeat(64),ORIGIN='https://bonaqu.github.io';
 function db(){
  const builds=new Map(),links=new Map(),sources=new Map();
  const tables=new Set(['private_builds','shared_builds','shared_build_limits','shared_build_sources']);
  return {peekLink:id=>links.get(id),replaceLink:(id,payload)=>links.set(id,payload),prepare(sql){
+  if(sql.startsWith('SELECT a.id,a.username,a.owner_hash FROM user_accounts'))return {bind(tokenHash){return {first:async()=>({owner_hash:tokenHash})}}};
   if(sql.includes('FROM sqlite_master'))return {all:async()=>({results:[...tables].map(name=>({name}))})};
   return {bind(...v){
    const one=async()=>{
@@ -76,25 +77,25 @@ test('two links become globally unavailable when the original is deleted, foreig
  assert.equal((await call(DB,'/api/library','POST',
   {action:'put',entry:{id,name:'Build updated',at:124,data:changed}},OWNER)).status,200);
  const second=await call(DB,'/api/shared','POST',payload,OWNER);
- assert.equal((await call(DB,'/api/shared/'+first.data.id)).data.share.data.level,55);
- assert.equal((await call(DB,'/api/shared/'+second.data.id)).data.share.data.level,54);
+ assert.equal((await call(DB,'/api/shared/'+first.data.id,'GET',null,OWNER)).data.share.data.level,55);
+ assert.equal((await call(DB,'/api/shared/'+second.data.id,'GET',null,OWNER)).data.share.data.level,54);
  // A malicious caller cannot replace an owned snapshot with arbitrary client data.
  const forged=await call(DB,'/api/shared','POST',{...payload,data:{race:0,job:0,level:1}},OWNER);
  assert.equal(forged.status,200);
  assert.equal(forged.data.id,second.data.id);
- assert.equal((await call(DB,'/api/shared/'+forged.data.id)).data.share.data.level,54);
+ assert.equal((await call(DB,'/api/shared/'+forged.data.id,'GET',null,OWNER)).data.share.data.level,54);
  assert.equal(first.status,201);assert.equal(second.status,201);
  assert.notEqual(first.data.id,second.data.id);
  const other=await call(DB,'/api/shared','POST',{...payload,buildId:otherId},OTHER);
  assert.equal(other.status,201);
- for(const share of [first,second])assert.equal((await call(DB,'/api/shared/'+share.data.id)).status,200);
+ for(const share of [first,second])assert.equal((await call(DB,'/api/shared/'+share.data.id,'GET',null,OWNER)).status,200);
  assert.equal((await call(DB,'/api/library','POST',{action:'delete',id},OWNER)).status,200);
  for(const share of [first,second]){
   assert.equal(DB.peekLink(share.data.id),'{}','Delete must scrub snapshot content');
-  const response=await call(DB,'/api/shared/'+share.data.id);
+  const response=await call(DB,'/api/shared/'+share.data.id,'GET',null,OWNER);
   assert.equal(response.status,410);assert.equal(response.data.reason,'deleted');
  }
- assert.equal((await call(DB,'/api/shared/'+other.data.id)).status,200);
+ assert.equal((await call(DB,'/api/shared/'+other.data.id,'GET',null,OTHER)).status,200);
  const stale=await call(DB,'/api/library','POST',{action:'put',entry:{id,name:'Stale',at:125,data:character}},OWNER);
  assert.equal(stale.status,409);
  assert.equal((await call(DB,'/api/shared','POST',payload,OWNER)).status,409);
@@ -106,8 +107,12 @@ test('share creation checks owner and rejects anonymous, invented and library sn
  assert.equal((await call(DB,'/api/library','POST',{action:'put',entry:{id,name:'Test',at:1,data:character}},OWNER)).status,200);
  assert.equal((await call(DB,'/api/shared','POST',payload,OTHER)).status,409);
  assert.equal((await call(DB,'/api/shared','POST',payload)).status,401);
+ assert.equal((await call(DB,'/api/shared','POST',payload,GUEST)).status,401,
+  'Legacy guest secret cannot create a new public link');
+ assert.equal((await call(DB,'/api/shared/aaaaaaaaaaa')).status,401,
+  'Reading a shared build is account-only');
  assert.equal((await call(DB,'/api/shared','POST',{...payload,type:'library'},OWNER)).status,400);
- assert.equal((await call(DB,'/api/shared/aaaaaaaaaaa')).status,404);
+ assert.equal((await call(DB,'/api/shared/aaaaaaaaaaa','GET',null,OWNER)).status,404);
 });
 test('revocation toast and link creation remain inline; server has no destructive share migration',()=>{
  const app=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css'),sql=read('worker/migrations/0003_shares.sql');
@@ -139,12 +144,12 @@ test('invalid public share payload is isolated without deleting any other valid 
  for(const broken of ['{not-json',JSON.stringify({schema:9,type:'build',data:character}),
   JSON.stringify({schema:1,type:'build',data:{race:3,job:0,level:56}})]){
   DB.replaceLink(first.data.id,broken);
-  const response=await call(DB,'/api/shared/'+first.data.id);
+  const response=await call(DB,'/api/shared/'+first.data.id,'GET',null,OWNER);
   assert.equal(response.status,410);
   assert.equal(response.data.reason,'invalid');
   assert.equal(JSON.stringify(response.data).includes(broken),false);
   assert.equal(DB.peekLink(first.data.id),broken,'No implicit D1 repair');
-  const healthy=await call(DB,'/api/shared/'+second.data.id);
+  const healthy=await call(DB,'/api/shared/'+second.data.id,'GET',null,OWNER);
   assert.equal(healthy.status,200,'Unrelated share stays valid');
   assert.deepEqual(healthy.data.share.data,character);
  }

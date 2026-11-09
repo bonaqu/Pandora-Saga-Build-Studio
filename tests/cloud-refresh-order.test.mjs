@@ -17,7 +17,7 @@ function scenario(){
   'const queuedDeletes=()=>[];'+
   'const cloudLibraryRequest=()=>request();'+
   'const acknowledgeDelete=()=>{};'+
-  'const window={PandoraBuildLibraryMerge:{reconcile:({remote})=>({merged:remote.map(x=>x.entry),activeId:null,outgoing:[],copies:0,unavailable:0})}};'+
+  'const window={PandoraAccountUI:{isLoggedIn:()=>true},PandoraBuildLibraryMerge:{reconcile:({remote})=>({merged:remote.map(x=>x.entry),activeId:null,outgoing:[],copies:0,unavailable:0})}};'+
   'const persistBuilds=()=>{persisted.push(builds.map(b=>b.name));return true};'+
   'const reportCloudStatus=s=>status.push(s);'+
   'const putCloudBuild=async()=>true,showStudioToast=()=>{},renderDetails=()=>{};'+

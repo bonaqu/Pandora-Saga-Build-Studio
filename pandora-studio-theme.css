@@ -2181,3 +2181,25 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  text-underline-offset:3px;font-weight:700;cursor:pointer}
 .build-account-reminder-links a:hover{color:#ffe5ad}
 .build-account-reminder-links a:focus-visible{outline:2px solid #ffdf98;outline-offset:3px}
+
+/* One compact account gate for saved builds and incoming shared links. */
+.build-signin-gate{display:grid;grid-template-columns:auto minmax(0,1fr);
+ align-items:start;gap:10px 13px;max-width:560px;margin:8px auto;
+ padding:18px;border:1px solid #8c6d44;border-radius:9px;
+ background:linear-gradient(140deg,#2c2118,#19130f);
+ color:#ebd7bc;font:13px/1.55 Manrope,Arial,sans-serif}
+.build-signin-emblem{display:grid;place-items:center;width:36px;height:36px;
+ border:1px solid #8b6e45;border-radius:50%;color:#f3ce8a;
+ background:#382919;font-size:21px}
+.build-signin-copy{min-width:0}
+.build-signin-copy h3{margin:0 0 5px;color:#ffe3b1;
+ font:750 17px/1.35 Manrope,Arial,sans-serif}
+.build-signin-copy p{margin:0;color:#dec8a8}
+.build-signin-actions{display:flex;grid-column:2;gap:8px;flex-wrap:wrap}
+.build-signin-actions .button-action{min-height:40px;margin:0;
+ padding:9px 16px;flex:0 1 auto}
+.build-signin-actions .button-action:focus-visible{outline:2px solid #f7d298;outline-offset:2px}
+@media(max-width:480px){.build-signin-gate{grid-template-columns:1fr;padding:16px;
+ gap:8px}.build-signin-emblem{width:32px;height:32px}
+ .build-signin-actions{grid-column:1}
+ .build-signin-actions .button-action{flex:1 1 125px;justify-content:center}}

@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {runIndependentSmokes} from './browser-runner.mjs';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
+import {runBuildAuthGateSmoke} from './browser-build-auth-gate.mjs';
+import {runLegacyImportSmoke} from './browser-legacy-import.mjs';
 import {runLayoutAudit} from './browser-layout.mjs';
 import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
 import {runCloudSaveFailureSmoke} from './browser-cloud-save-failure.mjs';
@@ -302,24 +304,24 @@ async function main(){
   null,{timeout:30000});
  assert.equal(await page.locator('#level').inputValue(),'55');
 
- // Creating a new build must ask about the unsaved level-55 character.
+ // Guest can plan and recover the local draft, but saving into My Builds
+ // requires an account. Clicking the quick save shortcut cannot change the hero.
  await page.locator('#newBuildQuick').click();
- await page.locator('.new-build-choice').waitFor({state:'visible'});
- const draftName=page.locator('.new-build-choice input');
- await draftName.fill('Черновик после синхронизации');
- // A background catalog/library refresh rerenders the panel. The confirmation
- // and its typed name must survive rather than silently disappearing.
- await page.evaluate(()=>{
-  document.querySelector('#locale [data-locale="en"]').click();
- });
- await page.locator('.new-build-choice').waitFor({state:'visible'});
- assert.equal(await page.locator('.new-build-choice input').inputValue(),
-  'Черновик после синхронизации');
- await page.getByRole('button',{name:/^(Создать без сохранения|Create without saving)$/}).click();
- assert.equal(await page.locator('#levelOut').textContent(),'1');
- assert.equal(await page.locator('#level').inputValue(),'1');
- assert.match(await page.locator('#raceGrid .race-slide-select').innerText(),/Choose this race|Выбрать эту расу/);
- assert.match(await page.locator('#activeJob').innerText(),/Choose a class|Выберите профессию/);
+ const signInGate=page.locator('.build-signin-gate');
+ await signInGate.waitFor({state:'visible',timeout:15000});
+ assert.equal(await page.locator('.build-name-input').count(),0,
+  'Guest must not see a saved-build creation form');
+ assert.match(await signInGate.innerText(),/Мои билды — в аккаунте/);
+ await page.locator('#dockClose').click();
+ assert.equal(await page.locator('#levelOut').textContent(),'55',
+  'Opening the sign-in gate must not discard the local character draft');
+ await page.locator('#locale [data-locale="en"]').click();
+ await page.waitForFunction(()=>document.documentElement.lang==='en',null,{timeout:20000});
+ await page.locator('#nav [data-tab="builds"]').click();
+ assert.match(await page.locator('.build-signin-gate').innerText(),
+  /Your builds belong to your account/);
+ await page.locator('#dockClose').click();
+ assert.equal(await page.locator('#level').inputValue(),'55');
  assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
  console.log('Chromium desktop smoke passed: hero book, keyboard, level 1–55 and unsaved build');
  await context.close();
@@ -350,6 +352,8 @@ async function main(){
  // Execute at most three at once: this reduces wall time without risking
  // cross-test localStorage/account contamination or high 4K screenshot memory.
  const scenarios=[
+  ['build-account-gate',runBuildAuthGateSmoke],
+  ['legacy-build-import',runLegacyImportSmoke],
   ['share-link',runShareLinkSmoke],
   ['cloud-conflict',runCloudConflictSmoke],
   ['cloud-save-failure',runCloudSaveFailureSmoke],
@@ -389,7 +393,7 @@ async function main(){
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
- const quickCases=new Set(['share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
+ const quickCases=new Set(['build-account-gate','share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;

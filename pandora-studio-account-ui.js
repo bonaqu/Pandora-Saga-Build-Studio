@@ -175,6 +175,7 @@ function render(){
    }));
    card.append(button('Я сохранил код',()=>{
     pendingRecoveryCode=null;card.remove();info('Резервный код скрыт.');
+    options?.onRecoveryAcknowledged?.();
    }));
    panel.append(card);
   }
@@ -493,6 +494,8 @@ function updateGuard(){
  return null;
 }
 root.PandoraAccountUI=Object.freeze({init,token,open,updateGuard,
+ hasRecoveryPending:()=>Boolean(pendingRecoveryCode),
+ dismiss:()=>{if(panel){panel.hidden=true;trigger?.setAttribute('aria-expanded','false')}},
  username:()=>activeSession()?session.username:null,
  refresh,isLoggedIn:()=>activeSession()});
 })(typeof window==='undefined'?globalThis:window);

@@ -16,11 +16,15 @@ test('new heroes are level 1 and sharing is exclusively per saved build',()=>{
 test('private library refuses access without migration and bearer key',async()=>{
  const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev/api/library';
  const origin='https://bonaqu.github.io';
- const mock={prepare:()=>({all:async()=>({results:[]})})};
- const request=new Request(endpoint,{headers:{Origin:origin}});
- assert.equal((await worker.fetch(request,{DB:mock})).status,503);
- const other={prepare:()=>({all:async()=>({results:[{name:'private_builds'}]})})};
- assert.equal((await worker.fetch(request,{DB:other})).status,401);
+ const mock={prepare:sql=>sql.startsWith('SELECT a.id,a.username,a.owner_hash')?
+  {bind:()=>({first:async()=>({owner_hash:'account-test'})})}:
+  {all:async()=>({results:[]})}};
+ const anonymous=new Request(endpoint,{headers:{Origin:origin}});
+ assert.equal((await worker.fetch(anonymous,{DB:mock})).status,401);
+ const authenticated=new Request(endpoint,{headers:{Origin:origin,
+  Authorization:'Bearer '+'t'.repeat(43)}});
+ assert.equal((await worker.fetch(authenticated,{DB:mock})).status,503,
+  'An authenticated library still requires the D1 schema');
  assert.match(read('worker/migrations/0004_private_builds.sql'),/CREATE TABLE IF NOT EXISTS private_builds/);
  assert.match(read('worker/index.js'),/CREATE TABLE IF NOT EXISTS shared_builds/);
  assert.match(read('worker/index.js'),/CREATE TABLE IF NOT EXISTS private_builds/);
@@ -28,22 +32,23 @@ test('private library refuses access without migration and bearer key',async()=>
  assert.match(read('index.html'),/id="newBuildQuick"/);
 });
 
-test('saved cloud data retries after network recovery with an explicit key warning',()=>{
+test('only signed-in cloud libraries retry after network recovery',()=>{
  const app=read('pandora-studio-app.js');
  assert.match(app,/window\.addEventListener\('online',resumeCloudLibrary\)/);
  assert.match(app,/document\.addEventListener\('visibilitychange'/);
- assert.match(app,/const signedIn=window\.PandoraAccountUI\?\.isLoggedIn\(\)===true/);
- assert.match(app,/if\(!signedIn&&!builds\.length&&!queuedDeletes\(\)\.length\)return/);
+ assert.match(app,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)return/);
  assert.match(app,/lastCloudReconnect<20000/);
- assert.match(app,/Сохраните личный код библиотеки до очистки данных браузера/);
- assert.match(app,/Перенести или восстановить облачные билды/);
+ assert.match(app,/function buildLegacyImport\(\)/);
+ assert.match(app,/Перенести старые билды/);
 });
 
-test('account bearer joins private library and sharing without removing legacy secret-key access',()=>{
+test('account bearer joins private library and sharing without guest-key fallback',()=>{
  const app=read('pandora-studio-app.js'),worker=read('worker/index.js'),html=read('index.html');
- assert.match(app,/window\.PandoraAccountUI\?\.token\(\)\|\|tabGuestSecret/);
+ assert.match(app,/window\.PandoraAccountUI\.token\(\)/);
  assert.match(app,/window\.PandoraAccountUI\.init\(/);
  assert.match(worker,/accountPrincipal\(request,env\)/);
+ assert.match(app,/const bearer=credential/);
+ assert.doesNotMatch(app,/bearer=credential\|\|tabGuestSecret/);
  assert.match(worker,/path\.startsWith\('\/api\/account\/'\)/);
  assert.match(html,/id="profileTrigger"/);
  assert.match(html,/id="accountPanel"/);

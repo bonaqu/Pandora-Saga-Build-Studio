@@ -31,5 +31,7 @@ jobs:
         run: node scripts/wait-live-release.mjs
       - name: Check Pages version, Worker health, D1 catalog and CORS (read-only)
         run: npm run connection:check:full
+      - name: Verify guest denial and account-only Worker capabilities (read-only)
+        run: node scripts/check-build-account-only-live.mjs
       - name: Compare 16 published gameplay datasets against the same D1 snapshot (read-only)
         run: npm run catalog:parity:live

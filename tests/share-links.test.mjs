@@ -28,8 +28,8 @@ test('sharing never replaces an existing build without explicit choice',()=>{
  assert.equal((src.match(/window\.addEventListener\('hashchange'/g)||[]).length,1,
   'shared-build and wiki navigation must share one hashchange listener');
  assert.match(src,/const currentRequest=\+\+sharedHashRequestId/);
- assert.match(src,/currentRequest===sharedHashRequestId&&location\.hash/);
- assert.match(src,/currentRequest!==sharedHashRequestId\|\|location\.hash/);
+ assert.match(src,/currentRequest===sharedHashRequestId&&\s*window\.PandoraAccountUI\?\.token\(\)===sessionToken&&location\.hash/);
+ assert.match(src,/currentRequest!==sharedHashRequestId\|\|\s*window\.PandoraAccountUI\?\.token\(\)!==sessionToken\|\|\s*location\.hash/);
 });
 test('share links display alongside saved builds with an inline copy fallback',()=>{
  const src=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');

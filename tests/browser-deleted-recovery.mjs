@@ -2,19 +2,22 @@ import assert from 'node:assert/strict';
 
 export async function runDeletedBuildRecoverySmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const removedId='d'.repeat(32),secret='7'.repeat(64);
+ const removedId='d'.repeat(32),secret='7'.repeat(64),
+  token='t'.repeat(43),username='recovery_user';
  const local={id:removedId,name:'Lost offline hero',at:120,
   data:{race:1,job:16,gender:0,level:55}};
  const cloud=new Map(),writes=[];
  const ctx=await browser.newContext({viewport:{width:1365,height:850}});
- await ctx.addInitScript(({secret,local})=>{
+ await ctx.addInitScript(({secret,local,token,username})=>{
   if(sessionStorage.getItem('ps-tombstone-test-seeded'))return;
   sessionStorage.setItem('ps-tombstone-test-seeded','1');
   localStorage.setItem('ps-build-library-secret.v1',secret);
+  localStorage.setItem('ps-account-session.v1',JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
+  localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
   localStorage.setItem('ps-build-library.v1',JSON.stringify([local]));
   localStorage.setItem('ps-build-studio.v1',JSON.stringify(local.data));
   localStorage.setItem('ps-active-build-id.v1',local.id);
- },{secret,local});
+ },{secret,local,token,username});
  await ctx.route('**/*',async route=>{
   const url=route.request().url();
   if(url.startsWith(base+'/'))return route.continue();
@@ -26,7 +29,9 @@ export async function runDeletedBuildRecoverySmoke(browser,base){
   const send=(body,status=200)=>route.fulfill({status,headers,
    contentType:'application/json',body:JSON.stringify(body)});
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
+  if(path==='/api/account/me')return send({account:{username}});
   if(path==='/api/library'){
+   assert.equal(route.request().headers().authorization,'Bearer '+token);
    if(method==='GET')return send({records:[
     {id:removedId,deleted:true,entry:null},
     ...[...cloud.values()].map(entry=>({id:entry.id,entry,deleted:false}))

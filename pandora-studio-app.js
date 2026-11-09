@@ -261,22 +261,21 @@ function activateLibraryScope({carry=false,carryFrom=null,initial=false}={}){
 window.PandoraBuildScope.migrateLegacyGuest(localStorage,tabGuestSecret);
 // Claim existing pre-upgrade local records for their former owner without losing them.
 activateLibraryScope({initial:true});
-async function cloudLibraryRequest(payload,secret=null){
- let bearer=secret;
- if(!bearer){
-  // token() may expire the session and synchronously invoke onLogout().
-  // Never redirect an account's cloud request to its unrelated guest key.
-  const expectedOwner=tabOwnerScope;
-  const credential=window.PandoraAccountUI?.token()||null;
-  if(!expectedOwner||tabOwnerScope!==expectedOwner||
-   libraryScopeId()!==expectedOwner||
-   expectedOwner.startsWith('account:')&&!credential){
-   const error=new Error('Владелец библиотеки изменился: облачный запрос не отправлен');
-   error.reason='owner_changed';
-   throw error;
-  }
-  bearer=credential||tabGuestSecret;
+async function cloudLibraryRequest(payload){
+ if(!window.PandoraAccountUI?.isLoggedIn()){
+  const error=new Error('Войдите в аккаунт, чтобы работать с билдами');
+  error.reason='sign_in_required';throw error;
  }
+ // A switching owner or revoked session must never redirect a request into
+ // another account or to an obsolete guest-key library.
+ const expectedOwner=tabOwnerScope;
+ const credential=window.PandoraAccountUI?.token()||null;
+ if(!expectedOwner||!expectedOwner.startsWith('account:')||
+  tabOwnerScope!==expectedOwner||libraryScopeId()!==expectedOwner||!credential){
+  const error=new Error('Владелец библиотеки изменился: облачный запрос не отправлен');
+  error.reason='owner_changed';throw error;
+ }
+ const bearer=credential;
  // An unreachable Worker must not leave "Checking cloud" spinning forever.
  const signal=typeof AbortSignal!=='undefined'&&
   typeof AbortSignal.timeout==='function'?AbortSignal.timeout(payload?25000:20000):null;
@@ -304,6 +303,7 @@ function reportCloudStatus(message){
  if(node)node.textContent=cloudStatusText(message);
 }
 async function putCloudBuild(entry){
+ if(!window.PandoraAccountUI?.isLoggedIn())return false;
  // This guard also protects accidental call sites added in future changes.
  if(entry?.localOnly===true)return false;
  const owner=libraryScopeId(),generation=libraryChangeId;
@@ -328,6 +328,7 @@ async function putCloudBuild(entry){
  }
 }
 async function deleteCloudBuild(id){
+ if(!window.PandoraAccountUI?.isLoggedIn())return false;
  const owner=libraryScopeId();
  let queued=false;
  try{queueDelete(id);queued=true}
@@ -355,6 +356,7 @@ async function deleteCloudBuild(id){
  }
 }
 async function loadCloudBuilds(){
+ if(!window.PandoraAccountUI?.isLoggedIn())return;
  const generation=libraryChangeId,requestId=++cloudLoadRequestId;
  const latest=()=>requestId===cloudLoadRequestId;
  let pendingDeleteFailures=0;
@@ -5926,6 +5928,7 @@ function switchActiveDraft(snapshot,id){
  return true;
 }
 function openSavedBuild(b){
+ if(!requireBuildAccount())return false;
  // Resolve the latest snapshot, but never change the active character until
  // that saved record has been cloned and structurally prepared successfully.
  if(!b||typeof b!=='object')return false;
@@ -5962,103 +5965,209 @@ function newBlankBuild(){
 let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
 // The browser secret is effectively a password for this account-free D1 library.
 // Reveal or switch it only after a deliberate user interaction.
-async function connectCloudLibrary(secret,feedback){
- const tr=(ru,en)=>lang==='en'?en:ru;
- const trimmed=String(secret||'').trim().toLowerCase();
- if(window.PandoraAccountUI?.isLoggedIn()){
-  feedback.textContent=tr('Выйдите из аккаунта, чтобы переключить библиотеку по старому коду.','Sign out of your account to connect a library using a legacy code.');
-  return false;
- }
- if(!/^[a-f0-9]{64}$/.test(trimmed)){
-  feedback.textContent=tr('Код должен содержать 64 символа. Скопируйте его с другого устройства.','The transfer code must contain 64 characters. Copy it from your other device.');
-  return false;
- }
- if(queuedDeletes().length){
-  feedback.textContent=tr('Сначала синхронизируйте удаления с прежней библиотекой, чтобы старые ссылки перестали работать.','Sync pending deletions in your previous library first so removed build links stop working.');
-  return false;
- }
- const previousOwner=libraryScopeId();
- try{
-  const response=await cloudLibraryRequest(null,trimmed);
-  if(libraryScopeId()!==previousOwner||window.PandoraAccountUI?.isLoggedIn()){
-   feedback.textContent=tr('Контекст библиотеки изменился. Проверьте текущий профиль.','The active library changed. Check your current profile.');
-   return false;
-  }
-  if(!Array.isArray(response.records))throw Error(tr('Не удалось прочитать библиотеку','Could not read the library'));
-  if(!response.records.some(record=>!record.deleted&&record.entry)){
-   feedback.textContent=tr('По этому коду сохранённые билды не найдены. Проверьте, что код скопирован полностью.','No saved builds were found for this code. Check that you copied the entire code.');
-   return false;
-  }
-  if(trimmed===tabGuestSecret){
-   feedback.textContent=tr('Эта библиотека уже подключена.','This library is already connected.');
-   return true;
-  }
-  const previousGuest=tabGuestSecret;
-  tabGuestSecret=trimmed;
-  try{
-   activateLibraryScope({carry:true,
-    carryFrom:window.PandoraBuildScope.owner(null,previousGuest)});
-   // Persist the new secret LAST. A failed owner switch must not make next
-   // reload silently select a different library and strand the old one.
-   localStorage.setItem(CLOUD_TOKEN_KEY,trimmed);
-  }catch(error){
-   tabGuestSecret=previousGuest;
-   // The previous durable secret remains untouched. Restore the old visible
-   // scope too; if browser storage stays broken, a reload still finds the
-   // original key rather than the uncommitted transfer key.
-   try{activateLibraryScope()}
-   catch(rollbackError){console.warn('Previous library recovery failed',rollbackError)}
-   throw error;
-  }
-  selectActiveBuild(null);libraryChangeId++;
-  feedback.textContent=tr('Подключено. Объединяем сохранения…','Connected. Merging saved builds…');
-  void loadCloudBuilds();
-  return true;
- }catch(error){
-  feedback.textContent=tr('Не удалось подключить библиотеку: ','Could not connect the library: ')+error.message;
-  return false;
- }
-}
-function buildLibraryTransfer(){
+// Legacy guest keys are recovery credentials, not normal library sessions.
+// A signed-in player can explicitly preview and copy those older saves.
+function buildLegacyImport(){
  const tr=(ru,en)=>lang==='en'?en:ru;
  const panel=h('details',{class:'build-transfer'});
  const content=h('div',{class:'build-transfer-content'});
- const field=h('input',{type:'text',readOnly:true,value:'',class:'build-transfer-key',
-  'aria-label':tr('Личный код библиотеки','Personal library code'),
-  placeholder:tr('Код скрыт','Code hidden')});
- let codeVisible=false;
- const copy=h('button',{type:'button',class:'button-action',text:tr('Показать мой код','Reveal my code'),onclick:async()=>{
-  if(!codeVisible){
-   field.value=tabGuestSecret;
-   codeVisible=true;field.focus();field.select();
-   copy.textContent=tr('Скопировать мой код','Copy my code');
+ const input=h('input',{type:'password',class:'build-transfer-key',maxLength:'64',
+  autocomplete:'off',placeholder:tr('Код старой библиотеки','Previous library code'),
+  'aria-label':tr('Код старой библиотеки','Previous library code')});
+ const status=h('p',{class:'build-transfer-feedback',role:'status','aria-live':'polite'});
+ const actions=h('div',{class:'build-transfer-row'});
+ let candidates=[],selectedToken=null,selectedOwner=null;
+ const apply=h('button',{type:'button',class:'button-action primary',
+  text:tr('Добавить билды в мой аккаунт','Add builds to my account'),
+  hidden:true,onclick:async()=>{
+   if(!window.PandoraAccountUI?.isLoggedIn()||
+    window.PandoraAccountUI.token()!==selectedToken||
+    libraryScopeId()!==selectedOwner)return;
+   apply.disabled=true;
+   const previous=builds.slice(),created=[];
+   const known=new Set(builds.map(b=>b.id));
+   const existing=[...builds];
+   for(const source of candidates){
+    if(existing.some(row=>window.PandoraBuildLibraryMerge.same(row,source)))continue;
+    if(existing.length>=200)break;
+    let id=newId();
+    while(known.has(id))id=newId();
+    known.add(id);
+    const imported={id,name:String(source.name).slice(0,70),
+     data:structuredClone(source.data),at:Date.now()+created.length};
+    created.push(imported);existing.push(imported);
+   }
+   if(!created.length){
+    status.textContent=tr('Подходящие билды уже есть в аккаунте.',
+     'Those builds are already in your account.');
+    apply.hidden=true;apply.disabled=false;return;
+   }
+   builds=[...created,...builds];
+   if(!persistBuilds()){
+    builds=previous;apply.disabled=false;
+    status.textContent=tr('Не удалось сохранить в браузере. Освободи место и повтори.',
+     'Browser storage is full. Free up space and retry.');
+    return;
+   }
+   libraryChangeId++;
+   reportCloudStatus(tr('Переносим сохранения в аккаунт…','Importing builds into account…'));
+   let saved=0;
+   for(const row of created){
+    if(!window.PandoraAccountUI?.isLoggedIn()||
+     window.PandoraAccountUI.token()!==selectedToken||
+     libraryScopeId()!==selectedOwner)break;
+    if(await putCloudBuild(row))saved++;
+   }
+   reportCloudStatus(saved===created.length?
+    tr('Добавлено в аккаунт: ','Added to your account: ')+saved:
+    tr('Добавлено локально: ','Saved in browser: ')+created.length+
+    tr(' · в облаке подтверждено: ',' · confirmed in cloud: ')+saved+
+    tr('. Остальное повторно проверится при синхронизации.',
+       '. Remaining builds will retry syncing.'));
+   apply.hidden=true;apply.disabled=false;
+   if(activeTab==='builds')refreshBuildsAfterCloudLoad();
+  }});
+ const check=async key=>{
+  const code=String(key||'').trim().toLowerCase();
+  candidates=[];apply.hidden=true;
+  if(!/^[a-f0-9]{64}$/.test(code)){
+   status.textContent=tr('Код содержит 64 символа. Проверь, что он скопирован полностью.',
+    'The previous library code has 64 characters. Check the full code.');
    return;
   }
-  try{await navigator.clipboard.writeText(field.value);copy.textContent=tr('✓ Код скопирован','✓ Code copied')}
-  catch{field.focus();field.select();copy.textContent=tr('Скопируйте выделенный код','Copy the selected code')}
- }});
- const input=h('input',{type:'password',class:'build-transfer-key',maxLength:'64',
-  autocomplete:'off',placeholder:tr('Вставить код с другого устройства','Paste code from another device'),
-  'aria-label':tr('Подключить библиотеку по коду','Connect library by code')});
- const feedback=h('p',{class:'build-transfer-feedback',role:'status'});
- const join=h('button',{type:'button',class:'button-action primary',
-  text:tr('Подключить и объединить','Connect and merge'),onclick:async()=>{
-   join.disabled=true;
-   try{await connectCloudLibrary(input.value,feedback)}
-   finally{join.disabled=false}
-  }});
- content.append(h('p',{class:'library-key-warning',
-  text:tr('Сохраните личный код библиотеки до очистки данных браузера: без него восстановить ваши облачные билды не получится. Никому не передавайте этот код.',
-   'Save your personal library code before clearing browser data: without it, your cloud builds cannot be recovered. Never share this code.')}),
-  h('div',{class:'build-transfer-row'},[field,copy]),
-  h('p',{text:tr('На другом устройстве вставьте ранее сохранённый код. Билды загрузятся из облака.',
-   'On your other device, paste the code you saved earlier. Your builds will load from the cloud.')}),
-  h('div',{class:'build-transfer-row'},[input,join]),feedback);
- panel.append(h('summary',{text:tr('Перенести или восстановить облачные билды',
-  'Transfer or recover cloud builds')}),content);
+  if(!window.PandoraAccountUI?.isLoggedIn())return;
+  const token=window.PandoraAccountUI.token(),owner=libraryScopeId();
+  selectedToken=token;selectedOwner=owner;
+  verify.disabled=true;fromBrowser.disabled=true;
+  status.textContent=tr('Ищем старые сохранения…','Checking previous saves…');
+  try{
+   const remote=await apiRequest('/api/library/legacy-preview',
+    {legacyKey:code},token);
+   if(token!==window.PandoraAccountUI?.token()||owner!==libraryScopeId())return;
+   const remoteRows=Array.isArray(remote.records)?remote.records
+    .filter(row=>!row.deleted&&row.entry).map(row=>row.entry):[];
+   let localRows=[];
+   try{
+    const guestScope=window.PandoraBuildScope.owner(null,code);
+    localRows=safeStoredBuildRows(JSON.parse(
+     window.PandoraBuildScope.getOwned(localStorage,guestScope,'ps-build-library.v1')));
+   }catch{}
+   const all=[...remoteRows,...localRows];
+   for(const row of all){
+    if(!row||typeof row.name!=='string'||typeof row.data!=='object')continue;
+    try{sanitizeSharedState(row.data)}catch{continue}
+    if(candidates.some(x=>window.PandoraBuildLibraryMerge.same(x,row))||
+     builds.some(x=>window.PandoraBuildLibraryMerge.same(x,row)))continue;
+    candidates.push(row);
+   }
+   const capacity=Math.max(0,200-builds.length);
+   if(candidates.length>capacity)candidates=candidates.slice(0,capacity);
+   if(!candidates.length){
+    status.textContent=tr('Новых сохранений не найдено.',
+      'No new saved builds found.');
+    return;
+   }
+   status.textContent=tr('Найдено для переноса: ','Ready to import: ')+candidates.length;
+   apply.hidden=false;
+  }catch{
+   status.textContent=tr('Не получилось проверить библиотеку. Проверь соединение и код.',
+    'Could not check the previous library. Verify your connection and code.');
+  }finally{verify.disabled=false;fromBrowser.disabled=false}
+ };
+ const verify=h('button',{type:'button',class:'button-action',
+  text:tr('Проверить код','Check code'),onclick:()=>void check(input.value)});
+ const fromBrowser=h('button',{type:'button',class:'button-action',
+  text:tr('Найти на этом устройстве','Find on this device'),
+  onclick:()=>void check(tabGuestSecret)});
+ actions.append(input,verify,fromBrowser);
+ content.append(
+  h('p',{text:tr(
+   'Если раньше ты сохранял билды без аккаунта, перенеси их сюда. Оригиналы останутся нетронутыми.',
+   'Previously saved without an account? Import those builds here. Original copies are kept.')} ),
+  actions,status,apply);
+ panel.append(h('summary',{text:tr('Перенести старые билды','Import older builds')}),content);
  return panel;
 }
+// One account entry point for saved builds and incoming build links.
+let returnToBuildsAfterAuth=false,pendingGuestDraft=null;
+function buildSignInCard({shared=false}={}){
+ const tr=(ru,en)=>lang==='en'?en:ru;
+ const card=h('section',{class:'build-signin-gate',role:'note',
+  'aria-label':tr('Вход для работы с билдами','Sign in to use builds')});
+ card.append(h('span',{class:'build-signin-emblem','aria-hidden':'true',text:'◈'}),
+  h('div',{class:'build-signin-copy'},[
+   h('h3',{text:shared?tr('Билд доступен после входа','Sign in to open this build'):
+    tr('Мои билды — в аккаунте','Your builds belong to your account')}),
+   h('p',{text:shared?
+    tr('Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.',
+       'Sign in or register to open this build. Your link will stay here.'):
+    tr('Чтобы сохранять, открывать и сравнивать билды, нужен аккаунт. Персонажа можно создавать без входа.',
+       'Sign in to save, open or compare builds. You can still plan a character without an account.')})
+  ]),h('div',{class:'build-signin-actions'},[
+   h('button',{type:'button',class:'button-action primary',
+    text:tr('Войти','Sign in'),onclick:()=>openBuildAccount('login')}),
+   h('button',{type:'button',class:'button-action',
+    text:tr('Регистрация','Register'),onclick:()=>openBuildAccount('register')})
+  ]));
+ return card;
+}
+function openBuildAccount(mode){
+ returnToBuildsAfterAuth=true;
+ // Existing-account sign-in must not erase an unfinished guest draft.
+ if(!window.PandoraAccountUI?.isLoggedIn()&&unsavedBuild())
+  pendingGuestDraft={snapshot:structuredClone(state),owner:libraryScopeId()};
+ const dialog=$('modalRoot');
+ if(dialog&&!dialog.hidden){dialog.hidden=true;dialog.replaceChildren()}
+ closeWorkbench();
+ if(!window.PandoraAccountUI?.open?.(mode))$('profileTrigger')?.click();
+}
+function requireBuildAccount({shared=false}={}){
+ if(window.PandoraAccountUI?.isLoggedIn())return true;
+ modal(shared?(lang==='en'?'Sign in to open this build':'Вход для открытия билда'):
+  (lang==='en'?'Sign in to save builds':'Вход для сохранения билдов'),
+  buildSignInCard({shared}));
+ return false;
+}
+function finishBuildAccountEntry(){
+ if(!window.PandoraAccountUI?.isLoggedIn()||
+  window.PandoraAccountUI?.hasRecoveryPending?.())return;
+ // Opening a profile from the header must not silently dismiss it on login.
+ // Only a requested build action or unsaved guest draft resumes the workbench.
+ if(!returnToBuildsAfterAuth&&
+  !/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash))return;
+ const returnToBuilds=returnToBuildsAfterAuth;
+ returnToBuildsAfterAuth=false;
+ window.PandoraAccountUI?.dismiss?.();
+ if(/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash)){
+  pendingGuestDraft=null;
+  void restoreSharedHash();
+  return;
+ }
+ const guest=pendingGuestDraft;
+ pendingGuestDraft=null;
+ if(guest&&guest.owner.startsWith('guest:')&&
+  JSON.stringify(guest.snapshot)!==JSON.stringify(state)){
+  const content=h('div');
+  content.append(h('p',{text:lang==='en'?
+   'You started a character before signing in. Which draft would you like to continue? Your previous guest copy stays on this device.':
+   'Ты начал персонажа до входа. Какой черновик продолжить? Гостевая копия останется на устройстве.'}));
+  const close=()=>{$('modalRoot').hidden=true;$('modalRoot').replaceChildren()};
+  content.append(h('div',{class:'build-signin-actions'},[
+   h('button',{type:'button',class:'button-action primary',
+    text:lang==='en'?'Continue guest character':'Продолжить гостевого героя',
+    onclick:()=>{if(switchActiveDraft(guest.snapshot,null)){close();render();changeTab('character')}}}),
+   h('button',{type:'button',class:'button-action',
+    text:lang==='en'?'Keep account draft':'Оставить черновик аккаунта',
+    onclick:()=>{close();if(returnToBuilds)changeTab('builds')}})
+  ]));
+  modal(lang==='en'?'Continue your character?':'Продолжить персонажа?',content);
+ }else if(returnToBuilds)changeTab('builds');
+}
+
 function renderBuilds(root){
+ if(!window.PandoraAccountUI?.isLoggedIn()){
+  root.append(buildSignInCard());return;
+ }
  const toolbar=h('div',{class:'build-toolbar'});
  const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
  const choice=h('div',{class:'new-build-choice',hidden:!newBuildPromptOpen});
@@ -6095,36 +6204,8 @@ function renderBuilds(root){
   }}),
   h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
- // Player accounts are optional, but a guest must immediately understand why
- // their *account* cloud builds have not loaded after a cleared browser login.
- const signedIn=Boolean(window.PandoraAccountUI?.isLoggedIn());
- const openAccount=mode=>event=>{
-  event.preventDefault();
-  // Close the library drawer first: the existing profile form lives in the
-  // header beneath it. Keep guest saves separate until explicit registration.
-  closeWorkbench();
-  if(!window.PandoraAccountUI?.open?.(mode))
-   document.getElementById('profileTrigger')?.click();
- };
- const accountReminder=signedIn?null:h('aside',{
-  class:'build-account-reminder',role:'note',
-  'aria-label':lang==='en'?'Cloud build saving':'Облачное сохранение билдов'
- },[
-  h('strong',{class:'build-account-reminder-title',text:lang==='en'?
-   'Keep your builds in your account':'Сохраняйте билды в своём аккаунте'}),
-  h('p',{class:'build-account-reminder-copy',text:lang==='en'?
-   'Sign in or register to sync your saved builds with your account in the cloud. They will be available when you return or use another device. Until you sign in, this is a separate guest library.':
-   'Войдите или зарегистрируйтесь, чтобы синхронизировать сохранённые билды с вашим аккаунтом в облаке. Они будут доступны при следующем посещении и с другого устройства. Без входа здесь открыта отдельная гостевая библиотека.'}),
-  h('div',{class:'build-account-reminder-links'},[
-   h('a',{href:'#accountPanel',text:lang==='en'?'Sign in':'Войти',
-    onclick:openAccount('login')}),
-   h('a',{href:'#accountPanel',text:lang==='en'?'Register':'Зарегистрироваться',
-    onclick:openAccount('register')})
-  ])
- ]);
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
-   text:cloudStatusText(cloudLibraryStatus)}),
-  ...(signedIn?[]:[accountReminder,buildLibraryTransfer()]));
+  text:cloudStatusText(cloudLibraryStatus)}),buildLegacyImport());
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
  root.append(comparisonSlot);
  let comparison=null;
@@ -6241,6 +6322,7 @@ function renderBuilds(root){
 }
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
 function saveBuild(name=state.name||'Новый герой',overwriteId=null){
+ if(!requireBuildAccount())return false;
  if(typeof name!=='string'||!name.trim())return false;
  const cleanName=name.trim().slice(0,70),previousName=state.name;
  const previousBuilds=builds.slice(),previousActive=activeBuildId;
@@ -6377,6 +6459,7 @@ function isVerifiedSharedBuild(share,expectedData){
  catch{return false}
 }
 async function createShared(build,host){
+ if(!requireBuildAccount())return;
  if(!build||!host)return;
  if(build.localOnly===true){
   host.replaceChildren(h('p',{class:'build-share-error',
@@ -6393,10 +6476,10 @@ async function createShared(build,host){
   pending.textContent=sharedText('Создаём ссылку из последней сохранённой облачной версии…',
    'Creating a link from the latest saved cloud build…');
   const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},
-   window.PandoraAccountUI?.token()||tabGuestSecret);
+   window.PandoraAccountUI.token());
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
   // Confirm that the new public link is immediately readable before showing it.
-  const check=await apiRequest('/api/shared/'+response.id,null,'');
+  const check=await apiRequest('/api/shared/'+response.id,null,window.PandoraAccountUI.token());
   if(!isVerifiedSharedBuild(check?.share,build.data))
    throw Error('Ссылка не подтвердила выбранный билд. Попробуйте ещё раз.');
   const url=location.origin+location.pathname+'#b/'+response.id;
@@ -6422,6 +6505,7 @@ async function createShared(build,host){
  }
 }
 function openSharedSnapshot(share){
+ if(!requireBuildAccount({shared:true}))return;
  if(!share||share.schema!==1||!['build','library'].includes(share.type))throw Error('Неподдерживаемая ссылка');
  const clear=()=>{if(location.hash.startsWith('#b/'))history.replaceState(history.state,'',location.pathname+location.search)};
  if(share.type==='library'){
@@ -6453,7 +6537,7 @@ function openSharedSnapshot(share){
  const apply=()=>{
   // Do not dismiss the preview or discard the previous hero when the new
   // draft cannot be saved (for example, browser storage quota exhaustion).
-  if(!switchActiveDraft(incoming,null))return false;
+  if(!requireBuildAccount({shared:true})||!switchActiveDraft(incoming,null))return false;
   $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
   clear();render();changeTab('character');
   return true;
@@ -6490,13 +6574,20 @@ async function restoreSharedHash(){
  const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
  if(!match)return;
  const currentRequest=++sharedHashRequestId;
+ if(!window.PandoraAccountUI?.isLoggedIn()){
+  requireBuildAccount({shared:true});return;
+ }
+ const sessionToken=window.PandoraAccountUI.token();
  try{
-  const incoming=await apiRequest('/api/shared/'+match[1],null,'');
-  if(currentRequest===sharedHashRequestId&&location.hash==='#b/'+match[1])
+  const incoming=await apiRequest('/api/shared/'+match[1],null,sessionToken);
+  if(currentRequest===sharedHashRequestId&&
+   window.PandoraAccountUI?.token()===sessionToken&&location.hash==='#b/'+match[1])
    openSharedSnapshot(incoming.share);
  }catch(error){
   // Neither a departed URL nor an older attempt for the same URL may show an error.
-  if(currentRequest!==sharedHashRequestId||location.hash!=='#b/'+match[1])return;
+  if(currentRequest!==sharedHashRequestId||
+   window.PandoraAccountUI?.token()!==sessionToken||
+   location.hash!=='#b/'+match[1])return;
   const removed=error.httpStatus===404||error.httpStatus===410;
   const message=error.httpStatus===410&&error.reason==='deleted'?
    'Владелец удалил этот билд. Ссылка больше не существует.':
@@ -7974,6 +8065,11 @@ void startStudio({archive:['127.0.0.1','localhost'].includes(location.hostname)}
 void window.PandoraAccountUI.init({
  baseUrl:API,legacyKey:()=>tabGuestSecret,
  onLogin:({register})=>{
+  // Header login, like the build-gate login, must preserve an unsaved guest
+  // hero before the account owner switch replaces the visible draft.
+  if(!register&&!pendingGuestDraft&&tabOwnerScope?.startsWith('guest:')&&unsavedBuild())
+   pendingGuestDraft={snapshot:structuredClone(state),owner:tabOwnerScope};
+  if(register)pendingGuestDraft=null;
   // New registration adopts the guest library because its existing D1 owner hash
   // is intentionally bound to that browser key. Logging into a different existing
   // account never transfers another owner's cached saves.
@@ -7982,26 +8078,26 @@ void window.PandoraAccountUI.init({
   reportCloudStatus('Подключаем облачную библиотеку…');
   void loadCloudBuilds();
   if(activeTab==='builds')renderDetails();
+  finishBuildAccountEntry();
  },
+ onRecoveryAcknowledged:finishBuildAccountEntry,
  onLogout:()=>{
+  sharedHashRequestId++;
+  returnToBuildsAfterAuth=false;pendingGuestDraft=null;
   // Restore the previous guest's own saves and draft, not a different account's.
   activateLibraryScope();
   libraryChangeId++;
-  reportCloudStatus('Подключаем облачную библиотеку…');
-  void loadCloudBuilds();
+  reportCloudStatus('Войдите, чтобы открыть библиотеку билдов');
   if(activeTab==='builds')renderDetails();
  },
- onGuest:()=>{void loadCloudBuilds()}
-}).catch(error=>{console.warn('Account UI unavailable',error);void loadCloudBuilds()});
+ onGuest:()=>{reportCloudStatus('Войдите, чтобы открыть библиотеку билдов');
+  if(activeTab==='builds')renderDetails()}
+}).catch(error=>{console.warn('Account UI unavailable',error)});
 // Return to a saved library after network loss; an unsaved draft is never uploaded.
 let lastCloudReconnect=0;
 function resumeCloudLibrary(){
- // An authenticated account may have ALL its saved builds only in D1 (new
- // browser, cleared cache, or an initial GET that failed while offline).
- // Empty local storage is not evidence of an empty remote account library.
- // Keep the old guest guard: never make background empty-guest D1 requests.
- const signedIn=window.PandoraAccountUI?.isLoggedIn()===true;
- if(!signedIn&&!builds.length&&!queuedDeletes().length)return;
+ // An account's builds may exist exclusively in D1 even when the local cache is empty.
+ if(!window.PandoraAccountUI?.isLoggedIn())return;
  if(Date.now()-lastCloudReconnect<20000)return;
  lastCloudReconnect=Date.now();
  void loadCloudBuilds();

@@ -9,7 +9,6 @@ function extract(start,end){
 }
 const deletion=extract('async function deleteCloudBuild(id){','async function loadCloudBuilds(){');
 const put=extract('async function putCloudBuild(entry){','async function deleteCloudBuild(id){');
-const connecting=extract('async function connectCloudLibrary(secret,feedback){','function buildLibraryTransfer(){');
 function deferred(){
  let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j});
  return {promise,resolve,reject};
@@ -18,7 +17,7 @@ function deletionCase(pending){
  let owner='account:alice_01',acknowledged=[],messages=[],toasts=[],queue=[];
  const deleteCloudBuild=Function('libraryScopeId','queueDelete','acknowledgeDelete',
   'cloudLibraryRequest','reportCloudStatus','showStudioToast','console',
-  'let libraryChangeId=0;'+deletion+'return deleteCloudBuild')(
+  'let libraryChangeId=0;const window={PandoraAccountUI:{isLoggedIn:()=>true}};'+deletion+'return deleteCloudBuild')(
    ()=>owner,id=>queue.push(id),id=>acknowledged.push(id),
    ()=>pending.promise,message=>messages.push(message),
    (...args)=>toasts.push(args),{warn:()=>{}}
@@ -49,22 +48,27 @@ test('late cloud PUT status cannot claim another player saved its build',async()
  let owner='account:alice_01',status=[];
  const pending=deferred();
  const send=Function('libraryScopeId','cloudLibraryRequest','reportCloudStatus','console',
-  'let libraryChangeId=0;'+put+'return putCloudBuild')(()=>owner,()=>pending.promise,
+  'let libraryChangeId=0;const window={PandoraAccountUI:{isLoggedIn:()=>true}};'+put+'return putCloudBuild')(()=>owner,()=>pending.promise,
    x=>status.push(x),{warn:()=>{}});
  const operation=send({id:'a'.repeat(32)});
  owner='account:bob_222';pending.resolve({ok:true});
  assert.equal(await operation,true);assert.deepEqual(status,[]);
  const second=deferred();
  const send2=Function('libraryScopeId','cloudLibraryRequest','reportCloudStatus','console',
-  'let libraryChangeId=0;'+put+'return putCloudBuild')(()=>owner,()=>second.promise,
+  'let libraryChangeId=0;const window={PandoraAccountUI:{isLoggedIn:()=>true}};'+put+'return putCloudBuild')(()=>owner,()=>second.promise,
    x=>status.push(x),{warn:()=>{}});
  const op=send2({id:'b'.repeat(32)});
  second.resolve({ok:true});assert.equal(await op,true);
  assert.deepEqual(status,['Сохранено в облаке']);
 });
-test('old guest-key transfer response does not overwrite a newly logged-in account library',()=>{
- assert.match(connecting,/const previousOwner=libraryScopeId\(\)/);
- assert.match(connecting,/if\(libraryScopeId\(\)!==previousOwner\|\|window\.PandoraAccountUI\?\.isLoggedIn\(\)\)/);
+test('legacy import awaits account identity and ignores stale responses',()=>{
+ const importCode=extract('function buildLegacyImport(){','function renderBuilds(root){');
+ assert.match(importCode,/window\.PandoraAccountUI\.token\(\)!==selectedToken/);
+ assert.match(importCode,/owner!==libraryScopeId\(\)/);
+ assert.match(importCode,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)return/);
+ assert.match(importCode,/if\(!persistBuilds\(\)\)/);
+ assert.match(importCode,/builds=previous/);
+ assert.match(importCode,/for\(const row of created\)/);
  assert.match(extract('async function loadCloudBuilds(){','function h(tag,attrs={}'),
   /if\(libraryChangeId===generation&&latest\(\)\)/);
 });

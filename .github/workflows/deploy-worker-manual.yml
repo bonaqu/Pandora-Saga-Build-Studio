@@ -53,7 +53,8 @@ jobs:
             import {readFileSync} from "node:fs";
             const code=readFileSync("index.js","utf8");
             for(const marker of ["codeRelease:\x270.361.0\x27",
-              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "sourceEgressProbe:true", "sourceInstancesArray:true", "sourceFullProbe:true", "catalogPublishCASRequired:true", "catalogProvenanceCors:true", "key===\x27nameEn\x27", "key===\x27descEn\x27", "honorExtendedEditing:true", "wikiLabelEditing:true"])
+              "\x27bilingual-item-text\x27", "adminD1WriteCheck:\x27catalog-and-overrides\x27", "catalogSourceFailover:true", "sourceEgressProbe:true", "sourceInstancesArray:true", "sourceFullProbe:true",
+              "buildLibraryRequiresAccount:true", "sharedPreviewRequiresAccount:true", "legacyAccountImportPreview:true", "catalogPublishCASRequired:true", "catalogProvenanceCors:true", "key===\x27nameEn\x27", "key===\x27descEn\x27", "honorExtendedEditing:true", "wikiLabelEditing:true"])
               if(!code.includes(marker))throw Error("Missing expected reviewed Worker code: "+marker);
           '
       - name: Generate exact existing D1 config without secrets
@@ -96,6 +97,9 @@ jobs:
                 caps?.catalogSourceFailover===true&&caps?.honorExtendedEditing===true&&caps?.wikiLabelEditing===true&&caps?.sourceEgressProbe===true&&
                 caps?.sourceInstancesArray===true&&caps?.sourceFullProbe===true&&
                 caps?.catalogPublishCASRequired===true&&caps?.catalogProvenanceCors===true&&
+                caps?.buildLibraryRequiresAccount===true&&
+                caps?.sharedPreviewRequiresAccount===true&&
+                caps?.legacyAccountImportPreview===true&&
                 healthy.ok&&health?.storage==="d1"&&health?.features?.catalog===true){
                 console.log("Verified live Worker 0.361.0, English item editing and the same D1 catalog");
                 process.exit(0);
@@ -104,6 +108,9 @@ jobs:
             }
             throw Error("Worker not yet serving 0.361.0 with bilingual-item-text and healthy D1");
           '
+
+      - name: Verify account-only cloud build access on deployed Worker (read-only)
+        run: node ../scripts/check-build-account-only-live.mjs
 
       - name: Probe Worker egress to public game metadata (read-only, no auth, no D1 writes)
         run: |
