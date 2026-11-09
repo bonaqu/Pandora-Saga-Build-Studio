@@ -17,7 +17,9 @@ test('account-only Worker deploy is verified on production without writing D1',(
  assert.match(guard,/\/api\/runtime-capabilities/);
  assert.match(guard,/\/api\/shared\/A1234567890/);
  assert.match(guard,/\/api\/library\/legacy-preview/);
- assert.match(guard,/response\.status!==401/);
+ assert.match(guard,/if\(status!==401\)/);
+ assert.match(guard,/check\.path!=='\/api\/library\/legacy-preview'\|\|status!==405/,
+  'Release guard retries only the older 405 response while deploying Worker');
  assert.doesNotMatch(guard,/method:\s*'POST'|method:\s*"POST"/);
  assert.doesNotMatch(guard,/DELETE FROM|INSERT INTO|UPDATE private_builds/);
 });
