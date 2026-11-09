@@ -272,12 +272,16 @@ function render(){
  submit.type='submit';
  submit.disabled=guestPending;
  form.append(submit);
+ const renderedMode=mode;
  form.addEventListener('submit',async e=>{
   e.preventDefault();
-  // A detached form can still have a pending event while a locale refresh
-  // rendered another instance. Exactly one guest authentication per session.
+  // Keyboard/autofill may dispatch a submit on a form already detached by
+  // a login/register/recover switch or a locale remount. Never route old
+  // private fields to the NEW mode or a different live form.
+  if(form.isConnected===false||mode!==renderedMode)return;
+  // Exactly one guest authentication per session, including stale events.
   if(guestAuthRequest?.revision===sessionRevision)return;
-  const current=mode;
+  const current=renderedMode;
   if((current==='register'||current==='recover')&&pass.value!==confirm.value){
    info('Пароли не совпадают.');return;
   }
