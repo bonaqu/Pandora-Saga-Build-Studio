@@ -16,7 +16,7 @@ test('guest working draft warns about clearing browser data in both languages',(
 test('conflicting drafts save existing account work before switching to guest',()=>{
  const block=app.slice(app.indexOf('function finishBuildAccountEntry('),app.indexOf('function renderBuilds('));
  assert.match(block,/const accountWasSaved=!unsavedBuild\(\)/);
- assert.match(block,/if\(!accountWasSaved&&!saveBuild\(state\.name\)\)return/);
+ assert.match(block,/if\(!accountWasSaved&&!saveBuild\(state\.name\|\|tr\('Новый герой','New hero'\)\)\)return/);
  assert.match(block,/if\(!switchActiveDraft\(structuredClone\(guest\.snapshot\),null\)\)return/);
  assert.match(block,/build-draft-choices/);
  assert.match(block,/Оставить героя аккаунта/);

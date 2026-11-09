@@ -40,7 +40,14 @@ test('the preview requires real account login, denies legacy and absent bearer',
  assert.equal((await worker.fetch(request({bearer:null}),{DB})).status,401);
  assert.equal((await worker.fetch(request({bearer:guest}),{DB})).status,401);
  assert.equal((await worker.fetch(request({key:'bad'}),{DB})).status,400);
- assert.equal((await worker.fetch(request({method:'GET'}),{DB})).status,405);
+ // Restore the narrow regression that was left in the superseded #377
+ // branch: even unsupported methods require a signed-in account first.
+ assert.equal((await worker.fetch(request({method:'GET',bearer:null}),{DB})).status,401,
+  'Anonymous legacy preview must reject GET as unauthenticated before method checks');
+ assert.equal((await worker.fetch(request({method:'GET',bearer:guest}),{DB})).status,401,
+  'Old guest library keys cannot authorize an unsupported legacy preview method');
+ assert.equal((await worker.fetch(request({method:'GET',bearer:token}),{DB})).status,405,
+  'A signed-in owner still cannot call preview with GET');
  assert.deepEqual(DB.reads,[]);
  assert.deepEqual(DB.writes,[]);
 });
