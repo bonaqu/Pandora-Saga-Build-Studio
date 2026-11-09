@@ -11,7 +11,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
   profile:{guild:'Guests'}};
  const account={race:1,gender:0,job:8,level:33,
   name:'Existing account draft',points:{archery:9}};
- async function check({register=false,accountDraft=false,viaBuilds=false}={}){
+ async function check({register=false,accountDraft=false,viaBuilds=false,link=false}={}){
   const context=await browser.newContext({viewport:{width:1280,height:900}});
   const writes=[],errors=[];
   await context.route('**/*',route=>{
@@ -36,6 +36,9 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     return send(req.headers().authorization==='Bearer '+token?
      {account:{username}}:{error:'Sign in required'},
      req.headers().authorization==='Bearer '+token?200:401);
+   if(path==='/api/shared/A1234567890'&&method==='GET')
+    return send({schema:1,share:{schema:1,type:'build',
+     data:{race:1,gender:0,job:8,level:22,name:'Friend shared hero'}}});
    if(path==='/api/library'){
     if(method!=='GET')writes.push(req.postDataJSON());
     return send(method==='GET'?{records:[]}:{ok:true});
@@ -64,7 +67,12 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     document.querySelector('#raceGrid')?.children.length>0&&
     document.querySelector('#levelOut')?.textContent==='27',
     guestKey,{timeout:30000});
-   if(viaBuilds){
+   if(link){
+    await page.evaluate(()=>{location.hash='#b/A1234567890'});
+    const gate=page.getByRole('dialog',{name:'Вход для открытия билда'});
+    await gate.waitFor({state:'visible'});
+    await gate.getByRole('button',{name:'Войти'}).click();
+   }else if(viaBuilds){
     await page.locator('#nav [data-tab="builds"]').click();
     await page.locator('.build-signin-gate').waitFor({state:'visible'});
     await page.locator('.build-signin-gate')
@@ -118,7 +126,15 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     await panel.getByRole('button',{name:'Я сохранил код'}).click();
     assert.equal(await page.locator('#levelOut').textContent(),'27');
    }
-   if(!viaBuilds&&!accountDraft){
+   if(link){
+    const preview=page.getByRole('dialog',{name:'Открыть билд по ссылке?'});
+    await preview.waitFor({state:'visible'});
+    await preview.getByRole('button',{name:'Отмена'}).click();
+    assert.equal((await page.evaluate(()=>JSON.parse(
+     localStorage.getItem('ps-build-studio.v1')).name)),'Guest progress',
+     'Rejecting a friend link must keep the guest draft after sign-in');
+   }
+   if(!viaBuilds&&!accountDraft&&!link){
     assert.equal(await page.locator('#profileTrigger')
      .getAttribute('aria-expanded'),'true',
      'Header sign-in should leave the profile accessible');
@@ -136,5 +152,6 @@ export async function runGuestDraftContinuitySmoke(browser,base){
  await check(); // Header login: empty account automatically continues guest.
  await check({accountDraft:true,viaBuilds:true}); // Choice protects existing work.
  await check({register:true}); // Registration keeps the guest working draft.
- console.log('Chromium guest draft continuity: header login, conflicting drafts and registration passed');
+ await check({link:true}); // Friend link is previewed without losing the guest hero.
+ console.log('Chromium guest draft continuity: header, conflicts, registration and friend link passed');
 }
