@@ -141,6 +141,15 @@ const english=Object.freeze({
  'Ссылка на билд уже создана.':'Build link already exists.',
  'Скопировать ссылку':'Copy link','✓ Скопировано':'✓ Copied',
  'Ссылка на билд':'Build link',
+ 'Не удалось сохранить билд. Проверь свободное место в браузере.':'Could not save the build. Check available browser storage.',
+ 'Ссылка содержит некорректные параметры персонажа':'The link contains invalid character data',
+ 'Некорректная ссылка':'Invalid link',
+ 'Ссылка не подтвердила выбранный билд. Попробуйте ещё раз.':'The link did not confirm the selected build. Try again.',
+ 'Ссылка выделена — скопируй через меню или Ctrl+C':'Link selected — copy it using the menu or Ctrl+C',
+ 'Владелец удалил этот билд. Ссылка больше не существует.':'The owner deleted this build. The link is no longer available.',
+ 'Ссылка устарела. Попросите владельца поделиться билдом заново.':'The link is outdated. Ask the owner to share it again.',
+ 'Билд по ссылке не найден. Возможно, адрес неверный.':'Shared build not found. Check the link.',
+ 'Не получилось загрузить билд. Проверь соединение и попробуй снова.':'Could not load the build. Check your connection and try again.',
  'Ссылка на билд повреждена. Попросите владельца создать новую.':'This build link is damaged. Ask the owner to create a new one.',
  'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.':'The link preserves a snapshot. Deleting the original build revokes the link.'
 });
