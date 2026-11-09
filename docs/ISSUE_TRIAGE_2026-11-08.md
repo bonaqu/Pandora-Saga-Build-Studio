@@ -20,6 +20,16 @@
 | [#4](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/4) | Стабильность/редактор, epic | Долгосрочный | Полный CRUD, миграции и эксплуатационная проверка |
 | [#5](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/5) | Боевой расчёт, epic | Долгосрочный | Неизвестные игровые формулы, эффекты, оракулы и source-backed паритет |
 
+
+## 09.11.2026 — подтверждённые релизы 0.539–0.541 и критерии закрытия
+
+- [PR #326 · 0.539.0](https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/326): `transition()` больше не выдаёт успешный same-owner sync при смене маркера другой вкладкой (#253).
+- [PR #327 · 0.540.0](https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/327): повторяемая тройная Chromium-регрессия feedback/locale/delayed `/me` (#115, #253); исправлен тестовый gate второго GET `/me`.
+- [PR #328 · 0.541.0](https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/328): in-memory тесты независимых CAS-ключей, 200/409/401, reset и очистки (#203). **Не** производство D1.
+- [0.539 read-only live D1 workflow](https://github.com/bonaqu/Pandora-Saga-Build-Studio/actions/runs/42547536560): 16/16 данных совпадают с единственным известным исключением — 6 неопубликованных RU-описаний подземелий (#284). Ни один игровой snapshot не был изменён.
+
+Для **всех 13 открытых задач** с источниками, точными тестами и причинами, почему Issue ещё не закрыта, используется [матрица приёмки 09.11.2026](ISSUES_ACCEPTANCE_MATRIX_2026-11-09.md). Не путать завершение регрессии с полной production/game-client приёмкой.
+
 ## Закрыто и нормализовано
 
 - [#91](https://github.com/bonaqu/Pandora-Saga-Build-Studio/issues/91) закрыта как **not planned**: отдельное сравнение публичного OS калькулятора с текущим клиентом без прямого подтверждения Gladiator 45 не доказывает баг. Исследование ОЗ/ОМ остаётся в #5.
