@@ -6444,6 +6444,8 @@ async function restoreSharedHash(){
   const incoming=await apiRequest('/api/shared/'+match[1],null,'');
   if(location.hash==='#b/'+match[1])openSharedSnapshot(incoming.share);
  }catch(error){
+  // A delayed failed GET must not show an error for a link already left.
+  if(location.hash!=='#b/'+match[1])return;
   const removed=error.httpStatus===404||error.httpStatus===410;
   const message=error.httpStatus===410&&error.reason==='deleted'?
    'Владелец удалил этот билд. Ссылка больше не существует.':
@@ -7943,7 +7945,12 @@ void window.PandoraAccountUI.init({
 // Return to a saved library after network loss; an unsaved draft is never uploaded.
 let lastCloudReconnect=0;
 function resumeCloudLibrary(){
- if(!builds.length&&!queuedDeletes().length)return;
+ // An authenticated account may have ALL its saved builds only in D1 (new
+ // browser, cleared cache, or an initial GET that failed while offline).
+ // Empty local storage is not evidence of an empty remote account library.
+ // Keep the old guest guard: never make background empty-guest D1 requests.
+ const signedIn=window.PandoraAccountUI?.isLoggedIn()===true;
+ if(!signedIn&&!builds.length&&!queuedDeletes().length)return;
  if(Date.now()-lastCloudReconnect<20000)return;
  lastCloudReconnect=Date.now();
  void loadCloudBuilds();
@@ -7962,6 +7969,11 @@ if(bootView.open&&bootView.tab!=='wiki'&&!String(location.hash).startsWith('#wik
 }
 if(bootView.slotOpen&&!bootView.open){stageSlotPickerOpen=true;renderSlotRails();renderStagePicker()}
 requestAnimationFrame(()=>window.scrollTo({top:Math.max(0,Number(bootView.page)||0),behavior:'instant'}));
+// A pasted/shared URL in an already loaded SPA is a same-document hash
+// navigation. Initial boot's restoreSharedHash() does not run again then.
+window.addEventListener('hashchange',()=>{
+ if(/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash))void restoreSharedHash();
+});
 window.addEventListener('pagehide',saveView);
 document.addEventListener('pandora:before-update',saveView);
 document.addEventListener('scroll',saveView,{passive:true});

@@ -32,7 +32,8 @@ test('saved cloud data retries after network recovery with an explicit key warni
  const app=read('pandora-studio-app.js');
  assert.match(app,/window\.addEventListener\('online',resumeCloudLibrary\)/);
  assert.match(app,/document\.addEventListener\('visibilitychange'/);
- assert.match(app,/if\(!builds\.length&&!queuedDeletes\(\)\.length\)return/);
+ assert.match(app,/const signedIn=window\.PandoraAccountUI\?\.isLoggedIn\(\)===true/);
+ assert.match(app,/if\(!signedIn&&!builds\.length&&!queuedDeletes\(\)\.length\)return/);
  assert.match(app,/lastCloudReconnect<20000/);
  assert.match(app,/Сохраните личный код библиотеки до очистки данных браузера/);
  assert.match(app,/Перенести или восстановить облачные билды/);

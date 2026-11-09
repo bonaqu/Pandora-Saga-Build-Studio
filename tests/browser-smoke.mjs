@@ -19,6 +19,7 @@ import {runSavedAutosaveSmoke} from './browser-saved-autosave.mjs';
 import {runAccountSmoke} from './browser-account.mjs';
 import {runAccountLocalRecoveryFailureSmoke} from './browser-account-local-recovery.mjs';
 import {runAccountLateBootstrapSmoke} from './browser-account-late-bootstrap.mjs';
+import {runEmptyAccountCloudReconnectSmoke} from './browser-empty-account-reconnect.mjs';
 import {runAccountFeedbackRaceSmoke} from './browser-account-feedback-race.mjs';
 import {runAccountLibraryIsolationSmoke} from './browser-account-isolation.mjs';
 import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs';
@@ -368,6 +369,7 @@ async function main(){
   ['account-login',runAccountSmoke],
   ['account-local-recovery',runAccountLocalRecoveryFailureSmoke],
   ['account-late-bootstrap',runAccountLateBootstrapSmoke],
+  ['empty-account-reconnect',runEmptyAccountCloudReconnectSmoke],
   ['account-feedback-race',runAccountFeedbackRaceSmoke],
   ['account-isolation',runAccountLibraryIsolationSmoke],
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
@@ -386,7 +388,7 @@ async function main(){
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
  const quickCases=new Set(['share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc',
-  'manual-saved-overwrite','account-late-bootstrap','account-isolation','inline-skill-milestones',
+  'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
  const report=await runIndependentSmokes(selected,browser,base,{concurrency});
