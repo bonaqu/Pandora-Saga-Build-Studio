@@ -303,24 +303,24 @@ async function main(){
   null,{timeout:30000});
  assert.equal(await page.locator('#level').inputValue(),'55');
 
- // Creating a new build must ask about the unsaved level-55 character.
+ // Guest can plan and recover the local draft, but saving into My Builds
+ // requires an account. Clicking the quick save shortcut cannot change the hero.
  await page.locator('#newBuildQuick').click();
- await page.locator('.new-build-choice').waitFor({state:'visible'});
- const draftName=page.locator('.new-build-choice input');
- await draftName.fill('Черновик после синхронизации');
- // A background catalog/library refresh rerenders the panel. The confirmation
- // and its typed name must survive rather than silently disappearing.
- await page.evaluate(()=>{
-  document.querySelector('#locale [data-locale="en"]').click();
- });
- await page.locator('.new-build-choice').waitFor({state:'visible'});
- assert.equal(await page.locator('.new-build-choice input').inputValue(),
-  'Черновик после синхронизации');
- await page.getByRole('button',{name:/^(Создать без сохранения|Create without saving)$/}).click();
- assert.equal(await page.locator('#levelOut').textContent(),'1');
- assert.equal(await page.locator('#level').inputValue(),'1');
- assert.match(await page.locator('#raceGrid .race-slide-select').innerText(),/Choose this race|Выбрать эту расу/);
- assert.match(await page.locator('#activeJob').innerText(),/Choose a class|Выберите профессию/);
+ const signInGate=page.locator('.build-signin-gate');
+ await signInGate.waitFor({state:'visible',timeout:15000});
+ assert.equal(await page.locator('.build-name-input').count(),0,
+  'Guest must not see a saved-build creation form');
+ assert.match(await signInGate.innerText(),/Мои билды — в аккаунте/);
+ await page.locator('#dockClose').click();
+ assert.equal(await page.locator('#levelOut').textContent(),'55',
+  'Opening the sign-in gate must not discard the local character draft');
+ await page.locator('#locale [data-locale="en"]').click();
+ await page.waitForFunction(()=>document.documentElement.lang==='en',null,{timeout:20000});
+ await page.locator('#nav [data-tab="builds"]').click();
+ assert.match(await page.locator('.build-signin-gate').innerText(),
+  /Your builds belong to your account/);
+ await page.locator('#dockClose').click();
+ assert.equal(await page.locator('#level').inputValue(),'55');
  assert.deepEqual(errors,[],'Unexpected browser JavaScript exceptions');
  console.log('Chromium desktop smoke passed: hero book, keyboard, level 1–55 and unsaved build');
  await context.close();
