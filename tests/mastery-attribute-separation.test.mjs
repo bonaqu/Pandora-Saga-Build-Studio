@@ -26,7 +26,7 @@ test('Origin keeps calculations correct but removes the noisy breakdown row',()=
  assert.doesNotMatch(app,/entry\.breakdown\.textContent/);
  assert.doesNotMatch(app,/origin-stat-guide/);
  assert.match(app,/effective=estimate\?\.stats\?\.\[key\]/);
- assert.match(app,/const snap=attributeSnapshot\(\),estimate=previewBaseStats\(\)/);
+ assert.match(app,/const snap=attributeSnapshot\(\),estimate=known===undefined\?previewBaseStats\(\):known/);
  assert.match(app,/PandoraAttributeProgression\.allowed\(snap,row\.i,spent\+1\)/);
  assert.match(css,/\.origin-stat-row button,\.origin-stat-row \.origin-stat-input\{/);
 });
