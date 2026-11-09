@@ -25,7 +25,7 @@ function setup(library,{canPersist=true}={}){
  const context=Function('records','initial','selected','events','messages','canPersist',
   'let builds=records,state=structuredClone(initial),activeBuildId='+JSON.stringify(other)+';'+
   'const lang="ru",races=[];'+
-  'const window={PandoraUIPlanner:{normalizeGender:(_r,_race,gender)=>gender}};'+
+  'const window={PandoraUIPlanner:{normalizeGender:(_r,_race,gender)=>gender}}; const requireBuildAccount=()=>true;'+
   'const selectActiveBuild=id=>{activeBuildId=id;selected.push(id)};'+
   'const showStudioToast=(message,status)=>messages.push({message,status});'+
   'const fresh=()=>structuredClone(initial);'+
