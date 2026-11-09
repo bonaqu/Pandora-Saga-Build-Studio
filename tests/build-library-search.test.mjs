@@ -13,4 +13,10 @@ test('large libraries can be filtered by character name, profession and level',(
  assert.match(src,/none\.hidden=!query\|\|visible>0/);
  assert.match(css,/\.build-card\[hidden\]\{display:none!important\}/);
  assert.doesNotMatch(src,/Поделиться всей библиотекой/);
+ assert.match(src,/function refreshBuildsAfterCloudLoad\(\)/);
+ assert.match(src,/const typedName=name\?\.value,scrollTop=content\?\.scrollTop\?\?0/);
+ assert.match(src,/target\.focus\(\{preventScroll:true\}\)/);
+ assert.match(src,/updated\.scrollTop=scrollTop/);
+ assert.match(src,/refreshBuildsAfterCloudLoad\(\);/);
+
 });

@@ -396,7 +396,7 @@ async function loadCloudBuilds(){
    return;
   }
   if(reconciled.activeId!==activeBuildId)selectActiveBuild(reconciled.activeId);
-  if(activeTab==='builds')renderDetails();
+  refreshBuildsAfterCloudLoad();
   reportCloudStatus(outgoing.length?'Синхронизируем локальные изменения…':
    builds.some(entry=>entry.localOnly===true)?
     'Облако подключено · локальные копии ещё не сохранены':
@@ -2200,6 +2200,34 @@ $('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job])
  renderOriginStats(calculated);renderBranches();refreshBudgetLabel();
  renderPathPages();renderDetails();renderOriginVitals(calculated);
  renderVitalsEnhancements(calculated);renderOriginCopyLabels();updateAdminHint()}
+// Cloud reconciliation replaces saved-build cards, but it must not erase a
+// title being typed or move the reader away from the filtered results.
+function refreshBuildsAfterCloudLoad(){
+ if(activeTab!=='builds')return;
+ const content=$('detailContent'),name=content?.querySelector('.build-name-input');
+ const search=content?.querySelector('.build-library-search');
+ const draft=content?.querySelector('.new-build-choice input');
+ const active=document.activeElement;
+ const focusKey=active===name?'name':active===search?'search':active===draft?'draft':null;
+ const selection=focusKey&&typeof active.selectionStart==='number'?
+  [active.selectionStart,active.selectionEnd]:null;
+ const typedName=name?.value,scrollTop=content?.scrollTop??0;
+ renderDetails();
+ const updated=$('detailContent');
+ if(typedName!==undefined){
+  const replacement=updated.querySelector('.build-name-input');
+  if(replacement)replacement.value=typedName;
+ }
+ const target=focusKey==='name'?updated.querySelector('.build-name-input'):
+  focusKey==='search'?updated.querySelector('.build-library-search'):
+  focusKey==='draft'?updated.querySelector('.new-build-choice input'):null;
+ if(target){
+  target.focus({preventScroll:true});
+  if(selection&&typeof target.setSelectionRange==='function')
+   target.setSelectionRange(...selection);
+ }
+ updated.scrollTop=scrollTop;
+}
 let wikiOutsideCleanup=null;
 function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 

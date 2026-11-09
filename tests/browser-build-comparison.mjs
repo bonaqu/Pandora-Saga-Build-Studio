@@ -201,6 +201,44 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   assert.match(await page.locator('.build-grid + .muted').innerText(),
    /No builds match this search/);
   await search.fill('');
+  // A delayed D1 refresh must not erase an unsaved name, search focus or
+  // scroll position; all requests in this test are synthetic.
+  const refreshStarted=new Promise(resolve=>{page.__refreshStarted=resolve});
+  let releaseRefresh=null;
+  await page.route('**/api/library',async route=>{
+   if(route.request().method()!=='GET')return route.abort();
+   page.__refreshStarted();
+   await new Promise(resolve=>{releaseRefresh=resolve});
+   await route.fulfill({status:200,contentType:'application/json',
+    headers:{'access-control-allow-origin':'*'},
+    body:JSON.stringify({records:library.map(entry=>({id:entry.id,entry}))})});
+  });
+  await page.locator('.build-toolbar button').filter({
+   hasText:/Refresh library|Обновить библиотеку/
+  }).click();
+  await refreshStarted;
+  const typed='Unsaved title during cloud refresh';
+  await page.locator('.build-name-input').fill(typed);
+  await search.fill('темный');
+  const beforeScroll=await page.locator('#detailContent').evaluate(el=>{
+   el.style.maxHeight='140px';
+   el.scrollTop=65;
+   return el.scrollTop;
+  });
+  releaseRefresh();
+  await page.waitForFunction(()=>
+   document.querySelector('.cloud-library-status')?.textContent?.includes('connected')||
+   document.querySelector('.cloud-library-status')?.textContent?.includes('подключена'),
+   null,{timeout:15000});
+  assert.equal(await page.locator('.build-name-input').inputValue(),typed,
+   'Cloud refresh must retain a typed but unsaved build name');
+  assert.equal(await search.inputValue(),'темный');
+  assert.equal(await search.evaluate(el=>document.activeElement===el),true,
+   'Cloud refresh must restore typing focus to search');
+  assert.equal(await page.locator('#detailContent').evaluate(el=>el.scrollTop),beforeScroll,
+   'Cloud refresh must retain the drawer scroll offset');
+  assert.equal(await page.locator('.build-card:visible').count(),1);
+  await search.fill('');
   await hero.getByRole('button',{name:'↻ Save to this build'}).click();
   const warning=await hero.locator('.build-overwrite-choice p').innerText();
   assert.match(warning,/^Overwrite saved build “Сияние героя”/);
@@ -208,8 +246,10 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   assert.doesNotMatch(warning,/Перезаписать|Предыдущую/);
   assert.equal(await hero.getByRole('button',{name:'Confirm overwrite'}).isVisible(),true);
   const persisted=await page.evaluate(()=>
-   JSON.stringify(JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')));
-  assert.equal(persisted,original,'Previewing overwrite must not change saved data');
+   JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]'));
+  const byId=rows=>rows.slice().sort((a,b)=>a.id.localeCompare(b.id));
+  assert.deepEqual(byId(persisted),byId(library),
+   'Cloud refresh may sort build cards, but must preserve every saved build and field');
   assert.deepEqual(errors,[]);
   console.log('Chromium saved-build EN passed: localized race, bilingual search, dynamic prompt');
  }finally{await context.close()}

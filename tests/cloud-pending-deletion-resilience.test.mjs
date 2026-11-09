@@ -15,7 +15,7 @@ function scenario({pending=[A,B],fail=[A],remote=[]}={}){
  const queue=[...pending],failIds=new Set(fail),calls=[],messages=[],warnings=[];
  let saves=0;
  const run=Function('queuedDeletes','cloudLibraryRequest','acknowledgeDelete','window',
-  'persistBuilds','renderDetails','reportCloudStatus','putCloudBuild','showStudioToast',
+  'persistBuilds','refreshBuildsAfterCloudLoad','reportCloudStatus','putCloudBuild','showStudioToast',
   'newId','console',
   'let libraryChangeId=0,cloudLoadRequestId=0,builds=[],activeBuildId=null,activeTab="builds",lang="ru";'+
   loader+'\nreturn {load:loadCloudBuilds,builds:()=>builds,active:()=>activeBuildId};')(
