@@ -6094,6 +6094,78 @@ function buildLegacyImport(){
  panel.append(h('summary',{text:tr('Перенести старые билды','Import older builds')}),content);
  return panel;
 }
+// One account entry point for saved builds and incoming build links.
+let returnToBuildsAfterAuth=false,pendingGuestDraft=null;
+function buildSignInCard({shared=false}={}){
+ const tr=(ru,en)=>lang==='en'?en:ru;
+ const card=h('section',{class:'build-signin-gate',role:'note',
+  'aria-label':tr('Вход для работы с билдами','Sign in to use builds')});
+ card.append(h('span',{class:'build-signin-emblem','aria-hidden':'true',text:'◈'}),
+  h('div',{class:'build-signin-copy'},[
+   h('h3',{text:shared?tr('Билд доступен после входа','Sign in to open this build'):
+    tr('Мои билды — в аккаунте','Your builds belong to your account')}),
+   h('p',{text:shared?
+    tr('Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.',
+       'Sign in or register to open this build. Your link will stay here.'):
+    tr('Чтобы сохранять, открывать и сравнивать билды, нужен аккаунт. Персонажа можно создавать без входа.',
+       'Sign in to save, open or compare builds. You can still plan a character without an account.')})
+  ]),h('div',{class:'build-signin-actions'},[
+   h('button',{type:'button',class:'button-action primary',
+    text:tr('Войти','Sign in'),onclick:()=>openBuildAccount('login')}),
+   h('button',{type:'button',class:'button-action',
+    text:tr('Регистрация','Register'),onclick:()=>openBuildAccount('register')})
+  ]));
+ return card;
+}
+function openBuildAccount(mode){
+ returnToBuildsAfterAuth=true;
+ // Existing-account sign-in must not erase an unfinished guest draft.
+ if(!window.PandoraAccountUI?.isLoggedIn()&&unsavedBuild())
+  pendingGuestDraft={snapshot:structuredClone(state),owner:libraryScopeId()};
+ const dialog=$('modalRoot');
+ if(dialog&&!dialog.hidden){dialog.hidden=true;dialog.replaceChildren()}
+ closeWorkbench();
+ if(!window.PandoraAccountUI?.open?.(mode))$('profileTrigger')?.click();
+}
+function requireBuildAccount({shared=false}={}){
+ if(window.PandoraAccountUI?.isLoggedIn())return true;
+ modal(shared?(lang==='en'?'Sign in to open this build':'Вход для открытия билда'):
+  (lang==='en'?'Sign in to save builds':'Вход для сохранения билдов'),
+  buildSignInCard({shared}));
+ return false;
+}
+function finishBuildAccountEntry(){
+ if(!window.PandoraAccountUI?.isLoggedIn()||
+  window.PandoraAccountUI?.hasRecoveryPending?.())return;
+ const returnToBuilds=returnToBuildsAfterAuth;
+ returnToBuildsAfterAuth=false;
+ window.PandoraAccountUI?.dismiss?.();
+ if(/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash)){
+  pendingGuestDraft=null;
+  void restoreSharedHash();
+  return;
+ }
+ const guest=pendingGuestDraft;
+ pendingGuestDraft=null;
+ if(guest&&guest.owner.startsWith('guest:')&&
+  JSON.stringify(guest.snapshot)!==JSON.stringify(state)){
+  const content=h('div');
+  content.append(h('p',{text:lang==='en'?
+   'You started a character before signing in. Which draft would you like to continue? Your previous guest copy stays on this device.':
+   'Ты начал персонажа до входа. Какой черновик продолжить? Гостевая копия останется на устройстве.'}));
+  const close=()=>{$('modalRoot').hidden=true;$('modalRoot').replaceChildren()};
+  content.append(h('div',{class:'build-signin-actions'},[
+   h('button',{type:'button',class:'button-action primary',
+    text:lang==='en'?'Continue guest character':'Продолжить гостевого героя',
+    onclick:()=>{if(switchActiveDraft(guest.snapshot,null)){close();render();changeTab('character')}}}),
+   h('button',{type:'button',class:'button-action',
+    text:lang==='en'?'Keep account draft':'Оставить черновик аккаунта',
+    onclick:()=>{close();if(returnToBuilds)changeTab('builds')}})
+  ]));
+  modal(lang==='en'?'Continue your character?':'Продолжить персонажа?',content);
+ }else if(returnToBuilds)changeTab('builds');
+}
+
 function renderBuilds(root){
  if(!window.PandoraAccountUI?.isLoggedIn()){
   root.append(buildSignInCard());return;
@@ -7995,6 +8067,7 @@ void startStudio({archive:['127.0.0.1','localhost'].includes(location.hostname)}
 void window.PandoraAccountUI.init({
  baseUrl:API,legacyKey:()=>tabGuestSecret,
  onLogin:({register})=>{
+  if(register)pendingGuestDraft=null;
   // New registration adopts the guest library because its existing D1 owner hash
   // is intentionally bound to that browser key. Logging into a different existing
   // account never transfers another owner's cached saves.
@@ -8008,7 +8081,7 @@ void window.PandoraAccountUI.init({
  onRecoveryAcknowledged:finishBuildAccountEntry,
  onLogout:()=>{
   sharedHashRequestId++;
-  returnToBuildsAfterAuth=false;
+  returnToBuildsAfterAuth=false;pendingGuestDraft=null;
   // Restore the previous guest's own saves and draft, not a different account's.
   activateLibraryScope();
   libraryChangeId++;
