@@ -7436,6 +7436,7 @@ async function loadCatalog({archive=false}={}){
  // the Encyclopedia before any D1 record can reach the Hero Book or builder.
  window.PandoraWikiCatalog.validateCharacterCatalog(data);
  window.PandoraWikiCatalog.validateCharacterExtras(data);
+ window.PandoraWikiCatalog.validateCharacterTables(data.tables);
  if(!data.meta?.counts?.skills||!data.classes?.CLERIC||
     !data.tables?.abilityPoint||!data.tables?.weaponPlus||!data.tables?.forge||
     !data.itemForth||typeof data.itemForth!=='object'||Array.isArray(data.itemForth))
