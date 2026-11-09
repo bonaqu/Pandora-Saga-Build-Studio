@@ -6309,6 +6309,9 @@ function sanitizeSharedState(original){
   safe.racialPassiveId=original.racialPassiveId;
  return safe;
 }
+// Shared-link dialogs sit outside the saved-build panel's locale walker.
+// Translate fixed UI copy, never the user's custom build name.
+const sharedText=(ru,en)=>lang==='en'?en:ru;
 function isVerifiedSharedBuild(share,expectedData){
  if(!share||share.schema!==1||share.type!=='build'||
   !share.data||typeof share.data!=='object'||Array.isArray(share.data))return false;
@@ -6319,15 +6322,18 @@ async function createShared(build,host){
  if(!build||!host)return;
  if(build.localOnly===true){
   host.replaceChildren(h('p',{class:'build-share-error',
-   text:'Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».'}));
+   text:sharedText('Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».',
+    'Open this local copy and explicitly save it with “Overwrite” first.')}));
   return;
  }
- const pending=h('p',{class:'muted',text:'Проверяем сохранение билда…'});
+ const pending=h('p',{class:'muted',text:sharedText('Проверяем сохранение билда…',
+  'Checking saved build…')});
  host.replaceChildren(pending);
  try{
   // Invalid saved state must show a card error instead of escaping the click handler.
   sanitizeSharedState(build.data);
-  pending.textContent='Создаём ссылку из последней сохранённой облачной версии…';
+  pending.textContent=sharedText('Создаём ссылку из последней сохранённой облачной версии…',
+   'Creating a link from the latest saved cloud build…');
   const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},
    window.PandoraAccountUI?.token()||tabGuestSecret);
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
@@ -6349,7 +6355,8 @@ async function createShared(build,host){
   if(host.isConnected)host.replaceChildren(message);
  }catch(error){
   if(host.isConnected)host.replaceChildren(h('p',{class:'build-share-error',
-   text:'Не удалось создать ссылку: '+error.message}));
+   text:sharedText('Не удалось создать ссылку: ','Could not create link: ')+
+    (window.PandoraUILocale?.ui(error.message,lang)||error.message)}));
  }
 }
 function openSharedSnapshot(share){
@@ -6360,20 +6367,27 @@ function openSharedSnapshot(share){
   const added=share.data.map(v=>({id:newId(),name:String(v.name||'Билд').slice(0,70),
    data:sanitizeSharedState(v.data),at:Date.now()}));
   const view=h('div');
-  view.append(h('p',{text:'По ссылке найдено '+added.length+' сохранённых билдов. Текущие билды и активный черновик останутся без изменений.'}),
-   h('button',{class:'button-action primary',text:'Добавить в мою библиотеку',onclick:()=>{
+  view.append(h('p',{text:sharedText('Билдов по ссылке: ','Builds in link: ')+
+   added.length+'. '+sharedText('Текущие билды и активный черновик останутся без изменений.',
+    'Your saved builds and current draft stay unchanged.')}),
+   h('button',{class:'button-action primary',
+   text:sharedText('Добавить в мою библиотеку','Add to my builds'),onclick:()=>{
     const next=[...added,...builds];
     try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
      'ps-build-library.v1',JSON.stringify(next))}
-    catch(e){alert('Не удалось сохранить библиотеку: '+e.message);return}
+    catch(e){alert(sharedText('Не удалось сохранить библиотеку: ',
+     'Could not save the library: ')+e.message);return}
     builds=next;for(const entry of added)void putCloudBuild(entry);$('modalRoot').hidden=true;clear();changeTab('builds');
    }}));
-  modal('Импорт общей библиотеки',view);return;
+  modal(sharedText('Импорт общей библиотеки','Import shared library'),view);return;
  }
  const incoming=sanitizeSharedState(share.data);
  const view=h('div');
- view.append(h('p',{text:'Открыть чужой билд «'+incoming.name+'»? Несохранённые изменения текущего персонажа будут заменены.'}),
-  h('p',{class:'muted',text:'Сохранённые в «Мои билды» записи при этом не удаляются.'}));
+ view.append(h('p',{text:sharedText('Открыть билд «','Open build “')+
+  incoming.name+sharedText('»? Несохранённые изменения текущего персонажа будут заменены.',
+   '”? The current character’s unsaved changes will be replaced.')}),
+  h('p',{class:'muted',text:sharedText('Сохранённые в «Мои билды» записи при этом не удаляются.',
+   'Existing saved builds will not be deleted.')}));
  const apply=()=>{
   // Do not dismiss the preview or discard the previous hero when the new
   // draft cannot be saved (for example, browser storage quota exhaustion).
@@ -6382,13 +6396,15 @@ function openSharedSnapshot(share){
   clear();render();changeTab('character');
   return true;
  };
- view.append(h('button',{class:'button-action primary',text:'Сохранить текущий и открыть',
+ view.append(h('button',{class:'button-action primary',
+  text:sharedText('Сохранить текущий и открыть','Save current and open'),
    onclick:()=>{if(saveBuild())apply()}}),
-  h('button',{class:'button-action',text:'Открыть без сохранения',onclick:apply}),
-  h('button',{class:'button-action',text:'Отмена',onclick:()=>{
+  h('button',{class:'button-action',
+   text:sharedText('Открыть без сохранения','Open without saving'),onclick:apply}),
+  h('button',{class:'button-action',text:sharedText('Отмена','Cancel'),onclick:()=>{
    $('modalRoot').hidden=true;clear();
   }}));
- modal('Открыть билд по ссылке?',view);
+ modal(sharedText('Открыть билд по ссылке?','Open build from link?'),view);
 }
 let studioToastTimer=null;
 function showStudioToast(message,tone='warning'){
@@ -6428,7 +6444,7 @@ async function restoreSharedHash(){
    history.replaceState(history.state,'',location.pathname+location.search);
  }
 }
-function modal(title,content){const root=$('modalRoot');root.replaceChildren();root.hidden=false;const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});box.append(h('button',{class:'button-action close',text:'× Закрыть',onclick:()=>{root.hidden=true;root.replaceChildren()}}),h('h2',{text:title}),content);root.append(box);root.onclick=e=>{if(e.target===root){root.hidden=true;root.replaceChildren()}};return box}
+function modal(title,content){const root=$('modalRoot');root.replaceChildren();root.hidden=false;const box=h('div',{class:'modal',role:'dialog','aria-modal':'true','aria-label':title});box.append(h('button',{class:'button-action close',text:sharedText('× Закрыть','× Close'),onclick:()=>{root.hidden=true;root.replaceChildren()}}),h('h2',{text:title}),content);root.append(box);root.onclick=e=>{if(e.target===root){root.hidden=true;root.replaceChildren()}};return box}
 async function apiRequest(path,body,token=adminToken) {
  const editingWrite=Boolean(body)&&/^\/api\/admin\/(?:override|reset)$/.test(path);
  // The last D1 snapshot read by this editor is the precondition for every
