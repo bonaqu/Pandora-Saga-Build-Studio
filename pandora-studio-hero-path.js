@@ -2,6 +2,15 @@
 'use strict';
 const M=root.PandoraSkillProgression;
 const tr=(api,ru,en)=>api.lang==='en'?en:ru;
+// Hero skill search follows the same word-order-independent convention as
+// equipment and encyclopedia pickers, without changing catalog identities.
+const matchesSkillSearch=(label,query)=>{
+ const normalize=value=>String(value??'').normalize('NFKC')
+  .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
+ const searchable=normalize(label);
+ return normalize(query).split(' ').filter(Boolean)
+  .every(term=>searchable.includes(term));
+};
 function make(tag,attr={},children=[]){
  const e=document.createElement(tag);
  for(const [key,val]of Object.entries(attr)){
@@ -527,9 +536,8 @@ function viewSkills(target,details,api){
  target.replaceChildren();details.replaceChildren();details.hidden=true;
  if(!api.catalogReady){target.append(make('p',{class:'muted',text:tr(api,'Каталог умений загружается.','Loading skill catalog…')}));return}
  const skillIndex=indexSkills(api.skillCatalog);
- const needle=String(api.query||'').trim().toLocaleLowerCase('ru');
  const rows=api.skillCatalog.filter(skill=>allowedForJob(skill,api.job)&&
-  (String(skill.name||'')+' '+skill.id).toLocaleLowerCase('ru').includes(needle))
+  matchesSkillSearch(String(skill.name||'')+' '+String(skill.id??''),api.query))
   .map(skill=>({skill,gate:readiness(skill,api,new Set(),skillIndex)})).filter(({gate})=>
    api.filter==='all'||(api.filter==='known'?gate.learned:!gate.learned));
  rows.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
@@ -572,8 +580,7 @@ function viewSkills(target,details,api){
   field(tr(api,'Дальность','Range'),skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
   field(tr(api,'Стихия','Element'),skill.element);
   field(tr(api,'Характеристика','Attribute'),skill.powerStat);
-  field(tr(api,'ID умения','Skill ID'),skill.id);
-  details.append(stats);
+   details.append(stats);
   const requirements=Array.isArray(skill.reqs)?skill.reqs:[];
   if(requirements.length){
    const reqList=make('div',{class:'path-skill-prereqs'});
@@ -593,7 +600,7 @@ function viewSkills(target,details,api){
   if(skill.prereq){
    const before=skillIndex.get(String(skill.prereq));
    details.append(make('p',{class:'path-skill-prereqs',text:tr(api,'Предыдущее умение: ','Previous skill: ')+
-     (before?.name||String(skill.prereq))}));
+     (before?.name||tr(api,'Умение отсутствует в каталоге','Skill not in catalog'))}));
   }
   // Raw effect codes remain in the encyclopedia, not the quick skill card.
   if(typeof api.skillWiki==='function')details.append(api.skillWiki(skill));
