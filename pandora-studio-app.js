@@ -6234,7 +6234,7 @@ function finishBuildAccountEntry(){
   const continueGuest=()=>{
    // Explicit choice is an explicit library save; never replace the
    // unsaved account draft before its browser copy has been committed.
-   if(!accountWasSaved&&!saveBuild(state.name))return;
+   if(!accountWasSaved&&!saveBuild(state.name||tr('Новый герой','New hero')))return;
    if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
    close();render();notifyGuestDraftUnsaved();
    if(shared)openIncoming();else changeTab('character');
