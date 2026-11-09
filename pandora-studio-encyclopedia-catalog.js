@@ -79,14 +79,29 @@ function validate(input){
  const requireRef=(valid,relation)=>{
   if(!valid)throw Error('Нарушены связи игрового каталога: '+relation);
  };
- for(const row of Object.values(data.maps))
-  for(const id of row.mobs||[])requireRef(monster(id),'монстры локаций');
+ // A string is iterable too, but it is NOT an array of game IDs.
+ // Reject broken nested collections before the Wiki silently loses links
+ // or interprets a numeric string as several different monster IDs.
+ const list=(value,relation)=>{
+  requireRef(value==null||Array.isArray(value),'список '+relation);
+  return value||[];
+ };
+ for(const row of Object.values(data.maps)){
+  requireRef(isRecord(row),'локация');
+  for(const id of list(row.mobs,'монстров локации'))
+   requireRef(monster(id),'монстры локаций');
+  list(row.npcs,'NPC локации');
+ }
  for(const row of data.instances)
-  for(const id of row.mobs||[])requireRef(monster(id),'монстры подземелий');
+  for(const id of list(row.mobs,'монстров подземелья'))
+   requireRef(monster(id),'монстры подземелий');
  for(const [id,group] of Object.entries(data.drops)){
-  requireRef(monster(id),'таблица добычи монстра');
-  for(const row of [...(group.d||[]),...(group.s||[])])
+  requireRef(monster(id)&&isRecord(group),'таблица добычи монстра');
+  for(const row of [...list(group.d,'обычной добычи'),
+    ...list(group.s,'добычи душ')]){
+   requireRef(isRecord(row),'запись добычи монстра');
    if(row.i!=null)requireRef(item(row.i),'предмет добычи монстра');
+  }
  }
  // NPC trade lists preserve recipes individually. A duplicate or absent
  // source recipe ID creates indistinguishable offers despite valid item/NPC
@@ -99,12 +114,16 @@ function validate(input){
    'повторный или некорректный обмен NPC');
   seenTrades.add(id);
   requireRef(item(recipe.i),'награда обмена NPC');
-  for(const material of recipe.mats||[])
-   requireRef(item(material.i),'материал обмена NPC');
-  for(const id of recipe.npc||[])requireRef(npc(id),'NPC обмена');
+  for(const material of list(recipe.mats,'материалов обмена')){
+   requireRef(isRecord(material)&&item(material.i),'материал обмена NPC');
+  }
+  for(const id of list(recipe.npc,'NPC обмена'))requireRef(npc(id),'NPC обмена');
  }
- for(const row of Object.values(data.trades.npcs))
-  for(const id of row.maps||[])requireRef(map(id),'расположение NPC');
+ for(const row of Object.values(data.trades.npcs)){
+  requireRef(isRecord(row),'карточка NPC');
+  for(const id of list(row.maps,'локаций NPC'))
+   requireRef(map(id),'расположение NPC');
+ }
  // The Encyclopedia merges ordinary and NPC chests by item ID.
  // Duplicate IDs overwrite one card without warning, while a malformed
  // gold-only reward becomes "reward not listed" despite a real source row.
@@ -136,11 +155,14 @@ function validate(input){
  if(data.chests.masterKey!=null)
   requireRef(item(data.chests.masterKey),'универсальный ключ сундука');
  for(const zone of data.tables.zoneDrops){
-  requireRef(map(zone.map),'место добычи');
-  for(const group of zone.rows||[]){
+  requireRef(isRecord(zone)&&map(zone.map),'место добычи');
+  for(const group of list(zone.rows,'добычи локации')){
+   requireRef(isRecord(group),'группа добычи локации');
    if(group.mob!=null)requireRef(monster(group.mob),'монстр добычи локации');
-   for(const row of group.items||[])
+   for(const row of list(group.items,'наград локации')){
+    requireRef(isRecord(row),'запись добычи локации');
     if(row.i!=null)requireRef(item(row.i),'награда добычи локации');
+   }
   }
  }
  return data;
