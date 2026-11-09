@@ -596,3 +596,71 @@ test('historical zone groups with omitted optional rates stay compatible',()=>{
  assert.doesNotThrow(()=>loader.validate(data));
  assert.equal(data.tables.zoneDrops[0].rows[0].base,undefined);
 });
+
+
+test('all 236 current NPC trades, 339 ingredients and 48 exchange limits validate intact',()=>{
+ const trades=JSON.parse(readFileSync(new URL('../data/os/trades.json',import.meta.url),'utf8'));
+ const rows=trades.trades,materials=rows.flatMap(row=>row.mats||[]);
+ const limits=rows.filter(row=>row.limit!=null);
+ assert.equal(rows.length,236);
+ assert.equal(materials.length,339);
+ assert.equal(limits.length,48);
+ assert.equal(rows.filter(row=>['exp','gold','honor'].every(key=>
+  Number.isSafeInteger(row[key])&&row[key]>=0)).length,rows.length);
+ assert.equal(materials.filter(row=>Number.isSafeInteger(row.n)&&row.n>=1).length,
+  materials.length);
+ assert.equal(limits.filter(row=>Number.isSafeInteger(row.limit.n)&&
+  row.limit.n>=1&&['daily','weekly','lifetime'].includes(row.limit.period)).length,
+  limits.length);
+ const data={};
+ for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
+  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+ const original=JSON.stringify(data.trades);
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(JSON.stringify(data.trades),original);
+});
+
+test('malformed NPC trade requirements reject D1 atomically before showing false costs',async()=>{
+ const good=catalog('trade source');
+ good.trades.trades[0]={id:1,i:1,npc:[1],exp:0,gold:1200,honor:50,
+  mats:[{i:1,n:3}],limit:{n:2,period:'weekly'}};
+ assert.doesNotThrow(()=>loader.validate(good));
+ const cases=[
+  ['negative gold',c=>{c.trades.trades[0].gold=-1},/стоимость обмена/],
+  ['fractional gold',c=>{c.trades.trades[0].gold=3.14},/стоимость обмена/],
+  ['string gold',c=>{c.trades.trades[0].gold='1200'},/стоимость обмена/],
+  ['Infinity honor',c=>{c.trades.trades[0].honor=Infinity},/стоимость обмена/],
+  ['negative exp',c=>{c.trades.trades[0].exp=-2},/стоимость обмена/],
+  ['bad ingredient quantity',c=>{c.trades.trades[0].mats[0].n=0},/количество материала/],
+  ['fractional ingredient',c=>{c.trades.trades[0].mats[0].n=2.5},/количество материала/],
+  ['string ingredient',c=>{c.trades.trades[0].mats[0].n='3'},/количество материала/],
+  ['missing ingredient ID',c=>{delete c.trades.trades[0].mats[0].i},/материал обмена/],
+  ['negative limit',c=>{c.trades.trades[0].limit.n=-2},/ограничение обмена/],
+  ['limit quantity string',c=>{c.trades.trades[0].limit.n='2'},/ограничение обмена/],
+  ['unsupported reset period',c=>{c.trades.trades[0].limit.period='unknown'},/ограничение обмена/],
+  ['limit set to string',c=>{c.trades.trades[0].limit='weekly'},/ограничение обмена/]
+ ];
+ for(const [name,change,reason] of cases){
+  const damaged=structuredClone(good);
+  change(damaged);
+  assert.throws(()=>loader.validate(damaged),reason,name);
+ }
+ const damaged=structuredClone(good);
+ damaged.trades.trades[0].mats[0].n=-3;
+ const remote=mockFetch(damaged,good);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:remote.fetcher,strict:true}),/количество материала/);
+ const loaded=await loader.load({api:'https://worker.example',fetcher:remote.fetcher});
+ assert.equal(loaded.source,'local');
+ assert.equal(loaded.data.trades.trades[0].mats[0].n,3);
+ assert.equal(loaded.data.trades.trades[0].gold,1200);
+ assert.equal(loaded.data.trades.trades[0].limit.period,'weekly');
+});
+
+test('omitted optional legacy trade charges are not invented as zero',()=>{
+ const data=catalog();
+ assert.doesNotThrow(()=>loader.validate(data));
+ const recipe=data.trades.trades[0];
+ for(const field of ['exp','gold','honor','limit'])
+  assert.equal(Object.hasOwn(recipe,field),false);
+});
