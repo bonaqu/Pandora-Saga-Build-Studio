@@ -3,6 +3,7 @@ import {chromium} from 'playwright';
 import {runIndependentSmokes} from './browser-runner.mjs';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
 import {runBuildAuthGateSmoke} from './browser-build-auth-gate.mjs';
+import {runLegacyImportSmoke} from './browser-legacy-import.mjs';
 import {runLayoutAudit} from './browser-layout.mjs';
 import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
 import {runCloudSaveFailureSmoke} from './browser-cloud-save-failure.mjs';
@@ -352,6 +353,7 @@ async function main(){
  // cross-test localStorage/account contamination or high 4K screenshot memory.
  const scenarios=[
   ['build-account-gate',runBuildAuthGateSmoke],
+  ['legacy-build-import',runLegacyImportSmoke],
   ['share-link',runShareLinkSmoke],
   ['cloud-conflict',runCloudConflictSmoke],
   ['cloud-save-failure',runCloudSaveFailureSmoke],
