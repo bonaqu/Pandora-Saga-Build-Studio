@@ -583,7 +583,10 @@ function viewSkills(target,details,api){
   field(tr(api,'Перезарядка','Cooldown'),skill.cooldown);
   field(tr(api,'Дальность','Range'),skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
   field(tr(api,'Стихия','Element'),skill.element);
-  field(tr(api,'Характеристика','Attribute'),skill.powerStat);
+  if(skill.powerStat!==undefined&&skill.powerStat!==null&&skill.powerStat!=='')
+   field(tr(api,'Характеристика','Attribute'),
+    typeof api.attributeLabel==='function'?api.attributeLabel(skill.powerStat):
+     tr(api,'Неизвестная характеристика','Unknown attribute'));
    details.append(stats);
   const requirements=Array.isArray(skill.reqs)?skill.reqs:[];
   if(requirements.length){
