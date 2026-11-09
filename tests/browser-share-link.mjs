@@ -121,6 +121,10 @@ export async function runShareLinkSmoke(browser,base){
    // English receiver: the entire standalone shared-build dialog must be localized,
    // while preserving the original user build and all saved build data.
    await incoming.locator('#locale [data-locale="en"]').click();
+   // Switching to EN loads a verified locale asynchronously. The shared
+   // dialog must not race against an unfinished language switch.
+   await incoming.waitForFunction(()=>document.documentElement.lang==='en',
+    null,{timeout:15000});
    await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const englishDialog=incoming.getByRole('dialog',{name:'Open build from link?'});
    await englishDialog.waitFor({state:'visible',timeout:20000});
@@ -128,6 +132,8 @@ export async function runShareLinkSmoke(browser,base){
    await englishDialog.getByRole('button',{name:'Cancel'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'55');
    await incoming.locator('#locale [data-locale="ru"]').click();
+   await incoming.waitForFunction(()=>document.documentElement.lang==='ru',
+    null,{timeout:15000});
    revoked=true;
    await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const toast=incoming.locator('#studioToast');
