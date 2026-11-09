@@ -27,5 +27,5 @@ test('new, saved and shared draft transitions only activate after a successful l
  assert.match(blank,/if\(!switchActiveDraft\(fresh\(\),null\)\)return false/);
  const shared=app.slice(app.indexOf('function openSharedSnapshot(share){'),
   app.indexOf('let studioToastTimer=',app.indexOf('function openSharedSnapshot(share){')));
- assert.match(shared,/if\(!switchActiveDraft\(incoming,null\)\)return false/);
+ assert.match(shared,/if\(!requireBuildAccount\(\{shared:true\}\)\|\|!switchActiveDraft\(incoming,null\)\)return false/);
 });
