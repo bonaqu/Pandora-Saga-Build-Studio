@@ -151,7 +151,11 @@ const english=Object.freeze({
  'Билд по ссылке не найден. Возможно, адрес неверный.':'Shared build not found. Check the link.',
  'Не получилось загрузить билд. Проверь соединение и попробуй снова.':'Could not load the build. Check your connection and try again.',
  'Ссылка на билд повреждена. Попросите владельца создать новую.':'This build link is damaged. Ask the owner to create a new one.',
- 'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.':'The link preserves a snapshot. Deleting the original build revokes the link.'
+ 'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.':'The link preserves a snapshot. Deleting the original build revokes the link.',
+ 'Не удалось загрузить облачные билды. Локальные копии не удалены. Проверь соединение и нажми «Обновить библиотеку».':'Could not load cloud builds. Local copies were not deleted. Check your connection and choose “Refresh library”.',
+ 'Сохранено только в этом браузере · облако недоступно. Обнови библиотеку после восстановления соединения.':'Saved only in this browser · cloud unavailable. Refresh your library when back online.',
+ 'Билд не сохранён: браузер не смог записать его. Текущий герой остался открытым. Освободи место в браузере и повтори.':'Build not saved: the browser could not store it. Your current character remains open. Free up browser space and try again.',
+ 'Новые билды сохранены в браузере · проверяем облако…':'New builds saved in this browser · checking cloud…'
 });
 function text(key,lang='ru'){return strings[key]?.[lang==='en'?1:0]||key}
 function ui(value,lang='ru'){return lang==='en'?(english[value]||value):value}
