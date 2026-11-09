@@ -62,7 +62,7 @@ test('all cloud-library statuses and warnings have explicit verified RU/EN displ
 });
 
 test('cloud status is translated on updates and when reopening the Builds tab',()=>{
- const from=app.indexOf('function reportCloudStatus(');
+ const from=app.indexOf('function cloudStatusText(');
  const to=app.indexOf('\nasync function putCloudBuild(',from);
  assert.ok(from>=0&&to>from);
  const node={textContent:''},document={querySelector:()=>node};
@@ -71,12 +71,12 @@ test('cloud status is translated on updates and when reopening the Builds tab',(
   const holder=Function('window','document','lang',
    'let cloudLibraryStatus=null;'+code+
    '\nreturn {set:reportCloudStatus,source:()=>cloudLibraryStatus}')
-   ({PandoraUILocale:ui},document,lang);
+   ({PandoraUILocale:ui,PandoraAccountUI:{isLoggedIn:()=>false}},document,lang);
   holder.set('Синхронизируем локальные изменения…');
   assert.equal(holder.source(),'Синхронизируем локальные изменения…');
   assert.equal(node.textContent,ui.ui(holder.source(),lang));
  }
  assert.match(app,/activeId:activeBuildId,newId,lang/);
- assert.match(app,/text:window.PandoraUILocale\?\.ui\(cloudLibraryStatus,lang\)/);
- assert.match(app,/window.PandoraUILocale\?\.ui\(message,lang\)/);
+ assert.match(app,/text:cloudStatusText\(cloudLibraryStatus\)/);
+ assert.match(app,/window.PandoraUILocale\?\.ui\(label,lang\)/);
 });
