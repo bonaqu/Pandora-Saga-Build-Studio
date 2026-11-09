@@ -21,7 +21,7 @@ const fixture=()=>({
   npcs:{1:{name:'Merchant',maps:[1]}},mapNames:{}},
  tables:{zoneDrops:[{map:1,rows:[{mob:1,items:[{i:1}]}]}]},
  chests:{boxes:[{i:1,rolls:[[]]}],npc:[]},
- skills:{1:{id:1,skillType:'PASSIVE',branch:'race'}},
+ skills:{1:{id:1,name:'Test passive',skillType:'PASSIVE',branch:'race'}},
  racialPassives:{HUMAN:{key:'HUMAN',raceId:1,skills:[1]}}
 });
 

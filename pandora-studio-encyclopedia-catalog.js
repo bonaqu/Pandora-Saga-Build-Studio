@@ -66,6 +66,39 @@ function validate(input){
    if(!isRecord(row)||Object.hasOwn(row,'id')&&String(row.id)!==key)
     throw Error('Не совпадает идентификатор записи игрового каталога: '+kind);
   }
+ // The Hero Path and skill encyclopedia trust these numeric costs and
+ // prerequisites. A malformed D1 record must not masquerade as official
+ // mana, cooldown, level or mastery requirements. Never invent defaults
+ // for fields omitted by an older valid source snapshot.
+ const skillBranches=new Set(Object.values(data.skills).map(row=>row.branch)
+  .filter(value=>typeof value==='string'&&value.trim()));
+ for(const row of Object.values(data.skills)){
+  if(typeof row.name!=='string'||!row.name.trim())
+   throw Error('Некорректное название умения в игровом каталоге');
+  for(const field of ['mana','cast','cooldown','motion','range'])
+   if(row[field]!=null&&!(typeof row[field]==='number'&&
+    Number.isFinite(row[field])&&row[field]>=0))
+    throw Error('Некорректные числовые параметры умения');
+  for(const field of ['reqLevel','charLevel'])
+   if(row[field]!=null&&!(Number.isSafeInteger(row[field])&&row[field]>=0))
+    throw Error('Некорректный порог уровня умения');
+  for(const field of ['learnable','rangeFromWeapon'])
+   if(row[field]!=null&&typeof row[field]!=='boolean')
+    throw Error('Некорректный тип свойства умения');
+  if(row.aoe!=null&&!(Array.isArray(row.aoe)&&row.aoe.length===2&&
+   row.aoe.every(value=>typeof value==='number'&&
+    Number.isFinite(value)&&value>=0)))
+   throw Error('Некорректная область действия умения');
+  if(row.prereq!=null&&!(Number.isSafeInteger(row.prereq)&&
+   row.prereq>=0&&(row.prereq===0||
+    Object.hasOwn(data.skills,String(row.prereq)))))
+   throw Error('Неизвестное предыдущее умение');
+  if(row.reqs!=null&&!(Array.isArray(row.reqs)&&
+   row.reqs.every(req=>isRecord(req)&&
+    typeof req.branch==='string'&&skillBranches.has(req.branch)&&
+    Number.isSafeInteger(req.amount)&&req.amount>=0)))
+   throw Error('Некорректные требования ветки умения');
+ }
  // Check cross-record ownership only after record shape and identity are
  // verified; otherwise a null or mismatched passive skill is misreported as
  // a race-registry defect instead of a broken skills record.
