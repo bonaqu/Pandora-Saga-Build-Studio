@@ -103,6 +103,29 @@ function validate(input){
  // verified; otherwise a null or mismatched passive skill is misreported as
  // a race-registry defect instead of a broken skills record.
  validateRacialPassives(data.racialPassives,data.skills,data.meta.counts);
+ // Monster cards display source HP/level/defenses and resistances
+ // as game facts. Never turn malformed D1 numbers into valid-looking
+ // values, while retaining legitimate negative resistances (weaknesses).
+ for(const row of Object.values(data.monsters)){
+  if(typeof row.name!=='string'||!row.name.trim())
+   throw Error('Некорректное название монстра');
+  for(const field of ['level','life','ac','vit','str','agi','dex','spi','int',
+   'warding','magicProtection'])
+   if(row[field]!=null&&!(Number.isSafeInteger(row[field])&&
+    row[field]>=0&&(field!=='life'||row[field]>0)))
+    throw Error('Некорректные характеристики монстра');
+  if(row.lvMod!=null&&!Number.isSafeInteger(row.lvMod))
+   throw Error('Некорректная модификация уровня монстра');
+  if(row.resists!=null){
+   if(!isRecord(row.resists))
+    throw Error('Некорректные сопротивления монстра');
+   for(const [type,value] of Object.entries(row.resists))
+    if(!['physical','fire','cold','lightning','poison','charm','magic',
+     'holy','dark'].includes(type)||
+     !Number.isSafeInteger(value)||value< -1000||value>1000)
+     throw Error('Некорректные сопротивления монстра');
+  }
+ }
  // Wiki indexes dungeons by String(row.id) with Object.fromEntries().
  // Two source rows with the same ID silently overwrite one dungeon card,
  // while a missing/non-numeric ID creates an invalid deep link. Check these
