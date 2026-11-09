@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 export async function runGuestDraftContinuitySmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const guestKey='e'.repeat(64),token='a'.repeat(43),username='alice_01';
- const guest={race:1,gender:0,job:8,level:27,branch:3,
+ const guest={race:1,gender:0,job:8,level:27,branch:'brush',
   name:'Guest progress',stats:{'Сноровка':13},
   points:{archery:21},mastery:{archery:8},
   profile:{guild:'Guests'}};
