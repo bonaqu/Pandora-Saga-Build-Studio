@@ -2,6 +2,19 @@
 'use strict';
 const M=root.PandoraSkillProgression;
 const tr=(api,ru,en)=>api.lang==='en'?en:ru;
+// Display-only labels for OS element codes. Leave the D1 catalog untouched.
+const ELEMENT_LABELS=Object.freeze({
+ FIRE:['Огонь','Fire'],HOLY:['Свет','Light'],COLD:['Лёд','Ice'],
+ LIGHTNING:['Молния','Lightning'],CHARM:['Чары','Charm'],
+ DARK:['Тьма','Dark'],POISON:['Яд','Poison']
+});
+const elementLabel=(element,api)=>{
+ if(typeof element!=='string')return null;
+ const code=element.trim().toUpperCase();
+ if(!code||code==='NONE')return null;
+ const labels=Object.hasOwn(ELEMENT_LABELS,code)?ELEMENT_LABELS[code]:null;
+ return labels?labels[api.lang==='en'?1:0]:tr(api,'Неизвестно','Unknown');
+};
 // Hero skill search follows the same word-order-independent convention as
 // equipment and encyclopedia pickers, without changing catalog identities.
 const matchesSkillSearch=(label,query)=>{
@@ -28,7 +41,7 @@ function make(tag,attr={},children=[]){
 // Match the established Origin stat button behavior: one point per click,
 // continuous increments after holding 340 ms, repeat every 85 ms.
 // During a hold we update state in place; pointerup commits a single rerender.
-function bindPathHoldStep(button,step,commit){
+function bindPathHoldStep(button,step,commit,api){
  let delay=null,interval=null,active=false,skipClick=false,changed=false;
  const cleanup=()=>{
   if(delay!==null){clearTimeout(delay);delay=null}
@@ -66,7 +79,9 @@ function bindPathHoldStep(button,step,commit){
   run();finish();
  });
  button.addEventListener('keydown',event=>{if(event.key==='Escape')finish()});
- button.setAttribute('aria-description','Click to change by 1; hold to repeat.');
+ button.setAttribute('aria-description',tr(api,
+  'Нажмите, чтобы изменить на 1; удерживайте для повторения.',
+  'Click to change by 1; hold to repeat.'));
 }
 // First matching ID wins, matching the original Array.find semantics.
 function indexSkills(skills){
@@ -494,8 +509,8 @@ function viewGrowth(target,api){
      const commit=mastery?
       ()=>api.onMastery(key,M.branchMastery(state,key,innate,caps),true):
       ()=>update(M.potential(state,key),true);
-     bindPathHoldStep(minus,()=>step(-1),commit);
-     bindPathHoldStep(plus,()=>step(1),commit);
+     bindPathHoldStep(minus,()=>step(-1),commit,api);
+     bindPathHoldStep(plus,()=>step(1),commit,api);
      stepper.append(minus,field,plus);group.append(title,stepper);
      return group;
     };
@@ -548,7 +563,7 @@ function viewSkills(target,details,api){
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
     (String(api.selectedSkill?.id)===String(skill.id)?' active':''),
-      'aria-label':skill.name+' · '+(gate.learned?tr(api,'доступно','available'):tr(api,'недоступно','unavailable')),
+      'aria-label':(skill.name||tr(api,'Умение без названия','Unnamed skill'))+' · '+(gate.learned?tr(api,'доступно','available'):tr(api,'недоступно','unavailable')),
    'data-skill-id':String(skill.id),onclick:()=>api.onInspect(skill)});
   const src=api.icon(skill.branch,skill);
   if(src){const img=make('img',{src,alt:''});img.onerror=()=>img.replaceWith(make('span',{text:'✦'}));item.append(img)}
@@ -582,7 +597,7 @@ function viewSkills(target,details,api){
   field(tr(api,'Подготовка','Cast time'),skill.cast);
   field(tr(api,'Перезарядка','Cooldown'),skill.cooldown);
   field(tr(api,'Дальность','Range'),skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
-  field(tr(api,'Стихия','Element'),skill.element);
+  field(tr(api,'Стихия','Element'),elementLabel(skill.element,api));
   if(skill.powerStat!==undefined&&skill.powerStat!==null&&skill.powerStat!=='')
    field(tr(api,'Характеристика','Attribute'),
     typeof api.attributeLabel==='function'?api.attributeLabel(skill.powerStat):
