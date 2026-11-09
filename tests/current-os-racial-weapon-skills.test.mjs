@@ -54,7 +54,7 @@ test('one-handed, axe/blunt and two-handed source categories remain distinct',()
  }
 });
 
-test('racial source numbers are available through combat/base without contaminating final ATK',()=>{
+test('source-backed racial weapon bonuses contribute to final ATK only for matching weapons',()=>{
  for(const spec of testCatalog){
   const weapon=items[spec.matches[0]],opts={stats,level:40,
    weapon,jobKey:'WARRIOR',skillCatalog:skills};
@@ -62,8 +62,14 @@ test('racial source numbers are available through combat/base without contaminat
   assert.ok(after.racialWeapon);
   assert.equal(after.racialWeapon.flat,spec.flat);
   assert.equal(after.racialWeapon.percent,spec.percent);
-  assert.equal(after.attack.known,before.attack.known,
-   'weapon bonus has no validated server ATK stacking formula yet');
+  const expected=spec.flat+Math.ceil(before.attack.raw*spec.percent/100);
+  assert.equal(after.attack.racialBonus,expected);
+  assert.equal(after.attack.known,before.attack.known+expected,
+   'Matching passive changes final ATK using the Legacy per-bonus ceiling');
+  const wrong=C.combatPreview({...opts,weapon:items[spec.misses[0]],racialPassiveId:spec.id});
+  const wrongBase=C.combatPreview({...opts,weapon:items[spec.misses[0]]});
+  assert.equal(wrong.attack.known,wrongBase.attack.known,
+   'Incompatible weapon must not receive the racial bonus');
   assert.equal(after.attackSpeed.known,before.attackSpeed.known);
   const entry=C.base({classData:classes.WARRIOR,
    raceData:tables.raceInit[spec.race],jobData:tables.jobInit.WARRIOR,
@@ -73,6 +79,23 @@ test('racial source numbers are available through combat/base without contaminat
   assert.equal(entry.combat.racialWeapon.id,spec.id);
   assert.equal(entry.combat.racialWeapon.matchesCategory,true);
  }
+});
+
+test('Enkidu Dragoon Strong arms raises attack for a two-handed spear',()=>{
+ const spear=items[2201],opts={stats,level:45,jobKey:'DRAGOON',
+  weapon:spear,skillCatalog:skills,weaponPlus:tables.weaponPlus,weaponGrade:3};
+ assert.equal(spear.twoHanded,true);
+ const none=C.combatPreview(opts);
+ const strong=C.combatPreview({...opts,racialPassiveId:900050002});
+ assert.equal(strong.racialWeapon.matchesCategory,true);
+ const expected=Math.ceil(none.attack.raw*12/100);
+ assert.equal(strong.attack.racialBonus,expected);
+ assert.equal(strong.attack.known,none.attack.known+expected);
+ assert.equal(C.combatPreview({...opts,racialPassiveId:900050003}).attack.known,
+  none.attack.known,'Changing Enkidu passive must remove the attack bonus');
+ const oneHand=items[21],oneOpts={...opts,weapon:oneHand,weaponGrade:0};
+ assert.equal(C.combatPreview({...oneOpts,racialPassiveId:900050002}).attack.known,
+  C.combatPreview(oneOpts).attack.known,'No bonus on incompatible weapon');
 });
 
 test('missing and damaged OS skill source never creates a guessed weapon bonus',()=>{

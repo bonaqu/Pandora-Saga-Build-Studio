@@ -81,3 +81,11 @@ test('every stylesheet link is a complete standalone HTML tag',()=>{
  assert.ok(tags.every(x=>/href="[^"]+"/.test(x)));
  assert.ok(head.includes('<link rel="stylesheet" href="pandora-studio-forge-controls.css?v='+release+'"><link rel="stylesheet" href="pandora-studio-owner-inline-ui.css?v='+release+'">'));
 });
+test('Soul capacity 0–3 stays in one compact row without altering enchantment controls',()=>{
+ const forgeCss=read('pandora-studio-forge-controls.css');
+ assert.match(equipment,/for\(let n=0;n<=3;n\+\+\)/);
+ assert.match(equipment,/class:'stage-enchant-fieldset stage-soul-capacity-fieldset'/);
+ assert.match(forgeCss,/\.stage-soul-capacity-fieldset \.stage-enchant-options\.is-element-options\{\s*display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
+ assert.match(forgeCss,/\.stage-soul-capacity-fieldset \.stage-enchant-options\.is-element-options button\{\s*height:26px;min-height:26px;padding:0 3px/);
+ assert.match(forgeCss,/\.stage-rich-body \.stage-enchant-options\.is-element-options button:nth-child\(7\)/);
+});

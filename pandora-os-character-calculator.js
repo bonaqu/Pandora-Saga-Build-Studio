@@ -782,9 +782,9 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
  const concentration=permitted('concentration','combatConcentration',new Set(),0);
  return {warCry,raging,defender,lunge,concentration};
 }
-// Three source-backed current OS racial weapon passives. They expose the
-// independent flat and rate channels of EP_SKILL_EQUIP_DAMAGERATE, but DO NOT
-// add a guessed number into final ATK (stage/rounding not game-client-proven).
+// Current OS racial weapon passives expose independent flat and percentage
+// channels of EP_SKILL_EQUIP_DAMAGERATE. Remaked Legacy Calc('ATK') adds the
+// weapon-matched flat amount and ceil(base ATK * rate / 100) to final ATK.
 // Weapon categorisation is a source-property comparison, not a statement
 // about all mounted, magical or skill-specific combat restrictions.
 const racialWeaponRules=Object.freeze({
@@ -888,10 +888,15 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const atkPct=attack?equipped.attackPercent.map(e=>({
   ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
  const atkExtras=equipped.attackFlat+atkPct.reduce((sum,e)=>sum+e.bonus,0);
+ // Remaked Legacy Calc('ATK') applies this independent, rounded-up bonus
+ // to the base attack before other additive enhancements.
+ const racialAttackBonus=baseAtk!==null&&racialWeapon?.matchesCategory===true?
+  racialWeapon.flat+Math.ceil(baseAtk*racialWeapon.percent/100):0;
  const effectiveAttack=attack?{...attack,flatEquipment:equipped.attackFlat,
-  percentEquipment:atkPct,activeBonus:activeAtk,guildBonus:guildAtk,
+  percentEquipment:atkPct,racialBonus:racialAttackBonus,
+  activeBonus:activeAtk,guildBonus:guildAtk,
   known:Math.ceil((attack.raw??attack.known)+attack.honor+atkExtras+
-   activeAtk+guildAtk)}:null;
+   racialAttackBonus+activeAtk+guildAtk)}:null;
  const accuracyPercent=equipped.accuracyPercent.map(e=>({
   ...e,bonus:Math.ceil(accuracyBase*e.rate/100)}));
  const accuracyBonus=accuracyPercent.reduce((sum,e)=>sum+e.bonus,0);

@@ -105,3 +105,11 @@
 .stage-rich-body .stage-enchant-fieldset legend{
  color:#efcb91;padding:0 5px;max-width:100%;font-size:12px
 }
+/* Soul capacity 0–3: four short choices, independent of the element picker. */
+.stage-rich-body .stage-soul-capacity-fieldset .stage-enchant-options.is-element-options{
+ display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px
+}
+.stage-rich-body .stage-soul-capacity-fieldset .stage-enchant-options.is-element-options button{
+ height:26px;min-height:26px;padding:0 3px;
+ font:700 11px/1 Manrope,Arial,sans-serif
+}
