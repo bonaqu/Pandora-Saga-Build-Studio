@@ -223,7 +223,8 @@ test('English encyclopedia indexes official names only and never reveals raw cla
 });
 test('nested trade and map searches use the same order-independent token matching',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/const matchesWords=\(text,query\)=>/);
+ assert.match(app,/const searchWords=\(text,query\)=>/);
+ assert.match(app,/const matchesWords=searchWords;/);
  assert.match(app,/matchesWords\(card\.searchText,recipeSearch\.value\)/);
  assert.match(app,/matchesWords\(row\.name,search\.value\)/);
  assert.doesNotMatch(app,/card\.searchText\.includes\(query\)/);
