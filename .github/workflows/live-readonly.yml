@@ -1,17 +1,11 @@
-name: Live Pages and Worker readiness
+name: Live Pages and Worker readiness (on release or manual)
 
 on:
-  # The built-in GitHub Pages deployment uses event="dynamic" and has not
-  # emitted workflow_run here. A branch push check must wait for the public
-  # release before reading Worker/D1 so queued deployments aren't misreported.
+  # No cron/scheduled run: avoid background GitHub Actions usage.
+  # Keep only release-related checks and an explicit manual run.
+  # A branch push check waits for the deployed Pages release before auditing.
   push:
     branches: [bonaqu_projects]
-  workflow_run:
-    workflows: ["pages build and deployment"]
-    types: [completed]
-    branches: [bonaqu_projects]
-  schedule:
-    - cron: '17 4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -24,14 +18,11 @@ concurrency:
 
 jobs:
   check-live:
-    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
       - name: Checkout published revision
         uses: actions/checkout@v5
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Use Node 22
         uses: actions/setup-node@v5
         with:
