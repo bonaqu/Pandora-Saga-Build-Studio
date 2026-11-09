@@ -13,7 +13,7 @@ function fixture(){
  const request=payload=>new Promise((resolve,reject)=>pending.push({payload,resolve,reject}));
  const execute=Function('cloudLibraryRequest','libraryScopeId','reportCloudStatus',
   'showStudioToast','queueDelete','acknowledgeDelete','console',
-  'let libraryChangeId=0;\n'+implementations+
+  'let libraryChangeId=0;const window={PandoraAccountUI:{isLoggedIn:()=>true}};\n'+implementations+
   '\nreturn {putCloudBuild,deleteCloudBuild,bump:()=>++libraryChangeId};');
  const api=execute(request,()=>owner,message=>statuses.push(message),
   (...args)=>toasts.push(args),()=>{},id=>acknowledged.push(id),{warn(){}});
