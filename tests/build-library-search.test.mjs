@@ -8,7 +8,8 @@ test('large libraries can be filtered by character name, profession and level',(
  assert.match(src,/builds\.length>5\?h\('input',\{type:'search'/);
  assert.match(src,/searchText:\[b\.name,races\[b\.data\?\.race\]\?\.\[0\],races\[b\.data\?\.race\]\?\.\[1\],jobs\[b\.data\?\.job\]/);
  assert.match(src,/races\[b\.data\?\.race\]\?\.\[lang==='en'\?1:0\]/);
- assert.match(src,/row\.box\.hidden=!row\.searchText\.includes\(query\)/);
+ assert.match(src,/tokens\.every\(token=>row\.searchText\.includes\(token\)\)/);
+ assert.match(src,/\.split\(\/\\s\+\/\)\.filter\(Boolean\)/);
  assert.match(src,/none\.hidden=!query\|\|visible>0/);
  assert.match(css,/\.build-card\[hidden\]\{display:none!important\}/);
  assert.doesNotMatch(src,/Поделиться всей библиотекой/);
