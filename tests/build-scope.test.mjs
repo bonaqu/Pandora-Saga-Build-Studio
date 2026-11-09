@@ -562,3 +562,95 @@ test('same-owner transition cannot report success after another tab takes owner 
  mod.transition(store,ownerA);
  assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Alice saved');
 });
+
+
+test('failed Alice primary write cannot roll back a newer Alice save in another tab',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ const original=JSON.stringify([{name:'Alice original'}]);
+ const attempted=JSON.stringify([{name:'Alice first attempt'}]);
+ const later=JSON.stringify([{name:'Alice newer tab'}]);
+ mod.setOwned(store,ownerA,keys[0],original);
+ let interleavedOnce=false;
+ const fragile={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   if(key===keys[0]&&!interleavedOnce){
+    interleavedOnce=true;
+    mod.setOwned(store,ownerA,keys[0],later);
+    throw Error('First tab primary write failed after newer same-owner edit');
+   }
+   store.setItem(key,value);
+  }
+ };
+ assert.throws(()=>mod.setOwned(fragile,ownerA,keys[0],attempted),
+  /First tab primary write failed/);
+ assert.equal(interleavedOnce,true);
+ assert.equal(store.getItem(mod.MARKER),ownerA);
+ assert.equal(store.getItem(keys[0]),later,
+  'Failed older write cannot restore a stale active value');
+ assert.equal(mod.getOwned(store,ownerA,keys[0]),later,
+  'Failed older write cannot restore a stale owner recovery backup');
+});
+
+test('failed primary write after Bob takes marker never destroys later Alice cache',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ const original=JSON.stringify([{name:'Alice original'}]);
+ const later=JSON.stringify([{name:'Alice newer backup'}]);
+ const bob=JSON.stringify([{name:'Bob own'}]);
+ mod.setOwned(store,ownerA,keys[0],original);
+ mod.setOwned(store,ownerB,keys[0],bob);
+ let interleavedOnce=false;
+ const fragile={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   if(key===keys[0]&&!interleavedOnce){
+    interleavedOnce=true;
+    mod.transition(store,ownerB);
+    mod.setOwned(store,ownerA,keys[0],later);
+    throw Error('Failed Alice primary write after Bob switched');
+   }
+   store.setItem(key,value);
+  }
+ };
+ assert.throws(()=>mod.setOwned(fragile,ownerA,keys[0],
+  JSON.stringify([{name:'Alice obsolete write'}])),
+ /Failed Alice primary write after Bob switched/);
+ assert.equal(interleavedOnce,true);
+ assert.equal(store.getItem(mod.MARKER),ownerB);
+ assert.equal(store.getItem(keys[0]),bob);
+ assert.equal(mod.getOwned(store,ownerA,keys[0]),later);
+ assert.equal(mod.getOwned(store,ownerB,keys[0]),bob);
+ mod.transition(store,ownerA);
+ assert.equal(store.getItem(keys[0]),later);
+});
+
+test('failed partially-applied primary write restores own old value and backup',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ const original=JSON.stringify([{name:'Alice original'}]);
+ mod.setOwned(store,ownerA,keys[0],original);
+ const backupKey='ps-build-scope-cache.v1:'+ownerA,
+  before=store.getItem(backupKey);
+ let failed=false;
+ const partial={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   store.setItem(key,value);
+   if(key===keys[0]&&!failed){
+    failed=true;
+    throw Error('Primary write applied but storage reported failure');
+   }
+  }
+ };
+ assert.throws(()=>mod.setOwned(partial,ownerA,keys[0],
+  JSON.stringify([{name:'Alice incomplete'}])),/Primary write applied/);
+ assert.equal(failed,true);
+ assert.equal(store.getItem(mod.MARKER),ownerA);
+ assert.equal(store.getItem(keys[0]),original);
+ assert.equal(store.getItem(backupKey),before);
+});
