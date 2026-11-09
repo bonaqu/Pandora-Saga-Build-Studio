@@ -8,7 +8,7 @@ const loadingCss=read('pandora-studio-loading.css');
 test('no visible introduction and character editor immediately follows site notice',()=>{
  assert.doesNotMatch(html,/<section\s+class="intro"/);
  assert.doesNotMatch(html,/АРХИВ ГЕРОЕВ|Создай свою легенду|Выбери расу, профессию, снаряжение/);
- assert.match(html,/<main><h1 class="visually-hidden">/);
+ assert.match(html,/<main><h1 class="visually-hidden" data-i18n="editorHeading">/);
  assert.match(html,/<section class="workspace" id="workspace"/);
  assert.ok(html.indexOf('<section class="workspace"')<html.indexOf('id="originTabs"'));
  assert.doesNotMatch(css,/\.intro(?:\{|\s|>| )/);
