@@ -59,6 +59,15 @@ function validate(input){
   if(!Number.isSafeInteger(expected)||expected<1||observed<expected)
    throw Error('Неполный каталог '+key+': '+observed+' из '+expected);
  }
+ // A source record is reached by its dictionary key in the equipment picker,
+ // Wiki links, Soul relations and combat index. A conflicting embedded id
+ // would make one card claim to be another, even if counts and cross-links
+ // happen to match. Older key-only records remain valid.
+ for(const kind of ['items','monsters','skills','souls'])
+  for(const [key,row] of Object.entries(data[kind])){
+   if(!isRecord(row)||Object.hasOwn(row,'id')&&String(row.id)!==key)
+    throw Error('Не совпадает идентификатор записи игрового каталога: '+kind);
+  }
  // Wiki indexes dungeons by String(row.id) with Object.fromEntries().
  // Two source rows with the same ID silently overwrite one dungeon card,
  // while a missing/non-numeric ID creates an invalid deep link. Check these
