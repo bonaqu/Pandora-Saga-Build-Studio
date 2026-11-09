@@ -9,6 +9,7 @@ assert.ok(start>=0&&end>start,'Test the real cloud-loader function');
 const loader=app.slice(start,end);
 const world={};
 Function('window',read('pandora-studio-build-library-merge.js'))(world);
+world.PandoraAccountUI={isLoggedIn:()=>true};
 const A='a'.repeat(32),B='b'.repeat(32),C='c'.repeat(32);
 const entry=(id,name)=>({id,name,at:100,data:{race:1,job:16,level:45}});
 function scenario({pending=[A,B],fail=[A],remote=[]}={}){
