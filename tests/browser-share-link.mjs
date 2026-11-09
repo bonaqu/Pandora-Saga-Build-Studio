@@ -104,14 +104,15 @@ export async function runShareLinkSmoke(browser,base){
     el.value='22';el.dispatchEvent(new Event('input',{bubbles:true}));
    });
    assert.equal(await incoming.locator('#levelOut').textContent(),'22');
-   await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
+   // Navigate without a full page reload: previously only boot processed #b/.
+   await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const dialog=incoming.getByRole('dialog',{name:'Открыть билд по ссылке?'});
    await dialog.waitFor({state:'visible',timeout:20000});
    await dialog.getByRole('button',{name:'Отмена'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'22',
     'rejecting an imported build preserves the recipient draft');
    assert.equal(await incoming.evaluate(()=>location.hash),'');
-   await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
+   await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    await dialog.waitFor({state:'visible',timeout:20000});
    await dialog.getByRole('button',{name:'Открыть без сохранения'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'55',
@@ -120,7 +121,7 @@ export async function runShareLinkSmoke(browser,base){
    // English receiver: the entire standalone shared-build dialog must be localized,
    // while preserving the original user build and all saved build data.
    await incoming.locator('#locale [data-locale="en"]').click();
-   await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
+   await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const englishDialog=incoming.getByRole('dialog',{name:'Open build from link?'});
    await englishDialog.waitFor({state:'visible',timeout:20000});
    assert.match(await englishDialog.innerText(),/unsaved changes will be replaced/i);
@@ -128,7 +129,7 @@ export async function runShareLinkSmoke(browser,base){
    assert.equal(await incoming.locator('#levelOut').textContent(),'55');
    await incoming.locator('#locale [data-locale="ru"]').click();
    revoked=true;
-   await incoming.goto(base+'/#b/'+shareId,{waitUntil:'domcontentloaded'});
+   await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const toast=incoming.locator('#studioToast');
    await toast.waitFor({state:'visible',timeout:20000});
    assert.match(await toast.innerText(),/Владелец удалил этот билд/);
