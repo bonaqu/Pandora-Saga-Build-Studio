@@ -382,3 +382,39 @@ test('D1 exchange recipes must have distinct valid IDs even when NPC and item ma
  assert.equal(result.data.trades.trades.length,2);
  assert.deepEqual(result.data.trades.trades.map(row=>row.id),[1,2]);
 });
+
+
+test('keyed game records cannot impersonate a different item, skill, Soul or monster',async()=>{
+ const full=catalog('source'),safe=catalog('safe archive');
+ const kinds=['items','monsters','skills','souls'];
+ assert.doesNotThrow(()=>loader.validate(full));
+ for(const kind of kinds){
+  const record=structuredClone(full),first=record[kind][1];
+  record[kind][1]={...first,id:999};
+  assert.throws(()=>loader.validate(record),/идентификатор записи/,kind);
+  const remote=mockFetch(record,safe);
+  await assert.rejects(loader.load({api:'https://worker.example',
+   fetcher:remote.fetcher,strict:true}),/идентификатор записи/,kind);
+  const fallback=await loader.load({api:'https://worker.example',
+   fetcher:remote.fetcher});
+  assert.equal(fallback.source,'local',kind);
+  assert.equal(fallback.data[kind][1].id,1,
+   'A damaged D1 key must not poison the archive-backed Wiki: '+kind);
+ }
+});
+
+test('invalid or object-shaped keyed entries fail without breaking historical key-only rows',()=>{
+ const base=catalog('source');
+ for(const kind of ['items','monsters','skills','souls']){
+  const nullEntry=structuredClone(base);nullEntry[kind][1]=null;
+  assert.throws(()=>loader.validate(nullEntry),/идентификатор записи/,kind);
+  const wrongId=structuredClone(base);wrongId[kind][1].id=null;
+  assert.throws(()=>loader.validate(wrongId),/идентификатор записи/,kind);
+  const numericString=structuredClone(base);numericString[kind][1].id='1';
+  assert.doesNotThrow(()=>loader.validate(numericString),
+   'Older JSON may contain an equivalent string ID: '+kind);
+  const keyOnly=structuredClone(base);delete keyOnly[kind][1].id;
+  assert.doesNotThrow(()=>loader.validate(keyOnly),
+   'A legacy keyed record may omit redundant id: '+kind);
+ }
+});

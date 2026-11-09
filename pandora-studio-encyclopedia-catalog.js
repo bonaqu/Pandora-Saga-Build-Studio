@@ -50,8 +50,6 @@ function validate(input){
  if(!isRecord(data.chests)||!Array.isArray(data.chests.boxes)||
     !Array.isArray(data.chests.npc))
   throw Error('Неверный формат сундуков');
- // Keep one source-backed ownership check for both the current hero and Wiki.
- validateRacialPassives(data.racialPassives,data.skills,data.meta.counts);
  for(const key of ['items','monsters','maps','instances','drops','trades','skills','souls']){
   const observed=Array.isArray(data[key])?data[key].length:
    key==='trades'?data.trades.trades.length:Object.keys(data[key]).length;
@@ -59,6 +57,19 @@ function validate(input){
   if(!Number.isSafeInteger(expected)||expected<1||observed<expected)
    throw Error('Неполный каталог '+key+': '+observed+' из '+expected);
  }
+ // A source record is reached by its dictionary key in the equipment picker,
+ // Wiki links, Soul relations and combat index. A conflicting embedded id
+ // would make one card claim to be another, even if counts and cross-links
+ // happen to match. Older key-only records remain valid.
+ for(const kind of ['items','monsters','skills','souls'])
+  for(const [key,row] of Object.entries(data[kind])){
+   if(!isRecord(row)||Object.hasOwn(row,'id')&&String(row.id)!==key)
+    throw Error('Не совпадает идентификатор записи игрового каталога: '+kind);
+  }
+ // Check cross-record ownership only after record shape and identity are
+ // verified; otherwise a null or mismatched passive skill is misreported as
+ // a race-registry defect instead of a broken skills record.
+ validateRacialPassives(data.racialPassives,data.skills,data.meta.counts);
  // Wiki indexes dungeons by String(row.id) with Object.fromEntries().
  // Two source rows with the same ID silently overwrite one dungeon card,
  // while a missing/non-numeric ID creates an invalid deep link. Check these
