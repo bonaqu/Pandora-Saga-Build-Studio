@@ -538,3 +538,61 @@ test('absent chance remains unspecified, never fabricated as zero',()=>{
  assert.equal(value.drops[1].d[0].p,null);
  assert.equal(Object.hasOwn(value.drops[1].d[1],'p'),false);
 });
+
+
+test('all current 485 zone-drop groups and 1445 item references validate without mutation',()=>{
+ const table=JSON.parse(readFileSync(new URL('../data/os/tables.json',import.meta.url),'utf8'));
+ const groups=table.zoneDrops.flatMap(zone=>zone.rows);
+ const rows=groups.flatMap(group=>group.items);
+ assert.equal(groups.length,485);
+ assert.equal(rows.length,1445);
+ assert.equal(groups.filter(group=>Number.isFinite(group.base)&&
+  Number.isFinite(group.perMember)&&group.base>=0&&group.perMember>=0&&
+  group.base<=100&&group.perMember<=100).length,groups.length);
+ const before=JSON.stringify(table.zoneDrops);
+ const data={};
+ for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
+  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(JSON.stringify(data.tables.zoneDrops),before);
+});
+
+test('zone-drop probabilities and upgrade ranges cannot impersonate valid D1 data',async()=>{
+ const value=catalog('zone');
+ value.tables.zoneDrops=[{map:1,rows:[{
+  base:2.5,perMember:0.1,kind:'csv',items:[{i:1,lo:0,hi:3}]
+ }]}];
+ assert.doesNotThrow(()=>loader.validate(value));
+ const cases=[
+  ['negative base',c=>{c.tables.zoneDrops[0].rows[0].base=-2},/вероятность добычи локации/],
+  ['base over 100',c=>{c.tables.zoneDrops[0].rows[0].base=101},/вероятность добычи локации/],
+  ['base as a string',c=>{c.tables.zoneDrops[0].rows[0].base='2.5'},/вероятность добычи локации/],
+  ['per-member Infinity',c=>{c.tables.zoneDrops[0].rows[0].perMember=Infinity},/вероятность добычи локации/],
+  ['negative per member',c=>{c.tables.zoneDrops[0].rows[0].perMember=-0.5},/вероятность добычи локации/],
+  ['missing item ID',c=>{delete c.tables.zoneDrops[0].rows[0].items[0].i},/награда добычи локации/],
+  ['unknown item',c=>{c.tables.zoneDrops[0].rows[0].items[0].i=999},/награда добычи локации/],
+  ['negative lower upgrade',c=>{c.tables.zoneDrops[0].rows[0].items[0].lo=-1},/улучшение награды/],
+  ['upper upgrade string',c=>{c.tables.zoneDrops[0].rows[0].items[0].hi='3'},/улучшение награды/],
+  ['reversed upgrade bounds',c=>{c.tables.zoneDrops[0].rows[0].items[0].lo=4},/диапазон улучшения/]
+ ];
+ for(const [label,damage,reason] of cases){
+  const bad=structuredClone(value);damage(bad);
+  assert.throws(()=>loader.validate(bad),reason,label);
+ }
+ const remote=structuredClone(value);
+ remote.tables.zoneDrops[0].rows[0].base=-10;
+ const mock=mockFetch(remote,value);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:mock.fetcher,strict:true}),/вероятность добычи локации/);
+ const safe=await loader.load({api:'https://worker.example',fetcher:mock.fetcher});
+ assert.equal(safe.source,'local');
+ assert.equal(safe.data.tables.zoneDrops[0].rows[0].base,2.5);
+ assert.deepEqual(safe.data.tables.zoneDrops[0].rows[0].items,[{i:1,lo:0,hi:3}]);
+});
+
+test('historical zone groups with omitted optional rates stay compatible',()=>{
+ const data=catalog();
+ data.tables.zoneDrops=[{map:1,rows:[{items:[{i:1}]}]}];
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(data.tables.zoneDrops[0].rows[0].base,undefined);
+});
