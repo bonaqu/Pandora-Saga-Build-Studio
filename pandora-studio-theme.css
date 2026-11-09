@@ -2168,3 +2168,10 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  position:static;font:600 10px/1.2 Manrope,Arial,sans-serif;
  color:#d9ba8f;max-width:100%;white-space:nowrap
 }
+
+/* Optional sign-in prompt only in My Builds. Guest libraries remain usable. */
+.build-account-reminder{display:flex;align-items:center;justify-content:space-between;
+ gap:9px;flex-wrap:wrap;padding:8px 11px;margin:0 0 10px;border:1px solid #705434;
+ border-radius:4px;background:#211911;color:#dac9ac;font:12px/1.45 Manrope,Arial,sans-serif}
+.build-account-reminder .button-action{margin:0;padding:6px 11px;flex:0 0 auto}
+@media(max-width:600px){.build-account-reminder .button-action{margin-left:auto}}

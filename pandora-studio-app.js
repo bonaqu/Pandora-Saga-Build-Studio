@@ -5972,9 +5972,20 @@ function renderBuilds(root){
   }}),
   h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
+ // Player accounts are optional, but a guest must immediately understand why
+ // their *account* cloud builds have not loaded after a cleared browser login.
+ const signedIn=Boolean(window.PandoraAccountUI?.isLoggedIn());
+ const accountReminder=signedIn?null:h('div',{class:'build-account-reminder'},[
+  h('span',{text:lang==='en'?
+   'Saved builds in an account? Sign in to load them.':
+   'Сохраняли билды в аккаунте? Войдите, чтобы они загрузились.'}),
+  h('button',{type:'button',class:'button-action',
+   text:lang==='en'?'Sign in':'Войти в аккаунт',
+   onclick:()=>document.getElementById('profileTrigger')?.click()})
+ ]);
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
    text:window.PandoraUILocale?.ui(cloudLibraryStatus,lang)||cloudLibraryStatus}),
-  ...(window.PandoraAccountUI?.isLoggedIn()?[]:[buildLibraryTransfer()]));
+  ...(signedIn?[]:[accountReminder,buildLibraryTransfer()]));
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
  root.append(comparisonSlot);
  let comparison=null;
