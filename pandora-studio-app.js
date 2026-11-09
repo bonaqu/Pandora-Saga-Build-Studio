@@ -7943,7 +7943,12 @@ void window.PandoraAccountUI.init({
 // Return to a saved library after network loss; an unsaved draft is never uploaded.
 let lastCloudReconnect=0;
 function resumeCloudLibrary(){
- if(!builds.length&&!queuedDeletes().length)return;
+ // An authenticated account may have ALL its saved builds only in D1 (new
+ // browser, cleared cache, or an initial GET that failed while offline).
+ // Empty local storage is not evidence of an empty remote account library.
+ // Keep the old guest guard: never make background empty-guest D1 requests.
+ const signedIn=window.PandoraAccountUI?.isLoggedIn()===true;
+ if(!signedIn&&!builds.length&&!queuedDeletes().length)return;
  if(Date.now()-lastCloudReconnect<20000)return;
  lastCloudReconnect=Date.now();
  void loadCloudBuilds();
