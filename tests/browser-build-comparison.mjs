@@ -250,6 +250,19 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   const byId=rows=>rows.slice().sort((a,b)=>a.id.localeCompare(b.id));
   assert.deepEqual(byId(persisted),byId(library),
    'Cloud refresh may sort build cards, but must preserve every saved build and field');
+  await hero.locator('.build-overwrite-choice').getByRole('button',{name:'Cancel'}).click();
+  await search.fill('Сияние героя');
+  assert.equal(await page.locator('.build-card:visible').count(),1);
+  await hero.getByRole('button',{name:'Delete',exact:true}).click();
+  await hero.getByRole('button',{name:'Delete build'}).click();
+  // Removing one of six saved records leaves five. The active search must
+  // remain visible, with zero matches instead of leaking unfiltered cards.
+  await search.waitFor({state:'visible'});
+  assert.equal(await search.inputValue(),'Сияние героя');
+  assert.equal(await page.locator('.build-card').count(),5);
+  assert.equal(await page.locator('.build-card:visible').count(),0);
+  assert.match(await page.locator('.build-grid + .muted').innerText(),
+   /No builds match this search/);
   assert.deepEqual(errors,[]);
   console.log('Chromium saved-build EN passed: localized race, bilingual search, dynamic prompt');
  }finally{await context.close()}

@@ -6132,7 +6132,7 @@ function renderBuilds(root){
  const syncCompareCheckboxes=()=>{
   for(const row of searchable)row.check.checked=compareIds.includes(row.build.id);
  };
- const search=builds.length>5?h('input',{type:'search',class:'build-library-search',
+ const search=(builds.length>5||Boolean(buildSearchQuery.trim()))?h('input',{type:'search',class:'build-library-search',
   'aria-label':'Найти сохранённый билд',placeholder:'Поиск по названию, классу, уровню…',
   value:buildSearchQuery}):null;
  if(search)root.append(search);
