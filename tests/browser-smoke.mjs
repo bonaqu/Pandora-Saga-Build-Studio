@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {runIndependentSmokes} from './browser-runner.mjs';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
+import {runBuildAuthGateSmoke} from './browser-build-auth-gate.mjs';
 import {runLayoutAudit} from './browser-layout.mjs';
 import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
 import {runCloudSaveFailureSmoke} from './browser-cloud-save-failure.mjs';
@@ -350,6 +351,7 @@ async function main(){
  // Execute at most three at once: this reduces wall time without risking
  // cross-test localStorage/account contamination or high 4K screenshot memory.
  const scenarios=[
+  ['build-account-gate',runBuildAuthGateSmoke],
   ['share-link',runShareLinkSmoke],
   ['cloud-conflict',runCloudConflictSmoke],
   ['cloud-save-failure',runCloudSaveFailureSmoke],
@@ -389,7 +391,7 @@ async function main(){
   ['hidden-admin-entry',runAdminEntrySmoke],
   ['inline-skill-milestones',runInlineMilestonesSmoke]
  ];
- const quickCases=new Set(['share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
+ const quickCases=new Set(['build-account-gate','share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
