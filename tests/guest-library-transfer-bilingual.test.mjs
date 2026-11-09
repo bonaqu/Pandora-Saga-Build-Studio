@@ -1,119 +1,61 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-
 const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
-const extract=(first,last)=>{
- const a=app.indexOf(first),b=app.indexOf(last,a+first.length);
- assert.ok(a>=0&&b>a,'Production function not found: '+first);
- return app.slice(a,b);
+const begin=app.indexOf('function buildLegacyImport(){');
+const end=app.indexOf('function renderBuilds(root){',begin);
+assert.ok(begin>=0&&end>begin,'Test the real account import panel');
+const implementation=app.slice(begin,end);
+function h(tag,props={},children=[]){
+ const el={tag,props,hidden:Boolean(props.hidden),value:props.value??'',
+  textContent:props.text??'',onclick:props.onclick??null,disabled:false,
+  children:[],
+  append(...items){this.children.push(...items)}
+ };
+ el.append(...(Array.isArray(children)?children:[children]).filter(Boolean));
+ return el;
+}
+const flatten=node=>[node,...node.children.flatMap(flatten)];
+const panel=lang=>{
+ const factory=Function('h','lang',implementation+'\nreturn buildLegacyImport;');
+ const root=factory(h,lang)();
+ return {root,nodes:flatten(root)};
 };
-const transfer=extract('function buildLibraryTransfer(){','\nfunction renderBuilds(');
-const connect=extract('async function connectCloudLibrary(secret,feedback){',
- '\nfunction buildLibraryTransfer(){');
-const legacySecret='a'.repeat(64),otherSecret='b'.repeat(64);
-
-function node(tag,props={},children=[]){
- const items=Array.isArray(children)?children:[children];
- return{
-  tag,props,textContent:props.text||'',value:props.value||'',disabled:false,
-  onclick:props.onclick||null,children:items.filter(Boolean),
-  append(...more){this.children.push(...more)},
-  focus(){},select(){}
- };
-}
-const all=el=>[el,...el.children.flatMap(all)];
-function panel(language){
- const calls=[],clipboard=[];
- const getPanel=Function('h','lang','tabGuestSecret','navigator','connectCloudLibrary',
-  transfer+'\nreturn buildLibraryTransfer;')(
-   node,language,legacySecret,{
-    clipboard:{writeText:async text=>clipboard.push(text)}
-   },async(secret,feedback)=>{
-    calls.push({secret,feedback});return true;
-   });
- return{root:getPanel(),calls,clipboard};
-}
-
-test('English guest cloud transfer uses English buttons, labels, warning and helper text',async()=>{
- const {root,clipboard}=panel('en'),elements=all(root);
- const visible=elements.map(el=>[
-  el.textContent,el.props?.placeholder,el.props?.['aria-label']
- ].filter(Boolean).join(' ')).join(' ');
- assert.ok(visible.includes('Transfer or recover cloud builds'));
- assert.ok(visible.includes('Never share this code'));
- assert.ok(visible.includes('Connect and merge'));
- assert.equal(/[А-Яа-яЁё]/.test(visible),false,
-  'English panel must not leak unlocalized Russian controls');
- const copy=elements.find(el=>el.tag==='button'&&
-  el.textContent==='Reveal my code');
- const secret=elements.find(el=>el.props?.['aria-label']==='Personal library code');
- assert.ok(copy&&secret);
- assert.equal(secret.value,'','Guest code must never be shown before an explicit click');
- await copy.onclick();
- assert.equal(secret.value,legacySecret);
- assert.equal(copy.textContent,'Copy my code');
- await copy.onclick();
- assert.deepEqual(clipboard,[legacySecret]);
- assert.equal(copy.textContent,'✓ Code copied');
-});
-
-test('Russian transfer remains unchanged and never reveals the guest secret by default',()=>{
- const {root}=panel('ru'),elements=all(root);
- const values=elements.map(el=>[el.textContent,el.props?.placeholder].join(' ')).join(' ');
- assert.match(values,/Перенести или восстановить облачные билды/);
- assert.match(values,/Сохраните личный код библиотеки/);
- assert.match(values,/Подключить и объединить/);
- const secret=elements.find(el=>el.props?.['aria-label']==='Личный код библиотеки');
- assert.equal(secret?.value,'');
-});
-
-function connectHarness(language,{authenticated=false,pending=false,records=[]}={}){
- const actions=[],store=new Map(),window={
-  PandoraAccountUI:{isLoggedIn:()=>authenticated},
-  PandoraBuildScope:{owner:(_username,key)=>'guest:'+key}
- };
- const factory=Function('lang','window','queuedDeletes','libraryScopeId',
-  'cloudLibraryRequest','localStorage','CLOUD_TOKEN_KEY',
-  'activateLibraryScope','selectActiveBuild','loadCloudBuilds','originalSecret',
-  'let tabGuestSecret=originalSecret,libraryChangeId=0;\n'+connect+
-  '\nreturn {connect:connectCloudLibrary,secret:()=>tabGuestSecret,'+
-  'changeId:()=>libraryChangeId};');
- return{...factory(language,window,()=>pending?['pending']:[],
-  ()=>'guest:'+legacySecret,
-  async()=>({records}),
-  {setItem:(key,value)=>{store.set(key,value);actions.push('store')}},
-  'ps-build-library-secret.v1',
-  opts=>actions.push('scope'),
-  id=>actions.push('selected:'+id),
-  ()=>actions.push('refresh'),legacySecret),
-  actions,store};
-}
-
-test('invalid English guest codes and logged-in switching get actionable translated feedback',async()=>{
- const guest=connectHarness('en');
- const feedback={textContent:''};
- assert.equal(await guest.connect('bad-code',feedback),false);
+test('the English account import uses clear localized controls and hides recovery keys',async()=>{
+ const {nodes}=panel('en');
+ const visible=nodes.flatMap(el=>[el.textContent,el.props?.placeholder,
+  el.props?.['aria-label']]).filter(Boolean).join(' ');
+ for(const label of ['Import older builds','Check code','Find on this device',
+  'Add builds to my account','Previously saved without an account'])
+  assert.ok(visible.includes(label),label);
+ assert.equal(/[А-Яа-яЁё]/.test(visible),false);
+ const input=nodes.find(el=>el.props?.['aria-label']==='Previous library code');
+ assert.ok(input);
+ assert.equal(input.value,'','No old guest key is rendered or revealed by default');
+ const verify=nodes.find(el=>el.textContent==='Check code');
+ assert.ok(verify);
+ await verify.onclick();
+ const feedback=nodes.find(el=>el.props?.role==='status');
  assert.match(feedback.textContent,/64 characters/);
- assert.deepEqual(guest.actions,[]);
- const account=connectHarness('en',{authenticated:true});
- assert.equal(await account.connect(otherSecret,feedback),false);
- assert.match(feedback.textContent,/Sign out of your account/);
- const pending=connectHarness('en',{pending:true});
- assert.equal(await pending.connect(otherSecret,feedback),false);
- assert.match(feedback.textContent,/Sync pending deletions/);
- assert.equal(pending.store.size,0);
 });
-
-test('English cloud transfer keeps existing owner/secret safety checks and reports success',async()=>{
- const library=[{id:'f'.repeat(32),deleted:false,
-  entry:{id:'f'.repeat(32),name:'Character',at:1,data:{level:55}}}];
- const ctx=connectHarness('en',{records:library}),feedback={textContent:''};
- assert.equal(await ctx.connect(otherSecret,feedback),true);
- assert.match(feedback.textContent,/Connected\. Merging saved builds/);
- assert.deepEqual(ctx.actions,['scope','store','selected:null','refresh'],
-  'Guest transfer must commit its durable key only after owner activation');
- assert.equal(ctx.store.get('ps-build-library-secret.v1'),otherSecret);
- assert.equal(ctx.secret(),otherSecret);
- assert.equal(ctx.changeId(),1);
+test('the Russian account import stays compact and uses the same form logic',async()=>{
+ const {nodes}=panel('ru');
+ const text=nodes.map(el=>el.textContent).join(' ');
+ assert.match(text,/Перенести старые билды/);
+ assert.match(text,/Добавить билды в мой аккаунт/);
+ assert.match(text,/Найти на этом устройстве/);
+ const code=nodes.find(el=>el.props?.['aria-label']==='Код старой библиотеки');
+ assert.ok(code&&code.value==='');
+ await nodes.find(el=>el.textContent==='Проверить код').onclick();
+ const feedback=nodes.find(el=>el.props?.role==='status');
+ assert.match(feedback.textContent,/64 символа/);
+});
+test('legacy import cannot silently transfer across account or owner changes',()=>{
+ assert.match(implementation,/token!==window\.PandoraAccountUI\?\.token\(\)/);
+ assert.match(implementation,/owner!==libraryScopeId\(\)/);
+ assert.match(implementation,/window\.PandoraAccountUI\.token\(\)!==selectedToken/);
+ assert.match(implementation,/libraryScopeId\(\)!==selectedOwner/);
+ assert.match(implementation,/if\(!persistBuilds\(\)\)/);
+ assert.match(implementation,/builds=previous/);
+ assert.match(implementation,/await putCloudBuild\(row\)/);
 });
