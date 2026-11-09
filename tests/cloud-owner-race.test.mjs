@@ -18,7 +18,7 @@ function deletionCase(pending){
  let owner='account:alice_01',acknowledged=[],messages=[],toasts=[],queue=[];
  const deleteCloudBuild=Function('libraryScopeId','queueDelete','acknowledgeDelete',
   'cloudLibraryRequest','reportCloudStatus','showStudioToast','console',
-  'let libraryChangeId=0;'+deletion+'return deleteCloudBuild')(
+  'let libraryChangeId=0;const window={PandoraAccountUI:{isLoggedIn:()=>true}};'+deletion+'return deleteCloudBuild')(
    ()=>owner,id=>queue.push(id),id=>acknowledged.push(id),
    ()=>pending.promise,message=>messages.push(message),
    (...args)=>toasts.push(args),{warn:()=>{}}
@@ -49,14 +49,14 @@ test('late cloud PUT status cannot claim another player saved its build',async()
  let owner='account:alice_01',status=[];
  const pending=deferred();
  const send=Function('libraryScopeId','cloudLibraryRequest','reportCloudStatus','console',
-  'let libraryChangeId=0;'+put+'return putCloudBuild')(()=>owner,()=>pending.promise,
+  'let libraryChangeId=0;const window={PandoraAccountUI:{isLoggedIn:()=>true}};'+put+'return putCloudBuild')(()=>owner,()=>pending.promise,
    x=>status.push(x),{warn:()=>{}});
  const operation=send({id:'a'.repeat(32)});
  owner='account:bob_222';pending.resolve({ok:true});
  assert.equal(await operation,true);assert.deepEqual(status,[]);
  const second=deferred();
  const send2=Function('libraryScopeId','cloudLibraryRequest','reportCloudStatus','console',
-  'let libraryChangeId=0;'+put+'return putCloudBuild')(()=>owner,()=>second.promise,
+  'let libraryChangeId=0;const window={PandoraAccountUI:{isLoggedIn:()=>true}};'+put+'return putCloudBuild')(()=>owner,()=>second.promise,
    x=>status.push(x),{warn:()=>{}});
  const op=send2({id:'b'.repeat(32)});
  second.resolve({ok:true});assert.equal(await op,true);
