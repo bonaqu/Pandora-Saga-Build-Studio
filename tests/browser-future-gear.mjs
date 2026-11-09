@@ -41,6 +41,9 @@ export async function runFutureGearSmoke(browser,base){
   await page.locator('#locale [data-locale="en"][aria-pressed="true"]')
    .waitFor({state:'visible',timeout:20000});
   await page.locator('.equipment-slot[data-slot-index="0"]').click();
+  // An occupied slot starts on Properties, not Choose: use the visible
+  // existing tabs instead of expecting a hidden search input.
+  await page.locator('#stagePicker [data-stage-tab="choose"]').click();
   const englishPicker=page.locator('#stagePicker input[type="search"]');
   await englishPicker.waitFor({state:'visible',timeout:20000});
   await englishPicker.fill('меч Рычащий');
