@@ -475,3 +475,66 @@ test('missing chance remains unspecified rather than becoming invented 0 or 100'
  assert.equal(value.chests.boxes[0].rolls[0][0].p,null);
  assert.equal(Object.hasOwn(value.chests.boxes[0].rolls[0][1],'p'),false);
 });
+
+
+test('current 1288 monster drops retain valid source chances and referenced Souls',()=>{
+ const drops=JSON.parse(readFileSync(new URL('../data/os/drops.json',import.meta.url),'utf8'));
+ const souls=JSON.parse(readFileSync(new URL('../data/os/souls.json',import.meta.url),'utf8'));
+ const rows=Object.values(drops).flatMap(g=>[...(g.d||[]),...(g.s||[])]);
+ const pairs=rows.flatMap(row=>row.souls||[]);
+ assert.equal(rows.length,1288);
+ assert.equal(rows.filter(row=>Number.isFinite(row.p)&&row.p>=0&&row.p<=100).length,
+  rows.length,'No source probabilities are modified or invented');
+ assert.equal(pairs.length,4);
+ assert.equal(pairs.filter(([id])=>Object.hasOwn(souls,String(id))).length,pairs.length);
+ const data={};
+ for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
+  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+ const before=JSON.stringify(data.drops);
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(JSON.stringify(data.drops),before);
+});
+
+test('malformed monster drop chances, quantities and Soul links reject the D1 snapshot',async()=>{
+ const good=catalog('monster source');
+ good.drops[1]={d:[{i:1,p:12.5,n:2,slotAdd:1,lo:0,hi:1,
+  souls:[[1,25]]}],s:[]};
+ assert.doesNotThrow(()=>loader.validate(good));
+ const cases=[
+  ['missing item',c=>{c.drops[1].d[0].i=999},/предмет добычи/],
+  ['missing item field',c=>{delete c.drops[1].d[0].i},/предмет добычи/],
+  ['negative chance',c=>{c.drops[1].d[0].p=-0.5},/шанс добычи/],
+  ['chance above 100',c=>{c.drops[1].d[0].p=100.1},/шанс добычи/],
+  ['chance string',c=>{c.drops[1].d[0].p='50'},/шанс добычи/],
+  ['chance Infinity',c=>{c.drops[1].d[0].p=Infinity},/шанс добычи/],
+  ['quantity zero',c=>{c.drops[1].d[0].n=0},/количество добычи/],
+  ['quantity string',c=>{c.drops[1].d[0].n='3'},/количество добычи/],
+  ['Soul slot excess',c=>{c.drops[1].d[0].slotAdd=4},/слоты душ добычи/],
+  ['negative lower grade',c=>{c.drops[1].d[0].lo=-1},/границы улучшения/],
+  ['oversized higher grade',c=>{c.drops[1].d[0].hi=1001},/границы улучшения/],
+  ['Soul set as string',c=>{c.drops[1].d[0].souls='1'},/список душ добычи/],
+  ['unknown Soul ID',c=>{c.drops[1].d[0].souls=[[999,20]]},/душа добычи/],
+  ['invalid Soul chance',c=>{c.drops[1].d[0].souls=[[1,101]]},/душа добычи/]
+ ];
+ for(const [name,damage,reason] of cases){
+  const broken=structuredClone(good);damage(broken);
+  assert.throws(()=>loader.validate(broken),reason,name);
+ }
+ const damaged=structuredClone(good);
+ damaged.drops[1].d[0].p=-1;
+ const remote=mockFetch(damaged,good);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:remote.fetcher,strict:true}),/шанс добычи/);
+ const fallback=await loader.load({api:'https://worker.example',fetcher:remote.fetcher});
+ assert.equal(fallback.source,'local');
+ assert.equal(fallback.data.drops[1].d[0].p,12.5);
+ assert.equal(fallback.data.drops[1].d[0].souls[0][0],1);
+});
+
+test('absent chance remains unspecified, never fabricated as zero',()=>{
+ const value=catalog();
+ value.drops[1]={d:[{i:1,p:null},{i:1}],s:[]};
+ assert.doesNotThrow(()=>loader.validate(value));
+ assert.equal(value.drops[1].d[0].p,null);
+ assert.equal(Object.hasOwn(value.drops[1].d[1],'p'),false);
+});
