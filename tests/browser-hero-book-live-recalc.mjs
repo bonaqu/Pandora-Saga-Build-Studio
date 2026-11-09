@@ -53,7 +53,9 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
 
   // Auto-mastering and resetting points use the same live calculation path.
   await page.locator('#pathAutoMastery').check();
-  assert.equal(await numeric('Точность'),accuracy85);
+  const accuracyAuto=await numeric('Точность');
+  // Auto also trains SCOUT's 3 Assassin + 3 Warding starting points.
+  assert.equal(accuracyAuto-accuracy85,1);
   await page.locator('#pathAutoMastery').uncheck();
   assert.equal(await numeric('Точность'),accuracy65);
   await page.locator('#pathAutoMastery').check();
@@ -61,7 +63,7 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   await slider.evaluate(node=>{
    node.value='10';node.dispatchEvent(new Event('input',{bubbles:true}));
   });
-  assert.equal(await numeric('Точность'),accuracy65,
+  assert.equal(await numeric('Точность'),accuracy65+1,
    'Dragging allocated points with auto mastery must recalculate live');
   assert.equal(await book.isVisible(),true);
   assert.deepEqual(errors,[]);
