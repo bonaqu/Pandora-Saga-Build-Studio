@@ -159,6 +159,13 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   assert.equal(await page.locator('.build-card:visible').count(),6);
   await search.fill('Эльф');
   assert.equal(await page.locator('.build-card:visible').count(),6);
+  await search.fill('Elf   15');
+  assert.equal(await page.locator('.build-card:visible').count(),1,
+   'Race and level search terms must match across different card fields');
+  assert.equal(await hero.isVisible(),true,'The matching saved build must stay visible');
+  await search.fill('Эльф 12');
+  assert.equal(await page.locator('.build-card:visible').count(),1,
+   'Search terms must work in the alternate language');
   await search.fill('Human');
   assert.equal(await page.locator('.build-card:visible').count(),0);
   assert.match(await page.locator('.build-grid + .muted').innerText(),
