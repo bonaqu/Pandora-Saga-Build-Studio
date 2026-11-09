@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const app=read('pandora-studio-app.js');
 const start=app.indexOf('function renderSlotRails(){');
-const end=app.indexOf('\nfunction renderStageAttributes(){',start);
+const end=app.indexOf('\nfunction renderStageAttributes(',start);
 assert.ok(start>0&&end>start);
 const source=app.slice(start,end);
 const labelStart=app.indexOf('const englishGearSlots=');

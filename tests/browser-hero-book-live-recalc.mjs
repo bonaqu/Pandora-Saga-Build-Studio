@@ -36,7 +36,18 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   const chapter=page.locator('#stageAttributes [data-book-page="summary"]');
   assert.equal(await chapter.getAttribute('aria-selected'),'true');
 
+  // Spy on the real calculator without changing its return values. Previously
+  // Origin and the open Book independently repeated the full base() pass.
+  await page.evaluate(()=>{
+   const calc=window.PandoraOSCalculator;
+   window.__psCalculationCalls=0;
+   window.PandoraOSCalculator={...calc,base:(...args)=>{
+    window.__psCalculationCalls++;return calc.base(...args);
+   }};
+  });
   await dex.fill('10');await dex.press('Tab');
+  assert.ok((await page.evaluate(()=>window.__psCalculationCalls))<=2,
+   'Editing one stat must not run the same combat calculator again just for the Book');
   assert.equal(await numeric('Шанс крита'),2,'10 DEX did not update OPEN Book');
   await dex.fill('20');await dex.press('Tab');
   assert.equal(await numeric('Шанс крита'),3,'20 DEX did not update OPEN Book');
@@ -66,6 +77,22 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   assert.equal(await numeric('Точность'),accuracy65+1,
    'Dragging allocated points with auto mastery must recalculate live');
   assert.equal(await book.isVisible(),true);
+  // A whole-site rerender previously rendered the same open Book three times
+  // (stage picker, explicit Book call, and Origin vitals). Bound this cost.
+  await page.evaluate(()=>{
+   const book=window.PandoraStageAttributes;
+   window.__psBookRenderCalls=0;
+   window.PandoraStageAttributes={...book,render:(...args)=>{
+    window.__psBookRenderCalls++;return book.render(...args);
+   }};
+  });
+  await page.locator('#level').evaluate(node=>{
+   node.value='46';node.dispatchEvent(new Event('input',{bubbles:true}));
+  });
+  assert.ok((await page.evaluate(()=>window.__psBookRenderCalls))<=2,
+   'A full redraw must not mount the already-open Hero Book three times');
+  assert.equal(await book.isVisible(),true);
+  assert.equal(await chapter.getAttribute('aria-selected'),'true');
   assert.deepEqual(errors,[]);
   console.log('Chromium live Hero Book passed: DEX 9→10→20, green Tactics 85→65, auto and slider');
  }finally{await context.close()}

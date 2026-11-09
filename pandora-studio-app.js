@@ -673,9 +673,9 @@ function renderOriginVitals(){
   holder.setAttribute('aria-label',notice);
   holder.title=''; // Never show a second browser tooltip above game UI.
  }
- // Derived values are never frozen while the Hero Book is visible.
- // All character editing paths already refresh Origin vitals.
- refreshOpenHeroBook();
+ // The Book shares this exact derived snapshot with the vitals panel.
+ // Recalculating here would add a full combat pass to every input change.
+ refreshOpenHeroBook(calculated);
 }
 
 function renderVitalsEnhancements(){
@@ -1267,7 +1267,7 @@ function renderSlotRails(){
   }
  }
 }
-function renderStageAttributes(){
+function renderStageAttributes(calculated=undefined){
  const root=$('stageAttributes');if(!root)return;
  const show=Boolean(stageAttributesPage)&&!stageSlotPickerOpen;
  const priorPage=root.querySelector('.stage-book-page')?.dataset.bookVisible||null;
@@ -1382,7 +1382,9 @@ function renderStageAttributes(){
   }:null;
  }
  window.PandoraStageAttributes.render(root,{
-  page:stageAttributesPage,items,modifiers:previewBaseStats(),icon:rec=>itemIcon(rec),
+  page:stageAttributesPage,items,
+  modifiers:calculated===undefined?previewBaseStats():calculated,
+  icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
   availability,combatSkillCards,honorTitles:window.PandoraOSCalculator.honorTitles,
   resistanceSkillChoices:window.PandoraOSCalculator.resistanceSkillChoices(skillMap)
@@ -1415,8 +1417,8 @@ function renderStageAttributes(){
 }
 // The Hero Book is a live calculation, not a snapshot captured on open.
 // Re-render preserves the active chapter, scroll position and setting focus.
-function refreshOpenHeroBook(){
- if(stageAttributesPage&&!stageSlotPickerOpen)renderStageAttributes();
+function refreshOpenHeroBook(calculated=undefined){
+ if(stageAttributesPage&&!stageSlotPickerOpen)renderStageAttributes(calculated);
 }
 function focusSelectedSlot(){
  document.querySelector('.equipment-rail .equipment-slot[data-slot-index="'+selectedSlot+'"]')?.focus({preventScroll:true});
@@ -2179,7 +2181,7 @@ function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,sta
 $('hero').removeAttribute('data-edit-key');$('hero').classList.remove('admin-edit');
 $('hero').alt=hasRace?races[state.race][lang==='en'?1:0]:(lang==='en'?'Race not selected':'Раса не выбрана');
 $('raceTitle').textContent=hasRace?editableValue('race.'+state.race,races[state.race][lang==='en'?1:0]):(lang==='en'?'Choose a race':'Выберите расу');
-$('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job]):(lang==='en'?'Choose a class':'Выберите профессию');$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderStageAttributes();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();renderOriginCopyLabels();updateAdminHint()}
+$('jobTitle').textContent=hasJob?editableValue('job.'+state.job,jobs[state.job]):(lang==='en'?'Choose a class':'Выберите профессию');$('activeJob').textContent=$('jobTitle').textContent;$('level').value=state.level;$('levelOut').textContent=state.level;renderSlotRails();renderStagePicker();renderOriginPassives();renderOriginStats();renderBranches();refreshBudgetLabel();renderPathPages();renderDetails();renderOriginVitals();renderVitalsEnhancements();renderOriginCopyLabels();updateAdminHint()}
 let wikiOutsideCleanup=null;
 function renderDetails(){wikiOutsideCleanup?.();wikiOutsideCleanup=null;const titles=lang==='en'?{character:'Hero Workshop',skills:'Skill Tree',stats:'Attributes',builds:'Build Library',wiki:'Pandora Saga Encyclopedia'}:{character:'Мастерская героя',skills:'Дерево умений',stats:'Характеристики',builds:'Библиотека билдов',wiki:'Энциклопедия Pandora Saga'};$('detailTitle').textContent=titles[activeTab];$('detailContent').replaceChildren();const contents={character:renderCharacter,skills:renderSkills,stats:renderStats,builds:renderBuilds,wiki:renderWiki};contents[activeTab]($('detailContent'))}
 
