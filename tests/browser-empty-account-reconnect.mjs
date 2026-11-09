@@ -52,7 +52,7 @@ export async function runEmptyAccountCloudReconnectSmoke(browser,base){
    username,{timeout:20000});
   await page.locator('#nav [data-tab="builds"]').click();
   await page.waitForFunction(()=>
-   document.querySelector('.cloud-library-status')?.textContent.includes('облако пока недоступно'),
+   document.querySelector('.cloud-library-status')?.textContent.includes('Не удалось загрузить облачные билды'),
    null,{timeout:12000});
   assert.equal(await page.evaluate(()=>JSON.parse(
    localStorage.getItem('ps-build-library.v1')||'[]').length),0);

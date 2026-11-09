@@ -30,7 +30,7 @@ test('older PUT success cannot conceal a newer failed cloud save',async()=>{
  assert.equal(await newer,false);
  h.pending[0].resolve({ok:true});
  assert.equal(await old,true);
- assert.deepEqual(h.statuses,['Сохранено в браузере · облако недоступно']);
+ assert.deepEqual(h.statuses,['Сохранено только в этом браузере · облако недоступно. Обнови библиотеку после восстановления соединения.']);
 });
 
 test('older PUT failure cannot hide the newer confirmed cloud save',async()=>{
@@ -56,6 +56,6 @@ test('late deletion confirmation still clears tombstone but does not mask a newe
  h.pending[0].resolve({ok:true});
  await deleting;
  assert.deepEqual(h.acknowledged,['old-id'],'successful deletion still clears the queue');
- assert.deepEqual(h.statuses,['Сохранено в браузере · облако недоступно']);
+ assert.deepEqual(h.statuses,['Сохранено только в этом браузере · облако недоступно. Обнови библиотеку после восстановления соединения.']);
  assert.deepEqual(h.toasts,[],'stale deletion must not display a misleading success toast');
 });
