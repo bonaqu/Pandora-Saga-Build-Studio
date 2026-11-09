@@ -82,3 +82,45 @@ test('waiting for game data is distinct from a malformed saved build',()=>{
  assert.match(ui,/Calculated stats will appear once game data have loaded/);
  assert.match(ui,/Не удалось рассчитать один из билдов\. Сохранения не изменены/);
 });
+
+
+test('compact A/B includes derived combat differences previously omitted from Hero Book',()=>{
+ const pairs=[
+  ['АТК спереди','Front ATK','frontAttack','%'],
+  ['АТК сзади','Back ATK','backAttack','%'],
+  ['Дальн. АТК ближ. боя','Melee range (base)','meleeRange',''],
+  ['Дальн. АТК дальн. боя','Ranged range (base)','rangedRange',''],
+  ['Сопр. физ (ед.)','Physical mitigation (flat)','physicalFlat',''],
+  ['Точн. спереди','Front accuracy','frontAccuracy',''],
+  ['Укл. дальн. атак','Ranged evasion','rangedEvasion','%'],
+  ['Скор. в городе','Town movement speed','townSpeed','%'],
+  ['Сопр. аном. тел.','Physical conditions','physicalConditions','%'],
+  ['Сопр. аном. дух.','Mental conditions','mentalConditions','%']
+ ];
+ const a=pack(pairs.map(([ru,en,key,unit])=>[ru,en,10,unit]));
+ const b=pack(pairs.map(([ru,en,key,unit])=>[ru,en,12,unit]));
+ const before=JSON.stringify([a,b]);
+ const ru=compare(a,b),en=compare(a,b,{lang:'en'});
+ assert.deepEqual(ru.map(x=>x.key),
+  pairs.map(([, ,key])=>'stat.'+key));
+ assert.deepEqual(ru.map(x=>x.delta),pairs.map(([, , ,unit])=>'+2'+unit));
+ assert.deepEqual(en.map(x=>x.label),pairs.map(([,name])=>name));
+ assert.equal(JSON.stringify([a,b]),before,'comparison must not mutate Hero Book rows');
+});
+
+test('extra Hero Book outcomes never add UI rows when unchanged or unknown',()=>{
+ const left=pack([
+  ['АТК сзади','Back ATK',20,'%'],
+  ['Сопр. физ (ед.)','Physical mitigation (flat)',null],
+  ['Скор. в городе','Town movement speed',null,'%'],
+  ['Укл. дальн. атак','Ranged evasion',10,'%']
+ ]);
+ const right=pack([
+  ['АТК сзади','Back ATK',20,'%'],
+  ['Сопр. физ (ед.)','Physical mitigation (flat)',null],
+  ['Скор. в городе','Town movement speed',null,'%'],
+  ['Укл. дальн. атак','Ranged evasion',12,'%']
+ ]);
+ assert.deepEqual(compare(left,right).map(x=>x.key),['stat.rangedEvasion']);
+ assert.equal(compare(left,left).length,0);
+});
