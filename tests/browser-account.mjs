@@ -221,6 +221,29 @@ export async function runAccountSmoke(browser,base){
   assert.equal(await page.locator('.account-password-details').getAttribute('open'),null);
   assert.equal(await page.locator('.account-password-details input').first().isVisible(),false);
   await page.locator('.account-password-toggle').click();
+  // A queued click or Enter on an old form must not submit passwords after
+  // RU/EN has replaced the DOM. Test only with fake local API credentials.
+  const retiredForm=await page.locator('.account-password-details form').elementHandle();
+  const retiredButton=await page.locator('.account-password-details button.account-action.primary').elementHandle();
+  const retiredInputs=page.locator('.account-password-details input');
+  await retiredInputs.nth(0).fill('An unusually long phrase for my builds');
+  await retiredInputs.nth(1).fill('Unused old password 2026!');
+  await retiredInputs.nth(2).fill('Unused old password 2026!');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#profileTrigger').click();
+  await page.locator('#accountPanel').waitFor({state:'visible'});
+  const callsBeforeRetired=calls.filter(c=>c.action==='password').length;
+  await retiredButton.evaluate(button=>button.click());
+  await retiredForm.evaluate(form=>form.dispatchEvent(
+   new Event('submit',{bubbles:true,cancelable:true})));
+  await page.waitForTimeout(100);
+  assert.equal(calls.filter(c=>c.action==='password').length,callsBeforeRetired,
+   'Removed password controls must not submit after a locale remount');
+  assert.equal(await page.locator('#accountPanel .account-feedback').innerText(),'',
+   'Removed form events must not overwrite the visible account feedback');
+  await retiredButton.dispose();
+  await retiredForm.dispose();
   const change=page.locator('#accountPanel .account-form input');
   await change.nth(0).fill('An unusually long phrase for my builds');
   await change.nth(1).fill('A new long and secure passphrase 2026!');
