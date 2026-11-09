@@ -323,9 +323,26 @@ async function putCloudBuild(entry){
      'Сохранено в браузере · исходный билд в облаке уже удалён':
     error.reason==='owner_changed'?
      'Аккаунт изменился · синхронизация остановлена':
-     'Сохранено в браузере · облако недоступно');
+     'Сохранено только в этом браузере · облако недоступно. Обнови библиотеку после восстановления соединения.');
   return false;
  }
+}
+// A batch must report the result of ALL records. An earlier failed PUT
+// cannot be hidden by a later successful response from the same import.
+async function uploadSharedBuildBatch(entries,owner,generation){
+ let confirmed=0;
+ for(const entry of entries){
+  if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
+  if(await putCloudBuild(entry))confirmed++;
+ }
+ if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
+ reportCloudStatus(confirmed===entries.length?
+  (lang==='en'?'All imported builds saved to cloud':'Все добавленные билды сохранены в облаке'):
+  (lang==='en'?
+   'Saved to cloud: '+confirmed+' of '+entries.length+
+    '. Other builds remain in this browser. Refresh your library to retry.':
+   'Сохранено в облаке: '+confirmed+' из '+entries.length+
+    '. Остальные пока только в браузере. Обнови библиотеку для повторной попытки.'));
 }
 async function deleteCloudBuild(id){
  if(!window.PandoraAccountUI?.isLoggedIn())return false;
@@ -424,7 +441,7 @@ async function loadCloudBuilds(){
  }catch(error){
   console.warn('Cloud library unavailable',error);
   if(libraryChangeId===generation&&latest())
-   reportCloudStatus('Локальные билды доступны · облако пока недоступно');
+   reportCloudStatus('Не удалось загрузить облачные билды. Локальные копии не удалены. Проверь соединение и нажми «Обновить библиотеку».');
  }
 }
 
@@ -6102,7 +6119,10 @@ function buildSignInCard({shared=false}={}){
     tr('Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.',
        'Sign in or register to open this build. Your link will stay here.'):
     tr('Чтобы сохранять, открывать и сравнивать билды, нужен аккаунт. Персонажа можно создавать без входа.',
-       'Sign in to save, open or compare builds. You can still plan a character without an account.')})
+       'Sign in to save, open or compare builds. You can still plan a character without an account.')}),
+   h('p',{class:'build-guest-storage-note',text:tr(
+    'Без аккаунта текущий герой хранится только в этом браузере. Очистка его данных удалит черновик.',
+    'Without an account, your current hero stays only in this browser. Clearing its data erases the draft.')})
   ]),h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
     text:tr('Войти','Sign in'),onclick:()=>openBuildAccount('login')}),
@@ -6128,6 +6148,11 @@ function requireBuildAccount({shared=false}={}){
   buildSignInCard({shared}));
  return false;
 }
+function notifyGuestDraftUnsaved(){
+ showStudioToast(lang==='en'?
+  'Guest hero is ready, but is not saved to your account yet. Open My Builds and select “Save new build”.':
+  'Гостевой герой открыт, но ещё не сохранён в аккаунте. Открой «Мои билды» и нажми «Сохранить новый билд».','warning');
+}
 function finishBuildAccountEntry(){
  if(!window.PandoraAccountUI?.isLoggedIn()||
   window.PandoraAccountUI?.hasRecoveryPending?.())return;
@@ -6147,7 +6172,7 @@ function finishBuildAccountEntry(){
   // A separate nonempty account draft must NEVER be replaced silently.
   if(JSON.stringify(state)===JSON.stringify(fresh())){
    if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
-   render();
+   render();notifyGuestDraftUnsaved();
    if(shared)openIncoming();
    else{
     changeTab(returnToBuilds?'builds':'character');
@@ -6156,18 +6181,43 @@ function finishBuildAccountEntry(){
    return;
   }
   window.PandoraAccountUI?.dismiss?.();
-  const content=h('div');
-  content.append(h('p',{text:lang==='en'?
-   'You started a character before signing in. Which draft would you like to continue? Your previous guest copy stays on this device.':
-   'Ты начал персонажа до входа. Какой черновик продолжить? Гостевая копия останется на устройстве.'}));
+  const tr=(ru,en)=>lang==='en'?en:ru;
+  const accountWasSaved=!unsavedBuild();
+  const content=h('div',{class:'build-draft-conflict'});
+  content.append(h('p',{text:tr(
+   'В аккаунте и на этом устройстве есть два разных героя. Выбери, с кем продолжить.',
+   'You have two different characters: one in your account and one from this browser. Choose which to continue.')}));
+  const guestName=String(guest.snapshot.name||tr('Гостевой герой','Guest character')).slice(0,70);
+  const accountName=String(state.name||tr('Герой аккаунта','Account character')).slice(0,70);
+  content.append(h('div',{class:'build-draft-choices'},[
+   h('div',{class:'build-draft-choice'},[
+    h('span',{text:tr('До входа · только на этом устройстве','Before sign-in · on this device only')}),
+    h('strong',{text:guestName})]),
+   h('div',{class:'build-draft-choice'},[
+    h('span',{text:tr('Текущий черновик аккаунта','Current account draft')}),
+    h('strong',{text:accountName})])
+  ]));
+  content.append(h('p',{class:'muted',text:accountWasSaved?tr(
+   'Герой аккаунта уже сохранён. Гостевого можно продолжить без удаления сохранённого билда.',
+   'Your account character is already saved. Continue the guest without deleting the saved build.'):
+   tr('Если продолжишь гостевого героя, сначала сохраним героя аккаунта в «Мои билды». Облачная запись проверяется отдельно.',
+      'To continue the guest, your account draft will first be saved in My Builds. Cloud saving is checked separately.')}));
   const close=()=>{$('modalRoot').hidden=true;$('modalRoot').replaceChildren()};
+  const continueGuest=()=>{
+   // Explicit choice is an explicit library save; never replace the
+   // unsaved account draft before its browser copy has been committed.
+   if(!accountWasSaved&&!saveBuild(state.name))return;
+   if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
+   close();render();notifyGuestDraftUnsaved();
+   if(shared)openIncoming();else changeTab('character');
+  };
   content.append(h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
-    text:lang==='en'?'Continue guest character':'Продолжить гостевого героя',
-    onclick:()=>{if(!switchActiveDraft(guest.snapshot,null))return;
-     close();render();if(shared)openIncoming();else changeTab('character')}}),
+    text:accountWasSaved?tr('Продолжить гостевого героя','Continue guest character'):
+     tr('Сохранить героя аккаунта и продолжить гостевого','Save account character and continue guest'),
+    onclick:continueGuest}),
    h('button',{type:'button',class:'button-action',
-    text:lang==='en'?'Keep account draft':'Оставить черновик аккаунта',
+    text:tr('Оставить героя аккаунта','Keep account character'),
     onclick:()=>{close();if(shared)openIncoming();else if(returnToBuilds)changeTab('builds')}})
   ]));
   modal(lang==='en'?'Continue your character?':'Продолжить персонажа?',content);
@@ -6351,7 +6401,7 @@ function saveBuild(name=state.name||'Новый герой',overwriteId=null){
   'ps-build-library.v1',JSON.stringify(builds))}
  catch(error){
   builds=previousBuilds;state.name=previousName;selectActiveBuild(previousActive);
-  showStudioToast('Не удалось сохранить билд. Проверь свободное место в браузере.','error');
+  showStudioToast('Билд не сохранён: браузер не смог записать его. Текущий герой остался открытым. Освободи место в браузере и повтори.','error');
   return false;
  }
  libraryChangeId++;selectActiveBuild(id);persist();
@@ -6522,24 +6572,60 @@ function openSharedSnapshot(share){
  if(!requireBuildAccount({shared:true}))return;
  if(!share||share.schema!==1||!['build','library'].includes(share.type))throw Error('Неподдерживаемая ссылка');
  const clear=()=>{if(location.hash.startsWith('#b/'))history.replaceState(history.state,'',location.pathname+location.search)};
+ // Bind the confirmation to the original signed-in owner.
+ const viewerToken=window.PandoraAccountUI.token(),viewerOwner=libraryScopeId();
+ const sameViewer=()=>window.PandoraAccountUI?.token()===viewerToken&&
+  libraryScopeId()===viewerOwner;
+ const verifyViewer=()=>{
+  if(sameViewer())return true;
+  showStudioToast(sharedText(
+   'Аккаунт изменился. Открой ссылку снова, чтобы выбрать нужный аккаунт.',
+   'Your account changed. Open the link again to select the correct account.'),'warning');
+  return false;
+ };
  if(share.type==='library'){
   if(!Array.isArray(share.data)||!share.data.length||share.data.length>30)throw Error('Неверная библиотека');
   const added=share.data.map(v=>({id:newId(),name:String(v.name||'Билд').slice(0,70),
    data:sanitizeSharedState(v.data),at:Date.now()}));
   const view=h('div');
   view.append(h('p',{text:sharedText('Билдов по ссылке: ','Builds in link: ')+
-   added.length+'. '+sharedText('Текущие билды и активный черновик останутся без изменений.',
-    'Your saved builds and current draft stay unchanged.')}),
-   h('button',{class:'button-action primary',
-   text:sharedText('Добавить в мою библиотеку','Add to my builds'),onclick:()=>{
-    const next=[...added,...builds];
-    try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
-     'ps-build-library.v1',JSON.stringify(next))}
-    catch(e){alert(sharedText('Не удалось сохранить библиотеку: ',
-     'Could not save the library: ')+e.message);return}
-    builds=next;for(const entry of added)void putCloudBuild(entry);$('modalRoot').hidden=true;clear();changeTab('builds');
-   }}));
-  modal(sharedText('Импорт общей библиотеки','Import shared library'),view);return;
+   added.length+'. '+sharedText(
+    'Текущий герой и сохранённые билды не изменятся. Новые копии добавятся в «Мои билды».',
+    'Your current character and saved builds will not change. New copies will be added to My Builds.')}),
+   h('div',{class:'build-signin-actions'},[
+    h('button',{type:'button',class:'button-action primary',
+     text:sharedText('Добавить в мои билды','Add to My Builds'),onclick:()=>{
+      if(!verifyViewer())return;
+      if(builds.length+added.length>200){
+       showStudioToast(sharedText(
+        'В библиотеке может быть до 200 билдов. Удали ненужные и повтори.',
+        'Your library holds up to 200 builds. Delete unused builds and try again.'),'warning');
+       return;
+      }
+      const next=[...added,...builds];
+      try{
+       window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+        'ps-build-library.v1',JSON.stringify(next));
+      }catch{
+       showStudioToast(sharedText(
+        'Не удалось добавить билды: браузер не сохранил их. Освободи место и повтори.',
+        'Could not add builds: the browser could not save them. Free up space and retry.'),'error');
+       return;
+      }
+      builds=next;libraryChangeId++;
+      const batchOwner=libraryScopeId(),batchGeneration=libraryChangeId;
+      $('modalRoot').hidden=true;clear();changeTab('builds');
+      reportCloudStatus(sharedText(
+       'Новые билды сохранены в браузере · проверяем облако…',
+       'New builds saved in this browser · checking cloud…'));
+      void uploadSharedBuildBatch(added,batchOwner,batchGeneration);
+     }}),
+    h('button',{type:'button',class:'button-action',
+     text:sharedText('Отмена','Cancel'),onclick:()=>{
+      $('modalRoot').hidden=true;clear();
+     }})
+   ]));
+  modal(sharedText('Добавить билды по ссылке?','Add builds from link?'),view);return;
  }
  const incoming=sanitizeSharedState(share.data);
  const view=h('div');
@@ -6551,7 +6637,8 @@ function openSharedSnapshot(share){
  const apply=()=>{
   // Do not dismiss the preview or discard the previous hero when the new
   // draft cannot be saved (for example, browser storage quota exhaustion).
-  if(!requireBuildAccount({shared:true})||!switchActiveDraft(incoming,null))return false;
+  if(!verifyViewer()||!requireBuildAccount({shared:true})||
+   !switchActiveDraft(incoming,null))return false;
   $('modalRoot').hidden=true;$('modalRoot').replaceChildren();
   clear();render();changeTab('character');
   return true;

@@ -30,13 +30,13 @@ test('EN shared-link and browser-storage failures show translated errors',()=>{
 test('shared receiver buttons, dialogs and dynamic build name use explicit locale',()=>{
  assert.match(app,/const sharedText=\(ru,en\)=>lang==='en'\?en:ru/);
  for(const fragment of [
-  "sharedText('Импорт общей библиотеки','Import shared library')",
+  "sharedText('Добавить билды по ссылке?','Add builds from link?')",
   "sharedText('Открыть билд по ссылке?','Open build from link?')",
   "sharedText('Сохранить текущий и открыть','Save current and open')",
   "sharedText('Открыть без сохранения','Open without saving')",
   "sharedText('Отмена','Cancel')",
   "sharedText('× Закрыть','× Close')",
-  "sharedText('Добавить в мою библиотеку','Add to my builds')",
+  "sharedText('Добавить в мои билды','Add to My Builds')",
   "incoming.name+sharedText("
  ])assert.ok(app.includes(fragment),'Share dialog copy is not bilingual: '+fragment);
  assert.match(app,/sharedText\('Открыть билд «','Open build “'\)\+\s*incoming\.name\+sharedText/);

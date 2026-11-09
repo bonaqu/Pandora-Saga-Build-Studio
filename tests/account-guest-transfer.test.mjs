@@ -19,5 +19,6 @@ test('old guest saves are carried only into a new registration, not an existing 
  assert.match(app,/if\(register\)pendingGuestDraft=null/);
  assert.match(app,/guest\.owner\.startsWith\('guest:'\)/);
  assert.match(app,/Продолжить гостевого героя/);
- assert.match(app,/Оставить черновик аккаунта/);
+ assert.match(app,/Оставить героя аккаунта/);
+ assert.match(app,/if\(!accountWasSaved&&!saveBuild\(state\.name\)\)return/);
 });
