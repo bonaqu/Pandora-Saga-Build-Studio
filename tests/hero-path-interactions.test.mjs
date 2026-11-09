@@ -431,3 +431,31 @@ test('Tactics shows 44 trained / 44 learned / 29 invested, then 0 trained but 44
  f.state.mastery={};
  assert.equal(count(),'освоено 0 · изучено 44 · вложено 29');
 });
+
+
+test('Hero Path skill lookup is order-independent and hides internal ID in both languages',()=>{
+ const skill={id:390077001,name:'Огненный удар',desc:'Игровой навык',
+  classes:{WARRIOR:1},learnable:true,prereq:390077999,reqs:[]};
+ const api={state:{level:20,points:{}},job:'WARRIOR',lang:'ru',
+  skillCatalog:[skill],catalogReady:true,query:'удар   ОГНЕННЫЙ',
+  filter:'all',shown:24,selectedSkill:skill,
+  icon:()=>null,hover:()=>{},onInspect:()=>{}};
+ const target=new BrowserElement('root'),details=new BrowserElement('root');
+ const render=()=>root.PandoraHeroPath.viewSkills(target,details,api);
+ render();
+ assert.equal(walk(target).filter(x=>x.attributes?.['data-skill-id']==='390077001').length,1,
+  'Reversed words must find the original skill');
+ assert.ok(walk(details).some(x=>x.textContent==='Предыдущее умение: Умение отсутствует в каталоге'));
+ assert.equal(walk(details).some(x=>x.tag==='dt'&&x.textContent==='ID умения'),false);
+ assert.equal(walk(details).some(x=>String(x.textContent).includes('390077')),false,
+  'A nontechnical player must not see unknown catalog identifiers');
+ api.query='УДАР огненный';api.lang='en';
+ render();
+ assert.ok(walk(details).some(x=>x.textContent==='Previous skill: Skill not in catalog'));
+ assert.equal(walk(details).some(x=>x.tag==='dt'&&x.textContent==='Skill ID'),false);
+ api.query='390077001';render();
+ assert.equal(walk(target).filter(x=>x.attributes?.['data-skill-id']==='390077001').length,1,
+  'Internal ID search can still work without being displayed');
+ api.query='огненный отсутствующий';render();
+ assert.ok(walk(target).some(x=>x.textContent==='No skills match these filters.'));
+});
