@@ -3,19 +3,22 @@ import assert from 'node:assert/strict';
 // Browser-level cloud reconciliation with a fake Worker: production D1 is untouched.
 export async function runCloudConflictSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const id='e'.repeat(32),secret='f'.repeat(64);
+ const id='e'.repeat(32),secret='f'.repeat(64),token='t'.repeat(43),
+  username='conflict_user';
  const local={id,name:'Local Hero',at:100,data:{race:1,job:16,gender:0,level:55}};
  const remote={...local,name:'Cloud Hero',data:{...local.data,level:54}};
  const cloud=new Map([[id,remote]]),writes=[];
  const context=await browser.newContext({viewport:{width:1365,height:850}});
- await context.addInitScript(({secret,local})=>{
+ await context.addInitScript(({secret,local,token,username})=>{
   if(sessionStorage.getItem('ps-cloud-conflict-test-seeded')==='1')return;
   sessionStorage.setItem('ps-cloud-conflict-test-seeded','1');
   localStorage.setItem('ps-build-library-secret.v1',secret);
+  localStorage.setItem('ps-account-session.v1',JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
+  localStorage.setItem('ps-build-owner-scope.v1','account:'+username);
   localStorage.setItem('ps-build-library.v1',JSON.stringify([local]));
   localStorage.setItem('ps-build-studio.v1',JSON.stringify(local.data));
   localStorage.setItem('ps-active-build-id.v1',local.id);
- },{secret,local});
+ },{secret,local,token,username});
  await context.route('**/*',async route=>{
   const url=route.request().url();
   if(url.startsWith(base+'/'))return route.continue();
@@ -25,9 +28,13 @@ export async function runCloudConflictSmoke(browser,base){
    'access-control-allow-headers':'content-type,authorization',
    'access-control-allow-methods':'GET,POST,OPTIONS'};
   if(method==='OPTIONS')return route.fulfill({status:204,headers});
+  if(path==='/api/account/me')return route.fulfill({status:200,headers,
+   contentType:'application/json',body:JSON.stringify({account:{username}})});
   const json=(data,status=200)=>route.fulfill({
    status,headers,contentType:'application/json',body:JSON.stringify(data)});
   if(path==='/api/library'){
+   assert.equal(route.request().headers().authorization,'Bearer '+token,
+    'Cloud conflict fixture must use an authenticated account, not a guest key');
    if(method==='GET')return json({records:[...cloud.values()].map(entry=>({
     id:entry.id,entry,deleted:false
    }))});
