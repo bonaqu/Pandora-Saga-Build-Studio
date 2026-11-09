@@ -1566,7 +1566,9 @@ function renderStagePicker(focusSearch=false){
  }):[];
  const draw=()=>{
   list.replaceChildren();
-  const matches=records.filter(rec=>searchWords(itemName(rec),stageSlotQuery));
+  const matches=records.filter(rec=>searchWords([itemName(rec),
+   catalogSource?.items?.[String(rec.id)]?.name,
+   officialEnglish?.items?.[String(rec.id)]?.n].filter(Boolean).join(' '),stageSlotQuery));
   count.textContent=lang==='en'?
    matches.length+' matching · '+Math.min(matches.length,stageSlotShown)+' shown':
    matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
@@ -2886,11 +2888,21 @@ function renderWiki(root){
    type==='monster'?'monsters':type==='instance'?'instances':
    type==='skill'?'skills':type==='soul'?'souls':null;
   const translated=chapter?officialEnglish?.[chapter]?.[id]:null;
+  // The displayed record is localized in EN mode. Keep the original
+  // source-owned Russian name searchable, not just the translated name.
+  const original=type==='item'||type==='chest'?catalogSource?.items?.[id]:
+   type==='monster'?catalogSource?.monsters?.[id]:
+   type==='map'?catalogSource?.maps?.[id]:
+   type==='npc'?catalogSource?.trades?.npcs?.[id]:
+   type==='skill'?catalogSource?.skills?.[id]:
+   type==='soul'?catalogSource?.souls?.[id]:
+   type==='instance'?catalogSource?.instances?.find(row=>String(row.id)===String(id)):null;
+  const originalName=typeof original?.name==='string'?original.name:null;
   const territoryAlias=type==='map'?
    window.PandoraAstirLocations?.searchAliases(id):null;
   const npc=type==='npc'?wikiIndex.records('npc')?.[id]:null;
   const verifiedNpcAlias=npc?[npc.en,npc.nameEn,npc.name].filter(Boolean).join(' '):null;
-  const value=[dataName(type,id),translated?.n,verifiedNpcAlias,territoryAlias,
+  const value=[dataName(type,id),originalName,translated?.n,verifiedNpcAlias,territoryAlias,
    type==='monster'?wikiIndex.records('monster')?.[id]?.nameEn:null,
    type==='map'?officialEnglish?.tradeMaps?.[id]?.n:null]
    .filter(Boolean).join(' ');
@@ -2962,7 +2974,7 @@ function renderWiki(root){
   const items=Object.entries(wikiData.items||{});
   const fill=()=>{
    const q=wikiIndex.normalize(search.value);
-   const matches=items.filter(([id])=>!q||searchWords(dataName('item',id),q)).slice(0,80);
+   const matches=items.filter(([id])=>!q||searchWords(searchTerms('item',id),q)).slice(0,80);
    target.replaceChildren(h('option',{value:'',
     text:matches.length?wt('Выбери предмет','Choose item'):wt('Предметы не найдены','No items found')}));
    for(const [id]of matches)target.append(h('option',{value:id,text:dataName('item',id)}));
@@ -3005,7 +3017,7 @@ function renderWiki(root){
    const q=wikiIndex.normalize(search.value);
    const choices=Object.entries(candidates||{}).filter(([key])=>
     !ids.includes(key)&&(!replaceId||!replaceCandidate||replaceCandidate(key))&&
-    (!q||searchWords(dataName(kind,key),q))
+    (!q||searchWords(searchTerms(kind,key),q))
    ).slice(0,90);
    select.replaceChildren(h('option',{value:'',text:choices.length?
     wt('Выбери запись','Choose entry'):wt('Ничего не найдено','No matches')}));
@@ -3194,7 +3206,7 @@ function renderWiki(root){
     const q=wikiIndex.normalize(search.value);
     const filtered=entries.filter(([key])=>
      (kind.value!=='drop'||/^[1-9][0-9]{0,14}$/.test(String(key)))&&
-     (!q||searchWords(dataName(isMonster?'monster':'npc',key),q))
+     (!q||searchWords(searchTerms(isMonster?'monster':'npc',key),q))
     ).slice(0,90);
     target.replaceChildren(h('option',{value:'',
      text:filtered.length?wt('Выбери запись','Choose entry'):
@@ -4051,7 +4063,7 @@ function renderWiki(root){
       const filter=()=>{
        const q=wikiIndex.normalize(search.value);
        const matches=Object.entries(wikiData.trades?.npcs||{})
-        .filter(([npcId])=>!q||searchWords(dataName('npc',npcId),q))
+        .filter(([npcId])=>!q||searchWords(searchTerms('npc',npcId),q))
         .slice(0,90);
        npc.replaceChildren(h('option',{value:'',text:matches.length?
         wt('Выбери NPC','Choose NPC'):wt('NPC не найден','NPC not found')}));
@@ -4212,7 +4224,7 @@ function renderWiki(root){
         const q=wikiIndex.normalize(search.value);
         const matches=Object.entries(wikiData.skills||{}).filter(([skillId])=>
          String(skillId)!==String(id)&&(!q||
-          searchWords(dataName('skill',skillId),q))).slice(0,90);
+          searchWords(searchTerms('skill',skillId),q))).slice(0,90);
         select.replaceChildren(h('option',{value:'',text:wt('Выбери умение','Choose skill')}));
         for(const [skillId] of matches)
          select.append(h('option',{value:skillId,text:dataName('skill',skillId)}));
@@ -4671,7 +4683,7 @@ function renderWiki(root){
         const q=wikiIndex.normalize(search.value);
         const candidates=Object.entries(wikiData.trades?.npcs||{})
          .filter(([key])=>!(trade.npc||[]).map(String).includes(key)&&
-          (!q||searchWords(dataName('npc',key),q))).slice(0,80);
+          (!q||searchWords(searchTerms('npc',key),q))).slice(0,80);
         pick.replaceChildren(h('option',{value:'',
          text:candidates.length?wt('Выбери NPC','Choose NPC'):
           wt('NPC не найден','No NPC found')}));
