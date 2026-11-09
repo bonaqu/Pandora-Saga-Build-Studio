@@ -795,3 +795,71 @@ test('unknown optional monster fields remain absent, not fabricated as zeros',()
  assert.equal(Object.hasOwn(d.monsters[1],'life'),false);
  assert.equal(Object.hasOwn(d.monsters[1],'level'),false);
 });
+
+
+test('all 1116 source items have safe stats and Soul defaults without mutation',()=>{
+ const items=JSON.parse(readFileSync(new URL('../data/os/items.json',import.meta.url),'utf8'));
+ const rows=Object.values(items);
+ assert.equal(rows.length,1116);
+ assert.equal(rows.filter(item=>Number.isSafeInteger(item.soulslot)&&
+  item.soulslot>=0&&item.soulslot<=3).length,rows.length);
+ assert.equal(items[13041].soulslot,1,'The generic Iron Leggings remains one socket');
+ assert.equal(items[21001].soulslot,0,'The generic Belt remains zero sockets');
+ assert.equal(rows.filter(row=>typeof row.name==='string'&&row.name.trim()).length,
+  rows.length);
+ const before=JSON.stringify(items);
+ const data={};
+ for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
+  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(JSON.stringify(data.items),before,
+  'Reject malformed remote data, never rewrite source equipment definitions');
+});
+
+test('bad D1 equipment stats and Soul capacities fail before the player equips them',async()=>{
+ const good=catalog('item');
+ Object.assign(good.items[1],{kind:'ARMOR',slot:'legs',soulslot:1,
+  AC:12,PEN:0,W:10,atkspeed:50,block:5,level:1,plus:0,range:200,
+  twoHanded:false,unobtainable:false,classes:{WARRIOR:1},effects:[]});
+ assert.doesNotThrow(()=>loader.validate(good));
+ const cases=[
+  ['missing name',c=>{c.items[1].name=''},/название или тип предмета/],
+  ['empty type',c=>{c.items[1].kind=''},/название или тип предмета/],
+  ['invalid slot',c=>{c.items[1].slot=7},/слот предмета/],
+  ['Soul slots as text',c=>{c.items[1].soulslot='2'},/вместимость душ предмета/],
+  ['Soul slots excess',c=>{c.items[1].soulslot=4},/вместимость душ предмета/],
+  ['negative Souls',c=>{c.items[1].soulslot=-1},/вместимость душ предмета/],
+  ['fractional Souls',c=>{c.items[1].soulslot=1.5},/вместимость душ предмета/],
+  ['negative armor',c=>{c.items[1].AC=-1},/числовые характеристики предмета/],
+  ['attack as string',c=>{c.items[1].W='10'},/числовые характеристики предмета/],
+  ['penetration Infinity',c=>{c.items[1].PEN=Infinity},/числовые характеристики предмета/],
+  ['range negative',c=>{c.items[1].range=-200},/числовые характеристики предмета/],
+  ['invalid level',c=>{c.items[1].level=0},/числовые характеристики предмета/],
+  ['refinement fraction',c=>{c.items[1].plus=2.3},/числовые характеристики предмета/],
+  ['two-handed not boolean',c=>{c.items[1].twoHanded='true'},/флаг предмета/],
+  ['unobtainable not boolean',c=>{c.items[1].unobtainable=1},/флаг предмета/],
+  ['class list instead of record',c=>{c.items[1].classes=['WARRIOR']},/ограничения профессий предмета/],
+  ['effects as object',c=>{c.items[1].effects={}},/эффекты предмета/]
+ ];
+ for(const [label,damage,reason] of cases){
+  const broken=structuredClone(good);damage(broken);
+  assert.throws(()=>loader.validate(broken),reason,label);
+ }
+ const damaged=structuredClone(good);
+ damaged.items[1].soulslot=99;
+ const remote=mockFetch(damaged,good);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:remote.fetcher,strict:true}),/вместимость душ предмета/);
+ const fallback=await loader.load({api:'https://worker.example',fetcher:remote.fetcher});
+ assert.equal(fallback.source,'local');
+ assert.equal(fallback.data.items[1].soulslot,1);
+ assert.equal(fallback.data.items[1].AC,12);
+});
+
+test('missing optional legacy equipment fields do not get invented on validation',()=>{
+ const data=catalog();
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(Object.hasOwn(data.items[1],'soulslot'),false);
+ assert.equal(Object.hasOwn(data.items[1],'AC'),false);
+ assert.equal(Object.hasOwn(data.items[1],'effects'),false);
+});

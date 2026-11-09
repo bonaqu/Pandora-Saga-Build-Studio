@@ -99,6 +99,30 @@ function validate(input){
     Number.isSafeInteger(req.amount)&&req.amount>=0)))
    throw Error('Некорректные требования ветки умения');
  }
+ // The equipment picker, Hero Book and per-copy Soul UI all consume
+ // these source item numbers. Reject corrupted D1 values rather than
+ // displaying guessed defense, attack, Soul capacity or refinement.
+ for(const row of Object.values(data.items)){
+  if(typeof row.name!=='string'||!row.name.trim()||
+   row.kind!=null&&(typeof row.kind!=='string'||!row.kind.trim()))
+   throw Error('Некорректное название или тип предмета');
+  if(row.slot!=null&&(typeof row.slot!=='string'||!row.slot.trim()))
+   throw Error('Некорректный слот предмета');
+  if(row.soulslot!=null&&!(Number.isSafeInteger(row.soulslot)&&
+   row.soulslot>=0&&row.soulslot<=3))
+   throw Error('Некорректная вместимость душ предмета');
+  for(const field of ['AC','PEN','W','atkspeed','block','level','plus','range'])
+   if(row[field]!=null&&!(Number.isSafeInteger(row[field])&&
+    row[field]>=0&&(field!=='level'||row[field]>0)))
+    throw Error('Некорректные числовые характеристики предмета');
+  for(const field of ['twoHanded','unobtainable'])
+   if(row[field]!=null&&typeof row[field]!=='boolean')
+    throw Error('Некорректный флаг предмета');
+  if(row.classes!=null&&!isRecord(row.classes))
+   throw Error('Некорректные ограничения профессий предмета');
+  if(row.effects!=null&&!Array.isArray(row.effects))
+   throw Error('Некорректные эффекты предмета');
+ }
  // Check cross-record ownership only after record shape and identity are
  // verified; otherwise a null or mismatched passive skill is misreported as
  // a race-registry defect instead of a broken skills record.
