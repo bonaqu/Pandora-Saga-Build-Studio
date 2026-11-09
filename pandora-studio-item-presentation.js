@@ -113,12 +113,38 @@ function restoreReferences(edited,source,lookupItem,lang='ru'){
  if(result===descriptionText(source,lookupItem,lang))return String(source);
  const references=descriptionSegments(source,lookupItem,lang)
   .filter(part=>part.type==='item'&&part.exists);
+ const word=char=>/[\p{L}\p{N}_]/u.test(char||'');
+ const wholeMatches=(text,name)=>{
+  const positions=[];
+  let offset=0,at;
+  while((at=text.indexOf(name,offset))!==-1){
+   // Only replace a whole visible item name. A substring of a longer
+   // edited word must not silently turn into a different game item link.
+   const before=Array.from(text.slice(0,at)).at(-1);
+   const after=Array.from(text.slice(at+name.length))[0];
+   if(!word(before)&&!word(after))positions.push(at);
+   offset=at+name.length;
+  }
+  return positions;
+ };
+ const replacements=[];
  for(const reference of references){
-  const matches=result.split(reference.text).length-1;
-  if(matches>1)throw Error('Название «'+reference.text+
+  const matches=wholeMatches(result,reference.text);
+  if(matches.length>1)throw Error('Название «'+reference.text+
    '» встречается несколько раз. Уточни текст перед сохранением ссылки.');
-  if(matches===1)result=result.replace(reference.text,'<item '+reference.id+'>');
+  if(matches.length===1)
+   replacements.push({start:matches[0],end:matches[0]+reference.text.length,
+    reference});
  }
+ // Calculate against the untouched edited string, not strings that already
+ // contain <item N> tokens from an earlier replacement.
+ replacements.sort((a,b)=>a.start-b.start);
+ for(let i=1;i<replacements.length;i++)
+  if(replacements[i].start<replacements[i-1].end)
+   throw Error('Ссылки на предметы пересекаются. Уточни названия перед сохранением.');
+ for(const match of replacements.reverse())
+  result=result.slice(0,match.start)+'<item '+match.reference.id+'>'+
+   result.slice(match.end);
  return result;
 }
 root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
