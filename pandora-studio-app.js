@@ -1957,6 +1957,11 @@ function heroPathApi(){
   state,groups,job:klass,lang,selectedGroup:selectedSkillGroup,expandedBranch:inlineBranchId,
   innate:innateBranches(),branchCaps:branchCapacities(),
   skillCatalog:heroSkillRows(catalog.skills),catalogReady:!!catalog.skills,
+  // Search both the displayed locale and source-backed alternate language.
+  // These aliases never affect class gates, skill IDs or calculated effects.
+  skillSearchText:skill=>[skill.name,catalogSource?.skills?.[String(skill.id)]?.name,
+   officialEnglish?.skills?.[String(skill.id)]?.n,String(skill.id)]
+   .filter(Boolean).join(' '),
   allocationReady:Boolean(gameTables?.abilityPoint&&catalog.classes?.[klass]),
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
   shown:pathSkillShown,onMoreSkills:()=>{pathSkillShown+=24;renderPathSkills()},

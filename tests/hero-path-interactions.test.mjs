@@ -459,3 +459,28 @@ test('Hero Path skill lookup is order-independent and hides internal ID in both 
  api.query='огненный отсутствующий';render();
  assert.ok(walk(target).some(x=>x.textContent==='No skills match these filters.'));
 });
+
+
+test('English Hero Path skill search finds confirmed Russian source aliases without changing records',()=>{
+ const skill={id:100051001,name:'Lunge',desc:'Increases Attack Speed',
+  classes:{WARRIOR:1},learnable:true,reqs:[]};
+ const sourceBefore=JSON.stringify(skill);
+ const api={state:{level:40,points:{}},job:'WARRIOR',lang:'en',catalogReady:true,
+  skillCatalog:[skill],query:'рывок',filter:'all',shown:24,selectedSkill:skill,
+  skillSearchText:row=>[row.name,'Рывок',row.id].join(' '),
+  icon:()=>null,hover:()=>{},onInspect:()=>{}};
+ const target=new BrowserElement('root'),details=new BrowserElement('root');
+ root.PandoraHeroPath.viewSkills(target,details,api);
+ assert.equal(walk(target).filter(x=>x.attributes?.['data-skill-id']==='100051001').length,1);
+ assert.ok(walk(details).some(x=>x.tag==='h3'&&x.textContent==='Lunge'));
+ assert.equal(JSON.stringify(skill),sourceBefore,'Search must not rewrite official game data');
+ api.query='LUNGE';root.PandoraHeroPath.viewSkills(target,details,api);
+ assert.equal(walk(target).filter(x=>x.attributes?.['data-skill-id']==='100051001').length,1);
+ api.query='разгон';root.PandoraHeroPath.viewSkills(target,details,api);
+ assert.ok(walk(target).some(x=>x.textContent==='No skills match these filters.'));
+ const app=sources['pandora-studio-app.js'];
+ assert.ok(app.includes("catalogSource?.skills?.[String(skill.id)]?.name"),
+  'Russian search alias must originate from the source game catalog');
+ assert.ok(app.includes("officialEnglish?.skills?.[String(skill.id)]?.n"),
+  'English search alias must originate from the verified EN catalog');
+});

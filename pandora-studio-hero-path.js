@@ -537,7 +537,8 @@ function viewSkills(target,details,api){
  if(!api.catalogReady){target.append(make('p',{class:'muted',text:tr(api,'Каталог умений загружается.','Loading skill catalog…')}));return}
  const skillIndex=indexSkills(api.skillCatalog);
  const rows=api.skillCatalog.filter(skill=>allowedForJob(skill,api.job)&&
-  matchesSkillSearch(String(skill.name||'')+' '+String(skill.id??''),api.query))
+  matchesSkillSearch(typeof api.skillSearchText==='function'?
+   api.skillSearchText(skill):String(skill.name||'')+' '+String(skill.id??''),api.query))
   .map(skill=>({skill,gate:readiness(skill,api,new Set(),skillIndex)})).filter(({gate})=>
    api.filter==='all'||(api.filter==='known'?gate.learned:!gate.learned));
  rows.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
