@@ -63,7 +63,8 @@ function setOwned(storage,scope,key,value){
   values[index]=next;
   // Commit the independent owner recovery copy FIRST. If this hits quota,
   // not even one shared primary key is changed.
-  storage.setItem(slot(scope),JSON.stringify(values));
+  const attemptedBackup=JSON.stringify(values);
+  storage.setItem(slot(scope),attemptedBackup);
   // A concurrent switch may copy the OLD primary snapshot over our freshly
   // stored cache. Reapply this ONE key after the switch using the recovered
   // owner snapshot, rather than overwriting the other owner's active keys.
@@ -86,16 +87,24 @@ function setOwned(storage,scope,key,value){
   try{
    if(next==='')storage.removeItem(key);else storage.setItem(key,next);
   }catch(error){
-   // The primary write failed. Restore the old recovery copy so the app
-   // cannot report this edit as durable when the primary slot stayed stale.
-   // Do not roll back a key now owned by another browser tab.
+   // A failed primary write must never restore stale values on top of a
+   // later save by another tab. Storage has no CAS: roll back only values
+   // that still match THIS operation, and only while we own the marker.
+   // If the owner switched, keep our recovery copy for a safe later retry.
    if(storage.getItem(MARKER)===scope)try{
-    if(previous===null)storage.removeItem(key);
-    else storage.setItem(key,previous);
+    if(storage.getItem(key)===next){
+     if(previous===null)storage.removeItem(key);
+     else storage.setItem(key,previous);
+    }
    }catch{}
    try{
-    if(previousBackup===null)storage.removeItem(slot(scope));
-    else storage.setItem(slot(scope),previousBackup);
+    // Another same-owner tab may already have published a newer backup.
+    // Do not undo that write just because our primary write failed.
+    if(storage.getItem(MARKER)===scope&&
+       storage.getItem(slot(scope))===attemptedBackup){
+     if(previousBackup===null)storage.removeItem(slot(scope));
+     else storage.setItem(slot(scope),previousBackup);
+    }
    }catch(rollbackError){
     throw Error('Could not roll back owner-scoped save after primary failure',{
      cause:rollbackError
