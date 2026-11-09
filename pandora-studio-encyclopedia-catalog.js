@@ -34,38 +34,17 @@ function validateRacialPassives(racialPassives,skills,counts){
  }
  return true;
 }
-function validate(input){
- const data=normalize(input);
- if(!isRecord(data)||!isRecord(data.meta)||!isRecord(data.meta.counts))
-  throw Error('Каталог не содержит сведений о версии данных');
- for(const key of ['items','monsters','maps','drops','skills','souls'])
-  if(!isRecord(data[key]))throw Error('Неверный формат каталога: '+key);
- if(!Array.isArray(data.instances)||!data.instances.every(isRecord))
-  throw Error('Неверный формат подземелий');
- if(!isRecord(data.trades)||!Array.isArray(data.trades.trades)||
-  !isRecord(data.trades.npcs)||!isRecord(data.trades.mapNames))
-  throw Error('Неверный формат обменов NPC');
- if(!isRecord(data.tables)||!Array.isArray(data.tables.zoneDrops))
-  throw Error('Неверный формат добычи локаций');
- if(!isRecord(data.chests)||!Array.isArray(data.chests.boxes)||
-    !Array.isArray(data.chests.npc))
-  throw Error('Неверный формат сундуков');
- for(const key of ['items','monsters','maps','instances','drops','trades','skills','souls']){
-  const observed=Array.isArray(data[key])?data[key].length:
-   key==='trades'?data.trades.trades.length:Object.keys(data[key]).length;
-  const expected=Number(data.meta.counts[key]);
-  if(!Number.isSafeInteger(expected)||expected<1||observed<expected)
-   throw Error('Неполный каталог '+key+': '+observed+' из '+expected);
- }
- // A source record is reached by its dictionary key in the equipment picker,
- // Wiki links, Soul relations and combat index. A conflicting embedded id
- // would make one card claim to be another, even if counts and cross-links
- // happen to match. Older key-only records remain valid.
- for(const kind of ['items','monsters','skills','souls'])
-  for(const [key,row] of Object.entries(data[kind])){
+// One validation boundary for the Wiki and the character builder. Both need
+// the SAME verified source records before consuming stats, skills or Soul
+// effects. This function intentionally does not require Wiki-only datasets.
+function validateCharacterCatalog(data){
+ for(const kind of ['items','skills','souls']){
+  if(!isRecord(data?.[kind]))
+   throw Error('Неверный формат каталога: '+kind);
+  for(const [key,row] of Object.entries(data[kind]))
    if(!isRecord(row)||Object.hasOwn(row,'id')&&String(row.id)!==key)
     throw Error('Не совпадает идентификатор записи игрового каталога: '+kind);
-  }
+ }
  // The Hero Path and skill encyclopedia trust these numeric costs and
  // prerequisites. A malformed D1 record must not masquerade as official
  // mana, cooldown, level or mastery requirements. Never invent defaults
@@ -156,6 +135,41 @@ function validate(input){
  // verified; otherwise a null or mismatched passive skill is misreported as
  // a race-registry defect instead of a broken skills record.
  validateRacialPassives(data.racialPassives,data.skills,data.meta.counts);
+ return true;
+}
+function validate(input){
+ const data=normalize(input);
+ if(!isRecord(data)||!isRecord(data.meta)||!isRecord(data.meta.counts))
+  throw Error('Каталог не содержит сведений о версии данных');
+ for(const key of ['items','monsters','maps','drops','skills','souls'])
+  if(!isRecord(data[key]))throw Error('Неверный формат каталога: '+key);
+ if(!Array.isArray(data.instances)||!data.instances.every(isRecord))
+  throw Error('Неверный формат подземелий');
+ if(!isRecord(data.trades)||!Array.isArray(data.trades.trades)||
+  !isRecord(data.trades.npcs)||!isRecord(data.trades.mapNames))
+  throw Error('Неверный формат обменов NPC');
+ if(!isRecord(data.tables)||!Array.isArray(data.tables.zoneDrops))
+  throw Error('Неверный формат добычи локаций');
+ if(!isRecord(data.chests)||!Array.isArray(data.chests.boxes)||
+    !Array.isArray(data.chests.npc))
+  throw Error('Неверный формат сундуков');
+ for(const key of ['items','monsters','maps','instances','drops','trades','skills','souls']){
+  const observed=Array.isArray(data[key])?data[key].length:
+   key==='trades'?data.trades.trades.length:Object.keys(data[key]).length;
+  const expected=Number(data.meta.counts[key]);
+  if(!Number.isSafeInteger(expected)||expected<1||observed<expected)
+   throw Error('Неполный каталог '+key+': '+observed+' из '+expected);
+ }
+ // A source record is reached by its dictionary key in the equipment picker,
+ // Wiki links, Soul relations and combat index. A conflicting embedded id
+ // would make one card claim to be another, even if counts and cross-links
+ // happen to match. Older key-only records remain valid.
+ for(const kind of ['items','monsters','skills','souls'])
+  for(const [key,row] of Object.entries(data[kind])){
+   if(!isRecord(row)||Object.hasOwn(row,'id')&&String(row.id)!==key)
+    throw Error('Не совпадает идентификатор записи игрового каталога: '+kind);
+  }
+ validateCharacterCatalog(data);
  // Monster cards display source HP/level/defenses and resistances
  // as game facts. Never turn malformed D1 numbers into valid-looking
  // values, while retaining legitimate negative resistances (weaknesses).
@@ -439,5 +453,5 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   })}
  }
 }
-root.PandoraWikiCatalog=Object.freeze({keys,normalize,validateRacialPassives,validate,load});
+root.PandoraWikiCatalog=Object.freeze({keys,normalize,validateRacialPassives,validateCharacterCatalog,validate,load});
 })(typeof window==='undefined'?globalThis:window);
