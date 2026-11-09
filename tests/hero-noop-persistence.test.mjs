@@ -16,12 +16,12 @@ function fixture(){
   setPotential:(s,k,value)=>{count.set++;s.points[k]=value;return true}
  };
  const handler=Function('window','state','allowedBranch','gameTables','branchCap','innateBranches','branchCapacities',
-  'persist','refreshBudgetLabel','renderBranches','renderOriginStats','renderOriginVitals',
+  'persist','refreshBudgetLabel','renderBranches','renderOriginStats','renderOriginVitals','refreshOpenHeroBook',
   'saveView','document','heroPathPage','renderPathSkills','return ('+body+');')(
   {PandoraSkillProgression:progression},state,key=>key==='slash'?15:10,
   {abilityPoint:{}},key=>key==='slash'?15:10,()=>({}),()=>({slash:15,brush:10}),
   ()=>count.persist++,()=>count.budget++,()=>count.render++,()=>count.stats++,
-  ()=>count.vitals++,()=>count.save++,{activeElement:null,querySelector:()=>null},
+  ()=>count.vitals++,()=>{},()=>count.save++,{activeElement:null,querySelector:()=>null},
   'growth',()=>{});
  return {state,count,handler};
 }
