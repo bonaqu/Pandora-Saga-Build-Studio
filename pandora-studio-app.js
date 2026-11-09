@@ -1964,6 +1964,12 @@ function heroPathApi(){
    .filter(Boolean).join(' '),
   allocationReady:Boolean(gameTables?.abilityPoint&&catalog.classes?.[klass]),
   budget:budgetSummary(),selectedSkill,filter:pathSkillFilter,query:pathSkillQuery,
+  // Only established in-game attribute labels, never raw STR/AGI/etc codes.
+  attributeLabel:raw=>{
+   const source=ORIGIN_STAT_LABELS.find(row=>row.code===String(raw).toLowerCase());
+   return source?(lang==='en'?source.nameEn:source.name):
+    (lang==='en'?'Unknown attribute':'Неизвестная характеристика');
+  },
   shown:pathSkillShown,onMoreSkills:()=>{pathSkillShown+=24;renderPathSkills()},
   cap:branchCap,
   canEdit:Boolean(adminEditing&&adminToken),

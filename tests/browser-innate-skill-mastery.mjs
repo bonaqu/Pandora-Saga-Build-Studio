@@ -115,6 +115,19 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.equal(await skillSearch.evaluate(el=>el.readOnly),false);
   await skillSearch.fill('удар');
   assert.equal(await skillSearch.inputValue(),'удар');
+  // Sourced skill 100101001 has no character-level restriction (charLevel=0).
+  // It does have branch requirements: never fabricate "unknown level".
+  const strike=page.locator('#pathSkillGallery [data-skill-id="100101001"]');
+  await strike.waitFor({state:'visible'});
+  await strike.click();
+  const details=page.locator('#pathSkillDetails');
+  await details.waitFor({state:'visible'});
+  assert.equal(await details.locator('dt').filter({hasText:'Уровень персонажа'}).count(),0,
+   'Sourced zero requirement must not be presented as an unknown level');
+  assert.doesNotMatch(await details.innerText(),/Нет известного порога/);
+  assert.equal(await details.locator('dt').filter({hasText:'Характеристика'}).count(),1);
+  assert.match(await details.innerText(),/Характеристика\s+Сила/);
+  assert.doesNotMatch(await details.innerText(),/Характеристика\s+STR/);
   await skillSearch.press('Tab');
   assert.equal(await skillSearch.evaluate(el=>el.readOnly),true,
    'Search returns to non-credential readOnly state after editing');

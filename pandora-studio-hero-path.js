@@ -574,13 +574,19 @@ function viewSkills(target,details,api){
    if(value===null||value===undefined||value==='')return;
    stats.append(make('dt',{text:label}),make('dd',{text:String(value)}));
   };
-  field(tr(api,'Уровень персонажа','Character level'),skill.charLevel||tr(api,'Нет известного порога','Unknown requirement'));
+  // A verified zero means no character-level threshold, not an unknown one.
+  // Branch thresholds remain visible separately below.
+  if(skill.charLevel!==0&&skill.charLevel!==undefined&&skill.charLevel!==null)
+   field(tr(api,'Уровень персонажа','Character level'),skill.charLevel);
   field(tr(api,'Мана / ОМ','Mana / MP'),skill.mana);
   field(tr(api,'Подготовка','Cast time'),skill.cast);
   field(tr(api,'Перезарядка','Cooldown'),skill.cooldown);
   field(tr(api,'Дальность','Range'),skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
   field(tr(api,'Стихия','Element'),skill.element);
-  field(tr(api,'Характеристика','Attribute'),skill.powerStat);
+  if(skill.powerStat!==undefined&&skill.powerStat!==null&&skill.powerStat!=='')
+   field(tr(api,'Характеристика','Attribute'),
+    typeof api.attributeLabel==='function'?api.attributeLabel(skill.powerStat):
+     tr(api,'Неизвестная характеристика','Unknown attribute'));
    details.append(stats);
   const requirements=Array.isArray(skill.reqs)?skill.reqs:[];
   if(requirements.length){
