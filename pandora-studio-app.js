@@ -323,7 +323,7 @@ async function putCloudBuild(entry){
      'Сохранено в браузере · исходный билд в облаке уже удалён':
     error.reason==='owner_changed'?
      'Аккаунт изменился · синхронизация остановлена':
-     'Сохранено в браузере · облако недоступно');
+     'Сохранено только в этом браузере · облако недоступно. Обнови библиотеку после восстановления соединения.');
   return false;
  }
 }
@@ -424,7 +424,7 @@ async function loadCloudBuilds(){
  }catch(error){
   console.warn('Cloud library unavailable',error);
   if(libraryChangeId===generation&&latest())
-   reportCloudStatus('Локальные билды доступны · облако пока недоступно');
+   reportCloudStatus('Не удалось загрузить облачные билды. Локальные копии не удалены. Проверь соединение и нажми «Обновить библиотеку».');
  }
 }
 
@@ -6102,7 +6102,10 @@ function buildSignInCard({shared=false}={}){
     tr('Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.',
        'Sign in or register to open this build. Your link will stay here.'):
     tr('Чтобы сохранять, открывать и сравнивать билды, нужен аккаунт. Персонажа можно создавать без входа.',
-       'Sign in to save, open or compare builds. You can still plan a character without an account.')})
+       'Sign in to save, open or compare builds. You can still plan a character without an account.')}),
+   h('p',{class:'build-guest-storage-note',text:tr(
+    'Без аккаунта текущий герой хранится только в этом браузере. Очистка его данных удалит черновик.',
+    'Without an account, your current hero stays only in this browser. Clearing its data erases the draft.')})
   ]),h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
     text:tr('Войти','Sign in'),onclick:()=>openBuildAccount('login')}),
@@ -6156,18 +6159,42 @@ function finishBuildAccountEntry(){
    return;
   }
   window.PandoraAccountUI?.dismiss?.();
-  const content=h('div');
-  content.append(h('p',{text:lang==='en'?
-   'You started a character before signing in. Which draft would you like to continue? Your previous guest copy stays on this device.':
-   'Ты начал персонажа до входа. Какой черновик продолжить? Гостевая копия останется на устройстве.'}));
+  const tr=(ru,en)=>lang==='en'?en:ru;
+  const accountWasSaved=!unsavedBuild();
+  const content=h('div',{class:'build-draft-conflict'});
+  content.append(h('p',{text:tr(
+   'В аккаунте и на этом устройстве есть два разных героя. Выбери, с кем продолжить.',
+   'You have two different characters: one in your account and one from this browser. Choose which to continue.')}));
+  const guestName=String(guest.snapshot.name||tr('Гостевой герой','Guest character')).slice(0,70);
+  const accountName=String(state.name||tr('Герой аккаунта','Account character')).slice(0,70);
+  content.append(h('div',{class:'build-draft-choices'},[
+   h('div',{class:'build-draft-choice'},[
+    h('span',{text:tr('До входа · только на этом устройстве','Before sign-in · on this device only')}),
+    h('strong',{text:guestName})]),
+   h('div',{class:'build-draft-choice'},[
+    h('span',{text:tr('Текущий черновик аккаунта','Current account draft')}),
+    h('strong',{text:accountName})])
+  ]));
+  content.append(h('p',{class:'muted',text:accountWasSaved?tr(
+   'Герой аккаунта уже сохранён. Гостевого можно продолжить без удаления сохранённого билда.',
+   'Your account character is already saved. Continue the guest without deleting the saved build.'):
+   tr('Если продолжишь гостевого героя, сначала сохраним героя аккаунта в «Мои билды». Облачная запись проверяется отдельно.',
+      'To continue the guest, your account draft will first be saved in My Builds. Cloud saving is checked separately.')}));
   const close=()=>{$('modalRoot').hidden=true;$('modalRoot').replaceChildren()};
+  const continueGuest=()=>{
+   // Explicit choice is an explicit library save; never replace the
+   // unsaved account draft before its browser copy has been committed.
+   if(!accountWasSaved&&!saveBuild(state.name))return;
+   if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
+   close();render();if(shared)openIncoming();else changeTab('character');
+  };
   content.append(h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
-    text:lang==='en'?'Continue guest character':'Продолжить гостевого героя',
-    onclick:()=>{if(!switchActiveDraft(guest.snapshot,null))return;
-     close();render();if(shared)openIncoming();else changeTab('character')}}),
+    text:accountWasSaved?tr('Продолжить гостевого героя','Continue guest character'):
+     tr('Сохранить героя аккаунта и продолжить гостевого','Save account character and continue guest'),
+    onclick:continueGuest}),
    h('button',{type:'button',class:'button-action',
-    text:lang==='en'?'Keep account draft':'Оставить черновик аккаунта',
+    text:tr('Оставить героя аккаунта','Keep account character'),
     onclick:()=>{close();if(shared)openIncoming();else if(returnToBuilds)changeTab('builds')}})
   ]));
   modal(lang==='en'?'Continue your character?':'Продолжить персонажа?',content);
@@ -6351,7 +6378,7 @@ function saveBuild(name=state.name||'Новый герой',overwriteId=null){
   'ps-build-library.v1',JSON.stringify(builds))}
  catch(error){
   builds=previousBuilds;state.name=previousName;selectActiveBuild(previousActive);
-  showStudioToast('Не удалось сохранить билд. Проверь свободное место в браузере.','error');
+  showStudioToast('Билд не сохранён: браузер не смог записать его. Текущий герой остался открытым. Освободи место в браузере и повтори.','error');
   return false;
  }
  libraryChangeId++;selectActiveBuild(id);persist();
