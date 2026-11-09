@@ -20,6 +20,15 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
  }
  const known=new Set([...originals.keys(),
   ...remote.filter(x=>x&&ID.test(x.id)).map(x=>x.id)]);
+ // D1 uses unique build IDs. If a damaged transport unexpectedly delivers
+ // two rows for one ID, never choose whichever happened to arrive first:
+ // neither version is safe to upload over or display as authoritative.
+ const seenRemote=new Set(),duplicateRemote=new Set();
+ for(const record of remote){
+  if(!record||!ID.test(record.id))continue;
+  if(seenRemote.has(record.id))duplicateRemote.add(record.id);
+  seenRemote.add(record.id);
+ }
  const remoteIds=new Set(),merged=[],outgoing=[];
  let selected=activeId,copies=0,unavailable=0;
  const copy=(source,origin)=>{
@@ -73,6 +82,15 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
  }
  for(const record of remote){
   if(!record||!ID.test(record.id)||remoteIds.has(record.id))continue;
+  if(duplicateRemote.has(record.id)){
+   remoteIds.add(record.id);unavailable++;
+   const offline=originals.get(record.id);
+   if(offline&&!pending.has(record.id)){
+    const recovered=copy(offline,'unavailable');
+    if(selected===record.id)selected=recovered;
+   }
+   continue;
+  }
   if(record.deleted){
    // The D1 tombstone remains authoritative. Preserve an offline snapshot only
    // under a new browser-only ID; never revive the deleted original or its links.
