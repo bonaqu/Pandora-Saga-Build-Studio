@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 // Mocked Worker responses; no requests touch real player D1 data.
 export async function runShareLinkSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
- const shareId='A1234567890',stored=new Map();
+ const shareId='A1234567890',stored=new Map(),token='t'.repeat(43),username='share_tester';
  let mismatched=false,revoked=false,created=0,readbacks=0,sharedGets=0;
  let holdNextSharedRead=false,releaseStaleRead=null,notifyStaleRead=null;
  const context=await browser.newContext({viewport:{width:1365,height:850}});
+ const seedSession=({token,username})=>localStorage.setItem('ps-account-session.v1',
+  JSON.stringify({token,username,expires:Number.MAX_SAFE_INTEGER}));
+ await context.addInitScript(seedSession,{token,username});
  await context.grantPermissions(['clipboard-read','clipboard-write']);
  const mockWorkerRoute=async route=>{
   const request=route.request(),url=request.url();
@@ -26,7 +29,13 @@ export async function runShareLinkSmoke(browser,base){
    'access-control-allow-headers':'authorization,content-type',
    'access-control-allow-methods':'GET,POST,OPTIONS'
   }});
+  if(path==='/api/account/me'){
+   assert.equal(request.headers().authorization,'Bearer '+token);
+   return json({account:{username}});
+  }
   if(path==='/api/library'){
+   assert.equal(request.headers().authorization,'Bearer '+token,
+    'Library requests must use an account session');
    if(method==='GET')return json({records:[]});
    const body=request.postDataJSON();
    if(body?.action==='put'&&body.entry?.id){
@@ -35,11 +44,15 @@ export async function runShareLinkSmoke(browser,base){
    return json({error:'Invalid library request'},400);
   }
   if(path==='/api/shared'&&method==='POST'){
+   assert.equal(request.headers().authorization,'Bearer '+token,
+    'Only signed-in accounts may publish links');
    const body=request.postDataJSON();
    if(!stored.has(body?.buildId))return json({error:'Missing stored build'},409);
    created++;return json({ok:true,id:shareId});
   }
   if(path==='/api/shared/'+shareId&&method==='GET'){
+   assert.equal(request.headers().authorization,'Bearer '+token,
+    'Shared link reads must use an account session');
    sharedGets++;
    if(holdNextSharedRead){
     holdNextSharedRead=false;
@@ -102,6 +115,7 @@ export async function runShareLinkSmoke(browser,base){
   assert.deepEqual(errors,[]);
   mismatched=false;
   const receiver=await browser.newContext({viewport:{width:1365,height:850}});
+  await receiver.addInitScript(seedSession,{token,username});
   await receiver.route('**/*',mockWorkerRoute);
   const incoming=await receiver.newPage(),incomingErrors=[];
   incoming.on('pageerror',e=>incomingErrors.push(e.message));
