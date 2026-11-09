@@ -20,7 +20,7 @@ test('old saved build starts with disabled buffs; controls update without resett
  assert.match(app,/vitalsBuffs:\{guildHp:0,guildMp:0,lifeSign:false\}/);
  assert.match(app,/enhancements:effectiveGuildBuffs\.vitals/);
  assert.match(app,/guildPassiveAtLevel\(guildLevel\)/);
- const start=app.indexOf('function renderVitalsEnhancements(){');
+ const start=app.indexOf('function renderVitalsEnhancements(calculated=undefined){');
  const end=app.indexOf('\nfunction budgetSummary(){',start);
  assert.ok(start>0&&end>start);
  const body=app.slice(start,end);
@@ -67,11 +67,11 @@ test('runtime hooks update linked HP/MP and rune changes without a full page res
  assert.match(app,/setVitalsEnhancement\(key,select\.value\)/);
  assert.match(app,/setAttributeBuff\('honorTitle',event\.target\.value\)/);
  assert.doesNotMatch(html,/id="originRuneJoEun"/);
- assert.match(app,/state\.vitalsBuffs=current;persist\(\);renderOriginVitals\(\);renderVitalsEnhancements\(\)/);
+ assert.match(app,/state\.vitalsBuffs=current;persist\(\);\s*const calculated=previewBaseStats\(\);\s*renderOriginVitals\(calculated\);renderVitalsEnhancements\(calculated\)/);
 });
 
 test('guild-level automatic ranks stay synchronized between Origin and Hero Book',()=>{
- const start=app.indexOf('function renderVitalsEnhancements(){');
+ const start=app.indexOf('function renderVitalsEnhancements(calculated=undefined){');
  const end=app.indexOf('\nfunction budgetSummary(){',start);
  const body=app.slice(start,end);
  const state={vitalsBuffs:{guildHp:6,guildMp:5,lifeSign:false},
