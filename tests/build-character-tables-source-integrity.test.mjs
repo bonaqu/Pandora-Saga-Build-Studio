@@ -54,3 +54,28 @@ test('invalid physical/magical enhancement figures are source failures',()=>{
  for(const [make,reason] of bad)
   assert.throws(()=>validate(corrupt(make)),reason);
 });
+
+test('missing whole rows are rejected before calculator sees fabricated defaults',()=>{
+ const missing=[
+  [x=>{delete x.raceInit.ELF},/Неполная таблица начальных характеристик рас/],
+  [x=>{delete x.jobInit.SCOUT},/Неполная таблица начальных характеристик профессий/],
+  [x=>{delete x.abilityPoint['55']},/Неполная таблица очков мастерства/],
+  [x=>{delete x.exp['55']},/Неполная таблица прогрессии персонажа/],
+  [x=>{delete x.weaponPlus['7']},/Неполная таблица бонусов заточки/],
+  [x=>{delete x.magicPlus['10']},/Неполная таблица бонусов заточки/],
+  [x=>{x.forge.rates=x.forge.rates.filter(row=>row.plus!==7)},/Неполная таблица ставок кузницы/],
+  [x=>{x.forge.gemTiers=x.forge.gemTiers.filter(row=>row.tier!==3)},/Неполная таблица уровней самоцветов/]
+ ];
+ for(const [damage,reason] of missing)
+  assert.throws(()=>validate(corrupt(damage)),reason);
+});
+
+test('future progression and fractional historical experience remain untouched',()=>{
+ const source=fixture(),fraction=source.exp['60'].expReq;
+ assert.ok(!Number.isInteger(fraction));
+ source.exp['100']={...source.exp['99']};
+ source.abilityPoint['100']=source.abilityPoint['99'];
+ assert.equal(validate(source),true);
+ assert.equal(source.exp['60'].expReq,fraction);
+ assert.equal(source.levelCap,45,'server limit is not the planner range');
+});
