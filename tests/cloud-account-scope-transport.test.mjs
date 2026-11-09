@@ -15,7 +15,8 @@ const guestOwner='guest:'+guest;
 function setup({owner=accountOwner,liveOwner=owner,token=()=>account}={}){
  let currentOwner=liveOwner;
  const sent=[];
- const ui={PandoraAccountUI:{token:()=>token({setOwner:value=>{currentOwner=value}})}};
+ const ui={PandoraAccountUI:{isLoggedIn:()=>currentOwner.startsWith('account:'),
+  token:()=>token({setOwner:value=>{currentOwner=value}})}};
  const request=Function('window','fetch','API','tabGuestSecret','libraryScopeId',
   'tabOwnerScope',requestSource+'\nreturn cloudLibraryRequest;')(
   ui,async(url,options)=>{
@@ -53,11 +54,10 @@ test('missing account token fails closed even if library marker has not switched
  assert.equal(c.sent.length,0);
 });
 
-test('normal guest requests retain their own bearer',async()=>{
+test('guest cloud requests reject before any network without exposing their legacy key',async()=>{
  const c=setup({owner:guestOwner,token:()=>null});
- await c.send();
- assert.equal(c.sent.length,1);
- assert.equal(c.sent[0].authorization,'Bearer '+guest);
+ await assert.rejects(c.send(),error=>error?.reason==='sign_in_required');
+ assert.deepEqual(c.sent,[]);
 });
 
 test('explicit guest library lookup keeps its supplied secret without account fallback',async()=>{
