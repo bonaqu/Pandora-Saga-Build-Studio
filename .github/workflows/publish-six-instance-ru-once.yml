@@ -1,0 +1,45 @@
+name: Publish six reviewed RU quest-instance descriptions to D1 (one time)
+
+on:
+  # The owner explicitly approved this narrow repair on 2026-11-09.
+  # Only the initial reviewed merge adding THIS workflow auto-triggers it.
+  push:
+    branches: [bonaqu_projects]
+    paths:
+      - '.github/workflows/publish-six-instance-ru-once.yml'
+  workflow_dispatch:
+    inputs:
+      confirmation:
+        description: 'Type PUBLISH-6-RU-INSTANCES-20261109 to retry the guarded job'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pandora-ru-instances-d1-production-publish
+  cancel-in-progress: false
+
+jobs:
+  publish-six-ru:
+    if: github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects' && (github.event_name == 'push' || inputs.confirmation == 'PUBLISH-6-RU-INSTANCES-20261109')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Checkout precisely the reviewed source
+        uses: actions/checkout@v4
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify pure source safety and all 28 professions (no writes)
+        run: node --test tests/d1-six-ru-instance-publication.test.mjs tests/all-class-derived-attribute-matrix.test.mjs
+      - name: Verify published live catalogue BEFORE staging (read-only)
+        run: npm run catalog:parity:live
+      - name: Copy active snapshot, patch only six reviewed RU blurbs, verify, activate with CAS
+        run: node scripts/publish-six-instance-ru-once.mjs --publish-owner-authorized-six-ru
+      - name: Require all 16 public D1 datasets and all six translations AFTER activation
+        run: npm run catalog:parity:live -- --strict-ru
