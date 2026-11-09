@@ -2207,6 +2207,18 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .build-signin-copy h3{margin:0 0 5px;color:#ffe3b1;
  font:750 17px/1.35 Manrope,Arial,sans-serif}
 .build-signin-copy p{margin:0;color:#dec8a8}
+.build-signin-copy .build-guest-storage-note{font-size:11px;line-height:1.5;
+ color:#c8b398;margin-top:7px}
+.build-draft-conflict{display:grid;gap:10px}
+.build-draft-conflict>p{margin:0;line-height:1.55}
+.build-draft-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.build-draft-choice{display:grid;align-content:start;gap:5px;min-width:0;
+ padding:10px;border:1px solid #795b37;border-radius:5px;background:#291e16}
+.build-draft-choice span{color:#c6ac8c;font-size:10px;line-height:1.4}
+.build-draft-choice strong{color:#ffe1b4;font-size:13px;overflow-wrap:anywhere}
+.build-draft-conflict .build-signin-actions{grid-column:auto}
+@media(max-width:480px){.build-draft-choices{grid-template-columns:1fr}}
+
 .build-signin-actions{display:flex;grid-column:2;gap:8px;flex-wrap:wrap}
 .build-signin-actions .button-action{min-height:40px;margin:0;
  padding:9px 16px;flex:0 1 auto}
