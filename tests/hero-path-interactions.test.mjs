@@ -484,3 +484,40 @@ test('English Hero Path skill search finds confirmed Russian source aliases with
  assert.ok(app.includes("officialEnglish?.skills?.[String(skill.id)]?.n"),
   'English search alias must originate from the verified EN catalog');
 });
+
+
+test('Hero Path detail omits zero character-level threshold rather than claiming unknown requirement',()=>{
+ const rows=Object.values(JSON.parse(read('data/os/skills.json')));
+ const noLevel=rows.find(skill=>skill.charLevel===0&&skill.learnable===true&&
+  skill.classes?.WARRIOR===1&&skill.prereq==null&&
+  Array.isArray(skill.reqs)&&skill.reqs.length===0);
+ const levelFive=rows.find(skill=>skill.charLevel===5&&
+  skill.classes?.WARRIOR===1&&skill.learnable===true);
+ assert.ok(noLevel,'Test needs a real learnable level-zero Warrior skill');
+ assert.ok(levelFive,'Test needs a real explicit character-level requirement');
+ const target=new BrowserElement('root'),detail=new BrowserElement('root');
+ const api={lang:'ru',state:{level:45,points:{}},job:'WARRIOR',
+  skillCatalog:[noLevel,levelFive],catalogReady:true,query:'',filter:'all',
+  shown:24,selectedSkill:noLevel,icon:()=>null,hover:()=>{},onInspect:()=>{},
+  branchName:branch=>branch,innate:{},branchCaps:{}};
+ root.PandoraHeroPath.viewSkills(target,detail,api);
+ let captions=walk(detail).map(node=>node.textContent);
+ assert.equal(captions.includes('Уровень персонажа'),false,
+  'A sourced zero must not look like an unknown character-level restriction');
+ assert.equal(captions.includes('Нет известного порога'),false);
+ api.selectedSkill=levelFive;
+ root.PandoraHeroPath.viewSkills(target,detail,api);
+ captions=walk(detail).map(node=>node.textContent);
+ assert.ok(captions.includes('Уровень персонажа'),
+  'Known nonzero character-level requirement must remain visible');
+ assert.ok(captions.includes('5'));
+ api.lang='en';
+ root.PandoraHeroPath.viewSkills(target,detail,api);
+ captions=walk(detail).map(node=>node.textContent);
+ assert.ok(captions.includes('Character level'));
+ api.selectedSkill=noLevel;
+ root.PandoraHeroPath.viewSkills(target,detail,api);
+ captions=walk(detail).map(node=>node.textContent);
+ assert.equal(captions.includes('Character level'),false);
+ assert.equal(captions.includes('Unknown requirement'),false);
+});
