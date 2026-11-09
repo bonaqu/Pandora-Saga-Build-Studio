@@ -42,7 +42,7 @@ test('Origin tabs and section titles have stable copy edit targets',()=>{
 });
 
 test('stat hold intent is shared with Hero Book, green + and red minus',()=>{
- const stat=app.slice(app.indexOf('function renderOriginStats(){'),app.indexOf('function renderOriginPassives(){'));
+ const stat=app.slice(app.indexOf('function renderOriginStats(calculated=undefined){'),app.indexOf('function renderOriginPassives(){'));
  const book=app.slice(app.indexOf('function renderStats('),app.indexOf('function compareSnapshots('));
  assert.match(stat,/class:'stat-step-decrement'/);
  assert.match(stat,/class:'stat-step-increment'/);
