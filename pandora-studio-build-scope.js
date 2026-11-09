@@ -132,7 +132,13 @@ function transition(storage,next,{carry=false,carryFrom=null,legacyOwner=null}={
  if(!raw||previous===next)syncWithOwner(storage,previous);
  ensureUnchanged();
  if(previous===next){
-  try{storage.setItem(MARKER,next);sync(storage)}
+  try{
+   storage.setItem(MARKER,next);
+   // sync() returns false if another browser tab takes the primary keys
+   // while we snapshot them. Do not acknowledge a successful owner claim.
+   if(!sync(storage))
+    throw Error('Library owner changed in another tab; retry the switch');
+  }
   catch(error){
    // A different tab may have claimed another owner while sync() failed.
    // Never undo its marker as part of our same-owner error handling.

@@ -527,3 +527,38 @@ test('failed same-owner scope sync cannot reset another tab owner marker',()=>{
  assert.equal(store.getItem(mod.MARKER),ownerB);
  assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob library');
 });
+
+
+test('same-owner transition cannot report success after another tab takes owner during sync',()=>{
+ const store=storage();
+ mod.transition(store,ownerA);
+ mod.setOwned(store,ownerA,keys[0],JSON.stringify([{name:'Alice saved',data:{level:45}}]));
+ mod.setOwned(store,ownerB,keys[0],JSON.stringify([{name:'Bob saved',data:{level:55}}]));
+ const beforeAlice=mod.getOwned(store,ownerA,keys[0]);
+ let writes=0,switched=false;
+ const interleaved={
+  getItem:key=>store.getItem(key),
+  removeItem:key=>store.removeItem(key),
+  setItem:(key,value)=>{
+   store.setItem(key,value);
+   // The first Alice backup is from syncWithOwner(); the second backup
+   // is written by sync() AFTER the same-owner marker was acknowledged.
+   if(key==='ps-build-scope-cache.v1:'+ownerA&&++writes===2){
+    switched=true;
+    mod.transition(store,ownerB);
+   }
+  }
+ };
+ assert.throws(()=>mod.transition(interleaved,ownerA),
+  /Library owner changed in another tab/);
+ assert.equal(switched,true);
+ assert.equal(store.getItem(mod.MARKER),ownerB,
+  'A failed Alice re-claim must not roll Bob back to the old marker');
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Bob saved',
+  'Bob active primary library must not be overwritten by Alice');
+ assert.equal(mod.getOwned(store,ownerA,keys[0]),beforeAlice,
+  'Alice keeps her own recovery snapshot after the failed claim');
+ assert.equal(JSON.parse(mod.getOwned(store,ownerB,keys[0]))[0].name,'Bob saved');
+ mod.transition(store,ownerA);
+ assert.equal(JSON.parse(store.getItem(keys[0]))[0].name,'Alice saved');
+});
