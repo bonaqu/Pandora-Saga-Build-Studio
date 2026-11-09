@@ -17,7 +17,7 @@ export async function runFutureGearSmoke(browser,base){
   await page.locator('.equipment-slot[data-slot-index="0"]').click();
   const search=page.locator('#stagePicker input[type="search"]');
   await search.waitFor({state:'visible',timeout:20000});
-  await search.fill('Рычащий меч');
+  await search.fill('меч Рычащий');
   const future=page.locator('#stagePicker .stage-picker-item.future');
   await future.waitFor({state:'visible',timeout:20000});
   assert.match(await future.getAttribute('aria-label'),/Будет доступен с 53 уровня/);

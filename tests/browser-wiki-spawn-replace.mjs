@@ -80,7 +80,7 @@ export async function runWikiSpawnReplacementSmoke(browser,base){
   const lookup=picker.locator('.wiki-owner-search');
   // Reuse the actual pointer unlock for the anti-autofill-protected field.
   await lookup.click();
-  await lookup.fill('Туманные холмы');
+  await lookup.fill('холмы Туманные');
   const persisted=page.waitForResponse(response=>
    response.url()===api+'/api/admin/override'&&
    response.request().method()==='POST'&&

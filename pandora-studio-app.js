@@ -2,6 +2,15 @@
 // No invented combat formulas. Historical catalog is labelled explicitly.
 'use strict';
 const $=id=>document.getElementById(id);
+// One matching rule for the equipment picker and owner encyclopedia pickers.
+// Terms may be reordered or separated by extra whitespace; ё/е match, too.
+const searchWords=(text,query)=>{
+ const normalize=value=>String(value??'').normalize('NFKC')
+  .toLocaleLowerCase('ru').replace(/ё/g,'е').replace(/\s+/g,' ').trim();
+ const searchable=normalize(text);
+ return normalize(query).split(' ').filter(Boolean)
+  .every(term=>searchable.includes(term));
+};
 const startupOverlay=$('startupOverlay');
 let startupFinishId=0;
 function startupMessage(ru,en,locale=lang){
@@ -1557,8 +1566,7 @@ function renderStagePicker(focusSearch=false){
  }):[];
  const draw=()=>{
   list.replaceChildren();
-  const query=stageSlotQuery.trim().toLocaleLowerCase('ru');
-  const matches=records.filter(rec=>itemName(rec).toLocaleLowerCase('ru').includes(query));
+  const matches=records.filter(rec=>searchWords(itemName(rec),stageSlotQuery));
   count.textContent=lang==='en'?
    matches.length+' matching · '+Math.min(matches.length,stageSlotShown)+' shown':
    matches.length+' подходящих · '+Math.min(matches.length,stageSlotShown)+' показано';
@@ -2929,8 +2937,7 @@ function renderWiki(root){
   }
   return anchor;
  };
- const matchesWords=(text,query)=>wikiIndex.normalize(query).split(' ')
-  .filter(Boolean).every(term=>text.includes(term));
+ const matchesWords=searchWords;
 
  const wikiItemChoice=(container,selectItem)=>{
   const previous=container.querySelector('.wiki-owner-item-choice');
@@ -2944,7 +2951,7 @@ function renderWiki(root){
   const items=Object.entries(wikiData.items||{});
   const fill=()=>{
    const q=wikiIndex.normalize(search.value);
-   const matches=items.filter(([id])=>!q||wikiIndex.normalize(dataName('item',id)).includes(q)).slice(0,80);
+   const matches=items.filter(([id])=>!q||searchWords(dataName('item',id),q)).slice(0,80);
    target.replaceChildren(h('option',{value:'',
     text:matches.length?wt('Выбери предмет','Choose item'):wt('Предметы не найдены','No items found')}));
    for(const [id]of matches)target.append(h('option',{value:id,text:dataName('item',id)}));
@@ -2987,7 +2994,7 @@ function renderWiki(root){
    const q=wikiIndex.normalize(search.value);
    const choices=Object.entries(candidates||{}).filter(([key])=>
     !ids.includes(key)&&(!replaceId||!replaceCandidate||replaceCandidate(key))&&
-    (!q||wikiIndex.normalize(dataName(kind,key)).includes(q))
+    (!q||searchWords(dataName(kind,key),q))
    ).slice(0,90);
    select.replaceChildren(h('option',{value:'',text:choices.length?
     wt('Выбери запись','Choose entry'):wt('Ничего не найдено','No matches')}));
@@ -3176,7 +3183,7 @@ function renderWiki(root){
     const q=wikiIndex.normalize(search.value);
     const filtered=entries.filter(([key])=>
      (kind.value!=='drop'||/^[1-9][0-9]{0,14}$/.test(String(key)))&&
-     (!q||wikiIndex.normalize(dataName(isMonster?'monster':'npc',key)).includes(q))
+     (!q||searchWords(dataName(isMonster?'monster':'npc',key),q))
     ).slice(0,90);
     target.replaceChildren(h('option',{value:'',
      text:filtered.length?wt('Выбери запись','Choose entry'):
@@ -3882,7 +3889,7 @@ function renderWiki(root){
        const fill=()=>{
         const q=wikiIndex.normalize(search.value);
         const matches=effectOptions.filter(row=>!q||
-         wikiIndex.normalize(row.label+' '+row.value).includes(q));
+         searchWords(row.label+' '+row.value,q));
         chooser.replaceChildren(h('option',{value:'',text:matches.length?'Выбери эффект':'Эффекты не найдены'}));
         for(const row of matches)chooser.append(h('option',{value:row.value,text:row.label}));
        };
@@ -4033,7 +4040,7 @@ function renderWiki(root){
       const filter=()=>{
        const q=wikiIndex.normalize(search.value);
        const matches=Object.entries(wikiData.trades?.npcs||{})
-        .filter(([npcId])=>!q||wikiIndex.normalize(dataName('npc',npcId)).includes(q))
+        .filter(([npcId])=>!q||searchWords(dataName('npc',npcId),q))
         .slice(0,90);
        npc.replaceChildren(h('option',{value:'',text:matches.length?
         wt('Выбери NPC','Choose NPC'):wt('NPC не найден','NPC not found')}));
@@ -4194,7 +4201,7 @@ function renderWiki(root){
         const q=wikiIndex.normalize(search.value);
         const matches=Object.entries(wikiData.skills||{}).filter(([skillId])=>
          String(skillId)!==String(id)&&(!q||
-          wikiIndex.normalize(dataName('skill',skillId)).includes(q))).slice(0,90);
+          searchWords(dataName('skill',skillId),q))).slice(0,90);
         select.replaceChildren(h('option',{value:'',text:wt('Выбери умение','Choose skill')}));
         for(const [skillId] of matches)
          select.append(h('option',{value:skillId,text:dataName('skill',skillId)}));
@@ -4653,7 +4660,7 @@ function renderWiki(root){
         const q=wikiIndex.normalize(search.value);
         const candidates=Object.entries(wikiData.trades?.npcs||{})
          .filter(([key])=>!(trade.npc||[]).map(String).includes(key)&&
-          (!q||wikiIndex.normalize(dataName('npc',key)).includes(q))).slice(0,80);
+          (!q||searchWords(dataName('npc',key),q))).slice(0,80);
         pick.replaceChildren(h('option',{value:'',
          text:candidates.length?wt('Выбери NPC','Choose NPC'):
           wt('NPC не найден','No NPC found')}));
@@ -6677,8 +6684,8 @@ function showOverrideManager(){
    window.PandoraOwnerChangeReview.inspect(key,value,{
     base:wikiBaseData,items:wikiBaseData?.items||catalogSource?.items,
     classes:catalog?.classes,lang,englishBranches:officialEnglish?.branches||{}}))
-   .filter(record=>!q||[record.key,record.title,...record.changes.flatMap(x=>
-    [x.field,x.before,x.after])].join(' ').toLocaleLowerCase('ru').includes(q))
+   .filter(record=>!q||searchWords([record.key,record.title,...record.changes.flatMap(x=>
+    [x.field,x.before,x.after])].join(' '),q))
    .sort((a,b)=>a.section.localeCompare(b.section,lang)||a.title.localeCompare(b.title,lang));
   count.textContent=tr('Найдено ','Found ')+entries.length+tr(' из ',' of ')+Object.keys(override).length+tr(' ручных изменений',' manual edits');
   if(!entries.length)list.append(h('p',{class:'muted',
