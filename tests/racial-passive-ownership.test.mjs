@@ -23,7 +23,8 @@ test('Hero loader and Encyclopedia share the same race integrity validator',()=>
  borrowed.ELF.skills[0]=borrowed.HUMAN.skills[0];
  assert.throws(()=>validate(borrowed,skills,meta.counts),/связи расовых пассивок/);
  const app=read('pandora-studio-app.js');
- assert.match(app,/window\.PandoraWikiCatalog\.validateRacialPassives\(\s*data\.racialPassives,data\.skills,data\.meta\?\.counts\)/);
+ assert.equal(typeof wiki.PandoraWikiCatalog.validateCharacterCatalog,'function');
+ assert.match(app,/window\.PandoraWikiCatalog\.validateCharacterCatalog\(data\)/);
  const wikiSource=read('pandora-studio-encyclopedia-catalog.js');
  assert.match(wikiSource,/validateRacialPassives\(data\.racialPassives,data\.skills,data\.meta\.counts\)/);
 });
