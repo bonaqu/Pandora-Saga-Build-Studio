@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import worker from '../worker/index.js';
 
-const key='a'.repeat(64),other='b'.repeat(64);
+const key='a'.repeat(43),other='b'.repeat(43),guestKey='f'.repeat(64);
 const ORIGIN='https://bonaqu.github.io';
 function database(){
  const rows=new Map();
  return {seed(owner,id,payload,deleted_at=null){
   rows.set(owner+':'+id,{build_id:id,payload,deleted_at});
  },prepare(sql){
+  if(sql.startsWith('SELECT a.id,a.username,a.owner_hash FROM user_accounts'))return {bind(tokenHash){return {first:async()=>({owner_hash:tokenHash})}}};
   if(sql.includes('FROM sqlite_master'))return {all:async()=>({
    results:sql.includes("name='shared_build_sources'")?[]:[{name:'private_builds'}]
   })};
@@ -62,7 +63,7 @@ function request(method,body,token=key){
   ...(body?{body:JSON.stringify(body)}:{})
  });
 }
-test('private D1 library save/list/delete/reload keeps records isolated by browser secret',async()=>{
+test('private D1 library save/list/delete/reload keeps records isolated by account session',async()=>{
  const DB=database(),entry={id:'a'.repeat(32),name:'Future 55',at:Date.now(),
   data:{race:3,job:0,level:55,points:{slash:90},equipment:{}}};
  const saved=await worker.fetch(request('POST',{action:'put',entry}),{DB});
@@ -83,6 +84,8 @@ test('D1 library rejects invalid levels, IDs and tokens',async()=>{
   data:{race:0,job:1,level:56}};
  assert.equal((await worker.fetch(request('POST',{action:'put',entry}),{DB})).status,400);
  assert.equal((await worker.fetch(request('GET',null,'bad'),{DB})).status,401);
+ assert.equal((await worker.fetch(request('GET',null,guestKey),{DB})).status,401,
+  'Legacy guest key must not fetch a saved-build library');
  assert.equal((await worker.fetch(request('POST',{action:'delete',id:'../../'}),{DB})).status,400);
 });
 
