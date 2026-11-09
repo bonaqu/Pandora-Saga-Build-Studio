@@ -9,5 +9,5 @@ test('independent tabs cannot redirect account saves or silently switch guest so
  assert.match(app,/PandoraBuildScope\.owner\(null,code\)/);
  assert.match(app,/window\.PandoraAccountUI\.token\(\)!==selectedToken/);
  assert.match(app,/libraryScopeId\(\)!==selectedOwner/);
- assert.match(app,/if\(!secret&&!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)/);
+ assert.match(app,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)/);
 });
