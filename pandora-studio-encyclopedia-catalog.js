@@ -153,9 +153,27 @@ function validate(input){
     requireRef(isRecord(row),'награда сундука');
     const hasItem=row.i!=null,hasGold=Object.hasOwn(row,'gold');
     requireRef(hasItem!==hasGold,'тип награды сундука');
-    if(hasItem)requireRef(item(row.i),'награда сундука');
+    // Keep an unknown source chance unknown. Reject malformed published
+    // probabilities and quantities instead of displaying false game facts.
+    if(row.p!=null)
+     requireRef(typeof row.p==='number'&&Number.isFinite(row.p)&&
+      row.p>=0&&row.p<=100,'шанс награды сундука');
+    if(hasItem){
+     requireRef(item(row.i),'награда сундука');
+     if(row.n!=null)
+      requireRef(Number.isSafeInteger(row.n)&&row.n>=1&&row.n<=999999,
+       'количество награды сундука');
+     if(row.plus!=null)
+      requireRef(Number.isSafeInteger(row.plus)&&row.plus>=0&&row.plus<=20,
+       'заточка награды сундука');
+     if(row.soul!=null)
+      requireRef(Number.isSafeInteger(row.soul)&&row.soul>=0&&row.soul<=3,
+       'слоты душ награды сундука');
+    }
     if(hasGold){
      const gold=row.gold;
+     requireRef(Object.keys(row).every(key=>key==='gold'||key==='p'),
+      'структура золотой награды сундука');
      requireRef(Array.isArray(gold)&&gold.length===2&&
       gold.every(value=>Number.isSafeInteger(value)&&value>=0)&&
       gold[0]<=gold[1],'диапазон золота сундука');
