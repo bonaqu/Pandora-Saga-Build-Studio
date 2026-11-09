@@ -19,6 +19,7 @@ import {runSavedAutosaveSmoke} from './browser-saved-autosave.mjs';
 import {runAccountSmoke} from './browser-account.mjs';
 import {runAccountLocalRecoveryFailureSmoke} from './browser-account-local-recovery.mjs';
 import {runAccountLateBootstrapSmoke} from './browser-account-late-bootstrap.mjs';
+import {runAccountFeedbackRaceSmoke} from './browser-account-feedback-race.mjs';
 import {runAccountLibraryIsolationSmoke} from './browser-account-isolation.mjs';
 import {runCrossTabAccountIsolationSmoke} from './browser-cross-tab-account.mjs';
 import {runCrossTabGuestIsolationSmoke} from './browser-cross-tab-guest.mjs';
@@ -365,6 +366,7 @@ async function main(){
   ['account-login',runAccountSmoke],
   ['account-local-recovery',runAccountLocalRecoveryFailureSmoke],
   ['account-late-bootstrap',runAccountLateBootstrapSmoke],
+  ['account-feedback-race',runAccountFeedbackRaceSmoke],
   ['account-isolation',runAccountLibraryIsolationSmoke],
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],

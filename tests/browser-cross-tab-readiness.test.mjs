@@ -38,3 +38,14 @@ test('late account session race is exercised in a paused-module Chromium flow',(
  assert.match(source,/if\(!session\)try\{/);
  assert.match(source,/const latest=JSON\.parse\(localStorage\.getItem\(KEY\)/);
 });
+
+test('held third-tab /me gate blocks every concurrent GET until explicit release',()=>{
+ const start=code.indexOf("await tabC.route('**/api/account/me'");
+ const end=code.indexOf('// A profile can show',start);
+ assert.ok(start>=0&&end>start,'A real third-tab request gate must exist');
+ const handler=code.slice(start,end);
+ assert.match(handler,/if\(route\.request\(\)\.method\(\)==='OPTIONS'\)/);
+ assert.match(handler,/delayedMeTriggered=true;\s*await heldMe;/);
+ assert.doesNotMatch(handler,/\|\|delayedMeTriggered\)/,
+  'A second /me must not bypass the held response and verify the profile prematurely');
+});

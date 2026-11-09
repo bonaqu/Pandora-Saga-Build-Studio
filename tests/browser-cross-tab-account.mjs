@@ -170,8 +170,12 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
    // CORS OPTIONS belongs to the context's regular 204 preflight handler.
    // Intercept ONLY the authenticated GET. Otherwise the browser rejects
    // the preflight and no /me response ever reaches the page.
-   if(route.request().method()==='OPTIONS'||delayedMeTriggered)
+   if(route.request().method()==='OPTIONS')
     return route.fallback();
+   // Hold *every* authenticated GET, not only the first. The app can
+   // issue a second /me while a first request is pending. Letting that
+   // second request fall through verifies the profile early and makes
+   // the pending-state test fail even though ownership stayed correct.
    delayedMeTriggered=true;
    await heldMe;
    return route.fulfill({status:200,contentType:'application/json',
