@@ -664,3 +664,72 @@ test('omitted optional legacy trade charges are not invented as zero',()=>{
  for(const field of ['exp','gold','honor','limit'])
   assert.equal(Object.hasOwn(recipe,field),false);
 });
+
+
+test('current 569 OS skills keep their source costs, AoE and 179 mastery requirements',()=>{
+ const skills=JSON.parse(readFileSync(new URL('../data/os/skills.json',import.meta.url),'utf8'));
+ const rows=Object.values(skills),reqs=rows.flatMap(row=>row.reqs||[]);
+ const prerequisites=rows.filter(row=>row.prereq!=null);
+ assert.equal(rows.length,569);
+ assert.equal(reqs.length,179);
+ assert.equal(prerequisites.length,29);
+ assert.equal(rows.filter(row=>Number.isFinite(row.mana)&&row.mana>=0&&
+  Number.isFinite(row.cooldown)&&row.cooldown>=0&&
+  Number.isFinite(row.cast)&&row.cast>=0&&
+  Number.isSafeInteger(row.charLevel)&&row.charLevel>=0&&
+  Array.isArray(row.aoe)&&row.aoe.length===2).length,rows.length);
+ const original=JSON.stringify(skills);
+ const data={};
+ for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
+  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(JSON.stringify(data.skills),original);
+});
+
+test('invalid D1 skill thresholds, costs and prerequisites fail closed',async()=>{
+ const good=catalog('skill');
+ Object.assign(good.skills[1],{mana:5,cast:0,cooldown:10,motion:1,
+  range:2500,reqLevel:5,charLevel:10,learnable:false,
+  rangeFromWeapon:false,aoe:[0,0],prereq:0,
+  reqs:[{branch:'race',amount:10}]});
+ assert.doesNotThrow(()=>loader.validate(good));
+ const cases=[
+  ['missing name',d=>{d.skills[1].name=''},/название умения/],
+  ['negative mana',d=>{d.skills[1].mana=-5},/числовые параметры умения/],
+  ['non-numeric mana',d=>{d.skills[1].mana='5'},/числовые параметры умения/],
+  ['infinite cooldown',d=>{d.skills[1].cooldown=Infinity},/числовые параметры умения/],
+  ['negative cast',d=>{d.skills[1].cast=-2},/числовые параметры умения/],
+  ['negative range',d=>{d.skills[1].range=-1},/числовые параметры умения/],
+  ['fractional level',d=>{d.skills[1].charLevel=10.5},/порог уровня умения/],
+  ['negative required level',d=>{d.skills[1].reqLevel=-1},/порог уровня умения/],
+  ['string learnable',d=>{d.skills[1].learnable='true'},/тип свойства умения/],
+  ['string rangeFromWeapon',d=>{d.skills[1].rangeFromWeapon='false'},/тип свойства умения/],
+  ['AoE string',d=>{d.skills[1].aoe='0,0'},/область действия/],
+  ['negative AoE',d=>{d.skills[1].aoe=[0,-1]},/область действия/],
+  ['unknown prerequisite',d=>{d.skills[1].prereq=999},/предыдущее умение/],
+  ['prerequisite string',d=>{d.skills[1].prereq='1'},/предыдущее умение/],
+  ['required branches as string',d=>{d.skills[1].reqs='race'},/требования ветки/],
+  ['unknown skill branch',d=>{d.skills[1].reqs[0].branch='unknown'},/требования ветки/],
+  ['fractional mastery points',d=>{d.skills[1].reqs[0].amount=1.5},/требования ветки/]
+ ];
+ for(const [name,change,reason] of cases){
+  const corrupted=structuredClone(good);
+  change(corrupted);
+  assert.throws(()=>loader.validate(corrupted),reason,name);
+ }
+ const bad=structuredClone(good);bad.skills[1].mana=-1;
+ const fetch=mockFetch(bad,good);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:fetch.fetcher,strict:true}),/числовые параметры умения/);
+ const fallback=await loader.load({api:'https://worker.example',fetcher:fetch.fetcher});
+ assert.equal(fallback.source,'local');
+ assert.equal(fallback.data.skills[1].mana,5);
+ assert.equal(fallback.data.skills[1].reqs[0].amount,10);
+});
+
+test('older skill records with unspecified optional costs remain valid',()=>{
+ const good=catalog('legacy skills');
+ assert.doesNotThrow(()=>loader.validate(good));
+ assert.equal(Object.hasOwn(good.skills[1],'mana'),false);
+ assert.equal(Object.hasOwn(good.skills[1],'charLevel'),false);
+});
