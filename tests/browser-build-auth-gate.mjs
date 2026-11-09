@@ -69,6 +69,8 @@ export async function runBuildAuthGateSmoke(browser,base){
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('.build-name-input').waitFor({state:'visible'});
   assert.equal(await page.locator('.build-signin-gate').count(),0);
+  // The library drawer is a real modal surface; close it before using header locale.
+  await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en',null,{timeout:20000});
   assert.equal(await page.locator('.build-signin-gate').count(),0);
