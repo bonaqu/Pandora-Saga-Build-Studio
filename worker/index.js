@@ -289,6 +289,9 @@ async function adminCatalog(request,env,path){
 
 /* Public short links are bound to an existing private build and revoked on deletion. */
 async function shareApi(request,env,path,ip){
+ // Every public build preview and link creation requires a valid player session.
+ const principal=await accountPrincipal(request,env);
+ if(!principal)return no('Sign in to work with builds',401);
  const names=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name IN ('shared_builds','shared_build_limits','shared_build_sources')").all();
  const present=new Set((names.results||[]).map(row=>row.name));
  if(!['shared_builds','shared_build_limits','shared_build_sources'].every(name=>present.has(name))){
@@ -323,9 +326,7 @@ async function shareApi(request,env,path,ip){
   return json({schema:1,share});
  }
  if(request.method!=='POST'||path!=='/api/shared')return no('Not found',404);
- const bearer=request.headers.get('authorization')||'';
- if(!/^Bearer (?:[a-f0-9]{64}|[A-Za-z0-9_-]{43})$/.test(bearer))
-  return no('Доступ к созданию ссылки требует владельца билда',401);
+ // Account identity was checked before reading or writing shared snapshots.
  const input=await boundedTextBody(request,256*1024,48000);
  if(input.tooLarge)return no('Payload too large',413);
  if(typeof input.raw!=='string')return no('Invalid share payload',400);
@@ -337,9 +338,7 @@ async function shareApi(request,env,path,ip){
   Number.isInteger(entry.race)&&entry.race>=0&&entry.race<=5&&
   Number.isInteger(entry.job)&&entry.job>=0&&entry.job<28&&
   Number.isInteger(entry.level)&&entry.level>=1&&entry.level<=55;
- const owner=/^Bearer [a-f0-9]{64}$/.test(bearer)?
-  await sha(bearer.slice(7)):(await accountPrincipal(request,env))?.owner_hash;
- if(!owner)return no('Требуется вход в профиль',401);
+ const owner=principal.owner_hash;
  const saved=await env.DB.prepare('SELECT payload,deleted_at FROM private_builds WHERE owner_hash=? AND build_id=?').bind(owner,payload.buildId).first();
  if(!saved||saved.deleted_at!==null)return no('Сохранённый билд не найден или уже удалён',409);
  // Only the owned D1 record is authoritative. Never trust arbitrary character data from the share POST.
@@ -381,6 +380,8 @@ function validPrivateBuildEntry(entry,id){
   Number.isInteger(entry.data.level)&&entry.data.level>=1&&entry.data.level<=55;
 }
 async function libraryApi(request,env){
+ const principal=await accountPrincipal(request,env);
+ if(!principal)return no('Sign in to work with builds',401);
  const exists=await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='private_builds'").all();
  if(!(exists.results||[]).length){
   try{
@@ -388,10 +389,7 @@ async function libraryApi(request,env){
    await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_private_builds_owner_time ON private_builds(owner_hash,updated_at DESC)').run();
   }catch{return no('Хранилище билдов не подготовлено',503)}
  }
- const bearer=request.headers.get('authorization')||'';
- const owner=/^Bearer [a-f0-9]{64}$/.test(bearer)?
-  await sha(bearer.slice(7)):(await accountPrincipal(request,env))?.owner_hash;
- if(!owner)return no('Library key or account session required',401);
+ const owner=principal.owner_hash;
  if(request.method==='GET'){
   const rows=await env.DB.prepare('SELECT build_id,payload,deleted_at FROM private_builds WHERE owner_hash=? ORDER BY (deleted_at IS NOT NULL), updated_at DESC').bind(owner).all();
   // Isolate a malformed saved row instead of failing the entire library.
