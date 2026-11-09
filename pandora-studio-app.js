@@ -6131,6 +6131,10 @@ function requireBuildAccount({shared=false}={}){
 function finishBuildAccountEntry(){
  if(!window.PandoraAccountUI?.isLoggedIn()||
   window.PandoraAccountUI?.hasRecoveryPending?.())return;
+ // Opening a profile from the header must not silently dismiss it on login.
+ // Only a requested build action or unsaved guest draft resumes the workbench.
+ if(!returnToBuildsAfterAuth&&!pendingGuestDraft&&
+  !/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash))return;
  const returnToBuilds=returnToBuildsAfterAuth;
  returnToBuildsAfterAuth=false;
  window.PandoraAccountUI?.dismiss?.();
@@ -8061,6 +8065,10 @@ void startStudio({archive:['127.0.0.1','localhost'].includes(location.hostname)}
 void window.PandoraAccountUI.init({
  baseUrl:API,legacyKey:()=>tabGuestSecret,
  onLogin:({register})=>{
+  // Header login, like the build-gate login, must preserve an unsaved guest
+  // hero before the account owner switch replaces the visible draft.
+  if(!register&&!pendingGuestDraft&&tabOwnerScope?.startsWith('guest:')&&unsavedBuild())
+   pendingGuestDraft={snapshot:structuredClone(state),owner:tabOwnerScope};
   if(register)pendingGuestDraft=null;
   // New registration adopts the guest library because its existing D1 owner hash
   // is intentionally bound to that browser key. Logging into a different existing
