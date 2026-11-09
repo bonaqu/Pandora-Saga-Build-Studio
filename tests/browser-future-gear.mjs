@@ -35,6 +35,17 @@ export async function runFutureGearSmoke(browser,base){
    !document.querySelector('.equipment-slot[data-slot-index="0"].unavailable'),null,{timeout:20000});
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.equal(saved.equipment[0].id,422);
+  // The alternate-language gear picker must still search the real Russian
+  // source name after switching to the verified English UI.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#locale [data-locale="en"][aria-pressed="true"]')
+   .waitFor({state:'visible',timeout:20000});
+  await page.locator('.equipment-slot[data-slot-index="0"]').click();
+  const englishPicker=page.locator('#stagePicker input[type="search"]');
+  await englishPicker.waitFor({state:'visible',timeout:20000});
+  await englishPicker.fill('меч Рычащий');
+  await page.locator('#stagePicker [data-stage-choice="422"]')
+   .waitFor({state:'visible',timeout:20000});
   assert.deepEqual(errors,[]);
   console.log('Chromium future gear passed: level-53 sword planned at 45, automatically available at 53');
  }finally{await context.close()}
