@@ -246,8 +246,10 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   assert.doesNotMatch(warning,/Перезаписать|Предыдущую/);
   assert.equal(await hero.getByRole('button',{name:'Confirm overwrite'}).isVisible(),true);
   const persisted=await page.evaluate(()=>
-   JSON.stringify(JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')));
-  assert.equal(persisted,original,'Previewing overwrite must not change saved data');
+   JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]'));
+  const byId=rows=>rows.slice().sort((a,b)=>a.id.localeCompare(b.id));
+  assert.deepEqual(byId(persisted),byId(library),
+   'Cloud refresh may sort build cards, but must preserve every saved build and field');
   assert.deepEqual(errors,[]);
   console.log('Chromium saved-build EN passed: localized race, bilingual search, dynamic prompt');
  }finally{await context.close()}
