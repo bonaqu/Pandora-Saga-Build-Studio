@@ -418,3 +418,60 @@ test('invalid or object-shaped keyed entries fail without breaking historical ke
    'A legacy keyed record may omit redundant id: '+kind);
  }
 });
+
+
+test('all 457 source reward rows retain valid chances without rewriting game probabilities',()=>{
+ const chests=JSON.parse(readFileSync(new URL('../data/os/chests.json',import.meta.url),'utf8'));
+ const rows=[...chests.boxes,...chests.npc].flatMap(box=>box.rolls.flat());
+ assert.equal(rows.length,457);
+ assert.equal(rows.filter(row=>typeof row.p==='number'&&
+  Number.isFinite(row.p)&&row.p>=0&&row.p<=100).length,rows.length);
+ const data={};
+ for(const key of loader.keys)data[key]=JSON.parse(readFileSync(
+  new URL('../data/os/'+key+'.json',import.meta.url),'utf8'));
+ const before=JSON.stringify(chests);
+ assert.doesNotThrow(()=>loader.validate(data));
+ assert.equal(JSON.stringify(chests),before,'Validation must not change original chances');
+});
+
+test('D1 chest item and gold reward chances fail closed for invalid published values',async()=>{
+ const good=catalog('good');
+ good.chests.boxes[0].rolls=[[{i:1,n:2,p:14.29,plus:3,soul:2}]];
+ good.items[2]={id:2,name:'NPC Chest'};good.meta.counts.items=2;
+ good.chests.npc=[{i:2,key:1,rolls:[[{gold:[60000,100000],p:3}]]}];
+ assert.doesNotThrow(()=>loader.validate(good));
+ const cases=[
+  ['chance below zero',c=>{c.chests.boxes[0].rolls[0][0].p=-0.1},/шанс награды/],
+  ['chance above 100',c=>{c.chests.boxes[0].rolls[0][0].p=100.01},/шанс награды/],
+  ['chance string',c=>{c.chests.boxes[0].rolls[0][0].p='100'},/шанс награды/],
+  ['chance Infinity',c=>{c.chests.boxes[0].rolls[0][0].p=Infinity},/шанс награды/],
+  ['gold chance invalid',c=>{c.chests.npc[0].rolls[0][0].p=103},/шанс награды/],
+  ['item quantity zero',c=>{c.chests.boxes[0].rolls[0][0].n=0},/количество награды/],
+  ['item quantity string',c=>{c.chests.boxes[0].rolls[0][0].n='2'},/количество награды/],
+  ['item quantity oversized',c=>{c.chests.boxes[0].rolls[0][0].n=1000000},/количество награды/],
+  ['negative item grade',c=>{c.chests.boxes[0].rolls[0][0].plus=-1},/заточка награды/],
+  ['invalid item Soul sockets',c=>{c.chests.boxes[0].rolls[0][0].soul=4},/слоты душ/],
+  ['gold reward with fabricated quantity',c=>{c.chests.npc[0].rolls[0][0].n=1},/структура золотой/]
+ ];
+ for(const [label,corrupt,reason] of cases){
+  const bad=structuredClone(good);corrupt(bad);
+  assert.throws(()=>loader.validate(bad),reason,label);
+ }
+ const remote=structuredClone(good);
+ remote.chests.npc[0].rolls[0][0].p=102;
+ const fetcher=mockFetch(remote,good);
+ await assert.rejects(loader.load({api:'https://worker.example',
+  fetcher:fetcher.fetcher,strict:true}),/шанс награды/);
+ const fallback=await loader.load({api:'https://worker.example',fetcher:fetcher.fetcher});
+ assert.equal(fallback.source,'local');
+ assert.equal(fallback.data.chests.npc[0].rolls[0][0].p,3,
+  'An invalid D1 probability cannot replace an archived game chance');
+});
+
+test('missing chance remains unspecified rather than becoming invented 0 or 100',()=>{
+ const value=catalog();
+ value.chests.boxes[0].rolls=[[{i:1,n:1,p:null},{i:1,n:1}]];
+ assert.doesNotThrow(()=>loader.validate(value));
+ assert.equal(value.chests.boxes[0].rolls[0][0].p,null);
+ assert.equal(Object.hasOwn(value.chests.boxes[0].rolls[0][1],'p'),false);
+});
