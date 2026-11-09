@@ -51,14 +51,14 @@ const reply=(account,status=200)=>({
  json:async()=>({account,error:status===200?undefined:'Connection unavailable'})
 });
 
-test('restored session is trusted only with canonical owner, token, future finite expiry',async()=>{
+test('restored account requires canonical identity and safe stored session metadata',async()=>{
  for(const invalid of [
   {...session(),username:'../../../wrong'},
   {...session(),username:null},
   {...session(),token:'invalid'},
   {...session(),expires:Infinity},
   {...session(),expires:'9999999999999999'},
-  {...session(),expires:Date.now()-5000}
+  {...session(),expires:-1}
  ]){
   const c=create({stored:invalid});
   await c.init();
@@ -219,39 +219,33 @@ test('late /me failure never signs out a newer login and late /me success cannot
  }
 });
 
-test('an already-open tab signs out exactly once when account session expires',async()=>{
+
+test('old account keeps its login months after the original timestamp',async()=>{
  let now=Date.now();
  class Clock extends Date{static now(){return now}}
  const record={token:'a'.repeat(43),username:'alice_01',expires:now+30000};
  const c=create({stored:record,clock:Clock});
  await c.init();
+ now+=180*86400000;
  assert.equal(c.api.token(),record.token);
  assert.equal(c.api.username(),'alice_01');
  assert.equal(c.api.isLoggedIn(),true);
- now+=30001;
- assert.equal(c.api.token(),null,'No expired credential may be sent to the Worker');
- assert.equal(c.api.username(),null,'Do not reuse an expired account as owner scope');
- assert.equal(c.api.isLoggedIn(),false);
- assert.equal(c.storage.getItem('ps-account-session.v1'),null);
- assert.equal(c.events.logout.length,1);
- assert.equal(c.events.logout[0].expired,true);
  c.api.refresh();
- assert.equal(c.events.logout.length,1,'Repeated renders do not repeat logout');
+ assert.equal(c.events.logout.length,0);
+ assert.equal(JSON.parse(c.storage.getItem('ps-account-session.v1')).username,'alice_01');
 });
 
-test('refreshing the profile after expiry also clears the owner before rendering',async()=>{
- let now=Date.now();
- class Clock extends Date{static now(){return now}}
- const c=create({stored:{token:'b'.repeat(43),username:'alice_01',
-  expires:now+1500},clock:Clock});
+test('returning expired legacy timestamp is verified with the Worker, not guest',async()=>{
+ const record={token:'b'.repeat(43),username:'alice_01',
+  expires:Date.now()-30*86400000};
+ const c=create({stored:record});
  await c.init();
- now+=2000;
- c.api.refresh();
- assert.equal(c.api.isLoggedIn(),false);
- assert.equal(c.events.logout.length,1);
- assert.equal(c.storage.getItem('ps-account-session.v1'),null);
+ assert.equal(c.api.isLoggedIn(),true);
+ assert.equal(c.events.login.length,1);
+ assert.equal(c.events.guest.length,0);
+ assert.equal(c.trigger.getAttribute('data-account-bootstrap'),'verified');
+ assert.equal(c.storage.getItem('ps-account-session.v1'),JSON.stringify(record));
 });
-
 test('a temporary network error does not sign out a session whose expiry is still valid',async()=>{
  let now=Date.now();
  class Clock extends Date{static now(){return now}}

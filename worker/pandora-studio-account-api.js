@@ -45,12 +45,15 @@ export async function principal(request,env){
  const token=(request.headers.get('authorization')||'').replace(/^Bearer /,'');
  if(!SESSION.test(token))return null;
  const row=await env.DB.prepare(
-  'SELECT a.id,a.username,a.owner_hash FROM user_accounts AS a JOIN user_sessions AS s ON a.id=s.account_id WHERE s.token_hash=? AND s.expires_at>?'
- ).bind(await sha(token),Date.now()).first();
+  'SELECT a.id,a.username,a.owner_hash FROM user_accounts AS a JOIN user_sessions AS s ON a.id=s.account_id WHERE s.token_hash=?'
+ ).bind(await sha(token)).first();
  return row||null;
 }
 async function newSession(db,id){
- const token=b64(random()),expires=Date.now()+7*86400000;
+ // A player logs in to retrieve builds; inactivity never revokes that login.
+ // Keep expires_at for the existing NOT NULL schema and older clients.
+ // Explicit logout, password change, recovery still revoke real tokens.
+ const token=b64(random()),expires=Number.MAX_SAFE_INTEGER;
  await db.prepare('INSERT INTO user_sessions(token_hash,account_id,expires_at) VALUES(?,?,?)')
   .bind(await sha(token),id,expires).run();
  return {token,expires};

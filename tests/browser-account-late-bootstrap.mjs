@@ -54,7 +54,7 @@ export async function runAccountLateBootstrapSmoke(browser,base){
   // Another tab can persist the login during this exact loader gap.
   await page.evaluate(({token,username})=>{
    localStorage.setItem('ps-account-session.v1',JSON.stringify({
-    token,username,expires:Date.now()+3600000
+    token,username,expires:Date.now()-60*86400000
    }));
   },{token,username});
   // Register before releasing the deferred module: profile verification
@@ -73,7 +73,9 @@ export async function runAccountLateBootstrapSmoke(browser,base){
    document.querySelector('#raceGrid')?.children.length>0,
    username,{timeout:25000});
   await accountLibraryLoaded;
-  assert.equal(stats.me,1,'The late session must be checked via /me');
+  assert.equal(stats.me,1,'The old dormant session must be checked via /me');
+  assert.ok(await page.evaluate(()=>JSON.parse(
+   localStorage.getItem('ps-account-session.v1')).expires<Date.now()));
   assert.equal(stats.guestLibrary,0,
    'A newly persisted account may not bootstrap an unrelated guest library');
   assert.ok(stats.accountLibrary>=1,'Account library must be requested');

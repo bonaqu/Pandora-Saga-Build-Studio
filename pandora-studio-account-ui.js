@@ -20,16 +20,17 @@ const TOKEN=/^[A-Za-z0-9_-]{43}$/;
 const USERNAME=/^[a-z][a-z0-9_]{2,19}$/;
 const validName=value=>typeof value==='string'&&USERNAME.test(value.toLowerCase())?
  value.toLowerCase():null;
+// Legacy expiry metadata must not sign out an otherwise valid stored owner.
 const validSession=value=>value&&typeof value==='object'&&!Array.isArray(value)&&
  TOKEN.test(value.token||'')&&validName(value.username)&&
- Number.isSafeInteger(value.expires)&&value.expires>Date.now();
+ Number.isSafeInteger(value.expires)&&value.expires>=0;
 try{const raw=JSON.parse(localStorage.getItem(KEY)||'null');
  if(validSession(raw))session={token:raw.token,expires:raw.expires,
   username:validName(raw.username)};
 }catch{}
 bootstrapPhase=session?'pending':'guest';
-// A tab may stay open beyond the server-issued expiry. Stop using the old
-// owner identity before any cloud request or account-dependent UI lookup.
+// A browser tab remains signed into its build library across inactivity.
+// Malformed stored records and server-confirmed revocation still sign out.
 function activeSession(){
  if(!session)return false;
  if(validSession(session))return true;
@@ -112,9 +113,8 @@ function clearSession({revokeMatchingOwner=false}={}){
    const saved=JSON.parse(localStorage.getItem(KEY)||'null');
    // A newer login on another tab may reuse the bearer string. Never
    // erase a different owner or a newer expiry just because it matches.
-   // A revoked bearer must sign out every tab of the same owner, even if
-   // another tab refreshed its expiry. Passive expiration instead protects
-   // any newer saved login with a different expiry.
+   // Explicit revocation affects same-bearer same-owner tabs, but does
+   // not erase an independently saved newer login.
    if(saved?.token===previousToken&&validName(saved?.username)===previousName&&
     (revokeMatchingOwner||saved?.expires===previousExpires))localStorage.removeItem(KEY);
   }catch{}
