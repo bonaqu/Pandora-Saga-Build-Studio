@@ -100,8 +100,10 @@ export async function runCrossTabAccountIsolationSmoke(browser,base){
   await tabA.goto(base+'/',{waitUntil:'domcontentloaded'});
   await login(tabA,tokenA,'alice_01');
   await save(tabA,'Alice first',tokenA);
-  assert.equal(await tabA.locator('.build-transfer').count(),0,
-   'A signed-in account must not display its unrelated guest recovery key');
+  assert.equal(await tabA.locator('.build-transfer').count(),1,
+   'Signed-in players may explicitly import older builds without exposing a guest secret');
+  assert.equal(await tabA.locator('.build-transfer-key').inputValue(),'',
+   'Legacy library keys must not be pre-filled for a signed-in account');
   await tabB.goto(base+'/',{waitUntil:'domcontentloaded'});
   await login(tabB,tokenB,'bob_222');
   await save(tabB,'Bob only',tokenB);
