@@ -6015,7 +6015,8 @@ function buildLegacyImport(){
      'Browser storage is full. Free up space and retry.');
     return;
    }
-   libraryChangeId++;refreshBuildsAfterCloudLoad();
+   libraryChangeId++;
+   reportCloudStatus(tr('Переносим сохранения в аккаунт…','Importing builds into account…'));
    let saved=0;
    for(const row of created){
     if(!window.PandoraAccountUI?.isLoggedIn()||
@@ -6023,13 +6024,14 @@ function buildLegacyImport(){
      libraryScopeId()!==selectedOwner)break;
     if(await putCloudBuild(row))saved++;
    }
-   status.textContent= saved===created.length?
+   reportCloudStatus(saved===created.length?
     tr('Добавлено в аккаунт: ','Added to your account: ')+saved:
     tr('Добавлено локально: ','Saved in browser: ')+created.length+
     tr(' · в облаке подтверждено: ',' · confirmed in cloud: ')+saved+
     tr('. Остальное повторно проверится при синхронизации.',
-       '. Remaining builds will retry syncing.');
+       '. Remaining builds will retry syncing.'));
    apply.hidden=true;apply.disabled=false;
+   if(activeTab==='builds')refreshBuildsAfterCloudLoad();
   }});
  const check=async key=>{
   const code=String(key||'').trim().toLowerCase();
