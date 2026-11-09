@@ -10,8 +10,8 @@ test('live readiness runs parity only after the published release and Worker che
  const parity=workflow.indexOf('run: npm run catalog:parity:live');
  assert.ok(wait>=0&&health>wait&&parity>health,
   'Read-only parity must check only after expected publication and health');
- assert.match(workflow,/workflow_run:/);
- assert.match(workflow,/schedule:/);
+ assert.doesNotMatch(workflow,/^\s*workflow_run:/m);
+ assert.doesNotMatch(workflow,/^\s*schedule:/m);
  assert.match(workflow,/workflow_dispatch:/);
  assert.match(workflow,/contents: read/);
  assert.doesNotMatch(workflow,/catalog:review|catalog:import|wrangler d1|--write|--strict-ru/);
@@ -25,14 +25,14 @@ test('parity command runs a read-only script, not a production D1 mutation',()=>
  assert.match(source,/x-ps-catalog-snapshot/);
 });
 
-test('Pages dynamic deployments also trigger monitoring via source branch pushes',()=>{
+test('Pages dynamic deployments are monitored via the source branch push only',()=>{
  const workflow=read('.github/workflows/live-readonly.yml');
  const wait=read('scripts/wait-live-release.mjs');
  assert.match(workflow,/push:\s*\n\s*branches: \[bonaqu_projects\]/);
  assert.match(workflow,/group: live-readonly-bonaqu_projects/);
  assert.match(workflow,/cancel-in-progress: true/);
- assert.match(workflow,/workflow_run:/);
- assert.match(workflow,/github\.event_name != 'workflow_run' \|\| github\.event\.workflow_run\.conclusion == 'success'/);
+ assert.doesNotMatch(workflow,/^\s*workflow_run:/m);
+ assert.match(workflow,/workflow_dispatch:/);
  assert.match(wait,/const max=60;/);
  assert.match(wait,/if\(current===expected\)/);
  assert.doesNotMatch(workflow,/wrangler d1|Authorization|catalog:review|--write/);
