@@ -137,6 +137,84 @@ function validateCharacterCatalog(data){
  validateRacialPassives(data.racialPassives,data.skills,data.meta.counts);
  return true;
 }
+// Character-only sources are not loaded by the Wiki's lighter 12-dataset
+// index. Verify these additional D1 records before any Hero calculations,
+// without inventing values or changing the official enhancement formulas.
+function validateCharacterExtras(data){
+ if(!isRecord(data?.classes)||!isRecord(data?.unison)||
+  !isRecord(data?.itemForth))
+  throw Error('Неверный формат дополнительных таблиц персонажа');
+ const finite=value=>typeof value==='number'&&Number.isFinite(value);
+ for(const [key,job] of Object.entries(data.classes)){
+  if(!isRecord(job)||job.id!==key||typeof job.name!=='string'||!job.name.trim()||
+   !isRecord(job.hp)||!isRecord(job.mp)||
+   !isRecord(job.statCaps)||!isRecord(job.branchCaps))
+   throw Error('Некорректная профессия в игровом каталоге');
+  for(const ref of ['parent','baseClass'])
+   if(job[ref]!=null&&!(typeof job[ref]==='string'&&
+    Object.hasOwn(data.classes,job[ref])))
+    throw Error('Некорректная цепочка профессий');
+  for(const [kind,properties] of [['hp',['base','lv','vit']],['mp',['base','lv','spi']]])
+   for(const property of properties)
+    if(!finite(job[kind][property])||job[kind][property]<0)
+     throw Error('Некорректные параметры ОЗ/ОМ профессии');
+  if(!Object.keys(job.statCaps).length||!Object.keys(job.branchCaps).length)
+   throw Error('Неизвестные ограничения профессии');
+  for(const value of Object.values(job.statCaps))
+   if(!Number.isSafeInteger(value)||value<0||value>99)
+    throw Error('Некорректный предел характеристики профессии');
+  for(const value of Object.values(job.branchCaps))
+   if(!Number.isSafeInteger(value)||value<0||value>1000)
+    throw Error('Некорректный предел ветки профессии');
+ }
+ // Refinement effect keys refer to canonical items, not a separate item.
+ // Do not constrain source effect numbers to naive percent ranges: some
+ // valid OS effect constants encode flags and are much larger than 100.
+ for(const [id,tiers] of Object.entries(data.itemForth)){
+  if(!/^[1-9][0-9]{0,14}$/.test(id)||!Object.hasOwn(data.items,id)||
+    !isRecord(tiers))
+   throw Error('Некорректный предмет таблицы заточки');
+  for(const [grade,effects] of Object.entries(tiers)){
+   if(!/^(10|[0-9])$/.test(grade)||!Array.isArray(effects))
+    throw Error('Некорректная ступень заточки предмета');
+   for(const effect of effects){
+    if(!isRecord(effect)||typeof effect.func!=='string'||!effect.func.trim())
+     throw Error('Некорректный эффект заточки предмета');
+    for(const value of ['a','b'])
+     if(effect[value]!=null&&!finite(effect[value]))
+      throw Error('Некорректный числовой эффект заточки');
+   }
+  }
+ }
+ for(const [id,group] of Object.entries(data.unison)){
+  if(!isRecord(group)||String(group.id)!==id||
+    !/^[1-9][0-9]{0,14}$/.test(id)||
+    !Object.hasOwn(data.items,id)||!Array.isArray(group.members)||
+    !group.members.length||!Array.isArray(group.rows))
+   throw Error('Некорректная группа комплекта');
+  const members=new Set();
+  for(const member of group.members){
+   const key=String(member);
+   if(!Number.isSafeInteger(member)||member<1||
+    !Object.hasOwn(data.items,key)||members.has(key))
+    throw Error('Некорректный предмет комплекта');
+   members.add(key);
+  }
+  for(const row of group.rows){
+   if(!isRecord(row)||typeof row.func!=='string'||!row.func.trim()||
+    !Number.isSafeInteger(row.minC)||!Number.isSafeInteger(row.maxC)||
+    row.minC<0||row.maxC<row.minC||row.maxC>members.size||
+    !Number.isSafeInteger(row.minL)||!Number.isSafeInteger(row.maxL)||
+    row.minL<0||row.maxL<row.minL||row.maxL>10)
+    throw Error('Некорректные условия комплекта');
+   for(const coeff of [row.a,row.b]){
+    if(!isRecord(coeff)||!['f','p','c'].every(key=>finite(coeff[key])))
+     throw Error('Некорректные коэффициенты комплекта');
+   }
+  }
+ }
+ return true;
+}
 function validate(input){
  const data=normalize(input);
  if(!isRecord(data)||!isRecord(data.meta)||!isRecord(data.meta.counts))
@@ -453,5 +531,5 @@ async function load({api,fetcher,local='./data/os',timeout=12000,preferLocal=fal
   })}
  }
 }
-root.PandoraWikiCatalog=Object.freeze({keys,normalize,validateRacialPassives,validateCharacterCatalog,validate,load});
+root.PandoraWikiCatalog=Object.freeze({keys,normalize,validateRacialPassives,validateCharacterCatalog,validateCharacterExtras,validate,load});
 })(typeof window==='undefined'?globalThis:window);

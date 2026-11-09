@@ -7435,6 +7435,7 @@ async function loadCatalog({archive=false}={}){
  // Apply the SAME skills, equipment, Soul and race integrity gate as
  // the Encyclopedia before any D1 record can reach the Hero Book or builder.
  window.PandoraWikiCatalog.validateCharacterCatalog(data);
+ window.PandoraWikiCatalog.validateCharacterExtras(data);
  if(!data.meta?.counts?.skills||!data.classes?.CLERIC||
     !data.tables?.abilityPoint||!data.tables?.weaponPlus||!data.tables?.forge||
     !data.itemForth||typeof data.itemForth!=='object'||Array.isArray(data.itemForth))
