@@ -2513,9 +2513,11 @@ function renderWiki(root){
   if(parent?.querySelector('.wiki-owner-monster-form'))return;
   const form=h('div',{class:'wiki-owner-source-picker wiki-owner-monster-form'});
   const ru=ownerPlainTextField({class:'wiki-inline-input',value:name,
-   'aria-label':wt('Название монстра RU','Monster name RU'),placeholder:'Название RU'});
+   'aria-label':wt('Название монстра RU','Monster name RU'),
+   placeholder:wt('Название · RU','Name · RU')});
   const en=ownerPlainTextField({class:'wiki-inline-input',
-   'aria-label':wt('Название монстра EN','Monster name EN'),placeholder:'Name EN'});
+   'aria-label':wt('Название монстра EN','Monster name EN'),
+   placeholder:wt('Название · EN','Name · EN')});
   const lvl=h('input',{type:'number',min:'1',max:'255',step:'1',
    value:String(level),'aria-label':wt('Уровень монстра','Monster level'),
    class:'wiki-inline-input wiki-owner-monster-level'});
@@ -2537,7 +2539,7 @@ function renderWiki(root){
       monsterId=candidate;break;
      }
     }
-    if(!monsterId){error.textContent=wt('Не удалось создать уникальный ID','No unique ID available');return}
+    if(!monsterId){error.textContent=wt('Не удалось создать монстра. Повтори попытку.','Could not create monster. Try again.');return}
     submit.disabled=true;
     try{
      await saveWikiRecordPatch('monster',monsterId,{
@@ -2563,9 +2565,11 @@ function renderWiki(root){
    if(controls.querySelector('.wiki-map-create-form'))return;
    const form=h('div',{class:'wiki-map-create-form wiki-owner-source-picker'});
    const ru=ownerPlainTextField({class:'wiki-inline-input',
-    placeholder:'Название · RU','aria-label':'Название локации на русском'});
+    placeholder:wt('Название · RU','Name · RU'),
+    'aria-label':wt('Название локации на русском','Location name in Russian')});
    const en=ownerPlainTextField({class:'wiki-inline-input',
-    placeholder:'Name · EN','aria-label':'Location name in English'});
+    placeholder:wt('Название · EN','Name · EN'),
+    'aria-label':wt('Название локации на английском','Location name in English')});
    const error=h('small',{class:'inline-owner-error',role:'status'});
    const submit=h('button',{type:'button',class:'wiki-owner-plus',
     text:wt('Создать','Create'),onclick:async()=>{
@@ -5029,7 +5033,7 @@ function renderWiki(root){
          const npcId=added||removed;
          if(!npcId)return;
          const current=wikiData.trades?.npcs?.[npcId];
-         if(!current)throw Error('NPC не найден в каталоге');
+         if(!current)throw Error(wt('NPC не найден в каталоге','NPC not found in catalog'));
          const maps=(current.maps||[]).map(String);
          const updated=added?[...new Set([...maps,String(id)])]:maps.filter(x=>x!==String(id));
          await saveWikiRecordField('npc',npcId,'maps',updated.map(Number));
@@ -5065,12 +5069,14 @@ function renderWiki(root){
         if(detail.querySelector('.wiki-map-create-npc-form'))return;
         const form=h('div',{class:'wiki-owner-source-picker wiki-map-create-npc-form'});
         const ru=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:'Название NPC · RU','aria-label':'Название нового NPC RU'});
+         placeholder:wt('Название NPC · RU','NPC name · RU'),
+         'aria-label':wt('Название нового NPC RU','New NPC name RU')});
         const en=ownerPlainTextField({class:'wiki-inline-input',
-         placeholder:'NPC name · EN','aria-label':'New NPC name EN'});
+         placeholder:wt('Название NPC · EN','NPC name · EN'),
+         'aria-label':wt('Название нового NPC EN','New NPC name EN')});
         const role=ownerPlainTextField({class:'wiki-inline-input',
          placeholder:wt('Назначение (необязательно)','Service (optional)'),
-         'aria-label':'Назначение нового NPC'});
+         'aria-label':wt('Назначение нового NPC','New NPC service')});
         const err=h('small',{class:'inline-owner-error',role:'status'});
         const submit=h('button',{type:'button',class:'wiki-owner-plus',
          text:wt('Сохранить NPC','Save NPC')});
@@ -5083,7 +5089,7 @@ function renderWiki(root){
          const npcId='owner-npc-'+[...crypto.getRandomValues(new Uint8Array(8))]
           .map(x=>x.toString(16).padStart(2,'0')).join('');
          if(wikiIndex.records('npc')?.[npcId]){
-          err.textContent=wt('Конфликт ID, попробуй ещё раз','ID collision, please retry');return}
+          err.textContent=wt('Не удалось создать NPC. Повтори попытку.','Could not create NPC. Try again.');return}
          submit.disabled=true;
          try{
           await saveWikiRecordPatch('npc',npcId,{name,nameEn,service,maps:[String(id)]});
@@ -5107,7 +5113,8 @@ function renderWiki(root){
          input.setAttribute('data-max',String(max));
          const row=h('label',{},[h('small',{text:label}),input]);controls.append(row);return input;
         };
-        const ru=field('Имя NPC · RU'),en=field('NPC name · EN'),
+        const ru=field(wt('Имя NPC · RU','NPC name · RU')),
+         en=field(wt('Имя NPC · EN','NPC name · EN')),
          role=field(wt('Назначение','Service'));
         const error=h('small',{class:'inline-owner-error',role:'status'});
         const save=h('button',{type:'button',class:'wiki-owner-plus',
@@ -5220,9 +5227,11 @@ function renderWiki(root){
        if(detail.querySelector('.wiki-map-custom-form'))return;
        const form=h('div',{class:'wiki-map-custom-form wiki-owner-source-picker'});
        const ru=ownerPlainTextField({class:'wiki-inline-input',
-        placeholder:'Название раздела · RU','aria-label':'Название раздела RU'});
+        placeholder:wt('Название раздела · RU','Section title · RU'),
+         'aria-label':wt('Название раздела RU','Section title RU')});
        const en=ownerPlainTextField({class:'wiki-inline-input',
-        placeholder:'Section title · EN','aria-label':'Section title EN'});
+        placeholder:wt('Название раздела · EN','Section title · EN'),
+         'aria-label':wt('Название раздела EN','Section title EN')});
        const kind=h('select',{class:'wiki-inline-select','aria-label':wt('Содержимое раздела','Section content')});
        for(const [value,label]of [
         ['text',wt('Описание','Text')],
@@ -6989,10 +6998,10 @@ async function saveGuidePatchNow(key,fields){
 }
 async function saveGuideList(key,rows){
  if(!['honor.zones','honor.wars'].includes(key)||!Array.isArray(rows))
-  throw Error('Неизвестный список');
+  throw Error(wt('Неизвестный список','Unknown list'));
  const overrideKey='guideedit.'+key,before=activeOverride(overrideKey),value=JSON.stringify(rows);
  if(!window.PandoraHonorGuide?.validOverride(key,value))
-  throw Error('Проверь названия, ID и связи списка');
+  throw Error(wt('Проверь названия и связи списка','Check list names and links'));
  if(value===before)return;
  editIsSaving=true;
  try{
