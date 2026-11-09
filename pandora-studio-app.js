@@ -6133,7 +6133,7 @@ function finishBuildAccountEntry(){
   window.PandoraAccountUI?.hasRecoveryPending?.())return;
  // Opening a profile from the header must not silently dismiss it on login.
  // Only a requested build action or unsaved guest draft resumes the workbench.
- if(!returnToBuildsAfterAuth&&!pendingGuestDraft&&
+ if(!returnToBuildsAfterAuth&&
   !/^#b\/[A-Za-z0-9_-]{11}$/.test(location.hash))return;
  const returnToBuilds=returnToBuildsAfterAuth;
  returnToBuildsAfterAuth=false;
