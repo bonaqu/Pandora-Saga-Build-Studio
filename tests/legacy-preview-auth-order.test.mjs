@@ -7,7 +7,8 @@ const key='f'.repeat(64),session='a'.repeat(43);
 const dbQueries=[];
 const DB={prepare(sql){
  dbQueries.push(sql);
- assert.match(sql,/SELECT a\\.id,a\\.username,a\\.owner_hash FROM user_accounts/);
+ assert.ok(sql.startsWith('SELECT a.id,a.username,a.owner_hash FROM user_accounts'),
+  'Authenticated previews must validate the account session');
  return {bind(){return {first:async()=>({id:'test-id',username:'account-user',
   owner_hash:'owner-for-isolated-test'})}}};
 }};
