@@ -9,7 +9,6 @@ function extract(start,end){
 }
 const deletion=extract('async function deleteCloudBuild(id){','async function loadCloudBuilds(){');
 const put=extract('async function putCloudBuild(entry){','async function deleteCloudBuild(id){');
-const connecting=extract('async function connectCloudLibrary(secret,feedback){','function buildLibraryTransfer(){');
 function deferred(){
  let resolve,reject;const promise=new Promise((r,j)=>{resolve=r;reject=j});
  return {promise,resolve,reject};
@@ -62,9 +61,14 @@ test('late cloud PUT status cannot claim another player saved its build',async()
  second.resolve({ok:true});assert.equal(await op,true);
  assert.deepEqual(status,['Сохранено в облаке']);
 });
-test('old guest-key transfer response does not overwrite a newly logged-in account library',()=>{
- assert.match(connecting,/const previousOwner=libraryScopeId\(\)/);
- assert.match(connecting,/if\(libraryScopeId\(\)!==previousOwner\|\|window\.PandoraAccountUI\?\.isLoggedIn\(\)\)/);
+test('legacy import awaits account identity and ignores stale responses',()=>{
+ const importCode=extract('function buildLegacyImport(){','function renderBuilds(root){');
+ assert.match(importCode,/window\.PandoraAccountUI\.token\(\)!==selectedToken/);
+ assert.match(importCode,/owner!==libraryScopeId\(\)/);
+ assert.match(importCode,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)return/);
+ assert.match(importCode,/if\(!persistBuilds\(\)\)/);
+ assert.match(importCode,/builds=previous/);
+ assert.match(importCode,/for\(const row of created\)/);
  assert.match(extract('async function loadCloudBuilds(){','function h(tag,attrs={}'),
   /if\(libraryChangeId===generation&&latest\(\)\)/);
 });
