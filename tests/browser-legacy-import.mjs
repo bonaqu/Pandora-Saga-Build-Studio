@@ -77,7 +77,8 @@ export async function runLegacyImportSmoke(browser,base){
   const again=page.locator('.build-transfer');
   await again.locator('summary').click();
   await again.getByRole('button',{name:'Найти на этом устройстве'}).click();
-  assert.match(await again.locator('[role=status]').innerText(),/Новых сохранений не найдено/);
+  await again.locator('[role=status]').getByText(/Новых сохранений не найдено/)
+   .waitFor({state:'visible',timeout:15000});
   assert.equal(uploads.length,1,'Identical legacy data must not create duplicate builds');
   assert.deepEqual(errors,[]);
  }finally{await context.close()}
