@@ -92,7 +92,7 @@ test('two links become globally unavailable when the original is deleted, foreig
  assert.equal((await call(DB,'/api/library','POST',{action:'delete',id},OWNER)).status,200);
  for(const share of [first,second]){
   assert.equal(DB.peekLink(share.data.id),'{}','Delete must scrub snapshot content');
-  const response=await call(DB,'/api/shared/'+share.data.id);
+  const response=await call(DB,'/api/shared/'+share.data.id,'GET',null,OWNER);
   assert.equal(response.status,410);assert.equal(response.data.reason,'deleted');
  }
  assert.equal((await call(DB,'/api/shared/'+other.data.id,'GET',null,OTHER)).status,200);
@@ -144,12 +144,12 @@ test('invalid public share payload is isolated without deleting any other valid 
  for(const broken of ['{not-json',JSON.stringify({schema:9,type:'build',data:character}),
   JSON.stringify({schema:1,type:'build',data:{race:3,job:0,level:56}})]){
   DB.replaceLink(first.data.id,broken);
-  const response=await call(DB,'/api/shared/'+first.data.id);
+  const response=await call(DB,'/api/shared/'+first.data.id,'GET',null,OWNER);
   assert.equal(response.status,410);
   assert.equal(response.data.reason,'invalid');
   assert.equal(JSON.stringify(response.data).includes(broken),false);
   assert.equal(DB.peekLink(first.data.id),broken,'No implicit D1 repair');
-  const healthy=await call(DB,'/api/shared/'+second.data.id);
+  const healthy=await call(DB,'/api/shared/'+second.data.id,'GET',null,OWNER);
   assert.equal(healthy.status,200,'Unrelated share stays valid');
   assert.deepEqual(healthy.data.share.data,character);
  }
