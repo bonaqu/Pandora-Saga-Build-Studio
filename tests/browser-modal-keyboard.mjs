@@ -29,6 +29,10 @@ export async function runModalKeyboardSmoke(browser,base){
    await opener.click();
    await page.locator('.build-signin-gate').waitFor({state:'visible'});
    const savedBefore=await page.evaluate(()=>localStorage.getItem('ps-build-studio.v1'));
+   // A URL hashchange has no clicked invoker of its own. Focus the stable
+   // navigation control explicitly to test real focus restoration.
+   await opener.focus();
+   assert.equal(await page.evaluate(()=>document.activeElement?.getAttribute('data-tab')),'builds');
    await page.evaluate(()=>{location.hash='#b/A1234567890'});
    const dialog=page.getByRole('dialog',{name:'Вход для открытия билда'});
    await dialog.waitFor({state:'visible'});
