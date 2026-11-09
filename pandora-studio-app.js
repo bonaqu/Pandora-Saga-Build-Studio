@@ -6133,8 +6133,8 @@ function requireBuildAccount({shared=false}={}){
 }
 function notifyGuestDraftUnsaved(){
  showStudioToast(lang==='en'?
-  'Your guest character is ready to continue. It is not yet in your library. Open My Builds and choose “Save new build” to keep it in your account.':
-  'Гостевой герой готов к продолжению, но ещё не в библиотеке. Открой «Мои билды» и нажми «Сохранить новый билд», чтобы сохранить его в аккаунте.','warning');
+  'Guest hero is ready, but is not saved to your account yet. Open My Builds and select “Save new build”.':
+  'Гостевой герой открыт, но ещё не сохранён в аккаунте. Открой «Мои билды» и нажми «Сохранить новый билд».','warning');
 }
 function finishBuildAccountEntry(){
  if(!window.PandoraAccountUI?.isLoggedIn()||
