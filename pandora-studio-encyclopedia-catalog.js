@@ -123,6 +123,35 @@ function validate(input){
   if(row.effects!=null&&!Array.isArray(row.effects))
    throw Error('Некорректные эффекты предмета');
  }
+ // Soul effects and sockets are used by the equipment and Hero Book.
+ // A broken nested value in D1 must not be presented as a sourced bonus.
+ // Keep absent optional properties absent for older valid snapshots.
+ const soulSlots=new Set(['weapon','shield','head','body','gloves','legs','feet','belt']);
+ for(const row of Object.values(data.souls)){
+  if(typeof row.name!=='string'||!row.name.trim())
+   throw Error('Некорректное название души');
+  if(row.price!=null&&!(Number.isSafeInteger(row.price)&&row.price>=0))
+   throw Error('Некорректная цена души');
+  if(row.slots!=null&&!(Array.isArray(row.slots)&&row.slots.length>0&&
+   row.slots.every(slot=>typeof slot==='string'&&soulSlots.has(slot))&&
+   new Set(row.slots).size===row.slots.length))
+   throw Error('Некорректные слоты души');
+  if(row.effects!=null){
+   if(!Array.isArray(row.effects))
+    throw Error('Некорректные эффекты души');
+   for(const effect of row.effects){
+    if(!isRecord(effect)||typeof effect.func!=='string'||!effect.func.trim()||
+     effect.dir!=null&&(typeof effect.dir!=='string'||!effect.dir.trim()))
+     throw Error('Некорректный эффект души');
+    for(const field of ['a','b','min','max'])
+     if(effect[field]!=null&&!(typeof effect[field]==='number'&&
+      Number.isFinite(effect[field])))
+      throw Error('Некорректное число эффекта души');
+    if(effect.min!=null&&effect.max!=null&&effect.min>effect.max)
+     throw Error('Некорректный диапазон эффекта души');
+   }
+  }
+ }
  // Check cross-record ownership only after record shape and identity are
  // verified; otherwise a null or mismatched passive skill is misreported as
  // a race-registry defect instead of a broken skills record.
@@ -156,6 +185,11 @@ function validate(input){
  // BEFORE declaring a D1 snapshot complete, regardless of matching counts.
  const seenInstances=new Set();
  for(const instance of data.instances){
+  if(typeof instance.name!=='string'||!instance.name.trim())
+   throw Error('Некорректное название подземелья');
+  for(const field of ['kind','quest','blurb','blurbRu'])
+   if(instance[field]!=null&&typeof instance[field]!=='string')
+    throw Error('Некорректный текст подземелья');
   const raw=instance.id,id=String(raw);
   if(!/^[1-9][0-9]{0,14}$/.test(id)||
    !Number.isSafeInteger(Number(id))||seenInstances.has(id))
@@ -178,7 +212,8 @@ function validate(input){
   return value||[];
  };
  for(const row of Object.values(data.maps)){
-  requireRef(isRecord(row),'локация');
+  requireRef(isRecord(row)&&typeof row.name==='string'&&row.name.trim(),
+   'название локации');
   for(const id of list(row.mobs,'монстров локации'))
    requireRef(monster(id),'монстры локаций');
   list(row.npcs,'NPC локации');
@@ -208,6 +243,8 @@ function validate(input){
      requireRef(Number.isSafeInteger(row[boundary])&&
       row[boundary]>=0&&row[boundary]<=1000,
       'границы улучшения добычи монстра');
+   if(row.lo!=null&&row.hi!=null)
+    requireRef(row.lo<=row.hi,'диапазон улучшения добычи монстра');
    if(row.souls!=null){
     requireRef(Array.isArray(row.souls)&&row.souls.length<=20,
      'список душ добычи монстра');
@@ -238,8 +275,12 @@ function validate(input){
    if(recipe[currency]!=null)
     requireRef(Number.isSafeInteger(recipe[currency])&&recipe[currency]>=0,
      'стоимость обмена NPC');
+  const seenMaterials=new Set();
   for(const material of list(recipe.mats,'материалов обмена')){
    requireRef(isRecord(material)&&item(material.i),'материал обмена NPC');
+   const materialId=String(material.i);
+   requireRef(!seenMaterials.has(materialId),'повторный материал обмена NPC');
+   seenMaterials.add(materialId);
    if(material.n!=null)
     requireRef(Number.isSafeInteger(material.n)&&material.n>=1,
      'количество материала обмена NPC');
@@ -249,13 +290,22 @@ function validate(input){
     Number.isSafeInteger(recipe.limit.n)&&recipe.limit.n>=1&&
     ['daily','weekly','lifetime'].includes(recipe.limit.period),
     'ограничение обмена NPC');
-  for(const id of list(recipe.npc,'NPC обмена'))requireRef(npc(id),'NPC обмена');
+  const seenRecipeNpc=new Set();
+  for(const id of list(recipe.npc,'NPC обмена')){
+   requireRef(npc(id),'NPC обмена');
+   requireRef(!seenRecipeNpc.has(String(id)),'повторный NPC обмена');
+   seenRecipeNpc.add(String(id));
+  }
  }
  for(const row of Object.values(data.trades.npcs)){
-  requireRef(isRecord(row),'карточка NPC');
+  requireRef(isRecord(row)&&typeof row.name==='string'&&row.name.trim(),
+   'название NPC');
   for(const id of list(row.maps,'локаций NPC'))
    requireRef(map(id),'расположение NPC');
  }
+ for(const row of Object.values(data.trades.mapNames))
+  requireRef(isRecord(row)&&typeof row.name==='string'&&row.name.trim(),
+   'название локации NPC');
  // The Encyclopedia merges ordinary and NPC chests by item ID.
  // Duplicate IDs overwrite one card without warning, while a malformed
  // gold-only reward becomes "reward not listed" despite a real source row.
