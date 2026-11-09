@@ -214,9 +214,21 @@ function validate(input){
   for(const group of list(zone.rows,'добычи локации')){
    requireRef(isRecord(group),'группа добычи локации');
    if(group.mob!=null)requireRef(monster(group.mob),'монстр добычи локации');
+   // Base and per-member numbers are source rates, not a guessed summed
+   // probability. Keep missing fields unknown for historical snapshots.
+   for(const field of ['base','perMember'])
+    if(group[field]!=null)
+     requireRef(typeof group[field]==='number'&&
+      Number.isFinite(group[field])&&group[field]>=0&&
+      group[field]<=100,'вероятность добычи локации');
    for(const row of list(group.items,'наград локации')){
-    requireRef(isRecord(row),'запись добычи локации');
-    if(row.i!=null)requireRef(item(row.i),'награда добычи локации');
+    requireRef(isRecord(row)&&item(row.i),'награда добычи локации');
+    for(const field of ['lo','hi'])
+     if(row[field]!=null)
+      requireRef(Number.isSafeInteger(row[field])&&row[field]>=0&&
+       row[field]<=1000,'улучшение награды локации');
+    if(row.lo!=null&&row.hi!=null)
+     requireRef(row.lo<=row.hi,'диапазон улучшения награды локации');
    }
   }
  }
