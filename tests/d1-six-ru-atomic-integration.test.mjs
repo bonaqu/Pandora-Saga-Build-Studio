@@ -26,6 +26,7 @@ function harness({translated=false,failDataset=null,changeEnglish=false}={}){
    is_costume_overlay:0,payload:'{}'});
  }
  const snapshots=new Map([[EXPECTED_ACTIVE,oldRows]]);
+ const getRows=snapshot=>snapshots.get(snapshot)||[];
  const response=(results=[],changes=0,ok=true)=>new Response(
   JSON.stringify({success:ok,result:[{success:ok,results,meta:{changes}}]}),
   {status:ok?200:403,headers:{'content-type':'application/json'}});
@@ -41,7 +42,6 @@ function harness({translated=false,failDataset=null,changeEnglish=false}={}){
   }
   if(!url.includes('/d1/database/'))throw Error('Unexpected remote request');
   const {sql,params=[]}=JSON.parse(init.body);
-  const getRows=snapshot=>snapshots.get(snapshot)||[];
   if(sql.startsWith('SELECT snapshot,published_at,expected_counts'))
    return response([{snapshot:current,published_at:0,
     expected_counts:JSON.stringify(counts)}]);
