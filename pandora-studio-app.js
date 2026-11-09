@@ -6437,6 +6437,8 @@ function openSharedSnapshot(share){
  modal(sharedText('Открыть билд по ссылке?','Open build from link?'),view);
 }
 let studioToastTimer=null;
+// Ignore obsolete replies when the same shared URL is reopened before an older GET resolves.
+let sharedHashRequestId=0;
 function showStudioToast(message,tone='warning'){
  let root=document.getElementById('studioToast');
  if(!root){root=h('div',{id:'studioToast',class:'studio-toast','aria-live':'polite',role:'status'});document.body.append(root)}
@@ -6455,12 +6457,14 @@ function showStudioToast(message,tone='warning'){
 async function restoreSharedHash(){
  const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
  if(!match)return;
+ const currentRequest=++sharedHashRequestId;
  try{
   const incoming=await apiRequest('/api/shared/'+match[1],null,'');
-  if(location.hash==='#b/'+match[1])openSharedSnapshot(incoming.share);
+  if(currentRequest===sharedHashRequestId&&location.hash==='#b/'+match[1])
+   openSharedSnapshot(incoming.share);
  }catch(error){
-  // A delayed failed GET must not show an error for a link already left.
-  if(location.hash!=='#b/'+match[1])return;
+  // Neither a departed URL nor an older attempt for the same URL may show an error.
+  if(currentRequest!==sharedHashRequestId||location.hash!=='#b/'+match[1])return;
   const removed=error.httpStatus===404||error.httpStatus===410;
   const message=error.httpStatus===410&&error.reason==='deleted'?
    'Владелец удалил этот билд. Ссылка больше не существует.':
