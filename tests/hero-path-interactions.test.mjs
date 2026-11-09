@@ -521,3 +521,43 @@ test('Hero Path detail omits zero character-level threshold rather than claiming
  assert.equal(captions.includes('Character level'),false);
  assert.equal(captions.includes('Unknown requirement'),false);
 });
+
+
+test('Hero Path displays localized element names without exposing OS codes or NONE',()=>{
+ const skill=(id,name,element)=>({id,name,element,classes:{MAGE:1},learnable:true,reqs:[]});
+ const ordinary=skill(1,'Ordinary skill','NONE'),fire=skill(2,'Fire skill','FIRE'),
+  unknown=skill(3,'Unknown skill','UNMAPPED'),unnamed=skill(4,undefined,'COLD');
+ const api={lang:'ru',state:{level:45,points:{}},job:'MAGE',catalogReady:true,
+  skillCatalog:[ordinary,fire,unknown,unnamed],query:'',filter:'all',
+  shown:24,selectedSkill:ordinary,icon:()=>null,hover:()=>{},onInspect:()=>{}};
+ const target=new BrowserElement('root'),details=new BrowserElement('root');
+ const render=()=>root.PandoraHeroPath.viewSkills(target,details,api);
+ const captions=()=>walk(details).filter(n=>n.tag==='dt').map(n=>n.textContent);
+ const values=()=>walk(details).filter(n=>n.tag==='dd').map(n=>n.textContent);
+ render();
+ assert.equal(captions().includes('Стихия'),false,'NONE must not be a shown element');
+ api.selectedSkill=fire;render();
+ assert.ok(captions().includes('Стихия'));
+ assert.ok(values().includes('Огонь'));
+ assert.equal(values().includes('FIRE'),false);
+ api.lang='en';render();
+ assert.ok(captions().includes('Element'));assert.ok(values().includes('Fire'));
+ api.selectedSkill=unknown;render();
+ assert.ok(values().includes('Unknown'));assert.equal(values().includes('UNMAPPED'),false);
+ api.selectedSkill=unnamed;render();
+ assert.ok(values().includes('Ice'));
+ const card=walk(target).find(n=>n.attributes?.['data-skill-id']==='4');
+ assert.ok(card?.attributes['aria-label'].includes('Unnamed skill'));
+ assert.equal(card.attributes['aria-label'].includes('undefined'),false);
+});
+
+test('point-stepper hold instructions follow RU/EN Hero Path language',()=>{
+ const {target,api}=fixture();
+ const descriptions=()=>walk(target).filter(n=>n.attributes?.['aria-description'])
+  .map(n=>n.attributes['aria-description']);
+ assert.ok(descriptions().length>=2);
+ assert.ok(descriptions().every(v=>v.startsWith('Нажмите,')));
+ api.lang='en';root.PandoraHeroPath.viewGrowth(target,api);
+ assert.ok(descriptions().length>=2);
+ assert.ok(descriptions().every(v=>v==='Click to change by 1; hold to repeat.'));
+});
