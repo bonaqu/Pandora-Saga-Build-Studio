@@ -574,7 +574,10 @@ function viewSkills(target,details,api){
    if(value===null||value===undefined||value==='')return;
    stats.append(make('dt',{text:label}),make('dd',{text:String(value)}));
   };
-  field(tr(api,'Уровень персонажа','Character level'),skill.charLevel||tr(api,'Нет известного порога','Unknown requirement'));
+  // A verified zero means no character-level threshold, not an unknown one.
+  // Branch thresholds remain visible separately below.
+  if(skill.charLevel!==0&&skill.charLevel!==undefined&&skill.charLevel!==null)
+   field(tr(api,'Уровень персонажа','Character level'),skill.charLevel);
   field(tr(api,'Мана / ОМ','Mana / MP'),skill.mana);
   field(tr(api,'Подготовка','Cast time'),skill.cast);
   field(tr(api,'Перезарядка','Cooldown'),skill.cooldown);
