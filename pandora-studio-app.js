@@ -164,11 +164,39 @@ stageSoulQuery=typeof bootView.soulQuery==='string'?bootView.soulQuery.slice(0,1
 stageSoulScrollTop=0,stageGemQuery='',gameTables=null,gameItemForth=null,
 stageAttributesPage=['summary','attack','defense','buffs','effects','recovery'].includes(bootView.attributes)?bootView.attributes:null;
 if(Number.isInteger(bootView.slot)&&bootView.slot>=0&&bootView.slot<slots.length)selectedSlot=bootView.slot;
+// A failed draft write must be visible, even when the user is not in My Builds.
+// Show just one persistent status, not a toast for every slider movement.
+function draftStorageStatus(failed){
+ const id='draftStorageWarning';
+ let element=document.getElementById(id);
+ if(!failed){element?.remove();return}
+ if(!element){
+  element=document.createElement('div');
+  element.id=id;
+  element.className='draft-storage-warning';
+  element.setAttribute('role','alert');
+  element.append(document.createElement('strong'),document.createElement('span'));
+  document.body.append(element);
+ }
+ if(element.dataset.lang===lang)return;
+ element.dataset.lang=lang;
+ element.querySelector('strong').textContent=lang==='en'?
+  'Character changes not saved':'Изменения героя не сохранены';
+ element.querySelector('span').textContent=lang==='en'?
+  'They may be lost after reloading. Free up browser storage or allow this site to save data.':
+  'После перезагрузки изменения могут пропасть. Освободи место в браузере или разреши сайту сохранять данные.';
+}
 // Current character changes remain a local draft until explicit user save.
 function persist(){
- try{return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
-  'ps-build-studio.v1',JSON.stringify(state))}
- catch(error){console.warn('Draft could not be stored locally',error);return false}
+ try{
+  const committed=window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
+   'ps-build-studio.v1',JSON.stringify(state));
+  draftStorageStatus(committed!==true);
+  return committed;
+ }catch(error){
+  console.warn('Draft could not be stored locally',error);
+  draftStorageStatus(true);return false;
+ }
 }
 function persistBuilds(){
  try{return window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),

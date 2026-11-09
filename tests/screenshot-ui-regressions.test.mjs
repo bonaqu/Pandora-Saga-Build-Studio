@@ -38,8 +38,9 @@ test('skill markers keep tooltips in one shared bar and never block the slider',
 });
 test('saved builds stay local until the user explicitly overwrites',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/function persist\(\)\{\s*try\{return window\.PandoraBuildScope\.setOwned/);
- assert.match(app,/catch\(error\)\{console\.warn\('Draft could not be stored locally',error\);return false\}/);
+ assert.match(app,/function persist\(\)\{\s*try\{\s*const committed=window\.PandoraBuildScope\.setOwned/);
+ assert.match(app,/draftStorageStatus\(committed!==true\)/);
+ assert.match(app,/catch\(error\)\{[\s\S]*?draftStorageStatus\(true\);return false/);
  assert.doesNotMatch(app,/PandoraSavedBuildAutosave\.updatedSaved/);
  assert.match(app,/text:activeBuildId===b\.id\?'↻ Перезаписать':'↻ Сохранить в этот билд'/);
  assert.match(app,/saveBuild\(activeBuildId===b\.id\?state\.name:b\.name,b\.id\)/);

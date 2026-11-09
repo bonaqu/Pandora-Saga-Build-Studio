@@ -13,7 +13,7 @@ const saveBuilds=extract('function persistBuilds(){','\nconst CLOUD_TOKEN_KEY');
 const saveBeforeUpdate=extract('function saveBeforeUpdate(event){','\n// Restore deep links');
 
 function attempt({failure=null,lang='ru'}={}){
- const writes=[],toasts=[],listeners={};
+ const writes=[],toasts=[],listeners={},draftWarnings=[];
  const window={PandoraBuildScope:{setOwned(_storage,_scope,key){
   writes.push(key);
   if(key===failure)throw Error('Quota exceeded');
@@ -24,20 +24,22 @@ function attempt({failure=null,lang='ru'}={}){
  // Execute actual production functions, but with isolated storage and event
  // dependencies. This verifies both failure paths without a production D1 write.
  Function('window','localStorage','libraryScopeId','state','builds',
-  'console','document','showStudioToast','lang',
+  'console','document','showStudioToast','lang','draftStorageStatus',
   saveDraft+'\n'+saveBuilds+'\n'+saveBeforeUpdate
  ) (window,{},()=> 'account:alice_01',{race:1,level:1},[],
-  {warn(){}},document,showStudioToast,lang);
+  {warn(){}},document,showStudioToast,lang,
+  failed=>draftWarnings.push(failed));
  let cancelled=false;
  assert.equal(typeof listeners['pandora:before-update'],'function');
  listeners['pandora:before-update']({preventDefault(){cancelled=true}});
- return {writes,toasts,cancelled};
+ return {writes,toasts,cancelled,draftWarnings};
 }
 
 test('failure saving the active draft vetoes upgrade and displays RU warning',()=>{
  const result=attempt({failure:'ps-build-studio.v1'});
  assert.deepEqual(result.writes,['ps-build-studio.v1','ps-build-library.v1']);
  assert.equal(result.cancelled,true);
+ assert.deepEqual(result.draftWarnings,[true]);
  assert.equal(result.toasts.length,1);
  assert.equal(result.toasts[0].kind,'error');
  assert.match(result.toasts[0].message,/Обновление отменено/);
@@ -46,11 +48,13 @@ test('failure saving conflict copies vetoes upgrade and displays EN warning',()=
  const result=attempt({failure:'ps-build-library.v1',lang:'en'});
  assert.deepEqual(result.writes,['ps-build-studio.v1','ps-build-library.v1']);
  assert.equal(result.cancelled,true);
+ assert.deepEqual(result.draftWarnings,[false]);
  assert.match(result.toasts[0].message,/Update cancelled/);
 });
 test('successful draft and library writes permit update',()=>{
  const result=attempt();
  assert.equal(result.cancelled,false);
  assert.equal(result.toasts.length,0);
+ assert.deepEqual(result.draftWarnings,[false]);
  assert.deepEqual(result.writes,['ps-build-studio.v1','ps-build-library.v1']);
 });
