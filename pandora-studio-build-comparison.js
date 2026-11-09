@@ -509,24 +509,34 @@ function compactResults(summaryA=[],summaryB=[],{lang='ru'}={}){
   // Two unavailable readings are not meaningful differences.
   if(left===null&&right===null)continue;
   const unitA=a?.unit||'',unitB=b?.unit||'';
-  const verifiedRangesDiffer=key==='attack'&&range(a)&&range(b)&&
-   range(a)!==range(b);
+  const rangeA=key==='attack'?range(a):null;
+  const rangeB=key==='attack'?range(b):null;
+  const verifiedRangesDiffer=Boolean(rangeA&&rangeB&&rangeA!==rangeB);
   if(left===right&&unitA===unitB&&!verifiedRangesDiffer)continue;
   const both=left!==null&&right!==null&&unitA===unitB;
   // A difference in the verified minimum cannot be misreported as Δ=0.
   const delta=both&&!(verifiedRangesDiffer&&left===right)?
    rounded(right-left):null;
-  // A/B emphasis depends on the meaning of the stat, not the sign of B-A.
-  // Missing or non-comparable readings do not claim an advantage.
+  // A/B emphasis depends on dominance, not just the sign of B-A.
+  // E.g. 20–100 and 30–90 physical ATK have no unambiguous winner.
   let advantage=null;
-  if(both&&left!==right){
+  if(both&&key==='attack'&&(rangeA||rangeB)){
+   if(rangeA&&rangeB){
+    const [minA,maxA]=rangeA.split('–').map(Number);
+    const [minB,maxB]=rangeB.split('–').map(Number);
+    if([minA,maxA,minB,maxB].every(Number.isFinite)&&
+     maxA===left&&maxB===right){
+     const aDominates=minA>=minB&&maxA>=maxB&&
+      (minA>minB||maxA>maxB);
+     const bDominates=minB>=minA&&maxB>=maxA&&
+      (minB>minA||maxB>maxA);
+     advantage=aDominates?'a':bDominates?'b':null;
+    }
+   }
+   // If only one build has a verified range, don't guess its minimum.
+  }else if(both&&left!==right){
    const firstBetter=LOWER_IS_BETTER.has(key)?left<right:left>right;
    advantage=firstBetter?'a':'b';
-  }else if(both&&verifiedRangesDiffer&&left===right){
-   // Equal maximum ATK still allows a verified, stronger minimum.
-   const minA=Number(range(a).split('–')[0]);
-   const minB=Number(range(b).split('–')[0]);
-   if(minA!==minB)advantage=minA>minB?'a':'b';
   }
   changes.push({
    key:'stat.'+key,label:english?en:ru,
