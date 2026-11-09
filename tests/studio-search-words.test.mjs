@@ -19,6 +19,8 @@ test('search matches reordered words, flexible whitespace, case and NFKC',()=>{
  assert.equal(matches('Рычащий меч',''),true);
  assert.equal(matches('Рычащий меч','    '),true);
  assert.equal(matches('Potion №２','№2 potion'),true);
+ assert.equal(matches('Тёмный герой Elf Lv. 14','темный 14 ELF'),true,
+  'A saved build name with ё should match its bilingual race and level in any order');
 });
 test('all player and owner pickers reuse the exact same search semantics',()=>{
  const stage=source.slice(source.indexOf('const draw=()=>{',source.indexOf('function renderStagePicker')),
@@ -36,6 +38,8 @@ test('all player and owner pickers reuse the exact same search semantics',()=>{
   "searchWords(searchTerms('npc',key),q)",
   "searchWords(row.label+' '+row.value,q)"
  ])assert.ok(source.includes(candidate),'Editor picker diverged: '+candidate);
+ assert.match(source,/row\.box\.hidden=!searchWords\(row\.searchText,query\)/,
+  'Saved-build search must reuse the shared match semantics');
  assert.match(source,/const matchesWords=searchWords;/,
   'Regular wiki and its editor must use one search rule');
  assert.doesNotMatch(source,/wikiIndex\.normalize\(dataName\([^\n]+\.includes\(q\)/,

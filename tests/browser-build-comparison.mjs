@@ -125,7 +125,7 @@ export async function runSavedBuildEnglishSmoke(browser,base){
  const secret='c'.repeat(64);
  const library=Array.from({length:6},(_,i)=>({
   id:(i+1).toString(16).repeat(32),
-  name:i===5?'Сияние героя':'Build '+(i+1),at:100+i,
+  name:i===5?'Сияние героя':i===4?'Тёмный герой':'Build '+(i+1),at:100+i,
   data:{race:1,gender:0,job:16,level:10+i,name:'Сияние героя'}
  }));
  const original=JSON.stringify(library);
@@ -190,6 +190,12 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   await search.fill('Эльф 12');
   assert.equal(await page.locator('.build-card:visible').count(),1,
    'Search terms must work in the alternate language');
+  await search.fill('темный Elf 14');
+  assert.equal(await page.locator('.build-card:visible').count(),1,
+   'Build search must match ё/е across RU name, EN race and level');
+  await search.fill('ГЕРОЙ   ТЕМНЫЙ');
+  assert.equal(await page.locator('.build-card:visible').count(),1,
+   'Case, whitespace and reordered words must be ignored');
   await search.fill('Human');
   assert.equal(await page.locator('.build-card:visible').count(),0);
   assert.match(await page.locator('.build-grid + .muted').innerText(),
