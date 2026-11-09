@@ -84,6 +84,13 @@ export async function runEquipmentLocaleSmoke(browser,base){
   assert.equal((await rows.first().innerText()).trim(),firstEn);
   const wikiSearch=page.locator('.wiki-controls input[type="search"]');
   await wikiSearch.click();
+  // Search the original RU name while the wiki is displaying official EN.
+  // Combining RU+EN proves the cached search text contains both names.
+  await wikiSearch.fill(firstRu+' '+firstEn);
+  const crossLocale=page.locator('.wiki-list [data-wiki-record="1"]');
+  await crossLocale.waitFor({state:'visible',timeout:20000});
+  assert.equal((await crossLocale.innerText()).trim(),firstEn,
+   'EN wiki must find the exact source item by its original Russian name');
   await wikiSearch.fill('Kris');
   await page.waitForFunction(()=>
    [...document.querySelectorAll('.wiki-list [data-wiki-record]')]
