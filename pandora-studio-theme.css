@@ -1540,8 +1540,6 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .account-password-toggle:focus-visible{outline:2px solid #f2c387;outline-offset:1px}
 .account-password-details .account-form{margin:3px 0 14px;padding:0 2px}
 .account-profile-footer{display:flex;justify-content:flex-end;padding:7px 0 0}
-.account-signout{background:#2b1d18;border-color:#815140;color:#e2b3a6}
-.account-signout:hover{background:#4c2b24;border-color:#c0816c}
 @media(max-width:790px){.account-panel{right:0;top:calc(100% + 6px)}}
 
 /* 0.193.0 — skill milestones belong INSIDE the interactive progress line.
