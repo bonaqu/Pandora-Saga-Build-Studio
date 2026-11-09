@@ -44,6 +44,10 @@ export async function runBuildComparisonSmoke(browser,base){
    'The modal build drawer must close so account fields are accessible');
   await page.locator('#profileTrigger').click();
   assert.equal(await page.locator('#accountPanel').isVisible(),false);
+  // Sign-in intentionally returns to the normal page so the profile fields
+  // are unobscured; visitors can then reopen the saved-build workbench.
+  await page.locator('#nav [data-tab="builds"]').click();
+  await page.locator('.build-card').first().waitFor({state:'visible'});
   assert.equal(await page.locator('.build-card').count(),3);
   const panel=page.locator('[data-build-compare]');
   await panel.waitFor({state:'visible'});
