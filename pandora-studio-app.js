@@ -306,14 +306,15 @@ function reportCloudStatus(message){
 async function putCloudBuild(entry){
  // This guard also protects accidental call sites added in future changes.
  if(entry?.localOnly===true)return false;
- const owner=libraryScopeId();
+ const owner=libraryScopeId(),generation=libraryChangeId;
  try{
   await cloudLibraryRequest({action:'put',entry});
-  if(libraryScopeId()===owner)reportCloudStatus('Сохранено в облаке');
+  if(libraryScopeId()===owner&&libraryChangeId===generation)
+   reportCloudStatus('Сохранено в облаке');
   return true;
  }catch(error){
   console.warn('Build cloud save failed',error);
-  if(libraryScopeId()===owner)reportCloudStatus(
+  if(libraryScopeId()===owner&&libraryChangeId===generation)reportCloudStatus(
    error.reason==='stale'||error.reason==='conflict'?
     'В облаке другая редакция · обновите библиотеку для сохранения обеих версий':
     error.reason==='unavailable'?
@@ -332,16 +333,20 @@ async function deleteCloudBuild(id){
  try{queueDelete(id);queued=true}
  catch(error){console.warn('Cannot persist pending deletion',error)}
  libraryChangeId++;
+ const generation=libraryChangeId;
  try{
   await cloudLibraryRequest({action:'delete',id});
   // Only the owner who initiated deletion can clear its local pending tombstone.
   if(libraryScopeId()!==owner)return;
   if(queued)acknowledgeDelete(id);
+  // Always clear the old tombstone, but only the latest user action owns
+  // the visible cloud status and notification.
+  if(libraryChangeId!==generation)return;
   reportCloudStatus('Билд удалён · все его ссылки отозваны');
   showStudioToast('Билд удалён. Все его ссылки больше не работают.','success');
  }catch(error){
   console.warn('Build cloud delete pending',error);
-  if(libraryScopeId()!==owner)return;
+  if(libraryScopeId()!==owner||libraryChangeId!==generation)return;
   reportCloudStatus(queued?'Удалено в браузере · синхронизируем позже':
    'Не удалось записать удаление для повторной отправки');
   showStudioToast(queued?
