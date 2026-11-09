@@ -44,12 +44,12 @@ test('85→65 actual green Tactics changes Archer accuracy by two, not untrained
  const at65=archer({dex:3},green());
  assert.equal(at85.combat.accuracy.known-at65.combat.accuracy.known,2);
  assert.equal(rows(at85).get('Точность')-rows(at65).get('Точность'),2);
- assert.equal(P.combatMasteries({...state,masteryAuto:true},innate,caps).techniqueTrained,85);
+ assert.equal(P.combatMasteries({...state,masteryAuto:true},innate,caps).techniqueTrained,91); // Auto also includes innate Assassin 3 + Warding 3
 });
 test('all six base stat investments affect their supported final computed outputs',()=>{
  const base=archer();
  const vit=archer({vit:10}),str=archer({str:10}),agi=archer({agi:20}),
-  dex=archer({dex:15}),spi=archer({spi:10}),int=archer({int:20});
+  dex=archer({dex:15}),spi=archer({spi:10}),int=archer({int:40}); // Cross floor(INT²/1000) threshold
  assert.ok(vit.hp>base.hp,'VIT must increase HP');
  assert.ok(str.combat.attack.known>base.combat.attack.known,'STR must increase ATK');
  assert.ok(agi.combat.dodge.known>base.combat.dodge.known,'AGI must increase dodge');
