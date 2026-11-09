@@ -1,6 +1,6 @@
 /* Read-only comparison of the currently published D1 and checked-in OS snapshot.
  * Never authenticates, writes, publishes, or mutates game data. Node.js >=20.
- * Usage: npm run catalog:parity:live [-- --strict-ru] */
+ * Usage: npm run catalog:parity:live (RU completeness mandatory since 0.573) */
 import {readFileSync} from 'node:fs';
 import {pathToFileURL} from 'node:url';
 
@@ -10,8 +10,9 @@ export const DATASETS=Object.freeze([
  'unison','expertise','stringsEn'
 ]);
 const endpoint='https://ps-build-studio-cloud.bonaqu.workers.dev/api/catalog/';
-// Known D1 publication debt from the direct 2026-11-08 audit. Do not
-// normalize NEW missing translations as harmless: require explicit review.
+// Historical six-record exception used for precise drift diagnostics only.
+// Since 0.573 published these values to D1, the live CI audit fails if they
+// disappear again (e.g. accidental rollback to the pre-0.573 snapshot).
 export const KNOWN_MISSING_RU_INSTANCE_IDS=Object.freeze([
  20030040,20030070,20030080,20030090,20030100,20030110
 ]);
@@ -155,7 +156,7 @@ export function validateDescriptionReferences({items={},souls={},stringsEn={}}={
  scan(stringsEn?.items,'d');scan(stringsEn?.souls,'d');
  return {total,unresolved};
 }
-async function run({strictRu=false,fetcher=fetch}={}){
+export async function run({strictRu=true,fetcher=fetch}={}){
  let snapshot=null,failures=0,translations=0,checked=0;
  const archive={},published={};
  for(const dataset of DATASETS){
@@ -187,8 +188,10 @@ async function run({strictRu=false,fetcher=fetch}={}){
      describeCatalogDifference(local,remote,dataset)+details);
    }else if(report.missingRu){
     translations+=report.missingRu;
-    console.log('WARN '+dataset+': '+report.missingRu+
-     ' source-matched RU descriptions absent in D1');
+    if(strictRu)failures++;
+    const message=(strictRu?'FAIL ':'WARN ')+dataset+': '+report.missingRu+
+     ' previously published RU descriptions absent in D1';
+    if(strictRu)console.error(message);else console.log(message);
    }else console.log('OK   '+dataset+': '+report.staticCount+
     ' source records match D1');
   }catch(error){failures++;console.error('FAIL '+dataset+': '+error.message)}
@@ -204,7 +207,6 @@ async function run({strictRu=false,fetcher=fetch}={}){
   }else console.log('OK   '+label+' description references: '+refs.total+
    ' verified destinations');
  }
- if(strictRu&&translations)failures++;
  console.log('Read-only parity: '+checked+' of '+DATASETS.length+
   ' dataset responses checked; '+translations+
   ' missing RU blurbs; '+failures+' blocking failures. No writes performed.');
@@ -212,7 +214,7 @@ async function run({strictRu=false,fetcher=fetch}={}){
 }
 const invoked=process.argv[1]&&pathToFileURL(process.argv[1]).href===import.meta.url;
 if(invoked){
- run({strictRu:process.argv.includes('--strict-ru')}).then(ok=>{
+ run({strictRu:true}).then(ok=>{
   if(!ok)process.exitCode=1;
  }).catch(error=>{console.error(error.message);process.exitCode=1});
 }
