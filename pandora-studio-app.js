@@ -6860,6 +6860,8 @@ function updateAdminHint(){
  }
  document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));
  if(typeof bindStaticUICopyEditors==='function')bindStaticUICopyEditors();
+ if(typeof bindAccountCopyEditors==='function')
+  bindAccountCopyEditors(document.getElementById('accountPanel'));
  refreshOwnerUI();
 }
 
@@ -6956,6 +6958,57 @@ function bindStaticUICopyEditors(){
    'data-ui-content-for':key,text:'✎',onclick:edit,
    title:(lang==='en'?'Edit hint':'Изменить подсказку'),
    'aria-label':(lang==='en'?'Edit hint: ':'Изменить подсказку: ')+locale.text(key,lang)}));
+ }
+}
+
+// The account popup already exists for sign-in; owner copy editing happens
+// directly inside it. Never edit credentials, usernames or network feedback.
+function bindAccountCopyEditors(panel){
+ if(!panel||!window.PandoraUILocale)return;
+ const locale=window.PandoraUILocale,enabled=Boolean(adminEditing&&adminToken);
+ for(const node of panel.querySelectorAll('[data-owner-copy-key]')){
+  const key=node.getAttribute('data-owner-copy-key'),id=locale.fieldKey(key);
+  if(!id)continue;
+  const isAction=node.matches('button,summary,[role="button"]');
+  node.classList.toggle('ui-content-editable',enabled&&!isAction);
+  if(!enabled){
+   if(node.nextElementSibling?.dataset?.ownerCopyPencil===key)
+    node.nextElementSibling.remove();
+   continue;
+  }
+  if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
+  const edit=event=>{
+   if(!adminEditing||!adminToken)return;
+   event.preventDefault();event.stopPropagation();
+   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
+   const before=locale.text(key,lang);
+   const host=h('span',{class:'ui-content-edit-host account-copy-edit-host',text:before});
+   node.after(host);node.hidden=true;
+   const pencil=host.nextElementSibling?.dataset?.ownerCopyPencil===key?
+    host.nextElementSibling:null;
+   if(pencil)pencil.hidden=true;
+   editWikiValue(host,before,{
+    type:'text',
+    onCommit:next=>{
+     if(next.length>locale.copyLimit(key))
+      throw Error(lang==='en'?'Text is too long':'Слишком длинный текст');
+     return saveGuidePatch('book.'+id,{[lang]:next});
+    },
+    onCommitted:next=>{node.textContent=next},
+    onFinished:()=>{node.hidden=false;host.remove();if(pencil)pencil.hidden=false}
+   });
+  };
+  if(!node.dataset.ownerCopyBound){
+   node.dataset.ownerCopyBound='1';
+   if(!isAction)node.addEventListener('dblclick',edit);
+  }
+  if(isAction&&!node.nextElementSibling?.dataset?.ownerCopyPencil){
+   node.after(h('button',{type:'button',class:'ui-content-pencil account-copy-pencil',
+    'data-owner-copy-pencil':key,text:'✎',
+    title:lang==='en'?'Edit caption':'Изменить надпись',
+    'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+locale.text(key,lang),
+    onclick:edit}));
+  }
  }
 }
 
@@ -7159,6 +7212,8 @@ async function undoOwnerEdit(){
     if(last.key.startsWith('guideedit.book.ui.label.')){
      window.PandoraUILocale.setOverrides(override);
      window.PandoraUILocale.apply(lang);
+     if(last.key.startsWith('guideedit.book.ui.label.account-'))
+      window.PandoraAccountUI?.refresh?.();
     }
     await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -7461,7 +7516,8 @@ async function saveGuidePatchNow(key,fields){
    if(pane)pane.scrollTop=position;
    saveView();
   }else if(key==='wiki.labels')saveView();
-  else if(key.startsWith('book.origin.'))saveView(); // editable label keeps its mounted input
+  else if(key.startsWith('book.origin.')||
+   key.startsWith('book.ui.label.account-'))saveView(); // leave inline editor mounted
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
@@ -8362,6 +8418,7 @@ $('startupArchive').onclick=()=>void startStudio({archive:true});
 void startStudio({archive:['127.0.0.1','localhost'].includes(location.hostname)});
 void window.PandoraAccountUI.init({
  baseUrl:API,legacyKey:()=>tabGuestSecret,
+ onCopyReady:bindAccountCopyEditors,
  onLogin:({register})=>{
   // Header login, like the build-gate login, must preserve an unsaved guest
   // hero before the account owner switch replaces the visible draft.
