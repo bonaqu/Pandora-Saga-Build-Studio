@@ -75,6 +75,9 @@ export async function runUIContentInlineSmoke(browser,base){
   const category=page.locator('[data-wiki-chapter="item"]');
   if(await category.count())await category.click();
   const search=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  // The UI intentionally guards this search against password-manager autofill.
+  // Real pointer focus unlocks readonly before typing.
+  await search.click();
   await search.fill('Копье Зефира');
   const spear=page.locator('[data-wiki-record="1482"]');
   await spear.waitFor({state:'visible',timeout:20000});
