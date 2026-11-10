@@ -186,7 +186,8 @@ export async function runUIContentInlineSmoke(browser,base){
    '✧ Сохранить персонажа',null,{timeout:12000});
   const libraryKey='guideedit.book.ui.label.library-save-new';
   assert.equal(JSON.parse(values[libraryKey]).ru,'✧ Сохранить персонажа');
-  await page.locator('#locale [data-locale="en"]').click({force:true});
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   // The panel is rebuilt when the site language changes; editors must be
   // rebound to the new controls, not a detached DOM reference.
