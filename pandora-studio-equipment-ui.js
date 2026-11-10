@@ -324,7 +324,11 @@ function render(root,api){
   tabs.append(labeledAction(button,'tab.'+key,ru,en));
  }
  root.append(tabs);
- if(!record){root.append(el('p',{class:'muted',text:'Сначала выбери предмет.'}));return}
+ if(!record){
+  const ru='Сначала выбери предмет.',en='Choose an item first.';
+  root.append(editable(el('p',{class:'muted',text:copy('chooseItemEmpty',ru,en)}),
+   'chooseItemEmpty',ru,en));return
+ }
  const body=el('div',{class:'stage-rich-body'+(mode==='details'?' stage-rich-details':'')});root.append(body);
  if(mode==='details'){
   body.append(summary(record,icons,'item',{slot,refinement,
@@ -342,13 +346,21 @@ function render(root,api){
      class:n===cap?'chosen':'','aria-pressed':String(n===cap),
      'aria-label':tr('Слоты душ: ','Soul slots: ')+n,
      'data-socket-capacity':String(n),
-     title:occupiedBeyond?tr('Сначала извлеките души из лишних слотов',
+     title:occupiedBeyond?copy('socketOverflowHint',
+      'Сначала извлеките души из лишних слотов',
       'Remove Souls from extra sockets first'):'',
      disabled:occupiedBeyond,
      onclick:()=>api.updateSocketCapacity(n)});
     choices.append(btn);
    }
-   frame.append(choices);body.append(frame);
+   frame.append(choices);
+   if(plan.asSocketArray(souls).slice(1).some(Boolean)){
+    const ru='Сначала извлеките души из лишних слотов';
+    const en='Remove Souls from extra sockets first';
+    frame.append(editable(el('small',{class:'stage-socket-capacity-hint',
+     text:copy('socketOverflowHint',ru,en)}),'socketOverflowHint',ru,en));
+   }
+   body.append(frame);
   }
   if(refinable){
    const grade=Number(refinement)||0,buttons=el('div',{class:'stage-grade'});
@@ -447,8 +459,16 @@ function render(root,api){
     }else button.append(caption);
     list.append(button);attachPreview(button,rec,icons,'soul');
    }
-   if(results.length>80)list.append(el('p',{class:'muted',text:'Показано 80 душ. Уточни поиск.'}));
-   if(!results.length)list.append(el('p',{class:'muted',text:'Совместимых душ не найдено'}));
+   if(results.length>80){
+    const ru='Показано 80 душ. Уточни поиск.',en='Showing 80 Souls. Narrow your search.';
+    list.append(editable(el('p',{class:'muted',text:copy('soulSearchLimit',ru,en)}),
+     'soulSearchLimit',ru,en));
+   }
+   if(!results.length){
+    const ru='Совместимых душ не найдено',en='No compatible Souls found';
+    list.append(editable(el('p',{class:'muted',text:copy('soulSearchEmpty',ru,en)}),
+     'soulSearchEmpty',ru,en));
+   }
   };
   query.addEventListener('input',()=>{api.onSoulQuery?.(query.value);draw()});
   if(api.canEdit)body.append(editable(el('label',{

@@ -25,8 +25,10 @@ test('Hero Path skill availability messages are translated by interface language
 });
 test('skill detail fields and workspace labels translate without rewriting game data',()=>{
  const app=readFileSync(new URL('../pandora-studio-app.js',import.meta.url),'utf8');
- assert.ok(source.includes("tr(api,'Уровень персонажа','Character level')"));
- assert.ok(source.includes("tr(api,'Требования по веткам','Branch requirements')"));
+ assert.ok(source.includes("field('skillCharacterLevel','Уровень персонажа','Character level',skill.charLevel)"));
+ assert.ok(source.includes("authored(api,'skillRequirementsHeading','Требования по веткам','Branch requirements'"));
+ assert.ok(source.includes("stats.append(label,make('dd',{text:String(value)}))"));
+ assert.ok(source.includes("api.copyLabel?.(key,ru,en)||tr(api,ru,en)"));
  assert.ok(source.includes("'Show more ('"));
  assert.ok(app.includes('Hero Workshop'));
  assert.ok(app.includes('Full encyclopedia entry'));
