@@ -921,7 +921,8 @@ function ownerCopyLabel(node,section,key,ru,en){
  node.classList.add('origin-copy-editable');
  // Captions inside real buttons already have their own pencil and handler.
  // Plain labels also need keyboard access without inserting extra controls.
- if(!node.matches?.('button,[role="button"]')){
+ if(!node.matches?.('button,[role="button"]')&&
+    !node.closest?.('button,[role="button"]')){
   node.tabIndex=0;
   node.setAttribute?.('aria-keyshortcuts','F2 Enter');
  }
