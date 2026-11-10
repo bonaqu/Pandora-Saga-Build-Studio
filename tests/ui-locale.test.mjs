@@ -29,7 +29,7 @@ test('all registered static interface labels support independent RU/EN D1 overri
  // Invalid payloads must never erase the bundled fallback.
  locale.setOverrides({['guideedit.book.'+known]:'{invalid'});
  assert.equal(locale.text('heroLevel','ru'),'Уровень героя');
- locale.setOverrides({'guideedit.book.'+known:JSON.stringify({
+ locale.setOverrides({['guideedit.book.'+known]:JSON.stringify({
   ru:'',en:'x'.repeat(91)})});
  assert.equal(locale.text('heroLevel','ru'),'Уровень героя');
  assert.equal(locale.text('heroLevel','en'),'Hero level');
