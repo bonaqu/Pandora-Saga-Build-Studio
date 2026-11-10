@@ -34,6 +34,17 @@
 .stage-rich-body dt.origin-copy-editable{
  text-decoration:underline dotted #987b50;text-underline-offset:3px
 }
+/* Captions inside buttons already have an explicit pencil: no duplicate
+   pseudo-action. Preserve the full hit area for existing tab clicks. */
+.stage-copy-caption.origin-copy-editable::after{content:none}
+.stage-copy-caption.origin-copy-editable{text-decoration:none}
+.stage-rich-body .origin-copy-editable:focus-visible,
+.path-skill-metadata .origin-copy-editable:focus-visible,
+.path-skill-requirements-title.origin-copy-editable:focus-visible{
+ outline:2px solid #eec588;outline-offset:2px;border-radius:2px
+}
+.stage-socket-capacity-hint{display:block;margin-top:4px;color:#c7a77b;font-size:10px;line-height:1.35}
+
 .game-tree-head:has(.path-group-pencil){gap:5px}
 .game-tree-head .path-group-pencil{margin-left:auto}
 .path-sections button .path-tab-copy{flex:0 1 auto}
