@@ -51,5 +51,7 @@ test('hero-book editor offers distinct stat caption and hint actions',()=>{
  assert.match(book,/onclick:editName/);
  assert.match(book,/english\?'hintEn':'hintRu'/);
  assert.match(book,/text:'\?'/);
- assert.match(css,/\.stage-result-tile>\.stage-guide-edit-name/);
+ assert.match(book,/class:'stage-guide-actions'/);
+ assert.match(css,/\.stage-result-tile>\.stage-guide-actions/);
+ assert.match(css,/\.stage-chapter-label/);
 });
