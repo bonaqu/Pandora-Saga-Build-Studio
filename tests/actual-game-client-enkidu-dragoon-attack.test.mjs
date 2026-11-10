@@ -156,7 +156,7 @@ test('published OS web calculator STR percent expression at 1–200',()=>{
  assert.equal(C.weaponAttackPreview({str:72,weapon}).known,160);
 });
 
-test('planner auto-fill reaches 56 thrust potential, separate from 50 trained on client screenshot',()=>{
+test('game screenshot 56.0(56)/90: fully trained green equals 56 potential',()=>{
  const window={};
  Function('window',read('pandora-studio-skill-progression.js'))(window);
  const P=window.PandoraSkillProgression;
@@ -170,10 +170,10 @@ test('planner auto-fill reaches 56 thrust potential, separate from 50 trained on
  assert.equal(P.combatMasteries(actualState,innate,caps).techniqueTrained,1);
  assert.equal(P.groupAdeptness(actualState,['riding'],innate,caps),50);
  const screenshotGreen={...actualState,masteryAuto:false,masteryFormat:2,
-  mastery:{slash:5,thrust:50,brush:5,blow:2,defense:4,archery:1,riding:50}};
- assert.equal(P.branchMastery(screenshotGreen,'thrust',innate,caps),50);
- assert.equal(P.combatMasteries(screenshotGreen,innate,caps).melee,66,
-  'Screenshot 50.0(56)/90 means 50 trained and 56 potential, not 56 trained');
+  mastery:{slash:5,thrust:56,brush:5,blow:2,defense:4,archery:1,riding:50}};
+ assert.equal(P.branchMastery(screenshotGreen,'thrust',innate,caps),56);
+ assert.equal(P.combatMasteries(screenshotGreen,innate,caps).melee,72,
+  'User confirms screenshot 56.0(56)/90: green mastery 56 equals potential 56');
  const noAuto={...actualState,masteryAuto:false,masteryFormat:2,mastery:{}};
  assert.equal(P.branchMastery(noAuto,'thrust',innate,caps),0,
   'Allocated skill points are not automatically trained green when auto disabled');
