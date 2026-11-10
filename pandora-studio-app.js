@@ -7691,10 +7691,22 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   catch(error){saving=false;control.disabled=false;node.classList.remove('wiki-inline-saving');
    if(control.setCustomValidity){
     control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity()
+   }else if(node.closest('#studioToast')){
+    // A toast must not replace itself when its OWN D1 edit conflicts.
+    // Show feedback next to the active input; preserve the draft for retry.
+    let feedback=node.querySelector('.ui-content-inline-error');
+    if(!feedback){
+     feedback=h('small',{class:'ui-content-inline-error',role:'alert'});
+     node.append(feedback);
+    }
+    feedback.textContent='Не сохранено: '+String(error.message||'Ошибка');
    }else showStudioToast('Не сохранено: '+String(error.message||'Ошибка'),'warning');
    control.focus()}
  };
- control.oninput=()=>{if(control.setCustomValidity)control.setCustomValidity('')};
+ control.oninput=()=>{
+  if(control.setCustomValidity)control.setCustomValidity('');
+  node.querySelector('.ui-content-inline-error')?.remove();
+ };
  control.onblur=()=>{if(type==='select'){if(!saving){finished=true;restore()}}else void save()};
  control.onchange=()=>{if(type==='select')void save()};
  control.onkeydown=e=>{
