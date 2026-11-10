@@ -20,14 +20,13 @@
       if(!canEdit||typeof editLabel!=='function')return button;
       const wrap=h('span',{class:'os-sync-action-editor'});
       const host=h('span',{class:'os-sync-action-edit-host',hidden:true});
+      button.id||='os-sync-copy-'+key;
       const pencil=h('button',{type:'button',class:'os-sync-owner-pencil',
         text:'✎',title:tr('Переименовать','Rename'),
-        'aria-label':tr('Переименовать: ','Rename: ')+button.textContent});
+        'aria-label':tr('Изменить надпись действия','Edit action caption'),
+        'aria-describedby':button.id});
       editLabel(host,key,ru,en,{
-        onCommitted:next=>{
-          button.textContent=next;
-          pencil.setAttribute('aria-label',tr('Переименовать: ','Rename: ')+next);
-        },
+        onCommitted:next=>{button.textContent=next},
         onFinished:()=>{button.hidden=false;pencil.hidden=false;host.hidden=true}
       });
       for(const [keyName,value] of Object.entries({
