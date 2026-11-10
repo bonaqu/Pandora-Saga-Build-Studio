@@ -38,6 +38,12 @@ function make(tag,attr={},children=[]){
  if(tag==='input'&&attr.type==='number')root.PandoraNumericField?.prepare(e);
  return e;
 }
+// Fixed UI help stays separate from skill names, thresholds and player input.
+const authored=(api,key,ru,en,tag='p',cls='muted')=>{
+ const node=make(tag,{class:cls,text:api.copyLabel?.(key,ru,en)||tr(api,ru,en)});
+ api.editLabel?.(node,key,ru,en);
+ return node;
+};
 // Match the established Origin stat button behavior: one point per click,
 // continuous increments after holding 340 ms, repeat every 85 ms.
 // During a hold we update state in place; pointerup commits a single rerender.
@@ -534,11 +540,18 @@ function viewGrowth(target,api){
     editor.append(track,legend);
     if(unlockDetails)editor.append(unlockDetails);
     editor.append(controls);
-    if(!available)editor.append(make('p',{class:'muted',
-     text:!api.allocationReady?tr(api,'Загружаются таблицы очков и лимитов класса.','Loading class point and limit tables…'):
-      cap===0?tr(api,'Для этой профессии ветка заблокирована (лимит 0).','This class cannot train this branch (limit 0).'):tr(api,'Недостаточно доступных очков.','Not enough available points.')}));
-    if(points>0&&cap===0)editor.append(make('p',{class:'budget-excess',
-     text:tr(api,'Ветка недоступна для текущей профессии. Прежние вложения сохранены и могут быть возвращены.','Branch unavailable to this class. Old allocations are preserved and can be refunded.')}));
+    if(!available){
+     const copy=!api.allocationReady?
+      ['pathPointsLoading','Загружаются таблицы очков и лимитов класса.','Loading class point and limit tables…']:
+      cap===0?
+      ['pathBranchCapZero','Для этой профессии ветка заблокирована (лимит 0).','This class cannot train this branch (limit 0).']:
+      ['pathPointsUnavailable','Недостаточно доступных очков.','Not enough available points.'];
+     editor.append(authored(api,...copy));
+    }
+    if(points>0&&cap===0)editor.append(authored(api,'pathPointsPreserved',
+     'Ветка недоступна для текущей профессии. Прежние вложения сохранены и могут быть возвращены.',
+     'Branch unavailable to this class. Old allocations are preserved and can be refunded.',
+     'p','budget-excess'));
     wrap.append(editor);
    }
    // Race passives belong in Origin and need no extra reminder on this screen.
@@ -549,7 +562,9 @@ function viewGrowth(target,api){
 function viewSkills(target,details,api){
  const previousScroll=target.querySelector?.('.path-skill-grid')?.scrollTop||0;
  target.replaceChildren();details.replaceChildren();details.hidden=true;
- if(!api.catalogReady){target.append(make('p',{class:'muted',text:tr(api,'Каталог умений загружается.','Loading skill catalog…')}));return}
+ if(!api.catalogReady){
+  target.append(authored(api,'skillCatalogLoading','Каталог умений загружается.','Loading skill catalog…'));return
+ }
  const skillIndex=indexSkills(api.skillCatalog);
  const rows=api.skillCatalog.filter(skill=>allowedForJob(skill,api.job)&&
   matchesSkillSearch(typeof api.skillSearchText==='function'?
@@ -575,7 +590,8 @@ function viewSkills(target,details,api){
  if(rows.length>(api.shown||24))
   target.append(make('button',{type:'button',class:'path-show-more',
    text:tr(api,'Показать ещё (','Show more (')+(rows.length-(api.shown||24))+')',onclick:api.onMoreSkills}));
- if(!rows.length)target.append(make('p',{class:'muted',text:tr(api,'По этим параметрам навыки не найдены.','No skills match these filters.')}));
+ if(!rows.length)target.append(authored(api,'skillSearchEmpty',
+  'По этим параметрам навыки не найдены.','No skills match these filters.'));
  const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===String(api.selectedSkill.id)):null;
  if(selected){details.hidden=false;
   const skill=selected.skill,gate=selected.gate;
@@ -585,28 +601,29 @@ function viewSkills(target,details,api){
     text:gate.learned?tr(api,'✓ Условия выполнены','✓ Requirements met'):
      '🔒 '+gate.problems.join(' · ')}));
   const stats=make('dl',{class:'path-skill-metadata'});
-  const field=(label,value)=>{
+  const field=(key,ru,en,value)=>{
    if(value===null||value===undefined||value==='')return;
-   stats.append(make('dt',{text:label}),make('dd',{text:String(value)}));
+   const label=authored(api,key,ru,en,'dt','path-skill-meta-label');
+   stats.append(label,make('dd',{text:String(value)}));
   };
   // A verified zero means no character-level threshold, not an unknown one.
   // Branch thresholds remain visible separately below.
   if(skill.charLevel!==0&&skill.charLevel!==undefined&&skill.charLevel!==null)
-   field(tr(api,'Уровень персонажа','Character level'),skill.charLevel);
-  field(tr(api,'Мана / ОМ','Mana / MP'),skill.mana);
-  field(tr(api,'Подготовка','Cast time'),skill.cast);
-  field(tr(api,'Перезарядка','Cooldown'),skill.cooldown);
-  field(tr(api,'Дальность','Range'),skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
-  field(tr(api,'Стихия','Element'),elementLabel(skill.element,api));
+   field('skillCharacterLevel','Уровень персонажа','Character level',skill.charLevel);
+  field('skillMana','Мана / ОМ','Mana / MP',skill.mana);
+  field('skillCast','Подготовка','Cast time',skill.cast);
+  field('skillCooldown','Перезарядка','Cooldown',skill.cooldown);
+  field('skillRange','Дальность','Range',skill.rangeFromWeapon?tr(api,'Зависит от оружия','Depends on weapon'):skill.range);
+  field('skillElement','Стихия','Element',elementLabel(skill.element,api));
   if(skill.powerStat!==undefined&&skill.powerStat!==null&&skill.powerStat!=='')
-   field(tr(api,'Характеристика','Attribute'),
+   field('skillAttribute','Характеристика','Attribute',
     typeof api.attributeLabel==='function'?api.attributeLabel(skill.powerStat):
      tr(api,'Неизвестная характеристика','Unknown attribute'));
    details.append(stats);
   const requirements=Array.isArray(skill.reqs)?skill.reqs:[];
   if(requirements.length){
    const reqList=make('div',{class:'path-skill-prereqs'});
-   reqList.append(make('strong',{text:tr(api,'Требования по веткам','Branch requirements')}));
+   reqList.append(authored(api,'skillRequirementsHeading','Требования по веткам','Branch requirements','strong','path-skill-requirements-title'));
    for(const req of requirements){
     if(!req||!req.branch)continue;
     const base=M.branchBase(api.innate,req.branch);
