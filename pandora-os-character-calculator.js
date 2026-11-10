@@ -531,6 +531,34 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
 // lookups. Keep verified client measurements in regression/research fixtures.
 // OS BuildCalculator's damage_potential/damage_min describes its own combat
 // simulation; it does not reproduce all observed character-sheet ranges.
+// Empirical game-client character-sheet MIN ATK (2026-11-10):
+// Two floors are required. The published web combat preview instead rounds
+// the intermediate percent to nearest-even, which fails observed client ATK.
+// This uses the weapon's own PEN, not a constant or an item-specific lookup.
+// Active trained green mastery comes from branchMasteries, already capped by
+// PandoraSkillProgression.branchMastery; learned blue potential is not used.
+// No minimum is reported if inputs/weapon category cannot be established.
+const characterAttackBranch=Object.freeze({
+ '1H_SWORD':'slash','2H_SWORD':'slash','1H_TRUMP_WEAPON':'slash',
+ '1H_AXE':'brush','2H_AXE':'brush',
+ '1H_BLUNT_WEAPON':'blow','2H_BLUNT_WEAPON':'blow','WAND':'blow','STAFF':'blow',
+ 'POLE_ARM':'thrust','LANCE':'thrust',
+ 'BOW':'archery','CROSSBOW':'archery',
+ '2H_TRUMP_WEAPON':'assassin',
+ 'BARE_HAND':'martial','MARTIAL_WEAPON':'martial'
+});
+function characterSheetPhysicalAttackRange({maximum=null,weapon=null,branchMasteries={}}={}){
+ const branch=characterAttackBranch[weapon?.kind];
+ const mastery=branch?branchMasteries?.[branch]:undefined;
+ const pen=weapon?.PEN;
+ if(!branch||!Number.isSafeInteger(maximum)||maximum<0||
+  !Number.isSafeInteger(pen)||pen<0||
+  !Number.isSafeInteger(mastery)||mastery<0)return null;
+ const rate=Math.floor(100*pen/(200+6*mastery));
+ if(!Number.isSafeInteger(rate)||rate<0||rate>100)return null;
+ const minimum=maximum-Math.floor(maximum*rate/100);
+ return {minimum,maximum,rate,pen,mastery,branch};
+}
 // Source-backed equipment modifiers from current OS item/Soul structured EP codes.
  // Apply Remaked's ceil(base * rate / 100) separately to every source effect.
  // Deliberately ignore unstructured gear description text and conditional skills.
@@ -947,10 +975,15 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const observedDodge=dodge+quickStep+(supportSkills.windAssist?Math.floor(
   supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
   dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0);
- // No general formula proven for the character-sheet minimum. Display only
- // the independently computed maximum, never hard-coded min–max fixtures.
+ // Distinct from OS web-calculator combat damage: the observed client
+ // character sheet floors both the PEN/mastery percentage and the final gap.
+ // Leave the minimum unavailable if the weapon or actual green is unknown.
+ const clientRange=characterSheetPhysicalAttackRange({
+  maximum:effectiveAttack?.known??null,weapon,branchMasteries});
  const attackWithRange=effectiveAttack?
-  {...effectiveAttack,minimum:null,minimumVerified:false}:null;
+  {...effectiveAttack,minimum:clientRange?.minimum??null,
+   minimumVerified:clientRange!==null,
+   minimumSpreadPercent:clientRange?.rate??null}:null;
  const frontAccuracy={known:accuracyKnown,positionalBonus:0,verified:false,
   source:"Remaked Calc('ACC'), Status_62 / Status_63",
   excluded:['unmapped front-only item and skill effects']};
@@ -2235,7 +2268,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
 root.PandoraOSCalculator=Object.freeze({resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
- base,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
+ base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
 })(typeof window==='undefined'?globalThis:window);
