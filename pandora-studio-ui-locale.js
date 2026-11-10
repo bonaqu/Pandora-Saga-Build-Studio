@@ -64,8 +64,37 @@ const accountCopy=Object.freeze({
  accountResetPassword:['Восстановить пароль','Reset password'],
  accountFootnote:['Без электронной почты и СМС. После регистрации сохраните резервный код.','No email or SMS. Save your recovery code after registering.']
 });
-const literalKeys=Object.freeze(Object.fromEntries(Object.entries(accountCopy)
- .map(([key,pair])=>[pair[0],key])));
+// Fixed build-library copy is editorial content. Never bind build names, levels,
+// cloud responses, user-entered values, or the variable overwrite confirmation.
+const libraryCopy=Object.freeze({
+ libraryDraftUnsaved:['Текущий персонаж ещё не сохранён.','This character has not been saved yet.'],
+ librarySaveAndCreate:['Сохранить и создать','Save and create'],
+ libraryCreateWithoutSave:['Создать без сохранения','Create without saving'],
+ libraryCancel:['Отмена','Cancel'],
+ librarySaveNew:['✧ Сохранить новый билд','✧ Save new build'],
+ librarySaveCopy:['Сохранить копию','Save a copy'],
+ libraryNewBuild:['＋ Новый билд','＋ New build'],
+ libraryRefresh:['↻ Обновить библиотеку','↻ Refresh library'],
+ libraryUnsavedOpen:['Есть несохранённые изменения. Открыть другой билд?','You have unsaved edits. Open another build?'],
+ librarySaveCurrentOpen:['Сохранить текущий и открыть','Save current and open'],
+ libraryOpenWithoutSave:['Открыть без сохранения','Open without saving'],
+ libraryDeleteAsk:['Удалить билд и отозвать все созданные ссылки?','Delete this build and revoke all its links?'],
+ libraryDeleteLocalAsk:['Удалить локальную копию? Она ещё не сохранена в облаке.','Delete this local copy? It has not been saved to cloud.'],
+ libraryDeleteBuild:['Удалить билд','Delete build'],
+ libraryOpen:['Открыть','Open'],
+ libraryOverwrite:['↻ Перезаписать','↻ Overwrite'],
+ librarySaveInto:['↻ Сохранить в этот билд','↻ Save to this build'],
+ libraryConfirmOverwrite:['Подтвердить перезапись','Confirm overwrite'],
+ libraryShare:['🔗 Поделиться','🔗 Share'],
+ libraryDelete:['Удалить','Delete'],
+ libraryCompare:['Сравнить','Compare'],
+ librarySearchEmpty:['Билды по запросу не найдены.','No builds match this search.'],
+ libraryEmpty:['Сохранённых билдов пока нет.','No saved builds yet.'],
+ libraryLocalCopyNote:['Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»','Local copy · open it and select “Overwrite” to save it to cloud']
+});
+const literalKeys=Object.freeze(Object.fromEntries(
+ [...Object.entries(accountCopy),...Object.entries(libraryCopy)]
+  .map(([key,pair])=>[pair[0],key])));
 function literalKey(value){
  return typeof value==='string'&&Object.hasOwn(literalKeys,value)?literalKeys[value]:null;
 }
@@ -191,7 +220,8 @@ const english=Object.freeze({
 // Do not rewrite arbitrary game data, player names, error diagnostics or IDs.
 let contentOverrides={};
 function fieldKey(key){
- if(!Object.hasOwn(strings,key)&&!Object.hasOwn(accountCopy,key))return null;
+ if(!Object.hasOwn(strings,key)&&!Object.hasOwn(accountCopy,key)&&
+  !Object.hasOwn(libraryCopy,key))return null;
  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
  return /^[a-z][a-z0-9-]{0,75}$/.test(slug)?'ui.label.'+slug:null;
 }
@@ -200,14 +230,15 @@ function setOverrides(overrides){
   overrides:{};
 }
 function baseText(key,lang='ru'){
- const defaults=strings[key]||accountCopy[key];
+ const defaults=strings[key]||accountCopy[key]||libraryCopy[key];
  return defaults?defaults[lang==='en'?1:0]:key;
 }
 // Compact actions and headings stay short; only the storage warning may
 // need a longer paragraph. The Worker still enforces the global 360 limit.
-function copyLimit(key){return key==='accountStorageWarning'?350:90}
+function copyLimit(key){return key==='accountStorageWarning'?350:
+ Object.hasOwn(libraryCopy,key)&&libraryCopy[key][0].length>90?250:90}
 function text(key,lang='ru'){
- const defaults=strings[key]||accountCopy[key],id=fieldKey(key);
+ const defaults=strings[key]||accountCopy[key]||libraryCopy[key],id=fieldKey(key);
  if(!defaults||!id)return key;
  let edit=null;
  try{
@@ -218,7 +249,8 @@ function text(key,lang='ru'){
  const max=copyLimit(key);
  return typeof saved==='string'&&saved.trim()&&saved.length<=max?saved:defaults[lang==='en'?1:0];
 }
-function keys(){return [...Object.keys(strings),...Object.keys(accountCopy)]}
+function keys(){return [...Object.keys(strings),...Object.keys(accountCopy),
+ ...Object.keys(libraryCopy)]}
 function ui(value,lang='ru'){
  const id=literalKey(value);
  return id?text(id,lang):lang==='en'?(english[value]||value):value;
@@ -234,17 +266,24 @@ function apply(lang='ru',doc=typeof document==='undefined'?null:document){
 }
 // Only called for newly rendered saved-build controls; not used on the game catalog.
 function localize(root,lang='ru'){
- if(!root||lang!=='en')return;
+ if(!root)return;
  const doc=root.ownerDocument||document;
  const walker=doc.createTreeWalker(root,4);
  let node;
  while((node=walker.nextNode())){
   const parent=node.parentElement;
   if(!parent||parent.closest('h3, .build-share-slot, .build-name-input'))continue;
-  const raw=node.nodeValue,trimmed=raw.trim(),translated=english[trimmed];
-  if(translated)node.nodeValue=raw.replace(trimmed,translated);
+  const raw=node.nodeValue,trimmed=raw.trim(),key=literalKey(trimmed);
+  // Only a standalone, literal label can be edited. Never mark a build name
+  // or a mixed element containing a checkbox, icon, link, or runtime value.
+  if(key&&Object.hasOwn(libraryCopy,key)&&parent.childNodes.length===1){
+   parent.setAttribute('data-owner-copy-key',key);
+   node.nodeValue=raw.replace(trimmed,text(key,lang));
+  }else if(lang==='en'&&english[trimmed]){
+   node.nodeValue=raw.replace(trimmed,english[trimmed]);
+  }
  }
- for(const field of root.querySelectorAll('input')){
+ if(lang==='en')for(const field of root.querySelectorAll('input')){
   for(const attr of ['placeholder','aria-label']){
    const original=field.getAttribute(attr);
    if(original&&english[original])field.setAttribute(attr,english[original]);
