@@ -246,3 +246,26 @@
  .ps-profile-row>.ps-profile-copy-host{width:100%}
  .ps-profile-copy-host .wiki-inline-input{width:100%}
 }
+
+/* Toast editorial forms should stay inside the live notice and never
+   overlay its heading, close action, or the bottom of the viewport. */
+#studioToast:has(.account-copy-edit-host){align-items:flex-start}
+#studioToast .studio-toast-content:has(.account-copy-edit-host){min-width:0}
+#studioToast .account-copy-edit-host{
+ display:flex;flex-direction:column;align-items:stretch;gap:5px;
+ width:min(100%,320px);min-width:0;max-width:100%;
+ margin:5px 0;vertical-align:top
+}
+#studioToast .account-copy-edit-host .wiki-inline-input{
+ display:block;min-width:0;max-width:100%;width:100%;
+ min-height:38px;max-height:min(30vh,170px);
+ overflow:auto;box-sizing:border-box;
+ padding:7px 8px;line-height:1.4;overflow-wrap:anywhere
+}
+#studioToast .ui-content-inline-error{
+ display:block;min-width:0;font:500 11px/1.4 Manrope,Arial,sans-serif;
+ color:#ffc2b1;overflow-wrap:anywhere
+}
+@media(max-width:560px){
+ #studioToast .account-copy-edit-host{width:100%}
+}
