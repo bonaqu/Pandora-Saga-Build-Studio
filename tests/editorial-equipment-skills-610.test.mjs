@@ -62,7 +62,8 @@ test('equipment and Path Undo only refresh copy without remounting user UI',()=>
  assert.match(app,/node\.dataset\.ownerCopySection=section/);
  assert.match(app,/node\.dataset\.ownerCopyId=key/);
  assert.match(app,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
- assert.match(app,/if\(key\.startsWith\('book\.equipment\.'\)\|\|key\.startsWith\('book\.path\.'\)\)/);
+ assert.match(app,/key\.startsWith\('book\.equipment\.'\)/);
+ assert.match(app,/key\.startsWith\('book\.path\.'\)/);
  assert.match(app,/node\.querySelector\('\.wiki-inline-input'\)/);
  assert.match(app,/if\(button\.disabled\)button\.title=hint/);
 });

@@ -916,7 +916,7 @@ function ownerCopy(section,key,ru,en){
  const entry=window.PandoraHonorGuide?.field(override,ownerCopyKey(section,key),ru,en);
  return lang==='en'?(entry?.en||en):(entry?.ru||ru);
 }
-function ownerCopyLabel(node,section,key,ru,en){
+function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
  if(!node||!adminEditing||!adminToken)return;
  node.dataset.ownerCopySection=section;
  node.dataset.ownerCopyId=key;
@@ -938,8 +938,11 @@ function ownerCopyLabel(node,section,key,ru,en){
    type:'text',
    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey(section,key),{[editLang]:next}),
    onCommitted:next=>{
-    node.textContent=lang===editLang?next:ownerCopy(section,key,ru,en);
-   }
+    const visible=lang===editLang?next:ownerCopy(section,key,ru,en);
+    node.textContent=visible;
+    onCommitted?.(visible);
+   },
+   onFinished
   });
  };
  node.addEventListener('dblclick',edit);
@@ -7430,7 +7433,7 @@ function refreshVisibleUICopy(recordKey){
 // Copy-only Undo/saves must not unmount the Soul search or Path card.
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
- if(!/^(equipment|path)\./.test(key))return;
+ if(!/^(equipment|path|catalog-sync)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -7481,7 +7484,7 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path)\./.test(last.key)){
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync)\./.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -7788,9 +7791,11 @@ async function saveGuidePatchNow(key,fields){
   if(key==='wiki.labels')refreshVisibleWikiLabels();
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
-  if(key.startsWith('book.equipment.')||key.startsWith('book.path.'))
+  if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
+     key.startsWith('book.catalog-sync.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
-  if(activeTab==='wiki'&&wikiSelection.type==='honor'){
+  if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
+     !key.startsWith('book.catalog-sync.')){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
    if(pane)pane.scrollTop=position;
@@ -8199,7 +8204,11 @@ async function showCatalogImport(){
  if(!workbench)throw Error('Модуль сверки актуального игрового сервера не подключён');
  return workbench.open({
   request:(path,body)=>apiRequest(path,body,adminToken),
-  apiBase:API,modal,h,
+  apiBase:API,modal,h,lang,
+  canEdit:Boolean(adminEditing&&adminToken),
+  copyLabel:(key,ru,en)=>ownerCopy('catalog-sync',key,ru,en),
+  editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(
+   node,'catalog-sync',key,ru,en,callbacks),
   afterPublish:async()=>{invalidateWikiCatalog({dropSnapshot:true});await loadCatalog()}
  });
 }

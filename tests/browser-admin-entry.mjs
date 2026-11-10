@@ -394,6 +394,34 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
   const dialog=page.getByRole('dialog',{name:/Обновление игрового каталога/});
   await dialog.waitFor({state:'visible'});
+  // A pencil next to the LIVE catalog check must edit only its RU/EN copy.
+  // The real check button retains its normal behavior and accessible name.
+  // Scope :has() to each wrapper, not to the outer dialog.
+  const liveAction=dialog.locator('.os-sync-action-editor:has(> .os-sync-main-check)');
+  const actionPencil=liveAction.locator('.os-sync-owner-pencil');
+  const actionState=await dialog.evaluate(node=>({
+   ownerPencils:node.querySelectorAll('.os-sync-owner-pencil').length,
+   actionWrappers:node.querySelectorAll('.os-sync-action-editor').length,
+   liveActionClass:node.querySelector('.os-sync-main-check')?.parentElement?.className
+  }));
+  assert.equal(await actionPencil.count(),1,
+   'Live catalog edit action missing or incorrectly nested: '+JSON.stringify(actionState));
+  const expectedCalls=calls.filter(value=>value.startsWith('game-source:')).length;
+  for(const caption of ['Проверить игровой источник QA','Проверить изменения в текущей игре']){
+   await actionPencil.click();
+   const input=liveAction.locator('.os-sync-action-edit-host [contenteditable]');
+   await input.waitFor({state:'visible'});
+   await input.fill(caption);
+   await input.press('Tab');
+   await page.waitForFunction(text=>
+    document.querySelector('.os-sync-main-check')?.textContent===text,caption,
+    {timeout:12000});
+  }
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.live-button')).ru,
+   'Проверить изменения в текущей игре');
+  assert.equal(calls.filter(value=>value.startsWith('game-source:')).length,
+   expectedCalls,'Editing the button must not start a catalog download');
+  assert.equal(await dialog.locator('.os-sync-main-check').count(),1);
   const liveSource=dialog.getByRole('button',{name:'Проверить изменения в текущей игре'});
   await liveSource.hover();
   await page.waitForTimeout(330);
