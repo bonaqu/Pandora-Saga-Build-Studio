@@ -165,14 +165,30 @@
 .stage-book-buff-group:has(>.stage-guide-actions)>:not(strong):not(.stage-guide-actions){
  grid-column:1/-1
 }
-.stage-book-heading{
+/* Navigation arrows stay in the outer grid. The owner buttons use
+   the eyebrow's row; the full second row is reserved for the chapter title. */
+.stage-attribute-head .stage-book-heading{
  display:grid;grid-template-columns:minmax(0,1fr) auto;
- column-gap:5px;align-items:center;min-width:0
+ column-gap:4px;row-gap:2px;align-items:center;
+ min-width:0;max-width:100%;overflow:hidden
 }
-.stage-book-heading>span:first-child{grid-column:1/-1}
-.stage-book-heading>strong{grid-column:1;grid-row:2;min-width:0}
-.stage-book-heading>.stage-guide-actions{
- grid-column:2;grid-row:2;align-self:center;margin-left:0
+.stage-attribute-head .stage-book-heading>span:first-child{
+ grid-column:1;grid-row:1;min-width:0;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;text-align:left
+}
+.stage-attribute-head .stage-book-heading>strong{
+ grid-column:1/-1;grid-row:2;min-width:0;
+ font-size:21px;text-align:center
+}
+.stage-attribute-head .stage-book-heading>.stage-guide-actions{
+ display:inline-flex;grid-column:2;grid-row:1;
+ justify-self:end;align-self:center;margin-left:0
+}
+.stage-attribute-head>.stage-book-arrow,.stage-attribute-head>.stage-book-close{
+ position:relative;z-index:2
+}
+.stage-attributes,.stage-attribute-head .stage-book-close{
+ scroll-margin-top:96px
 }
 @media(max-width:430px){
  .stage-guide-edit-name,.stage-guide-edit-hint{width:20px;height:20px;min-width:20px;flex-basis:20px}
