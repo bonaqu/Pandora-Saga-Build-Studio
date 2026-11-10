@@ -6486,8 +6486,7 @@ function renderBuilds(root){
     'Overwrite saved build “'+b.name+'” with your current character? The previous version of this build cannot be restored.':
     'Перезаписать сохранённый билд «'+b.name+'» текущим персонажем? Предыдущую версию этого билда восстановить будет нельзя.'}),
    h('button',{type:'button',class:'button-action primary',text:'Подтвердить перезапись',onclick:()=>{
-    if(saveBuild(activeBuildId===b.id?state.name:b.name,b.id))showStudioToast(window.PandoraUILocale.ui(
-     'Сохранено в браузере. Проверяем запись в облаке…',lang),'warning');
+    if(saveBuild(activeBuildId===b.id?state.name:b.name,b.id))showStudioToast('Сохранено в браузере. Проверяем запись в облаке…','warning');
    }}),
    h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{overwriteChoice.hidden=true}}));
   const deleteChoice=h('div',{class:'build-delete-choice',hidden:true});
