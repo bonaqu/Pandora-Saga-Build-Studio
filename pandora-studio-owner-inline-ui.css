@@ -120,3 +120,17 @@
 @media(prefers-reduced-motion:reduce){
  .stage-guide-edit-name,.stage-guide-edit-hint{transition:none}
 }
+
+/* A real pencil is more discoverable than a dotted underline on the
+   Hero Path legend and auto mastery label, while remaining unobtrusive. */
+.path-inline-copy-pencil{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 17px;min-width:17px;width:17px;height:18px;
+ padding:0;margin:0 2px;border:1px solid #8b6b44;border-radius:3px;
+ background:#302117;color:#e4bd87;font:600 10px/1 Manrope,Arial,sans-serif;
+ vertical-align:middle;cursor:pointer
+}
+.path-inline-copy-pencil:hover,.path-inline-copy-pencil:focus-visible{
+ background:#52371f;border-color:#e9be7f;outline-offset:2px
+}
+.path-inline-copy-pencil[hidden]{display:none!important}
