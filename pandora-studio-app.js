@@ -6859,7 +6859,64 @@ function updateAdminHint(){
   indicator.textContent=adminEditing?'✎ Редактор':'';
  }
  document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));
+ bindStaticUICopyEditors();
  refreshOwnerUI();
+}
+
+// Stable UI labels are edited where they appear, never in an admin dialog.
+// Existing specialized origin/path editors retain priority over generic labels.
+function bindStaticUICopyEditors(){
+ const locale=window.PandoraUILocale,canEdit=Boolean(adminEditing&&adminToken);
+ for(const node of document.querySelectorAll('[data-i18n]')){
+  const key=node.dataset.i18n,id=locale.fieldKey(key);
+  if(!id||node.matches('option')||node.id==='originRaceName'||
+   node.id==='pathGrowthTab'||node.id==='pathSkillsTab'||
+   node.dataset.originCopyBound==='1')continue;
+  const button=node.closest('button,[role="button"]');
+  const target=button||node;
+  const oldPencil=target.nextElementSibling;
+  if(!canEdit){
+   node.classList.remove('ui-content-editable');
+   if(oldPencil?.dataset?.uiContentFor===key)oldPencil.remove();
+   continue;
+  }
+  node.classList.add('ui-content-editable');
+  const edit=event=>{
+   if(!adminEditing||!adminToken)return;
+   event.preventDefault();event.stopPropagation();
+   if(target.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
+   const current=locale.text(key,lang);
+   const host=h('span',{class:'ui-content-edit-host',text:current});
+   target.after(host);target.hidden=true;
+   const pencil=host.nextElementSibling?.dataset?.uiContentFor===key?
+    host.nextElementSibling:null;
+   if(pencil)pencil.hidden=true;
+   editWikiValue(host,current,{
+    type:'text',
+    onCommit:async next=>{
+     if(next.length>90)throw Error(wt('Надпись слишком длинная','Label is too long'));
+     await saveGuidePatch('book.'+id,{[lang]:next});
+    },
+    onCommitted:next=>{node.textContent=next},
+    onFinished:()=>{
+     target.hidden=false;host.remove();
+     if(pencil)pencil.hidden=false;
+    }
+   });
+  };
+  if(!node.dataset.uiContentBound){
+   node.dataset.uiContentBound='1';
+   if(!button)node.addEventListener('dblclick',edit);
+  }
+  if(button&&!oldPencil?.dataset?.uiContentFor){
+   const pencil=h('button',{type:'button',
+    class:'ui-content-pencil','data-ui-content-for':key,
+    text:'✎',title:wt('Изменить надпись','Edit label'),
+    'aria-label':wt('Изменить надпись: ','Edit label: ')+locale.text(key,lang),
+    onclick:edit});
+   target.after(pencil);
+  }
+ }
 }
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
@@ -7350,6 +7407,10 @@ async function saveGuidePatchNow(key,fields){
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
   if(key==='wiki.labels')refreshVisibleWikiLabels();
+  if(key.startsWith('book.ui.label.')){
+   window.PandoraUILocale.setOverrides(override);
+   window.PandoraUILocale.apply(lang);
+  }
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
@@ -7785,7 +7846,9 @@ function renderCatalogStatus(){
   data.meta.counts.souls+(lang==='en'?' souls':' душ');
 }
 function applyGameLocale({redraw=true}={}){
+ window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
+ bindStaticUICopyEditors();
  renderArchiveNotice();
  renderCatalogStatus();
  renderOriginCopyLabels();
@@ -7950,6 +8013,8 @@ async function refreshOwnerCatalog(){
 async function loadOverrides({strict=false}={}){try{
  const response=await apiRequest('/api/overrides',null,'');
  override=response.values||{};
+ window.PandoraUILocale.setOverrides(override);
+ window.PandoraUILocale.apply(lang);
  refreshVisibleWikiLabels();
  await refreshOwnerCatalog();
 }catch(error){
