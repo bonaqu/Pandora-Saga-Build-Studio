@@ -3880,10 +3880,10 @@ function renderWiki(root){
      ...(window.PandoraEquipmentPlan.supportsSoulSlot(rec.slot)?
       [[wt('Слоты душ','Soul slots'),rec.soulslot,'soulslot']]:[])
     ];
-    const hints={kind:'Игровая категория предмета',level:'Уровень предмета',W:'Показатель атаки оружия',PEN:'Показатель пробития оружия',AC:'Защита предмета',atkspeed:'Скорость атаки',range:'Дальность действия',soulslot:'Слоты душ: от 0 до 3'};
     for(const [label,value,key]of itemFields)if(value!=null){
+     const hint=window.PandoraItemPresentation.fieldHint(key,lang)||label;
      const dt=h('dt',{class:'wiki-help-label'},[
-      h('span',{text:label,title:hints[key]||label,class:'wiki-help-word'})]);
+      h('span',{text:label,title:hint,class:'wiki-help-word'})]);
      const dd=h('dd',{text:String(value),class:adminEditing&&adminToken?'wiki-edit-value':''});
      if(adminEditing&&adminToken){
       dd.title=wt('Двойной клик для изменения','Double-click to edit');
