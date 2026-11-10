@@ -12,6 +12,9 @@ const locale=root.PandoraUILocale;
 test('account copy has stable bilingual semantic keys and independent D1 values',()=>{
  assert.ok(locale.keys().includes('accountGuestLead'));
  assert.equal(locale.fieldKey('accountGuestLead'),'ui.label.account-guest-lead');
+ assert.equal(locale.copyLimit('accountSignIn'),90);
+ assert.equal(locale.copyLimit('accountGuestLead'),90);
+ assert.equal(locale.copyLimit('accountStorageWarning'),350);
  assert.equal(locale.literalKey('Логин и пароль — для доступа к сохранённым облачным билдам.'),
   'accountGuestLead');
  assert.equal(locale.literalKey('Пароли не совпадают.'),null,
@@ -31,6 +34,9 @@ test('account copy has stable bilingual semantic keys and independent D1 values'
  assert.equal(locale.baseText('accountGuestLead','en'),
   'Your username and password give access to your saved cloud builds.');
  assert.equal(locale.ui('Пароли не совпадают.','en'),'Passwords do not match.');
+ locale.setOverrides({[key]:JSON.stringify({ru:'x'.repeat(91),en:'y'.repeat(91)})});
+ assert.equal(locale.text('accountGuestLead','ru'),
+  'Логин и пароль — для доступа к сохранённым облачным билдам.');
  locale.setOverrides({});
  assert.equal(locale.ui('Логин и пароль — для доступа к сохранённым облачным билдам.','en'),
   'Your username and password give access to your saved cloud builds.');
