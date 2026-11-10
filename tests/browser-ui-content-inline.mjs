@@ -162,6 +162,7 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.account-guest-lead').length,2);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,2);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,1);
+  console.log('UI test: preparing to sign in');
   // Sign in without editing the username or password: library controls, not
   // account credentials or player-authored names, are the editing targets.
   const loginForm=page.locator('#accountPanel .account-form');
