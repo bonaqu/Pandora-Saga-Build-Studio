@@ -258,3 +258,41 @@
 @media(max-width:580px){
  .os-sync-review-signals{margin-left:0}
 }
+
+/* Admin copy controls are external siblings of publish/test action buttons.
+   Editing a caption cannot dispatch an action click. */
+.os-sync-action-editor{
+ display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;
+ vertical-align:middle
+}
+.os-sync-action-editor>.button-action{min-width:0;max-width:100%}
+.os-sync-actions>.os-sync-action-editor{width:100%}
+.os-sync-actions>.os-sync-action-editor>.button-action{flex:1}
+.os-sync-archive-choice>.os-sync-action-editor{margin:0 13px 12px}
+.os-sync-review-actions .os-sync-action-editor:has(>.primary){margin-left:auto}
+.os-sync-owner-pencil{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 22px;min-width:22px;width:22px;height:25px;padding:0;
+ border:1px solid #80613d;border-radius:4px;background:#312318;
+ color:#dfbd85;font-size:12px;cursor:pointer
+}
+.os-sync-owner-pencil:hover,.os-sync-owner-pencil:focus-visible{
+ background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
+}
+.os-sync-action-edit-host{display:inline-flex;align-items:center;min-width:140px;max-width:100%;flex:1}
+.os-sync-action-edit-host.origin-copy-editable::after{content:none}
+.os-sync-action-edit-host .wiki-inline-input{
+ box-sizing:border-box;display:block;min-width:0;width:100%;max-width:100%;
+ min-height:30px;padding:5px 7px;font-size:12px
+}
+.os-sync-intro .origin-copy-editable:focus-visible,
+.os-sync-archive-choice .origin-copy-editable:focus-visible,
+.os-sync-review-steps .origin-copy-editable:focus-visible,
+.os-sync-advanced .origin-copy-editable:focus-visible{
+ outline:2px solid #edc485;outline-offset:3px;border-radius:2px
+}
+@media(max-width:580px){
+ .os-sync-review-actions .os-sync-action-editor:has(>.primary){margin-left:0}
+ .os-sync-action-editor{flex:1 1 auto}
+ .os-sync-action-editor>.button-action{flex:1}
+}
