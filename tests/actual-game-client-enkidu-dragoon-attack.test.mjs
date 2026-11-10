@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 
 // Actual client screenshots supplied 2026-11-10: Enkidu Dragoon level 45.
 // Real game-client maximum attack vectors now confirm calculation stages.
-// Minimum ATK still requires its own green-mastery formula (#238).
+// Player-supplied min–max sequences now test empirical double-floor PEN/mastery parity.
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const win={};
 Function('window',read('pandora-os-character-calculator.js'))(win);
@@ -101,10 +101,12 @@ test('source: Strong arms matches POLE_ARM and War Cry has exactly 10 +20%',()=>
  assert.equal(cry.combat.activeSkills.warCry,true);
 });
 
-test('verified STR72 +8 client ATK is 219 and 266',()=>{
+test('verified STR72 +8 client ATK is 189–219 and 229–266',()=>{
  const base=result(false),cry=result(true);
  assert.equal(base.combat.attack.known,219);
  assert.equal(cry.combat.attack.known,266);
+ assert.equal(base.combat.attack.minimum,189);
+ assert.equal(cry.combat.attack.minimum,229);
  assert.equal(base.combat.attack.raw,186);
  assert.equal(base.combat.attack.racialBonus,22);
  assert.equal(cry.combat.attack.activeBonus,47);
@@ -126,6 +128,8 @@ test('verified STR71 via either item, and STR70 via both: 218/265',()=>{
   assert.equal(a.stats.str,str);
   assert.equal(a.combat.attack.known,218);
   assert.equal(b.combat.attack.known,265);
+  assert.equal(a.combat.attack.minimum,188);
+  assert.equal(b.combat.attack.minimum,228);
  }
 });
 
@@ -140,8 +144,26 @@ test('verified STR71 plain Zephyr +0 (W90): 174 without War Cry',()=>{
  assert.equal(a.combat.attack.refinement,0);
  assert.equal(a.combat.attack.racialBonus,17);
  assert.equal(a.combat.attack.known,174);
- // Forecast only, this +0/War Cry case was not measured in the game.
- assert.equal(attackFor(rows,true,weapon,0).combat.attack.known,213);
+ assert.equal(a.combat.attack.minimum,150);
+ const buffed=attackFor(rows,true,weapon,0);
+ assert.deepEqual([buffed.combat.attack.minimum,buffed.combat.attack.known],[184,213]);
+});
+
+test('same-W +0 Zephyr versus Pike: switching PEN changes only minimum',()=>{
+ const rowsFor=weapon=>[
+  ...records.filter(([source])=>
+   source!=='item:1483'&&source!=='soul:101001'),
+  ['item:'+weapon.id,weapon,0]
+ ];
+ const z=attackFor(rowsFor(items[1482]),false,items[1482],0);
+ const p=attackFor(rowsFor(items[1451]),false,items[1451],0);
+ const zb=attackFor(rowsFor(items[1482]),true,items[1482],0);
+ const pb=attackFor(rowsFor(items[1451]),true,items[1451],0);
+ assert.deepEqual([z.stats.str,p.stats.str],[71,70]);
+ assert.deepEqual([z.combat.attack.minimum,z.combat.attack.known],[150,174]);
+ assert.deepEqual([p.combat.attack.minimum,p.combat.attack.known],[136,174]);
+ assert.deepEqual([zb.combat.attack.minimum,zb.combat.attack.known],[184,213]);
+ assert.deepEqual([pb.combat.attack.minimum,pb.combat.attack.known],[167,213]);
 });
 
 test('published OS web calculator STR percent expression at 1–200',()=>{
@@ -179,21 +201,18 @@ test('game screenshot 56.0(56)/90: fully trained green equals 56 potential',()=>
   'Allocated skill points are not automatically trained green when auto disabled');
 });
 
-test('game-client evidence is not hard-coded as a runtime attack minimum',()=>{
+test('empirical minimum is computed generically and shown in Hero Book',()=>{
  const full=result(false),cry=result(true);
- assert.equal(full.combat.attack.known,219);
- assert.equal(cry.combat.attack.known,266);
- for(const x of [full,cry]){
-  assert.equal(x.combat.attack.minimum,null);
-  assert.equal(x.combat.attack.minimumVerified,false);
- }
+ assert.deepEqual([full.combat.attack.minimum,full.combat.attack.known],[189,219]);
+ assert.deepEqual([cry.combat.attack.minimum,cry.combat.attack.known],[229,266]);
+ for(const x of [full,cry])assert.equal(x.combat.attack.minimumVerified,true);
  const root={};
  Function('window','document',read('pandora-studio-hero-book.js'))(root,
   {documentElement:{lang:'ru'}});
  const output=root.PandoraStageAttributes.summaryRows(full)
   .flatMap(group=>group.rows).find(row=>row.ru==='АТК');
  assert.equal(output.value,219);
- assert.equal(output.display,null,'Do not label a fixture-specific minimum as universal');
+ assert.equal(output.display,'189–219');
 });
 test('all prior game-client minimum examples remain evidence, never magic branches',()=>{
  const src=read('pandora-os-character-calculator.js');
@@ -201,4 +220,7 @@ test('all prior game-client minimum examples remain evidence, never magic branch
  assert.doesNotMatch(src,/minimum:189|minimum:229|minimum:50|minimum:9/);
 });
 
-test.todo('Issue #238: universal minimum ATK function by weapon proficiency remains unverified');
+test('Issue #238: no item-ID/character-specific minimum branches',()=>{
+ const source=read('pandora-os-character-calculator.js');
+ assert.doesNotMatch(source,/if\s*\(\s*weapon\.id\s*===\s*(1482|1451|2442|2411)/);
+});
