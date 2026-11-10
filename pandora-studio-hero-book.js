@@ -390,7 +390,7 @@ function summaryPage(body,calc,options={}){
    make('span',{class:'stage-result-symbol','aria-hidden':'true',text:group.symbol}),
    make('strong',{text:en?group.en:group.ru})
   ]);
-  guideLabel(heading.querySelector('strong'),'summary.group.'+groupIndex,
+  guideLabel(heading.lastChild,'summary.group.'+groupIndex,
    group.ru,group.en,options);
   heading.append(make('span',{class:'stage-result-chevron','aria-hidden':'true',text:'⌄'}));
   const grid=make('div',{class:'stage-result-grid'});
