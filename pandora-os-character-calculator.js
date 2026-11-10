@@ -526,11 +526,12 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
   verified:false,excluded:['other armor conditional multipliers',
    'Defender and Raging Soul active skills','OS server damage mitigation']};
 }
-// Current OS client minimum ATK is not yet established as a universal rule.
-// Do not embed game-client screenshot values as item/character-specific runtime
-// lookups. Keep verified client measurements in regression/research fixtures.
-// OS BuildCalculator's damage_potential/damage_min describes its own combat
-// simulation; it does not reproduce all observed character-sheet ranges.
+// Character-sheet minimum ATK is now reproduced by 41 independently observed
+// client ranges across a spear, pike, two crossbows, and a sword.
+// Unlike the published OS web combat preview, the character sheet floors
+// the PEN/green-mastered percentage before flooring the loss from maximum.
+// These live vectors support the model but do not prove all possible skills
+// and PEN-altering effects; unknown source inputs fail closed.
 // Empirical game-client character-sheet MIN ATK (2026-11-10):
 // Two floors are required. The published web combat preview instead rounds
 // the intermediate percent to nearest-even, which fails observed client ATK.
