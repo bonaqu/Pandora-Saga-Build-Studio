@@ -88,17 +88,24 @@
     const github = h('button',{type:'button',class:'button-action',
       text:'Создать PR в GitHub',disabled:true});
     const search = h('input', {type:'search',class:'os-sync-search',
-      placeholder:'Поиск по названию, описанию и связанным предметам…','aria-label':'Поиск изменений'});
+      placeholder:copy('searchPlaceholder',
+       'Поиск по названию, описанию и связанным предметам…',
+       'Search names, descriptions and linked items…'),
+      'aria-label':copy('searchAria','Поиск изменений','Search changes')});
     const progress = h('progress', {class:'catalog-import-progress',max:'100',value:'0'});
     progress.hidden=true;
-    const filters=h('div',{class:'os-sync-filters',role:'group','aria-label':'Фильтр изменений'});
+    const filters=h('div',{class:'os-sync-filters',role:'group',
+      'aria-label':copy('filterAria','Фильтр изменений','Change filters')});
     const overview=h('div',{class:'os-sync-overview'});
     const summary = h('div', {class:'os-sync-summary',role:'status'});
     const sourceBanner=h('p',{class:'os-sync-source-banner',hidden:true});
     const status = h('p', {class:'os-sync-status',role:'status',
-      text:'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.'});
+      text:copy('initialStatus',
+       'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.',
+       'Check the current game first. If it is unavailable, use the saved snapshot.')});
     const diagnostic=h('details',{class:'os-sync-diagnostics'},[
-      h('summary',{text:'Технические сведения об ошибке'})
+      h('summary',{text:copy('diagnosticsSummary',
+       'Технические сведения об ошибке','Technical error details')})
     ]);
     diagnostic.hidden=true;
     const diagnosticText=h('p',{class:'muted'});
@@ -117,8 +124,10 @@
       ])
     );
     const formattingToggle=h('input',{type:'checkbox',disabled:true,
-      'aria-label':'Синхронизировать переносы игровых описаний'});
-    const formattingLabel=h('span',{text:'Привести переносы строк в описаниях к виду игрового сайта'});
+      'aria-label':copy('formattingAria','Синхронизировать переносы игровых описаний','Synchronize game description line breaks')});
+    const formattingLabel=h('span',{text:copy('formattingLabel',
+      'Привести переносы строк в описаниях к виду игрового сайта',
+      'Match line breaks in descriptions to the game site')});
     const formattingInfo=authored('p',{class:'muted os-sync-formatting-info'},
      'formattingExplanation',
      'Доступно после сверки с игровым сайтом. Не изменяет характеристики, названия или эффекты. Действие выполняется только после подтверждения публикации.',
@@ -129,15 +138,18 @@
       [formattingOption,formattingInfo]);
     reviewSteps.append(formattingReview);
     const russianToggle=h('input',{type:'checkbox',disabled:true,
-      'aria-label':'Добавить проверенные русские описания подземелий в D1'});
-    const russianLabel=h('span',{text:'Добавить русские описания подземелий'});
+      'aria-label':copy('russianDescriptionsAria',
+       'Добавить проверенные русские описания подземелий в D1',
+       'Add verified Russian dungeon descriptions to D1')});
+    const russianLabel=h('span',{text:copy('russianDescriptionsLabel',
+      'Добавить русские описания подземелий','Add Russian dungeon descriptions')});
     const russianInfo=authored('p',{class:'muted os-sync-formatting-info'},
      'russianDescriptionExplanation',
      'Тексты взяты из сохранённой копии проекта. Публикация только после отдельного подтверждения.',
      'These texts come from the saved project snapshot. Publication requires separate confirmation.');
     const russianList=h('div',{class:'os-sync-russian-list'});
     const russianDetails=h('details',{class:'os-sync-russian-preview'},[
-      h('summary',{text:'Посмотреть русские тексты'}),russianList
+      h('summary',{text:copy('russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts')}),russianList
     ]);
     const russianOption=h('label',{class:'os-sync-formatting-option'},
       [russianToggle,russianLabel]);
@@ -148,10 +160,10 @@
      'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.',
      'Game file checksums verify data origin and integrity; they are not item or monster statistics.');
     const advanced=h('details',{class:'os-sync-advanced'},[
-      h('summary',{text:'Дополнительные инструменты'}),
+      h('summary',{text:copy('advancedSummary','Дополнительные инструменты','Additional tools')}),
       metaStatus,
       authored('p',{},'advancedExplanation',
-       'Проверка сохранения не обновляет данные игры. GitHub фиксирует уже опубликованную версию, а скачивание позволяет вручную изучить изменения.',
+       'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.',
        'Testing D1 writes does not update game data. GitHub can record an already-published revision; downloads are for manual review.'),
       h('div',{class:'os-sync-advanced-actions'},[
        action(testWrite,'testWriteButton','Проверить сохранение правок','Test D1 writes'),
