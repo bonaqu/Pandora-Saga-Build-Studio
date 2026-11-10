@@ -56,3 +56,13 @@ test('inline editing is keyboard-reachable and captures the initial language',()
  assert.match(css,/\.stage-copy-caption\.origin-copy-editable::after\{content:none\}/);
  assert.match(css,/\.stage-rich-body \.origin-copy-editable:focus-visible/);
 });
+
+test('equipment and Path Undo only refresh copy without remounting user UI',()=>{
+ assert.match(app,/function refreshVisibleOwnerCopy\(recordKey\)/);
+ assert.match(app,/node\.dataset\.ownerCopySection=section/);
+ assert.match(app,/node\.dataset\.ownerCopyId=key/);
+ assert.match(app,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
+ assert.match(app,/if\(key\.startsWith\('book\.equipment\.'\)\|\|key\.startsWith\('book\.path\.'\)\)/);
+ assert.match(app,/node\.querySelector\('\.wiki-inline-input'\)/);
+ assert.match(app,/if\(button\.disabled\)button\.title=hint/);
+});
