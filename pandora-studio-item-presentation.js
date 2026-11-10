@@ -147,6 +147,32 @@ function restoreReferences(edited,source,lookupItem,lang='ru'){
    result.slice(match.end);
  return result;
 }
-root.PandoraItemPresentation=Object.freeze({kind,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
+// Player-facing encyclopedia field explanations. Keep the physical ATK spread
+// separate from unverified target-armor penetration and from magical attack.
+// Translation must follow the selected wiki language, including keyboard hints.
+const itemFieldHints=Object.freeze({
+ kind:['Игровая категория предмета','Game item category'],
+ level:['Уровень предмета','Item level'],
+ W:[
+  'Базовая физическая атака оружия. Бонусы от СИЛ, заточки и усилений учитываются в итоговой АТК персонажа.',
+  'Base physical attack of the weapon. STR, refinement and other bonuses affect the character’s final ATK.'
+ ],
+ PEN:[
+  'Параметр разброса физической АТК. При одинаковом максимуме АТК и мастерстве больше число — ниже минимум; меньше — выше. Влияние на защиту цели не подтверждено.',
+  'Physical ATK spread. At the same maximum ATK and weapon mastery, a higher value means a lower minimum; a lower value means a higher minimum. Effects on enemy defense are unconfirmed.'
+ ],
+ AC:['Защита предмета','Item defense'],
+ atkspeed:['Скорость атаки оружием','Weapon attack speed'],
+ range:[
+  'Базовая дальность атаки этим оружием. Бонусы навыков и экипировки могут увеличивать итоговую дальность.',
+  'Base attack range of this weapon. Skills and equipment may increase the final attack range.'
+ ],
+ soulslot:['Количество слотов для душ: от 0 до 3','Number of Soul sockets: 0 to 3']
+});
+function fieldHint(key,lang='ru'){
+ const value=itemFieldHints[key];
+ return value?value[lang==='en'?1:0]:null;
+}
+root.PandoraItemPresentation=Object.freeze({kind,fieldHint,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
  kindOptions:(lang='ru')=>Object.entries(lang==='en'?namesEn:names).map(([value,label])=>({value,label}))});
 })(typeof window==='undefined'?globalThis:window);
