@@ -138,18 +138,45 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await page.locator('.inline-owner-editor').count(),0);
   const bookControls=await page.evaluate(()=>{
    const rect=selector=>document.querySelector(selector)?.getBoundingClientRect();
-   const pencil=rect('.stage-book-heading>.stage-guide-edit-hint');
+   const pencil=rect('.stage-book-heading .stage-guide-edit-hint');
+   const rename=rect('.stage-book-heading .stage-guide-edit-name');
+   const actions=rect('.stage-book-heading>.stage-guide-actions');
+   const heading=rect('.stage-book-heading');
    const close=rect('#stageAttributes .stage-book-close');
    const next=rect('#stageAttributes .stage-book-arrow[aria-label="Следующая страница"]');
-   const intersects=(a,b)=>a&&b&&a.left<b.right&&a.right>b.left&&
-    a.top<b.bottom&&a.bottom>b.top;
-   return{pencil:!!pencil,close:!!close,intersectsClose:intersects(pencil,close),
-    intersectsNext:intersects(pencil,next)};
+   const groupActions=rect('#stageBookPanel .stage-result-section-head .stage-guide-actions');
+   const chevron=rect('#stageBookPanel .stage-result-section-head .stage-result-chevron');
+   const tileActions=rect('#stageBookPanel .stage-result-tile .stage-guide-actions');
+   const statValue=rect('#stageBookPanel .stage-result-tile>strong');
+   const intersects=(a,b)=>Boolean(a&&b&&a.left<b.right&&a.right>b.left&&
+    a.top<b.bottom&&a.bottom>b.top);
+   const within=(a,b)=>Boolean(a&&b&&a.left>=b.left-1&&a.right<=b.right+1&&
+    a.top>=b.top-1&&a.bottom<=b.bottom+1);
+   return {pencil:!!pencil,rename:!!rename,actionsWithinHeading:within(actions,heading),
+    intersectsClose:intersects(actions,close),intersectsNext:intersects(actions,next),
+    intersectsChevron:intersects(groupActions,chevron),
+    intersectsStatValue:intersects(tileActions,statValue)};
   });
-  assert.equal(bookControls.intersectsClose,false,
-   'Admin hint pencil must not cover Book close');
-  assert.equal(bookControls.intersectsNext,false,
-   'Admin hint pencil must not cover Book next');
+  assert.equal(bookControls.pencil,true);
+  assert.equal(bookControls.rename,true);
+  for(const key of ['actionsWithinHeading','intersectsClose','intersectsNext',
+   'intersectsChevron','intersectsStatValue'])
+   assert.equal(bookControls[key],key==='actionsWithinHeading',key+': Book controls overlap');
+  // Check the same geometry on a narrow portrait screen, with the real
+  // owner toolbar visible, before restoring the desktop editor viewport.
+  await page.setViewportSize({width:390,height:844});
+  const narrow=await page.evaluate(()=>{
+   const box=x=>document.querySelector(x)?.getBoundingClientRect();
+   const header=box('.stage-result-section-head');
+   const actions=box('.stage-result-section-head .stage-guide-actions');
+   const arrow=box('.stage-result-section-head .stage-result-chevron');
+   return {actionsInside:!!header&&!!actions&&actions.left>=header.left-1&&
+     actions.right<=header.right+1,chevronOutside:!!actions&&!!arrow&&
+     actions.right<=arrow.left+1};
+  });
+  assert.deepEqual(narrow,{actionsInside:true,chevronOutside:true},
+   'Hero Book controls should fit inside mobile result headings');
+  await page.setViewportSize({width:1440,height:900});
   await page.locator('#stageAttributes .stage-book-close').click();
   await page.locator('#hero').focus();
   await page.keyboard.press('Enter');
