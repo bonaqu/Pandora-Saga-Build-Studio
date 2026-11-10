@@ -152,7 +152,7 @@ async function main(){
  assert.equal(await page.locator('#stage-guide-tooltip').isVisible(),false,
   'Group heading must not display placeholder help');
  const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
- assert.equal(await guideLabels.count(),48,'43 result hints, four group headers and one editable caption');
+ assert.equal(await guideLabels.count(),47,'43 result hints and four group headers (duplicate caption removed)');
  await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
  // A scrolling chapter must not permanently cancel a delayed hover hint.
  await page.locator('#stageBookPanel').evaluate(node=>{node.scrollTop+=1});
