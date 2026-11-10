@@ -451,9 +451,9 @@ function regenerationPreview({stats={},guild={}}={}){
    total:mpBase+recovery[levels[1]]+common},
   verified:false,excluded:['equipment effects','active skill modifiers']};
 }
-// Legacy Remaked Calc('ATK','ACC','Dodge','Cri') direct base terms; current
-// OS equipment W/weaponPlus uses its own (different at +7..10) refinement table.
-// Excludes unported active buffs/weapon-specific Soul effects; not a final OS stat.
+// OS game-client parity: apply STR% to unrefined weapon W before adding OS
+// physical refinement. Legacy included refinement in the STR multiplier,
+// overestimating ATK. Unsupported secondary effects remain unverified.
 function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle=0}={}){
  if(!Number.isFinite(str)||str<0||!Number.isInteger(grade)||grade<0||grade>10||
   !Number.isInteger(honorTitle)||honorTitle<0||honorTitle>=honorTitles.length)return null;
@@ -468,13 +468,14 @@ function weaponAttackPreview({str,weapon=null,grade=0,weaponPlus=null,honorTitle
   if(!tier||!Number.isFinite(tier.ratio)||!Number.isFinite(tier.flat))return null;
   refinement=Math.floor(damage*tier.ratio/100)+tier.flat;
  }
- const table=[[130,.9],[120,.75],[110,.6],[100,.5],[90,.4],[80,.32],
-  [70,.24],[60,.18],[50,.12],[40,.08],[30,.04],[20,.02]];
- const strengthRate=table.find(([threshold])=>str>=threshold)?.[1]??0;
- const raw=physical+damage+refinement+(damage+refinement)*strengthRate;
+ // Current OS BuildCalculator uses floor(floor(STR/10)^2/2)% (not a capped table).
+ const decade=Math.floor(str/10),strengthPercent=Math.floor(decade*decade/2);
+ const strengthRate=strengthPercent/100;
+ const scaledWeapon=Math.floor(damage*(100+strengthPercent)/100);
+ const raw=physical+scaledWeapon+refinement;
  const honor=honorTitle===3?Math.floor(raw*.02):0;
- return {known:Math.ceil(raw+honor),raw,unarmed:false,physical,
-  weaponDamage:damage,refinement,strengthRate,honor,verified:false};
+ return {known:raw+honor,raw,unarmed:false,physical,
+  weaponDamage:damage,scaledWeapon,refinement,strengthRate,honor,verified:false};
 }
 // Current game's news #4: all forgeable armor and shields now gain +1.2
 // DEF per enhancement level, replacing the archival +1.5. Keep tenths as
@@ -900,7 +901,7 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const guildAtk=baseAtk===null?null:Math.ceil(baseAtk*guildRate);
  const activeAtk=baseAtk===null?null:
   (actives.warCry?effect('warCry','EP_DAMAGERATE_CONST')+
-   Math.ceil(baseAtk*effect('warCry','EP_DAMAGERATE_SCALE')/100):0)+
+   Math.floor(baseAtk*effect('warCry','EP_DAMAGERATE_SCALE')/100):0)+
   (actives.raging?Math.ceil(baseAtk*effect('raging','EP_DAMAGERATE_SCALE')/100):0)+
   (actives.defender?Math.floor(baseAtk*effect('defender','EP_DAMAGERATE_SCALE')/100):0);
  const directDef=defense.directRaw;
@@ -913,10 +914,10 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const atkPct=attack?equipped.attackPercent.map(e=>({
   ...e,bonus:Math.ceil((attack.raw??attack.known)*e.rate/100)})):[];
  const atkExtras=equipped.attackFlat+atkPct.reduce((sum,e)=>sum+e.bonus,0);
- // Remaked Legacy Calc('ATK') applies this independent, rounded-up bonus
- // to the base attack before other additive enhancements.
+ // Racial percentage uses the weapon+refinement base, before unrelated
+ // flat equipment ATK/buffs. Real client confirms integer truncation.
  const racialAttackBonus=baseAtk!==null&&racialWeapon?.matchesCategory===true?
-  racialWeapon.flat+Math.ceil(baseAtk*racialWeapon.percent/100):0;
+  racialWeapon.flat+Math.floor(baseAtk*racialWeapon.percent/100):0;
  const effectiveAttack=attack?{...attack,flatEquipment:equipped.attackFlat,
   percentEquipment:atkPct,racialBonus:racialAttackBonus,
   activeBonus:activeAtk,guildBonus:guildAtk,
