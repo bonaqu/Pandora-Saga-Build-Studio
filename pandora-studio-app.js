@@ -6752,6 +6752,8 @@ let studioToastTimer=null;
 // Ignore obsolete replies when the same shared URL is reopened before an older GET resolves.
 let sharedHashRequestId=0;
 function showStudioToast(message,tone='warning'){
+ const statusKey=window.PandoraUILocale?.literalKey?.(message);
+ const authoredKey=statusKey?.startsWith('status')?statusKey:null;
  let root=document.getElementById('studioToast');
  if(!root){root=h('div',{id:'studioToast',class:'studio-toast','aria-live':'polite',role:'status'});document.body.append(root)}
  clearTimeout(studioToastTimer);
@@ -6759,12 +6761,17 @@ function showStudioToast(message,tone='warning'){
  root.replaceChildren(h('div',{class:'studio-toast-content'},[
   h('strong',{text:window.PandoraUILocale?.ui(
    tone==='success'?'Готово':tone==='error'?'Ошибка':'Уведомление',lang)}),
-  h('p',{text:window.PandoraUILocale?.ui(message,lang)||message})
+  h('p',{text:window.PandoraUILocale?.ui(message,lang)||message,
+   ...(authoredKey?{'data-owner-copy-key':authoredKey}:{})})
  ]));
  const close=()=>{root.hidden=true;root.replaceChildren()};
  root.append(h('button',{type:'button',class:'studio-toast-ok',text:'ОК',onclick:close}));
  root.hidden=false;
- studioToastTimer=setTimeout(close,8500);
+ if(authoredKey&&adminEditing&&adminToken){
+  // No auto-dismiss while the owner is editing a short authored notice.
+  // Runtime/server diagnostics remain non-editable and time out normally.
+  bindAccountCopyEditors(root);
+ }else studioToastTimer=setTimeout(close,8500);
 }
 async function restoreSharedHash(){
  const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
@@ -7262,9 +7269,13 @@ function refreshVisibleUICopy(recordKey){
  const locale=window.PandoraUILocale;
  locale.setOverrides(override);
  locale.apply(lang);
- if(!recordKey.startsWith('guideedit.book.ui.label.library-'))return;
+ const isLibrary=recordKey.startsWith('guideedit.book.ui.label.library-');
+ const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
+ if(!isLibrary&&!isStatus)return;
  const id=recordKey.slice('guideedit.book.'.length);
- for(const node of document.querySelectorAll('#detailContent [data-owner-copy-key]')){
+ const selector=isLibrary?'#detailContent [data-owner-copy-key]':
+  '#studioToast [data-owner-copy-key]';
+ for(const node of document.querySelectorAll(selector)){
   const key=node.dataset.ownerCopyKey;
   if(locale.fieldKey(key)!==id||node.hidden||
    node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
