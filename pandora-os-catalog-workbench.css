@@ -296,3 +296,17 @@
  .os-sync-action-editor{flex:1 1 auto}
  .os-sync-action-editor>.button-action{flex:1}
 }
+
+/* Explanatory copy uses the same separate-action rule for touch screens. */
+.os-sync-copy-field{display:flex;align-items:flex-start;gap:6px;min-width:0}
+.os-sync-copy-field>.origin-copy-editable{flex:1;min-width:0}
+.os-sync-copy-field>.origin-copy-editable::after{content:none}
+.os-sync-copy-pencil{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 20px;min-width:20px;width:20px;height:21px;
+ margin-top:1px;padding:0;border:1px solid #80613d;border-radius:4px;
+ background:#312318;color:#dfbd85;font-size:11px;cursor:pointer
+}
+.os-sync-copy-pencil:hover,.os-sync-copy-pencil:focus-visible{
+ background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
+}
