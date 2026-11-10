@@ -3881,9 +3881,35 @@ function renderWiki(root){
       [[wt('Слоты душ','Soul slots'),rec.soulslot,'soulslot']]:[])
     ];
     for(const [label,value,key]of itemFields)if(value!=null){
-     const hint=window.PandoraItemPresentation.fieldHint(key,lang)||label;
-     const dt=h('dt',{class:'wiki-help-label'},[
-      h('span',{text:label,title:hint,class:'wiki-help-word'})]);
+     let hint=window.PandoraItemPresentation.fieldHint(key,lang,override)||label;
+     const caption=h('span',{text:label,title:hint,class:'wiki-help-word'});
+     const dt=h('dt',{class:'wiki-help-label'},[caption]);
+     if(adminEditing&&adminToken&&window.PandoraItemPresentation.fieldHintKey(key)){
+      const editHint=event=>{
+       event.preventDefault();event.stopPropagation();
+       if(dt.querySelector('.wiki-hint-inline-edit'))return;
+       const editorHost=h('span',{class:'wiki-hint-inline-edit',text:hint});
+       const pencil=dt.querySelector('.wiki-hint-pencil');
+       dt.append(editorHost);if(pencil)pencil.hidden=true;
+       editWikiValue(editorHost,hint,{
+        type:'text',
+        onCommit:async next=>{
+         if(next.length>220)throw Error(wt('Подсказка слишком длинная','Hint is too long'));
+         const field=lang==='en'?'hintEn':'hintRu';
+         await saveGuidePatch('book.'+
+          window.PandoraItemPresentation.fieldHintKey(key),{[field]:next});
+        },
+        onCommitted:next=>{hint=next;caption.title=next},
+        onFinished:()=>{editorHost.remove();if(pencil)pencil.hidden=false}
+       });
+      };
+      caption.classList.add('wiki-hint-editable');
+      caption.addEventListener('dblclick',editHint);
+      dt.append(h('button',{type:'button',class:'wiki-hint-pencil',
+       text:'✎',title:wt('Изменить подсказку','Edit hint'),
+       'aria-label':wt('Изменить подсказку: ','Edit hint: ')+label,
+       onclick:editHint}));
+     }
      const dd=h('dd',{text:String(value),class:adminEditing&&adminToken?'wiki-edit-value':''});
      if(adminEditing&&adminToken){
       dd.title=wt('Двойной клик для изменения','Double-click to edit');
