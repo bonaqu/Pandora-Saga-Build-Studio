@@ -98,6 +98,22 @@ test('Enkidu Dragoon Strong arms raises attack for a two-handed spear',()=>{
   C.combatPreview(oneOpts).attack.known,'No bonus on incompatible weapon');
 });
 
+test('racial passives require exact server weaponUse, not all two-handed weapons',()=>{
+ const bogus={slot:'weapon',kind:'UNLISTED_TWO_HANDED',twoHanded:true,W:80};
+ assert.equal(concrete(900050002,bogus).matchesCategory,false);
+ assert.equal(concrete(900050002,items[1483]).matchesCategory,true,
+  'Verified +8 Zephyr spear is a POLE_ARM allowed by Strong arms');
+ assert.equal(concrete(900010001,items[1483]).matchesCategory,false);
+ const changed=structuredClone(skills[900050002]);
+ changed.weaponUse=['2H_SWORD'];
+ assert.equal(C.racialWeaponPreview({racialPassiveId:900050002,
+  skillCatalog:{...skills,[changed.id]:changed},weapon:items[1483]}).matchesCategory,false);
+ const damaged=structuredClone(skills[900050002]);
+ delete damaged.weaponUse;
+ assert.equal(C.racialWeaponPreview({racialPassiveId:900050002,
+  skillCatalog:{...skills,[damaged.id]:damaged},weapon:items[1483]}),null);
+});
+
 test('missing and damaged OS skill source never creates a guessed weapon bonus',()=>{
  assert.equal(concrete(900040001,items[21]),null);
  assert.equal(C.racialWeaponPreview({racialPassiveId:900010001}),null);

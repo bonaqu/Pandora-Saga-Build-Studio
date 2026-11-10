@@ -694,8 +694,17 @@ function skillEffectsPage(body,{modifiers=null}={}){
    'Ориентировочное действие навыка, не постоянное восстановление героя.'}));
   body.append(details);
  }
+ const hitPassive=modifiers?.combat?.incredibleStrength;
+ if(hitPassive?.applies===true){
+  body.append(make('section',{class:'stage-attribute-row stage-hit-passive'},[
+   make('strong',{text:en?'Incredible Strength':'Невероятная сила'}),
+   make('p',{text:en?
+    'Melee weapon hit-damage passive. It does not increase the ATK stat. The exact damage per hit is not calculated without a verified server formula.':
+    'Пассивка усиливает урон при попадании оружием ближнего боя, но не показатель АТК. Точный урон удара без подтверждённой серверной формулы не рассчитывается.'})
+  ]));
+ }
  renderSongSkills(body,modifiers);
- if(!spells.length&&!periodic.length&&!(modifiers?.songSkills?.rows||[]).length)
+ if(!hitPassive?.applies&&!spells.length&&!periodic.length&&!(modifiers?.songSkills?.rows||[]).length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Calculated skill effects appear here when game records and requirements are available.':
    'Здесь появятся эффекты навыков, для которых доступны игровые данные и расчёт.'}));
