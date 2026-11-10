@@ -193,10 +193,10 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
   const key=root.PandoraUILocale?.keys?.().find(value=>
    root.PandoraUILocale.fieldKey(value)===parts.slice(2).join('.'));
   name=tr('Надпись: ','Caption: ')+
-   (key?root.PandoraUILocale.text(key,lang):tr('Интерфейс','Interface'));
+   (key?root.PandoraUILocale.baseText(key,lang):tr('Интерфейс','Interface'));
   patch=toObject(stored);
-  source=key?{ru:root.PandoraUILocale.text(key,'ru'),
-   en:root.PandoraUILocale.text(key,'en')}:{};
+  source=key?{ru:root.PandoraUILocale.baseText(key,'ru'),
+   en:root.PandoraUILocale.baseText(key,'en')}:{};
  }else if(type==='spawnedit'){
   target={type:'monster',id};name=lookup('monster',id);section='Появление монстра';
   const spawn=[];
