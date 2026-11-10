@@ -6989,7 +6989,11 @@ function bindAccountCopyEditors(panel){
    if(pencil)pencil.hidden=true;
    editWikiValue(host,before,{
     type:'text',
-    onCommit:next=>saveGuidePatch('book.'+id,{[lang]:next}),
+    onCommit:next=>{
+     if(next.length>locale.copyLimit(key))
+      throw Error(lang==='en'?'Text is too long':'Слишком длинный текст');
+     return saveGuidePatch('book.'+id,{[lang]:next});
+    },
     onCommitted:next=>{node.textContent=next},
     onFinished:()=>{node.hidden=false;host.remove();if(pencil)pencil.hidden=false}
    });
