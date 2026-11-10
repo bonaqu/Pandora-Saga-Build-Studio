@@ -16,6 +16,15 @@ export async function runUIContentInlineSmoke(browser,base){
    contentType:'application/json',body:JSON.stringify(body)});
   const path=new URL(url).pathname;
   if(path==='/api/overrides')return reply({values});
+  // A signed-in library is required to exercise real dynamic build controls.
+  if(path==='/api/account/login'){
+   const body=req.postDataJSON();
+   assert.equal(body.username.toLowerCase(),'testingprofile');
+   return reply({account:{username:'testingprofile'},token:'b'.repeat(43),
+    expires:Date.now()+7200000});
+  }
+  if(path==='/api/account/me')return reply({account:{username:'testingprofile'}});
+  if(path==='/api/library')return reply({records:[]});
   if(path==='/api/admin/login'){
    assert.equal(req.postDataJSON().password,'Correct admin password!');
    return reply({token:'a'.repeat(43),expires:Date.now()+600000});
@@ -153,6 +162,49 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.account-guest-lead').length,2);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,2);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,1);
-  console.log('Chromium D1 inline UI/Wiki hints RU+EN: pencil, blur, CAS, locale switch passed');
+  // Sign in without editing the username or password: library controls, not
+  // account credentials or player-authored names, are the editing targets.
+  const loginForm=page.locator('#accountPanel .account-form');
+  await loginForm.locator('input').nth(0).fill('testingprofile');
+  await loginForm.locator('input').nth(1).fill('password-for-test');
+  await loginForm.locator('button[type="submit"]').click();
+  await page.locator('#accountPanel .account-identity').waitFor({state:'visible'});
+  await page.locator('#nav [data-tab="builds"]').click();
+  const saveNew=page.locator('#detailContent [data-owner-copy-key="librarySaveNew"]');
+  const libraryPencil=page.locator('#detailContent [data-owner-copy-pencil="librarySaveNew"]');
+  await saveNew.waitFor({state:'visible'});
+  await libraryPencil.waitFor({state:'visible'});
+  assert.equal(await page.locator('#detailContent [data-owner-copy-key]').count()>10,true);
+  assert.equal(await page.locator('#detailContent .build-name-input[data-owner-copy-key]').count(),0,
+   'The user-entered build name must not become owner-editable');
+  await libraryPencil.click();
+  const libraryInput=page.locator('#detailContent .account-copy-edit-host [contenteditable]');
+  await libraryInput.fill('✧ Сохранить персонажа');
+  await libraryInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-owner-copy-key="librarySaveNew"]')?.textContent===
+   '✧ Сохранить персонажа',null,{timeout:12000});
+  const libraryKey='guideedit.book.ui.label.library-save-new';
+  assert.equal(JSON.parse(values[libraryKey]).ru,'✧ Сохранить персонажа');
+  await page.locator('#locale [data-locale="en"]').click({force:true});
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  // The panel is rebuilt when the site language changes; editors must be
+  // rebound to the new controls, not a detached DOM reference.
+  const enLibrary=page.locator('#detailContent [data-owner-copy-key="librarySaveNew"]');
+  await enLibrary.waitFor({state:'visible'});
+  assert.equal(await enLibrary.textContent(),'✧ Save new build');
+  await page.locator('#detailContent [data-owner-copy-pencil="librarySaveNew"]').click();
+  const enLibraryInput=page.locator('#detailContent .account-copy-edit-host [contenteditable]');
+  await enLibraryInput.fill('✧ Save character');
+  await enLibraryInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-owner-copy-key="librarySaveNew"]')?.textContent===
+   '✧ Save character',null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values[libraryKey]),{
+   ru:'✧ Сохранить персонажа',en:'✧ Save character'
+  });
+  assert.equal(writes.filter(x=>x.key===libraryKey).length,2);
+  assert.deepEqual(errors,[]);
+  console.log('Chromium D1 inline UI/Wiki/account/library RU+EN: blur, CAS, locale switch passed');
  }finally{await context.close()}
 }
