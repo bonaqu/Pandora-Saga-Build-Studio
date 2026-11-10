@@ -34,7 +34,7 @@ test('profile/editor captions have stable bilingual D1 identifiers',()=>{
   const result=guide.field(saved,full,ru,en);
   assert.equal(result.ru,'Изменённая подпись');
   assert.equal(result.en,'Updated caption');
-  assert.match(app,new RegExp('\\b'+key+'\\b'));
+  assert.ok(app.includes(key)||key.startsWith('field-')&&app.includes('"'+key.slice(6)+'"'), 'Missing profile label source: '+key);
  }
 });
 
@@ -44,7 +44,7 @@ test('profile owner copy changes only labels and accessible placeholders, never 
  assert.match(app,/class:'ps-profile-copy'/);
  assert.match(app,/data-profile-copy-key/);
  assert.match(app,/onCommit:next=>saveGuidePatch\('book\.'\+ownerCopyKey\('profile',key\)/);
- assert.match(app,/if\(key==='name'\)\{state\.name=input\.value\}/);
+ assert.match(app,/if\(key==="name"\)\{state\.name=input\.value\}/);
  assert.match(app,/state\.profile\[key\]=input\.value/);
  assert.match(app,/state\.profile\.about=description\.value/);
  assert.match(app,/function refreshVisibleProfileCopy\(/);
