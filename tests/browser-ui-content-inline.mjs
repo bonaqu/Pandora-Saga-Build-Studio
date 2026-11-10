@@ -101,6 +101,18 @@ export async function runUIContentInlineSmoke(browser,base){
    {timeout:12000});
   assert.equal(JSON.parse(values['guideedit.book.wiki.item-field.pen']).hintRu,
    'Чем меньше пробитие, тем выше минимальная атака.');
+  const penBefore=await page.locator('.item-fields dt[data-item-field="PEN"] + dd').textContent();
+  await penLabel.locator('.wiki-label-pencil').click();
+  const rename=penLabel.locator('.wiki-label-inline-edit [contenteditable]');
+  await rename.fill('Потенциал атаки');
+  await rename.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '.item-fields dt[data-item-field="PEN"] .wiki-help-word')?.textContent===
+   'Потенциал атаки',null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki.item-field.pen']).ru,'Потенциал атаки');
+  assert.equal(JSON.parse(values['guideedit.book.wiki.item-field.pen']).hintRu,
+   'Чем меньше пробитие, тем выше минимальная атака.');
+  assert.equal(await page.locator('.item-fields dt[data-item-field="PEN"] + dd').textContent(),penBefore);
   // Leave the existing Encyclopedia detail workbench before opening the
   // account UI: a modal workbench correctly intercepts background clicks.
   if(await page.locator('#detailPanel.is-open').count())
@@ -161,7 +173,7 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.deepEqual(errors,[]);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.account-guest-lead').length,2);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,2);
-  assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,1);
+  assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,2);
   console.log('UI test: preparing to sign in');
   // Sign in without editing the username or password: library controls, not
   // account credentials or player-authored names, are the editing targets.
