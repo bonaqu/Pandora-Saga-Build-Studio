@@ -6437,6 +6437,9 @@ function renderBuilds(root){
  }
  if(!builds.length)root.append(h('p',{class:'muted',text:'Сохранённых билдов пока нет.'}));
  window.PandoraUILocale.localize(root,lang);
+ // Saved-build controls are mounted dynamically; bind the same D1 editor
+ // used for authored account copy after every library render.
+ bindAccountCopyEditors(root);
 }
 function newId(){return Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')}
 function saveBuild(name=state.name||'Новый герой',overwriteId=null){
@@ -6860,8 +6863,10 @@ function updateAdminHint(){
  }
  document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));
  if(typeof bindStaticUICopyEditors==='function')bindStaticUICopyEditors();
- if(typeof bindAccountCopyEditors==='function')
+ if(typeof bindAccountCopyEditors==='function'){
   bindAccountCopyEditors(document.getElementById('accountPanel'));
+  if(activeTab==='builds')bindAccountCopyEditors(document.getElementById('detailContent'));
+ }
  refreshOwnerUI();
 }
 
@@ -6961,8 +6966,9 @@ function bindStaticUICopyEditors(){
  }
 }
 
-// The account popup already exists for sign-in; owner copy editing happens
-// directly inside it. Never edit credentials, usernames or network feedback.
+// Edit only semantically keyed authored labels inside the existing account
+// panel or saved-build library. Never edit usernames, saved build names,
+// credentials, diagnostic responses or live cloud status.
 function bindAccountCopyEditors(panel){
  if(!panel||!window.PandoraUILocale)return;
  const locale=window.PandoraUILocale,enabled=Boolean(adminEditing&&adminToken);
@@ -6970,7 +6976,10 @@ function bindAccountCopyEditors(panel){
   const key=node.getAttribute('data-owner-copy-key'),id=locale.fieldKey(key);
   if(!id)continue;
   const isAction=node.matches('button,summary,[role="button"]');
+  const isLibrary=panel.id!=='accountPanel';
   node.classList.toggle('ui-content-editable',enabled&&!isAction);
+  if(!isAction&&enabled)node.tabIndex=0;
+  else if(!isAction&&node.tabIndex===0)node.removeAttribute('tabindex');
   if(!enabled){
    if(node.nextElementSibling?.dataset?.ownerCopyPencil===key)
     node.nextElementSibling.remove();
@@ -7000,9 +7009,16 @@ function bindAccountCopyEditors(panel){
   };
   if(!node.dataset.ownerCopyBound){
    node.dataset.ownerCopyBound='1';
-   if(!isAction)node.addEventListener('dblclick',edit);
+   if(!isAction){
+    node.addEventListener('dblclick',edit);
+    node.addEventListener('keydown',event=>{
+     if(event.key==='Enter'||event.key===' '){event.preventDefault();edit(event)}
+    });
+   }
   }
-  if(isAction&&!node.nextElementSibling?.dataset?.ownerCopyPencil){
+  // A small pencil keeps descriptions accessible to touch and keyboard;
+  // existing account paragraphs remain compact with double-click editing.
+  if((isAction||isLibrary)&&!node.nextElementSibling?.dataset?.ownerCopyPencil){
    node.after(h('button',{type:'button',class:'ui-content-pencil account-copy-pencil',
     'data-owner-copy-pencil':key,text:'✎',
     title:lang==='en'?'Edit caption':'Изменить надпись',
@@ -7507,8 +7523,17 @@ async function saveGuidePatchNow(key,fields){
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
   if(key==='wiki.labels')refreshVisibleWikiLabels();
   if(key.startsWith('book.ui.label.')){
-   window.PandoraUILocale.setOverrides(override);
-   window.PandoraUILocale.apply(lang);
+   const locale=window.PandoraUILocale;
+   locale.setOverrides(override);
+   locale.apply(lang);
+   // Repeated built-in library captions share one key. Update other
+   // mounted occurrences without rebuilding a card or discarding edits.
+   if(key.startsWith('book.ui.label.library-'))
+    for(const node of document.querySelectorAll('[data-owner-copy-key]')){
+     if(locale.fieldKey(node.dataset.ownerCopyKey)!==key.slice(5)||node.hidden||
+      node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
+     node.textContent=locale.text(node.dataset.ownerCopyKey,lang);
+    }
   }
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
@@ -7517,7 +7542,8 @@ async function saveGuidePatchNow(key,fields){
    saveView();
   }else if(key==='wiki.labels')saveView();
   else if(key.startsWith('book.origin.')||
-   key.startsWith('book.ui.label.account-'))saveView(); // leave inline editor mounted
+   key.startsWith('book.ui.label.account-')||
+   key.startsWith('book.ui.label.library-'))saveView(); // leave inline editor mounted
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
