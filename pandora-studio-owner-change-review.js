@@ -3,6 +3,7 @@
 // Read-only descriptions of owner overrides; never change the stored D1 values.
 const labels={
  name:'Название',nameEn:'Название EN',desc:'Описание',descEn:'Описание EN',
+ ru:'Текст RU',en:'Текст EN',hintRu:'Подсказка RU',hintEn:'Подсказка EN',
  service:'Назначение',serviceEn:'Назначение EN',grid:'Координаты',
  blurb:'Описание',blurbRu:'Описание',
  level:'Уровень',W:'Атака',PEN:'Пробитие',AC:'Защита',
@@ -25,6 +26,7 @@ const labels={
 };
 const labelsEn={
  name:'Name',nameEn:'English name',desc:'Description',descEn:'English description',
+ ru:'Russian text',en:'English text',hintRu:'Russian hint',hintEn:'English hint',
  service:'Service',serviceEn:'English service',grid:'Coordinates',
  blurb:'Description',blurbRu:'Russian description',
  level:'Level',W:'Attack',PEN:'Penetration',AC:'Defense',
@@ -43,7 +45,7 @@ const labelsEn={
  str:'STR',vit:'VIT',agi:'AGI',dex:'DEX',spi:'SPI',int:'INT'
 };
 const sectionEn={
- 'Предмет':'Item','Монстр':'Monster','Локация':'Location',
+ 'Интерфейс':'Interface','Предмет':'Item','Монстр':'Monster','Локация':'Location',
  'NPC':'NPC','Подземелье':'Dungeon','Навык':'Skill','Душа':'Soul',
  'Энциклопедия':'Encyclopedia','Добыча монстра':'Monster drops',
  'Сундук':'Chest','Обмен NPC':'NPC exchange',
@@ -175,6 +177,26 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
   target={type:'item',id};source={acquisitions:[]};
   name=itemName(id);section='Источники получения';
   patch={acquisitions:toObject(stored)};
+ }else if(type==='guideedit'&&parts[1]==='book'&&parts[2]==='wiki'&&
+  parts[3]==='item-field'){
+  section='Интерфейс';
+  const fieldId=parts[4].toUpperCase();
+  name=tr('Подсказка предмета: ','Item hint: ')+
+   ((english?labelsEn:labels)[fieldId]||fieldId);
+  patch=toObject(stored);
+  const baseHint=root.PandoraItemPresentation?.fieldHint?.(fieldId,'ru',{});
+  const baseEn=root.PandoraItemPresentation?.fieldHint?.(fieldId,'en',{});
+  source={hintRu:baseHint,hintEn:baseEn};
+ }else if(type==='guideedit'&&parts[1]==='book'&&parts[2]==='ui'&&
+  parts[3]==='label'){
+  section='Интерфейс';
+  const key=root.PandoraUILocale?.keys?.().find(value=>
+   root.PandoraUILocale.fieldKey(value)===parts.slice(2).join('.'));
+  name=tr('Надпись: ','Caption: ')+
+   (key?root.PandoraUILocale.text(key,lang):tr('Интерфейс','Interface'));
+  patch=toObject(stored);
+  source=key?{ru:root.PandoraUILocale.text(key,'ru'),
+   en:root.PandoraUILocale.text(key,'en')}:{};
  }else if(type==='spawnedit'){
   target={type:'monster',id};name=lookup('monster',id);section='Появление монстра';
   const spawn=[];
