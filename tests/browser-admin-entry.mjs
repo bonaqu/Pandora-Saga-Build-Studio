@@ -167,21 +167,23 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#stageAttributes .stage-book-close').click();
   await page.setViewportSize({width:390,height:844});
   await page.locator('#hero').click();
-  await page.locator('#stageBookPanel details.stage-result-section').first()
-   .waitFor({state:'visible'});
+  await page.locator('#stageAttributes').waitFor({state:'visible'});
+  // This scenario has no selected class and therefore no calculated groups.
+  // Check the always-present chapter-title toolbar and close control here;
+  // result-group geometry is covered by scenarios with a real character.
   const narrow=await page.evaluate(()=>{
    const box=x=>document.querySelector(x)?.getBoundingClientRect();
-   const header=box('.stage-result-section-head');
-   const actions=box('.stage-result-section-head .stage-guide-actions');
-   const arrow=box('.stage-result-section-head .stage-result-chevron');
-   return {actionsInside:!!header&&!!actions&&actions.left>=header.left-1&&
-     actions.right<=header.right+1,chevronOutside:!!actions&&!!arrow&&
-     actions.right<=arrow.left+1};
+   const heading=box('.stage-book-heading');
+   const actions=box('.stage-book-heading .stage-guide-actions');
+   const close=box('#stageAttributes .stage-book-close');
+   return {actionsInside:!!heading&&!!actions&&actions.left>=heading.left-1&&
+     actions.right<=heading.right+1,closeSeparate:!!actions&&!!close&&
+     actions.right<=close.left+1};
   });
   assert.equal(narrow.actionsInside,true,
-   'Hero Book owner actions overflow mobile heading: '+JSON.stringify(narrow));
-  assert.equal(narrow.chevronOutside,true,
-   'Hero Book owner actions overlap mobile disclosure: '+JSON.stringify(narrow));
+   'Hero Book owner buttons overflow mobile title: '+JSON.stringify(narrow));
+  assert.equal(narrow.closeSeparate,true,
+   'Hero Book owner buttons collide with mobile Close: '+JSON.stringify(narrow));
   await page.setViewportSize({width:1440,height:900});
   await page.locator('#stageAttributes .stage-book-close').click();
   await page.locator('#hero').focus();
