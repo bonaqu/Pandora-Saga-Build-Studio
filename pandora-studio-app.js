@@ -5732,7 +5732,8 @@ function renderWiki(root){
 function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
  const label=ownerCopy('profile',key,ru,en);
  const node=h(as,{text:label,class:'ps-profile-copy',
-  'data-profile-copy-key':key,...(forId?{for:forId}:{})});
+  'data-profile-copy-key':key,'data-profile-copy-ru':ru,
+  'data-profile-copy-en':en,...(forId?{for:forId}:{})});
  if(!adminEditing||!adminToken)return node;
  node.classList.add('origin-copy-editable');
  const edit=event=>{
@@ -5741,7 +5742,17 @@ function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
   editWikiValue(node,ownerCopy('profile',key,ru,en),{
    type:'text',
    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('profile',key),{[lang]:next}),
-   onCommitted:next=>{node.textContent=next}
+   onCommitted:next=>{
+    node.textContent=next;
+    const id=key.startsWith('field-')?'ps-profile-field-'+key.slice(6):
+     key==='bio-label'||key==='bio-placeholder'?'ps-profile-description':null;
+    const input=id?document.getElementById(id):null;
+    if(input){
+     if(key==='bio-placeholder')input.placeholder=next;
+     else{input.setAttribute('aria-label',next);
+      if(key.startsWith('field-'))input.placeholder=next;}
+    }
+   }
   });
  };
  node.addEventListener('dblclick',edit);
@@ -7367,6 +7378,25 @@ function refreshVisibleUICopy(recordKey){
    pencil.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
  }
 }
+function refreshVisibleProfileCopy(){
+ for(const node of document.querySelectorAll('#detailContent [data-profile-copy-key]')){
+  if(node.querySelector('.wiki-inline-input'))continue;
+  const key=node.dataset.profileCopyKey;
+  const value=ownerCopy('profile',key,node.dataset.profileCopyRu,node.dataset.profileCopyEn);
+  node.textContent=value;
+  const pencil=node.nextElementSibling;
+  if(pencil?.dataset.profileCopyPencil===key)
+   pencil.setAttribute('aria-label',(lang==='en'?'Rename: ':'Переименовать: ')+value);
+  const id=key.startsWith('field-')?'ps-profile-field-'+key.slice(6):
+   key==='bio-label'||key==='bio-placeholder'?'ps-profile-description':null;
+  const input=id?document.getElementById(id):null;
+  if(input){
+   if(key==='bio-placeholder')input.placeholder=value;
+   else{input.setAttribute('aria-label',value);
+    if(key.startsWith('field-'))input.placeholder=value;}
+  }
+ }
+}
 async function undoOwnerEdit(){
   if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)return;
   const last=ownerEdits[ownerEdits.length-1];
@@ -7376,7 +7406,10 @@ async function undoOwnerEdit(){
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
     ownerEdits.pop();closeInlineEditor();
     if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
-    if(last.key.startsWith('guideedit.book.ui.label.')){
+    if(last.key.startsWith('guideedit.book.profile.')){
+     refreshVisibleProfileCopy();
+     saveView();
+    }else if(last.key.startsWith('guideedit.book.ui.label.')){
      refreshVisibleUICopy(last.key);
      if(last.key.startsWith('guideedit.book.ui.label.account-'))
       window.PandoraAccountUI?.refresh?.();
@@ -7684,7 +7717,8 @@ async function saveGuidePatchNow(key,fields){
   else if(key.startsWith('book.origin.')||
    key.startsWith('book.ui.label.account-')||
    key.startsWith('book.ui.label.library-')||
-   key.startsWith('book.ui.label.status-'))saveView(); // leave inline editor mounted
+   key.startsWith('book.ui.label.status-')||
+   key.startsWith('book.profile.'))saveView(); // leave inline editor mounted
   else if(key.startsWith('book.'))saveView(); // refresh Book only after the input is restored
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
