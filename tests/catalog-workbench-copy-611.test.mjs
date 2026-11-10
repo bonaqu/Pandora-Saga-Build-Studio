@@ -23,7 +23,7 @@ test('catalog workbench labels have stable RU/EN D1 identifiers',()=>{
    JSON.stringify({ru:'Подпись',en:'Caption'})),true,d1);
  }
  assert.match(view,/copyLabel\?\.\(key,ru,en\)\|\|tr\(ru,en\)/);
- assert.match(view,/editLabel\?\.\(node,key,ru,en\)/);
+ assert.match(view,/editLabel\(node,key,ru,en\)/);
  assert.match(app,/ownerCopy\('catalog-sync',key,ru,en\)/);
  assert.match(app,/node,'catalog-sync',key,ru,en,callbacks/);
 });
