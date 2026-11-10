@@ -56,7 +56,12 @@ export async function runWikiSkillLabelEditorSmoke(browser,base){
   await page.locator('input[placeholder="Пароль администратора"]')
    .fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
-  await page.locator('#ownerDock').waitFor({state:'visible'});
+  try{await page.locator('#ownerDock').waitFor({state:'visible',timeout:10000})}
+  catch(error){
+   const feedback=await page.locator('.modal .error').allTextContents().catch(()=>[]);
+   throw new Error('Admin dock unavailable: '+JSON.stringify({feedback,pageErrors:errors})+
+    '; '+error.message);
+  }
   const control=page.locator('.wiki-skill-type');
   await control.waitFor({state:'visible',timeout:20000});
   assert.equal(await control.inputValue(),'player');

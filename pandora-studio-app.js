@@ -3881,9 +3881,35 @@ function renderWiki(root){
       [[wt('Слоты душ','Soul slots'),rec.soulslot,'soulslot']]:[])
     ];
     for(const [label,value,key]of itemFields)if(value!=null){
-     const hint=window.PandoraItemPresentation.fieldHint(key,lang)||label;
-     const dt=h('dt',{class:'wiki-help-label'},[
-      h('span',{text:label,title:hint,class:'wiki-help-word'})]);
+     let hint=window.PandoraItemPresentation.fieldHint(key,lang,override)||label;
+     const caption=h('span',{text:label,title:hint,class:'wiki-help-word'});
+     const dt=h('dt',{class:'wiki-help-label'},[caption]);
+     if(adminEditing&&adminToken&&window.PandoraItemPresentation.fieldHintKey(key)){
+      const editHint=event=>{
+       event.preventDefault();event.stopPropagation();
+       if(dt.querySelector('.wiki-hint-inline-edit'))return;
+       const editorHost=h('span',{class:'wiki-hint-inline-edit',text:hint});
+       const pencil=dt.querySelector('.wiki-hint-pencil');
+       dt.append(editorHost);if(pencil)pencil.hidden=true;
+       editWikiValue(editorHost,hint,{
+        type:'text',
+        onCommit:async next=>{
+         if(next.length>220)throw Error(wt('Подсказка слишком длинная','Hint is too long'));
+         const field=lang==='en'?'hintEn':'hintRu';
+         await saveGuidePatch('book.'+
+          window.PandoraItemPresentation.fieldHintKey(key),{[field]:next});
+        },
+        onCommitted:next=>{hint=next;caption.title=next},
+        onFinished:()=>{editorHost.remove();if(pencil)pencil.hidden=false}
+       });
+      };
+      caption.classList.add('wiki-hint-editable');
+      caption.addEventListener('dblclick',editHint);
+      dt.append(h('button',{type:'button',class:'wiki-hint-pencil',
+       text:'✎',title:wt('Изменить подсказку','Edit hint'),
+       'aria-label':wt('Изменить подсказку: ','Edit hint: ')+label,
+       onclick:editHint}));
+     }
      const dd=h('dd',{text:String(value),class:adminEditing&&adminToken?'wiki-edit-value':''});
      if(adminEditing&&adminToken){
       dd.title=wt('Двойной клик для изменения','Double-click to edit');
@@ -6833,7 +6859,104 @@ function updateAdminHint(){
   indicator.textContent=adminEditing?'✎ Редактор':'';
  }
  document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));
+ if(typeof bindStaticUICopyEditors==='function')bindStaticUICopyEditors();
  refreshOwnerUI();
+}
+
+// Stable UI labels are edited where they appear, never in an admin dialog.
+// Existing specialized origin/path editors retain priority over generic labels.
+function bindStaticUICopyEditors(){
+ const locale=window.PandoraUILocale,canEdit=Boolean(adminEditing&&adminToken);
+ for(const node of document.querySelectorAll('[data-i18n]')){
+  const key=node.dataset.i18n,id=locale.fieldKey(key);
+  if(!id||node.matches('option')||node.id==='originRaceName'||
+   node.id==='pathGrowthTab'||node.id==='pathSkillsTab'||
+   node.dataset.originCopyBound==='1')continue;
+  const button=node.closest('button,[role="button"]');
+  const target=button||node;
+  if(target.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
+  const oldPencil=target.nextElementSibling;
+  if(!canEdit){
+   node.classList.remove('ui-content-editable');
+   if(oldPencil?.dataset?.uiContentFor===key)oldPencil.remove();
+   continue;
+  }
+  node.classList.add('ui-content-editable');
+  const edit=event=>{
+   if(!adminEditing||!adminToken)return;
+   event.preventDefault();event.stopPropagation();
+   if(target.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
+   const current=locale.text(key,lang);
+   const host=h('span',{class:'ui-content-edit-host',text:current});
+   target.after(host);target.hidden=true;
+   const pencil=host.nextElementSibling?.dataset?.uiContentFor===key?
+    host.nextElementSibling:null;
+   if(pencil)pencil.hidden=true;
+   editWikiValue(host,current,{
+    type:'text',
+    onCommit:async next=>{
+     if(next.length>90)throw Error((lang==='en'?'Label is too long':'Надпись слишком длинная'));
+     await saveGuidePatch('book.'+id,{[lang]:next});
+    },
+    onCommitted:next=>{node.textContent=next},
+    onFinished:()=>{
+     target.hidden=false;host.remove();
+     if(pencil)pencil.hidden=false;
+    }
+   });
+  };
+  if(!node.dataset.uiContentBound){
+   node.dataset.uiContentBound='1';
+   if(!button)node.addEventListener('dblclick',edit);
+  }
+  if(button&&!oldPencil?.dataset?.uiContentFor){
+   const pencil=h('button',{type:'button',
+    class:'ui-content-pencil','data-ui-content-for':key,
+    text:'✎',title:(lang==='en'?'Edit label':'Изменить надпись'),
+    'aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+locale.text(key,lang),
+    onclick:edit});
+   target.after(pencil);
+  }
+ }
+ // Placeholder, title and aria-label tooltips on actual controls use the same
+ // locale key and D1 save path. Do not add decoration to layout containers.
+ for(const node of document.querySelectorAll(
+  '[data-i18n-placeholder],[data-i18n-title],[data-i18n-aria-label]')){
+  if(node.hasAttribute('data-i18n')||
+   !node.matches('button,input,select,[role="button"]'))continue;
+  const key=node.dataset.i18nTitle||node.dataset.i18nPlaceholder||
+   node.dataset.i18nAriaLabel,id=locale.fieldKey(key);
+  if(!id)continue;
+  const pencil=node.nextElementSibling;
+  if(!canEdit){
+   if(pencil?.dataset?.uiContentFor===key)pencil.remove();
+   continue;
+  }
+  if(pencil?.dataset?.uiContentFor===key||
+   pencil?.classList?.contains('ui-content-edit-host'))continue;
+  const edit=event=>{
+   event.preventDefault();event.stopPropagation();
+   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
+   const current=locale.text(key,lang);
+   const host=h('span',{class:'ui-content-edit-host',text:current});
+   node.after(host);node.hidden=true;
+   const editButton=host.nextElementSibling?.dataset?.uiContentFor===key?
+    host.nextElementSibling:null;
+   if(editButton)editButton.hidden=true;
+   editWikiValue(host,current,{
+    type:'text',
+    onCommit:async next=>{
+     if(next.length>90)throw Error((lang==='en'?'Label is too long':'Надпись слишком длинная'));
+     await saveGuidePatch('book.'+id,{[lang]:next});
+    },
+    onFinished:()=>{node.hidden=false;host.remove();if(editButton)editButton.hidden=false}
+   });
+  };
+  node.after(h('button',{type:'button',class:'ui-content-pencil',
+   'data-ui-content-for':key,text:'✎',onclick:edit,
+   title:(lang==='en'?'Edit hint':'Изменить подсказку'),
+   'aria-label':(lang==='en'?'Edit hint: ':'Изменить подсказку: ')+locale.text(key,lang)}));
+ }
 }
 
 /* Authenticated on-page editing; all write actions are checked again by the Worker. */
@@ -7033,6 +7156,10 @@ async function undoOwnerEdit(){
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
     ownerEdits.pop();closeInlineEditor();
     if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
+    if(last.key.startsWith('guideedit.book.ui.label.')){
+     window.PandoraUILocale.setOverrides(override);
+     window.PandoraUILocale.apply(lang);
+    }
     await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
@@ -7324,6 +7451,10 @@ async function saveGuidePatchNow(key,fields){
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
   if(key==='wiki.labels')refreshVisibleWikiLabels();
+  if(key.startsWith('book.ui.label.')){
+   window.PandoraUILocale.setOverrides(override);
+   window.PandoraUILocale.apply(lang);
+  }
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
@@ -7759,10 +7890,12 @@ function renderCatalogStatus(){
   data.meta.counts.souls+(lang==='en'?' souls':' душ');
 }
 function applyGameLocale({redraw=true}={}){
+ window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
  renderArchiveNotice();
  renderCatalogStatus();
  renderOriginCopyLabels();
+ bindStaticUICopyEditors();
  window.PandoraAccountUI?.refresh?.();
  syncLocaleControls();
  if(!catalogSource)return;
@@ -7924,6 +8057,8 @@ async function refreshOwnerCatalog(){
 async function loadOverrides({strict=false}={}){try{
  const response=await apiRequest('/api/overrides',null,'');
  override=response.values||{};
+ window.PandoraUILocale.setOverrides(override);
+ window.PandoraUILocale.apply(lang);
  refreshVisibleWikiLabels();
  await refreshOwnerCatalog();
 }catch(error){

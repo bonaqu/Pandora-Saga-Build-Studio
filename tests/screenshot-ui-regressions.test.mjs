@@ -49,7 +49,8 @@ test('saved builds stay local until the user explicitly overwrites',()=>{
 });
 test('locale selection works before async catalog is available',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/function applyGameLocale\(\{redraw=true\}=\{\}\)\{\n window\.PandoraUILocale\.apply\(lang\)/);
+ assert.match(app,/window\.PandoraUILocale\.setOverrides\(override\)/);
+ assert.match(app,/window\.PandoraUILocale\.apply\(lang\)/);
  assert.match(app,/button\.setAttribute\('aria-pressed',String\(active\)\)/);
 });
 

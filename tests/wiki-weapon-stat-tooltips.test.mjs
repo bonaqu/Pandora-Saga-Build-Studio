@@ -10,21 +10,19 @@ const hint=root.PandoraItemPresentation.fieldHint;
 test('weapon physical attack tooltip explains what W actually measures (RU/EN)',()=>{
  const ru=hint('W','ru'),en=hint('W','en');
  assert.match(ru,/базовая физическая атака/i);
- assert.match(ru,/сил|заточк/i);
+ assert.equal(ru,'Базовая физическая атака оружия.');
  assert.match(en,/base physical attack/i);
- assert.match(en,/STR|refinement/i);
+ assert.equal(en,'Base physical attack of the weapon.');
 });
 
-test('PEN tooltip explains physical ATK spread, direction, and unverified armor interaction',()=>{
+test('PEN hint is concise and states only the observed physical ATK spread',()=>{
  const ru=hint('PEN','ru'),en=hint('PEN','en');
- assert.match(ru,/разброса физической АТК/i);
- assert.match(ru,/больше число — ниже минимум/i);
- assert.match(ru,/меньше — выше/i);
- assert.match(ru,/защиту цели не подтверждено/i);
- assert.match(en,/physical ATK spread/i);
- assert.match(en,/higher value means a lower minimum/i);
- assert.match(en,/lower value means a higher minimum/i);
- assert.match(en,/enemy defense are unconfirmed/i);
+ assert.match(ru,/разброс физической атаки/i);
+ assert.match(ru,/чем меньше пробитие, тем выше минимум/i);
+ assert.match(en,/physical attack spread/i);
+ assert.match(en,/lower penetration gives a higher minimum/i);
+ assert.doesNotMatch(ru,/защит|брон|не подтверждено|формул/i);
+ assert.doesNotMatch(en,/enemy defense|unconfirmed|formula/i);
  assert.doesNotMatch(ru,/точно пробивает|игнорирует защиту/i);
 });
 
@@ -43,8 +41,8 @@ test('PEN explanation agrees with observed Zephyr vs Piercing Pike ATK range',()
 });
 
 test('range tooltip explains attack distance, not generic "range of effect" (RU/EN)',()=>{
- assert.match(hint('range','ru'),/дальность атаки этим оружием/i);
- assert.match(hint('range','en'),/attack range of this weapon/i);
+ assert.equal(hint('range','ru'),'Базовая дальность атаки оружием.');
+ assert.equal(hint('range','en'),'Base weapon attack range.');
  assert.doesNotMatch(hint('range','ru'),/^Дальность действия$/);
  assert.doesNotMatch(hint('range','en'),/^Range$/);
 });
@@ -65,7 +63,10 @@ test('all encyclopedia item-stat hints have language-dependent meaningful fallba
 
 test('item encyclopedia field hover reads centralized translated hints',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/PandoraItemPresentation\.fieldHint\(key,lang\)/);
+ assert.match(app,/PandoraItemPresentation\.fieldHint\(key,lang,override\)/);
+ assert.match(app,/saveGuidePatch\('book\.'\+/);
+ assert.match(app,/class:'wiki-hint-pencil'/);
+ assert.match(app,/caption\.addEventListener\('dblclick',editHint\)/);
  assert.match(app,/title:hint,class:'wiki-help-word'/);
  assert.doesNotMatch(app,/PEN:'Показатель пробития оружия'/);
  assert.doesNotMatch(app,/range:'Дальность действия'/);

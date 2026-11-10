@@ -417,3 +417,25 @@
 .wiki-skill-edit-row .wiki-inline-input{
  min-width:0;width:100%;max-width:100%;padding:5px;font-size:12px;
 }
+
+
+/* Small on-page editor for D1-backed weapon-field hints. No modals. */
+.item-fields .wiki-help-label:has(.wiki-hint-pencil){
+ display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap
+}
+.wiki-hint-editable{cursor:text;text-decoration:underline dotted #947650;
+ text-underline-offset:3px;overflow-wrap:anywhere}
+.item-fields .wiki-hint-pencil{
+ flex:0 0 auto;min-width:20px;width:20px;height:20px;padding:0;
+ border:1px solid #80613e;border-radius:4px;background:#291f16;
+ color:#e4bf80;font-size:12px;line-height:1;cursor:pointer
+}
+.wiki-hint-pencil:hover,.wiki-hint-pencil:focus-visible{
+ background:#51381f;border-color:#e9bd7c;outline-offset:2px
+}
+.item-fields .wiki-help-label:has(.wiki-hint-inline-edit){grid-column:1 / -1}
+.item-fields .wiki-hint-inline-edit{display:block;flex:1 0 100%;min-width:0}
+.item-fields .wiki-hint-inline-edit .wiki-inline-input{
+ display:block;box-sizing:border-box;width:100%;max-width:100%;
+ min-height:32px;padding:6px 8px;font-size:12px;text-align:left
+}

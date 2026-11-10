@@ -39,6 +39,7 @@ import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
+import {runUIContentInlineSmoke} from './browser-ui-content-inline.mjs';
 import {runWikiOwnerEnglishSyncSmoke} from './browser-wiki-owner-english-sync.mjs';
 import {runWikiSpawnReplacementSmoke} from './browser-wiki-spawn-replace.mjs';
 import {runChestRewardLayoutSmoke} from './browser-chest-reward.mjs';
@@ -394,6 +395,7 @@ async function main(){
   ['effect-items',runEffectItemsSmoke],
   ['wiki-skill-filters',runWikiSkillFiltersSmoke],
   ['wiki-skill-label-editor',runWikiSkillLabelEditorSmoke],
+  ['ui-content-inline',runUIContentInlineSmoke],
   ['wiki-owner-english-sync',runWikiOwnerEnglishSyncSmoke],
   ['wiki-spawn-replace',runWikiSpawnReplacementSmoke],
   ['wiki-icons-offline',runWikiIconManifestFallbackSmoke],
@@ -403,7 +405,7 @@ async function main(){
  ];
  const quickCases=new Set(['build-account-gate','modal-keyboard','shared-library-import','draft-persistence-warning','guest-draft-continuity','share-link','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
-  'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
+  'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','ui-content-inline','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;
  const report=await runIndependentSmokes(selected,browser,base,{concurrency});
  console.log('Chromium '+(quick?'quick':'full')+' suite: '+

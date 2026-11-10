@@ -61,3 +61,22 @@
  display:block;margin:5px 2px 0;
  color:#cdb084;font:600 10px/1.25 Manrope,Arial,sans-serif
 }
+
+
+/* D1-backed interface labels: no modal dialogs or intrusive editor panels. */
+.ui-content-editable:not(button){cursor:text;text-decoration:underline dotted #8c7049;text-underline-offset:3px}
+.ui-content-pencil{
+ display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;
+ flex:0 0 auto;min-width:19px;width:19px;height:19px;padding:0;margin:0 3px;
+ border:1px solid #82643d;border-radius:3px;background:#302219;color:#e8c38a;
+ font-size:11px;line-height:1;cursor:pointer
+}
+.ui-content-pencil:hover,.ui-content-pencil:focus-visible{
+ background:#624226;border-color:#efc68a;outline-offset:2px
+}
+.ui-content-edit-host{display:inline-flex;min-width:96px;max-width:min(90vw,280px);align-items:center}
+.ui-content-edit-host .wiki-inline-input{
+ display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;
+ min-height:29px;padding:5px 7px;font-size:12px;text-align:left
+}
+.ui-content-pencil[hidden],.ui-content-edit-host[hidden]{display:none!important}

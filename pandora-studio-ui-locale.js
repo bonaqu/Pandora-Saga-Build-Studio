@@ -157,7 +157,30 @@ const english=Object.freeze({
  'Билд не сохранён: браузер не смог записать его. Текущий герой остался открытым. Освободи место в браузере и повтори.':'Build not saved: the browser could not store it. Your current character remains open. Free up browser space and try again.',
  'Новые билды сохранены в браузере · проверяем облако…':'New builds saved in this browser · checking cloud…'
 });
-function text(key,lang='ru'){return strings[key]?.[lang==='en'?1:0]||key}
+// Exact keys keep UI labels editable in the existing D1 overrides store.
+// Do not rewrite arbitrary game data, player names, error diagnostics or IDs.
+let contentOverrides={};
+function fieldKey(key){
+ if(!Object.hasOwn(strings,key))return null;
+ const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
+ return /^[a-z][a-z0-9-]{0,75}$/.test(slug)?'ui.label.'+slug:null;
+}
+function setOverrides(overrides){
+ contentOverrides=overrides&&typeof overrides==='object'&&!Array.isArray(overrides)?
+  overrides:{};
+}
+function text(key,lang='ru'){
+ const defaults=strings[key],id=fieldKey(key);
+ if(!defaults||!id)return key;
+ let edit=null;
+ try{
+  const value=contentOverrides['guideedit.book.'+id];
+  edit=typeof value==='string'?JSON.parse(value):null;
+ }catch{}
+ const field=lang==='en'?'en':'ru',saved=edit?.[field];
+ return typeof saved==='string'&&saved.trim()&&saved.length<=90?saved:defaults[lang==='en'?1:0];
+}
+function keys(){return Object.keys(strings)}
 function ui(value,lang='ru'){return lang==='en'?(english[value]||value):value}
 function apply(lang='ru',doc=typeof document==='undefined'?null:document){
  if(!doc)return;
@@ -187,5 +210,5 @@ function localize(root,lang='ru'){
   }
  }
 }
-root.PandoraUILocale=Object.freeze({text,ui,apply,localize});
+root.PandoraUILocale=Object.freeze({text,fieldKey,keys,setOverrides,ui,apply,localize});
 })(typeof window==='undefined'?globalThis:window);

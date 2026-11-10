@@ -15,6 +15,51 @@ test('exact user interface keys translate to English without rewriting unknown g
  assert.equal(locale.text('wiki','ru'),'📜 Энциклопедия');
  assert.equal(locale.text('wiki','en'),'📜 Encyclopedia');
 });
+test('all registered static interface labels support independent RU/EN D1 overrides',()=>{
+ assert.ok(locale.keys().length>=50);
+ const known=locale.fieldKey('heroLevel');
+ assert.equal(known,'ui.label.hero-level');
+ assert.equal(locale.fieldKey('unknown'),null);
+ locale.setOverrides({['guideedit.book.'+known]:JSON.stringify({
+  ru:'Уровень приключенца',en:'Adventurer level'
+ })});
+ assert.equal(locale.text('heroLevel','ru'),'Уровень приключенца');
+ assert.equal(locale.text('heroLevel','en'),'Adventurer level');
+ assert.equal(locale.text('wiki','ru'),'📜 Энциклопедия');
+ // Invalid payloads must never erase the bundled fallback.
+ locale.setOverrides({['guideedit.book.'+known]:'{invalid'});
+ assert.equal(locale.text('heroLevel','ru'),'Уровень героя');
+ locale.setOverrides({['guideedit.book.'+known]:JSON.stringify({
+  ru:'',en:'x'.repeat(91)})});
+ assert.equal(locale.text('heroLevel','ru'),'Уровень героя');
+ assert.equal(locale.text('heroLevel','en'),'Hero level');
+ locale.setOverrides({});
+});
+
+test('D1 edits update already mounted labels and accessibility attributes on locale apply',()=>{
+ const label={dataset:{i18n:'heroLevel'},textContent:''};
+ const action={dataset:{i18nAriaLabel:'profileAccess'},attrs:{},
+  setAttribute(key,value){this.attrs[key]=value}};
+ const doc={documentElement:{lang:'ru'},querySelectorAll(selector){
+  if(selector==='[data-i18n]')return [label];
+  if(selector==='[data-i18n-aria-label]')return [action];
+  return [];
+ }};
+ locale.setOverrides({
+  'guideedit.book.ui.label.hero-level':JSON.stringify({
+   ru:'Уровень героя 🗡',en:'Hero level 🗡'}),
+  'guideedit.book.ui.label.profile-access':JSON.stringify({
+   ru:'Вход на сайт',en:'Sign in to the site'})
+ });
+ locale.apply('ru',doc);
+ assert.equal(label.textContent,'Уровень героя 🗡');
+ assert.equal(action.attrs['aria-label'],'Вход на сайт');
+ locale.apply('en',doc);
+ assert.equal(label.textContent,'Hero level 🗡');
+ assert.equal(action.attrs['aria-label'],'Sign in to the site');
+ locale.setOverrides({});
+});
+
 test('static locale attributes update without touching user input values',()=>{
  const element={dataset:{i18nPlaceholder:'findSkill',i18nAriaLabel:'profileAccess'},
   attrs:{value:'My personal character'},setAttribute(k,v){this.attrs[k]=v;}};
