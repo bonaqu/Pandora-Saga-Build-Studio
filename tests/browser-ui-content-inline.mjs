@@ -112,7 +112,8 @@ export async function runUIContentInlineSmoke(browser,base){
    'Editing descriptive text must not erase the account username draft');
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
-  await page.locator('#profileTrigger').click();
+  if(!(await page.locator('#accountPanel').isVisible()))
+   await page.locator('#profileTrigger').click();
   const guestEn=page.locator('#accountPanel [data-owner-copy-key="accountGuestLead"]');
   await guestEn.waitFor({state:'visible'});
   assert.match(await guestEn.textContent(),/username and password/i);
