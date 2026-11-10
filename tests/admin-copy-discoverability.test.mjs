@@ -39,7 +39,7 @@ test('authoring pencil is visible for origin and main stage headings',()=>{
  assert.match(app,/node\.dataset\.pathCopyBound==='1'/);
  assert.match(app,/bindAccountCopyEditors\(root\)/);
  assert.match(app,/const authoredKey=statusKey\?\.startsWith\('status'\)/);
- assert.match(app,/statusKey&&adminEditing&&adminToken/);
+ assert.match(app,/authoredKey&&adminEditing&&adminToken/);
  assert.match(app,/data-owner-copy-key':authoredKey/);
 });
 
