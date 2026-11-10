@@ -28,7 +28,7 @@ test('profile/editor captions have stable bilingual D1 identifiers',()=>{
  const app=read('pandora-studio-app.js');
  for(const [key,[ru,en]] of Object.entries(labels)){
   const full='profile.'+key;
-  const saved={'guideedit.book.'+full:JSON.stringify({ru:'Изменённая подпись',en:'Updated caption'})};
+  const saved={['guideedit.book.'+full]:JSON.stringify({ru:'Изменённая подпись',en:'Updated caption'})};
   assert.equal(guide.validOverride('book.'+full,
    JSON.stringify({ru:'Изменённая подпись',en:'Updated caption'})),true);
   const result=guide.field(saved,full,ru,en);
