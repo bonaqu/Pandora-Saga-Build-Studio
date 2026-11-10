@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 export async function runUIContentInlineSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const context=await browser.newContext({viewport:{width:1100,height:810}});
+ // The results matrix exists only for an actual character. Start with a
+ // deliberately local, non-account QA build; no player data is fetched.
+ await context.addInitScript(()=>{
+  localStorage.setItem('ps-build-studio.v1',JSON.stringify({
+   race:1,gender:0,job:8,level:45,name:'Editorial UI QA',
+   stats:{'Сноровка':9},points:{archery:20},mastery:{},
+   equipment:{},souls:{},refinements:{},gems:{}
+  }));
+ });
  const values={},writes=[],errors=[];
  await context.route('**/*',route=>{
   const req=route.request(),url=req.url(),method=req.method();
@@ -67,6 +76,37 @@ export async function runUIContentInlineSmoke(browser,base){
   const originHeadingPencil=page.locator('.workspace>.left>.panel-heading [data-origin-edit-for="heading"]');
   await originHeadingPencil.waitFor({state:'visible'});
   assert.equal(await page.locator('#pathGrowthPage [data-path-copy-for]').count(),4);
+  // Edit a group heading and its help in the REAL Book. A D1 request must
+  // not unmount the active editor or accidentally fold the results section.
+  await page.waitForFunction(()=>
+   document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),
+   null,{timeout:25000});
+  await page.locator('#hero').click();
+  const firstGroup=page.locator('#stageBookPanel details.stage-result-section').first();
+  await firstGroup.waitFor({state:'visible'});
+  const bookActions=firstGroup.locator('summary .stage-guide-actions');
+  assert.equal(await bookActions.locator('button').count(),2);
+  await bookActions.locator('.stage-guide-edit-hint').click();
+  const bookHint=firstGroup.locator('summary [data-guide-key="summary.group.0"] [contenteditable]');
+  await bookHint.fill('Очки здоровья и маны героя');
+  await bookHint.press('Tab');
+  await page.waitForFunction(()=>
+   !document.querySelector('#stageBookPanel .stage-result-section-head [contenteditable]'),
+   null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).hintRu,
+   'Очки здоровья и маны героя');
+  assert.equal(await firstGroup.getAttribute('open'),'',
+   'Editing a help text must not collapse the native results disclosure');
+  await firstGroup.locator('summary .stage-guide-edit-name').click();
+  const bookTitle=firstGroup.locator('summary [data-guide-key="summary.group.0"] [contenteditable]');
+  await bookTitle.fill('Жизнь героя');
+  await bookTitle.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stageBookPanel .stage-result-section-head [data-guide-key="summary.group.0"]')
+   ?.textContent==='Жизнь героя',null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).ru,'Жизнь героя');
+  assert.equal(await firstGroup.getAttribute('open'),'');
+  await page.locator('#stageAttributes .stage-book-close').click();
   const wiki=page.locator('#nav [data-i18n="wiki"]');
   const pencil=page.locator('#nav [data-ui-content-for="wiki"]');
   await pencil.waitFor({state:'visible'});
@@ -110,7 +150,7 @@ export async function runUIContentInlineSmoke(browser,base){
   const penLabel=page.locator('.item-fields dt').filter({hasText:'Пробитие'});
   await penLabel.waitFor({state:'visible'});
   await penLabel.locator('.wiki-hint-pencil').click();
-  const field=penLabel.locator('.wiki-hint-inline-edit [contenteditable]');
+  const field=page.locator('.item-fields .wiki-item-field-inline-editor[data-editor-field="PEN"] [contenteditable]');
   await field.fill('Чем меньше пробитие, тем выше минимальная атака.');
   await field.press('Tab');
   await page.waitForFunction(()=>document.querySelector('.item-fields dt .wiki-help-word[title="Чем меньше пробитие, тем выше минимальная атака."]')!==null,null,
@@ -119,7 +159,7 @@ export async function runUIContentInlineSmoke(browser,base){
    'Чем меньше пробитие, тем выше минимальная атака.');
   const penBefore=await page.locator('.item-fields dt[data-item-field="PEN"] + dd').textContent();
   await penLabel.locator('.wiki-label-pencil').click();
-  const rename=penLabel.locator('.wiki-label-inline-edit [contenteditable]');
+  const rename=page.locator('.item-fields .wiki-item-field-inline-editor[data-editor-field="PEN"] [contenteditable]');
   await rename.fill('Потенциал атаки');
   await rename.press('Tab');
   await page.waitForFunction(()=>document.querySelector(

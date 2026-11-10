@@ -102,13 +102,34 @@ const statusCopy=Object.freeze({
  statusLocalDelete:['Билд удалён локально. Ссылки перестанут работать после синхронизации с облаком.','Build deleted locally. Links will stop working after cloud sync.'],
  statusDeleteRetryFailed:['Облако недоступно. Повторное удаление не удалось поставить в очередь — пока ссылка может работать.','Cloud unavailable. Could not queue another deletion attempt; the link may still work.'],
  statusSaveFailed:['Билд не сохранён: браузер не смог записать его. Текущий герой остался открытым. Освободи место в браузере и повтори.','Build not saved: the browser could not store it. Your current character remains open. Free up browser space and try again.'],
- statusImportsQueued:['Новые билды сохранены в браузере · проверяем облако…','New builds saved in this browser · checking cloud…']
+ statusImportsQueued:['Новые билды сохранены в браузере · проверяем облако…','New builds saved in this browser · checking cloud…'],
+ statusGuestHero:['Гостевой герой открыт, но ещё не сохранён в аккаунте. Открой «Мои билды» и нажми «Сохранить новый билд».','Guest hero is ready, but is not saved to your account yet. Open My Builds and select “Save new build”.'],
+ statusBuildOpenStorage:['Не удалось открыть билд: браузер не сохранил новый черновик. Освободи место и повтори.','Could not open the build: this browser could not save the new draft. Free up storage and try again.'],
+ statusBuildCorrupted:['Не удалось открыть билд: его сохранённые данные повреждены.','This saved build cannot be opened. Its data is incomplete.'],
+ statusBuildRestore:['Не удалось восстановить сохранённый билд.','This saved build could not be restored.'],
+ statusSharedAccountChanged:['Аккаунт изменился. Открой ссылку снова, чтобы выбрать нужный аккаунт.','Your account changed. Open the link again to select the correct account.'],
+ statusSharedLimit:['В библиотеке может быть до 200 билдов. Удали ненужные и повтори.','Your library holds up to 200 builds. Delete unused builds and try again.'],
+ statusSharedImportStorage:['Не удалось добавить билды: браузер не сохранил их. Освободи место и повтори.','Could not add builds: the browser could not save them. Free up space and retry.'],
+ statusSharedDeleted:['Владелец удалил этот билд. Ссылка больше не существует.','The owner deleted this build. The link is no longer available.'],
+ statusSharedLegacy:['Ссылка устарела. Попросите владельца поделиться билдом заново.','This link has expired. Ask the owner to share the build again.'],
+ statusSharedInvalid:['Ссылка на билд повреждена. Попросите владельца создать новую.','This build link is invalid. Ask the owner for a new link.'],
+ statusSharedNotFound:['Билд по ссылке не найден. Возможно, адрес неверный.','No build found for this link. Check the address.'],
+ statusSharedNetwork:['Не получилось загрузить билд. Проверь соединение и попробуй снова.','Could not load the shared build. Check your connection and try again.'],
+ statusItemDeleteLinked:['Сначала убери связанные монстров, NPC, добычу, разделы и ссылки на эту запись. Удаление с зависимостями заблокировано.','Remove linked monsters, NPCs, loot, sections and references before deleting this record.'],
+ statusNpcDeleteLinked:['Сначала убери ссылки на NPC из локаций и разделов.','Remove NPC references from maps and custom sections before deletion.']
 });
 const literalKeys=Object.freeze(Object.fromEntries(
  [...Object.entries(accountCopy),...Object.entries(libraryCopy),...Object.entries(statusCopy)]
   .map(([key,pair])=>[pair[0],key])));
+// Some static notifications are authored in the selected EN language before
+// being passed to the toast. Match their exact English defaults too; never
+// fall back to a fuzzy match against runtime server messages.
+const statusEnglishKeys=Object.freeze(Object.fromEntries(
+ Object.entries(statusCopy).map(([key,pair])=>[pair[1],key])));
 function literalKey(value){
- return typeof value==='string'&&Object.hasOwn(literalKeys,value)?literalKeys[value]:null;
+ if(typeof value!=='string')return null;
+ return Object.hasOwn(literalKeys,value)?literalKeys[value]:
+  (Object.hasOwn(statusEnglishKeys,value)?statusEnglishKeys[value]:null);
 }
 const english=Object.freeze({
  'Профиль':'Profile','Аккаунт':'Account','Войти или зарегистрироваться':'Sign in or register',

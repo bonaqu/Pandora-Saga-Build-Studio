@@ -98,25 +98,102 @@
 #accountPanel .account-copy-edit-host[hidden],
 #accountPanel .account-copy-pencil[hidden]{display:none!important}
 
-/* Explicit rename vs. explanation actions in the Hero Book editor. These
-   controls are absent for guests and do not change game calculations. */
+/* One anchored editorial toolbar per caption: no absolute positioning.
+   Align the label, two compact actions, and numeric value in separate tracks. */
+.stage-guide-actions{
+ display:inline-flex;align-items:center;justify-content:flex-end;
+ flex:0 0 auto;gap:3px;min-width:0;max-width:100%;margin-left:auto
+}
 .stage-guide-edit-name,.stage-guide-edit-hint{
- display:inline-flex;align-items:center;justify-content:center;
- flex:0 0 18px;width:18px;height:18px;min-width:18px;
- padding:0;margin:0 1px;border:1px solid #896b45;border-radius:4px;
- background:#302116;color:#eac38b;font:600 11px/1 Manrope,Arial,sans-serif;
- cursor:pointer;vertical-align:middle;transition:border-color .15s,background .15s
+ display:inline-grid;place-items:center;flex:0 0 22px;
+ width:22px;height:22px;min-width:22px;box-sizing:border-box;
+ padding:0;margin:0;border:1px solid #8b6c43;border-radius:5px;
+ background:#2b2018;color:#eac58f;
+ font:650 12px/1 Manrope,Arial,sans-serif;cursor:pointer;
+ transition:border-color .15s,background .15s
 }
 .stage-guide-edit-name:hover,.stage-guide-edit-name:focus-visible,
 .stage-guide-edit-hint:hover,.stage-guide-edit-hint:focus-visible{
- border-color:#f0c482;background:#563920;color:#ffe3b0;outline-offset:2px
+ border-color:#f0c482;background:#563b22;color:#ffe6b5;outline-offset:2px
 }
-.stage-result-tile:has(.stage-guide-edit-name){position:relative}
-.stage-result-tile>span[data-guide-key]{padding-right:42px}
-.stage-result-tile>.stage-guide-edit-name,.stage-result-tile>.stage-guide-edit-hint{
- position:absolute;top:5px;right:26px
+.stage-result-section-head>.stage-guide-actions{
+ margin-left:0;align-self:center;flex-shrink:0
 }
-.stage-result-tile>.stage-guide-edit-hint{right:5px}
+.stage-result-tile>span[data-guide-key]{
+ grid-column:1;grid-row:1;align-self:center;min-width:0;padding:0
+}
+.stage-result-tile>.stage-guide-actions{
+ grid-column:2;grid-row:1;justify-self:end;align-self:start
+}
+.stage-result-tile>strong{grid-column:1/-1;grid-row:2}
+.stage-result-section-head:has(.wiki-inline-input)>.stage-guide-actions,
+.stage-result-tile:has(.wiki-inline-input)>.stage-guide-actions,
+.stage-book-heading:has(.wiki-inline-input)>.stage-guide-actions{
+ visibility:hidden
+}
+.stage-result-section-head [data-guide-key] .wiki-inline-input,
+.stage-result-tile [data-guide-key] .wiki-inline-input{
+ width:100%;min-width:0;max-width:100%;font:500 11px Manrope,Arial,sans-serif
+}
+/* Avoid accidental implicit grid rows in attack/defense chapter metrics. */
+.stage-chapter-heading{
+ display:flex;align-items:center;gap:5px;min-width:0;flex-wrap:wrap
+}
+.stage-chapter-heading>strong{
+ flex:1 1 auto;min-width:0;font:600 18px/1.12 'Cormorant Garamond',Georgia,serif;
+ color:#f4d19a;overflow-wrap:anywhere
+}
+.stage-chapter-heading>.stage-guide-actions{margin-left:auto}
+.stage-chapter-label{
+ display:flex;align-items:center;flex-wrap:wrap;gap:4px;min-width:0
+}
+.stage-chapter-label>span{
+ font:500 11px/1.35 Manrope,Arial,sans-serif;color:#e1c7a5;
+ min-width:0;overflow-wrap:anywhere;flex:1 1 85px
+}
+.stage-chapter-label>.stage-guide-actions{margin-left:0}
+.stage-chapter-entry>.stage-chapter-label{min-width:0}
+.stage-chapter-entry>.stage-guide-actions{display:none}
+/* Buff groups remain multi-row grids; controls share their heading row. */
+.stage-book-buff-group:has(>.stage-guide-actions){
+ grid-template-columns:minmax(0,1fr) auto
+}
+.stage-book-buff-group:has(>.stage-guide-actions)>strong{grid-column:1;grid-row:1}
+.stage-book-buff-group:has(>.stage-guide-actions)>.stage-guide-actions{
+ grid-column:2;grid-row:1;align-self:center
+}
+.stage-book-buff-group:has(>.stage-guide-actions)>:not(strong):not(.stage-guide-actions){
+ grid-column:1/-1
+}
+/* Navigation arrows stay in the outer grid. The owner buttons use
+   the eyebrow's row; the full second row is reserved for the chapter title. */
+.stage-attribute-head .stage-book-heading{
+ display:grid;grid-template-columns:minmax(0,1fr) auto;
+ column-gap:4px;row-gap:2px;align-items:center;
+ min-width:0;max-width:100%;overflow:hidden
+}
+.stage-attribute-head .stage-book-heading>span:first-child{
+ grid-column:1;grid-row:1;min-width:0;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;text-align:left
+}
+.stage-attribute-head .stage-book-heading>strong{
+ grid-column:1/-1;grid-row:2;min-width:0;
+ font-size:21px;text-align:center
+}
+.stage-attribute-head .stage-book-heading>.stage-guide-actions{
+ display:inline-flex;grid-column:2;grid-row:1;
+ justify-self:end;align-self:center;margin-left:0
+}
+.stage-attribute-head>.stage-book-arrow,.stage-attribute-head>.stage-book-close{
+ position:relative;z-index:2
+}
+.stage-attributes,.stage-attribute-head .stage-book-close{
+ scroll-margin-top:96px
+}
+@media(max-width:430px){
+ .stage-guide-edit-name,.stage-guide-edit-hint{width:20px;height:20px;min-width:20px;flex-basis:20px}
+ .stage-chapter-label>span{flex-basis:65px;font-size:10px}
+}
 @media(prefers-reduced-motion:reduce){
  .stage-guide-edit-name,.stage-guide-edit-hint{transition:none}
 }

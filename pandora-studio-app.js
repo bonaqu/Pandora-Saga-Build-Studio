@@ -1458,7 +1458,12 @@ function renderStageAttributes(calculated=undefined){
   onItem:id=>openWiki('item',String(id)),
   copy:override,canEdit:Boolean(adminEditing&&adminToken),
   onTextEdit:(node,key,field,initial)=>editWikiValue(node,initial,{
-   type:'text',onCommit:value=>saveGuidePatch('book.'+key,{[field]:value})}),
+   type:'text',
+   onCommit:value=>saveGuidePatch('book.'+key,{[field]:value}),
+   // The editor must finish and restore its original label before the Book
+   // is refreshed; never unmount an input during its D1 save request.
+   onCommitted:()=>{if(stageAttributesPage&&!stageSlotPickerOpen)renderStageAttributes()}
+  }),
   onHonor:()=>openWiki('honor','overview'),
   onBuff:(key,value)=>setAttributeBuff(key,value),
   onVital:(key,value)=>setVitalsEnhancement(key,value),
@@ -3909,10 +3914,13 @@ function renderWiki(root){
       const recordKey='book.'+presentation.fieldHintKey(key);
       const editLabel=event=>{
        event.preventDefault();event.stopPropagation();
-       if(dt.querySelector('.wiki-label-inline-edit,.wiki-hint-inline-edit'))return;
-       const editorHost=h('span',{class:'wiki-label-inline-edit',text:fieldName});
+       if(dl.querySelector('.wiki-item-field-inline-editor'))return;
+       // Put the input in its own row across both dl columns. The numeric
+       // value stays aligned with the label while the owner types.
+       const editorHost=h('div',{class:'wiki-item-field-inline-editor wiki-label-inline-edit',
+        'data-editor-field':key,text:fieldName});
        const buttons=[...dt.querySelectorAll('.wiki-label-pencil,.wiki-hint-pencil')];
-       dt.append(editorHost);for(const button of buttons)button.hidden=true;
+       dd.after(editorHost);for(const button of buttons)button.hidden=true;
        editWikiValue(editorHost,fieldName,{
         type:'text',
         onCommit:async next=>{
@@ -3930,10 +3938,11 @@ function renderWiki(root){
       };
       const editHint=event=>{
        event.preventDefault();event.stopPropagation();
-       if(dt.querySelector('.wiki-hint-inline-edit,.wiki-label-inline-edit'))return;
-       const editorHost=h('span',{class:'wiki-hint-inline-edit',text:hint});
+       if(dl.querySelector('.wiki-item-field-inline-editor'))return;
+       const editorHost=h('div',{class:'wiki-item-field-inline-editor wiki-hint-inline-edit',
+        'data-editor-field':key,text:hint});
        const buttons=[...dt.querySelectorAll('.wiki-label-pencil,.wiki-hint-pencil')];
-       dt.append(editorHost);for(const button of buttons)button.hidden=true;
+       dd.after(editorHost);for(const button of buttons)button.hidden=true;
        editWikiValue(editorHost,hint,{
         type:'text',
         onCommit:async next=>{
@@ -7617,6 +7626,7 @@ async function saveGuidePatchNow(key,fields){
    key.startsWith('book.ui.label.account-')||
    key.startsWith('book.ui.label.library-')||
    key.startsWith('book.ui.label.status-'))saveView(); // leave inline editor mounted
+  else if(key.startsWith('book.'))saveView(); // refresh Book only after the input is restored
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }

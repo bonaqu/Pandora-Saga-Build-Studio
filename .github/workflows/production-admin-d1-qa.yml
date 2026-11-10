@@ -1,0 +1,45 @@
+name: Verified isolated production D1 admin edit (on source change or manual)
+
+on:
+  # Not a scheduled job. Runs on the one release that adds/changes the safe
+  # acceptance script; never on ordinary edits or every site publication.
+  push:
+    branches: [bonaqu_projects]
+    paths:
+      - 'scripts/check-production-admin-edit.mjs'
+      - '.github/workflows/production-admin-d1-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pandora-production-admin-d1-qa
+  cancel-in-progress: false
+
+jobs:
+  qa:
+    if: github.repository == 'bonaqu/Pandora-Saga-Build-Studio' && github.ref == 'refs/heads/bonaqu_projects'
+    runs-on: ubuntu-latest
+    timeout-minutes: 9
+    defaults:
+      run:
+        working-directory: worker
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: 57ac934cd0f0a7f5e8533177d612f893
+      PS_D1_DATABASE_ID: 0f8fbcd8-be06-414c-844b-a2091fdf6784
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+      - name: Verify exact Cloudflare target without exposing credentials
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN"
+          test "$CLOUDFLARE_ACCOUNT_ID" = '57ac934cd0f0a7f5e8533177d612f893'
+          test "$PS_D1_DATABASE_ID" = '0f8fbcd8-be06-414c-844b-a2091fdf6784'
+          node scripts/prepare-config.mjs
+          node --check ../scripts/check-production-admin-edit.mjs
+      - name: Validate live owner edit, readback, conflict, Undo and cleanup
+        run: node ../scripts/check-production-admin-edit.mjs --isolated-authorized
