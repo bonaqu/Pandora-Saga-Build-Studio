@@ -994,8 +994,14 @@ function editOriginCopyLabel(node,key,ru,en){
   }});
 }
 function renderOriginCopyLabels(){
- for(const [selector,key,ru,en] of originFixedLabels)
-  originCopyLabel(document.querySelector(selector),key,ru,en);
+ for(const [selector,key,ru,en] of originFixedLabels){
+  const node=document.querySelector(selector);
+  // Plain Origin titles and subheads need a real touch-accessible pencil.
+  // Navigation tabs already own their click actions: keep those untouched.
+  const pencilHost=node?.matches?.('h2')||node?.closest?.('.subhead')?
+   node.parentElement:null;
+  originCopyLabel(node,key,ru,en,{pencilHost});
+ }
 }
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
@@ -6910,7 +6916,7 @@ function bindStaticUICopyEditors(){
   const key=node.dataset.i18n,id=locale.fieldKey(key);
   if(!id||node.matches('option')||node.id==='originRaceName'||
    node.id==='pathGrowthTab'||node.id==='pathSkillsTab'||
-   node.dataset.originCopyBound==='1')continue;
+   node.dataset.originCopyBound==='1'||node.dataset.pathCopyBound==='1')continue;
   const button=node.closest('button,[role="button"]');
   const target=button||node;
   if(target.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
@@ -6948,7 +6954,9 @@ function bindStaticUICopyEditors(){
    node.dataset.uiContentBound='1';
    if(!button)node.addEventListener('dblclick',edit);
   }
-  if(button&&!oldPencil?.dataset?.uiContentFor){
+  // Headings were technically editable by a hidden double-click, but had
+  // no discoverable touch control. Buttons keep their existing pencil.
+  if((button||node.matches('h2,h3'))&&!oldPencil?.dataset?.uiContentFor){
    const pencil=h('button',{type:'button',
     class:'ui-content-pencil','data-ui-content-for':key,
     text:'✎',title:(lang==='en'?'Edit label':'Изменить надпись'),
