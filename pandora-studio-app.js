@@ -7794,7 +7794,8 @@ async function saveGuidePatchNow(key,fields){
   if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
-  if(activeTab==='wiki'&&wikiSelection.type==='honor'){
+  if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
+     !key.startsWith('book.catalog-sync.')){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
    if(pane)pane.scrollTop=position;
