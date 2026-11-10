@@ -196,6 +196,11 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     await panel.waitFor({state:'hidden'});
     await page.locator('#profileTrigger').click();
     await panel.waitFor({state:'visible'});
+    // Account rendering and focus restoration can finish after the panel
+    // first becomes visible; check the final accessible expanded state.
+    await page.waitForFunction(()=>
+     document.querySelector('#profileTrigger')?.getAttribute('aria-expanded')==='true',
+     null,{timeout:12000});
     assert.equal(await page.locator('#profileTrigger')
      .getAttribute('aria-expanded'),'true');
    }
