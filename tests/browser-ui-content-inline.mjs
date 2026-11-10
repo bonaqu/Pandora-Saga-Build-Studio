@@ -92,6 +92,10 @@ export async function runUIContentInlineSmoke(browser,base){
    {timeout:12000});
   assert.equal(JSON.parse(values['guideedit.book.wiki.item-field.pen']).hintRu,
    'Чем меньше пробитие, тем выше минимальная атака.');
+  // Leave the existing Encyclopedia detail workbench before opening the
+  // account UI: a modal workbench correctly intercepts background clicks.
+  if(await page.locator('#detailPanel.is-open').count())
+   await page.locator('#dockClose').click();
   // Dynamic account panel is rebuilt independently of the main planner.
   // Author edits remain inside the existing panel without touching forms.
   await page.locator('#profileTrigger').click();
