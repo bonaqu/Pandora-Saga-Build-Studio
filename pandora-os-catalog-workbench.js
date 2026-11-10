@@ -3,7 +3,45 @@
 
   // Administrator-only review. UI selection is never a D1 write.
   // The Worker validates the auth token and the expected active snapshot.
-  async function open({request, apiBase, modal, h, afterPublish}) {
+  async function open({request, apiBase, modal, h, afterPublish,
+    lang='ru',canEdit=false,copyLabel,editLabel}) {
+    const tr=(ru,en)=>lang==='en'?en:ru;
+    const copy=(key,ru,en)=>copyLabel?.(key,ru,en)||tr(ru,en);
+    // Only fixed author text, never a game ID, API status or comparison value.
+    const authored=(tag,attrs,key,ru,en)=>{
+      const node=h(tag,{...attrs,text:copy(key,ru,en)});
+      if(canEdit)editLabel?.(node,key,ru,en);
+      return node;
+    };
+    // Publishing a catalog must never run when a pencil is pressed:
+    // place the editor BESIDE the action, not inside its clickable button.
+    const action=(button,key,ru,en)=>{
+      button.textContent=copy(key,ru,en);
+      if(!canEdit||typeof editLabel!=='function')return button;
+      const wrap=h('span',{class:'os-sync-action-editor'});
+      const host=h('span',{class:'os-sync-action-edit-host',hidden:true});
+      const pencil=h('button',{type:'button',class:'os-sync-owner-pencil',
+        text:'✎',title:tr('Переименовать','Rename'),
+        'aria-label':tr('Переименовать: ','Rename: ')+button.textContent});
+      editLabel(host,key,ru,en,{
+        onCommitted:next=>{
+          button.textContent=next;
+          pencil.setAttribute('aria-label',tr('Переименовать: ','Rename: ')+next);
+        },
+        onFinished:()=>{button.hidden=false;pencil.hidden=false;host.hidden=true}
+      });
+      for(const [keyName,value] of Object.entries({
+        ownerCopySection:'catalog-sync',ownerCopyId:key,
+        ownerCopyRu:ru,ownerCopyEn:en}))button.dataset[keyName]=value;
+      pencil.addEventListener('click',event=>{
+        event.preventDefault();event.stopPropagation();
+        if(!button.isConnected)return;
+        button.hidden=true;pencil.hidden=true;host.hidden=false;
+        host.textContent=copy(key,ru,en);
+        host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+      });
+      wrap.append(button,pencil,host);return wrap;
+    };
     // Reuse the game's hover/focus helper. Tooltip text is static, never from D1.
     const hint=(node,description)=>{
       root.PandoraGuideTooltip?.attach(node,description,{hoverDelay:1000});
@@ -17,8 +55,10 @@
 
     const view = h('div', {class:'os-sync'});
     const intro = h('div',{class:'os-sync-intro'},[
-      h('strong',{text:'Обновление игрового каталога'}),
-      h('p',{text:'Проверка получает открытые JSON с сайта pandorasaga-os.com через Cloudflare Worker и сравнивает их с опубликованным каталогом Build Studio в D1. Она не ищет файлы на твоём компьютере и не подключается напрямую к игровому серверу.'})
+      authored('strong',{},'title','Обновление игрового каталога','Game catalog updates'),
+      authored('p',{},'introExplanation',
+       'Проверка получает открытые JSON с сайта pandorasaga-os.com через Cloudflare Worker и сравнивает их с опубликованным каталогом Build Studio в D1. Она не ищет файлы на твоём компьютере и не подключается напрямую к игровому серверу.',
+       'The Cloudflare Worker retrieves public JSON from pandorasaga-os.com and compares it with the Build Studio catalog published in D1. It never accesses files on your computer or connects directly to the game client.')
     ]);
     const actions = h('div', {class:'os-sync-actions'});
     const live = h('button', {type:'button',class:'button-action primary os-sync-main-check',
@@ -28,9 +68,11 @@
     hint(live,'Получить 17 общедоступных файлов JSON с pandorasaga-os.com через Cloudflare Worker, сравнить с опубликованным каталогом Build Studio в D1. Не читает файлы на ПК, не обращается к клиенту игры и не сохраняет изменения автоматически.');
     hint(archive,'Сравнить D1 с JSON-файлами, которые уже сохранены в GitHub Pages Build Studio. Это архив проекта, а НЕ новые данные с сайта игры. Может содержать более старые характеристики.');
     const archiveChoice=h('details',{class:'os-sync-archive-choice'},[
-      h('summary',{text:'Если сайт игры не отдаёт данные'}),
-      h('p',{text:'Архивная сверка берёт файлы из репозитория Build Studio, а не с pandorasaga-os.com. Она не проверяет свежесть игрового сервера. Не применяй её результаты как заведомо актуальные.'}),
-      archive
+      h('summary',{text:copy('archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable')}),
+      authored('p',{},'archiveExplanation',
+       'Архивная сверка берёт файлы из репозитория Build Studio, а не с pandorasaga-os.com. Она не проверяет свежесть игрового сервера. Не применяй её результаты как заведомо актуальные.',
+       'Archive comparison reads the Build Studio repository rather than pandorasaga-os.com. It cannot confirm that game server data is current. Do not treat archive differences as verified live updates.'),
+      action(archive,'archiveButton','Сверить с сохранённой копией','Compare saved snapshot')
     ]);
     const acceptAll = h('button', {type:'button',class:'button-action',text:'Выбрать понятные изменения',disabled:true});
     const declineAll = h('button', {type:'button',class:'button-action',text:'Снять весь выбор',disabled:true});
@@ -65,14 +107,22 @@
     const reviewSteps=h('section',{class:'os-sync-review-steps'});
     reviewSteps.hidden=true;
     reviewSteps.append(
-      h('p',{text:'Сравни игровые значения «было → стало». Отметь только проверенные изменения. Служебные сведения и непонятные параметры не выбираются автоматически.'}),
-      h('div',{class:'os-sync-review-actions'},[acceptAll,declineAll,publish])
+      authored('p',{},'reviewExplanation',
+       'Сравни игровые значения «было → стало». Отметь только проверенные изменения. Служебные сведения и непонятные параметры не выбираются автоматически.',
+       'Compare old and new game values, then select only verified changes. Unknown parameters and technical metadata are never selected automatically.'),
+      h('div',{class:'os-sync-review-actions'},[
+       action(acceptAll,'acceptAllButton','Выбрать понятные изменения','Select understood changes'),
+       action(declineAll,'declineAllButton','Снять весь выбор','Clear selection'),
+       action(publish,'publishButton','Применить выбранные изменения','Publish selected changes')
+      ])
     );
     const formattingToggle=h('input',{type:'checkbox',disabled:true,
       'aria-label':'Синхронизировать переносы игровых описаний'});
     const formattingLabel=h('span',{text:'Привести переносы строк в описаниях к виду игрового сайта'});
-    const formattingInfo=h('p',{class:'muted os-sync-formatting-info',
-      text:'Доступно после сверки с игровым сайтом. Не изменяет характеристики, названия или эффекты. Действие выполняется только после подтверждения публикации.'});
+    const formattingInfo=authored('p',{class:'muted os-sync-formatting-info'},
+     'formattingExplanation',
+     'Доступно после сверки с игровым сайтом. Не изменяет характеристики, названия или эффекты. Действие выполняется только после подтверждения публикации.',
+     'Available after checking the live game site. Does not change stats, names or effects. Only runs after a separate publish confirmation.');
     const formattingOption=h('label',{class:'os-sync-formatting-option'},
       [formattingToggle,formattingLabel]);
     const formattingReview=h('div',{class:'os-sync-formatting-review',hidden:true},
@@ -81,8 +131,10 @@
     const russianToggle=h('input',{type:'checkbox',disabled:true,
       'aria-label':'Добавить проверенные русские описания подземелий в D1'});
     const russianLabel=h('span',{text:'Добавить русские описания подземелий'});
-    const russianInfo=h('p',{class:'muted os-sync-formatting-info',
-      text:'Тексты взяты из сохранённой копии проекта. Публикация только после отдельного подтверждения.'});
+    const russianInfo=authored('p',{class:'muted os-sync-formatting-info'},
+     'russianDescriptionExplanation',
+     'Тексты взяты из сохранённой копии проекта. Публикация только после отдельного подтверждения.',
+     'These texts come from the saved project snapshot. Publication requires separate confirmation.');
     const russianList=h('div',{class:'os-sync-russian-list'});
     const russianDetails=h('details',{class:'os-sync-russian-preview'},[
       h('summary',{text:'Посмотреть русские тексты'}),russianList
@@ -92,13 +144,21 @@
     const russianReview=h('div',{class:'os-sync-formatting-review',hidden:true},
       [russianOption,russianInfo,russianDetails]);
     reviewSteps.append(russianReview);
-    const metaStatus=h('p',{class:'muted os-sync-meta-status',
-      text:'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.'});
+    const metaStatus=authored('p',{class:'muted os-sync-meta-status'},'checksumExplanation',
+     'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.',
+     'Game file checksums verify data origin and integrity; they are not item or monster statistics.');
     const advanced=h('details',{class:'os-sync-advanced'},[
       h('summary',{text:'Дополнительные инструменты'}),
       metaStatus,
-      h('p',{text:'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.'}),
-      h('div',{class:'os-sync-advanced-actions'},[testWrite,testCAS,github,exportButton])
+      authored('p',{},'advancedExplanation',
+       'Проверка сохранения не обновляет данные игры. GitHub фиксирует уже опубликованную версию, а скачивание позволяет вручную изучить изменения.',
+       'Testing D1 writes does not update game data. GitHub can record an already-published revision; downloads are for manual review.'),
+      h('div',{class:'os-sync-advanced-actions'},[
+       action(testWrite,'testWriteButton','Проверить сохранение правок','Test D1 writes'),
+       action(testCAS,'testCasButton','Проверить конфликты правок','Test edit conflicts'),
+       action(github,'githubButton','Создать PR в GitHub','Create GitHub PR'),
+       action(exportButton,'exportButton','Скачать выбранное для GitHub','Download selected for GitHub')
+      ])
     ]);
     for(const [node,description] of [
       [acceptAll,'Выбрать только изменения, которые удалось расшифровать, исключив непонятные параметры и служебные сведения. Это не публикация.'],
@@ -112,7 +172,8 @@
       [archiveChoice.querySelector('summary'),'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.'],
       [advanced.querySelector('summary'),'Необязательные операции: тест записи D1, экспорт и предложение изменений GitHub.']
     ])hint(node,description);
-    actions.append(live,archiveChoice,reviewSteps,advanced);
+    actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
+     archiveChoice,reviewSteps,advanced);
     view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,filters,overview,search,results);
     for(const element of [filters,overview,search,results])element.hidden=true;
 
@@ -897,7 +958,7 @@
     declineAll.onclick=()=>{chosen.clear();render()};
     search.addEventListener('input',render);
     refreshActions();
-    modal('Обновление игрового каталога',view);
+    modal(copy('title','Обновление игрового каталога','Game catalog updates'),view);
   }
 
   root.PandoraOSCatalogWorkbench=Object.freeze({open});
