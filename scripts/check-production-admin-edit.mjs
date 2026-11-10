@@ -71,7 +71,6 @@ async function run(){
  const first=JSON.stringify({ru:'Временная QA-надпись',en:'Disposable QA caption'});
  const second=JSON.stringify({ru:'Изменённая QA-надпись',en:'Updated disposable QA caption'});
  const expires=Date.now()+180000;
- let hasSession=false;
  console.log('Production admin API / D1: begin isolated create, CAS, readback, reset, cleanup.');
  try{
   const health=await call('GET','/api/health',null);
@@ -83,7 +82,6 @@ async function run(){
   // impersonated and no real owner account or session is ever read.
   query('INSERT INTO sessions(token_hash,expires) VALUES ('+
    escapeSql(sessionHash)+','+expires+')');
-  hasSession=true;
   expect(await call('POST','/api/admin/override',bearer,{
    key,value:first,expectedValue:null}),200,'Create editorial override');
   const publicCopy=expect(await call('GET','/api/overrides',null),
@@ -109,8 +107,7 @@ async function run(){
   for(let attempt=0;attempt<3&&!cleaned;attempt++){
    try{
     query('DELETE FROM overrides WHERE key='+escapeSql(key));
-    if(hasSession)
-     query('DELETE FROM sessions WHERE token_hash='+escapeSql(sessionHash));
+    query('DELETE FROM sessions WHERE token_hash='+escapeSql(sessionHash));
     const editRows=query('SELECT COUNT(*) AS count FROM overrides WHERE key='+
      escapeSql(key));
     const sessionRows=query('SELECT COUNT(*) AS count FROM sessions WHERE token_hash='+
