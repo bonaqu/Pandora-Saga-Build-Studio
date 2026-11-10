@@ -296,10 +296,13 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
    text:'✎',title:english?'Rename label':'Переименовать подпись',
    'aria-label':english?'Rename '+label:'Переименовать '+label,
    onclick:editName});
-  // Two unambiguous actions: rename display label or edit its explanation.
-  // Both use the same existing D1 record with separate ru/en/hintRu/hintEn.
-  node.after(hintPencil);
-  node.after(namePencil);
+  // Keep the two actions in one stable toolbar instead of two free
+  // siblings: title, controls and disclosure arrow have separate tracks.
+  // The D1 record still stores independent ru/en/hintRu/hintEn values.
+  const actions=make('span',{class:'stage-guide-actions',
+   role:'group','aria-label':english?'Edit field label':'Редактирование надписи'});
+  actions.append(namePencil,hintPencil);
+  node.after(actions);
  }
  return node;
 }
@@ -875,17 +878,21 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
  for(const group of groups){
   const section=make('section',{class:'stage-attribute-row stage-chapter-group',
    'data-chapter-group':group.key});
+  const heading=make('div',{class:'stage-chapter-heading'});
   const title=make('strong',{text:english?group.en:group.ru});
-  section.append(title);
+  heading.append(title);section.append(heading);
   guideLabel(title,(options.page||'attack')+'.group.'+group.key,group.ru,group.en,options);
   const grid=make('div',{class:'stage-chapter-grid'});
   for(const row of group.rows){
+   const labelSlot=make('div',{class:'stage-chapter-label'},[
+    make('span',{text:english?row.en:row.ru})
+   ]);
    const entry=make('div',{class:'stage-chapter-entry','data-chapter-stat':row.key},[
-    make('span',{text:english?row.en:row.ru}),
+    labelSlot,
     make('strong',{text:number.format(row.value)+
      (row.unit===' инд.'?(english?' idx':' инд.'):row.unit)})
    ]);
-   guideLabel(entry.firstChild,(options.page||'attack')+'.'+row.key,
+   guideLabel(labelSlot.firstChild,(options.page||'attack')+'.'+row.key,
     row.ru,row.en,options);
    grid.append(entry);
   }
