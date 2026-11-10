@@ -39,6 +39,36 @@ const strings={
  known:['Доступные','Available'],locked:['Недоступные','Unavailable'],
  closeDock:['✕ Закрыть','✕ Close'],heroBook:['Открыть книгу результатов героя','Open hero results book']
 };
+// Owner-editable account copy: stable semantic keys, not user-input or server errors.
+// Runtime username, password, recovery code and security checks remain untouched.
+const accountCopy=Object.freeze({
+ accountGuestTitle:['Аккаунт','Account'],
+ accountProfileTitle:['Профиль','Profile'],
+ accountPending:['Проверяем учётную запись…','Checking your account…'],
+ accountGuestLead:['Логин и пароль — для доступа к сохранённым облачным билдам.','Your username and password give access to your saved cloud builds.'],
+ accountProfileLead:['Сохранённые билды доступны после входа на другом устройстве.','Saved builds are available after signing in on another device.'],
+ accountStorageWarning:['Браузер не сохранил вход. После обновления страницы потребуется войти снова. Сохраните резервный код, если он показан.','The browser could not save this sign-in. You will need to sign in again after refreshing. Save the recovery code if it is shown.'],
+ accountIdentity:['УЧЁТНАЯ ЗАПИСЬ','ACCOUNT'],
+ accountCloudNote:['Облачные билды привязаны к вашему профилю','Cloud builds belong to your account'],
+ accountRecoveryHeading:['Сохраните резервный код вне браузера','Save the recovery code outside this browser'],
+ accountRecoveryWarning:['Без пароля или этого кода вернуть доступ к аккаунту нельзя.','Without your password or this code you cannot recover account access.'],
+ accountRecoveryExpiry:['Код доступен до обновления страницы или подтверждения сохранения.','The code remains visible until you refresh the page or confirm you saved it.'],
+ accountCopyCode:['Скопировать код','Copy code'],
+ accountSavedCode:['Я сохранил код','I have saved the code'],
+ accountPasswordHeading:['Изменить пароль','Change password'],
+ accountSignOut:['Выйти из аккаунта','Sign out of account'],
+ accountSignIn:['Войти','Sign in'],
+ accountRegister:['Регистрация','Register'],
+ accountRecover:['Восстановить','Recover'],
+ accountCreate:['Создать аккаунт','Create account'],
+ accountResetPassword:['Восстановить пароль','Reset password'],
+ accountFootnote:['Без электронной почты и СМС. После регистрации сохраните резервный код.','No email or SMS. Save your recovery code after registering.']
+});
+const literalKeys=Object.freeze(Object.fromEntries(Object.entries(accountCopy)
+ .map(([key,pair])=>[pair[0],key])));
+function literalKey(value){
+ return typeof value==='string'&&Object.hasOwn(literalKeys,value)?literalKeys[value]:null;
+}
 const english=Object.freeze({
  'Профиль':'Profile','Аккаунт':'Account','Войти или зарегистрироваться':'Sign in or register',
  'Проверяем учётную запись…':'Checking your account…',
@@ -161,7 +191,7 @@ const english=Object.freeze({
 // Do not rewrite arbitrary game data, player names, error diagnostics or IDs.
 let contentOverrides={};
 function fieldKey(key){
- if(!Object.hasOwn(strings,key))return null;
+ if(!Object.hasOwn(strings,key)&&!Object.hasOwn(accountCopy,key))return null;
  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
  return /^[a-z][a-z0-9-]{0,75}$/.test(slug)?'ui.label.'+slug:null;
 }
@@ -170,7 +200,7 @@ function setOverrides(overrides){
   overrides:{};
 }
 function text(key,lang='ru'){
- const defaults=strings[key],id=fieldKey(key);
+ const defaults=strings[key]||accountCopy[key],id=fieldKey(key);
  if(!defaults||!id)return key;
  let edit=null;
  try{
@@ -178,10 +208,14 @@ function text(key,lang='ru'){
   edit=typeof value==='string'?JSON.parse(value):null;
  }catch{}
  const field=lang==='en'?'en':'ru',saved=edit?.[field];
- return typeof saved==='string'&&saved.trim()&&saved.length<=90?saved:defaults[lang==='en'?1:0];
+ const max=Object.hasOwn(accountCopy,key)?350:90;
+ return typeof saved==='string'&&saved.trim()&&saved.length<=max?saved:defaults[lang==='en'?1:0];
 }
-function keys(){return Object.keys(strings)}
-function ui(value,lang='ru'){return lang==='en'?(english[value]||value):value}
+function keys(){return [...Object.keys(strings),...Object.keys(accountCopy)]}
+function ui(value,lang='ru'){
+ const id=literalKey(value);
+ return id?text(id,lang):lang==='en'?(english[value]||value):value;
+}
 function apply(lang='ru',doc=typeof document==='undefined'?null:document){
  if(!doc)return;
  const locale=lang==='en'?'en':'ru';
@@ -210,5 +244,5 @@ function localize(root,lang='ru'){
   }
  }
 }
-root.PandoraUILocale=Object.freeze({text,fieldKey,keys,setOverrides,ui,apply,localize});
+root.PandoraUILocale=Object.freeze({text,fieldKey,keys,literalKey,setOverrides,ui,apply,localize});
 })(typeof window==='undefined'?globalThis:window);
