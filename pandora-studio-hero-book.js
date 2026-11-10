@@ -393,6 +393,13 @@ function summaryPage(body,calc,options={}){
   guideLabel(heading.lastChild,'summary.group.'+groupIndex,
    group.ru,group.en,options);
   heading.append(make('span',{class:'stage-result-chevron','aria-hidden':'true',text:'⌄'}));
+  // Update immediately on mouse or keyboard disclosure, before a live
+  // calculator rerender can replace the native details node.
+  heading.addEventListener('click',event=>{
+   if(event.defaultPrevented)return;
+   if(section.open)collapsedSummaryGroups.add(groupIndex);
+   else collapsedSummaryGroups.delete(groupIndex);
+  });
   const grid=make('div',{class:'stage-result-grid'});
   for(const result of group.rows){
    const text=result.display??(Number.isFinite(result.value)?
@@ -1031,6 +1038,13 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  // a newly animated pane used to reset scroll/focus and visibly flash the Book.
  const stablePanel=target.querySelector?.('.stage-book-page');
  const reusePanel=stablePanel?.dataset.bookVisible===page;
+ if(reusePanel&&page==='summary')
+  for(const node of stablePanel.querySelectorAll?.('details.stage-result-section')||[]){
+   const index=Number(node.dataset.resultIndex);
+   if(!Number.isInteger(index)||index<0||index>3)continue;
+   if(node.open)collapsedSummaryGroups.delete(index);
+   else collapsedSummaryGroups.add(index);
+  }
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
   for(const child of [...target.children])if(child!==stablePanel)child.remove();
