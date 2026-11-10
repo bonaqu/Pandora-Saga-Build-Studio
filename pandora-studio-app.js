@@ -7156,6 +7156,10 @@ async function undoOwnerEdit(){
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
     ownerEdits.pop();closeInlineEditor();
     if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
+    if(last.key.startsWith('guideedit.book.ui.label.')){
+     window.PandoraUILocale.setOverrides(override);
+     window.PandoraUILocale.apply(lang);
+    }
     await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
