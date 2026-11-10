@@ -14,7 +14,7 @@ test('D1 book guide schema supports independent encyclopedia hint RU and EN',()=
  assert.equal(items.fieldHintKey('PEN'),key);
  assert.equal(guide.validOverride('book.'+key,
   JSON.stringify({hintRu:'Новый русский текст',hintEn:'New English text'})),true);
- const overrides={'guideedit.book.'+key:
+ const overrides={['guideedit.book.'+key]:
   JSON.stringify({hintRu:'Новый русский текст',hintEn:'New English text'})};
  assert.equal(items.fieldHint('PEN','ru',overrides),'Новый русский текст');
  assert.equal(items.fieldHint('PEN','en',overrides),'New English text');
