@@ -7615,7 +7615,8 @@ async function saveGuidePatchNow(key,fields){
   }else if(key==='wiki.labels')saveView();
   else if(key.startsWith('book.origin.')||
    key.startsWith('book.ui.label.account-')||
-   key.startsWith('book.ui.label.library-'))saveView(); // leave inline editor mounted
+   key.startsWith('book.ui.label.library-')||
+   key.startsWith('book.ui.label.status-'))saveView(); // leave inline editor mounted
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
