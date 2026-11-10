@@ -6895,7 +6895,7 @@ function bindStaticUICopyEditors(){
    editWikiValue(host,current,{
     type:'text',
     onCommit:async next=>{
-     if(next.length>90)throw Error(wt('Надпись слишком длинная','Label is too long'));
+     if(next.length>90)throw Error((lang==='en'?'Label is too long':'Надпись слишком длинная'));
      await saveGuidePatch('book.'+id,{[lang]:next});
     },
     onCommitted:next=>{node.textContent=next},
@@ -6912,8 +6912,8 @@ function bindStaticUICopyEditors(){
   if(button&&!oldPencil?.dataset?.uiContentFor){
    const pencil=h('button',{type:'button',
     class:'ui-content-pencil','data-ui-content-for':key,
-    text:'✎',title:wt('Изменить надпись','Edit label'),
-    'aria-label':wt('Изменить надпись: ','Edit label: ')+locale.text(key,lang),
+    text:'✎',title:(lang==='en'?'Edit label':'Изменить надпись'),
+    'aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+locale.text(key,lang),
     onclick:edit});
    target.after(pencil);
   }
@@ -6946,7 +6946,7 @@ function bindStaticUICopyEditors(){
    editWikiValue(host,current,{
     type:'text',
     onCommit:async next=>{
-     if(next.length>90)throw Error(wt('Надпись слишком длинная','Label is too long'));
+     if(next.length>90)throw Error((lang==='en'?'Label is too long':'Надпись слишком длинная'));
      await saveGuidePatch('book.'+id,{[lang]:next});
     },
     onFinished:()=>{node.hidden=false;host.remove();if(editButton)editButton.hidden=false}
@@ -6954,8 +6954,8 @@ function bindStaticUICopyEditors(){
   };
   node.after(h('button',{type:'button',class:'ui-content-pencil',
    'data-ui-content-for':key,text:'✎',onclick:edit,
-   title:wt('Изменить подсказку','Edit hint'),
-   'aria-label':wt('Изменить подсказку: ','Edit hint: ')+locale.text(key,lang)}));
+   title:(lang==='en'?'Edit hint':'Изменить подсказку'),
+   'aria-label':(lang==='en'?'Edit hint: ':'Изменить подсказку: ')+locale.text(key,lang)}));
  }
 }
 
