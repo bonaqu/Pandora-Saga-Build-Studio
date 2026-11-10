@@ -63,10 +63,11 @@ test('all encyclopedia item-stat hints have language-dependent meaningful fallba
 
 test('item encyclopedia field hover reads centralized translated hints',()=>{
  const app=read('pandora-studio-app.js');
- assert.match(app,/PandoraItemPresentation\.fieldHint\(key,lang,override\)/);
+ assert.match(app,/presentation\.fieldHint\(key,lang,override\)/);
+ assert.match(app,/presentation\.fieldLabel\(key,lang,override\)/);
  assert.match(app,/saveGuidePatch\('book\.'\+/);
  assert.match(app,/class:'wiki-hint-pencil'/);
- assert.match(app,/caption\.addEventListener\('dblclick',editHint\)/);
+ assert.match(app,/caption\.addEventListener\('dblclick',editLabel\)/);
  assert.match(app,/title:hint,class:'wiki-help-word'/);
  assert.doesNotMatch(app,/PEN:'Показатель пробития оружия'/);
  assert.doesNotMatch(app,/range:'Дальность действия'/);

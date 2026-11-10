@@ -152,7 +152,7 @@ async function main(){
  assert.equal(await page.locator('#stage-guide-tooltip').isVisible(),false,
   'Group heading must not display placeholder help');
  const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
- assert.equal(await guideLabels.count(),48,'43 result hints, four group headers and one editable caption');
+ assert.equal(await guideLabels.count(),47,'43 result hints and four group headers (duplicate caption removed)');
  await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
  // A scrolling chapter must not permanently cancel a delayed hover hint.
  await page.locator('#stageBookPanel').evaluate(node=>{node.scrollTop+=1});
@@ -250,7 +250,8 @@ async function main(){
  assert.match(await page.locator('#originPassives .origin-passive.selected').getAttribute('aria-label'),/selected/);
  await page.locator('#hero').click();
  await page.locator('#stageAttributes [data-book-page="summary"]').waitFor({state:'visible'});
- assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Calculated results'),true);
+ assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Vitals and recovery'),true);
+ assert.equal(await page.locator('#stageBookPanel .stage-result-intro').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),43);
  assert.equal(await page.locator('#stageBookPanel .stage-result-section-head button').count(),0);
  assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');

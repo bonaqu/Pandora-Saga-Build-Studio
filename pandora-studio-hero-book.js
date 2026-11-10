@@ -288,7 +288,8 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
    text:'✎',title:english?'Edit tooltip':'Изменить подсказку',
    'aria-label':english?'Edit tooltip for '+label:'Изменить подсказку: '+label,
    onclick:event=>{
-    event.stopPropagation();root.PandoraGuideTooltip?.dismiss();
+    event.preventDefault();event.stopPropagation();
+    root.PandoraGuideTooltip?.dismiss();
     options.onTextEdit(node,key,english?'hintEn':'hintRu',hint||'');
    }});
   // Pencil is a separate control so editing a hint never changes a stat label.
@@ -300,6 +301,9 @@ const bookPages=Object.freeze([
  ['summary','Результаты расчёта'],['attack','Атака'],['defense','Защита'],
  ['buffs','Усиления'],['effects','Эффекты умений'],['recovery','Эффекты зелий']
 ]);
+// Remember only the reader's collapsed groups while the Book is mounted.
+// All four groups are expanded on first visit; this state is UI-only.
+const collapsedSummaryGroups=new Set();
 // Keep the source-backed Hero Book results in one ordered matrix.
 // A missing calculator branch stays unknown (—), never a fabricated zero.
 function summaryRows(calc){
@@ -369,21 +373,33 @@ function summaryPage(body,calc,options={}){
    'Stats appear after game data loads.':
    'Параметры появятся после загрузки игровых данных.'}));return}
  const en=document.documentElement?.lang==='en';
- body.append(make('div',{class:'stage-result-intro'},[
-  make('strong',{text:en?'Calculated results':'Результаты расчёта'})
- ]));
  const format=new Intl.NumberFormat(en?'en-US':'ru-RU',{maximumFractionDigits:2});
  let summaryIndex=0,summaryGroupIndex=0;
  for(const group of summaryRows(calc)){
-  const section=make('section',{class:'stage-result-section',
-   'data-result-group':group.page});
-  // Modern Set.Status has its own matrix; this is not a shortcut to
-  // Attack/Defense, which display different Set.ATK/Set.RES fields.
-  const heading=make('div',{class:'stage-result-section-head'},[
+  const groupIndex=summaryGroupIndex++;
+  const section=make('details',{class:'stage-result-section',
+   'data-result-group':group.page,'data-result-index':groupIndex});
+  section.open=!collapsedSummaryGroups.has(groupIndex);
+  section.addEventListener('toggle',()=>{
+   if(section.open)collapsedSummaryGroups.delete(groupIndex);
+   else collapsedSummaryGroups.add(groupIndex);
+  });
+  // Built-in details/summary provides accessible, keyboard-operable
+  // disclosure and keeps every verified combat calculation unchanged.
+  const heading=make('summary',{class:'stage-result-section-head'},[
    make('span',{class:'stage-result-symbol','aria-hidden':'true',text:group.symbol}),
    make('strong',{text:en?group.en:group.ru})
   ]);
-  guideLabel(heading.lastChild,'summary.group.'+summaryGroupIndex++,group.ru,group.en,options);
+  guideLabel(heading.lastChild,'summary.group.'+groupIndex,
+   group.ru,group.en,options);
+  heading.append(make('span',{class:'stage-result-chevron','aria-hidden':'true',text:'⌄'}));
+  // Update immediately on mouse or keyboard disclosure, before a live
+  // calculator rerender can replace the native details node.
+  heading.addEventListener('click',event=>{
+   if(event.defaultPrevented)return;
+   if(section.open)collapsedSummaryGroups.add(groupIndex);
+   else collapsedSummaryGroups.delete(groupIndex);
+  });
   const grid=make('div',{class:'stage-result-grid'});
   for(const result of group.rows){
    const text=result.display??(Number.isFinite(result.value)?
@@ -986,7 +1002,6 @@ function defensePage(body,calc,english,options={}){
 // Stable text identities: editing a caption never mutates the game skill or
 // item catalog. Details retain their live record counts after localization.
 const chapterCaptionSpecs=Object.freeze([
- ['summary','results','.stage-result-intro > strong','Результаты расчёта','Calculated results'],
  ['effects','healing','.stage-healing-spells > strong','Лечащие умения','Healing skills'],
  ['effects','periodic','.stage-periodic-recovery > summary','Восстановление каждые 2 секунды','Recovery every 2 seconds'],
  ['effects','songs','.stage-song-skills > summary','Песни для выбранного класса','Songs available to this class'],
@@ -1023,6 +1038,13 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  // a newly animated pane used to reset scroll/focus and visibly flash the Book.
  const stablePanel=target.querySelector?.('.stage-book-page');
  const reusePanel=stablePanel?.dataset.bookVisible===page;
+ if(reusePanel&&page==='summary')
+  for(const node of stablePanel.querySelectorAll?.('details.stage-result-section')||[]){
+   const index=Number(node.dataset.resultIndex);
+   if(!Number.isInteger(index)||index<0||index>3)continue;
+   if(node.open)collapsedSummaryGroups.delete(index);
+   else collapsedSummaryGroups.add(index);
+  }
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
   for(const child of [...target.children])if(child!==stablePanel)child.remove();

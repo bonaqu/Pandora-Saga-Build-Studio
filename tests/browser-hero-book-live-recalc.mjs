@@ -35,6 +35,23 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   assert.equal(await numeric('Шанс крита'),1);
   const chapter=page.locator('#stageAttributes [data-book-page="summary"]');
   assert.equal(await chapter.getAttribute('aria-selected'),'true');
+  // Four accessible results sections start OPEN and may be collapsed
+  // independently with native keyboard disclosure; no duplicate intro.
+  const groups=page.locator('#stageBookPanel details.stage-result-section');
+  assert.equal(await groups.count(),4);
+  assert.equal(await page.locator('#stageBookPanel .stage-result-intro').count(),0);
+  for(let i=0;i<4;i++)assert.equal(await groups.nth(i).getAttribute('open'),'');
+  const first=groups.first();
+  await first.locator('summary').click();
+  assert.equal(await first.getAttribute('open'),null);
+  assert.equal(await groups.nth(1).getAttribute('open'),'');
+  await first.locator('summary').focus();
+  await page.keyboard.press('Enter');
+  assert.equal(await first.getAttribute('open'),'');
+  // Change a stat while a section is collapsed: the Book rerenders
+  // totals, but remembers the user's chosen disclosure state.
+  await groups.nth(2).locator('summary').click();
+  assert.equal(await groups.nth(2).getAttribute('open'),null);
 
   // Spy on the real calculator without changing its return values. Previously
   // Origin and the open Book independently repeated the full base() pass.
@@ -49,6 +66,10 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   assert.ok((await page.evaluate(()=>window.__psCalculationCalls))<=2,
    'Editing one stat must not run the same combat calculator again just for the Book');
   assert.equal(await numeric('Шанс крита'),2,'10 DEX did not update OPEN Book');
+  assert.equal(await groups.nth(2).getAttribute('open'),null,
+   'Results accordion should retain collapse during live character calculation');
+  await groups.nth(2).locator('summary').click();
+  assert.equal(await groups.nth(2).getAttribute('open'),'');
   await dex.fill('20');await dex.press('Tab');
   assert.equal(await numeric('Шанс крита'),3,'20 DEX did not update OPEN Book');
   assert.equal(await chapter.getAttribute('aria-selected'),'true','Book chapter changed on stat update');

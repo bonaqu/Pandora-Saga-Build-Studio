@@ -3881,33 +3881,65 @@ function renderWiki(root){
       [[wt('Слоты душ','Soul slots'),rec.soulslot,'soulslot']]:[])
     ];
     for(const [label,value,key]of itemFields)if(value!=null){
-     let hint=window.PandoraItemPresentation.fieldHint(key,lang,override)||label;
-     const caption=h('span',{text:label,title:hint,class:'wiki-help-word'});
-     const dt=h('dt',{class:'wiki-help-label'},[caption]);
-     if(adminEditing&&adminToken&&window.PandoraItemPresentation.fieldHintKey(key)){
+     const presentation=window.PandoraItemPresentation;
+     let fieldName=presentation.fieldLabel(key,lang,override)||label;
+     let hint=presentation.fieldHint(key,lang,override)||fieldName;
+     const caption=h('span',{text:fieldName,title:hint,class:'wiki-help-word'});
+     const dt=h('dt',{class:'wiki-help-label','data-item-field':key},[caption]);
+     if(adminEditing&&adminToken&&presentation.fieldHintKey(key)){
+      const recordKey='book.'+presentation.fieldHintKey(key);
+      const editLabel=event=>{
+       event.preventDefault();event.stopPropagation();
+       if(dt.querySelector('.wiki-label-inline-edit,.wiki-hint-inline-edit'))return;
+       const editorHost=h('span',{class:'wiki-label-inline-edit',text:fieldName});
+       const buttons=[...dt.querySelectorAll('.wiki-label-pencil,.wiki-hint-pencil')];
+       dt.append(editorHost);for(const button of buttons)button.hidden=true;
+       editWikiValue(editorHost,fieldName,{
+        type:'text',
+        onCommit:async next=>{
+         if(next.length>90)throw Error(wt('Название слишком длинное','Label is too long'));
+         await saveGuidePatch(recordKey,{[lang==='en'?'en':'ru']:next});
+        },
+        onCommitted:next=>{
+         fieldName=next;caption.textContent=next;
+         const pencil=dt.querySelector('.wiki-label-pencil');
+         if(pencil)pencil.setAttribute('aria-label',
+          wt('Переименовать: ','Rename: ')+next);
+        },
+        onFinished:()=>{editorHost.remove();for(const button of buttons)button.hidden=false}
+       });
+      };
       const editHint=event=>{
        event.preventDefault();event.stopPropagation();
-       if(dt.querySelector('.wiki-hint-inline-edit'))return;
+       if(dt.querySelector('.wiki-hint-inline-edit,.wiki-label-inline-edit'))return;
        const editorHost=h('span',{class:'wiki-hint-inline-edit',text:hint});
-       const pencil=dt.querySelector('.wiki-hint-pencil');
-       dt.append(editorHost);if(pencil)pencil.hidden=true;
+       const buttons=[...dt.querySelectorAll('.wiki-label-pencil,.wiki-hint-pencil')];
+       dt.append(editorHost);for(const button of buttons)button.hidden=true;
        editWikiValue(editorHost,hint,{
         type:'text',
         onCommit:async next=>{
          if(next.length>220)throw Error(wt('Подсказка слишком длинная','Hint is too long'));
          const field=lang==='en'?'hintEn':'hintRu';
-         await saveGuidePatch('book.'+
-          window.PandoraItemPresentation.fieldHintKey(key),{[field]:next});
+         await saveGuidePatch(recordKey,{[field]:next});
         },
         onCommitted:next=>{hint=next;caption.title=next},
-        onFinished:()=>{editorHost.remove();if(pencil)pencil.hidden=false}
+        onFinished:()=>{editorHost.remove();for(const button of buttons)button.hidden=false}
        });
       };
-      caption.classList.add('wiki-hint-editable');
-      caption.addEventListener('dblclick',editHint);
+      caption.classList.add('wiki-label-editable');
+      caption.tabIndex=0;
+      caption.setAttribute('aria-keyshortcuts','F2');
+      caption.addEventListener('dblclick',editLabel);
+      caption.addEventListener('keydown',event=>{
+       if(event.key==='F2'){editLabel(event)}
+      });
+      dt.append(h('button',{type:'button',class:'wiki-label-pencil',
+       text:'✎',title:wt('Переименовать поле','Rename field label'),
+       'aria-label':wt('Переименовать: ','Rename: ')+fieldName,
+       onclick:editLabel}));
       dt.append(h('button',{type:'button',class:'wiki-hint-pencil',
-       text:'✎',title:wt('Изменить подсказку','Edit hint'),
-       'aria-label':wt('Изменить подсказку: ','Edit hint: ')+label,
+       text:'?',title:wt('Изменить подсказку','Edit hint'),
+       'aria-label':wt('Изменить подсказку: ','Edit hint: ')+fieldName,
        onclick:editHint}));
      }
      const dd=h('dd',{text:String(value),class:adminEditing&&adminToken?'wiki-edit-value':''});

@@ -163,6 +163,26 @@ const itemFieldHints=Object.freeze({
  range:['Базовая дальность атаки оружием.','Base weapon attack range.'],
  soulslot:['Количество слотов для душ: от 0 до 3','Number of Soul sockets: 0 to 3']
 });
+// Labels and hints share a D1 record but are independent editorial fields.
+// Only the label changes; the item's numerical W/PEN/AC and internal IDs remain intact.
+const itemFieldLabels=Object.freeze({
+ kind:['Тип','Type'],
+ level:['Уровень','Level'],
+ W:['Атака','Attack'],
+ PEN:['Пробитие','Penetration'],
+ AC:['Защита','Defense'],
+ atkspeed:['Скорость атаки','Attack speed'],
+ range:['Дальность','Range'],
+ soulslot:['Слоты душ','Soul slots']
+});
+function fieldLabel(key,lang='ru',overrides={}){
+ const defaults=itemFieldLabels[key],id=fieldHintKey(key);
+ if(!defaults||!id)return null;
+ const field=lang==='en'?'en':'ru';
+ const result=root.PandoraHonorGuide?.field(overrides,id,defaults[0],defaults[1]);
+ return typeof result?.[field]==='string'&&result[field].trim()?
+  result[field]:defaults[lang==='en'?1:0];
+}
 // Existing D1 overrides (guideedit.book.*) are the canonical owner-edit path.
 // Defaults remain in the public bundle so offline/archive mode stays readable.
 function fieldHintKey(key){
@@ -176,6 +196,6 @@ function fieldHint(key,lang='ru',overrides={}){
   defaults[0],defaults[1])?.[locale];
  return typeof saved==='string'&&saved.trim()?saved:defaults[lang==='en'?1:0];
 }
-root.PandoraItemPresentation=Object.freeze({kind,fieldHint,fieldHintKey,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
+root.PandoraItemPresentation=Object.freeze({kind,fieldLabel,fieldHint,fieldHintKey,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
  kindOptions:(lang='ru')=>Object.entries(lang==='en'?namesEn:names).map(([value,label])=>({value,label}))});
 })(typeof window==='undefined'?globalThis:window);

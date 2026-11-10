@@ -25,6 +25,12 @@ export async function runModalKeyboardSmoke(browser,base){
    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0,
     null,{timeout:30000});
+   // The carousel mounts before asynchronous archive catalog bootstrap has
+   // finished its initial draft persistence. Wait for the ready state so
+   // a later startup write is never mistaken for an Escape-dialog write.
+   await page.waitForFunction(()=>
+    document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),
+    null,{timeout:30000});
    // Open from the normal editor, not from the separate My Builds backdrop:
    // a header control remains focusable while the link dialog is shown.
    const opener=page.locator('#profileTrigger');
