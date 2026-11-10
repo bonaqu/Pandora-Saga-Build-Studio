@@ -6874,6 +6874,7 @@ function bindStaticUICopyEditors(){
    node.dataset.originCopyBound==='1')continue;
   const button=node.closest('button,[role="button"]');
   const target=button||node;
+  if(target.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
   const oldPencil=target.nextElementSibling;
   if(!canEdit){
    node.classList.remove('ui-content-editable');
@@ -6916,6 +6917,45 @@ function bindStaticUICopyEditors(){
     onclick:edit});
    target.after(pencil);
   }
+ }
+ // Placeholder, title and aria-label tooltips on actual controls use the same
+ // locale key and D1 save path. Do not add decoration to layout containers.
+ for(const node of document.querySelectorAll(
+  '[data-i18n-placeholder],[data-i18n-title],[data-i18n-aria-label]')){
+  if(node.hasAttribute('data-i18n')||
+   !node.matches('button,input,select,[role="button"]'))continue;
+  const key=node.dataset.i18nTitle||node.dataset.i18nPlaceholder||
+   node.dataset.i18nAriaLabel,id=locale.fieldKey(key);
+  if(!id)continue;
+  const pencil=node.nextElementSibling;
+  if(!canEdit){
+   if(pencil?.dataset?.uiContentFor===key)pencil.remove();
+   continue;
+  }
+  if(pencil?.dataset?.uiContentFor===key||
+   pencil?.classList?.contains('ui-content-edit-host'))continue;
+  const edit=event=>{
+   event.preventDefault();event.stopPropagation();
+   if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
+   const current=locale.text(key,lang);
+   const host=h('span',{class:'ui-content-edit-host',text:current});
+   node.after(host);node.hidden=true;
+   const editButton=host.nextElementSibling?.dataset?.uiContentFor===key?
+    host.nextElementSibling:null;
+   if(editButton)editButton.hidden=true;
+   editWikiValue(host,current,{
+    type:'text',
+    onCommit:async next=>{
+     if(next.length>90)throw Error(wt('Надпись слишком длинная','Label is too long'));
+     await saveGuidePatch('book.'+id,{[lang]:next});
+    },
+    onFinished:()=>{node.hidden=false;host.remove();if(editButton)editButton.hidden=false}
+   });
+  };
+  node.after(h('button',{type:'button',class:'ui-content-pencil',
+   'data-ui-content-for':key,text:'✎',onclick:edit,
+   title:wt('Изменить подсказку','Edit hint'),
+   'aria-label':wt('Изменить подсказку: ','Edit hint: ')+locale.text(key,lang)}));
  }
 }
 
