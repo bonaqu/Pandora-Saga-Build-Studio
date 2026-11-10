@@ -5843,7 +5843,9 @@ function renderCharacter(root){
     profileCopyLabel('overview-level','Уровень','Level'),
     h('strong',{text:String(state.level)})]));
   body.append(cards);
-  const racialTitle=h('div',{class:'subhead',text:'✦ '+(lang==='en'?'Racial passive — choose one':'Расовая пассивка — выбери одну из трёх')});
+  const racialTitle=h('div',{class:'subhead'});
+  racialTitle.append(h('span',{text:'✦'}),profileCopyLabel('racial-heading',
+   'Расовая пассивка — выбери одну из трёх','Racial passive — choose one'));
   const passivePicker=h('div',{class:'race-passive-picker'});
   const passives=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
   if(!passives.length)passivePicker.append(h('p',{class:'muted',text:Number.isInteger(state.race)?tr('Загружаю расовые способности…','Loading racial abilities…'):tr('Выберите расу','Choose a race')}));
@@ -5861,7 +5863,9 @@ function renderCharacter(root){
     passivePicker.append(button);
   }
   body.append(racialTitle,passivePicker);
-  body.append(h("p",{class:"muted",text:tr("Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет.","Train skills in Hero Path and allocate attributes in Origin; these values have no duplicate editor here.")}));
+  body.append(profileCopyNote('overview-help',
+   'Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет.',
+   'Train skills in Hero Path and allocate attributes in Origin; these values have no duplicate editor here.'));
   const jump=h("div",{class:"ps-overview-actions"});
   jump.append(h("button",{class:"button-action",text:tr("⚔ Путь героя · умения","⚔ Hero Path · skills"),onclick:()=>{
    closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
