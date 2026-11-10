@@ -57,8 +57,9 @@ test('partial or missing combat data never fabricates a completed positional out
   assert.equal(rowFor({combat:{accuracy:{known:11}}},label).value,null,label);
  }
  const heroBook=read('pandora-studio-hero-book.js');
- assert.match(heroBook,/text:en\?'Calculated results':'Результаты расчёта'/,
-  'English results heading must match the established browser locale contract');
+ assert.match(heroBook,/\['summary','Результаты расчёта'\]/,
+  'The results chapter keeps its localized tab even without duplicate intro');
+ assert.doesNotMatch(heroBook,/stage-result-intro/);
  assert.doesNotMatch(heroBook,/позиционные бонусы и активные эффекты OS ещё не полностью проверены/);
  assert.match(heroBook,/row\('Точн. спереди','Front accuracy',c.frontAccuracy\?\.known\)/);
 });
