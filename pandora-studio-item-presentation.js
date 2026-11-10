@@ -153,26 +153,29 @@ function restoreReferences(edited,source,lookupItem,lang='ru'){
 const itemFieldHints=Object.freeze({
  kind:['Игровая категория предмета','Game item category'],
  level:['Уровень предмета','Item level'],
- W:[
-  'Базовая физическая атака оружия. Бонусы от СИЛ, заточки и усилений учитываются в итоговой АТК персонажа.',
-  'Base physical attack of the weapon. STR, refinement and other bonuses affect the character’s final ATK.'
- ],
+ W:['Базовая физическая атака оружия.','Base physical attack of the weapon.'],
  PEN:[
-  'Параметр разброса физической АТК. При одинаковом максимуме АТК и мастерстве больше число — ниже минимум; меньше — выше. Влияние на защиту цели не подтверждено.',
-  'Physical ATK spread. At the same maximum ATK and weapon mastery, a higher value means a lower minimum; a lower value means a higher minimum. Effects on enemy defense are unconfirmed.'
+  'Влияет на разброс физической атаки: при одинаковом максимуме и мастерстве чем меньше пробитие, тем выше минимум.',
+  'Affects physical attack spread: at the same maximum and mastery, lower penetration gives a higher minimum.'
  ],
  AC:['Защита предмета','Item defense'],
  atkspeed:['Скорость атаки оружием','Weapon attack speed'],
- range:[
-  'Базовая дальность атаки этим оружием. Бонусы навыков и экипировки могут увеличивать итоговую дальность.',
-  'Base attack range of this weapon. Skills and equipment may increase the final attack range.'
- ],
+ range:['Базовая дальность атаки оружием.','Base weapon attack range.'],
  soulslot:['Количество слотов для душ: от 0 до 3','Number of Soul sockets: 0 to 3']
 });
-function fieldHint(key,lang='ru'){
- const value=itemFieldHints[key];
- return value?value[lang==='en'?1:0]:null;
+// Existing D1 overrides (guideedit.book.*) are the canonical owner-edit path.
+// Defaults remain in the public bundle so offline/archive mode stays readable.
+function fieldHintKey(key){
+ return Object.hasOwn(itemFieldHints,key)?'wiki.item-field.'+key.toLowerCase():null;
 }
-root.PandoraItemPresentation=Object.freeze({kind,fieldHint,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
+function fieldHint(key,lang='ru',overrides={}){
+ const defaults=itemFieldHints[key],id=fieldHintKey(key);
+ if(!defaults||!id)return null;
+ const locale=lang==='en'?'hintEn':'hintRu';
+ const saved=root.PandoraHonorGuide?.field(overrides,id,'','',
+  defaults[0],defaults[1])?.[locale];
+ return typeof saved==='string'&&saved.trim()?saved:defaults[lang==='en'?1:0];
+}
+root.PandoraItemPresentation=Object.freeze({kind,fieldHint,fieldHintKey,slotLabel,description,descriptionSegments,descriptionText,restoreReferences,setReferenceResolver,displayName,
  kindOptions:(lang='ru')=>Object.entries(lang==='en'?namesEn:names).map(([value,label])=>({value,label}))});
 })(typeof window==='undefined'?globalThis:window);
