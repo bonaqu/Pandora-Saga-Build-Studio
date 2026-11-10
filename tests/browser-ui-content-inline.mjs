@@ -51,6 +51,22 @@ export async function runUIContentInlineSmoke(browser,base){
    .fill('Correct admin password!');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+  // A real pencil must exist beside fixed headers on touchscreens. Renaming
+  // the Hero Appearance heading is editorial copy, not a character change.
+  const appearancePencil=page.locator('.stage .panel-heading [data-ui-content-for="appearance"]');
+  await appearancePencil.waitFor({state:'visible'});
+  await appearancePencil.click();
+  const appearanceInput=page.locator('.stage .panel-heading .ui-content-edit-host [contenteditable]');
+  await appearanceInput.fill('Облик героя');
+  await appearanceInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#stageHeading')?.textContent===
+   'Облик героя',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.appearance']).ru,'Облик героя');
+  const pathTitlePencil=page.locator('.right .panel-heading [data-ui-content-for="path"]');
+  await pathTitlePencil.waitFor({state:'visible'});
+  const originHeadingPencil=page.locator('.workspace>.left>.panel-heading [data-origin-edit-for="heading"]');
+  await originHeadingPencil.waitFor({state:'visible'});
+  assert.equal(await page.locator('#pathGrowthPage [data-path-copy-for]').count(),4);
   const wiki=page.locator('#nav [data-i18n="wiki"]');
   const pencil=page.locator('#nav [data-ui-content-for="wiki"]');
   await pencil.waitFor({state:'visible'});
