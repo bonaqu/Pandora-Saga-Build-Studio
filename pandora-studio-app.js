@@ -7216,6 +7216,25 @@ function refreshOwnerUI(){
  });
  update(root);
 }
+// Update only author-edited interface copy. Redrawing the whole game
+// catalog on Undo would discard active build names and confirmation states.
+function refreshVisibleUICopy(recordKey){
+ const locale=window.PandoraUILocale;
+ locale.setOverrides(override);
+ locale.apply(lang);
+ if(!recordKey.startsWith('guideedit.book.ui.label.library-'))return;
+ const id=recordKey.slice('guideedit.book.'.length);
+ for(const node of document.querySelectorAll('#detailContent [data-owner-copy-key]')){
+  const key=node.dataset.ownerCopyKey;
+  if(locale.fieldKey(key)!==id||node.hidden||
+   node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
+  const value=locale.text(key,lang);
+  node.textContent=value;
+  const pencil=node.nextElementSibling;
+  if(pencil?.dataset?.ownerCopyPencil===key)
+   pencil.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+ }
+}
 async function undoOwnerEdit(){
   if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)return;
   const last=ownerEdits[ownerEdits.length-1];
@@ -7226,12 +7245,12 @@ async function undoOwnerEdit(){
     ownerEdits.pop();closeInlineEditor();
     if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
     if(last.key.startsWith('guideedit.book.ui.label.')){
-     window.PandoraUILocale.setOverrides(override);
-     window.PandoraUILocale.apply(lang);
+     refreshVisibleUICopy(last.key);
      if(last.key.startsWith('guideedit.book.ui.label.account-'))
       window.PandoraAccountUI?.refresh?.();
-    }
-    await refreshOwnerCatalog();
+     // UI copy does not affect catalogs or builds; preserve active inputs.
+     saveView();
+    }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
 }
@@ -7522,19 +7541,8 @@ async function saveGuidePatchNow(key,fields){
   await apiRequest('/api/admin/override',{key:overrideKey,value:serialized});
   override[overrideKey]=serialized;ownerEdits.push({key:overrideKey,before,after:serialized});
   if(key==='wiki.labels')refreshVisibleWikiLabels();
-  if(key.startsWith('book.ui.label.')){
-   const locale=window.PandoraUILocale;
-   locale.setOverrides(override);
-   locale.apply(lang);
-   // Repeated built-in library captions share one key. Update other
-   // mounted occurrences without rebuilding a card or discarding edits.
-   if(key.startsWith('book.ui.label.library-'))
-    for(const node of document.querySelectorAll('[data-owner-copy-key]')){
-     if(locale.fieldKey(node.dataset.ownerCopyKey)!==key.slice(5)||node.hidden||
-      node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
-     node.textContent=locale.text(node.dataset.ownerCopyKey,lang);
-    }
-  }
+  if(key.startsWith('book.ui.label.'))
+   refreshVisibleUICopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();

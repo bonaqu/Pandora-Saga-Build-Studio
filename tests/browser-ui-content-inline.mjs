@@ -210,7 +210,23 @@ export async function runUIContentInlineSmoke(browser,base){
    ru:'✧ Сохранить персонажа',en:'✧ Save character'
   });
   assert.equal(writes.filter(x=>x.key===libraryKey).length,2);
+  // Undoing the last English UI edit must not redraw the build library:
+  // unsaved text in the name field belongs to the user, not the D1 editor.
+  const activeName=page.locator('#detailContent .build-name-input');
+  await activeName.fill('Unsent character name');
+  const originalInput=await activeName.elementHandle();
+  await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#detailContent [data-owner-copy-key="librarySaveNew"]')?.textContent===
+   '✧ Save new build',null,{timeout:12000});
+  assert.equal(await activeName.inputValue(),'Unsent character name');
+  assert.equal(await originalInput.evaluate(node=>node.isConnected),true,
+   'Undoing UI text must not remount the saved-build library');
+  assert.equal(JSON.parse(values[libraryKey]).ru,'✧ Сохранить персонажа');
+  assert.equal(JSON.parse(values[libraryKey]).en,undefined);
+  await originalInput.dispose();
   assert.deepEqual(errors,[]);
-  console.log('Chromium D1 inline UI/Wiki/account/library RU+EN: blur, CAS, locale switch passed');
+  console.log('Chromium D1 inline UI/Wiki/account/library RU+EN: blur, CAS, locale and no-redraw Undo passed');
  }finally{await context.close()}
 }
