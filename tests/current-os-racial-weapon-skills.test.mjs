@@ -62,10 +62,10 @@ test('source-backed racial weapon bonuses contribute to final ATK only for match
   assert.ok(after.racialWeapon);
   assert.equal(after.racialWeapon.flat,spec.flat);
   assert.equal(after.racialWeapon.percent,spec.percent);
-  const expected=spec.flat+Math.ceil(before.attack.raw*spec.percent/100);
+  const expected=spec.flat+Math.floor(before.attack.raw*spec.percent/100);
   assert.equal(after.attack.racialBonus,expected);
   assert.equal(after.attack.known,before.attack.known+expected,
-   'Matching passive changes final ATK using the Legacy per-bonus ceiling');
+   'Matching passive changes final ATK using the OS per-bonus floor');
   const wrong=C.combatPreview({...opts,weapon:items[spec.misses[0]],racialPassiveId:spec.id});
   const wrongBase=C.combatPreview({...opts,weapon:items[spec.misses[0]]});
   assert.equal(wrong.attack.known,wrongBase.attack.known,
@@ -88,7 +88,7 @@ test('Enkidu Dragoon Strong arms raises attack for a two-handed spear',()=>{
  const none=C.combatPreview(opts);
  const strong=C.combatPreview({...opts,racialPassiveId:900050002});
  assert.equal(strong.racialWeapon.matchesCategory,true);
- const expected=Math.ceil(none.attack.raw*12/100);
+ const expected=Math.floor(none.attack.raw*12/100);
  assert.equal(strong.attack.racialBonus,expected);
  assert.equal(strong.attack.known,none.attack.known+expected);
  assert.equal(C.combatPreview({...opts,racialPassiveId:900050003}).attack.known,

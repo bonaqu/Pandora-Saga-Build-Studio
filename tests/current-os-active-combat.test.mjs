@@ -33,10 +33,10 @@ test('current OS Shieldbearer uses -20% attack, +40% defense, requires shield',(
  const invalid=preview('GLADIATOR',35,{combatDefender:true});
  assert.equal(invalid.activeSkills.defender,false);
 });
-test('current OS percent and original Remaked rounding are separated from passives',()=>{
+test('current OS War Cry floors the independent base percentage',()=>{
  const plain=preview('GLADIATOR',35);
  const cry=preview('GLADIATOR',35,{combatWarCry:true});
- assert.equal(cry.attack.activeBonus,10+Math.ceil(plain.attack.raw*.2));
+ assert.equal(cry.attack.activeBonus,10+Math.floor(plain.attack.raw*.2));
  const rage=preview('GLADIATOR',35,{combatRage:true});
  assert.equal(rage.attack.activeBonus,Math.ceil(plain.attack.raw*.3));
  const arr=preview('GLADIATOR',35,{},equipped,2);

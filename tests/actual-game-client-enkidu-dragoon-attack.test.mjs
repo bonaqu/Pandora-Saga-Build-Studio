@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 // Actual client screenshots supplied 2026-11-10: Enkidu Dragoon level 45.
-// This fixture is deliberately not an invented fix for the unresolved ATK
-// formula (#386). It freezes everything else that matches the game.
+// Real game-client maximum attack vectors now confirm calculation stages.
+// Minimum ATK still requires its own green-mastery formula (#238).
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 const win={};
 Function('window',read('pandora-os-character-calculator.js'))(win);
@@ -99,19 +99,59 @@ test('source: Strong arms matches POLE_ARM and War Cry has exactly 10 +20%',()=>
  assert.equal(cry.combat.activeSkills.warCry,true);
 });
 
-// Observed real game max is 219 / 266 (ranges 189–219 / 229–266).
-// The inherited strength curve calculates 231 / 281 on exactly these records.
-// Do NOT hard-code 219 or 266 just for this character. Obtain independent
-// STR threshold and/or server-engine evidence, then enable this parity check.
-test.todo('Issue #386: OS client 45 Enkidu Dragoon Zephyr +8 max ATK 219 without War Cry');
-test.todo('Issue #386: OS client 45 Enkidu Dragoon Zephyr +8 max ATK 266 with War Cry');
-test.todo('Issue #238: OS client same build minimum ATK 189 without and 229 with War Cry');
-
-test('diagnostic ONLY: a 15% strength coefficient reproduces both observed maxima',()=>{
- // This does not establish which STR ranges use that coefficient on OS.
- const raw=Math.floor(72/2)+(90+39)+(90+39)*.15;
- const passive=Math.ceil(raw*.12),flatGear=3+4+4;
- assert.equal(Math.ceil(raw+passive+flatGear),game.normal.max);
- assert.equal(Math.ceil(raw+passive+flatGear+10+Math.ceil(raw*.2)),
-  game.warCry.max);
+test('verified STR72 +8 client ATK is 219 and 266',()=>{
+ const base=result(false),cry=result(true);
+ assert.equal(base.combat.attack.known,219);
+ assert.equal(cry.combat.attack.known,266);
+ assert.equal(base.combat.attack.raw,186);
+ assert.equal(base.combat.attack.racialBonus,22);
+ assert.equal(cry.combat.attack.activeBonus,47);
 });
+
+const attackFor=(rows,warCry=false,weapon=items[1483],grade=8)=>
+ C.base({...setup,records:rows,attributeBuffs:{combatWarCry:warCry},
+  combatContext:{...setup.combatContext,weapon,weaponGrade:grade}});
+
+test('verified STR71 via either item, and STR70 via both: 218/265',()=>{
+ const removed=ids=>records.filter(([source])=>!ids.includes(source));
+ const pants=['item:13608','soul:103010'];
+ const gloves=['item:14562','soul:104003'];
+ for(const [rows,str] of [
+  [removed(pants),71],[removed(gloves),71],
+  [removed([...pants,...gloves]),70]
+ ]){
+  const a=attackFor(rows,false),b=attackFor(rows,true);
+  assert.equal(a.stats.str,str);
+  assert.equal(a.combat.attack.known,218);
+  assert.equal(b.combat.attack.known,265);
+ }
+});
+
+test('verified STR71 plain Zephyr +0 (W90): 174 without War Cry',()=>{
+ const weapon=items[1482];
+ const rows=records.filter(([source])=>
+  source!=='item:1483'&&source!=='soul:101001');
+ rows.push(['item:1482',weapon,0]);
+ const a=attackFor(rows,false,weapon,0);
+ assert.equal(a.stats.str,71);
+ assert.equal(a.combat.attack.raw,146);
+ assert.equal(a.combat.attack.refinement,0);
+ assert.equal(a.combat.attack.racialBonus,17);
+ assert.equal(a.combat.attack.known,174);
+ // Forecast only, this +0/War Cry case was not measured in the game.
+ assert.equal(attackFor(rows,true,weapon,0).combat.attack.known,213);
+});
+
+test('published OS web calculator STR percent expression at 1–200',()=>{
+ const weapon={W:100};
+ const percent=s=>C.weaponAttackPreview({str:s,weapon}).strengthRate*100;
+ for(const [s,p] of [[1,0],[19,0],[20,2],[50,12],
+  [60,18],[69,18],[70,24],[71,24],[72,24],[79,24],
+  [80,32],[100,50],[110,60],[119,60],[120,72],
+  [130,84],[140,98],[150,112],[200,200]]){
+  assert.equal(percent(s),p,'STR='+s);
+ }
+ assert.equal(C.weaponAttackPreview({str:72,weapon}).known,160);
+});
+
+test.todo('Issue #238: OS minimum attack 189/229 needs confirmed skill-mastery rule');
