@@ -6860,6 +6860,8 @@ function updateAdminHint(){
  }
  document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));
  if(typeof bindStaticUICopyEditors==='function')bindStaticUICopyEditors();
+ if(typeof bindAccountCopyEditors==='function')
+  bindAccountCopyEditors(document.getElementById('accountPanel'));
  refreshOwnerUI();
 }
 
@@ -6969,7 +6971,12 @@ function bindAccountCopyEditors(panel){
   if(!id)continue;
   const isAction=node.matches('button,summary,[role="button"]');
   node.classList.toggle('ui-content-editable',enabled&&!isAction);
-  if(!enabled)continue;
+  if(!enabled){
+   if(node.nextElementSibling?.dataset?.ownerCopyPencil===key)
+    node.nextElementSibling.remove();
+   continue;
+  }
+  if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
   const edit=event=>{
    if(!adminEditing||!adminToken)return;
    event.preventDefault();event.stopPropagation();
