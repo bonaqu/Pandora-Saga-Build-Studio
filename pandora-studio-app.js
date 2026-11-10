@@ -6869,6 +6869,29 @@ function showStudioToast(message,tone='warning'){
   bindAccountCopyEditors(root);
  }else studioToastTimer=setTimeout(close,8500);
 }
+// Only user-facing, whitelisted D1-owned toast copy can be retranslated.
+// Raw server errors and values containing build names must remain untouched.
+function refreshOpenAuthoredToast(){
+ const root=document.getElementById('studioToast');
+ if(!root||root.hidden)return;
+ const textNode=root.querySelector('.studio-toast-content [data-owner-copy-key]');
+ if(!textNode)return;
+ const locale=window.PandoraUILocale,key=textNode.dataset.ownerCopyKey;
+ if(!locale?.fieldKey?.(key))return;
+ // Switching language while typing must not destroy the input or send its
+ // original RU text into the EN field. The edit captures its starting locale.
+ if(textNode.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
+ textNode.textContent=locale.text(key,lang);
+ const heading=root.querySelector('.studio-toast-content>strong');
+ if(heading)heading.textContent=locale.ui(root.classList.contains('success')?'Готово':
+  root.classList.contains('error')?'Ошибка':'Уведомление',lang);
+ const pencil=textNode.nextElementSibling;
+ if(pencil?.dataset?.ownerCopyPencil===key){
+  pencil.title=lang==='en'?'Edit caption':'Изменить надпись';
+  pencil.setAttribute('aria-label',
+   (lang==='en'?'Edit caption: ':'Изменить надпись: ')+textNode.textContent);
+ }
+}
 async function restoreSharedHash(){
  const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
  if(!match)return;
@@ -7133,7 +7156,9 @@ function bindAccountCopyEditors(panel){
    if(!adminEditing||!adminToken)return;
    event.preventDefault();event.stopPropagation();
    if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
-   const before=locale.text(key,lang);
+   // Snapshot the language at editor open, not at blur time. A language
+   // toggle cannot silently write Russian copy into its English D1 field.
+   const editLang=lang,before=locale.text(key,editLang);
    const host=h('span',{class:'ui-content-edit-host account-copy-edit-host',text:before});
    node.after(host);node.hidden=true;
    const pencil=host.nextElementSibling?.dataset?.ownerCopyPencil===key?
@@ -7144,9 +7169,12 @@ function bindAccountCopyEditors(panel){
     onCommit:next=>{
      if(next.length>locale.copyLimit(key))
       throw Error(lang==='en'?'Text is too long':'Слишком длинный текст');
-     return saveGuidePatch('book.'+id,{[lang]:next});
+     return saveGuidePatch('book.'+id,{[editLang]:next});
     },
-    onCommitted:next=>{node.textContent=next},
+    onCommitted:next=>{
+     node.textContent=editLang===lang?next:locale.text(key,lang);
+     if(panel.id==='studioToast')refreshOpenAuthoredToast();
+    },
     onFinished:()=>{node.hidden=false;host.remove();if(pencil)pencil.hidden=false}
    });
   };
@@ -8154,6 +8182,7 @@ function renderCatalogStatus(){
 function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
+ refreshOpenAuthoredToast();
  renderArchiveNotice();
  renderCatalogStatus();
  renderOriginCopyLabels();
