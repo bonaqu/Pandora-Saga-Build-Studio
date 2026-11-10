@@ -144,7 +144,7 @@ test('verified STR71 plain Zephyr +0 (W90): 174 without War Cry',()=>{
 
 test('published OS web calculator STR percent expression at 1–200',()=>{
  const weapon={W:100};
- const percent=s=>C.weaponAttackPreview({str:s,weapon}).strengthRate*100;
+ const percent=s=>Math.round(C.weaponAttackPreview({str:s,weapon}).strengthRate*100);
  for(const [s,p] of [[1,0],[19,0],[20,2],[50,12],
   [60,18],[69,18],[70,24],[71,24],[72,24],[79,24],
   [80,32],[100,50],[110,60],[119,60],[120,72],

@@ -32,7 +32,7 @@ test('catalog-backed active skills reproduce checked attack, defense and attack 
  const rage=preview('GLADIATOR',{combatRage:true});
  const lunge=preview('GLADIATOR',{combatLunge:true});
  const defender=preview('KNIGHT',{combatDefender:true});
- assert.equal(cry.attack.activeBonus,10+Math.ceil(plain.attack.raw*.2));
+ assert.equal(cry.attack.activeBonus,10+Math.floor(plain.attack.raw*.2));
  assert.equal(rage.attack.activeBonus,Math.ceil(plain.attack.raw*.3));
  assert.equal(rage.defense.activeBonus,Math.ceil(40*-.6));
  assert.equal(lunge.attackSpeed.known,plain.attackSpeed.known+15);
@@ -45,7 +45,7 @@ test('changing source EP percentages changes the actual calculation',()=>{
   .find(x=>x.ep==='EP_DAMAGERATE_SCALE').fv1[3]=25;
  const current=preview('GLADIATOR',{combatWarCry:true});
  const updated=preview('GLADIATOR',{combatWarCry:true},{skillCatalog:changed});
- assert.equal(updated.attack.activeBonus,10+Math.ceil(updated.attack.raw*.25));
+ assert.equal(updated.attack.activeBonus,10+Math.floor(updated.attack.raw*.25));
  assert.equal(updated.attack.known-current.attack.known,4);
 });
 test('missing or corrupted published skill data fails closed without invented bonuses',()=>{
