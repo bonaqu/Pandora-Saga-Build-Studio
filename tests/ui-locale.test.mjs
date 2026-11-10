@@ -20,14 +20,14 @@ test('all registered static interface labels support independent RU/EN D1 overri
  const known=locale.fieldKey('heroLevel');
  assert.equal(known,'ui.label.hero-level');
  assert.equal(locale.fieldKey('unknown'),null);
- locale.setOverrides({'guideedit.book.'+known:JSON.stringify({
+ locale.setOverrides({['guideedit.book.'+known]:JSON.stringify({
   ru:'Уровень приключенца',en:'Adventurer level'
  })});
  assert.equal(locale.text('heroLevel','ru'),'Уровень приключенца');
  assert.equal(locale.text('heroLevel','en'),'Adventurer level');
  assert.equal(locale.text('wiki','ru'),'📜 Энциклопедия');
  // Invalid payloads must never erase the bundled fallback.
- locale.setOverrides({'guideedit.book.'+known:'{invalid'});
+ locale.setOverrides({['guideedit.book.'+known]:'{invalid'});
  assert.equal(locale.text('heroLevel','ru'),'Уровень героя');
  locale.setOverrides({'guideedit.book.'+known:JSON.stringify({
   ru:'',en:'x'.repeat(91)})});
