@@ -162,9 +162,13 @@ export async function runAdminEntrySmoke(browser,base){
   for(const key of ['actionsWithinHeading','intersectsClose','intersectsNext',
    'intersectsChevron','intersectsStatValue'])
    assert.equal(bookControls[key],key==='actionsWithinHeading',key+': Book controls overlap');
-  // Check the same geometry on a narrow portrait screen, with the real
-  // owner toolbar visible, before restoring the desktop editor viewport.
+  // A portrait resize can invalidate the current overlaid Book geometry.
+  // Reopen it at the mobile breakpoint, as a real user would, before measuring.
+  await page.locator('#stageAttributes .stage-book-close').click();
   await page.setViewportSize({width:390,height:844});
+  await page.locator('#hero').click();
+  await page.locator('#stageBookPanel details.stage-result-section').first()
+   .waitFor({state:'visible'});
   const narrow=await page.evaluate(()=>{
    const box=x=>document.querySelector(x)?.getBoundingClientRect();
    const header=box('.stage-result-section-head');
@@ -174,8 +178,10 @@ export async function runAdminEntrySmoke(browser,base){
      actions.right<=header.right+1,chevronOutside:!!actions&&!!arrow&&
      actions.right<=arrow.left+1};
   });
-  assert.deepEqual(narrow,{actionsInside:true,chevronOutside:true},
-   'Hero Book controls should fit inside mobile result headings');
+  assert.equal(narrow.actionsInside,true,
+   'Hero Book owner actions overflow mobile heading: '+JSON.stringify(narrow));
+  assert.equal(narrow.chevronOutside,true,
+   'Hero Book owner actions overlap mobile disclosure: '+JSON.stringify(narrow));
   await page.setViewportSize({width:1440,height:900});
   await page.locator('#stageAttributes .stage-book-close').click();
   await page.locator('#hero').focus();
