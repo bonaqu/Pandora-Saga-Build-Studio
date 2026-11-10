@@ -27,22 +27,23 @@ function elfArcher({records:given=records(),level=45,techniqueTrained=15}={}){
    jobKey:'ARCHER',meleeMastery:4,techniqueTrained,techniqueInnate:0}
  });
 }
-test('game-client elf archer 45: confirmed defense, attack endpoints, accuracy, evasion and ice',()=>{
+test('game-client elf archer 45: proven maximum, defense, accuracy, evasion and ice; min remains reference-only',()=>{
  const x=elfArcher();
  assert.deepEqual([x.stats.vit,x.stats.str,x.stats.agi,x.stats.dex,
   x.stats.spi,x.stats.int],[3,5,7,6,6,7]);
  assert.deepEqual([x.combat.defense.armor,x.combat.defense.refinement,
   x.combat.defense.known],[44,3,47]);
- assert.deepEqual([x.combat.attack.minimum,x.combat.attack.known],[50,74]);
- assert.equal(x.combat.attack.minimumVerified,true);
+ assert.deepEqual([x.combat.attack.minimum,x.combat.attack.known],[null,74]);
+ assert.equal(x.combat.attack.minimumVerified,false); // observed 50 is evidence, not a generic formula
  assert.equal(x.combat.accuracy.known,62);
  assert.equal(x.combat.dodge.known,52);
  assert.equal(x.resistances.elements.ice,3);
  const rows=view.PandoraStageAttributes.summaryRows(x).flatMap(group=>group.rows);
- assert.equal(rows.find(row=>row.ru==='АТК')?.display,'50–74');
+ assert.equal(rows.find(row=>row.ru==='АТК')?.display,null);
+ assert.equal(rows.find(row=>row.ru==='АТК')?.value,74);
  assert.equal(rows.find(row=>row.ru==='Защита')?.value,47);
 });
-test('any changed skill mastery or item set invalidates the observed minimum',()=>{
+test('unknown minimum is consistently absent across modified mastery, gear and level',()=>{
  assert.equal(elfArcher({techniqueTrained:20}).combat.attack.minimum,null);
  assert.equal(elfArcher({records:records().filter(row=>row[0]!=='item:21001')})
   .combat.attack.minimum,null);
@@ -55,14 +56,14 @@ test('the +1.2 defense rule applies to every eligible armor item, not only leggi
  const old=C.defensePreview({records:[item(11001,3)]});
  assert.deepEqual([old.armor,old.refinementRaw,old.refinement,old.known],[4,3.6,3,7]);
 });
-test('previous actual elf warrior level-1 short-sword attack remains 9–12',()=>{
+test('historical elf warrior level-1 client observed 9–12, but planner shows only proven max',()=>{
  const data=C.base({classData:classes.WARRIOR,
   raceData:tables.raceInit.ELF,jobData:tables.jobInit.WARRIOR,
   allocation:zero,level:1,
   records:[item(21),item(12001),item(13001),item(15061)],
   combatContext:{jobKey:'WARRIOR',weapon:items['21'],weaponGrade:0,
    weaponPlus:tables.weaponPlus}});
- assert.equal(data.combat.attack.minimum,9);
+ assert.equal(data.combat.attack.minimum,null); // Game-client evidence still records 9, no per-build override
  assert.equal(data.combat.attack.known,12);
  assert.equal(data.combat.defense.known,12);
 });
