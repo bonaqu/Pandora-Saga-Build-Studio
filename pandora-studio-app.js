@@ -7848,10 +7848,10 @@ function renderCatalogStatus(){
 function applyGameLocale({redraw=true}={}){
  window.PandoraUILocale.setOverrides(override);
  window.PandoraUILocale.apply(lang);
- bindStaticUICopyEditors();
  renderArchiveNotice();
  renderCatalogStatus();
  renderOriginCopyLabels();
+ bindStaticUICopyEditors();
  window.PandoraAccountUI?.refresh?.();
  syncLocaleControls();
  if(!catalogSource)return;
