@@ -156,6 +156,24 @@ test('published OS web calculator STR percent expression at 1–200',()=>{
  assert.equal(C.weaponAttackPreview({str:72,weapon}).known,160);
 });
 
+test('real skill progression generates the exact 72 green melee / 50 riding values',()=>{
+ const window={};
+ Function('window',read('pandora-studio-skill-progression.js'))(window);
+ const P=window.PandoraSkillProgression;
+ const actualState={level:45,points:{thrust:54,riding:50},masteryAuto:true};
+ const innate=tables.jobInit.WARRIOR.branches,caps=classes.DRAGOON.branchCaps;
+ const trained=Object.fromEntries(
+  ['slash','thrust','brush','blow','defense','archery','riding']
+   .map(key=>[key,P.branchMastery(actualState,key,innate,caps)]));
+ assert.deepEqual(trained,setup.combatContext.branchMasteries);
+ assert.equal(P.combatMasteries(actualState,innate,caps).melee,72);
+ assert.equal(P.combatMasteries(actualState,innate,caps).techniqueTrained,1);
+ assert.equal(P.groupAdeptness(actualState,['riding'],innate,caps),50);
+ const noAuto={...actualState,masteryAuto:false,masteryFormat:2,mastery:{}};
+ assert.equal(P.branchMastery(noAuto,'thrust',innate,caps),0,
+  'Allocated skill points are not automatically trained green when auto disabled');
+});
+
 test('game-client exact equipped and trained Enkidu build displays 189–219 / 229–266',()=>{
  const a=result(false),b=result(true);
  assert.deepEqual([a.combat.attack.minimum,a.combat.attack.known],[189,219]);
