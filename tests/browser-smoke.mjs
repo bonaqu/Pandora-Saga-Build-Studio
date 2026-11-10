@@ -250,7 +250,8 @@ async function main(){
  assert.match(await page.locator('#originPassives .origin-passive.selected').getAttribute('aria-label'),/selected/);
  await page.locator('#hero').click();
  await page.locator('#stageAttributes [data-book-page="summary"]').waitFor({state:'visible'});
- assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Calculated results'),true);
+ assert.equal((await page.locator('#stageBookPanel').innerText()).includes('Vitals and recovery'),true);
+ assert.equal(await page.locator('#stageBookPanel .stage-result-intro').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-result-tile').count(),43);
  assert.equal(await page.locator('#stageBookPanel .stage-result-section-head button').count(),0);
  assert.equal((await page.locator('#stageAttributes [data-book-page="recovery"]').innerText()).trim(),'Potion effects');
