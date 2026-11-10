@@ -38,6 +38,10 @@ test('editing catalog actions is separate from their potentially destructive cli
  assert.match(view,/if\(!canEdit\|\|typeof editLabel!=='function'\)return button/);
  assert.match(css,/\.os-sync-actions>\.os-sync-action-editor\{width:100%\}/);
  assert.match(css,/\.os-sync-action-edit-host\.origin-copy-editable::after\{content:none\}/);
+ assert.match(view,/class:'os-sync-copy-field'/);
+ assert.match(view,/class:'os-sync-copy-pencil'/);
+ assert.match(view,/node.dispatchEvent\(new MouseEvent\('dblclick'/);
+ assert.match(css,/\.os-sync-copy-field>\.origin-copy-editable::after\{content:none\}/);
 });
 
 test('catalog copy Undo refreshes only authored text and cannot rewrite D1 catalog',()=>{
