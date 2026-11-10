@@ -265,7 +265,9 @@
  display:inline-flex;align-items:center;gap:5px;min-width:0;max-width:100%;
  vertical-align:middle
 }
-.os-sync-action-editor>.button-action{min-width:0;max-width:100%}
+.os-sync-action-editor>.button-action{
+ min-width:0;max-width:100%;white-space:normal;overflow-wrap:anywhere
+}
 .os-sync-actions>.os-sync-action-editor{width:100%}
 .os-sync-actions>.os-sync-action-editor>.button-action{flex:1}
 .os-sync-archive-choice>.os-sync-action-editor{margin:0 13px 12px}
