@@ -12,7 +12,7 @@ export async function runUIContentInlineSmoke(browser,base){
    equipment:{},souls:{},refinements:{},gems:{}
   }));
  });
- const values={},writes=[],errors=[];
+ const values={},writes=[],errors=[],nextConflicts=new Set();
  await context.route('**/*',route=>{
   const req=route.request(),url=req.url(),method=req.method();
   if(url.startsWith(base+'/'))return route.continue();
@@ -42,6 +42,8 @@ export async function runUIContentInlineSmoke(browser,base){
    assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
    const data=req.postDataJSON();
    assert.equal(data.expectedValue,Object.hasOwn(values,data.key)?values[data.key]:null);
+   if(nextConflicts.delete(data.key))
+    return reply({code:'OWNER_EDIT_CONFLICT',error:'Mock concurrent edit'},409);
    values[data.key]=data.value;writes.push(data);
    return reply({ok:true,key:data.key,value:data.value,conditional:true});
   }
@@ -294,7 +296,64 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(JSON.parse(values[libraryKey]).ru,'✧ Сохранить персонажа');
   assert.equal(JSON.parse(values[libraryKey]).en,undefined);
   await originalInput.dispose();
+
+  // Dynamic toast owner copy must follow locale switches even when a toast is
+  // already open; runtime diagnostics must not become editable or be erased.
+  console.log('UI test: live editable toast RU, EN and conflict feedback');
+  await page.locator('#locale [data-locale="ru"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  await page.evaluate(()=>showStudioToast(
+   'Билд удалён. Все его ссылки больше не работают.','success'));
+  const statusKey='guideedit.book.ui.label.status-build-deleted';
+  const toastText=page.locator('#studioToast [data-owner-copy-key="statusBuildDeleted"]');
+  await toastText.waitFor({state:'visible'});
+  assert.equal(await toastText.textContent(),
+   'Билд удалён. Все его ссылки больше не работают.');
+  await page.locator('#studioToast [data-owner-copy-pencil="statusBuildDeleted"]').click();
+  const toastEditor=page.locator('#studioToast .account-copy-edit-host [contenteditable]');
+  await toastEditor.fill('Запись удалена, ссылка отозвана.');
+  await toastEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#studioToast [data-owner-copy-key="statusBuildDeleted"]')?.textContent===
+   'Запись удалена, ссылка отозвана.',null,{timeout:12000});
+  assert.equal(JSON.parse(values[statusKey]).ru,'Запись удалена, ссылка отозвана.');
+
+  await page.locator('#locale [data-locale="en"]').focus();
+  await page.keyboard.press('Enter');
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  await page.waitForFunction(()=>document.querySelector(
+   '#studioToast [data-owner-copy-key="statusBuildDeleted"]')?.textContent===
+   'Build deleted. Its links are no longer valid.',null,{timeout:15000});
+  assert.equal(await page.locator('#studioToast .studio-toast-content>strong').textContent(),'Done');
+  const toastPencil=page.locator('#studioToast [data-owner-copy-pencil="statusBuildDeleted"]');
+  assert.match(await toastPencil.getAttribute('aria-label'),/^Edit caption:/);
+  await toastPencil.click();
+  await toastEditor.fill('Build removed and link revoked.');
+  await toastEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#studioToast [data-owner-copy-key="statusBuildDeleted"]')?.textContent===
+   'Build removed and link revoked.',null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values[statusKey]),{
+   ru:'Запись удалена, ссылка отозвана.',en:'Build removed and link revoked.'
+  });
+
+  // A CAS conflict in a toast edit must not replace the toast itself or
+  // destroy typed text with another warning toast.
+  nextConflicts.add(statusKey);
+  await toastPencil.click();
+  await toastEditor.fill('Uncommitted owner text survives conflict');
+  await toastEditor.press('Tab');
+  const inlineFailure=page.locator('#studioToast .ui-content-inline-error');
+  await inlineFailure.waitFor({state:'visible',timeout:12000});
+  assert.match(await inlineFailure.textContent(),/changed in another window|изменили в другом окне/i);
+  assert.equal(await toastEditor.textContent(),'Uncommitted owner text survives conflict');
+  assert.equal(await page.locator('#studioToast .studio-toast-content>strong').count(),1);
+  await toastEditor.press('Escape');
+  await toastText.waitFor({state:'visible'});
+  assert.equal(await toastText.textContent(),'Build removed and link revoked.');
+  assert.equal(JSON.parse(values[statusKey]).en,'Build removed and link revoked.');
   assert.deepEqual(errors,[]);
-  console.log('Chromium D1 inline UI/Wiki/account/library RU+EN: blur, CAS, locale and no-redraw Undo passed');
+  console.log('Chromium UI content: RU/EN status toast edit, live translation, 409 and local draft preservation passed');
  }finally{await context.close()}
 }
