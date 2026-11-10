@@ -3,6 +3,15 @@ import assert from 'node:assert/strict';
 export async function runUIContentInlineSmoke(browser,base){
  const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
  const context=await browser.newContext({viewport:{width:1100,height:810}});
+ // The results matrix exists only for an actual character. Start with a
+ // deliberately local, non-account QA build; no player data is fetched.
+ await context.addInitScript(()=>{
+  localStorage.setItem('ps-build-studio.v1',JSON.stringify({
+   race:1,gender:0,job:8,level:45,name:'Editorial UI QA',
+   stats:{'Сноровка':9},points:{archery:20},mastery:{},
+   equipment:{},souls:{},refinements:{},gems:{}
+  }));
+ });
  const values={},writes=[],errors=[];
  await context.route('**/*',route=>{
   const req=route.request(),url=req.url(),method=req.method();
@@ -69,6 +78,9 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await page.locator('#pathGrowthPage [data-path-copy-for]').count(),4);
   // Edit a group heading and its help in the REAL Book. A D1 request must
   // not unmount the active editor or accidentally fold the results section.
+  await page.waitForFunction(()=>
+   document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),
+   null,{timeout:25000});
   await page.locator('#hero').click();
   const firstGroup=page.locator('#stageBookPanel details.stage-result-section').first();
   await firstGroup.waitFor({state:'visible'});
