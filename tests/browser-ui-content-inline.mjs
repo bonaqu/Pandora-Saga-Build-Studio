@@ -170,6 +170,7 @@ export async function runUIContentInlineSmoke(browser,base){
   await loginForm.locator('input').nth(1).fill('password-for-test');
   await loginForm.locator('button[type="submit"]').click();
   await page.locator('#accountPanel .account-identity').waitFor({state:'visible'});
+  console.log('UI test: opening saved-build library');
   await page.locator('#nav [data-tab="builds"]').click();
   const saveNew=page.locator('#detailContent [data-owner-copy-key="librarySaveNew"]');
   const libraryPencil=page.locator('#detailContent [data-owner-copy-pencil="librarySaveNew"]');
@@ -178,6 +179,7 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await page.locator('#detailContent [data-owner-copy-key]').count()>=7,true);
   assert.equal(await page.locator('#detailContent .build-name-input[data-owner-copy-key]').count(),0,
    'The user-entered build name must not become owner-editable');
+  console.log('UI test: editing library Russian copy');
   await libraryPencil.click();
   const libraryInput=page.locator('#detailContent .account-copy-edit-host [contenteditable]');
   await libraryInput.fill('✧ Сохранить персонажа');
@@ -187,11 +189,13 @@ export async function runUIContentInlineSmoke(browser,base){
    '✧ Сохранить персонажа',null,{timeout:12000});
   const libraryKey='guideedit.book.ui.label.library-save-new';
   assert.equal(JSON.parse(values[libraryKey]).ru,'✧ Сохранить персонажа');
+  console.log('UI test: switching library to English');
   await page.locator('#locale [data-locale="en"]').focus();
   await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   // The panel is rebuilt when the site language changes; editors must be
   // rebound to the new controls, not a detached DOM reference.
+  console.log('UI test: editing library English copy');
   const enLibrary=page.locator('#detailContent [data-owner-copy-key="librarySaveNew"]');
   await enLibrary.waitFor({state:'visible'});
   assert.equal(await enLibrary.textContent(),'✧ Save new build');
