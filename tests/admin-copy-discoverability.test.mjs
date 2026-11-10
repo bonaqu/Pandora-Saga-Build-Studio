@@ -11,13 +11,19 @@ const locale=root.PandoraUILocale,guide=root.PandoraHonorGuide;
 test('fixed notices have safe RU/EN D1 copy keys, with no server/user inputs',()=>{
  const ids=['statusBuildDeleted','statusConflictingBuilds','statusLibraryFull',
   'statusDeleteFailed','statusLocalDelete','statusDeleteRetryFailed',
-  'statusSaveFailed','statusImportsQueued'];
+  'statusSaveFailed','statusImportsQueued','statusGuestHero',
+  'statusBuildOpenStorage','statusBuildCorrupted','statusBuildRestore',
+  'statusSharedAccountChanged','statusSharedLimit','statusSharedImportStorage',
+  'statusSharedDeleted','statusSharedLegacy','statusSharedInvalid',
+  'statusSharedNotFound','statusSharedNetwork','statusItemDeleteLinked',
+  'statusNpcDeleteLinked'];
  for(const key of ids){
   assert.ok(locale.keys().includes(key));
   assert.match(locale.fieldKey(key),/^ui\.label\.status-/);
   assert.equal(typeof locale.baseText(key,'ru'),'string');
   assert.ok(locale.baseText(key,'en'));
   assert.equal(locale.literalKey(locale.baseText(key,'ru')),key);
+  assert.equal(locale.literalKey(locale.baseText(key,'en')),key);
   assert.equal(guide.validOverride('book.'+locale.fieldKey(key),
    JSON.stringify({ru:'Изменённый текст',en:'Updated copy'})),true);
  }
