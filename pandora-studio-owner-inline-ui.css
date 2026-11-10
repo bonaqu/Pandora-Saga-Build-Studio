@@ -211,3 +211,38 @@
  background:#52371f;border-color:#e9be7f;outline-offset:2px
 }
 .path-inline-copy-pencil[hidden]{display:none!important}
+
+/* Profile/character editorial labels: one compact pencil beside the caption,
+   never inside the real name/bio input; player text stays undisturbed. */
+.ps-profile-copy-host{
+ display:inline-flex;align-items:center;justify-content:flex-start;
+ min-width:0;max-width:100%;gap:5px;flex-wrap:wrap
+}
+.ps-profile-copy-host>.ps-profile-copy{min-width:0;overflow-wrap:anywhere}
+.ps-profile-copy-pencil{
+ display:inline-grid;place-items:center;flex:0 0 19px;
+ min-width:19px;width:19px;height:19px;box-sizing:border-box;
+ margin:0;padding:0;border:1px solid #8d6e45;border-radius:4px;
+ background:#2f2118;color:#e6c18b;font:600 11px/1 Manrope,Arial,sans-serif;
+ cursor:pointer
+}
+.ps-profile-copy-pencil:hover,.ps-profile-copy-pencil:focus-visible{
+ border-color:#f2c683;background:#543a23;color:#ffe6b6;outline-offset:2px
+}
+.ps-profile-row>.ps-profile-copy-host{
+ display:inline-flex;align-self:center;min-width:0
+}
+.ps-overview-card .ps-profile-copy-host{display:inline-flex;flex-wrap:wrap}
+.ps-profile-placeholder-editor{
+ display:flex;align-items:center;min-width:0;
+ padding:2px 0 4px;margin-left:0;color:#bca27e;
+ font:500 10px/1.4 Manrope,Arial,sans-serif
+}
+.ps-profile-copy-host .wiki-inline-input{
+ display:block;width:min(100%,230px);min-width:0;max-width:100%;
+ box-sizing:border-box;font:500 12px/1.35 Manrope,Arial,sans-serif
+}
+@media(max-width:700px){
+ .ps-profile-row>.ps-profile-copy-host{width:100%}
+ .ps-profile-copy-host .wiki-inline-input{width:100%}
+}
