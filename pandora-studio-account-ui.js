@@ -43,7 +43,12 @@ const tr=value=>root.PandoraUILocale?.ui(value,document.documentElement.lang)||v
 function node(tag,cls='',text=''){
  const el=document.createElement(tag);
  if(cls)el.className=cls;
- if(text)el.textContent=tr(text);
+ if(text){
+  el.textContent=tr(text);
+  // The owner edits authored interface copy, never credentials or account IDs.
+  const key=root.PandoraUILocale?.literalKey?.(text);
+  if(key)el.setAttribute?.('data-owner-copy-key',key);
+ }
  return el;
 }
 function button(text,action,cls=''){
@@ -248,7 +253,9 @@ function render(){
    if(session?.token!==owner||sessionRevision!==revision)return;
    clearSession({revokeMatchingOwner:true});options.onLogout?.();render();
   },'account-signout'));
-  panel.append(footer,errorLine);return;
+  panel.append(footer,errorLine);
+  options?.onCopyReady?.(panel);
+  return;
  }
  const tabs=node('div','account-tabs');
  // Registration can issue a one-time recovery code. Do not abandon its reply
@@ -337,7 +344,7 @@ function render(){
  });
  panel.append(form,errorLine);
  panel.append(node('p','account-small','Без электронной почты и СМС. После регистрации сохраните резервный код.'));
-
+ options?.onCopyReady?.(panel);
 }
 // Explicit entry point for links in My Builds. The library drawer is closed
 // by the caller before this popover is opened; no synthetic trigger clicks.
