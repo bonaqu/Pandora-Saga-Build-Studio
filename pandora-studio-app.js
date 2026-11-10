@@ -6396,7 +6396,7 @@ function renderBuilds(root){
    h('p',{
    text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
     (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
-   h('label',{},[check,' Сравнить']),
+   h('label',{},[check,h('span',{text:' Сравнить'})]),
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
     if(!unsavedBuild()){openSavedBuild(b);return}
     openChoice.hidden=!openChoice.hidden;
