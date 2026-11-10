@@ -6859,7 +6859,7 @@ function updateAdminHint(){
   indicator.textContent=adminEditing?'✎ Редактор':'';
  }
  document.querySelectorAll('[data-edit-key]').forEach(el=>el.classList.toggle('admin-edit',adminEditing));
- bindStaticUICopyEditors();
+ if(typeof bindStaticUICopyEditors==='function')bindStaticUICopyEditors();
  refreshOwnerUI();
 }
 
