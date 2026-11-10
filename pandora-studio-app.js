@@ -1458,7 +1458,12 @@ function renderStageAttributes(calculated=undefined){
   onItem:id=>openWiki('item',String(id)),
   copy:override,canEdit:Boolean(adminEditing&&adminToken),
   onTextEdit:(node,key,field,initial)=>editWikiValue(node,initial,{
-   type:'text',onCommit:value=>saveGuidePatch('book.'+key,{[field]:value})}),
+   type:'text',
+   onCommit:value=>saveGuidePatch('book.'+key,{[field]:value}),
+   // The editor must finish and restore its original label before the Book
+   // is refreshed; never unmount an input during its D1 save request.
+   onCommitted:()=>{if(stageAttributesPage&&!stageSlotPickerOpen)renderStageAttributes()}
+  }),
   onHonor:()=>openWiki('honor','overview'),
   onBuff:(key,value)=>setAttributeBuff(key,value),
   onVital:(key,value)=>setVitalsEnhancement(key,value),
@@ -7621,6 +7626,7 @@ async function saveGuidePatchNow(key,fields){
    key.startsWith('book.ui.label.account-')||
    key.startsWith('book.ui.label.library-')||
    key.startsWith('book.ui.label.status-'))saveView(); // leave inline editor mounted
+  else if(key.startsWith('book.'))saveView(); // refresh Book only after the input is restored
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
