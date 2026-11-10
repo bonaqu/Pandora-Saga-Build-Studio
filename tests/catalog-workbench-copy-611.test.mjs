@@ -49,6 +49,7 @@ test('catalog copy Undo refreshes only authored text and cannot rewrite D1 catal
  assert.match(app,/\(equipment\|path\|catalog-sync\)/);
  assert.match(app,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
  assert.match(app,/key\.startsWith\('book\.catalog-sync\.'\)/);
+ assert.match(app,/!key\.startsWith\('book\.catalog-sync\.'\)/);
  assert.match(view,/request\('\/api\/admin\/catalog\/publish'/);
  assert.match(view,/if\(!confirm\('Создать отдельный GitHub PR/);
  assert.match(view,/if\(!confirm\('Проверить конфликты правок/);
