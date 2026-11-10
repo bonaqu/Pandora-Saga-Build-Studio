@@ -116,6 +116,11 @@ export async function runUIContentInlineSmoke(browser,base){
    'Editing descriptive text must not erase the account username draft');
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  // The real account panel has a 170ms exit animation; never decide
+  // whether to reopen it while that transition is still closing.
+  await page.waitForFunction(()=>
+   !document.querySelector('#accountPanel')?.classList.contains('is-closing'),
+   null,{timeout:12000});
   if(!(await page.locator('#accountPanel').isVisible()))
    await page.locator('#profileTrigger').click();
   const guestEn=page.locator('#accountPanel [data-owner-copy-key="accountGuestLead"]');
@@ -134,6 +139,11 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
   // If the account popup was closed by the locale button, open it again.
+  // The real account panel has a 170ms exit animation; never decide
+  // whether to reopen it while that transition is still closing.
+  await page.waitForFunction(()=>
+   !document.querySelector('#accountPanel')?.classList.contains('is-closing'),
+   null,{timeout:12000});
   if(!(await page.locator('#accountPanel').isVisible()))
    await page.locator('#profileTrigger').click();
   await page.waitForFunction(()=>document.querySelector(
