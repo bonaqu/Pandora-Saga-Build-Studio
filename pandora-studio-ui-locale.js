@@ -116,7 +116,15 @@ const statusCopy=Object.freeze({
  statusSharedNotFound:['Билд по ссылке не найден. Возможно, адрес неверный.','No build found for this link. Check the address.'],
  statusSharedNetwork:['Не получилось загрузить билд. Проверь соединение и попробуй снова.','Could not load the shared build. Check your connection and try again.'],
  statusItemDeleteLinked:['Сначала убери связанные монстров, NPC, добычу, разделы и ссылки на эту запись. Удаление с зависимостями заблокировано.','Remove linked monsters, NPCs, loot, sections and references before deleting this record.'],
- statusNpcDeleteLinked:['Сначала убери ссылки на NPC из локаций и разделов.','Remove NPC references from maps and custom sections before deletion.']
+ statusNpcDeleteLinked:['Сначала убери ссылки на NPC из локаций и разделов.','Remove NPC references from maps and custom sections before deletion.'],
+ statusOwnerD1Check:['D1: временная запись и чтение проверены, тестовые данные удалены.','D1: test write and read succeeded; temporary data was removed.'],
+ statusOwnerSaveInProgress:['Дождись окончания сохранения в Cloudflare D1','Finish saving to Cloudflare D1 before continuing.'],
+ statusOwnerSaveError:['Есть ошибка сохранения. Проверь поле и повтори изменение.','A change could not be saved. Review the field and try again.'],
+ statusOwnerFinishPending:['Сначала заверши текущее сохранение.','Finish saving the current change first.'],
+ statusOwnerTranslationsSaved:['Все подготовленные английские переводы уже сохранены.','All prepared English translations have already been saved.'],
+ statusOwnerPullRequestWaiting:['Дождись завершения сохранения в Cloudflare D1 перед созданием PR.','Finish the Cloudflare D1 save before creating a pull request.'],
+ statusOwnerPullRequestBlocked:['Сначала исправь ошибку сохранения. PR пока недоступен.','Resolve the save error before creating a pull request.'],
+ statusLibraryCloudPending:['Сохранено в браузере. Проверяем запись в облаке…','Saved in this browser. Checking the cloud copy…']
 });
 const literalKeys=Object.freeze(Object.fromEntries(
  [...Object.entries(accountCopy),...Object.entries(libraryCopy),...Object.entries(statusCopy)]
