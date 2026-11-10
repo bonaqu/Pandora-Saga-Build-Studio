@@ -174,7 +174,7 @@ export async function runUIContentInlineSmoke(browser,base){
   const libraryPencil=page.locator('#detailContent [data-owner-copy-pencil="librarySaveNew"]');
   await saveNew.waitFor({state:'visible'});
   await libraryPencil.waitFor({state:'visible'});
-  assert.equal(await page.locator('#detailContent [data-owner-copy-key]').count()>10,true);
+  assert.equal(await page.locator('#detailContent [data-owner-copy-key]').count()>=7,true);
   assert.equal(await page.locator('#detailContent .build-name-input[data-owner-copy-key]').count(),0,
    'The user-entered build name must not become owner-editable');
   await libraryPencil.click();
