@@ -203,6 +203,9 @@ function baseText(key,lang='ru'){
  const defaults=strings[key]||accountCopy[key];
  return defaults?defaults[lang==='en'?1:0]:key;
 }
+// Compact actions and headings stay short; only the storage warning may
+// need a longer paragraph. The Worker still enforces the global 360 limit.
+function copyLimit(key){return key==='accountStorageWarning'?350:90}
 function text(key,lang='ru'){
  const defaults=strings[key]||accountCopy[key],id=fieldKey(key);
  if(!defaults||!id)return key;
@@ -212,7 +215,7 @@ function text(key,lang='ru'){
   edit=typeof value==='string'?JSON.parse(value):null;
  }catch{}
  const field=lang==='en'?'en':'ru',saved=edit?.[field];
- const max=Object.hasOwn(accountCopy,key)?350:90;
+ const max=copyLimit(key);
  return typeof saved==='string'&&saved.trim()&&saved.length<=max?saved:defaults[lang==='en'?1:0];
 }
 function keys(){return [...Object.keys(strings),...Object.keys(accountCopy)]}
@@ -248,5 +251,5 @@ function localize(root,lang='ru'){
   }
  }
 }
-root.PandoraUILocale=Object.freeze({text,baseText,fieldKey,keys,literalKey,setOverrides,ui,apply,localize});
+root.PandoraUILocale=Object.freeze({text,baseText,copyLimit,fieldKey,keys,literalKey,setOverrides,ui,apply,localize});
 })(typeof window==='undefined'?globalThis:window);
