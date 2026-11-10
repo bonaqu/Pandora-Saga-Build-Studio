@@ -919,14 +919,27 @@ function ownerCopy(section,key,ru,en){
 function ownerCopyLabel(node,section,key,ru,en){
  if(!node||!adminEditing||!adminToken)return;
  node.classList.add('origin-copy-editable');
- node.addEventListener('dblclick',event=>{
-  if(!adminEditing||!adminToken)return;
+ // Captions inside real buttons already have their own pencil and handler.
+ // Plain labels also need keyboard access without inserting extra controls.
+ if(!node.matches?.('button,[role="button"]')){
+  node.tabIndex=0;
+  node.setAttribute?.('aria-keyshortcuts','F2 Enter');
+ }
+ const edit=event=>{
+  if(!adminEditing||!adminToken||node.querySelector?.('.wiki-inline-input'))return;
   event.preventDefault();event.stopPropagation();
+  const editLang=lang; // Never write an open RU editor to the EN D1 field.
   editWikiValue(node,ownerCopy(section,key,ru,en),{
    type:'text',
-   onCommit:next=>saveGuidePatch('book.'+ownerCopyKey(section,key),{[lang]:next}),
-   onCommitted:next=>{node.textContent=next}
+   onCommit:next=>saveGuidePatch('book.'+ownerCopyKey(section,key),{[editLang]:next}),
+   onCommitted:next=>{
+    node.textContent=lang===editLang?next:ownerCopy(section,key,ru,en);
+   }
   });
+ };
+ node.addEventListener('dblclick',edit);
+ node.addEventListener('keydown',event=>{
+  if(event.target===node&&(event.key==='F2'||event.key==='Enter'))edit(event);
  });
 }
 const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
