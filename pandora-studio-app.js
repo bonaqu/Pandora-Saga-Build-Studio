@@ -2193,16 +2193,29 @@ function renderPathCopyControls(){
   const node=document.querySelector(selector);if(!node)continue;
   if(!node.querySelector('.wiki-inline-input'))node.textContent=copy(key,ru,en);
   node.classList.toggle('origin-copy-editable',editing);
+  const edit=event=>{
+   if(!adminEditing||!adminToken)return;
+   event.preventDefault();event.stopPropagation();
+   if(node.querySelector('.wiki-inline-input'))return;
+   editWikiValue(node,copy(key,ru,en),{type:'text',
+    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
+    onCommitted:next=>{node.textContent=next}});
+  };
+  // Origin/path labels should be discoverable on touch and keyboard, without
+  // replacing user-facing labels or the mastery checkbox's click behavior.
   if(!node.dataset.pathCopyBound){
    node.dataset.pathCopyBound='1';
-   node.addEventListener('dblclick',event=>{
-    if(!adminEditing||!adminToken)return;
-    event.preventDefault();event.stopPropagation();
-    editWikiValue(node,copy(key,ru,en),{type:'text',
-     onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
-     onCommitted:next=>{node.textContent=next}});
-   });
+   node.addEventListener('dblclick',edit);
   }
+  const existing=node.nextElementSibling?.dataset?.pathCopyFor===key?
+   node.nextElementSibling:null;
+  if(!editing){existing?.remove();continue}
+  if(existing)continue;
+  node.after(h('button',{type:'button',class:'path-inline-copy-pencil',
+   'data-path-copy-for':key,text:'✎',
+   title:lang==='en'?'Rename caption':'Переименовать подпись',
+   'aria-label':(lang==='en'?'Rename: ':'Переименовать: ')+copy(key,ru,en),
+   onclick:edit}));
  }
  for(const [id,key,ru,en,symbol] of [
   ['pathGrowthTab','tabGrowth','Развитие','Growth','◈'],
