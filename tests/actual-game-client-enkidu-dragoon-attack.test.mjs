@@ -174,50 +174,26 @@ test('real skill progression generates the exact 72 green melee / 50 riding valu
   'Allocated skill points are not automatically trained green when auto disabled');
 });
 
-test('game-client exact equipped and trained Enkidu build displays 189–219 / 229–266',()=>{
- const a=result(false),b=result(true);
- assert.deepEqual([a.combat.attack.minimum,a.combat.attack.known],[189,219]);
- assert.deepEqual([b.combat.attack.minimum,b.combat.attack.known],[229,266]);
- assert.equal(a.combat.attack.minimumVerified,true);
- assert.equal(b.combat.attack.minimumVerified,true);
-});
-
-test('client fixture never guesses minimum if green mastery, gear, buff or race differs',()=>{
- const compare=changes=>C.base({...setup,...changes});
- const original=setup.combatContext;
- const changedTrained={...original,branchMasteries:{
-  ...original.branchMasteries,thrust:55,slash:6
- }};
- assert.equal(compare({combatContext:changedTrained}).combat.attack.minimum,null,
-  'Same total mastery, different weapon proficiency is NOT the verified build');
- const missingMasteries={...original};delete missingMasteries.branchMasteries;
- assert.equal(compare({combatContext:missingMasteries}).combat.attack.minimum,null);
- const missingSoul=records.filter(([key])=>key!=='soul:103002');
- assert.equal(compare({records:missingSoul}).combat.attack.minimum,null);
- const weirdPassive=compare({potionContext:{racialPassiveId:900050003}});
- assert.equal(weirdPassive.combat.attack.minimum,null);
- const extraBuff=compare({attributeBuffs:{combatWarCry:true,combatRage:true}});
- assert.equal(extraBuff.combat.attack.minimum,null);
- const ordinary=items[1482],ordinaryRows=records.filter(([key])=>
-  key!=='item:1483'&&key!=='soul:101001');
- ordinaryRows.push(['item:1482',ordinary,0]);
- assert.equal(compare({records:ordinaryRows,
-  combatContext:{...original,weapon:ordinary,weaponGrade:0}}).combat.attack.minimum,null);
-});
-
-test('UI summary emits real min–max only for validated game-client fixture',()=>{
+test('game-client evidence is not hard-coded as a runtime attack minimum',()=>{
+ const full=result(false),cry=result(true);
+ assert.equal(full.combat.attack.known,219);
+ assert.equal(cry.combat.attack.known,266);
+ for(const x of [full,cry]){
+  assert.equal(x.combat.attack.minimum,null);
+  assert.equal(x.combat.attack.minimumVerified,false);
+ }
  const root={};
  Function('window','document',read('pandora-studio-hero-book.js'))(root,
   {documentElement:{lang:'ru'}});
- const rows=calc=>root.PandoraStageAttributes.summaryRows(calc)
-  .flatMap(group=>group.rows);
- const a=rows(result(false)).find(r=>r.ru==='АТК');
- const b=rows(result(true)).find(r=>r.ru==='АТК');
- assert.equal(a.display,'189–219');
- assert.equal(b.display,'229–266');
- assert.equal(rows(C.base({...setup,combatContext:{
-  ...setup.combatContext,branchMasteries:{...setup.combatContext.branchMasteries,thrust:55,slash:6}
- }})).find(r=>r.ru==='АТК').display,null);
+ const output=root.PandoraStageAttributes.summaryRows(full)
+  .flatMap(group=>group.rows).find(row=>row.ru==='АТК');
+ assert.equal(output.value,219);
+ assert.equal(output.display,null,'Do not label a fixture-specific minimum as universal');
+});
+test('all prior game-client minimum examples remain evidence, never magic branches',()=>{
+ const src=read('pandora-os-character-calculator.js');
+ assert.doesNotMatch(src,/observedEnkiduMinimum|observedMinimumAttack|observedAttackBounds/);
+ assert.doesNotMatch(src,/minimum:189|minimum:229|minimum:50|minimum:9/);
 });
 
 test.todo('Issue #238: universal minimum ATK function by weapon proficiency remains unverified');

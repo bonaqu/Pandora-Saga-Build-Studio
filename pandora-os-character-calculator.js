@@ -526,100 +526,11 @@ function defensePreview({records=[],honorTitle=0,itemForth=null}={}){
   verified:false,excluded:['other armor conditional multipliers',
    'Defender and Raging Soul active skills','OS server damage mitigation']};
 }
-// Only full, directly observed game-client builds have trustworthy minimum
-// attack endpoints. The Remaked Calc('ATK') routine calculates MAX attack.
-// Minimum attack also depends on weapon proficiency; no verified generic
-// current-server formula exists. Keep unobserved minima explicitly unknown.
-const observedAttackBounds=Object.freeze([
- {level:1,jobs:['WARRIOR'],stats:{vit:5,str:6,agi:5,dex:5,spi:6,int:7},
-  techniqueTrained:null,meleeMastery:null,
-  gear:['21:0','12001:0','13001:0','15061:0'],
-  maximum:12,minimum:9,defense:12,accuracy:6,dodge:6},
- {level:45,jobs:['ARCHER','SNIPER','PREDATOR'],
-  stats:{vit:3,str:5,agi:7,dex:6,spi:6,int:7},
-  techniqueTrained:15,meleeMastery:4,
-  gear:['2411:0','11001:0','12041:0','14004:0','13041:3',
-   '15011:0','18001:0','22001:0','22001:0','21001:0'],
-  maximum:74,minimum:50,defense:47,accuracy:62,dodge:52}
-].map(x=>Object.freeze({...x,gear:Object.freeze(x.gear.slice().sort())})));
-function observedMinimumAttack({level,jobKey,stats,records,techniqueTrained,
- meleeMastery,attack,defense,accuracy,dodge,honorTitle,guildArouse}){
- if(honorTitle!==0||guildArouse!==0||!Array.isArray(records))return null;
- const gear=[];
- for(const [source,record,grade] of records){
-  if(!String(source).startsWith('item:')||!record||
-   String(record.id)!==String(source).slice(5)||!Number.isInteger(grade))
-   return null; // Additional souls, unverified gear or malformed sources.
-  gear.push(String(record.id)+':'+grade);
- }
- gear.sort();
- for(const x of observedAttackBounds){
-  if(level!==x.level||!x.jobs.includes(jobKey)||
-   attack!==x.maximum||defense!==x.defense||accuracy!==x.accuracy||
-   dodge!==x.dodge||gear.length!==x.gear.length||
-   gear.some((entry,i)=>entry!==x.gear[i])||
-   Object.entries(x.stats).some(([key,value])=>stats[key]!==value)||
-   (x.techniqueTrained!==null&&techniqueTrained!==x.techniqueTrained)||
-   (x.meleeMastery!==null&&meleeMastery!==x.meleeMastery))continue;
-  return x.minimum;
- }
- return null;
-}
-// Full, independently observed in-game Enkidu Dragoon equipment/green
-// mastery fixture (2026-11-10). NOT a generic lower-bound formula.
-// Guard every gameplay-relevant dimension; anything else remains unknown.
-const enkiduObservedGear=Object.freeze([
- 'item:1483:8','item:11087:3','item:12608:4','item:14562:3',
- 'item:13608:4','item:15608:6','item:18001:0',
- 'item:19036:0','item:19036:0','item:20001:0','item:21001:0',
- 'item:22005:0','item:22005:0',
- 'soul:101001:8','soul:101001:8',
- 'soul:103002:4','soul:103002:4',
- 'soul:104003:3','soul:103010:4','soul:103010:4',
- 'soul:105001:6','soul:107006:0','soul:107006:0'
-].sort());
-const enkiduObservedStats=Object.freeze({
- vit:10,str:72,agi:72,dex:40,spi:5,int:1
-});
-const enkiduObservedMasteries=Object.freeze({
- slash:5,thrust:56,brush:5,blow:2,defense:4,archery:1,riding:50
-});
-function observedEnkiduMinimum({level,jobKey,stats,records,attack,defense,
- accuracy,dodge,weapon,weaponGrade,weaponEnhancementType,racialWeapon,
- racialPassiveId,meleeMastery,techniqueTrained,ridingMastery,
- branchMasteries,activeSkills,combatBuffs,honorTitle,guildArouse}={}){
- if(level!==45||jobKey!=='DRAGOON'||racialPassiveId!==900050002||
-  weapon?.id!==1483||weaponGrade!==8||weaponEnhancementType!=='physical'||
-  honorTitle!==0||guildArouse!==0||meleeMastery!==72||
-  techniqueTrained!==1||ridingMastery!==50||
-  racialWeapon?.matchesCategory!==true||racialWeapon.flat!==0||
-  racialWeapon.percent!==12||defense!==72||accuracy!==99||
-  dodge!==144||!Array.isArray(records)||!branchMasteries||
-  typeof branchMasteries!=='object')return null;
- for(const [key,n] of Object.entries(enkiduObservedStats))
-  if(stats?.[key]!==n)return null;
- for(const [key,n] of Object.entries(enkiduObservedMasteries))
-  if(branchMasteries[key]!==n)return null;
- // Other trained green branches are also relevant to attack mechanics.
- for(const [key,n] of Object.entries(branchMasteries))
-  if(!Object.hasOwn(enkiduObservedMasteries,key)&&n!==0)return null;
- const active=activeSkills?.warCry===true;
- if(!activeSkills||Object.entries(activeSkills).some(([k,on])=>k!=='warCry'&&on===true)||
-  Object.entries(combatBuffs||{}).some(([k,v])=>k!=='combatWarCry'&&v===true)||
-  active!==Boolean(combatBuffs?.combatWarCry))return null;
- if(attack!==(active?266:219)||records.length!==enkiduObservedGear.length)return null;
- const actual=[];
- for(const [source,record,grade] of records){
-  if(typeof source!=='string'||!Number.isInteger(grade)||
-   !record||!Number.isInteger(record.id)||
-   source!==((source.startsWith('item:')?'item:':'soul:')+record.id))
-   return null;
-  actual.push(source+':'+grade);
- }
- actual.sort();
- if(actual.some((row,i)=>row!==enkiduObservedGear[i]))return null;
- return active?229:189;
-}
+// Current OS client minimum ATK is not yet established as a universal rule.
+// Do not embed game-client screenshot values as item/character-specific runtime
+// lookups. Keep verified client measurements in regression/research fixtures.
+// OS BuildCalculator's damage_potential/damage_min describes its own combat
+// simulation; it does not reproduce all observed character-sheet ranges.
 // Source-backed equipment modifiers from current OS item/Soul structured EP codes.
  // Apply Remaked's ceil(base * rate / 100) separately to every source effect.
  // Deliberately ignore unstructured gear description text and conditional skills.
@@ -1036,20 +947,10 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const observedDodge=dodge+quickStep+(supportSkills.windAssist?Math.floor(
   supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
   dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0);
- const knownBounds=effectiveAttack?observedMinimumAttack({
-  level,jobKey,stats,records,techniqueTrained,meleeMastery,
-  attack:effectiveAttack.known,defense:effectiveDefense.known,
-  accuracy:accuracyKnown,dodge:observedDodge,honorTitle,guildArouse
- }):null;
- const minimumAttack=knownBounds??(effectiveAttack?observedEnkiduMinimum({
-  level,jobKey,stats,records,attack:effectiveAttack.known,
-  defense:effectiveDefense.known,accuracy:accuracyKnown,dodge:observedDodge,
-  weapon,weaponGrade,weaponEnhancementType,racialWeapon,racialPassiveId,
-  meleeMastery,techniqueTrained,ridingMastery:branchMasteries?.riding,
-  branchMasteries,activeSkills:actives,combatBuffs,honorTitle,guildArouse
- }):null);
+ // No general formula proven for the character-sheet minimum. Display only
+ // the independently computed maximum, never hard-coded min–max fixtures.
  const attackWithRange=effectiveAttack?
-  {...effectiveAttack,minimum:minimumAttack,minimumVerified:minimumAttack!==null}:null;
+  {...effectiveAttack,minimum:null,minimumVerified:false}:null;
  const frontAccuracy={known:accuracyKnown,positionalBonus:0,verified:false,
   source:"Remaked Calc('ACC'), Status_62 / Status_63",
   excluded:['unmapped front-only item and skill effects']};
