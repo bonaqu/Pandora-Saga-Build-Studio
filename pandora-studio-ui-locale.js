@@ -199,6 +199,10 @@ function setOverrides(overrides){
  contentOverrides=overrides&&typeof overrides==='object'&&!Array.isArray(overrides)?
   overrides:{};
 }
+function baseText(key,lang='ru'){
+ const defaults=strings[key]||accountCopy[key];
+ return defaults?defaults[lang==='en'?1:0]:key;
+}
 function text(key,lang='ru'){
  const defaults=strings[key]||accountCopy[key],id=fieldKey(key);
  if(!defaults||!id)return key;
@@ -244,5 +248,5 @@ function localize(root,lang='ru'){
   }
  }
 }
-root.PandoraUILocale=Object.freeze({text,fieldKey,keys,literalKey,setOverrides,ui,apply,localize});
+root.PandoraUILocale=Object.freeze({text,baseText,fieldKey,keys,literalKey,setOverrides,ui,apply,localize});
 })(typeof window==='undefined'?globalThis:window);
