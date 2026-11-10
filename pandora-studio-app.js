@@ -918,6 +918,10 @@ function ownerCopy(section,key,ru,en){
 }
 function ownerCopyLabel(node,section,key,ru,en){
  if(!node||!adminEditing||!adminToken)return;
+ node.dataset.ownerCopySection=section;
+ node.dataset.ownerCopyId=key;
+ node.dataset.ownerCopyRu=ru;
+ node.dataset.ownerCopyEn=en;
  node.classList.add('origin-copy-editable');
  // Captions inside real buttons already have their own pencil and handler.
  // Plain labels also need keyboard access without inserting extra controls.
@@ -7423,6 +7427,23 @@ function refreshVisibleUICopy(recordKey){
    pencil.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
  }
 }
+// Copy-only Undo/saves must not unmount the Soul search or Path card.
+function refreshVisibleOwnerCopy(recordKey){
+ const key=String(recordKey).replace(/^guideedit\.book\./,'');
+ if(!/^(equipment|path)\./.test(key))return;
+ for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
+  const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
+  if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
+  node.textContent=ownerCopy(section,id,ru,en);
+ }
+ if(key==='equipment.socket-overflow-hint'){
+  const hint=ownerCopy('equipment','socketOverflowHint',
+   'Сначала извлеките души из лишних слотов',
+   'Remove Souls from extra sockets first');
+  for(const button of document.querySelectorAll('#stagePicker [data-socket-capacity]'))
+   if(button.disabled)button.title=hint;
+ }
+}
 function refreshVisibleProfileCopy(){
  for(const node of document.querySelectorAll('#detailContent [data-profile-copy-key]')){
   if(node.querySelector('.wiki-inline-input'))continue;
@@ -7460,6 +7481,8 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
+    }else if(/^guideedit\.book\.(equipment|path)\./.test(last.key)){
+     refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
   finally{editIsSaving=false;refreshOwnerUI()}
@@ -7765,6 +7788,8 @@ async function saveGuidePatchNow(key,fields){
   if(key==='wiki.labels')refreshVisibleWikiLabels();
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
+  if(key.startsWith('book.equipment.')||key.startsWith('book.path.'))
+   refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'){
    const pane=$('detailContent'),position=pane?.scrollTop||0;
    wikiRenderSelected?.();
