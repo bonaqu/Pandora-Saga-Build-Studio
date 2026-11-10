@@ -26,6 +26,10 @@ test('account copy has stable bilingual semantic keys and independent D1 values'
   'Вход открывает облачные билды.');
  assert.equal(locale.ui('Логин и пароль — для доступа к сохранённым облачным билдам.','en'),
   'Sign in to open cloud builds.');
+ assert.equal(locale.baseText('accountGuestLead','ru'),
+  'Логин и пароль — для доступа к сохранённым облачным билдам.');
+ assert.equal(locale.baseText('accountGuestLead','en'),
+  'Your username and password give access to your saved cloud builds.');
  assert.equal(locale.ui('Пароли не совпадают.','en'),'Passwords do not match.');
  locale.setOverrides({});
  assert.equal(locale.ui('Логин и пароль — для доступа к сохранённым облачным билдам.','en'),
@@ -42,6 +46,23 @@ test('account long RU/EN help text is editable without losing bundled defaults',
  assert.equal(locale.text('accountStorageWarning','en'),'Updated explanation.');
  locale.setOverrides({['guideedit.book.'+id]:JSON.stringify({ru:'x'.repeat(351)})});
  assert.equal(locale.text('accountStorageWarning','ru'),before);
+ locale.setOverrides({});
+});
+
+test('owner change review compares D1 copy against immutable RU/EN defaults',()=>{
+ runInNewContext(source('pandora-studio-owner-change-review.js'),root);
+ const key='accountGuestLead',record='guideedit.book.'+locale.fieldKey(key);
+ const edit={ru:'Отредактированный текст',en:'Edited text'};
+ locale.setOverrides({[record]:JSON.stringify(edit)});
+ const ru=root.PandoraOwnerChangeReview.inspect(record,JSON.stringify(edit),{lang:'ru'});
+ const en=root.PandoraOwnerChangeReview.inspect(record,JSON.stringify(edit),{lang:'en'});
+ assert.match(ru.title,/Логин и пароль/);
+ assert.match(en.title,/Your username and password/);
+ assert.equal(ru.changes.find(x=>x.field==='Текст RU').before,
+  locale.baseText(key,'ru'));
+ assert.equal(en.changes.find(x=>x.field==='English text').before,
+  locale.baseText(key,'en'));
+ assert.equal(en.changes.find(x=>x.field==='English text').after,'Edited text');
  locale.setOverrides({});
 });
 
