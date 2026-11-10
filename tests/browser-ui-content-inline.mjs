@@ -1,0 +1,97 @@
+import assert from 'node:assert/strict';
+
+export async function runUIContentInlineSmoke(browser,base){
+ const api='https://ps-build-studio-cloud.bonaqu.workers.dev';
+ const context=await browser.newContext({viewport:{width:1100,height:810}});
+ const values={},writes=[],errors=[];
+ await context.route('**/*',route=>{
+  const req=route.request(),url=req.url(),method=req.method();
+  if(url.startsWith(base+'/'))return route.continue();
+  if(!url.startsWith(api+'/'))return route.abort();
+  const headers={'access-control-allow-origin':'*',
+   'access-control-allow-headers':'Authorization,Content-Type',
+   'access-control-allow-methods':'GET,POST,OPTIONS'};
+  if(method==='OPTIONS')return route.fulfill({status:204,headers});
+  const reply=(body,status=200)=>route.fulfill({status,headers,
+   contentType:'application/json',body:JSON.stringify(body)});
+  const path=new URL(url).pathname;
+  if(path==='/api/overrides')return reply({values});
+  if(path==='/api/admin/login'){
+   assert.equal(req.postDataJSON().password,'Correct admin password!');
+   return reply({token:'a'.repeat(43),expires:Date.now()+600000});
+  }
+  if(path==='/api/admin/override'){
+   assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
+   const data=req.postDataJSON();
+   assert.equal(data.expectedValue,Object.hasOwn(values,data.key)?values[data.key]:null);
+   values[data.key]=data.value;writes.push(data);
+   return reply({ok:true,key:data.key,value:data.value,conditional:true});
+  }
+  return route.abort();
+ });
+ const page=await context.newPage();
+ page.on('pageerror',error=>errors.push(error.message));
+ try{
+  await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+  await page.locator('#nav [data-tab="wiki"]').waitFor({state:'visible'});
+  assert.equal(await page.locator('#nav .ui-content-pencil').count(),0,
+   'Guest does not see editing controls');
+  await page.keyboard.press('Control+Alt+Shift+P');
+  await page.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
+  await page.locator('input[placeholder="Пароль администратора"]')
+   .fill('Correct admin password!');
+  await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
+  await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
+  const wiki=page.locator('#nav [data-i18n="wiki"]');
+  const pencil=page.locator('#nav [data-ui-content-for="wiki"]');
+  await pencil.waitFor({state:'visible'});
+  await pencil.click();
+  const input=page.locator('#nav .ui-content-edit-host [contenteditable]');
+  await input.waitFor({state:'visible'});
+  await input.fill('📜 Справочник');
+  await input.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
+   ?.textContent==='📜 Справочник',null,{timeout:15000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.wiki']).ru,'📜 Справочник');
+  assert.equal(await page.getByRole('dialog',{name:'Служебный вход'}).isVisible(),false);
+  assert.equal(await wiki.isVisible(),true);
+
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  await pencil.click();
+  const englishInput=page.locator('#nav .ui-content-edit-host [contenteditable]');
+  await englishInput.fill('📜 Wiki Guide');
+  await englishInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
+   ?.textContent==='📜 Wiki Guide',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.ui.label.wiki']),{
+   ru:'📜 Справочник',en:'📜 Wiki Guide'
+  });
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
+   ?.textContent==='📜 Справочник',null,{timeout:15000});
+
+  await wiki.click();
+  const category=page.locator('[data-wiki-chapter="item"]');
+  if(await category.count())await category.click();
+  const search=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
+  await search.fill('Копье Зефира');
+  const spear=page.locator('[data-wiki-record="1482"]');
+  await spear.waitFor({state:'visible',timeout:20000});
+  await spear.press('Enter');
+  const penLabel=page.locator('.item-fields dt').filter({hasText:'Пробитие'});
+  await penLabel.waitFor({state:'visible'});
+  await penLabel.locator('.wiki-hint-pencil').click();
+  const field=penLabel.locator('.wiki-hint-inline-edit [contenteditable]');
+  await field.fill('Чем меньше пробитие, тем выше минимальная атака.');
+  await field.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('.item-fields dt .wiki-help-word[title="Чем меньше пробитие, тем выше минимальная атака."]')!==null,null,
+   {timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.wiki.item-field.pen']).hintRu,
+   'Чем меньше пробитие, тем выше минимальная атака.');
+  assert.deepEqual(errors,[]);
+  assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,2);
+  assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,1);
+  console.log('Chromium D1 inline UI/Wiki hints RU+EN: pencil, blur, CAS, locale switch passed');
+ }finally{await context.close()}
+}
