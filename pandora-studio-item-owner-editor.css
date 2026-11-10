@@ -372,27 +372,18 @@ body:has(.modal-root:not([hidden])) #ownerDock{pointer-events:none}
  overflow-wrap:anywhere
 }
 
-/* Inline owner guide pencil is absolutely contained by the heading.
-   It must never extend over Book navigation or intercept Close/Next. */
-.stage-attribute-head .stage-book-heading{position:relative;padding-right:47px}
-.stage-attribute-head .stage-book-heading>.stage-guide-edit-name{
- position:absolute;top:50%;right:24px;transform:translateY(-50%);
+/* Hero Book heading editor actions now share the title's own grid row.
+   No absolute pencil positions; navigation remains fully clickable. */
+.stage-attribute-head .stage-book-heading{padding-right:0}
+.stage-attribute-head .stage-book-heading>.stage-guide-actions{
+ justify-self:end;min-width:0
 }
-.stage-attribute-head .stage-book-heading>.stage-guide-edit-hint{
- position:absolute;top:50%;right:1px;transform:translateY(-50%);
- display:grid;place-items:center;width:20px;height:20px;min-width:20px;
- min-height:20px;padding:0;margin:0;
- font:600 11px/1 Manrope,Arial,sans-serif;
- border:1px solid #8c6d47;border-radius:4px;
- background:#332318;color:#e7c69b;cursor:pointer;
+.stage-attribute-head .stage-book-heading>.stage-guide-actions .stage-guide-edit-name,
+.stage-attribute-head .stage-book-heading>.stage-guide-actions .stage-guide-edit-hint{
+ width:20px;min-width:20px;height:20px;flex-basis:20px
 }
-.stage-attribute-head .stage-book-heading>.stage-guide-edit-hint:hover{
- border-color:#dab47b;background:#49321f
-}
-/* The header keeps its two small actions inside the title, away from arrows. */
-.stage-attribute-head .stage-book-heading>.stage-guide-edit-name{
- display:grid;place-items:center;width:20px;height:20px;min-width:20px;
- min-height:20px;padding:0;margin:0
+.stage-attribute-head .stage-book-heading .wiki-inline-input{
+ width:100%;min-width:0;max-width:100%;font:500 11px Manrope,Arial,sans-serif
 }
 
 /* Shared entity-link editing: the same searchable picker supports both
