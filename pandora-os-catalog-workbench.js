@@ -10,8 +10,20 @@
     // Only fixed author text, never a game ID, API status or comparison value.
     const authored=(tag,attrs,key,ru,en)=>{
       const node=h(tag,{...attrs,text:copy(key,ru,en)});
-      if(canEdit)editLabel?.(node,key,ru,en);
-      return node;
+      if(!canEdit||typeof editLabel!=='function')return node;
+      editLabel(node,key,ru,en);
+      // A separate real control supports touch, unlike a decorative
+      // ::after pencil. Only this static copy receives the double-click.
+      node.id||='os-sync-label-'+key;
+      const pencil=h('button',{type:'button',class:'os-sync-copy-pencil',
+       text:'✎',title:tr('Изменить текст','Edit text'),
+       'aria-label':tr('Изменить пояснение','Edit explanation'),
+       'aria-describedby':node.id});
+      pencil.addEventListener('click',event=>{
+       event.preventDefault();event.stopPropagation();
+       node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+      });
+      return h('div',{class:'os-sync-copy-field'},[node,pencil]);
     };
     // Publishing a catalog must never run when a pencil is pressed:
     // place the editor BESIDE the action, not inside its clickable button.
