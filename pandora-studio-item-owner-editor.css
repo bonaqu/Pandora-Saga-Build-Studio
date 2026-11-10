@@ -374,7 +374,10 @@ body:has(.modal-root:not([hidden])) #ownerDock{pointer-events:none}
 
 /* Inline owner guide pencil is absolutely contained by the heading.
    It must never extend over Book navigation or intercept Close/Next. */
-.stage-attribute-head .stage-book-heading{position:relative;padding-right:24px}
+.stage-attribute-head .stage-book-heading{position:relative;padding-right:47px}
+.stage-attribute-head .stage-book-heading>.stage-guide-edit-name{
+ position:absolute;top:50%;right:24px;transform:translateY(-50%);
+}
 .stage-attribute-head .stage-book-heading>.stage-guide-edit-hint{
  position:absolute;top:50%;right:1px;transform:translateY(-50%);
  display:grid;place-items:center;width:20px;height:20px;min-width:20px;
@@ -385,6 +388,11 @@ body:has(.modal-root:not([hidden])) #ownerDock{pointer-events:none}
 }
 .stage-attribute-head .stage-book-heading>.stage-guide-edit-hint:hover{
  border-color:#dab47b;background:#49321f
+}
+/* The header keeps its two small actions inside the title, away from arrows. */
+.stage-attribute-head .stage-book-heading>.stage-guide-edit-name{
+ display:grid;place-items:center;width:20px;height:20px;min-width:20px;
+ min-height:20px;padding:0;margin:0
 }
 
 /* Shared entity-link editing: the same searchable picker supports both
