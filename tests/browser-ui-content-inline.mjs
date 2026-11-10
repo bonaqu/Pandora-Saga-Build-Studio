@@ -92,7 +92,50 @@ export async function runUIContentInlineSmoke(browser,base){
    {timeout:12000});
   assert.equal(JSON.parse(values['guideedit.book.wiki.item-field.pen']).hintRu,
    'Чем меньше пробитие, тем выше минимальная атака.');
+  // Dynamic account panel is rebuilt independently of the main planner.
+  // Author edits remain inside the existing panel without touching forms.
+  await page.locator('#profileTrigger').click();
+  const guestLead=page.locator('#accountPanel [data-owner-copy-key="accountGuestLead"]');
+  await guestLead.waitFor({state:'visible'});
+  const login=page.locator('#accountPanel .account-form input').first();
+  await login.fill('TestingProfile');
+  await guestLead.dblclick();
+  const accountInput=page.locator('#accountPanel .account-copy-edit-host [contenteditable]');
+  await accountInput.fill('Вход открывает облачные билды.');
+  await accountInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#accountPanel [data-owner-copy-key="accountGuestLead"]')?.textContent===
+   'Вход открывает облачные билды.',null,{timeout:12000});
+  assert.equal(JSON.parse(values['guideedit.book.ui.label.account-guest-lead']).ru,
+   'Вход открывает облачные билды.');
+  assert.equal(await login.inputValue(),'TestingProfile',
+   'Editing descriptive text must not erase the account username draft');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  await page.locator('#profileTrigger').click();
+  const guestEn=page.locator('#accountPanel [data-owner-copy-key="accountGuestLead"]');
+  await guestEn.waitFor({state:'visible'});
+  assert.match(await guestEn.textContent(),/username and password/i);
+  await guestEn.dblclick();
+  const enInput=page.locator('#accountPanel .account-copy-edit-host [contenteditable]');
+  await enInput.fill('Sign in to open cloud builds.');
+  await enInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#accountPanel [data-owner-copy-key="accountGuestLead"]')?.textContent===
+   'Sign in to open cloud builds.',null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.ui.label.account-guest-lead']),{
+   ru:'Вход открывает облачные билды.',en:'Sign in to open cloud builds.'
+  });
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
+  // If the account popup was closed by the locale button, open it again.
+  if(!(await page.locator('#accountPanel').isVisible()))
+   await page.locator('#profileTrigger').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#accountPanel [data-owner-copy-key="accountGuestLead"]')?.textContent===
+   'Вход открывает облачные билды.',null,{timeout:12000});
   assert.deepEqual(errors,[]);
+  assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.account-guest-lead').length,2);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,2);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,1);
   console.log('Chromium D1 inline UI/Wiki hints RU+EN: pencil, blur, CAS, locale switch passed');
