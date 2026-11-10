@@ -53,7 +53,9 @@ const setup={
  combatContext:{weapon:items[1483],weaponGrade:8,
   weaponPlus:tables.weaponPlus,magicPlus:tables.magicPlus,
   jobKey:'DRAGOON',skillCatalog:skills,meleeMastery:72,
-  ridingMastery:50}
+  techniqueTrained:1,ridingMastery:50,
+  branchMasteries:{slash:5,thrust:56,brush:5,blow:2,
+   defense:4,archery:1,riding:50}}
 };
 const game=Object.freeze({
  normal:{min:189,max:219},warCry:{min:229,max:266},
@@ -154,4 +156,50 @@ test('published OS web calculator STR percent expression at 1–200',()=>{
  assert.equal(C.weaponAttackPreview({str:72,weapon}).known,160);
 });
 
-test.todo('Issue #238: OS minimum attack 189/229 needs confirmed skill-mastery rule');
+test('game-client exact equipped and trained Enkidu build displays 189–219 / 229–266',()=>{
+ const a=result(false),b=result(true);
+ assert.deepEqual([a.combat.attack.minimum,a.combat.attack.known],[189,219]);
+ assert.deepEqual([b.combat.attack.minimum,b.combat.attack.known],[229,266]);
+ assert.equal(a.combat.attack.minimumVerified,true);
+ assert.equal(b.combat.attack.minimumVerified,true);
+});
+
+test('client fixture never guesses minimum if green mastery, gear, buff or race differs',()=>{
+ const compare=changes=>C.base({...setup,...changes});
+ const original=setup.combatContext;
+ const changedTrained={...original,branchMasteries:{
+  ...original.branchMasteries,thrust:55,slash:6
+ }};
+ assert.equal(compare({combatContext:changedTrained}).combat.attack.minimum,null,
+  'Same total mastery, different weapon proficiency is NOT the verified build');
+ const missingMasteries={...original};delete missingMasteries.branchMasteries;
+ assert.equal(compare({combatContext:missingMasteries}).combat.attack.minimum,null);
+ const missingSoul=records.filter(([key])=>key!=='soul:103002');
+ assert.equal(compare({records:missingSoul}).combat.attack.minimum,null);
+ const weirdPassive=compare({potionContext:{racialPassiveId:900050003}});
+ assert.equal(weirdPassive.combat.attack.minimum,null);
+ const extraBuff=compare({attributeBuffs:{combatWarCry:true,combatRage:true}});
+ assert.equal(extraBuff.combat.attack.minimum,null);
+ const ordinary=items[1482],ordinaryRows=records.filter(([key])=>
+  key!=='item:1483'&&key!=='soul:101001');
+ ordinaryRows.push(['item:1482',ordinary,0]);
+ assert.equal(compare({records:ordinaryRows,
+  combatContext:{...original,weapon:ordinary,weaponGrade:0}}).combat.attack.minimum,null);
+});
+
+test('UI summary emits real min–max only for validated game-client fixture',()=>{
+ const root={};
+ Function('window','document',read('pandora-studio-hero-book.js'))(root,
+  {documentElement:{lang:'ru'}});
+ const rows=calc=>root.PandoraStageAttributes.summaryRows(calc)
+  .flatMap(group=>group.rows);
+ const a=rows(result(false)).find(r=>r.ru==='АТК');
+ const b=rows(result(true)).find(r=>r.ru==='АТК');
+ assert.equal(a.display,'189–219');
+ assert.equal(b.display,'229–266');
+ assert.equal(rows(C.base({...setup,combatContext:{
+  ...setup.combatContext,branchMasteries:{...setup.combatContext.branchMasteries,thrust:55,slash:6}
+ }})).find(r=>r.ru==='АТК').display,null);
+});
+
+test.todo('Issue #238: universal minimum ATK function by weapon proficiency remains unverified');

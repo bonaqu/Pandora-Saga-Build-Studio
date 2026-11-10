@@ -565,6 +565,61 @@ function observedMinimumAttack({level,jobKey,stats,records,techniqueTrained,
  }
  return null;
 }
+// Full, independently observed in-game Enkidu Dragoon equipment/green
+// mastery fixture (2026-11-10). NOT a generic lower-bound formula.
+// Guard every gameplay-relevant dimension; anything else remains unknown.
+const enkiduObservedGear=Object.freeze([
+ 'item:1483:8','item:11087:3','item:12608:4','item:14562:3',
+ 'item:13608:4','item:15608:6','item:18001:0',
+ 'item:19036:0','item:19036:0','item:20001:0','item:21001:0',
+ 'item:22005:0','item:22005:0',
+ 'soul:101001:8','soul:101001:8',
+ 'soul:103002:4','soul:103002:4',
+ 'soul:104003:3','soul:103010:4','soul:103010:4',
+ 'soul:105001:6','soul:107006:0','soul:107006:0'
+].sort());
+const enkiduObservedStats=Object.freeze({
+ vit:10,str:72,agi:72,dex:40,spi:5,int:1
+});
+const enkiduObservedMasteries=Object.freeze({
+ slash:5,thrust:56,brush:5,blow:2,defense:4,archery:1,riding:50
+});
+function observedEnkiduMinimum({level,jobKey,stats,records,attack,defense,
+ accuracy,dodge,weapon,weaponGrade,weaponEnhancementType,racialWeapon,
+ racialPassiveId,meleeMastery,techniqueTrained,ridingMastery,
+ branchMasteries,activeSkills,combatBuffs,honorTitle,guildArouse}={}){
+ if(level!==45||jobKey!=='DRAGOON'||racialPassiveId!==900050002||
+  weapon?.id!==1483||weaponGrade!==8||weaponEnhancementType!=='physical'||
+  honorTitle!==0||guildArouse!==0||meleeMastery!==72||
+  techniqueTrained!==1||ridingMastery!==50||
+  racialWeapon?.matchesCategory!==true||racialWeapon.flat!==0||
+  racialWeapon.percent!==12||defense!==72||accuracy!==99||
+  dodge!==144||!Array.isArray(records)||!branchMasteries||
+  typeof branchMasteries!=='object')return null;
+ for(const [key,n] of Object.entries(enkiduObservedStats))
+  if(stats?.[key]!==n)return null;
+ for(const [key,n] of Object.entries(enkiduObservedMasteries))
+  if(branchMasteries[key]!==n)return null;
+ // Other trained green branches are also relevant to attack mechanics.
+ for(const [key,n] of Object.entries(branchMasteries))
+  if(!Object.hasOwn(enkiduObservedMasteries,key)&&n!==0)return null;
+ const active=activeSkills?.warCry===true;
+ if(!activeSkills||Object.entries(activeSkills).some(([k,on])=>k!=='warCry'&&on===true)||
+  Object.entries(combatBuffs||{}).some(([k,v])=>k!=='combatWarCry'&&v===true)||
+  active!==Boolean(combatBuffs?.combatWarCry))return null;
+ if(attack!==(active?266:219)||records.length!==enkiduObservedGear.length)return null;
+ const actual=[];
+ for(const [source,record,grade] of records){
+  if(typeof source!=='string'||!Number.isInteger(grade)||
+   !record||!Number.isInteger(record.id)||
+   source!==((source.startsWith('item:')?'item:':'soul:')+record.id))
+   return null;
+  actual.push(source+':'+grade);
+ }
+ actual.sort();
+ if(actual.some((row,i)=>row!==enkiduObservedGear[i]))return null;
+ return active?229:189;
+}
 // Source-backed equipment modifiers from current OS item/Soul structured EP codes.
  // Apply Remaked's ceil(base * rate / 100) separately to every source effect.
  // Deliberately ignore unstructured gear description text and conditional skills.
@@ -981,11 +1036,18 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const observedDodge=dodge+quickStep+(supportSkills.windAssist?Math.floor(
   supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
   dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0);
- const minimumAttack=effectiveAttack?observedMinimumAttack({
+ const knownBounds=effectiveAttack?observedMinimumAttack({
   level,jobKey,stats,records,techniqueTrained,meleeMastery,
   attack:effectiveAttack.known,defense:effectiveDefense.known,
   accuracy:accuracyKnown,dodge:observedDodge,honorTitle,guildArouse
  }):null;
+ const minimumAttack=knownBounds??(effectiveAttack?observedEnkiduMinimum({
+  level,jobKey,stats,records,attack:effectiveAttack.known,
+  defense:effectiveDefense.known,accuracy:accuracyKnown,dodge:observedDodge,
+  weapon,weaponGrade,weaponEnhancementType,racialWeapon,racialPassiveId,
+  meleeMastery,techniqueTrained,ridingMastery:branchMasteries?.riding,
+  branchMasteries,activeSkills:actives,combatBuffs,honorTitle,guildArouse
+ }):null);
  const attackWithRange=effectiveAttack?
   {...effectiveAttack,minimum:minimumAttack,minimumVerified:minimumAttack!==null}:null;
  const frontAccuracy={known:accuracyKnown,positionalBonus:0,verified:false,
