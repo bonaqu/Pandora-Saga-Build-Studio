@@ -415,7 +415,7 @@ export async function runAdminEntrySmoke(browser,base){
    'Проверить изменения в текущей игре');
   assert.equal(calls.filter(value=>value.startsWith('game-source:')).length,
    expectedCalls,'Editing the button must not start a catalog download');
-  assert.equal(dialog.locator('.os-sync-main-check').count(),1);
+  assert.equal(await dialog.locator('.os-sync-main-check').count(),1);
   const liveSource=dialog.getByRole('button',{name:'Проверить изменения в текущей игре'});
   await liveSource.hover();
   await page.waitForTimeout(330);
