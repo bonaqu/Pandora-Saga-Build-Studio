@@ -5726,6 +5726,49 @@ function renderWiki(root){
  }
 }
 
+// Stable author-copy keys are separate from player-authored profile values.
+// Only labels and help text are editable; typed names/bios and saved build
+// properties never enter the D1 editorial namespace.
+function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
+ const label=ownerCopy('profile',key,ru,en);
+ const node=h(as,{text:label,class:'ps-profile-copy',
+  'data-profile-copy-key':key,'data-profile-copy-ru':ru,
+  'data-profile-copy-en':en,...(forId?{for:forId}:{})});
+ if(!adminEditing||!adminToken)return node;
+ node.classList.add('origin-copy-editable');
+ const edit=event=>{
+  event.preventDefault();event.stopPropagation();
+  if(node.querySelector('.wiki-inline-input'))return;
+  editWikiValue(node,ownerCopy('profile',key,ru,en),{
+   type:'text',
+   onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('profile',key),{[lang]:next}),
+   onCommitted:next=>{
+    node.textContent=next;
+    const id=key.startsWith('field-')?'ps-profile-field-'+key.slice(6):
+     key==='bio-label'||key==='bio-placeholder'?'ps-profile-description':null;
+    const input=id?document.getElementById(id):null;
+    if(input){
+     if(key==='bio-placeholder')input.placeholder=next;
+     else{input.setAttribute('aria-label',next);
+      if(key.startsWith('field-'))input.placeholder=next;}
+    }
+   }
+  });
+ };
+ node.addEventListener('dblclick',edit);
+ node.tabIndex=0;
+ node.setAttribute('aria-keyshortcuts','F2');
+ node.addEventListener('keydown',event=>{if(event.key==='F2')edit(event)});
+ const pencil=h('button',{type:'button',class:'ps-profile-copy-pencil',
+  'data-profile-copy-pencil':key,text:'✎',
+  'aria-label':(lang==='en'?'Rename: ':'Переименовать: ')+label,onclick:edit});
+ const host=h('span',{class:'ps-profile-copy-host'},[node,pencil]);
+ return host;
+}
+function profileCopyNote(key,ru,en){
+ const note=h('p',{class:'muted'});
+ note.append(profileCopyLabel(key,ru,en));return note;
+}
 function renderProfile(root){
  const tr=(ru,en)=>lang==='en'?en:ru;
  const raceName=races[state.race]?.[lang==='en'?1:0]||races[state.race]?.[0]||'';
@@ -5735,24 +5778,44 @@ function renderProfile(root){
  left.append(h("img",{src:raceSource(state.race,state.gender),alt:tr("Облик расы ","Race appearance: ")+raceName}),
  h("strong",{text:state.name||tr("Без имени","Unnamed hero")}),h("small",{text:(raceName||tr('Раса не выбрана','Race not selected'))+" · "+(jobs[state.job]||tr('Профессия не выбрана','Class not selected'))+" · "+state.level+tr(" ур."," lvl.")}));
  const right=h("section",{class:"ps-profile-info"});
- const fields=[["name",tr("Имя героя","Hero name"),state.name||"",64],["guild",tr("Гильдия","Guild"),profile.guild||"",80],
- ["nation",tr("Нация","Nation"),profile.nation||"",80],["rank",tr("Ранг","Rank"),profile.rank||"",80]];
- for(const [key,label,value,max]of fields){
-   const row=h("label",{class:"ps-profile-row"});
-   const input=h("input",{type:"text",maxLength:String(max),value,"aria-label":label,placeholder:label});
+ const fields=[["name","Имя героя","Hero name",state.name||"",64],
+ ["guild","Гильдия","Guild",profile.guild||"",80],
+ ["nation","Нация","Nation",profile.nation||"",80],
+ ["rank","Ранг","Rank",profile.rank||"",80]];
+ for(const [key,ru,en,value,max]of fields){
+   const label=ownerCopy('profile','field-'+key,ru,en);
+   const inputId='ps-profile-field-'+key;
+   const row=h('div',{class:'ps-profile-row'});
+   const input=h("input",{id:inputId,type:"text",maxLength:String(max),value,
+    "aria-label":label,placeholder:label});
    input.addEventListener("input",()=>{
     if(key==="name"){state.name=input.value}
     else{state.profile??={};state.profile[key]=input.value}
     persist();
    });
-   row.append(h("span",{text:label}),input);right.append(row);
+   row.append(profileCopyLabel('field-'+key,ru,en,{as:'label',forId:inputId}),input);
+   right.append(row);
  }
- const bio=h("label",{class:"ps-profile-row ps-profile-bio"});
- const description=h("textarea",{rows:"5",maxLength:"500",placeholder:tr("Описание героя — сохраняется в билде","Hero bio — saved with the build"),"aria-label":tr("О себе","About")});
+ const bio=h("div",{class:"ps-profile-row ps-profile-bio"});
+ const descriptionId='ps-profile-description';
+ const description=h("textarea",{id:descriptionId,rows:"5",maxLength:"500",
+  placeholder:ownerCopy('profile','bio-placeholder',
+   "Описание героя — сохраняется в билде","Hero bio — saved with the build"),
+  "aria-label":ownerCopy('profile','bio-label',"О себе","About")});
  description.value=typeof profile.about==="string"?profile.about:"";
  description.addEventListener("input",()=>{state.profile??={};state.profile.about=description.value;persist()});
- bio.append(h("span",{text:tr("О себе","About")}),description);right.append(bio);
- right.append(h("p",{class:"muted",text:tr("Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах.","Profile fields are notes saved with the build. Nation, honor and rank are not verified against the game server and do not affect calculations.")}));
+ bio.append(profileCopyLabel('bio-label','О себе','About',
+  {as:'label',forId:descriptionId}),description);right.append(bio);
+ // The placeholder is an accessible input attribute, never a text node.
+ if(adminEditing&&adminToken){
+  const placeholder=profileCopyLabel('bio-placeholder',
+   'Описание героя — сохраняется в билде','Hero bio — saved with the build');
+  const help=h('div',{class:'ps-profile-placeholder-editor'},[placeholder]);
+  right.append(help);
+ }
+ right.append(profileCopyNote('profile-notes',
+  'Поля профиля — пользовательские заметки в билде. Нация, честь и ранг не сверяются с игровым сервером и не участвуют в расчётах.',
+  'Profile fields are notes saved with the build. Nation, honor and rank are not verified against the game server and do not affect calculations.'));
  view.append(left,right);root.append(view);
 }
 function renderCharacter(root){
@@ -5769,11 +5832,20 @@ function renderCharacter(root){
  if(characterPanelTab==="profile")renderProfile(body);
  else{
   const cards=h("div",{class:"ps-overview-grid"});
-  cards.append(h("div",{class:"ps-overview-card"},[h("span",{text:tr("Раса","Race")}),h("strong",{text:races[state.race]?.[lang==='en'?1:0]||tr('Не выбрана','Not selected')})]),
-   h("div",{class:"ps-overview-card"},[h("span",{text:tr("Профессия","Class")}),h("strong",{text:jobs[state.job]||tr('Не выбрана','Not selected')})]),
-   h("div",{class:"ps-overview-card"},[h("span",{text:tr("Уровень","Level")}),h("strong",{text:String(state.level)})]));
+  cards.append(
+   h('div',{class:'ps-overview-card'},[
+    profileCopyLabel('overview-race','Раса','Race'),
+    h('strong',{text:races[state.race]?.[lang==='en'?1:0]||tr('Не выбрана','Not selected')})]),
+   h('div',{class:'ps-overview-card'},[
+    profileCopyLabel('overview-class','Профессия','Class'),
+    h('strong',{text:jobs[state.job]||tr('Не выбрана','Not selected')})]),
+   h('div',{class:'ps-overview-card'},[
+    profileCopyLabel('overview-level','Уровень','Level'),
+    h('strong',{text:String(state.level)})]));
   body.append(cards);
-  const racialTitle=h('div',{class:'subhead',text:'✦ '+(lang==='en'?'Racial passive — choose one':'Расовая пассивка — выбери одну из трёх')});
+  const racialTitle=h('div',{class:'subhead'});
+  racialTitle.append(h('span',{text:'✦'}),profileCopyLabel('racial-heading',
+   'Расовая пассивка — выбери одну из трёх','Racial passive — choose one'));
   const passivePicker=h('div',{class:'race-passive-picker'});
   const passives=window.PandoraGameNavigation.racePassiveIds(catalog.racialPassives,state.race);
   if(!passives.length)passivePicker.append(h('p',{class:'muted',text:Number.isInteger(state.race)?tr('Загружаю расовые способности…','Loading racial abilities…'):tr('Выберите расу','Choose a race')}));
@@ -5791,7 +5863,9 @@ function renderCharacter(root){
     passivePicker.append(button);
   }
   body.append(racialTitle,passivePicker);
-  body.append(h("p",{class:"muted",text:tr("Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет.","Train skills in Hero Path and allocate attributes in Origin; these values have no duplicate editor here.")}));
+  body.append(profileCopyNote('overview-help',
+   'Умения развиваются в «Пути героя», а очки характеристик распределяются в «Происхождении». Других редакторов этих значений здесь нет.',
+   'Train skills in Hero Path and allocate attributes in Origin; these values have no duplicate editor here.'));
   const jump=h("div",{class:"ps-overview-actions"});
   jump.append(h("button",{class:"button-action",text:tr("⚔ Путь героя · умения","⚔ Hero Path · skills"),onclick:()=>{
    closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
@@ -7308,6 +7382,25 @@ function refreshVisibleUICopy(recordKey){
    pencil.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
  }
 }
+function refreshVisibleProfileCopy(){
+ for(const node of document.querySelectorAll('#detailContent [data-profile-copy-key]')){
+  if(node.querySelector('.wiki-inline-input'))continue;
+  const key=node.dataset.profileCopyKey;
+  const value=ownerCopy('profile',key,node.dataset.profileCopyRu,node.dataset.profileCopyEn);
+  node.textContent=value;
+  const pencil=node.nextElementSibling;
+  if(pencil?.dataset.profileCopyPencil===key)
+   pencil.setAttribute('aria-label',(lang==='en'?'Rename: ':'Переименовать: ')+value);
+  const id=key.startsWith('field-')?'ps-profile-field-'+key.slice(6):
+   key==='bio-label'||key==='bio-placeholder'?'ps-profile-description':null;
+  const input=id?document.getElementById(id):null;
+  if(input){
+   if(key==='bio-placeholder')input.placeholder=value;
+   else{input.setAttribute('aria-label',value);
+    if(key.startsWith('field-'))input.placeholder=value;}
+  }
+ }
+}
 async function undoOwnerEdit(){
   if(!adminToken||!ownerEdits.length||editIsSaving||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)return;
   const last=ownerEdits[ownerEdits.length-1];
@@ -7317,7 +7410,10 @@ async function undoOwnerEdit(){
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
     ownerEdits.pop();closeInlineEditor();
     if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
-    if(last.key.startsWith('guideedit.book.ui.label.')){
+    if(last.key.startsWith('guideedit.book.profile.')){
+     refreshVisibleProfileCopy();
+     saveView();
+    }else if(last.key.startsWith('guideedit.book.ui.label.')){
      refreshVisibleUICopy(last.key);
      if(last.key.startsWith('guideedit.book.ui.label.account-'))
       window.PandoraAccountUI?.refresh?.();
@@ -7625,7 +7721,8 @@ async function saveGuidePatchNow(key,fields){
   else if(key.startsWith('book.origin.')||
    key.startsWith('book.ui.label.account-')||
    key.startsWith('book.ui.label.library-')||
-   key.startsWith('book.ui.label.status-'))saveView(); // leave inline editor mounted
+   key.startsWith('book.ui.label.status-')||
+   key.startsWith('book.profile.'))saveView(); // leave inline editor mounted
   else if(key.startsWith('book.'))saveView(); // refresh Book only after the input is restored
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
