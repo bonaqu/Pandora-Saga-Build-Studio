@@ -284,16 +284,22 @@ function guideLabel(node,key,ru,en,options={},fallbackRu='',fallbackEn=''){
   node.addEventListener('dblclick',editName);
   node.setAttribute('aria-keyshortcuts','F2');
   node.addEventListener('keydown',event=>{if(event.key==='F2')editName(event)});
-  const pencil=make('button',{type:'button',class:'stage-guide-edit-hint',
-   text:'✎',title:english?'Edit tooltip':'Изменить подсказку',
-   'aria-label':english?'Edit tooltip for '+label:'Изменить подсказку: '+label,
+  const hintPencil=make('button',{type:'button',class:'stage-guide-edit-hint',
+   text:'?',title:english?'Edit explanation':'Изменить пояснение',
+   'aria-label':english?'Edit explanation for '+label:'Изменить пояснение: '+label,
    onclick:event=>{
     event.preventDefault();event.stopPropagation();
     root.PandoraGuideTooltip?.dismiss();
     options.onTextEdit(node,key,english?'hintEn':'hintRu',hint||'');
    }});
-  // Pencil is a separate control so editing a hint never changes a stat label.
-  node.after(pencil);
+  const namePencil=make('button',{type:'button',class:'stage-guide-edit-name',
+   text:'✎',title:english?'Rename label':'Переименовать подпись',
+   'aria-label':english?'Rename '+label:'Переименовать '+label,
+   onclick:editName});
+  // Two unambiguous actions: rename display label or edit its explanation.
+  // Both use the same existing D1 record with separate ru/en/hintRu/hintEn.
+  node.after(hintPencil);
+  node.after(namePencil);
  }
  return node;
 }

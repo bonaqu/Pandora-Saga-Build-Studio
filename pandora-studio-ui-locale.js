@@ -92,8 +92,20 @@ const libraryCopy=Object.freeze({
  libraryEmpty:['Сохранённых билдов пока нет.','No saved builds yet.'],
  libraryLocalCopyNote:['Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»','Local copy · open it and select “Overwrite” to save it to cloud']
 });
+// Fixed toast notifications are safe authored copy. Exclude runtime details,
+ // player build names, network errors and security diagnostics.
+const statusCopy=Object.freeze({
+ statusBuildDeleted:['Билд удалён. Все его ссылки больше не работают.','Build deleted. Its links are no longer valid.'],
+ statusConflictingBuilds:['Обнаружены разные версии билда. Обе сохранены отдельно в библиотеке.','Different build versions found. Both were preserved separately.'],
+ statusLibraryFull:['Недостаточно места для сохранения библиотеки. Освободи место в браузере.','Not enough browser storage for the build library. Free up space.'],
+ statusDeleteFailed:['Не удалось удалить билд: браузер не сохранил изменения.','Could not delete the build: the browser did not save the change.'],
+ statusLocalDelete:['Билд удалён локально. Ссылки перестанут работать после синхронизации с облаком.','Build deleted locally. Links will stop working after cloud sync.'],
+ statusDeleteRetryFailed:['Облако недоступно. Повторное удаление не удалось поставить в очередь — пока ссылка может работать.','Cloud unavailable. Could not queue another deletion attempt; the link may still work.'],
+ statusSaveFailed:['Билд не сохранён: браузер не смог записать его. Текущий герой остался открытым. Освободи место в браузере и повтори.','Build not saved: the browser could not store it. Your current character remains open. Free up browser space and try again.'],
+ statusImportsQueued:['Новые билды сохранены в браузере · проверяем облако…','New builds saved in this browser · checking cloud…']
+});
 const literalKeys=Object.freeze(Object.fromEntries(
- [...Object.entries(accountCopy),...Object.entries(libraryCopy)]
+ [...Object.entries(accountCopy),...Object.entries(libraryCopy),...Object.entries(statusCopy)]
   .map(([key,pair])=>[pair[0],key])));
 function literalKey(value){
  return typeof value==='string'&&Object.hasOwn(literalKeys,value)?literalKeys[value]:null;
@@ -221,7 +233,7 @@ const english=Object.freeze({
 let contentOverrides={};
 function fieldKey(key){
  if(!Object.hasOwn(strings,key)&&!Object.hasOwn(accountCopy,key)&&
-  !Object.hasOwn(libraryCopy,key))return null;
+  !Object.hasOwn(libraryCopy,key)&&!Object.hasOwn(statusCopy,key))return null;
  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
  return /^[a-z][a-z0-9-]{0,75}$/.test(slug)?'ui.label.'+slug:null;
 }
@@ -230,15 +242,15 @@ function setOverrides(overrides){
   overrides:{};
 }
 function baseText(key,lang='ru'){
- const defaults=strings[key]||accountCopy[key]||libraryCopy[key];
+ const defaults=strings[key]||accountCopy[key]||libraryCopy[key]||statusCopy[key];
  return defaults?defaults[lang==='en'?1:0]:key;
 }
 // Compact actions and headings stay short; only the storage warning may
 // need a longer paragraph. The Worker still enforces the global 360 limit.
-function copyLimit(key){return key==='accountStorageWarning'?350:
+function copyLimit(key){return key==='accountStorageWarning'||Object.hasOwn(statusCopy,key)?350:
  Object.hasOwn(libraryCopy,key)&&libraryCopy[key][0].length>90?250:90}
 function text(key,lang='ru'){
- const defaults=strings[key]||accountCopy[key]||libraryCopy[key],id=fieldKey(key);
+ const defaults=strings[key]||accountCopy[key]||libraryCopy[key]||statusCopy[key],id=fieldKey(key);
  if(!defaults||!id)return key;
  let edit=null;
  try{
@@ -250,7 +262,7 @@ function text(key,lang='ru'){
  return typeof saved==='string'&&saved.trim()&&saved.length<=max?saved:defaults[lang==='en'?1:0];
 }
 function keys(){return [...Object.keys(strings),...Object.keys(accountCopy),
- ...Object.keys(libraryCopy)]}
+ ...Object.keys(libraryCopy),...Object.keys(statusCopy)]}
 function ui(value,lang='ru'){
  const id=literalKey(value);
  return id?text(id,lang):lang==='en'?(english[value]||value):value;

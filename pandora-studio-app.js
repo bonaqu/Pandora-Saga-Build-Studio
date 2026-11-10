@@ -994,8 +994,14 @@ function editOriginCopyLabel(node,key,ru,en){
   }});
 }
 function renderOriginCopyLabels(){
- for(const [selector,key,ru,en] of originFixedLabels)
-  originCopyLabel(document.querySelector(selector),key,ru,en);
+ for(const [selector,key,ru,en] of originFixedLabels){
+  const node=document.querySelector(selector);
+  // Plain Origin titles and subheads need a real touch-accessible pencil.
+  // Navigation tabs already own their click actions: keep those untouched.
+  const pencilHost=node?.matches?.('h2')||node?.closest?.('.subhead')?
+   node.parentElement:null;
+  originCopyLabel(node,key,ru,en,{pencilHost});
+ }
 }
 function editAttr(el,key){el.dataset.editKey=key;if(adminEditing)el.classList.add('admin-edit');return el}
 function raceSource(i,gender){
@@ -2187,16 +2193,29 @@ function renderPathCopyControls(){
   const node=document.querySelector(selector);if(!node)continue;
   if(!node.querySelector('.wiki-inline-input'))node.textContent=copy(key,ru,en);
   node.classList.toggle('origin-copy-editable',editing);
+  const edit=event=>{
+   if(!adminEditing||!adminToken)return;
+   event.preventDefault();event.stopPropagation();
+   if(node.querySelector('.wiki-inline-input'))return;
+   editWikiValue(node,copy(key,ru,en),{type:'text',
+    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
+    onCommitted:next=>{node.textContent=next}});
+  };
+  // Origin/path labels should be discoverable on touch and keyboard, without
+  // replacing user-facing labels or the mastery checkbox's click behavior.
   if(!node.dataset.pathCopyBound){
    node.dataset.pathCopyBound='1';
-   node.addEventListener('dblclick',event=>{
-    if(!adminEditing||!adminToken)return;
-    event.preventDefault();event.stopPropagation();
-    editWikiValue(node,copy(key,ru,en),{type:'text',
-     onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
-     onCommitted:next=>{node.textContent=next}});
-   });
+   node.addEventListener('dblclick',edit);
   }
+  const existing=node.nextElementSibling?.dataset?.pathCopyFor===key?
+   node.nextElementSibling:null;
+  if(!editing){existing?.remove();continue}
+  if(existing)continue;
+  node.after(h('button',{type:'button',class:'path-inline-copy-pencil',
+   'data-path-copy-for':key,text:'✎',
+   title:lang==='en'?'Rename caption':'Переименовать подпись',
+   'aria-label':(lang==='en'?'Rename: ':'Переименовать: ')+copy(key,ru,en),
+   onclick:edit}));
  }
  for(const [id,key,ru,en,symbol] of [
   ['pathGrowthTab','tabGrowth','Развитие','Growth','◈'],
@@ -6746,6 +6765,8 @@ let studioToastTimer=null;
 // Ignore obsolete replies when the same shared URL is reopened before an older GET resolves.
 let sharedHashRequestId=0;
 function showStudioToast(message,tone='warning'){
+ const statusKey=window.PandoraUILocale?.literalKey?.(message);
+ const authoredKey=statusKey?.startsWith('status')?statusKey:null;
  let root=document.getElementById('studioToast');
  if(!root){root=h('div',{id:'studioToast',class:'studio-toast','aria-live':'polite',role:'status'});document.body.append(root)}
  clearTimeout(studioToastTimer);
@@ -6753,12 +6774,17 @@ function showStudioToast(message,tone='warning'){
  root.replaceChildren(h('div',{class:'studio-toast-content'},[
   h('strong',{text:window.PandoraUILocale?.ui(
    tone==='success'?'Готово':tone==='error'?'Ошибка':'Уведомление',lang)}),
-  h('p',{text:window.PandoraUILocale?.ui(message,lang)||message})
+  h('p',{text:window.PandoraUILocale?.ui(message,lang)||message,
+   ...(authoredKey?{'data-owner-copy-key':authoredKey}:{})})
  ]));
  const close=()=>{root.hidden=true;root.replaceChildren()};
  root.append(h('button',{type:'button',class:'studio-toast-ok',text:'ОК',onclick:close}));
  root.hidden=false;
- studioToastTimer=setTimeout(close,8500);
+ if(authoredKey&&adminEditing&&adminToken){
+  // No auto-dismiss while the owner is editing a short authored notice.
+  // Runtime/server diagnostics remain non-editable and time out normally.
+  bindAccountCopyEditors(root);
+ }else studioToastTimer=setTimeout(close,8500);
 }
 async function restoreSharedHash(){
  const match=location.hash.match(/^#b\/([A-Za-z0-9_-]{11})$/);
@@ -6910,7 +6936,7 @@ function bindStaticUICopyEditors(){
   const key=node.dataset.i18n,id=locale.fieldKey(key);
   if(!id||node.matches('option')||node.id==='originRaceName'||
    node.id==='pathGrowthTab'||node.id==='pathSkillsTab'||
-   node.dataset.originCopyBound==='1')continue;
+   node.dataset.originCopyBound==='1'||node.dataset.pathCopyBound==='1')continue;
   const button=node.closest('button,[role="button"]');
   const target=button||node;
   if(target.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
@@ -6948,7 +6974,9 @@ function bindStaticUICopyEditors(){
    node.dataset.uiContentBound='1';
    if(!button)node.addEventListener('dblclick',edit);
   }
-  if(button&&!oldPencil?.dataset?.uiContentFor){
+  // Headings were technically editable by a hidden double-click, but had
+  // no discoverable touch control. Buttons keep their existing pencil.
+  if((button||node.matches('h2,h3'))&&!oldPencil?.dataset?.uiContentFor){
    const pencil=h('button',{type:'button',
     class:'ui-content-pencil','data-ui-content-for':key,
     text:'✎',title:(lang==='en'?'Edit label':'Изменить надпись'),
@@ -7254,9 +7282,13 @@ function refreshVisibleUICopy(recordKey){
  const locale=window.PandoraUILocale;
  locale.setOverrides(override);
  locale.apply(lang);
- if(!recordKey.startsWith('guideedit.book.ui.label.library-'))return;
+ const isLibrary=recordKey.startsWith('guideedit.book.ui.label.library-');
+ const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
+ if(!isLibrary&&!isStatus)return;
  const id=recordKey.slice('guideedit.book.'.length);
- for(const node of document.querySelectorAll('#detailContent [data-owner-copy-key]')){
+ const selector=isLibrary?'#detailContent [data-owner-copy-key]':
+  '#studioToast [data-owner-copy-key]';
+ for(const node of document.querySelectorAll(selector)){
   const key=node.dataset.ownerCopyKey;
   if(locale.fieldKey(key)!==id||node.hidden||
    node.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
@@ -7583,7 +7615,8 @@ async function saveGuidePatchNow(key,fields){
   }else if(key==='wiki.labels')saveView();
   else if(key.startsWith('book.origin.')||
    key.startsWith('book.ui.label.account-')||
-   key.startsWith('book.ui.label.library-'))saveView(); // leave inline editor mounted
+   key.startsWith('book.ui.label.library-')||
+   key.startsWith('book.ui.label.status-'))saveView(); // leave inline editor mounted
   else renderStageAttributes();
  }finally{editIsSaving=false;refreshOwnerUI()}
 }
