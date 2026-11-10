@@ -38,6 +38,10 @@ export async function runUIContentInlineSmoke(browser,base){
    assert.equal(req.postDataJSON().password,'Correct admin password!');
    return reply({token:'a'.repeat(43),expires:Date.now()+600000});
   }
+  if(path==='/api/admin/catalog/test-write')return reply({
+   ok:true,readback:true,cleaned:true,overrideReadback:true,
+   overrideCleaned:true,activeCatalogUnchanged:true
+  });
   if(path==='/api/admin/override'){
    assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
    const data=req.postDataJSON();
@@ -303,19 +307,22 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').focus();
   await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
-  await page.evaluate(()=>showStudioToast(
-   'Билд удалён. Все его ссылки больше не работают.','success'));
-  const statusKey='guideedit.book.ui.label.status-build-deleted';
-  const toastText=page.locator('#studioToast [data-owner-copy-key="statusBuildDeleted"]');
+  // Trigger the production UI's existing diagnostics control rather than
+  // reaching into the private app module from Playwright.
+  if(await page.locator('#ownerDock').evaluate(el=>el.classList.contains('owner-dock-collapsed')))
+   await page.locator('#ownerDock [data-owner-collapse]').click();
+  await page.locator('#ownerDock .owner-dock-d1-check').click();
+  const statusKey='guideedit.book.ui.label.status-owner-d1-check';
+  const toastText=page.locator('#studioToast [data-owner-copy-key="statusOwnerD1Check"]');
   await toastText.waitFor({state:'visible'});
   assert.equal(await toastText.textContent(),
-   'Билд удалён. Все его ссылки больше не работают.');
-  await page.locator('#studioToast [data-owner-copy-pencil="statusBuildDeleted"]').click();
+   'D1: временная запись и чтение проверены, тестовые данные удалены.');
+  await page.locator('#studioToast [data-owner-copy-pencil="statusOwnerD1Check"]').click();
   const toastEditor=page.locator('#studioToast .account-copy-edit-host [contenteditable]');
   await toastEditor.fill('Запись удалена, ссылка отозвана.');
   await toastEditor.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
-   '#studioToast [data-owner-copy-key="statusBuildDeleted"]')?.textContent===
+   '#studioToast [data-owner-copy-key="statusOwnerD1Check"]')?.textContent===
    'Запись удалена, ссылка отозвана.',null,{timeout:12000});
   assert.equal(JSON.parse(values[statusKey]).ru,'Запись удалена, ссылка отозвана.');
 
@@ -323,16 +330,16 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.keyboard.press('Enter');
   await page.waitForFunction(()=>document.documentElement.lang==='en');
   await page.waitForFunction(()=>document.querySelector(
-   '#studioToast [data-owner-copy-key="statusBuildDeleted"]')?.textContent===
-   'Build deleted. Its links are no longer valid.',null,{timeout:15000});
+   '#studioToast [data-owner-copy-key="statusOwnerD1Check"]')?.textContent===
+   'D1: test write and read succeeded; temporary data was removed.',null,{timeout:15000});
   assert.equal(await page.locator('#studioToast .studio-toast-content>strong').textContent(),'Done');
-  const toastPencil=page.locator('#studioToast [data-owner-copy-pencil="statusBuildDeleted"]');
+  const toastPencil=page.locator('#studioToast [data-owner-copy-pencil="statusOwnerD1Check"]');
   assert.match(await toastPencil.getAttribute('aria-label'),/^Edit caption:/);
   await toastPencil.click();
   await toastEditor.fill('Build removed and link revoked.');
   await toastEditor.press('Tab');
   await page.waitForFunction(()=>document.querySelector(
-   '#studioToast [data-owner-copy-key="statusBuildDeleted"]')?.textContent===
+   '#studioToast [data-owner-copy-key="statusOwnerD1Check"]')?.textContent===
    'Build removed and link revoked.',null,{timeout:12000});
   assert.deepEqual(JSON.parse(values[statusKey]),{
    ru:'Запись удалена, ссылка отозвана.',en:'Build removed and link revoked.'
