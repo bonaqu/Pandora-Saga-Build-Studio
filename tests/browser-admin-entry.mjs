@@ -251,6 +251,8 @@ export async function runAdminEntrySmoke(browser,base){
   await ownerPanel.locator('.owner-workflow-guide>summary').click();
   assert.match(await ownerPanel.innerText(),/Экспорт в GitHub/);
   assert.match(await ownerPanel.innerText(),/Проверить сохранение/);
+  assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
+  assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
   // Separate D1 label pencils must never click their actual admin action.
   const d1Action=ownerPanel.locator('.owner-dock-action-slot[data-owner-dock-key="testD1"]');
   assert.equal(await d1Action.locator('.owner-dock-action-pencil').count(),1);
@@ -283,8 +285,7 @@ export async function runAdminEntrySmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(label=>
    document.querySelector('.owner-dock-d1-check')?.textContent===label,d1Label);
-  assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
-  assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
+  assert.match(await ownerPanel.locator('[data-owner-recent]').innerText(),/За этот сеанс: 2/);
   // Origin captions share the same authenticated inline D1 path as approved
   // encyclopedia editing: pencil -> focus/blur -> independent RU/EN fields.
   const raceCopy='guideedit.book.origin.race-choose';
