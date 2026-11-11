@@ -695,8 +695,12 @@
       descriptions.clear();
       sourceBanner.hidden=false;
       sourceBanner.textContent=from==='server'
-        ?'Проверяем открытые данные pandorasaga-os.com и опубликованный каталог Build Studio (D1). Это не прямое подключение к игровому серверу.'
-        :'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.';
+        ?copy('sourceLiveNotice',
+         'Проверяем открытые данные pandorasaga-os.com и опубликованный каталог Build Studio (D1). Это не прямое подключение к игровому серверу.',
+         'Comparing public pandorasaga-os.com data with the Build Studio catalog published in D1. This is not a direct connection to the game server.')
+        :copy('sourceArchiveNotice',
+         'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.',
+         'Comparing an archived snapshot, NOT the current game server. Publishing may restore older values.');
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();
@@ -716,8 +720,10 @@
         await mapLimited(importer.files,async name=>{
           next[name]=await sourceFile(name,from);
           const done=++readCount;
-          status.textContent=(from==='server'?'Получаю данные сайта игры':'Читаю архив Build Studio')+
-            ' · '+done+' из '+importer.files.length;
+          status.textContent=(from==='server'?
+            tr('Получаю данные сайта игры','Reading live game data'):
+            tr('Читаю архив Build Studio','Reading Build Studio archive'))+
+            ' · '+done+tr(' из ',' of ')+importer.files.length;
           progress.value=Math.round(45*done/importer.files.length);
         });
         // Reject mixed upstream snapshots if the server changes during 17-file retrieval.
@@ -789,14 +795,24 @@
         baseline=old;upstream=next;legacy=retained.locales;legacyRows=retained.records;mode=from;
         activeSnapshot=[...versions][0];changes=findings;
         status.textContent=findings.length
-          ? 'Сверка завершена. Ни одно изменение не принято автоматически.'
+          ? copy('comparisonFound',
+             'Сверка завершена. Ни одно изменение не принято автоматически.',
+             'Comparison complete. No changes were selected automatically.')
           : formattingCount&&verifiedRussian.length
-           ? 'Игровые значения совпадают. Можно отдельно сохранить переносы и добавить русские описания.'
+           ? copy('comparisonFormattingAndRussian',
+              'Игровые значения совпадают. Можно отдельно сохранить переносы и добавить русские описания.',
+              'Game values match. You may separately save line breaks and add Russian descriptions.')
            : formattingCount
-            ? 'Игровые значения совпадают. Можно отдельно сохранить оригинальные переносы описаний.'
+            ? copy('comparisonFormatting',
+               'Игровые значения совпадают. Можно отдельно сохранить оригинальные переносы описаний.',
+               'Game values match. You may separately restore the original description line breaks.')
             : verifiedRussian.length
-             ? 'Игровые значения совпадают. Можно отдельно добавить проверенные русские описания.'
-             : 'Данные совпадают. Публикация не требуется.';
+             ? copy('comparisonRussian',
+                'Игровые значения совпадают. Можно отдельно добавить проверенные русские описания.',
+                'Game values match. You may separately add verified Russian descriptions.')
+             : copy('comparisonNoChanges',
+                'Данные совпадают. Публикация не требуется.',
+                'Data matches. No publication is needed.');
         render();
       }catch(error) {
         const unavailable=from==='server'&&(
@@ -823,11 +839,17 @@
             ?'Ответ сайта игры превысил ограничение безопасности.'
             :code?'Сайт игры ответил HTTP '+code+'.'
             :'Не удалось получить открытые игровые данные через Cloudflare Worker.';
-          status.textContent=issue+' Каталог Build Studio не изменён. Архивную копию можно сравнить отдельно, но она может быть старее.';
+          status.textContent=issue+tr(
+           ' Каталог Build Studio не изменён. Архивную копию можно сравнить отдельно, но она может быть старее.',
+           ' The Build Studio catalog is unchanged. You can compare the archived copy separately, but it may be older.');
         }else if(error.httpStatus===401){
-          status.textContent='Сеанс администратора завершился. Войди заново, чтобы повторить проверку.';
+          status.textContent=copy('compareSessionExpired',
+            'Сеанс администратора завершился. Войди заново, чтобы повторить проверку.',
+            'The admin session ended. Sign in again to repeat the comparison.');
         }else{
-          status.textContent='Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.';
+          status.textContent=copy('compareNotCompleted',
+            'Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.',
+            'Comparison did not finish. Published data is unchanged. Try again or use the archived snapshot.');
         }
         diagnosticText.textContent='Этап: '+(error.sourceDataset||'не определён')+
           ' · Ответ Worker: '+(error.httpStatus??'нет HTTP-ответа')+
