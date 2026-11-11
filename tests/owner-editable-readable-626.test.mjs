@@ -40,6 +40,8 @@ test('a later locale switch does not remap the ongoing copy edit',()=>{
  assert.equal((code.match(/saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/g)||[]).length,2);
  assert.doesNotMatch(code,/saveGuidePatch\('book\.'\+id,\{\[lang\]:next\}\)/);
  assert.match(code,/const syncPencil=\(pencil,key,hint=false\)=>/);
+ assert.match(code,/syncPencil\(target\.nextElementSibling\.nextElementSibling,key\)/);
+ assert.match(code,/syncPencil\(pencil\.nextElementSibling,key,true\)/);
  assert.match(code,/node\.dataset\[datasetKey\]/);
  assert.doesNotMatch(code,/locale\.apply\(lang\)/);
 });
