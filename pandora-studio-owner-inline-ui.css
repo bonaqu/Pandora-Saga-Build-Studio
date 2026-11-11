@@ -409,3 +409,31 @@
  display:block;box-sizing:border-box;width:100%;max-width:100%;
  min-width:0;white-space:pre-wrap;overflow-wrap:anywhere
 }
+
+
+/* Hero Book editorial text: one unobtrusive inline pencil only in admin mode.
+   Avoid absolute overlays over metric numbers, disclosure arrows and controls. */
+#stageAttributes .stage-book-page [data-owner-copy-key]{
+ overflow-wrap:anywhere;min-width:0
+}
+#stageAttributes .stage-book-page .account-copy-pencil{
+ display:inline-grid;place-items:center;vertical-align:middle;
+ width:19px;min-width:19px;height:19px;padding:0;margin:0 0 0 4px;
+ font-size:11px;line-height:1;flex:0 0 19px
+}
+#stageAttributes .stage-book-page .account-copy-pencil[hidden]{
+ display:none!important
+}
+#stageAttributes .stage-book-page .account-copy-edit-host{
+ display:inline-flex;align-items:flex-start;min-width:0;
+ width:min(100%,490px);max-width:100%;margin:4px 0;
+ overflow:visible;vertical-align:top
+}
+#stageAttributes .stage-book-page .account-copy-edit-host .wiki-inline-input{
+ display:block;box-sizing:border-box;max-width:100%;width:100%;
+ min-height:36px;height:auto;max-height:min(60dvh,460px);
+ overflow-y:auto;white-space:pre-wrap;overflow-wrap:anywhere
+}
+#stageAttributes .stage-book-page .account-copy-pencil:focus-visible{
+ outline:2px solid #e9c187;outline-offset:2px
+}

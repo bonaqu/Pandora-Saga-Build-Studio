@@ -31,7 +31,7 @@ const bookEnglish=Object.freeze({
  'Эффект': "Effect",
  'Лечение': "Healing",
  'Эффект навыков': "Skill effect",
- 'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.': "All settings immediately affect this build. Numbers update in other chapters.",
+ 'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.': "Settings apply to this build immediately. Values update in the other Hero Book chapters.",
  'Недоступно для героя': "Unavailable to this hero",
  'Выключено': "Off",
  'ОЗ и ОМ': "HP & MP",
@@ -226,8 +226,23 @@ const bookLineFragments=Object.freeze({
 // Build their ordered key/value pairs once, not on every element/attribute.
 const bookLineHeadEntries=Object.entries(bookLineHeads);
 const bookLineFragmentEntries=Object.entries(bookLineFragments);
+// Stable, human-readable English slug plus a short hash of the original RU
+// caption. This does not depend on array positions or future dictionary edits.
+function bookEditorialKey(ru){
+ if(!Object.hasOwn(bookEnglish,ru))return null;
+ const slug=bookEnglish[ru].toLowerCase().normalize('NFKD')
+  .replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,43)||'caption';
+ let hash=2166136261;
+ for(const letter of ru){hash=Math.imul(hash^letter.codePointAt(0),16777619)>>>0}
+ return 'book-'+slug+'-'+hash.toString(16).padStart(8,'0');
+}
 function bookText(value){
- if(typeof value!=='string'||document.documentElement?.lang!=='en')return value;
+ if(typeof value!=='string')return value;
+ // Only exact, authored Book defaults are D1-editable: numbers, item names,
+ // saved character names and generated combat messages are not templates.
+ const key=root.PandoraUILocale?.bookFieldKey?.(value);
+ if(key)return root.PandoraUILocale.text(key,document.documentElement?.lang);
+ if(document.documentElement?.lang!=='en')return value;
  if(Object.hasOwn(bookEnglish,value))return bookEnglish[value];
  const match=bookLineHeadEntries.find(([ru])=>value.startsWith(ru));
  if(!match)return value;
@@ -240,6 +255,11 @@ function bookText(value){
 }
 function make(tag,attrs={},children=[]){
  const n=document.createElement(tag);
+ // These plain Book captions can be edited inline. Interactive controls,
+ // calculated metric cells and specialized guide fields are excluded below.
+ const key=['p','strong','small','span','summary','h3'].includes(tag)&&
+  typeof attrs.text==='string'?root.PandoraUILocale?.bookFieldKey?.(attrs.text):null;
+ if(key)n.dataset.bookEditorialKey=key;
  for(const [key,value] of Object.entries(attrs)){
   if(key==='text')n.textContent=bookText(value);
   else if(key==='class')n.className=value;
@@ -1262,10 +1282,20 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   }
  }
  decorateChapterCaptions(body,chosen,copyOptions);
+ // Existing chapter tabs and guide labels already own a dedicated editor.
+ // Suppress generic pencils there and on actionable game/item controls.
+ for(const node of body.querySelectorAll?.('[data-book-editorial-key]')||[]){
+  if(node.closest('[data-guide-key],.stage-guide-actions,.stage-book-tab-owner,button,[role="button"]')||
+   node.querySelector('button,input,select,[role="button"]')){
+   node.removeAttribute('data-book-editorial-key');continue;
+  }
+  node.setAttribute('data-owner-copy-key',node.dataset.bookEditorialKey);
+ }
  if(reusePanel){
   stablePanel.replaceChildren(...body.childNodes);
   stablePanel.scrollTop=storedScroll;
  }else target.append(body);
 }
-root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,summaryRows,attackChapterGroups,defenseChapterGroups});
+root.PandoraStageAttributes=Object.freeze({render,bookPages,bookText,bookEditorialKey,
+ bookEditorialDefaults:bookEnglish,summaryRows,attackChapterGroups,defenseChapterGroups});
 })(typeof window==='undefined'?globalThis:window);

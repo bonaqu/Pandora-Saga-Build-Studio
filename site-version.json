@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.640",
-  "notes": "Editable RU/EN guest library and shared-link gate copy without account side effects"
+  "release": "2026.11.11.641",
+  "notes": "Hero Book RU/EN source-backed inline editor: 156 stable captions, safe undo and long-text layout"
 }

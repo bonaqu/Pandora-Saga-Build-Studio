@@ -1646,6 +1646,9 @@ function renderStageAttributes(calculated=undefined){
    stageAttributesPage=name;renderStageAttributes();saveView();
   }
  });
+ // The Hero Book has the same single inline D1 editor as other authored
+ // UI copy. Bind after rendering, without remounting a character or book tab.
+ if(adminEditing&&adminToken)bindAccountCopyEditors(root);
  if(priorPage===stageAttributesPage){
   const scroll=root.querySelector('.stage-book-page');
   if(scroll)scroll.scrollTop=priorScroll;
@@ -7661,10 +7664,12 @@ function refreshVisibleUICopy(recordKey){
  locale.apply(lang);
  const isLibrary=recordKey.startsWith('guideedit.book.ui.label.library-');
  const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
- if(!isLibrary&&!isStatus)return;
+ const isBook=recordKey.startsWith('guideedit.book.ui.label.book-');
+ if(!isLibrary&&!isStatus&&!isBook)return;
  const id=recordKey.slice('guideedit.book.'.length);
  const selector=isLibrary?
   '#detailContent [data-owner-copy-key],#modalRoot [data-owner-copy-key]':
+  isBook?'#stageAttributes [data-owner-copy-key]':
   '#studioToast [data-owner-copy-key]';
  for(const node of document.querySelectorAll(selector)){
   const key=node.dataset.ownerCopyKey;
@@ -8116,6 +8121,7 @@ async function saveGuidePatchNow(key,fields){
    key.startsWith('book.ui.label.account-')||
    key.startsWith('book.ui.label.library-')||
    key.startsWith('book.ui.label.status-')||
+   key.startsWith('book.ui.label.book-')||
    key.startsWith('book.profile.'))saveView(); // leave inline editor mounted
   else if(key.startsWith('book.'))saveView(); // refresh Book only after the input is restored
   else renderStageAttributes();
