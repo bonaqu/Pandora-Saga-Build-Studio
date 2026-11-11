@@ -317,3 +317,24 @@
    the owner-editable explanation and its compact pencil. */
 .os-sync-meta-detail{overflow-wrap:anywhere;white-space:normal;
  font-size:11px;line-height:1.45}
+
+/* Fixed source notices and status messages can be edited independently.
+   Live progress/errors stay ordinary text and never expose an editor. */
+.os-sync-status:has(>.os-sync-state-pencil),
+.os-sync-source-banner:has(>.os-sync-state-pencil){
+ display:flex;align-items:flex-start;gap:7px;min-width:0
+}
+.os-sync-state-caption{display:inline-block;min-width:0;flex:1;overflow-wrap:anywhere}
+.os-sync-state-caption.origin-copy-editable::after{content:none}
+.os-sync-state-pencil{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 21px;min-width:21px;width:21px;height:22px;
+ padding:0;border:1px solid #80613d;border-radius:4px;
+ background:#312318;color:#dfbd85;font-size:11px;cursor:pointer
+}
+.os-sync-state-pencil:hover,.os-sync-state-pencil:focus-visible{
+ background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
+}
+.os-sync-state-caption.origin-copy-editable:focus-visible{
+ outline:2px solid #edc485;outline-offset:3px;border-radius:2px
+}
