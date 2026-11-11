@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {mkdir} from 'node:fs/promises';
 
 // Genuine Chromium interactions, with a fixed local library and no production
 // Cloudflare writes. The A/B table is inside the builds workbench, not a dialog.
@@ -57,6 +58,14 @@ export async function runBuildComparisonSmoke(browser,base){
    assert.match(names[1],/^(Перезаписать|Сохранить в этот билд)$/);
    assert.deepEqual(names.slice(2),['Поделиться','Удалить']);
    assert.equal(metrics.compareAccessible,true);
+   const compareStyle=await page.locator('.build-card-compare').first().evaluate(el=>{
+    const s=getComputedStyle(el);
+    return{border:s.borderTopWidth,background:s.backgroundColor,boxShadow:s.boxShadow};
+   });
+   assert.equal(compareStyle.border,'0px','Compare label must not have its own frame');
+   assert.equal(compareStyle.background,'rgba(0, 0, 0, 0)',
+    'Compare checkbox label should be visually transparent');
+   assert.equal(compareStyle.boxShadow,'none','No duplicate highlight ring around Compare');
    assert.ok(metrics.compare.right<=metrics.card.right+1);
    assert.ok(metrics.compare.top<metrics.actions[0].top);
    assert.ok(metrics.actions.every((r,i)=>i===0||
@@ -64,6 +73,9 @@ export async function runBuildComparisonSmoke(browser,base){
     'All four actions must share one horizontal row');
   };
   await assertCardGeometry();
+  await mkdir('artifacts/layout',{recursive:true});
+  await page.screenshot({path:'artifacts/layout/saved-build-cards-desktop.jpg',
+   type:'jpeg',quality:76,animations:'disabled'});
   const panel=page.locator('[data-build-compare]');
   await panel.waitFor({state:'visible'});
   assert.equal(await page.locator('#modalRoot .modal').count(),0);
@@ -118,6 +130,8 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal(await page.locator('.build-card').count(),3);
   await page.setViewportSize({width:390,height:780});
   await assertCardGeometry();
+  await page.screenshot({path:'artifacts/layout/saved-build-cards-mobile.jpg',
+   type:'jpeg',quality:76,animations:'disabled'});
   await panel.getByRole('button',{name:'Развернуть сравнение'}).click();
   const overflow=await page.evaluate(()=>
    Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
