@@ -249,7 +249,8 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await ownerPanel.locator('.owner-workflow-guide[open]').count(),1);
   assert.match(await ownerPanel.locator('.owner-workflow-glossary').innerText(),/Игровой каталог/);
   await ownerPanel.locator('.owner-workflow-guide>summary').click();
-  assert.match(await ownerPanel.innerText(),/PR правок/);
+  assert.match(await ownerPanel.innerText(),/Экспорт в GitHub/);
+  assert.match(await ownerPanel.innerText(),/Проверить сохранение/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
   // Origin captions share the same authenticated inline D1 path as approved
