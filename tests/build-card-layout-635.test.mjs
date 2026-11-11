@@ -13,6 +13,9 @@ test('saved build card keeps Compare in the top corner and exactly four actions 
  const body=app.slice(start,end);
  assert.match(body,/class:'build-card-compare'/);
  assert.match(body,/class:'build-card-actions'/);
+ assert.match(app.slice(app.indexOf('function renderBuilds(root){'),start),
+  /const tr=\(ru,en\)=>lang==='en'\?en:ru/,
+  'The library must own its RU/EN translator; another screen helper is out of scope');
  assert.match(body,/box\.append\(cardHead,/);
  assert.equal((body.match(/cardAction\('/g)||[]).length,4);
  for(const [icon,ru,en] of [['📂','Открыть','Open'],['↻','Перезаписать','Overwrite'],
