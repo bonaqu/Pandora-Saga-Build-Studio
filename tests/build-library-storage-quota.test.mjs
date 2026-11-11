@@ -41,7 +41,7 @@ test('failed browser-storage reconciliation never overwrites the working local l
 });
 test('deletion requires a successful persistent write before cloud revocation',()=>{
  const ui=extract('function renderBuilds(root){','\nfunction newId(){');
- const marker=ui.indexOf("text:'Удалить билд',onclick:()=>{");
+ const marker=ui.indexOf("text:tr('Удалить билд','Delete build'),onclick:()=>{");
  const commit=ui.indexOf('if(!persistBuilds())',marker);
  const revoke=ui.indexOf('void deleteCloudBuild(b.id)',marker);
  assert.ok(marker>=0&&commit>marker&&revoke>commit);
