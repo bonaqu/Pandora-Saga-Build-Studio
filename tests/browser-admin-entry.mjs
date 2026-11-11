@@ -1274,7 +1274,7 @@ export async function runAdminEntrySmoke(browser,base){
   const exportEn=page.getByRole('dialog',{name:'Optional GitHub encyclopedia copy'});
   await exportEn.waitFor({state:'visible'});
   assert.match(await exportEn.locator('[data-owner-copy-id="githubExplanation"]').innerText(),
-   /public GitHub/);
+   /GitHub export is OPTIONAL/);
   assert.equal(await exportEn.locator('.owner-dialog-action').innerText(),
    'Prepare copy PR');
   assert.match(await exportEn.locator('.owner-dialog-live-count').innerText(),/2/);
