@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.637",
-  "notes": "Bilingual D1-editable admin drawer captions, inline help and focused owner controls"
+  "release": "2026.11.11.638",
+  "notes": "Two-browser owner CAS conflict, preserved draft and safe refresh/retry regression"
 }
