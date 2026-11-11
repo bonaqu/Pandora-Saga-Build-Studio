@@ -7704,7 +7704,7 @@ function refreshVisibleOriginCopy(recordKey){
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
  if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
-  if(!/^(equipment|path|catalog-sync|honor-view)\./.test(key))return;
+  if(!/^(equipment|path|catalog-sync|honor-view|owner-history)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -7787,7 +7787,7 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock)\./.test(last.key)){
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history)\./.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -7797,8 +7797,25 @@ function showOverrideManager(){
  if(!adminToken)return;
  const tr=(ru,en)=>lang==='en'?en:ru;
  const body=h('div',{class:'owner-manager'});
- body.append(h('p',{class:'muted',text:
-  tr('Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.','Manual changes saved in Cloudflare D1. Every entry shows its section, field, original game-catalog value, and your edit. Unknown original values are marked.')}));
+ // Editorial help belongs to the admin, never to a game record or a player.
+ // Reuse the same CAS-backed inline text field as the other site sections.
+ const authoredHistory=(key,ru,en)=>{
+  const node=h('p',{class:'muted owner-history-caption',
+   text:ownerCopy('owner-history',key,ru,en)});
+  ownerCopyLabel(node,'owner-history',key,ru,en);
+  if(!adminEditing||!adminToken)return node;
+  const pencil=h('button',{type:'button',class:'owner-history-pencil',
+   text:'✎',title:tr('Изменить пояснение','Edit explanation'),
+   'aria-label':tr('Изменить пояснение','Edit explanation')+': '+node.textContent,
+   onclick:event=>{
+    event.preventDefault();event.stopPropagation();
+    node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   }});
+  return h('div',{class:'owner-history-edit-row'},[node,pencil]);
+ };
+ body.append(authoredHistory('intro',
+  'Ручные изменения, сохранённые в Cloudflare D1. Для каждой записи показаны раздел, поле, исходное значение игрового каталога и текущая правка. Неизвестные исходные значения отмечены отдельно.',
+  'Manual changes saved in Cloudflare D1. Every entry shows its section, field, original game-catalog value, and your edit. Unknown original values are marked.'));
  const search=ownerPlainTextField({placeholder:tr('Найти предмет, NPC или изменённое поле…','Find an item, NPC or edited field…'),
   class:'owner-manager-search wiki-owner-search','aria-label':tr('Поиск среди ручных изменений','Search manual edits')});
  const count=h('p',{class:'owner-manager-summary',role:'status'});
@@ -7814,8 +7831,8 @@ function showOverrideManager(){
     [x.field,x.before,x.after])].join(' '),q))
    .sort((a,b)=>a.section.localeCompare(b.section,lang)||a.title.localeCompare(b.title,lang));
   count.textContent=tr('Найдено ','Found ')+entries.length+tr(' из ',' of ')+Object.keys(override).length+tr(' ручных изменений',' manual edits');
-  if(!entries.length)list.append(h('p',{class:'muted',
-   text:tr('Не найдено правок по выбранному запросу.','No edits match your search.')}));
+  if(!entries.length)list.append(authoredHistory('empty',
+   'Не найдено правок по выбранному запросу.','No edits match your search.'));
   for(const record of entries){
    const row=h('section',{class:'owner-manager-row owner-review-row'});
    const head=h('div',{class:'owner-review-heading'},[
@@ -7853,7 +7870,8 @@ function showOverrideManager(){
       delete override[record.key];draw();
        if(record.key.startsWith('guideedit.book.origin.')){
         refreshVisibleOriginCopy(record.key);saveView();
-       }else if(record.key.startsWith('guideedit.book.owner-dock.')){
+       }else if(record.key.startsWith('guideedit.book.owner-dock.')||
+        record.key.startsWith('guideedit.book.owner-history.')){
         refreshVisibleOwnerCopy(record.key);
        }else void refreshOwnerCatalog();
        refreshOwnerUI();
@@ -8108,7 +8126,7 @@ async function saveGuidePatchNow(key,fields){
    refreshVisibleUICopy('guideedit.'+key);
   if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
-     key.startsWith('book.owner-dock.'))
+     key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
      !key.startsWith('book.catalog-sync.')){

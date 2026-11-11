@@ -1186,6 +1186,35 @@ export async function runAdminEntrySmoke(browser,base){
   assert.deepEqual(calls.filter(x=>x==='owner-acquire-edit'),['owner-acquire-edit']);
   assert.deepEqual(calls.filter(x=>x==='owner-trade-edit'),['owner-trade-edit']);
   assert.deepEqual(errors,[]);
+  // #390 admin history help: use the same D1 editor and independent pencil,
+  // not a second modal or a write to the game catalog.
+  const historyButton=ownerPanel.locator('.owner-dock-history');
+  if(!await historyButton.isVisible()){
+   const toggle=ownerPanel.locator('[data-owner-collapse]');
+   if(await toggle.getAttribute('aria-expanded')==='false')await toggle.click();
+  }
+  await historyButton.click();
+  const history=page.getByRole('dialog',{name:'Все ручные правки'});
+  await history.waitFor({state:'visible'});
+  const intro=history.locator('[data-owner-copy-section="owner-history"][data-owner-copy-id="intro"]');
+  await intro.waitFor({state:'visible'});
+  const introWrap=intro.locator('xpath=..');
+  assert.equal(await introWrap.locator('.owner-history-pencil').count(),1);
+  const beforeCatalogCalls=calls.filter(x=>x==='d1-import'||x.startsWith('game-source:')).length;
+  await introWrap.locator('.owner-history-pencil').click();
+  const introInput=introWrap.locator('[contenteditable]').first();
+  await introInput.waitFor({state:'visible'});
+  const historyCopy='История правок QA: записи сохраняются в Cloudflare D1 и доступны для проверки и отмены.';
+  await introInput.fill(historyCopy);
+  await introInput.press('Tab');
+  await page.waitForFunction(value=>
+   document.querySelector('.owner-history-caption')?.textContent===value,
+   historyCopy,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-history.intro')).ru,
+   historyCopy,'History copy saves via the established D1 override path');
+  assert.equal(calls.filter(x=>x==='d1-import'||x.startsWith('game-source:')).length,
+   beforeCatalogCalls,'History copy editing must not publish the game catalog');
+  await history.locator('button.close').click();
   // #390: exercise the Hero Book's real RU/EN author-copy editor under a
   // logged-in admin with an isolated, mocked Cloudflare D1 override response.
   if(await page.locator('#dockClose').isVisible())await page.locator('#dockClose').click();
