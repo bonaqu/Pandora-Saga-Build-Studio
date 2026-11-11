@@ -23,7 +23,7 @@ test('Honor displays succinct rank descriptions and three proper monthly title g
  assert.doesNotMatch(overview.overviewRu,/1 000/);
  assert.doesNotMatch(view,/wiki-honor-joining/);
  assert.match(view,/wiki-honor-emblem/);
- assert.match(view,/tr\('Награды','Rewards'\)/);
+ assert.match(view,/editorial\('small','','rewardsHeading','Награды','Rewards'\)/);
  assert.match(ranks[8].benefitRu,/Новые предметы в обменнике предметов за честь/);
  assert.equal(overview.totalRu,'Заработанная за всё время честь: определяет ранги и рейтинги.');
  assert.equal(overview.cloaksRu.split(/\n\s*\n/).length,3);
