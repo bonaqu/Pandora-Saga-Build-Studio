@@ -6,7 +6,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 
 test('saved build card keeps Compare in the top corner and exactly four actions in one row',()=>{
  const app=read('pandora-studio-app.js');
- const css=read('pandora-studio-theme.css');
+ const css=read('pandora-studio-build-comparison.css');
  const start=app.indexOf("const cardHead=h('div',{class:'build-card-head'}");
  const end=app.indexOf('  box.append(openChoice);',start);
  assert.ok(start>0&&end>start,'Card markup not located');
