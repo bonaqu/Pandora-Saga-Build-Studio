@@ -549,7 +549,10 @@ export async function runAdminEntrySmoke(browser,base){
   assert.ok(structures.every(x=>!x.pencilInsideLabel&&x.pencilCount===1),
    'Catalog checkbox pencils must be siblings of the clickable native label');
   const formattingChoice=choices.first();
-  await formattingChoice.evaluate(el=>{el.closest('.os-sync-formatting-review').hidden=false});
+  await formattingChoice.evaluate(el=>{
+   el.closest('.os-sync-review-steps').hidden=false;
+   el.closest('.os-sync-formatting-review').hidden=false;
+  });
   const checkboxBefore=await formattingChoice.locator('input[type="checkbox"]').isChecked();
   const sourceCallsBefore=calls.filter(x=>x.startsWith('game-source:')).length;
   const originalCaption='Привести переносы строк в описаниях к виду игрового сайта';
@@ -568,7 +571,10 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await formattingChoice.locator('input[type="checkbox"]').isChecked(),checkboxBefore);
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,sourceCallsBefore,
    'Editing a catalog caption must not launch a comparison or D1 game publication');
-  await formattingChoice.evaluate(el=>{el.closest('.os-sync-formatting-review').hidden=true});
+  await formattingChoice.evaluate(el=>{
+   el.closest('.os-sync-formatting-review').hidden=true;
+   el.closest('.os-sync-review-steps').hidden=true;
+  });
   const liveAction=dialog.locator('.os-sync-action-editor:has(> .os-sync-main-check)');
   const actionPencil=liveAction.locator('.os-sync-owner-pencil');
   const actionState=await dialog.evaluate(node=>({
