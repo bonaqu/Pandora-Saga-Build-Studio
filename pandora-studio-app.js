@@ -951,8 +951,8 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
  });
 }
 const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
-const equipmentCopyLabel=(node,key,ru,en)=>
- ownerCopyLabel(node,'equipment',key,ru,en);
+const equipmentCopyLabel=(node,key,ru,en,options)=>
+ ownerCopyLabel(node,'equipment',key,ru,en,options);
 const originFixedLabels=[
  ['.workspace>.left>.panel-heading h2','heading','Происхождение','Origin'],
  ['#originTabs [data-origin-tab="race"]','tabRace','Раса','Race'],
@@ -7562,6 +7562,14 @@ function refreshVisibleOwnerCopy(recordKey){
   if(section==='catalog-sync'&&id.startsWith('hint'))
    for(const target of document.querySelectorAll('[data-guide-owner-key]'))
     if(target.dataset.guideOwnerKey===id)target.dataset.guideHint=value;
+ }
+ if(key==='equipment.soul-search'){
+  // A D1 save or Undo must update the live placeholder, not reset the query.
+  const placeholder=ownerCopy('equipment','soulSearch',
+   'Поиск совместимой души','Find a compatible Soul');
+  for(const input of document.querySelectorAll(
+   '#stagePicker [data-equipment-copy-placeholder="soulSearch"]'))
+   input.placeholder=placeholder;
  }
  if(key==='equipment.socket-overflow-hint'){
   const hint=ownerCopy('equipment','socketOverflowHint',

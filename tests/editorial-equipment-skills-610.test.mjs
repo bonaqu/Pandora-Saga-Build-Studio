@@ -22,7 +22,7 @@ test('equipment empty states and Soul socket hint are safe RU/EN D1 content',()=
  assert.doesNotMatch(equipment,/text:'Сначала выбери предмет\.'/);
  assert.doesNotMatch(equipment,/text:'Показано 80 душ\. Уточни поиск\.'/);
  assert.doesNotMatch(equipment,/text:'Совместимых душ не найдено'/);
- assert.match(equipment,/api\.editLabel\?\.\(node,key,ru,en\)/);
+ assert.match(equipment,/api\.editLabel\?\.\(node,key,ru,en,options\)/);
  assert.match(equipment,/copy\('socketOverflowHint'/);
  assert.match(equipment,/class:'stage-socket-capacity-hint'/);
  assert.match(equipment,/disabled:occupiedBeyond/);

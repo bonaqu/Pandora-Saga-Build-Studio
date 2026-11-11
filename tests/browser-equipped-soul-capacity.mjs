@@ -110,6 +110,13 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   const picker=pageOld.locator('#stagePicker');
   assert.equal(await picker.locator('[data-socket-capacity="1"]')
    .getAttribute('aria-pressed'),'true');
+  const insertedCount=()=>picker.locator('.stage-rich-fields').evaluate(dl=>{
+   const labels=[...dl.querySelectorAll('dt')];
+   const index=labels.findIndex(label=>label.textContent.trim()==='Вставлено душ');
+   return index<0?null:dl.querySelectorAll('dd')[index]?.textContent.trim();
+  });
+  assert.equal(await insertedCount(),'1 / 1',
+   'Inactive saved Souls must not count until the copy capacity grows');
   await picker.locator('[data-stage-tab="souls"]').click();
   assert.equal(await picker.locator('[data-socket-index]').count(),1,
    'The second Soul stays inactive before choosing real copy capacity');
@@ -117,6 +124,8 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   await picker.locator('[data-socket-capacity="2"]').click();
   assert.equal(await picker.locator('[data-socket-capacity="2"]')
    .getAttribute('aria-pressed'),'true');
+  assert.equal(await insertedCount(),'2 / 2',
+   'Properties must show active saved Souls instead of hardcoded zero');
   await picker.locator('[data-stage-tab="souls"]').click();
   assert.equal(await picker.locator('[data-socket-index]').count(),2);
   assert.match(await picker.locator('[data-socket-index="1"]')
