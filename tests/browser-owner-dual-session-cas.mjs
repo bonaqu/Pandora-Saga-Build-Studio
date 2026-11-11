@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 
 // Two isolated browser contexts share one CAS-aware mock Worker. Production D1
 // atomicity is verified separately by the authorized release workflow.
@@ -21,6 +22,17 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
    const json=(body,status=200)=>route.fulfill({
     status,headers,contentType:'application/json',body:JSON.stringify(body)});
    if(method==='OPTIONS')return route.fulfill({status:204,headers});
+   if(path.startsWith('/api/catalog/')&&path.endsWith('.json')){
+    const id=path.split('/').pop().slice(0,-5);
+    if(id==='legacyLocale')return json({});
+    const filename=id==='stringsEn'?'strings.en':id;
+    const data=JSON.parse(readFileSync(
+     new URL('../data/os/'+filename+'.json',import.meta.url),'utf8'));
+    return route.fulfill({status:200,headers:{
+     ...headers,'access-control-expose-headers':'X-PS-Catalog-Snapshot, X-PS-Catalog',
+     'x-ps-catalog-snapshot':'ps-browser-qa','x-ps-catalog':'d1'
+    },contentType:'application/json',body:JSON.stringify(data)});
+   }
    if(path==='/api/overrides'&&method==='GET')
     return json({values:{...values}});
    if(path==='/api/admin/login'&&method==='POST')
@@ -49,11 +61,19 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
   return context;
  }));
  const pages=[];let phase='start';
+ const enterLiveCatalog=async page=>{
+  await page.evaluate(()=>document.querySelector('#startupRetry')?.click());
+  await page.waitForFunction(()=>
+   document.querySelector('#startupOverlay')?.hidden===true &&
+   document.querySelector('#catalogStatus')?.textContent?.includes('навыков'),
+   null,{timeout:30000});
+ };
  try{
   for(const context of contexts){
    const page=await context.newPage();pages.push(page);
    page.on('pageerror',error=>errors.push(error.message));
    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
+   await enterLiveCatalog(page);
    await page.locator('#nav [data-tab="wiki"]').waitFor({state:'visible',timeout:30000});
    await page.keyboard.press('Control+Alt+Shift+P');
    await page.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
@@ -113,6 +133,7 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
   // then may save a new revision with the exact current CAS precondition.
   phase='second-reload';
   await second.reload({waitUntil:'domcontentloaded'});
+  await enterLiveCatalog(second);
   await second.locator('#nav [data-tab="wiki"]').waitFor({state:'visible',timeout:30000});
   await second.keyboard.press('Control+Alt+Shift+P');
   await second.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
