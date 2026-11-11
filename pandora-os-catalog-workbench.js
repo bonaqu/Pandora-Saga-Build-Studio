@@ -141,8 +141,8 @@
       'Match line breaks in descriptions to the game site')});
     const formattingInfo=authored('p',{class:'muted os-sync-formatting-info'},
      'formattingExplanation',
-     'Доступно после сверки с игровым сайтом. Не изменяет характеристики, названия или эффекты. Действие выполняется только после подтверждения публикации.',
-     'Available after checking the live game site. Does not change stats, names or effects. Only runs after a separate publish confirmation.');
+     'После сверки с игровым сайтом можно восстановить оригинальные переносы. Другие поля не меняются. Понадобятся галочка и подтверждение публикации.',
+     'After comparing the live game data, original line breaks can be restored. Other fields remain unchanged. This requires selecting the checkbox and confirming publication.');
     const formattingOption=h('label',{class:'os-sync-formatting-option'},
       [formattingToggle,formattingLabel]);
     const formattingReview=h('div',{class:'os-sync-formatting-review',hidden:true},
