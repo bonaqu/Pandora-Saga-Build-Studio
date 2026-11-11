@@ -32,7 +32,7 @@ test('comparison statuses use semantic RU/EN author keys, not raw item values',(
    JSON.stringify({ru:'Проверка',en:'Verified'})),true,key);
  }
  assert.match(source,/metaStatusDetail\.textContent\+=tr\(/);
- assert.match(source,/sourceBanner\.textContent=from==='server'/);
+ assert.match(source,/if\(from==='server'\)editorialState\(sourceBanner/);
  assert.match(source,/status\.textContent=issue\+tr\(/);
 });
 
