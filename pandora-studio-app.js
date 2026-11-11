@@ -6374,27 +6374,30 @@ let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
 // One account entry point for saved builds and incoming build links.
 let returnToBuildsAfterAuth=false,pendingGuestDraft=null;
 function buildSignInCard({shared=false,inDialog=false}={}){
- const tr=(ru,en)=>lang==='en'?en:ru;
- const card=h('section',{class:inDialog?'build-signin-gate build-signin-gate-dialog':'build-signin-gate',role:'note',
-  'aria-label':tr('Вход для работы с билдами','Sign in to use builds')});
+ const locale=window.PandoraUILocale;
+ const caption=key=>locale.text(key,lang);
+ const leadKey=shared?'librarySharedGateLead':'libraryGuestLead';
+ const titleKey=shared?'librarySharedGateTitle':'libraryGuestTitle';
+ const card=h('section',{
+  class:inDialog?'build-signin-gate build-signin-gate-dialog':'build-signin-gate',
+  role:'note','aria-label':caption('libraryGateAria')
+ });
  card.append(h('span',{class:'build-signin-emblem','aria-hidden':'true',text:'◈'}),
   h('div',{class:'build-signin-copy'},[
-   ...(inDialog?[]:[h('h3',{text:shared?tr('Билд доступен после входа','Sign in to open this build'):
-    tr('Мои билды — в аккаунте','Your builds belong to your account')})]),
-   h('p',{text:shared?
-    tr('Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.',
-       'Sign in or register to open this build. Your link will stay here.'):
-    tr('Чтобы сохранять, открывать и сравнивать билды, нужен аккаунт. Персонажа можно создавать без входа.',
-       'Sign in to save, open or compare builds. You can still plan a character without an account.')}),
-   h('p',{class:'build-guest-storage-note',text:tr(
-    'Без аккаунта текущий герой хранится только в этом браузере. Очистка его данных удалит черновик.',
-    'Without an account, your current hero stays only in this browser. Clearing its data erases the draft.')})
+   ...(inDialog?[]:[h('h3',{'data-owner-copy-key':titleKey,
+    text:caption(titleKey)})]),
+   h('p',{'data-owner-copy-key':leadKey,text:caption(leadKey)}),
+   h('p',{class:'build-guest-storage-note',
+    'data-owner-copy-key':'libraryGuestStorageWarning',
+    text:caption('libraryGuestStorageWarning')})
   ]),h('div',{class:'build-signin-actions'},[
    h('button',{type:'button',class:'button-action primary',
-    text:tr('Войти','Sign in'),onclick:()=>openBuildAccount('login')}),
+    text:caption('accountSignIn'),onclick:()=>openBuildAccount('login')}),
    h('button',{type:'button',class:'button-action',
-    text:tr('Регистрация','Register'),onclick:()=>openBuildAccount('register')})
+    text:caption('accountRegister'),onclick:()=>openBuildAccount('register')})
   ]));
+ // Guest player data and account actions are never stored in editorial D1 keys.
+ if(adminEditing&&adminToken)bindAccountCopyEditors(card);
  return card;
 }
 function openBuildAccount(mode){
@@ -7650,7 +7653,8 @@ function refreshVisibleUICopy(recordKey){
  const isStatus=recordKey.startsWith('guideedit.book.ui.label.status-');
  if(!isLibrary&&!isStatus)return;
  const id=recordKey.slice('guideedit.book.'.length);
- const selector=isLibrary?'#detailContent [data-owner-copy-key]':
+ const selector=isLibrary?
+  '#detailContent [data-owner-copy-key],#modalRoot [data-owner-copy-key]':
   '#studioToast [data-owner-copy-key]';
  for(const node of document.querySelectorAll(selector)){
   const key=node.dataset.ownerCopyKey;
