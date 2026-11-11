@@ -126,7 +126,8 @@ const cleanPatch=(patch,allowed,max=600)=>{
 const own=(obj,key)=>Object.prototype.hasOwnProperty.call(obj||{},key);
 const parse=x=>{try{return JSON.parse(x)}catch{return null}};
 const plain=x=>x&&typeof x==='object'&&!Array.isArray(x);
-const validBookKey=x=>/^book\.[a-z][a-z0-9._:-]{1,80}$/.test(x);
+// Existing semantic editor keys include camelCase setting identifiers.
+const validBookKey=x=>/^book\.[a-z][a-zA-Z0-9._:-]{1,80}$/.test(x);
 const validRankKey=x=>/^honor\.rank\.(?:[0-9]|1[01])$/.test(x);
 const fields=['ru','en','hintRu','hintEn'];
 const rankFields=['nameRu','nameEn','benefitRu','benefitEn','requirementRu','requirementEn'];
