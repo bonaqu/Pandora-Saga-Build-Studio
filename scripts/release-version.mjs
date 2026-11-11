@@ -10,6 +10,9 @@ const write=(name,contents)=>writeFileSync(path(name),contents,'utf8');
 const releasePattern=/^\d{4}\.\d{1,2}\.\d{1,2}\.\d+$/;
 const metaPattern=/(<meta name="ps-studio-release" content=")([^"]+)(")/;
 const assetPattern=/\?v=(\d{4}\.\d{1,2}\.\d{1,2}\.\d+)/g;
+// Link-preview scrapers do not run JavaScript. Keep both descriptions in the
+// committed HTML and bump them with the same release that updates assets.
+const socialVersionPattern=/(<meta (?:property="og:description"|name="twitter:description") content="[^"]*Version: )0\.\d+\.0(?=")/g;
 const numberParts=value=>value.split('.').map(Number);
 const newer=(next,prev)=>{
  const a=numberParts(next),b=numberParts(prev);
@@ -35,6 +38,19 @@ function check(){
  if(assetVersions.some(value=>value!==release))mismatches.push('index.html CSS/JS cache keys');
  if(!html.includes('id="siteVersion" class="footer-version"'))
   mismatches.push('index.html footer version marker');
+ const socialDescriptions=[...html.matchAll(/<meta (?:property="og:description"|name="twitter:description") content="([^"]+)">/g)];
+ if(socialDescriptions.length!==2||
+    socialDescriptions.some(m=>!m[1].includes('Version: '+expectedVersion)))
+  mismatches.push('crawler-visible OG/X descriptions and site release');
+ const socialImage='https://bonaqu.github.io/Pandora-Saga-Build-Studio/assets/social-preview.jpg?v='+release;
+ const imageTags=[...html.matchAll(/<meta (?:property="og:image"|name="twitter:image") content="([^"]+)">/g)];
+ if(imageTags.length!==2||imageTags.some(m=>m[1]!==socialImage))
+  mismatches.push('canonical same-origin social image and cache key');
+ if(!html.includes('<meta property="og:title" content="Pandora Saga | Build Studio">')||
+    !html.includes('<meta name="twitter:card" content="summary_large_image">'))
+  mismatches.push('static share title or wide image card');
+ if(!html.includes('<link rel="canonical" href="https://bonaqu.github.io/Pandora-Saga-Build-Studio/">'))
+  mismatches.push('canonical Pages URL');
  // The updater must derive the footer from the HTML release rather than
  // copying a stale hard-coded version or showing a future offered update.
  const updater=read('pandora-studio-update-manager.js');
@@ -59,8 +75,15 @@ function bump(next,note){
  const oldManifest=JSON.parse(read('site-version.json'));
  if(oldManifest.release!==old)throw Error('Manifest version mismatch. Fix before bump.');
  const ver='0.'+Number(next.split('.')[3])+'.0';
+ let socialDescriptionsUpdated=0;
  const html=current.replace(metaPattern,(_m,a,_b,c)=>a+next+c)
-  .replace(assetPattern,(_m)=>'?v='+next);
+  .replace(assetPattern,(_m)=>'?v='+next)
+  .replace(socialVersionPattern,(_m,prefix)=>{
+   socialDescriptionsUpdated++;
+   return prefix+ver;
+  });
+ if(socialDescriptionsUpdated!==2)
+  throw Error('Social preview release descriptions could not be updated');
  const assets=[...html.matchAll(assetPattern)].map(x=>x[1]);
  if(!assets.length||assets.some(v=>v!==next))throw Error('Asset cache key update failed');
  const roadmap=read('ROADMAP.md').replace(

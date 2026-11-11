@@ -27,6 +27,28 @@ try{
  check(response.ok&&payload?.release===expected,'Pages publication',
   'expected '+expected+', live '+(payload?.release??'unavailable'));
 }catch(e){check(false,'Pages publication',e.message)}
+// Production social-preview verification: HTML is static for crawlers;
+// the image URL and both versions must match the actually published release.
+try{
+ const previewVersion='0.'+Number(expected.split('.')[3])+'.0';
+ const imageUrl=site+'assets/social-preview.jpg?v='+expected;
+ const response=await fetch(site+'?social-check='+encodeURIComponent(expected),{
+  cache:'no-store',signal:AbortSignal.timeout(12000)});
+ const html=await response.text();
+ const matchingDescriptions=[...html.matchAll(/<meta (?:property="og:description"|name="twitter:description") content="([^"]+)">/g)]
+  .filter(m=>m[1].includes('Version: '+previewVersion));
+ check(response.ok&&matchingDescriptions.length===2&&
+  html.includes('<meta property="og:title" content="Pandora Saga | Build Studio">')&&
+  html.includes('<meta name="twitter:card" content="summary_large_image">')&&
+  (html.match(/content="https:\/\/bonaqu\.github\.io\/Pandora-Saga-Build-Studio\/assets\/social-preview\.jpg\?v=[0-9.]+"\>/g)||[]).length===2&&
+  html.includes('content="'+imageUrl+'"'),
+  'Public social preview metadata','Open Graph and X share version '+previewVersion);
+ const image=await fetch(imageUrl,{method:'HEAD',cache:'no-store',
+  signal:AbortSignal.timeout(12000)});
+ check(image.ok&&String(image.headers.get('content-type')||'').includes('image/jpeg'),
+  'Public social preview image',
+  image.status+' / '+(image.headers.get('content-type')||'no image type'));
+}catch(e){check(false,'Public social preview metadata/image',e.message)}
 try{
  const {response,payload}=await read(worker+'/api/health',{cors:true});
  check(response.status===200&&payload?.status==='ok'&&payload?.storage==='d1',
