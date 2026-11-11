@@ -558,11 +558,15 @@
         const selected = group.filter(checked).length;
         panel.append(h('summary',{class:'os-sync-group-heading'},[
           h('strong',{text:review.labels[name]||name}),
-          h('span',{class:'os-sync-count',text:selected+' / '+group.length+' выбрано'})
+          h('span',{class:'os-sync-count',
+            text:selected+' / '+group.length+tr(' выбрано',' selected')})
         ]));
         const toolbar = h('div',{class:'os-sync-group-actions'});
-        const take = h('button',{type:'button',class:'button-action',text:'Выбрать понятные изменения раздела',disabled:busy||!group.some(safe)});
-        const reject = h('button',{type:'button',class:'button-action',text:'Снять выбор раздела',disabled:busy});
+        const take = h('button',{type:'button',class:'button-action',
+          text:tr('Выбрать понятные изменения раздела','Select understood changes in section'),
+          disabled:busy||!group.some(safe)});
+        const reject = h('button',{type:'button',class:'button-action',
+          text:tr('Снять выбор раздела','Clear section selection'),disabled:busy});
         take.addEventListener('click',()=> {
           if (busy) return;
           for (const item of group)if(safe(item))chosen.add(item.id);
@@ -574,7 +578,8 @@
           refreshActions(); render();
         });
         const takeVisible=h('button',{type:'button',class:'button-action',
-          text:'Выбрать найденное · '+filtered.filter(safe).length,disabled:busy||!filtered.some(safe)});
+          text:tr('Выбрать найденное · ','Select matching · ')+filtered.filter(safe).length,
+          disabled:busy||!filtered.some(safe)});
         takeVisible.onclick=()=>{
           if(busy)return;
           for(const item of filtered)if(safe(item))chosen.add(item.id);
@@ -599,20 +604,21 @@
           const visuallySame=description.rows.some(field=>field.sameVisible);
           const row = h('article',{class:'os-sync-record'+(description.uncertain?' os-sync-review-caution':'')});
           const helper=h('small',{class:'os-sync-review-level',
-            text:description.service?'Служебные данные · ручная проверка':
-              hasLinks?'Игровая ссылка · требуется ручная проверка':
-              visuallySame?'Видимый текст совпадает · требуется ручная проверка':
-              description.uncertain?'Есть нерасшифрованные параметры':
-              'Значения расшифрованы · проверь перед выбором'});
+            text:description.service?tr('Служебные данные · ручная проверка','Technical data · manual review'):
+              hasLinks?tr('Игровая ссылка · требуется ручная проверка','Game link · manual review'):
+              visuallySame?tr('Видимый текст совпадает · требуется ручная проверка','Same visible text · manual review'):
+              description.uncertain?tr('Есть нерасшифрованные параметры','Some parameters are unexplained'):
+              tr('Значения расшифрованы · проверь перед выбором','Values explained · verify before selecting')});
           if(variantTotal.get(description.title)>1)
-            helper.textContent+=' · Вариант '+variantOrder.get(change.id)+
-              ' из '+variantTotal.get(description.title)+' с этим названием';
+            helper.textContent+=tr(' · Вариант ',' · Variant ')+variantOrder.get(change.id)+
+              tr(' из ',' of ')+variantTotal.get(description.title)+
+              tr(' с этим названием',' with this name');
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
-            'aria-label':'Выбрать изменение '+description.title+
-              (hasLinks||visuallySame?' — требуется отдельная проверка':'')});
+            'aria-label':tr('Выбрать изменение ','Select change ')+description.title+
+              (hasLinks||visuallySame?tr(' — требуется отдельная проверка',' — requires separate review'):'')});
           input.addEventListener('change',()=>setChoice(change,input.checked));
-          const indicator = change.kind==='added'?'Добавлено':
-            change.kind==='removed'?'Удалено':'Изменено';
+          const indicator = change.kind==='added'?tr('Добавлено','Added'):
+            change.kind==='removed'?tr('Удалено','Removed'):tr('Изменено','Changed');
           row.append(h('label',{class:'os-sync-record-label'},[
             input,
             h('span',{class:'os-sync-record-title'},[
@@ -624,11 +630,13 @@
             const signals=h('div',{class:'os-sync-review-signals'});
             if(hasLinks)signals.append(h('small',{
               class:'os-sync-review-signal os-sync-review-signal-link',
-              text:'Связь с предметом изменилась · проверить вручную'
+              text:tr('Связь с предметом изменилась · проверить вручную',
+               'Item link changed · review manually')
             }));
             if(visuallySame)signals.append(h('small',{
               class:'os-sync-review-signal',
-              text:'Текст выглядит одинаково · проверить исходное отличие'
+              text:tr('Текст выглядит одинаково · проверить исходное отличие',
+               'Text looks identical · inspect source difference')
             }));
             row.append(signals);
           }
@@ -638,13 +646,16 @@
         panel.append(list);
         if (limit<filtered.length) {
           const more=h('button',{type:'button',class:'button-action',
-            text:'Показать остальные '+(filtered.length-limit)+' изменений'});
+            text:tr('Показать остальные ','Show remaining ')+(filtered.length-limit)+
+             tr(' изменений',' changes')});
           more.onclick=()=>{full.add(name);expanded.add(name);render()};
           panel.append(more);
         }
         results.append(panel);
       }
-      if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',text:'По этому фильтру изменений нет. Измени запрос или выбери «Все».'}));
+      if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',
+        text:tr('По этому фильтру изменений нет. Измени запрос или выбери «Все».',
+         'No changes match this filter. Change the search or select “All”.')}));
       refreshActions();
       // Keep the reviewer's place after selection; only a new search or
       // category filter intentionally starts at the beginning.
