@@ -24,7 +24,7 @@ test('D1 remains authoritative and a conflicting offline edit becomes a browser-
 });
 test('monotonic timestamps and atomic SQLite compare prevent late or same-timestamp clobbers',()=>{
  const app=read('pandora-studio-app.js'),worker=read('worker/index.js');
- assert.match(app,/Math\.max\(Date\.now\(\),\(existingIndex>=0\?Number\(builds\[existingIndex\]\.at\)\|\|0:0\)\+1\)/);
+ assert.match(app,/Math\.max\(Date\.now\(\),\(existing\?Number\(existing\.at\)\|\|0:0\)\+1\)/);
  assert.match(worker,/private_builds\.deleted_at IS NULL AND/);
  assert.match(worker,/CASE WHEN json_valid\(private_builds\.payload\)/);
  assert.match(worker,/json_type\(private_builds\.payload,'\$\.data\.level'\)='integer'/);

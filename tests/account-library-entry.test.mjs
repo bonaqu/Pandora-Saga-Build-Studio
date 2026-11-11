@@ -7,8 +7,14 @@ test('guest build library has two real RU/EN account actions and no saving contr
  const from=app.indexOf('function buildSignInCard('),to=app.indexOf('function renderBuilds(',from);
  const gate=app.slice(from,to);
  assert.ok(from>0&&to>from);
- for(const label of ['Мои билды — в аккаунте','Your builds belong to your account',
-  'Войти','Регистрация','Sign in','Register'])assert.ok(gate.includes(label),label);
+ const locale=read('pandora-studio-ui-locale.js');
+ for(const key of ['libraryGuestTitle','libraryGuestLead','libraryGuestStorageWarning',
+  'librarySharedGateTitle','librarySharedGateLead','accountSignIn','accountRegister']){
+  assert.ok(gate.includes("caption('"+key+"')")||
+   ['libraryGuestTitle','librarySharedGateTitle','libraryGuestLead','librarySharedGateLead']
+    .includes(key)&&gate.includes("'"+key+"'"),key);
+  assert.ok(locale.includes(key+':['),key+' must define RU/EN defaults');
+ }
  assert.match(gate,/onclick:\(\)=>openBuildAccount\('login'\)/);
  assert.match(gate,/onclick:\(\)=>openBuildAccount\('register'\)/);
  assert.match(css,/\.build-signin-gate\{/);

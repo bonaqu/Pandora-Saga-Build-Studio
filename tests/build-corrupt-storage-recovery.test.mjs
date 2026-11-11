@@ -39,7 +39,9 @@ function setup(library,{canPersist=true}={}){
 }
 
 test('one invalid localStorage list entry does not hide valid stored builds',()=>{
- const safe=Function(rowsCode+'\nreturn safeStoredBuildRows')();
+ const scope={};
+ Function('window',readFileSync(new URL('../pandora-studio-build-library-merge.js',import.meta.url),'utf8'))(scope);
+ const safe=Function('window',rowsCode+'\nreturn safeStoredBuildRows')(scope);
  const good={id,data:{level:55}},bad={id:other,data:null};
  const rows=[null,'old invalid text',false,good,bad,[],{id:other,data:[]},undefined];
  const untouched=rows.slice();

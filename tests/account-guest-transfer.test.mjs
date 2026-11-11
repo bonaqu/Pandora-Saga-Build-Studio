@@ -13,7 +13,8 @@ test('guest saved-build library is gated and legacy import UI is retired',()=>{
  assert.match(panel,/root\.append\(buildSignInCard\(\)\);return/);
  assert.doesNotMatch(app,/function buildLegacyImport\(/);
  assert.doesNotMatch(panel,/buildLegacyImport\(/);
- assert.match(app,/text:tr\('Регистрация','Register'\)/);
+ assert.match(app,/text:caption\('accountRegister'\)/);
+ assert.match(app,/text:caption\('accountSignIn'\)/);
 });
 test('both registration and login preserve only working guest draft, not saved builds',()=>{
  assert.match(app,/if\(tabOwnerScope\?\.startsWith\('guest:'\)&&unsavedBuild\(\)\)/);

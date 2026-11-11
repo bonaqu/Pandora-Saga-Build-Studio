@@ -3,6 +3,7 @@ import {chromium} from 'playwright';
 import {runIndependentSmokes} from './browser-runner.mjs';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
 import {runBuildAuthGateSmoke} from './browser-build-auth-gate.mjs';
+import {runGuestGateEditorialSmoke} from './browser-guest-gate-editorial-640.mjs';
 import {runModalKeyboardSmoke} from './browser-modal-keyboard.mjs';
 import {runSharedLibraryImportSmoke} from './browser-shared-library-import.mjs';
 import {runDraftPersistenceWarningSmoke} from './browser-draft-persistence-warning.mjs';
@@ -38,6 +39,7 @@ import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
 import {runHeroBookLiveRecalcSmoke} from './browser-hero-book-live-recalc.mjs';
 import {runOriginSharedSnapshotSmoke} from './browser-origin-shared-snapshot.mjs';
 import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build-comparison.mjs';
+import {runSavedBuildGridSmoke} from './browser-build-grid-640.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
@@ -62,6 +64,7 @@ if(only&&quick)throw Error('Single-scenario smoke cannot be combined with quick 
 const errors=[];
 const scenarios=[
   ['build-account-gate',runBuildAuthGateSmoke],
+  ['guest-gate-editorial',runGuestGateEditorialSmoke],
   ['modal-keyboard',runModalKeyboardSmoke],
   ['shared-library-import',runSharedLibraryImportSmoke],
   ['draft-persistence-warning',runDraftPersistenceWarningSmoke],
@@ -95,6 +98,7 @@ const scenarios=[
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
   ['honor-guide',runHonorGuideSmoke],
+  ['saved-build-card-grid',runSavedBuildGridSmoke],
   ['build-comparison',runBuildComparisonSmoke],
   ['saved-builds-english',runSavedBuildEnglishSmoke],
   ['effect-items',runEffectItemsSmoke],

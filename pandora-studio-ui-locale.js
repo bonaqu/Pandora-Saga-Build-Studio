@@ -67,6 +67,14 @@ const accountCopy=Object.freeze({
 // Fixed build-library copy is editorial content. Never bind build names, levels,
 // cloud responses, user-entered values, or the variable overwrite confirmation.
 const libraryCopy=Object.freeze({
+ // Guest/linked-build entry copy is editorial: keep the player's draft,
+ // account state and incoming share URL outside of these D1 overrides.
+ libraryGateAria:['Вход для работы с билдами','Sign in to use builds'],
+ libraryGuestTitle:['Мои билды — в аккаунте','Your builds belong to your account'],
+ librarySharedGateTitle:['Билд доступен после входа','Sign in to open this build'],
+ libraryGuestLead:['Чтобы сохранять, открывать и сравнивать билды, нужен аккаунт. Персонажа можно создавать без входа.','Sign in to save, open or compare builds. You can still plan a character without an account.'],
+ librarySharedGateLead:['Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.','Sign in or register to open this build. Your link will stay here.'],
+ libraryGuestStorageWarning:['Без аккаунта текущий герой хранится только в этом браузере. Очистка его данных удалит черновик.','Without an account, your current hero stays only in this browser. Clearing its data erases the draft.'],
  libraryDraftUnsaved:['Текущий персонаж ещё не сохранён.','This character has not been saved yet.'],
  librarySaveAndCreate:['Сохранить и создать','Save and create'],
  libraryCreateWithoutSave:['Создать без сохранения','Create without saving'],
@@ -95,6 +103,7 @@ const libraryCopy=Object.freeze({
 // Fixed toast notifications are safe authored copy. Exclude runtime details,
  // player build names, network errors and security diagnostics.
 const statusCopy=Object.freeze({
+ statusLibrarySignIn:['Войдите, чтобы открыть библиотеку билдов','Sign in to open your build library'],
  statusBuildDeleted:['Билд удалён. Все его ссылки больше не работают.','Build deleted. Its links are no longer valid.'],
  statusConflictingBuilds:['Обнаружены разные версии билда. Обе сохранены отдельно в библиотеке.','Different build versions found. Both were preserved separately.'],
  statusLibraryFull:['Недостаточно места для сохранения библиотеки. Освободи место в браузере.','Not enough browser storage for the build library. Free up space.'],

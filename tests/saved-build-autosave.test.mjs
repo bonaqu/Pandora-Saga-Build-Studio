@@ -32,7 +32,9 @@ test('named builds are written only after explicit player save/overwrite intent'
  assert.ok(start>0&&end>start);
  const actual=app.slice(start,end);
  assert.match(actual,/const existingIndex=overwriteId\?builds\.findIndex\(b=>b\.id===overwriteId\):-1/);
- assert.match(actual,/const id=existingIndex>=0\?builds\[existingIndex\]\.id:newId\(\)/);
+ assert.match(actual,/const id=existing\?existing\.id:newId\(\)/);
+ assert.match(actual,/if\(existing\)builds\.splice\(existingIndex,1,entry\)/);
+ assert.match(actual,/else builds\.push\(entry\)/);
  assert.match(actual,/window\.PandoraBuildScope\.setOwned\(localStorage,libraryScopeId\(\)/);
  assert.match(actual,/void putCloudBuild\(entry\)/);
  assert.match(app,/level:1,branch:3/);

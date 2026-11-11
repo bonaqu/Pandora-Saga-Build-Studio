@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.640.0 — 2026.11.11.640 · Guest library RU/EN editor and stable four-slot saved-build rows
+
+- Editable RU/EN guest library and shared-link gate copy without account side effects.
+- Guest gate and shared-link modal receive D1-safe authored copy keys without touching usernames, build IDs, drafts, or access checks.
+- New saved builds appear last; overwrites retain their position across local storage and cloud refresh, using a backward-compatible creation timestamp.
+- Fixed 390px build-card width, four slots per complete row, no stretching of partly filled rows; horizontal scrolling is confined to the card grid only when needed, including filtered results.
+- No production D1 mutations; Node and Chromium use isolated fixtures for editorial and card-grid acceptance.
+
+
 ## 0.639.0 — 2026.11.11.639 · Borderless Compare checkbox and comprehensive desktop/mobile visual layout screenshots
 
 - Borderless Compare checkbox and comprehensive desktop/mobile visual layout screenshots.
