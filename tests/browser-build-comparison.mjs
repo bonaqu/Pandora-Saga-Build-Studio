@@ -261,7 +261,7 @@ export async function runSavedBuildEnglishSmoke(browser,base){
    'Cloud refresh must retain the drawer scroll offset');
   assert.equal(await page.locator('.build-card:visible').count(),1);
   await search.fill('');
-  await hero.getByRole('button',{name:'↻ Save to this build'}).click();
+  await hero.getByRole('button',{name:'↻ Overwrite'}).click();
   const warning=await hero.locator('.build-overwrite-choice p').innerText();
   assert.match(warning,/^Overwrite saved build “Сияние героя”/);
   assert.match(warning,/cannot be restored\.$/);
