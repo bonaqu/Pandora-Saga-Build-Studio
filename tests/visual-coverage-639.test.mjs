@@ -26,7 +26,7 @@ test('full visual QA takes screenshots of core editor, book, wiki and modal work
  const entry=file('tests/browser-smoke.mjs');
  assert.match(entry,/site-visual-coverage',runVisualCoverageSmoke/);
  for(const target of ['origin-race','path-skills','path-growth',
-  'hero-book-results','wiki-','build-account-gate','guest-save-modal','account-panel'])
+  'hero-book-results','wiki-','build-account-gate','guest-share-signin-modal','account-panel'])
   assert.ok(module.includes(target),target);
  assert.match(module,/for\(const tab of \['class','stats'\]\)/);
  assert.match(module,/document\.querySelectorAll\('#stageBookPanel details\.stage-result-section/);
