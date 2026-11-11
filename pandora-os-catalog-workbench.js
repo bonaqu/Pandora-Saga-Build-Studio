@@ -53,10 +53,37 @@
       });
       wrap.append(button,pencil,host);return wrap;
     };
-    // Reuse the game's hover/focus helper. Tooltip text is static, never from D1.
+    // Reuse the game's hover/focus helper. All hints remain plain text;
+    // owner-authored copy updates the existing tooltip, never HTML.
     const hint=(node,description)=>{
       root.PandoraGuideTooltip?.attach(node,description,{hoverDelay:1000});
       return node;
+    };
+    const actionHint=(node,key,ru,en)=>{
+      hint(node,copy(key,ru,en));
+      if(!canEdit||typeof editLabel!=='function')return;
+      const wrap=node.closest('.os-sync-action-editor');
+      if(!wrap)return;
+      const host=h('span',{class:'os-sync-hint-edit-host',hidden:true});
+      const pencil=h('button',{type:'button',class:'os-sync-hint-pencil',
+        text:'?',title:tr('Изменить подсказку','Edit tooltip'),
+        'aria-label':tr('Изменить подсказку действия','Edit action tooltip')});
+      editLabel(host,key,ru,en,{
+        onCommitted:next=>{node.dataset.guideHint=next},
+        onFinished:()=>{
+          pencil.hidden=false;host.hidden=true;
+          wrap.classList.remove('editing-hint');
+        }
+      });
+      pencil.addEventListener('click',event=>{
+        event.preventDefault();event.stopPropagation();
+        if(!node.isConnected)return;
+        pencil.hidden=true;host.hidden=false;
+        wrap.classList.add('editing-hint');
+        host.textContent=copy(key,ru,en);
+        host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+      });
+      wrap.append(pencil,host);
     };
     const importer = root.PandoraCatalogImport;
     const difference = root.PandoraCatalogDiff;
@@ -76,8 +103,6 @@
       text:'Проверить изменения в текущей игре'});
     const archive = h('button', {type:'button',class:'button-action',
       text:'Сверить с сохранённой копией'});
-    hint(live,'Получить 17 общедоступных файлов JSON с pandorasaga-os.com через Cloudflare Worker, сравнить с опубликованным каталогом Build Studio в D1. Не читает файлы на ПК, не обращается к клиенту игры и не сохраняет изменения автоматически.');
-    hint(archive,'Сравнить D1 с JSON-файлами, которые уже сохранены в GitHub Pages Build Studio. Это архив проекта, а НЕ новые данные с сайта игры. Может содержать более старые характеристики.');
     const archiveChoice=h('details',{class:'os-sync-archive-choice'},[
       h('summary',{text:copy('archiveSummary','Если сайт игры не отдаёт данные','When the game site is unavailable')}),
       authored('p',{},'archiveExplanation',
@@ -204,20 +229,49 @@
        action(exportButton,'exportButton','Скачать выбранное для GitHub','Download selected for GitHub')
       ])
     ]);
-    for(const [node,description] of [
-      [acceptAll,'Выбрать только изменения, которые удалось расшифровать, исключив непонятные параметры и служебные сведения. Это не публикация.'],
-      [declineAll,'Снять галочки со всех изменений. Уже опубликованный каталог D1 останется прежним.'],
-      [publish,'После подтверждения сохранить только выбранные изменения как новую версию каталога в Cloudflare D1. Это меняет данные на сайте, но не файлы игры на ПК.'],
-      [testWrite,'Проверить временную запись, чтение и удаление в Cloudflare D1. Опубликованные предметы и билды не меняются.'],
-      [testCAS,'Проверить конфликты на двух случайных временных записях. Запись только после подтверждения, без изменения игрового каталога и билдов.'],
-      [github,'Создать предложение изменений в репозитории GitHub из уже опубликованной версии D1. Автоматического принятия изменений не будет.'],
-      [exportButton,'Скачать файл с выбранными изменениями для ручного обновления GitHub. Ничего не публикует.'],
-      [search,'Найти изменения по названиям игровых объектов. Поиск не меняет выбор и не публикует данные.'],
-      [archiveChoice.querySelector('summary'),'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.'],
-      [advanced.querySelector('summary'),'Необязательные операции: тест записи D1, экспорт и предложение изменений GitHub.']
-    ])hint(node,description);
     actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
      archiveChoice,reviewSteps,advanced);
+    // Each action tooltip has independent RU/EN D1 copy. Its ? editor is
+    // a sibling of the real action button, never part of its click target.
+    for(const [node,key,ru,en] of [
+      [live,'hintLive',
+       'Получить 17 общедоступных файлов JSON с pandorasaga-os.com через Cloudflare Worker, сравнить с опубликованным каталогом Build Studio в D1. Не читает файлы на ПК, не обращается к клиенту игры и не сохраняет изменения автоматически.',
+       'Retrieve 17 public JSON files from pandorasaga-os.com through Cloudflare Worker and compare with the published D1 catalog. Never reads local files, connects to the game client or saves changes automatically.'],
+      [archive,'hintArchive',
+       'Сравнить D1 с JSON-файлами, которые уже сохранены в GitHub Pages Build Studio. Это архив проекта, а НЕ новые данные с сайта игры. Может содержать более старые характеристики.',
+       'Compare D1 with JSON already saved in GitHub Pages Build Studio. This is a project archive, NOT live game data, and may have older statistics.'],
+      [acceptAll,'hintAcceptAll',
+       'Выбрать только изменения, которые удалось расшифровать, исключив непонятные параметры и служебные сведения. Это не публикация.',
+       'Select only explained changes, excluding unknown parameters and technical metadata. This does not publish anything.'],
+      [declineAll,'hintDeclineAll',
+       'Снять галочки со всех изменений. Уже опубликованный каталог D1 останется прежним.',
+       'Clear every selection. The published D1 catalog remains unchanged.'],
+      [publish,'hintPublish',
+       'После подтверждения сохранить только выбранные изменения как новую версию каталога в Cloudflare D1. Это меняет данные на сайте, но не файлы игры на ПК.',
+       'After confirmation, publish only selected changes as a new Cloudflare D1 catalog version. This changes website data, never local game files.'],
+      [testWrite,'hintTestWrite',
+       'Проверить временную запись, чтение и удаление в Cloudflare D1. Опубликованные предметы и билды не меняются.',
+       'Test temporary write, read and delete operations in Cloudflare D1. Published items and builds are unchanged.'],
+      [testCAS,'hintTestCas',
+       'Проверить конфликты на двух случайных временных записях. Запись только после подтверждения, без изменения игрового каталога и билдов.',
+       'Check conflicts using two randomized temporary records, after confirmation, without changing the game catalog or builds.'],
+      [github,'hintGithub',
+       'Создать предложение изменений в репозитории GitHub из уже опубликованной версии D1. Автоматического принятия изменений не будет.',
+       'Create a GitHub pull request from the already published D1 version. The proposal is never merged automatically.'],
+      [exportButton,'hintExport',
+       'Скачать файл с выбранными изменениями для ручного обновления GitHub. Ничего не публикует.',
+       'Download selected changes for a manual GitHub update. Nothing is published.']
+    ])actionHint(node,key,ru,en);
+    for(const [node,ru,en] of [
+      [search,'Найти изменения по названиям игровых объектов. Поиск не меняет выбор и не публикует данные.',
+       'Search changes by game-object names. Searching never changes selection or publishes data.'],
+      [archiveChoice.querySelector('summary'),
+       'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.',
+       'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.'],
+      [advanced.querySelector('summary'),
+       'Необязательные операции: тест записи D1, экспорт и предложение изменений GitHub.',
+       'Optional operations: D1 write test, export and GitHub pull request.']
+    ])hint(node,tr(ru,en));
     view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,filters,overview,search,results);
     for(const element of [filters,overview,search,results])element.hidden=true;
 
