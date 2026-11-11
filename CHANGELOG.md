@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.645.0 — 2026.11.11.645 · Bilingual administrator review dialogs
+
+- Two admin review dialogs (English translations and GitHub export) have source-backed RU/EN introductory explanations and safe D1 inline ✎ editors. Translation/save and GitHub/create labels have independent D1 copy fields and separate pencils, never nested in their action buttons.
+- EN modal titles, status text, actions and feedback render in English; live record/translation counts and imported row values remain read-only. Export and translation actions still use the existing D1 CAS/fingerprint checks. No game formulas, character states, tokens, or catalog values are made editable.
+- Existing history/undo and owner-copy refresh now handle `owner-dialog`. Long text grows inside the same modal; mobile pencils remain independent.
+- Node key contract and Chromium authenticated admin mock cover separate RU/EN fallback, D1 captions, dynamic counts and no accidental GitHub publication.
+- Merge only after Node and Chromium, then verify Pages and Worker readiness independently.
+
+
 ## 0.644.0 — 2026.11.11.644 · Owner change history inline D1 help editing
 
 - The administrator's “All manual edits” view now has two real RU/EN D1-authored help captions (intro and empty-search message), with separate compact ✎ buttons, double-click, keyboard entry, growing input, CAS on save and Undo without dismissing the modal.
