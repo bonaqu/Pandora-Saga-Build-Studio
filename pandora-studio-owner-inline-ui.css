@@ -529,3 +529,9 @@
 .path-more-owner-row>.path-more-pencil:hover{background:#513520;border-color:#dcb477}
 .path-more-owner-row>.path-more-pencil:focus-visible{outline:2px solid #ecc88c;outline-offset:2px}
 .path-more-owner-row .path-more-copy{overflow-wrap:anywhere}
+
+/* Hero Path prerequisite text: edit only the caption, not the linked skill. */
+.path-skill-previous-row{display:flex;align-items:center;flex-wrap:wrap;gap:2px;min-width:0}
+.path-skill-previous-row>.path-skill-previous-label{display:inline-flex;align-items:center;gap:4px;min-width:0;margin:0;overflow-wrap:anywhere}
+.path-skill-previous-row>.path-skill-previous-separator{flex:0 0 auto;white-space:pre}
+.path-skill-previous-row>.path-skill-previous-value{min-width:0;overflow-wrap:anywhere}

@@ -711,8 +711,16 @@ function viewSkills(target,details,api){
   }
   if(skill.prereq){
    const before=skillIndex.get(String(skill.prereq));
-   details.append(make('p',{class:'path-skill-prereqs',text:tr(api,'Предыдущее умение: ','Previous skill: ')+
-     (before?.name||tr(api,'Умение отсутствует в каталоге','Skill not in catalog'))}));
+   const title=authored(api,'skillPreviousLabel','Предыдущее умение',
+    'Previous skill','span','path-skill-previous-label');
+   const current=before?.name?
+    make('span',{class:'path-skill-previous-value',text:before.name}):
+    authored(api,'skillPrerequisiteMissing','Умение отсутствует в каталоге',
+     'Skill not in catalog','span','path-skill-previous-value');
+   // Missing-skill text alone is editable; actual skill names and IDs never are.
+   const row=make('p',{class:'path-skill-prereqs path-skill-previous-row'});
+   row.append(title,make('span',{class:'path-skill-previous-separator',text:': '}),current);
+   details.append(row);
   }
   // Raw effect codes remain in the encyclopedia, not the quick skill card.
   if(typeof api.skillWiki==='function')details.append(api.skillWiki(skill));

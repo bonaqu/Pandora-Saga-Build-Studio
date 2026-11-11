@@ -127,6 +127,35 @@ export async function runOwnerRacialPath648Smoke(browser,base){
    .innerText()).match(/[0-9]+/)?.[0]);
   assert.equal(after,before-24);
   console.log('Chromium 0.649 Show more EN D1 caption and dynamic skill count passed');
+  // Pick a known SCOUT skill with an actual previous-skill requirement.
+  // Search by source ID is test-only; game IDs are not displayed to players.
+  // The real search starts read-only to block password-manager injection.
+  // A user's focus/click unlocks it; programmatic fill must follow that gesture.
+  const search=page.locator('#pathSkillSearch');
+  await search.click();
+  assert.equal(await search.isEditable(),true);
+  await search.fill('110101002');
+  const skillCard=page.locator('#pathSkillGallery [data-skill-id="110101002"]');
+  await skillCard.waitFor({state:'visible',timeout:12000});
+  await skillCard.click();
+  const prereq=page.locator('#pathSkillDetails .path-skill-previous-row');
+  await prereq.waitFor({state:'visible',timeout:12000});
+  const requiredName=await prereq.locator('.path-skill-previous-value').innerText();
+  assert.ok(requiredName.trim(),'The source prerequisite name must remain visible');
+  assert.equal((await prereq.locator('.path-owner-copy-text').innerText()).trim(),
+   'Previous skill');
+  await prereq.locator('.path-owner-pencil').click();
+  const prereqEdit=prereq.locator('[data-owner-text-field]');
+  await prereqEdit.waitFor({state:'visible'});
+  await prereqEdit.fill('Prerequisite QA');await prereqEdit.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#pathSkillDetails .path-skill-previous-label .path-owner-copy-text')
+   ?.textContent==='Prerequisite QA',null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.path.skill-previous-label']),
+   {en:'Prerequisite QA'});
+  assert.equal(await prereq.locator('.path-skill-previous-value').innerText(),requiredName,
+   'D1 text changes must not rename the required source skill');
+  console.log('Chromium 0.650 bilingual prerequisite caption and game-data separation passed');
   assert.equal(writes.filter(x=>x.key==='guideedit.book.path.racial-branch').length,2);
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.ok(Object.values(saved.points||{}).every(value=>Number(value)===0),
