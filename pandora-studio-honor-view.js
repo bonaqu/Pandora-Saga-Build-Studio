@@ -360,16 +360,23 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const rankFilters=make('div',{class:'wiki-honor-rank-filters',role:'group',
   'aria-label':tr('Фильтр рангов','Rank filter')});
  const rankGrid=make('div',{class:'wiki-honor-rank-list'});
+ // Counts come from actual rank records; only captions are authored D1 copy.
  const filters=[
-  ['all',tr('Все · 12','All · 12')],
-  ['standard',tr('Обычные · 9','Standard · 9')],
-  ['monthly',tr('Месячные · 3','Monthly · 3')]
+  ['all','filterAll','Все','All',article.ranks.length],
+  ['standard','filterStandard','Обычные','Standard',
+   article.ranks.filter(rank=>rank.top==null).length],
+  ['monthly','filterMonthly','Месячные','Monthly',
+   article.ranks.filter(rank=>rank.top!=null).length]
  ];
- for(const [key,label]of filters){
-  const button=make('button',{type:'button',class:'wiki-honor-filter'+(key===oldFilter?' chosen':''),
-   text:label,'data-honor-filter':key,
+ for(const [key,copyKey,ru,english,count]of filters){
+  const label=copy(copyKey,ru,english);
+  const wrap=make('span',{class:'wiki-honor-filter-wrap'});
+  const button=make('button',{type:'button',
+   class:'wiki-honor-filter'+(key===oldFilter?' chosen':''),
+   'data-honor-filter':key,
    'aria-pressed':String(key===oldFilter),onclick:()=>{
-    for(const choice of rankFilters.querySelectorAll('button')){
+    // Editing pencils are buttons too, but never a filter action.
+    for(const choice of rankFilters.querySelectorAll('button[data-honor-filter]')){
      const active=choice===button;
      choice.classList.toggle('chosen',active);choice.setAttribute('aria-pressed',String(active));
     }
@@ -377,7 +384,29 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      card.hidden=key==='standard'?card.dataset.rankType!=='standard':
       key==='monthly'?card.dataset.rankType!=='monthly':false;
    }});
-  rankFilters.append(button);
+  const caption=node('span','wiki-honor-filter-caption',label);
+  button.append(caption,node('span','wiki-honor-filter-count',' · '+count));
+  wrap.append(button);
+  if(editable){
+   // Do not nest a pencil inside a filter button. Triggering an editor
+   // must never change active filter or the rank cards' visibility.
+   const pencil=make('button',{type:'button',
+    class:'wiki-honor-copy-pencil wiki-honor-filter-pencil',text:'✎',
+    'aria-label':tr('Изменить подпись: ','Edit caption: ')+label});
+   const host=make('span',{class:'wiki-honor-filter-edit-host',hidden:true,text:label});
+   const restore=()=>{button.hidden=false;pencil.hidden=false;host.hidden=true};
+   editCopy(host,copyKey,ru,english,{
+    onCommitted:visible=>{caption.textContent=visible},
+    onFinished:restore
+   });
+   pencil.addEventListener('click',event=>{
+    event.preventDefault();event.stopPropagation();
+    button.hidden=true;pencil.hidden=true;host.hidden=false;
+    host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   });
+   wrap.append(pencil,host);
+  }
+  rankFilters.append(wrap);
  }
  ranks.append(rankFilters);
  for(const rank of article.ranks){
