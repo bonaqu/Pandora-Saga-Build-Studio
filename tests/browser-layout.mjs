@@ -17,6 +17,12 @@ export async function runLayoutAudit(browser,base){
    await page.goto(base+'/',{waitUntil:'domcontentloaded'});
    await page.waitForFunction(()=>document.querySelector('#raceGrid')?.children.length>0,
     null,{timeout:20000});
+   await page.waitForFunction(()=>/^Version: 0\.\d+\.0$/.test(
+    document.querySelector('#siteVersion')?.textContent||''),null,{timeout:20000});
+   const release=await page.locator('meta[name="ps-studio-release"]').getAttribute('content');
+   const expectedVersion='Version: 0.'+Number(release.split('.')[3])+'.0';
+   assert.equal(await page.locator('#siteVersion').innerText(),expectedVersion,
+    width+'px: footer must follow the version of this page');
    const geometry=await page.evaluate(()=>{
     const rect=selector=>{
      const element=document.querySelector(selector);
@@ -28,6 +34,7 @@ export async function runLayoutAudit(browser,base){
     return{
      viewport:document.documentElement.clientWidth,
      fullWidth:Math.max(document.body.scrollWidth,document.documentElement.scrollWidth),
+     catalogStatus:rect('#catalogStatus'),releaseTag:rect('#siteVersion'),
      workspace:rect('#workspace'),stage:rect('.workspace>.stage'),
      portrait:rect('.workspace>.stage .portrait-frame'),
      left:rect('.workspace>.left'),right:rect('.workspace>.right'),
@@ -35,8 +42,15 @@ export async function runLayoutAudit(browser,base){
      heroImage:getComputedStyle(document.querySelector('#hero')).objectFit
     };
    });
-   const {stage,portrait,left,right}=geometry;
+   const {stage,portrait,left,right,catalogStatus,releaseTag}=geometry;
    assert.ok(stage&&portrait&&left&&right,'Missing a primary editor column');
+   assert.ok(catalogStatus&&releaseTag,'Footer catalog counts and release must exist');
+   assert.ok(releaseTag.right<=geometry.viewport+1,
+    width+'px: release label must stay inside the page');
+   const sameRow=Math.abs(catalogStatus.y-releaseTag.y)<4;
+   assert.ok(sameRow?catalogStatus.right<=releaseTag.x+2:
+    catalogStatus.bottom<=releaseTag.y+2,
+    width+'px: catalog counters must not overlap the release label');
    assert.ok(geometry.fullWidth-geometry.viewport<=12,
     width+'px: unexpected horizontal page overflow '+(geometry.fullWidth-geometry.viewport));
    assert.ok(portrait.width>=100&&portrait.height>=160,
