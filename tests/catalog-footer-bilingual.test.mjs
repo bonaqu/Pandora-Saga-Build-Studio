@@ -30,7 +30,10 @@ test('the same renderer runs on catalog refresh and locale switching',()=>{
 });
 
 test('the catalog count remains a separate left footer field',()=>{
- assert.match(html,/<footer>[\\s\\S]*id="catalogStatus"[\\s\\S]*id="siteVersion"[\\s\\S]*<\\/footer>/);
+ const footer=html.slice(html.indexOf('<footer>'),html.indexOf('</footer>')+9);
+ assert.ok(footer.includes('id="catalogStatus"'));
+ assert.ok(footer.includes('id="siteVersion"'));
+ assert.ok(footer.indexOf('id="catalogStatus"')<footer.indexOf('id="siteVersion"'));
  assert.equal((html.match(/id="catalogStatus"/g)||[]).length,1);
  assert.equal((html.match(/id="siteVersion"/g)||[]).length,1);
 });
