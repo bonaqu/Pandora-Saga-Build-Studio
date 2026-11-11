@@ -76,7 +76,9 @@ function attach(node,text,{hoverDelay=0}={}){
  const show=()=>{
   if(!node.isConnected||node.closest('#ownerDock.owner-dock-collapsed .owner-dock-panel'))return;
   dismiss();ensure();
-  current=node;popup.textContent=text;popup.hidden=false;
+  // Owner D1 copy may change while the original hover target stays mounted.
+  // Read its current plain text at show time; never treat it as HTML.
+  current=node;popup.textContent=node.dataset.guideHint||text;popup.hidden=false;
   linkDescription(node,popup.id);
   position(node);
   if(typeof MutationObserver==='function'&&document.body){
