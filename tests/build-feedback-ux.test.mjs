@@ -9,8 +9,11 @@ Function('window',read('pandora-studio-ui-locale.js'))(root);
 test('guest working draft warns about clearing browser data in both languages',()=>{
  const block=app.slice(app.indexOf('function buildSignInCard('),app.indexOf('function openBuildAccount('));
  assert.match(block,/build-guest-storage-note/);
- assert.match(block,/Очистка его данных удалит черновик/);
- assert.match(block,/Clearing its data erases the draft/);
+ assert.match(block,/caption\('libraryGuestStorageWarning'\)/);
+ assert.equal(root.PandoraUILocale.text('libraryGuestStorageWarning','ru'),
+  'Без аккаунта текущий герой хранится только в этом браузере. Очистка его данных удалит черновик.');
+ assert.equal(root.PandoraUILocale.text('libraryGuestStorageWarning','en'),
+  'Without an account, your current hero stays only in this browser. Clearing its data erases the draft.');
  assert.match(css,/\.build-signin-copy \.build-guest-storage-note/);
 });
 test('conflicting drafts save existing account work before switching to guest',()=>{
