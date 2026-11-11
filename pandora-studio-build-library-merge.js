@@ -2,6 +2,11 @@
 'use strict';
 // Keep conflicting local and cloud snapshots: a timestamp is not an edit history.
 const ID=/^[a-f0-9]{32}$/;
+// Creation order is independent of the latest overwrite's revision timestamp.
+// Historical rows without createdAt retain their original at as a fallback.
+const creationStamp=row=>Number.isSafeInteger(row?.createdAt)&&row.createdAt>=0?
+ row.createdAt:(Number.isSafeInteger(row?.at)&&row.at>=0?row.at:0);
+const orderByCreation=rows=>rows.sort((a,b)=>creationStamp(a)-creationStamp(b));
 // Name and character data are compared structurally; object key order is not an edit.
 const equivalent=(a,b)=>{
   if(a===b)return true;
@@ -61,7 +66,7 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
    origin==='local'?(english?' · local copy':' · локальная копия'):
    (english?' · cloud copy':' · облачная копия');
   const duplicate={...source,id,name:String(source.name||(english?'Build':'Билд')).slice(0,70-suffix.length)+suffix,
-   at:Math.max(Date.now(),Number(source.at)||0),localOnly:true};
+   at:Math.max(Date.now(),Number(source.at)||0),createdAt:Math.max(Date.now(),creationStamp(source)),localOnly:true};
   merged.push(duplicate); // A conflict copy stays local until explicitly saved.
   return id;
  };
@@ -138,9 +143,9 @@ function reconcile({local=[],remote=[],pendingDeletes=[],activeId=null,newId,lan
   if(entry.localOnly!==true)outgoing.push(entry);
   remoteIds.add(entry.id);
  }
- merged.sort((a,b)=>(b.at||0)-(a.at||0));
+ orderByCreation(merged);
  if(selected&&!merged.some(x=>x.id===selected))selected=null;
  return {merged,outgoing,activeId:selected,copies,unavailable};
 }
-root.PandoraBuildLibraryMerge=Object.freeze({reconcile,same});
+root.PandoraBuildLibraryMerge=Object.freeze({reconcile,same,creationStamp,orderByCreation});
 })(typeof window==='undefined'?globalThis:window);
