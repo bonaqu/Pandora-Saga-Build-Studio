@@ -6506,6 +6506,8 @@ function renderBuilds(root){
  if(!window.PandoraAccountUI?.isLoggedIn()){
   root.append(buildSignInCard());return;
  }
+ // This renderer is independent from the Origin and Hero Path local helpers.
+ const tr=(ru,en)=>lang==='en'?en:ru;
  const toolbar=h('div',{class:'build-toolbar'});
  const name=h('input',{type:'text',class:'build-name-input',maxLength:'70',value:state.name||'Новый герой','aria-label':'Название билда'});
  const choice=h('div',{class:'new-build-choice',hidden:!newBuildPromptOpen});
