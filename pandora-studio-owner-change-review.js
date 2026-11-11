@@ -194,7 +194,12 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
  }else if(type==='guideedit'&&parts[1]==='book'&&parts[2]==='wiki'&&
   parts[3]==='item-field'){
   section='Интерфейс';
-  const fieldId=parts[4].toUpperCase();
+  // D1 keys are lowercase, while only W/PEN/AC are uppercase in the
+  // item presentation model. Preserve the original spelling for all other
+  // fields so labels and source hints resolve without leaking schema names.
+  const rawField=parts[4]||'';
+  const fieldId=['w','pen','ac'].includes(rawField.toLowerCase())?
+   rawField.toUpperCase():rawField;
   name=tr('Подсказка предмета: ','Item hint: ')+
    ((english?labelsEn:labels)[fieldId]||fieldId);
   patch=toObject(stored);
