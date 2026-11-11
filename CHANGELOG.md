@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.641.0 — 2026.11.11.641 · Hero Book RU/EN editorial sweep
+
+- Expanded existing D1 inline copy editor to 156 exact, source-backed Hero Book caption pairs; each has a stable readable key with a collision-resistant suffix and independent RU/EN overrides.
+- No duplicate pencil on specialized labels, chapter tabs or actionable game/item controls; long text grows within the Book and editing does not trigger a navigation or a game calculation.
+- Live save, undo and locale switch update only authored text without remounting the current hero, losing focus or overriding generated combat values.
+- Node regression and Chromium admin acceptance cover bilingual fallback, safe edit scope, long text and real in-screen D1 mock transport; production D1 is not changed by tests.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.640.0 — 2026.11.11.640 · Guest library RU/EN editor and stable four-slot saved-build rows
 
 - Editable RU/EN guest library and shared-link gate copy without account side effects.
