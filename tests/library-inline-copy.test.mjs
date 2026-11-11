@@ -174,3 +174,42 @@ test('shared-link receiver help has two safe RU/EN D1 keys independent of dynami
  const css=read('pandora-studio-owner-inline-ui.css');
  assert.match(css,/\.shared-receiver-dialog \.shared-receiver-copy-row/);
 });
+
+test('share publisher owner copy is RU/EN editable without touching server errors or live URLs',()=>{
+ const copy={
+  libraryShareLocalOnlyHelp:[
+   'Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».',
+   'Open this local copy and explicitly save it with “Overwrite” first.'],
+  libraryShareCreating:[
+   'Создаём ссылку из последней сохранённой облачной версии…',
+   'Creating a link from the latest saved cloud build…'],
+  libraryShareErrorIntro:['Не удалось создать ссылку:','Could not create link:']
+ };
+ for(const [key,[ru,en]] of Object.entries(copy)){
+  assert.equal(locale.literalKey(ru),key);
+  assert.equal(locale.text(key,'en'),en);
+  assert.ok(locale.copyLimit(key)>=ru.length);
+  assert.ok(guide.validOverride('book.'+locale.fieldKey(key),
+   JSON.stringify({ru:'Тест',en:'Test'})));
+  const path='guideedit.book.'+locale.fieldKey(key);
+  locale.setOverrides({[path]:JSON.stringify({ru:'RU QA',en:'EN QA'})});
+  assert.equal(locale.text(key,'ru'),'RU QA');
+  assert.equal(locale.text(key,'en'),'EN QA');
+  locale.setOverrides({});
+ }
+ const source=read('pandora-studio-app.js');
+ const block=source.slice(source.indexOf('async function createShared('),
+  source.indexOf('function openSharedSnapshot('));
+ assert.match(block,/function|const showShareCopy=/);
+ assert.match(block,/PandoraUILocale\?\.localize\(row,lang\)/);
+ assert.match(block,/PandoraUILocale\?\.localize\(prefix,lang\)/);
+ assert.match(block,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(row\)/);
+ assert.match(block,/class:'share-runtime-detail'/);
+ assert.match(block,/class:'share-error-intro'/);
+ assert.match(block,/window\.PandoraUILocale\?\.ui\(error\.message,lang\)\|\|error\.message/);
+ assert.doesNotMatch(block,/localize\(detail,lang\)/);
+ assert.doesNotMatch(block,/data-owner-copy-key.*(?:field|url|detail)/);
+ assert.equal(locale.literalKey('Server response from another account'),null);
+ const css=read('pandora-studio-owner-inline-ui.css');
+ assert.match(css,/\.build-share-slot \.share-editorial-row/);
+});

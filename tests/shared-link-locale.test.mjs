@@ -45,7 +45,8 @@ test('shared receiver buttons, dialogs and dynamic build name use explicit local
 
 test('share status errors use translated detail instead of raw Russian in EN UI',()=>{
  assert.match(app,/window\.PandoraUILocale\?\.ui\(error\.message,lang\)\|\|error\.message/);
- assert.match(app,/sharedText\('Не удалось создать ссылку: ','Could not create link: '\)/);
+ assert.match(app,/const prefix=h\('span',\{class:'share-error-intro',text:'Не удалось создать ссылку:'\}\)/);
+ assert.match(app,/class:'share-runtime-detail'/);
  assert.ok(translate('Ссылка выделена — скопируй через меню или Ctrl+C','en').includes('copy'));
  assert.match(app,/copy\.textContent=window\.PandoraUILocale\?\.ui\('✓ Скопировано',lang\)/);
  assert.match(app,/copy\.textContent=window\.PandoraUILocale\?\.ui\(\s*'Ссылка выделена — скопируй через меню или Ctrl\+C',lang\)/);

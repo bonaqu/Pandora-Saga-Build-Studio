@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.656.0 — 2026.11.12.656 · D1 editable shared-link creation statuses and safe error prefix
+
+- Shared build publisher has three separate authored RU/EN inline notes: local-only copy guidance, link creation progress and the fixed introduction to an error. All reuse semantic `ui.label.library-share-*` D1 keys, owner-only pencil controls, bilingual CAS saves, undo and strict fallbacks.
+- Runtime Worker error text is now a separate non-editable node; generated share token/URL, saved-build name, public verification and copy-to-clipboard controls remain untouched.
+- Removed the instantaneously replaced “Checking saved build…” state, leaving one clear progress status during the actual POST/GET verification.
+- Added responsive layout for long RU/EN share notices and error details. Node validates D1 keys and dynamic isolation; Chromium checks real verification-failure DOM, no guest/account pencils and unaffected copy/receiver flow.
+- Release metadata, public social-preview descriptions/cache keys, asset versions and footer stay synchronized. No production D1 writes or gameplay changes.
+
+
+
 ## 0.655.0 — 2026.11.12.655 · Bilingual editable shared-link receiver explanations
 
 - Shared library import modal now separates the computed incoming build count from a short, independently editable RU/EN explanation; imported builds and active draft remain under the existing explicit user action.
