@@ -293,6 +293,19 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await page.locator('#originTabs [data-origin-copy-key="tabRace"]').count(),1);
   await edge.click();
   assert.equal(await edge.getAttribute('aria-expanded'),'true');
+  // Undo a bilingual Origin label without remounting the current race picker.
+  await page.evaluate(()=>{window.__qaOriginSelect=document.querySelector('.race-slide-select')});
+  const undoOrigin=page.waitForResponse(response=>response.url().endsWith('/api/admin/override')&&
+   response.request().postDataJSON()?.key===raceCopy);
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await undoOrigin;
+  assert.equal(await page.evaluate(()=>
+   window.__qaOriginSelect===document.querySelector('.race-slide-select')),true);
+  assert.deepEqual(JSON.parse(townOverrides.get(raceCopy)),{ru:'Выбрать расу'});
+  await page.locator('#locale [data-locale="en"]').click();
+  await captionReady(page,'Choose this race','EN-after-origin-undo');
+  await page.locator('#locale [data-locale="ru"]').click();
+  await captionReady(page,'Выбрать расу','RU-after-origin-undo');
   // A floating owner drawer must preserve explicit expansion across workbenches.
   await page.locator('#nav [data-tab="builds"]').click();
   await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
