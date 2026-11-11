@@ -7704,7 +7704,7 @@ function refreshVisibleOriginCopy(recordKey){
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
  if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
-  if(!/^(equipment|path|catalog-sync|honor-view|owner-history)\./.test(key))return;
+  if(!/^(equipment|path|catalog-sync|honor-view|owner-history|owner-dialog)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -7721,6 +7721,10 @@ function refreshVisibleOwnerCopy(recordKey){
     node.parentElement.querySelector('.path-owner-pencil'):null;
    (tabPencil||inlinePencil||helpPencil)?.setAttribute('aria-label',
     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
+  }
+  if(section==='owner-dialog'){
+   const action=node.closest('.owner-dialog-action-editor')?.querySelector('.owner-dialog-action');
+   if(action)action.textContent=value;
   }
   if(section==='honor-view'){
    const filterCaption=node.parentElement?.querySelector('.wiki-honor-filter-caption');
@@ -7787,7 +7791,7 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history)\./.test(last.key)){
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog)\./.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -7871,7 +7875,8 @@ function showOverrideManager(){
        if(record.key.startsWith('guideedit.book.origin.')){
         refreshVisibleOriginCopy(record.key);saveView();
        }else if(record.key.startsWith('guideedit.book.owner-dock.')||
-        record.key.startsWith('guideedit.book.owner-history.')){
+        record.key.startsWith('guideedit.book.owner-history.')||
+        record.key.startsWith('guideedit.book.owner-dialog.')){
         refreshVisibleOwnerCopy(record.key);
        }else void refreshOwnerCatalog();
        refreshOwnerUI();
@@ -8126,7 +8131,8 @@ async function saveGuidePatchNow(key,fields){
    refreshVisibleUICopy('guideedit.'+key);
   if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
-     key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.'))
+     key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
+     key.startsWith('book.owner-dialog.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
      !key.startsWith('book.catalog-sync.')){
@@ -8443,8 +8449,50 @@ function inlineWikiText(el){
  }});
 }
 
-async function showOwnerEnglishReview(){
+async /* Editorial copy for administrative dialogs uses the same authenticated
+   inline D1 CAS path as the Book. No JSON values, counts, tokens or callbacks
+   are ever passed to this generic text editor. */
+function ownerDialogHelp(key,ru,en){
+ const caption=h('p',{class:'muted owner-dialog-help',
+  id:'owner-dialog-copy-'+key,text:ownerCopy('owner-dialog',key,ru,en)});
+ if(!adminEditing||!adminToken)return caption;
+ ownerCopyLabel(caption,'owner-dialog',key,ru,en);
+ const pencil=h('button',{type:'button',class:'owner-dialog-pencil',
+  text:'✎',title:lang==='en'?'Edit explanation':'Изменить пояснение',
+  'aria-label':lang==='en'?'Edit explanation':'Изменить пояснение',
+  'aria-describedby':caption.id,
+  onclick:event=>{
+   event.preventDefault();event.stopPropagation();
+   caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+  }});
+ return h('div',{class:'owner-dialog-editor'},[caption,pencil]);
+}
+function ownerDialogAction(button,key,ru,en){
+ button.textContent=ownerCopy('owner-dialog',key,ru,en);
+ button.classList.add('owner-dialog-action');
+ if(!adminEditing||!adminToken)return button;
+ const wrapper=h('span',{class:'owner-dialog-action-editor'});
+ const host=h('span',{class:'owner-dialog-action-host',hidden:true});
+ const pencil=h('button',{type:'button',class:'owner-dialog-pencil',
+  text:'✎',title:lang==='en'?'Edit action caption':'Изменить подпись действия',
+  'aria-label':lang==='en'?'Edit action caption':'Изменить подпись действия',
+  onclick:event=>{
+   event.preventDefault();event.stopPropagation();
+   if(!button.isConnected)return;
+   button.hidden=true;pencil.hidden=true;host.hidden=false;
+   host.textContent=ownerCopy('owner-dialog',key,ru,en);
+   host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+  }});
+ ownerCopyLabel(host,'owner-dialog',key,ru,en,{
+  onCommitted:next=>{button.textContent=next},
+  onFinished:()=>{button.hidden=false;pencil.hidden=false;host.hidden=true}
+ });
+ wrapper.append(button,pencil,host);
+ return wrapper;
+}
+function showOwnerEnglishReview(){
  if(!adminEditing||!adminToken)return;
+ const tr=(ru,en)=>lang==='en'?en:ru;
  if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
   showStudioToast('Сначала заверши текущее сохранение.','warning');return;
  }
@@ -8455,31 +8503,30 @@ async function showOwnerEnglishReview(){
  }
  const fields=planned.reduce((sum,entry)=>sum+entry.fields.length,0);
  const body=h('div',{class:'owner-manager'});
- body.append(h('p',{class:'muted',text:
-  'Готовые переводы русских правок. Здесь только записи с подтверждённым исходным текстом. Уже сохранённые EN-названия не заменяются.'}));
+ body.append(ownerDialogHelp('translationsIntro',
+  'Готовые переводы русских правок. Здесь только записи с подтверждённым исходным текстом. Уже сохранённые EN-названия не заменяются.',
+  'Suggested English translations of Russian edits. Only verified source texts are included. Existing English names are not replaced.'));
  const list=h('div',{class:'owner-manager-list'});
  for(const row of planned){
   const group=h('div',{class:'owner-manager-row'});
   group.append(h('strong',{text:row.title}));
-  for(const field of row.fields){
-   group.append(h('p',{text:field.ru+' → '+field.en}));
-  }
+  for(const field of row.fields)group.append(h('p',{text:field.ru+' → '+field.en}));
   list.append(group);
  }
  const status=h('p',{role:'status',class:'muted'});
- const save=h('button',{type:'button',class:'button-action primary',
-  text:'Сохранить '+fields+' EN-перевода(ов)'});
+ const save=h('button',{type:'button',class:'button-action primary'});
  save.onclick=async()=>{
   save.disabled=true;editIsSaving=true;refreshOwnerUI();
   let saved=0;
   try{
-   // Refresh before changing D1: preserve newer changes from another editor.
+   // Re-read D1 before saving: never clobber edits from another session.
    const remote=(await apiRequest('/api/overrides',null,'')).values||{};
    const current=helper.pending(remote);
    if(current.length!==planned.length||
     current.some((entry,i)=>entry.key!==planned[i].key||
      entry.before!==planned[i].before||entry.value!==planned[i].value))
-    throw Error('Содержимое D1 изменилось. Закрой окно и проверь переводы заново.');
+    throw Error(tr('Содержимое D1 изменилось. Закрой окно и проверь переводы заново.',
+     'D1 content changed. Close the dialog and review translations again.'));
    for(const change of current){
     await apiRequest('/api/admin/override',{key:change.key,value:change.value});
     const before=Object.hasOwn(override,change.key)?override[change.key]:null;
@@ -8488,20 +8535,29 @@ async function showOwnerEnglishReview(){
     saved++;
    }
    refreshVisibleWikiLabels();
-   status.textContent='Готово: '+fields+' переводов сохранены в D1.';
+   status.textContent=tr('Готово: ','Done: ')+fields+
+    tr(' переводов сохранены в D1.',' translations saved in D1.');
    await refreshOwnerCatalog();
    save.hidden=true;
   }catch(error){
-   status.textContent='Сохранено '+saved+' из '+planned.length+
-    ' записей. '+error.message;
+   status.textContent=tr('Сохранено ','Saved ')+saved+
+    tr(' из ',' of ')+planned.length+
+    tr(' записей. ',' entries. ')+error.message;
    if(!saved)save.disabled=false;
   }finally{editIsSaving=false;refreshOwnerUI()}
  };
- body.append(list,save,status);
- modal('Английские переводы',body);
+ const toolbar=h('div',{class:'owner-dialog-save-row'},[
+  ownerDialogAction(save,'translationsSaveButton',
+   'Сохранить EN-переводы','Save English translations'),
+  h('small',{class:'owner-dialog-live-count',
+   text:tr('К сохранению: ','To save: ')+fields})
+ ]);
+ body.append(list,toolbar,status);
+ modal(tr('Английские переводы','English translations'),body);
 }
 async function showOwnerGitHubExport(){
  if(!adminToken)return;
+ const tr=(ru,en)=>lang==='en'?en:ru;
  if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
   showStudioToast('Дождись завершения сохранения в Cloudflare D1 перед созданием PR.','warning');
   return;
@@ -8514,10 +8570,17 @@ async function showOwnerGitHubExport(){
   const info=await apiRequest('/api/admin/catalog/owner-review');
   if(!info.configured){showStudioToast('GitHub-токен пока недоступен Worker.','warning');return}
   const panel=h('div',{class:'owner-github-review'});
-  panel.append(h('p',{text:'Подготовить PR ручных изменений энциклопедии: '+info.count+' записей?'}),
-   h('p',{class:'muted',text:'Это экспорт в публичный GitHub. Проверь названия, описания и примечания перед объединением. Пароли и аккаунты не экспортируются. Исходный игровой каталог не изменяется.'}));
+  panel.append(
+   ownerDialogHelp('githubPrompt',
+    'Подготовить Pull Request с проверенными изменениями энциклопедии?',
+    'Prepare a pull request with reviewed encyclopedia changes?'),
+   h('p',{class:'owner-dialog-live-count',
+    text:tr('Записей к публикации: ','Records to publish: ')+info.count}),
+   ownerDialogHelp('githubExplanation',
+    'Это экспорт в публичный GitHub. Проверь названия, описания и примечания перед объединением. Пароли и аккаунты не экспортируются. Исходный игровой каталог не изменяется.',
+    'This exports changes to a public GitHub pull request. Review names, descriptions and notes before merging. Passwords and accounts are not exported. The source game catalog is unchanged.'));
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
-  const go=h('button',{type:'button',class:'button-action primary',text:'Создать PR в GitHub',disabled:!info.count});
+  const go=h('button',{type:'button',class:'button-action primary',disabled:!info.count});
   go.onclick=async()=>{
    go.disabled=true;
    try{
@@ -8525,12 +8588,15 @@ async function showOwnerGitHubExport(){
      expectedFingerprint:info.fingerprint});
     if(result.url&&/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url)){
      feedback.replaceChildren(h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
-      text:'Открыть PR для проверки'}));
+      text:tr('Открыть PR для проверки','Open PR for review')}));
     }else feedback.textContent=result.unchanged?
-     'Изменений относительно GitHub нет.':'PR создан, но адрес не указан.';
+     tr('Изменений относительно GitHub нет.','No changes compared with GitHub.'):
+     tr('PR создан, но адрес не указан.','PR created, but no URL was returned.');
    }catch(error){feedback.textContent=error.message;go.disabled=false}
   };
-  panel.append(go,feedback);modal('Синхронизация энциклопедии с GitHub',panel);
+  panel.append(ownerDialogAction(go,'githubCreateButton',
+   'Создать PR в GitHub','Create GitHub pull request'),feedback);
+  modal(tr('Синхронизация энциклопедии с GitHub','Encyclopedia sync with GitHub'),panel);
  }catch(error){showStudioToast('Не удалось подготовить экспорт: '+error.message,'warning')}
 }
 async function showCatalogImport(){
