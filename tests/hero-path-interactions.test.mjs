@@ -588,3 +588,40 @@ test('point-stepper hold instructions follow RU/EN Hero Path language',()=>{
  assert.ok(descriptions().length>=2);
  assert.ok(descriptions().every(v=>v==='Click to change by 1; hold to repeat.'));
 });
+
+test('Racial path remains disabled with an independent owner-copy pencil',()=>{
+ const f=fixture('CLERIC','special','riding');f.api.canEdit=true;
+ const edits=[];f.api.copyLabel=(key,ru)=>key==='racialBranch'?'Редакция':ru;
+ f.api.editLabel=(node,key,ru,en)=>edits.push({key,ru,en,node});
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const ownerRows=walk(f.target).filter(x=>x.className==='path-racial-owner-row');
+ assert.equal(ownerRows.length,1);
+ const [race,pencil]=ownerRows[0].children;
+ assert.equal(race.disabled,true);
+ assert.equal(race.attributes['data-path-branch'],'race');
+ assert.equal(pencil.tag,'button');
+ assert.equal(pencil.attributes.type,'button');
+ assert.equal(pencil.className,'path-racial-pencil');
+ assert.equal(typeof pencil.listeners.click,'function');
+ assert.equal(walk(race).find(x=>x.tag==='strong').textContent,'Редакция');
+ assert.ok(!walk(race).some(x=>x.className==='path-racial-pencil'));
+ assert.equal(edits.find(x=>x.key==='racialBranch')?.ru,'Расовые');
+ assert.equal(edits.find(x=>x.key==='racialBranch')?.en,'Racial');
+ assert.equal(f.budget().remaining,104);
+ const guest=fixture('CLERIC','special','riding');
+ assert.equal(walk(guest.target).filter(x=>x.className==='path-racial-unavailable').length,1);
+ assert.equal(walk(guest.target).filter(x=>x.className==='path-racial-pencil').length,0);
+});
+test('Path group pencil accessible name tracks saved localized caption',()=>{
+ const f=fixture();f.api.canEdit=true;
+ const edits=[];f.api.copyLabel=(key,ru)=>ru;
+ f.api.editLabel=(node,key,ru,en,callbacks)=>edits.push({node,callbacks});
+ root.PandoraHeroPath.viewGrowth(f.target,f.api);
+ const row=walk(f.target).find(x=>x.className==='game-tree-head-row');
+ const pencil=row.children.find(x=>x.className==='path-group-pencil');
+ const caption=row.children[0].children.find(x=>x.tag==='strong');
+ assert.ok(pencil.attributes['aria-label'].includes(caption.textContent));
+ caption.textContent='Новая подпись';
+ edits.find(x=>x.node===caption).callbacks.onCommitted();
+ assert.ok(pencil.attributes['aria-label'].includes('Новая подпись'));
+});

@@ -248,14 +248,20 @@ function viewGrowth(target,api){
   const name=api.copyLabel?.(captionKey,group.ru,group.en)||
    (api.lang==='en'?group.en:group.ru);
   const caption=make('strong',{text:name});
-  api.editLabel?.(caption,captionKey,group.ru,group.en);
+  let groupPencil=null;
+  const pencilName=()=>tr(api,'Редактировать направление ','Edit path group ')+caption.textContent;
+  api.editLabel?.(caption,captionKey,group.ru,group.en,{
+   onCommitted:()=>groupPencil?.setAttribute('aria-label',pencilName())
+  });
   groupButton.append(caption,groupCount);
   head.append(groupButton);
   if(api.canEdit){
    // Real sibling action: a pencil must not be nested in disclosure controls.
    // Both actions support touch, keyboard and screen-reader navigation.
    const pencil=make('button',{type:'button',class:'path-group-pencil',text:'✎',
-    'aria-label':api.lang==='en'?'Edit path group '+name:'Редактировать направление '+name});
+    'aria-label':pencilName()});
+   groupPencil=pencil;
+   pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',pencilName()));
    pencil.addEventListener('click',event=>{
     event.preventDefault();event.stopPropagation();
     caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
@@ -272,9 +278,27 @@ function viewGrowth(target,api){
      'data-path-branch':'race',
      'aria-label':tr(api,'Расовые навыки: не прокачиваются очками веток','Racial skills: no branch point allocation')});
     const info=make('div');
-    info.append(make('strong',{text:tr(api,'Расовые','Racial')}));
+    const ru='Расовые',en='Racial',key='racialBranch';
+    const value=api.copyLabel?.(key,ru,en)||tr(api,ru,en);
+    const caption=make('strong',{text:value});
+    if(api.canEdit&&typeof api.editLabel==='function')
+     api.editLabel(caption,key,ru,en);
+    info.append(caption);
     race.append(info,make('b',{class:'count',text:'—'}));
-    wrap.append(race);
+    if(api.canEdit&&typeof api.editLabel==='function'){
+     // Keep the Racial branch disabled; its sibling pencil edits only text.
+     const row=make('div',{class:'path-racial-owner-row'},[race]);
+     const pencil=make('button',{type:'button',class:'path-racial-pencil',
+      text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+value});
+     const sync=()=>pencil.setAttribute('aria-label',
+      tr(api,'Изменить надпись: ','Edit caption: ')+caption.textContent);
+     pencil.addEventListener('focus',sync);
+     pencil.addEventListener('click',event=>{
+      event.preventDefault();event.stopPropagation();
+      caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+     });
+     row.append(pencil);wrap.append(row);
+    }else wrap.append(race);
    }
    for(const key of branchKeys){
     const points=M.potential(state,key),base=M.branchBase(innate,key),

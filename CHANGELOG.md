@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.648.0 — 2026.11.11.648 · Racial Path inline RU/EN copy
+
+- Disabled Racial row in Hero Path → Special now displays the D1-override RU/EN caption and exposes a separate owner-only pencil. All game/race stats, allocations and branch access remain unchanged.
+- Group edit-pencil accessible labels update after D1 save and keyboard focus (including Undo). Editing the pencil never opens or closes a skill group.
+- Node behavioral tests cover owner-only pencil, no nested controls, both language defaults, unchanged skills budget and updated pencil accessible name; full browser and production checks are separate.
+
 ## 0.647.0 — 2026.11.11.647 · Non-disruptive history reset for UI copy
 
 - “Все правки” / “All edits” → “Вернуть оригинал” / “Restore original” now restores editor-authored equipment, Hero Path, Honor, catalog, profile and generic RU/EN UI copy on the current screen, without reloading the game catalog or replacing an open character/Soul picker. Game-record resets still refresh game data.
