@@ -7437,7 +7437,13 @@ function refreshVisibleOwnerCopy(recordKey){
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
-  node.textContent=ownerCopy(section,id,ru,en);
+  const value=ownerCopy(section,id,ru,en);
+  node.textContent=value;
+  // Reset/Undo of an editorial hover hint must update the already-mounted
+  // tooltip target rather than leaving the previous text in its dataset.
+  if(section==='catalog-sync'&&id.startsWith('hint'))
+   for(const target of document.querySelectorAll('[data-guide-owner-key]'))
+    if(target.dataset.guideOwnerKey===id)target.dataset.guideHint=value;
  }
  if(key==='equipment.socket-overflow-hint'){
   const hint=ownerCopy('equipment','socketOverflowHint',
