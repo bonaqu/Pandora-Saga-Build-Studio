@@ -493,6 +493,8 @@ export async function runAdminEntrySmoke(browser,base){
   // without running the data comparison, catalog publication or D1 probe.
   const originalCompareCalls=calls.filter(x=>x.startsWith('game-source:')).length;
   const banner=dialog.locator('.os-sync-source-banner');
+  assert.match(await banner.innerText(),/сохранённой копии/,
+   'Archive warning should be present before an editor replaces its text');
   const state=dialog.locator('.os-sync-status');
   assert.equal(await banner.locator('.os-sync-state-pencil').count(),1);
   assert.equal(await state.locator('.os-sync-state-pencil').count(),1);
@@ -522,7 +524,9 @@ export async function runAdminEntrySmoke(browser,base){
   await dialog.getByRole('button',{name:/Изменённые · 1/}).click();
   assert.equal(await dialog.locator('.os-sync-record').count(),1,'Only changed records');
   await dialog.getByRole('button',{name:/Все · 1/}).click();
-  assert.match(await dialog.locator('.os-sync-source-banner').innerText(),/сохранённой копии/);
+  assert.equal(await dialog.locator('.os-sync-source-banner .os-sync-state-caption').textContent(),
+   'Архивный источник проверен отдельно.',
+   'After D1 edit, the authored archive message must remain visible');
   assert.match(await dialog.locator('.os-sync-overview').innerText(),/Предметы · 1/);
   assert.equal(await dialog.locator('.os-sync-stat').count(),0,
     'redundant four-card metrics dashboard is no longer present');
