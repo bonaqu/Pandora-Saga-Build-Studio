@@ -17,7 +17,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
   const currentAccount=unnamedAccount?{...account,name:''}:account;
   const savedAccountName=currentAccount.name||'Новый герой';
   const context=await browser.newContext({viewport:{width:1280,height:900}});
-  const writes=[],errors=[];
+  const writes=[],errors=[],savedRecords=new Map();
   await context.route('**/*',route=>{
    const req=route.request(),url=req.url();
    if(url.startsWith(base+'/'))return route.continue();
@@ -45,8 +45,14 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     return send({schema:1,share:{schema:1,type:'build',
      data:{race:1,gender:0,job:8,level:22,name:'Friend shared hero'}}});
    if(path==='/api/library'){
-    if(method!=='GET')writes.push(req.postDataJSON());
-    return send(method==='GET'?{records:[]}:{ok:true});
+    if(method!=='GET'){
+     const data=req.postDataJSON();writes.push(data);
+     // A successful Worker PUT must be visible to later GETs; otherwise
+     // reconciliation sees a phantom empty cloud and retries the same save.
+     if(data.action==='put'&&data.entry?.id)savedRecords.set(data.entry.id,data.entry);
+     if(data.action==='delete')savedRecords.delete(data.id);
+    }
+    return send(method==='GET'?{records:[...savedRecords.values()]}:{ok:true});
    }
    return route.abort();
   });
