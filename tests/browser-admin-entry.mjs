@@ -1149,6 +1149,10 @@ export async function runAdminEntrySmoke(browser,base){
   // #390: exercise the Hero Book's real RU/EN author-copy editor under a
   // logged-in admin with an isolated, mocked Cloudflare D1 override response.
   if(await page.locator('#dockClose').isVisible())await page.locator('#dockClose').click();
+  // Previous scenario deliberately ends in English. Select RU for the RU
+  // write first, then verify untouched EN fallback and restoration.
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
   await page.locator('#hero').click();
   await page.locator('#stageBookTab_buffs').click();
   const bookDebug=await page.evaluate(()=>({
