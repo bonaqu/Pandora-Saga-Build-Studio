@@ -1234,7 +1234,7 @@ export async function runAdminEntrySmoke(browser,base){
   // Issue #390: real owner-export modal, with independent pencil and D1 save.
   // The publication endpoint must not run when the owner edits its caption.
   await ownerPanel.locator('.owner-dock-export').click();
-  const exportModal=page.getByRole('dialog',{name:'Синхронизация энциклопедии с GitHub'});
+  const exportModal=page.getByRole('dialog',{name:'Необязательная копия энциклопедии в GitHub'});
   await exportModal.waitFor({state:'visible'});
   assert.match(await exportModal.locator('.owner-dialog-live-count').innerText(),/2/);
   const exportIntro=exportModal.locator('[data-owner-copy-section="owner-dialog"]'+
@@ -1271,12 +1271,12 @@ export async function runAdminEntrySmoke(browser,base){
   // EN localization is independent; editing the RU copy must not overwrite it.
   await page.locator('#locale [data-locale="en"]').click();
   await ownerPanel.locator('.owner-dock-export').click();
-  const exportEn=page.getByRole('dialog',{name:'Encyclopedia sync with GitHub'});
+  const exportEn=page.getByRole('dialog',{name:'Optional GitHub encyclopedia copy'});
   await exportEn.waitFor({state:'visible'});
   assert.match(await exportEn.locator('[data-owner-copy-id="githubExplanation"]').innerText(),
    /public GitHub/);
   assert.equal(await exportEn.locator('.owner-dialog-action').innerText(),
-   'Create GitHub pull request');
+   'Prepare copy PR');
   assert.match(await exportEn.locator('.owner-dialog-live-count').innerText(),/2/);
   await exportEn.locator('button.close').click();
   await page.locator('#locale [data-locale="ru"]').click();
