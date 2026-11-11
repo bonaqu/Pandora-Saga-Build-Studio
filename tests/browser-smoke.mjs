@@ -3,6 +3,7 @@ import {chromium} from 'playwright';
 import {runIndependentSmokes} from './browser-runner.mjs';
 import {runShareLinkSmoke} from './browser-share-link.mjs';
 import {runBuildAuthGateSmoke} from './browser-build-auth-gate.mjs';
+import {runGuestGateEditorialSmoke} from './browser-guest-gate-editorial-640.mjs';
 import {runModalKeyboardSmoke} from './browser-modal-keyboard.mjs';
 import {runSharedLibraryImportSmoke} from './browser-shared-library-import.mjs';
 import {runDraftPersistenceWarningSmoke} from './browser-draft-persistence-warning.mjs';
@@ -62,6 +63,7 @@ if(only&&quick)throw Error('Single-scenario smoke cannot be combined with quick 
 const errors=[];
 const scenarios=[
   ['build-account-gate',runBuildAuthGateSmoke],
+  ['guest-gate-editorial',runGuestGateEditorialSmoke],
   ['modal-keyboard',runModalKeyboardSmoke],
   ['shared-library-import',runSharedLibraryImportSmoke],
   ['draft-persistence-warning',runDraftPersistenceWarningSmoke],
