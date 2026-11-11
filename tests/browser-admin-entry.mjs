@@ -1188,6 +1188,9 @@ export async function runAdminEntrySmoke(browser,base){
   assert.deepEqual(errors,[]);
   // #390 admin history help: use the same D1 editor and independent pencil,
   // not a second modal or a write to the game catalog.
+  // NPC admin flow can finish in EN; guarantee the RU editor writes RU.
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.documentElement.lang==='ru');
   const historyButton=ownerPanel.locator('.owner-dock-history');
   if(!await historyButton.isVisible()){
    const toggle=ownerPanel.locator('[data-owner-collapse]');
