@@ -140,7 +140,7 @@ export async function runVisualCoverageSmoke(browser,base){
      '.wiki-effect-toolbar','.wiki-honor-rank-filters','.detail-title']);
     // Capture the real opened record too. A list-only screenshot can miss
     // overlapping item properties, metadata chips and in-card actions.
-    const record=page.locator('#detailPanel .wiki-list [data-wiki-record]').first();
+    const record=page.locator('#detailPanel .wiki-list [data-wiki-record]:visible').first();
     if(await record.count()){
      await record.click();
      const detail=page.locator('#detailPanel .wiki-page');
