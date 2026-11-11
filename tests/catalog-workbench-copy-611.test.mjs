@@ -46,7 +46,7 @@ test('editing catalog actions is separate from their potentially destructive cli
 
 test('catalog copy Undo refreshes only authored text and cannot rewrite D1 catalog',()=>{
  assert.match(app,/function refreshVisibleOwnerCopy\(recordKey\)/);
- assert.match(app,/\(equipment\|path\|catalog-sync\|honor-view\)/);
+ assert.match(app,/\(equipment\|path\|catalog-sync\|honor-view\|owner-history\)/);
  assert.match(app,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
  assert.match(app,/key\.startsWith\('book\.catalog-sync\.'\)/);
  assert.match(app,/!key\.startsWith\('book\.catalog-sync\.'\)/);
