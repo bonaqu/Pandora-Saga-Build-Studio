@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.647.0 — 2026.11.11.647 · Non-disruptive history reset for UI copy
+
+- “Все правки” / “All edits” → “Вернуть оригинал” / “Restore original” now restores editor-authored equipment, Hero Path, Honor, catalog, profile and generic RU/EN UI copy on the current screen, without reloading the game catalog or replacing an open character/Soul picker. Game-record resets still refresh game data.
+- Extended Chromium admin acceptance with a mocked CAS-protected history reset, checking that the previously edited label returns to the EN fallback without changing its DOM node or the active equipped item's 0/2 Soul capacity. Full Node regressions and browser smoke are required before merge; live D1 writes are outside this scope.
+- Kept the existing compact item properties unchanged: the installed-Souls listing is not redundantly inserted into the properties tab, where the dedicated Souls tab already manages that content.
+
 ## 0.646.0 — 2026.11.11.646 · Hero Book Buff bilingual defaults
 
 - Buff chapter's guide fields now receive separate Russian and English defaults instead of sending the current locale value to both D1 columns. Five section headings and nine settings retain stable semantic keys, inline editing and undo; existing D1 overrides take precedence.

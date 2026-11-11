@@ -37,6 +37,13 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    values[data.key]=data.value;writes.push(data);
    return reply({ok:true,key:data.key,value:data.value,conditional:true});
   }
+  if(path==='/api/admin/reset'){
+   const data=req.postDataJSON();
+   assert.equal(data.expectedValue,values[data.key],'History reset must use current CAS value');
+   if(!Object.hasOwn(values,data.key))return reply({code:'OWNER_EDIT_CONFLICT'},409);
+   delete values[data.key];writes.push({key:data.key,reset:true});
+   return reply({ok:true,deleted:true,conditional:true});
+  }
   return route.abort();
  });
  const page=await context.newPage();
@@ -139,7 +146,25 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    ?.textContent==='Soul slots',null,{timeout:12000});
   assert.deepEqual(JSON.parse(values[recordKey]),{ru:'Гнёзда для душ'});
   assert.equal((await value().innerText()).trim(),'0/2');
+  // Manual history reset preserves the DOM node and the selected item.
+  await page.evaluate(()=>{window.__ownerQAFieldNode=document.querySelector(
+   '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]');});
+  await page.locator('#ownerDock .owner-dock-history').click();
+  const history=page.locator('#modalRoot .owner-manager');
+  await history.locator('.owner-review-reset').waitFor({state:'visible'});
+  page.once('dialog',dialog=>dialog.accept());
+  await history.locator('.owner-review-reset').first().click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]')
+   ?.textContent==='Soul slots',null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,recordKey),false);
+  assert.equal(await page.evaluate(()=>window.__ownerQAFieldNode===document.querySelector(
+   '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]')),true,
+   'History reset must not remount equipment');
+  assert.equal((await value().innerText()).trim(),'0/2');
+  await page.locator('#modalRoot .modal button.close').click();
+  // A text-only history reset does not remount the item picker or change Souls.
   assert.deepEqual(errors,[]);
-  console.log('Chromium owner equipment: full-width edit, RU/EN CAS and Undo passed');
+  console.log('Chromium owner equipment: RU/EN CAS, Undo and in-place history reset passed');
  }finally{await context.close()}
 }
