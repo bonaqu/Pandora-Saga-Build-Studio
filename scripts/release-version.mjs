@@ -33,6 +33,14 @@ function check(){
  if(manifest.release!==release)mismatches.push('site-version.json');
  if(meta!==release)mismatches.push('index.html meta');
  if(assetVersions.some(value=>value!==release))mismatches.push('index.html CSS/JS cache keys');
+ if(!html.includes('id="siteVersion" class="footer-version"'))
+  mismatches.push('index.html footer version marker');
+ // The updater must derive the footer from the HTML release rather than
+ // copying a stale hard-coded version or showing a future offered update.
+ const updater=read('pandora-studio-update-manager.js');
+ if(!updater.includes("document.getElementById('siteVersion')")||
+    !updater.includes("Number(version.split('.')[3])"))
+  mismatches.push('footer version auto-sync with release meta');
  if(!roadmap.includes('Latest source release:** '+expectedVersion+' ('+String.fromCharCode(96)+release+String.fromCharCode(96)+')'))
   mismatches.push('ROADMAP.md latest release');
  if(!log.includes('## '+expectedVersion+' — '+release))mismatches.push('CHANGELOG.md release entry');

@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.651.0 — 2026.11.12.651 · Automatic site version in the footer
+
+- A compact `Version: 0.651.0` label appears at the bottom-right of every page in RU and EN. The encyclopedia counts remain at the bottom-left, including after language changes.
+- The label reads the version from the actual HTML release metadata. Future releases update it automatically through the existing `release:bump` process, without manually changing UI text. Update availability keeps showing the running version until the new page is loaded.
+- Responsive footer layout for small screens, focused Node tests for version derivation/fallback and release consistency, plus Chromium checks across desktop/mobile layouts. No game data, D1 writes, saved builds, or gameplay formulas changed.
+
 ## 0.650.0 — 2026.11.11.650 · Bilingual editable prerequisite caption
 
 - Hero Path skill detail “Предыдущее умение” / “Previous skill” now has a stable RU/EN owner-copy D1 field and compact inline ✎ editor. The referenced skill name stays a separate, non-editable game-data value. When that source record is missing, the fixed RU/EN 'Skill not in catalog' explanation is independently editable, never the actual skill identity.

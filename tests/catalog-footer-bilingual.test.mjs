@@ -28,3 +28,9 @@ test('the same renderer runs on catalog refresh and locale switching',()=>{
  assert.equal((app.match(/\$\('catalogStatus'\)\.textContent=/g)||[]).length,0);
  assert.match(html,/id="catalogStatus">Загружаем данные игры…<\/span>/);
 });
+
+test('the catalog count remains a separate left footer field',()=>{
+ assert.match(html,/<footer>[\\s\\S]*id="catalogStatus"[\\s\\S]*id="siteVersion"[\\s\\S]*<\\/footer>/);
+ assert.equal((html.match(/id="catalogStatus"/g)||[]).length,1);
+ assert.equal((html.match(/id="siteVersion"/g)||[]).length,1);
+});

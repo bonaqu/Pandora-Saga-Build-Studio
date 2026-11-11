@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.650",
-  "notes": "Bilingual editable skill prerequisite label, original skill names unchanged"
+  "release": "2026.11.12.651",
+  "notes": "Footer release label from HTML metadata, responsive RU/EN layout and automated regressions"
 }

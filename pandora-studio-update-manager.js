@@ -10,8 +10,13 @@
     history.replaceState(history.state, '', current.pathname + current.search + current.hash);
   }
   const version = document.querySelector('meta[name="ps-studio-release"]')?.content || '';
-  if (!version) return;
   const valid = value => typeof value === 'string' && /^\d{4}\.\d{1,2}\.\d{1,2}\.\d+$/.test(value);
+  // Show the release of the HTML actually running, not a newer release that
+  // may be offered by site-version.json. The release script updates this meta.
+  const versionLabel = document.getElementById('siteVersion');
+  if (versionLabel) versionLabel.textContent = 'Version: ' +
+    (valid(version) ? '0.' + Number(version.split('.')[3]) + '.0' : '—');
+  if (!version) return;
   const newer = (remote, local) => {
     if (!valid(remote) || !valid(local)) return false;
     const a = remote.split('.').map(Number), b = local.split('.').map(Number);
