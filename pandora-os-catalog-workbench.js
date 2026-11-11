@@ -403,12 +403,14 @@
           referenceContext+'|'+segment.id+'|'+(occurrence++):null;
         const wasExpanded=refKey?expandedReferences.has(refKey):false;
         const button=h('button',{type:'button',class:'os-sync-item-ref',
-          'aria-label':'Показать связанный предмет: '+segment.text,
+          'aria-label':tr('Показать связанный предмет: ','Show linked item: ')+segment.text,
           'aria-expanded':String(wasExpanded),text:segment.text});
-        hint(button,'Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.');
+        hint(button,tr('Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.',
+         'Linked game item. Click to preview its description and open the encyclopedia entry.'));
         const preview=h('span',{class:'os-sync-reference-preview',hidden:!wasExpanded});
         preview.append(h('strong',{text:segment.text}),
-          h('small',{text:'Связанный предмет · игровая ссылка в описании'}));
+          h('small',{text:tr('Связанный предмет · игровая ссылка в описании',
+           'Linked item · in-game description reference')}));
         const record=upstream?.items?.[segment.id]||baseline?.items?.[segment.id];
         const sourceDesc=language==='en'?
           upstream?.['strings.en']?.items?.[segment.id]?.d||
@@ -423,8 +425,10 @@
           preview.append(h('a',{
             href:'#wiki/item/'+encodeURIComponent(segment.id),target:'_blank',
             rel:'noopener noreferrer',class:'os-sync-reference-open',
-            text:'Открыть в энциклопедии (новая вкладка) ↗'}));
-        }else preview.append(h('small',{text:'Предмет пока не опубликован в энциклопедии.'}));
+            text:tr('Открыть в энциклопедии (новая вкладка) ↗',
+             'Open encyclopedia (new tab) ↗')}));
+        }else preview.append(h('small',{text:tr('Предмет пока не опубликован в энциклопедии.',
+          'This item has not yet been published in the encyclopedia.')}));
         button.onclick=()=>{
           const expanded=preview.hidden;
           preview.hidden=!expanded;
@@ -442,7 +446,8 @@
     function fieldPreview(change,description) {
       const content=h('div',{class:'os-sync-explanation'});
       if(description.rows.length>1)content.append(h('small',{
-        class:'os-sync-result-count',text:'Изменено параметров: '+description.rows.length}));
+        class:'os-sync-result-count',
+        text:tr('Изменено параметров: ','Changed parameters: ')+description.rows.length}));
       content.append(h('p',{class:'os-sync-change-summary',text:description.summary}));
       if(description.caution)content.append(h('p',{
         class:'os-sync-change-caution',text:description.caution}));
@@ -453,7 +458,8 @@
         if(details.open)expandedDetails.add(change.id);
         else expandedDetails.delete(change.id);
       });
-      details.append(h('summary',{text:'Посмотреть подробно · '+description.rows.length}));
+      details.append(h('summary',{
+        text:tr('Посмотреть подробно · ','View details · ')+description.rows.length}));
       if(description.rows.length){
         for(const field of description.rows){
           const language=change.dataset==='strings.en'?'en':'ru';
@@ -468,7 +474,8 @@
           if(field.difference){
             const delta=h('small',{class:'os-sync-value-delta',
               text:(field.delta>0?'▲ ':'▼ ')+field.difference});
-            hint(delta,'Изменение числа относительно опубликованной версии. Знак не означает, что изменение полезно или вредно.');
+            hint(delta,tr('Изменение числа относительно опубликованной версии. Знак не означает, что изменение полезно или вредно.',
+           'Change relative to the published version. The sign does not imply that the change is beneficial or harmful.'));
             newValue.append(delta);
           }
           const label=h('strong',{text:field.label});
@@ -492,13 +499,16 @@
           if(field.note)line.append(h('p',{class:'os-sync-field-note',text:field.note}));
           if(/Доп\. слоты$/.test(field.label))line.append(h('p',{
             class:'os-sync-field-note',
-            text:'Это параметр дополнительных слотов конкретного предмета в таблице добычи. «Не указаны» означает отсутствие поля в старом источнике, а не подтверждённый ноль.'}));
+            text:tr('Это параметр дополнительных слотов конкретного предмета в таблице добычи. «Не указаны» означает отсутствие поля в старом источнике, а не подтверждённый ноль.',
+          'This is the extra-socket field of an individual item in the loot table. “Not specified” means the old source lacks the field, not a confirmed zero.')}));
           details.append(line);
         }
       }else details.append(h('p',{class:'muted',
-        text:'Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.'}));
+        text:tr('Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.',
+          'No verified explanation is available. Review these changes separately.')}));
       const raw=h('details',{class:'os-sync-raw-details'});
-      raw.append(h('summary',{text:'Технические сведения (для разработчика)'}));
+      raw.append(h('summary',{text:tr('Технические сведения (для разработчика)',
+        'Technical details (developers)')}));
       raw.append(h('small',{class:'os-sync-technical-code',text:'ID: '+change.key}));
       const humanizeValue=value=>{
         const source=String(value);
