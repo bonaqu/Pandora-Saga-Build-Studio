@@ -509,13 +509,13 @@ export async function runAdminEntrySmoke(browser,base){
    'Архивный источник проверен отдельно.');
   await state.locator('.os-sync-state-pencil').click();
   const statusEditor=state.locator('[contenteditable]');
-  await statusEditor.fill('Сверка завершена, изменения не выбраны.');
+  await statusEditor.fill('Сверка завершена. Изменения не выбраны.');
   await statusEditor.press('Tab');
   await page.waitForFunction(()=>
    document.querySelector('.os-sync-status .os-sync-state-caption')?.textContent===
-   'Сверка завершена, изменения не выбраны.',null,{timeout:12000});
+   'Сверка завершена. Изменения не выбраны.',null,{timeout:12000});
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.comparison-found')).ru,
-   'Сверка завершена, изменения не выбраны.');
+   'Сверка завершена. Изменения не выбраны.');
   assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,originalCompareCalls);
   assert.equal(await banner.locator('.os-sync-state-pencil').count(),1);
   assert.equal(await state.locator('.os-sync-state-pencil').count(),1);
