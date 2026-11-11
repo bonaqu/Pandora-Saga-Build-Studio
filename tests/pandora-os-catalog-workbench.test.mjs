@@ -145,7 +145,7 @@ test('catalog admin review interprets source data and excludes raw data from def
  assert.match(workbench,/Служебных:/);
  assert.match(workbench,/Не выбрано:/);
  assert.match(workbench,/changes\.filter\(safe\)/);
- assert.match(workbench,/sourceBanner\.textContent=from===/);
+ assert.match(workbench,/if\(from==='server'\)editorialState\(sourceBanner/);
 });
 
 

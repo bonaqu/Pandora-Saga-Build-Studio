@@ -110,10 +110,28 @@
     const overview=h('div',{class:'os-sync-overview'});
     const summary = h('div', {class:'os-sync-summary',role:'status'});
     const sourceBanner=h('p',{class:'os-sync-source-banner',hidden:true});
-    const status = h('p', {class:'os-sync-status',role:'status',
-      text:copy('initialStatus',
-       'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.',
-       'Check the current game first. If it is unavailable, use the saved snapshot.')});
+    const status = h('p', {class:'os-sync-status',role:'status'});
+    // Only fixed editor-authored messages receive a pencil. Runtime counts,
+    // server diagnostics, errors and catalog values remain read-only.
+    const editorialState=(target,key,ru,en)=>{
+      const label=h('span',{class:'os-sync-state-caption',text:copy(key,ru,en)});
+      target.replaceChildren(label);
+      if(!canEdit||typeof editLabel!=='function')return;
+      editLabel(label,key,ru,en);
+      label.id||='os-sync-state-'+key;
+      const pencil=h('button',{type:'button',class:'os-sync-state-pencil',
+       text:'✎',title:tr('Изменить сообщение','Edit message'),
+       'aria-label':tr('Изменить текст сообщения','Edit status text'),
+       'aria-describedby':label.id});
+      pencil.addEventListener('click',event=>{
+       event.preventDefault();event.stopPropagation();
+       label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+      });
+      target.append(pencil);
+    };
+    editorialState(status,'initialStatus',
+     'Начни с проверки текущей игры. Если данные недоступны, используй сохранённую копию.',
+     'Check the current game first. If it is unavailable, use the saved snapshot.');
     const diagnostic=h('details',{class:'os-sync-diagnostics'},[
       h('summary',{text:copy('diagnosticsSummary',
        'Технические сведения об ошибке','Technical error details')})
@@ -694,11 +712,10 @@
       setBusy(true);
       descriptions.clear();
       sourceBanner.hidden=false;
-      sourceBanner.textContent=from==='server'
-        ?copy('sourceLiveNotice',
+      if(from==='server')editorialState(sourceBanner,'sourceLiveNotice',
          'Проверяем открытые данные pandorasaga-os.com и опубликованный каталог Build Studio (D1). Это не прямое подключение к игровому серверу.',
-         'Comparing public pandorasaga-os.com data with the Build Studio catalog published in D1. This is not a direct connection to the game server.')
-        :copy('sourceArchiveNotice',
+         'Comparing public pandorasaga-os.com data with the Build Studio catalog published in D1. This is not a direct connection to the game server.');
+      else editorialState(sourceBanner,'sourceArchiveNotice',
          'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.',
          'Comparing an archived snapshot, NOT the current game server. Publishing may restore older values.');
       diagnostic.hidden=true;diagnosticText.textContent='';
@@ -794,25 +811,26 @@
           name==='meta'&&onlyTechnicalMeta?[]:review.changes(name,old[name],next[name]));
         baseline=old;upstream=next;legacy=retained.locales;legacyRows=retained.records;mode=from;
         activeSnapshot=[...versions][0];changes=findings;
-        status.textContent=findings.length
-          ? copy('comparisonFound',
+        const complete=findings.length
+          ? ['comparisonFound',
              'Сверка завершена. Ни одно изменение не принято автоматически.',
-             'Comparison complete. No changes were selected automatically.')
+             'Comparison complete. No changes were selected automatically.']
           : formattingCount&&verifiedRussian.length
-           ? copy('comparisonFormattingAndRussian',
+           ? ['comparisonFormattingAndRussian',
               'Игровые значения совпадают. Можно отдельно сохранить переносы и добавить русские описания.',
-              'Game values match. You may separately save line breaks and add Russian descriptions.')
+              'Game values match. You may separately save line breaks and add Russian descriptions.']
            : formattingCount
-            ? copy('comparisonFormatting',
+            ? ['comparisonFormatting',
                'Игровые значения совпадают. Можно отдельно сохранить оригинальные переносы описаний.',
-               'Game values match. You may separately restore the original description line breaks.')
+               'Game values match. You may separately restore the original description line breaks.']
             : verifiedRussian.length
-             ? copy('comparisonRussian',
+             ? ['comparisonRussian',
                 'Игровые значения совпадают. Можно отдельно добавить проверенные русские описания.',
-                'Game values match. You may separately add verified Russian descriptions.')
-             : copy('comparisonNoChanges',
+                'Game values match. You may separately add verified Russian descriptions.']
+             : ['comparisonNoChanges',
                 'Данные совпадают. Публикация не требуется.',
-                'Data matches. No publication is needed.');
+                'Data matches. No publication is needed.'];
+        editorialState(status,...complete);
         render();
       }catch(error) {
         const unavailable=from==='server'&&(
@@ -843,11 +861,11 @@
            ' Каталог Build Studio не изменён. Архивную копию можно сравнить отдельно, но она может быть старее.',
            ' The Build Studio catalog is unchanged. You can compare the archived copy separately, but it may be older.');
         }else if(error.httpStatus===401){
-          status.textContent=copy('compareSessionExpired',
+          editorialState(status,'compareSessionExpired',
             'Сеанс администратора завершился. Войди заново, чтобы повторить проверку.',
             'The admin session ended. Sign in again to repeat the comparison.');
         }else{
-          status.textContent=copy('compareNotCompleted',
+          editorialState(status,'compareNotCompleted',
             'Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.',
             'Comparison did not finish. Published data is unchanged. Try again or use the archived snapshot.');
         }

@@ -489,12 +489,44 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await checksumPencil.count(),1,
    'Saving the explanation must preserve its separate edit control');
   assert.ok(originalChecksum.length>30);
+  // 0.613: safe static status and archive banner text can be D1-edited
+  // without running the data comparison, catalog publication or D1 probe.
+  const originalCompareCalls=calls.filter(x=>x.startsWith('game-source:')).length;
+  const banner=dialog.locator('.os-sync-source-banner');
+  assert.match(await banner.innerText(),/сохранённой копии/,
+   'Archive warning should be present before an editor replaces its text');
+  const state=dialog.locator('.os-sync-status');
+  assert.equal(await banner.locator('.os-sync-state-pencil').count(),1);
+  assert.equal(await state.locator('.os-sync-state-pencil').count(),1);
+  await banner.locator('.os-sync-state-pencil').click();
+  const bannerEditor=banner.locator('[contenteditable]');
+  await bannerEditor.fill('Архивный источник проверен отдельно.');
+  await bannerEditor.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.os-sync-source-banner .os-sync-state-caption')
+    ?.textContent==='Архивный источник проверен отдельно.',null,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.source-archive-notice')).ru,
+   'Архивный источник проверен отдельно.');
+  await state.locator('.os-sync-state-pencil').click();
+  const statusEditor=state.locator('[contenteditable]');
+  await statusEditor.fill('Сверка завершена. Изменения не выбраны.');
+  await statusEditor.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.os-sync-status .os-sync-state-caption')?.textContent===
+   'Сверка завершена. Изменения не выбраны.',null,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.comparison-found')).ru,
+   'Сверка завершена. Изменения не выбраны.');
+  assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,originalCompareCalls);
+  assert.equal(await banner.locator('.os-sync-state-pencil').count(),1);
+  assert.equal(await state.locator('.os-sync-state-pencil').count(),1);
   await dialog.getByRole('button',{name:/Новые · 0/}).click();
   assert.equal(await dialog.locator('.os-sync-record').count(),0,'No added records');
   await dialog.getByRole('button',{name:/Изменённые · 1/}).click();
   assert.equal(await dialog.locator('.os-sync-record').count(),1,'Only changed records');
   await dialog.getByRole('button',{name:/Все · 1/}).click();
-  assert.match(await dialog.locator('.os-sync-source-banner').innerText(),/сохранённой копии/);
+  assert.equal(await dialog.locator('.os-sync-source-banner .os-sync-state-caption').textContent(),
+   'Архивный источник проверен отдельно.',
+   'After D1 edit, the authored archive message must remain visible');
   assert.match(await dialog.locator('.os-sync-overview').innerText(),/Предметы · 1/);
   assert.equal(await dialog.locator('.os-sync-stat').count(),0,
     'redundant four-card metrics dashboard is no longer present');
