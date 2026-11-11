@@ -9,7 +9,7 @@ test('UI-copy undo updates the visible label without remounting builds',()=>{
   app.indexOf('async function undoOwnerEdit(){'));
  assert.match(helper,/locale\.setOverrides\(override\)/);
  assert.match(helper,/locale\.apply\(lang\)/);
- assert.match(helper,/const selector=isLibrary\?'#detailContent \[data-owner-copy-key\]'/);
+ assert.match(helper,/const selector=isLibrary\?[\s\S]*'#detailContent \[data-owner-copy-key\],#modalRoot \[data-owner-copy-key\]'/);
  assert.match(helper,/document\.querySelectorAll\(selector\)/);
  assert.match(helper,/locale\.fieldKey\(key\)!==id/);
  assert.match(helper,/node\.textContent=value/);
