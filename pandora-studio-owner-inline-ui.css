@@ -36,6 +36,15 @@
  min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
  white-space:nowrap
 }
+/* Shortened game labels are fine in view mode; not when a user is typing.
+   Unlock the enclosing text track only for its active admin editor. */
+.stage-copy-caption:has([data-owner-text-field]),
+.stage-book-tab-copy:has([data-owner-text-field]),
+.path-tab-copy:has([data-owner-text-field]),
+.stage-attribute-head .stage-book-heading:has([data-owner-text-field]),
+.stage-attribute-head .stage-book-heading>strong:has([data-owner-text-field]){
+ white-space:normal;overflow:visible;text-overflow:clip
+}
 .stage-copy-pencil,.stage-control-pencil,.stage-book-tab-pencil,
 .path-group-pencil,.path-tab-pencil{
  display:inline-flex;align-items:center;justify-content:center;
