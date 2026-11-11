@@ -2923,6 +2923,8 @@ function renderWiki(root){
     browse,detail,make:h,lang,article:window.PandoraHonorGuide?.article(override),
     editable:adminEditing&&Boolean(adminToken),
     label:(group,id,ru,en)=>wikiTitle(group,id,ru,en),
+    copy:(key,ru,en)=>ownerCopy('honor-view',key,ru,en),
+    editCopy:(node,key,ru,en)=>ownerCopyLabel(node,'honor-view',key,ru,en),
     editLabel:(node,group,id,initial)=>editWikiValue(node,initial,{type:'text',
      onCommit:value=>saveGuidePatch('wiki.labels',{
       [window.PandoraWikiLabels.key(group,id,lang)]:value
@@ -7433,7 +7435,7 @@ function refreshVisibleUICopy(recordKey){
 // Copy-only Undo/saves must not unmount the Soul search or Path card.
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
- if(!/^(equipment|path|catalog-sync)\./.test(key))return;
+ if(!/^(equipment|path|catalog-sync|honor-view)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -7441,6 +7443,10 @@ function refreshVisibleOwnerCopy(recordKey){
   node.textContent=value;
   // Reset/Undo of an editorial hover hint must update the already-mounted
   // tooltip target rather than leaving the previous text in its dataset.
+  if(section==='honor-view'){
+   const pencil=node.parentElement?.querySelector('.wiki-honor-copy-pencil');
+   pencil?.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить подпись: ')+value);
+  }
   if(section==='catalog-sync'&&id.startsWith('hint'))
    for(const target of document.querySelectorAll('[data-guide-owner-key]'))
     if(target.dataset.guideOwnerKey===id)target.dataset.guideHint=value;
@@ -7490,7 +7496,7 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path|catalog-sync)\./.test(last.key)){
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view)\./.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -7798,7 +7804,7 @@ async function saveGuidePatchNow(key,fields){
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
   if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
-     key.startsWith('book.catalog-sync.'))
+     key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
      !key.startsWith('book.catalog-sync.')){

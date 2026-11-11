@@ -22,6 +22,19 @@
  box-shadow:0 1px 4px #0008}
 .stage-guide-edit-hint:hover,.stage-guide-edit-hint:focus-visible{
  color:#fff0cf;background:#79532f;outline:1px solid #f1cc90}
+/* In owner mode, the pencil stays inside its own caption. It never
+   competes with a PvP link, filter button or the rank's live data. */
+.wiki-honor-copy-owner-label.origin-copy-editable{cursor:text;
+ text-decoration:underline dotted #ac845780;text-underline-offset:3px}
+.wiki-honor-copy-owner-label:focus-visible{outline:2px solid #e4b879;
+ outline-offset:2px;border-radius:2px}
+.wiki-honor-copy-pencil{display:inline-flex;align-items:center;justify-content:center;
+ vertical-align:middle;margin-inline-start:6px;min-width:20px;height:19px;padding:0 3px;
+ border:1px solid #957047;border-radius:4px;color:#e8c18e;
+ background:#39281b;cursor:pointer;font:600 11px/1 Manrope,Arial,sans-serif}
+.wiki-honor-copy-pencil:hover,.wiki-honor-copy-pencil:focus-visible{
+ border-color:#e5ba7f;background:#5b3c23;color:#ffe6bb;
+ outline:1px solid #eac38c;outline-offset:1px}
 /* Honor uses the exact same wiki-list / wiki-link sidebar surfaces as Locations. */
 .wiki-honor-nav-link{width:100%;cursor:pointer;text-align:left;font:600 11px/1.4 Manrope,Arial,sans-serif}
 .wiki-honor-nav-icon{display:inline-flex;align-items:center;justify-content:center;
