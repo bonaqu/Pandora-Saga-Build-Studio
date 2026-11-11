@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.638.0 — 2026.11.11.638 · Two-browser owner CAS conflict, preserved draft and safe refresh/retry regression
+
+- Two-browser owner CAS conflict, preserved draft and safe refresh/retry regression.
+- No production admin writes in the browser scenario: isolated, intercept-only mock API.
+- Production CAS atomicity was verified separately by workflow #43034133794.
+
+
 ## 0.637.0 — 2026.11.11.637 · Bilingual D1-editable admin drawer captions, inline help and focused owner controls
 
 - Bilingual D1-editable admin drawer captions, inline help and focused owner controls.
