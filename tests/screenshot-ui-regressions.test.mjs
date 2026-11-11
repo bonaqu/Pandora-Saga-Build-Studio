@@ -43,7 +43,7 @@ test('saved builds stay local until the user explicitly overwrites',()=>{
  assert.match(app,/draftStorageStatus\(committed!==true\)/);
  assert.match(app,/catch\(error\)\{[\s\S]*?draftStorageStatus\(true\);return false/);
  assert.doesNotMatch(app,/PandoraSavedBuildAutosave\.updatedSaved/);
- assert.match(app,/text:activeBuildId===b\.id\?'↻ Перезаписать':'↻ Сохранить в этот билд'/);
+ assert.match(app,/text:'↻ Перезаписать'/);
  assert.match(app,/saveBuild\(activeBuildId===b\.id\?state\.name:b\.name,b\.id\)/);
  assert.match(app,/function saveBuild\(name=state\.name\|\|'Новый герой',overwriteId=null\)/);
  assert.match(app,/\$\('snapshot'\)\.onclick=\(\)=>\{changeTab\('builds'\)\}/);

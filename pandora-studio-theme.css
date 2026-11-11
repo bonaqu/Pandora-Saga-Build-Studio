@@ -2329,6 +2329,15 @@ textarea:focus-visible,select:focus-visible{
 .build-signin-actions .button-action{min-height:40px;margin:0;
  padding:9px 16px;flex:0 1 auto}
 .build-signin-actions .button-action:focus-visible{outline:2px solid #f7d298;outline-offset:2px}
+/* In a sign-in modal the modal itself is already a card. Do not nest
+   another border, emblem or repeated heading inside that same dialog. */
+#modalRoot .build-signin-gate-dialog{
+ display:flex;flex-direction:column;gap:11px;padding:0;border:0;
+ background:transparent;box-shadow:none
+}
+#modalRoot .build-signin-gate-dialog .build-signin-emblem{display:none}
+#modalRoot .build-signin-gate-dialog .build-signin-actions{grid-column:auto}
+
 @media(max-width:480px){.build-signin-gate{grid-template-columns:1fr;padding:16px;
  gap:8px}.build-signin-emblem{width:32px;height:32px}
  .build-signin-actions{grid-column:1}

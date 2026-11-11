@@ -46,9 +46,6 @@
 .build-compare-table td[data-compare-advantage]{color:#ffe5b5;font-weight:800}
 .build-compare-table td:not([data-compare-advantage]){font-weight:500}
 .build-compare-table td:empty{background:transparent}
-.build-card:has(input[aria-label^="Сравнить "]:checked),
-.build-card:has(input[aria-label^="Compare "]:checked){border-color:#cc9b59;
- box-shadow:0 0 0 1px rgba(215,164,89,.22)}
 @media(max-width:700px){
  .build-compare-header{padding:8px 10px}
  .build-compare-title{font-size:19px}
@@ -79,9 +76,9 @@
  color:#f4d6a4;overflow-wrap:anywhere}
 .build-card-compare{display:inline-flex;align-items:center;justify-content:center;
  flex:0 0 auto;gap:6px;min-height:29px;cursor:pointer;white-space:nowrap;
- padding:4px 7px;border:1px solid #775938;border-radius:5px;
- background:rgba(23,17,12,.75)}
-.build-card-compare:has(input:checked){border-color:#c69a60;background:#4b3420}
+ padding:4px 2px;border:0;border-radius:0;background:transparent;
+ box-shadow:none}
+.build-card-compare:hover>span,.build-card-compare:has(input:checked)>span{color:#f0ce9d}
 .build-card-compare>span{font:600 10px/1.2 Manrope,Arial,sans-serif;color:#dcc19a}
 .build-card-compare input[type=checkbox]{flex:0 0 auto;margin:0}
 .build-card .build-card-meta{min-width:0;margin:0 0 3px;
@@ -90,7 +87,7 @@
  align-items:stretch;gap:5px;min-width:0;margin-top:auto}
 .build-card-actions>.button-action{display:flex;align-items:center;justify-content:center;
  min-width:0;min-height:38px;margin:0;padding:6px 3px;
- border-radius:5px;font:650 10px/1.25 Manrope,Arial,sans-serif;
+ border-radius:5px;font:650 11px/1.25 Manrope,Arial,sans-serif;
  white-space:normal;text-align:center;overflow-wrap:anywhere}
 .build-card-actions>.primary{border-color:#b58a50;background:#513821}
 .build-card-actions>.build-card-delete{border-color:#765342;color:#d6ab99}
@@ -100,6 +97,6 @@
  .build-grid>.build-card{padding:11px 10px}
  .build-card .build-card-title{font-size:20px}
  .build-card-actions{gap:4px}
- .build-card-actions>.button-action{padding:5px 2px;min-height:42px;font-size:9px}
+ .build-card-actions>.button-action{padding:5px 2px;min-height:42px;font-size:10px}
 }
 

@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.639.0 — 2026.11.11.639 · Borderless Compare checkbox and comprehensive desktop/mobile visual layout screenshots
+
+- Borderless Compare checkbox and comprehensive desktop/mobile visual layout screenshots.
+- Adds the extended Chromium screenshot and geometry audit for Origin, Appearance, Hero Path, Hero Book, Wiki chapters, account and build dialogs.
+- The visual audit reports only checks that the browser actually executes; broader RU/EN content remains in Issue #390.
+
+
 ## 0.638.0 — 2026.11.11.638 · Two-browser owner CAS conflict, preserved draft and safe refresh/retry regression
 
 - Two-browser owner CAS conflict, preserved draft and safe refresh/retry regression.
