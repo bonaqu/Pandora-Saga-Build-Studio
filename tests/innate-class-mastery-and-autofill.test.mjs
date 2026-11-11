@@ -156,7 +156,7 @@ test('ten green Technique boosts Archer accuracy one point, not Warrior',()=>{
 test('hero skill search is never exposed as login, including static search input',()=>{
  const tag=html.match(/<input\s+id="pathSkillSearch"[^>]*>/)?.[0];
  assert.ok(tag);
- for(const attr of ['autocomplete="off"','name="ps-hero-skill-filter"',
+ for(const attr of ['autocomplete="none"','name="ps-hero-skill-filter"',
   'data-lpignore="true"','data-1p-ignore="true"','data-bwignore="true"',
   'data-form-type="other"','aria-autocomplete="none"'])
   assert.ok(tag.includes(attr),'missing '+attr);

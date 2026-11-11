@@ -18,7 +18,7 @@ test('worn gear context actions reuse picker and one shared unequip lifecycle',(
  assert.match(app,/clearChangedEquipmentSouls\(state,previousEquipment\)/);
  assert.match(app,/unequipStageEquipmentSlot\(sourceSlot\)/);
  assert.match(app,/else unequipStageEquipmentSlot\(selectedSlot\)/);
- assert.match(app,/id==='replace'\?index:sourceSlot/);
+ assert.match(app,/id==='replace'\|\|id==='choose'\?index:sourceSlot/);
  assert.match(app,/canManageSouls=Boolean\(record&&window\.PandoraEquipmentPlan\.canSocket/);
 });
 test('context menu is accessible, localized, and dismissible without touching empty slots',()=>{

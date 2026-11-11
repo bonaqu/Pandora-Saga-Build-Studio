@@ -38,8 +38,8 @@ test('only signed-in cloud libraries retry after network recovery',()=>{
  assert.match(app,/document\.addEventListener\('visibilitychange'/);
  assert.match(app,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)return/);
  assert.match(app,/lastCloudReconnect<20000/);
- assert.match(app,/function buildLegacyImport\(\)/);
- assert.match(app,/Перенести старые билды/);
+ assert.doesNotMatch(app,/function buildLegacyImport\(\)/);
+ assert.doesNotMatch(app,/Перенести старые билды/);
 });
 
 test('account bearer joins private library and sharing without guest-key fallback',()=>{
