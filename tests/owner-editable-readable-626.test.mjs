@@ -26,6 +26,9 @@ test('long labels and descriptions expand rather than hide or ellipsize text',()
  assert.match(ownerCss,/\.wiki-inline-input\[data-owner-text-field\]:not\(\.wiki-owner-search\)/);
  assert.match(ownerCss,/\.ui-content-edit-host\{display:inline-flex;flex:1 1 230px/);
  assert.match(ownerCss,/max-height:min\(65dvh,480px\)/);
+ assert.match(ownerCss,/\.stage-book-tab-copy:has\(\[data-owner-text-field\]\)/);
+ assert.match(ownerCss,/\.path-tab-copy:has\(\[data-owner-text-field\]\)/);
+ assert.match(ownerCss,/\.stage-attribute-head \.stage-book-heading:has\(\[data-owner-text-field\]\)/);
  assert.match(ownerCss,/overflow-y:auto;overflow-x:hidden/);
 });
 test('a later locale switch does not remap the ongoing copy edit',()=>{
