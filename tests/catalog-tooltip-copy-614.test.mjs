@@ -23,6 +23,8 @@ test('nine catalog action hover hints have safe independent RU/EN D1 keys',()=>{
  assert.match(workbench,/const wrap=node\.closest\('\.os-sync-action-editor'\)/);
  assert.match(workbench,/class:'os-sync-hint-pencil'/);
  assert.match(workbench,/node\.dataset\.guideHint=next/);
+ assert.match(workbench,/node\.dataset\.guideOwnerKey=key/);
+ assert.match(app,/if\(target\.dataset\.guideOwnerKey===id\)target\.dataset\.guideHint=value/);
  assert.match(workbench,/wrap\.append\(pencil,host\)/);
  assert.match(workbench,/if\(!node\.isConnected\)return/);
  assert.match(app,/node,'catalog-sync',key,ru,en,callbacks/);
