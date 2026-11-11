@@ -483,7 +483,10 @@ function h(tag,attrs={},children=[]){const el=document.createElement(tag);
    ['username','current-password','new-password'].includes(hint)||
    attrs['data-auth-field']==='true';
   if(!isLogin){
-   attrs={...attrs,autocomplete:'off','data-lpignore':'true','data-1p-ignore':'true',
+   // Yandex's own webmaster guidance recommends the invalid token "none"
+   // for ordinary site fields. "off" may still trigger stored logins.
+   // This is best-effort; never relabel genuine account credentials.
+   attrs={...attrs,autocomplete:'none','data-lpignore':'true','data-1p-ignore':'true',
     'data-bwignore':'true','data-form-type':'other',
     autocapitalize:'off',spellcheck:'false'};
    if(['text','search','email','url','tel'].includes(String(attrs.type||'text').toLowerCase()))
@@ -1322,7 +1325,8 @@ function unequipStageEquipmentSlot(index){
  stageSlotView='choose';persist();render();
 }
 function openStageGearMenu(index,sourceSlot,event,anchor){
- if(!state.equipment?.[sourceSlot])return;
+ // Empty slots have one safe action: Choose item. No hidden equip mutation.
+ const hasItem=Boolean(state.equipment?.[sourceSlot]);
  closeStageGearMenu();hideStageRailWarning();
  window.PandoraStageItemUI.dismissPreview();
  const equipped=state.equipment[sourceSlot],record=equippedRecord(sourceSlot);
@@ -1332,19 +1336,20 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
   slotKeys[sourceSlot],record,cap));
  const tr=(ru,en)=>lang==='en'?en:ru;
  const menu=h('div',{class:'stage-gear-context-menu',role:'menu',
-  'aria-label':tr('Действия с надетой вещью','Equipped item actions'),
+  'aria-label':hasItem?tr('Действия с надетой вещью','Equipped item actions'):
+   tr('Действия с пустым слотом','Empty equipment slot actions'),
   'data-gear-context-slot':String(index)});
  const title=h('div',{class:'stage-gear-context-heading'},[
   h('small',{text:gearSlotName(index)}),
-  h('strong',{text:itemName(equipped)})
+  h('strong',{text:hasItem?itemName(equipped):tr('Пустой слот','Empty slot')})
  ]);
  menu.append(title);
- const actions=[
+ const actions=hasItem?[
   ['properties','◇','Свойства','Properties',false],
   ['souls','◈','Управление душами','Manage Souls',!canManageSouls],
   ['replace','⇄','Выбрать другую вещь','Choose another item',false],
   ['remove','×','Снять вещь','Unequip item',false]
- ];
+ ]:[['choose','+','Выбрать вещь','Choose item',false]];
  for(const [id,glyph,ru,en,disabled] of actions){
   const label=h('span',{class:'stage-gear-context-caption',
    text:equipmentCopy('context.'+id,ru,en)});
@@ -1362,8 +1367,8 @@ function openStageGearMenu(index,sourceSlot,event,anchor){
      unequipStageEquipmentSlot(sourceSlot);
      focusSelectedSlot();return;
     }
-    openStageEquipmentSlot(id==='replace'?index:sourceSlot,
-     id==='replace'?'choose':id==='souls'?'souls':'details');
+    openStageEquipmentSlot(id==='replace'||id==='choose'?index:sourceSlot,
+     id==='replace'||id==='choose'?'choose':id==='souls'?'souls':'details');
    }
   },[h('span',{class:'stage-gear-context-icon','aria-hidden':'true',text:glyph}),label]);
   const wrap=h('div',{class:'stage-gear-context-row'},[button]);
@@ -1441,14 +1446,14 @@ function renderSlotRails(){
     (selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':'')+(issue.length?' unavailable':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
     'aria-label':tooltip,
-    ...(item?{'aria-haspopup':'menu','aria-keyshortcuts':'Shift+F10'}:{}),
+    'aria-haspopup':'menu','aria-keyshortcuts':'Shift+F10',
     onclick:()=>openStageEquipmentSlot(i),
     oncontextmenu:event=>{
-     if(!item)return;event.preventDefault();
+     event.preventDefault();
      openStageGearMenu(i,sourceSlot,event,button);
     },
     onkeydown:event=>{
-     if(!item||!(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10'))return;
+     if(!(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10'))return;
      event.preventDefault();event.stopPropagation();
      openStageGearMenu(i,sourceSlot,event,button);
     }});
@@ -6367,127 +6372,8 @@ let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
 // Reveal or switch it only after a deliberate user interaction.
 // Legacy guest keys are recovery credentials, not normal library sessions.
 // A signed-in player can explicitly preview and copy those older saves.
-function buildLegacyImport(){
- const tr=(ru,en)=>lang==='en'?en:ru;
- const panel=h('details',{class:'build-transfer'});
- const content=h('div',{class:'build-transfer-content'});
- const input=h('input',{type:'password',class:'build-transfer-key',maxLength:'64',
-  autocomplete:'off',placeholder:tr('Код старой библиотеки','Previous library code'),
-  'aria-label':tr('Код старой библиотеки','Previous library code')});
- const status=h('p',{class:'build-transfer-feedback',role:'status','aria-live':'polite'});
- const actions=h('div',{class:'build-transfer-row'});
- let candidates=[],selectedToken=null,selectedOwner=null;
- const apply=h('button',{type:'button',class:'button-action primary',
-  text:tr('Добавить билды в мой аккаунт','Add builds to my account'),
-  hidden:true,onclick:async()=>{
-   if(!window.PandoraAccountUI?.isLoggedIn()||
-    window.PandoraAccountUI.token()!==selectedToken||
-    libraryScopeId()!==selectedOwner)return;
-   apply.disabled=true;
-   const previous=builds.slice(),created=[];
-   const known=new Set(builds.map(b=>b.id));
-   const existing=[...builds];
-   for(const source of candidates){
-    if(existing.some(row=>window.PandoraBuildLibraryMerge.same(row,source)))continue;
-    if(existing.length>=200)break;
-    let id=newId();
-    while(known.has(id))id=newId();
-    known.add(id);
-    const imported={id,name:String(source.name).slice(0,70),
-     data:structuredClone(source.data),at:Date.now()+created.length};
-    created.push(imported);existing.push(imported);
-   }
-   if(!created.length){
-    status.textContent=tr('Подходящие билды уже есть в аккаунте.',
-     'Those builds are already in your account.');
-    apply.hidden=true;apply.disabled=false;return;
-   }
-   builds=[...created,...builds];
-   if(!persistBuilds()){
-    builds=previous;apply.disabled=false;
-    status.textContent=tr('Не удалось сохранить в браузере. Освободи место и повтори.',
-     'Browser storage is full. Free up space and retry.');
-    return;
-   }
-   libraryChangeId++;
-   reportCloudStatus(tr('Переносим сохранения в аккаунт…','Importing builds into account…'));
-   let saved=0;
-   for(const row of created){
-    if(!window.PandoraAccountUI?.isLoggedIn()||
-     window.PandoraAccountUI.token()!==selectedToken||
-     libraryScopeId()!==selectedOwner)break;
-    if(await putCloudBuild(row))saved++;
-   }
-   reportCloudStatus(saved===created.length?
-    tr('Добавлено в аккаунт: ','Added to your account: ')+saved:
-    tr('Добавлено локально: ','Saved in browser: ')+created.length+
-    tr(' · в облаке подтверждено: ',' · confirmed in cloud: ')+saved+
-    tr('. Остальное повторно проверится при синхронизации.',
-       '. Remaining builds will retry syncing.'));
-   apply.hidden=true;apply.disabled=false;
-   if(activeTab==='builds')refreshBuildsAfterCloudLoad();
-  }});
- const check=async key=>{
-  const code=String(key||'').trim().toLowerCase();
-  candidates=[];apply.hidden=true;
-  if(!/^[a-f0-9]{64}$/.test(code)){
-   status.textContent=tr('Код содержит 64 символа. Проверь, что он скопирован полностью.',
-    'The previous library code has 64 characters. Check the full code.');
-   return;
-  }
-  if(!window.PandoraAccountUI?.isLoggedIn())return;
-  const token=window.PandoraAccountUI.token(),owner=libraryScopeId();
-  selectedToken=token;selectedOwner=owner;
-  verify.disabled=true;fromBrowser.disabled=true;
-  status.textContent=tr('Ищем старые сохранения…','Checking previous saves…');
-  try{
-   const remote=await apiRequest('/api/library/legacy-preview',
-    {legacyKey:code},token);
-   if(token!==window.PandoraAccountUI?.token()||owner!==libraryScopeId())return;
-   const remoteRows=Array.isArray(remote.records)?remote.records
-    .filter(row=>!row.deleted&&row.entry).map(row=>row.entry):[];
-   let localRows=[];
-   try{
-    const guestScope=window.PandoraBuildScope.owner(null,code);
-    localRows=safeStoredBuildRows(JSON.parse(
-     window.PandoraBuildScope.getOwned(localStorage,guestScope,'ps-build-library.v1')));
-   }catch{}
-   const all=[...remoteRows,...localRows];
-   for(const row of all){
-    if(!row||typeof row.name!=='string'||typeof row.data!=='object')continue;
-    try{sanitizeSharedState(row.data)}catch{continue}
-    if(candidates.some(x=>window.PandoraBuildLibraryMerge.same(x,row))||
-     builds.some(x=>window.PandoraBuildLibraryMerge.same(x,row)))continue;
-    candidates.push(row);
-   }
-   const capacity=Math.max(0,200-builds.length);
-   if(candidates.length>capacity)candidates=candidates.slice(0,capacity);
-   if(!candidates.length){
-    status.textContent=tr('Новых сохранений не найдено.',
-      'No new saved builds found.');
-    return;
-   }
-   status.textContent=tr('Найдено для переноса: ','Ready to import: ')+candidates.length;
-   apply.hidden=false;
-  }catch{
-   status.textContent=tr('Не получилось проверить библиотеку. Проверь соединение и код.',
-    'Could not check the previous library. Verify your connection and code.');
-  }finally{verify.disabled=false;fromBrowser.disabled=false}
- };
- const verify=h('button',{type:'button',class:'button-action',
-  text:tr('Проверить код','Check code'),onclick:()=>void check(input.value)});
- const fromBrowser=h('button',{type:'button',class:'button-action',
-  text:tr('Найти на этом устройстве','Find on this device'),
-  onclick:()=>void check(tabGuestSecret)});
- actions.append(input,verify,fromBrowser);
- content.append(
-  h('p',{text:tr(
-   'Если раньше ты сохранял билды без аккаунта, перенеси их сюда. Оригиналы останутся нетронутыми.',
-   'Previously saved without an account? Import those builds here. Original copies are kept.')} ),
-  actions,status,apply);
- panel.append(h('summary',{text:tr('Перенести старые билды','Import older builds')}),content);
- return panel;
-}
+// Retired legacy-import UI: guest builds are never migrated into an account.
+// A guest's current character remains a local draft until the user saves it.
 // One account entry point for saved builds and incoming build links.
 let returnToBuildsAfterAuth=false,pendingGuestDraft=null;
 function buildSignInCard({shared=false}={}){
@@ -6555,7 +6441,8 @@ function finishBuildAccountEntry(){
   // A separate nonempty account draft must NEVER be replaced silently.
   if(JSON.stringify(state)===JSON.stringify(fresh())){
    if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
-   render();notifyGuestDraftUnsaved();
+   render();
+   if(!builds.length)notifyGuestDraftUnsaved();
    if(shared)openIncoming();
    else{
     changeTab(returnToBuilds?'builds':'character');
@@ -6591,7 +6478,8 @@ function finishBuildAccountEntry(){
    // unsaved account draft before its browser copy has been committed.
    if(!accountWasSaved&&!saveBuild(state.name||tr('Новый герой','New hero')))return;
    if(!switchActiveDraft(structuredClone(guest.snapshot),null))return;
-   close();render();notifyGuestDraftUnsaved();
+   // Account already had a different hero: don't prompt a second save.
+   close();render();
    if(shared)openIncoming();else changeTab('character');
   };
   content.append(h('div',{class:'build-signin-actions'},[
@@ -6652,7 +6540,7 @@ function renderBuilds(root){
   h('button',{type:'button',class:'button-action',text:'↻ Обновить библиотеку',
    onclick:()=>{reportCloudStatus('Проверяем облако…');void loadCloudBuilds()}}));
  root.append(toolbar,choice,h('p',{class:'cloud-library-status',role:'status',
-  text:cloudStatusText(cloudLibraryStatus)}),buildLegacyImport());
+  text:cloudStatusText(cloudLibraryStatus)}));
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
  root.append(comparisonSlot);
  let comparison=null;
@@ -9023,18 +8911,16 @@ $('startupArchive').onclick=()=>void startStudio({archive:true});
 // site always requires D1 unless the visitor explicitly opts into archive mode.
 void startStudio({archive:['127.0.0.1','localhost'].includes(location.hostname)});
 void window.PandoraAccountUI.init({
- baseUrl:API,legacyKey:()=>tabGuestSecret,
+ baseUrl:API,
  onCopyReady:bindAccountCopyEditors,
  onLogin:({register})=>{
   // Header login, like the build-gate login, must preserve an unsaved guest
   // hero before the account owner switch replaces the visible draft.
-  if(!register&&tabOwnerScope?.startsWith('guest:')&&unsavedBuild())
+  if(tabOwnerScope?.startsWith('guest:')&&unsavedBuild())
    pendingGuestDraft={snapshot:structuredClone(state),owner:tabOwnerScope};
-  if(register)pendingGuestDraft=null;
-  // New registration adopts the guest library because its existing D1 owner hash
-  // is intentionally bound to that browser key. Logging into a different existing
-  // account never transfers another owner's cached saves.
-  activateLibraryScope({carry:Boolean(register)});
+  // Registration and existing login never import old guest saved builds.
+  // Preserve the working character *separately* via pendingGuestDraft.
+  activateLibraryScope();
   libraryChangeId++;
   reportCloudStatus('Подключаем облачную библиотеку…');
   void loadCloudBuilds();

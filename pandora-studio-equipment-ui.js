@@ -2,6 +2,14 @@
 'use strict';
 const el=(tag,attrs={},children=[])=>{
  const e=document.createElement(tag);
+ if((tag==='input'||tag==='textarea')&&
+  String(attrs.type||'').toLowerCase()!=='password'){
+  // Gameplay fields are not credentials; Yandex Browser ignores many "off"
+  // hints and recommends "none" for suppressing autofill (best effort).
+  attrs={...attrs,autocomplete:'none','aria-autocomplete':'none',
+   'data-lpignore':'true','data-1p-ignore':'true',
+   'data-bwignore':'true','data-form-type':'other'};
+ }
  for(const [k,v] of Object.entries(attrs)){
   if(k==='class')e.className=v;else if(k==='text')e.textContent=v;
   else if(k.startsWith('on'))e.addEventListener(k.slice(2),v);

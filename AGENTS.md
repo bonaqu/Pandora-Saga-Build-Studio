@@ -19,3 +19,9 @@ These repository-level rules are durable instructions for future coding sessions
 
 ## Why this is needed
 2026-11-11: Releases 0.631.0–0.632.0 occupied roughly 27 minutes because two browser iterations in PR #422 repeated the full 46-scenario Chromium suite while isolating an Escape propagation issue, and another set of unit regressions had stale fixture assertions. The browser discovered a real regression; **retain the final full check**, but use isolated diagnostics to avoid repeated unrelated work. See `docs/DEVELOPMENT_PROCESS_TIME_OPTIMIZATION_2026-11-11.md`.
+
+## Character-state and browser-autofill regressions (2026-11-11)
+- A newly equipped copy must not inherit the old copy's refinement, element/gem, Souls or manual socket capacity after unequip or swap. The shared `clearChangedEquipmentSouls` lifecycle clears all such per-copy keys on an item identity change. Never clear other slots' customization.
+- No guest saved-build import UI, D1 legacy-preview action or implicit guest-library transfer on registration. Preserve only the currently edited character as an unsaved draft, and offer an explicit user-controlled save when the account has no earlier work.
+- **Every gameplay/editor search input is NOT a login field.** Use Yandex's best-effort `autocomplete="none"` plus the standard `data-lpignore`, `data-1p-ignore`, `data-bwignore` markers. Keep genuine username/password fields semantically correct and editable. Don't introduce readOnly on normal text/search fields: it breaks normal typing and tests.
+- Screenshot-based Yandex autofill behavior cannot be proven by regular Playwright Chromium: assert emitted DOM attributes and normal text entry, then leave a concise manual YaBrowser acceptance check. Run focused smoke first and keep final PR full CI.
