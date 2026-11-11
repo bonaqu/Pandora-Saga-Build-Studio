@@ -279,29 +279,34 @@ function render(root,api){
  const cap=Number.isInteger(api.capacity)?api.capacity:plan.socketCapacity(record);
  const hasSouls=plan.canSocket(slot,record,cap);
  if(mode==='gems'||mode==='souls'&&!hasSouls){api.changeMode('details');return}
- const head=el('div',{class:'stage-picker-head'},[
-  el('strong',{text:api.slotLabel||'Слот: '+slot}),
-  el('button',{type:'button',text:'✕',onclick:api.close,'aria-label':'Закрыть настройку'})
- ]);root.append(head);
  const english=document.documentElement?.lang==='en',tr=(ru,en)=>english?en:ru;
+ const head=el('div',{class:'stage-picker-head'},[
+  el('strong',{text:api.slotLabel||tr('Слот: ','Slot: ')+slot}),
+  el('button',{type:'button',text:'✕',onclick:api.close,
+   'aria-label':tr('Закрыть настройку','Close item settings')})
+ ]);root.append(head);
  const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
  const editable=(node,key,ru,en)=>{api.editLabel?.(node,key,ru,en);return node};
  const labeledAction=(button,key,ru,en,prefix='')=>{
   if(!api.canEdit)return button;
   const caption=editable(el('span',{class:'stage-copy-caption',text:copy(key,ru,en)}),key,ru,en);
-  const pencil=el('span',{class:'stage-control-pencil',role:'button',tabindex:'0',
+  const pencil=el('button',{type:'button',class:'stage-control-pencil',
    text:'✎','aria-label':tr('Изменить надпись: ','Edit caption: ')+copy(key,ru,en)});
   const start=event=>{
    event.preventDefault();event.stopPropagation();
+   // Sibling button: editing must never activate the underlying tab/refinement.
    caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
   };
+  const syncName=()=>pencil.setAttribute('aria-label',
+   tr('Изменить надпись: ','Edit caption: ')+caption.textContent);
   pencil.addEventListener('click',start);
-  pencil.addEventListener('keydown',event=>{
-   if(event.key==='Enter'||event.key===' ')start(event);
-  });
+  pencil.addEventListener('focus',syncName);
+  pencil.addEventListener('pointerenter',syncName);
   button.replaceChildren(...(prefix?[el('span',{class:'stage-action-glyph',text:prefix})]:[]),
-   caption,pencil);
-  return button;
+   caption);
+  const wrapper=el('span',{class:'stage-action-edit-wrap'});
+  wrapper.append(button,pencil);
+  return wrapper;
  };
  const tabs=el('nav',{class:'stage-rich-tabs'+(hasSouls?' has-souls':' no-souls'),
   role:'group','aria-label':tr('Настройка предмета','Item settings')});
@@ -445,19 +450,21 @@ function render(root,api){
     if(api.canEdit){
      caption.setAttribute('data-owner-record','soul:'+rec.id);
      caption.setAttribute('data-owner-field',english?'nameEn':'name');
-     const pencil=el('span',{class:'stage-control-pencil',role:'button',
-      tabindex:'0',text:'✎','aria-label':tr('Изменить душу: ','Edit Soul: ')+name});
+     const pencil=el('button',{type:'button',class:'stage-control-pencil',
+      text:'✎','aria-label':tr('Изменить душу: ','Edit Soul: ')+name});
      const edit=event=>{
       event.preventDefault();event.stopPropagation();
       caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
      };
      pencil.addEventListener('click',edit);
-     pencil.addEventListener('keydown',event=>{
-      if(event.key==='Enter'||event.key===' ')edit(event);
-     });
-     button.append(caption,pencil);
-    }else button.append(caption);
-    list.append(button);attachPreview(button,rec,icons,'soul');
+     pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',
+      tr('Изменить душу: ','Edit Soul: ')+caption.textContent));
+     button.append(caption);
+     const wrapper=el('div',{class:'stage-rich-result-edit-wrap'});
+     wrapper.append(button,pencil);
+     list.append(wrapper);
+    }else{button.append(caption);list.append(button)}
+    attachPreview(button,rec,icons,'soul');
    }
    if(results.length>80){
     const ru='Показано 80 душ. Уточни поиск.',en='Showing 80 Souls. Narrow your search.';

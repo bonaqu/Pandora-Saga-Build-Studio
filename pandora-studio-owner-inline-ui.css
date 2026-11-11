@@ -1,7 +1,5 @@
-/* Unified on-page copy editing: one subtle pencil inside interactive controls.
-   Only visible to a logged-in owner; ordinary player layout is unchanged. */
-.stage-rich-tabs button:has(.stage-control-pencil),
-.stage-enchant-options button:has(.stage-control-pencil),
+/* Owner edits live beside game actions, never inside nested interactive buttons.
+   Guest markup remains unchanged and keeps the original compact layout. */
 .stage-attribute-tabs button:has(.stage-book-tab-pencil),
 .path-sections button:has(.path-tab-pencil){
  display:flex;align-items:center;justify-content:center;gap:4px;
@@ -34,9 +32,48 @@
 .stage-rich-body dt.origin-copy-editable{
  text-decoration:underline dotted #987b50;text-underline-offset:3px
 }
-/* Captions inside buttons already have an explicit pencil: no duplicate
-   pseudo-action. Preserve the full hit area for existing tab clicks. */
+/* Captions inside game buttons use an adjacent independent pencil. Keep the
+   original game action intact while preventing duplicate pseudo-actions. */
 .stage-copy-caption.origin-copy-editable::after{content:none}
+.stage-action-edit-wrap{position:relative;display:flex;align-items:stretch;min-width:0}
+.stage-action-edit-wrap>button:not(.stage-control-pencil){flex:1 1 auto;width:100%;min-width:0;
+ padding-inline-end:23px!important}
+.stage-rich-tabs>.stage-action-edit-wrap{width:100%;min-width:0}
+.stage-rich-tabs .stage-action-edit-wrap>button:not(.stage-control-pencil){
+ display:flex;align-items:center;justify-content:center;gap:3px}
+.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap,
+.stage-rich-body .stage-enchant-options.is-element-options>.stage-action-edit-wrap{
+ display:flex;align-items:stretch;min-width:0;position:relative}
+.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap>button:not(.stage-control-pencil),
+.stage-rich-body .stage-enchant-options.is-element-options>.stage-action-edit-wrap>button:not(.stage-control-pencil){
+ flex:1 1 auto;min-width:0;width:100%;box-sizing:border-box}
+.stage-rich-tabs .stage-action-edit-wrap>.stage-control-pencil,
+.stage-rich-body .stage-enchant-options .stage-action-edit-wrap>.stage-control-pencil,
+.stage-rich-body .stage-action-edit-wrap>.stage-control-pencil{
+ position:absolute;z-index:2;right:3px;top:50%;transform:translateY(-50%);
+ display:inline-flex;align-items:center;justify-content:center;
+ width:18px;min-width:18px;min-height:20px;height:20px;padding:1px;
+ margin:0;border:1px solid #957247;border-radius:3px;background:#382618;
+ color:#e8c692;font:650 11px/1 Manrope,Arial,sans-serif;
+ cursor:pointer;opacity:.9;box-shadow:none}
+.stage-rich-tabs .stage-action-edit-wrap>.stage-control-pencil:focus-visible,
+.stage-rich-body .stage-action-edit-wrap>.stage-control-pencil:focus-visible{
+ outline:2px solid #f2c989;outline-offset:1px}
+.stage-rich-body .stage-enchant-options.is-element-options>.stage-action-edit-wrap:nth-child(7){
+ grid-column:span 2}
+.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap:first-child>button:not(.stage-control-pencil){
+ border-radius:4px 0 0 4px}
+.stage-rich-body .stage-enchant-options.is-type-options>.stage-action-edit-wrap:last-child>button:not(.stage-control-pencil){
+ border-radius:0 4px 4px 0}
+.stage-rich-body .stage-action-edit-wrap:has(>.stage-enchant-reset){
+ align-self:flex-start;width:max-content;max-width:100%}
+.stage-rich-result-edit-wrap{position:relative;display:flex;align-items:stretch;min-width:0}
+.stage-rich-result-edit-wrap>.stage-rich-result{flex:1 1 auto;min-width:0;
+ padding-inline-end:28px}
+.stage-rich-result-edit-wrap>.stage-control-pencil{position:absolute;right:7px;top:50%;
+ transform:translateY(-50%);width:22px;height:24px;flex:none;margin:0}
+.stage-rich-result-edit-wrap>.stage-control-pencil:focus-visible{
+ outline:2px solid #f2c989;outline-offset:2px}
 .stage-copy-caption.origin-copy-editable{text-decoration:none}
 .stage-rich-body .origin-copy-editable:focus-visible,
 .path-skill-metadata .origin-copy-editable:focus-visible,
@@ -67,20 +104,23 @@
  width:min(240px,100%);max-width:100%;font-size:11px
 }
 @media(max-width:390px){
- .stage-rich-tabs .stage-control-pencil,
- .stage-enchant-options .stage-control-pencil{
-  flex-basis:12px;width:12px;height:13px;font-size:9px;margin-left:0
+ .stage-rich-tabs .stage-action-edit-wrap>.stage-control-pencil,
+ .stage-enchant-options .stage-action-edit-wrap>.stage-control-pencil{
+  width:16px;min-width:16px;height:18px;min-height:18px;font-size:10px;right:1px
+ }
+ .stage-action-edit-wrap>button:not(.stage-control-pencil){
+  padding-inline-end:18px!important
  }
 }
 
-.stage-rich-result:has(.stage-control-pencil){
+.stage-rich-result-edit-wrap>.stage-rich-result{
  display:flex;align-items:center;gap:7px
 }
 .stage-rich-result .stage-soul-result-caption{
  min-width:0;flex:1;text-align:left;
  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
 }
-.stage-rich-result .stage-control-pencil{margin-left:auto;flex-shrink:0}
+.stage-rich-result-edit-wrap>.stage-control-pencil{margin-left:0;flex-shrink:0}
 .stage-soul-search-caption{
  display:block;margin:5px 2px 0;
  color:#cdb084;font:600 10px/1.25 Manrope,Arial,sans-serif
