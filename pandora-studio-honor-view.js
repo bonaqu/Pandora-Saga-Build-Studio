@@ -47,6 +47,17 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    editCopy(target,key,ru,english);
    return element;
   };
+ // One independent owner control for native headings and rich Honor text.
+ // It is never nested in navigation buttons, links or disclosure controls.
+ const directPencil=(action,caption)=>{
+  const pencil=make('button',{type:'button',
+   class:'wiki-honor-copy-pencil wiki-honor-direct-pencil',
+   text:'✎','aria-label':tr('Изменить: ','Edit: ')+caption});
+  pencil.addEventListener('click',event=>{
+   event.preventDefault();event.stopPropagation();action();
+  });
+  return pencil;
+ };
  // Wars are Honor records, not OS map IDs. Give every existing and
  // owner-created entry its own page without inventing location records.
  if(warId!=null){
@@ -72,6 +83,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    detail.append(editorial('p','wiki-honor-war-eyebrow','warEyebrow','PvP-война','PvP war'));
    const name=en?entry.nameEn:entry.nameRu;
    const title=node('h3','wiki-honor-title wiki-honor-war-title',name);
+   const titleRow=make('div',{class:'wiki-honor-heading-row wiki-honor-title-row'});
+   titleRow.append(title);
    if(editable){
     title.classList.add('wiki-honor-editable');title.tabIndex=0;
     const edit=()=>editText(title,name,false,next=>saveList('honor.wars',
@@ -81,8 +94,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     title.addEventListener('keydown',event=>{
      if(event.key==='F2'){event.preventDefault();edit()}
     });
+    titleRow.append(directPencil(edit,name));
    }
-   detail.append(title);
+   detail.append(titleRow);
    // Use existing Honor information instead of inventing war-specific rules.
    detail.append(node('p','wiki-honor-copy wiki-honor-war-copy',
     en?article.overview.gainEn:article.overview.gainRu));
@@ -95,28 +109,33 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const element=make('section',{class:'wiki-honor-section',id:'honor-'+id});
   const name=label('honor',id,ru,english);
   const heading=node('h4','wiki-honor-heading',name);
+  const headingRow=make('div',{class:'wiki-honor-heading-row'});
+  headingRow.append(heading);
   if(editable){
    heading.classList.add('wiki-honor-editable');heading.tabIndex=0;
    heading.title=tr('Двойной клик — изменить заголовок','Double-click to edit heading');
    const change=()=>editLabel(heading,'honor',id,name);
    heading.addEventListener('dblclick',change);
    heading.addEventListener('keydown',event=>{
-    if(event.key==='F2'){event.preventDefault();change()}
+    if(event.key==='F2'||event.key==='Enter'){event.preventDefault();change()}
    });
+   headingRow.append(directPencil(change,name));
   }
-  element.append(heading);detail.append(element);
+  element.append(headingRow);detail.append(element);
   return element;
  };
  const editableText=(target,value,key,field,multiline=false)=>{
   if(!editable)return target;
   target.classList.add('wiki-honor-editable');
   target.setAttribute('tabindex','0');
-  target.setAttribute('title',tr('Двойной клик — изменить','Double-click to edit'));
+  target.setAttribute('title',tr('Двойной клик или F2 — изменить','Double-click or F2 to edit'));
   const start=()=>editText(target,value,multiline,
    next=>saveText(key,{[field]:next}));
   target.addEventListener('dblclick',start);
   target.addEventListener('keydown',event=>{
-   if(event.key==='Enter'&&!multiline){event.preventDefault();start()}
+   if(event.key==='F2'||(event.key==='Enter'&&!multiline)){
+    event.preventDefault();start();
+   }
   });
   return target;
  };
@@ -127,7 +146,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    items.map((entry,i)=>i===index?{...entry,[field]:next}:entry)));
   target.addEventListener('dblclick',start);
   target.addEventListener('keydown',event=>{
-   if(event.key==='Enter'){event.preventDefault();start()}
+   if(event.key==='Enter'||event.key==='F2'){event.preventDefault();start()}
   });
   return target;
  };
@@ -175,16 +194,19 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  }
  const honorTitle=label('chapter','honor','Честь','Honor');
  const title=node('h3','wiki-honor-title',honorTitle);
+ const titleRow=make('div',{class:'wiki-honor-heading-row wiki-honor-title-row'});
+ titleRow.append(title);
  if(editable){
   title.classList.add('wiki-honor-editable');title.tabIndex=0;
   title.title=tr('Двойной клик — изменить название','Double-click to edit title');
   const change=()=>editLabel(title,'chapter','honor',honorTitle);
   title.addEventListener('dblclick',change);
   title.addEventListener('keydown',event=>{
-   if(event.key==='F2'){event.preventDefault();change()}
+   if(event.key==='F2'||event.key==='Enter'){event.preventDefault();change()}
   });
+  titleRow.append(directPencil(change,honorTitle));
  }
- detail.append(title,editorial('p','wiki-honor-subtitle','subtitle',
+ detail.append(titleRow,editorial('p','wiki-honor-subtitle','subtitle',
   'PvP · нации · звания · награды','PvP · nations · titles · rewards'));
  const overview=section('overview','Система чести','Honor system');
  const o=article.overview;
@@ -473,6 +495,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   row.append(head);
   const entry=monthlyRows[index]||'';
   const content=node('p','wiki-honor-copy wiki-honor-cloak-list','');
+  const contentRow=make('div',{class:'wiki-honor-cloak-edit-row'});
+  contentRow.append(content);
   const ruRows=String(o.cloaksRu||'').split(/\n\s*\n|\n(?=Топ-|Top )/);
   const parseLine=line=>/^(.*?[—–]\s*)(.+?)([;,.]?\s*)$/.exec(line);
   for(const [lineIndex,line]of entry.split('\n').entries()){
@@ -511,8 +535,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    content.addEventListener('keydown',event=>{
     if(event.key==='F2'){event.preventDefault();startEdit()}
    });
+   contentRow.append(directPencil(startEdit,name));
   }
-  row.append(content);
+  row.append(contentRow);
   monthlyGrid.append(row);
  }
  monthly.append(monthlyGrid);

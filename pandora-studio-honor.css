@@ -35,6 +35,16 @@
 .wiki-honor-copy-pencil:hover,.wiki-honor-copy-pencil:focus-visible{
  border-color:#e5ba7f;background:#5b3c23;color:#ffe6bb;
  outline:1px solid #eac38c;outline-offset:1px}
+/* Honor editorial actions align with their own text, never on top of content.
+   A separate button keeps editing usable on touch as well as F2/keyboard. */
+.wiki-honor-heading-row{display:flex;align-items:baseline;gap:8px;min-width:0}
+.wiki-honor-heading-row>.wiki-honor-heading,
+.wiki-honor-title-row>.wiki-honor-title{min-width:0;overflow-wrap:anywhere}
+.wiki-honor-title-row{align-items:center}
+.wiki-honor-direct-pencil{flex:none;align-self:center;min-width:28px;min-height:28px;
+ margin-inline-start:0;padding:3px}
+.wiki-honor-cloak-edit-row{display:flex;align-items:flex-start;gap:8px;min-width:0}
+.wiki-honor-cloak-edit-row>.wiki-honor-cloak-list{flex:1;min-width:0}
 /* Honor uses the exact same wiki-list / wiki-link sidebar surfaces as Locations. */
 .wiki-honor-nav-link{width:100%;cursor:pointer;text-align:left;font:600 11px/1.4 Manrope,Arial,sans-serif}
 .wiki-honor-nav-icon{display:inline-flex;align-items:center;justify-content:center;
