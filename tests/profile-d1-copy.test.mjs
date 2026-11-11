@@ -44,6 +44,13 @@ test('profile owner copy changes only labels and accessible placeholders, never 
  assert.match(app,/class:'ps-profile-copy'/);
  assert.match(app,/data-profile-copy-key/);
  assert.match(app,/onCommit:next=>saveGuidePatch\('book\.'\+ownerCopyKey\('profile',key\)/);
+ const begin=app.indexOf('function profileCopyLabel(');
+ const end=app.indexOf('function profileCopyNote(',begin);
+ const editor=app.slice(begin,end);
+ assert.match(editor,/const editLang=lang;/);
+ assert.match(editor,/\{\[editLang\]:next\}/);
+ assert.doesNotMatch(editor,/\{\[lang\]:next\}/);
+ assert.match(editor,/onFinished:\(\)=>refreshVisibleProfileCopy\(\)/);
  assert.match(app,/if\(key==="name"\)\{state\.name=input\.value\}/);
  assert.match(app,/state\.profile\[key\]=input\.value/);
  assert.match(app,/state\.profile\.about=description\.value/);
