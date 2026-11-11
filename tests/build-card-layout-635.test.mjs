@@ -25,7 +25,7 @@ test('saved build card keeps Compare in the top corner and exactly four actions 
  assert.match(body,/toggleCardChoice\(deleteChoice\)/);
  assert.match(app,/class:'build-card-action-icon','aria-hidden':'true'/);
  assert.match(app,/text:tr\('Сохранить текущий и открыть','Save current and open'\)/);
- assert.match(body,/text:tr\('Удалить билд','Delete build'\)/);
+ assert.match(app,/text:tr\('Удалить билд','Delete build'\)/);
  assert.match(body,/text:tr\('Сравнить','Compare'\)/);
  assert.match(css,/\.build-card-action-icon\{display:block/);
  assert.match(css,/\.build-card-action-label\{display:block/);
