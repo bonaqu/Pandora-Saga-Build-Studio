@@ -405,9 +405,12 @@ export async function runAdminEntrySmoke(browser,base){
    'Saving Honor jumps to top: '+JSON.stringify({honorScrollBefore,honorScrollAfter}));
   assert.equal(JSON.parse(townOverrides.get('guideedit.honor.rank.8')).benefitRu,
    updatedBenefit);
-  // The other locale has an independent D1 field. Switching languages
-  // does not overwrite the saved RU caption or turn off the inline pencil.
+  // The Wiki workbench is modal; close it before using the global
+  // language switch, then reopen the same Honor article.
+  // The other locale has its own D1 field, not a replacement for RU.
+  await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   const englishCaption=page.locator('.wiki-honor-subtitle');
   await englishCaption.locator('.wiki-honor-copy-pencil').click();
@@ -427,7 +430,9 @@ export async function runAdminEntrySmoke(browser,base){
    {ru:'PvP · нации · звания · награды — RU'});
   assert.equal(calls.filter(value=>value.startsWith('game-source:')).length,
    catalogCallsBeforeUndo,'Undo of editorial text reloaded the game source');
+  await page.locator('#dockClose').click();
   await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('#nav [data-tab="wiki"]').click();
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   assert.match(await page.locator('.wiki-honor-subtitle').innerText(),/— RU/);
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
