@@ -511,8 +511,3 @@
  .owner-dialog-action-editor>.owner-dialog-action{max-width:calc(100vw - 95px)}
  .owner-dialog-editor{gap:4px}
 }
-
-/* Installed-Souls D1 caption: compact pencil, never overlay Soul entries. */
-.stage-rich-body .stage-gear-souls-head{display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
-.stage-rich-body .stage-gear-souls-head>strong{min-width:0;overflow-wrap:anywhere}
-.stage-rich-body .stage-gear-souls-head>.stage-gear-souls-pencil{position:static;transform:none;flex:0 0 16px;margin:0}

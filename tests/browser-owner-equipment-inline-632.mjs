@@ -163,31 +163,8 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    'History reset must not remount equipment');
   assert.equal((await value().innerText()).trim(),'0/2');
   await page.locator('#modalRoot .modal button.close').click();
-  // The owner drawer intentionally overlays the workbench on mobile.
-  // Collapse it before selecting a Soul; keep admin editing active.
-  await page.locator('#ownerDock [data-owner-collapse]').click();
-  assert.equal(await page.locator('#ownerDock').evaluate(el=>
-   el.classList.contains('owner-dock-collapsed')),true);
-  // Install a compatible real Soul and edit only the newly exposed caption.
-  await page.locator('#stagePicker [data-stage-tab="souls"]').click();
-  await page.locator('#stagePicker .stage-rich-result').first().click();
-  await page.locator('#stagePicker [data-stage-tab="details"]').click();
-  const caption=page.locator('#stagePicker .stage-gear-souls-head>strong');
-  await caption.waitFor({state:'visible'});
-  assert.equal((await caption.innerText()).trim(),'Socketed Souls');
-  assert.equal((await value().innerText()).trim(),'1/2');
-  await page.locator('#stagePicker .stage-gear-souls-pencil').click();
-  const edit=caption.locator('[data-owner-text-field]');
-  await edit.fill('Installed Souls QA');
-  await edit.press('Tab');
-  await page.waitForFunction(()=>document.querySelector(
-   '#stagePicker .stage-gear-souls-head>strong')?.textContent==='Installed Souls QA',
-   null,{timeout:12000});
-  assert.deepEqual(JSON.parse(values['guideedit.book.equipment.socketed-souls']),
-   {en:'Installed Souls QA'});
-  assert.equal((await value().innerText()).trim(),'1/2');
-  assert.equal(await page.locator('#stagePicker .stage-gear-soul').count(),1);
+  // A text-only history reset does not remount the item picker or change Souls.
   assert.deepEqual(errors,[]);
-  console.log('Chromium owner equipment: RU/EN CAS, history reset and Souls caption passed');
+  console.log('Chromium owner equipment: RU/EN CAS, Undo and in-place history reset passed');
  }finally{await context.close()}
 }

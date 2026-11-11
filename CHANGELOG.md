@@ -1,12 +1,10 @@
 # Pandora Saga Build Studio — CHANGELOG
 
-## 0.647.0 — 2026.11.11.647 · Editable Soul header and safe history reset
+## 0.647.0 — 2026.11.11.647 · Non-disruptive history reset for UI copy
 
-- The equipped item “Вставленные души” / “Socketed Souls” heading is D1 owner-editable with an inline field and compact separate pencil, without editing actual Soul records or slot capacity.
-- “Все правки” / “All edits” → “Вернуть оригинал” / “Restore original” handles equipment, Hero Path, catalog, Honor, profile and general UI copy without rebuilding the active character and catalog. Game data resets keep existing refresh behavior.
-- Node contracts and Chromium owner mock test CAS and Undo, history reset, preserved equipment DOM and socket count, and EN editing of the newly covered caption. Live D1 writes and deployment remain separately verified.
-
-
+- “Все правки” / “All edits” → “Вернуть оригинал” / “Restore original” now restores editor-authored equipment, Hero Path, Honor, catalog, profile and generic RU/EN UI copy on the current screen, without reloading the game catalog or replacing an open character/Soul picker. Game-record resets still refresh game data.
+- Extended Chromium admin acceptance with a mocked CAS-protected history reset, checking that the previously edited label returns to the EN fallback without changing its DOM node or the active equipped item's 0/2 Soul capacity. Full Node regressions and browser smoke are required before merge; live D1 writes are outside this scope.
+- Kept the existing compact item properties unchanged: the installed-Souls listing is not redundantly inserted into the properties tab, where the dedicated Souls tab already manages that content.
 
 ## 0.646.0 — 2026.11.11.646 · Hero Book Buff bilingual defaults
 

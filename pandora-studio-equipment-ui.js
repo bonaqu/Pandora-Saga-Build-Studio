@@ -156,23 +156,7 @@ function summary(record,icon,kind='item',context=null){
  }
  if(kind==='item'&&Array.isArray(context?.souls)&&context.souls.length){
   const group=el('div',{class:'stage-gear-souls'});
-  // Only the authored heading is editable; the Soul records remain game data.
-  const ru='Вставленные души',en='Socketed Souls';
-  const heading=el('strong',{text:context?.copyLabel?.('socketedSouls',ru,en)||tr(ru,en)});
-  if(context?.canEdit&&typeof context.editLabel==='function'){
-   context.editLabel(heading,'socketedSouls',ru,en);
-   const headingRow=el('div',{class:'stage-gear-souls-head'},[heading]);
-   const pencil=el('button',{type:'button',
-    class:'stage-control-pencil stage-gear-souls-pencil',text:'✎',
-    'aria-label':tr('Изменить надпись: ','Edit caption: ')+heading.textContent,
-    onclick:event=>{
-     event.preventDefault();event.stopPropagation();
-     heading.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-    }});
-   pencil.addEventListener('focus',()=>pencil.setAttribute('aria-label',
-    tr('Изменить надпись: ','Edit caption: ')+heading.textContent));
-   headingRow.append(pencil);group.append(headingRow);
-  }else group.append(heading);
+  group.append(el('strong',{text:tr('Вставленные души','Socketed Souls')}));
   for(const soul of context.souls){
    const row=el('div',{class:'stage-gear-soul'});
    const src=icon(soul,'soul');
@@ -382,8 +366,7 @@ function render(root,api){
   body.append(summary(record,icons,'item',{slot,refinement,
    gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),
    capacity:cap,socketedCount:plan.asSocketArray(souls).slice(0,Math.max(0,cap??0))
-    .filter(Boolean).length,tables:gameTables,copyLabel:copy,editLabel:editable,
-   canEdit:api.canEdit}));
+    .filter(Boolean).length,tables:gameTables,copyLabel:copy,editLabel:editable}));
   if(plan.supportsSoulSlot(slot)&&typeof api.updateSocketCapacity==='function'){
    const frame=el('fieldset',{class:'stage-enchant-fieldset stage-soul-capacity-fieldset'});
    frame.append(editable(el('legend',{text:copy('socketCapacityHeading',
