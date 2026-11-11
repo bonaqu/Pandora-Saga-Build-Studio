@@ -88,13 +88,13 @@ export async function runWikiOwnerEnglishSyncSmoke(browser,base){
   await page.keyboard.press('Control+Alt+Shift+P');
   await page.getByRole('dialog',{name:'Служебный вход'}).waitFor({state:'visible'});
   await page.locator('input[placeholder="Пароль администратора"]')
-   .fill('Correct admin password!');
+   .fill('Test fixture password');
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible'});
   await page.locator('#ownerDock [data-owner-collapse]').click();
   const button=page.locator('#ownerDock [data-owner-en-sync]');
   await button.waitFor({state:'visible'});
-  assert.match(await button.innerText(),/EN-переводы · 4/);
+  assert.match(await button.innerText(),/EN translations · 4/);
   await button.click();
   const modal=page.getByRole('dialog',{name:'Английские переводы'});
   await modal.waitFor({state:'visible'});
