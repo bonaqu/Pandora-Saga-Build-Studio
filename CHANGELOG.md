@@ -4,7 +4,8 @@
 
 - While an owner edits a narrow equipment stat label, the active inline text field uses the whole stats grid width and the associated numeric value moves below; after save or Escape, the original compact two-column layout returns.
 - All other labels and player-facing properties remain visually unchanged. No new admin modal or D1 schema field.
-- Added focused CSS contracts and a real Chromium owner flow: mobile long-draft visibility, Escape without writes, RU and EN override saves through mocked CAS Worker, and Undo of EN without changing RU or the equipped Soul count.
+- The shared inline owner editor now stops Escape/Enter keyboard events from also activating document-level panel shortcuts: Escape cancels the edit without closing the equipped-item picker.
+- Added focused CSS and keyboard contracts and a real Chromium owner flow: mobile long-draft visibility, Escape without writes, RU and EN override saves through mocked CAS Worker, and Undo of EN without changing RU or the equipped Soul count.
 - Browser acceptance and deployed Pages state must be verified separately.
 
 
