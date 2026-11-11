@@ -7874,10 +7874,19 @@ function showOverrideManager(){
       delete override[record.key];draw();
        if(record.key.startsWith('guideedit.book.origin.')){
         refreshVisibleOriginCopy(record.key);saveView();
+       }else if(record.key.startsWith('guideedit.book.profile.')){
+        refreshVisibleProfileCopy();saveView();
+       }else if(record.key.startsWith('guideedit.book.ui.label.')){
+        refreshVisibleUICopy(record.key);
+        if(record.key.startsWith('guideedit.book.ui.label.account-'))
+         window.PandoraAccountUI?.refresh?.();
+        saveView();
        }else if(record.key.startsWith('guideedit.book.owner-dock.')||
         record.key.startsWith('guideedit.book.owner-history.')||
-        record.key.startsWith('guideedit.book.owner-dialog.')){
-        refreshVisibleOwnerCopy(record.key);
+        record.key.startsWith('guideedit.book.owner-dialog.')||
+        /^guideedit\.book\.(equipment|path|catalog-sync|honor-view)\./.test(record.key)){
+        // Reset author copy only. Preserve the live picker and build draft.
+        refreshVisibleOwnerCopy(record.key);saveView();
        }else void refreshOwnerCatalog();
        refreshOwnerUI();
      }catch(error){showStudioToast('Не удалось отменить правку: '+error.message,'warning')}
