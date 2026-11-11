@@ -26,13 +26,23 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   await cap(2).waitFor({state:'visible'});
   assert.equal(await cap(2).getAttribute('aria-pressed'),'true');
   assert.equal(await props.locator('[data-stage-tab="souls"]').count(),1);
-  assert.equal(await props.locator('.stage-rich-fields').evaluate(dl=>{
-   const labels=[...dl.querySelectorAll('dt')].map(x=>x.textContent.trim());
-   return dl.querySelectorAll('dd')[labels.indexOf('Слоты')]?.textContent;
-  }),'2');
+  const slotValue=async(label='Слоты')=>props.locator('.stage-rich-fields').evaluate(
+   (dl,name)=>{
+    const labels=[...dl.querySelectorAll('dt')].map(el=>el.textContent.trim());
+    const index=labels.indexOf(name);
+    return index<0?null:dl.querySelectorAll('dd')[index]?.textContent.trim();
+   },label);
+  const hasDuplicateSoulRow=()=>props.locator('.stage-rich-fields dt')
+   .filter({hasText:/^(Вставлено душ|Socketed Souls)$/}).count();
+  assert.equal(await slotValue(),'0/2','Empty two-socket item shows used/available');
+  assert.equal(await hasDuplicateSoulRow(),0,'Only the Slots row should remain');
   await props.locator('[data-stage-tab="souls"]').click();
   assert.equal(await props.locator('[data-socket-index]').count(),2);
+  // Select a real compatible Soul through the same UI used by players.
+  await props.locator('.stage-rich-result').first().click();
   await props.locator('[data-stage-tab="details"]').click();
+  assert.equal(await slotValue(),'1/2','Installing one Soul updates the single Slots row');
+  assert.equal(await hasDuplicateSoulRow(),0);
   await cap(3).click();
   assert.equal(await cap(3).getAttribute('aria-pressed'),'true');
   await cap(2).click();
@@ -46,9 +56,12 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   assert.equal(await props.locator('[data-socket-index]').count(),1);
   await props.locator('[data-stage-tab="details"]').click();
   await cap(0).click();
+  assert.equal(await slotValue(),'0','Zero sockets display 0, not 0/0');
+  assert.equal(await hasDuplicateSoulRow(),0);
   assert.equal(await props.locator('[data-stage-tab="souls"]').count(),0,
    'A specific zero-socket belt must hide the Souls tab');
   await cap(1).click();
+  assert.equal(await slotValue(),'0/1');
   assert.equal(await props.locator('[data-stage-tab="souls"]').count(),1);
   let draft=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.equal(draft.socketCapacities['5:13041'],2);
@@ -63,6 +76,8 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   await openSlot(11);
   assert.equal(await cap(1).getAttribute('aria-pressed'),'true');
   assert.equal(await cap(1).getAttribute('aria-label'),'Soul slots: 1');
+  assert.equal(await slotValue('Slots'),'0/1','The English UI keeps the compact count');
+  assert.equal(await hasDuplicateSoulRow(),0);
   const emptyWeapon=page.locator('.equipment-slot[data-slot-index="0"]');
   assert.match(await emptyWeapon.getAttribute('aria-label'),/^Weapon · Empty$/);
   assert.equal((await emptyWeapon.locator('small').innerText()).trim(),'Weapon');
@@ -110,13 +125,15 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   const picker=pageOld.locator('#stagePicker');
   assert.equal(await picker.locator('[data-socket-capacity="1"]')
    .getAttribute('aria-pressed'),'true');
-  const insertedCount=()=>picker.locator('.stage-rich-fields').evaluate(dl=>{
+  const visibleSlots=()=>picker.locator('.stage-rich-fields').evaluate(dl=>{
    const labels=[...dl.querySelectorAll('dt')];
-   const index=labels.findIndex(label=>label.textContent.trim()==='Вставлено душ');
+   const index=labels.findIndex(label=>label.textContent.trim()==='Слоты');
    return index<0?null:dl.querySelectorAll('dd')[index]?.textContent.trim();
   });
-  assert.equal(await insertedCount(),'1 / 1',
+  assert.equal(await visibleSlots(),'1/1',
    'Inactive saved Souls must not count until the copy capacity grows');
+  assert.equal(await picker.locator('.stage-rich-fields dt').filter({
+   hasText:/^Вставлено душ$/}).count(),0);
   await picker.locator('[data-stage-tab="souls"]').click();
   assert.equal(await picker.locator('[data-socket-index]').count(),1,
    'The second Soul stays inactive before choosing real copy capacity');
@@ -124,8 +141,8 @@ export async function runEquippedSoulCapacitySmoke(browser,base){
   await picker.locator('[data-socket-capacity="2"]').click();
   assert.equal(await picker.locator('[data-socket-capacity="2"]')
    .getAttribute('aria-pressed'),'true');
-  assert.equal(await insertedCount(),'2 / 2',
-   'Properties must show active saved Souls instead of hardcoded zero');
+  assert.equal(await visibleSlots(),'2/2',
+   'Properties must show active saved Souls in the single Slots row');
   await picker.locator('[data-stage-tab="souls"]').click();
   assert.equal(await picker.locator('[data-socket-index]').count(),2);
   assert.match(await picker.locator('[data-socket-index="1"]')

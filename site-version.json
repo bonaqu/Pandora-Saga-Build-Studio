@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.629",
-  "notes": "Honor owner-form RU/EN accessibility and safe missing-war copy"
+  "release": "2026.11.11.630",
+  "notes": "One Slots row shows active Souls / available sockets, or 0 when none"
 }

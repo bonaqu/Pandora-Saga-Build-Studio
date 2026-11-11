@@ -24,6 +24,7 @@ class FakeElement{
 const document={createElement:t=>new FakeElement(t),createTextNode:t=>({tag:'#text',textContent:t}),body:new FakeElement('body')};
 const stage={};
 Function('window','document',load('pandora-studio-equipment-ui.js'))(stage,document);
+stage.PandoraEquipmentPlan=host.PandoraEquipmentPlan;
 const walk=node=>[node,...(node.children||[]).flatMap(walk)];
 const byText=(node,text)=>walk(node).find(x=>x.tag==='button'&&x.textContent===text);
 
@@ -130,7 +131,7 @@ test('equipped item hover includes base and refinement defense plus socketed Sou
  assert.match(all,/11\+3/);
  assert.match(all,/Душа защиты/);
  assert.match(all,/Сопротивление слабости \+3%/);
- assert.match(all,/1 \/ 1/);
+ assert.match(all,/1\/1/);
  const grade4=stage.PandoraStageItemUI.summary({...rec,AC:13},()=>null,'item',
   {refinement:6,souls:[]});
  assert.match(walk(grade4).map(e=>e.textContent).join(' '),/13\+7/);
