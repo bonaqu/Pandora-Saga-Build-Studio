@@ -18,7 +18,12 @@ test('Hero Book owner tab pencils are native sibling actions, not nested in tabs
 });
 test('Path owner tabs retain original IDs and capture locale of D1 edit',()=>{
  assert.match(app,/const button=\$\(id\);if\(!button\)continue/);
- assert.match(app,/const editLang=lang;/);
+ assert.ok((app.match(/const editLang=lang;/g)||[]).length>=2,
+  'both path tabs and mastery legend labels must capture the editing language');
+ assert.match(app,/node\.dataset\.ownerCopySection='path';node\.dataset\.ownerCopyId=key/);
+ assert.match(app,/caption\.dataset\.ownerCopySection='path';caption\.dataset\.ownerCopyId=key/);
+ assert.match(app,/if\(section==='path'\)\{/);
+ assert.match(app,/node\.closest\('\.path-tab-owner-wrap'\)/);
  assert.match(app,/onCommit:next=>saveGuidePatch\('book\.'\+ownerCopyKey\('path',key\),\{\[editLang\]:next\}\)/);
  assert.match(app,/if\(button\.querySelector\('\.wiki-inline-input'\)\)continue/);
  assert.match(app,/if\(wrapper\)\{wrapper\.before\(button\);wrapper\.remove\(\)\}/);
