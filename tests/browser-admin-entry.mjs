@@ -463,11 +463,17 @@ export async function runAdminEntrySmoke(browser,base){
    null,{timeout:30000});
   // 0.612: reloading results may update checksum evidence but must not
   // erase the D1-editable explanation or the adjacent touch pencil.
-  const checksumRow=dialog.locator('.os-sync-advanced .os-sync-copy-field')
-   .filter({has:dialog.locator('.os-sync-meta-status')});
+  const checksumRow=dialog.locator(
+   '.os-sync-advanced .os-sync-copy-field:has(> .os-sync-meta-status)');
   const checksumPencil=checksumRow.locator('.os-sync-copy-pencil');
+  const checksumStructure=await dialog.evaluate(node=>({
+   explanationCount:node.querySelectorAll('.os-sync-meta-status').length,
+   parentClass:node.querySelector('.os-sync-meta-status')?.parentElement?.className,
+   advancedPencils:node.querySelectorAll('.os-sync-advanced .os-sync-copy-pencil').length
+  }));
   assert.equal(await checksumPencil.count(),1,
-   'Checksum copy pencil disappeared after refreshing the catalog');
+   'Checksum copy pencil disappeared after refreshing the catalog: '+
+    JSON.stringify(checksumStructure));
   assert.match(await dialog.locator('.os-sync-meta-detail').textContent(),
    /Сведения об источнике:/);
   const originalChecksum=await dialog.locator('.os-sync-meta-status').textContent();
