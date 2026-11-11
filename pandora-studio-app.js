@@ -2249,22 +2249,39 @@ function renderPathCopyControls(){
  ]){
   const button=$(id);if(!button)continue;
   const label=copy(key,ru,en);
-  if(!editing){button.textContent=symbol+' '+label;continue}
+  let wrapper=button.parentElement?.classList.contains('path-tab-owner-wrap')?
+   button.parentElement:null;
+  if(!editing){
+   if(wrapper){wrapper.before(button);wrapper.remove()}
+   button.textContent=symbol+' '+label;continue;
+  }
+  // An in-progress editor must not be remounted by an unrelated path render.
+  if(button.querySelector('.wiki-inline-input'))continue;
   const caption=h('span',{class:'path-tab-copy',text:label});
-  const pencil=h('span',{class:'path-tab-pencil',role:'button',tabindex:'0',text:'✎',
+  const pencil=h('button',{type:'button',class:'path-tab-pencil',text:'✎',
    'aria-label':lang==='en'?'Edit '+label:'Редактировать '+label});
   const edit=event=>{
+   if(!adminEditing||!adminToken)return;
    event.preventDefault();event.stopPropagation();
+   if(caption.querySelector('.wiki-inline-input'))return;
+   const editLang=lang;
    editWikiValue(caption,copy(key,ru,en),{type:'text',
-    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
-    onCommitted:next=>{caption.textContent=next}});
+    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[editLang]:next}),
+    onCommitted:next=>{
+     const visible=lang===editLang?next:copy(key,ru,en);
+     caption.textContent=visible;
+     pencil.setAttribute('aria-label',(lang==='en'?'Edit ':'Редактировать ')+visible);
+    }});
   };
   caption.addEventListener('dblclick',edit);
   pencil.addEventListener('click',edit);
-  pencil.addEventListener('keydown',event=>{
-   if(event.key==='Enter'||event.key===' ')edit(event);
-  });
-  button.replaceChildren(h('span',{text:symbol}),caption,pencil);
+  button.replaceChildren(h('span',{text:symbol}),caption);
+  if(!wrapper){
+   wrapper=h('span',{class:'path-tab-owner-wrap',role:'presentation'});
+   button.before(wrapper);wrapper.append(button);
+  }
+  wrapper.querySelector('.path-tab-pencil')?.remove();
+  wrapper.append(pencil);
  }
 }
 function renderPathPages(){

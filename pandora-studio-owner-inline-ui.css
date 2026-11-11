@@ -1,9 +1,36 @@
 /* Owner edits live beside game actions, never inside nested interactive buttons.
-   Guest markup remains unchanged and keeps the original compact layout. */
-.stage-attribute-tabs button:has(.stage-book-tab-pencil),
-.path-sections button:has(.path-tab-pencil){
+   The tablist retains its original number of logical tabs via presentation hosts. */
+.stage-attribute-tabs>.stage-book-tab-owner,
+.path-sections>.path-tab-owner-wrap{
+ position:relative;display:flex;align-items:stretch;min-width:0
+}
+.stage-attribute-tabs>.stage-book-tab-owner>button[role="tab"],
+.path-sections>.path-tab-owner-wrap>button[role="tab"]{
  display:flex;align-items:center;justify-content:center;gap:4px;
- min-width:0;position:relative
+ flex:1 1 auto;min-width:0;width:100%;padding-inline-end:26px
+}
+.stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil,
+.path-sections>.path-tab-owner-wrap>.path-tab-pencil{
+ position:absolute;z-index:2;top:50%;right:4px;transform:translateY(-50%);
+ display:inline-flex;align-items:center;justify-content:center;
+ width:20px;min-width:20px;height:22px;min-height:22px;
+ margin:0;padding:1px;border:1px solid #957247;border-radius:4px;
+ background:#392719;color:#f0cf99;cursor:pointer;
+ font:650 11px/1 Manrope,Arial,sans-serif;opacity:.9
+}
+.stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil:focus-visible,
+.path-sections>.path-tab-owner-wrap>.path-tab-pencil:focus-visible{
+ outline:2px solid #f2c989;outline-offset:1px
+}
+@media(max-width:390px){
+ .stage-attribute-tabs>.stage-book-tab-owner>button[role="tab"],
+ .path-sections>.path-tab-owner-wrap>button[role="tab"]{
+  padding-inline-end:21px
+ }
+ .stage-attribute-tabs>.stage-book-tab-owner>.stage-book-tab-pencil,
+ .path-sections>.path-tab-owner-wrap>.path-tab-pencil{
+  width:17px;min-width:17px;height:20px;min-height:20px;right:2px
+ }
 }
 .stage-copy-caption,.stage-book-tab-copy,.path-tab-copy{
  min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
