@@ -25,6 +25,20 @@
       });
       return h('div',{class:'os-sync-copy-field'},[node,pencil]);
     };
+    // A checkbox label must keep native checkbox semantics. Its editor is a
+    // sibling OUTSIDE <label>; counts remain non-editable runtime values.
+    const choiceEditor=(caption,key,ru,en)=>{
+      if(!canEdit||typeof editLabel!=='function')return null;
+      editLabel(caption,key,ru,en);
+      const pencil=h('button',{type:'button',class:'os-sync-choice-pencil',
+       text:'✎',title:tr('Изменить надпись','Edit caption'),
+       'aria-label':tr('Изменить надпись','Edit caption')+': '+copy(key,ru,en)});
+      pencil.addEventListener('click',event=>{
+       event.preventDefault();event.stopPropagation();
+       caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+      });
+      return pencil;
+    };
     // Publishing a catalog must never run when a pencil is pressed:
     // place the editor BESIDE the action, not inside its clickable button.
     const action=(button,key,ru,en)=>{
@@ -209,24 +223,30 @@
     );
     const formattingToggle=h('input',{type:'checkbox',disabled:true,
       'aria-label':copy('formattingAria','Синхронизировать переносы игровых описаний','Synchronize game description line breaks')});
-    const formattingLabel=h('span',{text:copy('formattingLabel',
-      'Привести переносы строк в описаниях к виду игрового сайта',
-      'Match line breaks in descriptions to the game site')});
+    const formattingRu='Привести переносы строк в описаниях к виду игрового сайта',
+      formattingEn='Match line breaks in descriptions to the game site';
+    const formattingLabel=h('span',{text:copy('formattingLabel',formattingRu,formattingEn)});
+    const formattingCountLabel=h('small',{class:'os-sync-choice-count'});
     const formattingInfo=authored('p',{class:'muted os-sync-formatting-info'},
      'formattingExplanation',
      'После сверки с игровым сайтом можно восстановить оригинальные переносы. Другие поля не меняются. Понадобятся галочка и подтверждение публикации.',
      'After comparing the live game data, original line breaks can be restored. Other fields remain unchanged. This requires selecting the checkbox and confirming publication.');
     const formattingOption=h('label',{class:'os-sync-formatting-option'},
-      [formattingToggle,formattingLabel]);
+      [formattingToggle,formattingLabel,formattingCountLabel]);
+    const formattingChoice=h('div',{class:'os-sync-choice-editor'},[formattingOption]);
+    const formattingPencil=choiceEditor(formattingLabel,'formattingLabel',formattingRu,formattingEn);
+    if(formattingPencil)formattingChoice.append(formattingPencil);
     const formattingReview=h('div',{class:'os-sync-formatting-review',hidden:true},
-      [formattingOption,formattingInfo]);
+      [formattingChoice,formattingInfo]);
     reviewSteps.append(formattingReview);
     const russianToggle=h('input',{type:'checkbox',disabled:true,
       'aria-label':copy('russianDescriptionsAria',
        'Добавить проверенные русские описания подземелий в D1',
        'Add verified Russian dungeon descriptions to D1')});
-    const russianLabel=h('span',{text:copy('russianDescriptionsLabel',
-      'Добавить русские описания подземелий','Add Russian dungeon descriptions')});
+    const russianRu='Добавить русские описания подземелий',
+      russianEn='Add Russian dungeon descriptions';
+    const russianLabel=h('span',{text:copy('russianDescriptionsLabel',russianRu,russianEn)});
+    const russianCountLabel=h('small',{class:'os-sync-choice-count'});
     const russianInfo=authored('p',{class:'muted os-sync-formatting-info'},
      'russianDescriptionExplanation',
      'Тексты взяты из сохранённой копии Build Studio и предложены только при полном совпадении остальных полей с текущей игрой и D1. Другие переводы не заменяются.',
@@ -236,9 +256,12 @@
       h('summary',{text:copy('russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts')}),russianList
     ]);
     const russianOption=h('label',{class:'os-sync-formatting-option'},
-      [russianToggle,russianLabel]);
+      [russianToggle,russianLabel,russianCountLabel]);
+    const russianChoice=h('div',{class:'os-sync-choice-editor'},[russianOption]);
+    const russianPencil=choiceEditor(russianLabel,'russianDescriptionsLabel',russianRu,russianEn);
+    if(russianPencil)russianChoice.append(russianPencil);
     const russianReview=h('div',{class:'os-sync-formatting-review',hidden:true},
-      [russianOption,russianInfo,russianDetails]);
+      [russianChoice,russianInfo,russianDetails]);
     reviewSteps.append(russianReview);
     const metaStatus=authored('p',{class:'muted os-sync-meta-status'},'checksumExplanation',
      'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.',
@@ -382,13 +405,8 @@
       const ready = !busy && (selected>0||syncFormatting||syncRussian) && baseline && upstream;
       formattingToggle.disabled=busy||mode!=='server'||!formattingCount;
       russianToggle.disabled=busy||mode!=='server'||!verifiedRussian.length;
-      russianLabel.textContent=copy('russianDescriptionsLabel',
-        'Добавить проверенные русские описания','Add verified Russian descriptions')+
-        ' · '+verifiedRussian.length;
-      formattingLabel.textContent=copy('formattingLabel',
-        'Привести переносы строк в описаниях к виду игрового сайта',
-        'Match game description line breaks')+
-        (formattingCount?' · '+formattingCount:'');
+      russianCountLabel.textContent=' · '+verifiedRussian.length;
+      formattingCountLabel.textContent=formattingCount?' · '+formattingCount:'';
       // Preserve editing controls and the D1-authored explanatory copy.
       // Dynamic counts live in the labels and never become editable text.
       acceptAll.disabled = busy || !changes.some(safe);
