@@ -62,7 +62,9 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   await page.evaluate(()=>{location.hash='#b/W1234567890'});
   const importDialog=page.getByRole('dialog',{name:'Добавить билды по ссылке?'});
   await importDialog.waitFor({state:'visible',timeout:20000});
-  assert.equal(await importDialog.locator('.shared-import-count').innerText(),'Билдов по ссылке: 2.');
+  assert.equal(await importDialog.locator('[data-owner-copy-key="librarySharedImportCountLabel"]').innerText(),
+   'Билдов по ссылке:');
+  assert.equal(await importDialog.locator('.shared-import-count-value').innerText(),'2.');
   assert.equal(await importDialog.locator('.shared-import-count [data-owner-copy-key]').count(),1);
   assert.equal(await importDialog.locator('.shared-import-count-value [data-owner-copy-key]').count(),0);
   const countKey='guideedit.book.ui.label.library-shared-import-count-label';
