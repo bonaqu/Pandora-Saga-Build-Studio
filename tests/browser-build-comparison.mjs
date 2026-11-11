@@ -156,7 +156,8 @@ export async function runSavedBuildEnglishSmoke(browser,base){
   await cards.first().waitFor({state:'visible',timeout:20000});
   assert.equal(await cards.count(),6,'Six saved builds must be present');
   assert.equal(await page.locator('.build-signin-gate').count(),0);
-  assert.match(await page.locator('.build-transfer summary').innerText(),/Import older builds/);
+  assert.equal(await page.locator('.build-transfer').count(),0,
+   'The bilingual account library must not show the retired old-build importer');
   const hero=cards.filter({has:page.getByRole('heading',{name:'Сияние героя'})});
   assert.equal(await hero.count(),1,'Player-authored names are never translated');
   assert.match(await hero.locator('p').first().innerText(),/^Elf · /);
