@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.655.0 — 2026.11.12.655 · Bilingual editable shared-link receiver explanations
+
+- Shared library import modal now separates the computed incoming build count from a short, independently editable RU/EN explanation; imported builds and active draft remain under the existing explicit user action.
+- Single shared build confirmation exposes its separate static reassurance that existing saved builds will not be deleted, while the quoted other player's build name and unsaved-work warning remain non-editorial dynamic content.
+- Admin-only compact inline pencils reuse existing D1 CAS/blur/Escape/Undo machinery. Notes have stable `ui.label.library-shared-*` keys and bundled RU/EN fallbacks; no admin buttons for guests or ordinary account users.
+- Responsive dialog copy rows, node regressions for exact registered text/dynamic isolation, ordinary Chromium share/import checks, and a dedicated authenticated mock-admin Chromium scenario validate both languages and that editing never imports or saves a build.
+- No production D1 writes or changes to game formulas, player accounts, shared-link token semantics or build persistence. Social preview metadata also advances to this release automatically.
+
+
+
 ## 0.654.0 — 2026.11.12.654 · Social link previews and automatic version sync
 
 - Added crawler-visible Open Graph and X Card metadata for Telegram, messengers and social link sharing: canonical title `Pandora Saga | Build Studio`, an English Character Planner summary, RU/EN availability, and current site version.

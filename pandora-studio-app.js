@@ -6893,11 +6893,14 @@ function openSharedSnapshot(share){
   if(!Array.isArray(share.data)||!share.data.length||share.data.length>30)throw Error('Неверная библиотека');
   const added=share.data.map(v=>({id:newId(),name:String(v.name||'Билд').slice(0,70),
    data:sanitizeSharedState(v.data),at:Date.now()}));
-  const view=h('div');
-  view.append(h('p',{text:sharedText('Билдов по ссылке: ','Builds in link: ')+
-   added.length+'. '+sharedText(
-    'Текущий герой и сохранённые билды не изменятся. Новые копии добавятся в «Мои билды».',
-    'Your current character and saved builds will not change. New copies will be added to My Builds.')}),
+  const view=h('div',{class:'shared-receiver-dialog'});
+  const importCount=h('p',{class:'shared-import-count',
+   text:sharedText('Билдов по ссылке: ','Builds in link: ')+added.length+'.'});
+  const importNote=h('p',{class:'muted shared-receiver-note',
+   text:'Текущий герой и сохранённые билды не изменятся. Новые копии добавятся в «Мои билды».'});
+  window.PandoraUILocale?.localize(importNote,lang);
+  // The count is always live data and must never be part of editable copy.
+  view.append(importCount,h('div',{class:'shared-receiver-copy-row'},importNote),
    h('div',{class:'build-signin-actions'},[
     h('button',{type:'button',class:'button-action primary',
      text:sharedText('Добавить в мои билды','Add to My Builds'),onclick:()=>{
@@ -6931,15 +6934,20 @@ function openSharedSnapshot(share){
       $('modalRoot').hidden=true;clear();
      }})
    ]));
-  modal(sharedText('Добавить билды по ссылке?','Add builds from link?'),view);return;
+  modal(sharedText('Добавить билды по ссылке?','Add builds from link?'),view);
+  if(adminEditing&&adminToken)bindAccountCopyEditors(view);
+  return;
  }
  const incoming=sanitizeSharedState(share.data);
- const view=h('div');
- view.append(h('p',{text:sharedText('Открыть билд «','Open build “')+
-  incoming.name+sharedText('»? Несохранённые изменения текущего персонажа будут заменены.',
-   '”? The current character’s unsaved changes will be replaced.')}),
-  h('p',{class:'muted',text:sharedText('Сохранённые в «Мои билды» записи при этом не удаляются.',
-   'Existing saved builds will not be deleted.')}));
+ const view=h('div',{class:'shared-receiver-dialog'});
+ const openNote=h('p',{class:'muted shared-receiver-note',
+  text:'Сохранённые в «Мои билды» записи при этом не удаляются.'});
+ window.PandoraUILocale?.localize(openNote,lang);
+ view.append(h('p',{class:'shared-personal-name',
+  text:sharedText('Открыть билд «','Open build “')+
+   incoming.name+sharedText('»? Несохранённые изменения текущего персонажа будут заменены.',
+    '”? The current character’s unsaved changes will be replaced.')}),h('div',{
+   class:'shared-receiver-copy-row'},openNote));
  const apply=()=>{
   // Do not dismiss the preview or discard the previous hero when the new
   // draft cannot be saved (for example, browser storage quota exhaustion).
@@ -6958,6 +6966,7 @@ function openSharedSnapshot(share){
    $('modalRoot').hidden=true;clear();
   }}));
  modal(sharedText('Открыть билд по ссылке?','Open build from link?'),view);
+ if(adminEditing&&adminToken)bindAccountCopyEditors(view);
 }
 let studioToastTimer=null;
 // Ignore obsolete replies when the same shared URL is reopened before an older GET resolves.

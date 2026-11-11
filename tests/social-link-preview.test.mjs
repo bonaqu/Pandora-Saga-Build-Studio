@@ -90,7 +90,7 @@ test('a simulated future release automatically refreshes both social description
   for(const field of ['og:description','twitter:description'])
    assert.match(next,new RegExp((field==='og:description'?'property':'name')+'="'+field+'" content="[^"]*Version: '+nextVersion.replaceAll('.','\\.')+'"'));
   assert.equal((next.match(new RegExp('assets/social-preview\\.jpg\\?v='+nextRelease.replaceAll('.','\\.'),'g'))||[]).length,2);
-  assert.doesNotMatch(next,/Version: 0\.(?:653|654)\.0(?=")/,
-   'A new release cannot preserve an outdated card version');
+  assert.ok(!next.includes('Version: '+version+'"'),
+   'A new release cannot preserve the previous share-card version');
  }finally{rmSync(folder,{recursive:true,force:true})}
 });

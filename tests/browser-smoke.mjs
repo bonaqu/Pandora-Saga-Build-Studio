@@ -6,6 +6,7 @@ import {runBuildAuthGateSmoke} from './browser-build-auth-gate.mjs';
 import {runGuestGateEditorialSmoke} from './browser-guest-gate-editorial-640.mjs';
 import {runModalKeyboardSmoke} from './browser-modal-keyboard.mjs';
 import {runSharedLibraryImportSmoke} from './browser-shared-library-import.mjs';
+import {runSharedReceiverEditorial655Smoke} from './browser-shared-receiver-editorial-655.mjs';
 import {runDraftPersistenceWarningSmoke} from './browser-draft-persistence-warning.mjs';
 import {runGuestDraftContinuitySmoke} from './browser-guest-draft-continuity.mjs';
 import {runLegacyImportSmoke} from './browser-legacy-import.mjs';
@@ -69,6 +70,7 @@ const scenarios=[
   ['guest-gate-editorial',runGuestGateEditorialSmoke],
   ['modal-keyboard',runModalKeyboardSmoke],
   ['shared-library-import',runSharedLibraryImportSmoke],
+  ['shared-receiver-editorial-655',runSharedReceiverEditorial655Smoke],
   ['draft-persistence-warning',runDraftPersistenceWarningSmoke],
   ['guest-draft-continuity',runGuestDraftContinuitySmoke],
   ['legacy-build-import',runLegacyImportSmoke],

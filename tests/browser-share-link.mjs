@@ -139,6 +139,9 @@ export async function runShareLinkSmoke(browser,base){
    await incoming.evaluate(id=>{location.hash='#b/'+id},shareId);
    const dialog=incoming.getByRole('dialog',{name:'Открыть билд по ссылке?'});
    await dialog.waitFor({state:'visible',timeout:20000});
+   assert.equal(await dialog.locator('[data-owner-copy-key="librarySharedOpenNote"]').count(),1);
+   assert.equal(await dialog.locator('.shared-receiver-copy-row .account-copy-pencil').count(),0);
+   assert.equal(await dialog.locator('.shared-personal-name [data-owner-copy-key]').count(),0);
    assert.equal(sharedGets,3,'one same-tab hashchange must issue exactly one shared GET');
    await dialog.getByRole('button',{name:'Отмена'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'22',
@@ -163,6 +166,8 @@ export async function runShareLinkSmoke(browser,base){
    await englishDialog.waitFor({state:'visible',timeout:20000});
    assert.equal(sharedGets,5,'EN navigation must issue one shared GET');
    assert.match(await englishDialog.innerText(),/unsaved changes will be replaced/i);
+   assert.equal(await englishDialog.locator('[data-owner-copy-key="librarySharedOpenNote"]').innerText(),
+    'Existing saved builds will not be deleted.');
    await englishDialog.getByRole('button',{name:'Cancel'}).click();
    assert.equal(await incoming.locator('#levelOut').textContent(),'55');
    await incoming.locator('#locale [data-locale="ru"]').click();
