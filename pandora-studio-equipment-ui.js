@@ -59,8 +59,10 @@ function summary(record,icon,kind='item',context=null){
  const socketCapacity=context?.capacity??record.soulslot;
  const socketedCount=context?.socketedCount??(Array.isArray(context?.souls)?
   context.souls.slice(0,Math.max(0,Number(socketCapacity)||0)).filter(Boolean).length:0);
+ const activeSockets=Number.isInteger(context?.capacity)?
+  Math.min(Math.max(0,Number(socketedCount)||0),Math.max(0,context.capacity)):0;
  const displayedSlots=Number.isInteger(context?.capacity)&&context.capacity>0?
-  socketedCount+'/'+context.capacity:socketCapacity;
+  activeSockets+'/'+context.capacity:socketCapacity;
  const rows=kind==='soul'?
  [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
@@ -68,7 +70,7 @@ function summary(record,icon,kind='item',context=null){
  [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),attackDisplay],
  ...(magicPlus?[[tr('Магическая атака','Magic attack'),'+'+magicPlus.rate+'%']]:[]),
  [tr('Защита','Defense'),armorDisplay],
- ...(showSoulSlots?[[tr('Слоты','Slots'),displayedSlots]]:[]),
+ ...(showSoulSlots?[[tr('Слоты душ','Soul slots'),displayedSlots]]:[]),
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
  if(gem&&grade>0){
@@ -86,7 +88,7 @@ function summary(record,icon,kind='item',context=null){
    ['attack','Атака','Attack'],
    ...(magicPlus?[['magicAttack','Магическая атака','Magic attack']]:[]),
    ['defense','Защита','Defense'],
-   ...(showSoulSlots?[['slots','Слоты','Slots']]:[]),
+   ...(showSoulSlots?[['slots','Слоты душ','Soul slots']]:[]),
    ['speed','Скорость','Speed'],['range','Дальность','Range']];
  if(gem&&grade>0){
   if((context.slot||record.slot)==='weapon'&&gemType)
@@ -99,7 +101,22 @@ function summary(record,icon,kind='item',context=null){
   const dd=el('dd',{text:String(value)}),field=fieldNames[index];
   const dt=el('dt',{text:field?context?.copyLabel?.('field.'+field[0],field[1],field[2])||key:key});
   if(field)context?.editLabel?.(dt,'field.'+field[0],field[1],field[2]);
-  if(kind==='item'&&key===tr('Слоты','Slots'))dd.dataset.editKey='itemslots.'+record.id;
+  if(kind==='item'&&field?.[0]==='slots'){
+   dd.dataset.editKey='itemslots.'+record.id;
+   if(Number.isInteger(context?.capacity)&&context.capacity>0){
+    // Quiet, accessible status: muted amber for some Souls, green only when full.
+    // Empty is neutral; zero-capacity items remain plain "0".
+    dd.className='stage-soul-slot-count';
+    dd.dataset.soulFill=activeSockets===0?'empty':
+     activeSockets===context.capacity?'full':'partial';
+    dd.replaceChildren(
+     el('span',{class:'stage-soul-count-used',text:String(activeSockets)}),
+     document.createTextNode('/'+context.capacity));
+    dd.setAttribute('aria-label',tr(
+     activeSockets+' из '+context.capacity+' слотов душ занято',
+     activeSockets+' of '+context.capacity+' Soul slots occupied'));
+   }
+  }
   dl.append(dt,dd);
  });
  // Variant 02 — wearable races belong to the ordinary item stat rows.

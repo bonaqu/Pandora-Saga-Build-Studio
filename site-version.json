@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.630",
-  "notes": "One Slots row shows active Souls / available sockets, or 0 when none"
+  "release": "2026.11.11.631",
+  "notes": "Soul slots status: calm partial/full occupancy colors with accessible RU/EN labels"
 }

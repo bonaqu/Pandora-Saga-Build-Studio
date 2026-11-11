@@ -36,3 +36,10 @@
  white-space:normal;overflow-wrap:normal;word-break:normal
 }
 .stage-rich-summary .stage-gear-wearer-name{white-space:normal}
+
+/* A single, calm Soul-slots status: tint only the inserted amount.
+   No badges, backgrounds or flashing indicators in the equipment properties. */
+.stage-rich-fields dd.stage-soul-slot-count{white-space:nowrap;font-variant-numeric:tabular-nums}
+.stage-soul-slot-count .stage-soul-count-used{color:inherit;font-weight:650}
+.stage-soul-slot-count[data-soul-fill="partial"] .stage-soul-count-used{color:#d6bb86}
+.stage-soul-slot-count[data-soul-fill="full"] .stage-soul-count-used{color:#a6c39a}
