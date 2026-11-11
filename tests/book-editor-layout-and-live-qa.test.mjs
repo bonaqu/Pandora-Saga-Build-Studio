@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {createRequire} from 'node:module';
+import {spawnSync} from 'node:child_process';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 
 test('production admin QA only creates isolated disposable session and owner copy',()=>{
@@ -15,7 +15,15 @@ test('production admin QA only creates isolated disposable session and owner cop
  assert.match(script,/\/api\/admin\/reset/);
  assert.match(script,/expectedValue:null/);
  assert.match(script,/expectedValue:first/);
- assert.match(script,/expectedValue:second/);
+ assert.match(script,/secondBearer/);
+ assert.match(script,/Promise\.all\(\[/);
+ assert.match(script,/contenders\.map\(result=>result\.status\)/);
+ assert.match(script,/assertConflict\(losing/);
+ assert.match(script,/expectedValue:winner/);
+ assert.match(script,/expectedValue:peer/);
+ assert.match(script,/Repeated stale Undo/);
+ assert.match(script,/qaCount\(\),0/);
+ assert.match(script,/secondSessionHash/);
  assert.match(script,/finally\s*\{/);
  assert.match(script,/DELETE FROM overrides WHERE key=/);
  assert.match(script,/DELETE FROM sessions WHERE token_hash=/);
@@ -24,6 +32,13 @@ test('production admin QA only creates isolated disposable session and owner cop
  assert.match(flow,/branches: \[bonaqu_projects\]/);
  assert.match(flow,/working-directory: worker/);
  assert.doesNotMatch(flow,/schedule:|cron:/);
+});
+
+test('production QA script parses without starting any remote process',()=>{
+ const result=spawnSync(process.execPath,['--check','scripts/check-production-admin-edit.mjs'],{
+  cwd:new URL('../',import.meta.url),encoding:'utf8'
+ });
+ assert.equal(result.status,0,result.stderr||'Unexpected JS syntax error');
 });
 
 test('Book editing keeps stable stat and header tracks, not overlay pencils',()=>{

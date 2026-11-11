@@ -64,63 +64,115 @@ function expect(response,status,context){
 }
 async function run(){
  ready();
+ // Both sessions and records are generated per invocation. No real admin
+ // account, game record or saved player build is read or changed.
  const nonce=randomBytes(14).toString('hex');
  const bearer=randomBytes(32).toString('base64url');
+ const secondBearer=randomBytes(32).toString('base64url');
  const sessionHash=createHash('sha256').update(bearer).digest('base64url');
+ const secondSessionHash=createHash('sha256').update(secondBearer).digest('base64url');
  const key='guideedit.book.qa.owner-copy-'+nonce;
+ const other='guideedit.book.qa.peer-copy-'+nonce;
  const first=JSON.stringify({ru:'Временная QA-надпись',en:'Disposable QA caption'});
  const second=JSON.stringify({ru:'Изменённая QA-надпись',en:'Updated disposable QA caption'});
- const expires=Date.now()+180000;
- console.log('Production admin API / D1: begin isolated create, CAS, readback, reset, cleanup.');
+ const third=JSON.stringify({ru:'Другой ответ QA',en:'Competing disposable QA caption'});
+ const peer=JSON.stringify({ru:'Соседняя QA-надпись',en:'Independent QA caption'});
+ const expires=Date.now()+300000;
+ const sqlKey=escapeSql(key),sqlOther=escapeSql(other);
+ const qaCount=()=>query('SELECT COUNT(*) AS count FROM overrides WHERE key IN ('+
+  sqlKey+','+sqlOther+')')[0]?.count;
+ const readValue=record=>query('SELECT value FROM overrides WHERE key='+escapeSql(record))[0]?.value;
+ const assertConflict=(response,context)=>{
+  expect(response,409,context);
+  assert.equal(response.data?.code,'OWNER_EDIT_CONFLICT',context+' must identify CAS collision');
+ };
+ console.log('Production D1: isolated dual-session CAS acceptance begins (two disposable captions).');
  try{
   const health=await call('GET','/api/health',null);
   assert.equal(health.status,200,'Production Worker health');
   assert.equal(health.data?.storage,'d1','Expected D1-backed production Worker');
-  const empty=query('SELECT COUNT(*) AS count FROM overrides WHERE key='+escapeSql(key));
-  assert.equal(empty[0].count,0,'QA record already exists unexpectedly');
-  // A QA-only session with a random token: the real admin login is not
-  // impersonated and no real owner account or session is ever read.
+  assert.equal(qaCount(),0,'QA records unexpectedly preexist');
+  // Two separate, temporary auth sessions simulate conflicting editor tabs
+  // without using or inspecting the owner's credentials.
   query('INSERT INTO sessions(token_hash,expires) VALUES ('+
    escapeSql(sessionHash)+','+expires+')');
+  query('INSERT INTO sessions(token_hash,expires) VALUES ('+
+   escapeSql(secondSessionHash)+','+expires+')');
+
   expect(await call('POST','/api/admin/override',bearer,{
-   key,value:first,expectedValue:null}),200,'Create editorial override');
+   key,value:first,expectedValue:null}),200,'Create editable caption');
+  expect(await call('POST','/api/admin/override',secondBearer,{
+   key:other,value:peer,expectedValue:null}),200,'Create independent QA caption');
   const publicCopy=expect(await call('GET','/api/overrides',null),
-   200,'Public readback of saved bilingual text');
-  assert.equal(publicCopy.values?.[key],first,'Saved RU/EN copy not visible');
-  expect(await call('POST','/api/admin/override',bearer,{
-   key,value:second,expectedValue:null}),409,'CAS prevents stale replace');
-  expect(await call('POST','/api/admin/override',bearer,{
-   key,value:second,expectedValue:first}),200,'Update existing editable caption');
-  assert.equal(query('SELECT value FROM overrides WHERE key='+escapeSql(key))[0]?.value,
-   second,'D1 did not persist the edited caption');
+   200,'Public readback of bilingual QA captions');
+  assert.equal(publicCopy.values?.[key],first,'RU/EN readback mismatch');
+  assert.equal(publicCopy.values?.[other],peer,'Independent readback mismatch');
+  assertConflict(await call('POST','/api/admin/override',secondBearer,{
+   key,value:second,expectedValue:null}),'Stale create cannot replace existing caption');
+
+  // Both sessions hold the same old value. Exactly one atomic writer wins;
+  // the other must receive HTTP 409, with no silent clobber.
+  const contenders=await Promise.all([
+   call('POST','/api/admin/override',bearer,{key,value:second,expectedValue:first}),
+   call('POST','/api/admin/override',secondBearer,{key,value:third,expectedValue:first})
+  ]);
+  assert.deepEqual(contenders.map(result=>result.status).sort((a,b)=>a-b),[200,409],
+   'Exactly one competing editor must win atomic CAS');
+  const winner=contenders[0].status===200?second:third;
+  const losing=contenders.find(response=>response.status===409);
+  assertConflict(losing,'Concurrent stale editor');
+  assert.equal(readValue(key),winner,'D1 persisted a value other than the winning edit');
+  assert.equal(readValue(other),peer,'Concurrent edit touched independent QA caption');
+  const afterRace=expect(await call('GET','/api/overrides',null),
+   200,'Readback after concurrent requests');
+  assert.equal(afterRace.values?.[key],winner);
+  assert.equal(afterRace.values?.[other],peer);
+
+  assertConflict(await call('POST','/api/admin/reset',secondBearer,{
+   key,expectedValue:first}),'Stale Undo must not delete winner');
+  assertConflict(await call('POST','/api/admin/override',secondBearer,{
+   key,value:first,expectedValue:first}),'Stale update must not revert winner');
+  expect(await call('POST','/api/admin/override',secondBearer,{
+   key,value:first}),428,'Outdated client cannot omit expectedValue');
+  assert.equal(readValue(key),winner,'Failed conflict attempts changed saved value');
+  assert.equal(readValue(other),peer,'Failed conflict attempts touched other QA key');
+
   expect(await call('POST','/api/admin/reset',bearer,{
-   key,expectedValue:first}),409,'CAS prevents stale Undo');
-  expect(await call('POST','/api/admin/reset',bearer,{
-   key,expectedValue:second}),200,'Reset exact edited caption');
-  assert.equal(query('SELECT COUNT(*) AS count FROM overrides WHERE key='+
-   escapeSql(key))[0]?.count,0,'Reset left an orphaned QA override');
-  console.log('PASS: production admin edit, RU/EN readback, CAS conflict, update, Undo/reset.');
+   key,expectedValue:winner}),200,'Undo exact winning value');
+  assertConflict(await call('POST','/api/admin/reset',secondBearer,{
+   key,expectedValue:winner}),'Repeated stale Undo after reset');
+  assert.equal(readValue(other),peer,'Undo changed the independent QA caption');
+  expect(await call('POST','/api/admin/reset',secondBearer,{
+   key:other,expectedValue:peer}),200,'Reset independent QA caption');
+  assertConflict(await call('POST','/api/admin/reset',bearer,{
+   key:other,expectedValue:peer}),'Repeated stale independent reset');
+  assert.equal(qaCount(),0,'D1 retained a QA caption after both resets');
+  const emptyCopy=expect(await call('GET','/api/overrides',null),
+   200,'Public readback after reset');
+  assert.equal(Object.hasOwn(emptyCopy.values||{},key),false);
+  assert.equal(Object.hasOwn(emptyCopy.values||{},other),false);
+  console.log('PASS: real D1 create, two sessions, concurrent 200/409 CAS, independent key, Undo and stale reset.');
  }finally{
-  // Clean only our random, disposable QA key and temporary session. Retry
-  // both remote DELETEs and prove they are absent, even after API failures.
+  // Cleanup owns only two unpredictable QA keys and two temporary hashes.
+  // Failed requests are never counted as successful editorial writes.
   let cleaned=false;
   for(let attempt=0;attempt<3&&!cleaned;attempt++){
    try{
-    query('DELETE FROM overrides WHERE key='+escapeSql(key));
+    query('DELETE FROM overrides WHERE key='+sqlKey);
+    query('DELETE FROM overrides WHERE key='+sqlOther);
     query('DELETE FROM sessions WHERE token_hash='+escapeSql(sessionHash));
-    const editRows=query('SELECT COUNT(*) AS count FROM overrides WHERE key='+
-     escapeSql(key));
-    const sessionRows=query('SELECT COUNT(*) AS count FROM sessions WHERE token_hash='+
-     escapeSql(sessionHash));
-    assert.equal(editRows[0]?.count,0);
-    assert.equal(sessionRows[0]?.count,0);
+    query('DELETE FROM sessions WHERE token_hash='+escapeSql(secondSessionHash));
+    assert.equal(qaCount(),0,'Temporary QA overrides remain');
+    const sessions=query('SELECT COUNT(*) AS count FROM sessions WHERE token_hash IN ('+
+     escapeSql(sessionHash)+','+escapeSql(secondSessionHash)+')');
+    assert.equal(sessions[0]?.count,0,'Temporary QA admin sessions remain');
     cleaned=true;
    }catch(error){
     console.error('QA cleanup attempt '+(attempt+1)+' failed; retrying');
    }
   }
   if(!cleaned)throw Error('Production QA cleanup incomplete; inspect only disposable QA namespace');
-  console.log('PASS: zero temporary D1 overrides and zero temporary admin sessions remain.');
+  console.log('PASS: both D1 QA captions and both temporary sessions removed.');
  }
 }
 run().catch(error=>{

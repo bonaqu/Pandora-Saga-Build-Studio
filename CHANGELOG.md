@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.636.0 — 2026.11.11.636 · Controlled production D1 CAS acceptance with two independent temporary admin sessions and verified cleanup
+
+- Controlled production D1 CAS acceptance with two independent temporary admin sessions and verified cleanup.
+- No user-build data or game-catalog edits; temporary QA D1 records only.
+- Actual production QA execution requires a successful postmerge workflow run; do not infer success from unit tests.
+
+
 ## 0.635.0 — 2026.11.11.635 · Saved-build card layout, centered disclosure arrows, softer text-field focus and clearer D1/GitHub admin tools
 
 - Saved-build card layout, centered disclosure arrows, softer text-field focus and clearer D1/GitHub admin tools.
