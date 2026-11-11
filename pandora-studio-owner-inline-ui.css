@@ -45,8 +45,21 @@
 }
 .stage-socket-capacity-hint{display:block;margin-top:4px;color:#c7a77b;font-size:10px;line-height:1.35}
 
-.game-tree-head:has(.path-group-pencil){gap:5px}
-.game-tree-head .path-group-pencil{margin-left:auto}
+/* The disclosure remains one continuous hit area. The admin editor is
+   a sibling control, never a nested button; its position is anchored in-row. */
+.game-tree-head-row{display:flex;align-items:stretch;min-width:0;
+ background:linear-gradient(#352519,#17120f)}
+.game-tree-head-row>.game-tree-head{flex:1 1 auto;width:auto;min-width:0;
+ overflow:hidden;text-align:left}
+.game-tree-head-row>.path-group-pencil{flex:0 0 27px;width:27px;height:27px;
+ align-self:center;margin:0 7px 0 2px;opacity:.9;
+ border-color:#a27d50;background:#412b1b}
+.game-tree-head-row:has(>.game-tree-head.active){background:linear-gradient(#6d2c20,#2d1715)}
+.game-tree-head-row>.game-tree-head:focus-visible{outline:2px solid #edc38a;
+ outline-offset:-2px}
+@media(max-width:700px){
+ .game-tree-head-row>.path-group-pencil{flex-basis:30px;width:30px;height:30px}
+}
 .path-sections button .path-tab-copy{flex:0 1 auto}
 .stage-rich-body .wiki-inline-input,
 .stage-attribute-tabs .wiki-inline-input,
