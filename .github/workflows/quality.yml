@@ -6,7 +6,6 @@ on:
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
-      - 'tests/*.test.mjs'
       - 'artifacts/**'
   workflow_dispatch:
 

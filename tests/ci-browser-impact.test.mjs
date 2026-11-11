@@ -37,6 +37,8 @@ test('PR is tested once before merge; postmerge live Pages/Worker acceptance rem
   assert.match(wf,/^\s*workflow_dispatch:\s*$/m);
   assert.doesNotMatch(wf,/^\s*push:\s*$/m,name+' should not duplicate a merged PR');
  }
+ assert.doesNotMatch(read('.github/workflows/quality.yml'),/      - 'tests\/\*\.test\.mjs'/,
+  'Node-only regression PRs must still trigger quality CI');
  const live=read('.github/workflows/live-readonly.yml');
  assert.match(live,/^\s*push:\s*$/m);
  assert.match(live,/run: npm run connection:check:full/);
