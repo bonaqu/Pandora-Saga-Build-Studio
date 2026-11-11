@@ -13,6 +13,15 @@ export async function runVisualCoverageSmoke(browser,base){
  ]){
   const context=await browser.newContext({viewport:{width:config.width,height:config.height},
    deviceScaleFactor:1,isMobile:config.width<500,hasTouch:config.width<500});
+  // Exercise real result cards and skill contents, not only the empty
+  // first-visit placeholder. A separate baseline layout test covers empties.
+  await context.addInitScript(()=>{
+   localStorage.setItem('ps-build-studio.v1',JSON.stringify({
+    race:1,gender:0,job:8,level:45,name:'Visual QA Archer',
+    stats:{'Сноровка':9},points:{archery:20},mastery:{},
+    equipment:{},souls:{},refinements:{},gems:{}
+   }));
+  });
   await context.route('**/*',route=>
    route.request().url().startsWith(base+'/')?route.continue():route.abort());
   const page=await context.newPage();
