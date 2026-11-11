@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.633.0 — 2026.11.11.633 · Equipped-item context menu and targeted browser debugging without reducing PR coverage
+
+- Right-click equipped item rails for a compact, themed, viewport-clamped context menu: Properties, Manage Souls, Choose another item, Unequip item. The special armor-and-pants projection resolves its actual owning slot for item actions; choosing pants still replaces the outfit using the existing picker.
+- Keyboard ContextMenu/Shift+F10, Arrow keys, Home/End, Escape and outside click to dismiss; no custom menu on empty slots. If a piece has no active Soul socket, the Soul action is disabled with a concise explanation.
+- Removal now shares the exact same equipment/soul preservation logic between the existing picker and the shortcut menu. Context captions use D1 editable RU/EN owner copy keys `book.equipment.context.*`.
+- Added a focused Chromium scenario plus Node contracts and repeatable manual-only single-scenario CI support; all PR code changes still require full browser acceptance.
+- Browser acceptance and deployed Pages state must be verified separately. No production D1 writes were performed.
+
+
 ## 0.632.0 — 2026.11.11.632 · Full-width D1 editing for long equipment property names without changing values
 
 - While an owner edits a narrow equipment stat label, the active inline text field uses the whole stats grid width and the associated numeric value moves below; after save or Escape, the original compact two-column layout returns.

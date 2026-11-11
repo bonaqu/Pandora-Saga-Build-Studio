@@ -43,3 +43,59 @@
 .stage-soul-slot-count .stage-soul-count-used{color:inherit;font-weight:650}
 .stage-soul-slot-count[data-soul-fill="partial"] .stage-soul-count-used{color:#d6bb86}
 .stage-soul-slot-count[data-soul-fill="full"] .stage-soul-count-used{color:#a6c39a}
+
+/* Compact player context menu: mounted on body so the portrait/rails never
+   clip its actions. Colors follow the existing warm game-editor palette. */
+.stage-gear-context-menu{
+ position:fixed;z-index:550;width:min(222px,calc(100vw - 16px));
+ box-sizing:border-box;padding:5px;
+ background:linear-gradient(150deg,#302216,#1a130f 85%);
+ border:1px solid #a17a4d;border-radius:7px;
+ box-shadow:0 12px 30px #000b,0 0 0 1px #24170d;
+ color:#ead2ab;font:500 11px/1.35 Manrope,Arial,sans-serif
+}
+.stage-gear-context-heading{
+ padding:5px 8px 8px;margin-bottom:4px;border-bottom:1px solid #75543488;
+ display:grid;gap:1px;min-width:0
+}
+.stage-gear-context-heading small{color:#b99d7a;font-size:10px}
+.stage-gear-context-heading strong{
+ font-size:11px;font-weight:650;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis;color:#f2d5a2
+}
+.stage-gear-context-row{display:flex;align-items:stretch;gap:3px;min-width:0}
+.stage-gear-context-row:has(.is-remove){
+ margin-top:5px;padding-top:5px;border-top:1px solid #75543488
+}
+.stage-gear-context-action{
+ display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 auto;
+ min-height:32px;padding:5px 8px;border:1px solid transparent;
+ border-radius:4px;background:transparent;color:#e8cfaa;
+ text-align:left;font:inherit;cursor:pointer
+}
+.stage-gear-context-icon{
+ display:inline-flex;align-items:center;justify-content:center;flex:0 0 16px;
+ color:#c69f67;font-size:15px;font-weight:700
+}
+.stage-gear-context-caption{min-width:0;overflow-wrap:anywhere}
+.stage-gear-context-action:hover:not(:disabled),
+.stage-gear-context-action:focus-visible{
+ outline:none;border-color:#9d7646;background:#4a3220;color:#ffe2b5
+}
+.stage-gear-context-action:focus-visible{outline:2px solid #d7a766;outline-offset:-1px}
+.stage-gear-context-action:disabled{opacity:.42;cursor:not-allowed}
+.stage-gear-context-action.is-remove{color:#d6ab9a}
+.stage-gear-context-action.is-remove:hover:not(:disabled),
+.stage-gear-context-action.is-remove:focus-visible{
+ background:#503027;border-color:#935a45;color:#f1c6ac
+}
+.stage-gear-context-pencil{
+ flex:0 0 22px;margin:auto 1px;padding:2px;min-height:24px;
+ border:1px solid #80613d;border-radius:4px;background:#302219;
+ color:#d4b286;font:600 11px Manrope,Arial;cursor:pointer
+}
+.stage-gear-context-pencil:focus-visible{outline:2px solid #e5bf85}
+.stage-gear-context-caption [data-owner-text-field]{
+ display:block;width:100%;min-width:0;white-space:pre-wrap;
+ overflow-wrap:anywhere;word-break:break-word
+}
