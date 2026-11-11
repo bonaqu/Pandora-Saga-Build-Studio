@@ -108,10 +108,10 @@ let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','bui
 // A damaged browser draft must not prevent the independent saved-build library
 // from loading. Keep the original storage untouched for manual recovery.
 function safeStoredBuildRows(value){
- return Array.isArray(value)?value.filter(row=>
-  row&&typeof row==='object'&&!Array.isArray(row)&&
-  typeof row.id==='string'&&row.id.length>0&&
-  row.data&&typeof row.data==='object'&&!Array.isArray(row.data)):[];
+ return Array.isArray(value)?window.PandoraBuildLibraryMerge.orderByCreation(
+  value.filter(row=>row&&typeof row==='object'&&!Array.isArray(row)&&
+   typeof row.id==='string'&&row.id.length>0&&
+   row.data&&typeof row.data==='object'&&!Array.isArray(row.data))):[];
 }
 try{
  const saved=localStorage.getItem('ps-build-studio.v1');
@@ -6545,6 +6545,9 @@ function renderBuilds(root){
  root.append(comparisonSlot);
  let comparison=null;
  const grid=h('div',{class:'build-grid'}),searchable=[];
+ // Four fixed-size slots per row. Only visible cards consume scroll width.
+ const setGridColumns=count=>grid.style.setProperty('--build-visible-columns',
+  String(Math.max(1,Math.min(4,count))));
  const syncCompareCheckboxes=()=>{
   for(const row of searchable)row.check.checked=compareIds.includes(row.build.id);
  };
@@ -6644,6 +6647,7 @@ function renderBuilds(root){
   searchable.push({box,build:b,check,searchText:[b.name,races[b.data?.race]?.[0],races[b.data?.race]?.[1],jobs[b.data?.job],
    (lang==='en'?'Lv. ':'ур. ')+(b.data?.level??'')].filter(Boolean).join(' ').toLocaleLowerCase()});
  }
+ setGridColumns(searchable.length);
  root.append(grid);
  comparison=renderBuildComparison(comparisonSlot,syncCompareCheckboxes);
  if(search){
@@ -6658,6 +6662,7 @@ function renderBuilds(root){
     row.box.hidden=!searchWords(row.searchText,query);
     if(!row.box.hidden)visible++;
    }
+   setGridColumns(visible);
    none.hidden=!query||visible>0;
   };
   search.addEventListener('input',()=>{buildSearchQuery=search.value;apply()});
@@ -6676,12 +6681,17 @@ function saveBuild(name=state.name||'Новый герой',overwriteId=null){
  const cleanName=name.trim().slice(0,70),previousName=state.name;
  const previousBuilds=builds.slice(),previousActive=activeBuildId;
  const existingIndex=overwriteId?builds.findIndex(b=>b.id===overwriteId):-1;
- const id=existingIndex>=0?builds[existingIndex].id:newId();
+ const existing=existingIndex>=0?builds[existingIndex]:null;
+ const id=existing?existing.id:newId();
+ const creationStamp=window.PandoraBuildLibraryMerge.creationStamp;
+ const createdAt=existing?creationStamp(existing):
+  Math.max(Date.now(),0,...builds.map(row=>creationStamp(row)+1));
  state.name=cleanName;
- const entry={id,name:cleanName,data:structuredClone(state),
-  at:Math.max(Date.now(),(existingIndex>=0?Number(builds[existingIndex].at)||0:0)+1)};
- if(existingIndex>=0)builds.splice(existingIndex,1);
- builds.unshift(entry);
+ const entry={id,name:cleanName,data:structuredClone(state),createdAt,
+  at:Math.max(Date.now(),(existing?Number(existing.at)||0:0)+1)};
+ // A new save goes last; overwriting keeps the existing card in its place.
+ if(existing)builds.splice(existingIndex,1,entry);
+ else builds.push(entry);
  try{window.PandoraBuildScope.setOwned(localStorage,libraryScopeId(),
   'ps-build-library.v1',JSON.stringify(builds))}
  catch(error){
