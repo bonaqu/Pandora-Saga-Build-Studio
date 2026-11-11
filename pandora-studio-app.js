@@ -6373,14 +6373,14 @@ let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
 // Only the character being actively edited can continue as an unsaved draft.
 // One account entry point for saved builds and incoming build links.
 let returnToBuildsAfterAuth=false,pendingGuestDraft=null;
-function buildSignInCard({shared=false}={}){
+function buildSignInCard({shared=false,inDialog=false}={}){
  const tr=(ru,en)=>lang==='en'?en:ru;
- const card=h('section',{class:'build-signin-gate',role:'note',
+ const card=h('section',{class:inDialog?'build-signin-gate build-signin-gate-dialog':'build-signin-gate',role:'note',
   'aria-label':tr('Вход для работы с билдами','Sign in to use builds')});
  card.append(h('span',{class:'build-signin-emblem','aria-hidden':'true',text:'◈'}),
   h('div',{class:'build-signin-copy'},[
-   h('h3',{text:shared?tr('Билд доступен после входа','Sign in to open this build'):
-    tr('Мои билды — в аккаунте','Your builds belong to your account')}),
+   ...(inDialog?[]:[h('h3',{text:shared?tr('Билд доступен после входа','Sign in to open this build'):
+    tr('Мои билды — в аккаунте','Your builds belong to your account')})]),
    h('p',{text:shared?
     tr('Войди или зарегистрируйся, чтобы открыть билд по ссылке. Ссылка сохранится.',
        'Sign in or register to open this build. Your link will stay here.'):
@@ -6411,7 +6411,7 @@ function requireBuildAccount({shared=false}={}){
  if(window.PandoraAccountUI?.isLoggedIn())return true;
  modal(shared?(lang==='en'?'Sign in to open this build':'Вход для открытия билда'):
   (lang==='en'?'Sign in to save builds':'Вход для сохранения билдов'),
-  buildSignInCard({shared}));
+  buildSignInCard({shared,inDialog:true}));
  return false;
 }
 function notifyGuestDraftUnsaved(){
