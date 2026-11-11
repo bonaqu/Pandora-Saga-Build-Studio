@@ -464,3 +464,50 @@
 #stageAttributes .stage-book-page .account-copy-pencil:focus-visible{
  outline:2px solid #e9c187;outline-offset:2px
 }
+
+/* Two admin review dialogs share the same compact D1 text fields used in the
+   encyclopedia. Actions are siblings of their ✎ buttons, never nested. */
+.owner-manager .owner-dialog-editor,
+.owner-github-review .owner-dialog-editor{
+ display:flex;align-items:flex-start;gap:6px;min-width:0;width:100%;
+ margin:3px 0 10px
+}
+.owner-dialog-editor>.owner-dialog-help{
+ flex:1 1 auto;min-width:0;max-width:100%;margin:0;
+ line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere
+}
+.owner-dialog-editor>.owner-dialog-pencil,
+.owner-dialog-action-editor>.owner-dialog-pencil{
+ display:inline-grid;place-items:center;flex:0 0 23px;
+ width:23px;min-width:23px;height:25px;min-height:25px;
+ padding:0;border:1px solid #8e6c44;border-radius:4px;
+ background:#312318;color:#ebc993;
+ font:600 11px/1 Manrope,Arial,sans-serif;cursor:pointer
+}
+.owner-dialog-pencil:hover,.owner-dialog-pencil:focus-visible{
+ background:#51361f;border-color:#edbd7f;outline-offset:2px
+}
+.owner-dialog-action-editor{
+ display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;
+ min-width:0;max-width:100%
+}
+.owner-dialog-action-editor>.owner-dialog-action-host{
+ flex:1 1 210px;min-width:0;max-width:100%
+}
+.owner-dialog-action-host>.wiki-inline-input,
+.owner-dialog-help>.wiki-inline-input{
+ display:block;box-sizing:border-box;min-width:0;max-width:100%;width:100%;
+ min-height:36px;height:auto;max-height:min(60dvh,460px);
+ overflow-y:auto;white-space:pre-wrap;overflow-wrap:anywhere
+}
+.owner-dialog-save-row{
+ display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:8px 0
+}
+.owner-dialog-live-count{
+ color:#d8bc93;font-size:11px;overflow-wrap:anywhere
+}
+.owner-github-review>.owner-dialog-live-count{margin:0 0 9px}
+@media(max-width:420px){
+ .owner-dialog-action-editor>.owner-dialog-action{max-width:calc(100vw - 95px)}
+ .owner-dialog-editor{gap:4px}
+}

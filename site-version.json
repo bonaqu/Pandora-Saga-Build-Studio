@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.644",
-  "notes": "D1-editable history explanations and safe inline Undo without changing record values"
+  "release": "2026.11.11.645",
+  "notes": "Bilingual D1 inline admin translation and GitHub review captions with independent safe actions"
 }

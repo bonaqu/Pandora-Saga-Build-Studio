@@ -38,7 +38,7 @@ test('admin copy Undo and reset update the existing drawer, not the game catalog
  const app=get('pandora-studio-app.js');
  assert.match(app,/if\(key\.startsWith\('owner-dock\.'\)\)\{refreshOwnerUI\(\);return\}/);
  assert.match(app,/key\.startsWith\('book.owner-dock\.'\)/);
- assert.match(app,/guideedit\\\.book\\\.\(equipment\|path\|catalog-sync\|honor-view\|owner-dock\|owner-history\)/);
+ assert.match(app,/guideedit\\\.book\\\.\(equipment\|path\|catalog-sync\|honor-view\|owner-dock\|owner-history\|owner-dialog\)/);
  assert.match(app,/record\.key\.startsWith\('guideedit.book.owner-dock\.'\)/);
  assert.match(app,/Saving to Cloudflare D1/);
  assert.match(app,/ownerDockCopy\('translations'\)/);
