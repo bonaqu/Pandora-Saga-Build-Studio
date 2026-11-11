@@ -16,6 +16,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  editText=()=>{},saveText=()=>{},saveList=()=>{},link=()=>null,cloakLink=()=>null,
  warId=null,warLink=()=>null,backButton=()=>null,
  label=(group,id,ru,en)=>lang==='en'?en:ru,editLabel=()=>{},
+  copy=(key,ru,en)=>lang==='en'?en:ru,editCopy=()=>{},
  mapOptions=[],onOpenLocations=()=>{}}={}){
  if(!browse||!detail||!article||typeof make!=='function')return;
  // Re-rendering after admin edits must never accumulate scroll observers.
@@ -28,11 +29,29 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  const oldFilter=detail.querySelector('.wiki-honor-filter.chosen')?.dataset.honorFilter||'all';
  browse.replaceChildren();detail.replaceChildren();
  const node=(tag,cls,text)=>make(tag,{class:cls,text});
+  // Honor's interface captions are authored UI, not game data or rank rules.
+  // Only the owner sees an inline editor with a neighboring touch-friendly pencil.
+  const editorial=(tag,cls,key,ru,english)=>{
+   const value=copy(key,ru,english);
+   const element=node(tag,cls,value);
+   if(!editable)return element;
+   const target=node('span','wiki-honor-copy-owner-label',value);
+   const pencil=make('button',{type:'button',class:'wiki-honor-copy-pencil',
+    text:'✎','aria-label':tr('Изменить подпись: ','Edit caption: ')+value});
+   element.replaceChildren(target,pencil);
+   pencil.addEventListener('click',event=>{
+    event.preventDefault();event.stopPropagation();
+    // This follows the exact editor, blur-save, Escape, CAS and Undo path as F2.
+    target.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   });
+   editCopy(target,key,ru,english);
+   return element;
+  };
  // Wars are Honor records, not OS map IDs. Give every existing and
  // owner-created entry its own page without inventing location records.
  if(warId!=null){
   const entry=article.battles.find(war=>war.id===warId);
-  browse.append(node('p','muted',tr('PvP-войны','PvP wars')));
+  browse.append(editorial('p','muted','warsHeading','PvP-войны','PvP wars'));
   browse.append(node('h4','wiki-location-list-heading',
    label('chapter','honor','Честь','Honor')));
   for(const war of article.battles){
@@ -50,7 +69,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const back=backButton();
   if(back)detail.append(back);
   if(entry){
-   detail.append(node('p','wiki-honor-war-eyebrow',tr('PvP-война','PvP war')));
+   detail.append(editorial('p','wiki-honor-war-eyebrow','warEyebrow','PvP-война','PvP war'));
    const name=en?entry.nameEn:entry.nameRu;
    const title=node('h3','wiki-honor-title wiki-honor-war-title',name);
    if(editable){
@@ -165,8 +184,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    if(event.key==='F2'){event.preventDefault();change()}
   });
  }
- detail.append(title,node('p','wiki-honor-subtitle',tr(
-  'PvP · нации · звания · награды','PvP · nations · titles · rewards')));
+ detail.append(title,editorial('p','wiki-honor-subtitle','subtitle',
+  'PvP · нации · звания · награды','PvP · nations · titles · rewards'));
  const overview=section('overview','Система чести','Honor system');
  const o=article.overview;
  paragraph(overview,en?o.overviewEn:o.overviewRu,'honor.overview',
@@ -176,7 +195,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
  function listField(items,kind,captionRu,captionEn){
   const isZone=kind==='zones',key='honor.'+kind;
   const wrapper=make('section',{class:'wiki-honor-list-section'});
-  wrapper.append(node('h5','',tr(captionRu,captionEn)));
+  wrapper.append(editorial('h5','',isZone?'zonesHeading':'warsHeading',captionRu,captionEn));
   // Reuse the same compact relation chips as monster spawn locations and
   // NPC/map links. The owner controls stay adjacent to the proper record.
   const content=make('div',{class:'wiki-honor-list wiki-entity-flow'});
@@ -421,7 +440,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const head=make('div',{class:'wiki-honor-monthly-head'});
   head.append(editableText(node('strong','',name),name,
    'honor.rank.'+rank.id,en?'nameEn':'nameRu'),
-   node('small','',tr('Награды','Rewards')));
+   editorial('small','','rewardsHeading','Награды','Rewards'));
   row.append(head);
   const entry=monthlyRows[index]||'';
   const content=node('p','wiki-honor-copy wiki-honor-cloak-list','');
