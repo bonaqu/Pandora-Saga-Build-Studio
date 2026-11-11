@@ -7392,7 +7392,7 @@ const ownerDockText=Object.freeze({
  catalog:['Игровой каталог','Game catalog'],
  translations:['EN-переводы','EN translations'],
  testD1:['Проверить сохранение','Test saving'],
- githubExport:['Экспорт в GitHub','Export to GitHub'],
+ githubExport:['Копия в GitHub','GitHub copy'],
  finish:['Завершить','Finish'],
  extra:['Дополнительно','Additional tools'],
  guide:['Как редактировать и когда нажимать кнопки','How editing works'],
@@ -7406,8 +7406,8 @@ const ownerDockText=Object.freeze({
   ' — review saved changes or restore the original.'],
  catalogHelp:[' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.',
   ' — compare the game server catalog; not needed for manual text edits.'],
- githubHelp:[' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.',
-  ' — optional export for review in GitHub. Your changes are already saved in D1.'],
+ githubHelp:[' — необязательная публичная копия. Редактор уже сохраняет изменения в D1; для работы сайта экспорт не нужен.',
+  ' — optional public copy. Edits already save to D1; GitHub export is not needed for the live site.'],
  d1Help:[' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.',
   ' — safely create and delete temporary test records without changing user data.'],
  finishHelp:[' — только скрыть инструменты редактирования, не удалить изменения.',
@@ -7931,7 +7931,7 @@ function editor(el){
     ownerPlainTextField({multiline:true,rows:key.startsWith('skilldesc.')?5:3,
    class:'owner-plain-multiline','aria-label':'Редактируемый текст'});
   if(!visual)input.value=original;
-  const feedback=h('p',{class:'inline-owner-error',role:'status'});
+  const feedback=h('div',{class:'owner-github-feedback',role:'status','aria-live':'polite'});
   root.append(bar);
   if(visual){
     const preview=h('img',{class:'inline-owner-preview',src:original,alt:'Предпросмотр'});
@@ -8572,13 +8572,13 @@ async function showOwnerGitHubExport(){
   const panel=h('div',{class:'owner-github-review'});
   panel.append(
    ownerDialogHelp('githubPrompt',
-    'Подготовить Pull Request с проверенными изменениями энциклопедии?',
-    'Prepare a pull request with reviewed encyclopedia changes?'),
+    'Необязательная копия правок энциклопедии в GitHub',
+    'Optional copy of encyclopedia edits in GitHub'),
    h('p',{class:'owner-dialog-live-count',
-    text:tr('Записей к публикации: ','Records to publish: ')+info.count}),
+    text:tr('Записей для копии: ','Records in copy: ')+info.count}),
    ownerDialogHelp('githubExplanation',
-    'Это экспорт в публичный GitHub. Проверь названия, описания и примечания перед объединением. Пароли и аккаунты не экспортируются. Исходный игровой каталог не изменяется.',
-    'This exports changes to a public GitHub pull request. Review names, descriptions and notes before merging. Passwords and accounts are not exported. The source game catalog is unchanged.'));
+    'Изменения через ✎ уже сохраняются в D1 и работают на сайте. Копия в GitHub НЕ обязательна. Эта кнопка создаст публичный PR — предложение добавить текстовую копию в репозиторий. Зелёные проверки означают, что тесты прошли, но не объединяют PR. Если нужна копия, проверь её содержимое и нажми Merge pull request в GitHub.',
+    'Edits made with ✎ already save to D1 and work on the site. GitHub export is OPTIONAL. This creates a public PR to add a text copy to the repository. Green checks mean tests passed, not that the PR was merged. To keep the copy, review its contents and select Merge pull request in GitHub.'));
   const feedback=h('p',{class:'inline-owner-error',role:'status'});
   const go=h('button',{type:'button',class:'button-action primary',disabled:!info.count});
   go.onclick=async()=>{
@@ -8587,16 +8587,22 @@ async function showOwnerGitHubExport(){
     const result=await apiRequest('/api/admin/catalog/owner-pr',{
      expectedFingerprint:info.fingerprint});
     if(result.url&&/^https:\/\/github\.com\/bonaqu\/Pandora-Saga-Build-Studio\/pull\/\d+$/.test(result.url)){
-     feedback.replaceChildren(h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
-      text:tr('Открыть PR для проверки','Open PR for review')}));
+     feedback.replaceChildren(
+      h('span',{text:tr('Копия предложена, но ещё НЕ добавлена в GitHub. Проверки PR не объединяют его автоматически. ',
+       'The copy has been proposed, but is NOT yet merged into GitHub. PR checks do not merge it automatically. ')}),
+      h('a',{href:result.url,target:'_blank',rel:'noopener noreferrer',
+       text:tr('Открыть PR и проверить содержимое','Open PR and review the contents')}),
+      h('span',{text:tr(' Если копия нужна, после успешных проверок нажми Merge pull request. Для обычной правки энциклопедии это необязательно.',
+       ' If you want the copy, select Merge pull request after successful checks. This is optional for editing the live encyclopedia.')})
+     );
     }else feedback.textContent=result.unchanged?
      tr('Изменений относительно GitHub нет.','No changes compared with GitHub.'):
      tr('PR создан, но адрес не указан.','PR created, but no URL was returned.');
    }catch(error){feedback.textContent=error.message;go.disabled=false}
   };
   panel.append(ownerDialogAction(go,'githubCreateButton',
-   'Создать PR в GitHub','Create GitHub pull request'),feedback);
-  modal(tr('Синхронизация энциклопедии с GitHub','Encyclopedia sync with GitHub'),panel);
+   'Подготовить PR для копии','Prepare copy PR'),feedback);
+  modal(tr('Необязательная копия энциклопедии в GitHub','Optional GitHub encyclopedia copy'),panel);
  }catch(error){showStudioToast('Не удалось подготовить экспорт: '+error.message,'warning')}
 }
 async function showCatalogImport(){

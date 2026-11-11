@@ -38,7 +38,7 @@ test('realtime counts, field translations and GitHub actions stay noneditable',(
  assert.match(view,/text:row\.title/);
  assert.match(view,/text:field\.ru\+' → '\+field\.en/);
  assert.match(view,/text:tr\('К сохранению: '/);
- assert.match(view,/text:tr\('Записей к публикации: '/);
+ assert.match(view,/text:tr\('Записей для копии: '/);
  assert.match(view,/info\.count/);
  assert.match(view,/expectedFingerprint:info\.fingerprint/);
  assert.match(view,/if\(!info\.configured\)/);
@@ -64,8 +64,12 @@ test('D1 writes and Undo update a mounted caption, including the action label',(
 
 test('English admin review statuses and titles do not reuse untranslated RU defaults',()=>{
  assert.match(app,/modal\(tr\('Английские переводы','English translations'\),body\)/);
- assert.match(app,/modal\(tr\('Синхронизация энциклопедии с GitHub','Encyclopedia sync with GitHub'\),panel\)/);
+ assert.match(app,/modal\(tr\('Необязательная копия энциклопедии в GitHub','Optional GitHub encyclopedia copy'\),panel\)/);
  assert.match(app,/tr\('Готово: ','Done: '\)/);
  assert.match(app,/tr\('Сохранено ','Saved '\)/);
- assert.match(app,/tr\('Открыть PR для проверки','Open PR for review'\)/);
+ assert.match(app,/tr\('Открыть PR и проверить содержимое','Open PR and review the contents'\)/);
+ assert.match(app,/Изменения через ✎ уже сохраняются в D1/);
+ assert.match(app,/Зелёные проверки означают, что тесты прошли, но не объединяют PR/);
+ assert.match(app,/Merge pull request/);
+ assert.match(app,/Копия в GitHub/);
 });

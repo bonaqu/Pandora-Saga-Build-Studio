@@ -96,15 +96,16 @@ export async function runWikiOwnerEnglishSyncSmoke(browser,base){
   await button.waitFor({state:'visible'});
   assert.match(await button.innerText(),/EN translations · 4/);
   await button.click();
-  const modal=page.getByRole('dialog',{name:'Английские переводы'});
+  const modal=page.getByRole('dialog',{name:'English translations'});
   await modal.waitFor({state:'visible'});
   assert.match(await modal.innerText(),/Hero origin/);
   assert.match(await modal.innerText(),/Unresolved/);
   assert.equal(writes.length,0,
    'Opening the English review must not mutate production data');
-  await modal.getByRole('button',{name:/Сохранить 4 EN-перевода/}).click();
+  assert.match(await modal.locator('.owner-dialog-live-count').innerText(),/4/);
+  await modal.getByRole('button',{name:'Save English translations'}).click();
   await page.waitForFunction(()=>document.querySelector('.owner-manager [role="status"]')
-   ?.textContent.includes('Готово'),null,{timeout:15000});
+   ?.textContent.includes('Done:'),null,{timeout:15000});
   assert.equal(writes.length,sourceKeys.length);
   assert.equal(JSON.parse(values['guideedit.wiki.labels']).skill_filter_unknown_en,'Unresolved');
   assert.equal(JSON.parse(values['guideedit.wiki.labels']).honor_monthly_en,'Monthly ranks');
