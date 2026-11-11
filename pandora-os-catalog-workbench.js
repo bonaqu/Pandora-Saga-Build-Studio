@@ -86,6 +86,35 @@
       });
       wrap.append(pencil,host);
     };
+    // Search and disclosure hints need a separate pencil too. Wrapping the
+    // native <details>, rather than putting buttons inside <summary>, keeps
+    // mouse, touch and keyboard toggling independent of editing.
+    const secondaryHint=(control,key,ru,en)=>{
+      const target=control.matches('details')?
+        control.querySelector('summary'):control;
+      hint(target,copy(key,ru,en));
+      target.dataset.guideOwnerKey=key;
+      const wrap=h('div',{class:'os-sync-secondary-hint'});
+      wrap.append(control);
+      if(!canEdit||typeof editLabel!=='function')return wrap;
+      const pencil=h('button',{type:'button',class:'os-sync-secondary-pencil',
+        text:'?',title:tr('Изменить подсказку','Edit tooltip'),
+        'aria-label':tr('Изменить подсказку','Edit tooltip')});
+      const host=h('span',{class:'os-sync-secondary-host',hidden:true});
+      editLabel(host,key,ru,en,{
+        onCommitted:next=>{target.dataset.guideHint=next},
+        onFinished:()=>{pencil.hidden=false;host.hidden=true}
+      });
+      pencil.addEventListener('click',event=>{
+        event.preventDefault();event.stopPropagation();
+        if(!target.isConnected)return;
+        pencil.hidden=true;host.hidden=false;
+        host.textContent=copy(key,ru,en);
+        host.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+      });
+      wrap.append(pencil,host);
+      return wrap;
+    };
     const importer = root.PandoraCatalogImport;
     const difference = root.PandoraCatalogDiff;
     const review = root.PandoraOSCatalogReview;
@@ -231,7 +260,13 @@
       ])
     ]);
     actions.append(action(live,'liveButton','Проверить изменения в текущей игре','Check live game updates'),
-     archiveChoice,reviewSteps,advanced);
+     secondaryHint(archiveChoice,'hintArchiveDisclosure',
+       'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.',
+       'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.'),
+     reviewSteps,
+     secondaryHint(advanced,'hintAdvancedDisclosure',
+       'Необязательные операции: тест записи D1, экспорт и предложение изменений GitHub.',
+       'Optional operations: D1 write test, export and GitHub pull request.'));
     // Each action tooltip has independent RU/EN D1 copy. Its ? editor is
     // a sibling of the real action button, never part of its click target.
     for(const [node,key,ru,en] of [
@@ -263,18 +298,13 @@
        'Скачать файл с выбранными изменениями для ручного обновления GitHub. Ничего не публикует.',
        'Download selected changes for a manual GitHub update. Nothing is published.']
     ])actionHint(node,key,ru,en);
-    for(const [node,ru,en] of [
-      [search,'Найти изменения по названиям игровых объектов. Поиск не меняет выбор и не публикует данные.',
-       'Search changes by game-object names. Searching never changes selection or publishes data.'],
-      [archiveChoice.querySelector('summary'),
-       'Открыть отдельную сверку с архивом GitHub Pages. Архивная копия не подтверждает актуальные параметры на игровом сайте.',
-       'Open a comparison with the GitHub Pages archive. An archived copy cannot verify current game-server values.'],
-      [advanced.querySelector('summary'),
-       'Необязательные операции: тест записи D1, экспорт и предложение изменений GitHub.',
-       'Optional operations: D1 write test, export and GitHub pull request.']
-    ])hint(node,tr(ru,en));
-    view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,filters,overview,search,results);
-    for(const element of [filters,overview,search,results])element.hidden=true;
+    const searchField=secondaryHint(search,'hintSearch',
+       'Найти изменения по названиям игровых объектов. Поиск не меняет выбор и не публикует данные.',
+       'Search changes by game-object names. Searching never changes selection or publishes data.');
+    searchField.classList.add('os-sync-search-field');
+    view.append(intro,actions,sourceBanner,summary,status,diagnostic,progress,
+      filters,overview,searchField,results);
+    for(const element of [filters,overview,searchField,results])element.hidden=true;
 
     let baseline = null, upstream = null, legacy = null, legacyRows = null, mode = null;
     let activeSnapshot = null, changes = [], chosen = new Set(), busy = false;
@@ -371,7 +401,7 @@
       reviewSteps.hidden=!reviewing||(!changes.length&&!formattingCount&&!verifiedRussian.length);
       formattingReview.hidden=!reviewing||mode!=='server'||!formattingCount;
       russianReview.hidden=!reviewing||mode!=='server'||!verifiedRussian.length;
-      for(const element of [filters,overview,search,results])element.hidden=!reviewing;
+      for(const element of [filters,overview,searchField,results])element.hidden=!reviewing;
       const byKind={
         all:changes.length,added:changes.filter(row=>row.kind==='added').length,
         changed:changes.filter(row=>row.kind==='changed').length,

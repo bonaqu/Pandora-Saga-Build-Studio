@@ -360,3 +360,30 @@
 .os-sync-action-editor.editing-hint>.button-action,
 .os-sync-action-editor.editing-hint>.os-sync-owner-pencil{display:none}
 .os-sync-action-editor.editing-hint{flex:1 1 200px}
+
+/* Native disclosure/search controls stay intact. Editor ? lives OUTSIDE
+   summary, so a tooltip edit never expands/collapses a details section. */
+.os-sync-secondary-hint{display:grid;grid-template-columns:minmax(0,1fr) 22px;
+ gap:6px;align-items:start;min-width:0;width:100%}
+.os-sync-secondary-hint>.os-sync-archive-choice,
+.os-sync-secondary-hint>.os-sync-advanced,
+.os-sync-secondary-hint>.os-sync-search{min-width:0;width:100%}
+.os-sync-secondary-pencil{
+ display:inline-flex;justify-content:center;align-items:center;
+ width:22px;min-width:22px;height:25px;margin-top:6px;padding:0;
+ background:#2a2018;border:1px solid #776044;border-radius:4px;
+ color:#d6bd98;font-size:11px;cursor:pointer
+}
+.os-sync-secondary-pencil:hover,.os-sync-secondary-pencil:focus-visible{
+ background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
+}
+.os-sync-secondary-host{grid-column:1/-1;min-width:0;max-width:100%}
+.os-sync-secondary-host.origin-copy-editable::after{content:none}
+.os-sync-secondary-host .wiki-inline-input{
+ display:block;box-sizing:border-box;min-width:0;width:100%;max-width:100%;
+ min-height:31px;padding:5px 7px;font-size:11px
+}
+.os-sync-search-field>.os-sync-secondary-pencil{margin-top:6px}
+@media(max-width:580px){
+ .os-sync-secondary-hint{grid-template-columns:minmax(0,1fr) 22px;gap:4px}
+}
