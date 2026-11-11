@@ -59,8 +59,10 @@ test('static homepage exposes Telegram/Open Graph identity, photo and consistent
   assert.ok(description.endsWith('Version: '+version));
   assert.ok(description.length<160);
  }
- assert.ok(head.indexOf('property="og:title"')<head.indexOf('</head>'),
-  'The crawler must see metadata without any scripts or browser storage');
+ assert.ok(head.indexOf('property="og:title"')>0&&
+  head.indexOf('<script')===-1&&
+  head.indexOf('property="og:title"')<head.indexOf('<link rel="stylesheet"'),
+  'The crawler must see static metadata before any script or stylesheet');
 });
 test('published cover is a genuine self-hosted 1920×1080 JPEG with no external asset hosting',()=>{
  const jpeg=readFileSync(new URL('assets/social-preview.jpg',root));
