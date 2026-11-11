@@ -56,9 +56,12 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   await page.locator('.modal').getByRole('button',{name:'Войти',exact:true}).click();
   await page.locator('#ownerDock').waitFor({state:'visible',timeout:15000});
   await page.locator('.equipment-slot[data-slot-index="5"]').click();
+  await page.locator('#stagePicker [data-stage-tab="details"]').click();
   const label=page.locator(selector);
   await label.waitFor({state:'visible'});
-  assert.equal((await label.textContent()).trim(),'Слоты душ');
+  console.log('Owner equipment 632: initial label rendered');
+  assert.equal((await label.textContent({timeout:4000})).trim(),'Слоты душ');
+  console.log('Owner equipment 632: initial label confirmed');
   const value=()=>page.locator('#stagePicker .stage-rich-fields dd[data-edit-key="itemslots.13041"]');
   assert.equal((await value().innerText()).trim(),'0/2');
   await label.dblclick();
@@ -86,7 +89,9 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   assert.equal((await value().innerText()).trim(),'0/2',
    'Editing the label must not alter the Soul count');
   await input.press('Escape');
-  assert.equal((await label.textContent()).trim(),'Слоты душ');
+  console.log('Owner equipment 632: Escape pressed');
+  assert.equal((await label.textContent({timeout:4000})).trim(),'Слоты душ');
+  console.log('Owner equipment 632: Escape restored original label');
   assert.equal(writes.length,0,'Escape must not write a D1 override');
   // Real in-place owner editor -> mocked CAS Worker -> existing D1 key.
   await label.dblclick();
@@ -98,13 +103,18 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    ?.textContent==='Гнёзда для душ',null,{timeout:12000});
   assert.deepEqual(JSON.parse(values[recordKey]),{ru:'Гнёзда для душ'});
   assert.equal((await value().innerText()).trim(),'0/2');
+  console.log('Owner equipment 632: RU committed to mock CAS');
+  // Locale switching may switch the inspector to Choose; reopen Properties.
+  await page.locator('#stagePicker .stage-picker-head button').click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en');
-  if(!(await page.locator('#stagePicker').isVisible()))
-   await page.locator('.equipment-slot[data-slot-index="5"]').click();
+  await page.locator('.equipment-slot[data-slot-index="5"]').click();
+  await page.locator('#stagePicker [data-stage-tab="details"]').click();
   const enLabel=page.locator(selector);
   await enLabel.waitFor({state:'visible'});
-  assert.equal((await enLabel.textContent()).trim(),'Soul slots');
+  console.log('Owner equipment 632: EN label rendered');
+  assert.equal((await enLabel.textContent({timeout:4000})).trim(),'Soul slots');
+  console.log('Owner equipment 632: EN label confirmed');
   await enLabel.dblclick();
   const enInput=enLabel.locator('[data-owner-text-field]');
   await enInput.fill('Soul sockets');
@@ -115,6 +125,7 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
   assert.deepEqual(JSON.parse(values[recordKey]),{
    ru:'Гнёзда для душ',en:'Soul sockets'
   });
+  console.log('Owner equipment 632: EN committed to mock CAS');
   assert.equal(writes.filter(row=>row.key===recordKey).length,2);
   assert.equal((await value().innerText()).trim(),'0/2');
   // Undo the EN save: revert only the last locale, not the RU edit or Soul data.
@@ -122,6 +133,7 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    el.classList.contains('owner-dock-collapsed')))
    await page.locator('#ownerDock [data-owner-collapse]').click();
   await page.locator('#ownerDock [data-owner-undo]').click();
+  console.log('Owner equipment 632: Undo clicked');
   await page.waitForFunction(()=>document.querySelector(
    '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]')
    ?.textContent==='Soul slots',null,{timeout:12000});
