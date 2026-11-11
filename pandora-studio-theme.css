@@ -2342,17 +2342,7 @@ textarea:focus-visible,select:focus-visible{
  gap:8px}.build-signin-emblem{width:32px;height:32px}
  .build-signin-actions{grid-column:1}
  .build-signin-actions .button-action{flex:1 1 125px;justify-content:center}}
-
-
-/* 0.651.0 — encyclopedia counters stay left; release follows the HTML meta.
-   Unlike the hidden technical status, the version is always visible. */
+/* Footer: live catalog counts left, HTML release at right. */
 footer #catalogStatus{min-width:0;overflow-wrap:anywhere}
-footer .footer-version{
- flex:0 0 auto;margin-inline-start:auto;align-self:center;
- white-space:nowrap;font-variant-numeric:tabular-nums;
- color:#bca68b;letter-spacing:.025em
-}
-@media(max-width:460px){
- footer{align-items:stretch;gap:5px}
- footer .footer-version{align-self:flex-end;margin-inline-start:0}
-}
+footer .footer-version{margin-inline-start:auto;align-self:center;white-space:nowrap;font-variant-numeric:tabular-nums;color:#bca68b}
+@media(max-width:460px){footer{align-items:stretch;gap:5px}footer .footer-version{align-self:flex-end;margin-inline-start:0}}
