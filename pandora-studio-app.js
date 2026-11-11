@@ -975,6 +975,7 @@ function originCopyLabel(node,key,ru,en,{pencilHost=null}={}){
   node.textContent=originCopy(key,ru,en);
  if(!node.dataset)node.dataset={}; // lightweight browser-free test elements
  node.dataset.originCopyKey=key;
+ node.dataset.originCopyRu=ru;node.dataset.originCopyEn=en;
  const editing=Boolean(adminEditing&&adminToken);
  node.classList?.toggle?.('origin-copy-editable',editing);
  if(!node.dataset.originCopyBound){
@@ -989,7 +990,9 @@ function originCopyLabel(node,key,ru,en,{pencilHost=null}={}){
   const existing=[...pencilHost.querySelectorAll('[data-origin-edit-for]')]
    .find(x=>x.dataset.originEditFor===key);
   if(existing&&!editing)existing.remove();
-  else if(!existing&&editing){
+  else if(existing&&editing){
+   existing.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+originCopy(key,ru,en));
+  }else if(!existing&&editing){
    pencilHost.append(h('button',{type:'button',class:'origin-copy-pencil',
     'data-origin-edit-for':key,
     'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+originCopy(key,ru,en),
@@ -1006,9 +1009,16 @@ function editOriginCopyLabel(node,key,ru,en){
  const mount=isButton?h('span',{class:'origin-copy-input-slot'}):node;
  if(isButton){node.after(mount);node.hidden=true}
  node.dataset.originEditing='1';
+ const editLang=lang; // Capture locale before the user can switch language.
  editWikiValue(mount,value,{type:'text',
-  onCommit:next=>saveGuidePatch('book.origin.'+originGuideKey(key),{[lang]:next}),
-  onCommitted:next=>{node.textContent=next},
+  onCommit:next=>saveGuidePatch('book.origin.'+originGuideKey(key),{[editLang]:next}),
+  onCommitted:next=>{
+   const visible=lang===editLang?next:originCopy(key,ru,en);
+   node.textContent=visible;
+   for(const pencil of document.querySelectorAll('[data-origin-edit-for]'))
+    if(pencil.dataset.originEditFor===key)pencil.setAttribute('aria-label',
+     (lang==='en'?'Edit caption: ':'Изменить надпись: ')+visible);
+  },
   onFinished:()=>{
    node.dataset.originEditing='0';
    if(isButton){node.hidden=false;mount.remove()}
@@ -7475,6 +7485,24 @@ function refreshVisibleUICopy(recordKey){
    pencil.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
  }
 }
+// An Origin copy Undo refreshes visible captions without remounting the build.
+function refreshVisibleOriginCopy(recordKey){
+ const wanted=String(recordKey).replace(/^guideedit\.book\.origin\./,'');
+ for(const node of document.querySelectorAll('[data-origin-copy-key]')){
+  const key=node.dataset.originCopyKey;
+  if(originGuideKey(key)!==wanted||node.dataset.originEditing==='1'||
+   node.querySelector?.('.wiki-inline-input,[data-owner-editor]'))continue;
+  node.textContent=originCopy(key,node.dataset.originCopyRu,node.dataset.originCopyEn);
+ }
+ for(const pencil of document.querySelectorAll('[data-origin-edit-for]')){
+  const key=pencil.dataset.originEditFor;
+  if(originGuideKey(key)!==wanted)continue;
+  const caption=[...document.querySelectorAll('[data-origin-copy-key]')]
+   .find(node=>node.dataset.originCopyKey===key);
+  if(caption)pencil.setAttribute('aria-label',
+   (lang==='en'?'Edit caption: ':'Изменить надпись: ')+caption.textContent);
+ }
+}
 // Copy-only Undo/saves must not unmount the Soul search or Path card.
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
@@ -7542,7 +7570,9 @@ async function undoOwnerEdit(){
     else{await apiRequest('/api/admin/override',{key:last.key,value:last.before});override[last.key]=last.before;}
     ownerEdits.pop();closeInlineEditor();
     if(last.key==='guideedit.wiki.labels')refreshVisibleWikiLabels();
-    if(last.key.startsWith('guideedit.book.profile.')){
+    if(last.key.startsWith('guideedit.book.origin.')){
+      refreshVisibleOriginCopy(last.key);saveView();
+     }else if(last.key.startsWith('guideedit.book.profile.')){
      refreshVisibleProfileCopy();
      saveView();
     }else if(last.key.startsWith('guideedit.book.ui.label.')){
@@ -7614,7 +7644,11 @@ function showOverrideManager(){
      try{
       await apiRequest('/api/admin/reset',{key:record.key});
       ownerEdits.push({key:record.key,before:previous,after:null});
-      delete override[record.key];draw();void refreshOwnerCatalog();refreshOwnerUI();
+      delete override[record.key];draw();
+       if(record.key.startsWith('guideedit.book.origin.')){
+        refreshVisibleOriginCopy(record.key);saveView();
+       }else void refreshOwnerCatalog();
+       refreshOwnerUI();
      }catch(error){showStudioToast('Не удалось отменить правку: '+error.message,'warning')}
     }}));
    row.append(head,edits,actions);list.append(row);
