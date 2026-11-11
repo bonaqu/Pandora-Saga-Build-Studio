@@ -461,6 +461,34 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForFunction(()=>
    document.querySelector('.os-sync [role=status]')?.textContent?.includes('Найдено изменений:'),
    null,{timeout:30000});
+  // 0.612: reloading results may update checksum evidence but must not
+  // erase the D1-editable explanation or the adjacent touch pencil.
+  const checksumRow=dialog.locator(
+   '.os-sync-advanced .os-sync-copy-field:has(> .os-sync-meta-status)');
+  const checksumPencil=checksumRow.locator('.os-sync-copy-pencil');
+  const checksumStructure=await dialog.evaluate(node=>({
+   explanationCount:node.querySelectorAll('.os-sync-meta-status').length,
+   parentClass:node.querySelector('.os-sync-meta-status')?.parentElement?.className,
+   advancedPencils:node.querySelectorAll('.os-sync-advanced .os-sync-copy-pencil').length
+  }));
+  assert.equal(await checksumPencil.count(),1,
+   'Checksum copy pencil disappeared after refreshing the catalog: '+
+    JSON.stringify(checksumStructure));
+  assert.match(await dialog.locator('.os-sync-meta-detail').textContent(),
+   /Сведения об источнике:/);
+  const originalChecksum=await dialog.locator('.os-sync-meta-status').textContent();
+  await checksumPencil.click();
+  const checksumInput=checksumRow.locator('[contenteditable]');
+  await checksumInput.fill('Контрольные суммы описывают целостность файлов.');
+  await checksumInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.os-sync-meta-status')?.textContent===
+   'Контрольные суммы описывают целостность файлов.',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.checksum-explanation')).ru,
+   'Контрольные суммы описывают целостность файлов.');
+  assert.equal(await checksumPencil.count(),1,
+   'Saving the explanation must preserve its separate edit control');
+  assert.ok(originalChecksum.length>30);
   await dialog.getByRole('button',{name:/Новые · 0/}).click();
   assert.equal(await dialog.locator('.os-sync-record').count(),0,'No added records');
   await dialog.getByRole('button',{name:/Изменённые · 1/}).click();

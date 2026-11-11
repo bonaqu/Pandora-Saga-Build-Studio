@@ -141,8 +141,8 @@
       'Match line breaks in descriptions to the game site')});
     const formattingInfo=authored('p',{class:'muted os-sync-formatting-info'},
      'formattingExplanation',
-     'Доступно после сверки с игровым сайтом. Не изменяет характеристики, названия или эффекты. Действие выполняется только после подтверждения публикации.',
-     'Available after checking the live game site. Does not change stats, names or effects. Only runs after a separate publish confirmation.');
+     'После сверки с игровым сайтом можно восстановить оригинальные переносы. Другие поля не меняются. Понадобятся галочка и подтверждение публикации.',
+     'After comparing the live game data, original line breaks can be restored. Other fields remain unchanged. This requires selecting the checkbox and confirming publication.');
     const formattingOption=h('label',{class:'os-sync-formatting-option'},
       [formattingToggle,formattingLabel]);
     const formattingReview=h('div',{class:'os-sync-formatting-review',hidden:true},
@@ -156,8 +156,8 @@
       'Добавить русские описания подземелий','Add Russian dungeon descriptions')});
     const russianInfo=authored('p',{class:'muted os-sync-formatting-info'},
      'russianDescriptionExplanation',
-     'Тексты взяты из сохранённой копии проекта. Публикация только после отдельного подтверждения.',
-     'These texts come from the saved project snapshot. Publication requires separate confirmation.');
+     'Тексты взяты из сохранённой копии Build Studio и предложены только при полном совпадении остальных полей с текущей игрой и D1. Другие переводы не заменяются.',
+     'These descriptions come from the saved Build Studio snapshot and are offered only when the other fields match both the live game and D1. Other translations remain unchanged.');
     const russianList=h('div',{class:'os-sync-russian-list'});
     const russianDetails=h('details',{class:'os-sync-russian-preview'},[
       h('summary',{text:copy('russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts')}),russianList
@@ -170,9 +170,12 @@
     const metaStatus=authored('p',{class:'muted os-sync-meta-status'},'checksumExplanation',
      'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.',
      'Game file checksums verify data origin and integrity; they are not item or monster statistics.');
+    // Runtime checksum evidence is separate from editable editorial copy.
+    // Never replace the pencil-containing explanation wrapper with textContent.
+    const metaStatusDetail=h('p',{class:'muted os-sync-meta-detail',hidden:true});
     const advanced=h('details',{class:'os-sync-advanced'},[
       h('summary',{text:copy('advancedSummary','Дополнительные инструменты','Additional tools')}),
-      metaStatus,
+      metaStatus,metaStatusDetail,
       authored('p',{},'advancedExplanation',
        'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.',
        'Testing D1 writes does not update game data. GitHub can record an already-published revision; downloads are for manual review.'),
@@ -216,31 +219,35 @@
     const safe=change=>!describe(change).uncertain && !describe(change).service;
 
     const filterChoices=[
-      ['all','Все'],['added','Новые'],['changed','Изменённые'],
-      ['removed','Удалённые'],['accepted','Выбранные'],['declined','Не выбраны'],
-      ['needsReview','Требует проверки'],['links','Игровые ссылки'],
-      ['sameVisible','Текст совпадает'],['readable','Расшифрованы']
+      ['all','Все','All'],['added','Новые','New'],['changed','Изменённые','Changed'],
+      ['removed','Удалённые','Removed'],['accepted','Выбранные','Selected'],
+      ['declined','Не выбраны','Not selected'],
+      ['needsReview','Требует проверки','Needs review'],
+      ['links','Игровые ссылки','Game links'],
+      ['sameVisible','Текст совпадает','Same visible text'],
+      ['readable','Расшифрованы','Explained']
     ];
     const filterButtons=new Map();
-    for(const [id,label]of filterChoices){
+    for(const [id,ru,en]of filterChoices){
       const button=h('button',{type:'button',class:'os-sync-filter',
-       'aria-pressed':String(id===filterKind),text:label});
+       'aria-pressed':String(id===filterKind),text:tr(ru,en)});
       button.onclick=()=>{
         if(busy)return;
         filterKind=id;render();
       };
-      hint(button,({
-        all:'Все найденные изменения.',
-        added:'Объекты, добавленные в проверяемом источнике.',
-        changed:'Объекты, чьи параметры отличаются.',
-        removed:'Объекты, которых нет в проверяемом источнике.',
-        accepted:'Только изменения с поставленной галочкой.',
-        declined:'Изменения без галочки, не выбранные для применения.',
-        needsReview:'Неоднозначные или неизвестные параметры — требуют ручного анализа.',
-        links:'Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.',
-        sameVisible:'Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.',
-        readable:'Изменения, для которых доступны понятные названия и описания.'
-      })[id]);
+      const tips={
+        all:['Все найденные изменения.','All detected changes.'],
+        added:['Объекты, добавленные в проверяемом источнике.','Entries added in the checked source.'],
+        changed:['Объекты, чьи параметры отличаются.','Entries with changed parameters.'],
+        removed:['Объекты, которых нет в проверяемом источнике.','Entries missing from the checked source.'],
+        accepted:['Только изменения с поставленной галочкой.','Only selected changes.'],
+        declined:['Изменения без галочки, не выбранные для применения.','Changes not selected for publication.'],
+        needsReview:['Неоднозначные или неизвестные параметры — требуют ручного анализа.','Ambiguous or unknown fields require manual review.'],
+        links:['Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.','Item reference links changed; review and select these manually.'],
+        sameVisible:['Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.','Displayed text is the same, but the source differs. Review manually.'],
+        readable:['Изменения, для которых доступны понятные названия и описания.','Changes with readable labels and descriptions.']
+      };
+      hint(button,tr(...tips[id]));
       filters.append(button);filterButtons.set(id,button);
     }
     function matchesFilter(change){
@@ -272,13 +279,15 @@
       const ready = !busy && (selected>0||syncFormatting||syncRussian) && baseline && upstream;
       formattingToggle.disabled=busy||mode!=='server'||!formattingCount;
       russianToggle.disabled=busy||mode!=='server'||!verifiedRussian.length;
-      russianLabel.textContent='Добавить проверенные русские описания · '+verifiedRussian.length;
-      russianInfo.textContent='Тексты взяты из сохранённой копии Build Studio и предложены только при полном совпадении остальных полей с текущей игрой и D1. Другие переводы не заменяются.';
-      formattingLabel.textContent='Привести переносы строк в описаниях к виду игрового сайта'+
+      russianLabel.textContent=copy('russianDescriptionsLabel',
+        'Добавить проверенные русские описания','Add verified Russian descriptions')+
+        ' · '+verifiedRussian.length;
+      formattingLabel.textContent=copy('formattingLabel',
+        'Привести переносы строк в описаниях к виду игрового сайта',
+        'Match game description line breaks')+
         (formattingCount?' · '+formattingCount:'');
-      formattingInfo.textContent=formattingCount
-        ?'В '+formattingCount+' описаниях можно восстановить оригинальные переносы игрового текста. Другие поля не меняются. Понадобятся галочка и подтверждение публикации.'
-        :'Оригинальные переносы игровых описаний уже совпадают.';
+      // Preserve editing controls and the D1-authored explanatory copy.
+      // Dynamic counts live in the labels and never become editable text.
       acceptAll.disabled = busy || !changes.some(safe);
       declineAll.disabled = busy || !changes.length;
       publish.disabled = !ready;
@@ -300,9 +309,9 @@
         sameVisible:changes.filter(row=>describe(row).rows.some(field=>field.sameVisible)).length,
         readable:changes.filter(row=>!describe(row).uncertain).length
       };
-      for(const [id,label]of filterChoices){
+      for(const [id,ru,en]of filterChoices){
         const button=filterButtons.get(id);
-        button.textContent=label+' · '+byKind[id];
+        button.textContent=tr(ru,en)+' · '+byKind[id];
         button.classList.toggle('active',id===filterKind);
         button.setAttribute('aria-pressed',String(id===filterKind));
       }
@@ -310,7 +319,7 @@
       // inside a large dashboard of decorative statistics.
       const groups=importer.files.filter(name=>changes.some(row=>row.dataset===name));
       const ordered=[...groups.filter(name=>name!=='meta'),...groups.filter(name=>name==='meta')];
-      overview.textContent=ordered.length?'Затронутые разделы: '+
+      overview.textContent=ordered.length?tr('Затронутые разделы: ','Affected sections: ')+
         ordered.map(name=>(review.labels[name]||name)+' · '+
           changes.filter(row=>row.dataset===name).length).join('   •   '):'';
       overview.hidden=!reviewing||!changes.length;
@@ -319,14 +328,16 @@
         const count=changes.filter(row=>row.dataset===name&&chosen.has(row.id)).length;
         const total=changes.filter(row=>row.dataset===name).length;
         const label=panel.querySelector('.os-sync-count');
-        if(label)label.textContent=count+' / '+total+' выбрано';
+        if(label)label.textContent=count+' / '+total+tr(' выбрано',' selected');
       }
       const service=changes.filter(row=>describe(row).service).length;
       summary.textContent = changes.length
-        ? 'Найдено изменений: '+changes.length+(service?' · Служебных: '+service:'')+
-          ' · Выбрано: '+selected+' · Не выбрано: '+(changes.length-selected)+
-          (byKind.needsReview?' · Нужна проверка: '+byKind.needsReview:'')
-        : baseline ? 'Различий в игровых данных нет' : '';
+        ? tr('Найдено изменений: ','Changes found: ')+changes.length+
+          (service?tr(' · Служебных: ',' · Technical: ')+service:'')+
+          tr(' · Выбрано: ',' · Selected: ')+selected+
+          tr(' · Не выбрано: ',' · Not selected: ')+(changes.length-selected)+
+          (byKind.needsReview?tr(' · Нужна проверка: ',' · Needs review: ')+byKind.needsReview:'')
+        : baseline ? tr('Различий в игровых данных нет','No differences in game data') : '';
     }
     const checked = change => chosen.has(change.id);
     // Search resolved descriptions and item names without exposing source IDs.
@@ -392,12 +403,14 @@
           referenceContext+'|'+segment.id+'|'+(occurrence++):null;
         const wasExpanded=refKey?expandedReferences.has(refKey):false;
         const button=h('button',{type:'button',class:'os-sync-item-ref',
-          'aria-label':'Показать связанный предмет: '+segment.text,
+          'aria-label':tr('Показать связанный предмет: ','Show linked item: ')+segment.text,
           'aria-expanded':String(wasExpanded),text:segment.text});
-        hint(button,'Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.');
+        hint(button,tr('Ссылка на связанный игровой предмет. Нажми, чтобы посмотреть его описание и открыть карточку энциклопедии.',
+         'Linked game item. Click to preview its description and open the encyclopedia entry.'));
         const preview=h('span',{class:'os-sync-reference-preview',hidden:!wasExpanded});
         preview.append(h('strong',{text:segment.text}),
-          h('small',{text:'Связанный предмет · игровая ссылка в описании'}));
+          h('small',{text:tr('Связанный предмет · игровая ссылка в описании',
+           'Linked item · in-game description reference')}));
         const record=upstream?.items?.[segment.id]||baseline?.items?.[segment.id];
         const sourceDesc=language==='en'?
           upstream?.['strings.en']?.items?.[segment.id]?.d||
@@ -412,8 +425,10 @@
           preview.append(h('a',{
             href:'#wiki/item/'+encodeURIComponent(segment.id),target:'_blank',
             rel:'noopener noreferrer',class:'os-sync-reference-open',
-            text:'Открыть в энциклопедии (новая вкладка) ↗'}));
-        }else preview.append(h('small',{text:'Предмет пока не опубликован в энциклопедии.'}));
+            text:tr('Открыть в энциклопедии (новая вкладка) ↗',
+             'Open encyclopedia (new tab) ↗')}));
+        }else preview.append(h('small',{text:tr('Предмет пока не опубликован в энциклопедии.',
+          'This item has not yet been published in the encyclopedia.')}));
         button.onclick=()=>{
           const expanded=preview.hidden;
           preview.hidden=!expanded;
@@ -431,7 +446,8 @@
     function fieldPreview(change,description) {
       const content=h('div',{class:'os-sync-explanation'});
       if(description.rows.length>1)content.append(h('small',{
-        class:'os-sync-result-count',text:'Изменено параметров: '+description.rows.length}));
+        class:'os-sync-result-count',
+        text:tr('Изменено параметров: ','Changed parameters: ')+description.rows.length}));
       content.append(h('p',{class:'os-sync-change-summary',text:description.summary}));
       if(description.caution)content.append(h('p',{
         class:'os-sync-change-caution',text:description.caution}));
@@ -442,7 +458,8 @@
         if(details.open)expandedDetails.add(change.id);
         else expandedDetails.delete(change.id);
       });
-      details.append(h('summary',{text:'Посмотреть подробно · '+description.rows.length}));
+      details.append(h('summary',{
+        text:tr('Посмотреть подробно · ','View details · ')+description.rows.length}));
       if(description.rows.length){
         for(const field of description.rows){
           const language=change.dataset==='strings.en'?'en':'ru';
@@ -457,7 +474,8 @@
           if(field.difference){
             const delta=h('small',{class:'os-sync-value-delta',
               text:(field.delta>0?'▲ ':'▼ ')+field.difference});
-            hint(delta,'Изменение числа относительно опубликованной версии. Знак не означает, что изменение полезно или вредно.');
+            hint(delta,tr('Изменение числа относительно опубликованной версии. Знак не означает, что изменение полезно или вредно.',
+           'Change relative to the published version. The sign does not imply that the change is beneficial or harmful.'));
             newValue.append(delta);
           }
           const label=h('strong',{text:field.label});
@@ -481,13 +499,16 @@
           if(field.note)line.append(h('p',{class:'os-sync-field-note',text:field.note}));
           if(/Доп\. слоты$/.test(field.label))line.append(h('p',{
             class:'os-sync-field-note',
-            text:'Это параметр дополнительных слотов конкретного предмета в таблице добычи. «Не указаны» означает отсутствие поля в старом источнике, а не подтверждённый ноль.'}));
+            text:tr('Это параметр дополнительных слотов конкретного предмета в таблице добычи. «Не указаны» означает отсутствие поля в старом источнике, а не подтверждённый ноль.',
+          'This is the extra-socket field of an individual item in the loot table. “Not specified” means the old source lacks the field, not a confirmed zero.')}));
           details.append(line);
         }
       }else details.append(h('p',{class:'muted',
-        text:'Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.'}));
+        text:tr('Нет подтверждённой расшифровки. Эти изменения требуют отдельной проверки.',
+          'No verified explanation is available. Review these changes separately.')}));
       const raw=h('details',{class:'os-sync-raw-details'});
-      raw.append(h('summary',{text:'Технические сведения (для разработчика)'}));
+      raw.append(h('summary',{text:tr('Технические сведения (для разработчика)',
+        'Technical details (developers)')}));
       raw.append(h('small',{class:'os-sync-technical-code',text:'ID: '+change.key}));
       const humanizeValue=value=>{
         const source=String(value);
@@ -537,11 +558,15 @@
         const selected = group.filter(checked).length;
         panel.append(h('summary',{class:'os-sync-group-heading'},[
           h('strong',{text:review.labels[name]||name}),
-          h('span',{class:'os-sync-count',text:selected+' / '+group.length+' выбрано'})
+          h('span',{class:'os-sync-count',
+            text:selected+' / '+group.length+tr(' выбрано',' selected')})
         ]));
         const toolbar = h('div',{class:'os-sync-group-actions'});
-        const take = h('button',{type:'button',class:'button-action',text:'Выбрать понятные изменения раздела',disabled:busy||!group.some(safe)});
-        const reject = h('button',{type:'button',class:'button-action',text:'Снять выбор раздела',disabled:busy});
+        const take = h('button',{type:'button',class:'button-action',
+          text:tr('Выбрать понятные изменения раздела','Select understood changes in section'),
+          disabled:busy||!group.some(safe)});
+        const reject = h('button',{type:'button',class:'button-action',
+          text:tr('Снять выбор раздела','Clear section selection'),disabled:busy});
         take.addEventListener('click',()=> {
           if (busy) return;
           for (const item of group)if(safe(item))chosen.add(item.id);
@@ -553,7 +578,8 @@
           refreshActions(); render();
         });
         const takeVisible=h('button',{type:'button',class:'button-action',
-          text:'Выбрать найденное · '+filtered.filter(safe).length,disabled:busy||!filtered.some(safe)});
+          text:tr('Выбрать найденное · ','Select matching · ')+filtered.filter(safe).length,
+          disabled:busy||!filtered.some(safe)});
         takeVisible.onclick=()=>{
           if(busy)return;
           for(const item of filtered)if(safe(item))chosen.add(item.id);
@@ -578,20 +604,21 @@
           const visuallySame=description.rows.some(field=>field.sameVisible);
           const row = h('article',{class:'os-sync-record'+(description.uncertain?' os-sync-review-caution':'')});
           const helper=h('small',{class:'os-sync-review-level',
-            text:description.service?'Служебные данные · ручная проверка':
-              hasLinks?'Игровая ссылка · требуется ручная проверка':
-              visuallySame?'Видимый текст совпадает · требуется ручная проверка':
-              description.uncertain?'Есть нерасшифрованные параметры':
-              'Значения расшифрованы · проверь перед выбором'});
+            text:description.service?tr('Служебные данные · ручная проверка','Technical data · manual review'):
+              hasLinks?tr('Игровая ссылка · требуется ручная проверка','Game link · manual review'):
+              visuallySame?tr('Видимый текст совпадает · требуется ручная проверка','Same visible text · manual review'):
+              description.uncertain?tr('Есть нерасшифрованные параметры','Some parameters are unexplained'):
+              tr('Значения расшифрованы · проверь перед выбором','Values explained · verify before selecting')});
           if(variantTotal.get(description.title)>1)
-            helper.textContent+=' · Вариант '+variantOrder.get(change.id)+
-              ' из '+variantTotal.get(description.title)+' с этим названием';
+            helper.textContent+=tr(' · Вариант ',' · Variant ')+variantOrder.get(change.id)+
+              tr(' из ',' of ')+variantTotal.get(description.title)+
+              tr(' с этим названием',' with this name');
           const input = h('input',{type:'checkbox',checked:checked(change),disabled:busy,
-            'aria-label':'Выбрать изменение '+description.title+
-              (hasLinks||visuallySame?' — требуется отдельная проверка':'')});
+            'aria-label':tr('Выбрать изменение ','Select change ')+description.title+
+              (hasLinks||visuallySame?tr(' — требуется отдельная проверка',' — requires separate review'):'')});
           input.addEventListener('change',()=>setChoice(change,input.checked));
-          const indicator = change.kind==='added'?'Добавлено':
-            change.kind==='removed'?'Удалено':'Изменено';
+          const indicator = change.kind==='added'?tr('Добавлено','Added'):
+            change.kind==='removed'?tr('Удалено','Removed'):tr('Изменено','Changed');
           row.append(h('label',{class:'os-sync-record-label'},[
             input,
             h('span',{class:'os-sync-record-title'},[
@@ -603,11 +630,13 @@
             const signals=h('div',{class:'os-sync-review-signals'});
             if(hasLinks)signals.append(h('small',{
               class:'os-sync-review-signal os-sync-review-signal-link',
-              text:'Связь с предметом изменилась · проверить вручную'
+              text:tr('Связь с предметом изменилась · проверить вручную',
+               'Item link changed · review manually')
             }));
             if(visuallySame)signals.append(h('small',{
               class:'os-sync-review-signal',
-              text:'Текст выглядит одинаково · проверить исходное отличие'
+              text:tr('Текст выглядит одинаково · проверить исходное отличие',
+               'Text looks identical · inspect source difference')
             }));
             row.append(signals);
           }
@@ -617,13 +646,16 @@
         panel.append(list);
         if (limit<filtered.length) {
           const more=h('button',{type:'button',class:'button-action',
-            text:'Показать остальные '+(filtered.length-limit)+' изменений'});
+            text:tr('Показать остальные ','Show remaining ')+(filtered.length-limit)+
+             tr(' изменений',' changes')});
           more.onclick=()=>{full.add(name);expanded.add(name);render()};
           panel.append(more);
         }
         results.append(panel);
       }
-      if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',text:'По этому фильтру изменений нет. Измени запрос или выбери «Все».'}));
+      if(!results.childElementCount&&baseline)results.append(h('p',{class:'os-sync-empty',
+        text:tr('По этому фильтру изменений нет. Измени запрос или выбери «Все».',
+         'No changes match this filter. Change the search or select “All”.')}));
       refreshActions();
       // Keep the reviewer's place after selection; only a new search or
       // category filter intentionally starts at the beginning.
@@ -663,8 +695,12 @@
       descriptions.clear();
       sourceBanner.hidden=false;
       sourceBanner.textContent=from==='server'
-        ?'Проверяем открытые данные pandorasaga-os.com и опубликованный каталог Build Studio (D1). Это не прямое подключение к игровому серверу.'
-        :'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.';
+        ?copy('sourceLiveNotice',
+         'Проверяем открытые данные pandorasaga-os.com и опубликованный каталог Build Studio (D1). Это не прямое подключение к игровому серверу.',
+         'Comparing public pandorasaga-os.com data with the Build Studio catalog published in D1. This is not a direct connection to the game server.')
+        :copy('sourceArchiveNotice',
+         'Архивная сверка по данным сохранённой копии: это НЕ проверка текущего игрового сервера. Применение может вернуть старые значения.',
+         'Comparing an archived snapshot, NOT the current game server. Publishing may restore older values.');
       diagnostic.hidden=true;diagnosticText.textContent='';
       baseline=null;upstream=null;legacy=null;legacyRows=null;activeSnapshot=null;
       changes=[];chosen=new Set();expanded=new Set();full=new Set();
@@ -675,7 +711,8 @@
       russianDetails.open=false;russianList.replaceChildren();
       results.replaceChildren();summary.textContent='';
       progress.value=0;
-      metaStatus.textContent='Служебная проверка контрольных сумм будет доступна после сравнения.';
+      metaStatusDetail.textContent='';
+      metaStatusDetail.hidden=true;
       refreshActions();
       try {
         const next={},old={};
@@ -683,8 +720,10 @@
         await mapLimited(importer.files,async name=>{
           next[name]=await sourceFile(name,from);
           const done=++readCount;
-          status.textContent=(from==='server'?'Получаю данные сайта игры':'Читаю архив Build Studio')+
-            ' · '+done+' из '+importer.files.length;
+          status.textContent=(from==='server'?
+            tr('Получаю данные сайта игры','Reading live game data'):
+            tr('Читаю архив Build Studio','Reading Build Studio archive'))+
+            ' · '+done+tr(' из ',' of ')+importer.files.length;
           progress.value=Math.round(45*done/importer.files.length);
         });
         // Reject mixed upstream snapshots if the server changes during 17-file retrieval.
@@ -727,12 +766,18 @@
         const fingerprintCount=[...new Set([...Object.keys(oldSha),...Object.keys(newSha)])]
           .filter(key=>oldSha[key]!==newSha[key]).length;
         const onlyTechnicalMeta=review.metadataOnlyTechnical(old.meta,next.meta);
-        metaStatus.textContent=fingerprintCount
-          ?'Сведения об источнике: контрольные суммы '+fingerprintCount+
-           ' файлов изменились. Это не означает изменения характеристик. Хэши используются для проверки целостности и не предлагаются к публикации как игровые данные.'
-          :'Сведения об источнике: изменения контрольных сумм не обнаружены.';
+        metaStatusDetail.hidden=false;
+        metaStatusDetail.textContent=fingerprintCount
+          ?tr('Сведения об источнике: контрольные суммы ',
+              'Source integrity: checksums for ')+fingerprintCount+
+           tr(' файлов изменились. Это не означает изменения характеристик. Хэши используются для проверки целостности и не предлагаются к публикации как игровые данные.',
+              ' files changed. This does not establish a change in game statistics. Checksums are for integrity checks and are not proposed as gameplay updates.')
+          :tr('Сведения об источнике: изменения контрольных сумм не обнаружены.',
+              'Source integrity: no checksum changes detected.');
         if(!onlyTechnicalMeta)
-          metaStatus.textContent+=' Есть и изменения настроек каталога — они показаны в списке отдельно и требуют ручной проверки.';
+          metaStatusDetail.textContent+=tr(
+           ' Есть и изменения настроек каталога — они показаны в списке отдельно и требуют ручной проверки.',
+           ' Catalog configuration changes are also listed separately and require manual review.');
         if(from==='server')try{
           const copy=await fetch('./data/os/instances.json',{cache:'no-store'});
           if(copy.ok)localInstances=await copy.json();
@@ -750,14 +795,24 @@
         baseline=old;upstream=next;legacy=retained.locales;legacyRows=retained.records;mode=from;
         activeSnapshot=[...versions][0];changes=findings;
         status.textContent=findings.length
-          ? 'Сверка завершена. Ни одно изменение не принято автоматически.'
+          ? copy('comparisonFound',
+             'Сверка завершена. Ни одно изменение не принято автоматически.',
+             'Comparison complete. No changes were selected automatically.')
           : formattingCount&&verifiedRussian.length
-           ? 'Игровые значения совпадают. Можно отдельно сохранить переносы и добавить русские описания.'
+           ? copy('comparisonFormattingAndRussian',
+              'Игровые значения совпадают. Можно отдельно сохранить переносы и добавить русские описания.',
+              'Game values match. You may separately save line breaks and add Russian descriptions.')
            : formattingCount
-            ? 'Игровые значения совпадают. Можно отдельно сохранить оригинальные переносы описаний.'
+            ? copy('comparisonFormatting',
+               'Игровые значения совпадают. Можно отдельно сохранить оригинальные переносы описаний.',
+               'Game values match. You may separately restore the original description line breaks.')
             : verifiedRussian.length
-             ? 'Игровые значения совпадают. Можно отдельно добавить проверенные русские описания.'
-             : 'Данные совпадают. Публикация не требуется.';
+             ? copy('comparisonRussian',
+                'Игровые значения совпадают. Можно отдельно добавить проверенные русские описания.',
+                'Game values match. You may separately add verified Russian descriptions.')
+             : copy('comparisonNoChanges',
+                'Данные совпадают. Публикация не требуется.',
+                'Data matches. No publication is needed.');
         render();
       }catch(error) {
         const unavailable=from==='server'&&(
@@ -784,11 +839,17 @@
             ?'Ответ сайта игры превысил ограничение безопасности.'
             :code?'Сайт игры ответил HTTP '+code+'.'
             :'Не удалось получить открытые игровые данные через Cloudflare Worker.';
-          status.textContent=issue+' Каталог Build Studio не изменён. Архивную копию можно сравнить отдельно, но она может быть старее.';
+          status.textContent=issue+tr(
+           ' Каталог Build Studio не изменён. Архивную копию можно сравнить отдельно, но она может быть старее.',
+           ' The Build Studio catalog is unchanged. You can compare the archived copy separately, but it may be older.');
         }else if(error.httpStatus===401){
-          status.textContent='Сеанс администратора завершился. Войди заново, чтобы повторить проверку.';
+          status.textContent=copy('compareSessionExpired',
+            'Сеанс администратора завершился. Войди заново, чтобы повторить проверку.',
+            'The admin session ended. Sign in again to repeat the comparison.');
         }else{
-          status.textContent='Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.';
+          status.textContent=copy('compareNotCompleted',
+            'Сверка не завершена. Действующие данные остались прежними. Попробуй ещё раз или воспользуйся сохранённой копией.',
+            'Comparison did not finish. Published data is unchanged. Try again or use the archived snapshot.');
         }
         diagnosticText.textContent='Этап: '+(error.sourceDataset||'не определён')+
           ' · Ответ Worker: '+(error.httpStatus??'нет HTTP-ответа')+
