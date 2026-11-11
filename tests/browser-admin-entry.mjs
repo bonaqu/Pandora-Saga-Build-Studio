@@ -460,8 +460,36 @@ export async function runAdminEntrySmoke(browser,base){
   await page.getByRole('tooltip').waitFor({state:'hidden'});
   assert.match(await dialog.locator('.os-sync-intro').innerText(),/не ищет файлы на твоём компьютере/);
   assert.match(await dialog.locator('.os-sync-archive-choice>summary').innerText(),/сайт игры/);
+  // 0.615: disclosure help edits must not toggle the native <details> element
+  // or invoke a catalog operation. The hover target remains the summary.
+  const archiveBlock=dialog.locator('.os-sync-secondary-hint:has(> .os-sync-archive-choice)');
+  const archiveDetails=archiveBlock.locator('details.os-sync-archive-choice');
+  assert.equal(await archiveDetails.evaluate(el=>el.open),false);
+  await archiveBlock.locator('.os-sync-secondary-pencil').click();
+  const archiveHelp=archiveBlock.locator('.os-sync-secondary-host [contenteditable]');
+  await archiveHelp.waitFor({state:'visible'});
+  await archiveHelp.fill('Подсказка архивной сверки QA.');
+  await archiveHelp.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('.os-sync-archive-choice>summary')
+   ?.dataset.guideHint==='Подсказка архивной сверки QA.',null,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.hint-archive-disclosure')).ru,
+   'Подсказка архивной сверки QA.');
+  assert.equal(await archiveDetails.evaluate(el=>el.open),false,
+   'Editing a summary tooltip must not expand its details element');
+  assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,expectedCalls);
   // A PR is generated from the published D1 snapshot via Worker, not the
   // browser's downloaded JSON. No GitHub token enters the client.
+  const advancedBlock=dialog.locator('.os-sync-secondary-hint:has(> .os-sync-advanced)');
+  await advancedBlock.locator('.os-sync-secondary-pencil').click();
+  const advancedHelp=advancedBlock.locator('.os-sync-secondary-host [contenteditable]');
+  await advancedHelp.waitFor({state:'visible'});
+  await advancedHelp.fill('Подсказка дополнительных инструментов QA.');
+  await advancedHelp.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('.os-sync-advanced>summary')
+   ?.dataset.guideHint==='Подсказка дополнительных инструментов QA.',null,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.hint-advanced-disclosure')).ru,
+   'Подсказка дополнительных инструментов QA.');
+  assert.equal(await advancedBlock.locator('details').evaluate(el=>el.open),false);
   await dialog.locator('.os-sync-advanced>summary').click();
   const prButton=dialog.getByRole('button',{name:'Создать PR в GitHub'});
   await prButton.waitFor({state:'visible'});
@@ -550,6 +578,20 @@ export async function runAdminEntrySmoke(browser,base){
    'Архивный источник проверен отдельно.',
    'After D1 edit, the authored archive message must remain visible');
   assert.match(await dialog.locator('.os-sync-overview').innerText(),/Предметы · 1/);
+  const searchBlock=dialog.locator('.os-sync-search-field');
+  assert.equal(await searchBlock.locator('.os-sync-secondary-pencil').count(),1);
+  await searchBlock.locator('.os-sync-secondary-pencil').click();
+  const searchHelp=searchBlock.locator('.os-sync-secondary-host [contenteditable]');
+  await searchHelp.waitFor({state:'visible'});
+  await searchHelp.fill('Подсказка поиска изменений QA.');
+  await searchHelp.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.os-sync-search')?.dataset.guideHint==='Подсказка поиска изменений QA.',
+   null,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.hint-search')).ru,
+   'Подсказка поиска изменений QA.');
+  assert.equal(await dialog.locator('.os-sync-search').inputValue(),'',
+   'Editing help must not overwrite the search query');
   assert.equal(await dialog.locator('.os-sync-stat').count(),0,
     'redundant four-card metrics dashboard is no longer present');
   assert.equal(await dialog.locator('.os-sync-results').evaluate(el=>getComputedStyle(el).overflowY),'visible',
