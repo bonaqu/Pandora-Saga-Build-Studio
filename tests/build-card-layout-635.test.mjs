@@ -17,6 +17,7 @@ test('saved build card keeps Compare in the top corner and exactly four actions 
  assert.equal((body.match(/h\('button',\{class:'button-action/g)||[]).length,4);
  assert.match(body,/onclick:\(\)=>createShared\(b,shareSlot\)/);
  assert.match(body,/overwriteChoice\.hidden=!overwriteChoice\.hidden/);
+ assert.match(body,/text:'↻ Перезаписать'/);
  assert.match(body,/deleteChoice\.hidden=!deleteChoice\.hidden/);
  assert.match(css,/\.build-card-actions\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.build-card-compare\{display:inline-flex/);
