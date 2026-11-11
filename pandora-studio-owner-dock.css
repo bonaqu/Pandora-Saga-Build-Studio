@@ -114,6 +114,43 @@ body>#ownerDock.owner-dock-collapsed{
  padding:8px 6px;margin:0;border-radius:5px;font-size:11px;
  white-space:normal;transition:border-color .18s,background .18s;
 }
+/* An action and its inline-editor pencil share one grid cell. Editing a
+   caption must never activate the underlying save/reset/navigation button. */
+#ownerDock .owner-dock-action-slot{
+ display:grid;grid-template-columns:minmax(0,1fr) 23px;
+ align-items:stretch;gap:4px;min-width:0
+}
+#ownerDock .owner-dock-action-slot:has(>.owner-dock-primary),
+#ownerDock .owner-dock-action-slot:has(>.owner-dock-finish),
+#ownerDock .owner-dock-action-slot.owner-dock-action-wide{grid-column:1/-1}
+#ownerDock .owner-dock-action-slot:has(>.owner-en-sync[hidden]),
+#ownerDock .owner-dock-action-slot[hidden]{display:none!important}
+#ownerDock .owner-dock-action-slot>.owner-dock-primary,
+#ownerDock .owner-dock-action-slot>.owner-dock-finish{
+ grid-column:auto
+}
+#ownerDock .owner-dock-action-slot>button:not(.owner-dock-action-pencil){
+ width:100%;min-width:0;margin:0
+}
+#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil{
+ width:23px;min-width:23px;min-height:37px;margin:0;padding:0;
+ display:flex;align-items:center;justify-content:center;flex:none;
+ border:1px solid #786044;border-radius:5px;background:#2b2018;
+ color:#d8b580;font:600 11px/1 Manrope,Arial,sans-serif
+}
+#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil:hover{
+ border-color:#ddaf72;background:#49311f;color:#ffe0a9
+}
+#ownerDock .owner-dock-action-slot>.owner-dock-action-pencil[hidden]{display:none}
+#ownerDock .owner-dock-action-edit-host{
+ grid-column:1/-1;display:block;min-width:0;max-width:100%;
+ border:1px solid #b28a56;border-radius:5px;background:#17110e
+}
+#ownerDock .owner-dock-action-edit-host[hidden]{display:none}
+#ownerDock .owner-dock-action-edit-host .wiki-inline-input{
+ display:block;width:100%;max-width:100%;min-width:0;min-height:37px;
+ box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere
+}
 #ownerDock .owner-dock-secondary-label{
  grid-column:1/-1;display:block;margin:3px 0 -1px;padding:8px 2px 0;
  border-top:1px solid #695139;color:#b7a38b;
@@ -127,7 +164,6 @@ body>#ownerDock.owner-dock-collapsed{
 #ownerDock .owner-dock-actions .owner-dock-export:hover{
  background:#3d2b1d;border-color:#c39961
 }
-#ownerDock .owner-dock-catalog:has(+ .owner-en-sync[hidden]){grid-column:1/-1}
 #ownerDock .owner-dock-actions .owner-dock-primary,
 #ownerDock .owner-dock-actions .owner-dock-finish{
  grid-column:1/-1;
