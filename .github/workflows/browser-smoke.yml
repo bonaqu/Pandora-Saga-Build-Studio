@@ -9,6 +9,12 @@ on:
       - 'tests/*.test.mjs'
       - 'artifacts/**'
   workflow_dispatch:
+    inputs:
+      scenario:
+        description: 'Optional isolated Chromium flow for debugging (manual only)'
+        type: string
+        required: false
+        default: ''
 
 permissions:
   contents: read
@@ -59,11 +65,16 @@ jobs:
             npx playwright install-deps chromium
           fi
       - name: Exercise the real editor in Chromium
+        env:
+          BROWSER_SCENARIO: ${{ github.event_name == 'workflow_dispatch' && inputs.scenario || '' }}
         run: |
           node scripts/dev-server.mjs &
           server=$!
           trap 'kill "$server" 2>/dev/null || true' EXIT
-          if [[ "${{ steps.suite.outputs.mode }}" == 'quick' ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == 'workflow_dispatch' && -n "${BROWSER_SCENARIO:-}" ]]; then
+            # Only manually requested diagnostic runs may select a single flow.
+            node tests/browser-smoke.mjs "--only=$BROWSER_SCENARIO"
+          elif [[ "${{ steps.suite.outputs.mode }}" == 'quick' ]]; then
             node tests/browser-smoke.mjs --quick
           else
             node tests/browser-smoke.mjs
