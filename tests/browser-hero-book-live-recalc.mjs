@@ -122,7 +122,7 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
   const authored=key=>page.locator('#stageBookPanel [data-guide-key="'+key+'"]');
   for(const [key,text] of [
    ['buffs.section.0','Vitals'],['buffs.guild','Guild'],
-   ['buffs.section.honor','Honor'],['buffs.section.1','Priest buffs'],
+   ['buffs.section.honor','Honor · passive skill'],['buffs.section.1','Priest buffs'],
    ['buffs.section.2','Combat skills'],
    ['buffs.setting.guildHp','Guild HP'],
    ['buffs.setting.guildMp','Guild MP'],

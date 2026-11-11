@@ -26,11 +26,11 @@ test('D1 guide fallback and explicit overrides keep the two languages isolated',
  const initial=guide.field({},key,'Гильдейское ОЗ','Guild HP');
  assert.equal(initial.ru,'Гильдейское ОЗ');
  assert.equal(initial.en,'Guild HP');
- const edited=guide.field({'guideedit.book.'+key:JSON.stringify({ru:'ОЗ гильдии',en:'Guild vitality'})},
+ const edited=guide.field({['guideedit.book.'+key]:JSON.stringify({ru:'ОЗ гильдии',en:'Guild vitality'})},
   key,'Гильдейское ОЗ','Guild HP');
  assert.equal(edited.ru,'ОЗ гильдии');
  assert.equal(edited.en,'Guild vitality');
- const rejected=guide.field({'guideedit.book.'+key:'{bad JSON'},
+ const rejected=guide.field({['guideedit.book.'+key]:'{bad JSON'},
   key,'Гильдейское ОЗ','Guild HP');
  assert.equal(rejected.ru,'Гильдейское ОЗ');
  assert.equal(rejected.en,'Guild HP');
