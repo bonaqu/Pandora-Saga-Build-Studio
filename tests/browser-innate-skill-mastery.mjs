@@ -177,6 +177,21 @@ export async function runInnateSkillMasterySmoke(browser,base){
   await passive.evaluate(node=>node.remove());
   await richSkill.waitFor({state:'detached',timeout:2000});
   assert.equal(await richSkill.count(),0,'Detached passive must not retain a rich preview');
+  // Player reset uses the same inline confirmation style as saved-build actions:
+  // Cancel must preserve spent points; Confirm must clear ONLY skill investments.
+  await page.locator('#pathResetPoints').click();
+  const resetPanel=page.locator('#pathResetConfirm');
+  await resetPanel.waitFor({state:'visible'});
+  assert.match(await resetPanel.innerText(),/Экипировка и другие настройки героя сохранятся/);
+  assert.equal(await page.locator('[data-branch-control="slash:potential-number"]').inputValue(),String(invested));
+  await resetPanel.getByRole('button',{name:'Отмена'}).click();
+  assert.equal(await resetPanel.count(),0);
+  assert.equal(await page.locator('[data-branch-control="slash:potential-number"]').inputValue(),String(invested));
+  await page.locator('#pathResetPoints').click();
+  await resetPanel.getByRole('button',{name:'Да, сбросить очки'}).click();
+  assert.equal(await resetPanel.count(),0);
+  assert.equal(await page.locator('[data-branch-control="slash:potential-number"]').inputValue(),'0');
+  assert.equal(await page.locator('#pathResetPoints').isVisible(),true);
   assert.deepEqual(errors,[]);
   console.log('Chromium innate mastery passed: Warrior Enkidu L1 5/2/5/2/4 + archery1, no spent points, manual green training, non-login search');
  }finally{await context.close()}

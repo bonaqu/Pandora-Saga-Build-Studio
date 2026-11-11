@@ -2179,6 +2179,8 @@ function heroPathApi(){
  };
 }
 function renderBranches(){
+ // Any change to a build invalidates a previously displayed reset question.
+ closePathResetConfirm();
  activeSkillPreview?.remove();activeSkillPreview=null;
  const groups=window.PandoraGameNavigation.groups;
  if(!pathGroupTouched&&catalog.classes?.[jobKeys[state.job]]){
@@ -2297,6 +2299,7 @@ function renderPathCopyControls(){
 }
 function renderPathPages(){
  const grow=heroPathPage==='growth';
+ if(!grow)closePathResetConfirm();
  $('pathGrowthPage').hidden=!grow;$('pathSkillsPage').hidden=grow;
  for(const [id,on]of[['pathGrowthTab',grow],['pathSkillsTab',!grow]]){
   $(id).classList.toggle('chosen',on);
@@ -2308,8 +2311,20 @@ function renderPathPages(){
 function render(){state.gender=window.PandoraUIPlanner.normalizeGender(races,state.race,state.gender);const hasRace=Number.isInteger(state.race)&&state.race>=0&&state.race<races.length;
  const hasJob=Number.isInteger(state.job)&&state.job>=0&&state.job<jobKeys.length;
  const logo=document.querySelector('.brand img');if(logo)logo.src=override['visual.logo']||'assets/pandora-logo.png';renderRaces();renderJobs();renderOriginTabs();$('genderF').classList.toggle('chosen',state.gender===0);
- $('raceSexInfo').textContent=['Пол по выбранному образу','Пол по выбранному образу',
- 'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'][state.race]||(lang==='en'?'Choose a race first':'Сначала выберите расу');$('genderM').classList.toggle('chosen',state.gender===1);const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);$('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;$('swapGender').disabled=!genderAllowed;$('genderF').title=$('genderM').title=genderAllowed?'Выбор варианта портрета':'Для этой расы нет отдельных вариантов портрета';$('hero').src=raceSource(state.race,state.gender);
+ const genderNotes=lang==='en'?
+  ['Gender follows the selected appearance','Gender follows the selected appearance',
+   'Dwarf · gender selection unavailable','Myrine · female','Enkidu · male','Lapin · genderless']:
+  ['Пол по выбранному образу','Пол по выбранному образу',
+   'Цверг · выбор пола недоступен','Мирина · женский','Энкиду · мужской','Кролль · бесполый'];
+ $('raceSexInfo').textContent=genderNotes[state.race]||(lang==='en'?'Choose a race first':'Сначала выберите расу');
+ $('genderM').classList.toggle('chosen',state.gender===1);
+ const genderAllowed=window.PandoraUIPlanner.raceHasGender(races,state.race);
+ $('genderF').disabled=!genderAllowed;$('genderM').disabled=!genderAllowed;
+ $('swapGender').disabled=!genderAllowed;
+ $('genderF').title=$('genderM').title=genderAllowed?
+  (lang==='en'?'Choose a portrait variant':'Выбор варианта портрета'):
+  (lang==='en'?'No alternate portraits for this race':'Для этой расы нет отдельных вариантов портрета');
+ $('hero').src=raceSource(state.race,state.gender);
 // The central hero portrait is the Book entry, never an image-edit target.
 // Race portrait artwork remains editable in Origin > Race carousel.
 $('hero').removeAttribute('data-edit-key');$('hero').classList.remove('admin-edit');
@@ -8561,14 +8576,58 @@ document.addEventListener('dblclick',event=>{
 },true);
 $('pathGrowthTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,.wiki-inline-input'))return;heroPathPage='growth';renderPathPages();saveView()};
  $('pathSkillsTab').onclick=event=>{if(event.target?.closest?.('.path-tab-pencil,.wiki-inline-input'))return;heroPathPage='skills';renderPathPages();saveView()};
+ // The one-step browser confirm interrupts the game and is RU-only.
+ // Keep this warning in the Path itself, with separate cancel/confirm actions.
+ function closePathResetConfirm(restoreFocus=false){
+  $('pathResetConfirm')?.remove();
+  const trigger=$('pathResetPoints');
+  if(trigger)trigger.hidden=false;
+  if(restoreFocus&&trigger&&!trigger.closest('[hidden]'))
+   trigger.focus({preventScroll:true});
+ }
  $('pathResetPoints').onclick=()=>{
-  const spent=budgetSummary().spent;
-  if(!spent)return;
-  if(!confirm('Сбросить все вложенные очки навыков и зелёное мастерство? Остальная сборка и экипировка сохранятся.'))return;
-  for(const b of branches)state.points[b.id]=0;
-  state.mastery={};
-  persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderOriginVitals();
-  saveView();
+  if(!budgetSummary().spent||$('pathResetConfirm'))return;
+  const ru='Сбросить вложенные очки навыков и зелёное мастерство? Экипировка и другие настройки героя сохранятся.';
+  const en='Reset allocated skill points and trained mastery? Equipment and other character settings will be kept.';
+  const note=h('p',{class:'path-reset-confirm-note',
+   text:ownerCopy('path','resetConfirmHelp',ru,en)});
+  ownerCopyLabel(note,'path','resetConfirmHelp',ru,en);
+  const copyRow=h('div',{class:'path-reset-confirm-copy'});
+  copyRow.append(note);
+  if(adminEditing&&adminToken){
+   const pencil=h('button',{type:'button',class:'path-reset-confirm-pencil',
+    text:'✎','aria-label':(lang==='en'?'Edit warning: ':'Изменить предупреждение: ')+note.textContent,
+    onclick:event=>{
+     event.preventDefault();event.stopPropagation();
+     note.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+    }});
+   copyRow.append(pencil);
+  }
+  const panel=h('div',{id:'pathResetConfirm',class:'path-reset-confirm',
+   role:'group','aria-label':lang==='en'?'Confirm skill reset':'Подтверждение сброса навыков'});
+  const controls=h('div',{class:'path-reset-confirm-actions'});
+  const reset=h('button',{type:'button',class:'path-reset-accept',
+   text:lang==='en'?'Yes, reset skill points':'Да, сбросить очки',
+   onclick:()=>{
+    // Allocation can change before confirmation; re-check the live budget.
+    if(!budgetSummary().spent){closePathResetConfirm(true);return}
+    closePathResetConfirm();
+    for(const b of branches)state.points[b.id]=0;
+    state.mastery={};
+    persist();renderBranches();refreshBudgetLabel();renderOriginStats();renderOriginVitals();
+    saveView();
+   }});
+  const cancel=h('button',{type:'button',class:'path-reset-cancel',
+   text:lang==='en'?'Cancel':'Отмена',onclick:()=>closePathResetConfirm(true)});
+  controls.append(reset,cancel);panel.append(copyRow,controls);
+  panel.addEventListener('keydown',event=>{
+   if(event.key==='Escape'){
+    event.preventDefault();event.stopPropagation();closePathResetConfirm(true);
+   }
+  });
+  $('pathResetPoints').after(panel);
+  $('pathResetPoints').hidden=true;
+  cancel.focus({preventScroll:true});
  };
  $('pathAutoMastery').onchange=e=>{
   window.PandoraSkillProgression.setAuto(state,e.target.checked,branches.map(b=>b.id),
