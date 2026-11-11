@@ -28,7 +28,8 @@ test('milestone labels consistently distinguish initial, invested, class cap and
 test('outfit mirrored pants has a lock but stays an interactive, nonduplicated slot',()=>{
  assert.match(app,/class:'equipment-slot'\+\(item\?' equipped'/);
  assert.match(app,/class:'stage-shared-mark',text:'🔒'/);
- assert.match(app,/stageSlotView=shared\?'choose':state\.equipment\?\.\[i\]\?'details':'choose'/);
+ assert.match(app,/stageSlotView=view==='auto'\?/);
+ assert.match(app,/shared\|\|!state\.equipment\?\.\[index\]\?'choose':'details'/);
  assert.match(app,/if\(selectedSlot===5&&oldDress\)/);
  assert.match(css,/\.equipment-slot\.shared-outfit\{/);
  assert.match(css,/\.shared-outfit .equipped-icon/);
