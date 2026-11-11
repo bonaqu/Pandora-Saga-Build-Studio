@@ -7129,7 +7129,11 @@ function bindStaticUICopyEditors(){
    node.dataset.originCopyBound==='1'||node.dataset.pathCopyBound==='1')continue;
   const button=node.closest('button,[role="button"]');
   const target=button||node;
-  if(target.nextElementSibling?.classList?.contains('ui-content-edit-host'))continue;
+  if(target.nextElementSibling?.classList?.contains('ui-content-edit-host')){
+   // Locale may change while the active editor host sits between the game
+   // button and its pencil. Refresh the live pencil without remounting input.
+   syncPencil(target.nextElementSibling.nextElementSibling,key);continue;
+  }
   const oldPencil=target.nextElementSibling;
   if(!canEdit){
    node.classList.remove('ui-content-editable');
@@ -7158,7 +7162,9 @@ function bindStaticUICopyEditors(){
     onFinished:()=>{
      target.hidden=false;host.remove();
      node.textContent=locale.text(key,lang);
-     if(pencil){pencil.hidden=false;syncPencil(pencil,key)}
+     const mounted=target.nextElementSibling;
+     if(pencil)pencil.hidden=false;
+     syncPencil(mounted?.dataset?.uiContentFor===key?mounted:pencil,key)
     }
    });
   };
@@ -7194,7 +7200,9 @@ function bindStaticUICopyEditors(){
   if(pencil?.dataset?.uiContentFor===key){
    syncPencil(pencil,key,true);continue;
   }
-  if(pencil?.classList?.contains('ui-content-edit-host'))continue;
+  if(pencil?.classList?.contains('ui-content-edit-host')){
+   syncPencil(pencil.nextElementSibling,key,true);continue;
+  }
   const edit=event=>{
    event.preventDefault();event.stopPropagation();
    if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
@@ -7220,7 +7228,9 @@ function bindStaticUICopyEditors(){
       if(node.dataset[datasetKey])
        node.setAttribute(attribute,locale.text(node.dataset[datasetKey],lang));
      }
-     if(editButton){editButton.hidden=false;syncPencil(editButton,key,true)}
+     const mounted=node.nextElementSibling;
+     if(editButton)editButton.hidden=false;
+     syncPencil(mounted?.dataset?.uiContentFor===key?mounted:editButton,key,true)
     }
    });
   };
