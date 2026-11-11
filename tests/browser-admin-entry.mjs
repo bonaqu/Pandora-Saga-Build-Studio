@@ -351,7 +351,12 @@ export async function runAdminEntrySmoke(browser,base){
   const subtitleCopy=honorPanel.locator('.wiki-honor-subtitle');
   assert.equal(await subtitleCopy.locator('.wiki-honor-copy-pencil').count(),1);
   assert.equal(await honorPanel.locator('.wiki-honor-list-section h5 .wiki-honor-copy-pencil').count(),2);
-  assert.equal(await honorPanel.locator('.wiki-honor-monthly-head .wiki-honor-copy-pencil').count(),3);
+  // Monthly rewards have two independent owner actions per group:
+  // editable rank names and editable "Rewards" captions.
+  assert.equal(await honorPanel.locator(
+   '.wiki-honor-monthly-head small .wiki-honor-copy-pencil').count(),3);
+  assert.equal(await honorPanel.locator(
+   '.wiki-honor-monthly-head .wiki-honor-field-edit-row>.wiki-honor-direct-pencil').count(),3);
   await subtitleCopy.locator('.wiki-honor-copy-pencil').click();
   const subtitleEditor=subtitleCopy.locator('[data-owner-text-field="true"]');
   await subtitleEditor.waitFor({state:'visible'});
