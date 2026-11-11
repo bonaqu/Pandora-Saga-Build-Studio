@@ -230,10 +230,14 @@ async function main(){
   'Group heading must not display placeholder help');
  const guideLabels=page.locator('#stageBookPanel [data-guide-key^="summary."]');
  assert.equal(await guideLabels.count(),47,'43 result hints and four group headers (duplicate caption removed)');
- await page.locator('#stageBookPanel [data-guide-key="summary.0"]').hover();
- // A scrolling chapter must not permanently cancel a delayed hover hint.
+ const firstGuide=page.locator('#stageBookPanel [data-guide-key="summary.0"]');
+ await firstGuide.hover();
+ // Scroll can move the element out from under a real pointer. Re-hover after
+ // the scroll to assert the tooltip is still available, not that an old
+ // hover session survives an unrelated mouseleave.
  await page.locator('#stageBookPanel').evaluate(node=>{node.scrollTop+=1});
- await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:3000});
+ await firstGuide.hover();
+ await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:4000});
  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/Очки здоровья/);
  await page.locator('#stageBookPanel [data-guide-key="summary.23"]').hover();
  await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:3000});

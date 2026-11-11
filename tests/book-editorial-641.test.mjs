@@ -49,7 +49,7 @@ test('Book D1 edits are bilingual, scoped, read-only for unknown values, and rev
 
 test('generic Book editor avoids specialized guides, item controls and repeated rerenders',()=>{
  const src=file('pandora-studio-hero-book.js'),app=file('pandora-studio-app.js');
- assert.match(src,/node\.closest\('\[data-guide-key\],\.stage-guide-actions,\.stage-book-tab-owner,button,\[role="button"\]'\)/);
+ assert.match(src,/node\.closest\('\[data-guide-key\],\.stage-guide-actions,\.stage-book-tab-owner,button,\[role="button"\],\.stage-potion-item/);
  assert.match(src,/node\.querySelector\('button,input,select,\[role="button"\]'\)/);
  assert.match(app,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(root\)/);
  const restore=app.slice(app.indexOf('function refreshVisibleUICopy('),app.indexOf('function refreshVisibleOriginCopy('));

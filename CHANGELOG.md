@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.642.0 — 2026.11.11.642 · Expanded Hero Book editorial defaults
+
+- Added 36 further source-authored RU/EN captions in Book: guild and priest enhancements, resistance skill explanations, song previews, conditional equipment effects, potion recovery and empty/disabled messaging.
+- Added dedicated Node tests for additional pairs, independent RU/EN D1 overrides, exact-match fallback and noneditable player/game data.
+- Player names, item rows, skill records and calculated numbers remain outside the generic editor; specialized guide editors keep priority.
+- Publication requires full Node and Chromium acceptance.
+
+
 ## 0.641.0 — 2026.11.11.641 · Hero Book RU/EN editorial sweep
 
 - Expanded existing D1 inline copy editor to 156 exact, source-backed Hero Book caption pairs; each has a stable readable key with a collision-resistant suffix and independent RU/EN overrides.
