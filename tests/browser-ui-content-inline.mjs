@@ -172,7 +172,16 @@ export async function runUIContentInlineSmoke(browser,base){
   await liveRu.fill('📜 Изменённый русский текст');
   await page.evaluate(()=>document.querySelector('#locale [data-locale="en"]').click());
   await page.waitForFunction(()=>document.documentElement.lang==='en');
+  // The visible EN caption may already have the expected fallback before
+  // the prior RU blur has finished its async CAS D1 write.
+  const ruSave=page.waitForResponse(response=>
+   response.url().endsWith('/api/admin/override')&&
+   response.request().postDataJSON()?.key==='guideedit.book.ui.label.wiki'&&
+   JSON.parse(response.request().postDataJSON()?.value||'{}').ru===
+    '📜 Изменённый русский текст',{timeout:15000});
   await liveRu.press('Tab');
+  const saved=await ruSave;
+  assert.equal(saved.status(),200,'The RU draft must finish its CAS save');
   await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
    ?.textContent==='📜 Wiki Guide',null,{timeout:15000});
   assert.deepEqual(JSON.parse(values['guideedit.book.ui.label.wiki']),{
