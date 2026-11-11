@@ -70,6 +70,33 @@ function fixture(job='CLERIC',section='prayer',branch='benevolence'){
  const range=walk(target).find(x=>x.tag==='input'&&x.attributes.type==='range');
  return {state,api,target,range,budget};
 }
+test('Hero Path owner group edit pencil is a sibling BUTTON, not nested in disclosure',()=>{
+ const {target,api}=fixture();
+ api.canEdit=true;
+ api.copyLabel=(key,ru,en)=>ru;
+ api.editLabel=()=>{};
+ root.PandoraHeroPath.viewGrowth(target,api);
+ const headers=walk(target).filter(x=>x.className==='game-tree-head-row');
+ assert.ok(headers.length>0);
+ for(const header of headers){
+  const buttons=header.children.filter(x=>x.tag==='button');
+  assert.equal(buttons.length,2,'one independent expand and one edit action');
+  const [disclosure,pencil]=buttons;
+  assert.match(disclosure.className,/game-tree-head/);
+  assert.equal(pencil.className,'path-group-pencil');
+  assert.equal(pencil.attributes.type,'button');
+  assert.equal(disclosure.attributes['data-path-group']?.length>0,true);
+  assert.equal(pencil.attributes.role,undefined);
+  assert.equal(pencil.attributes.tabindex,undefined);
+  assert.ok(!walk(disclosure).some(x=>x.className==='path-group-pencil'));
+  assert.equal(typeof disclosure.listeners.click,'function');
+  assert.equal(typeof pencil.listeners.click,'function');
+ }
+ const normal=fixture();
+ assert.ok(walk(normal.target).filter(x=>x.className==='game-tree-head-row')
+  .every(header=>header.children.filter(x=>x.tag==='button').length===1));
+});
+
 test('45-level Cleric with 104 available points has actually ENABLED skill range',()=>{
  const {range,budget}=fixture();
  assert.equal(budget().remaining,104);assert.ok(range);

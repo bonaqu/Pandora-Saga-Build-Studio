@@ -207,12 +207,10 @@ function viewGrowth(target,api){
  for(const group of groups){
   const branchKeys=group.branches.filter(key=>key!=='race');
   const wrap=make('section',{class:'game-tree-group'});
+  const head=make('div',{class:'game-tree-head-row'});
   const groupButton=make('button',{type:'button',class:'game-tree-head'+(selectedGroup===group.id?' active':''),
    'aria-expanded':String(selectedGroup===group.id),'data-path-group':group.id,
-   onclick:event=>{
-    if(event.target?.closest?.('.path-group-pencil,.wiki-inline-input'))return;
-    api.onGroup(group.id);
-   }});
+   onclick:()=>api.onGroup(group.id)});
   const groupSummary=()=>{
    const spent=branchKeys.reduce((sum,key)=>sum+M.potential(state,key),0);
    const mastered=branchKeys.reduce((sum,key)=>sum+M.branchMastery(state,key,innate,caps),0);
@@ -229,21 +227,19 @@ function viewGrowth(target,api){
   const caption=make('strong',{text:name});
   api.editLabel?.(caption,captionKey,group.ru,group.en);
   groupButton.append(caption,groupCount);
+  head.append(groupButton);
   if(api.canEdit){
-   const pencil=make('span',{class:'path-group-pencil',role:'button',
-    tabindex:'0',text:'✎',
+   // Real sibling action: a pencil must not be nested in disclosure controls.
+   // Both actions support touch, keyboard and screen-reader navigation.
+   const pencil=make('button',{type:'button',class:'path-group-pencil',text:'✎',
     'aria-label':api.lang==='en'?'Edit path group '+name:'Редактировать направление '+name});
-   const edit=event=>{
+   pencil.addEventListener('click',event=>{
     event.preventDefault();event.stopPropagation();
     caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
-   };
-   pencil.addEventListener('click',edit);
-   pencil.addEventListener('keydown',event=>{
-    if(event.key==='Enter'||event.key===' ')edit(event);
    });
-   groupButton.append(pencil);
+   head.append(pencil);
   }
-  wrap.append(groupButton);
+  wrap.append(head);
   if(selectedGroup===group.id){
    // The game client also shows the Racial line under Special, greyed out.
    // Race passives are chosen in Origin and do not spend branch skill points.
