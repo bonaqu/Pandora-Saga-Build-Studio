@@ -62,7 +62,13 @@
 
 /* Saved-build cards: a compare toggle in the top-right and exactly one
    four-action row. Keep longer localized labels in their own button cells. */
-.build-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,390px),1fr));gap:12px}
+.build-grid{
+ grid-template-columns:repeat(var(--build-visible-columns,4),390px);
+ gap:12px;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;
+ padding:2px 0 10px;align-content:start;scrollbar-width:thin;
+ scrollbar-color:#997348 #261b14;overscroll-behavior-x:contain;
+ -webkit-overflow-scrolling:touch
+}
 .build-grid>.build-card{
  display:flex;flex-direction:column;gap:8px;min-width:0;position:relative;
  padding:13px 14px;border:1px solid #86623d;border-radius:8px;
