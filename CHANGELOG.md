@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.629.0 — 2026.11.11.629 · Honor owner-form RU/EN accessibility and safe missing-war copy
+
+- Honor's owner-only PvP-war creation form uses the active UI locale for its Russian-name and English-name input labels, without changing the submitted RU/EN record fields.
+- Delete buttons describe the actual visible record name, including EN and linked location names, rather than always saying the Russian name.
+- Missing-war public message uses the existing owner inline RU/EN D1 editor, with touch pencil only in authorized edit mode.
+- Added focused regressions; rank counts, wars and real game data are unchanged.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.628.0 — 2026.11.11.628 · Active Soul counts and live RU/EN search-placeholder synchronization
 
 - Equipment properties display active Souls in the current item's accessible sockets; saved overflow Souls remain preserved.

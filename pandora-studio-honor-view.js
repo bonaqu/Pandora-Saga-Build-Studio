@@ -103,8 +103,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    // Use existing Honor information instead of inventing war-specific rules.
    detail.append(node('p','wiki-honor-copy wiki-honor-war-copy',
     en?article.overview.gainEn:article.overview.gainRu));
-  }else detail.append(node('h3','wiki-honor-title',tr(
-   'Война не найдена','War not found')));
+  }else detail.append(editorial('h3','wiki-honor-title','warNotFound',
+   'Война не найдена','War not found'));
   browse.scrollTop=0;detail.scrollTop=0;
   return;
  }
@@ -305,7 +305,7 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      row.append(select);
     }
     row.append(make('button',{type:'button',class:'wiki-owner-remove',
-     text:'×','aria-label':tr('Удалить','Remove')+' '+item.nameRu,
+     text:'×','aria-label':tr('Удалить','Remove')+' '+(value||item.nameRu),
      onclick:()=>void Promise.resolve(saveList(key,items.filter((_,i)=>i!==index)))
       .catch(error=>showError(row,error))}));
    }
@@ -359,9 +359,11 @@ function render({browse,detail,make,lang='ru',article,editable=false,
       search.addEventListener('input',fill);fill();search.focus();
      }else{
       const ru=make('input',{type:'text',maxLength:140,
-       placeholder:'Русское название','aria-label':'Русское название'});
+       placeholder:tr('Название на русском','Russian name'),
+       'aria-label':tr('Название на русском','Russian name')});
       const english=make('input',{type:'text',maxLength:140,
-       placeholder:'English name','aria-label':'English name'});
+       placeholder:tr('Название на английском','English name'),
+       'aria-label':tr('Название на английском','English name')});
       const submit=make('button',{type:'button',class:'wiki-owner-plus',
        text:tr('Добавить','Add'),onclick:async()=>{
         const nameRu=ru.value.trim(),nameEn=english.value.trim();
