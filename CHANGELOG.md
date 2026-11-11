@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.637.0 — 2026.11.11.637 · Bilingual D1-editable admin drawer captions, inline help and focused owner controls
+
+- Bilingual D1-editable admin drawer captions, inline help and focused owner controls.
+- Test Node and Chromium before merging; verify Pages publication and D1 separately.
+
+
 ## 0.636.0 — 2026.11.11.636 · Controlled production D1 CAS acceptance with two independent temporary admin sessions and verified cleanup
 
 - Controlled production D1 CAS acceptance with two independent temporary admin sessions and verified cleanup.
