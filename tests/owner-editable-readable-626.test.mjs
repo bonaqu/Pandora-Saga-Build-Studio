@@ -45,3 +45,11 @@ test('a later locale switch does not remap the ongoing copy edit',()=>{
  assert.match(code,/node\.dataset\[datasetKey\]/);
  assert.doesNotMatch(code,/locale\.apply\(lang\)/);
 });
+
+test('editing an equipment statistic spans the available row without hiding its value',()=>{
+ assert.match(ownerCss,/\.stage-rich-fields>dt\.origin-copy-editable:has\(>\.wiki-inline-input\[data-owner-text-field\]\)/);
+ assert.match(ownerCss,/grid-column:1\/-1;min-width:0;white-space:normal/);
+ assert.match(ownerCss,/:has\(>\.wiki-inline-input\[data-owner-text-field\]\)\+dd\{/);
+ assert.match(ownerCss,/display:block;box-sizing:border-box;width:100%;max-width:100%/);
+ assert.match(ownerCss,/min-width:0;white-space:pre-wrap;overflow-wrap:anywhere/);
+});
