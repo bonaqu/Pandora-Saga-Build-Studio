@@ -159,6 +159,12 @@ export async function runAdminEntrySmoke(browser,base){
   });
   assert.equal(bookControls.pencil,true);
   assert.equal(bookControls.rename,true);
+  assert.equal(await page.locator(
+   '#stageAttributes .stage-attribute-tabs .stage-book-tab-owner>[role="tab"]').count(),6);
+  assert.equal(await page.locator(
+   '#stageAttributes .stage-attribute-tabs .stage-book-tab-owner>.stage-book-tab-pencil').count(),6);
+  assert.equal(await page.locator(
+   '#stageAttributes .stage-attribute-tabs [role="tab"] .stage-book-tab-pencil').count(),0);
   for(const key of ['actionsWithinHeading','intersectsClose','intersectsNext',
    'intersectsChevron','intersectsStatValue'])
    assert.equal(bookControls[key],key==='actionsWithinHeading',key+': Book controls overlap');
@@ -190,6 +196,9 @@ export async function runAdminEntrySmoke(browser,base){
   await page.keyboard.press('Enter');
   await page.locator('#stageAttributes').waitFor({state:'visible'});
   await page.locator('#stageAttributes .stage-book-close').click();
+  assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>[role="tab"]').count(),2);
+  assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>.path-tab-pencil').count(),2);
+  assert.equal(await page.locator('.path-sections [role="tab"] .path-tab-pencil').count(),0);
   const ownerPanel=page.locator('#ownerDock');
   assert.equal(await ownerPanel.evaluate(node=>node.parentElement===document.body),true,
    'Editor must float above the page, not live inside the stat column');

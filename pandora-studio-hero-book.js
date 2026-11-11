@@ -1107,9 +1107,8 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   if(canEdit&&typeof onTextEdit==='function'){
    const display=chapterTitle(name,label);
    const caption=make('span',{class:'stage-book-tab-copy',text:display});
-   const pencil=make('span',{class:'stage-book-tab-pencil',role:'button',
-    tabindex:'0',text:'✎',
-    'aria-label':document.documentElement?.lang==='en'?
+   const pencil=make('button',{type:'button',class:'stage-book-tab-pencil',
+    text:'✎','aria-label':document.documentElement?.lang==='en'?
      'Edit tab '+display:'Редактировать вкладку '+display});
    const edit=event=>{
     event.preventDefault();event.stopPropagation();
@@ -1118,12 +1117,13 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
    };
    caption.addEventListener('dblclick',edit);
    pencil.addEventListener('click',edit);
-   pencil.addEventListener('keydown',event=>{
-    if(event.key==='Enter'||event.key===' ')edit(event);
-   });
-   button.replaceChildren(caption,pencil);
-  }
-  nav.append(button);
+   // The tab remains the real game navigation action; editing is its sibling.
+   // Role=presentation keeps the wrapper out of the tablist's logical tabs.
+   button.replaceChildren(caption);
+   const wrapper=make('span',{class:'stage-book-tab-owner',role:'presentation'});
+   wrapper.append(button,pencil);
+   nav.append(wrapper);
+  }else nav.append(button);
  }
  if(reusePanel)target.insertBefore(nav,stablePanel);
  else target.append(nav);
