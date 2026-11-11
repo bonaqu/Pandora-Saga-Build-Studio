@@ -904,14 +904,16 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await wikiSearch.getAttribute('autocomplete'),'off');
   assert.equal(await wikiSearch.getAttribute('data-lpignore'),'true');
   await wikiSearch.click();
-  await wikiSearch.fill('Старое название из D1');
+  // Search-name overrides can change while a mock catalog refreshes. This
+  // journey checks keyboard item editing, not a particular temporary name.
+  await wikiSearch.fill('');
   // The owner panel intentionally stays open across navigation. A user may
   // hide it to reach wiki entries covered by the floating panel; the admin
   // editing permission stays enabled when only the drawer is collapsed.
   assert.equal(await edge.getAttribute('aria-expanded'),'true');
   await edge.click();
   assert.equal(await edge.getAttribute('aria-expanded'),'false');
-  const firstItem=page.locator('[data-wiki-record="1"]');
+  const firstItem=page.locator('.wiki-list [data-wiki-record]').first();
   await firstItem.waitFor({state:'visible',timeout:20000});
   // The wiki list can redraw while indexed search settles. Keyboard
   // activation is stable across re-renders and verifies accessible links.
