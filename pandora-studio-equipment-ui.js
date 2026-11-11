@@ -13,7 +13,8 @@ const el=(tag,attrs={},children=[])=>{
  return e;
 };
 function summary(record,icon,kind='item',context=null){
- if(!record)return el('p',{class:'muted',text:'Данные о предмете пока не загружены'});
+ if(!record)return el('p',{class:'muted',text:document.documentElement?.lang==='en'?
+  'Item information is not loaded yet':'Данные о предмете пока не загружены'});
  const presenter=root.PandoraItemPresentation,english=document.documentElement?.lang==='en';
  const locale=english?'en':'ru',tr=(ru,en)=>english?en:ru;
  const wrap=el('div',{class:'stage-rich-summary'}),head=el('div',{class:'stage-rich-head'});
