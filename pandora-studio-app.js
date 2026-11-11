@@ -5815,20 +5815,15 @@ function profileCopyLabel(key,ru,en,{as='span',forId=null}={}){
  const edit=event=>{
   event.preventDefault();event.stopPropagation();
   if(node.querySelector('.wiki-inline-input'))return;
+  // Keep the language of the draft, not the language at asynchronous blur.
+  // Only authored profile labels live in D1; user-written fields are untouched.
+  const editLang=lang;
   editWikiValue(node,ownerCopy('profile',key,ru,en),{
    type:'text',
-   onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('profile',key),{[lang]:next}),
-   onCommitted:next=>{
-    node.textContent=next;
-    const id=key.startsWith('field-')?'ps-profile-field-'+key.slice(6):
-     key==='bio-label'||key==='bio-placeholder'?'ps-profile-description':null;
-    const input=id?document.getElementById(id):null;
-    if(input){
-     if(key==='bio-placeholder')input.placeholder=next;
-     else{input.setAttribute('aria-label',next);
-      if(key.startsWith('field-'))input.placeholder=next;}
-    }
-   }
+   onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('profile',key),{[editLang]:next}),
+   // The shared refresh also handles Esc, newer locale, input aria/placeholder,
+   // and the pencil; no profile redraw or player field remount is required.
+   onFinished:()=>refreshVisibleProfileCopy()
   });
  };
  node.addEventListener('dblclick',edit);
