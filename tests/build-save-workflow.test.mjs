@@ -5,8 +5,9 @@ const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
 test('saving an opened build reuses ID instead of duplicating it',()=>{
  const source=read('pandora-studio-app.js');
  assert.match(source,/const existingIndex=overwriteId\?builds\.findIndex\(b=>b\.id===overwriteId\):-1/);
- assert.match(source,/const id=existingIndex>=0\?builds\[existingIndex\]\.id:newId\(\)/);
- assert.match(source,/if\(existingIndex>=0\)builds\.splice\(existingIndex,1\)/);
+ assert.match(source,/const id=existing\?existing\.id:newId\(\)/);
+ assert.match(source,/if\(existing\)builds\.splice\(existingIndex,1,entry\)/);
+ assert.match(source,/else builds\.push\(entry\)/);
  assert.match(source,/if\(!switchActiveDraft\(next,latest\.id\)\)return false/);
  assert.match(source,/if\(!switchActiveDraft\(fresh\(\),null\)\)return false/);
  assert.match(source,/text:'Сохранить копию'/);
