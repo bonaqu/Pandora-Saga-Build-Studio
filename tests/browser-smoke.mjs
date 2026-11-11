@@ -105,8 +105,8 @@ async function main(){
  // A public player sees just the disclosure, not the admin editor button.
  const firstPathHead=page.locator('.right .game-tree-head-row').first();
  await firstPathHead.waitFor({state:'visible'});
- assert.equal(await firstPathHead.locator('> button.game-tree-head').count(),1);
- assert.equal(await firstPathHead.locator('> button.path-group-pencil').count(),0);
+ assert.equal(await firstPathHead.locator(':scope > button.game-tree-head').count(),1);
+ assert.equal(await firstPathHead.locator(':scope > button.path-group-pencil').count(),0);
  // The portrait itself opens the book; chapter navigation supports the keyboard.
  await page.locator('#hero').click();
  await page.locator('#stageAttributes').waitFor({state:'visible'});
