@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.654.0 — 2026.11.12.654 · Social link previews and automatic version sync
+
+- Added crawler-visible Open Graph and X Card metadata for Telegram, messengers and social link sharing: canonical title `Pandora Saga | Build Studio`, an English Character Planner summary, RU/EN availability, and current site version.
+- Published `assets/social-preview.jpg` as a stable self-hosted screenshot of the real hero creator (1920×1080, shared from the existing reviewed interface capture); image accessibility text and actual dimensions are declared in both cards.
+- Automatically bump share-card versions and image cache keys with `release:bump`. The release guard fails when crawler-visible metadata drifts away from the HTML/package/manifest version; no runtime JavaScript or D1 override is needed.
+- Added standalone Node metadata/image checks, a fixture-based next-release regression and production read-only checks for served HTML and image. Shared build links with `#b/...` correctly retain the generic site preview without exposing private build details.
+
+
+
 ## 0.653.0 — 2026.11.12.653 · Owner-editable bilingual build share-link result copy
 
 - Saved-build share result exposes three static RU/EN D1 owner-copy keys for a new link, a reused link, and a short explanation that the link is revoked when its source build is deleted.
