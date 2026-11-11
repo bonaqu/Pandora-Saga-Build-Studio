@@ -59,7 +59,10 @@ export async function runSharedLibraryImportSmoke(browser,base){
   assert.equal(await prompt.locator('[data-owner-copy-key="librarySharedImportNote"]').count(),1);
   assert.equal(await prompt.locator('.shared-receiver-copy-row .account-copy-pencil').count(),0,
    'Only administrators may edit import explanations');
-  assert.equal(await prompt.locator('.shared-import-count [data-owner-copy-key]').count(),0);
+  assert.equal(await prompt.locator('.shared-import-count [data-owner-copy-key]').count(),1,
+   'Only the fixed count label is editorial, not the number');
+  assert.equal(await prompt.locator('.shared-import-count-value [data-owner-copy-key]').count(),0);
+  assert.equal(await prompt.locator('.shared-import-count .account-copy-pencil').count(),0);
   await prompt.getByRole('button',{name:'Отмена'}).click();
   assert.equal(uploads.length,0);
   await page.evaluate(id=>{location.hash='#b/'+id},shareId);

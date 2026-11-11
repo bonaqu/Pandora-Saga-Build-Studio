@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.656",
-  "notes": "Owner-editable RU/EN shared-link publisher status and error intro; runtime errors isolated"
+  "release": "2026.11.12.657",
+  "notes": "Split shared-library count captions and dynamic incoming-build warning into safe editable RU/EN parts"
 }

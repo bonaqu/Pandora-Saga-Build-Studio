@@ -213,3 +213,38 @@ test('share publisher owner copy is RU/EN editable without touching server error
  const css=read('pandora-studio-owner-inline-ui.css');
  assert.match(css,/\.build-share-slot \.share-editorial-row/);
 });
+test('shared build import caption and unsaved warning are isolated from dynamic count and name',()=>{
+ const fields={
+  librarySharedImportCountLabel:['Билдов по ссылке:','Builds in link:'],
+  librarySharedUnsavedWarning:[
+   'Несохранённые изменения текущего персонажа будут заменены.',
+   'The current character’s unsaved changes will be replaced.']
+ };
+ for(const [key,[ru,en]] of Object.entries(fields)){
+  assert.equal(locale.literalKey(ru),key);
+  assert.equal(locale.text(key,'ru'),ru);
+  assert.equal(locale.text(key,'en'),en);
+  const id='guideedit.book.'+locale.fieldKey(key);
+  assert.ok(guide.validOverride('book.'+locale.fieldKey(key),
+   JSON.stringify({ru:'Изменено',en:'Edited'})));
+  locale.setOverrides({[id]:JSON.stringify({ru:'Изменено',en:'Edited'})});
+  assert.equal(locale.text(key,'ru'),'Изменено');
+  assert.equal(locale.text(key,'en'),'Edited');
+  locale.setOverrides({});
+ }
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('function openSharedSnapshot(share){');
+ const end=app.indexOf('let studioToastTimer=',start);
+ const shared=app.slice(start,end);
+ assert.match(shared,/const importCountLabel=h\('span'/);
+ assert.match(shared,/PandoraUILocale\?\.localize\(importCountLabel,lang\)/);
+ assert.match(shared,/class:'shared-import-count-value',text:' '\+added\.length\+'\.'/);
+ assert.match(shared,/PandoraUILocale\?\.localize\(unsavedWarning,lang\)/);
+ assert.match(shared,/class:'shared-unsaved-warning-row|shared-receiver-copy-row shared-unsaved-warning-row'/);
+ assert.match(shared,/incoming\.name\+sharedText\('»\?','”\?'\)/);
+ assert.doesNotMatch(shared,/localize\(incoming,lang\)/);
+ assert.doesNotMatch(shared,/localize\(importCount,lang\)/);
+ for(const unknown of ['Билдов по ссылке: 4.','Another hero name','Friend private QA hero']){
+  assert.equal(locale.literalKey(unknown),null);
+ }
+});

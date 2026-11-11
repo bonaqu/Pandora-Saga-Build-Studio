@@ -39,7 +39,8 @@ test('shared receiver buttons, dialogs and dynamic build name use explicit local
   "sharedText('Добавить в мои билды','Add to My Builds')",
   "incoming.name+sharedText("
  ])assert.ok(app.includes(fragment),'Share dialog copy is not bilingual: '+fragment);
- assert.match(app,/sharedText\('Открыть билд «','Open build “'\)\+\s*incoming\.name\+sharedText/);
+ assert.match(app,/sharedText\('Открыть билд «','Open build “'\)\+\s*incoming\.name\+sharedText\('»\?','”\?'\)/);
+ assert.match(app,/PandoraUILocale\?\.localize\(unsavedWarning,lang\)/);
  assert.doesNotMatch(app,/modal\('Открыть билд по ссылке\?',view\)/);
 });
 

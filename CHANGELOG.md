@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.657.0 — 2026.11.12.657 · Owner-editable shared import counter label and unsaved-work warning
+
+- The shared library import count now consists of an independently editable RU/EN label and a separately rendered **computed count**. The count is never D1-backed or editable.
+- The shared character confirmation now separates the incoming player's name from the warning that unsaved changes will be replaced. Only the static warning is D1 owner-editable, the name and character snapshot remain unchanged.
+- Two safe semantic keys `ui.label.library-shared-import-count-label` and `ui.label.library-shared-unsaved-warning` reuse the existing owner-only inline pencil and D1 CAS/blur/Escape/Undo semantics, with responsive layouts.
+- Extended Node regression for dynamic data isolation, ordinary Chromium share/import flows and the authenticated mock-owner Chromium scenario exercising 6 writes across both languages and all affected captions.
+- All release metadata, social-preview descriptions/image cache keys, HTML assets and footer remain synchronized. No live production D1 write or combat/build data mutation.
+
+
+
 ## 0.656.0 — 2026.11.12.656 · D1 editable shared-link creation statuses and safe error prefix
 
 - Shared build publisher has three separate authored RU/EN inline notes: local-only copy guidance, link creation progress and the fixed introduction to an error. All reuse semantic `ui.label.library-share-*` D1 keys, owner-only pencil controls, bilingual CAS saves, undo and strict fallbacks.

@@ -6910,8 +6910,14 @@ function openSharedSnapshot(share){
   const added=share.data.map(v=>({id:newId(),name:String(v.name||'Билд').slice(0,70),
    data:sanitizeSharedState(v.data),at:Date.now()}));
   const view=h('div',{class:'shared-receiver-dialog'});
-  const importCount=h('p',{class:'shared-import-count',
-   text:sharedText('Билдов по ссылке: ','Builds in link: ')+added.length+'.'});
+  const importCountLabel=h('span',{class:'shared-import-count-label',
+   text:'Билдов по ссылке:'});
+  window.PandoraUILocale?.localize(importCountLabel,lang);
+  // The counter stays live and entirely outside owner-editable content.
+  const importCount=h('p',{class:'shared-import-count'},[
+   importCountLabel,
+   h('span',{class:'shared-import-count-value',text:' '+added.length+'.'})
+  ]);
   const importNote=h('p',{class:'muted shared-receiver-note',
    text:'Текущий герой и сохранённые билды не изменятся. Новые копии добавятся в «Мои билды».'});
   window.PandoraUILocale?.localize(importNote,lang);
@@ -6958,12 +6964,19 @@ function openSharedSnapshot(share){
  const view=h('div',{class:'shared-receiver-dialog'});
  const openNote=h('p',{class:'muted shared-receiver-note',
   text:'Сохранённые в «Мои билды» записи при этом не удаляются.'});
+ const unsavedWarning=h('p',{class:'muted shared-receiver-note',
+  text:'Несохранённые изменения текущего персонажа будут заменены.'});
  window.PandoraUILocale?.localize(openNote,lang);
- view.append(h('p',{class:'shared-personal-name',
-  text:sharedText('Открыть билд «','Open build “')+
-   incoming.name+sharedText('»? Несохранённые изменения текущего персонажа будут заменены.',
-    '”? The current character’s unsaved changes will be replaced.')}),h('div',{
-   class:'shared-receiver-copy-row'},openNote));
+ window.PandoraUILocale?.localize(unsavedWarning,lang);
+ // Split the incoming player's name from the authored warning. No portion
+ // of the name becomes a D1 editable label, even when the name matches copy.
+ view.append(
+  h('p',{class:'shared-personal-name',
+   text:sharedText('Открыть билд «','Open build “')+
+    incoming.name+sharedText('»?','”?')}),
+  h('div',{class:'shared-receiver-copy-row shared-unsaved-warning-row'},unsavedWarning),
+  h('div',{class:'shared-receiver-copy-row'},openNote)
+ );
  const apply=()=>{
   // Do not dismiss the preview or discard the previous hero when the new
   // draft cannot be saved (for example, browser storage quota exhaustion).

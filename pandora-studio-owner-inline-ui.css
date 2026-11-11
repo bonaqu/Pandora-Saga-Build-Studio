@@ -571,3 +571,21 @@
  min-width:0;max-width:100%}
 .build-share-slot .share-editorial-row .wiki-inline-input{width:100%;min-width:0;
  max-width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere}
+
+
+/* Shared library count: inline authored label + independent immutable number. */
+.shared-receiver-dialog .shared-import-count{max-width:100%;min-width:0;
+ overflow-wrap:anywhere;line-height:1.5}
+.shared-receiver-dialog .shared-import-count-label{overflow-wrap:anywhere;min-width:0}
+.shared-receiver-dialog .shared-import-count-value{white-space:nowrap;
+ font-variant-numeric:tabular-nums}
+.shared-receiver-dialog .shared-import-count>.account-copy-pencil{display:inline-grid;
+ place-items:center;vertical-align:middle;margin:0 4px;min-width:19px;width:19px;
+ height:19px;padding:0}
+.shared-receiver-dialog .shared-import-count>.account-copy-edit-host{display:inline-flex;
+ vertical-align:middle;width:min(100%,420px);max-width:100%;min-width:0;
+ overflow:visible}
+.shared-receiver-dialog .shared-import-count>.account-copy-edit-host .wiki-inline-input{
+ display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;
+ min-height:36px;white-space:pre-wrap;overflow-wrap:anywhere}
+.shared-receiver-dialog .shared-unsaved-warning-row{margin-top:2px}
