@@ -268,10 +268,24 @@ const english=Object.freeze({
 });
 // Exact keys keep UI labels editable in the existing D1 overrides store.
 // Do not rewrite arbitrary game data, player names, error diagnostics or IDs.
+// The Hero Book is loaded before this locale module. Its 156 explicitly
+// authored RU/EN fallback pairs are registered as stable editable UI copy,
+// without treating player names, D1 catalog records or generated stats as copy.
+const bookCopy=Object.freeze(Object.fromEntries(Object.entries(
+ root.PandoraStageAttributes?.bookEditorialDefaults||{}).map(([ru,en])=>
+ [root.PandoraStageAttributes.bookEditorialKey(ru),[ru,en]])));
+const bookDefaults=new Map();
+for(const [key,[ru,en]] of Object.entries(bookCopy)){
+ if(!bookDefaults.has(ru))bookDefaults.set(ru,key);
+ if(!bookDefaults.has(en))bookDefaults.set(en,key);
+}
+function bookFieldKey(value){return typeof value==='string'?
+ bookDefaults.get(value)||null:null}
 let contentOverrides={};
 function fieldKey(key){
  if(!Object.hasOwn(strings,key)&&!Object.hasOwn(accountCopy,key)&&
-  !Object.hasOwn(libraryCopy,key)&&!Object.hasOwn(statusCopy,key))return null;
+  !Object.hasOwn(libraryCopy,key)&&!Object.hasOwn(statusCopy,key)&&
+  !Object.hasOwn(bookCopy,key))return null;
  const slug=key.replace(/[A-Z]/g,ch=>'-'+ch.toLowerCase());
  return /^[a-z][a-z0-9-]{0,75}$/.test(slug)?'ui.label.'+slug:null;
 }
@@ -280,15 +294,18 @@ function setOverrides(overrides){
   overrides:{};
 }
 function baseText(key,lang='ru'){
- const defaults=strings[key]||accountCopy[key]||libraryCopy[key]||statusCopy[key];
+ const defaults=strings[key]||accountCopy[key]||libraryCopy[key]||
+  statusCopy[key]||bookCopy[key];
  return defaults?defaults[lang==='en'?1:0]:key;
 }
 // Compact actions and headings stay short; only the storage warning may
 // need a longer paragraph. The Worker still enforces the global 360 limit.
 function copyLimit(key){return key==='accountStorageWarning'||Object.hasOwn(statusCopy,key)?350:
- Object.hasOwn(libraryCopy,key)&&libraryCopy[key][0].length>90?250:90}
+ Object.hasOwn(libraryCopy,key)&&libraryCopy[key][0].length>90?250:
+ Object.hasOwn(bookCopy,key)&&bookCopy[key][0].length>90?350:90}
 function text(key,lang='ru'){
- const defaults=strings[key]||accountCopy[key]||libraryCopy[key]||statusCopy[key],id=fieldKey(key);
+ const defaults=strings[key]||accountCopy[key]||libraryCopy[key]||
+  statusCopy[key]||bookCopy[key],id=fieldKey(key);
  if(!defaults||!id)return key;
  let edit=null;
  try{
@@ -300,7 +317,7 @@ function text(key,lang='ru'){
  return typeof saved==='string'&&saved.trim()&&saved.length<=max?saved:defaults[lang==='en'?1:0];
 }
 function keys(){return [...Object.keys(strings),...Object.keys(accountCopy),
- ...Object.keys(libraryCopy),...Object.keys(statusCopy)]}
+ ...Object.keys(libraryCopy),...Object.keys(statusCopy),...Object.keys(bookCopy)]}
 function ui(value,lang='ru'){
  const id=literalKey(value);
  return id?text(id,lang):lang==='en'?(english[value]||value):value;
@@ -340,5 +357,6 @@ function localize(root,lang='ru'){
   }
  }
 }
-root.PandoraUILocale=Object.freeze({text,baseText,copyLimit,fieldKey,keys,literalKey,setOverrides,ui,apply,localize});
+root.PandoraUILocale=Object.freeze({text,baseText,copyLimit,fieldKey,bookFieldKey,
+ keys,literalKey,setOverrides,ui,apply,localize});
 })(typeof window==='undefined'?globalThis:window);
