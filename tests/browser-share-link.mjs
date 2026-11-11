@@ -96,6 +96,13 @@ export async function runShareLinkSmoke(browser,base){
   const status=page.locator('.build-card').first().locator('.share-result');
   await status.waitFor({state:'visible',timeout:20000});
   assert.match(await status.innerText(),/Ссылка на билд создана/);
+  assert.equal(await status.locator('[data-owner-copy-key="libraryShareCreated"]').count(),1);
+  assert.equal(await status.locator('[data-owner-copy-key="libraryShareSnapshotNote"]').count(),1);
+  assert.equal(await status.locator('.share-result-copy-row').count(),2);
+  assert.equal(await status.locator('.account-copy-pencil').count(),0,
+   'Ordinary account users must never see administrator edit buttons');
+  assert.equal(await status.locator('button[data-owner-copy-key]').count(),0,
+   'Copying a link is a user action, not an editable caption');
   const input=status.locator('input[aria-label="Ссылка на билд"]');
   const link=await input.inputValue();
   assert.equal(link,base+'/#b/'+shareId);

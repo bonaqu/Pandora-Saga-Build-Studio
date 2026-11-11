@@ -98,7 +98,12 @@ const libraryCopy=Object.freeze({
  libraryCompare:['Сравнить','Compare'],
  librarySearchEmpty:['Билды по запросу не найдены.','No builds match this search.'],
  libraryEmpty:['Сохранённых билдов пока нет.','No saved builds yet.'],
- libraryLocalCopyNote:['Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»','Local copy · open it and select “Overwrite” to save it to cloud']
+ libraryLocalCopyNote:['Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»','Local copy · open it and select “Overwrite” to save it to cloud'],
+ // Static shared-link confirmation copy is editorial. Never expose a URL,
+ // share token, build name, server response or active clipboard operation.
+ libraryShareCreated:['Ссылка на билд создана.','Build link created.'],
+ libraryShareAlreadyCreated:['Ссылка на билд уже создана.','Build link already exists.'],
+ libraryShareSnapshotNote:['Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.','The link preserves a snapshot. Deleting the original build revokes the link.']
 });
 // Fixed toast notifications are safe authored copy. Exclude runtime details,
  // player build names, network errors and security diagnostics.

@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.653.0 — 2026.11.12.653 · Owner-editable bilingual build share-link result copy
+
+- Saved-build share result exposes three static RU/EN D1 owner-copy keys for a new link, a reused link, and a short explanation that the link is revoked when its source build is deleted.
+- A compact owner-only inline pencil beside each standalone paragraph uses the established CAS save, blur/Escape/Undo and localized fallback. The URL, read-only input, clipboard button, saved character identity and Worker verification are never editor targets.
+- Share-result rows wrap text safely on narrow screens. A normal signed-in player sees no pencils; the existing copy action remains usable.
+- Node tests exercise exact D1 keys and independent RU/EN overrides; the original Chromium share-link scenario asserts real DOM markers, no guest/normal-user pencils, and unchanged link verification and clipboard behavior. No live D1 writes.
+
+
+
 ## 0.652.0 — 2026.11.12.652 · RU/EN owner history field and data preview parity
 
 - Fixed the read-only administrator change-history preview: nested chest reward groups now use "Draw" / "Gold" in EN and retain "Розыгрыш" / "Золото" in RU, without changing reward item identity, count, or chance.

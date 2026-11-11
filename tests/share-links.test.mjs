@@ -35,7 +35,9 @@ test('share links display alongside saved builds with an inline copy fallback',(
  const src=read('pandora-studio-app.js'),css=read('pandora-studio-theme.css');
  assert.match(src,/class:'build-share-slot'/);
  assert.match(src,/createShared\(b,shareSlot\)/);
- assert.match(src,/if\(host\.isConnected\)host\.replaceChildren\(message\)/);
+ assert.match(src,/if\(host\.isConnected\)\{\s*host\.replaceChildren\(message\);/);
+ assert.match(src,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(message\)/,
+  'Only an active administrator may bind share-result editorial controls');
  assert.match(src,/field\.focus\(\);field\.select\(\)/);
  assert.match(src,/isVerifiedSharedBuild\(check\?\.share,build\.data\)/);
  assert.match(css,/\.build-share-slot/);

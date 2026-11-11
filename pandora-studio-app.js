@@ -6856,10 +6856,18 @@ async function createShared(build,host){
       'Ссылка выделена — скопируй через меню или Ctrl+C',lang)||
       'Ссылка выделена — скопируй через меню или Ctrl+C';}
    }});
-  message.append(h('p',{text:response.reused?'Ссылка на билд уже создана.':'Ссылка на билд создана.'}),
-   field,copy,h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));
+  // Put static editorial copy in its own non-action row. This allows
+  // owner-only inline editing without re-running clipboard or share actions.
+  const titleCopy=h('div',{class:'share-result-copy-row'},
+   h('p',{text:response.reused?'Ссылка на билд уже создана.':'Ссылка на билд создана.'}));
+  const explanation=h('div',{class:'share-result-copy-row'},
+   h('p',{class:'muted',text:'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.'}));
+  message.append(titleCopy,field,copy,explanation);
   window.PandoraUILocale.localize(message,lang);
-  if(host.isConnected)host.replaceChildren(message);
+  if(host.isConnected){
+   host.replaceChildren(message);
+   if(adminEditing&&adminToken)bindAccountCopyEditors(message);
+  }
  }catch(error){
   if(host.isConnected)host.replaceChildren(h('p',{class:'build-share-error',
    text:sharedText('Не удалось создать ссылку: ','Could not create link: ')+
