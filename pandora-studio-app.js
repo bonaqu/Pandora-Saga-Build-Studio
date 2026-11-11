@@ -7532,9 +7532,9 @@ function refreshOwnerUI(){
  const guide=h('details',{class:'owner-workflow-guide'},[
   h('summary',{text:'Как редактировать и когда нажимать кнопки'}),
   h('ol',{class:'owner-workflow-steps'},[
-   h('li',{'data-owner-dock-static':'step1',text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'}),
-   h('li',{'data-owner-dock-static':'step2',text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'}),
-   h('li',{'data-owner-dock-static':'step3',text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})
+   h('li',{},[h('span',{'data-owner-dock-static':'step1',text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'})]),
+   h('li',{},[h('span',{'data-owner-dock-static':'step2',text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'})]),
+   h('li',{},[h('span',{'data-owner-dock-static':'step3',text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})])
   ]),
   h('div',{class:'owner-workflow-glossary'},[
    h('p',{},[h('strong',{'data-owner-dock-static':'history',text:'Все правки'}),h('span',{'data-owner-dock-static':'historyHelp',text:' — посмотреть сохранённые изменения и вернуть исходное.'})]),
@@ -7586,6 +7586,21 @@ function refreshOwnerUI(){
    }})
  ]);
  decorateOwnerDockActions(actions);
+ // Help copy can also be edited where it appears. The pencil is a
+ // separate control, so clicking help never changes any D1 data implicitly.
+ for(const node of guide.querySelectorAll('[data-owner-dock-static]')){
+  const key=node.dataset.ownerDockStatic;
+  if(!['step1','step2','step3','historyHelp','catalogHelp','githubHelp',
+   'd1Help','finishHelp'].includes(key))continue;
+  const pair=ownerDockText[key];
+  ownerCopyLabel(node,'owner-dock',key,pair[0],pair[1]);
+  node.after(h('button',{type:'button',class:'owner-workflow-copy-pencil',
+   text:'✎','aria-label':(lang==='en'?'Edit help: ':'Изменить пояснение: ')+ownerDockCopy(key),
+   onclick:event=>{
+    event.preventDefault();event.stopPropagation();
+    node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   }}));
+ }
  const body=h('div',{class:'owner-dock-body'},[status,counters,guide,actions]);
  const panel=h('div',{id:'ownerDockPanel',class:'owner-dock-panel'},[head,body]);
  const toggle=h('button',{type:'button',class:'owner-dock-handle','data-owner-collapse':'',
