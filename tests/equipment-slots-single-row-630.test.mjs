@@ -3,9 +3,6 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-const root={};
-root.window=root;
-runInNewContext(read('pandora-studio-equipment-ui.js'),root);
 const mockDom=()=>{
  const el=(tag)=>({
   tagName:tag.toUpperCase(),children:[],dataset:{},attributes:{},
@@ -22,16 +19,11 @@ const mockDom=()=>{
 };
 const slots=(capacity,filled,locale='ru')=>{
  const {document}=mockDom();document.documentElement.lang=locale;
- root.PandoraEquipmentPlan={supportsSoulSlot:()=>true};
- root.PandoraItemPresentation={displayName:item=>item.name,
-  kind:()=>'',outfitWearers:()=>[]};
- root.PandoraUIPlanner={outfitWearers:()=>[]};
- const ctx={document,globalThis:root};
- // Construct a fresh DOM-shaped scope while using the same production module.
+ const ctx={document};
  ctx.window=ctx;
- ctx.PandoraEquipmentPlan=root.PandoraEquipmentPlan;
- ctx.PandoraItemPresentation=root.PandoraItemPresentation;
- ctx.PandoraUIPlanner=root.PandoraUIPlanner;
+ ctx.PandoraEquipmentPlan={supportsSoulSlot:()=>true};
+ ctx.PandoraItemPresentation={displayName:item=>item.name,kind:()=>''};
+ ctx.PandoraUIPlanner={outfitWearers:()=>[]};
  runInNewContext(read('pandora-studio-equipment-ui.js'),ctx);
  const record={id:11,name:'Тест',slot:'pants',soulslot:capacity,level:1};
  const wrap=ctx.PandoraStageItemUI.summary(record,()=>null,'item',
