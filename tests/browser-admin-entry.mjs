@@ -1151,6 +1151,16 @@ export async function runAdminEntrySmoke(browser,base){
   if(await page.locator('#dockClose').isVisible())await page.locator('#dockClose').click();
   await page.locator('#hero').click();
   await page.locator('#stageBookTab_buffs').click();
+  const bookDebug=await page.evaluate(()=>({
+   lang:document.documentElement.lang,
+   stageHidden:document.querySelector('#stageAttributes')?.hidden,
+   bookVisible:document.querySelector('#stageBookPanel')?.dataset.bookVisible,
+   paragraphs:[...document.querySelectorAll('#stageBookPanel p')].slice(0,5)
+    .map(x=>({text:x.textContent?.slice(0,110),key:x.dataset.ownerCopyKey})),
+   bookCaptionCount:document.querySelectorAll('#stageBookPanel [data-owner-copy-key]').length,
+   tab:document.querySelector('#stageBookTab_buffs')?.getAttribute('aria-selected')
+  }));
+  console.log('Book editorial probe',JSON.stringify(bookDebug));
   const bookCaption=page.locator(
    '#stageBookPanel p.stage-attribute-note[data-owner-copy-key]').first();
   await bookCaption.waitFor({state:'visible',timeout:20000});
