@@ -134,9 +134,11 @@ export async function runVisualCoverageSmoke(browser,base){
    await page.locator('#nav [data-tab="builds"]').click();
    await examine('build-account-gate',['.build-signin-actions','.detail-title']);
    await page.locator('#dockClose').click();
-   await page.locator('#snapshot').click();
+   // A guest save button can be disabled for an empty hero; a shared-link
+   // sign-in dialog has an established real user entry path in both locales.
+   await page.evaluate(()=>{location.hash='#b/A1234567890'});
    await page.locator('#modalRoot .modal').waitFor({state:'visible'});
-   await examine('guest-save-modal',['#modalRoot .modal-actions','#modalRoot .build-signin-actions']);
+   await examine('guest-share-signin-modal',['#modalRoot .modal-actions','#modalRoot .build-signin-actions']);
    await page.keyboard.press('Escape');
    if(await page.locator('#modalRoot .modal').isVisible().catch(()=>false))
     await page.locator('#modalRoot button').last().click().catch(()=>{});
