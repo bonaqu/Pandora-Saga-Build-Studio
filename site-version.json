@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.638",
-  "notes": "Two-browser owner CAS conflict, preserved draft and safe refresh/retry regression"
+  "release": "2026.11.11.639",
+  "notes": "Borderless Compare checkbox and comprehensive desktop/mobile visual layout screenshots"
 }
