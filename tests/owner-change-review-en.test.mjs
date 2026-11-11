@@ -88,3 +88,22 @@ test('owner history uses human-readable labels for deletion, spawn, sources and 
  const other=inspect('site.accent','#9a8558',{base,lang:'en'});
  assert.equal(after(other,'Value'),'#9a8558');
 });
+
+test('item hint history keeps source-backed labels and original hints across mixed-case D1 keys',()=>{
+ const cases=[
+  ['kind','Item type'],['level','Level'],['w','Attack'],
+  ['pen','Penetration'],['ac','Defense'],['atkspeed','Attack speed'],
+  ['range','Range'],['soulslot','Soul sockets']
+ ];
+ for(const [key,label] of cases){
+  const field=['w','pen','ac'].includes(key)?key.toUpperCase():key;
+  const record=inspect('guideedit.book.wiki.item-field.'+key,
+   JSON.stringify({hintRu:'Тестовая подсказка',hintEn:'Custom QA hint'}),
+   {base,lang:'en'});
+  assert.equal(record.title,'Interface · Item hint: '+label,key);
+  assert.equal(record.changes.find(row=>row.field==='English hint')?.before,
+   root.PandoraItemPresentation.fieldHint(field,'en',{}),key+' English source');
+  assert.equal(record.changes.find(row=>row.field==='Russian hint')?.before,
+   root.PandoraItemPresentation.fieldHint(field,'ru',{}),key+' Russian source');
+ }
+});

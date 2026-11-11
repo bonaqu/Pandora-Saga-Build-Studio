@@ -25,7 +25,9 @@ export async function runOwnerHistory652Smoke(browser,base){
     itemEn:fields('itemedit.50',{slots:['weapon','shield'],
      classes:{warrior:true}},'en'),
     itemRu:fields('itemedit.50',{slots:['weapon','shield'],
-     classes:{warrior:true}},'ru')
+     classes:{warrior:true}},'ru'),
+    hintEn:inspect('guideedit.book.wiki.item-field.atkspeed',
+     JSON.stringify({hintRu:'Test',hintEn:'English QA hint'}),{base,lang:'en'})
    };
   });
   const find=(rows,field)=>rows.find(row=>row.field===field)?.after;
@@ -37,6 +39,9 @@ export async function runOwnerHistory652Smoke(browser,base){
   assert.equal(find(content.itemRu,'Совместимые слоты'),'Оружие, Щит');
   assert.equal(find(content.itemEn,'Eligible classes'),'Warrior');
   assert.equal(find(content.itemRu,'Доступные классы'),'Воин');
-  console.log('Owner change history 652: EN/RU chest, slots and professions verified');
+  assert.equal(content.hintEn.title,'Interface · Item hint: Attack speed');
+  assert.equal(content.hintEn.changes.find(row=>row.field==='English hint')?.before,
+   'Weapon attack speed');
+  console.log('Owner change history 652: EN/RU chest, slots, classes, item hints verified');
  }finally{await ctx.close()}
 }
