@@ -22,7 +22,8 @@ const labels={
  exp:'Опыт',npc:'NPC',i:'Предмет награды',mats:'Материалы',
  d:'Обычная добыча',s:'Особая добыча',rolls:'Содержимое сундука',
  percent:'Шанс',p:'Шанс',str:'СИЛ',vit:'ВЫН',agi:'ПРВ',dex:'ЛВК',
- spi:'СД',int:'ИНТ'
+ spi:'СД',int:'ИНТ',
+ acquisitions:'Источники получения',spawn:'Места появления',deleted:'Удалено',value:'Значение'
 };
 const labelsEn={
  name:'Name',nameEn:'English name',desc:'Description',descEn:'English description',
@@ -42,7 +43,8 @@ const labelsEn={
  life:'HP',mana:'MP',gold:'Gold',honor:'Honor',exp:'Experience',
  npc:'NPC',i:'Reward item',mats:'Materials',d:'Normal drops',
  s:'Special drops',rolls:'Chest contents',percent:'Chance',p:'Chance',
- str:'STR',vit:'VIT',agi:'AGI',dex:'DEX',spi:'SPI',int:'INT'
+ str:'STR',vit:'VIT',agi:'AGI',dex:'DEX',spi:'SPI',int:'INT',
+ acquisitions:'Item sources',spawn:'Spawn locations',deleted:'Deleted',value:'Value'
 };
 const sectionEn={
  'Интерфейс':'Interface','Предмет':'Item','Монстр':'Monster','Локация':'Location',
@@ -93,6 +95,18 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
  const extraKinds=english?
   {item:'Items',monster:'Monsters',npc:'NPCs',text:'Text'}:
   {item:'Предметы',monster:'Монстры',npc:'NPC',text:'Текст'};
+ // Use official localized class labels where supplied. Fall back to source
+ // names if the live catalog has not translated a particular profession.
+ const classLabel=id=>{
+  const record=classNames?.[id];
+  if(!record||typeof record!=='object')return String(id);
+  const preferred=english?
+   [record.nameEn,record.names?.en,record.name?.en]:
+   [record.nameRu,record.names?.ru,record.name?.ru];
+  const fallback=[typeof record.name==='string'?record.name:null,
+   record.name?.ru,record.name?.en];
+  return [...preferred,...fallback].find(v=>typeof v==='string'&&v.trim())||String(id);
+ };
  const fmt=(value,field)=>{
   if(value===undefined)return tr('Не указано','Not specified');
   if(value===null)return tr('Нет','None');
@@ -118,11 +132,11 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
    if(field==='reqs')return value.map(v=>
     ((english?englishBranches?.[v.branch]:null)||raw.meta?.branchLabels?.[v.branch]||v.branch)+' ≥'+v.amount
    ).join(', ')||tr('Нет','None');
-   if(field==='rolls')return value.map((group,i)=>'Розыгрыш '+(i+1)+': '+group.map(v=>
-    (v.gold?'Золото':itemName(v.i))+
+   if(field==='rolls')return value.map((group,i)=>tr('Розыгрыш ','Draw ')+(i+1)+': '+group.map(v=>
+    (v.gold?tr('Золото','Gold'):itemName(v.i))+
     (v.n&&v.n!==1?' ×'+v.n:'')+(v.p!=null?' · '+v.p+'%':'')).join(', ')).join('\n')||tr('Нет','None');
    if(field==='npc')return value.map(v=>lookup('npc',v)).join(', ')||tr('Нет','None');
-   if(field==='slots')return value.map(v=>root.PandoraItemPresentation?.slotLabel?.(v,'ru')||v).join(', ')||tr('Нет','None');
+   if(field==='slots')return value.map(v=>root.PandoraItemPresentation?.slotLabel?.(v,lang)||v).join(', ')||tr('Нет','None');
    if(field==='maps')return value.map(v=>lookup('map',v)).join(', ')||tr('Нет','None');
    if(field==='mobs')return value.map(v=>lookup('monster',v)).join(', ')||tr('Нет','None');
    if(field==='d'||field==='s')return value.map(v=>itemName(v.i)+(v.n?' ×'+v.n:'')+(v.p!=null?' · '+v.p+'%':'')).join(', ')||tr('Нет','None');
@@ -131,7 +145,7 @@ function inspect(key,stored,{base=null,items=null,classes=null,lang='ru',english
    return value.map(x=>typeof x==='object'?preview(x,80):String(x)).join(', ')||tr('Нет','None');
   }
   if(typeof value==='object'){
-   if(field==='classes')return Object.keys(value).filter(k=>value[k]).map(k=>classNames?.[k]?.name||k).join(', ')||tr('Нет','None');
+   if(field==='classes')return Object.keys(value).filter(k=>value[k]).map(classLabel).join(', ')||tr('Нет','None');
    if(field==='resists')return Object.entries(value).map(([k,v])=>
     (resistLabels[k]||k)+': '+(v>0?'+':'')+v
    ).join(', ')||tr('Нет','None');
