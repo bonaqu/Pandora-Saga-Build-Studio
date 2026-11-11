@@ -627,3 +627,41 @@ test('Path group pencil accessible name tracks saved localized caption',()=>{
  edits.find(x=>x.node===caption).callbacks.onCommitted();
  assert.ok(pencil.attributes['aria-label'].includes('Новая подпись'));
 });
+
+
+test('Path Show More owner label is editable independently of live skill count',()=>{
+ const f=fixture('CLERIC','special','riding');
+ f.api.catalogReady=true;f.api.filter='all';f.api.query='';f.api.shown=24;
+ f.api.skillCatalog=Array.from({length:26},(_,i)=>({
+  id:i+1,name:'Test '+i,classes:{CLERIC:true},reqs:[]
+ }));
+ let calls=0;f.api.onMoreSkills=()=>calls++;f.api.onInspect=()=>{};
+ f.api.canEdit=true;
+ const edits=[];
+ f.api.copyLabel=(key,ru)=>key==='skillShowMore'?'Другие навыки':ru;
+ f.api.editLabel=(node,key,ru,en,callbacks)=>edits.push({node,key,ru,en,callbacks});
+ const gallery=new BrowserElement('div'),details=new BrowserElement('div');
+ root.PandoraHeroPath.viewSkills(gallery,details,f.api);
+ const row=walk(gallery).find(x=>x.className==='path-more-owner-row');
+ assert.ok(row);
+ const [button,pencil]=row.children;
+ assert.equal(button.tag,'button');
+ assert.equal(button.className,'path-show-more');
+ assert.equal(pencil.className,'path-more-pencil');
+ assert.equal(button.children[0].textContent,'Другие навыки');
+ assert.equal(button.children[1].textContent,' (2)');
+ assert.equal(edits.find(x=>x.key==='skillShowMore')?.ru,'Показать ещё');
+ assert.equal(edits.find(x=>x.key==='skillShowMore')?.en,'Show more');
+ assert.ok(!walk(button).some(x=>x.className==='path-more-pencil'));
+ button.listeners.click({target:{closest:()=>null}});
+ assert.equal(calls,1);
+ button.children[0].textContent='Ещё';
+ edits.find(x=>x.key==='skillShowMore').callbacks.onCommitted();
+ assert.match(pencil.attributes['aria-label'],/Ещё/);
+ assert.equal(button.children[1].textContent,' (2)');
+ const plain=new BrowserElement('div');f.api.canEdit=false;
+ root.PandoraHeroPath.viewSkills(plain,new BrowserElement('div'),f.api);
+ assert.equal(walk(plain).filter(x=>x.className==='path-more-owner-row').length,0);
+ assert.equal(walk(plain).filter(x=>x.className==='path-show-more').length,1);
+ assert.equal(f.budget().remaining,104);
+});
