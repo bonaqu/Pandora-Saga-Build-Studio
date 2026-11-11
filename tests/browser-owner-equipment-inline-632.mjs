@@ -163,6 +163,11 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    'History reset must not remount equipment');
   assert.equal((await value().innerText()).trim(),'0/2');
   await page.locator('#modalRoot .modal button.close').click();
+  // The owner drawer intentionally overlays the workbench on mobile.
+  // Collapse it before selecting a Soul; keep admin editing active.
+  await page.locator('#ownerDock [data-owner-collapse]').click();
+  assert.equal(await page.locator('#ownerDock').evaluate(el=>
+   el.classList.contains('owner-dock-collapsed')),true);
   // Install a compatible real Soul and edit only the newly exposed caption.
   await page.locator('#stagePicker [data-stage-tab="souls"]').click();
   await page.locator('#stagePicker .stage-rich-result').first().click();
