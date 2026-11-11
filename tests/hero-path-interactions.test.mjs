@@ -596,14 +596,16 @@ test('Racial path remains disabled with an independent owner-copy pencil',()=>{
  root.PandoraHeroPath.viewGrowth(f.target,f.api);
  const ownerRows=walk(f.target).filter(x=>x.className==='path-racial-owner-row');
  assert.equal(ownerRows.length,1);
- const [race,pencil]=ownerRows[0].children;
+ const [race,label,pencil]=ownerRows[0].children;
  assert.equal(race.disabled,true);
  assert.equal(race.attributes['data-path-branch'],'race');
  assert.equal(pencil.tag,'button');
  assert.equal(pencil.attributes.type,'button');
  assert.equal(pencil.className,'path-racial-pencil');
  assert.equal(typeof pencil.listeners.click,'function');
- assert.equal(walk(race).find(x=>x.tag==='strong').textContent,'Редакция');
+ assert.equal(walk(label).find(x=>x.tag==='strong').textContent,'Редакция');
+ assert.equal(walk(race).find(x=>x.tag==='strong'),undefined,
+  'Editors must never be children of a disabled button');
  assert.ok(!walk(race).some(x=>x.className==='path-racial-pencil'));
  assert.equal(edits.find(x=>x.key==='racialBranch')?.ru,'Расовые');
  assert.equal(edits.find(x=>x.key==='racialBranch')?.en,'Racial');

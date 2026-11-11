@@ -71,6 +71,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await edit.waitFor({state:'visible'});
   await edit.fill('Расовые умения QA');
   await edit.press('Tab');
+  console.log('Racial 648: RU submitted');
   await page.waitForFunction(()=>document.querySelector(
    '.right .path-racial-owner-row strong')?.textContent==='Расовые умения QA',
    null,{timeout:12000});
@@ -83,6 +84,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await groupEdit.waitFor({state:'visible'});
   await groupEdit.fill('Особое QA');
   await groupEdit.press('Tab');
+  console.log('Racial 648: group title submitted');
   await page.waitForFunction(()=>document.querySelector(
    '.right [data-path-group="special"] strong')?.textContent==='Особое QA',
    null,{timeout:12000});
@@ -95,6 +97,7 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   await en.locator('button.path-racial-pencil').click();
   const enEditor=en.locator('strong [data-owner-text-field]');
   await enEditor.fill('Race traits QA');await enEditor.press('Tab');
+  console.log('Racial 648: EN submitted');
   await page.waitForFunction(()=>document.querySelector(
    '.right .path-racial-owner-row strong')?.textContent==='Race traits QA',
    null,{timeout:12000});

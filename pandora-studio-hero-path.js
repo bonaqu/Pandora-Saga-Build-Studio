@@ -281,13 +281,13 @@ function viewGrowth(target,api){
     const ru='Расовые',en='Racial',key='racialBranch';
     const value=api.copyLabel?.(key,ru,en)||tr(api,ru,en);
     const caption=make('strong',{text:value});
-    if(api.canEdit&&typeof api.editLabel==='function')
-     api.editLabel(caption,key,ru,en);
-    info.append(caption);
-    race.append(info,make('b',{class:'count',text:'—'}));
     if(api.canEdit&&typeof api.editLabel==='function'){
-     // Keep the Racial branch disabled; its sibling pencil edits only text.
+     // Content-editable inputs cannot be focused inside a disabled button.
+     // Overlay a sibling caption onto the same disabled row instead.
+     race.append(info,make('b',{class:'count',text:'—'}));
      const row=make('div',{class:'path-racial-owner-row'},[race]);
+     const captionHost=make('div',{class:'path-racial-owner-caption'},[caption]);
+     api.editLabel(caption,key,ru,en);
      const pencil=make('button',{type:'button',class:'path-racial-pencil',
       text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+value});
      const sync=()=>pencil.setAttribute('aria-label',
@@ -297,8 +297,11 @@ function viewGrowth(target,api){
       event.preventDefault();event.stopPropagation();
       caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
      });
-     row.append(pencil);wrap.append(row);
-    }else wrap.append(race);
+     row.append(captionHost,pencil);wrap.append(row);
+    }else{
+     info.append(caption);race.append(info,make('b',{class:'count',text:'—'}));
+     wrap.append(race);
+    }
    }
    for(const key of branchKeys){
     const points=M.potential(state,key),base=M.branchBase(innate,key),

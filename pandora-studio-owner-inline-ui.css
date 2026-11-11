@@ -513,8 +513,11 @@
 }
 
 /* Racial branch stays disabled; the site-copy pencil is a separate control. */
-.path-racial-owner-row{display:flex;align-items:stretch;gap:3px;min-width:0}
-.path-racial-owner-row>.path-racial-unavailable{flex:1 1 auto;min-width:0;margin:0}
+.path-racial-owner-row{display:grid;grid-template-columns:minmax(0,1fr) 27px;align-items:stretch;gap:3px;min-width:0}
+.path-racial-owner-row>.path-racial-unavailable{grid-column:1;grid-row:1;min-width:0;margin:0}
+.path-racial-owner-row>.path-racial-owner-caption{grid-column:1;grid-row:1;z-index:1;align-self:center;margin-inline:12px 28px;min-width:0;overflow-wrap:anywhere}
+.path-racial-owner-row>.path-racial-owner-caption .wiki-inline-input{max-width:100%;min-width:0}
+.path-racial-owner-row>.path-racial-pencil{grid-column:2;grid-row:1}
 .path-racial-owner-row>.path-racial-pencil{flex:0 0 27px;align-self:center;width:27px;height:27px;border:1px solid #89643b;border-radius:4px;background:#302017;color:#e5c28b;cursor:pointer}
 .path-racial-owner-row>.path-racial-pencil:hover{background:#513520;border-color:#dcb477}
 .path-racial-owner-row>.path-racial-pencil:focus-visible{outline:2px solid #ecc88c;outline-offset:2px}
