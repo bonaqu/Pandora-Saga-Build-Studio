@@ -199,6 +199,15 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>[role="tab"]').count(),2);
   assert.equal(await page.locator('.path-sections .path-tab-owner-wrap>.path-tab-pencil').count(),2);
   assert.equal(await page.locator('.path-sections [role="tab"] .path-tab-pencil').count(),0);
+  await page.locator('#pathSkillsTab').click();
+  const authoredPencil=page.locator('#pathSkillGallery .path-owner-pencil').first();
+  await authoredPencil.waitFor({state:'visible'});
+  assert.equal(await authoredPencil.getAttribute('type'),'button');
+  await authoredPencil.click();
+  const quickEditor=page.locator('#pathSkillGallery [data-owner-text-field="true"]').first();
+  await quickEditor.waitFor({state:'visible'});
+  await quickEditor.press('Escape');
+  await page.locator('#pathGrowthTab').click();
   const ownerPanel=page.locator('#ownerDock');
   assert.equal(await ownerPanel.evaluate(node=>node.parentElement===document.body),true,
    'Editor must float above the page, not live inside the stat column');

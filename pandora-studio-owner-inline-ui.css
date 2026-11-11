@@ -109,6 +109,18 @@
 }
 .stage-socket-capacity-hint{display:block;margin-top:4px;color:#c7a77b;font-size:10px;line-height:1.35}
 
+/* Owner-only help editors are one compact independent touch/keyboard button. */
+.path-owner-edit-row{display:flex;align-items:flex-start;gap:6px;min-width:0}
+.path-owner-edit-row>.path-owner-copy-text{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.path-owner-edit-row>.path-owner-pencil{flex:none;display:inline-flex;
+ align-items:center;justify-content:center;width:24px;min-width:24px;
+ height:24px;min-height:24px;padding:0;border:1px solid #987448;
+ border-radius:4px;background:#3b2a1c;color:#efd1a0;
+ font:650 11px/1 Manrope,Arial,sans-serif;cursor:pointer}
+.path-owner-edit-row>.path-owner-pencil:hover{background:#5b3c25;border-color:#dfb87c}
+.path-owner-edit-row>.path-owner-pencil:focus-visible{outline:2px solid #f4cc86;outline-offset:2px}
+.path-skill-metadata dt.path-owner-edit-row{align-items:center}
+.path-skill-prereqs>.path-owner-edit-row{margin-block:4px}
 /* The disclosure remains one continuous hit area. The admin editor is
    a sibling control, never a nested button; its position is anchored in-row. */
 .game-tree-head-row{display:flex;align-items:stretch;min-width:0;

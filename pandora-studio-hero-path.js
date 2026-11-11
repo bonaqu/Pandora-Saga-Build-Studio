@@ -47,8 +47,24 @@ const skillCountLabel=(count,locale='ru')=>{
 };
 // Fixed UI help stays separate from skill names, thresholds and player input.
 const authored=(api,key,ru,en,tag='p',cls='muted')=>{
- const node=make(tag,{class:cls,text:api.copyLabel?.(key,ru,en)||tr(api,ru,en)});
- api.editLabel?.(node,key,ru,en);
+ const value=api.copyLabel?.(key,ru,en)||tr(api,ru,en);
+ const node=make(tag,{class:cls});
+ if(!api.canEdit||typeof api.editLabel!=='function'){
+  node.textContent=value;return node;
+ }
+ node.classList.add('path-owner-edit-row');
+ const label=make('span',{class:'path-owner-copy-text',text:value});
+ const pencil=make('button',{type:'button',class:'path-owner-pencil',
+  text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+value});
+ const sync=next=>pencil.setAttribute('aria-label',
+  tr(api,'Изменить надпись: ','Edit caption: ')+next);
+ api.editLabel(label,key,ru,en,{onCommitted:sync});
+ pencil.addEventListener('click',event=>{
+  event.preventDefault();event.stopPropagation();
+  label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+ });
+ pencil.addEventListener('focus',()=>sync(label.textContent));
+ node.append(label,pencil);
  return node;
 };
 // Match the established Origin stat button behavior: one point per click,
@@ -599,10 +615,13 @@ function viewSkills(target,details,api){
  if(selected){details.hidden=false;
   const skill=selected.skill,gate=selected.gate;
   details.append(make('h3',{text:skill.name||tr(api,'Умение без названия','Unnamed skill')}),
-   make('p',{text:skill.desc||tr(api,'Описание умения отсутствует.','Skill description unavailable.')}),
-   make('p',{class:gate.learned?'path-skill-yes':'path-skill-no',
-    text:gate.learned?tr(api,'✓ Условия выполнены','✓ Requirements met'):
-     '🔒 '+gate.problems.join(' · ')}));
+   skill.desc?make('p',{text:skill.desc}):
+    authored(api,'skillDescriptionUnavailable','Описание умения отсутствует.',
+     'Skill description unavailable.'),
+   gate.learned?
+    authored(api,'skillReady','✓ Условия выполнены','✓ Requirements met',
+     'p','path-skill-yes'):
+    make('p',{class:'path-skill-no',text:'🔒 '+gate.problems.join(' · ')}));
   const stats=make('dl',{class:'path-skill-metadata'});
   const field=(key,ru,en,value)=>{
    if(value===null||value===undefined||value==='')return;
