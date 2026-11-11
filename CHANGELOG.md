@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.632.0 — 2026.11.11.632 · Full-width D1 editing for long equipment property names without changing values
+
+- While an owner edits a narrow equipment stat label, the active inline text field uses the whole stats grid width and the associated numeric value moves below; after save or Escape, the original compact two-column layout returns.
+- All other labels and player-facing properties remain visually unchanged. No new admin modal or D1 schema field.
+- The shared inline owner editor now stops Escape/Enter keyboard events from also activating document-level panel shortcuts: Escape cancels the edit without closing the equipped-item picker.
+- Added focused CSS and keyboard contracts and a real Chromium owner flow: mobile long-draft visibility, Escape without writes, RU and EN override saves through mocked CAS Worker, and Undo of EN without changing RU or the equipped Soul count.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.631.0 — 2026.11.11.631 · Soul slots status: calm partial/full occupancy colors with accessible RU/EN labels
 
 - Equipment Properties label is now **«Слоты душ» / «Soul slots»**, reusing existing owner-editable D1 key `book.equipment.field.slots`.

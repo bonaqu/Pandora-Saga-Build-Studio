@@ -45,3 +45,22 @@ test('a later locale switch does not remap the ongoing copy edit',()=>{
  assert.match(code,/node\.dataset\[datasetKey\]/);
  assert.doesNotMatch(code,/locale\.apply\(lang\)/);
 });
+
+test('editing an equipment statistic spans the available row without hiding its value',()=>{
+ assert.match(ownerCss,/\.stage-rich-fields>dt\.origin-copy-editable:has\(>\.wiki-inline-input\[data-owner-text-field\]\)/);
+ assert.match(ownerCss,/grid-column:1\/-1;min-width:0;white-space:normal/);
+ assert.match(ownerCss,/:has\(>\.wiki-inline-input\[data-owner-text-field\]\)\+dd\{/);
+ assert.match(ownerCss,/display:block;box-sizing:border-box;width:100%;max-width:100%/);
+ assert.match(ownerCss,/min-width:0;white-space:pre-wrap;overflow-wrap:anywhere/);
+});
+
+test('Escape and Enter in a D1 inline editor do not propagate to parent panels',()=>{
+ const start=app.indexOf('control.onkeydown=e=>{',app.indexOf('function editWikiValue('));
+ const end=app.indexOf('node.replaceChildren(control);control.focus();',start);
+ assert.ok(start>=0&&end>start);
+ const keys=app.slice(start,end);
+ assert.match(keys,/if\(e.key==='Escape'\)\{/);
+ assert.match(keys,/e.preventDefault\(\);e.stopPropagation\(\);finished=true;restore\(\)/);
+ assert.match(keys,/e.key==='Enter'&&\(type!=='textarea'\|\|e.ctrlKey\)/);
+ assert.match(keys,/e.preventDefault\(\);e.stopPropagation\(\);void save\(\)/);
+});

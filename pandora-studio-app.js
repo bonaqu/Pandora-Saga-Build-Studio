@@ -7888,8 +7888,13 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  control.onblur=()=>{if(type==='select'){if(!saving){finished=true;restore()}}else void save()};
  control.onchange=()=>{if(type==='select')void save()};
  control.onkeydown=e=>{
-  if(e.key==='Escape'){e.preventDefault();finished=true;restore()}
-  else if(e.key==='Enter'&&(type!=='textarea'||e.ctrlKey)){e.preventDefault();void save()}
+  if(e.key==='Escape'){
+   // Editing Escape must not also dismiss the equipped-item picker, Book,
+   // or any other parent panel listening for document-level shortcuts.
+   e.preventDefault();e.stopPropagation();finished=true;restore();
+  }else if(e.key==='Enter'&&(type!=='textarea'||e.ctrlKey)){
+   e.preventDefault();e.stopPropagation();void save();
+  }
  };
  node.replaceChildren(control);control.focus();
  if(type==='number')control.select();

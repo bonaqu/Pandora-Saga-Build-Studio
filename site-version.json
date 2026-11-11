@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.631",
-  "notes": "Soul slots status: calm partial/full occupancy colors with accessible RU/EN labels"
+  "release": "2026.11.11.632",
+  "notes": "Full-width D1 editing for long equipment property names without changing values"
 }

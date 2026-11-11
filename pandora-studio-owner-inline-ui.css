@@ -394,3 +394,18 @@
 @media(max-width:560px){
  #studioToast .account-copy-edit-host{width:100%}
 }
+
+/* D1 editable equipment stat names normally use a tight two-column dl.
+   During inline editing only, give the current label a full-width row so
+   long RU/EN drafts remain visible without crowding the numerical value. */
+.stage-rich-body .stage-rich-fields>dt.origin-copy-editable:has(>.wiki-inline-input[data-owner-text-field]){
+ grid-column:1/-1;min-width:0;white-space:normal;
+ overflow:visible;text-decoration:none
+}
+.stage-rich-body .stage-rich-fields>dt.origin-copy-editable:has(>.wiki-inline-input[data-owner-text-field])+dd{
+ grid-column:1/-1;min-width:0;text-align:right
+}
+.stage-rich-body .stage-rich-fields>dt.origin-copy-editable>.wiki-inline-input[data-owner-text-field]{
+ display:block;box-sizing:border-box;width:100%;max-width:100%;
+ min-width:0;white-space:pre-wrap;overflow-wrap:anywhere
+}
