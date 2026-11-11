@@ -609,7 +609,7 @@ test('Racial path remains disabled with an independent owner-copy pencil',()=>{
  assert.equal(edits.find(x=>x.key==='racialBranch')?.en,'Racial');
  assert.equal(f.budget().remaining,104);
  const guest=fixture('CLERIC','special','riding');
- assert.equal(walk(guest.target).filter(x=>x.className==='path-racial-unavailable').length,1);
+ assert.equal(walk(guest.target).filter(x=>String(x.className).includes('path-racial-unavailable')).length,1);
  assert.equal(walk(guest.target).filter(x=>x.className==='path-racial-pencil').length,0);
 });
 test('Path group pencil accessible name tracks saved localized caption',()=>{
