@@ -35,4 +35,5 @@ test('full visual QA takes screenshots of core editor, book, wiki and modal work
  assert.match(module,/horizontalOverflow/);
  assert.match(module,/collisions/);
  assert.match(module,/artifacts\/layout\/visual-coverage\.json/);
+ assert.match(module,/sign-in modal must not repeat its main title/);
 });
