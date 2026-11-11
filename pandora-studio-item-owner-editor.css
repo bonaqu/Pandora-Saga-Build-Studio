@@ -132,7 +132,20 @@
  outline:none;cursor:text;font:inherit;line-height:1.45}
 .wiki-owner-plaintext[data-owner-text-field]:not([aria-multiline="true"]){
  display:inline-block;vertical-align:middle;width:min(100%,320px)}
-[data-owner-text-field][aria-multiline="false"]{white-space:nowrap;overflow:hidden}
+/* Editing captions and descriptions use the same expanding plaintext surface.
+   Only search boxes retain their single-line scrolling behavior. */
+[data-owner-text-field][aria-multiline="false"]:not(.wiki-owner-search){
+ white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;
+ overflow:visible;height:auto;min-height:32px
+}
+.wiki-owner-plaintext.wiki-inline-input[data-owner-text-field]{
+ display:block;width:100%;max-width:100%;min-width:0;
+ white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible;
+ height:auto;max-height:none;line-height:1.5
+}
+[data-owner-text-field].wiki-owner-search[aria-multiline="false"]{
+ white-space:nowrap;overflow-x:auto;overflow-y:hidden
+}
 [data-owner-text-field]:empty::before{content:attr(data-placeholder);color:#b49b7a;pointer-events:none}
 [data-owner-text-field]:focus-visible{border-color:#e6bc75;
  box-shadow:0 0 0 2px rgba(236,186,99,.24)}
