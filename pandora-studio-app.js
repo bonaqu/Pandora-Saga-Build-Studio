@@ -7649,7 +7649,8 @@ function refreshVisibleOriginCopy(recordKey){
 // Copy-only Undo/saves must not unmount the Soul search or Path card.
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
- if(!/^(equipment|path|catalog-sync|honor-view)\./.test(key))return;
+ if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
+  if(!/^(equipment|path|catalog-sync|honor-view)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -7732,7 +7733,7 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view)\./.test(last.key)){
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock)\./.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -7798,6 +7799,8 @@ function showOverrideManager(){
       delete override[record.key];draw();
        if(record.key.startsWith('guideedit.book.origin.')){
         refreshVisibleOriginCopy(record.key);saveView();
+       }else if(record.key.startsWith('guideedit.book.owner-dock.')){
+        refreshVisibleOwnerCopy(record.key);
        }else void refreshOwnerCatalog();
        refreshOwnerUI();
      }catch(error){showStudioToast('Не удалось отменить правку: '+error.message,'warning')}
@@ -8050,7 +8053,8 @@ async function saveGuidePatchNow(key,fields){
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
   if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
-     key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.'))
+     key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
+     key.startsWith('book.owner-dock.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
      !key.startsWith('book.catalog-sync.')){
