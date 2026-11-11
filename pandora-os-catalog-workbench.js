@@ -156,8 +156,8 @@
       'Добавить русские описания подземелий','Add Russian dungeon descriptions')});
     const russianInfo=authored('p',{class:'muted os-sync-formatting-info'},
      'russianDescriptionExplanation',
-     'Тексты взяты из сохранённой копии проекта. Публикация только после отдельного подтверждения.',
-     'These texts come from the saved project snapshot. Publication requires separate confirmation.');
+     'Тексты взяты из сохранённой копии Build Studio и предложены только при полном совпадении остальных полей с текущей игрой и D1. Другие переводы не заменяются.',
+     'These descriptions come from the saved Build Studio snapshot and are offered only when the other fields match both the live game and D1. Other translations remain unchanged.');
     const russianList=h('div',{class:'os-sync-russian-list'});
     const russianDetails=h('details',{class:'os-sync-russian-preview'},[
       h('summary',{text:copy('russianPreviewSummary','Посмотреть русские тексты','Preview Russian texts')}),russianList
@@ -170,9 +170,12 @@
     const metaStatus=authored('p',{class:'muted os-sync-meta-status'},'checksumExplanation',
      'Контрольные суммы игровых файлов используются для проверки происхождения и целостности данных. Это не характеристики предметов или монстров.',
      'Game file checksums verify data origin and integrity; they are not item or monster statistics.');
+    // Runtime checksum evidence is separate from editable editorial copy.
+    // Never replace the pencil-containing explanation wrapper with textContent.
+    const metaStatusDetail=h('p',{class:'muted os-sync-meta-detail',hidden:true});
     const advanced=h('details',{class:'os-sync-advanced'},[
       h('summary',{text:copy('advancedSummary','Дополнительные инструменты','Additional tools')}),
-      metaStatus,
+      metaStatus,metaStatusDetail,
       authored('p',{},'advancedExplanation',
        'Проверка сохранения не обновляет данные игры. GitHub нужен для фиксации уже опубликованной версии, а скачивание — для ручной работы с данными.',
        'Testing D1 writes does not update game data. GitHub can record an already-published revision; downloads are for manual review.'),
@@ -272,13 +275,15 @@
       const ready = !busy && (selected>0||syncFormatting||syncRussian) && baseline && upstream;
       formattingToggle.disabled=busy||mode!=='server'||!formattingCount;
       russianToggle.disabled=busy||mode!=='server'||!verifiedRussian.length;
-      russianLabel.textContent='Добавить проверенные русские описания · '+verifiedRussian.length;
-      russianInfo.textContent='Тексты взяты из сохранённой копии Build Studio и предложены только при полном совпадении остальных полей с текущей игрой и D1. Другие переводы не заменяются.';
-      formattingLabel.textContent='Привести переносы строк в описаниях к виду игрового сайта'+
+      russianLabel.textContent=copy('russianDescriptionsLabel',
+        'Добавить проверенные русские описания','Add verified Russian descriptions')+
+        ' · '+verifiedRussian.length;
+      formattingLabel.textContent=copy('formattingLabel',
+        'Привести переносы строк в описаниях к виду игрового сайта',
+        'Match game description line breaks')+
         (formattingCount?' · '+formattingCount:'');
-      formattingInfo.textContent=formattingCount
-        ?'В '+formattingCount+' описаниях можно восстановить оригинальные переносы игрового текста. Другие поля не меняются. Понадобятся галочка и подтверждение публикации.'
-        :'Оригинальные переносы игровых описаний уже совпадают.';
+      // Preserve editing controls and the D1-authored explanatory copy.
+      // Dynamic counts live in the labels and never become editable text.
       acceptAll.disabled = busy || !changes.some(safe);
       declineAll.disabled = busy || !changes.length;
       publish.disabled = !ready;
@@ -675,7 +680,8 @@
       russianDetails.open=false;russianList.replaceChildren();
       results.replaceChildren();summary.textContent='';
       progress.value=0;
-      metaStatus.textContent='Служебная проверка контрольных сумм будет доступна после сравнения.';
+      metaStatusDetail.textContent='';
+      metaStatusDetail.hidden=true;
       refreshActions();
       try {
         const next={},old={};
@@ -727,12 +733,18 @@
         const fingerprintCount=[...new Set([...Object.keys(oldSha),...Object.keys(newSha)])]
           .filter(key=>oldSha[key]!==newSha[key]).length;
         const onlyTechnicalMeta=review.metadataOnlyTechnical(old.meta,next.meta);
-        metaStatus.textContent=fingerprintCount
-          ?'Сведения об источнике: контрольные суммы '+fingerprintCount+
-           ' файлов изменились. Это не означает изменения характеристик. Хэши используются для проверки целостности и не предлагаются к публикации как игровые данные.'
-          :'Сведения об источнике: изменения контрольных сумм не обнаружены.';
+        metaStatusDetail.hidden=false;
+        metaStatusDetail.textContent=fingerprintCount
+          ?tr('Сведения об источнике: контрольные суммы ',
+              'Source integrity: checksums for ')+fingerprintCount+
+           tr(' файлов изменились. Это не означает изменения характеристик. Хэши используются для проверки целостности и не предлагаются к публикации как игровые данные.',
+              ' files changed. This does not establish a change in game statistics. Checksums are for integrity checks and are not proposed as gameplay updates.')
+          :tr('Сведения об источнике: изменения контрольных сумм не обнаружены.',
+              'Source integrity: no checksum changes detected.');
         if(!onlyTechnicalMeta)
-          metaStatus.textContent+=' Есть и изменения настроек каталога — они показаны в списке отдельно и требуют ручной проверки.';
+          metaStatusDetail.textContent+=tr(
+           ' Есть и изменения настроек каталога — они показаны в списке отдельно и требуют ручной проверки.',
+           ' Catalog configuration changes are also listed separately and require manual review.');
         if(from==='server')try{
           const copy=await fetch('./data/os/instances.json',{cache:'no-store'});
           if(copy.ok)localInstances=await copy.json();
