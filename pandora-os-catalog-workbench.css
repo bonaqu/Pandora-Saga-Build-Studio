@@ -312,3 +312,8 @@
 .os-sync-copy-pencil:hover,.os-sync-copy-pencil:focus-visible{
  background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
 }
+
+/* Checksum evidence is runtime data. It follows, rather than replaces,
+   the owner-editable explanation and its compact pencil. */
+.os-sync-meta-detail{overflow-wrap:anywhere;white-space:normal;
+ font-size:11px;line-height:1.45}
