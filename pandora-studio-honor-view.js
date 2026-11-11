@@ -44,7 +44,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     // This follows the exact editor, blur-save, Escape, CAS and Undo path as F2.
     target.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
    });
-   editCopy(target,key,ru,english);
+   editCopy(target,key,ru,english,{
+    onCommitted:next=>pencil.setAttribute('aria-label',
+     tr('Изменить подпись: ','Edit caption: ')+next)
+   });
    return element;
   };
  // One independent owner control for native headings and rich Honor text.
@@ -137,7 +140,16 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     event.preventDefault();start();
    }
   });
-  return target;
+  // Only owner mode adds a touch action; player-facing rank cards keep
+  // their original markup and their source-verified game values.
+  const kind=target.tagName==='STRONG'?
+   tr('название','name'):tr('описание','description');
+  const isRequirement=target.classList.contains('wiki-honor-requirement');
+  const isBenefit=target.classList.contains('wiki-honor-rank-benefit');
+  const wrap=make('div',{class:'wiki-honor-field-edit-row'+
+   (isRequirement?' is-rank-requirement':isBenefit?' is-rank-benefit':'')});
+  wrap.append(target,directPencil(start,kind));
+  return wrap;
  };
  const editableListText=(target,value,key,items,index,field)=>{
   if(!editable)return target;
@@ -418,7 +430,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    const host=make('span',{class:'wiki-honor-filter-edit-host',hidden:true,text:label});
    const restore=()=>{button.hidden=false;pencil.hidden=false;host.hidden=true};
    editCopy(host,copyKey,ru,english,{
-    onCommitted:visible=>{caption.textContent=visible},
+    onCommitted:visible=>{
+     caption.textContent=visible;
+     pencil.setAttribute('aria-label',tr('Изменить подпись: ','Edit caption: ')+visible);
+    },
     onFinished:restore
    });
    pencil.addEventListener('click',event=>{

@@ -45,6 +45,23 @@
  margin-inline-start:0;padding:3px}
 .wiki-honor-cloak-edit-row{display:flex;align-items:flex-start;gap:8px;min-width:0}
 .wiki-honor-cloak-edit-row>.wiki-honor-cloak-list{flex:1;min-width:0}
+/* Owner-only text rows keep one small pencil adjacent to a single editable
+   field. Grid placement is explicit so rank requirements/benefits cannot
+   jump into the emblem column when editing. */
+.wiki-honor-field-edit-row{display:flex;align-items:flex-start;gap:5px;min-width:0}
+.wiki-honor-field-edit-row>:first-child{flex:1;min-width:0}
+.wiki-honor-field-edit-row>.wiki-honor-direct-pencil{min-width:25px;
+ min-height:25px;padding:2px;align-self:flex-start}
+.wiki-honor-rank>.wiki-honor-field-edit-row.is-rank-requirement{
+ grid-column:2;grid-row:2}
+.wiki-honor-rank>.wiki-honor-field-edit-row.is-rank-benefit{
+ grid-column:2;grid-row:3}
+.wiki-honor-rank-name .wiki-honor-field-edit-row{align-items:center}
+@media(hover:hover) and (pointer:fine){
+ .wiki-honor-field-edit-row>.wiki-honor-direct-pencil{opacity:.55}
+ .wiki-honor-field-edit-row:hover>.wiki-honor-direct-pencil,
+ .wiki-honor-field-edit-row:focus-within>.wiki-honor-direct-pencil{opacity:1}
+}
 /* Honor uses the exact same wiki-list / wiki-link sidebar surfaces as Locations. */
 .wiki-honor-nav-link{width:100%;cursor:pointer;text-align:left;font:600 11px/1.4 Manrope,Arial,sans-serif}
 .wiki-honor-nav-icon{display:inline-flex;align-items:center;justify-content:center;

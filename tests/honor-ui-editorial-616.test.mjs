@@ -34,7 +34,7 @@ test('Honor pencils edit only adjacent text: never trigger PvP navigation or ran
  assert.match(view,/event\.preventDefault\(\);event\.stopPropagation\(\)/);
  assert.match(view,/target\.dispatchEvent\(new MouseEvent\('dblclick'/);
  assert.doesNotMatch(view,/pencil\.dispatchEvent\(new MouseEvent\('click'/);
- assert.match(view,/editCopy\(target,key,ru,english\)/);
+ assert.match(view,/editCopy\(target,key,ru,english,\{/);
  assert.match(css,/\.wiki-honor-copy-pencil\{/);
  assert.match(css,/\.wiki-honor-copy-owner-label:focus-visible/);
 });
