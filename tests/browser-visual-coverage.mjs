@@ -138,6 +138,17 @@ export async function runVisualCoverageSmoke(browser,base){
     await page.locator('#detailPanel.is-open').waitFor({state:'visible'});
     await examine('wiki-'+name,['.wiki-controls','.wiki-skill-toolbar','.wiki-categories',
      '.wiki-effect-toolbar','.wiki-honor-rank-filters','.detail-title']);
+    // Capture the real opened record too. A list-only screenshot can miss
+    // overlapping item properties, metadata chips and in-card actions.
+    const record=page.locator('#detailPanel .wiki-list [data-wiki-record]').first();
+    if(await record.count()){
+     await record.click();
+     const detail=page.locator('#detailPanel .wiki-page');
+     await detail.waitFor({state:'visible',timeout:15000});
+     await examine('wiki-detail-'+name,['.wiki-page .item-fields',
+      '.wiki-page .wiki-honor-rank-filters','.wiki-page .wiki-entity-flow',
+      '.wiki-page .wiki-chest-assured-grid','.detail-title']);
+    }
    }
    await page.locator('#dockClose').click();
    await page.locator('#nav [data-tab="builds"]').click();
