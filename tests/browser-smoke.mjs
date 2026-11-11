@@ -39,6 +39,7 @@ import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
 import {runHeroBookLiveRecalcSmoke} from './browser-hero-book-live-recalc.mjs';
 import {runOriginSharedSnapshotSmoke} from './browser-origin-shared-snapshot.mjs';
 import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build-comparison.mjs';
+import {runSavedBuildGridSmoke} from './browser-build-grid-640.mjs';
 import {runEffectItemsSmoke} from './browser-effect-items.mjs';
 import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './browser-wiki-skill-filters.mjs';
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
@@ -97,6 +98,7 @@ const scenarios=[
   ['cross-tab-account',runCrossTabAccountIsolationSmoke],
   ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
   ['honor-guide',runHonorGuideSmoke],
+  ['saved-build-card-grid',runSavedBuildGridSmoke],
   ['build-comparison',runBuildComparisonSmoke],
   ['saved-builds-english',runSavedBuildEnglishSmoke],
   ['effect-items',runEffectItemsSmoke],
