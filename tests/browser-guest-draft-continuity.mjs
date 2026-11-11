@@ -30,7 +30,8 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    if(path==='/api/account/login'&&method==='POST')
     return send({account:{username},token,expires:Number.MAX_SAFE_INTEGER});
    if(path==='/api/account/register'&&method==='POST'){
-    assert.equal(req.postDataJSON()?.legacyKey,guestKey);
+    assert.equal(Object.hasOwn(req.postDataJSON(),'legacyKey'),false,
+     'Registration must not upload a guest library credential');
     return send({account:{username},token,expires:Number.MAX_SAFE_INTEGER,
      recoveryCode:'r'.repeat(43)},201);
    }

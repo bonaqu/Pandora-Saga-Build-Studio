@@ -2,28 +2,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 const read=p=>readFileSync(new URL('../'+p,import.meta.url),'utf8');
-test('legacy import is opt-in and only visible behind a signed-in build library',()=>{
- const app=read('pandora-studio-app.js'),html=read('index.html');
- assert.match(app,/function buildLegacyImport\(\)/);
- assert.match(app,/text:tr\('Перенести старые билды','Import older builds'\)/);
- assert.match(app,/text:tr\('Проверить код','Check code'\)/);
- assert.match(app,/text:tr\('Найти на этом устройстве','Find on this device'\)/);
- assert.match(app,/text:tr\('Добавить билды в мой аккаунт','Add builds to my account'\)/);
- assert.match(app,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)return/);
- assert.doesNotMatch(html,/ps-build-library-secret\.v1/);
+
+test('the account library has no old guest-build import action or code form',()=>{
+ const app=read('pandora-studio-app.js'),account=read('pandora-studio-account-ui.js');
+ const start=app.indexOf('function renderBuilds(root){');
+ const end=app.indexOf('function newId(){',start);
+ assert.ok(start>=0&&end>start);
+ const panel=app.slice(start,end);
+ assert.doesNotMatch(panel,/build-transfer|buildLegacyImport|legacy-preview/);
+ assert.doesNotMatch(app,/Перенести старые билды|Import older builds/);
+ assert.doesNotMatch(app,/\/api\/library\/legacy-preview/);
+ assert.doesNotMatch(account,/legacyKey:options\.legacyKey/);
 });
-test('legacy import never replaces source keys or original D1 records',()=>{
- const app=read('pandora-studio-app.js'),worker=read('worker/index.js');
- const start=app.indexOf('function buildLegacyImport(){'),end=app.indexOf('function renderBuilds(root){',start);
- const importer=app.slice(start,end);
- assert.match(importer,/apiRequest\('\/api\/library\/legacy-preview'/);
- assert.match(importer,/if\(!persistBuilds\(\)\)/);
- assert.match(importer,/builds=previous/);
- assert.match(importer,/window\.PandoraBuildLibraryMerge\.same/);
- assert.match(importer,/structuredClone\(source\.data\)/);
- assert.match(importer,/await putCloudBuild\(row\)/);
- assert.doesNotMatch(importer,/localStorage\.setItem\(CLOUD_TOKEN_KEY/);
- assert.match(worker,/async function legacyBuildPreview\(/);
- assert.match(worker,/const principal=await accountPrincipal\(request,env\)/);
- assert.match(worker,/if\(!principal\)return no\('Sign in to import older builds',401\)/);
+test('account save remains explicit; the old legacy API cannot be invoked from player UI',()=>{
+ const app=read('pandora-studio-app.js');
+ const guest=app.slice(app.indexOf('function buildSignInCard('),
+  app.indexOf('function renderBuilds(root){'));
+ assert.match(guest,/Sign in to save builds/);
+ assert.match(guest,/notifyGuestDraftUnsaved/);
+ assert.match(guest,/switchActiveDraft\(structuredClone\(guest\.snapshot\),null\)/);
+ assert.match(guest,/if\(!builds\.length\)notifyGuestDraftUnsaved\(\)/);
+ assert.doesNotMatch(guest,/legacy-preview|legacyKey/);
 });

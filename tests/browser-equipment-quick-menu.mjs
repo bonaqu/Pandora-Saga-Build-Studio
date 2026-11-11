@@ -24,6 +24,7 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   11:{id:21001,name:'Пояс'}
  },{
   socketCapacities:{'5:13041':2,'11:21001':0},
+  refinements:{'5:13041':3},gems:{'5:13041':{element:'fire'}},
   souls:{5:[{id:103001,name:'Душа'}]},soulOwners:{5:'13041'}
  });
  try{
@@ -33,8 +34,14 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   const menu=page.locator('.stage-gear-context-menu[role="menu"]');
   const action=id=>menu.locator('[data-gear-context-action="'+id+'"]');
   const right=async locator=>locator.click({button:'right'});
-  await right(page.locator('.equipment-slot[data-slot-index="0"]'));
-  assert.equal(await menu.count(),0,'Empty gear slot does not offer an item menu');
+  const emptyWeapon=page.locator('.equipment-slot[data-slot-index="0"]');
+  await right(emptyWeapon);
+  await menu.waitFor({state:'visible'});
+  assert.equal(await menu.locator('[role="menuitem"]').count(),1);
+  assert.equal((await action('choose').innerText()).trim(),'+\nВыбрать вещь');
+  await action('choose').click();
+  assert.equal(await page.locator('#stagePicker .stage-picker-list').isVisible(),true);
+  await page.locator('#stagePicker .stage-picker-head button[aria-label="Закрыть выбор"]').click();
 
   await right(pants);
   await menu.waitFor({state:'visible'});
@@ -60,6 +67,11 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.equal(await page.locator('#stagePicker [data-stage-tab="souls"]')
    .getAttribute('aria-pressed'),'true');
   assert.equal(await page.locator('#stagePicker [data-socket-index]').count(),2);
+  const soulInput=page.locator('#stagePicker [data-soul-query]');
+  assert.equal(await soulInput.getAttribute('autocomplete'),'none');
+  assert.equal(await soulInput.getAttribute('data-lpignore'),'true');
+  await soulInput.fill('bonaqu');
+  assert.equal(await soulInput.inputValue(),'bonaqu','Ordinary Soul search remains editable');
   await page.locator('#stagePicker .stage-picker-head button').first().click();
 
   await pants.focus();
@@ -105,8 +117,25 @@ export async function runEquipmentQuickMenuSmoke(browser,base){
   assert.equal(saved.souls?.[5],undefined,
    'Unequipping via context menu must use normal Soul cleanup logic');
   assert.equal(saved.equipment[11]?.id,21001,'Other worn items remain untouched');
+  for(const key of ['refinements','gems','socketCapacities'])
+   assert.equal(saved[key]?.['5:13041'],undefined,
+    'Unequipped copy must discard '+key);
   await right(page.locator('.equipment-slot[data-slot-index="5"]'));
-  assert.equal(await menu.count(),0);
+  await menu.waitFor({state:'visible'});
+  assert.equal(await menu.locator('[role="menuitem"]').count(),1);
+  assert.match(await action('choose').innerText(),/Choose item/);
+  await action('choose').click();
+  assert.equal(await page.locator('#stagePicker .stage-picker-list').isVisible(),true);
+  const original=page.locator('#stagePicker [data-stage-choice="13041"]');
+  if(await original.count()){
+   await original.click();
+   const now=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
+   assert.equal(Number(now.equipment[5]?.id),13041);
+   assert.equal(now.refinements?.['5:13041'],undefined);
+   assert.equal(now.gems?.['5:13041'],undefined);
+   assert.equal(now.socketCapacities?.['5:13041'],undefined);
+   assert.equal(now.souls?.[5],undefined);
+  }
   assert.deepEqual(errors,[]);
   console.log('Chromium quick gear menu passed: left/right, four actions, keyboard, RU/EN and Soul cleanup');
  }finally{await first.context.close()}
