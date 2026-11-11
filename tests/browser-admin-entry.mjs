@@ -346,6 +346,22 @@ export async function runAdminEntrySmoke(browser,base){
    /Muldian Uncivilized District|El Beht|Underground of Astir/);
   assert.ok(await honorPanel.locator('.wiki-honor-location-select').first()
    .locator('option').count()>4,'Location picker must include existing maps');
+  // Five Honor interface captions are D1-editable, but their links, ranks
+  // and filter actions must remain unchanged by a pencil click.
+  const subtitleCopy=honorPanel.locator('.wiki-honor-subtitle');
+  assert.equal(await subtitleCopy.locator('.wiki-honor-copy-pencil').count(),1);
+  assert.equal(await honorPanel.locator('.wiki-honor-list-section h5 .wiki-honor-copy-pencil').count(),2);
+  assert.equal(await honorPanel.locator('.wiki-honor-monthly-head .wiki-honor-copy-pencil').count(),3);
+  await subtitleCopy.locator('.wiki-honor-copy-pencil').click();
+  const subtitleEditor=subtitleCopy.locator('[data-owner-text-field="true"]');
+  await subtitleEditor.waitFor({state:'visible'});
+  assert.equal(await subtitleEditor.getAttribute('role'),'textbox');
+  await subtitleEditor.fill('PvP · нации · звания · награды — RU');
+  await subtitleEditor.blur();
+  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle .wiki-honor-copy-owner-label')?.textContent.includes('— RU'));
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.honor-view.subtitle')).ru,
+   'PvP · нации · звания · награды — RU');
+  assert.equal(await honorPanel.locator('.wiki-honor-rank').count(),12);
   // A chapter's text is editable without mutating its stable data-wiki-chapter.
   const chapterRow=page.locator('.wiki-category-line')
    .filter({has:page.locator('[data-wiki-chapter="honor"]')});
@@ -389,6 +405,21 @@ export async function runAdminEntrySmoke(browser,base){
    'Saving Honor jumps to top: '+JSON.stringify({honorScrollBefore,honorScrollAfter}));
   assert.equal(JSON.parse(townOverrides.get('guideedit.honor.rank.8')).benefitRu,
    updatedBenefit);
+  // The other locale has an independent D1 field. Switching languages
+  // does not overwrite the saved RU caption or turn off the inline pencil.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  const englishCaption=page.locator('.wiki-honor-subtitle');
+  await englishCaption.locator('.wiki-honor-copy-pencil').click();
+  const englishEditor=englishCaption.locator('[data-owner-text-field="true"]');
+  await englishEditor.fill('PvP · nations · titles · rewards — EN');
+  await englishEditor.blur();
+  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle .wiki-honor-copy-owner-label')?.textContent.includes('— EN'));
+  assert.deepEqual(JSON.parse(townOverrides.get('guideedit.book.honor-view.subtitle')),
+   {ru:'PvP · нации · звания · награды — RU',en:'PvP · nations · titles · rewards — EN'});
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
+  assert.match(await page.locator('.wiki-honor-subtitle').innerText(),/— RU/);
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
   // All catalog requests are mocked; no production Worker or D1 is mutated.
   await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
