@@ -1188,6 +1188,10 @@ export async function runAdminEntrySmoke(browser,base){
   assert.deepEqual(errors,[]);
   // #390 admin history help: use the same D1 editor and independent pencil,
   // not a second modal or a write to the game catalog.
+  // The NPC Wiki workbench is modal and covers the language switch.
+  // Close it using the real X button before changing language.
+  if(await page.locator('#detailPanel.is-open').count())
+   await page.locator('#dockClose').click();
   // NPC admin flow can finish in EN; guarantee the RU editor writes RU.
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='ru');
