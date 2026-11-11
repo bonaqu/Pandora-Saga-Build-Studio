@@ -417,6 +417,16 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle .wiki-honor-copy-owner-label')?.textContent.includes('— EN'));
   assert.deepEqual(JSON.parse(townOverrides.get('guideedit.book.honor-view.subtitle')),
    {ru:'PvP · нации · звания · награды — RU',en:'PvP · nations · titles · rewards — EN'});
+  // Undo the latest EN edit without refreshing the game catalog, jumping
+  // away from Honor, or discarding the independent RU edit.
+  const catalogCallsBeforeUndo=calls.filter(value=>value.startsWith('game-source:')).length;
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector('.wiki-honor-subtitle .wiki-honor-copy-owner-label')
+   ?.textContent==='PvP · nations · titles · rewards');
+  assert.deepEqual(JSON.parse(townOverrides.get('guideedit.book.honor-view.subtitle')),
+   {ru:'PvP · нации · звания · награды — RU'});
+  assert.equal(calls.filter(value=>value.startsWith('game-source:')).length,
+   catalogCallsBeforeUndo,'Undo of editorial text reloaded the game source');
   await page.locator('#locale [data-locale="ru"]').click();
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   assert.match(await page.locator('.wiki-honor-subtitle').innerText(),/— RU/);
