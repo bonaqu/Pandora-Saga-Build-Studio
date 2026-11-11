@@ -362,6 +362,28 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.honor-view.subtitle')).ru,
    'PvP · нации · звания · награды — RU');
   assert.equal(await honorPanel.locator('.wiki-honor-rank').count(),12);
+  // Rank counts are derived from real records. The pencil beside a filter
+  // edits a separate hidden host, never clicks/selects the filter itself.
+  const monthlyFilter=honorPanel.locator(
+   '.wiki-honor-filter-wrap:has(> [data-honor-filter="monthly"])');
+  assert.equal(await monthlyFilter.locator('.wiki-honor-filter-pencil').count(),1);
+  assert.equal(await honorPanel.locator('.wiki-honor-filter.chosen').getAttribute('data-honor-filter'),'all');
+  await monthlyFilter.locator('.wiki-honor-filter-pencil').click();
+  const monthlyEditor=monthlyFilter.locator('[data-owner-text-field="true"]');
+  await monthlyEditor.waitFor({state:'visible'});
+  await monthlyEditor.fill('Месячные звания');
+  await monthlyEditor.blur();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-honor-filter="monthly"] .wiki-honor-filter-caption')?.textContent==='Месячные звания');
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.honor-view.filter-monthly')).ru,
+   'Месячные звания');
+  assert.equal(await honorPanel.locator('.wiki-honor-filter.chosen').getAttribute('data-honor-filter'),'all');
+  assert.equal(await honorPanel.locator('.wiki-honor-rank:not([hidden])').count(),12);
+  await page.locator('#ownerDock [data-owner-undo]').click();
+  await page.waitForFunction(()=>document.querySelector(
+   '[data-honor-filter="monthly"] .wiki-honor-filter-caption')?.textContent==='Месячные');
+  assert.equal(townOverrides.has('guideedit.book.honor-view.filter-monthly'),false);
+  assert.equal(await honorPanel.locator('.wiki-honor-filter.chosen').getAttribute('data-honor-filter'),'all');
   // A chapter's text is editable without mutating its stable data-wiki-chapter.
   const chapterRow=page.locator('.wiki-category-line')
    .filter({has:page.locator('[data-wiki-chapter="honor"]')});
