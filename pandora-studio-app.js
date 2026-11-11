@@ -2217,15 +2217,24 @@ function renderPathCopyControls(){
  ];
  for(const [selector,key,ru,en] of labels){
   const node=document.querySelector(selector);if(!node)continue;
+  node.dataset.ownerCopySection='path';node.dataset.ownerCopyId=key;
+  node.dataset.ownerCopyRu=ru;node.dataset.ownerCopyEn=en;
   if(!node.querySelector('.wiki-inline-input'))node.textContent=copy(key,ru,en);
   node.classList.toggle('origin-copy-editable',editing);
   const edit=event=>{
    if(!adminEditing||!adminToken)return;
    event.preventDefault();event.stopPropagation();
    if(node.querySelector('.wiki-inline-input'))return;
+   const editLang=lang;
    editWikiValue(node,copy(key,ru,en),{type:'text',
-    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[lang]:next}),
-    onCommitted:next=>{node.textContent=next}});
+    onCommit:next=>saveGuidePatch('book.'+ownerCopyKey('path',key),{[editLang]:next}),
+    onCommitted:next=>{
+     const visible=lang===editLang?next:copy(key,ru,en);
+     node.textContent=visible;
+     const pencil=node.nextElementSibling;
+     if(pencil?.dataset?.pathCopyFor===key)pencil.setAttribute('aria-label',
+      (lang==='en'?'Rename: ':'Переименовать: ')+visible);
+    }});
   };
   // Origin/path labels should be discoverable on touch and keyboard, without
   // replacing user-facing labels or the mastery checkbox's click behavior.
@@ -2258,6 +2267,8 @@ function renderPathCopyControls(){
   // An in-progress editor must not be remounted by an unrelated path render.
   if(button.querySelector('.wiki-inline-input'))continue;
   const caption=h('span',{class:'path-tab-copy',text:label});
+  caption.dataset.ownerCopySection='path';caption.dataset.ownerCopyId=key;
+  caption.dataset.ownerCopyRu=ru;caption.dataset.ownerCopyEn=en;
   const pencil=h('button',{type:'button',class:'path-tab-pencil',text:'✎',
    'aria-label':lang==='en'?'Edit '+label:'Редактировать '+label});
   const edit=event=>{
@@ -7460,6 +7471,14 @@ function refreshVisibleOwnerCopy(recordKey){
   node.textContent=value;
   // Reset/Undo of an editorial hover hint must update the already-mounted
   // tooltip target rather than leaving the previous text in its dataset.
+  if(section==='path'){
+   // Path captions are plain D1 copy: Undo updates the current field in place.
+   const tabPencil=node.closest('.path-tab-owner-wrap')?.querySelector('.path-tab-pencil');
+   const inlinePencil=node.nextElementSibling?.dataset?.pathCopyFor===id?
+    node.nextElementSibling:null;
+   (tabPencil||inlinePencil)?.setAttribute('aria-label',
+    (lang==='en'?'Edit: ':'Редактировать: ')+value);
+  }
   if(section==='honor-view'){
    const filterCaption=node.parentElement?.querySelector('.wiki-honor-filter-caption');
    if(filterCaption)filterCaption.textContent=value;
