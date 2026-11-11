@@ -436,6 +436,28 @@ export async function runAdminEntrySmoke(browser,base){
   await page.waitForTimeout(1050);
   assert.equal(await page.getByRole('tooltip').isVisible(),false,
    'Leaving an admin button cancels the tooltip timer');
+  // 0.614: the help ? is independent of the action and updates the original
+  // tooltip target after a D1 save, without adding duplicate hover handlers.
+  const hintPencil=liveAction.locator('.os-sync-hint-pencil');
+  assert.equal(await hintPencil.count(),1);
+  await hintPencil.click();
+  const hintInput=liveAction.locator('.os-sync-hint-edit-host [contenteditable]');
+  await hintInput.waitFor({state:'visible'});
+  await hintInput.fill('Подсказка проверки игрового источника QA.');
+  await hintInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.os-sync-main-check')?.dataset.guideHint===
+   'Подсказка проверки игрового источника QA.',null,{timeout:15000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.hint-live')).ru,
+   'Подсказка проверки игрового источника QA.');
+  assert.equal(calls.filter(value=>value.startsWith('game-source:')).length,
+   expectedCalls,'Changing help text must not start the catalog download');
+  assert.equal(await hintPencil.count(),1);
+  await liveSource.hover();
+  await page.getByRole('tooltip').filter({hasText:'Подсказка проверки игрового источника QA.'})
+   .waitFor({state:'visible',timeout:3500});
+  await page.mouse.move(2,2);
+  await page.getByRole('tooltip').waitFor({state:'hidden'});
   assert.match(await dialog.locator('.os-sync-intro').innerText(),/не ищет файлы на твоём компьютере/);
   assert.match(await dialog.locator('.os-sync-archive-choice>summary').innerText(),/сайт игры/);
   // A PR is generated from the published D1 snapshot via Worker, not the
