@@ -147,6 +147,13 @@ export async function runVisualCoverageSmoke(browser,base){
    // sign-in dialog has an established real user entry path in both locales.
    await page.evaluate(()=>{location.hash='#b/A1234567890'});
    await page.locator('#modalRoot .modal').waitFor({state:'visible'});
+   assert.equal(await page.locator('#modalRoot .modal .build-signin-copy h3').count(),0,
+    'The sign-in modal must not repeat its main title inside another card');
+   assert.equal(await page.locator('#modalRoot .modal h2').count(),1,
+    'A dialog should have exactly one primary heading');
+   const nestedEmblem=page.locator('#modalRoot .build-signin-gate-dialog .build-signin-emblem');
+   if(await nestedEmblem.count())assert.equal(await nestedEmblem.isVisible(),false,
+    'The nested decorative sign-in badge is redundant inside a dialog');
    await examine('guest-share-signin-modal',['#modalRoot .modal-actions','#modalRoot .build-signin-actions']);
    await page.keyboard.press('Escape');
    if(await page.locator('#modalRoot .modal').isVisible().catch(()=>false))
