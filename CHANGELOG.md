@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.652.0 — 2026.11.12.652 · RU/EN owner history field and data preview parity
+
+- Fixed the read-only administrator change-history preview: nested chest reward groups now use "Draw" / "Gold" in EN and retain "Розыгрыш" / "Золото" in RU, without changing reward item identity, count, or chance.
+- The compatible-slot listing passes the selected locale to existing game slot translations; eligible profession names prefer source-backed EN names, then safely fall back to the recorded source name.
+- Known administrative change fields for deleted trade entries, item acquisition sources, spawn locations and other saved values have readable RU/EN captions rather than raw schema field names.
+- Mixed-case item hint keys (W/PEN/AC versus kind/level/atkspeed/range/soulslot) now resolve friendly field captions and actual RU/EN source hints, instead of exposing technical schema names or falsely claiming the original hint was unknown.
+- Added Node behavioral regressions and an isolated real-Chromium scenario checking RU and EN chest, slot, profession rendering. This release affects only read-only history descriptions. No D1 mutation, build state, catalog contents or formula change.
+
+
 ## 0.651.0 — 2026.11.12.651 · Automatic site version in the footer
 
 - A compact `Version: 0.651.0` label appears at the bottom-right of every page in RU and EN. The encyclopedia counts remain at the bottom-left, including after language changes.

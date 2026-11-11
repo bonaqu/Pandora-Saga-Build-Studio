@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.651",
-  "notes": "Footer release label from HTML metadata, responsive RU/EN layout and automated regressions"
+  "release": "2026.11.12.652",
+  "notes": "Localized read-only owner change history for chest rolls, Soul slots, classes and stable fields"
 }
