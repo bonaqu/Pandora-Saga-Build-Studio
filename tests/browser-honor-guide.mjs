@@ -28,6 +28,17 @@ export async function runHonorGuideSmoke(browser,base){
   assert.doesNotMatch(await panel.locator('.wiki-honor-list-section').first()
    .innerText(),/Muldian Uncivilized District|El Beht|Underground of Astir/);
   assert.equal(await panel.locator('.wiki-honor-rank').count(),12);
+  const rankFilters=panel.locator('.wiki-honor-rank-filters [data-honor-filter]');
+  assert.equal(await rankFilters.count(),3);
+  assert.equal((await rankFilters.nth(0).innerText()).trim(),'Все · 12');
+  assert.equal((await rankFilters.nth(1).innerText()).trim(),'Обычные · 9');
+  assert.equal((await rankFilters.nth(2).innerText()).trim(),'Месячные · 3');
+  await rankFilters.nth(2).click();
+  assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),3);
+  await rankFilters.nth(1).click();
+  assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),9);
+  await rankFilters.nth(0).click();
+  assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
   assert.equal(await panel.locator('.wiki-honor-joining').count(),0,
    'Starting Honor belongs to the Squire rank, not a duplicated callout');
   // In-world entity cards: match the established spawn-location design.

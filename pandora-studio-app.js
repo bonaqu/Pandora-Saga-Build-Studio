@@ -2924,7 +2924,7 @@ function renderWiki(root){
     editable:adminEditing&&Boolean(adminToken),
     label:(group,id,ru,en)=>wikiTitle(group,id,ru,en),
     copy:(key,ru,en)=>ownerCopy('honor-view',key,ru,en),
-    editCopy:(node,key,ru,en)=>ownerCopyLabel(node,'honor-view',key,ru,en),
+    editCopy:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'honor-view',key,ru,en,callbacks),
     editLabel:(node,group,id,initial)=>editWikiValue(node,initial,{type:'text',
      onCommit:value=>saveGuidePatch('wiki.labels',{
       [window.PandoraWikiLabels.key(group,id,lang)]:value
@@ -7444,6 +7444,8 @@ function refreshVisibleOwnerCopy(recordKey){
   // Reset/Undo of an editorial hover hint must update the already-mounted
   // tooltip target rather than leaving the previous text in its dataset.
   if(section==='honor-view'){
+   const filterCaption=node.parentElement?.querySelector('.wiki-honor-filter-caption');
+   if(filterCaption)filterCaption.textContent=value;
    const pencil=node.parentElement?.querySelector('.wiki-honor-copy-pencil');
    pencil?.setAttribute('aria-label',(lang==='en'?'Edit caption: ':'Изменить подпись: ')+value);
   }

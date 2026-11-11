@@ -18,7 +18,7 @@ test('Honor UI captions have five stable, independent D1 RU/EN keys',()=>{
   assert.ok(view.includes("'"+key+"'"),key);
  }
  assert.match(app,/copy:\(key,ru,en\)=>ownerCopy\('honor-view',key,ru,en\)/);
- assert.match(app,/editCopy:\(node,key,ru,en\)=>ownerCopyLabel\(node,'honor-view',key,ru,en\)/);
+ assert.match(app,/editCopy:\(node,key,ru,en,callbacks\)=>ownerCopyLabel\(node,'honor-view',key,ru,en,callbacks\)/);
  assert.match(app,/\^\(equipment\|path\|catalog-sync\|honor-view\)/);
  assert.match(app,/key\.startsWith\('book\.honor-view\.'\)/);
  assert.match(app,/guideedit\\\.book\\\.\(equipment\|path\|catalog-sync\|honor-view\)/);

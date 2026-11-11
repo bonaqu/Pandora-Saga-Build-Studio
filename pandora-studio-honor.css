@@ -42,6 +42,13 @@
 .wiki-honor-rank-filters{display:flex;flex-wrap:wrap;gap:5px}
 .wiki-honor-filter{padding:7px 10px;border:1px solid #77593a;border-radius:4px;
  color:#d7bd98;background:#251b13;cursor:pointer;font:600 11px Manrope,Arial,sans-serif}
+.wiki-honor-filter-wrap{display:inline-flex;align-items:center;gap:4px;max-width:100%}
+.wiki-honor-filter-caption,.wiki-honor-filter-count{pointer-events:none}
+.wiki-honor-filter-pencil{margin-inline-start:0;min-width:24px;height:29px}
+.wiki-honor-filter-edit-host{display:inline-flex;align-items:center;min-width:90px;
+ min-height:29px;padding:4px 7px;border:1px solid #97734b;border-radius:4px;
+ background:#302116;color:#ebcb9a;font:600 11px Manrope,Arial,sans-serif}
+.wiki-honor-filter-edit-host[hidden]{display:none!important}
 .wiki-honor-filter.chosen,.wiki-honor-filter:hover,.wiki-honor-filter:focus-visible{
  border-color:#d8b174;background:#4c3422;color:#ffe5b8}
 .wiki-honor-rank[hidden]{display:none}
