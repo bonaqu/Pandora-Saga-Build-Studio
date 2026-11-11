@@ -2923,6 +2923,8 @@ function renderWiki(root){
     browse,detail,make:h,lang,article:window.PandoraHonorGuide?.article(override),
     editable:adminEditing&&Boolean(adminToken),
     label:(group,id,ru,en)=>wikiTitle(group,id,ru,en),
+    copy:(key,ru,en)=>ownerCopy('honor-view',key,ru,en),
+    editCopy:(node,key,ru,en)=>ownerCopyLabel(node,'honor-view',key,ru,en),
     editLabel:(node,group,id,initial)=>editWikiValue(node,initial,{type:'text',
      onCommit:value=>saveGuidePatch('wiki.labels',{
       [window.PandoraWikiLabels.key(group,id,lang)]:value
