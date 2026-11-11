@@ -32,6 +32,14 @@ export async function runSavedBuildGridSmoke(browser,base){
    const cards=page.locator('.build-card');
    assert.deepEqual(await cards.locator('h3').allInnerTexts(),names,
     'Creation order wins over reverse storage order and newer at revisions');
+   const buttons=cards.first().locator('.build-card-actions > button');
+   assert.equal(await buttons.count(),4,'Every card has four actions');
+   assert.deepEqual(await cards.first().locator('.build-card-action-icon').allInnerTexts(),
+    ['📂','↻','🔗','🗑'],'Icons for all four actions');
+   assert.deepEqual(await cards.first().locator('.build-card-action-label').allInnerTexts(),
+    ['Открыть','Перезаписать','Поделиться','Удалить'],'Readable action labels');
+   assert.deepEqual(await buttons.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('type'))),
+    ['button','button','button','button'],'Action buttons cannot submit a form');
    const search=page.locator('.build-library-search');
    const grid=page.locator('.build-grid');
    for(const [term,count] of [['one',1],['two',2],['three',3],
