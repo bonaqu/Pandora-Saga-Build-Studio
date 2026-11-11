@@ -61,6 +61,7 @@
     };
     const actionHint=(node,key,ru,en)=>{
       hint(node,copy(key,ru,en));
+      node.dataset.guideOwnerKey=key;
       if(!canEdit||typeof editLabel!=='function')return;
       const wrap=node.closest('.os-sync-action-editor');
       if(!wrap)return;
