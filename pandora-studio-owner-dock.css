@@ -114,6 +114,20 @@ body>#ownerDock.owner-dock-collapsed{
  padding:8px 6px;margin:0;border-radius:5px;font-size:11px;
  white-space:normal;transition:border-color .18s,background .18s;
 }
+#ownerDock .owner-dock-secondary-label{
+ grid-column:1/-1;display:block;margin:3px 0 -1px;padding:8px 2px 0;
+ border-top:1px solid #695139;color:#b7a38b;
+ font:700 10px/1.4 Manrope,Arial,sans-serif;letter-spacing:.035em
+}
+#ownerDock .owner-dock-actions .owner-dock-d1-check,
+#ownerDock .owner-dock-actions .owner-dock-export{
+ background:#241d17;border-color:#70573c;color:#dec9a9
+}
+#ownerDock .owner-dock-actions .owner-dock-d1-check:hover,
+#ownerDock .owner-dock-actions .owner-dock-export:hover{
+ background:#3d2b1d;border-color:#c39961
+}
+#ownerDock .owner-dock-catalog:has(+ .owner-en-sync[hidden]){grid-column:1/-1}
 #ownerDock .owner-dock-actions .owner-dock-primary,
 #ownerDock .owner-dock-actions .owner-dock-finish{
  grid-column:1/-1;
