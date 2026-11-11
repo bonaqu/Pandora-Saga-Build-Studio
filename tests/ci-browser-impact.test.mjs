@@ -21,8 +21,8 @@ test('CI uses quick browser for copy-only, layout CSS and release housekeeping',
  assert.equal(selectBrowserSuite(['index.html'],{releaseOnlyFiles:['index.html']}),'quick');
 });
 test('release-only metadata cannot conceal a new script, asset or HTML element',()=>{
- const old='<meta name="ps-studio-release" content="2026.11.11.627"><script src="app.js?v=2026.11.11.627"></script>';
- const next='<meta name="ps-studio-release" content="2026.11.11.628"><script src="app.js?v=2026.11.11.628"></script>';
+ const old='<meta name="ps-studio-release" content="2026.11.11.627"><script src="sample-entry.js?v=2026.11.11.627"></script>';
+ const next='<meta name="ps-studio-release" content="2026.11.11.628"><script src="sample-entry.js?v=2026.11.11.628"></script>';
  assert.equal(normalizeForReleaseOnly('index.html',old),normalizeForReleaseOnly('index.html',next));
  assert.notEqual(normalizeForReleaseOnly('index.html',old),normalizeForReleaseOnly('index.html',next+'<button>unexpected</button>'));
  assert.equal(normalizeForReleaseOnly('package.json','{"version":"0.627.0","pandoraRelease":"2026.11.11.627","scripts":{"test":"node --test"}}'),
