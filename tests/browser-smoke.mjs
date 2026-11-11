@@ -9,6 +9,7 @@ import {runDraftPersistenceWarningSmoke} from './browser-draft-persistence-warni
 import {runGuestDraftContinuitySmoke} from './browser-guest-draft-continuity.mjs';
 import {runLegacyImportSmoke} from './browser-legacy-import.mjs';
 import {runLayoutAudit} from './browser-layout.mjs';
+import {runVisualCoverageSmoke} from './browser-visual-coverage.mjs';
 import {runCloudConflictSmoke} from './browser-cloud-conflict.mjs';
 import {runCloudSaveFailureSmoke} from './browser-cloud-save-failure.mjs';
 import {runDeletedBuildRecoverySmoke} from './browser-deleted-recovery.mjs';
@@ -102,6 +103,7 @@ const scenarios=[
   ['ui-content-inline',runUIContentInlineSmoke],
   ['owner-equipment-copy-width',runOwnerEquipmentInlineSmoke],
   ['owner-two-session-cas',runOwnerDualSessionCasSmoke],
+  ['site-visual-coverage',runVisualCoverageSmoke],
   ['wiki-owner-english-sync',runWikiOwnerEnglishSyncSmoke],
   ['wiki-spawn-replace',runWikiSpawnReplacementSmoke],
   ['wiki-icons-offline',runWikiIconManifestFallbackSmoke],
