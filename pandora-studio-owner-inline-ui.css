@@ -330,6 +330,11 @@
   grid-template-columns:32px 32px minmax(0,1fr) 32px 32px;
   gap:3px
  }
+ /* The owner has two extra editor controls; move them below the eyebrow
+    rather than compressing or covering the centered "Hero Book · 1/6". */
+ #stageAttributes .stage-book-heading:has(>.stage-guide-actions)>.stage-guide-actions{
+  grid-column:1/-1;grid-row:3;justify-self:center
+ }
 }
 .stage-attribute-head>.stage-book-arrow,.stage-attribute-head>.stage-book-close{
  position:relative;z-index:2
