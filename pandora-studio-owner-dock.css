@@ -123,7 +123,7 @@ body>#ownerDock.owner-dock-collapsed{
 #ownerDock .owner-dock-action-slot:has(>.owner-dock-primary),
 #ownerDock .owner-dock-action-slot:has(>.owner-dock-finish),
 #ownerDock .owner-dock-action-slot.owner-dock-action-wide{grid-column:1/-1}
-#ownerDock .owner-dock-action-slot:has(>.owner-en-sync[hidden]),
+#ownerDock .owner-dock-action-slot:has(>.owner-en-sync[hidden]):not(:has(>.owner-dock-action-edit-host:not([hidden]))),
 #ownerDock .owner-dock-action-slot[hidden]{display:none!important}
 #ownerDock .owner-dock-action-slot>.owner-dock-primary,
 #ownerDock .owner-dock-action-slot>.owner-dock-finish{
