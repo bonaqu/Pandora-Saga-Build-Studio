@@ -72,7 +72,20 @@ export async function runVisualCoverageSmoke(browser,base){
        width:r.width,height:r.height,viewport:screen};
      });
     const globalOverflow=Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-screen;
-    return{viewport:screen,globalOverflow,groups,visibleDialog,
+    const bookHeader=document.querySelector('#stageAttributes .stage-attribute-head');
+    const bookEyebrow=document.querySelector('#stageAttributes .stage-book-heading>span:first-child');
+    const bookTitle=document.querySelector('#stageAttributes .stage-book-heading>strong');
+    const center=element=>{
+     if(!element)return null;
+     const bounds=element.getBoundingClientRect();
+     return bounds.left+bounds.width/2;
+    };
+    const bookHeaderGeometry=bookHeader&&isVisible(bookHeader)?{
+     center:center(bookHeader),eyebrow:center(bookEyebrow),
+     chapter:center(bookTitle),text:bookEyebrow?.textContent||'',
+     width:bookHeader.getBoundingClientRect().width
+    }:null;
+    return{viewport:screen,globalOverflow,groups,visibleDialog,bookHeaderGeometry,
      bookChevrons:document.querySelectorAll(
       '#stageBookPanel details.stage-result-section>summary .stage-result-chevron').length,
      bookSections:document.querySelectorAll('#stageBookPanel details.stage-result-section').length};
@@ -88,6 +101,16 @@ export async function runVisualCoverageSmoke(browser,base){
    for(const d of info.visibleDialog){
     assert.ok(d.left>=-8&&d.right<=d.viewport+9,
      prefix+' '+label+': dialog/window exceeds viewport '+JSON.stringify(d));
+   }
+   if(label.startsWith('hero-book-')){
+    const g=info.bookHeaderGeometry;
+    assert.ok(g&&g.eyebrow!==null&&g.chapter!==null,
+     prefix+' '+label+': header is visible');
+    assert.ok(Math.abs(g.eyebrow-g.center)<=2,
+     prefix+' '+label+': eyebrow must be centered in the entire header '+JSON.stringify(g));
+    assert.ok(Math.abs(g.chapter-g.center)<=2,
+     prefix+' '+label+': chapter title must share the same centerline '+JSON.stringify(g));
+    assert.match(g.text,/^(?:КНИГА ГЕРОЯ|HERO BOOK)/);
    }
    if(info.bookSections){
     assert.equal(info.bookChevrons,info.bookSections,

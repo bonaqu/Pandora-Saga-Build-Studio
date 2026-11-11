@@ -535,6 +535,46 @@ export async function runAdminEntrySmoke(browser,base){
   // A pencil next to the LIVE catalog check must edit only its RU/EN copy.
   // The real check button retains its normal behavior and accessible name.
   // Scope :has() to each wrapper, not to the outer dialog.
+  // #390: catalog checkbox captions are editable independently of their
+  // checkbox and dynamic approval counts. The test fixture reveals the
+  // optional review section without publishing any catalog change.
+  const choices=dialog.locator('.os-sync-choice-editor');
+  assert.equal(await choices.count(),2);
+  const structures=await choices.evaluateAll(nodes=>nodes.map(node=>({
+   pencilInsideLabel:Boolean(node.querySelector('label .os-sync-choice-pencil')),
+   pencilCount:node.querySelectorAll(':scope>.os-sync-choice-pencil').length,
+   count:node.querySelector('small.os-sync-choice-count')?.textContent||'',
+   label:node.querySelector('label>span')?.textContent||''
+  })));
+  assert.ok(structures.every(x=>!x.pencilInsideLabel&&x.pencilCount===1),
+   'Catalog checkbox pencils must be siblings of the clickable native label');
+  const formattingChoice=choices.first();
+  await formattingChoice.evaluate(el=>{
+   el.closest('.os-sync-review-steps').hidden=false;
+   el.closest('.os-sync-formatting-review').hidden=false;
+  });
+  const checkboxBefore=await formattingChoice.locator('input[type="checkbox"]').isChecked();
+  const sourceCallsBefore=calls.filter(x=>x.startsWith('game-source:')).length;
+  const originalCaption='Привести переносы строк в описаниях к виду игрового сайта';
+  for(const value of ['Настройка переносов строк QA',originalCaption]){
+   await formattingChoice.locator('.os-sync-choice-pencil').click();
+   const editor=formattingChoice.locator('[contenteditable]').first();
+   await editor.waitFor({state:'visible'});
+   await editor.fill(value);
+   await editor.press('Tab');
+   await page.waitForFunction(text=>
+    document.querySelector('.os-sync-choice-editor .os-sync-formatting-option>span')
+     ?.textContent===text,value,{timeout:12000});
+  }
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.formatting-label')).ru,
+   originalCaption,'Checkbox caption is stored in the same D1 owner-copy store');
+  assert.equal(await formattingChoice.locator('input[type="checkbox"]').isChecked(),checkboxBefore);
+  assert.equal(calls.filter(x=>x.startsWith('game-source:')).length,sourceCallsBefore,
+   'Editing a catalog caption must not launch a comparison or D1 game publication');
+  await formattingChoice.evaluate(el=>{
+   el.closest('.os-sync-formatting-review').hidden=true;
+   el.closest('.os-sync-review-steps').hidden=true;
+  });
   const liveAction=dialog.locator('.os-sync-action-editor:has(> .os-sync-main-check)');
   const actionPencil=liveAction.locator('.os-sync-owner-pencil');
   const actionState=await dialog.evaluate(node=>({

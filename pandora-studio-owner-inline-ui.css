@@ -290,24 +290,51 @@
 .stage-book-buff-group:has(>.stage-guide-actions)>:not(strong):not(.stage-guide-actions){
  grid-column:1/-1
 }
-/* Navigation arrows stay in the outer grid. The owner buttons use
-   the eyebrow's row; the full second row is reserved for the chapter title. */
-.stage-attribute-head .stage-book-heading{
- display:grid;grid-template-columns:minmax(0,1fr) auto;
+/* Balanced navigation gutters put both the eyebrow and chapter title
+   on the TRUE centerline of the Book. The spare left track mirrors the
+   right-hand close control; it is not another button or focus target. */
+#stageAttributes .stage-attribute-head{
+ grid-template-columns:36px 36px minmax(0,1fr) 36px 36px;
+ gap:5px;min-width:0
+}
+#stageAttributes .stage-attribute-head>.stage-book-arrow:first-child{
+ grid-column:1;grid-row:1
+}
+#stageAttributes .stage-attribute-head>.stage-book-heading{
+ grid-column:3;grid-row:1;display:grid;
+ grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
  column-gap:4px;row-gap:2px;align-items:center;
  min-width:0;max-width:100%;overflow:hidden
 }
-.stage-attribute-head .stage-book-heading>span:first-child{
- grid-column:1;grid-row:1;min-width:0;overflow:hidden;
- text-overflow:ellipsis;white-space:nowrap;text-align:left
+#stageAttributes .stage-attribute-head>.stage-book-arrow:not(:first-child){
+ grid-column:4;grid-row:1
 }
-.stage-attribute-head .stage-book-heading>strong{
+#stageAttributes .stage-attribute-head>.stage-book-close{
+ grid-column:5;grid-row:1
+}
+#stageAttributes .stage-book-heading>span:first-child{
+ grid-column:2;grid-row:1;justify-self:center;min-width:0;
+ max-width:100%;overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;text-align:center
+}
+#stageAttributes .stage-book-heading>strong{
  grid-column:1/-1;grid-row:2;min-width:0;
  font-size:21px;text-align:center
 }
-.stage-attribute-head .stage-book-heading>.stage-guide-actions{
- display:inline-flex;grid-column:2;grid-row:1;
+#stageAttributes .stage-book-heading>.stage-guide-actions{
+ display:inline-flex;grid-column:3;grid-row:1;
  justify-self:end;align-self:center;margin-left:0
+}
+@media(max-width:410px){
+ #stageAttributes .stage-attribute-head{
+  grid-template-columns:32px 32px minmax(0,1fr) 32px 32px;
+  gap:3px
+ }
+ /* The owner has two extra editor controls; move them below the eyebrow
+    rather than compressing or covering the centered "Hero Book · 1/6". */
+ #stageAttributes .stage-book-heading:has(>.stage-guide-actions)>.stage-guide-actions{
+  grid-column:1/-1;grid-row:3;justify-self:center
+ }
 }
 .stage-attribute-head>.stage-book-arrow,.stage-attribute-head>.stage-book-close{
  position:relative;z-index:2

@@ -15,8 +15,10 @@ test('author-editable catalog explanations cannot lose their pencil on refresh',
  assert.match(source,/metaStatus,metaStatusDetail,/);
  assert.match(source,/metaStatusDetail\.hidden=false/);
  assert.match(source,/metaStatusDetail\.textContent=fingerprintCount/);
- assert.match(source,/russianLabel\.textContent=copy\('russianDescriptionsLabel'/);
- assert.match(source,/formattingLabel\.textContent=copy\('formattingLabel'/);
+ assert.match(source,/russianCountLabel\.textContent=' · '\+verifiedRussian\.length/);
+ assert.match(source,/formattingCountLabel\.textContent=formattingCount/);
+ assert.doesNotMatch(source,/russianLabel\.textContent=copy\('russianDescriptionsLabel'/);
+ assert.doesNotMatch(source,/formattingLabel\.textContent=copy\('formattingLabel'/);
 });
 
 test('comparison statuses use semantic RU/EN author keys, not raw item values',()=>{

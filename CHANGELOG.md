@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.643.0 — 2026.11.11.643 · D1 catalog choices and centered Book heading
+
+- Catalog review: static RU/EN text for both optional comparison checkboxes is independently editable in D1 with the existing CAS/Undo editor. Dynamic selection counts are separate, noneditable nodes; editing cannot toggle a checkbox or publish catalog data.
+- Hero Book: restore true centered “КНИГА ГЕРОЯ · 1/6” and chapter title by balancing navigation gutters, including mobile. In narrow owner mode, editorial controls move below rather than overlapping the heading.
+- Node regression and full Chromium visual geometry check cover the six Book chapters in RU desktop and EN mobile; authenticated admin smoke checks checkbox captions, isolation from actions and a mocked D1 save.
+- Production game data, saved builds and formulas remain unchanged.
+- Publish only after Node and Chromium pass; verify Pages and Worker readiness separately.
+
+
 ## 0.642.0 — 2026.11.11.642 · Expanded Hero Book editorial defaults
 
 - Added 36 further source-authored RU/EN captions in Book: guild and priest enhancements, resistance skill explanations, song previews, conditional equipment effects, potion recovery and empty/disabled messaging.

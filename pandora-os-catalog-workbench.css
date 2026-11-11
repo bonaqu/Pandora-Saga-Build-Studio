@@ -387,3 +387,18 @@
 @media(max-width:580px){
  .os-sync-secondary-hint{grid-template-columns:minmax(0,1fr) 22px;gap:4px}
 }
+
+/* Catalog review checkbox captions are D1-editable separately from live counts.
+   The pencil is never nested inside a native label and cannot toggle the checkbox. */
+.os-sync-choice-editor{display:flex;align-items:center;gap:6px;min-width:0;width:100%}
+.os-sync-choice-editor>.os-sync-formatting-option{flex:1 1 auto;min-width:0;margin:8px 0 2px}
+.os-sync-choice-editor .os-sync-choice-count{margin-left:auto;white-space:nowrap;color:#cfb185;font-size:11px}
+.os-sync-choice-pencil{display:inline-grid;place-items:center;flex:0 0 22px;
+ width:22px;height:25px;min-width:22px;padding:0;border:1px solid #80613d;
+ border-radius:4px;background:#312318;color:#dfbd85;font-size:12px;cursor:pointer}
+.os-sync-choice-pencil:hover,.os-sync-choice-pencil:focus-visible{
+ background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px}
+.os-sync-choice-editor .wiki-inline-input{display:block;min-width:0;max-width:100%;
+ width:100%;height:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+@media(max-width:450px){.os-sync-choice-editor{gap:3px}
+ .os-sync-choice-editor>.os-sync-formatting-option{padding:8px 6px}}
