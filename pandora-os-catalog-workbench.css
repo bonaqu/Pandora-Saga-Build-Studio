@@ -338,3 +338,25 @@
 .os-sync-state-caption.origin-copy-editable:focus-visible{
  outline:2px solid #edc485;outline-offset:3px;border-radius:2px
 }
+
+/* Inline D1-editable hover help: ? is separate from the actual publish/test
+   button, so an editorial click cannot trigger a catalog operation. */
+.os-sync-hint-pencil{
+ display:inline-flex;align-items:center;justify-content:center;
+ flex:0 0 18px;min-width:18px;width:18px;height:21px;padding:0;
+ border:1px solid #776044;border-radius:4px;background:#2a2018;
+ color:#d6bd98;font-size:11px;cursor:pointer
+}
+.os-sync-hint-pencil:hover,.os-sync-hint-pencil:focus-visible{
+ background:#573920;border-color:#efc181;color:#ffe5b3;outline-offset:2px
+}
+.os-sync-hint-edit-host{display:inline-flex;align-items:center;
+ flex:1;min-width:128px;max-width:100%}
+.os-sync-hint-edit-host.origin-copy-editable::after{content:none}
+.os-sync-hint-edit-host .wiki-inline-input{
+ box-sizing:border-box;display:block;min-width:0;width:100%;
+ max-width:100%;min-height:29px;padding:5px 7px;font-size:11px
+}
+.os-sync-action-editor.editing-hint>.button-action,
+.os-sync-action-editor.editing-hint>.os-sync-owner-pencil{display:none}
+.os-sync-action-editor.editing-hint{flex:1 1 200px}
