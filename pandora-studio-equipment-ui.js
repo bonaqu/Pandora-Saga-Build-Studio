@@ -73,7 +73,7 @@ function summary(record,icon,kind='item',context=null){
  }
  if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
   rows.push([tr('Вставлено душ','Socketed Souls'),
-   (context.souls?.length||0)+' / '+context.capacity]);
+   (context.socketedCount??context.souls?.length??0)+' / '+context.capacity]);
  // Keep per-row translation/editor keys aligned with dynamically inserted
  // magical refinements and hidden Soul slots. Index drift formerly assigned
  // Defense the "Slots" editor key on magically enhanced weapons.
@@ -287,7 +287,7 @@ function render(root,api){
    'aria-label':tr('Закрыть настройку','Close item settings')})
  ]);root.append(head);
  const copy=(key,ru,en)=>api.copyLabel?.(key,ru,en)||tr(ru,en);
- const editable=(node,key,ru,en)=>{api.editLabel?.(node,key,ru,en);return node};
+ const editable=(node,key,ru,en,options)=>{api.editLabel?.(node,key,ru,en,options);return node};
  const labeledAction=(button,key,ru,en,prefix='')=>{
   if(!api.canEdit)return button;
   const caption=editable(el('span',{class:'stage-copy-caption',text:copy(key,ru,en)}),key,ru,en);
@@ -339,7 +339,8 @@ function render(root,api){
  if(mode==='details'){
   body.append(summary(record,icons,'item',{slot,refinement,
    gem:globalThis.PandoraEnchantModel?.normalizeForSlot?.(slot,gems),
-   capacity:cap,tables:gameTables,copyLabel:copy,editLabel:editable}));
+   capacity:cap,socketedCount:plan.asSocketArray(souls).slice(0,Math.max(0,cap??0))
+    .filter(Boolean).length,tables:gameTables,copyLabel:copy,editLabel:editable}));
   if(plan.supportsSoulSlot(slot)&&typeof api.updateSocketCapacity==='function'){
    const frame=el('fieldset',{class:'stage-enchant-fieldset stage-soul-capacity-fieldset'});
    frame.append(editable(el('legend',{text:copy('socketCapacityHeading',
@@ -430,7 +431,8 @@ function render(root,api){
   const searchRu='Поиск совместимой души',searchEn='Find a compatible Soul';
   const query=el('input',{type:'search',placeholder:copy('soulSearch',searchRu,searchEn),
    'aria-label':tr('Поиск души','Find Soul'),
-   'data-soul-query':'1',value:api.soulQuery||''});
+   'data-soul-query':'1','data-equipment-copy-placeholder':'soulSearch',
+    value:api.soulQuery||''});
   const list=el('div',{class:'stage-rich-list'});
   const draw=()=>{
    list.replaceChildren();const needle=String(query.value||'').trim().toLocaleLowerCase('ru');
@@ -481,7 +483,7 @@ function render(root,api){
   query.addEventListener('input',()=>{api.onSoulQuery?.(query.value);draw()});
   if(api.canEdit)body.append(editable(el('label',{
    class:'stage-soul-search-caption',text:copy('soulSearch',searchRu,searchEn)}),
-   'soulSearch',searchRu,searchEn));
+   'soulSearch',searchRu,searchEn,{onCommitted:visible=>{query.placeholder=visible;}}));
   const removeRu='Извлечь душу из выбранного слота';
   const removeEn='Remove Soul from selected slot';
   const remove=el('button',{type:'button',class:'stage-enchant-reset',

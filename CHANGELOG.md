@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.628.0 — 2026.11.11.628 · Active Soul counts and live RU/EN search-placeholder synchronization
+
+- Equipment properties display active Souls in the current item's accessible sockets; saved overflow Souls remain preserved.
+- Inline D1 save and Undo refresh the Souls search placeholder in place without clearing the user's search or re-rendering its list.
+- Added a real-browser saved-two-Souls recovery regression and focused Node contracts.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.627.0 — 2026.11.11.627 · Profile author-copy locale stability
 
 - Администраторские текстовые подписи «Персонаж / Профиль» фиксируют RU или EN при открытии редактора. Если интерфейс переключён до сохранения, исходный язык правки не подменяется другой колонкой D1.
