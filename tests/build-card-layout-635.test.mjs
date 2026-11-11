@@ -45,5 +45,6 @@ test('optional D1 test and GitHub export are clearly labelled in owner dock',()=
  assert.match(app,/class:'owner-dock-d1-check'/);
  assert.match(app,/class:'owner-en-sync'/);
  assert.match(css,/\.owner-dock-secondary-label\{/);
- assert.match(css,/\.owner-dock-catalog:has\(\+ \.owner-en-sync\[hidden\]\)/);
+ assert.match(css,/\.owner-dock-action-slot\.owner-dock-action-wide\{grid-column:1\/-1\}/);
+ assert.match(css,/\.owner-dock-action-slot:has\(>\.owner-en-sync\[hidden\]\)/);
 });
