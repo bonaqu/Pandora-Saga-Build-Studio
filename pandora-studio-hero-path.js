@@ -633,9 +633,33 @@ function viewSkills(target,details,api){
   grid.append(item);api.hover(item,skill);
  }
  target.append(grid);grid.scrollTop=previousScroll;
- if(rows.length>(api.shown||24))
-  target.append(make('button',{type:'button',class:'path-show-more',
-   text:tr(api,'Показать ещё (','Show more (')+(rows.length-(api.shown||24))+')',onclick:api.onMoreSkills}));
+ if(rows.length>(api.shown||24)){
+  const ru='Показать ещё',en='Show more',key='skillShowMore';
+  const title=api.copyLabel?.(key,ru,en)||tr(api,ru,en);
+  const caption=make('span',{class:'path-more-copy',text:title});
+  const remain=make('span',{class:'path-more-count',text:' ('+
+   (rows.length-(api.shown||24))+')'});
+  const showMore=make('button',{type:'button',class:'path-show-more',
+   onclick:event=>{
+    // Never load more game records when an owner finishes editing a caption.
+    if(event?.target?.closest?.('.wiki-inline-input'))return;
+    api.onMoreSkills();
+   }},[caption,remain]);
+  if(api.canEdit&&typeof api.editLabel==='function'){
+   const row=make('div',{class:'path-more-owner-row'},[showMore]);
+   const pencil=make('button',{type:'button',class:'path-more-pencil',
+    text:'✎','aria-label':tr(api,'Изменить надпись: ','Edit caption: ')+title});
+   const sync=()=>pencil.setAttribute('aria-label',
+    tr(api,'Изменить надпись: ','Edit caption: ')+caption.textContent);
+   api.editLabel(caption,key,ru,en,{onCommitted:sync});
+   pencil.addEventListener('focus',sync);
+   pencil.addEventListener('click',event=>{
+    event.preventDefault();event.stopPropagation();
+    caption.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   });
+   row.append(pencil);target.append(row);
+  }else target.append(showMore);
+ }
  if(!rows.length)target.append(authored(api,'skillSearchEmpty',
   'По этим параметрам навыки не найдены.','No skills match these filters.'));
  const selected=api.selectedSkill?rows.find(row=>String(row.skill.id)===String(api.selectedSkill.id)):null;
