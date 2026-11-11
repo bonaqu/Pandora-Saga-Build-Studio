@@ -7365,27 +7365,137 @@ function refreshVisibleWikiLabels(){
   if(edit)edit.setAttribute('aria-label',(lang==='en'?'Edit: ':'Изменить: ')+name);
  }
 }
+// Admin toolbar captions use the same bilingual, CAS-protected guideedit.book
+// D1 store as other authored labels. Never store diagnostics or credentials.
+const ownerDockText=Object.freeze({
+ title:['✎ Редактор сайта','✎ Site editor'],
+ online:['Редактирование включено','Editing enabled'],
+ openWiki:['Открыть энциклопедию','Open encyclopedia'],
+ undo:['↶ Отменить','↶ Undo'],
+ history:['Все правки','All edits'],
+ catalog:['Игровой каталог','Game catalog'],
+ translations:['EN-переводы','EN translations'],
+ testD1:['Проверить сохранение','Test saving'],
+ githubExport:['Экспорт в GitHub','Export to GitHub'],
+ finish:['Завершить','Finish'],
+ extra:['Дополнительно','Additional tools'],
+ guide:['Как редактировать и когда нажимать кнопки','How editing works'],
+ step1:['В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.',
+  'In the encyclopedia, double-click a highlighted value or use + to add a new entry.'],
+ step2:['Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.',
+  'Edit the text or link, then press Enter or leave the field: Cloudflare D1 saves it automatically.'],
+ step3:['Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.',
+  'Wait for “Saved to Cloudflare D1”, then select Finish. There is no separate Save button.'],
+ historyHelp:[' — посмотреть сохранённые изменения и вернуть исходное.',
+  ' — review saved changes or restore the original.'],
+ catalogHelp:[' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.',
+  ' — compare the game server catalog; not needed for manual text edits.'],
+ githubHelp:[' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.',
+  ' — optional export for review in GitHub. Your changes are already saved in D1.'],
+ d1Help:[' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.',
+  ' — safely create and delete temporary test records without changing user data.'],
+ finishHelp:[' — только скрыть инструменты редактирования, не удалить изменения.',
+  ' — hide editing controls without removing saved changes.'],
+ collapse:['◀ Скрыть','◀ Hide'],
+ expand:['✎ Редактор','✎ Editor']
+});
+function ownerDockCopy(key){
+ const pair=ownerDockText[key];
+ return pair?ownerCopy('owner-dock',key,pair[0],pair[1]):key;
+}
+function decorateOwnerDockActions(actions){
+ const refs=[
+  ['.owner-dock-primary','openWiki'],
+  ['[data-owner-undo]','undo'],
+  ['.owner-dock-history','history'],
+  ['.owner-dock-catalog','catalog'],
+  ['.owner-en-sync','translations'],
+  ['.owner-dock-d1-check','testD1'],
+  ['.owner-dock-export','githubExport'],
+  ['.owner-dock-finish','finish']
+ ];
+ for(const [selector,key] of refs){
+  const button=actions.querySelector(selector);
+  if(!button)continue;
+  const slot=h('span',{class:'owner-dock-action-slot','data-owner-dock-key':key});
+  const pencil=h('button',{type:'button',class:'owner-dock-action-pencil',
+   text:'✎','aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key)});
+  const host=h('span',{class:'owner-dock-action-edit-host',hidden:true});
+  button.before(slot);slot.append(button,pencil,host);
+  pencil.onclick=event=>{
+   event.preventDefault();event.stopPropagation();
+   if(!adminEditing||!adminToken||!host.hidden)return;
+   if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
+    showStudioToast(lang==='en'?'Finish the current save first.':
+     'Сначала заверши текущее сохранение.','warning');return;
+   }
+   const editLang=lang,before=ownerDockCopy(key);
+   button.hidden=true;pencil.hidden=true;host.hidden=false;
+   window.PandoraGuideTooltip?.dismiss();
+   editWikiValue(host,before,{
+    type:'text',
+    onCommit:next=>{
+     if(next.length>90)throw Error(editLang==='en'?'Label is too long':'Надпись слишком длинная');
+     return saveGuidePatch('book.'+ownerCopyKey('owner-dock',key),{[editLang]:next});
+    },
+    onCommitted:()=>{button.textContent=ownerDockCopy(key)},
+    onFinished:()=>{
+     host.hidden=true;host.replaceChildren();
+     button.hidden=false;pencil.hidden=false;
+     button.textContent=key==='translations'?
+      ownerDockCopy(key)+' · '+(window.PandoraOwnerBilingual?.pending(override)||[])
+       .reduce((sum,item)=>sum+item.fields.length,0):ownerDockCopy(key);
+    }
+   });
+  };
+ }
+}
 function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
  const count=Object.keys(override).length;
- const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?'Сохраняю в Cloudflare D1…':
-  ownerSaveState==='error'?'Не сохранено: '+(ownerSaveError||'ошибка сервера'):
-  ownerSaveState==='saved'?'✓ Сохранено в Cloudflare D1':
-  '✓ Подключено к Cloudflare D1 · сохранение автоматическое';
+ const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?
+  (lang==='en'?'Saving to Cloudflare D1…':'Сохраняю в Cloudflare D1…'):
+  ownerSaveState==='error'?(lang==='en'?'Not saved: ':'Не сохранено: ')+
+   (ownerSaveError||(lang==='en'?'server error':'ошибка сервера')):
+  ownerSaveState==='saved'?(lang==='en'?'✓ Saved to Cloudflare D1':'✓ Сохранено в Cloudflare D1'):
+  (lang==='en'?'✓ Cloudflare D1 connected · changes save automatically':
+   '✓ Подключено к Cloudflare D1 · сохранение автоматическое');
  const update=root=>{
   const counter=root.querySelector('[data-owner-count]');
-  if(counter)counter.textContent=count+' '+(count===1?'запись':'записей')+' в D1';
+  if(counter)counter.textContent=lang==='en'?count+' D1 edits':
+   count+' '+(count===1?'запись':'записей')+' в D1';
   const recent=root.querySelector('[data-owner-recent]');
-  if(recent)recent.textContent='За этот сеанс: '+ownerEdits.length;
+  if(recent)recent.textContent=(lang==='en'?'This session: ':'За этот сеанс: ')+ownerEdits.length;
   const translations=root.querySelector('[data-owner-en-sync]');
   if(translations){
    const changes=window.PandoraOwnerBilingual?.pending(override)||[];
    const count=changes.reduce((sum,item)=>sum+item.fields.length,0);
    translations.hidden=count===0;
    translations.disabled=!count||editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving';
-   translations.textContent='EN-переводы · '+count;
+   translations.textContent=ownerDockCopy('translations')+' · '+count;
   }
+  for(const slot of root.querySelectorAll('.owner-dock-action-slot[data-owner-dock-key]')){
+   const key=slot.dataset.ownerDockKey,button=slot.querySelector('button:not(.owner-dock-action-pencil)');
+   if(button&&key!=='translations')button.textContent=ownerDockCopy(key);
+   const pencil=slot.querySelector('.owner-dock-action-pencil');
+   if(pencil)pencil.setAttribute('aria-label',
+    (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
+  }
+  const catalogSlot=root.querySelector('.owner-dock-catalog')?.closest('.owner-dock-action-slot');
+  if(catalogSlot)catalogSlot.classList.toggle('owner-dock-action-wide',Boolean(translations?.hidden));
+  const title=root.querySelector('.owner-dock-title');
+  if(title&&!title.querySelector('.wiki-inline-input'))title.textContent=ownerDockCopy('title');
+  const online=root.querySelector('.owner-dock-online');
+  if(online)online.textContent=ownerDockCopy('online');
+  const extra=root.querySelector('.owner-dock-secondary-label');
+  if(extra)extra.textContent=ownerDockCopy('extra');
+  for(const node of root.querySelectorAll('[data-owner-dock-static]')){
+   if(!node.querySelector('.wiki-inline-input'))
+    node.textContent=ownerDockCopy(node.dataset.ownerDockStatic);
+  }
+  const guide=root.querySelector('.owner-workflow-guide>summary');
+  if(guide)guide.textContent=ownerDockCopy('guide');
   const state=root.querySelector('[data-owner-save-state]');
   if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
@@ -7399,9 +7509,10 @@ function refreshOwnerUI(){
   }
   const toggle=root.querySelector('[data-owner-collapse]');
   if(toggle){
-   toggle.textContent=ownerDockCollapsed?'✎ Редактор':'◀ Скрыть';
+   toggle.textContent=ownerDockCopy(ownerDockCollapsed?'expand':'collapse');
    toggle.setAttribute('aria-label',ownerDockCollapsed?
-    'Открыть боковую панель редактора сайта':'Скрыть боковую панель редактора сайта');
+    (lang==='en'?'Open site editor drawer':'Открыть боковую панель редактора сайта'):
+    (lang==='en'?'Hide site editor drawer':'Скрыть боковую панель редактора сайта'));
    toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed));
   }
  };
@@ -7421,16 +7532,16 @@ function refreshOwnerUI(){
  const guide=h('details',{class:'owner-workflow-guide'},[
   h('summary',{text:'Как редактировать и когда нажимать кнопки'}),
   h('ol',{class:'owner-workflow-steps'},[
-   h('li',{text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'}),
-   h('li',{text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'}),
-   h('li',{text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})
+   h('li',{},[h('span',{'data-owner-dock-static':'step1',text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'})]),
+   h('li',{},[h('span',{'data-owner-dock-static':'step2',text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'})]),
+   h('li',{},[h('span',{'data-owner-dock-static':'step3',text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})])
   ]),
   h('div',{class:'owner-workflow-glossary'},[
-   h('p',{},[h('strong',{text:'Все правки'}),document.createTextNode(' — посмотреть сохранённые изменения и вернуть исходное.')]),
-   h('p',{},[h('strong',{text:'Игровой каталог'}),document.createTextNode(' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.')]),
-   h('p',{},[h('strong',{text:'Экспорт в GitHub'}),document.createTextNode(' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.')]),
-   h('p',{},[h('strong',{text:'Проверить сохранение'}),document.createTextNode(' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.')]),
-   h('p',{},[h('strong',{text:'Завершить'}),document.createTextNode(' — только скрыть инструменты редактирования, не удалить изменения.')])
+   h('p',{},[h('strong',{'data-owner-dock-static':'history',text:'Все правки'}),h('span',{'data-owner-dock-static':'historyHelp',text:' — посмотреть сохранённые изменения и вернуть исходное.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'catalog',text:'Игровой каталог'}),h('span',{'data-owner-dock-static':'catalogHelp',text:' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'githubExport',text:'Экспорт в GitHub'}),h('span',{'data-owner-dock-static':'githubHelp',text:' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'testD1',text:'Проверить сохранение'}),h('span',{'data-owner-dock-static':'d1Help',text:' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'finish',text:'Завершить'}),h('span',{'data-owner-dock-static':'finishHelp',text:' — только скрыть инструменты редактирования, не удалить изменения.'})])
   ])
  ]);
  const actions=h('div',{class:'owner-dock-actions'},[
@@ -7474,6 +7585,22 @@ function refreshOwnerUI(){
     adminEditing=false;closeInlineEditor();render();updateAdminHint()
    }})
  ]);
+ decorateOwnerDockActions(actions);
+ // Help copy can also be edited where it appears. The pencil is a
+ // separate control, so clicking help never changes any D1 data implicitly.
+ for(const node of guide.querySelectorAll('[data-owner-dock-static]')){
+  const key=node.dataset.ownerDockStatic;
+  if(!['step1','step2','step3','historyHelp','catalogHelp','githubHelp',
+   'd1Help','finishHelp'].includes(key))continue;
+  const pair=ownerDockText[key];
+  ownerCopyLabel(node,'owner-dock',key,pair[0],pair[1]);
+  node.after(h('button',{type:'button',class:'owner-workflow-copy-pencil',
+   text:'✎','aria-label':(lang==='en'?'Edit help: ':'Изменить пояснение: ')+ownerDockCopy(key),
+   onclick:event=>{
+    event.preventDefault();event.stopPropagation();
+    node.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   }}));
+ }
  const body=h('div',{class:'owner-dock-body'},[status,counters,guide,actions]);
  const panel=h('div',{id:'ownerDockPanel',class:'owner-dock-panel'},[head,body]);
  const toggle=h('button',{type:'button',class:'owner-dock-handle','data-owner-collapse':'',
@@ -7557,7 +7684,8 @@ function refreshVisibleOriginCopy(recordKey){
 // Copy-only Undo/saves must not unmount the Soul search or Path card.
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
- if(!/^(equipment|path|catalog-sync|honor-view)\./.test(key))return;
+ if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
+  if(!/^(equipment|path|catalog-sync|honor-view)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -7640,7 +7768,7 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view)\./.test(last.key)){
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock)\./.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -7706,6 +7834,8 @@ function showOverrideManager(){
       delete override[record.key];draw();
        if(record.key.startsWith('guideedit.book.origin.')){
         refreshVisibleOriginCopy(record.key);saveView();
+       }else if(record.key.startsWith('guideedit.book.owner-dock.')){
+        refreshVisibleOwnerCopy(record.key);
        }else void refreshOwnerCatalog();
        refreshOwnerUI();
      }catch(error){showStudioToast('Не удалось отменить правку: '+error.message,'warning')}
@@ -7958,7 +8088,8 @@ async function saveGuidePatchNow(key,fields){
   if(key.startsWith('book.ui.label.'))
    refreshVisibleUICopy('guideedit.'+key);
   if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
-     key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.'))
+     key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
+     key.startsWith('book.owner-dock.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
      !key.startsWith('book.catalog-sync.')){

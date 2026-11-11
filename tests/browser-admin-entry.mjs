@@ -253,6 +253,39 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await ownerPanel.innerText(),/Проверить сохранение/);
   assert.match(await ownerPanel.innerText(),/За этот сеанс: 0/);
   assert.match(await ownerPanel.innerText(),/записей в D1|запись в D1/);
+  // Separate D1 label pencils must never click their actual admin action.
+  const d1Action=ownerPanel.locator('.owner-dock-action-slot[data-owner-dock-key="testD1"]');
+  assert.equal(await d1Action.locator('.owner-dock-action-pencil').count(),1);
+  const d1Label='Сохранение проверено';
+  const d1Key='guideedit.book.owner-dock.test-d1';
+  const initialD1Calls=calls.filter(x=>x==='d1-write-check').length;
+  await d1Action.locator('.owner-dock-action-pencil').click();
+  assert.equal(await d1Action.locator('.owner-dock-d1-check').isVisible(),false);
+  const ownerCaptionEditor=d1Action.locator('[contenteditable="plaintext-only"]');
+  await ownerCaptionEditor.waitFor({state:'visible'});
+  await ownerCaptionEditor.fill(d1Label);
+  await ownerCaptionEditor.press('Tab');
+  await page.waitForFunction(label=>
+   document.querySelector('.owner-dock-d1-check')?.textContent?.trim()===label,
+   d1Label,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get(d1Key)).ru,d1Label);
+  assert.equal(calls.filter(x=>x==='d1-write-check').length,initialD1Calls,
+   'Editing the diagnostic label must not execute the diagnostic');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.waitForFunction(()=>document.querySelector('.owner-dock-d1-check')?.textContent==='Test saving');
+  await d1Action.locator('.owner-dock-action-pencil').click();
+  const englishCaptionEditor=d1Action.locator('[contenteditable="plaintext-only"]');
+  await englishCaptionEditor.waitFor({state:'visible'});
+  await englishCaptionEditor.fill('Verify saving');
+  await englishCaptionEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('.owner-dock-d1-check')?.textContent==='Verify saving');
+  assert.deepEqual(JSON.parse(townOverrides.get(d1Key)),{ru:d1Label,en:'Verify saving'});
+  assert.match(await ownerPanel.innerText(),/Site editor|Editing enabled/);
+  assert.equal(await ownerPanel.locator('.owner-dock-action-slot').count(),8);
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(label=>
+   document.querySelector('.owner-dock-d1-check')?.textContent===label,d1Label);
+  assert.match(await ownerPanel.locator('[data-owner-recent]').innerText(),/За этот сеанс: 2/);
   // Origin captions share the same authenticated inline D1 path as approved
   // encyclopedia editing: pencil -> focus/blur -> independent RU/EN fields.
   const raceCopy='guideedit.book.origin.race-choose';
@@ -496,7 +529,7 @@ export async function runAdminEntrySmoke(browser,base){
   assert.match(await page.locator('.wiki-honor-subtitle').innerText(),/— RU/);
   // Reuse the existing authenticated admin smoke to check the real OS workbench.
   // All catalog requests are mocked; no production Worker or D1 is mutated.
-  await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог'}).click();
+  await page.locator('#ownerDock').getByRole('button',{name:'Игровой каталог',exact:true}).click();
   const dialog=page.getByRole('dialog',{name:/Обновление игрового каталога/});
   await dialog.waitFor({state:'visible'});
   // A pencil next to the LIVE catalog check must edit only its RU/EN copy.
@@ -1105,7 +1138,7 @@ export async function runAdminEntrySmoke(browser,base){
    .waitFor({state:'visible',timeout:20000});
   // The drawer may be collapsed after Wiki navigation; textContent still
   // represents the saved D1 count, unlike hidden-element innerText.
-  assert.match(await ownerPanel.locator('[data-owner-count]').textContent(),/запис/);
+  assert.match(await ownerPanel.locator('[data-owner-count]').textContent(),/запис|D1 edits/);
   console.log('Chromium future-map NPC D1 passed: create, link and display bilingual owner NPC');
   console.log('Chromium future-map roster D1 passed: owner monster creation and cross-link');
   console.log('Chromium owner location created and edited through D1: RU/EN, tags, sections');
