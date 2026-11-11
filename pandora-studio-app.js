@@ -6823,20 +6823,28 @@ function isVerifiedSharedBuild(share,expectedData){
 async function createShared(build,host){
  if(!requireBuildAccount())return;
  if(!build||!host)return;
+ // Render detached authored text before insertion. The generic library
+ // translator only annotates standalone, literal copy; neither URLs nor
+ // generated player data may become editorial targets.
+ const showShareCopy=(literal,kind='muted')=>{
+  const row=h('div',{class:'share-editorial-row'},
+   h('p',{class:kind,text:literal}));
+  window.PandoraUILocale?.localize(row,lang);
+  if(host.isConnected){
+   host.replaceChildren(row);
+   if(adminEditing&&adminToken)bindAccountCopyEditors(row);
+  }
+ };
  if(build.localOnly===true){
-  host.replaceChildren(h('p',{class:'build-share-error',
-   text:sharedText('Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».',
-    'Open this local copy and explicitly save it with “Overwrite” first.')}));
+  showShareCopy('Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».',
+   'build-share-error');
   return;
  }
- const pending=h('p',{class:'muted',text:sharedText('Проверяем сохранение билда…',
-  'Checking saved build…')});
- host.replaceChildren(pending);
  try{
-  // Invalid saved state must show a card error instead of escaping the click handler.
+  // Validation is synchronous, so avoid an imperceptible duplicate
+  // "Checking…" loading step before starting the real network request.
   sanitizeSharedState(build.data);
-  pending.textContent=sharedText('Создаём ссылку из последней сохранённой облачной версии…',
-   'Creating a link from the latest saved cloud build…');
+  showShareCopy('Создаём ссылку из последней сохранённой облачной версии…');
   const response=await apiRequest('/api/shared',{schema:1,type:'build',buildId:build.id},
    window.PandoraAccountUI.token());
   if(!/^[A-Za-z0-9_-]{11}$/.test(response.id||''))throw Error('Некорректная ссылка');
@@ -6869,9 +6877,17 @@ async function createShared(build,host){
    if(adminEditing&&adminToken)bindAccountCopyEditors(message);
   }
  }catch(error){
-  if(host.isConnected)host.replaceChildren(h('p',{class:'build-share-error',
-   text:sharedText('Не удалось создать ссылку: ','Could not create link: ')+
-    (window.PandoraUILocale?.ui(error.message,lang)||error.message)}));
+  // The server response is runtime data: keep it in its own non-editable
+  // span, not inside the D1-controlled introductory explanation.
+  const prefix=h('span',{class:'share-error-intro',text:'Не удалось создать ссылку:'});
+  window.PandoraUILocale?.localize(prefix,lang);
+  const detail=h('span',{class:'share-runtime-detail',
+   text:' '+(window.PandoraUILocale?.ui(error.message,lang)||error.message)});
+  const row=h('div',{class:'share-editorial-row build-share-error'},[prefix,detail]);
+  if(host.isConnected){
+   host.replaceChildren(row);
+   if(adminEditing&&adminToken)bindAccountCopyEditors(row);
+  }
  }
 }
 function openSharedSnapshot(share){

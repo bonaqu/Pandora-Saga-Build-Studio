@@ -116,6 +116,11 @@ export async function runShareLinkSmoke(browser,base){
   const error=page.locator('.build-card').first().locator('.build-share-error');
   await error.waitFor({state:'visible',timeout:20000});
   assert.match(await error.innerText(),/не подтвердила выбранный билд/);
+  assert.equal(await error.locator('[data-owner-copy-key="libraryShareErrorIntro"]').count(),1);
+  assert.equal(await error.locator('.share-runtime-detail').count(),1);
+  assert.equal(await error.locator('.share-runtime-detail [data-owner-copy-key]').count(),0);
+  assert.equal(await error.locator('.account-copy-pencil').count(),0,
+   'Player cannot edit the fixed failure intro or server reason');
   assert.equal(await page.locator('.build-share-slot .share-result').count(),0);
   assert.equal(readbacks,2);
   assert.equal(sharedGets,2,'repeat verification must issue one GET');

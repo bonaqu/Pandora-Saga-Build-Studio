@@ -553,3 +553,21 @@
 .shared-receiver-dialog .shared-receiver-copy-row>.account-copy-pencil{flex:0 0 auto;align-self:flex-start}
 .shared-receiver-dialog .shared-receiver-copy-row>.account-copy-edit-host{display:flex;flex:1 1 auto;min-width:0;max-width:100%;overflow:visible}
 .shared-receiver-dialog .shared-receiver-copy-row .wiki-inline-input{display:block;box-sizing:border-box;width:100%;max-width:100%;min-height:36px;height:auto;white-space:pre-wrap;overflow-wrap:anywhere}
+
+
+/* Shared build publisher: editorial status/prefix and runtime error stay apart.
+   Long RU/EN overrides wrap without covering the generated link or actions. */
+.build-share-slot .share-editorial-row{display:flex;align-items:flex-start;gap:6px;
+ min-width:0;max-width:100%;flex-wrap:wrap;overflow-wrap:anywhere}
+.build-share-slot .share-editorial-row>p{margin:0;flex:1 1 180px;min-width:0;
+ white-space:normal;overflow-wrap:anywhere}
+.build-share-slot .share-editorial-row>.share-error-intro{flex:0 1 auto;
+ min-width:0;max-width:100%;overflow-wrap:anywhere}
+.build-share-slot .share-editorial-row>.share-runtime-detail{flex:1 1 140px;
+ min-width:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.build-share-slot .share-editorial-row>.account-copy-pencil{flex:0 0 auto;
+ align-self:flex-start}
+.build-share-slot .share-editorial-row>.account-copy-edit-host{flex:1 1 180px;
+ min-width:0;max-width:100%}
+.build-share-slot .share-editorial-row .wiki-inline-input{width:100%;min-width:0;
+ max-width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere}

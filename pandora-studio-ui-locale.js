@@ -107,7 +107,12 @@ const libraryCopy=Object.freeze({
  // Only static explanatory notes are owner-editable. Counts, shared names,
  // network responses and actions are not editorial copy.
  librarySharedImportNote:['Текущий герой и сохранённые билды не изменятся. Новые копии добавятся в «Мои билды».','Your current character and saved builds will not change. New copies will be added to My Builds.'],
- librarySharedOpenNote:['Сохранённые в «Мои билды» записи при этом не удаляются.','Existing saved builds will not be deleted.']
+ librarySharedOpenNote:['Сохранённые в «Мои билды» записи при этом не удаляются.','Existing saved builds will not be deleted.'],
+ // Editable authored help in the share generator. The network error body,
+ // private build identity and generated URL are never owner-editable.
+ libraryShareLocalOnlyHelp:['Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».','Open this local copy and explicitly save it with “Overwrite” first.'],
+ libraryShareCreating:['Создаём ссылку из последней сохранённой облачной версии…','Creating a link from the latest saved cloud build…'],
+ libraryShareErrorIntro:['Не удалось создать ссылку:','Could not create link:']
 });
 // Fixed toast notifications are safe authored copy. Exclude runtime details,
  // player build names, network errors and security diagnostics.

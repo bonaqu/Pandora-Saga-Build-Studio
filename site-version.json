@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.655",
-  "notes": "D1 owner-editable bilingual shared-link receiver explanatory notes with dynamic count/name isolation"
+  "release": "2026.11.12.656",
+  "notes": "Owner-editable RU/EN shared-link publisher status and error intro; runtime errors isolated"
 }
