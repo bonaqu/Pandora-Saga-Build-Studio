@@ -6603,24 +6603,36 @@ function renderBuilds(root){
    if(expand){expand.setAttribute('aria-expanded','true');
     expand.textContent=lang==='en'?'Collapse':'Скрыть сравнение'}
   };
-  box.append(h('h3',{text:b.name}),
-   ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
-    text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
-   h('p',{
-   text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
-    (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
-   h('label',{},[check,h('span',{text:' Сравнить'})]),
+  // Keep the compare selector separate from the four one-row actions.
+  // Build names remain user-owned; only static labels use D1 editorial copy.
+  const cardHead=h('div',{class:'build-card-head'},[
+   h('h3',{class:'build-card-title',text:b.name}),
+   h('label',{class:'build-card-compare'},[
+    check,h('span',{text:'Сравнить'})
+   ])
+  ]);
+  const cardActions=h('div',{class:'build-card-actions'},[
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
     if(!unsavedBuild()){openSavedBuild(b);return}
     openChoice.hidden=!openChoice.hidden;
    }}),
-   ...[h('button',{class:'button-action primary',
-     text:activeBuildId===b.id?'↻ Перезаписать':'↻ Сохранить в этот билд',onclick:()=>{
+   h('button',{class:'button-action',
+    text:activeBuildId===b.id?'↻ Перезаписать':'↻ Сохранить в этот билд',onclick:()=>{
      overwriteChoice.hidden=!overwriteChoice.hidden;
      if(!overwriteChoice.hidden)overwriteChoice.querySelector('button')?.focus({preventScroll:true});
-    }})],
-    h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared(b,shareSlot)}),
-   h('button',{class:'button-action',text:'Удалить',onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}}));
+    }}),
+   h('button',{class:'button-action',text:'🔗 Поделиться',
+    onclick:()=>createShared(b,shareSlot)}),
+   h('button',{class:'button-action build-card-delete',text:'Удалить',
+    onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}})
+  ]);
+  box.append(cardHead,
+   ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
+    text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
+   h('p',{class:'build-card-meta',
+    text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
+     (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
+   cardActions);
   box.append(openChoice);
   box.append(deleteChoice);
   box.append(overwriteChoice);
