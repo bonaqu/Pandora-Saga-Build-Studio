@@ -13,12 +13,25 @@ test('saved build card keeps Compare in the top corner and exactly four actions 
  const body=app.slice(start,end);
  assert.match(body,/class:'build-card-compare'/);
  assert.match(body,/class:'build-card-actions'/);
+ assert.match(app.slice(app.indexOf('function renderBuilds(root){'),start),
+  /const tr=\(ru,en\)=>lang==='en'\?en:ru/,
+  'The library must own its RU/EN translator; another screen helper is out of scope');
  assert.match(body,/box\.append\(cardHead,/);
- assert.equal((body.match(/h\('button',\{class:'button-action/g)||[]).length,4);
- assert.match(body,/onclick:\(\)=>createShared\(b,shareSlot\)/);
- assert.match(body,/overwriteChoice\.hidden=!overwriteChoice\.hidden/);
- assert.match(body,/text:'↻ Перезаписать'/);
- assert.match(body,/deleteChoice\.hidden=!deleteChoice\.hidden/);
+ assert.equal((body.match(/cardAction\('/g)||[]).length,4);
+ for(const [icon,ru,en] of [['📂','Открыть','Open'],['↻','Перезаписать','Overwrite'],
+  ['🔗','Поделиться','Share'],['🗑','Удалить','Delete']]){
+  assert.ok(body.includes("cardAction('"+icon+"','"+ru+"','"+en+"'"),ru+' bilingual icon action');
+ }
+ assert.match(body,/createShared\(b,shareSlot\)/);
+ assert.match(body,/toggleCardChoice\(openChoice\)/);
+ assert.match(body,/toggleCardChoice\(overwriteChoice\)/);
+ assert.match(body,/toggleCardChoice\(deleteChoice\)/);
+ assert.match(app,/class:'build-card-action-icon','aria-hidden':'true'/);
+ assert.match(app,/text:tr\('Сохранить текущий и открыть','Save current and open'\)/);
+ assert.match(app,/text:tr\('Удалить билд','Delete build'\)/);
+ assert.match(body,/text:tr\('Сравнить','Compare'\)/);
+ assert.match(css,/\.build-card-action-icon\{display:block/);
+ assert.match(css,/\.build-card-action-label\{display:block/);
  assert.match(css,/\.build-card-actions\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.build-card-compare\{display:inline-flex/);
  assert.match(css,/\.build-grid\{[\s\S]*grid-template-columns:repeat\(var\(--build-visible-columns,4\),390px\)/);

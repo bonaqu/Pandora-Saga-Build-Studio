@@ -91,10 +91,14 @@
  color:#c9b293;font-size:11px;overflow-wrap:anywhere}
 .build-card-actions{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
  align-items:stretch;gap:5px;min-width:0;margin-top:auto}
-.build-card-actions>.button-action{display:flex;align-items:center;justify-content:center;
- min-width:0;min-height:38px;margin:0;padding:6px 3px;
+.build-card-actions>.button-action{display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:3px;
+ min-width:0;min-height:48px;margin:0;padding:6px 3px;
  border-radius:5px;font:650 11px/1.25 Manrope,Arial,sans-serif;
  white-space:normal;text-align:center;overflow-wrap:anywhere}
+.build-card-action-icon{display:block;flex:none;font-size:15px;line-height:1}
+.build-card-action-label{display:block;min-width:0;max-width:100%;
+ line-height:1.2;overflow-wrap:anywhere}
 .build-card-actions>.primary{border-color:#b58a50;background:#513821}
 .build-card-actions>.build-card-delete{border-color:#765342;color:#d6ab99}
 .build-card-actions>.build-card-delete:hover{border-color:#c68d76;background:#43271f}
@@ -103,6 +107,6 @@
  .build-grid>.build-card{padding:11px 10px}
  .build-card .build-card-title{font-size:20px}
  .build-card-actions{gap:4px}
- .build-card-actions>.button-action{padding:5px 2px;min-height:42px;font-size:10px}
+ .build-card-actions>.button-action{padding:5px 2px;min-height:48px;font-size:10px}
 }
 

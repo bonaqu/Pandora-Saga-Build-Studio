@@ -92,7 +92,7 @@ export async function runShareLinkSmoke(browser,base){
   await page.waitForFunction(()=>
    document.querySelector('.cloud-library-status')?.textContent.includes('Сохранено в облаке'),
    null,{timeout:15000});
-  await page.locator('.build-card').first().getByRole('button',{name:'🔗 Поделиться'}).click();
+  await page.locator('.build-card').first().getByRole('button',{name:'Поделиться',exact:true}).click();
   const status=page.locator('.build-card').first().locator('.share-result');
   await status.waitFor({state:'visible',timeout:20000});
   assert.match(await status.innerText(),/Ссылка на билд создана/);
@@ -112,7 +112,7 @@ export async function runShareLinkSmoke(browser,base){
   await status.getByRole('button',{name:'Скопировать ссылку'}).click();
   assert.equal(await page.evaluate(()=>navigator.clipboard.readText()),link);
   mismatched=true;
-  await page.locator('.build-card').first().getByRole('button',{name:'🔗 Поделиться'}).click();
+  await page.locator('.build-card').first().getByRole('button',{name:'Поделиться',exact:true}).click();
   const error=page.locator('.build-card').first().locator('.build-share-error');
   await error.waitFor({state:'visible',timeout:20000});
   assert.match(await error.innerText(),/не подтвердила выбранный билд/);

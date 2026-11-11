@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.12.657",
-  "notes": "Split shared-library count captions and dynamic incoming-build warning into safe editable RU/EN parts"
+  "release": "2026.11.12.658",
+  "notes": "Bilingual saved-build action icons and mutually exclusive confirmation panels"
 }
