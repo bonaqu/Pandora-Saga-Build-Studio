@@ -15,3 +15,29 @@
  outline:2px solid #ffce87;outline-offset:2px;
 }
 .wiki-page>.wiki-return-button:active{background:#261a11}
+
+/* Owner history has the same in-place D1 editor, without a second modal.
+   Dynamic values (names, before/after and counts) remain non-editable. */
+.owner-manager .owner-history-edit-row{
+ display:flex;align-items:flex-start;flex-wrap:wrap;gap:6px;
+ min-width:0;width:100%;margin-bottom:8px
+}
+.owner-manager .owner-history-caption{
+ flex:1 1 180px;min-width:0;max-width:100%;margin:0;
+ white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5
+}
+.owner-manager .owner-history-pencil{
+ display:inline-grid;place-items:center;flex:0 0 22px;
+ width:22px;height:24px;min-width:22px;min-height:24px;
+ padding:0;border:1px solid #8e6c44;border-radius:4px;
+ background:#312318;color:#ebc993;font:600 11px/1 Manrope,Arial,sans-serif;
+ cursor:pointer
+}
+.owner-manager .owner-history-pencil:hover,
+.owner-manager .owner-history-pencil:focus-visible{
+ background:#51361f;border-color:#edbd7f;outline-offset:2px
+}
+.owner-manager .owner-history-edit-row .wiki-inline-input{
+ min-width:0;max-width:100%;width:100%;min-height:35px;height:auto;
+ overflow:visible;white-space:pre-wrap;overflow-wrap:anywhere
+}

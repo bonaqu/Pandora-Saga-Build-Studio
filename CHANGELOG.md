@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.644.0 — 2026.11.11.644 · Owner change history inline D1 help editing
+
+- The administrator's “All manual edits” view now has two real RU/EN D1-authored help captions (intro and empty-search message), with separate compact ✎ buttons, double-click, keyboard entry, growing input, CAS on save and Undo without dismissing the modal.
+- Only static explanatory text is editable. The change counter, before/after values, record titles, player data and game-catalog values remain read-only.
+- Browser admin mock checks the real in-modal D1 write and verifies that no game-source or catalog-publish action is triggered; Node protects supported keys and safe editor scope.
+- No production D1 writes during CI. Pages and Worker readiness must be checked after merge.
+
+
 ## 0.643.0 — 2026.11.11.643 · D1 catalog choices and centered Book heading
 
 - Catalog review: static RU/EN text for both optional comparison checkboxes is independently editable in D1 with the existing CAS/Undo editor. Dynamic selection counts are separate, noneditable nodes; editing cannot toggle a checkbox or publish catalog data.
