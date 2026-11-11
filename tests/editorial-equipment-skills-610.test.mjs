@@ -41,7 +41,7 @@ test('Path skill metadata labels are editable, numeric gameplay values are not',
  }
  assert.match(skills,/const field=\(key,ru,en,value\)=>/);
  assert.match(skills,/stats\.append\(label,make\('dd',\{text:String\(value\)\}\)\)/);
- assert.match(skills,/api\.editLabel\?\.\(node,key,ru,en\)/);
+ assert.match(skills,/api\.editLabel\(label,key,ru,en,\{onCommitted:sync\}\)/);
  assert.match(skills,/const before=skillIndex\.get\(String\(skill\.prereq\)\)/);
  assert.match(skills,/M\.branchPotential\(state,key,innate,caps\)/);
  assert.match(skills,/target\.append\(grid\)/);

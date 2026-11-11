@@ -2079,7 +2079,7 @@ function heroPathApi(){
   cap:branchCap,
   canEdit:Boolean(adminEditing&&adminToken),
   copyLabel:(key,ru,en)=>ownerCopy('path',key,ru,en),
-  editLabel:(node,key,ru,en)=>ownerCopyLabel(node,'path',key,ru,en),
+  editLabel:(node,key,ru,en,callbacks)=>ownerCopyLabel(node,'path',key,ru,en,callbacks),
   branchName:key=>editableValue('branch.'+key,catalog.meta?.branchLabels?.[key]||key),
   icon:(key,skill)=>skillIcon(key,skill?.id,skill),
   hover:(node,skill)=>skillHover(node,skill),
@@ -7491,8 +7491,10 @@ function refreshVisibleOwnerCopy(recordKey){
    const tabPencil=node.closest('.path-tab-owner-wrap')?.querySelector('.path-tab-pencil');
    const inlinePencil=node.nextElementSibling?.dataset?.pathCopyFor===id?
     node.nextElementSibling:null;
-   (tabPencil||inlinePencil)?.setAttribute('aria-label',
-    (lang==='en'?'Edit: ':'Редактировать: ')+value);
+   const helpPencil=node.parentElement?.classList?.contains('path-owner-edit-row')?
+    node.parentElement.querySelector('.path-owner-pencil'):null;
+   (tabPencil||inlinePencil||helpPencil)?.setAttribute('aria-label',
+    (lang==='en'?'Edit caption: ':'Изменить надпись: ')+value);
   }
   if(section==='honor-view'){
    const filterCaption=node.parentElement?.querySelector('.wiki-honor-filter-caption');

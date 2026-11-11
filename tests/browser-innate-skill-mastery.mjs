@@ -27,6 +27,8 @@ export async function runInnateSkillMasterySmoke(browser,base){
   assert.equal(await page.locator('#levelOut').innerText(),'1');
   assert.equal(await page.locator('#pathAutoMastery').isChecked(),true,
    'A fresh build must auto-fill green mastery by default');
+  assert.equal(await page.locator('.path-owner-pencil').count(),0,
+   'Players must not see the admin-only help pencils');
   await page.locator('#pathAutoMastery').uncheck(); // Exercise the independent manual green mastery starting from zero.
   const budget=await page.locator('#budgetState').innerText();
   assert.match(budget,/0[\s\S]*Вложено/);
