@@ -1284,7 +1284,7 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
  decorateChapterCaptions(body,chosen,copyOptions);
  // Existing chapter tabs and guide labels already own a dedicated editor.
  // Suppress generic pencils there and on actionable game/item controls.
- for(const node of body.querySelectorAll('[data-book-editorial-key]')){
+ for(const node of body.querySelectorAll?.('[data-book-editorial-key]')||[]){
   if(node.closest('[data-guide-key],.stage-guide-actions,.stage-book-tab-owner,button,[role="button"]')||
    node.querySelector('button,input,select,[role="button"]')){
    node.removeAttribute('data-book-editorial-key');continue;
