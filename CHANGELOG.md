@@ -1,5 +1,12 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.646.0 — 2026.11.11.646 · Hero Book Buff bilingual defaults
+
+- Buff chapter's guide fields now receive separate Russian and English defaults instead of sending the current locale value to both D1 columns. Five section headings and nine settings retain stable semantic keys, inline editing and undo; existing D1 overrides take precedence.
+- Fixed English fallback for previously Russian-only guide captions such as guild HP/MP, attributes, and combat skills. The change affects only text, not gameplay bonuses, character state or settings.
+- Added Node source/override contracts and browser checks on the real Buff chapter when switching EN ↔ RU. Full PR Node/Chromium and production deployment require separate verification.
+
+
 ## 0.645.0 — 2026.11.11.645 · Bilingual administrator review dialogs
 
 - Two admin review dialogs (English translations and GitHub export) have source-backed RU/EN introductory explanations and safe D1 inline ✎ editors. Translation/save and GitHub/create labels have independent D1 copy fields and separate pencils, never nested in their action buttons.

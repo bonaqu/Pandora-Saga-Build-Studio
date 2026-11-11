@@ -114,6 +114,28 @@ export async function runHeroBookLiveRecalcSmoke(browser,base){
    'A full redraw must not mount the already-open Hero Book three times');
   assert.equal(await book.isVisible(),true);
   assert.equal(await chapter.getAttribute('aria-selected'),'true');
+  // Real RU/EN rendering contract for owner-editable Buff chapter headings.
+  // These guide labels must receive independent RU/EN defaults even when no
+  // D1 override has been saved. No production owner session is needed.
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#stageAttributes [data-book-page="buffs"]').click();
+  const authored=key=>page.locator('#stageBookPanel [data-guide-key="'+key+'"]');
+  for(const [key,text] of [
+   ['buffs.section.0','Vitals'],['buffs.guild','Guild'],
+   ['buffs.section.honor','Honor'],['buffs.section.1','Priest buffs'],
+   ['buffs.section.2','Combat skills'],
+   ['buffs.setting.guildHp','Guild HP'],
+   ['buffs.setting.guildMp','Guild MP'],
+   ['buffs.setting.guildAll','All attributes'],
+   ['buffs.setting.guildLifeRecovery','Guild: HP recovery']
+  ])assert.equal(await authored(key).innerText(),text,'EN '+key);
+  await page.locator('#locale [data-locale="ru"]').click();
+  for(const [key,text] of [
+   ['buffs.section.0','ОЗ и ОМ'],['buffs.guild','Гильдия'],
+   ['buffs.section.1','Усиления жреца'],['buffs.section.2','Боевые умения'],
+   ['buffs.setting.guildHp','Гильдейское ОЗ'],
+   ['buffs.setting.guildAll','Все характеристики']
+  ])assert.equal(await authored(key).innerText(),text,'RU '+key);
   assert.deepEqual(errors,[]);
   console.log('Chromium live Hero Book passed: DEX 9→10→20, green Tactics 85→65, auto and slider');
  }finally{await context.close()}

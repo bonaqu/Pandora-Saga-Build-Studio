@@ -515,18 +515,19 @@ function buffsPage(body,options){
  ]);
  body.append(status);
  let sectionIndex=0;
- const section=(name,stableId=null)=>{
-  const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:name})]);
+ const section=(ru,en,stableId=null)=>{
+  const node=make('section',{class:'stage-book-buff-group'},[make('strong',{text:english?en:ru})]);
   guideLabel(node.firstChild,stableId==='guild'?'buffs.guild':
-   'buffs.section.'+(stableId||sectionIndex++),name,name,options);
+   'buffs.section.'+(stableId||sectionIndex++),ru,en,options);
   body.append(node);
   return node;
  };
- const select=(parent,name,key,levels,vital=false,compact=false)=>{
+ const select=(parent,ru,en,key,levels,vital=false,compact=false)=>{
+  const name=english?en:ru;
   const field=make(compact?'div':'label',{class:'stage-book-field'+(compact?' stage-book-choice-only':'')},
    compact?[]:[make('span',{text:name})]);
   if(!compact)guideLabel(field.firstChild,'buffs.setting.'+key,
-   name,name,options);
+   ru,en,options);
   const entry=make('select',{'aria-label':name,'data-book-setting':key,
    onchange:event=>(vital?onVital:onBuff)(key,event.target.value)});
   const selected=(vital?vitalsBuffs:buffs)[key]??0;
@@ -557,16 +558,16 @@ function buffsPage(body,options){
   (document.documentElement?.lang==='en'?'Level ':'Уровень ')+i+' · +'+n]);
  const guildLevel=Number(buffs.guildLevel)||0;
  const guildPreview=root.PandoraOSCalculator?.guildPassiveAtLevel(guildLevel);
- const vitals=section(english?'Vitals':'ОЗ и ОМ');
+ const vitals=section('ОЗ и ОМ','Vitals');
  toggle(vitals,'Знак жизни','lifeSign',true);
- const guild=section(english?'Guild':'Гильдия','guild');
- select(guild,english?'Guild level':'Уровень гильдии','guildLevel',
+ const guild=section('Гильдия','Guild','guild');
+ select(guild,'Уровень гильдии','Guild level','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
    (english?'Manual guild buffs':'Ручной выбор усилений'):
    (english?'Guild level ':'Гильдия · уровень ')+i]));
  if(!guildLevel){
-  select(guild,'Гильдейское ОЗ','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
-  select(guild,'Гильдейское ОМ','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+  select(guild,'Гильдейское ОЗ','Guild HP','guildHp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
+  select(guild,'Гильдейское ОМ','Guild MP','guildMp',opts([0,'2%','4%','6%','9%','12%','15%']),true);
  }else guild.append(make('p',{class:'stage-attribute-note',text:english?
   'HP and MP passives depend on guild level.':'Бонусы ОЗ и ОМ зависят от уровня гильдии.'}));
  if(guildLevel&&guildPreview){
@@ -585,17 +586,17 @@ function buffsPage(body,options){
    'HP, MP and recovery bonuses are applied. Other values are shown for reference.':
    'Учитываются бонусы ОЗ, ОМ и восстановления. Остальные значения — справочные.'}));
  }
- select(guild,'Все характеристики','guildAll',opts([0,1,2,3,4,5,6]));
- select(guild,'Пробуждение','guildArouse',opts([0,'2%','4%','6%']));
- const honor=section(english?'Honor':'Честь','honor');
+ select(guild,'Все характеристики','All attributes','guildAll',opts([0,1,2,3,4,5,6]));
+ select(guild,'Пробуждение','Awakening','guildArouse',opts([0,'2%','4%','6%']));
+ const honor=section('Честь','Honor','honor');
  const honorTerm=make('span',{class:'stage-honor-term',text:english?'passive skill':'пассивное умение'});
  const honorHeading=honor.firstChild||honor.children?.[0];
  if(honorHeading)honorHeading.append(make('span',{text:' · '}),honorTerm);
  guideLabel(honorTerm,'buffs.honor',english?'passive skill':'пассивное умение',
   'passive skill',options);
- select(honor,english?'Honor passive skill':'Пассивное умение за честь',
+ select(honor,'Пассивное умение за честь','Honor passive skill',
   'honorTitle',honorTitles.map(x=>[x.id,english?x.en:x.ru]),false,true);
- const priest=section(english?'Priest buffs':'Усиления жреца');
+ const priest=section('Усиления жреца','Priest buffs');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});
  for(const [key,ru,en] of [
@@ -623,7 +624,7 @@ function buffsPage(body,options){
  priest.append(make('p',{class:'stage-attribute-note',text:english?
   'Selected attack and defense signs and Battle Prayer affect the build; other values are previews.':
   'На билд влияют выбранные знаки атаки и защиты, а также Ободрение. Остальное — предварительный просмотр.'}));
- const skills=section('Боевые умения');
+ const skills=section('Боевые умения','Combat skills');
  for(const [key,label] of [['combatLunge','Рывок'],['combatWarCry','Боевой клич'],
   ['combatRage','Яростная атака'],['combatDefender','Бастион (нужен щит)'],
   ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра'],
@@ -657,10 +658,10 @@ function buffsPage(body,options){
   skills.append(group);
  }
  if(!guildLevel){
-  select(guild,'Гильдия: скорость ОЗ','guildLifeRecovery',opts([0,5,8]));
-  select(guild,'Гильдия: скорость ОМ','guildManaRecovery',opts([0,5,8]));
+  select(guild,'Гильдия: скорость ОЗ','Guild: HP recovery','guildLifeRecovery',opts([0,5,8]));
+  select(guild,'Гильдия: скорость ОМ','Guild: MP recovery','guildManaRecovery',opts([0,5,8]));
  }
- select(guild,'Гильдейское лечение','guildHealing',opts([0,10,20,30]));
+ select(guild,'Гильдейское лечение','Guild healing','guildHealing',opts([0,10,20,30]));
  if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
   const details=make('details',{class:'stage-legacy-buff-previews'});
   details.append(make('summary',{text:'Мощность поддерживающих навыков'}));
