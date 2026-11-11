@@ -31,7 +31,7 @@ const bookEnglish=Object.freeze({
  'Эффект': "Effect",
  'Лечение': "Healing",
  'Эффект навыков': "Skill effect",
- 'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.': "All settings immediately affect this build. Numbers update in other chapters.",
+ 'Все настройки применяются к текущему билду сразу. Числа обновляются в остальных главах книги.': "Settings apply to this build immediately. Values update in the other Hero Book chapters.",
  'Недоступно для героя': "Unavailable to this hero",
  'Выключено': "Off",
  'ОЗ и ОМ': "HP & MP",
