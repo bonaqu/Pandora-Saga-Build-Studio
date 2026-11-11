@@ -7365,27 +7365,117 @@ function refreshVisibleWikiLabels(){
   if(edit)edit.setAttribute('aria-label',(lang==='en'?'Edit: ':'Изменить: ')+name);
  }
 }
+// Admin toolbar captions use the same bilingual, CAS-protected guideedit.book
+// D1 store as other authored labels. Never store diagnostics or credentials.
+const ownerDockText=Object.freeze({
+ title:['✎ Редактор сайта','✎ Site editor'],
+ online:['Редактирование включено','Editing enabled'],
+ openWiki:['Открыть энциклопедию','Open encyclopedia'],
+ undo:['↶ Отменить','↶ Undo'],
+ history:['Все правки','All edits'],
+ catalog:['Игровой каталог','Game catalog'],
+ translations:['EN-переводы','EN translations'],
+ testD1:['Проверить сохранение','Test saving'],
+ githubExport:['Экспорт в GitHub','Export to GitHub'],
+ finish:['Завершить','Finish'],
+ extra:['Дополнительно','Additional tools'],
+ guide:['Как редактировать и когда нажимать кнопки','How editing works'],
+ collapse:['◀ Скрыть','◀ Hide'],
+ expand:['✎ Редактор','✎ Editor']
+});
+function ownerDockCopy(key){
+ const pair=ownerDockText[key];
+ return pair?ownerCopy('owner-dock',key,pair[0],pair[1]):key;
+}
+function decorateOwnerDockActions(actions){
+ const refs=[
+  ['.owner-dock-primary','openWiki'],
+  ['[data-owner-undo]','undo'],
+  ['.owner-dock-history','history'],
+  ['.owner-dock-catalog','catalog'],
+  ['.owner-en-sync','translations'],
+  ['.owner-dock-d1-check','testD1'],
+  ['.owner-dock-export','githubExport'],
+  ['.owner-dock-finish','finish']
+ ];
+ for(const [selector,key] of refs){
+  const button=actions.querySelector(selector);
+  if(!button)continue;
+  const slot=h('span',{class:'owner-dock-action-slot','data-owner-dock-key':key});
+  const pencil=h('button',{type:'button',class:'owner-dock-action-pencil',
+   text:'✎','aria-label':(lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key)});
+  const host=h('span',{class:'owner-dock-action-edit-host',hidden:true});
+  button.before(slot);slot.append(button,pencil,host);
+  pencil.onclick=event=>{
+   event.preventDefault();event.stopPropagation();
+   if(!adminEditing||!adminToken||!host.hidden)return;
+   if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving'){
+    showStudioToast(lang==='en'?'Finish the current save first.':
+     'Сначала заверши текущее сохранение.','warning');return;
+   }
+   const editLang=lang,before=ownerDockCopy(key);
+   button.hidden=true;pencil.hidden=true;host.hidden=false;
+   window.PandoraGuideTooltip?.dismiss();
+   editWikiValue(host,before,{
+    type:'text',
+    onCommit:next=>{
+     if(next.length>90)throw Error(editLang==='en'?'Label is too long':'Надпись слишком длинная');
+     return saveGuidePatch('book.'+ownerCopyKey('owner-dock',key),{[editLang]:next});
+    },
+    onCommitted:()=>{button.textContent=ownerDockCopy(key)},
+    onFinished:()=>{
+     host.hidden=true;host.replaceChildren();
+     button.hidden=false;pencil.hidden=false;
+     button.textContent=key==='translations'?
+      ownerDockCopy(key)+' · '+(window.PandoraOwnerBilingual?.pending(override)||[])
+       .reduce((sum,item)=>sum+item.fields.length,0):ownerDockCopy(key);
+    }
+   });
+  };
+ }
+}
 function refreshOwnerUI(){
  const dock=document.getElementById('ownerDock');
  if(!adminEditing||!adminToken){closeInlineEditor();dock?.remove();return}
  const count=Object.keys(override).length;
- const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?'Сохраняю в Cloudflare D1…':
-  ownerSaveState==='error'?'Не сохранено: '+(ownerSaveError||'ошибка сервера'):
-  ownerSaveState==='saved'?'✓ Сохранено в Cloudflare D1':
-  '✓ Подключено к Cloudflare D1 · сохранение автоматическое';
+ const saveText=(ownerSaveState==='saving'||wikiLabelPendingWrites>0||wikiRecordWriteQueue.size>0)?
+  (lang==='en'?'Saving to Cloudflare D1…':'Сохраняю в Cloudflare D1…'):
+  ownerSaveState==='error'?(lang==='en'?'Not saved: ':'Не сохранено: ')+
+   (ownerSaveError||(lang==='en'?'server error':'ошибка сервера')):
+  ownerSaveState==='saved'?(lang==='en'?'✓ Saved to Cloudflare D1':'✓ Сохранено в Cloudflare D1'):
+  (lang==='en'?'✓ Cloudflare D1 connected · changes save automatically':
+   '✓ Подключено к Cloudflare D1 · сохранение автоматическое');
  const update=root=>{
   const counter=root.querySelector('[data-owner-count]');
-  if(counter)counter.textContent=count+' '+(count===1?'запись':'записей')+' в D1';
+  if(counter)counter.textContent=lang==='en'?count+' D1 edits':
+   count+' '+(count===1?'запись':'записей')+' в D1';
   const recent=root.querySelector('[data-owner-recent]');
-  if(recent)recent.textContent='За этот сеанс: '+ownerEdits.length;
+  if(recent)recent.textContent=(lang==='en'?'This session: ':'За этот сеанс: ')+ownerEdits.length;
   const translations=root.querySelector('[data-owner-en-sync]');
   if(translations){
    const changes=window.PandoraOwnerBilingual?.pending(override)||[];
    const count=changes.reduce((sum,item)=>sum+item.fields.length,0);
    translations.hidden=count===0;
    translations.disabled=!count||editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving';
-   translations.textContent='EN-переводы · '+count;
+   translations.textContent=ownerDockCopy('translations')+' · '+count;
   }
+  for(const slot of root.querySelectorAll('.owner-dock-action-slot[data-owner-dock-key]')){
+   const key=slot.dataset.ownerDockKey,button=slot.querySelector('button:not(.owner-dock-action-pencil)');
+   if(button&&key!=='translations')button.textContent=ownerDockCopy(key);
+   const pencil=slot.querySelector('.owner-dock-action-pencil');
+   if(pencil)pencil.setAttribute('aria-label',
+    (lang==='en'?'Edit label: ':'Изменить надпись: ')+ownerDockCopy(key));
+  }
+  const catalogSlot=root.querySelector('.owner-dock-catalog')?.closest('.owner-dock-action-slot');
+  if(catalogSlot)catalogSlot.classList.toggle('owner-dock-action-wide',Boolean(translations?.hidden));
+  const title=root.querySelector('.owner-dock-title');
+  if(title&&!title.querySelector('.wiki-inline-input'))title.textContent=ownerDockCopy('title');
+  const online=root.querySelector('.owner-dock-online');
+  if(online)online.textContent=ownerDockCopy('online');
+  const extra=root.querySelector('.owner-dock-secondary-label');
+  if(extra)extra.textContent=ownerDockCopy('extra');
+  const guide=root.querySelector('.owner-workflow-guide>summary');
+  if(guide)guide.textContent=ownerDockCopy('guide');
   const state=root.querySelector('[data-owner-save-state]');
   if(state){state.textContent=saveText;state.dataset.state=ownerSaveState}
   root.querySelector('[data-owner-undo]').disabled=!ownerEdits.length||editIsSaving||
@@ -7399,9 +7489,10 @@ function refreshOwnerUI(){
   }
   const toggle=root.querySelector('[data-owner-collapse]');
   if(toggle){
-   toggle.textContent=ownerDockCollapsed?'✎ Редактор':'◀ Скрыть';
+   toggle.textContent=ownerDockCopy(ownerDockCollapsed?'expand':'collapse');
    toggle.setAttribute('aria-label',ownerDockCollapsed?
-    'Открыть боковую панель редактора сайта':'Скрыть боковую панель редактора сайта');
+    (lang==='en'?'Open site editor drawer':'Открыть боковую панель редактора сайта'):
+    (lang==='en'?'Hide site editor drawer':'Скрыть боковую панель редактора сайта'));
    toggle.setAttribute('aria-expanded',String(!ownerDockCollapsed));
   }
  };
@@ -7474,6 +7565,7 @@ function refreshOwnerUI(){
     adminEditing=false;closeInlineEditor();render();updateAdminHint()
    }})
  ]);
+ decorateOwnerDockActions(actions);
  const body=h('div',{class:'owner-dock-body'},[status,counters,guide,actions]);
  const panel=h('div',{id:'ownerDockPanel',class:'owner-dock-panel'},[head,body]);
  const toggle=h('button',{type:'button',class:'owner-dock-handle','data-owner-collapse':'',
