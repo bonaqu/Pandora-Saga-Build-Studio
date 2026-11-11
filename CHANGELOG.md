@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.650.0 — 2026.11.11.650 · Bilingual editable prerequisite caption
+
+- Hero Path skill detail “Предыдущее умение” / “Previous skill” now has a stable RU/EN owner-copy D1 field and compact inline ✎ editor. The referenced skill name (or verified missing-skill fallback) stays a separate, non-editable game-data value.
+- The caption and dynamic name remain on one compact accessible row; long owner text wraps without changing the prereq requirement. Keyboard/blur save and Undo use the existing editor mechanism.
+- Node behavioral regression covers separate fields, both languages, owner-only pencils, unmodified catalog identity and preserved skill prerequisite. Full Chromium and live release checks are required before merge.
+
 ## 0.649.0 — 2026.11.11.649 · Editable Show More and unchanged dynamic count
 
 - Hero Path skill gallery: “Показать ещё” / “Show more” now uses an RU/EN owner-editable D1 caption with a compact separate pencil and inline blur-save/Undo. The numeric count is computed exclusively from the filtered skill catalog and is never stored in D1.

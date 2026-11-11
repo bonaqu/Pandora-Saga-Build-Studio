@@ -472,13 +472,19 @@ test('Hero Path skill lookup is order-independent and hides internal ID in both 
  render();
  assert.equal(walk(target).filter(x=>x.attributes?.['data-skill-id']==='390077001').length,1,
   'Reversed words must find the original skill');
- assert.ok(walk(details).some(x=>x.textContent==='Предыдущее умение: Умение отсутствует в каталоге'));
+ assert.ok(walk(details).some(x=>x.className==='path-skill-previous-label'&&
+  x.textContent==='Предыдущее умение'));
+ assert.ok(walk(details).some(x=>x.className==='path-skill-previous-value'&&
+  x.textContent==='Умение отсутствует в каталоге'));
  assert.equal(walk(details).some(x=>x.tag==='dt'&&x.textContent==='ID умения'),false);
  assert.equal(walk(details).some(x=>String(x.textContent).includes('390077')),false,
   'A nontechnical player must not see unknown catalog identifiers');
  api.query='УДАР огненный';api.lang='en';
  render();
- assert.ok(walk(details).some(x=>x.textContent==='Previous skill: Skill not in catalog'));
+ assert.ok(walk(details).some(x=>x.className==='path-skill-previous-label'&&
+  x.textContent==='Previous skill'));
+ assert.ok(walk(details).some(x=>x.className==='path-skill-previous-value'&&
+  x.textContent==='Skill not in catalog'));
  assert.equal(walk(details).some(x=>x.tag==='dt'&&x.textContent==='Skill ID'),false);
  api.query='390077001';render();
  assert.equal(walk(target).filter(x=>x.attributes?.['data-skill-id']==='390077001').length,1,
@@ -664,4 +670,39 @@ test('Path Show More owner label is editable independently of live skill count',
  assert.equal(walk(plain).filter(x=>x.className==='path-more-owner-row').length,0);
  assert.equal(walk(plain).filter(x=>x.className==='path-show-more').length,1);
  assert.equal(f.budget().remaining,104);
+});
+
+
+test('previous-skill caption has separate RU/EN D1 editor and preserves source skill name',()=>{
+ const skill={id:91003,name:'Текущий навык',desc:'',classes:{WARRIOR:1},learnable:true,
+  prereq:91002,reqs:[]};
+ const previous={id:91002,name:'Проверенный предшественник',classes:{WARRIOR:1},learnable:true,reqs:[]};
+ const api={state:{level:45,points:{}},job:'WARRIOR',lang:'ru',
+  skillCatalog:[skill,previous],catalogReady:true,query:'',filter:'all',shown:24,
+  selectedSkill:skill,icon:()=>null,hover:()=>{},onInspect:()=>{},canEdit:true};
+ const calls=[];
+ api.copyLabel=(key,ru,en)=>key==='skillPreviousLabel'?'Ранее изученное':ru;
+ api.editLabel=(node,key,ru,en,callbacks)=>calls.push({node,key,ru,en,callbacks});
+ const gallery=new BrowserElement('root'),details=new BrowserElement('root');
+ const render=()=>root.PandoraHeroPath.viewSkills(gallery,details,api);
+ render();
+ let row=walk(details).find(x=>String(x.className).includes('path-skill-previous-row'));
+ assert.ok(row,'Previous skill requirement is visible');
+ const caption=walk(row).find(x=>x.className==='path-owner-copy-text');
+ const value=walk(row).find(x=>x.className==='path-skill-previous-value');
+ const pencil=walk(row).find(x=>x.className==='path-owner-pencil');
+ assert.equal(caption.textContent,'Ранее изученное');
+ assert.equal(value.textContent,'Проверенный предшественник');
+ assert.equal(pencil.tag,'button');
+ assert.ok(!walk(value).some(x=>x.className==='path-owner-pencil'));
+ assert.equal(calls.find(x=>x.key==='skillPreviousLabel')?.ru,'Предыдущее умение');
+ assert.equal(calls.find(x=>x.key==='skillPreviousLabel')?.en,'Previous skill');
+ api.lang='en';api.copyLabel=(key,ru,en)=>en;render();
+ row=walk(details).find(x=>String(x.className).includes('path-skill-previous-row'));
+ assert.equal(walk(row).find(x=>x.className==='path-owner-copy-text').textContent,'Previous skill');
+ assert.equal(walk(row).find(x=>x.className==='path-skill-previous-value').textContent,
+  'Проверенный предшественник','English UI copy must not change catalog skill names');
+ api.canEdit=false;render();
+ assert.equal(walk(details).filter(x=>x.className==='path-owner-pencil').length,0);
+ assert.equal(skill.prereq,91002);
 });
