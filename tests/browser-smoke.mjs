@@ -45,6 +45,7 @@ import {runWikiSkillFiltersSmoke,runWikiIconManifestFallbackSmoke} from './brows
 import {runWikiSkillLabelEditorSmoke} from './browser-wiki-skill-label-editor.mjs';
 import {runUIContentInlineSmoke} from './browser-ui-content-inline.mjs';
 import {runOwnerEquipmentInlineSmoke} from './browser-owner-equipment-inline-632.mjs';
+import {runOwnerRacialPath648Smoke} from './browser-owner-racial-path-648.mjs';
 import {runOwnerDualSessionCasSmoke} from './browser-owner-dual-session-cas.mjs';
 import {runWikiOwnerEnglishSyncSmoke} from './browser-wiki-owner-english-sync.mjs';
 import {runWikiSpawnReplacementSmoke} from './browser-wiki-spawn-replace.mjs';
@@ -106,6 +107,7 @@ const scenarios=[
   ['wiki-skill-label-editor',runWikiSkillLabelEditorSmoke],
   ['ui-content-inline',runUIContentInlineSmoke],
   ['owner-equipment-copy-width',runOwnerEquipmentInlineSmoke],
+  ['owner-racial-path-648',runOwnerRacialPath648Smoke],
   ['owner-two-session-cas',runOwnerDualSessionCasSmoke],
   ['site-visual-coverage',runVisualCoverageSmoke],
   ['wiki-owner-english-sync',runWikiOwnerEnglishSyncSmoke],
