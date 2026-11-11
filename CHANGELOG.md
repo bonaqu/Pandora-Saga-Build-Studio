@@ -1,5 +1,13 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.658.0 — 2026.11.12.658 · Bilingual build card actions and icons
+
+- All four saved-build actions now have consistently positioned decorative icons: 📂 Open, ↻ Overwrite, 🔗 Share and 🗑 Delete. Buttons retain clear accessible text names.
+- The actions, comparison caption, and open/overwrite/delete confirmation copy now follow RU/EN; player-generated build names remain untouched.
+- Only one confirmation panel can be expanded per saved-build card at once; keyboard focus moves to its first action.
+- Added Node regression and real Chromium card icon checks. Release metadata, footer assets and Telegram/Open Graph previews remain synchronized.
+- No user build data, gameplay rules, authentication, link mechanics, live D1 or Worker API changes.
+
 ## 0.657.0 — 2026.11.12.657 · Owner-editable shared import counter label and unsaved-work warning
 
 - The shared library import count now consists of an independently editable RU/EN label and a separately rendered **computed count**. The count is never D1-backed or editable.
