@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.649.0 — 2026.11.11.649 · Editable Show More and unchanged dynamic count
+
+- Hero Path skill gallery: “Показать ещё” / “Show more” now uses an RU/EN owner-editable D1 caption with a compact separate pencil and inline blur-save/Undo. The numeric count is computed exclusively from the filtered skill catalog and is never stored in D1.
+- Ordinary players still see one full paging button; administrators can edit its text without invoking pagination. The button remains keyboard and touch operable, with no nested action button.
+- Added Node behavior regression and real Chromium admin scenario for bilingual D1 save, unchanged count and loading the next 24 skills. Game catalog, class allocation and formulas are unchanged.
+
 ## 0.648.0 — 2026.11.11.648 · Racial Path inline RU/EN copy
 
 - Disabled Racial row in Hero Path → Special now displays the D1-override RU/EN caption and exposes a separate owner-only pencil. All game/race stats, allocations and branch access remain unchanged.

@@ -29,7 +29,8 @@ test('skill detail fields and workspace labels translate without rewriting game 
  assert.ok(source.includes("authored(api,'skillRequirementsHeading','Требования по веткам','Branch requirements'"));
  assert.ok(source.includes("stats.append(label,make('dd',{text:String(value)}))"));
  assert.ok(source.includes("api.copyLabel?.(key,ru,en)||tr(api,ru,en)"));
- assert.ok(source.includes("'Show more ('"));
+ assert.ok(source.includes("const ru='Показать ещё',en='Show more',key='skillShowMore'"));
+ assert.ok(source.includes("class:'path-more-count'"));
  assert.ok(app.includes('Hero Workshop'));
  assert.ok(app.includes('Full encyclopedia entry'));
 });
