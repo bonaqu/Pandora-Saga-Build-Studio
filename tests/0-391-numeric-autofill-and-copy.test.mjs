@@ -86,3 +86,10 @@ test('ordinary dynamic searches request Yandex no-login autofill, never readonly
  assert.match(account,/field\('Логин \(3–20, a-z, 0-9, _\)','text','username',20\)/);
  assert.match(account,/mode==='login'\?'current-password':'new-password'/);
 });
+
+test('Honor location search is a gameplay search, not a credential entry',()=>{
+ const honor=read('pandora-studio-honor-view.js');
+ assert.match(honor,/Найти локацию…','Find a location…'\),\s*autocomplete:'none'/);
+ assert.match(honor,/'data-lpignore':'true','data-1p-ignore':'true'/);
+ assert.match(honor,/'data-bwignore':'true','data-form-type':'other'/);
+});
