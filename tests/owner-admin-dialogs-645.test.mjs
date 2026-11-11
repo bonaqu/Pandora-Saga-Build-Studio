@@ -6,6 +6,7 @@ const read=path=>readFileSync(new URL('../'+path,import.meta.url),'utf8');
 const app=read('pandora-studio-app.js');
 const styles=read('pandora-studio-owner-inline-ui.css');
 const smoke=read('tests/browser-admin-entry.mjs');
+assert.doesNotMatch(app,/\basync\s+\/\* Editorial copy for administrative dialogs/);
 const root={};root.window=root;
 Function('window',read('pandora-studio-honor-guide.js'))(root);
 
