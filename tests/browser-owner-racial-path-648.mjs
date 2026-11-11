@@ -104,6 +104,29 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.deepEqual(JSON.parse(values['guideedit.book.path.racial-branch']),
    {ru:'Расовые умения QA',en:'Race traits QA'});
   assert.equal(await en.locator('button.path-racial-unavailable').isDisabled(),true);
+  // New D1 caption: never edit or persist the computed number of skills.
+  await page.locator('#pathSkillsTab').click();
+  const more=page.locator('#pathSkillGallery .path-more-owner-row');
+  await more.waitFor({state:'visible',timeout:15000});
+  const before=Number((await more.locator('.path-more-count').innerText()).match(/[0-9]+/)?.[0]);
+  assert.ok(before>24,'Fixture must have at least 49 eligible skills');
+  await more.locator('button.path-more-pencil').click();
+  const moreEditor=more.locator('.path-more-copy [data-owner-text-field]');
+  await moreEditor.waitFor({state:'visible'});
+  await moreEditor.fill('More skills QA');await moreEditor.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#pathSkillGallery .path-more-copy')?.textContent==='More skills QA',
+   null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.path.skill-show-more']),
+   {en:'More skills QA'});
+  assert.match(await more.locator('button.path-more-pencil').getAttribute('aria-label'),
+   /More skills QA/);
+  assert.equal(Number((await more.locator('.path-more-count').innerText()).match(/[0-9]+/)?.[0]),before);
+  await more.locator('button.path-show-more').click();
+  const after=Number((await page.locator('#pathSkillGallery .path-more-count')
+   .innerText()).match(/[0-9]+/)?.[0]);
+  assert.equal(after,before-24);
+  console.log('Chromium 0.649 Show more EN D1 caption and dynamic skill count passed');
   assert.equal(writes.filter(x=>x.key==='guideedit.book.path.racial-branch').length,2);
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
   assert.ok(Object.values(saved.points||{}).every(value=>Number(value)===0),
