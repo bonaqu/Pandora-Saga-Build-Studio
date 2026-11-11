@@ -7212,7 +7212,14 @@ function bindStaticUICopyEditors(){
     },
     onFinished:()=>{
      node.hidden=false;host.remove();
-     locale.apply(lang);
+     // Update only this control: applying the entire locale would overwrite
+     // another still-open inline editor when two captions are edited in turn.
+     for(const [attribute,datasetKey] of [
+      ['placeholder','i18nPlaceholder'],['title','i18nTitle'],
+      ['aria-label','i18nAriaLabel']]){
+      if(node.dataset[datasetKey])
+       node.setAttribute(attribute,locale.text(node.dataset[datasetKey],lang));
+     }
      if(editButton){editButton.hidden=false;syncPencil(editButton,key,true)}
     }
    });
@@ -7815,7 +7822,8 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  let finished=false,saving=false;
  const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
   type==='textarea'||type==='text'?ownerPlainTextField({
-   multiline:type==='textarea',rows:6,class:'wiki-inline-input wiki-owner-plaintext',
+   multiline:type==='textarea',rows:6,
+   class:'wiki-inline-input wiki-owner-plaintext owner-editor-unified',
    'aria-label':type==='textarea'?'Изменить описание':'Изменить значение'}):
   h('input',{type:'number',class:'wiki-inline-input',
    'aria-label':'Изменить значение',min:String(min),max:String(max),
