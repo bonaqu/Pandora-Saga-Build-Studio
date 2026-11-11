@@ -6617,7 +6617,7 @@ function renderBuilds(root){
     openChoice.hidden=!openChoice.hidden;
    }}),
    h('button',{class:'button-action',
-    text:activeBuildId===b.id?'↻ Перезаписать':'↻ Сохранить в этот билд',onclick:()=>{
+    text:'↻ Перезаписать',onclick:()=>{
      overwriteChoice.hidden=!overwriteChoice.hidden;
      if(!overwriteChoice.hidden)overwriteChoice.querySelector('button')?.focus({preventScroll:true});
     }}),
