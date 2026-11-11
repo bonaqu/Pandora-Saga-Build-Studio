@@ -6558,36 +6558,48 @@ function renderBuilds(root){
   'aria-label':'Найти сохранённый билд',placeholder:'Поиск по названию, классу, уровню…',
   value:buildSearchQuery}):null;
  if(search)root.append(search);
+ // Decorative icons and accessible localized labels share one layout.
+ const cardAction=(icon,ru,en,onclick,kind='')=>h('button',{
+  type:'button',class:'button-action'+kind,onclick
+ },[
+  h('span',{class:'build-card-action-icon','aria-hidden':'true',text:icon}),
+  h('span',{class:'build-card-action-label',text:tr(ru,en)})
+ ]);
  for(const b of builds){
   const box=h('div',{class:'build-card'});
   const shareSlot=h('div',{class:'build-share-slot',role:'status'});
   const openChoice=h('div',{class:'build-open-choice',hidden:true});
   const check=h('input',{type:'checkbox','aria-label':(lang==='en'?'Compare ':'Сравнить ')+b.name});
-  openChoice.append(h('p',{text:'Есть несохранённые изменения. Открыть другой билд?'}),
-   h('button',{type:'button',class:'button-action primary',text:'Сохранить текущий и открыть',
+  openChoice.append(h('p',{text:tr('Есть несохранённые изменения. Открыть другой билд?',
+    'You have unsaved changes. Open another build?')}),
+   h('button',{type:'button',class:'button-action primary',text:tr('Сохранить текущий и открыть','Save current and open'),
     onclick:()=>{if(saveBuild())openSavedBuild(b)}}),
-   h('button',{type:'button',class:'button-action',text:'Открыть без сохранения',
+   h('button',{type:'button',class:'button-action',text:tr('Открыть без сохранения','Open without saving'),
     onclick:()=>openSavedBuild(b)}),
-   h('button',{type:'button',class:'button-action',text:'Отмена',
+   h('button',{type:'button',class:'button-action',text:tr('Отмена','Cancel'),
     onclick:()=>{openChoice.hidden=true}}));
   const overwriteChoice=h('div',{class:'build-overwrite-choice',hidden:true});
    overwriteChoice.append(h('p',{text:lang==='en'?
     'Overwrite saved build “'+b.name+'” with your current character? The previous version of this build cannot be restored.':
     'Перезаписать сохранённый билд «'+b.name+'» текущим персонажем? Предыдущую версию этого билда восстановить будет нельзя.'}),
-   h('button',{type:'button',class:'button-action primary',text:'Подтвердить перезапись',onclick:()=>{
-    if(saveBuild(activeBuildId===b.id?state.name:b.name,b.id))showStudioToast('Сохранено в браузере. Проверяем запись в облаке…','warning');
+   h('button',{type:'button',class:'button-action primary',text:tr('Подтвердить перезапись','Confirm overwrite'),onclick:()=>{
+    if(saveBuild(activeBuildId===b.id?state.name:b.name,b.id))showStudioToast(tr('Сохранено в браузере. Проверяем запись в облаке…',
+     'Saved in browser. Checking cloud storage…'),'warning');
    }}),
-   h('button',{type:'button',class:'button-action',text:'Отмена',onclick:()=>{overwriteChoice.hidden=true}}));
+   h('button',{type:'button',class:'button-action',text:tr('Отмена','Cancel'),onclick:()=>{overwriteChoice.hidden=true}}));
   const deleteChoice=h('div',{class:'build-delete-choice',hidden:true});
   deleteChoice.append(h('p',{text:b.localOnly===true?
-   'Удалить локальную копию? Она ещё не сохранена в облаке.':
-   'Удалить билд и отозвать все созданные ссылки?'}),
-   h('button',{class:'button-action danger',type:'button',text:'Удалить билд',onclick:()=>{
+   tr('Удалить локальную копию? Она ещё не сохранена в облаке.',
+    'Delete local copy? It has not been saved to the cloud yet.'):
+   tr('Удалить билд и отозвать все созданные ссылки?',
+    'Delete this build and revoke all shared links?')}),
+   h('button',{class:'button-action danger',type:'button',text:tr('Удалить билд','Delete build'),onclick:()=>{
     const beforeDelete=builds;
     builds=builds.filter(v=>v.id!==b.id);
     if(!persistBuilds()){
      builds=beforeDelete;
-     showStudioToast('Не удалось удалить билд: браузер не сохранил изменения.','error');
+     showStudioToast(tr('Не удалось удалить билд: браузер не сохранил изменения.',
+      'Could not delete the build: the browser failed to save the change.'),'error');
      return;
     }
     compareIds=compareIds.filter(id=>id!==b.id);
@@ -6598,7 +6610,7 @@ function renderBuilds(root){
     }else void deleteCloudBuild(b.id);
     renderDetails();
    }}),
-   h('button',{class:'button-action',type:'button',text:'Отмена',onclick:()=>{deleteChoice.hidden=true}}));
+   h('button',{class:'button-action',type:'button',text:tr('Отмена','Cancel'),onclick:()=>{deleteChoice.hidden=true}}));
   check.checked=compareIds.includes(b.id);
   check.onchange=()=>{
    const chosen=compareIds.filter(Boolean);
@@ -6617,27 +6629,29 @@ function renderBuilds(root){
   const cardHead=h('div',{class:'build-card-head'},[
    h('h3',{class:'build-card-title',text:b.name}),
    h('label',{class:'build-card-compare'},[
-    check,h('span',{text:'Сравнить'})
+    check,h('span',{text:tr('Сравнить','Compare')})
    ])
   ]);
+  // A second confirmation replaces the first instead of stacking panels.
+  const toggleCardChoice=target=>{
+   const opening=target.hidden;
+   for(const choice of [openChoice,overwriteChoice,deleteChoice])choice.hidden=true;
+   target.hidden=!opening;
+   if(opening)target.querySelector('button')?.focus({preventScroll:true});
+  };
   const cardActions=h('div',{class:'build-card-actions'},[
-   h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
+   cardAction('📂','Открыть','Open',()=>{
     if(!unsavedBuild()){openSavedBuild(b);return}
-    openChoice.hidden=!openChoice.hidden;
-   }}),
-   h('button',{class:'button-action',
-    text:'↻ Перезаписать',onclick:()=>{
-     overwriteChoice.hidden=!overwriteChoice.hidden;
-     if(!overwriteChoice.hidden)overwriteChoice.querySelector('button')?.focus({preventScroll:true});
-    }}),
-   h('button',{class:'button-action',text:'🔗 Поделиться',
-    onclick:()=>createShared(b,shareSlot)}),
-   h('button',{class:'button-action build-card-delete',text:'Удалить',
-    onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}})
+    toggleCardChoice(openChoice);
+   },' primary'),
+   cardAction('↻','Перезаписать','Overwrite',()=>toggleCardChoice(overwriteChoice)),
+   cardAction('🔗','Поделиться','Share',()=>createShared(b,shareSlot)),
+   cardAction('🗑','Удалить','Delete',()=>toggleCardChoice(deleteChoice),' build-card-delete')
   ]);
   box.append(cardHead,
    ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
-    text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
+    text:tr('Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»',
+     'Local copy · to save it to the cloud, open it and select Overwrite')})]:[]),
    h('p',{class:'build-card-meta',
     text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
      (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
