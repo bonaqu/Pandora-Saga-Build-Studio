@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "source": "Cloudflare D1 owner overrides",
+  "overrides": {
+    "guideedit.book.equipment.wearable-by": "{\"ru\":\"Кому подходит\",\"en\":\"Who can equip\"}",
+    "guideedit.book.origin.heading": "{\"ru\":\"Происхождение героя\",\"en\":\"Hero origin\"}",
+    "guideedit.book.origin.level-heading": "{\"ru\":\"Уровень персонажа\",\"en\":\"Character level\"}",
+    "guideedit.book.origin.progress-heading": "{\"ru\":\"Развитие персонажа\",\"en\":\"Character progression\"}",
+    "guideedit.book.origin.race-choose": "{\"ru\":\"Выбрать\",\"en\":\"Select\"}",
+    "guideedit.book.wiki.item-field.range": "{\"hintRu\":\"Базовая дальность атаки оружия.\"}",
+    "guideedit.honor.overview": "{\"overviewRu\":\"Честь — PvP-ресурс.\\nЗаработать честь можно за убийства в PvP-локациях и участие в войнах.\\n\\nРазделяется на:\\n1. «Честь» — расходуемый ресурс очков чести;\\n2. «Вся честь» — общий зарабатываемый запас очков чести для повышения рангов и рейтинга.\",\"lossRu\":\"Честь может уменьшаться после гибели от вражеского игрока, а также при смерти от монстра, если потеря опыта превышает накопленный опыт уровня.\",\"ranksRu\":\"Повышение ранга требует ресурс «Вся честь» и игровое золото.\\nНекоторые ранги выдаются по результатам прошлого месяца и действуют один месяц.\",\"gainRu\":\"Очки чести можно получить за убийство игроков вражеских наций в PvP-локациях и за участие в войнах.\",\"monthlyNoteRu\":\"Обладатели рангов Герцог, Кронпринц и Эрцгерцог в каждой нации определяются 1-го числа по результатам прошлого месяца.\\n\\nРанг действует месяц и не продлевается, если в следующем месяце не выполнены условия для его получения. \\nВ случае, если ранг пропадает, то пропадает и плащ из инвентаря, который выдавался в награду за этот ранг.\",\"overviewEn\":\"Honor is a PvP resource.\\nEarn Honor by defeating enemy players in PvP locations and participating in wars.\\n\\nThere are two types:\\n1. “Honor” — spendable Honor points;\\n2. “Total Honor” — the cumulative Honor earned for ranks and rankings.\",\"lossEn\":\"Honor may decrease when defeated by an enemy player or killed by a monster if the experience lost exceeds the experience accumulated toward your current level.\",\"ranksEn\":\"Rank advancement requires Total Honor and in-game gold.\\nSome ranks are awarded based on the previous month's results and last for one month.\",\"gainEn\":\"Earn Honor by defeating players of opposing nations in PvP locations and participating in wars.\",\"monthlyNoteEn\":\"Duke, Crown Prince and Archduke ranks in each nation are assigned on the first day of each month based on the previous month's results.\\n\\nThe rank lasts for one month and is not renewed unless its requirements are met the following month.\\nIf the rank expires, the reward cloak is also removed from the inventory.\"}",
+    "guideedit.honor.rank.0": "{\"benefitRu\":\"Привилегии ранга: Отсутствуют.\",\"benefitEn\":\"Rank privileges: None.\"}",
+    "guideedit.honor.rank.1": "{\"benefitRu\":\"Привилегии ранга: Возможность создать гильдию.\",\"benefitEn\":\"Rank privileges: Ability to create a guild.\"}",
+    "guideedit.honor.rank.10": "{\"benefitRu\":\"Привилегии ранга: На месяц: плащ монарха своей нации.\",\"benefitEn\":\"Rank privileges: For one month, a Monarch's Cloak of your nation.\"}",
+    "guideedit.honor.rank.11": "{\"benefitRu\":\"Привилегии ранга: На месяц: плащ императора своей нации.\",\"benefitEn\":\"Rank privileges: For one month, an Emperor's Cloak of your nation.\"}",
+    "guideedit.honor.rank.2": "{\"benefitRu\":\"Привилегии ранга: Скидка 10% в магазинах.\",\"benefitEn\":\"Rank privileges: 10% discount in shops.\"}",
+    "guideedit.honor.rank.3": "{\"benefitRu\":\"Привилегии ранга: Расширение инвентаря.\",\"benefitEn\":\"Rank privileges: Increased inventory capacity.\"}",
+    "guideedit.honor.rank.4": "{\"benefitRu\":\"Привилегии ранга: Обмен чести на особые предметы.\",\"benefitEn\":\"Rank privileges: Exchange Honor for special items.\"}",
+    "guideedit.honor.rank.5": "{\"benefitRu\":\"Привилегии ранга: Расширение инвентаря.\",\"benefitEn\":\"Rank privileges: Increased inventory capacity.\"}",
+    "guideedit.honor.rank.6": "{\"benefitRu\":\"Привилегии ранга: Обмен чести на более ценные предметы.\",\"benefitEn\":\"Rank privileges: Exchange Honor for more valuable items.\"}",
+    "guideedit.honor.rank.7": "{\"benefitRu\":\"Привилегии ранга: Расширение инвентаря и выбор пассивного умения (Луна).\",\"benefitEn\":\"Rank privileges: Increased inventory capacity and choice of a passive skill (Luna).\"}",
+    "guideedit.honor.rank.8": "{\"benefitRu\":\"Привилегии ранга: Новые предметы в обменнике предметов за честь.\",\"benefitEn\":\"Rank privileges: New items available from the Honor item exchange.\"}",
+    "guideedit.honor.rank.9": "{\"benefitRu\":\"Привилегии ранга: На месяц: плащ победителя своей нации.\",\"benefitEn\":\"Rank privileges: For one month, a Victor's Cloak of your nation.\"}",
+    "spawnedit.600": "[]"
+  }
+}
