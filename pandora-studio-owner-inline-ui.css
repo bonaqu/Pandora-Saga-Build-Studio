@@ -521,3 +521,11 @@
 .path-racial-owner-row>.path-racial-pencil{flex:0 0 27px;align-self:center;width:27px;height:27px;border:1px solid #89643b;border-radius:4px;background:#302017;color:#e5c28b;cursor:pointer}
 .path-racial-owner-row>.path-racial-pencil:hover{background:#513520;border-color:#dcb477}
 .path-racial-owner-row>.path-racial-pencil:focus-visible{outline:2px solid #ecc88c;outline-offset:2px}
+
+/* The dynamic skill-count suffix stays outside the editable Show-more caption. */
+.path-more-owner-row{display:flex;align-items:stretch;gap:4px;min-width:0}
+.path-more-owner-row>.path-show-more{flex:1 1 auto;width:auto;min-width:0}
+.path-more-owner-row>.path-more-pencil{flex:0 0 28px;align-self:stretch;border:1px solid #85643d;border-radius:4px;background:#302017;color:#e5c28b;cursor:pointer}
+.path-more-owner-row>.path-more-pencil:hover{background:#513520;border-color:#dcb477}
+.path-more-owner-row>.path-more-pencil:focus-visible{outline:2px solid #ecc88c;outline-offset:2px}
+.path-more-owner-row .path-more-copy{overflow-wrap:anywhere}
