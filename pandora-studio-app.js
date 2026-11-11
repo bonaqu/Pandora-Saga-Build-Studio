@@ -7380,6 +7380,22 @@ const ownerDockText=Object.freeze({
  finish:['Завершить','Finish'],
  extra:['Дополнительно','Additional tools'],
  guide:['Как редактировать и когда нажимать кнопки','How editing works'],
+ step1:['В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.',
+  'In the encyclopedia, double-click a highlighted value or use + to add a new entry.'],
+ step2:['Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.',
+  'Edit the text or link, then press Enter or leave the field: Cloudflare D1 saves it automatically.'],
+ step3:['Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.',
+  'Wait for “Saved to Cloudflare D1”, then select Finish. There is no separate Save button.'],
+ historyHelp:[' — посмотреть сохранённые изменения и вернуть исходное.',
+  ' — review saved changes or restore the original.'],
+ catalogHelp:[' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.',
+  ' — compare the game server catalog; not needed for manual text edits.'],
+ githubHelp:[' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.',
+  ' — optional export for review in GitHub. Your changes are already saved in D1.'],
+ d1Help:[' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.',
+  ' — safely create and delete temporary test records without changing user data.'],
+ finishHelp:[' — только скрыть инструменты редактирования, не удалить изменения.',
+  ' — hide editing controls without removing saved changes.'],
  collapse:['◀ Скрыть','◀ Hide'],
  expand:['✎ Редактор','✎ Editor']
 });
@@ -7474,6 +7490,10 @@ function refreshOwnerUI(){
   if(online)online.textContent=ownerDockCopy('online');
   const extra=root.querySelector('.owner-dock-secondary-label');
   if(extra)extra.textContent=ownerDockCopy('extra');
+  for(const node of root.querySelectorAll('[data-owner-dock-static]')){
+   if(!node.querySelector('.wiki-inline-input'))
+    node.textContent=ownerDockCopy(node.dataset.ownerDockStatic);
+  }
   const guide=root.querySelector('.owner-workflow-guide>summary');
   if(guide)guide.textContent=ownerDockCopy('guide');
   const state=root.querySelector('[data-owner-save-state]');
@@ -7512,16 +7532,16 @@ function refreshOwnerUI(){
  const guide=h('details',{class:'owner-workflow-guide'},[
   h('summary',{text:'Как редактировать и когда нажимать кнопки'}),
   h('ol',{class:'owner-workflow-steps'},[
-   h('li',{text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'}),
-   h('li',{text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'}),
-   h('li',{text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})
+   h('li',{'data-owner-dock-static':'step1',text:'В энциклопедии дважды нажми на подсвеченное значение или используй кнопку + для добавления.'}),
+   h('li',{'data-owner-dock-static':'step2',text:'Измени текст или связь. Нажми Enter либо уйди с поля: запись автоматически сохраняется в Cloudflare D1.'}),
+   h('li',{'data-owner-dock-static':'step3',text:'Убедись, что показано «Сохранено в Cloudflare D1», затем нажми «Завершить». Отдельной кнопки сохранения нет.'})
   ]),
   h('div',{class:'owner-workflow-glossary'},[
-   h('p',{},[h('strong',{text:'Все правки'}),document.createTextNode(' — посмотреть сохранённые изменения и вернуть исходное.')]),
-   h('p',{},[h('strong',{text:'Игровой каталог'}),document.createTextNode(' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.')]),
-   h('p',{},[h('strong',{text:'Экспорт в GitHub'}),document.createTextNode(' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.')]),
-   h('p',{},[h('strong',{text:'Проверить сохранение'}),document.createTextNode(' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.')]),
-   h('p',{},[h('strong',{text:'Завершить'}),document.createTextNode(' — только скрыть инструменты редактирования, не удалить изменения.')])
+   h('p',{},[h('strong',{'data-owner-dock-static':'history',text:'Все правки'}),h('span',{'data-owner-dock-static':'historyHelp',text:' — посмотреть сохранённые изменения и вернуть исходное.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'catalog',text:'Игровой каталог'}),h('span',{'data-owner-dock-static':'catalogHelp',text:' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'githubExport',text:'Экспорт в GitHub'}),h('span',{'data-owner-dock-static':'githubHelp',text:' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'testD1',text:'Проверить сохранение'}),h('span',{'data-owner-dock-static':'d1Help',text:' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.'})]),
+   h('p',{},[h('strong',{'data-owner-dock-static':'finish',text:'Завершить'}),h('span',{'data-owner-dock-static':'finishHelp',text:' — только скрыть инструменты редактирования, не удалить изменения.'})])
   ])
  ]);
  const actions=h('div',{class:'owner-dock-actions'},[
