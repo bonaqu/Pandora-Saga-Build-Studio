@@ -36,6 +36,15 @@
  min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
  white-space:nowrap
 }
+/* Shortened game labels are fine in view mode; not when a user is typing.
+   Unlock the enclosing text track only for its active admin editor. */
+.stage-copy-caption:has([data-owner-text-field]),
+.stage-book-tab-copy:has([data-owner-text-field]),
+.path-tab-copy:has([data-owner-text-field]),
+.stage-attribute-head .stage-book-heading:has([data-owner-text-field]),
+.stage-attribute-head .stage-book-heading>strong:has([data-owner-text-field]){
+ white-space:normal;overflow:visible;text-overflow:clip
+}
 .stage-copy-pencil,.stage-control-pencil,.stage-book-tab-pencil,
 .path-group-pencil,.path-tab-pencil{
  display:inline-flex;align-items:center;justify-content:center;
@@ -177,10 +186,23 @@
 .ui-content-pencil:hover,.ui-content-pencil:focus-visible{
  background:#624226;border-color:#efc68a;outline-offset:2px
 }
-.ui-content-edit-host{display:inline-flex;min-width:96px;max-width:min(90vw,280px);align-items:center}
+/* A long editorial value must grow downward instead of disappearing into
+   a 280px clipped single-line box. This changes editor mode only. */
+.ui-content-edit-host{display:inline-flex;flex:1 1 230px;
+ min-width:min(200px,calc(100vw - 32px));width:min(100%,480px);
+ max-width:min(100%,480px);align-items:flex-start;overflow:visible}
 .ui-content-edit-host .wiki-inline-input{
  display:block;box-sizing:border-box;width:100%;min-width:0;max-width:100%;
- min-height:29px;padding:5px 7px;font-size:12px;text-align:left
+ min-height:34px;height:auto;max-height:none;padding:7px 9px;
+ font-size:12px;line-height:1.5;text-align:left;
+ white-space:pre-wrap;overflow-wrap:anywhere;overflow:visible
+}
+/* Shared D1 edit fields have one layout rule across Origin, Book, Wiki,
+   workbench, accounts and special inline captions. */
+.wiki-inline-input[data-owner-text-field]:not(.wiki-owner-search){
+ box-sizing:border-box;min-width:0;max-width:100%;min-height:34px;
+ height:auto;max-height:none;white-space:pre-wrap;
+ overflow-wrap:anywhere;word-break:break-word;overflow:visible
 }
 .ui-content-pencil[hidden],.ui-content-edit-host[hidden]{display:none!important}
 
@@ -361,9 +383,9 @@
 }
 #studioToast .account-copy-edit-host .wiki-inline-input{
  display:block;min-width:0;max-width:100%;width:100%;
- min-height:38px;max-height:min(30vh,170px);
- overflow:auto;box-sizing:border-box;
- padding:7px 8px;line-height:1.4;overflow-wrap:anywhere
+ min-height:38px;height:auto;max-height:min(65dvh,480px);
+ overflow-y:auto;overflow-x:hidden;box-sizing:border-box;
+ padding:7px 8px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere
 }
 #studioToast .ui-content-inline-error{
  display:block;min-width:0;font:500 11px/1.4 Manrope,Arial,sans-serif;

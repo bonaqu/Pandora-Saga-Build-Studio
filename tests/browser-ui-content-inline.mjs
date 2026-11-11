@@ -77,6 +77,29 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.waitForFunction(()=>document.querySelector('#stageHeading')?.textContent===
    'Облик героя',null,{timeout:15000});
   assert.equal(JSON.parse(values['guideedit.book.ui.label.appearance']).ru,'Облик героя');
+  // A long owner draft must remain fully measurable at a mobile viewport.
+  // Escape discards the draft, preserving the real short heading.
+  await page.setViewportSize({width:390,height:780});
+  await appearancePencil.click();
+  const longField=page.locator('.stage .panel-heading .ui-content-edit-host [contenteditable]');
+  await longField.fill('Полное название или пояснение '.repeat(10));
+  const visibleText=await longField.evaluate(el=>{
+   const range=document.createRange();range.selectNodeContents(el);
+   const field=el.getBoundingClientRect(),content=range.getBoundingClientRect();
+   const css=getComputedStyle(el);
+   return {whiteSpace:css.whiteSpace,overflowY:css.overflowY,
+    scrollHeight:el.scrollHeight,clientHeight:el.clientHeight,
+    contentBottom:content.bottom,fieldBottom:field.bottom};
+  });
+  assert.equal(visibleText.whiteSpace,'pre-wrap');
+  assert.ok(visibleText.scrollHeight<=visibleText.clientHeight+2,
+   'Owner input clips long text vertically: '+JSON.stringify(visibleText));
+  assert.ok(visibleText.contentBottom<=visibleText.fieldBottom+2,
+   'Owner input cuts off the last entered line: '+JSON.stringify(visibleText));
+  assert.notEqual(visibleText.overflowY,'hidden');
+  await longField.press('Escape');
+  assert.equal(await page.locator('#stageHeading').innerText(),'Облик героя');
+  await page.setViewportSize({width:1100,height:810});
   const pathTitlePencil=page.locator('.right .panel-heading [data-ui-content-for="path"]');
   await pathTitlePencil.waitFor({state:'visible'});
   const originHeadingPencil=page.locator('.workspace>.left>.panel-heading [data-origin-edit-for="heading"]');
@@ -141,6 +164,24 @@ export async function runUIContentInlineSmoke(browser,base){
   await page.locator('#locale [data-locale="ru"]').click();
   await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
    ?.textContent==='📜 Справочник',null,{timeout:15000});
+  assert.match(await pencil.getAttribute('aria-label'),/Изменить надпись:.*Справочник/);
+  // A RU draft must not overwrite an existing EN value when the locale
+  // changes before blur. Keep the active editor mounted through the switch.
+  await pencil.click();
+  const liveRu=page.locator('#nav .ui-content-edit-host [contenteditable]');
+  await liveRu.fill('📜 Изменённый русский текст');
+  await page.evaluate(()=>document.querySelector('#locale [data-locale="en"]').click());
+  await page.waitForFunction(()=>document.documentElement.lang==='en');
+  await liveRu.press('Tab');
+  await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
+   ?.textContent==='📜 Wiki Guide',null,{timeout:15000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.ui.label.wiki']),{
+   ru:'📜 Изменённый русский текст',en:'📜 Wiki Guide'
+  });
+  assert.match(await pencil.getAttribute('aria-label'),/Edit label:.*Wiki Guide/);
+  await page.locator('#locale [data-locale="ru"]').click();
+  await page.waitForFunction(()=>document.querySelector('#nav [data-i18n="wiki"]')
+   ?.textContent==='📜 Изменённый русский текст',null,{timeout:15000});
 
   await wiki.click();
   const category=page.locator('[data-wiki-chapter="item"]');
@@ -234,7 +275,8 @@ export async function runUIContentInlineSmoke(browser,base){
    'Вход открывает облачные билды.',null,{timeout:12000});
   assert.deepEqual(errors,[]);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.account-guest-lead').length,2);
-  assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,2);
+  // Two explicit locale saves plus the additional live-switch RU regression.
+  assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,3);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,2);
   console.log('UI test: preparing to sign in');
   // Sign in without editing the username or password: library controls, not
