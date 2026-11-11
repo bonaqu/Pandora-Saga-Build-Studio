@@ -74,6 +74,11 @@
 .stage-rich-body .stage-enchant-options.is-element-options button:nth-child(7){
  grid-column:span 2
 }
+/* In owner mode a button+pencil form one grid cell. Rainbow keeps its
+   original two-cell span; no narrow duplicated action can shift the row. */
+.stage-rich-body .stage-enchant-options.is-element-options>.stage-action-edit-wrap:nth-child(7){
+ grid-column:span 2
+}
 .stage-rich-body .stage-enchant-options.is-element-options button:hover{
  border-color:#d8a66b;background:#4a3120
 }

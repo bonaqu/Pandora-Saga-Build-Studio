@@ -22,7 +22,8 @@ test('two explicit RU/EN buttons keep the selected language accessible',()=>{
 });
 test('item dialog header shows localized slot type, not duplicated item name',()=>{
  const source=read('pandora-studio-equipment-ui.js'),app=read('pandora-studio-app.js');
- assert.match(source,/api\.slotLabel\|\|'Слот: '\+slot/);
+ assert.match(source,/api\.slotLabel\|\|tr\('Слот: ','Slot: '\)\+slot/);
+ assert.match(source,/tr\('Закрыть настройку','Close item settings'\)/);
  assert.match(app,/const slots=\[\['Оружие','⚔'\]/);
  assert.match(app,/const englishGearSlots=\['Weapon','Shield','Helmet','Armor','Gloves','Pants'/);
  assert.match(app,/slotLabel:\(lang==='en'\?'Slot: ':'Слот: '\)\+gearSlotName\(selectedSlot\)/);

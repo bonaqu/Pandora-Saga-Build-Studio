@@ -38,6 +38,13 @@ function make(tag,attr={},children=[]){
  if(tag==='input'&&attr.type==='number')root.PandoraNumericField?.prepare(e);
  return e;
 }
+// A count is runtime data, but its visible noun must agree with the locale.
+const skillCountLabel=(count,locale='ru')=>{
+ const n=Number.isSafeInteger(count)&&count>=0?count:0;
+ if(locale==='en')return n+' '+(n===1?'skill':'skills');
+ const category=new Intl.PluralRules('ru').select(n);
+ return n+' '+(category==='one'?'умение':category==='few'?'умения':'умений');
+};
 // Fixed UI help stays separate from skill names, thresholds and player input.
 const authored=(api,key,ru,en,tag='p',cls='muted')=>{
  const node=make(tag,{class:cls,text:api.copyLabel?.(key,ru,en)||tr(api,ru,en)});
@@ -569,7 +576,7 @@ function viewSkills(target,details,api){
    api.filter==='all'||(api.filter==='known'?gate.learned:!gate.learned));
  rows.sort((a,b)=>Number(b.gate.learned)-Number(a.gate.learned)||
   String(a.skill.name||'').localeCompare(String(b.skill.name||''),'ru'));
- target.append(make('p',{class:'path-skill-count',text:rows.length+tr(api,' умений',' skills')}));
+ target.append(make('p',{class:'path-skill-count',text:skillCountLabel(rows.length,api.lang)}));
  const grid=make('div',{class:'path-skill-grid'});
  for(const {skill,gate}of rows.slice(0,api.shown||24)){
   const item=make('button',{type:'button',class:'path-skill-card'+(gate.learned?' learned':' locked')+
@@ -641,5 +648,5 @@ function viewSkills(target,details,api){
   if(typeof api.skillWiki==='function')details.append(api.skillWiki(skill));
  }
 }
-root.PandoraHeroPath=Object.freeze({viewGrowth,viewSkills,readiness});
+root.PandoraHeroPath=Object.freeze({viewGrowth,viewSkills,readiness,skillCountLabel});
 })(typeof window==='undefined'?globalThis:window);
