@@ -1296,7 +1296,7 @@ function openStageEquipmentSlot(index,view='auto'){
  closeStageGearMenu();
  const visual=window.PandoraUIPlanner.visualEquipment(state.equipment,index,catalog.equipment);
  const shared=Boolean(visual.shared);
- selectedSlot=shared&&view!=='choose'?visual.sourceSlot:index;
+ selectedSlot=shared&&(view==='properties'||view==='souls')?visual.sourceSlot:index;
  selectedSocket=0;gearMode='equipment';
  stageSlotQuery='';stageSoulQuery='';stageSoulScrollTop=0;stageSlotShown=48;
  stageSlotView=view==='auto'?
