@@ -54,6 +54,13 @@ function summary(record,icon,kind='item',context=null){
   globalThis.PandoraEnchantModel?.magicPreview?.(grade,context.tables?.magicPlus):null;
  const showSoulSlots=kind==='item'&&Boolean(
   root.PandoraEquipmentPlan?.supportsSoulSlot?.(context?.slot||record.slot));
+ // Equipped copies have a known capacity: one readable "used/available" row.
+ // Unselected previews retain the catalog's plain total, and zero stays "0".
+ const socketCapacity=context?.capacity??record.soulslot;
+ const socketedCount=context?.socketedCount??(Array.isArray(context?.souls)?
+  context.souls.slice(0,Math.max(0,Number(socketCapacity)||0)).filter(Boolean).length:0);
+ const displayedSlots=Number.isInteger(context?.capacity)&&context.capacity>0?
+  socketedCount+'/'+context.capacity:socketCapacity;
  const rows=kind==='soul'?
  [[tr('Подходящие слоты','Compatible slots'),(record.slots||[])
    .map(slot=>presenter?.slotLabel(slot,locale)||slot).join(', ')]]:
@@ -61,8 +68,7 @@ function summary(record,icon,kind='item',context=null){
  [tr('Уровень','Level'),record.level],[tr('Атака','Attack'),attackDisplay],
  ...(magicPlus?[[tr('Магическая атака','Magic attack'),'+'+magicPlus.rate+'%']]:[]),
  [tr('Защита','Defense'),armorDisplay],
- ...(showSoulSlots?[[tr('Слоты','Slots'),
-  context?.capacity??record.soulslot]]:[]),
+ ...(showSoulSlots?[[tr('Слоты','Slots'),displayedSlots]]:[]),
  [tr('Скорость','Speed'),record.atkspeed],[tr('Дальность','Range'),record.range]];
  const wearers=kind==='item'?root.PandoraUIPlanner?.outfitWearers?.(record,locale):null;
  if(gem&&grade>0){
@@ -71,9 +77,6 @@ function summary(record,icon,kind='item',context=null){
   if(gemElement)rows.push([tr('Стихия улучшения','Refinement element'),
    english?gemElement.en:gemElement.ru]);
  }
- if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
-  rows.push([tr('Вставлено душ','Socketed Souls'),
-   (context.socketedCount??context.souls?.length??0)+' / '+context.capacity]);
  // Keep per-row translation/editor keys aligned with dynamically inserted
  // magical refinements and hidden Soul slots. Index drift formerly assigned
  // Defense the "Slots" editor key on magically enhanced weapons.
@@ -90,8 +93,6 @@ function summary(record,icon,kind='item',context=null){
    fieldNames.push(['gemType','Тип самоцвета','Gemstone type']);
   if(gemElement)fieldNames.push(['element','Стихия улучшения','Refinement element']);
  }
- if(context&&Number.isInteger(context.capacity)&&context.capacity>0)
-  fieldNames.push(['insertedSouls','Вставлено душ','Socketed Souls']);
  const dl=el('dl',{class:'stage-rich-fields'});
  rows.forEach(([key,value],index)=>{
   if(value===null||value===undefined||value==='')return;

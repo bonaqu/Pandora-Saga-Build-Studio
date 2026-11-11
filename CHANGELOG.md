@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.630.0 — 2026.11.11.630 · One Slots row shows active Souls / available sockets, or 0 when none
+
+- Equipped item Properties now display a single `Слоты / Slots` stat: `0/2`, `1/2`, `2/2` (used/available). Zero capacity stays `0`, never `0/0`.
+- Removed the redundant standalone `Вставлено душ / Socketed Souls` stat row. Existing inline RU/EN `field.slots` editor remains intact.
+- Counts reflect actually active sockets, not saved inactive overflow; no Soul, equipment, or game data are changed.
+- Preview of not-yet-equipped items retains the original plain catalog slot count. Added RU/EN Node and Chromium regressions.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.629.0 — 2026.11.11.629 · Honor owner-form RU/EN accessibility and safe missing-war copy
 
 - Honor's owner-only PvP-war creation form uses the active UI locale for its Russian-name and English-name input labels, without changing the submitted RU/EN record fields.
