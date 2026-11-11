@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.633",
-  "notes": "Equipped-item context menu and targeted browser debugging without reducing PR coverage"
+  "release": "2026.11.11.634",
+  "notes": "Fresh equipment copies, zero-import account gate, empty-slot menu and Yandex search hints"
 }

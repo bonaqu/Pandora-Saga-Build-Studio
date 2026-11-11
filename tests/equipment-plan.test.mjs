@@ -105,3 +105,40 @@ test('a sparse Soul array within actual socket limits retains slot placement',()
  assert.equal(state.souls[0][1].id,7);
  assert.equal(state.soulOwners[0],'502');
 });
+
+test('unequipping and re-equipping an identical catalog item starts with a fresh copy',()=>{
+ const old={id:22,name:'Test sword'};
+ const state={equipment:{0:old,5:{id:33}},souls:{0:[{id:1001}]},
+  soulOwners:{0:'22'},refinements:{'0:22':3,'5:33':7},
+  gems:{'0:22':{element:'fire'},'5:33':{element:'ice'}},
+  socketCapacities:{'0:22':2,'5:33':1}};
+ const before={...state.equipment};
+ delete state.equipment[0];
+ assert.deepEqual(Array.from(p.clearChangedEquipmentSouls(state,before)),['0']);
+ assert.equal(state.refinements['0:22'],undefined);
+ assert.equal(state.gems['0:22'],undefined);
+ assert.equal(state.socketCapacities['0:22'],undefined);
+ assert.equal(state.souls[0],undefined);
+ assert.equal(state.soulOwners[0],undefined);
+ assert.equal(state.refinements['5:33'],7);
+ assert.equal(state.gems['5:33'].element,'ice');
+ assert.equal(state.socketCapacities['5:33'],1);
+ const empty={...state.equipment};
+ state.equipment[0]={id:22,name:'Test sword'};
+ p.clearChangedEquipmentSouls(state,empty);
+ assert.equal(p.refinementValue(state.refinements,0,{id:22}),0);
+ assert.equal(state.gems['0:22'],undefined);
+ assert.equal(state.socketCapacities['0:22'],undefined);
+});
+test('swapping model also resets old copy without touching the newly selected slot',()=>{
+ const state={equipment:{0:{id:10},1:{id:20}},refinements:{'0:10':9,'1:20':6},
+  gems:{'0:10':{element:'fire'},'1:20':{element:'ice'}},
+  socketCapacities:{'0:10':3,'1:20':1}};
+ const before={...state.equipment};
+ state.equipment[0]={id:11};
+ p.clearChangedEquipmentSouls(state,before);
+ assert.equal(state.refinements['0:10'],undefined);
+ assert.equal(state.gems['0:10'],undefined);
+ assert.equal(state.socketCapacities['0:10'],undefined);
+ assert.equal(state.refinements['1:20'],6);
+});

@@ -26,7 +26,8 @@ export async function runAccountSmoke(browser,base){
    calls.push({path,action});
    if(action==='register'){
     username=body.username.toLowerCase();passwd=body.password;
-    assert.match(body.legacyKey,/^[a-f0-9]{64}$/);
+    assert.equal(Object.hasOwn(body,'legacyKey'),false,
+     'Registration must never send old guest-library credentials');
     if(holdNextRegister){
      holdNextRegister=false;
      await new Promise(resolve=>{releaseHeldRegister=resolve;notifyHeldRegister?.()});

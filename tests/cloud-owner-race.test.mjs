@@ -61,14 +61,11 @@ test('late cloud PUT status cannot claim another player saved its build',async()
  second.resolve({ok:true});assert.equal(await op,true);
  assert.deepEqual(status,['Сохранено в облаке']);
 });
-test('legacy import awaits account identity and ignores stale responses',()=>{
- const importCode=extract('function buildLegacyImport(){','function renderBuilds(root){');
- assert.match(importCode,/window\.PandoraAccountUI\.token\(\)!==selectedToken/);
- assert.match(importCode,/owner!==libraryScopeId\(\)/);
- assert.match(importCode,/if\(!window\.PandoraAccountUI\?\.isLoggedIn\(\)\)return/);
- assert.match(importCode,/if\(!persistBuilds\(\)\)/);
- assert.match(importCode,/builds=previous/);
- assert.match(importCode,/for\(const row of created\)/);
+test('retired guest importer cannot race a different account or upload stale builds',()=>{
+ assert.doesNotMatch(app,/function buildLegacyImport\(\)/);
+ assert.doesNotMatch(app,/\/api\/library\/legacy-preview/);
  assert.match(extract('async function loadCloudBuilds(){','function h(tag,attrs={}'),
   /if\(libraryChangeId===generation&&latest\(\)\)/);
+ assert.match(app,/const expectedOwner=tabOwnerScope/);
+ assert.match(app,/tabOwnerScope!==expectedOwner/);
 });

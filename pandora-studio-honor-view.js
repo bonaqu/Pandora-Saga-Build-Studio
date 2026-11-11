@@ -325,7 +325,10 @@ function render({browse,detail,make,lang='ru',article,editable=false,
      if(isZone){
       const search=make('input',{type:'search',
        'aria-label':tr('Поиск существующей локации','Search existing locations'),
-       placeholder:tr('Найти локацию…','Find a location…'),autocomplete:'off'});
+       placeholder:tr('Найти локацию…','Find a location…'),
+       autocomplete:'none','aria-autocomplete':'none',
+       'data-lpignore':'true','data-1p-ignore':'true',
+       'data-bwignore':'true','data-form-type':'other'});
       const select=make('select',{class:'wiki-honor-location-select',
        'aria-label':tr('Выбери существующую локацию','Choose an existing location')});
       const fill=()=>{

@@ -73,3 +73,23 @@ test('milestone tooltip and two skill numeric descriptions are short, distinct a
  assert.match(path,/Skill points allocated as the character develops/);
  assert.match(path,/corresponding attack or weapon types/);
 });
+
+test('ordinary dynamic searches request Yandex no-login autofill, never readonly',()=>{
+ const app=read('pandora-studio-app.js'),equipment=read('pandora-studio-equipment-ui.js');
+ const html=read('index.html'),account=read('pandora-studio-account-ui.js');
+ assert.match(app,/attrs=\{\.\.\.attrs,autocomplete:'none','data-lpignore':'true'/);
+ assert.match(equipment,/attrs=\{\.\.\.attrs,autocomplete:'none','aria-autocomplete':'none'/);
+ assert.match(html,/id="pathSkillSearch"[^>]+autocomplete="none"/);
+ assert.match(equipment,/const query=el\('input',\{type:'search'/);
+ assert.doesNotMatch(app.slice(app.indexOf('function h(tag,attrs={}'),
+  app.indexOf('function imageUrl(')),/readOnly=true/);
+ assert.match(account,/field\('Логин \(3–20, a-z, 0-9, _\)','text','username',20\)/);
+ assert.match(account,/mode==='login'\?'current-password':'new-password'/);
+});
+
+test('Honor location search is a gameplay search, not a credential entry',()=>{
+ const honor=read('pandora-studio-honor-view.js');
+ assert.match(honor,/Найти локацию…','Find a location…'\),\s*autocomplete:'none'/);
+ assert.match(honor,/'data-lpignore':'true','data-1p-ignore':'true'/);
+ assert.match(honor,/'data-bwignore':'true','data-form-type':'other'/);
+});

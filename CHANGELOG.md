@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.634.0 — 2026.11.11.634 · Fresh equipment copies, zero-import account gate, empty-slot menu and Yandex search hints
+
+- Unequip or replace removes all customization owned by the prior equipped copy: Souls, refinement, element/gem, and selected Soul-slot capacity. Re-equipping the same catalog item begins fresh; other worn items remain unchanged.
+- All empty portrait equipment slots offer one right-click action «Выбрать вещь / Choose item» opening the normal equipment picker. Previously equipped slots retain all four context-menu actions.
+- Removed the old guest-saved-build import UI and registration's guest-library key/carry path. Guests still see only Sign in/Register in My Builds; the currently edited character is preserved across login and registration as an **unsaved** draft, with a save suggestion only when no account work exists. No implicit build uploads.
+- Ordinary gameplay and editor searches now send Yandex-recommended best-effort `autocomplete="none"` plus existing no-login markers. Genuine account username/password fields retain browser credential semantics; text entry remains direct and editable.
+- Node/Chromium contracts cover no legacy import, no guest-key submission, draft continuity, empty slots and fresh item customization. Production D1 writes remain out of scope without explicit approval.
+
+
 ## 0.633.0 — 2026.11.11.633 · Equipped-item context menu and targeted browser debugging without reducing PR coverage
 
 - Right-click equipped item rails for a compact, themed, viewport-clamped context menu: Properties, Manage Souls, Choose another item, Unequip item. The special armor-and-pants projection resolves its actual owning slot for item actions; choosing pants still replaces the outfit using the existing picker.

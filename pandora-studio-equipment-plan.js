@@ -28,9 +28,10 @@ function socketReport(souls,capacity){
  const excess=capacity===null?count:all.slice(capacity).filter(Boolean).length;
  return {all,count,excess,capacity,unknown:capacity===null};
 }
-// Socket contents belong to the currently equipped physical item, never the
-// equipment position itself. A replacement (or removal) invalidates that item's Souls.
-// Preserve Souls when the selected catalog item ID has not actually changed.
+// All customizations belong to the *equipped copy*, never permanently to its
+// catalog name/ID. Removal or replacement invalidates Souls, refinement,
+// enchantment, and manual socket capacity. Other equipped slots are untouched.
+// Preserve settings while the same equipped item stays in its position.
 function clearChangedEquipmentSouls(state,beforeEquipment){
  if(!state||typeof state!=='object')return [];
  const previous=beforeEquipment&&typeof beforeEquipment==='object'?beforeEquipment:{};
@@ -43,6 +44,13 @@ function clearChangedEquipmentSouls(state,beforeEquipment){
   changed.push(slot);
   if(state.souls&&typeof state.souls==='object')delete state.souls[slot];
   if(state.soulOwners&&typeof state.soulOwners==='object')delete state.soulOwners[slot];
+  const oldKey=refinementKey(Number(slot),previous[slot]);
+  if(oldKey!==null){
+   if(state.refinements&&typeof state.refinements==='object')delete state.refinements[oldKey];
+   if(state.gems&&typeof state.gems==='object')delete state.gems[oldKey];
+   if(state.socketCapacities&&typeof state.socketCapacities==='object')
+    delete state.socketCapacities[oldKey];
+  }
  }
  return changed;
 }

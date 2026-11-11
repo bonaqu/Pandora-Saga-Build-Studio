@@ -312,7 +312,7 @@ function render(){
   submit.disabled=true;info('Проверяем…');
   try{
    const result=await request(current,current==='register'?
-    {username:username.value,password:pass.value,legacyKey:options.legacyKey?.()}:
+    {username:username.value,password:pass.value}:
     current==='recover'?{username:username.value,password:pass.value,
      recoveryCode:recovery.value.trim()}:
     {username:username.value,password:pass.value},null);

@@ -12,6 +12,8 @@ export async function runGuestDraftContinuitySmoke(browser,base){
  const account={race:1,gender:0,job:8,level:33,
   name:'Existing account draft',points:{archery:9}};
  async function check({register=false,accountDraft=false,viaBuilds=false,link=false,keepAccount=false,quotaFail=false,unnamedAccount=false}={}){
+  const scenario={register,accountDraft,viaBuilds,link,keepAccount,quotaFail,unnamedAccount};
+  console.log('Guest draft acceptance case:',JSON.stringify(scenario));
   const currentAccount=unnamedAccount?{...account,name:''}:account;
   const savedAccountName=currentAccount.name||'Новый герой';
   const context=await browser.newContext({viewport:{width:1280,height:900}});
@@ -30,7 +32,8 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    if(path==='/api/account/login'&&method==='POST')
     return send({account:{username},token,expires:Number.MAX_SAFE_INTEGER});
    if(path==='/api/account/register'&&method==='POST'){
-    assert.equal(req.postDataJSON()?.legacyKey,guestKey);
+    assert.equal(Object.hasOwn(req.postDataJSON(),'legacyKey'),false,
+     'Registration must not upload a guest library credential');
     return send({account:{username},token,expires:Number.MAX_SAFE_INTEGER,
      recoveryCode:'r'.repeat(43)},201);
    }
@@ -89,9 +92,16 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    await inputs.nth(1).fill('long passphrase for draft continuity 2026!');
    if(register)await inputs.nth(2).fill('long passphrase for draft continuity 2026!');
    await panel.locator('.account-form button[type=submit]').click();
+   console.log('Guest draft acceptance: awaiting account scope');
    await page.waitForFunction(name=>
     localStorage.getItem('ps-build-owner-scope.v1')==='account:'+name,
     username,{timeout:20000});
+   if(register){
+    // A new account cannot complete the guest-draft switch until its one-time
+    // recovery code is acknowledged. Confirm it before checking the draft.
+    await panel.locator('.account-recovery').waitFor({state:'visible'});
+    await panel.getByRole('button',{name:'Я сохранил код'}).click();
+   }
    if(accountDraft){
     // Both drafts differ: only a deliberate choice may replace account work.
     const chooser=page.getByRole('dialog',{name:'Продолжить персонажа?'});
@@ -135,6 +145,7 @@ export async function runGuestDraftContinuitySmoke(browser,base){
     }
     if(savedResponse)await savedResponse;
    }
+   console.log('Guest draft acceptance: awaiting selected hero');
    await page.waitForFunction(({name,expected})=>{
     const raw=localStorage.getItem('ps-build-studio.v1');
     if(!raw||localStorage.getItem('ps-build-owner-scope.v1')!=='account:'+name)
@@ -174,9 +185,8 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    }else assert.deepEqual(writes,[],
     'Signing in, registration and choosing the existing draft cannot auto-save');
    if(register){
-    await panel.locator('.account-recovery').waitFor({state:'visible'});
-    await panel.getByRole('button',{name:'Я сохранил код'}).click();
     assert.equal(await page.locator('#levelOut').textContent(),'27');
+    assert.equal(writes.length,0,'Registration does not auto-upload old or current builds');
    }
    if(link){
     const preview=page.getByRole('dialog',{name:'Открыть билд по ссылке?'});
