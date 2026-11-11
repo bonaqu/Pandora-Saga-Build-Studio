@@ -219,31 +219,35 @@
     const safe=change=>!describe(change).uncertain && !describe(change).service;
 
     const filterChoices=[
-      ['all','Все'],['added','Новые'],['changed','Изменённые'],
-      ['removed','Удалённые'],['accepted','Выбранные'],['declined','Не выбраны'],
-      ['needsReview','Требует проверки'],['links','Игровые ссылки'],
-      ['sameVisible','Текст совпадает'],['readable','Расшифрованы']
+      ['all','Все','All'],['added','Новые','New'],['changed','Изменённые','Changed'],
+      ['removed','Удалённые','Removed'],['accepted','Выбранные','Selected'],
+      ['declined','Не выбраны','Not selected'],
+      ['needsReview','Требует проверки','Needs review'],
+      ['links','Игровые ссылки','Game links'],
+      ['sameVisible','Текст совпадает','Same visible text'],
+      ['readable','Расшифрованы','Explained']
     ];
     const filterButtons=new Map();
-    for(const [id,label]of filterChoices){
+    for(const [id,ru,en]of filterChoices){
       const button=h('button',{type:'button',class:'os-sync-filter',
-       'aria-pressed':String(id===filterKind),text:label});
+       'aria-pressed':String(id===filterKind),text:tr(ru,en)});
       button.onclick=()=>{
         if(busy)return;
         filterKind=id;render();
       };
-      hint(button,({
-        all:'Все найденные изменения.',
-        added:'Объекты, добавленные в проверяемом источнике.',
-        changed:'Объекты, чьи параметры отличаются.',
-        removed:'Объекты, которых нет в проверяемом источнике.',
-        accepted:'Только изменения с поставленной галочкой.',
-        declined:'Изменения без галочки, не выбранные для применения.',
-        needsReview:'Неоднозначные или неизвестные параметры — требуют ручного анализа.',
-        links:'Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.',
-        sameVisible:'Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.',
-        readable:'Изменения, для которых доступны понятные названия и описания.'
-      })[id]);
+      const tips={
+        all:['Все найденные изменения.','All detected changes.'],
+        added:['Объекты, добавленные в проверяемом источнике.','Entries added in the checked source.'],
+        changed:['Объекты, чьи параметры отличаются.','Entries with changed parameters.'],
+        removed:['Объекты, которых нет в проверяемом источнике.','Entries missing from the checked source.'],
+        accepted:['Только изменения с поставленной галочкой.','Only selected changes.'],
+        declined:['Изменения без галочки, не выбранные для применения.','Changes not selected for publication.'],
+        needsReview:['Неоднозначные или неизвестные параметры — требуют ручного анализа.','Ambiguous or unknown fields require manual review.'],
+        links:['Изменилась привязка ссылок на предметы. Такие записи нужно выбирать вручную.','Item reference links changed; review and select these manually.'],
+        sameVisible:['Видимый текст одинаков, но исходные записи отличаются. Требуется ручная проверка.','Displayed text is the same, but the source differs. Review manually.'],
+        readable:['Изменения, для которых доступны понятные названия и описания.','Changes with readable labels and descriptions.']
+      };
+      hint(button,tr(...tips[id]));
       filters.append(button);filterButtons.set(id,button);
     }
     function matchesFilter(change){
@@ -305,9 +309,9 @@
         sameVisible:changes.filter(row=>describe(row).rows.some(field=>field.sameVisible)).length,
         readable:changes.filter(row=>!describe(row).uncertain).length
       };
-      for(const [id,label]of filterChoices){
+      for(const [id,ru,en]of filterChoices){
         const button=filterButtons.get(id);
-        button.textContent=label+' · '+byKind[id];
+        button.textContent=tr(ru,en)+' · '+byKind[id];
         button.classList.toggle('active',id===filterKind);
         button.setAttribute('aria-pressed',String(id===filterKind));
       }
@@ -315,7 +319,7 @@
       // inside a large dashboard of decorative statistics.
       const groups=importer.files.filter(name=>changes.some(row=>row.dataset===name));
       const ordered=[...groups.filter(name=>name!=='meta'),...groups.filter(name=>name==='meta')];
-      overview.textContent=ordered.length?'Затронутые разделы: '+
+      overview.textContent=ordered.length?tr('Затронутые разделы: ','Affected sections: ')+
         ordered.map(name=>(review.labels[name]||name)+' · '+
           changes.filter(row=>row.dataset===name).length).join('   •   '):'';
       overview.hidden=!reviewing||!changes.length;
@@ -324,14 +328,16 @@
         const count=changes.filter(row=>row.dataset===name&&chosen.has(row.id)).length;
         const total=changes.filter(row=>row.dataset===name).length;
         const label=panel.querySelector('.os-sync-count');
-        if(label)label.textContent=count+' / '+total+' выбрано';
+        if(label)label.textContent=count+' / '+total+tr(' выбрано',' selected');
       }
       const service=changes.filter(row=>describe(row).service).length;
       summary.textContent = changes.length
-        ? 'Найдено изменений: '+changes.length+(service?' · Служебных: '+service:'')+
-          ' · Выбрано: '+selected+' · Не выбрано: '+(changes.length-selected)+
-          (byKind.needsReview?' · Нужна проверка: '+byKind.needsReview:'')
-        : baseline ? 'Различий в игровых данных нет' : '';
+        ? tr('Найдено изменений: ','Changes found: ')+changes.length+
+          (service?tr(' · Служебных: ',' · Technical: ')+service:'')+
+          tr(' · Выбрано: ',' · Selected: ')+selected+
+          tr(' · Не выбрано: ',' · Not selected: ')+(changes.length-selected)+
+          (byKind.needsReview?tr(' · Нужна проверка: ',' · Needs review: ')+byKind.needsReview:'')
+        : baseline ? tr('Различий в игровых данных нет','No differences in game data') : '';
     }
     const checked = change => chosen.has(change.id);
     // Search resolved descriptions and item names without exposing source IDs.
