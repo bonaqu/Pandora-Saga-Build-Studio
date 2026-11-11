@@ -82,7 +82,7 @@ test('account copy input marks only authored text, not secret value controls',()
  assert.match(app,/onCopyReady:bindAccountCopyEditors/);
  assert.match(app,/class:'ui-content-edit-host account-copy-edit-host'/);
  assert.match(app,/node\.addEventListener\('dblclick',edit\)/);
- assert.match(app,/saveGuidePatch\('book\.'\+id,\{\[lang\]:next\}\)/);
+ assert.match(app,/saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/);
  assert.doesNotMatch(account,/input\.setAttribute\('data-owner-copy-key'/);
 });
 
