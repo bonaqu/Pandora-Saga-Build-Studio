@@ -14,6 +14,11 @@ export async function runHonorGuideSmoke(browser,base){
   await page.locator('.wiki-categories [data-wiki-chapter="honor"]').click();
   const panel=page.locator('.wiki-page');
   await panel.locator('.wiki-honor-title').waitFor({state:'visible'});
+  assert.equal(await panel.locator('.wiki-honor-copy-pencil').count(),0,
+   'Ordinary players must never see the Honor editorial pencils');
+  assert.equal((await panel.locator('.wiki-honor-subtitle').textContent()).trim(),
+   'PvP · нации · звания · награды',
+   'Ordinary player copy must retain its original caption without editor markup');
   assert.doesNotMatch(await panel.innerText(),
    /23.10.2026|Официальная новость|Источники:/);
   assert.equal(await panel.locator('.wiki-honor-dual,.wiki-honor-resource').count(),0,
