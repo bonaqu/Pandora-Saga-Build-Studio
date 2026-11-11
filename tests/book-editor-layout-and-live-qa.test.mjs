@@ -15,7 +15,15 @@ test('production admin QA only creates isolated disposable session and owner cop
  assert.match(script,/\/api\/admin\/reset/);
  assert.match(script,/expectedValue:null/);
  assert.match(script,/expectedValue:first/);
- assert.match(script,/expectedValue:second/);
+ assert.match(script,/secondBearer/);
+ assert.match(script,/Promise\.all\(\[/);
+ assert.match(script,/contenders\.map\(result=>result\.status\)/);
+ assert.match(script,/assertConflict\(losing/);
+ assert.match(script,/expectedValue:winner/);
+ assert.match(script,/expectedValue:peer/);
+ assert.match(script,/Repeated stale Undo/);
+ assert.match(script,/qaCount\(\),0/);
+ assert.match(script,/secondSessionHash/);
  assert.match(script,/finally\s*\{/);
  assert.match(script,/DELETE FROM overrides WHERE key=/);
  assert.match(script,/DELETE FROM sessions WHERE token_hash=/);
