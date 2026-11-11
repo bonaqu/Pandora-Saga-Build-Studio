@@ -55,7 +55,7 @@ export async function runBuildComparisonSmoke(browser,base){
    assert.equal(metrics.actions.length,4);
    const names=metrics.labels.map(s=>s.replace(/^[↻🔗]\s*/u,''));
    assert.equal(names[0],'Открыть');
-   assert.match(names[1],/^(Перезаписать|Сохранить в этот билд)$/);
+   assert.equal(names[1],'Перезаписать');
    assert.deepEqual(names.slice(2),['Поделиться','Удалить']);
    assert.equal(metrics.compareAccessible,true);
    const compareStyle=await page.locator('.build-card-compare').first().evaluate(el=>{
