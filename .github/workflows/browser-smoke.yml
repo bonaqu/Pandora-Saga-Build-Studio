@@ -1,10 +1,13 @@
 name: Chromium browser smoke
 
 on:
-  push:
-    branches: [bonaqu_projects]
   pull_request:
     branches: [bonaqu_projects]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'tests/*.test.mjs'
+      - 'artifacts/**'
   workflow_dispatch:
 
 permissions:
@@ -20,9 +23,25 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 2 # Compare PR merge with its first parent; full suite if unavailable
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+      - name: Choose full or targeted browser regression suite
+        id: suite
+        shell: bash
+        run: |
+          mode=full
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+            if selected=$(node scripts/select-browser-suite.mjs); then
+              mode="$selected"
+            else
+              echo 'Could not classify PR diff; falling back to full Chromium'
+            fi
+          fi
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "Chromium suite: $mode"
       - name: Reuse pinned Playwright Chromium downloads
         uses: actions/cache@v4
         with:
@@ -44,7 +63,11 @@ jobs:
           node scripts/dev-server.mjs &
           server=$!
           trap 'kill "$server" 2>/dev/null || true' EXIT
-          node tests/browser-smoke.mjs
+          if [[ "${{ steps.suite.outputs.mode }}" == 'quick' ]]; then
+            node tests/browser-smoke.mjs --quick
+          else
+            node tests/browser-smoke.mjs
+          fi
       - name: Upload desktop and mobile layout screenshots
         if: always()
         uses: actions/upload-artifact@v4

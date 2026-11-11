@@ -1,10 +1,13 @@
 name: Studio quality checks
 
 on:
-  push:
-    branches: [bonaqu_projects]
   pull_request:
     branches: [bonaqu_projects]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'tests/*.test.mjs'
+      - 'artifacts/**'
   workflow_dispatch:
 
 permissions:
