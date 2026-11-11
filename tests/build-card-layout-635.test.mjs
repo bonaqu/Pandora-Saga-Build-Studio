@@ -21,7 +21,9 @@ test('saved build card keeps Compare in the top corner and exactly four actions 
  assert.match(body,/deleteChoice\.hidden=!deleteChoice\.hidden/);
  assert.match(css,/\.build-card-actions\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(css,/\.build-card-compare\{display:inline-flex/);
- assert.match(css,/\.build-grid\{grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,390px\),1fr\)\)/);
+ assert.match(css,/\.build-grid\{[\s\S]*grid-template-columns:repeat\(var\(--build-visible-columns,4\),390px\)/);
+ assert.match(css,/overflow-x:auto/);
+ assert.doesNotMatch(css,/\.build-grid\{grid-template-columns:repeat\(auto-fit/);
 });
 
 test('disclosure arrows have centered vector glyphs and text fields keep a soft visible focus',()=>{
