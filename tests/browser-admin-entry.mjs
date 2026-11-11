@@ -1146,6 +1146,41 @@ export async function runAdminEntrySmoke(browser,base){
   assert.deepEqual(calls.filter(x=>x==='owner-acquire-edit'),['owner-acquire-edit']);
   assert.deepEqual(calls.filter(x=>x==='owner-trade-edit'),['owner-trade-edit']);
   assert.deepEqual(errors,[]);
+  // #390: exercise the Hero Book's real RU/EN author-copy editor under a
+  // logged-in admin with an isolated, mocked Cloudflare D1 override response.
+  if(await page.locator('#dockClose').isVisible())await page.locator('#dockClose').click();
+  await page.locator('#hero').click();
+  await page.locator('#stageBookTab_buffs').click();
+  const bookCaption=page.locator(
+   '#stageBookPanel p.stage-attribute-note[data-owner-copy-key]').first();
+  await bookCaption.waitFor({state:'visible',timeout:20000});
+  const bookKey=await bookCaption.getAttribute('data-owner-copy-key');
+  assert.match(bookKey,/^book-[a-z0-9-]+-[a-f0-9]{8}$/);
+  const bookEdit=bookCaption.locator(
+   'xpath=following-sibling::button[contains(@class,"account-copy-pencil")][1]');
+  assert.equal(await bookEdit.count(),1,'One compact pencil, not duplicate editors');
+  await bookEdit.click();
+  const bookInput=page.locator('#stageBookPanel .account-copy-edit-host [contenteditable]').first();
+  await bookInput.waitFor({state:'visible'});
+  const longBookCopy='Настройки персонажа обновляют итоговые характеристики в других разделах Книги героя. Текст тестовой правки сохраняется полностью.';
+  await bookInput.fill(longBookCopy);
+  const editorHeight=await bookInput.evaluate(node=>node.getBoundingClientRect().height);
+  assert.ok(editorHeight>=34,'Long copy must remain visible in an expanding editor');
+  await bookInput.press('Tab');
+  await page.waitForFunction(text=>
+   document.querySelector('#stageBookPanel p.stage-attribute-note')?.textContent===text,
+   longBookCopy,{timeout:20000});
+  const bookSaved=JSON.parse(townOverrides.get('guideedit.book.ui.label.'+bookKey)||'null');
+  assert.equal(bookSaved?.ru,longBookCopy,'Real in-screen copy write must reach D1 transport mock');
+  await page.locator('#locale [data-locale="en"]').click();
+  await page.locator('#stageBookPanel p.stage-attribute-note').first().waitFor({state:'visible'});
+  assert.match(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
+   /Settings apply to this build immediately/);
+  await page.locator('#locale [data-locale="ru"]').click();
+  assert.equal(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
+   longBookCopy,'RU saved copy survives EN->RU and does not change the hero');
+  assert.deepEqual(errors,[]);
+  console.log('Chromium Book editorial passed: long RU D1 copy, EN fallback, no duplicate pencil');
   const other=await context.newPage();
   await other.goto(base+'/',{waitUntil:'domcontentloaded'});
   for(let i=0;i<5;i++)await other.locator('.brand').click();
