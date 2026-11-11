@@ -48,7 +48,7 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
   });
   return context;
  }));
- const pages=[];
+ const pages=[];let phase='start';
  try{
   for(const context of contexts){
    const page=await context.newPage();pages.push(page);
@@ -78,7 +78,9 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
    return input;
   };
   const [first,second]=pages;
+  phase='first-submit';
   await edit(first,'Первая подтверждённая подпись');
+  phase='first-visible';
   await first.waitForFunction(text=>
    document.querySelector('#ownerDock .owner-dock-d1-check')?.textContent===text,
    'Первая подтверждённая подпись',{timeout:12000});
@@ -87,7 +89,9 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
   assert.equal((await second.locator('#ownerDock .owner-dock-d1-check').innerText()).trim(),
    'Проверить сохранение','Second browser must retain its independently loaded stale copy');
 
+  phase='second-submit';
   await edit(second,'Вторая конкурирующая подпись');
+  phase='second-error';
   await second.waitForFunction(()=>document.querySelector(
    '#ownerDock [data-owner-save-state]')?.dataset.state==='error',
    null,{timeout:12000});
@@ -107,6 +111,7 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
 
   // After explicit refresh the second browser observes the winning value,
   // then may save a new revision with the exact current CAS precondition.
+  phase='second-reload';
   await second.reload({waitUntil:'domcontentloaded'});
   await second.locator('#nav [data-tab="wiki"]').waitFor({state:'visible',timeout:30000});
   await second.keyboard.press('Control+Alt+Shift+P');
@@ -119,7 +124,9 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
   await second.waitForFunction(text=>
    document.querySelector('#ownerDock .owner-dock-d1-check')?.textContent===text,
    'Первая подтверждённая подпись',{timeout:12000});
+  phase='second-retry';
   await edit(second,'Вторая версия после обновления');
+  phase='retry-visible';
   await second.waitForFunction(text=>
    document.querySelector('#ownerDock .owner-dock-d1-check')?.textContent===text,
    'Вторая версия после обновления',{timeout:12000});
@@ -130,5 +137,16 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
   assert.equal(testWriteCalls.length,0);
   assert.deepEqual(errors,[]);
   console.log('Chromium dual-session owner CAS passed: 200/409, draft and count preserved, fresh retry 200');
+ }catch(error){
+  const observed=[];
+  for(const page of pages)try{observed.push(await page.evaluate(()=>({
+   label:document.querySelector('#ownerDock .owner-dock-d1-check')?.textContent,
+   status:document.querySelector('#ownerDock [data-owner-save-state]')?.textContent,
+   input:document.querySelector('#ownerDock [contenteditable]')?.textContent,
+   toast:document.querySelector('#studioToast')?.textContent
+  })));}catch{observed.push({unavailable:true})}
+  console.error('DUAL CAS failure phase='+phase+' attempts='+JSON.stringify(attempts)+
+   ' writes='+writes.length+' data='+JSON.stringify(values)+' ui='+JSON.stringify(observed));
+  throw error;
  }finally{await Promise.all(contexts.map(context=>context.close()))}
 }
