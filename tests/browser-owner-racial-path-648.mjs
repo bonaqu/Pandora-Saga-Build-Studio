@@ -129,7 +129,12 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   console.log('Chromium 0.649 Show more EN D1 caption and dynamic skill count passed');
   // Pick a known SCOUT skill with an actual previous-skill requirement.
   // Search by source ID is test-only; game IDs are not displayed to players.
-  await page.locator('#pathSkillSearch').fill('110101002');
+  // The real search starts read-only to block password-manager injection.
+  // A user's focus/click unlocks it; programmatic fill must follow that gesture.
+  const search=page.locator('#pathSkillSearch');
+  await search.click();
+  assert.equal(await search.isEditable(),true);
+  await search.fill('110101002');
   const skillCard=page.locator('#pathSkillGallery [data-skill-id="110101002"]');
   await skillCard.waitFor({state:'visible',timeout:12000});
   await skillCard.click();
