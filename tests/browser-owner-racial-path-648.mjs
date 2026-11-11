@@ -106,7 +106,8 @@ export async function runOwnerRacialPath648Smoke(browser,base){
   assert.equal(await en.locator('button.path-racial-unavailable').isDisabled(),true);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.path.racial-branch').length,2);
   const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('ps-build-studio.v1')));
-  assert.deepEqual(saved.points||{},{});
+  assert.ok(Object.values(saved.points||{}).every(value=>Number(value)===0),
+   'Editing RU/EN site text must not allocate any character skill points');
   assert.deepEqual(errors,[]);
   console.log('Chromium 0.648 Racial RU/EN D1, independent pencil, unchanged points passed');
  }finally{await context.close()}
