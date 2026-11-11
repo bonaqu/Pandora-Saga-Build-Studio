@@ -9,11 +9,15 @@ class BrowserElement {
   this.tag=tag;this.children=[];this.attributes={};this.listeners={};this.style={};
   this.className='';this.textContent='';this.value='';this._disabled=false;this._checked=false;
   this.hidden=false;this.scrollTop=0;this.dataset={};
-  this.classList={toggle:(name,on)=>{
-   const parts=new Set(this.className.split(/\s+/).filter(Boolean));
-   if(on)parts.add(name);else parts.delete(name);
-   this.className=[...parts].join(' ');
-  }};
+  const setClass=(name,on)=>{
+    const parts=new Set(this.className.split(/\s+/).filter(Boolean));
+    if(on)parts.add(name);else parts.delete(name);
+    this.className=[...parts].join(' ');
+    return Boolean(on);
+   };
+   this.classList={toggle:setClass,add:name=>setClass(name,true),
+    remove:name=>setClass(name,false),
+    contains:name=>this.className.split(/\s+/).includes(name)};
  }
  append(...parts){this.children.push(...parts)}
  replaceChildren(...parts){this.children=[...parts]}
@@ -705,4 +709,34 @@ test('previous-skill caption has separate RU/EN D1 editor and preserves source s
  api.canEdit=false;render();
  assert.equal(walk(details).filter(x=>x.className==='path-owner-pencil').length,0);
  assert.equal(skill.prereq,91002);
+});
+
+test('missing prerequisite copy can be edited without changing unknown source IDs',()=>{
+ const missing={id:91005,name:'Скилл',classes:{WARRIOR:1},learnable:true,prereq:91004,reqs:[]};
+ const api={state:{level:45,points:{}},job:'WARRIOR',lang:'ru',
+  skillCatalog:[missing],catalogReady:true,query:'',filter:'all',shown:24,
+  selectedSkill:missing,icon:()=>null,hover:()=>{},onInspect:()=>{},canEdit:true};
+ const edits=[];api.copyLabel=(key,ru)=>key==='skillPrerequisiteMissing'?'Нет в базе':ru;
+ api.editLabel=(node,key,ru,en)=>edits.push({node,key,ru,en});
+ const gallery=new BrowserElement('root'),details=new BrowserElement('root');
+ const render=()=>root.PandoraHeroPath.viewSkills(gallery,details,api);
+ render();
+ let row=walk(details).find(n=>String(n.className).includes('path-skill-previous-row'));
+ assert.ok(row);
+ let fallback=walk(row).find(n=>String(n.className).includes('path-skill-previous-value'));
+ assert.ok(walk(fallback).some(n=>n.className==='path-owner-copy-text'&&n.textContent==='Нет в базе'));
+ assert.ok(walk(fallback).some(n=>n.className==='path-owner-pencil'));
+ assert.equal(edits.find(x=>x.key==='skillPrerequisiteMissing')?.ru,'Умение отсутствует в каталоге');
+ assert.equal(edits.find(x=>x.key==='skillPrerequisiteMissing')?.en,'Skill not in catalog');
+ assert.equal(missing.prereq,91004);
+ api.lang='en';api.copyLabel=(key,ru,en)=>en;render();
+ row=walk(details).find(n=>String(n.className).includes('path-skill-previous-row'));
+ fallback=walk(row).find(n=>String(n.className).includes('path-skill-previous-value'));
+ assert.ok(walk(fallback).some(n=>n.textContent==='Skill not in catalog'));
+ api.canEdit=false;render();
+ row=walk(details).find(n=>String(n.className).includes('path-skill-previous-row'));
+ fallback=walk(row).find(n=>n.className==='path-skill-previous-value');
+ assert.equal(fallback.textContent,'Skill not in catalog');
+ assert.ok(!walk(details).some(n=>n.className==='path-owner-pencil'));
+ assert.equal(missing.prereq,91004);
 });
