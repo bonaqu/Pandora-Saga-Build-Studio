@@ -542,3 +542,14 @@
 .share-result .share-result-copy-row>p{flex:1 1 auto;min-width:0;margin:0;color:var(--cream);font-size:12px;line-height:1.5;overflow-wrap:anywhere}
 .share-result .share-result-copy-row .account-copy-pencil{flex:0 0 auto;align-self:flex-start}
 .share-result .share-result-copy-row .account-copy-edit-host{flex:1 1 auto;min-width:0}
+
+
+/* Shared-link receiver: dynamic build names and counts stay outside D1 copy. */
+.shared-receiver-dialog{min-width:0}
+.shared-receiver-dialog .shared-import-count{font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.shared-receiver-dialog .shared-personal-name{overflow-wrap:anywhere}
+.shared-receiver-dialog .shared-receiver-copy-row{display:flex;gap:6px;align-items:flex-start;min-width:0;margin:8px 0}
+.shared-receiver-dialog .shared-receiver-copy-row>.shared-receiver-note{flex:1 1 auto;min-width:0;margin:0;overflow-wrap:anywhere;white-space:normal}
+.shared-receiver-dialog .shared-receiver-copy-row>.account-copy-pencil{flex:0 0 auto;align-self:flex-start}
+.shared-receiver-dialog .shared-receiver-copy-row>.account-copy-edit-host{display:flex;flex:1 1 auto;min-width:0;max-width:100%;overflow:visible}
+.shared-receiver-dialog .shared-receiver-copy-row .wiki-inline-input{display:block;box-sizing:border-box;width:100%;max-width:100%;min-height:36px;height:auto;white-space:pre-wrap;overflow-wrap:anywhere}

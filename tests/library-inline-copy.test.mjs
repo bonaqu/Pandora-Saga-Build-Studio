@@ -135,3 +135,42 @@ test('share result edits attach to separate paragraphs and cannot publish links'
  const css=read('pandora-studio-owner-inline-ui.css');
  assert.match(css,/\.share-result \.share-result-copy-row/);
 });
+
+test('shared-link receiver help has two safe RU/EN D1 keys independent of dynamic counts and names',()=>{
+ const pairs={
+  librarySharedImportNote:[
+   'Текущий герой и сохранённые билды не изменятся. Новые копии добавятся в «Мои билды».',
+   'Your current character and saved builds will not change. New copies will be added to My Builds.'
+  ],
+  librarySharedOpenNote:[
+   'Сохранённые в «Мои билды» записи при этом не удаляются.',
+   'Existing saved builds will not be deleted.'
+  ]
+ };
+ for(const [key,[ru,en]] of Object.entries(pairs)){
+  assert.ok(locale.keys().includes(key));
+  assert.equal(locale.literalKey(ru),key);
+  assert.equal(locale.text(key,'ru'),ru);
+  assert.equal(locale.text(key,'en'),en);
+  assert.equal(guide.validOverride('book.'+locale.fieldKey(key),
+   JSON.stringify({ru:'Новая подпись',en:'New explanatory copy'})),true);
+  const record='guideedit.book.'+locale.fieldKey(key);
+  locale.setOverrides({[record]:JSON.stringify({ru:'Русский QA',en:'English QA'})});
+  assert.equal(locale.text(key,'ru'),'Русский QA');
+  assert.equal(locale.text(key,'en'),'English QA');
+  locale.setOverrides({});
+ }
+ for(const value of ['Билдов по ссылке: 2.','Open build “My saved character”?','Import A'])
+  assert.equal(locale.literalKey(value),null,'runtime info is never editable: '+value);
+ const app=read('pandora-studio-app.js');
+ const block=app.slice(app.indexOf('function openSharedSnapshot(share){'),
+  app.indexOf('let studioToastTimer=',app.indexOf('function openSharedSnapshot(share){')));
+ assert.equal((block.match(/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(view\)/g)||[]).length,2);
+ assert.match(block,/class:'shared-import-count'/);
+ assert.match(block,/class:'shared-personal-name'/);
+ assert.match(block,/PandoraUILocale\?\.localize\(importNote,lang\)/);
+ assert.match(block,/PandoraUILocale\?\.localize\(openNote,lang\)/);
+ assert.doesNotMatch(block,/localize\(importCount,lang\)/);
+ const css=read('pandora-studio-owner-inline-ui.css');
+ assert.match(css,/\.shared-receiver-dialog \.shared-receiver-copy-row/);
+});

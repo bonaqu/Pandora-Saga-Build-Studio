@@ -103,7 +103,11 @@ const libraryCopy=Object.freeze({
  // share token, build name, server response or active clipboard operation.
  libraryShareCreated:['Ссылка на билд создана.','Build link created.'],
  libraryShareAlreadyCreated:['Ссылка на билд уже создана.','Build link already exists.'],
- libraryShareSnapshotNote:['Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.','The link preserves a snapshot. Deleting the original build revokes the link.']
+ libraryShareSnapshotNote:['Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.','The link preserves a snapshot. Deleting the original build revokes the link.'],
+ // Only static explanatory notes are owner-editable. Counts, shared names,
+ // network responses and actions are not editorial copy.
+ librarySharedImportNote:['Текущий герой и сохранённые билды не изменятся. Новые копии добавятся в «Мои билды».','Your current character and saved builds will not change. New copies will be added to My Builds.'],
+ librarySharedOpenNote:['Сохранённые в «Мои билды» записи при этом не удаляются.','Existing saved builds will not be deleted.']
 });
 // Fixed toast notifications are safe authored copy. Exclude runtime details,
  // player build names, network errors and security diagnostics.

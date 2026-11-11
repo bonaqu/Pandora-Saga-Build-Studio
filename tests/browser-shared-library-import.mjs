@@ -55,6 +55,11 @@ export async function runSharedLibraryImportSmoke(browser,base){
   const prompt=page.getByRole('dialog',{name:'Добавить билды по ссылке?'});
   await prompt.waitFor({state:'visible'});
   assert.match(await prompt.innerText(),/Билдов по ссылке: 2/);
+  assert.equal(await prompt.locator('.shared-import-count').innerText(),'Билдов по ссылке: 2.');
+  assert.equal(await prompt.locator('[data-owner-copy-key="librarySharedImportNote"]').count(),1);
+  assert.equal(await prompt.locator('.shared-receiver-copy-row .account-copy-pencil').count(),0,
+   'Only administrators may edit import explanations');
+  assert.equal(await prompt.locator('.shared-import-count [data-owner-copy-key]').count(),0);
   await prompt.getByRole('button',{name:'Отмена'}).click();
   assert.equal(uploads.length,0);
   await page.evaluate(id=>{location.hash='#b/'+id},shareId);
