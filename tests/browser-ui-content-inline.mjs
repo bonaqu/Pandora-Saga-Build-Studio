@@ -275,7 +275,8 @@ export async function runUIContentInlineSmoke(browser,base){
    'Вход открывает облачные билды.',null,{timeout:12000});
   assert.deepEqual(errors,[]);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.account-guest-lead').length,2);
-  assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,2);
+  // Two explicit locale saves plus the additional live-switch RU regression.
+  assert.equal(writes.filter(x=>x.key==='guideedit.book.ui.label.wiki').length,3);
   assert.equal(writes.filter(x=>x.key==='guideedit.book.wiki.item-field.pen').length,2);
   console.log('UI test: preparing to sign in');
   // Sign in without editing the username or password: library controls, not
