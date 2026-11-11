@@ -8449,7 +8449,7 @@ function inlineWikiText(el){
  }});
 }
 
-async /* Editorial copy for administrative dialogs uses the same authenticated
+/* Editorial copy for administrative dialogs uses the same authenticated
    inline D1 CAS path as the Book. No JSON values, counts, tokens or callbacks
    are ever passed to this generic text editor. */
 function ownerDialogHelp(key,ru,en){
