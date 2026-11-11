@@ -7113,6 +7113,15 @@ function updateAdminHint(){
 // Existing specialized origin/path editors retain priority over generic labels.
 function bindStaticUICopyEditors(){
  const locale=window.PandoraUILocale,canEdit=Boolean(adminEditing&&adminToken);
+ const syncPencil=(pencil,key,hint=false)=>{
+  if(pencil?.dataset?.uiContentFor!==key)return;
+  const english=lang==='en',value=locale.text(key,lang);
+  pencil.title=hint?(english?'Edit hint':'Изменить подсказку'):
+   (english?'Edit label':'Изменить надпись');
+  pencil.setAttribute('aria-label',(hint?
+   (english?'Edit hint: ':'Изменить подсказку: '):
+   (english?'Edit label: ':'Изменить надпись: '))+value);
+ };
  for(const node of document.querySelectorAll('[data-i18n]')){
   const key=node.dataset.i18n,id=locale.fieldKey(key);
   if(!id||node.matches('option')||node.id==='originRaceName'||
@@ -7128,11 +7137,12 @@ function bindStaticUICopyEditors(){
    continue;
   }
   node.classList.add('ui-content-editable');
+  syncPencil(oldPencil,key);
   const edit=event=>{
    if(!adminEditing||!adminToken)return;
    event.preventDefault();event.stopPropagation();
    if(target.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
-   const current=locale.text(key,lang);
+   const editLang=lang,current=locale.text(key,editLang);
    const host=h('span',{class:'ui-content-edit-host',text:current});
    target.after(host);target.hidden=true;
    const pencil=host.nextElementSibling?.dataset?.uiContentFor===key?
@@ -7141,13 +7151,14 @@ function bindStaticUICopyEditors(){
    editWikiValue(host,current,{
     type:'text',
     onCommit:async next=>{
-     if(next.length>90)throw Error((lang==='en'?'Label is too long':'Надпись слишком длинная'));
-     await saveGuidePatch('book.'+id,{[lang]:next});
+     if(next.length>90)throw Error((editLang==='en'?'Label is too long':'Надпись слишком длинная'));
+     await saveGuidePatch('book.'+id,{[editLang]:next});
     },
-    onCommitted:next=>{node.textContent=next},
+    onCommitted:()=>{node.textContent=locale.text(key,lang)},
     onFinished:()=>{
      target.hidden=false;host.remove();
-     if(pencil)pencil.hidden=false;
+     node.textContent=locale.text(key,lang);
+     if(pencil){pencil.hidden=false;syncPencil(pencil,key)}
     }
    });
   };
@@ -7180,12 +7191,14 @@ function bindStaticUICopyEditors(){
    if(pencil?.dataset?.uiContentFor===key)pencil.remove();
    continue;
   }
-  if(pencil?.dataset?.uiContentFor===key||
-   pencil?.classList?.contains('ui-content-edit-host'))continue;
+  if(pencil?.dataset?.uiContentFor===key){
+   syncPencil(pencil,key,true);continue;
+  }
+  if(pencil?.classList?.contains('ui-content-edit-host'))continue;
   const edit=event=>{
    event.preventDefault();event.stopPropagation();
    if(node.nextElementSibling?.classList?.contains('ui-content-edit-host'))return;
-   const current=locale.text(key,lang);
+   const editLang=lang,current=locale.text(key,editLang);
    const host=h('span',{class:'ui-content-edit-host',text:current});
    node.after(host);node.hidden=true;
    const editButton=host.nextElementSibling?.dataset?.uiContentFor===key?
@@ -7194,10 +7207,14 @@ function bindStaticUICopyEditors(){
    editWikiValue(host,current,{
     type:'text',
     onCommit:async next=>{
-     if(next.length>90)throw Error((lang==='en'?'Label is too long':'Надпись слишком длинная'));
-     await saveGuidePatch('book.'+id,{[lang]:next});
+     if(next.length>90)throw Error((editLang==='en'?'Label is too long':'Надпись слишком длинная'));
+     await saveGuidePatch('book.'+id,{[editLang]:next});
     },
-    onFinished:()=>{node.hidden=false;host.remove();if(editButton)editButton.hidden=false}
+    onFinished:()=>{
+     node.hidden=false;host.remove();
+     locale.apply(lang);
+     if(editButton){editButton.hidden=false;syncPencil(editButton,key,true)}
+    }
    });
   };
   node.after(h('button',{type:'button',class:'ui-content-pencil',
