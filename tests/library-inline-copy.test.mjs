@@ -93,3 +93,45 @@ test('the real library view binds edit controls after rendering without touching
  assert.match(app,/saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/);
  assert.doesNotMatch(view,/\bsecret\b|data-owner-copy-key.*b\.name/i);
 });
+
+test('share result captions have exact bilingual D1 keys but generated links and controls do not',()=>{
+ const expected={
+  libraryShareCreated:['Ссылка на билд создана.','Build link created.'],
+  libraryShareAlreadyCreated:['Ссылка на билд уже создана.','Build link already exists.'],
+  libraryShareSnapshotNote:[
+   'Ссылка хранит снимок на момент публикации. После удаления оригинального билда она перестанет работать.',
+   'The link preserves a snapshot. Deleting the original build revokes the link.'
+  ]
+ };
+ for(const [key,[ru,en]] of Object.entries(expected)){
+  assert.equal(locale.literalKey(ru),key);
+  assert.equal(locale.text(key,'ru'),ru);
+  assert.equal(locale.text(key,'en'),en);
+  assert.ok(locale.copyLimit(key)>=ru.length);
+  assert.equal(guide.validOverride('book.'+locale.fieldKey(key),
+   JSON.stringify({ru:'Тестовое пояснение',en:'Testing copy'})),true);
+ }
+ assert.equal(locale.literalKey('https://example.com/#b/A1234567890'),null);
+ assert.equal(locale.literalKey('My personal character build'),null);
+ const key='libraryShareSnapshotNote';
+ locale.setOverrides({['guideedit.book.'+locale.fieldKey(key)]:
+  JSON.stringify({ru:'Ссылка отзывается при удалении.',en:'Deleting revokes this link.'})});
+ assert.equal(locale.text(key,'ru'),'Ссылка отзывается при удалении.');
+ assert.equal(locale.text(key,'en'),'Deleting revokes this link.');
+ locale.setOverrides({});
+});
+test('share result edits attach to separate paragraphs and cannot publish links',()=>{
+ const app=read('pandora-studio-app.js');
+ const start=app.indexOf('  const message=h(\'div\',{class:\'share-result\'});');
+ const end=app.indexOf('\n }catch(error){',start);
+ assert.ok(start>0&&end>start);
+ const part=app.slice(start,end);
+ assert.match(part,/class:'share-result-copy-row'/);
+ assert.match(part,/window\.PandoraUILocale\.localize\(message,lang\)/);
+ assert.match(part,/if\(adminEditing&&adminToken\)bindAccountCopyEditors\(message\)/);
+ assert.match(part,/message\.append\(titleCopy,field,copy,explanation\)/);
+ assert.doesNotMatch(part,/field\.setAttribute\('data-owner-copy-key'/);
+ assert.doesNotMatch(part,/copy\.setAttribute\('data-owner-copy-key'/);
+ const css=read('pandora-studio-owner-inline-ui.css');
+ assert.match(css,/\.share-result \.share-result-copy-row/);
+});
