@@ -34,8 +34,9 @@ test('history copy save, Undo and reset share D1 CAS and keep the current modal 
  assert.match(app,/last\.key\)/);
  assert.match(app,/book\.owner-history\./);
  assert.match(app,/record\.key\.startsWith\('guideedit\.book\.owner-history\.'\)/);
- const refresh=app.slice(app.indexOf('function refreshVisibleOwnerCopy('),
-  app.indexOf('// Copy-only Undo/saves'));
+ const start=app.indexOf('function refreshVisibleOwnerCopy(');
+ assert.ok(start>0);
+ const refresh=app.slice(start,start+4500);
  assert.match(refresh,/owner-history/);
  assert.match(app,/refreshVisibleOwnerCopy\(last\.key\);saveView\(\)/);
  assert.match(css,/\.owner-manager \.owner-history-edit-row/);
