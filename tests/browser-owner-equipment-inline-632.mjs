@@ -37,6 +37,13 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    values[data.key]=data.value;writes.push(data);
    return reply({ok:true,key:data.key,value:data.value,conditional:true});
   }
+  if(path==='/api/admin/reset'){
+   const data=req.postDataJSON();
+   assert.equal(data.expectedValue,values[data.key],'History reset must use current CAS value');
+   if(!Object.hasOwn(values,data.key))return reply({code:'OWNER_EDIT_CONFLICT'},409);
+   delete values[data.key];writes.push({key:data.key,reset:true});
+   return reply({ok:true,deleted:true,conditional:true});
+  }
   return route.abort();
  });
  const page=await context.newPage();
@@ -139,7 +146,43 @@ export async function runOwnerEquipmentInlineSmoke(browser,base){
    ?.textContent==='Soul slots',null,{timeout:12000});
   assert.deepEqual(JSON.parse(values[recordKey]),{ru:'Гнёзда для душ'});
   assert.equal((await value().innerText()).trim(),'0/2');
+  // Manual history reset preserves the DOM node and the selected item.
+  await page.evaluate(()=>{window.__ownerQAFieldNode=document.querySelector(
+   '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]');});
+  await page.locator('#ownerDock .owner-dock-history').click();
+  const history=page.locator('#modalRoot .owner-manager');
+  await history.locator('.owner-review-reset').waitFor({state:'visible'});
+  page.once('dialog',dialog=>dialog.accept());
+  await history.locator('.owner-review-reset').first().click();
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]')
+   ?.textContent==='Soul slots',null,{timeout:12000});
+  assert.equal(Object.hasOwn(values,recordKey),false);
+  assert.equal(await page.evaluate(()=>window.__ownerQAFieldNode===document.querySelector(
+   '#stagePicker .stage-rich-fields dt[data-owner-copy-id="field.slots"]')),true,
+   'History reset must not remount equipment');
+  assert.equal((await value().innerText()).trim(),'0/2');
+  await page.locator('#modalRoot .modal button.close').click();
+  // Install a compatible real Soul and edit only the newly exposed caption.
+  await page.locator('#stagePicker [data-stage-tab="souls"]').click();
+  await page.locator('#stagePicker .stage-rich-result').first().click();
+  await page.locator('#stagePicker [data-stage-tab="details"]').click();
+  const caption=page.locator('#stagePicker .stage-gear-souls-head>strong');
+  await caption.waitFor({state:'visible'});
+  assert.equal((await caption.innerText()).trim(),'Socketed Souls');
+  assert.equal((await value().innerText()).trim(),'1/2');
+  await page.locator('#stagePicker .stage-gear-souls-pencil').click();
+  const edit=caption.locator('[data-owner-text-field]');
+  await edit.fill('Installed Souls QA');
+  await edit.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#stagePicker .stage-gear-souls-head>strong')?.textContent==='Installed Souls QA',
+   null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values['guideedit.book.equipment.socketed-souls']),
+   {en:'Installed Souls QA'});
+  assert.equal((await value().innerText()).trim(),'1/2');
+  assert.equal(await page.locator('#stagePicker .stage-gear-soul').count(),1);
   assert.deepEqual(errors,[]);
-  console.log('Chromium owner equipment: full-width edit, RU/EN CAS and Undo passed');
+  console.log('Chromium owner equipment: RU/EN CAS, history reset and Souls caption passed');
  }finally{await context.close()}
 }
