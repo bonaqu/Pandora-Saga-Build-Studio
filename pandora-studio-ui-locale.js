@@ -112,7 +112,11 @@ const libraryCopy=Object.freeze({
  // private build identity and generated URL are never owner-editable.
  libraryShareLocalOnlyHelp:['Сначала откройте эту локальную копию и явно сохраните её через «Перезаписать».','Open this local copy and explicitly save it with “Overwrite” first.'],
  libraryShareCreating:['Создаём ссылку из последней сохранённой облачной версии…','Creating a link from the latest saved cloud build…'],
- libraryShareErrorIntro:['Не удалось создать ссылку:','Could not create link:']
+ libraryShareErrorIntro:['Не удалось создать ссылку:','Could not create link:'],
+ // Editorial labels in received shared-build dialogs. The incoming record
+ // count and another player's build name are generated, never D1 strings.
+ librarySharedImportCountLabel:['Билдов по ссылке:','Builds in link:'],
+ librarySharedUnsavedWarning:['Несохранённые изменения текущего персонажа будут заменены.','The current character’s unsaved changes will be replaced.']
 });
 // Fixed toast notifications are safe authored copy. Exclude runtime details,
  // player build names, network errors and security diagnostics.

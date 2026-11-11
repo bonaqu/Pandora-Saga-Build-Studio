@@ -62,8 +62,21 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   await page.evaluate(()=>{location.hash='#b/W1234567890'});
   const importDialog=page.getByRole('dialog',{name:'Добавить билды по ссылке?'});
   await importDialog.waitFor({state:'visible',timeout:20000});
-  assert.equal(await importDialog.locator('.shared-import-count').innerText(),'Билдов по ссылке: 2.');
-  assert.equal(await importDialog.locator('.shared-import-count [data-owner-copy-key]').count(),0);
+  assert.equal(await importDialog.locator('[data-owner-copy-key="librarySharedImportCountLabel"]').innerText(),
+   'Билдов по ссылке:');
+  assert.equal((await importDialog.locator('.shared-import-count-value').innerText()).trim(),'2.');
+  assert.equal(await importDialog.locator('.shared-import-count [data-owner-copy-key]').count(),1);
+  assert.equal(await importDialog.locator('.shared-import-count-value [data-owner-copy-key]').count(),0);
+  const countKey='guideedit.book.ui.label.library-shared-import-count-label';
+  await importDialog.locator('[data-owner-copy-pencil="librarySharedImportCountLabel"]').click();
+  const countEdit=importDialog.locator('.shared-import-count .account-copy-edit-host [contenteditable]');
+  await countEdit.fill('В ссылке билдов:');
+  await countEdit.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#modalRoot [data-owner-copy-key="librarySharedImportCountLabel"]')?.textContent==='В ссылке билдов:',
+   null,{timeout:12000});
+  assert.equal(JSON.parse(values[countKey]).ru,'В ссылке билдов:');
+  assert.equal((await importDialog.locator('.shared-import-count-value').innerText()).trim(),'2.');
   const importKey='guideedit.book.ui.label.library-shared-import-note';
   const ruNote=importDialog.locator('[data-owner-copy-key="librarySharedImportNote"]');
   await ruNote.waitFor({state:'visible'});
@@ -76,13 +89,25 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
    'Герой и библиотека сохранены; добавим только новые копии.',null,{timeout:12000});
   assert.equal(JSON.parse(values[importKey]).ru,
    'Герой и библиотека сохранены; добавим только новые копии.');
-  assert.equal(await importDialog.locator('.shared-import-count').innerText(),'Билдов по ссылке: 2.');
+  assert.match(await importDialog.locator('.shared-import-count').innerText(),/В ссылке билдов:/);
+  assert.equal((await importDialog.locator('.shared-import-count-value').innerText()).trim(),'2.');
   await importDialog.getByRole('button',{name:'Отмена'}).click();
   await page.locator('#locale [data-locale="en"]').click();
   await page.waitForFunction(()=>document.documentElement.lang==='en',null,{timeout:15000});
   await page.evaluate(()=>{location.hash='#b/W1234567890'});
   const enImport=page.getByRole('dialog',{name:'Add builds from link?'});
   await enImport.waitFor({state:'visible'});
+  const enCount=enImport.locator('[data-owner-copy-key="librarySharedImportCountLabel"]');
+  assert.equal(await enCount.innerText(),'Builds in link:');
+  await enImport.locator('[data-owner-copy-pencil="librarySharedImportCountLabel"]').click();
+  const enCountEdit=enImport.locator('.shared-import-count .account-copy-edit-host [contenteditable]');
+  await enCountEdit.fill('Builds received:');
+  await enCountEdit.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#modalRoot [data-owner-copy-key="librarySharedImportCountLabel"]')?.textContent==='Builds received:',
+   null,{timeout:12000});
+  assert.deepEqual(JSON.parse(values[countKey]),{ru:'В ссылке билдов:',en:'Builds received:'});
+  assert.equal((await enImport.locator('.shared-import-count-value').innerText()).trim(),'2.');
   const enNote=enImport.locator('[data-owner-copy-key="librarySharedImportNote"]');
   assert.equal(await enNote.innerText(),
    'Your current character and saved builds will not change. New copies will be added to My Builds.');
@@ -103,6 +128,18 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
   await openDialog.waitFor({state:'visible'});
   assert.match(await openDialog.locator('.shared-personal-name').innerText(),/Friend private QA hero/);
   assert.equal(await openDialog.locator('.shared-personal-name [data-owner-copy-key]').count(),0);
+  const warnKey='guideedit.book.ui.label.library-shared-unsaved-warning';
+  assert.match(await openDialog.locator('[data-owner-copy-key="librarySharedUnsavedWarning"]').innerText(),
+   /unsaved changes will be replaced/i);
+  await openDialog.locator('[data-owner-copy-pencil="librarySharedUnsavedWarning"]').click();
+  const warnInput=openDialog.locator('.shared-unsaved-warning-row .account-copy-edit-host [contenteditable]');
+  await warnInput.fill('Unsaved character changes will be discarded.');
+  await warnInput.press('Tab');
+  await page.waitForFunction(()=>document.querySelector(
+   '#modalRoot [data-owner-copy-key="librarySharedUnsavedWarning"]')?.textContent===
+   'Unsaved character changes will be discarded.',null,{timeout:12000});
+  assert.equal(JSON.parse(values[warnKey]).en,'Unsaved character changes will be discarded.');
+  assert.match(await openDialog.locator('.shared-personal-name').innerText(),/Friend private QA hero/);
   const openKey='guideedit.book.ui.label.library-shared-open-note';
   await openDialog.locator('[data-owner-copy-pencil="librarySharedOpenNote"]').click();
   const openInput=openDialog.locator('.shared-receiver-copy-row .account-copy-edit-host [contenteditable]');
@@ -113,7 +150,7 @@ export async function runSharedReceiverEditorial655Smoke(browser,base){
    'Your previously saved builds stay untouched.',null,{timeout:12000});
   assert.equal(JSON.parse(values[openKey]).en,'Your previously saved builds stay untouched.');
   assert.match(await openDialog.locator('.shared-personal-name').innerText(),/Friend private QA hero/);
-  assert.equal(writes.length,3);
+  assert.equal(writes.length,6);
   assert.ok(writes.every(row=>row.key.startsWith('guideedit.book.ui.label.library-shared-')));
   await openDialog.getByRole('button',{name:'Cancel'}).click();
   assert.deepEqual(errors,[]);
