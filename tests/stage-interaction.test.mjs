@@ -21,7 +21,7 @@ class FakeElement{
  replaceWith(){}
  replaceChildren(...values){this.children=values}
 }
-const document={createElement:t=>new FakeElement(t),createTextNode:t=>({tag:'#text',textContent:t}),body:new FakeElement('body')};
+const document={createElement:t=>new FakeElement(t),createTextNode:t=>({tag:'#text',textContent:t,attributes:{}}),body:new FakeElement('body')};
 const stage={};
 Function('window','document',load('pandora-studio-equipment-ui.js'))(stage,document);
 stage.PandoraEquipmentPlan=host.PandoraEquipmentPlan;

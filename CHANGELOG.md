@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.631.0 — 2026.11.11.631 · Soul slots status: calm partial/full occupancy colors with accessible RU/EN labels
+
+- Equipment Properties label is now **«Слоты душ» / «Soul slots»**, reusing existing owner-editable D1 key `book.equipment.field.slots`.
+- Keep compact `0/2` / `1/2` / `2/2` presentation; only the used numerator gets subtle amber when partly filled and muted green when full. Empty capacity and zero occupancy remain neutral, without badges or added rows.
+- Screen readers receive current locale occupancy description through `aria-label`; selected physical item capacity, saved Soul contents and game calculations are unchanged.
+- Expanded Node/Chromium tests for actual rendered states, hue distinction, accessible names, and zero-socket behavior.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.630.0 — 2026.11.11.630 · One Slots row shows active Souls / available sockets, or 0 when none
 
 - Equipped item Properties now display a single `Слоты / Slots` stat: `0/2`, `1/2`, `2/2` (used/available). Zero capacity stays `0`, never `0/0`.
