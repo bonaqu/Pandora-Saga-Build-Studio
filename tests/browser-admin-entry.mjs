@@ -23,6 +23,15 @@ export async function runAdminEntrySmoke(browser,base){
     return json({ok:true,readback:true,cleaned:true,
       overrideReadback:true,overrideCleaned:true,activeCatalogUnchanged:true});
   }
+  // Owner export review is mocked; no real PR is created by this scenario.
+  if(path==='/api/admin/catalog/owner-review'&&method==='GET'){
+   calls.push('owner-review');
+   return json({configured:true,count:2,fingerprint:'qa-owner-fingerprint'});
+  }
+  if(path==='/api/admin/catalog/owner-pr'&&method==='POST'){
+   calls.push('owner-pr');
+   return json({url:'https://github.com/bonaqu/Pandora-Saga-Build-Studio/pull/246'});
+  }
   if(path==='/api/admin/catalog/github-status'&&method==='GET')
    return json({configured:true});
   if(path==='/api/admin/catalog/status'&&method==='POST')
@@ -1222,6 +1231,55 @@ export async function runAdminEntrySmoke(browser,base){
   assert.equal(calls.filter(x=>x==='d1-import'||x.startsWith('game-source:')).length,
    beforeCatalogCalls,'History copy editing must not publish the game catalog');
   await history.locator('button.close').click();
+  // Issue #390: real owner-export modal, with independent pencil and D1 save.
+  // The publication endpoint must not run when the owner edits its caption.
+  await ownerPanel.locator('.owner-dock-export').click();
+  const exportModal=page.getByRole('dialog',{name:'Синхронизация энциклопедии с GitHub'});
+  await exportModal.waitFor({state:'visible'});
+  assert.match(await exportModal.locator('.owner-dialog-live-count').innerText(),/2/);
+  const exportIntro=exportModal.locator('[data-owner-copy-section="owner-dialog"]'+
+   '[data-owner-copy-id="githubExplanation"]');
+  const introRow=exportIntro.locator('xpath=..');
+  assert.equal(await introRow.locator('.owner-dialog-pencil').count(),1);
+  const beforePRCalls=calls.filter(x=>x==='owner-pr').length;
+  await introRow.locator('.owner-dialog-pencil').click();
+  const exportInput=introRow.locator('[contenteditable]').first();
+  await exportInput.waitFor({state:'visible'});
+  const russianExport='Проверяй изменения перед экспортом в GitHub. Тестовое пояснение.';
+  await exportInput.fill(russianExport);
+  await exportInput.press('Tab');
+  await page.waitForFunction(value=>
+   document.querySelector('[data-owner-copy-id="githubExplanation"]')?.textContent===value,
+   russianExport,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-explanation')).ru,
+   russianExport);
+  const exportAction=exportModal.locator('.owner-dialog-action-editor');
+  assert.equal(await exportAction.locator('button.owner-dialog-action').count(),1);
+  await exportAction.locator('button.owner-dialog-pencil').click();
+  const exportActionInput=exportAction.locator('[contenteditable]').first();
+  await exportActionInput.waitFor({state:'visible'});
+  await exportActionInput.fill('Создать PR после проверки');
+  await exportActionInput.press('Tab');
+  await page.waitForFunction(()=>
+   document.querySelector('.owner-dialog-action')?.textContent==='Создать PR после проверки',
+   null,{timeout:12000});
+  assert.equal(JSON.parse(townOverrides.get('guideedit.book.owner-dialog.github-create-button')).ru,
+   'Создать PR после проверки');
+  assert.equal(calls.filter(x=>x==='owner-pr').length,beforePRCalls,
+   'The export pencil must never invoke the publication endpoint');
+  await exportModal.locator('button.close').click();
+  // EN localization is independent; editing the RU copy must not overwrite it.
+  await page.locator('#locale [data-locale="en"]').click();
+  await ownerPanel.locator('.owner-dock-export').click();
+  const exportEn=page.getByRole('dialog',{name:'Encyclopedia sync with GitHub'});
+  await exportEn.waitFor({state:'visible'});
+  assert.match(await exportEn.locator('[data-owner-copy-id="githubExplanation"]').innerText(),
+   /public GitHub/);
+  assert.equal(await exportEn.locator('.owner-dialog-action').innerText(),
+   'Create GitHub pull request');
+  assert.match(await exportEn.locator('.owner-dialog-live-count').innerText(),/2/);
+  await exportEn.locator('button.close').click();
+  await page.locator('#locale [data-locale="ru"]').click();
   // #390: exercise the Hero Book's real RU/EN author-copy editor under a
   // logged-in admin with an isolated, mocked Cloudflare D1 override response.
   if(await page.locator('#dockClose').isVisible())await page.locator('#dockClose').click();
