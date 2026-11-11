@@ -98,7 +98,7 @@ test('interactive links are safe UI controls with explicit non-published handlin
 
 test('admin filters expose link and invisible changes and preserve expanded context',()=>{
  const workbench=file('pandora-os-catalog-workbench.js');
- assert.match(workbench,/\['links','Игровые ссылки'\]/);
+ assert.match(workbench,/\['links','Игровые ссылки','Game links'\]/);
  assert.match(workbench,/\['sameVisible','Текст совпадает'\]/);
  assert.match(workbench,/expandedDetails\.has\(change\.id\)/);
  assert.match(workbench,/expandedReferences\.has\(refKey\)/);
