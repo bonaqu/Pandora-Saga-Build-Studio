@@ -111,11 +111,11 @@ test('local export bridge checks for uncommitted catalog modifications before ap
 });
 
 test('owner sync dashboard supports kind and approval filters without auto-acceptance',()=>{
- assert.match(workbench,/\['added','Новые'\]/);
- assert.match(workbench,/\['changed','Изменённые'\]/);
- assert.match(workbench,/\['removed','Удалённые'\]/);
- assert.match(workbench,/\['accepted','Выбранные'\]/);
- assert.match(workbench,/\['declined','Не выбраны'\]/);
+ assert.match(workbench,/\['added','Новые','New'\]/);
+ assert.match(workbench,/\['changed','Изменённые','Changed'\]/);
+ assert.match(workbench,/\['removed','Удалённые','Removed'\]/);
+ assert.match(workbench,/\['accepted','Выбранные','Selected'\]/);
+ assert.match(workbench,/\['declined','Не выбраны','Not selected'\]/);
  assert.match(workbench,/\.filter\(matchesFilter\)/);
  assert.match(workbench,/Выбрать найденное/);
  assert.match(workbench,/Ни одно изменение не принято автоматически/);
