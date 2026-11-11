@@ -1,4 +1,4 @@
 {
-  "release": "2026.11.11.635",
-  "notes": "Saved-build card layout, centered disclosure arrows, softer text-field focus and clearer D1/GitHub admin tools"
+  "release": "2026.11.11.636",
+  "notes": "Controlled production D1 CAS acceptance with two independent temporary admin sessions and verified cleanup"
 }
