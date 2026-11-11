@@ -12,7 +12,7 @@ test('details count only active Souls and never mutate stored socket data',()=>{
  assert.match(equipment,/socketedCount:plan\.asSocketArray\(souls\)\.slice\(0,Math\.max\(0,cap\?\?0\)\)/);
  assert.match(equipment,/\.filter\(Boolean\)\.length,tables:gameTables/);
  assert.match(equipment,/const displayedSlots=Number\.isInteger\(context\?\.capacity\)&&context\.capacity>0\?/);
- assert.match(equipment,/socketedCount\+'\/'\+context\.capacity:socketCapacity/);
+ assert.match(equipment,/activeSockets\+'\/'\+context\.capacity:socketCapacity/);
  assert.doesNotMatch(equipment,/fieldNames\.push\(\['insertedSouls'/);
  assert.doesNotMatch(equipment,/rows\.push\(\[tr\('Вставлено душ'/);
  assert.doesNotMatch(equipment,/souls\.splice\(/);
