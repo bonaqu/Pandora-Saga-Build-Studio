@@ -49,7 +49,7 @@ export async function runBuildComparisonSmoke(browser,base){
      return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};
     const buttons=[...card.querySelectorAll('.build-card-actions>button')];
     return{card:rect(card),compare:rect(card.querySelector('.build-card-compare')),
-     actions:buttons.map(rect),labels:buttons.map(node=>node.textContent.trim()),
+     actions:buttons.map(rect),labels:buttons.map(node=>node.querySelector('.build-card-action-label')?.textContent.trim()),
      compareAccessible:Boolean(card.querySelector('.build-card-compare input[aria-label]'))};
    });
    assert.equal(metrics.actions.length,4);
@@ -261,7 +261,7 @@ export async function runSavedBuildEnglishSmoke(browser,base){
    'Cloud refresh must retain the drawer scroll offset');
   assert.equal(await page.locator('.build-card:visible').count(),1);
   await search.fill('');
-  await hero.getByRole('button',{name:'↻ Overwrite'}).click();
+  await hero.getByRole('button',{name:'Overwrite',exact:true}).click();
   const warning=await hero.locator('.build-overwrite-choice p').innerText();
   assert.match(warning,/^Overwrite saved build “Сияние героя”/);
   assert.match(warning,/cannot be restored\.$/);
