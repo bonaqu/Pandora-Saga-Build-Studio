@@ -6,7 +6,8 @@ const account=readFileSync(new URL('../pandora-studio-account-ui.js',import.meta
 test('guest and account saved builds cannot mix when switching session identities',()=>{
  assert.match(account,/username:\(\)=>activeSession\(\)\?session\.username:null/);
  assert.match(account,/if\(validSession\(session\)\)return true/);
- assert.match(app,/activateLibraryScope\(\{carry:Boolean\(register\)\}\)/);
+ assert.match(app,/activateLibraryScope\(\);/);
+ assert.doesNotMatch(app,/activateLibraryScope\(\{carry:Boolean\(register\)\}\)/);
  assert.match(app,/onLogout:\(\)=>\{[\s\S]*?activateLibraryScope\(\)/);
  assert.doesNotMatch(app,/localStorage\.setItem\('ps-preaccount-library\.v1'/);
  assert.match(app,/PandoraBuildScope\.migrateLegacyGuest\(localStorage,tabGuestSecret\)/);

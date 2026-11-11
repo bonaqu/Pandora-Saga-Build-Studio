@@ -96,6 +96,12 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    await page.waitForFunction(name=>
     localStorage.getItem('ps-build-owner-scope.v1')==='account:'+name,
     username,{timeout:20000});
+   if(register){
+    // A new account cannot complete the guest-draft switch until its one-time
+    // recovery code is acknowledged. Confirm it before checking the draft.
+    await panel.locator('.account-recovery').waitFor({state:'visible'});
+    await panel.getByRole('button',{name:'Я сохранил код'}).click();
+   }
    if(accountDraft){
     // Both drafts differ: only a deliberate choice may replace account work.
     const chooser=page.getByRole('dialog',{name:'Продолжить персонажа?'});
@@ -179,9 +185,8 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    }else assert.deepEqual(writes,[],
     'Signing in, registration and choosing the existing draft cannot auto-save');
    if(register){
-    await panel.locator('.account-recovery').waitFor({state:'visible'});
-    await panel.getByRole('button',{name:'Я сохранил код'}).click();
     assert.equal(await page.locator('#levelOut').textContent(),'27');
+    assert.equal(writes.length,0,'Registration does not auto-upload old or current builds');
    }
    if(link){
     const preview=page.getByRole('dialog',{name:'Открыть билд по ссылке?'});

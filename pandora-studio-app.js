@@ -6368,12 +6368,9 @@ function newBlankBuild(){
  return true;
 }
 let buildSearchQuery='',newBuildPromptOpen=false,newBuildDraftName=null;
-// The browser secret is effectively a password for this account-free D1 library.
-// Reveal or switch it only after a deliberate user interaction.
-// Legacy guest keys are recovery credentials, not normal library sessions.
-// A signed-in player can explicitly preview and copy those older saves.
-// Retired legacy-import UI: guest builds are never migrated into an account.
-// A guest's current character remains a local draft until the user saves it.
+// Retired legacy-import UI: old guest builds stay in their original local
+// backup and cannot be migrated into an account through the player interface.
+// Only the character being actively edited can continue as an unsaved draft.
 // One account entry point for saved builds and incoming build links.
 let returnToBuildsAfterAuth=false,pendingGuestDraft=null;
 function buildSignInCard({shared=false}={}){
