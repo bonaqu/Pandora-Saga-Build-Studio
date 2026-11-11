@@ -61,7 +61,7 @@ function fixture(issue=()=>[],language='ru'){
   'equippedRecord','equipmentIssue','itemIcon','itemName','selectedSlot','stageSlotPickerOpen',
   'selectedSocket','gearMode','stageSlotQuery','stageSoulQuery','stageSlotShown',
   'stageSlotView','renderStagePicker','catalog','gameTables',
-  'hideStageRailWarning','showStageRailWarning',source+'\nreturn renderSlotRails;')(
+  'hideStageRailWarning','showStageRailWarning','closeStageGearMenu',source+'\nreturn renderSlotRails;')(
   window,state,$,slots,slotKeys,h,labels.gearSlotName,labels.gearIssueLabel,language,
   i=>h('span',{class:'slot-glyph',text:slots[i][1]}),
   i=>records[i]||null,issue,()=>null,
@@ -69,7 +69,7 @@ function fixture(issue=()=>[],language='ru'){
   'choose',()=>{},{souls:{
    '41':{id:41,name:'Душа меткости',desc:'Точность +2'},
    '42':{id:42,name:'Душа стойкости',desc:'Защита +1'}
-  }},{weaponPlus:{}},()=>{},(_badge,message)=>{lastWarning=message}
+  }},{weaponPlus:{}},()=>{},(_badge,message)=>{lastWarning=message},()=>{}
  );
  render();
  return{left,right,attached,get dismissed(){return dismiss},get warning(){return lastWarning}};

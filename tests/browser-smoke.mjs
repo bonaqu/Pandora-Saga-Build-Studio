@@ -15,6 +15,7 @@ import {runDeletedBuildRecoverySmoke} from './browser-deleted-recovery.mjs';
 import {runEquipmentEligibilitySmoke} from './browser-equipment-eligibility.mjs';
 import {runEquipmentLocaleSmoke} from './browser-equipment-locale.mjs';
 import {runEquippedSoulCapacitySmoke,runSavedSocketRecoverySmoke} from './browser-equipped-soul-capacity.mjs';
+import {runEquipmentQuickMenuSmoke} from './browser-equipment-quick-menu.mjs';
 import {runRefinementTooltipSmoke} from './browser-refinement-tooltip.mjs';
 import {runItemHoverDelaySmoke} from './browser-item-hover-delay.mjs';
 import {runLegacySkillCapSmoke} from './browser-legacy-skill-cap.mjs';
@@ -48,13 +49,75 @@ import {runEncyclopediaPerformanceSmoke} from './browser-encyclopedia-performanc
 
 const base='http://127.0.0.1:4173';
 const argv=new Set(process.argv.slice(2));
-for(const arg of argv)if(!['--quick','--serial'].includes(arg))
+for(const arg of argv)if(!['--quick','--serial'].includes(arg)&&
+ !/^--only=[a-z0-9-]+$/.test(arg))
  throw Error('Unsupported browser test option '+arg);
+const onlyOptions=[...argv].filter(arg=>arg.startsWith('--only='));
+if(onlyOptions.length>1)throw Error('Only one browser scenario may be selected');
+const only=onlyOptions[0]?.slice('--only='.length)||null;
 const quick=argv.has('--quick'),concurrency=argv.has('--serial')?1:3;
+if(only&&quick)throw Error('Single-scenario smoke cannot be combined with quick mode');
 const errors=[];
+const scenarios=[
+  ['build-account-gate',runBuildAuthGateSmoke],
+  ['modal-keyboard',runModalKeyboardSmoke],
+  ['shared-library-import',runSharedLibraryImportSmoke],
+  ['draft-persistence-warning',runDraftPersistenceWarningSmoke],
+  ['guest-draft-continuity',runGuestDraftContinuitySmoke],
+  ['legacy-build-import',runLegacyImportSmoke],
+  ['share-link',runShareLinkSmoke],
+  ['cloud-conflict',runCloudConflictSmoke],
+  ['cloud-save-failure',runCloudSaveFailureSmoke],
+  ['deleted-build-recovery',runDeletedBuildRecoverySmoke],
+  ['equipment-eligibility',runEquipmentEligibilitySmoke],
+  ['equipment-locale',runEquipmentLocaleSmoke],
+  ['per-item-soul-capacity',runEquippedSoulCapacitySmoke],
+  ['equipment-quick-menu',runEquipmentQuickMenuSmoke],
+  ['saved-copy-socket-recovery',runSavedSocketRecoverySmoke],
+  ['equipment-forge-bonuses',runRefinementTooltipSmoke],
+  ['item-preview-delay',runItemHoverDelaySmoke],
+  ['legacy-class-cap',runLegacySkillCapSmoke],
+  ['innate-l1-mastery',runInnateSkillMasterySmoke],
+  ['hero-book-live-recalc',runHeroBookLiveRecalcSmoke],
+  ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
+  ['two-handed-gear',runTwoHandedSmoke],
+  ['one-piece-outfit-and-soul-scroll',runOutfitSoulScrollSmoke],
+  ['future-level-gear',runFutureGearSmoke],
+  ['manual-saved-overwrite',runSavedAutosaveSmoke],
+  ['account-login',runAccountSmoke],
+  ['account-local-recovery',runAccountLocalRecoveryFailureSmoke],
+  ['account-late-bootstrap',runAccountLateBootstrapSmoke],
+  ['empty-account-reconnect',runEmptyAccountCloudReconnectSmoke],
+  ['account-feedback-race',runAccountFeedbackRaceSmoke],
+  ['account-isolation',runAccountLibraryIsolationSmoke],
+  ['cross-tab-account',runCrossTabAccountIsolationSmoke],
+  ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
+  ['honor-guide',runHonorGuideSmoke],
+  ['build-comparison',runBuildComparisonSmoke],
+  ['saved-builds-english',runSavedBuildEnglishSmoke],
+  ['effect-items',runEffectItemsSmoke],
+  ['wiki-skill-filters',runWikiSkillFiltersSmoke],
+  ['wiki-skill-label-editor',runWikiSkillLabelEditorSmoke],
+  ['ui-content-inline',runUIContentInlineSmoke],
+  ['owner-equipment-copy-width',runOwnerEquipmentInlineSmoke],
+  ['wiki-owner-english-sync',runWikiOwnerEnglishSyncSmoke],
+  ['wiki-spawn-replace',runWikiSpawnReplacementSmoke],
+  ['wiki-icons-offline',runWikiIconManifestFallbackSmoke],
+  ['chest-reward-layout',runChestRewardLayoutSmoke],
+  ['hidden-admin-entry',runAdminEntrySmoke],
+  ['inline-skill-milestones',runInlineMilestonesSmoke]
+ ];
 let browser;
 async function main(){
  browser=await chromium.launch({headless:true});
+ if(only){
+  const found=scenarios.filter(([name])=>name===only);
+  if(found.length!==1)throw Error('Unknown browser scenario '+only);
+  await runIndependentSmokes(found,browser,base,{concurrency:1});
+  console.log('Targeted Chromium scenario passed: '+only+
+   ' (manual diagnosis only; does not replace full PR acceptance)');
+  return;
+ }
  const context=await browser.newContext({viewport:{width:1365,height:850}});
  // Test the bundled OS snapshot, not remote Cloudflare or third-party services.
  await context.route('**/*',route=>{
@@ -363,55 +426,8 @@ async function main(){
  // Every smoke creates its own isolated browser context and network stubs.
  // Execute at most three at once: this reduces wall time without risking
  // cross-test localStorage/account contamination or high 4K screenshot memory.
- const scenarios=[
-  ['build-account-gate',runBuildAuthGateSmoke],
-  ['modal-keyboard',runModalKeyboardSmoke],
-  ['shared-library-import',runSharedLibraryImportSmoke],
-  ['draft-persistence-warning',runDraftPersistenceWarningSmoke],
-  ['guest-draft-continuity',runGuestDraftContinuitySmoke],
-  ['legacy-build-import',runLegacyImportSmoke],
-  ['share-link',runShareLinkSmoke],
-  ['cloud-conflict',runCloudConflictSmoke],
-  ['cloud-save-failure',runCloudSaveFailureSmoke],
-  ['deleted-build-recovery',runDeletedBuildRecoverySmoke],
-  ['equipment-eligibility',runEquipmentEligibilitySmoke],
-  ['equipment-locale',runEquipmentLocaleSmoke],
-  ['per-item-soul-capacity',runEquippedSoulCapacitySmoke],
-  ['saved-copy-socket-recovery',runSavedSocketRecoverySmoke],
-  ['equipment-forge-bonuses',runRefinementTooltipSmoke],
-  ['item-preview-delay',runItemHoverDelaySmoke],
-  ['legacy-class-cap',runLegacySkillCapSmoke],
-  ['innate-l1-mastery',runInnateSkillMasterySmoke],
-  ['hero-book-live-recalc',runHeroBookLiveRecalcSmoke],
-  ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
-  ['two-handed-gear',runTwoHandedSmoke],
-  ['one-piece-outfit-and-soul-scroll',runOutfitSoulScrollSmoke],
-  ['future-level-gear',runFutureGearSmoke],
-  ['manual-saved-overwrite',runSavedAutosaveSmoke],
-  ['account-login',runAccountSmoke],
-  ['account-local-recovery',runAccountLocalRecoveryFailureSmoke],
-  ['account-late-bootstrap',runAccountLateBootstrapSmoke],
-  ['empty-account-reconnect',runEmptyAccountCloudReconnectSmoke],
-  ['account-feedback-race',runAccountFeedbackRaceSmoke],
-  ['account-isolation',runAccountLibraryIsolationSmoke],
-  ['cross-tab-account',runCrossTabAccountIsolationSmoke],
-  ['cross-tab-guest',runCrossTabGuestIsolationSmoke],
-  ['honor-guide',runHonorGuideSmoke],
-  ['build-comparison',runBuildComparisonSmoke],
-  ['saved-builds-english',runSavedBuildEnglishSmoke],
-  ['effect-items',runEffectItemsSmoke],
-  ['wiki-skill-filters',runWikiSkillFiltersSmoke],
-  ['wiki-skill-label-editor',runWikiSkillLabelEditorSmoke],
-  ['ui-content-inline',runUIContentInlineSmoke],
-  ['owner-equipment-copy-width',runOwnerEquipmentInlineSmoke],
-  ['wiki-owner-english-sync',runWikiOwnerEnglishSyncSmoke],
-  ['wiki-spawn-replace',runWikiSpawnReplacementSmoke],
-  ['wiki-icons-offline',runWikiIconManifestFallbackSmoke],
-  ['chest-reward-layout',runChestRewardLayoutSmoke],
-  ['hidden-admin-entry',runAdminEntrySmoke],
-  ['inline-skill-milestones',runInlineMilestonesSmoke]
- ];
- const quickCases=new Set(['build-account-gate','modal-keyboard','shared-library-import','draft-persistence-warning','guest-draft-continuity','share-link','cloud-conflict','cloud-save-failure','cross-tab-account','account-feedback-race','equipment-locale','per-item-soul-capacity','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
+
+ const quickCases=new Set(['build-account-gate','modal-keyboard','shared-library-import','draft-persistence-warning','guest-draft-continuity','share-link','cloud-conflict','cloud-save-failure','cross-tab-account','account-feedback-race','equipment-locale','per-item-soul-capacity','equipment-quick-menu','equipment-forge-bonuses','legacy-class-cap','innate-l1-mastery','hero-book-live-recalc','origin-shared-snapshot',
   'manual-saved-overwrite','account-late-bootstrap','empty-account-reconnect','account-isolation','inline-skill-milestones',
   'build-comparison','chest-reward-layout','wiki-skill-filters','wiki-skill-label-editor','ui-content-inline','owner-equipment-copy-width','wiki-owner-english-sync','wiki-spawn-replace','wiki-icons-offline']);
  const selected=quick?scenarios.filter(([name])=>quickCases.has(name)):scenarios;

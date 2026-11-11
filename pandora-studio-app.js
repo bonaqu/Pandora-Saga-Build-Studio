@@ -1284,8 +1284,138 @@ function showStageRailWarning(badge,message){
  node.style.left=left+'px';node.style.top=top+'px';
  stageRailWarningPopover=node;
 }
+// One context menu for all 14 rail slots, mounted outside clipped portrait
+// artwork. A right click never mutates equipment until an action is chosen.
+let stageGearMenu=null,stageGearMenuAnchor=null;
+function closeStageGearMenu(restoreFocus=false){
+ const anchor=stageGearMenuAnchor;
+ stageGearMenu?.remove();stageGearMenu=null;stageGearMenuAnchor=null;
+ if(restoreFocus&&anchor?.isConnected)anchor.focus({preventScroll:true});
+}
+function openStageEquipmentSlot(index,view='auto'){
+ closeStageGearMenu();
+ const visual=window.PandoraUIPlanner.visualEquipment(state.equipment,index,catalog.equipment);
+ const shared=Boolean(visual.shared);
+ selectedSlot=shared&&(view==='properties'||view==='souls')?visual.sourceSlot:index;
+ selectedSocket=0;gearMode='equipment';
+ stageSlotQuery='';stageSoulQuery='';stageSoulScrollTop=0;stageSlotShown=48;
+ stageSlotView=view==='auto'?
+  (shared||!state.equipment?.[index]?'choose':'details'):view;
+ stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(view==='choose');
+}
+function unequipStageEquipmentSlot(index){
+ const equipped=state.equipment?.[index],removed=equippedRecord(index);
+ if(!equipped)return;
+ const ui=window.PandoraUIPlanner,previousEquipment={...state.equipment};
+ if(index===5&&ui.occupiesBodyAndLegs(equippedRecord(3))){
+  delete state.equipment[3];delete state.equipment[5];
+  if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
+  state.displacedLegwear=null;
+ }else{
+  delete state.equipment[index];
+  if(index===3&&ui.occupiesBodyAndLegs(removed)){
+   if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
+   state.displacedLegwear=null;
+  }
+ }
+ window.PandoraEquipmentPlan.clearChangedEquipmentSouls(state,previousEquipment);
+ stageSlotView='choose';persist();render();
+}
+function openStageGearMenu(index,sourceSlot,event,anchor){
+ if(!state.equipment?.[sourceSlot])return;
+ closeStageGearMenu();hideStageRailWarning();
+ window.PandoraStageItemUI.dismissPreview();
+ const equipped=state.equipment[sourceSlot],record=equippedRecord(sourceSlot);
+ const cap=window.PandoraEquipmentPlan.equippedSocketCapacity(
+  state,sourceSlot,equipped,record);
+ const canManageSouls=Boolean(record&&window.PandoraEquipmentPlan.canSocket(
+  slotKeys[sourceSlot],record,cap));
+ const tr=(ru,en)=>lang==='en'?en:ru;
+ const menu=h('div',{class:'stage-gear-context-menu',role:'menu',
+  'aria-label':tr('Действия с надетой вещью','Equipped item actions'),
+  'data-gear-context-slot':String(index)});
+ const title=h('div',{class:'stage-gear-context-heading'},[
+  h('small',{text:gearSlotName(index)}),
+  h('strong',{text:itemName(equipped)})
+ ]);
+ menu.append(title);
+ const actions=[
+  ['properties','◇','Свойства','Properties',false],
+  ['souls','◈','Управление душами','Manage Souls',!canManageSouls],
+  ['replace','⇄','Выбрать другую вещь','Choose another item',false],
+  ['remove','×','Снять вещь','Unequip item',false]
+ ];
+ for(const [id,glyph,ru,en,disabled] of actions){
+  const label=h('span',{class:'stage-gear-context-caption',
+   text:equipmentCopy('context.'+id,ru,en)});
+  const button=h('button',{type:'button',role:'menuitem',
+   class:'stage-gear-context-action'+(id==='remove'?' is-remove':''),
+   'data-gear-context-action':id,'tabindex':'-1',
+   disabled,
+   ...(disabled?{title:tr('У предмета нет доступных слотов душ. Добавить их можно в свойствах.',
+    'No available Soul slots. Configure them in Properties.')}:{ }),
+   onclick:e=>{
+    if(e.target.closest?.('[data-owner-text-field]'))return;
+    closeStageGearMenu();
+    if(id==='remove'){
+     selectedSlot=sourceSlot;stageSlotPickerOpen=false;
+     unequipStageEquipmentSlot(sourceSlot);
+     focusSelectedSlot();return;
+    }
+    openStageEquipmentSlot(id==='replace'?index:sourceSlot,
+     id==='replace'?'choose':id==='souls'?'souls':'details');
+   }
+  },[h('span',{class:'stage-gear-context-icon','aria-hidden':'true',text:glyph}),label]);
+  const wrap=h('div',{class:'stage-gear-context-row'},[button]);
+  if(adminEditing&&adminToken){
+   equipmentCopyLabel(label,'context.'+id,ru,en);
+   const pencil=h('button',{type:'button',class:'stage-gear-context-pencil',text:'✎',
+    'aria-label':tr('Редактировать название: ','Edit caption: ')+equipmentCopy('context.'+id,ru,en),
+    onclick:e=>{
+     e.preventDefault();e.stopPropagation();
+     label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+    }});
+   wrap.append(pencil);
+  }
+  menu.append(wrap);
+ }
+ document.body.append(menu);stageGearMenu=menu;stageGearMenuAnchor=anchor;
+ const rect=menu.getBoundingClientRect(),box=anchor.getBoundingClientRect();
+ const x=Number.isFinite(event?.clientX)&&event.clientX>0?event.clientX:box.right;
+ const y=Number.isFinite(event?.clientY)&&event.clientY>0?event.clientY:box.bottom;
+ menu.style.left=Math.max(8,Math.min(x,window.innerWidth-rect.width-8))+'px';
+ menu.style.top=Math.max(8,Math.min(y,window.innerHeight-rect.height-8))+'px';
+ menu.querySelector('[role="menuitem"]:not(:disabled)')?.focus({preventScroll:true});
+}
+document.addEventListener('pointerdown',event=>{
+ if(stageGearMenu&&!stageGearMenu.contains(event.target))closeStageGearMenu();
+},true);
+document.addEventListener('contextmenu',event=>{
+ if(stageGearMenu&&!event.target.closest?.('.equipment-slot.equipped')&&
+  !stageGearMenu.contains(event.target))closeStageGearMenu();
+},true);
+document.addEventListener('scroll',()=>closeStageGearMenu(),true);
+window.addEventListener('resize',()=>closeStageGearMenu());
+window.addEventListener('blur',()=>closeStageGearMenu());
+document.addEventListener('keydown',event=>{
+ if(!stageGearMenu||!stageGearMenu.contains(event.target))return;
+ if(event.target.closest?.('[data-owner-text-field]'))return;
+ if(event.key==='Escape'){
+  event.preventDefault();event.stopImmediatePropagation();
+  closeStageGearMenu(true);return;
+ }
+ if(event.key==='Tab'){closeStageGearMenu();return}
+ if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+ const choices=[...stageGearMenu.querySelectorAll('[role="menuitem"]:not(:disabled)')];
+ if(!choices.length)return;
+ event.preventDefault();event.stopPropagation();
+ const at=choices.indexOf(document.activeElement);
+ const next=event.key==='Home'?0:event.key==='End'?choices.length-1:
+  (at+(event.key==='ArrowDown'?1:-1)+choices.length)%choices.length;
+ choices[next].focus({preventScroll:true});
+},true);
 function renderSlotRails(){
- hideStageRailWarning();
+ closeStageGearMenu();hideStageRailWarning();
  window.PandoraStageItemUI.dismissPreview();
  const plan=window.PandoraEquipmentPlan,ui=window.PandoraUIPlanner;
  for(const[id,indexes]of[['railLeft',[0,2,3,4,5,6]],['railRight',[1,7,8,9,10,11,12,13]]]){
@@ -1310,13 +1440,17 @@ function renderSlotRails(){
    const button=h('button',{class:'equipment-slot'+(item?' equipped':'')+(shared?' shared-outfit':'')+
     (selectedSlot===i?' selected':'')+(report.excess?' socket-conflict':'')+(issue.length?' unavailable':''),
     'data-slot-index':String(i),'aria-expanded':String(stageSlotPickerOpen&&selectedSlot===i),'aria-controls':'stagePicker',
-    'aria-label':tooltip,onclick:()=>{
-     selectedSlot=i;selectedSocket=0;gearMode='equipment';
-     stageSlotQuery='';stageSoulQuery='';stageSoulScrollTop=0;stageSlotShown=48;
-     // A projected pants slot remains selectable: equipping pants removes
-     // the shared armor instead of locking the entire slot.
-     stageSlotView=shared?'choose':state.equipment?.[i]?'details':'choose';
-     stageSlotPickerOpen=true;renderSlotRails();renderStagePicker(true);
+    'aria-label':tooltip,
+    ...(item?{'aria-haspopup':'menu','aria-keyshortcuts':'Shift+F10'}:{}),
+    onclick:()=>openStageEquipmentSlot(i),
+    oncontextmenu:event=>{
+     if(!item)return;event.preventDefault();
+     openStageGearMenu(i,sourceSlot,event,button);
+    },
+    onkeydown:event=>{
+     if(!item||!(event.key==='ContextMenu'||event.shiftKey&&event.key==='F10'))return;
+     event.preventDefault();event.stopPropagation();
+     openStageGearMenu(i,sourceSlot,event,button);
     }});
    button.append(slotVisual(i,item,sourceSlot),h('small',{text:item?itemName(item):gearSlotName(i)}));
    if(shared)button.append(h('span',{class:'stage-shared-mark',text:'🔒',
@@ -1643,22 +1777,12 @@ function renderStagePicker(focusSearch=false){
  const list=h('div',{class:'stage-picker-list',role:'list'});
  const more=h('button',{type:'button',class:'stage-picker-more'});
  const remove=h('button',{type:'button',text:lang==='en'?'Unequip item':'Снять предмет',
-  disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),onclick:()=>{
-   const removed=equippedRecord(selectedSlot),ui=window.PandoraUIPlanner;
-   const previousEquipment={...state.equipment};
-   if(selectedSlot===5&&ui.occupiesBodyAndLegs(equippedRecord(3))){
-    delete state.equipment[3];delete state.equipment[5];
-    if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
-    state.displacedLegwear=null;
-   }else{
-    delete state.equipment[selectedSlot];
-    if(selectedSlot===3&&ui.occupiesBodyAndLegs(removed)){
-     if(state.displacedLegwear)state.equipment[5]=state.displacedLegwear;
-     state.displacedLegwear=null;
-    }
-   }
-   window.PandoraEquipmentPlan.clearChangedEquipmentSouls(state,previousEquipment);
-   stageSlotView='choose';persist();render();
+  disabled:!equipped&&!(selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3))),
+  onclick:()=>{
+   // Use the exact same removal semantics as the rail context menu.
+   if(!equipped&&selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3)))
+    unequipStageEquipmentSlot(3);
+   else unequipStageEquipmentSlot(selectedSlot);
   }});
  const bottom=h('div',{class:'stage-picker-foot'},[remove,more]);
  const isSharedPants=selectedSlot===5&&window.PandoraUIPlanner.occupiesBodyAndLegs(equippedRecord(3));
