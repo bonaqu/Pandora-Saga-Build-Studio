@@ -108,7 +108,7 @@ test('admin UI explains autosave semantics and every encyclopedia type offers ed
  assert.match(app,/За этот сеанс/);
  assert.match(app,/owner-workflow-guide/);
  assert.match(app,/Отдельной кнопки сохранения нет/);
- assert.match(app,/PR правок/);
+ assert.match(app,/Экспорт в GitHub/);
  assert.match(app,/wiki-map-create-npc/);
  assert.match(app,/wiki-skill-add-field/);
  assert.match(app,/wiki-owner-delete-record/);

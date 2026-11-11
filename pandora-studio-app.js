@@ -6603,24 +6603,36 @@ function renderBuilds(root){
    if(expand){expand.setAttribute('aria-expanded','true');
     expand.textContent=lang==='en'?'Collapse':'Скрыть сравнение'}
   };
-  box.append(h('h3',{text:b.name}),
-   ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
-    text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
-   h('p',{
-   text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
-    (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
-   h('label',{},[check,h('span',{text:' Сравнить'})]),
+  // Keep the compare selector separate from the four one-row actions.
+  // Build names remain user-owned; only static labels use D1 editorial copy.
+  const cardHead=h('div',{class:'build-card-head'},[
+   h('h3',{class:'build-card-title',text:b.name}),
+   h('label',{class:'build-card-compare'},[
+    check,h('span',{text:'Сравнить'})
+   ])
+  ]);
+  const cardActions=h('div',{class:'build-card-actions'},[
    h('button',{class:'button-action primary',text:'Открыть',onclick:()=>{
     if(!unsavedBuild()){openSavedBuild(b);return}
     openChoice.hidden=!openChoice.hidden;
    }}),
-   ...[h('button',{class:'button-action primary',
-     text:activeBuildId===b.id?'↻ Перезаписать':'↻ Сохранить в этот билд',onclick:()=>{
+   h('button',{class:'button-action',
+    text:activeBuildId===b.id?'↻ Перезаписать':'↻ Сохранить в этот билд',onclick:()=>{
      overwriteChoice.hidden=!overwriteChoice.hidden;
      if(!overwriteChoice.hidden)overwriteChoice.querySelector('button')?.focus({preventScroll:true});
-    }})],
-    h('button',{class:'button-action',text:'🔗 Поделиться',onclick:()=>createShared(b,shareSlot)}),
-   h('button',{class:'button-action',text:'Удалить',onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}}));
+    }}),
+   h('button',{class:'button-action',text:'🔗 Поделиться',
+    onclick:()=>createShared(b,shareSlot)}),
+   h('button',{class:'button-action build-card-delete',text:'Удалить',
+    onclick:()=>{deleteChoice.hidden=!deleteChoice.hidden}})
+  ]);
+  box.append(cardHead,
+   ...(b.localOnly===true?[h('p',{class:'build-local-only-note',
+    text:'Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»'})]:[]),
+   h('p',{class:'build-card-meta',
+    text:(races[b.data?.race]?.[lang==='en'?1:0]||'?')+' · '+
+     (jobs[b.data?.job]||'?')+' · '+(lang==='en'?'Lv. ':'ур. ')+(b.data?.level||'?')}),
+   cardActions);
   box.append(openChoice);
   box.append(deleteChoice);
   box.append(overwriteChoice);
@@ -7416,8 +7428,8 @@ function refreshOwnerUI(){
   h('div',{class:'owner-workflow-glossary'},[
    h('p',{},[h('strong',{text:'Все правки'}),document.createTextNode(' — посмотреть сохранённые изменения и вернуть исходное.')]),
    h('p',{},[h('strong',{text:'Игровой каталог'}),document.createTextNode(' — отдельная сверка новых данных с сервером игры; для ручных правок не нужен.')]),
-   h('p',{},[h('strong',{text:'PR правок'}),document.createTextNode(' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.')]),
-   h('p',{},[h('strong',{text:'Проверить запись D1'}),document.createTextNode(' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.')]),
+   h('p',{},[h('strong',{text:'Экспорт в GitHub'}),document.createTextNode(' — необязательный экспорт изменений в GitHub для проверки и объединения. Данные в D1 уже сохранены.')]),
+   h('p',{},[h('strong',{text:'Проверить сохранение'}),document.createTextNode(' — безопасная запись и удаление случайных временных тестовых записей; пользовательские данные не затрагиваются.')]),
    h('p',{},[h('strong',{text:'Завершить'}),document.createTextNode(' — только скрыть инструменты редактирования, не удалить изменения.')])
   ])
  ]);
@@ -7426,13 +7438,17 @@ function refreshOwnerUI(){
    text:'Открыть энциклопедию',onclick:()=>changeTab('wiki')}),
   h('button',{type:'button',text:'↶ Отменить','data-owner-undo':'',onclick:undoOwnerEdit,
    title:'Отменить последнее действие в этом сеансе в Cloudflare D1'}),
-  h('button',{type:'button',text:'Все правки',onclick:showOverrideManager,
+  h('button',{type:'button',class:'owner-dock-history',text:'Все правки',onclick:showOverrideManager,
    title:'Просмотр всех сохранённых переопределений в D1'}),
-  h('button',{type:'button',text:'Игровой каталог',onclick:showCatalogImport,
+  h('button',{type:'button',class:'owner-dock-catalog',text:'Игровой каталог',onclick:showCatalogImport,
    title:'Отдельное обновление снимка игрового каталога'}),
+  h('button',{type:'button',class:'owner-en-sync','data-owner-en-sync':'',
+   text:'EN-переводы',onclick:showOwnerEnglishReview,
+   title:'Проверить и записать готовые английские переводы русских правок'}),
+  h('span',{class:'owner-dock-secondary-label',text:'Дополнительно'}),
   h('button',{type:'button',class:'owner-dock-d1-check',
-   text:'Проверить запись D1',
-   title:'Записать и удалить две случайные временные тестовые записи в D1',
+   text:'Проверить сохранение',
+   title:'Безопасно записать, прочитать и удалить временные тестовые записи в D1',
    onclick:async function(){
     if(editIsSaving||wikiLabelPendingWrites>0||ownerSaveState==='saving')return;
     this.disabled=true;
@@ -7447,11 +7463,8 @@ function refreshOwnerUI(){
      showStudioToast('Не удалось проверить запись в D1: '+error.message,'warning');
     }finally{if(this.isConnected)this.disabled=false}
    }}),
-  h('button',{type:'button',text:'PR правок',onclick:showOwnerGitHubExport,
+  h('button',{type:'button',class:'owner-dock-export',text:'Экспорт в GitHub',onclick:showOwnerGitHubExport,
    title:'Необязательный экспорт уже сохранённых изменений в GitHub'}),
-  h('button',{type:'button',class:'owner-en-sync','data-owner-en-sync':'',
-   text:'EN-переводы',onclick:showOwnerEnglishReview,
-   title:'Проверить и записать готовые английские переводы русских правок'}),
   h('button',{type:'button',class:'owner-dock-finish',text:'Завершить',
    onclick:()=>{
     if(ownerSaveState==='saving'||editIsSaving||wikiLabelPendingWrites>0){
@@ -7477,10 +7490,10 @@ function refreshOwnerUI(){
  const hints=[
   ['.owner-dock-primary','Открыть энциклопедию для редактирования данных прямо в карточках.'],
   ['[data-owner-undo]','Отменяет последнюю ручную правку этого сеанса в Cloudflare D1.'],
-  ['.owner-dock-actions button:nth-child(3)','Посмотреть сохранённые ручные правки и вернуть исходные значения.'],
-  ['.owner-dock-actions button:nth-child(4)','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
-  ['.owner-dock-actions button:nth-child(5)','Проверить временную запись и удаление D1 без затрагивания пользовательских данных.'],
-  ['.owner-dock-actions button:nth-child(6)','Предложить уже сохранённые правки для проверки в GitHub.'],
+  ['.owner-dock-history','Посмотреть сохранённые ручные правки и вернуть исходные значения.'],
+  ['.owner-dock-catalog','Сравнить опубликованный каталог с игровым источником; ничего не применяется автоматически.'],
+  ['.owner-dock-d1-check','Проверить запись, чтение и удаление временных данных. Билды и игровой каталог не изменятся.'],
+  ['.owner-dock-export','Предложить уже сохранённые правки для проверки в GitHub.'],
   ['[data-owner-en-sync]','Предварительно просмотреть английские переводы только уже существующих русских правок. Ничего не записывается до подтверждения.'],
   ['.owner-dock-finish','Выключить режим редактирования. Уже сохранённые данные D1 останутся на месте.']
  ];

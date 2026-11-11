@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.635.0 — 2026.11.11.635 · Saved-build card layout, centered disclosure arrows, softer text-field focus and clearer D1/GitHub admin tools
+
+- Saved-build card layout, centered disclosure arrows, softer text-field focus and clearer D1/GitHub admin tools.
+- Browser acceptance and deployed Pages state must be verified separately.
+
+
 ## 0.634.0 — 2026.11.11.634 · Fresh equipment copies, zero-import account gate, empty-slot menu and Yandex search hints
 
 - Unequip or replace removes all customization owned by the prior equipped copy: Souls, refinement, element/gem, and selected Soul-slot capacity. Re-equipping the same catalog item begins fresh; other worn items remain unchanged.

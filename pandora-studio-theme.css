@@ -1174,7 +1174,12 @@ main{padding-top:10px}
  width:24px;height:24px;min-width:24px;
  border:1px solid #8b6a43;border-radius:5px;
  background:#241a13;color:#efc68c;
- font:600 20px/1 Georgia,serif;transition:transform .15s ease,background .15s ease
+ font:600 0/0 Georgia,serif;transition:transform .15s ease,background .15s ease
+}
+.stage-result-chevron::before{
+ content:'';display:block;width:9px;height:9px;
+ box-sizing:border-box;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
+ transform:rotate(45deg);transform-origin:center
 }
 .stage-result-section[open] .stage-result-chevron{
  transform:rotate(180deg);background:#3d2b1d
@@ -1432,6 +1437,14 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 
 
 
+/* Focus is intentionally visible for keyboard access, but muted to a
+   softer brass ring instead of a harsh yellow halo on text inputs. */
+input:not([type=checkbox]):not([type=radio]):not([type=range]):focus-visible,
+textarea:focus-visible,select:focus-visible{
+ outline:2px solid #d4aa72;outline-offset:2px;
+ box-shadow:0 0 0 3px rgba(201,151,79,.10)
+}
+
 /* Build-library inline actions */
 .build-toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px}
 .build-toolbar .button-action,.new-build-choice .button-action{margin:0}
@@ -1508,7 +1521,7 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  padding:10px 12px;margin:8px 0 12px;color:var(--cream);
  background:#1c1610;border:1px solid #967148;border-radius:5px;
  font:12px Manrope,Arial,sans-serif}
-.build-library-search:focus-visible{outline:2px solid #dcb57f;outline-offset:2px}
+.build-library-search:focus-visible{outline:2px solid #d4aa72;outline-offset:2px}
 .build-card[hidden]{display:none!important}
 
 /* Optional private D1 library recovery, collapsed by default. */
@@ -1620,8 +1633,11 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
 .account-password-toggle{list-style:none;display:flex;justify-content:space-between;align-items:center;
  gap:8px;cursor:pointer;padding:12px 5px;color:#e8c695;font-size:12px;font-weight:600}
 .account-password-toggle::-webkit-details-marker{display:none}
-.account-password-toggle:after{content:'⌄';color:#d9ad76;font-size:17px;transition:transform .16s}
-.account-password-details[open] .account-password-toggle:after{transform:rotate(180deg)}
+.account-password-toggle:after{content:'';display:block;flex:0 0 9px;
+ width:9px;height:9px;margin:-4px 5px 0 0;
+ box-sizing:border-box;border-right:2px solid #d9ad76;border-bottom:2px solid #d9ad76;
+ transform:rotate(45deg);transform-origin:center;transition:transform .16s}
+.account-password-details[open] .account-password-toggle:after{transform:rotate(225deg)}
 .account-password-toggle:hover{color:#ffe4b2}
 .account-password-toggle:focus-visible{outline:2px solid #f2c387;outline-offset:1px}
 .account-password-details .account-form{margin:3px 0 14px;padding:0 2px}
@@ -1940,7 +1956,11 @@ button.stage-potion-item:focus-visible{outline:2px solid #ebbe7c;outline-offset:
  border:1px solid #9a7546;border-radius:5px;background:#3a291a;color:#edc68a;font:17px Georgia,serif}
 .wiki-chest-group-name{font:600 16px Georgia,serif}
 .wiki-chest-group-summary small{margin-left:auto;font-size:10px;color:#bfaa8a}
-.wiki-chest-chevron{transition:transform .16s;color:#c49b65;font-size:16px}
+.wiki-chest-chevron{display:grid;place-items:center;flex:0 0 24px;
+ width:24px;height:24px;transition:transform .16s;color:#c49b65;font-size:0}
+.wiki-chest-chevron::before{content:'';display:block;width:9px;height:9px;
+ box-sizing:border-box;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
+ transform:rotate(45deg);transform-origin:center}
 .wiki-chest-group[open] .wiki-chest-chevron{transform:rotate(180deg)}
 .wiki-chest-options{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
  gap:7px;padding:11px;border-top:1px solid #674b30}

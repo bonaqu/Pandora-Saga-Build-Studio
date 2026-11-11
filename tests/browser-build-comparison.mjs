@@ -41,6 +41,29 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal(await page.locator('.build-signin-gate').count(),0,
    'An authenticated owner sees the actual comparison library');
   assert.equal(await page.locator('.build-card').count(),3);
+  // Compare belongs in the upper-right; four commands stay on one row.
+  const assertCardGeometry=async()=>{
+   const metrics=await page.locator('.build-card').first().evaluate(card=>{
+    const rect=element=>{const r=element.getBoundingClientRect();
+     return{left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width}};
+    const buttons=[...card.querySelectorAll('.build-card-actions>button')];
+    return{card:rect(card),compare:rect(card.querySelector('.build-card-compare')),
+     actions:buttons.map(rect),labels:buttons.map(node=>node.textContent.trim()),
+     compareAccessible:Boolean(card.querySelector('.build-card-compare input[aria-label]'))};
+   });
+   assert.equal(metrics.actions.length,4);
+   const names=metrics.labels.map(s=>s.replace(/^[↻🔗]\s*/u,''));
+   assert.equal(names[0],'Открыть');
+   assert.match(names[1],/^(Перезаписать|Сохранить в этот билд)$/);
+   assert.deepEqual(names.slice(2),['Поделиться','Удалить']);
+   assert.equal(metrics.compareAccessible,true);
+   assert.ok(metrics.compare.right<=metrics.card.right+1);
+   assert.ok(metrics.compare.top<metrics.actions[0].top);
+   assert.ok(metrics.actions.every((r,i)=>i===0||
+    (Math.abs(r.top-metrics.actions[0].top)<2&&r.left>metrics.actions[i-1].left)),
+    'All four actions must share one horizontal row');
+  };
+  await assertCardGeometry();
   const panel=page.locator('[data-build-compare]');
   await panel.waitFor({state:'visible'});
   assert.equal(await page.locator('#modalRoot .modal').count(),0);
@@ -94,6 +117,7 @@ export async function runBuildComparisonSmoke(browser,base){
   assert.equal(await panel.locator('.build-compare-table').isVisible(),false);
   assert.equal(await page.locator('.build-card').count(),3);
   await page.setViewportSize({width:390,height:780});
+  await assertCardGeometry();
   await panel.getByRole('button',{name:'Развернуть сравнение'}).click();
   const overflow=await page.evaluate(()=>
    Math.max(document.documentElement.scrollWidth,document.body.scrollWidth)-
