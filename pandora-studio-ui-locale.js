@@ -334,7 +334,11 @@ function baseText(key,lang='ru'){
 }
 // Compact actions and headings stay short; only the storage warning may
 // need a longer paragraph. The Worker still enforces the global 360 limit.
-function copyLimit(key){return key==='accountStorageWarning'||Object.hasOwn(statusCopy,key)?350:
+// Preserve the original maximum when a long editable instruction is
+// shortened. Otherwise a previously accepted D1 override could silently
+// disappear and a newly typed explanation would be rejected at 90 chars.
+function copyLimit(key){return key==='accountStorageWarning'||
+ key==='book-only-one-resistance-spell-can-be-active-sel-a8cce804'||Object.hasOwn(statusCopy,key)?350:
  Object.hasOwn(libraryCopy,key)&&libraryCopy[key][0].length>90?250:
  Object.hasOwn(bookCopy,key)&&bookCopy[key][0].length>90?350:90}
 function text(key,lang='ru'){

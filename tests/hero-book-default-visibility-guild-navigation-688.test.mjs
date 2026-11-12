@@ -59,6 +59,18 @@ test('short resistance sentence retains D1 editor key of previous longer copy',(
  assert.match(book,/'Одновременно действует только одно умение, выбор нового заменяет предыдущие.': 'Only one spell can be active at a time. Selecting another replaces the previous one.'/);
 });
 
+test('shortened instruction keeps 350-character existing D1 editor limit',()=>{
+ const host={};
+ Function('window',book)(host);
+ Function('window',read('pandora-studio-ui-locale.js'))(host);
+ const key='book-only-one-resistance-spell-can-be-active-sel-a8cce804';
+ assert.equal(host.PandoraUILocale.bookFieldKey(
+  'Одновременно действует только одно умение, выбор нового заменяет предыдущие.'),key);
+ assert.equal(host.PandoraUILocale.copyLimit(key),350);
+ const edited='Отмечай только действующие на героя эффекты. Проверка длинного текста и сохранения без потери введённых данных.';
+ assert.ok(edited.length>90&&edited.length<=host.PandoraUILocale.copyLimit(key));
+});
+
 test('resistance copy states exactly the exclusive-selection rule',()=>{
  assert.match(book,/Одновременно действует только одно умение, выбор нового заменяет предыдущие\./);
  const renderedNote=book.slice(book.indexOf("const elementalSkills="),
