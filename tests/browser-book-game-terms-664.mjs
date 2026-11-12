@@ -132,7 +132,7 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    assert.ok(Math.abs(icon.width-26)<=1 && Math.abs(icon.height-26)<=1,
     'Original effect icon must remain a compact 26px badge: '+JSON.stringify(icon));
   }
-  const scroll=await page.locator('#book-source-qa .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills)').evaluate(el=>({
+  const scroll=await page.locator('#book-source-qa .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills):not(.stage-movement-skills)').evaluate(el=>({
    width:el.getBoundingClientRect().width,scrollWidth:el.scrollWidth}));
   assert.ok(scroll.scrollWidth<=scroll.width+3,
    'Effect icons must not push healing rows beyond the Book: '+JSON.stringify(scroll));

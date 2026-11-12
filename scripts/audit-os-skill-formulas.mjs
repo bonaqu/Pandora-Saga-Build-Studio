@@ -43,7 +43,7 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   const result=calculator.scalingSkillPreview({skillCatalog:skills,
    jobKey,level:55,branchCaps,branchMasteries,stats,combat,
    weaponKind:'BARE_HAND',hasShield:true});
-  for(const row of [...(result.offense||[]),...(result.defense||[])]){
+  for(const row of [...(result.offense||[]),...(result.defense||[]),...(result.movement||[])]){
    const record=coverage.get(Number(row.id));
    if(!record)throw Error('Unrecognized formula preview skill '+row.id);
    record.sourcePreview=true;

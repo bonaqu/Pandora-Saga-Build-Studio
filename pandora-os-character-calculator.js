@@ -1092,10 +1092,90 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
 // source vectors are cross-checked against the live OS catalog; unknown
 // rounding never becomes an invented number. An unavailable skill can still
 // show its theoretical value, like the five Healing previews.
+// Read-only OS skill movement parameter family. The Remaked MoveSPD
+// +30/+40 terms are already applied elsewhere; OS +200, negative toggles
+// and enemy debuffs have no proven duration, stacking or final-speed stage.
+const movementSkillRules=Object.freeze([
+ [168002001,'TOGGLE_RADIATION','defense','CASTER',null,-1],
+ [168002003,'TOGGLE_RADIATION','defense','CASTER',168002001,-1],
+ [230002001,'TOGGLE','assassin','TARGET',null,-1],
+ [230002005,'TOGGLE','assassin','TARGET',230002001,-1],
+ [260002001,'MYSELF','warding','TARGET',null,1],
+ [260003001,'MYSELF','warding','TARGET',0,1],
+ [260010001,'ALLY','warding','TARGET',null,1],
+ [320004001,'ALLY','archery','TARGET',null,1],
+ [320009001,'ENEMY','blessing','TARGET',null,-1]
+]);
+function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
+ if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
+  level<1||level>55)return [];
+ const result=[];
+ for(const [id,type,branch,direction,prereq,sign] of movementSkillRules){
+  const record=skillCatalog[String(id)];
+  if(record?.id!==id||record.learnable!==true||record.skillType!==type||
+   record.branch!==branch||record.prereq!==prereq||
+   !Array.isArray(record.reqs)||!Array.isArray(record.funcs)||
+   !Number.isSafeInteger(record.charLevel)||record.charLevel<0||
+   record.charLevel>55)continue;
+  if(prereq!==null&&prereq!==0){
+   const parent=skillCatalog[String(prereq)];
+   if(parent?.id!==prereq||parent.learnable!==true||
+    parent.name!==record.name||parent.skillType!==type||
+    !parent.classes?.[jobKey])continue;
+  }
+  const effects=record.funcs.filter(f=>f?.ep==='EP_MOVESPEED_SCALE');
+  if(effects.length!==1||effects[0].dir!==direction)continue;
+  const effect=effects[0],v=effect.fv1;
+  if(!Array.isArray(v)||v.length!==4||!v.every(Number.isSafeInteger)||
+   v.slice(0,3).some(n=>n!==0)||v[3]*sign<=0||Math.abs(v[3])>300||
+   !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+   effect.fv2.some(n=>n!==0))continue;
+  const recipient=type==='ALLY',hostile=type==='ENEMY',
+   cap=Number(branchCaps?.[branch]??0);
+  if(!recipient&&(!record.classes?.[jobKey]||
+   !Number.isSafeInteger(cap)||cap<=0))continue;
+  if(!record.reqs.every(req=>typeof req?.branch==='string'&&
+   Number.isSafeInteger(req.amount)&&req.amount>=0&&
+   (recipient||(Number.isSafeInteger(branchCaps[req.branch])&&
+    branchCaps[req.branch]>=req.amount))))continue;
+  const reasons=[],reasonsEn=[],rank=Number(branchMasteries?.[branch]??0);
+  if(!recipient){
+   if(!Number.isSafeInteger(rank)||rank<0||rank>cap){
+    reasons.push('Мастерство вне пределов профессии');
+    reasonsEn.push('Mastery exceeds the class limit');
+   }
+   if(level<record.charLevel){
+    reasons.push('Требуется уровень '+record.charLevel);
+    reasonsEn.push('Requires level '+record.charLevel);
+   }
+   for(const req of record.reqs)if(Number(branchMasteries?.[req.branch]??0)<req.amount){
+    const ru=branchLabels[req.branch]||req.branch;
+    const en=englishBranches[req.branch]||ru;
+    reasons.push('Требуется мастерство «'+ru+'»: '+req.amount);
+    reasonsEn.push('Requires '+en+' mastery: '+req.amount);
+   }
+  }
+  const ruScope=hostile?'на противнике':direction==='CASTER'?'на применяющем':
+   recipient?'на союзнике':'на персонаже';
+  const enScope=hostile?'on the enemy':direction==='CASTER'?'on the caster':
+   recipient?'on an ally':'on the character';
+  result.push({id,name:record.name,description:record.desc||'',amount:v[3],
+   unit:'',available:reasons.length===0,reason:reasons.join(' · '),
+   reasonEn:reasonsEn.join(' · '),recipient,hostile,modelOnly:true,uncertain:true,
+   detailRu:'Исходный параметр скорости OS '+ruScope+
+    '; итоговая скорость, длительность и сложение эффектов не установлены',
+   detailEn:'OS movement source parameter '+enScope+
+    '; final speed, duration and stacking are not established',
+   source:'current OS EP_MOVESPEED_SCALE; source magnitude only'});
+ }
+ return result;
+}
+
 function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
  stats={},combat=null,weaponKind='BARE_HAND',hasShield=false}={}){
- const result={offense:[],defense:[],verified:false,
+ const result={offense:[],defense:[],movement:[],verified:false,
   source:'Remaked SkillView floors and current OS skill effect vectors'};
  if(!skillCatalog||!combat||typeof jobKey!=='string'||
   !Number.isInteger(level)||level<1||level>55)return result;
@@ -1536,6 +1616,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  })){
   if(!seen.has(spell.id))result.offense.push(spell);
  }
+ result.movement=movementSkillSourcePreview({skillCatalog,jobKey,level,
+  branchMasteries,branchCaps,branchLabels,englishBranches});
  return result;
 }
 
@@ -3217,7 +3299,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({priestCastPreviews,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({priestCastPreviews,movementSkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
