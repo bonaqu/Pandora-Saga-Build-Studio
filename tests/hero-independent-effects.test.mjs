@@ -89,7 +89,7 @@ test('UI route owns every source of information once; no mirrored result panels'
  assert.match(source,/if\(chosen==='summary'\)summaryPage\(body,modifiers,copyOptions\)/);
  assert.match(source,/if\(chosen==='attack'\)attackPage\(/);
  assert.match(source,/if\(chosen==='defense'\)defensePage\(/);
- assert.match(source,/if\(chosen==='effects'\)skillEffectsPage\(body,\{modifiers\}\)/);
+ assert.match(source,/if\(chosen==='effects'\)skillEffectsPage\(body,\{modifiers,gameTerms\}\)/);
  assert.doesNotMatch(source,/stage-combat-quick|independentEffectRows|stage-equipped-items/);
  assert.doesNotMatch(source,/Базовая атака '\+\(rec\.W|Базовая защита '\+\(rec\.AC/);
  assert.doesNotMatch(source,/appendVitalFormulas|appendCombatFormulas/);
