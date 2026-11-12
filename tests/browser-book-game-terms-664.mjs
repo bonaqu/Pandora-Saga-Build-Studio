@@ -91,6 +91,17 @@ export async function runHeroBookGameNames664Smoke(browser,base){
   }),required,{timeout:12000});
   assert.equal(await page.locator('#book-source-qa .stage-effect-skill-label img').count()>=6,true,
    'All six OS skill original images must be rendered, not an icon-less name');
+  const imageBounds=await page.locator('#book-source-qa .stage-effect-skill-label img').evaluateAll(
+   images=>images.map(img=>({width:img.getBoundingClientRect().width,
+    height:img.getBoundingClientRect().height,src:img.getAttribute('src')})));
+  for(const icon of imageBounds){
+   assert.ok(Math.abs(icon.width-26)<=1 && Math.abs(icon.height-26)<=1,
+    'Original effect icon must remain a compact 26px badge: '+JSON.stringify(icon));
+  }
+  const scroll=await page.locator('#book-source-qa .stage-healing-spells').evaluate(el=>({
+   width:el.getBoundingClientRect().width,scrollWidth:el.scrollWidth}));
+  assert.ok(scroll.scrollWidth<=scroll.width+3,
+   'Effect icons must not push healing rows beyond the Book: '+JSON.stringify(scroll));
   const en=await render({lang:'en',chapter:'effects'});
   for(const term of ['Heal','Healing Aura','Mana Restore',"Minstrel's Song",
    'Hymn 8','Acolyte class'])
