@@ -48,7 +48,7 @@ test('static allied and self-buff labels use exactly current OS English skill na
   assert.equal(book.bookText(expectedRu),english.skills[id].n,
    'UI translation must be the official OS English name for '+id);
  }
- assert.equal(book.bookText('Помощь ветра: '),'Speedy Gale: ');
+ assert.equal(book.bookText('Помощь ветра: +10'),'Speedy Gale: +10');
  for(const key of ['combatRage','combatWindAssist','combatWindBlessing','lifeSign'])
   assert.ok(bookSource.includes(key),'player-facing buff control '+key);
 });
