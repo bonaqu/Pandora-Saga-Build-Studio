@@ -40,6 +40,37 @@ export async function runSavedBuildGridSmoke(browser,base){
     ['Открыть','Перезаписать','Поделиться','Удалить'],'Readable action labels');
    assert.deepEqual(await buttons.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('type'))),
     ['button','button','button','button'],'Action buttons cannot submit a form');
+   const tips=[
+    'Загрузить этого героя в редактор.',
+    'Заменить этот билд текущим героем.',
+    'Создать ссылку для отправки билда.',
+    'Удалить билд и отозвать его ссылки.'
+   ];
+   const popup=page.locator('#stage-guide-tooltip');
+   for(let i=0;i<tips.length;i++){
+    assert.equal(await buttons.nth(i).getAttribute('title'),null,
+     'No duplicate native browser tooltip on action '+i);
+    await buttons.nth(i).hover();
+    await popup.waitFor({state:'visible',timeout:5000});
+    assert.equal(await popup.innerText(),tips[i]);
+    assert.match(await buttons.nth(i).getAttribute('aria-describedby')||'',
+     /stage-guide-tooltip/,'Screen readers receive transient description');
+    const rect=await popup.boundingBox();
+    assert.ok(rect&&rect.x>=0&&rect.y>=0&&rect.x+rect.width<=width+1,
+     'Game-style tooltip remains within the '+width+'px viewport');
+    await page.mouse.move(1,1);
+    await popup.waitFor({state:'hidden',timeout:3000});
+    assert.equal(await buttons.nth(i).getAttribute('aria-describedby'),null,
+     'Leaving the button removes transient description');
+   }
+   // Keyboard-only focus opens the same read-only hint without a mouse.
+   await buttons.first().focus();
+   await page.keyboard.press('Tab');
+   await popup.waitFor({state:'visible',timeout:3000});
+   assert.equal(await popup.innerText(),tips[1]);
+   await page.keyboard.press('Escape');
+   await popup.waitFor({state:'hidden',timeout:3000});
+   assert.equal(await cards.count(),6,'Escape must not close the build library');
    const search=page.locator('.build-library-search');
    const grid=page.locator('.build-grid');
    for(const [term,count] of [['one',1],['two',2],['three',3],
@@ -74,7 +105,34 @@ export async function runSavedBuildGridSmoke(browser,base){
      term+': horizontal scrollbar occurs only when cards exceed available width');
     assert.ok(geo.overflow<=14,'No document-level horizontal overflow: '+geo.overflow);
    }
-   // Filtering must not mutate the user's saved builds.
+   // Additional RU/EN parity check after the real search/layout interactions.
+   await page.locator('#dockClose').click();
+   await page.locator('#locale [data-locale="en"]').click();
+   await page.waitForFunction(()=>document.documentElement.lang==='en');
+   await page.locator('#nav [data-tab="builds"]').click();
+   await page.locator('.build-card').first().waitFor({state:'visible'});
+   const enButtons=page.locator('.build-card').first().locator('.build-card-actions > button');
+   assert.deepEqual(await enButtons.locator('.build-card-action-label').allInnerTexts(),
+    ['Open','Overwrite','Share','Delete']);
+   for(const [i,help] of [
+    'Load this character in the editor.',
+    'Replace this build with your current character.',
+    'Create a link to share this build.',
+    'Delete this build and revoke its links.'
+   ].entries()){
+    await enButtons.nth(i).hover();
+    await popup.waitFor({state:'visible',timeout:5000});
+    assert.equal(await popup.innerText(),help);
+    await page.mouse.move(1,1);
+    await popup.waitFor({state:'hidden',timeout:3000});
+   }
+   const englishSearch=page.locator('.build-library-search');
+   assert.equal(await englishSearch.getAttribute('placeholder'),'Search by name, class or level…');
+   assert.equal(await englishSearch.getAttribute('aria-label'),'Find a saved build');
+   await englishSearch.fill('no such build');
+   assert.match(await page.locator('.build-grid + .muted').innerText(),/No builds match this search/);
+   await englishSearch.fill('');
+   // Filtering, hover and locale switching must not mutate saved player data.
    assert.equal(await page.evaluate(()=>localStorage.getItem('ps-build-library.v1')),original);
    assert.deepEqual(errors,[]);
   }finally{await context.close()}

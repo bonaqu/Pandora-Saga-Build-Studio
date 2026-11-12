@@ -99,6 +99,11 @@
 .build-card-action-icon{display:block;flex:none;font-size:15px;line-height:1}
 .build-card-action-label{display:block;min-width:0;max-width:100%;
  line-height:1.2;overflow-wrap:anywhere}
+/* The shared game guide adds stage-guide-label; action buttons remain buttons,
+   not dotted-underlined glossary labels. The popup keeps its original skin. */
+.build-card-actions>.stage-guide-label{cursor:pointer;text-decoration:none}
+.build-card-actions>.stage-guide-label:focus-visible{
+ outline:2px solid #e4b879;outline-offset:2px;border-radius:5px}
 .build-card-actions>.primary{border-color:#b58a50;background:#513821}
 .build-card-actions>.build-card-delete{border-color:#765342;color:#d6ab99}
 .build-card-actions>.build-card-delete:hover{border-color:#c68d76;background:#43271f}

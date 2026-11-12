@@ -1,5 +1,15 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.659.0 — 2026.11.12.659 · Unified four-action library hover help
+
+- Open, Overwrite, Share and Delete use the already established PandoraGuideTooltip styling and lifecycle, with short RU/EN explanations. Delete uses a precise alternative for local-only copies.
+- Mouse hover waits 350 ms; keyboard focus is immediate. Tooltip text is plain text; Escape, pointer leave, blur, navigation and scrolling use the existing guide mechanism. Icons are decorative, button names remain accessible, no native title duplication.
+- Five semantic hint keys plus two searchable-library field keys use RU/EN fallbacks and existing D1 content overrides; search-empty and no-builds states use semantic translations. Never interpolate usernames, item IDs, shared URLs or build names into tooltip content.
+- Node safety/localization regressions and Chromium desktop/mobile real hover, keyboard, viewport, search and language-switch tests.
+- Release metadata, footer, assets, Telegram/Open Graph and notes synchronized. No change to character formulas, user library saves, account API or production D1 content.
+
+
+
 ## 0.658.0 — 2026.11.12.658 · Bilingual build card actions and icons
 
 - All four saved-build actions now have consistently positioned decorative icons: 📂 Open, ↻ Overwrite, 🔗 Share and 🗑 Delete. Buttons retain clear accessible text names.

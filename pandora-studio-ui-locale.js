@@ -96,6 +96,16 @@ const libraryCopy=Object.freeze({
  libraryShare:['🔗 Поделиться','🔗 Share'],
  libraryDelete:['Удалить','Delete'],
  libraryCompare:['Сравнить','Compare'],
+ // Short, safe authored explanations for the four saved-build actions.
+ // They are rendered as plain text by PandoraGuideTooltip, never HTML.
+ libraryHintOpen:['Загрузить этого героя в редактор.','Load this character in the editor.'],
+ libraryHintOverwrite:['Заменить этот билд текущим героем.','Replace this build with your current character.'],
+ libraryHintShare:['Создать ссылку для отправки билда.','Create a link to share this build.'],
+ libraryHintDelete:['Удалить билд и отозвать его ссылки.','Delete this build and revoke its links.'],
+ libraryHintDeleteLocal:['Удалить локальную копию билда.','Delete this local build copy.'],
+ // Search is an editor control, but its placeholder and label are fixed copy.
+ librarySearchInputLabel:['Найти сохранённый билд','Find a saved build'],
+ librarySearchPlaceholder:['Поиск по названию, классу, уровню…','Search by name, class or level…'],
  librarySearchEmpty:['Билды по запросу не найдены.','No builds match this search.'],
  libraryEmpty:['Сохранённых билдов пока нет.','No saved builds yet.'],
  libraryLocalCopyNote:['Локальная копия · чтобы сохранить в облако, откройте её и нажмите «Перезаписать»','Local copy · open it and select “Overwrite” to save it to cloud'],
