@@ -52,7 +52,7 @@ test('a unique added item in a zone rule appears by the game item name',()=>{
  next.zoneDrops[0].rows[0].items.push({i:52001,lo:2,hi:5});
  const result=render(old,next);
  assert.ok(result.rows.some(row=>row.label.includes(catalog.items['52001'].name)&&
-  /Присутствие в правиле/.test(row.label)&&row.before==='нет'&&row.after==='есть'));
+  /Наличие в правиле/.test(row.label)&&row.before==='нет'&&row.after==='есть'));
  assert.ok(result.rows.some(row=>row.label.includes('Границы (lo / hi)')&&
   row.after==='2 / 5'));
 });
@@ -64,18 +64,18 @@ test('new source rules show what was added without shifting an unrelated rule',(
  });
  const result=render(old,next);
  assert.ok(result.rows.some(row=>row.label.includes('Добавлено правило')&&
-  row.after.includes(catalog.items['52001'].name)&&row.after.includes('базовое значение: 0.8')));
- assert.ok(!result.rows.some(row=>row.label.includes('Базовое значение')));
+  row.after.includes(catalog.items['52001'].name)&&row.after.includes('базовое значение: 0,8')));
+ assert.ok(!result.rows.some(row=>row.label.includes('Базовое значение')&&row.before==='0,3'));
 });
 
-test('duplicate source identities are marked ambiguous, not falsely paired by row position',()=>{
+test('changed rule among identical copies is paired only after exact copies are matched',()=>{
  const old=clone(catalog.tables),next=clone(catalog.tables);
  old.zoneDrops[0].rows.push(clone(old.zoneDrops[0].rows[0]));
  next.zoneDrops[0].rows.push({...clone(next.zoneDrops[0].rows[0]),base:0.9});
  const result=render(old,next);
- assert.equal(result.unexplained,true);
- assert.ok(result.technical.some(line=>line.includes('неоднозначно')));
- assert.ok(result.rows.some(row=>row.label.includes('Повторяющиеся правила')));
+ assert.equal(result.unexplained,false);
+ assert.ok(result.rows.some(row=>row.label.includes('base')&&row.before==='0,3'&&row.after==='0,9'));
+ assert.ok(!result.rows.some(row=>row.label.includes('Повторяющиеся правила')));
 });
 
 test('unknown parameters stay explicit and prevent a misleading explained badge',()=>{
@@ -86,7 +86,7 @@ test('unknown parameters stay explicit and prevent a misleading explained badge'
  assert.equal(result.unexplained,true);
  assert.ok(result.rows.some(row=>row.label.includes('mystery')&&
   row.after==='7'));
- assert.ok(result.technical.some(line=>line.includes('неизвестное поле mystery')));
+ assert.ok(result.technical.some(line=>line.includes('неизвестный параметр mystery')));
 });
 
 test('nested weapon coefficients are shown with their specific refinement level',()=>{
@@ -119,7 +119,7 @@ test('hook-based monster loot retains the original monster and item names',()=>{
  row.base=41;
  const result=render(old,next);
  assert.ok(result.rows.some(entry=>entry.label.includes('Василиск')&&
-  entry.label.includes('Обработчик добычи')&&entry.label.includes('base')&&
+  entry.label.includes('Правило обработчика добычи')&&entry.label.includes('base')&&
   entry.before==='41'&&entry.after==='40'));
 });
 

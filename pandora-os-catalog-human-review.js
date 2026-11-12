@@ -48,151 +48,208 @@ const sectionNames={
 };
 
 function describeZoneDrops(previous,current,ctx,add,unknown){
- const zones=(value,side)=>{
-  const out=new Map();
-  if(!Array.isArray(value)){unknown(side+': неверный список локаций');return out}
-  value.forEach(entry=>{
-   if(!entry||entry.map==null){unknown(side+': локация без ID');return}
-   const id=String(entry.map);
-   if(out.has(id)){unknown(side+': дублируется локация №'+id);return}
-   out.set(id,entry);
-  });return out;
+ // Match exact source rules as a MULTISET before trying to infer edited fields.
+ // Duplicates are real source rows: 3 identical rules -> 1 means 2 removed,
+ // not an ambiguous change to an individual chance.
+ const zones=(rows,version)=>{
+  const result=new Map();
+  if(!Array.isArray(rows)){unknown(version+': неизвестный список локаций');return result}
+  for(const row of rows){
+   if(!plain(row)||row.map==null){unknown(version+': запись локации без ID');continue}
+   const id=String(row.map);
+   if(result.has(id)){unknown(version+': повтор локации №'+id);continue}
+   result.set(id,row);
+  }
+  return result;
  };
- const before=zones(previous,'Старая версия'),after=zones(current,'Новая версия');
- const sourceName=(section,id,entity)=>{
-  const row=ctx?.upstream?.[section]?.[id]||ctx?.baseline?.[section]?.[id];
-  const label=row?.name?.ru||row?.name;
-  if(typeof label==='string'&&label.trim())return label;
-  unknown('Название '+entity+' №'+id+' не найдено в каталоге');
-  return entity+' №'+id+' (название не найдено)';
+ const oldZones=zones(previous,'Опубликованная версия');
+ const newZones=zones(current,'Данные игрового сайта');
+ const sourceName=(group,id,word)=>{
+  const data=ctx?.upstream?.[group]?.[id]||ctx?.baseline?.[group]?.[id];
+  const name=data?.name?.ru||data?.name;
+  if(typeof name==='string'&&name.trim())return name;
+  unknown('Не найдено название '+word+' №'+id);
+  return word+' №'+id+' (название не найдено)';
  };
- const ruleType=row=>{
-  if(row?.kind==='csv')return 'Таблица CSV';
-  if(row?.kind==='hook')return 'Обработчик добычи';
+ const kind=row=>{
+  if(row?.kind==='csv')return 'Правило из таблицы CSV';
+  if(row?.kind==='hook')return 'Правило обработчика добычи';
   unknown('Неизвестный тип правила добычи: '+String(row?.kind));
-  return 'Неизвестный тип '+String(row?.kind);
+  return 'Правило неизвестного типа «'+String(row?.kind)+'»';
  };
  const monster=row=>row?.mob==null?'без указанного монстра':
   'монстр «'+sourceName('monsters',row.mob,'монстра')+'»';
- const items=row=>Array.isArray(row?.items)?
-  row.items.map(i=>sourceName('items',i.i,'предмета')).join(', '):'состав неизвестен';
+ const itemNames=row=>{
+  if(!Array.isArray(row?.items)){unknown('Список предметов правила не распознан');return 'предметы не указаны'}
+  return row.items.map(entry=>sourceName('items',entry?.i,'предмета')).join(', ');
+ };
  const identity=row=>String(row?.kind)+'|'+String(row?.mob??'')+'|'+
-  (Array.isArray(row?.items)?row.items.map(i=>String(i.i)).sort().join(','):'?');
+  (Array.isArray(row?.items)?row.items.map(entry=>String(entry?.i)).sort().join(','):'?');
  const owner=row=>String(row?.kind)+'|'+String(row?.mob??'');
- const summary=row=>ruleType(row)+' · '+monster(row)+' · предметы: '+items(row)+
-  '; базовое значение: '+String(row?.base??'—')+
-  '; значение на участника: '+String(row?.perMember??'—')+
-  ' (единицы не подтверждены)';
- const format=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
- let changed=0,locations=[];
- for(const id of new Set([...before.keys(),...after.keys()])){
-  const oldZone=before.get(id),newZone=after.get(id);
-  if(same(oldZone,newZone))continue;
-  const label=sourceName('maps',id,'локации');
-  changed++;if(locations.length<3)locations.push('«'+label+'»');
-  const prefix='Локация «'+label+'»';
-  if(!oldZone||!newZone){
-   add(prefix+' · Правила добычи',oldZone?'есть':'нет',newZone?'есть':'нет');
-   add(prefix+' · Число правил',oldZone?.rows?.length||0,newZone?.rows?.length||0);
-   unknown(prefix+': добавлена либо удалена локация целиком');continue;
+ const fingerprint=row=>JSON.stringify(canonical(row));
+ const numeral=n=>value(n);
+ const detailed=row=>kind(row)+' · '+monster(row)+' · предметы: '+itemNames(row)+
+  '; базовое значение: '+(row?.base==null?'не указано':numeral(row.base))+
+  '; на участника: '+(row?.perMember==null?'не указано':numeral(row.perMember))+
+  ' (единицы значений не подтверждены)';
+ const display=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
+ const grouped=(rows,used,signature)=>{
+  const map=new Map();
+  rows.forEach((row,index)=>{
+   if(used.has(index))return;
+   const id=signature(row),positions=map.get(id)||[];
+   positions.push(index);map.set(id,positions);
+  });return map;
+ };
+ let zonesChanged=0,removedTotal=0,addedTotal=0,editedTotal=0;
+ const locations=[];
+ const mapFacts=[];
+ for(const id of new Set([...oldZones.keys(),...newZones.keys()])){
+  const prior=oldZones.get(id),fresh=newZones.get(id);
+  if(same(prior,fresh))continue;
+  zonesChanged++;
+  const name=sourceName('maps',id,'локации');
+  if(locations.length<3)locations.push('«'+name+'»');
+  const prefix='Локация «'+name+'»';
+  const before=Array.isArray(prior?.rows)?prior.rows:[];
+  const after=Array.isArray(fresh?.rows)?fresh.rows:[];
+  if(!prior||!fresh){
+   removedTotal+=before.length;addedTotal+=after.length;
+   add(prefix+' · Количество правил',before.length,after.length);
+   unknown(prefix+': вся локация '+(prior?'удалена':'добавлена')+' в источнике; требуется проверка');
+   mapFacts.push(name+': '+before.length+' → '+after.length+' правил');
+   continue;
   }
-  for(const key of new Set([...Object.keys(oldZone),...Object.keys(newZone)]))
-   if(!['map','rows'].includes(key)&&!same(oldZone[key],newZone[key])){
-    unknown(prefix+': неизвестное поле '+key);
-    add(prefix+' · Поле '+key+' (назначение неизвестно)',format(oldZone[key]),format(newZone[key]));
-   }
-  if(!Array.isArray(oldZone.rows)||!Array.isArray(newZone.rows)){
-   unknown(prefix+': список правил добычи повреждён');continue;
+  for(const code of new Set([...Object.keys(prior),...Object.keys(fresh)])){
+   if(code==='map'||code==='rows'||same(prior[code],fresh[code]))continue;
+   unknown(prefix+': поле локации '+code+' не расшифровано');
+   add(prefix+' · Поле '+code+' (назначение не подтверждено)',
+    display(prior[code]),display(fresh[code]));
   }
-  const old=oldZone.rows,now=newZone.rows,usedA=new Set(),usedB=new Set();
-  let found=0;
-  const pair=(i,j)=>{
-   usedA.add(i);usedB.add(j);
-   const a=old[i],b=now[j];
-   if(same(a,b))return;
-   const title=prefix+' · '+ruleType(b)+' · '+monster(b)+' · '+items(b);
-   for(const field of new Set([...Object.keys(a||{}),...Object.keys(b||{})])){
-    if(['kind','mob','items'].includes(field)||same(a?.[field],b?.[field]))continue;
-    const decoded={base:'Базовое значение (base; единицы не подтверждены)',
-     perMember:'Значение на участника (perMember; единицы не подтверждены)'}[field];
-    if(!decoded)unknown(title+': неизвестное поле '+field);
-    add(title+' · '+(decoded||'Поле '+field+' (смысл неизвестен)'),
-     format(a?.[field]),format(b?.[field]));found++;
+  if(!Array.isArray(prior.rows)||!Array.isArray(fresh.rows)){
+   unknown(prefix+': неизвестный формат правил добычи');continue;
+  }
+  // The high-level delta is visible even before the long detailed list.
+  if(before.length!==after.length)
+   add(prefix+' · Всего правил добычи',before.length,after.length);
+  const usedBefore=new Set(),usedAfter=new Set();
+  let editsInZone=0;
+  const matchedExact=grouped(after,usedAfter,fingerprint);
+  // Pair as many IDENTICAL copies as possible without considering array order.
+  for(let i=0;i<before.length;i++){
+   const options=matchedExact.get(fingerprint(before[i]))||[];
+   if(!options.length)continue;
+   const j=options.shift();
+   usedBefore.add(i);usedAfter.add(j);
+  }
+  const edited=(i,j)=>{
+   usedBefore.add(i);usedAfter.add(j);
+   const x=before[i],y=after[j];
+   const title=prefix+' · '+kind(y)+' · '+monster(y)+' · '+itemNames(y);
+   editedTotal++;editsInZone++;
+   for(const code of new Set([...Object.keys(x),...Object.keys(y)])){
+    if(['items','kind','mob'].includes(code)||same(x[code],y[code]))continue;
+    const label={base:'Базовое значение (base; единицы не подтверждены)',
+     perMember:'Значение на участника (perMember; единицы не подтверждены)'}[code];
+    if(!label)unknown(title+': неизвестный параметр '+code);
+    add(title+' · '+(label||'Параметр '+code+' (смысл неизвестен)'),display(x[code]),display(y[code]));
    }
-   const mapItems=(rule)=>{
-    const m=new Map();
-    for(const item of (Array.isArray(rule?.items)?rule.items:[])){
-     if(!item||item.i==null){unknown(title+': отсутствует номер предмета');continue}
-     const id=String(item.i);
-     if(m.has(id))unknown(title+': повтор предмета №'+id+'; сравнение неоднозначно');
-     else m.set(id,item);
-    }return m;
-   };
-   const left=mapItems(a),right=mapItems(b);
-   for(const id of new Set([...left.keys(),...right.keys()])){
-    const x=left.get(id),y=right.get(id);
-    if(same(x,y))continue;
-    const itemTitle=prefix+' · '+ruleType(b)+' · '+monster(b)+
-     ' · предмет «'+sourceName('items',id,'предмета')+'»';
-    if(!x||!y){
-     const entry=add(itemTitle+' · Присутствие в правиле',x?'есть':'нет',y?'есть':'нет');
-     if(entry){entry.linkedItemId=id;entry.linkedItemName=sourceName('items',id,'предмета')}
-     const bounds=add(itemTitle+' · Границы (lo / hi)',x?String(x.lo??'—')+' / '+String(x.hi??'—'):'не было',
-      y?String(y.lo??'—')+' / '+String(y.hi??'—'):'нет');
-     if(bounds){bounds.linkedItemId=id;bounds.linkedItemName=sourceName('items',id,'предмета')}
-     found++;continue;
+   const toMap=(row)=>{
+    const result=new Map();
+    if(!Array.isArray(row?.items)){unknown(title+': нет понятного списка предметов');return result}
+    for(const item of row.items){
+     if(!plain(item)||item.i==null){unknown(title+': предмет без идентификатора');continue}
+     const key=String(item.i);
+     if(result.has(key))unknown(title+': одинаковый предмет №'+key+' встречается повторно');
+     result.set(key,item);
     }
-    for(const k of new Set([...Object.keys(x),...Object.keys(y)])){
-     if(k==='i'||same(x[k],y[k]))continue;
-     const decoded={lo:'Нижняя граница (lo)',hi:'Верхняя граница (hi)'}[k];
-     if(!decoded)unknown(itemTitle+': неизвестное поле '+k);
-     const entry=add(itemTitle+' · '+(decoded||'Поле '+k+' (смысл неизвестен)'),
-      format(x[k]),format(y[k]));
-     if(entry){entry.linkedItemId=id;entry.linkedItemName=sourceName('items',id,'предмета')}
-     found++;
+    return result;
+   };
+   const a=toMap(x),b=toMap(y);
+   for(const itemId of new Set([...a.keys(),...b.keys()])){
+    const previousItem=a.get(itemId),newItem=b.get(itemId);
+    if(same(previousItem,newItem))continue;
+    const item=sourceName('items',itemId,'предмета');
+    const baseTitle=prefix+' · '+monster(y)+' · предмет «'+item+'»';
+    const link=row=>{if(row){row.linkedItemId=itemId;row.linkedItemName=item}};
+    if(!previousItem||!newItem){
+     link(add(baseTitle+' · Наличие в правиле',previousItem?'есть':'нет',newItem?'есть':'нет'));
+     const bounds=row=>row?String(row.lo??'—')+' / '+String(row.hi??'—'):'не указано';
+     link(add(baseTitle+' · Границы (lo / hi)',bounds(previousItem),bounds(newItem)));
+     continue;
+    }
+    for(const code of new Set([...Object.keys(previousItem),...Object.keys(newItem)])){
+     if(code==='i'||same(previousItem[code],newItem[code]))continue;
+     const caption={lo:'Нижняя граница (lo)',hi:'Верхняя граница (hi)'}[code];
+     if(!caption)unknown(baseTitle+': неизвестный параметр '+code);
+     link(add(baseTitle+' · '+(caption||'Параметр '+code+' (смысл неизвестен)'),
+      display(previousItem[code]),display(newItem[code])));
     }
    }
   };
-  const match=fn=>{
-   const groups=(rows,used)=>{
-    const out=new Map();
-    rows.forEach((row,i)=>{
-     if(used.has(i))return;
-     const key=fn(row),list=out.get(key)||[];
-     list.push(i);out.set(key,list);
-    });return out;
-   };
-   const left=groups(old,usedA),right=groups(now,usedB);
-   for(const [key,indices] of left){
-    const ids=right.get(key)||[];
-    if(indices.length===1&&ids.length===1)pair(indices[0],ids[0]);
-    else if(indices.length&&ids.length){
-     unknown(prefix+': одинаковые признаки нескольких правил; соответствие неоднозначно');
-     add(prefix+' · Повторяющиеся правила · '+ruleType(old[indices[0]]),
-      indices.map(i=>summary(old[i])).join('; '),ids.map(i=>summary(now[i])).join('; '));
-     indices.forEach(i=>usedA.add(i));ids.forEach(i=>usedB.add(i));found++;
-    }
+  const matchUnique=signature=>{
+   const a=grouped(before,usedBefore,signature),b=grouped(after,usedAfter,signature);
+   for(const [key,left] of a){
+    const right=b.get(key)||[];
+    if(left.length===1&&right.length===1)edited(left[0],right[0]);
+    else if(left.length&&right.length)
+     unknown(prefix+': есть несколько изменившихся правил с одинаковыми признаками; нельзя надёжно сопоставить старое и новое значения');
    }
   };
-  match(identity); // stable item set; ignores row ordering
-  match(owner);    // item set changed, but only one unmatched rule per monster/type
-  old.forEach((row,i)=>{if(!usedA.has(i)){
-   add(prefix+' · Удалено правило · '+ruleType(row)+' · '+monster(row),
-    summary(row),'отсутствует');found++;
-  }});
-  now.forEach((row,i)=>{if(!usedB.has(i)){
-   add(prefix+' · Добавлено правило · '+ruleType(row)+' · '+monster(row),
-    'отсутствовало',summary(row));found++;
-  }});
-  if(!found&&!same(old,now)){
-   unknown(prefix+': поменялся только порядок строк; значение порядка не подтверждено');
+  matchUnique(identity);
+  matchUnique(owner);
+  // Group remaining EXACT source rows by full content and count copies;
+  // do not collapse 2/3/9 duplicates into "ambiguous" generic text.
+  const original=grouped(before,new Set(),fingerprint);
+  const latest=grouped(after,new Set(),fingerprint);
+  const leftOver=grouped(before,usedBefore,fingerprint);
+  const rightOver=grouped(after,usedAfter,fingerprint);
+  for(const [key,positions] of leftOver){
+   const row=before[positions[0]];
+   const oldCount=original.get(key)?.length||0;
+   const newCount=latest.get(key)?.length||0;
+   removedTotal+=positions.length;
+   const title=prefix+' · Убрано правило: '+kind(row)+' · '+monster(row)+
+    ' · '+itemNames(row);
+   add(title+' · Количество одинаковых записей',oldCount,newCount);
+   const source=add(title+' · Содержание удалённых копий',detailed(row),
+    'удалено '+positions.length+' из '+oldCount+'; осталось '+newCount+' '+
+     plural(newCount,'одинаковое правило','одинаковых правила','одинаковых правил'));
+   if(row?.items?.length===1&&source){
+    const itemId=String(row.items[0].i);
+    source.linkedItemId=itemId;source.linkedItemName=sourceName('items',itemId,'предмета');
+   }
+  }
+  for(const [key,positions] of rightOver){
+   const row=after[positions[0]];
+   const oldCount=original.get(key)?.length||0;
+   const newCount=latest.get(key)?.length||0;
+   addedTotal+=positions.length;
+   const title=prefix+' · Добавлено правило: '+kind(row)+' · '+monster(row)+
+    ' · '+itemNames(row);
+   add(title+' · Количество одинаковых записей',oldCount,newCount);
+   add(title+' · Содержание добавленных копий','было '+oldCount+' '+plural(oldCount,'одинаковое правило','одинаковых правила','одинаковых правил'),
+    'стало '+newCount+': '+detailed(row));
+  }
+  if(!leftOver.size&&!rightOver.size&&!editsInZone&&!same(before,after)){
+   unknown(prefix+': изменился порядок строк; его значение для игры неизвестно');
    add(prefix+' · Порядок правил','прежний порядок','новый порядок');
   }
+  const removed=[...leftOver.values()].reduce((n,list)=>n+list.length,0);
+  const added=[...rightOver.values()].reduce((n,list)=>n+list.length,0);
+  mapFacts.push(name+': '+before.length+' → '+after.length+
+   ' правил; убрано '+removed+', добавлено '+added);
  }
- return 'Изменения найдены в '+changed+' '+plural(changed,'локации','локациях','локациях')+
-  (locations.length?': '+locations.join(', ')+(changed>3?' и другие':''):'')+
-  '. Далее показаны точные отличия в правилах добычи. base и perMember не пересчитываются в проценты: единицы источника не подтверждены.';
+ const intro=zonesChanged+' '+plural(zonesChanged,'локация','локации','локаций');
+ const names=locations.length?': '+locations.join(', ')+(zonesChanged>3?' и другие':''):'';
+ const facts=mapFacts.slice(0,3).join('; ');
+ return 'Затронуто '+intro+names+
+  '. '+(facts?facts+'. ':'')+
+  'Итого удалено '+removedTotal+', добавлено '+addedTotal+
+  (editedTotal?', изменено правил '+editedTotal:'')+
+  '. Сравнены точные записи; это не подтверждение актуальной игровой механики.';
 }
+
 function describeNestedTable(section,a,b,add,unknown){
  const labels={ratio:'Относительный параметр (ratio)',flat:'Постоянная прибавка (flat)',
   ability:'Очки характеристик',skill:'Очки умений',skillLimit:'Ограничение умений',
@@ -266,7 +323,8 @@ function describeCompound(kind,before,after,ctx,add,unknown){
  };
  const fields=(left,right)=>new Set([...Object.keys(left||{}),...Object.keys(right||{})]);
  let touched=0;
- const safeAdd=(title,a,b)=>{if(touched>=60){unknown('Остались изменения вне первых 60 строк');return}
+ const safeAdd=(title,a,b)=>{const limit=kind==='tables'&&old?.zoneDrops&&next?.zoneDrops?3000:60;
+   if(touched>=limit){if(touched===limit)unknown('Слишком много изменений: показаны первые '+limit+' строк');touched++;return}
    const row=add(title,a,b);touched++;return row};
  const shortItem=id=>{
   const result=itemName(id,ctx);
@@ -399,8 +457,8 @@ function describeCompound(kind,before,after,ctx,add,unknown){
     sections[sections.length-1]=title+': '+describeZoneDrops(old[section],next[section],ctx,safeAdd,unknown);
    else describeNestedTable(section,old[section],next[section],safeAdd,unknown);
   }
-  return 'Изменены игровые разделы: '+sections.join('; ')+
-   '. Известные параметры объяснены, а неподтверждённые обозначения помечены. Правила расчёта и публикацию нужно проверить отдельно.';
+  return 'Изменены игровые разделы: '+sections.join('; ').replace(/\.+$/,'')+
+   '. Неизвестные обозначения явно помечены. Перед публикацией необходимо проверить правила расчёта.';
  }
  unknown('Неизвестный составной раздел');
  return 'Изменён состав данных, правила расчёта пока не подтверждены.';
