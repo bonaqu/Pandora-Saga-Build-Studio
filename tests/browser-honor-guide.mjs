@@ -46,6 +46,9 @@ export async function runHonorGuideSmoke(browser,base){
   // autofill. A real user click unlocks it before typing.
   await honorSearch.click();
   await honorSearch.fill('Эль Ведд');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'Эль Ведд',{timeout:5000});
   await page.waitForFunction(()=>
    document.querySelector('#honor-gain')?.hidden===false&&
    document.querySelector('#honor-ranks')?.hidden===true);
@@ -60,6 +63,9 @@ export async function runHonorGuideSmoke(browser,base){
   assert.ok(matchingSections.length>0&&matchingSections.every(text=>/Эль Ведд/u.test(text)),
    'Honor sections must match the location name');
   await honorSearch.fill('Герцог');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'Герцог',{timeout:5000});
   await page.waitForFunction(()=>
    document.querySelector('#honor-monthly')?.hidden===false);
   const matchingMonthly=await panel.locator('.wiki-honor-monthly-card:not([hidden])')
@@ -67,9 +73,15 @@ export async function runHonorGuideSmoke(browser,base){
   assert.ok(matchingMonthly.length>0&&matchingMonthly.every(text=>/Герцог/u.test(text)),
    'Honor monthly ranks must match the search term, not a fixed count');
   await honorSearch.fill('несуществующийнеизвестныйранг');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'несуществующийнеизвестныйранг',{timeout:5000});
   await panel.locator('.wiki-honor-search-empty').waitFor({state:'visible'});
   assert.equal(await panel.locator('.wiki-honor-section:not([hidden])').count(),0);
   await honorSearch.fill('');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='',
+   null,{timeout:5000});
   await page.waitForFunction(()=>
    document.querySelectorAll('.wiki-honor-section:not([hidden])').length===4);
   assert.equal(await panel.locator('.wiki-honor-rank:not([hidden])').count(),12);
@@ -286,6 +298,9 @@ export async function runHonorGuideSmoke(browser,base){
   const honorSearchEn=page.locator('input[name="pandora-studio-encyclopedia-filter"]');
   await honorSearchEn.click();
   await honorSearchEn.fill('Honor ranks');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'Honor ranks',{timeout:5000});
   await page.waitForFunction(()=>document.querySelector('#honor-ranks')?.hidden===false);
   const matchingEnglish=await panel.locator('.wiki-honor-section:not([hidden])')
    .allInnerTexts();
@@ -293,10 +308,16 @@ export async function runHonorGuideSmoke(browser,base){
    matchingEnglish.every(text=>/Honor ranks/i.test(text)),
    'Every visible English Honor section must match the phrase');
   await honorSearchEn.fill('totally-unknown-honor-record');
+  await page.waitForFunction(query=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery===query,
+   'totally-unknown-honor-record',{timeout:5000});
   await panel.locator('.wiki-honor-search-empty').waitFor({state:'visible'});
   assert.match(await panel.locator('.wiki-honor-search-empty').innerText(),
    /No Honor matches found/);
   await honorSearchEn.fill('');
+  await page.waitForFunction(()=>
+   document.querySelector('.wiki-page')?.dataset.honorSearchQuery==='',
+   null,{timeout:5000});
   await page.waitForFunction(()=>document.querySelectorAll(
    '.wiki-honor-section:not([hidden])').length===4);
   assert.match(await panel.locator('#honor-rank-7').innerText(),/Count/);
