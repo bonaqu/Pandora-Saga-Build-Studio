@@ -1304,10 +1304,12 @@ export async function runAdminEntrySmoke(browser,base){
    tab:document.querySelector('#stageBookTab_buffs')?.getAttribute('aria-selected')
   }));
   console.log('Book editorial probe',JSON.stringify(bookDebug));
-  // The editorial note lives inside an intentionally collapsed resistance
-  // subsection. Expand it as a reader would before using the inline pencil.
-  const showBookNote=async()=>{ 
-   const details=page.locator('#stageBookPanel .stage-resistance-skill-controls');
+  // The editable explanation now lives in the standard standalone
+  // Elemental Resistance disclosure, not the removed nested accordion.
+  const showBookNote=async()=>{
+   const details=page.locator('#stageBookPanel .stage-book-buff-group').filter({
+    has:page.locator('[data-guide-key="buffs.section.elemental"]')
+   });
    await details.waitFor({state:'attached'});
    if(!(await details.evaluate(node=>node.open)))
     await details.locator(':scope > summary').click();
@@ -1338,7 +1340,7 @@ export async function runAdminEntrySmoke(browser,base){
   await showBookNote();
   await page.locator('#stageBookPanel p.stage-attribute-note').first().waitFor({state:'visible'});
   assert.match(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
-   /Select only effects currently affecting this hero/);
+   /Only one resistance spell can be active/);
   await page.locator('#locale [data-locale="ru"]').click();
   await showBookNote();
   assert.equal(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),

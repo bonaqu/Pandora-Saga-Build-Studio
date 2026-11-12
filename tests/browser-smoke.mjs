@@ -342,6 +342,20 @@ async function main(){
  assert.match(await offense.innerText(),/Боевой клич|Массовая сосредоточенность/);
  assert.equal(await page.locator('#stageBookPanel input[type="checkbox"]').count(),0,
   'Read-only Skill Effects must never activate a defensive skill');
+ const calculatedSkill=offense.locator('.stage-effect-skill-label').first();
+ const sourceId=await calculatedSkill.getAttribute('data-source-skill-id');
+ assert.ok(Number(sourceId)>0,'Calculation row must attach its real OS skill ID');
+ await calculatedSkill.hover();
+ // Real pointer remains on the skill even when layout/sprite hydration shifts
+ // a Book row. Rehover when it is no longer the active hit target.
+ if(!await calculatedSkill.evaluate(node=>node.matches(':hover')))
+  await calculatedSkill.hover();
+ const richEffect=page.locator('#path-skill-hover-tooltip');
+ await richEffect.waitFor({state:'visible',timeout:5000});
+ assert.ok((await richEffect.locator('strong').first().innerText()).trim().length>2,
+  'Rich effect tooltip must show the canonical skill title');
+ assert.equal(await richEffect.locator('.path-skill-preview-item').count(),1);
+ await offense.locator('summary').hover();
  if(await offense.count()&&await healing.count()){
   const normalize=async selector=>selector.locator('summary').evaluate(node=>{
    const css=getComputedStyle(node);
@@ -387,8 +401,15 @@ async function main(){
  const skillHint=skillItems.locator('[data-triggered-skill-id]').first();
  assert.ok(await skillHint.count()>0,'Each triggered skill has a dedicated hover target');
  await skillHint.hover();
- await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:4000});
- assert.ok((await page.locator('#stage-guide-tooltip').innerText()).trim().length>8);
+ const richPotionSkill=page.locator('#path-skill-hover-tooltip');
+ await richPotionSkill.waitFor({state:'visible',timeout:5000});
+ assert.equal(await richPotionSkill.locator('.path-skill-preview-item').count(),1,
+  'Potion-triggered skills reuse the same Path skill preview');
+ assert.ok(await richPotionSkill.locator('strong').first().innerText(),
+  'The rich skill tooltip must contain the original game skill name');
+ assert.equal(await richPotionSkill.locator('img').count(),1,
+  'A skill tooltip includes its original game icon');
+ await page.locator('#stageAttributes .stage-consumable-skills summary').hover();
  assert.equal(await page.locator('#stageAttributes .stage-result-tile').count(),0,
   'Potion effects do not repeat potion-effectiveness total');
  await page.locator('#stageAttributes [data-book-page="effects"]').click();
@@ -500,6 +521,25 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').inputValue(),'90');
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestHymn"]').inputValue(),'30');
  assert.ok(await page.locator('#stageBookPanel .stage-legacy-buff-previews').count()>=1);
+ const elementalGroup=page.locator('#stageBookPanel .stage-book-buff-group').filter({
+  has:page.locator('[data-guide-key="buffs.section.elemental"]')});
+ assert.equal(await elementalGroup.count(),1,
+  'Elemental resistance must be a sibling of Ally Buffs, not nested inside');
+ assert.equal(await elementalGroup.locator('summary.stage-result-section-head').count(),1,
+  'Use the same disclosure geometry as the other Buffs sections');
+ assert.equal(await elementalGroup.locator('input[data-book-setting^="resistSkill:"]').count(),5);
+ const fire=elementalGroup.locator('[data-book-setting="resistSkill:410003001"]');
+ const ice=elementalGroup.locator('[data-book-setting="resistSkill:410015001"]');
+ await fire.check();
+ assert.equal(await fire.isChecked(),true);
+ await ice.check();
+ assert.equal(await ice.isChecked(),true);
+ assert.equal(await fire.isChecked(),false,
+  'Selecting Ice must automatically clear Fire');
+ assert.equal(await elementalGroup.locator('input[data-book-setting^="resistSkill:"]:checked').count(),1);
+ assert.doesNotMatch(await elementalGroup.innerText(),/Incoming skill|Вражеский навык/);
+ await ice.uncheck();
+ assert.equal(await elementalGroup.locator('input[data-book-setting^="resistSkill:"]:checked').count(),0);
  await page.locator('#stageAttributes .stage-book-close').click();
  await page.locator('#locale [data-locale="ru"]').click();
  await page.locator('#locale [data-locale="ru"][aria-pressed="true"]').waitFor({state:'visible'});

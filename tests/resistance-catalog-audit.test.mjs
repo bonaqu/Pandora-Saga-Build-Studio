@@ -80,7 +80,7 @@ test('skill resistance records are classified: active casts are not silently ass
   'a known skill is not an always-on hero buff until it was cast');
 });
 
-test('all six OS TARGET elemental resistance skills require explicit selection, preserve negative elements',()=>{
+test('only one of five elemental skills can affect resistance, Divine Blessing stays independent',()=>{
  const skills=JSON.parse(read('data/os/skills.json'));
  const choices=calc.resistanceSkillChoices(skills);
  assert.deepEqual(choices.map(row=>row.id),[
@@ -89,8 +89,10 @@ test('all six OS TARGET elemental resistance skills require explicit selection, 
  assert.deepEqual(calc.resistanceSkillPreview({skillCatalog:skills,selected:[]}).bonuses,{});
  const active=calc.resistanceSkillPreview({skillCatalog:skills,
   selected:[330004001,410003001,430054001,330004001]});
- assert.deepEqual(active.bonuses,{magic:25,fire:50,ice:-25,lightning:-25,
-  charm:-50,poison:25,dark:25});
+ assert.deepEqual(active.bonuses,{magic:25,fire:50,ice:-25,lightning:-25},
+  'Legacy saves with two elemental choices must not stack both');
+ assert.deepEqual(calc.resistanceSkillPreview({skillCatalog:skills,
+  selected:[440005501]}).bonuses,{charm:50,poison:-25,dark:-25});
  const z={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
  const classes=JSON.parse(read('data/os/classes.json'));
  const make=selected=>calc.base({classData:classes.WARRIOR,
@@ -101,7 +103,7 @@ test('all six OS TARGET elemental resistance skills require explicit selection, 
  const none=make([]),full=make([330004001,410003001,430054001]);
  for(const [key,delta] of Object.entries(active.bonuses))
   assert.equal(full.resistances.elements[key]-none.resistances.elements[key],delta,key);
- assert.equal(full.resistanceSkills.rows.length,3);
+ assert.equal(full.resistanceSkills.rows.length,2);
  assert.equal(make([900000000]).resistances.elements.fire,none.resistances.elements.fire);
  const forged={...skills,410003001:{...skills['410003001'],
   funcs:skills['410003001'].funcs.map(f=>({...f,fv1:[0,0,0,999]}))}};

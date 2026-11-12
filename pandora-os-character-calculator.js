@@ -352,8 +352,11 @@ function resistanceSkillPreview({skillCatalog=null,selected=[]}={}){
  const all=resistanceSkillChoices(skillCatalog),chosen=new Set(
   Array.isArray(selected)?selected.filter(Number.isSafeInteger):[]);
  const bonuses={},rows=[];
- for(const choice of all){
-  if(!chosen.has(choice.id))continue;
+ // Divine Blessing is a separate buff and a historical alias in older
+ // saves; the five elemental resistance spells are mutually exclusive.
+ const divine=all.find(s=>s.id===330004001&&chosen.has(s.id));
+ const elemental=all.find(s=>s.id!==330004001&&chosen.has(s.id));
+ for(const choice of [divine,elemental].filter(Boolean)){
   rows.push(choice);
   for(const [key,value] of Object.entries(choice.effects))
    bonuses[key]=(bonuses[key]||0)+value;
@@ -2345,6 +2348,43 @@ function guildPassiveAtLevel(level=0){
 // These are read-only magnitudes: never apply to combat stats merely because
 // the hero's level/mastery is high. The corresponding spell must be selected
 // and its current OS identity verified before it becomes an active buff.
+// Read-only external-priest per-cast magnitudes. The exact Remaked floor
+// rules are retained, but every coefficient and constant is checked against
+// current OS data. No selection flag or combat mutation is involved.
+function priestCastPreviews({spi,blessing,hymn,skills=null}={}){
+ const result={gratia:null,lapisMedio:null,encouragement:null,
+  groupBarrier:null,holyWeapon:null,minstrel:null,sage:null,verified:false};
+ if(![spi,blessing,hymn].every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500)||
+  !skills||typeof skills!=='object')return result;
+ const exact=(id,ep,values)=>{
+  const source=skills[String(id)];
+  const effects=(source?.funcs||[]).filter(f=>f?.dir==='TARGET'&&f.ep===ep);
+  return source?.id===id&&effects.length===1&&
+   Array.isArray(effects[0].fv1)&&effects[0].fv1.length===4&&
+   effects[0].fv1.every((v,i)=>v===values[i]);
+ };
+ if(exact(320007001,'EP_ATTACKINTERVAL_SCALE',[10,0,5,5]))
+  result.gratia=5+Math.floor(spi*10/100)+Math.floor(blessing*5/100);
+ if(exact(320008001,'EP_ARMORCLASS_CONST',[3,0,4,5]))
+  result.lapisMedio=5+Math.floor(spi*3/100)+Math.floor(blessing*4/100);
+ if(['EP_STRENGTH_CONST','EP_AGILITY_CONST','EP_INTELIGENCE_CONST']
+  .every(ep=>exact(320012001,ep,[0,0,10,0])))
+  result.encouragement=Math.floor(blessing/10);
+ if(exact(320003001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10]))
+  result.groupBarrier=-10-Math.floor(blessing/5);
+ if(exact(330051001,'EP_AURAHOLY_CONSTANT',[6,0,0,2]))
+  result.holyWeapon=2+Math.floor(spi*6/100);
+ const minstrel=songChains.find(x=>x.id===340001001);
+ if(songSourceMatches(skills,minstrel)&&
+  exact(340001003,'EP_TOHIT_CONST',[13,0,13,4])&&
+  exact(340001003,'EP_AVOIDANCE_CONST',[13,0,13,4]))
+  result.minstrel=4+Math.floor(spi*13/100)+Math.floor(hymn*13/100);
+ const sage=songChains.find(x=>x.id===340004001);
+ if(songSourceMatches(skills,sage)&&
+  exact(340004003,'EP_ELEMENT_DAMAGE_SCALE',[8,0,8,4]))
+  result.sage=4+Math.floor(spi*8/100)+Math.floor(hymn*8/100);
+ return result;
+}
 function legacyBuffPreview({spi,blessing=0,hymn=0,alchemy=0}={}){
  if(![spi,blessing,hymn,alchemy].every(n=>Number.isInteger(n)&&n>=0))return null;
  const quotient=(value,parts)=>Math.floor(value/(100/parts));
@@ -2627,6 +2667,10 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  // Only valid nonnegative integers may supply combat buffs.
  const priestValid=priestActive&&[priest.spi,priest.blessing,priest.hymn]
   .every(n=>Number.isSafeInteger(n)&&n>=0&&n<=500);
+ const priestCast=priestCastPreviews({
+  spi:priest?.spi,blessing:priest?.blessing,hymn:priest?.hymn,
+  skills:combatContext.skillCatalog
+ });
  const legacyBuffs=legacyBuffPreview({
   spi:priestValid?priest.spi:stats.spi,
   blessing:priestValid?priest.blessing:combatContext.legacyBuffMasteries?.blessing??0,
@@ -2752,14 +2796,14 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   vitalFormulas:{hp:hpFormula,mp:mpFormula},resistanceSkills,
   hpRaw:rawHp.base+level*rawHp.lv+stats.vit*rawHp.vit,
   mpRaw:rawMp.base+level*rawMp.lv+stats.spi*rawMp.spi,
-  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,priestApplied,songSkills,otherEquipment,
+  stats,basic,effects,honor:extra.honor,potion,resistances,targetResistance,procPreview,experienceBonus,battleMapCloaks,specialEquipment,regeneration,legacyBuffs,priestApplied,priestCast,songSkills,otherEquipment,
   recoveryAmount,healingSkill,healingSpells,periodicRecovery,consumableRecovery,consumableSkills,statusCures,harmfulConsumables,combat,gemstones,auraDamage,attackRange,racialEffects,elementalMagic,elementalRefinement,mountedRelease,unison,coverage,
   attributeBuffs:{flat:extra.flat,trace:extra.trace},supplementalFlat,supplementalSource,
   rounding:'floor-class-cents',source:'current game server / Modern current-vitals class formula',
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({scalingSkillPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({priestCastPreviews,scalingSkillPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });

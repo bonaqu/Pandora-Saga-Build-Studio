@@ -838,12 +838,9 @@ function setAttributeBuff(key,value){
   const id=Number(key.slice('resistSkill:'.length));
   if(!Number.isSafeInteger(id)||!window.PandoraOSCalculator
    .resistanceSkillChoices(catalog.skills||{}).some(row=>row.id===id))return;
-  const legal=new Set(window.PandoraOSCalculator
-   .resistanceSkillChoices(catalog.skills||{}).map(row=>row.id));
-  const selected=new Set(Array.isArray(current.resistanceSkillIds)?
-   current.resistanceSkillIds.filter(id=>legal.has(id)):[]);
-  if(value===true)selected.add(id);else selected.delete(id);
-  current.resistanceSkillIds=[...selected].sort((a,b)=>a-b);
+  // Single-choice elemental resistance spell, independent of Divine Blessing.
+  if(id===330004001)return;
+  current.resistanceSkillIds=value===true?[id]:[];
  }else if(key==='honorTitle'){
   const id=Number(value);
   if(!Number.isInteger(id)||id<0||id>=window.PandoraOSCalculator.honorTitles.length)return;
@@ -1682,7 +1679,7 @@ function renderStageAttributes(calculated=undefined){
     !ability.weaponUse.includes(equippedWeapon?.kind??'BARE_HAND')?
     (bookEn?'Unavailable with current weapon':'Недоступно с выбранным оружием'):null);
   combatSkillCards[setting]=ability?{
-   name:ability.name,
+   id,name:ability.name,
    nameEn:officialEnglish?.skills?.[String(id)]?.n||ability.name,
    desc:ability.desc,
    descEn:officialEnglish?.skills?.[String(id)]?.d||ability.desc,
@@ -1710,7 +1707,7 @@ function renderStageAttributes(calculated=undefined){
   const reason=availability[setting]?null:
    (bookEn?'This skill is unavailable':'Умение недоступно');
   combatSkillCards[setting]=ability?{
-   name:ability.name,
+   id:combatSkillCatalog.supportSkillIds[kind],name:ability.name,
    nameEn:officialEnglish?.skills?.[String(combatSkillCatalog.supportSkillIds[kind])]?.n||ability.name,
    desc:ability.desc,
    descEn:officialEnglish?.skills?.[String(combatSkillCatalog.supportSkillIds[kind])]?.d||ability.desc,
@@ -2293,6 +2290,14 @@ function skillHover(button,skill){
    if(src){const img=h('img',{src,alt:''});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));row.append(img)}
    const copy=h('div');copy.append(h('strong',{text:entry.name||(lang==='en'?'Skill':'Умение')}));
    if(entry.charLevel)copy.append(h('small',{text:(lang==='en'?'Level ':'Уровень ')+entry.charLevel}));
+   if(Array.isArray(entry.reqs))for(const req of entry.reqs){
+    if(!req||typeof req.branch!=='string'||!Number.isSafeInteger(req.amount)||req.amount<=0)continue;
+    const branch=lang==='en'?
+     (officialEnglish?.branches?.[req.branch]||catalog.meta?.branchLabels?.[req.branch]||req.branch):
+     (catalog.meta?.branchLabels?.[req.branch]||req.branch);
+    copy.append(h('small',{text:(lang==='en'?'Requires ':'Требуется мастерство «')+
+     branch+(lang==='en'?' mastery: ':'»: ')+req.amount}));
+   }
    if(entry.desc)copy.append(h('p',{text:entry.desc}));
    row.append(copy);tip.append(row);
   }
@@ -2318,6 +2323,14 @@ function skillHover(button,skill){
   if(event.pointerType==='touch')return;
   queueSkillPreview(button,show);
  });
+ // A Hero Book section can be rebuilt underneath a stationary pointer.
+ // Pointer movement recovers the preview even when the native enter event
+ // was lost during that redraw; never reset an existing hover timer.
+ button.addEventListener('pointermove',event=>{
+  if(event.pointerType==='touch'||activeSkillPreviewOwner===button||
+   pendingSkillPreview?.button===button)return;
+  queueSkillPreview(button,show);
+ });
  button.addEventListener('pointerleave',clear);
  button.addEventListener('focus',()=>{if(button.matches(':focus-visible'))show()});
  button.addEventListener('blur',clear);
@@ -2328,6 +2341,27 @@ function skillHover(button,skill){
   event.preventDefault();event.stopPropagation();clear();
  });
 }
+// Share the exact rich Path/Origin tooltip with skill references throughout
+// the site. One controller owns lifecycle, hover delay, sprite and requirements.
+window.PandoraSkillPreview=Object.freeze({
+ attach(node,id){
+  const key=String(id??''),skill=catalog.skills?.[key];
+  if(!node||!Number.isSafeInteger(Number(key))||Number(key)<=0||
+   skill?.id!==Number(key))return false;
+  if(node.dataset.pandoraRichSkillPreview==='1')return true;
+  const translation=officialEnglish?.skills?.[key];
+  const localized=lang==='en'?{
+   ...skill,name:translation?.n||skill.name,
+   desc:translation?.d||skill.desc
+  }:skill;
+  if(!node.matches('button,a,input,[tabindex]'))node.setAttribute('tabindex','0');
+  node.dataset.pandoraRichSkillPreview='1';
+  node.dataset.sourceSkillId=key;
+  skillHover(node,localized);
+  return true;
+ },
+ dismiss:dismissSkillPreview
+});
 // One global listener, not one scroll listener for every skill button.
 document.addEventListener('scroll',()=>{
  if(pendingSkillPreview){
@@ -2873,10 +2907,15 @@ function wikiLink(text,type,id,highlight=null){
  const displayId=type==='skill'?String(id):
   wikiIndex?.canonical?.(type,id)||String(id);
  const href='#wiki/'+encodeURIComponent(type)+'/'+encodeURIComponent(displayId)+(highlight==null?'':'/'+encodeURIComponent(highlight));
- return h('a',{class:'wiki-link',href,text,onclick:event=>{
+ const link=h('a',{class:'wiki-link',href,text,onclick:event=>{
   if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
   event.preventDefault();openWiki(type,displayId,highlight);
  }});
+ // References inside item, Soul, NPC, monster and recipe articles use the
+ // same rich skill preview as Hero Path, rather than plain text or titles.
+ if(type==='skill'&&typeof window!=='undefined')
+  window.PandoraSkillPreview?.attach(link,displayId);
+ return link;
 }
 function guardEncyclopediaSearch(input){
  // Some password managers ignore autocomplete="off". Prevent automatic

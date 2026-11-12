@@ -34,7 +34,8 @@ test('legacy reference remains an archive, not the active current OS amount',()=
  const legacy=C.legacyBuffPreview({spi:134,blessing:90,hymn:30});
  assert.equal(legacy.gratia.value,20);
  assert.equal(preview().priestApplied.gratiaPreview,22);
- assert.match(book,/id===320007001\?modifiers\?\.priestApplied\?\.gratiaPreview/);
+ assert.match(book,/const amount=priestValues\?\.\[benefit\]/);
+ assert.match(book,/Скорость атаки \+/);
 });
 
 test('invalid source and disabled or undertrained priest cannot add attack speed',()=>{
