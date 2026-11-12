@@ -857,9 +857,8 @@ function buffsPage(body,options){
     icon:skillIconForId(id),desc:row?.description,
     descEn:gameTerms.englishSkills?.[String(id)]?.d||row?.description,
     externalPriest:true,
-    summary:buffs.priestEnabled?summary:(english?
-     'Scales with the other priest’s attributes and mastery':
-     'Зависит от СД и мастерства другого жреца')});
+    summary:(english?gameTerms.englishSkills?.[String(id)]?.d:row?.description)||
+     (english?row?.nameEn:row?.name)||''});
  }
  for(const [key,label] of [['combatWarCry','Боевой клич'],
   ['combatWindAssist','Помощь ветра'],['combatWindBlessing','Благословение ветра']])
@@ -867,6 +866,45 @@ function buffsPage(body,options){
  // One source-controlled setting per Remaked enhancement. The entries
  // already represented by Life Sign, priest and elemental resistance tools
  // deliberately stay in their original sections, without duplicate inputs.
+ const readableBuffEffects={
+  100058001:['Увеличивает атаку и получаемый урон до следующего удара.',
+    'Increases damage dealt and taken until the next hit.'],
+  213702001:['Ускоряет стрельбу из арбалета на 30%.','Crossbow attack speed +30%.'],
+  213605001:['Повышает атаку, точность и дальность стрельбы. Во время действия нельзя двигаться.',
+    'Increases attack, accuracy and firing range; movement is disabled.'],
+  260002001:['Скорость передвижения +30%.','Movement speed +30%.'],
+  220001001:['Добавляет яд к атакам оружием. Сила эффекта зависит от мастерства.',
+    'Adds poison aura damage to weapon attacks, scaling with mastery.'],
+  430051001:['Добавляет урон тьмой к оружию, но наносит урон владельцу при атаках.',
+    'Adds dark aura damage to attacks but also damages the wielder.'],
+  168052001:['Уклонение −50%. Улучшает защиту от критических ударов.',
+    'Evasion −50%; provides protection against critical hits.'],
+  320002001:['Скорость восстановления ОМ союзников +90%.',
+    'Allies’ MP recovery speed +90%.'],
+  320006001:['Ускоряет применение умений союзниками.',
+    'Speeds up allies’ skill execution.'],
+  330005001:['Периодически восстанавливает ОМ цели.',
+    'Periodically restores MP to the target.'],
+  340003001:['Защищает союзников от небольших попаданий. Сила защиты зависит от жреца.',
+    'Negates small incoming hits to allies; potency depends on the priest.'],
+  320003001:['Уменьшает получаемый группой урон. Сила зависит от Благословения жреца.',
+    'Reduces damage taken by the party, scaling with priest Blessing.'],
+  330051001:['Добавляет святую ауру оружию союзника. Сила зависит от СД жреца.',
+    'Adds holy damage aura to an ally’s weapon, scaling with priest SPR.'],
+  320011001:['Усиливает ауру оружия и магический урон союзника. Эффект зависит от жреца.',
+    'Boosts an ally’s weapon aura and magical damage, scaling with the priest.'],
+  340001001:['Повышает точность и уклонение ближайших союзников.',
+    'Raises accuracy and evasion for nearby allies.'],
+  340004001:['Повышает магическую атаку союзников и сокращает перезарядку умений.',
+    'Increases allies’ magical damage and reduces skill cooldown.'],
+  142051001:['Шанс критического удара +10%.','Critical hit chance +10%.'],
+  260005001:['Уклонение +10.','Evasion +10.'],
+  260008001:['Уклонение +100 до двух полученных ударов.',
+    'Evasion +100 until hit twice.'],
+  100055001:['Точность +20 и дополнительно +15%.',
+    'Accuracy +20 plus +15%.']
+ };
+ const buffEffectText=id=>readableBuffEffects[id]?.[english?1:0]||'';
  for(const row of remakedBuffRows){
   if(row.existing||!row.name)continue;
   // Blessing- and Hymn-dependent spells are received from another priest.
@@ -899,9 +937,8 @@ function buffsPage(body,options){
     }[row.id]):
      // Game-client description is useful even where current OS stacking is
      // not confirmed. Never present historical previews as final damage.
-     (english?description||row.description:row.description)||
-     (english?'Effect has not been quantified yet':
-      'Числовой эффект ещё не подтверждён')});
+     buffEffectText(row.id)||description||row.description||
+     (english?'Exact effect not yet confirmed':'Точный эффект пока не подтверждён')});
  }
  if(resistanceSkillChoices.length){
   const group=make('details',{class:'stage-legacy-buff-previews stage-resistance-skill-controls'});
@@ -921,6 +958,13 @@ function buffsPage(body,options){
    const row=make('label',{class:'stage-book-check stage-resistance-skill-row'});
    row.append(make('input',{type:'checkbox','data-book-setting':'resistSkill:'+skill.id,
     checked:selected,onchange:event=>onBuff('resistSkill:'+skill.id,event.target.checked)}));
+   const sprite=skillIconForId(skill.id);
+   if(sprite){
+    const picture=make('img',{src:sprite,alt:'',loading:'lazy',
+     width:26,height:26,class:'stage-resistance-skill-icon'});
+    picture.onerror=()=>picture.remove();
+    row.append(picture);
+   }
    row.append(make('span',{class:'stage-combat-buff-copy'},[
     make('strong',{text:english?skill.nameEn:skill.name}),
     make('small',{text:(skill.incoming?(english?'Incoming skill · ':'Вражеский навык · '):
