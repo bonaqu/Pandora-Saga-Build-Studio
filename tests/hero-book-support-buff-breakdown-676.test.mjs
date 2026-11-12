@@ -40,6 +40,7 @@ test('support skill rows reuse healing presentation and show only applied speed 
  assert.match(ui,/id:320002001[\s\S]*?amount:modifiers\?\.regeneration\?\.mp\?\.allyBuff/);
  assert.match(ui,/supportRows\.length/);
  assert.match(ui,/gameSkillBadge\(row\.id,row\.ru,row\.en,gameTerms,en,skillIconForId\)/);
+ assert.match(ui,/\['effects','support','\.stage-supporting-skills > strong','Поддерживающие умения','Support skills'\]/);
  assert.match(ui,/mpRecoveryRepose/);
  assert.match(ui,/r\?\.mp\?\.allyBuff,' инд\.'/);
 });

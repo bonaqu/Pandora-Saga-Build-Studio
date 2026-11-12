@@ -1773,6 +1773,7 @@ function collapseBookSections(body,page){
 const chapterCaptionSpecs=Object.freeze([
  ['effects','healing','.stage-healing-spells > strong','Лечащие умения','Healing skills'],
  ['effects','offense','.stage-attacking-skills > strong','Атакующие умения','Offensive skills'],
+ ['effects','support','.stage-supporting-skills > strong','Поддерживающие умения','Support skills'],
  ['effects','defense','.stage-defensive-skills > strong','Защитные умения','Defensive skills'],
  ['effects','periodic','.stage-periodic-recovery > summary','Восстановление каждые 2 секунды','Recovery every 2 seconds'],
  ['effects','songs','.stage-song-skills > summary','Песни для выбранного класса','Songs available to this class'],
