@@ -213,7 +213,8 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
     ' · '+itemNames(row);
    add(title+' · Количество одинаковых записей',oldCount,newCount);
    const source=add(title+' · Содержание удалённых копий',detailed(row),
-    'удалено '+positions.length+' из '+oldCount+'; осталось '+newCount+' одинаковых правил');
+    'удалено '+positions.length+' из '+oldCount+'; осталось '+newCount+' '+
+     plural(newCount,'одинаковое правило','одинаковых правила','одинаковых правил'));
    if(row?.items?.length===1&&source){
     const itemId=String(row.items[0].i);
     source.linkedItemId=itemId;source.linkedItemName=sourceName('items',itemId,'предмета');
@@ -227,7 +228,7 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    const title=prefix+' · Добавлено правило: '+kind(row)+' · '+monster(row)+
     ' · '+itemNames(row);
    add(title+' · Количество одинаковых записей',oldCount,newCount);
-   add(title+' · Содержание добавленных копий','было '+oldCount+' одинаковых правил',
+   add(title+' · Содержание добавленных копий','было '+oldCount+' '+plural(oldCount,'одинаковое правило','одинаковых правила','одинаковых правил'),
     'стало '+newCount+': '+detailed(row));
   }
   if(!leftOver.size&&!rightOver.size&&!editsInZone&&!same(before,after)){
