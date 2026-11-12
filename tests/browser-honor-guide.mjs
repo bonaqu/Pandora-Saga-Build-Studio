@@ -53,14 +53,19 @@ export async function runHonorGuideSmoke(browser,base){
   assert.ok(locationMatches.length>0,'Honor search must find at least one PvP location');
   assert.ok(locationMatches.every(text=>/Эль Ведд/u.test(text)),
    'Only matching Honor entries may remain visible: '+locationMatches.join(' | '));
-  assert.equal(await page.locator('.wiki-honor-nav-link:not([hidden])').count(),1,
-   'Honor sidebar follows real matches');
+  const navVisible=await page.locator('.wiki-honor-nav-link:not([hidden])').count();
+  const matchingSections=await panel.locator('.wiki-honor-section:not([hidden])').allInnerTexts();
+  assert.equal(navVisible,matchingSections.length,
+   'Honor sidebar must expose exactly the sections containing search matches');
+  assert.ok(matchingSections.length>0&&matchingSections.every(text=>/Эль Ведд/u.test(text)),
+   'Honor sections must match the location name');
   await honorSearch.fill('Герцог');
   await page.waitForFunction(()=>
    document.querySelector('#honor-monthly')?.hidden===false);
-  assert.equal(await panel.locator('.wiki-honor-monthly-card:not([hidden])').count(),1);
-  assert.equal(await panel.locator('.wiki-honor-monthly-card:not([hidden])').first()
-   .innerText().then(text=>/Герцог/.test(text)),true);
+  const matchingMonthly=await panel.locator('.wiki-honor-monthly-card:not([hidden])')
+   .allInnerTexts();
+  assert.ok(matchingMonthly.length>0&&matchingMonthly.every(text=>/Герцог/u.test(text)),
+   'Honor monthly ranks must match the search term, not a fixed count');
   await honorSearch.fill('несуществующийнеизвестныйранг');
   await panel.locator('.wiki-honor-search-empty').waitFor({state:'visible'});
   assert.equal(await panel.locator('.wiki-honor-section:not([hidden])').count(),0);
@@ -282,7 +287,11 @@ export async function runHonorGuideSmoke(browser,base){
   await honorSearchEn.click();
   await honorSearchEn.fill('Honor ranks');
   await page.waitForFunction(()=>document.querySelector('#honor-ranks')?.hidden===false);
-  assert.equal(await panel.locator('.wiki-honor-section:not([hidden])').count(),1);
+  const matchingEnglish=await panel.locator('.wiki-honor-section:not([hidden])')
+   .allInnerTexts();
+  assert.ok(matchingEnglish.length>0&&
+   matchingEnglish.every(text=>/Honor ranks/i.test(text)),
+   'Every visible English Honor section must match the phrase');
   await honorSearchEn.fill('totally-unknown-honor-record');
   await panel.locator('.wiki-honor-search-empty').waitFor({state:'visible'});
   assert.match(await panel.locator('.wiki-honor-search-empty').innerText(),
