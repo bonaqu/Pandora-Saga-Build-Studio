@@ -333,7 +333,7 @@ async function main(){
  assert.match(await page.locator('#stage-guide-tooltip').innerText(),/индекс скорости восстановления/);
  await page.locator('#stageAttributes [data-book-page="effects"]').click();
  const offense=page.locator('#stageBookPanel .stage-attacking-skills');
- const healing=page.locator('#stageBookPanel .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills)');
+ const healing=page.locator('#stageBookPanel .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills):not(.stage-movement-skills)');
  const defensive=page.locator('#stageBookPanel .stage-defensive-skills');
  assert.equal(await defensive.count(),1,'Variable defensive-skill chapter must be present');
  assert.equal(await defensive.getAttribute('open'),null,
