@@ -2290,6 +2290,14 @@ function skillHover(button,skill){
    if(src){const img=h('img',{src,alt:''});img.onerror=()=>img.replaceWith(h('span',{text:'✦'}));row.append(img)}
    const copy=h('div');copy.append(h('strong',{text:entry.name||(lang==='en'?'Skill':'Умение')}));
    if(entry.charLevel)copy.append(h('small',{text:(lang==='en'?'Level ':'Уровень ')+entry.charLevel}));
+   if(Array.isArray(entry.reqs))for(const req of entry.reqs){
+    if(!req||typeof req.branch!=='string'||!Number.isSafeInteger(req.amount)||req.amount<=0)continue;
+    const branch=lang==='en'?
+     (officialEnglish?.branches?.[req.branch]||catalog.meta?.branchLabels?.[req.branch]||req.branch):
+     (catalog.meta?.branchLabels?.[req.branch]||req.branch);
+    copy.append(h('small',{text:(lang==='en'?'Requires ':'Требуется мастерство «')+
+     branch+(lang==='en'?' mastery: ':'»: ')+req.amount}));
+   }
    if(entry.desc)copy.append(h('p',{text:entry.desc}));
    row.append(copy);tip.append(row);
   }
@@ -2325,6 +2333,27 @@ function skillHover(button,skill){
   event.preventDefault();event.stopPropagation();clear();
  });
 }
+// Share the exact rich Path/Origin tooltip with skill references throughout
+// the site. One controller owns lifecycle, hover delay, sprite and requirements.
+window.PandoraSkillPreview=Object.freeze({
+ attach(node,id){
+  const key=String(id??''),skill=catalog.skills?.[key];
+  if(!node||!Number.isSafeInteger(Number(key))||Number(key)<=0||
+   skill?.id!==Number(key))return false;
+  if(node.dataset.pandoraRichSkillPreview==='1')return true;
+  const translation=officialEnglish?.skills?.[key];
+  const localized=lang==='en'?{
+   ...skill,name:translation?.n||skill.name,
+   desc:translation?.d||skill.desc
+  }:skill;
+  if(!node.matches('button,a,input,[tabindex]'))node.setAttribute('tabindex','0');
+  node.dataset.pandoraRichSkillPreview='1';
+  node.dataset.sourceSkillId=key;
+  skillHover(node,localized);
+  return true;
+ },
+ dismiss:dismissSkillPreview
+});
 // One global listener, not one scroll listener for every skill button.
 document.addEventListener('scroll',()=>{
  if(pendingSkillPreview){
