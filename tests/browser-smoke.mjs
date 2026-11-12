@@ -335,8 +335,13 @@ async function main(){
  const offense=page.locator('#stageBookPanel .stage-attacking-skills');
  const healing=page.locator('#stageBookPanel .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills)');
  const defensive=page.locator('#stageBookPanel .stage-defensive-skills');
- assert.equal(await defensive.count(),1,'Defensive-skill chapter must be present');
- assert.match(await defensive.innerText(),/Безболезненность/);
+ assert.equal(await defensive.count(),1,'Variable defensive-skill chapter must be present');
+ assert.match(await defensive.innerText(),/Помощь ветра/);
+ assert.doesNotMatch(await defensive.innerText(),/Быстрый отход|Ускользание/,
+  'Fixed-value skills must stay out of the Skill Effects preview');
+ assert.match(await offense.innerText(),/Боевой клич|Массовая сосредоточенность/);
+ assert.equal(await page.locator('#stageBookPanel input[type="checkbox"]').count(),0,
+  'Read-only Skill Effects must never activate a defensive skill');
  if(await offense.count()&&await healing.count()){
   const normalize=async selector=>selector.locator('summary').evaluate(node=>{
    const css=getComputedStyle(node);
