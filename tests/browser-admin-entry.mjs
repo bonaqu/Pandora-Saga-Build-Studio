@@ -1340,7 +1340,7 @@ export async function runAdminEntrySmoke(browser,base){
   await showBookNote();
   await page.locator('#stageBookPanel p.stage-attribute-note').first().waitFor({state:'visible'});
   assert.match(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
-   /Only one resistance spell can be active/);
+   /Only one spell can be active at a time/);
   await page.locator('#locale [data-locale="ru"]').click();
   await showBookNote();
   assert.equal(await page.locator('#stageBookPanel p.stage-attribute-note').first().innerText(),
