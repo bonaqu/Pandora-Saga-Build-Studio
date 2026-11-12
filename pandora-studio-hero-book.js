@@ -952,13 +952,22 @@ function buffsPage(body,options){
       const current=modifiers?.combat?.priestSong;
       const enabled=buffs.priestEnabled===true&&row.selected;
       if(!enabled)return basic;
+      const applied=modifiers?.priestApplied;
       const value=row.id===340001001?current?.minstrel:
-       row.id===340004001?current?.sageElementDamage:null;
+       row.id===340004001?current?.sageElementDamage:
+       row.id===320003001?applied?.groupBarrier:
+       row.id===330051001?applied?.holyWeapon:null;
       if(!Number.isFinite(value)||!value)return basic;
-      return basic+' · '+(row.id===340001001?
+      const label=row.id===340001001?
        (english?'Accuracy and evasion +':'Точность и уклонение +'):
-       (english?'Elemental damage +':'Стихийный урон +'))+
-       value+(row.id===340004001?'%':'');
+       row.id===340004001?
+        (english?'Elemental damage +':'Стихийный урон +'):
+       row.id===320003001?
+        (english?'Incoming damage ':'Получаемый урон '):
+        (english?'Holy weapon aura +':'Святая аура оружия +');
+      return basic+' · '+label+
+       (value>0?'+':'')+value+
+       ([340004001,320003001].includes(row.id)?'%':'');
      })()});
  }
  if(resistanceSkillChoices.length){
