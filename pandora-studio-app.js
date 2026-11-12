@@ -6587,6 +6587,20 @@ function renderBuilds(root){
      'data-owner-copy-key':key,text:libraryText(key)})
    ]));
   }
+  rows.append(h('h4',{class:'build-hint-owner-section',
+   text:tr('Поиск и сообщения','Search and messages')}));
+  for(const [key,ru,en] of [
+   ['librarySearchInputLabel','Имя поля','Search field label'],
+   ['librarySearchPlaceholder','Подсказка поиска','Search placeholder'],
+   ['librarySearchEmpty','Ничего не найдено','No matches'],
+   ['libraryEmpty','Нет сохранений','No saved builds']
+  ]){
+   rows.append(h('div',{class:'build-hint-owner-row'},[
+    h('span',{class:'build-hint-owner-action',text:tr(ru,en)}),
+    h('span',{class:'build-hint-owner-value',
+     'data-owner-copy-key':key,text:libraryText(key)})
+   ]));
+  }
   editor.append(rows);root.append(editor);
  }
  const comparisonSlot=h('section',{'data-build-compare-slot':''});
@@ -6599,7 +6613,8 @@ function renderBuilds(root){
  const syncCompareCheckboxes=()=>{
   for(const row of searchable)row.check.checked=compareIds.includes(row.build.id);
  };
- const search=(builds.length>5||Boolean(buildSearchQuery.trim()))?h('input',{type:'search',class:'build-library-search',
+ const search=(builds.length>5||Boolean(buildSearchQuery.trim()))?h('input',{
+  type:'search',class:'build-library-search','data-build-library-search':'',
   'aria-label':libraryText('librarySearchInputLabel'),
   placeholder:libraryText('librarySearchPlaceholder'),value:buildSearchQuery}):null;
  if(search)root.append(search);
@@ -6722,7 +6737,8 @@ function renderBuilds(root){
  root.append(grid);
  comparison=renderBuildComparison(comparisonSlot,syncCompareCheckboxes);
  if(search){
-  const none=h('p',{class:'muted',text:libraryText('librarySearchEmpty'),hidden:true});
+  const none=h('p',{class:'muted','data-build-library-state-copy':'librarySearchEmpty',
+   text:libraryText('librarySearchEmpty'),hidden:true});
   root.append(none);
   const apply=()=>{
    let visible=0;
@@ -6739,7 +6755,8 @@ function renderBuilds(root){
   search.addEventListener('input',()=>{buildSearchQuery=search.value;apply()});
   apply();
  }
- if(!builds.length)root.append(h('p',{class:'muted',text:libraryText('libraryEmpty')}));
+ if(!builds.length)root.append(h('p',{class:'muted',
+  'data-build-library-state-copy':'libraryEmpty',text:libraryText('libraryEmpty')}));
  window.PandoraUILocale.localize(root,lang);
  // Saved-build controls are mounted dynamically; bind the same D1 editor
  // used for authored account copy after every library render.
@@ -7807,6 +7824,19 @@ function refreshVisibleUICopy(recordKey){
   for(const caption of document.querySelectorAll('#detailContent [data-build-action-label]')){
    const key=caption.dataset.buildActionLabel;
    if(locale.fieldKey(key)===id)caption.textContent=locale.text(key,lang);
+  }
+  // Owner copy changes must not replace the live search input: preserve
+  // its query, focus, filtering, viewport scroll and the active character.
+  const search=document.querySelector('#detailContent [data-build-library-search]');
+  if(search){
+   if(id===locale.fieldKey('librarySearchInputLabel'))
+    search.setAttribute('aria-label',locale.text('librarySearchInputLabel',lang));
+   if(id===locale.fieldKey('librarySearchPlaceholder'))
+    search.placeholder=locale.text('librarySearchPlaceholder',lang);
+  }
+  for(const state of document.querySelectorAll('#detailContent [data-build-library-state-copy]')){
+   const key=state.dataset.buildLibraryStateCopy;
+   if(locale.fieldKey(key)===id)state.textContent=locale.text(key,lang);
   }
  }
 }
