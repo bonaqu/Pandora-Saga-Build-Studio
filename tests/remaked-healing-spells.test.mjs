@@ -90,8 +90,8 @@ test('base() supplies class cap and OS catalog; no automatic use or HP inflation
  const s=read('pandora-os-character-calculator.js'),stage=read('pandora-studio-hero-book.js');
  assert.match(s,/benevolenceCap:classData\.branchCaps\?\.benevolence/);
  assert.match(s,/skillCatalog:combatContext\.skillCatalog/);
- assert.match(stage,/gameSkillName\(row\.skillId\|\|/);
+ assert.match(stage,/gameSkillBadge\(row\.skillId\|\|/);
  assert.match(stage,/row\.requiresEn\|\|row\.requires/);
- assert.match(stage,/gameSkillName\(entry\.id,entry\.name,null,gameTerms,en\)/);
+ assert.match(stage,/gameSkillBadge\(entry\.id,entry\.name,null,gameTerms,en,skillIconForId\)/);
  assert.match(stage,/en\?'Recovery every 2 seconds'/);
 });
