@@ -1262,13 +1262,26 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    const detail=[ready,basis,en?
     (skill.detailEn||source?.d||skill.description):
     (skill.detailRu||skill.description)].filter(Boolean).join(' · ');
-   section.append(make('div',{class:'stage-heal-row '+rowClass+
+   const modelParts=(skill.coefficientModels||[]).filter(part=>
+    Number.isSafeInteger(part?.amount)&&
+    part.confidence==='coefficient-model');
+   const preview=make('div',{class:'stage-heal-row '+rowClass+
     (!skill.available?' stage-book-unavailable':'')},[
     gameSkillBadge(skill.id,skill.name,source?.n||skill.name,
      gameTerms,en,skillIconForId),
     make('strong',{text:amount}),
     make('small',{text:detail})
-   ]));
+   ]);
+   if(modelParts.length){
+    const parts=modelParts.map(part=>
+     (en?part.labelEn:part.labelRu)+' '+
+     (part.amount>0?'+':'')+part.amount+part.unit).join(' · ');
+    preview.append(make('small',{class:'stage-skill-os-coefficient-model',
+     text:(en?'OS coefficient model (server rounding not confirmed): ':
+      'Модель по коэффициентам OS (округление на сервере не подтверждено): ')+
+      parts}));
+   }
+   section.append(preview);
   }
   body.append(section);
  }

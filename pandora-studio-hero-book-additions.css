@@ -331,3 +331,9 @@
  outline-offset:3px;
 }
 #stageAttributes .stage-skill-separator{color:#a7865a}
+
+/* Shared Healing/Offense/Defense rows; no new card or accordion design. */
+#stageAttributes .stage-heal-row .stage-skill-os-coefficient-model{
+ grid-column:1/-1;min-width:0;overflow-wrap:anywhere;
+ color:#d4b58b;font-size:10px;line-height:1.45
+}

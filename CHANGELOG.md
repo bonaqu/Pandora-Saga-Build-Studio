@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.684.0 — 2026.11.12.684 · Source-gated OS coefficient models for 11 scalable skills, with separate unverified previews and 250 regression scenarios
+
+- Source-gated OS coefficient models for 11 scalable skills, with separate unverified previews and 250 regression scenarios. Source-only mathematical models are explicitly not confirmed server combat output and never change the character.
+- Full Node/Chromium PR verification and post-merge Pages/Worker readiness required.
+
+
 ## 0.683.0 — 2026.11.12.683 · Use current OS source-backed priest magnitudes in every Hero Book support preview
 
 - Use current OS source-backed priest magnitudes in every Hero Book support preview; unverified magnitude rendered as unknown, no combat formula or D1 changes.
