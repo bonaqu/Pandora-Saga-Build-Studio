@@ -2062,11 +2062,20 @@ function renderOriginStats(calculated=undefined){
   // Interactive handlers call refresh() without a snapshot so edits always
   // recompute; only a caller-owned, same-state initial render may reuse one.
   const snap=attributeSnapshot(),estimate=known===undefined?previewBaseStats():known;
-  summary.textContent=snap?
-   tr('Свободно: ','Available: ')+snap.remaining+' / '+snap.total+
-    tr(' · Потрачено: ',' · Spent: ')+snap.spent:
+  if(snap){
+   summary.replaceChildren(
+    bindOwnerInterfaceText(h('span',{}),'stats-ui','remainingPrefix',
+     'Свободно:','Available:','text',' '),
+    h('span',{text:String(snap.remaining)+' / '+String(snap.total)}),
+    h('span',{text:' · '}),
+    bindOwnerInterfaceText(h('span',{}),'stats-ui','spentPrefix',
+     'Потрачено:','Spent:','text',' '),
+    h('span',{text:String(snap.spent)})
+   );
+  }else summary.textContent=
    tr('Выберите расу и профессию · ','Choose a race and class · ')+
-    tr('Бюджет уровня: ','Level budget: ')+(window.PandoraAttributeProgression.budget(state.level)??'—');
+   tr('Бюджет уровня: ','Level budget: ')+
+   (window.PandoraAttributeProgression.budget(state.level)??'—');
   summary.classList.toggle('over-budget',!!snap?.overBudget);
   for(const row of entries){
    const base=snap?.base[row.i],spent=Number(state.stats[STATS[row.i]]||0);
@@ -2120,7 +2129,12 @@ function renderOriginStats(calculated=undefined){
   wrap.append(title,minus,input,plus,box);
   list.append(wrap);entries.push({i,input,result,caption,minus,plus,name});
  });
- root.append(list);refresh(calculated);
+ root.append(list);
+ if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('stats-ui',[
+  ['remainingPrefix','Свободно:','Available:','Свободные очки','Available points'],
+  ['spentPrefix','Потрачено:','Spent:','Вложенные очки','Spent points']
+ ],'Подписи очков героя','Hero point labels'));
+ refresh(calculated);
 }
 function renderOriginPassives(){
  const root=$('originPassives');if(!root)return;
@@ -2545,6 +2559,24 @@ function renderPathCopyControls(){
   }
   wrapper.querySelector('.path-tab-pencil')?.remove();
   wrapper.append(pencil);
+ }
+ // These are the real user-visible Hero Path skills controls. The legacy
+ // workbench "skills" tab is not present in the site's navigation.
+ const search=$('pathSkillSearch'),filter=$('pathSkillStatus');
+ if(search)bindOwnerInterfaceText(search,'skill-ui','searchPlaceholder',
+  'Найти умение','Find skill','placeholder');
+ if(filter)bindOwnerInterfaceText(filter,'skill-ui','filterAria',
+  'Фильтр навыков','Skill filter','aria-label');
+ $('ownerSkillSearchCopy')?.remove();
+ if(editing&&!$('pathSkillsPage')?.hidden){
+  const owner=ownerInterfaceEditor('skill-ui',[
+   ['searchPlaceholder','Найти умение','Find skill','Поле поиска','Search placeholder'],
+   ['filterAria','Фильтр навыков','Skill filter','Фильтр умений','Skill filter']
+  ],'Подписи умений','Skill labels');
+  if(owner){
+   owner.id='ownerSkillSearchCopy';
+   document.querySelector('#pathSkillsPage .path-skills-filter')?.after(owner);
+  }
  }
 }
 function renderPathPages(){
@@ -6218,18 +6250,13 @@ function renderCharacter(root){
 }
 // Legacy duplicate skill editor retired; all changes happen in the live Hero Path.
 function renderSkills(root){
- const note=bindOwnerInterfaceText(h('p',{class:'muted'}),'skill-ui','intro',
-  'Просматривайте умения и требования в «Пути героя».',
-  'View skills and their requirements in Hero Path.');
- const open=bindOwnerInterfaceText(h('button',{class:'button-action',
-  onclick:()=>{closeWorkbench();heroPathPage='skills';renderPathPages();saveView();}}),
-  'skill-ui','open','Открыть умения','Open skills');
- root.append(note,open);
- if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('skill-ui',[
-  ['intro','Просматривайте умения и требования в «Пути героя».',
-   'View skills and their requirements in Hero Path.','Пояснение','Description'],
-  ['open','Открыть умения','Open skills','Кнопка','Action']
- ],'Тексты умений','Skill texts'));
+ root.append(h('p',{class:'muted',text:lang==='en'?
+  'View skills and their requirements in Hero Path.':
+  'Просматривайте умения и требования в «Пути героя».'}));
+ root.append(h('button',{class:'button-action',
+  text:lang==='en'?'Open skills':'Открыть умения',onclick:()=>{
+   closeWorkbench();heroPathPage='skills';renderPathPages();saveView();
+ }}));
 }
 function itemName(r){return window.PandoraItemPresentation.displayName(
  r,lang==='en'?'Unnamed item':'Предмет без названия',lang)}
@@ -6237,13 +6264,10 @@ function renderStats(root){
  const tr=(ru,en)=>lang==='en'?en:ru;
  const statName=i=>lang==='en'?ORIGIN_STAT_LABELS[i].nameEn:ORIGIN_STAT_LABELS[i].name;
  const icons=['♥','⚔','➶','✥','✦','❂'];
- const overview=h('div',{class:'stat-editor-overview'});
- const header=bindOwnerInterfaceText(h('h3',{}),'stats-ui','heading',
-  'Характеристики','Attributes');
+ const overview=h('div',{class:'stat-editor-overview'}),
+  header=h('h3',{text:tr('Характеристики','Attributes')});
  const points=h('div',{class:'stat-total'},[
-  h('strong',{text:'—'}),
-  bindOwnerInterfaceText(h('span',{}),'stats-ui','available',
-   'Свободные очки','Available points')
+  h('strong',{text:'—'}),h('span',{text:tr('Свободные очки','Available points')})
  ]);
  overview.append(header,points);root.append(overview);
  const grid=h('div',{class:'stat-grid'}),controls=[];
@@ -6251,7 +6275,7 @@ function renderStats(root){
   const s=attributeSnapshot();
   points.querySelector('strong').textContent=s?String(s.remaining):'—';
   points.querySelector('span').textContent=s?tr('Свободно из ','Available out of ')+s.total:
-   ownerCopy('stats-ui','available','Свободные очки','Available points');
+   tr('Свободные очки','Available points');
   overview.classList.toggle('over-budget',!!s?.overBudget);
   const estimate=previewBaseStats();
   for(const v of controls){
@@ -6297,10 +6321,6 @@ function renderStats(root){
   controls.push({i,note,total,range,exact,fill,minus,plus});grid.append(card);
  });
  root.append(grid);refresh();
- if(adminEditing&&adminToken)root.append(ownerInterfaceEditor('stats-ui',[
-  ['heading','Характеристики','Attributes','Заголовок','Heading'],
-  ['available','Свободные очки','Available points','Свободные очки','Available points']
- ],'Подписи характеристик','Attribute labels'));
 }
 let comparisonOpen=false;
 function renderBuildComparison(host,onSelection=()=>{}){
