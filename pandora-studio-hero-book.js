@@ -139,6 +139,8 @@ const bookEnglish=Object.freeze({
  'Физическая атака оружия': "Physical weapon attack",
  'Сила атаки': "Attack power",
  'Верховая езда': "Riding",
+ 'Верхом': 'Mounted',
+ 'Характеристики верхом': 'Mounted attributes',
  'Бонусы дальности от снаряжения': "Equipment range bonuses",
  'Усиление стихийной магии': "Elemental magic bonus",
  'Аурный урон от снаряжения': "Equipment aura damage",
@@ -735,7 +737,20 @@ function buffsPage(body,options){
 
 }
 
-function renderSongSkills(body,modifiers,gameTerms={}){
+// Use the same exact OS icon resolution as Path, Wiki and combat Buffs.
+// Never infer artwork from a translated display label.
+function gameSkillBadge(id,ru,en,terms,english,skillIconForId){
+ const label=make('span',{class:'stage-effect-skill-label'});
+ const source=skillIconForId?.(id);
+ if(source){
+  const picture=make('img',{src:source,alt:'',loading:'lazy'});
+  picture.onerror=()=>picture.remove();
+  label.append(picture);
+ }
+ label.append(make('span',{text:gameSkillName(id,ru,en,terms,english)}));
+ return label;
+}
+function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
  const english=document.documentElement?.lang==='en';
  const songRows=modifiers?.songSkills?.rows||[];
  if(songRows.length){
@@ -747,8 +762,8 @@ function renderSongSkills(body,modifiers,gameTerms={}){
    const requirements=entry.requirements.map(req=>
     gameBranchName(req.branch,gameTerms,english)+' '+req.amount).join(' · ');
    const card=make('div',{class:'stage-song-skill-row'});
-   card.append(make('strong',{text:gameSkillName(
-    entry.id,entry.name,entry.nameEn,gameTerms,english)}),
+   card.append(make('strong',{class:'stage-effect-skill-heading'},[
+    gameSkillBadge(entry.id,entry.name,entry.nameEn,gameTerms,english,skillIconForId)]),
     make('small',{text:english?entry.descriptionEn:entry.description}),
     make('span',{class:entry.available?'stage-song-skill-ready':'stage-song-skill-locked',
      text:(entry.available?
@@ -765,7 +780,7 @@ function renderSongSkills(body,modifiers,gameTerms={}){
 }
 // Mirrors Remaked SkillView: individual skill outcomes, never the selected
 // buff toggles or the 43 main result values.
-function skillEffectsPage(body,{modifiers=null,gameTerms={}}={}){
+function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null}={}){
  const en=document.documentElement?.lang==='en';
  const spells=modifiers?.healingSpells?.rows||[];
  if(spells.length){
@@ -780,10 +795,10 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={}}={}){
     (available?'':' stage-book-unavailable')},[
     // Source IDs are stable for all five Remaked healing previews, including
     // locked skills which deliberately have a null available skillId.
-    make('span',{text:gameSkillName(row.skillId||
+    gameSkillBadge(row.skillId||
      ({firstAid:310001001,heal:310004001,healingAura:310021001,
        sanctuary:310023001,restoration:310022001})[row.id],
-     row.name,row.nameEn,gameTerms,en)}),
+     row.name,row.nameEn,gameTerms,en,skillIconForId),
     make('strong',{text:amount}),
     make('small',{text:available?(en?'Available':'Доступно'):
      (en?'Preview · '+(row.requiresEn||row.requires||'Requirements not met'):
@@ -807,7 +822,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={}}={}){
   for(const entry of periodic){
    if(!Number.isFinite(entry?.amount))continue;
    details.append(make('div',{class:'stage-periodic-row'},[
-    make('span',{text:gameSkillName(entry.id,entry.name,null,gameTerms,en)}),
+    gameSkillBadge(entry.id,entry.name,null,gameTerms,en,skillIconForId),
     make('strong',{text:'≈ '+entry.amount+' '+(entry.kind==='hp'?
      (en?'HP':'ОЗ'):(en?'MP':'ОМ'))}),
     make('small',{text:entry.available?(en?'Available when using the skill':
@@ -827,13 +842,15 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={}}={}){
  const hitPassive=modifiers?.combat?.incredibleStrength;
  if(hitPassive?.applies===true){
   body.append(make('section',{class:'stage-attribute-row stage-hit-passive'},[
-   make('strong',{text:en?'Incredible Strength':'Невероятная сила'}),
+   make('strong',{class:'stage-effect-skill-heading'},[
+    gameSkillBadge(hitPassive.id||910110001,'Невероятная сила',
+     'Incredible Strength',gameTerms,en,skillIconForId)]),
    make('p',{text:en?
     'Melee weapon hit-damage passive. It does not increase the ATK stat. The exact damage per hit is not calculated without a verified server formula.':
     'Пассивка усиливает урон при попадании оружием ближнего боя, но не показатель АТК. Точный урон удара без подтверждённой серверной формулы не рассчитывается.'})
   ]));
  }
- renderSongSkills(body,modifiers,gameTerms);
+ renderSongSkills(body,modifiers,gameTerms,skillIconForId);
  if(!hitPassive?.applies&&!spells.length&&!periodic.length&&!(modifiers?.songSkills?.rows||[]).length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Calculated skill effects appear here when game records and requirements are available.':
@@ -864,9 +881,11 @@ function attackChapterGroups(calc){
   if(row)groups[g].rows.push(row);
  };
  const combat=calc.combat||{},range=calc.attackRange||{};
- // Legacy ATK Status_21 (weapon physical bonus), NOT Status_18 (total ATK).
- put(0,'weaponPhysical','Физический урон оружия','Physical weapon damage',
-  combat.weaponPhysical,'',true);
+ // Original equipped weapon W is not the separate mastery/title damage bonus.
+ // Show the real base physical weapon attack, not misleading '1' for a sword.
+ if(combat.attack?.unarmed===false)
+  put(0,'weaponBase','Базовая физическая атака оружия',
+   'Base physical weapon attack',combat.attack.weaponDamage,'',true);
  const racial=combat.racialWeapon;
  if(racial?.matchesCategory===true&&
   typeof racial.ru==='string'&&typeof racial.en==='string'&&
@@ -886,7 +905,7 @@ function attackChapterGroups(calc){
    (entry.kind==='bow'?'Дальность стрельбы':'Дальность атаки')+' · '+entry.source,
    (entry.kind==='bow'?'Bow range':'Attack range')+' · '+entry.source,entry.amount);
  });
- put(0,'mountedRelease','Раскрытие характеристик верхом','Mounted attribute release',
+ put(0,'mountedRelease','Характеристики верхом','Mounted attributes',
   calc.mountedRelease?.known,'%');
  const aura=calc.auraDamage?.elements||{};
  for(const [key,entry]of Object.entries(aura)){
@@ -951,9 +970,9 @@ function defenseChapterGroups(calc){
   burn:['Ожоги','Burn'],stun:['Оглушение','Stun'],
   numb:['Заморозка','Freeze'],tumble:['Падение','Knockdown'],
   knockback:['Отбрасывание','Knockback'],sleep:['Сон','Sleep'],
-  silence:['Немота','Silence'],evil:['Зло','Evil'],
-  curse:['Проклятие','Curse'],disease:['Болезнь','Disease'],
-  madness:['Помешательство','Madness'],blockBreak:['Пробитие блока','Block break']
+  silence:['Немота','Silence'],evil:['Проклятие','Curse'],
+  curse:['Слабость','Weakness'],disease:['Болезнь','Disease'],
+  madness:['Безумие','Madness'],blockBreak:['Пробитие блока','Block break']
  };
  for(const [key,value]of Object.entries(calc.resistances?.status||{})){
   if(!statuses[key])continue;
@@ -1068,6 +1087,19 @@ function appendWeaponConditions(body,calc,items,english){
  body.append(panel);
 }
 function attackPage(body,calc,items,english,options={}){
+ // A saved character state, not a temporary UI-only preview.
+ const toggle=make('label',{class:'stage-book-check stage-mounted-toggle'},[
+  make('input',{type:'checkbox','data-book-setting':'mounted',
+   checked:options.buffs?.mounted===true,
+   onchange:event=>options.onBuff?.('mounted',event.target.checked)}),
+  make('span',{text:english?'Mounted':'Верхом'})
+ ]);
+ body.append(toggle);
+ if(options.buffs?.mounted===true)body.append(make('p',{
+  class:'stage-attribute-note stage-mounted-note',text:english?
+  'Mounted combat uses Remaked estimates. Defense and normal attack speed are not displayed while riding.':
+  'Верхом: предварительный расчёт по Remaked. Защита и скорость обычной атаки верхом не отображаются.'
+ }));
  appendChapterGroups(body,attackChapterGroups(calc),english,
   'Нет подтверждённых дополнительных атакующих параметров.',
   'No supported additional attack metrics.',{...options,page:'attack'});
@@ -1147,7 +1179,7 @@ function decorateChapterCaptions(body,page,options){
   guideLabel(label,section+'.caption.'+key,ru,en,options);
  }
 }
-function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
+function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{},gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
@@ -1236,12 +1268,13 @@ function render(target,{page,items=[],icon=()=>null,onPage=()=>{},onClose=()=>{}
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
  if(chosen==='summary')summaryPage(body,modifiers,copyOptions);
- if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',copyOptions);
+ if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',
+  {...copyOptions,buffs,onBuff});
  if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',copyOptions);
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
   gameTerms,...copyOptions});
- if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms});
+ if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
