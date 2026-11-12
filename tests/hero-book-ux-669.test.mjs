@@ -25,9 +25,9 @@ test('Incredible Strength tells the player what it does and honestly labels unav
  assert.ok(start>=0&&end>start);
  const section=book.slice(start,end);
  assert.match(section,/Увеличивает урон при попадании оружием ближнего боя/);
- assert.match(section,/Числовые показатели временно не отображаются \(в разработке\)/);
- assert.match(section,/Numerical effect details are temporarily unavailable\. In development\./);
- assert.doesNotMatch(section,/серверн|формул|Remaked|current OS|server formula/i);
+ assert.match(section,/Точная прибавка ещё не подтверждена/);
+ assert.match(section,/Exact damage is not yet confirmed/);
+ assert.doesNotMatch(section.match(/addOffense\\(hitPassive[\\s\\S]*?\\);/)?.[0]||'',/серверн|формул|Remaked|current OS|server formula/i);
  assert.doesNotMatch(section,/\+10%|\+5%/);
 });
 
