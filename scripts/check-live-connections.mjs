@@ -1,6 +1,7 @@
 /* Read-only diagnostic of Pages <-> Cloudflare Worker <-> D1.
    No secrets, account login, database mutation or GitHub Actions. Node 20+. */
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {classifyGameSource} from './source-egress-status.mjs';
 const site='https://bonaqu.github.io/Pandora-Saga-Build-Studio/';
 const worker='https://ps-build-studio-cloud.bonaqu.workers.dev';
@@ -31,7 +32,7 @@ try{
 // the image URL and both versions must match the actually published release.
 try{
  const previewVersion='0.'+Number(expected.split('.')[3])+'.0';
- const imageUrl=site+'assets/social-preview.jpg?v='+expected;
+ const imageUrl=site+'assets/social-preview.png?v='+expected;
  const response=await fetch(site+'?social-check='+encodeURIComponent(expected),{
   cache:'no-store',signal:AbortSignal.timeout(12000)});
  const html=await response.text();
@@ -40,14 +41,26 @@ try{
  check(response.ok&&matchingDescriptions.length===2&&
   html.includes('<meta property="og:title" content="Pandora Saga | Build Studio">')&&
   html.includes('<meta name="twitter:card" content="summary_large_image">')&&
-  (html.match(/content="https:\/\/bonaqu\.github\.io\/Pandora-Saga-Build-Studio\/assets\/social-preview\.jpg\?v=[0-9.]+"\>/g)||[]).length===2&&
-  html.includes('content="'+imageUrl+'"'),
+  (html.match(/content="https:\/\/bonaqu\.github\.io\/Pandora-Saga-Build-Studio\/assets\/social-preview\.png\?v=[0-9.]+"\>/g)||[]).length===2&&
+  html.includes('content="'+imageUrl+'"')&&
+  html.includes('<meta property="og:image:type" content="image/png">')&&
+  html.includes('<meta property="og:image:width" content="1280">')&&
+  html.includes('<meta property="og:image:height" content="640">'),
   'Public social preview metadata','Open Graph and X share version '+previewVersion);
- const image=await fetch(imageUrl,{method:'HEAD',cache:'no-store',
+ const image=await fetch(imageUrl,{cache:'no-store',
   signal:AbortSignal.timeout(12000)});
- check(image.ok&&String(image.headers.get('content-type')||'').includes('image/jpeg'),
+ const imageBytes=Buffer.from(await image.arrayBuffer());
+ const checksum=createHash('sha256').update(imageBytes).digest('hex');
+ const pngReady=image.ok&&
+  String(image.headers.get('content-type')||'').includes('image/png')&&
+  imageBytes.length===219991&&
+  imageBytes.subarray(0,8).toString('hex')==='89504e470d0a1a0a'&&
+  imageBytes.readUInt32BE(16)===1280&&imageBytes.readUInt32BE(20)===640&&
+  checksum==='65803dbe8d028422e601804c4a5f8cc383e7b1d0de6b7bfd92671aac7f99f37d';
+ check(pngReady,
   'Public social preview image',
-  image.status+' / '+(image.headers.get('content-type')||'no image type'));
+  image.status+' / '+(image.headers.get('content-type')||'no image type')+
+  ' / '+imageBytes.length+' bytes / SHA-256 '+checksum.slice(0,12));
 }catch(e){check(false,'Public social preview metadata/image',e.message)}
 try{
  const {response,payload}=await read(worker+'/api/health',{cors:true});
