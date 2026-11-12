@@ -82,3 +82,40 @@ test('Book puts model magnitudes underneath source skill name and next to caster
  assert.match(app,/priestBenevolence:61/);
  assert.match(app,/benevolence:snap\.attributeBuffs\?\.priestBenevolence/);
 });
+
+test('real character-sheet pipeline combines Holy + Enchantment only when both enabled and a weapon exists',()=>{
+ const zeros={vit:0,str:0,agi:0,dex:0,spi:0,int:0};
+ const ctx={classData:classes.WARRIOR,
+  raceData:{vit:45,str:50,agi:50,dex:40,spi:70,int:25},
+  jobData:zeros,allocation:zeros,level:45,
+  combatContext:{jobKey:'WARRIOR',skillCatalog:skills,
+   branchMasteries:{},weapon:{kind:'1H_SWORD',atk:90},
+   externalPriest:{enabled:true,spi:134,blessing:90,hymn:30,benevolence:61}}};
+ const preview=selected=>C.base({...ctx,
+  attributeBuffs:{priestEnabled:true,remakedSkillIds:selected}});
+ const plain=preview([]),holy=preview([330051001]),
+  both=preview([330051001,320011001]),enchantedOnly=preview([320011001]);
+ assert.equal(holy.auraDamage.elements.light.known,10);
+ assert.equal(both.auraDamage.elements.light.known,36);
+ assert.equal(both.auraDamage.elements.light.modeled,true);
+ assert.equal(both.auraDamage.elements.light.priestEnhanceBonus,26);
+ assert.equal(enchantedOnly.auraDamage.elements.light,undefined,
+  'Enhancement must not invent Holy aura on its own');
+ assert.equal(both.combat.attack.known,plain.combat.attack.known,
+  'Unverified aura modeling cannot alter physical attack');
+ assert.equal(both.hp,plain.hp);
+ assert.equal(both.mp,plain.mp);
+ const noWeapon=C.base({...ctx,combatContext:{
+  ...ctx.combatContext,weapon:null},
+  attributeBuffs:{priestEnabled:true,
+   remakedSkillIds:[330051001,320011001]}});
+ assert.deepEqual(noWeapon.auraDamage.elements,{});
+ const changed=structuredClone(skills);
+ changed['320011001'].funcs.find(x=>x.ep==='EP_AURADAMAGE_SCALE').fv1[0]=99;
+ const badSource=C.base({...ctx,combatContext:{
+  ...ctx.combatContext,skillCatalog:changed},
+  attributeBuffs:{priestEnabled:true,
+   remakedSkillIds:[330051001,320011001]}});
+ assert.equal(badSource.auraDamage.elements.light.known,10,
+  'Unknown OS enchantment vector must never trigger an invented aura boost');
+});
