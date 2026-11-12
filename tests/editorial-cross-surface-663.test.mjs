@@ -52,7 +52,7 @@ test('27 static RU/EN D1 editor strings span equipment, wiki, skills and stats',
    const id=section+'.'+slug;
    const expected=JSON.stringify({ru:'Переименовано',en:'Renamed'});
    assert.equal(guide.validOverride('book.'+id,expected),true,id);
-   const overridden={'guideedit.book.'+id:expected};
+   const overridden={['guideedit.book.'+id]:expected};
    assert.equal(guide.field(overridden,id,ru,en).ru,'Переименовано');
    assert.equal(guide.field(overridden,id,ru,en).en,'Renamed');
    assert.equal(guide.field({},id,ru,en).ru,ru);
