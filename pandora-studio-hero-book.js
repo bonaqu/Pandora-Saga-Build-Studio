@@ -1091,22 +1091,71 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
    'Ориентировочное действие навыка, не постоянное восстановление героя.'}));
   body.append(details);
  }
- const hitPassive=modifiers?.combat?.incredibleStrength;
- if(hitPassive?.applies===true){
-  body.append(make('section',{class:'stage-attribute-row stage-hit-passive'},[
-   make('strong',{class:'stage-effect-skill-heading'},[
-    gameSkillBadge(hitPassive.id||910110001,'Невероятная сила',
-     'Incredible Strength',gameTerms,en,skillIconForId)]),
-   make('p',{text:en?
-    'Increases damage dealt with melee weapons.':
-    'Увеличивает урон от оружия ближнего боя.'}),
-   make('small',{class:'stage-hit-passive-pending',text:en?
-    'Numerical effect details are temporarily unavailable. In development.':
-    'Числовые показатели временно не отображаются (в разработке).'})
-  ]));
+ const combat=modifiers?.combat||{};
+ const active=combat.activeSkills||{},base=combat.attack?.mountedBase??combat.attack?.walkingBase;
+ const values=combat.activeSkillValues||{};
+ const offense=make('section',{class:'stage-attribute-row stage-attacking-skills'});
+ const offenseHeading=make('strong',{text:en?'Offensive skills':'Атакующие умения'});
+ offense.append(offenseHeading);
+ const addOffense=(id,ru,enName,amount,detail)=>{
+  const row=make('div',{class:'stage-offense-skill-row'});
+  const label=gameSkillBadge(id,ru,enName,gameTerms,en,skillIconForId);
+  const caption=make('div',{class:'stage-offense-skill-details'});
+  caption.append(label);
+  if(detail)caption.append(make('small',{text:detail}));
+  row.append(caption,make('strong',{text:amount}));
+  offense.append(row);
+ };
+ const percent=value=>Number.isFinite(value)?(value>0?'+':'')+value:'—';
+ if(active.warCry){
+  const fixed=values.warCry?.EP_DAMAGERATE_CONST;
+  const rate=values.warCry?.EP_DAMAGERATE_SCALE;
+  const boost=[base,fixed,rate].every(Number.isFinite)?
+   fixed+Math.floor(base*rate/100):null;
+  addOffense(320001001,'Боевой клич','War Cry',
+   boost==null?'—':percent(boost)+(en?' ATK':' АТК'),
+   en?'Base attack +'+fixed+' and +'+rate+'%':
+    'Прибавка к базовой атаке: +'+fixed+' и +'+rate+'%');
  }
+ if(active.raging){
+  const rate=values.raging?.EP_DAMAGERATE_SCALE;
+  const boost=Number.isFinite(base)&&Number.isFinite(rate)?
+   Math.ceil(base*rate/100):null;
+  addOffense(100052001,'Яростная атака','Raging Attack',
+   boost==null?'—':percent(boost)+(en?' ATK':' АТК'),
+   en?'Attack increase · defense is reduced':'Повышает атаку, снижает защиту');
+ }
+ if(active.defender){
+  const rate=values.defender?.EP_DAMAGERATE_SCALE;
+  const boost=Number.isFinite(base)&&Number.isFinite(rate)?
+   Math.floor(base*rate/100):null;
+  addOffense(100053001,'Бастион','Defender',
+   boost==null?'—':percent(boost)+(en?' ATK':' АТК'),
+   en?'Attack reduction · defense increases':'Уменьшает атаку, повышает защиту');
+ }
+ if(active.concentration)
+  addOffense(100054001,'Сосредоточенность','Concentration',
+   percent(combat.accuracy?.activeBonus),
+   en?'Accuracy':'Точность');
+ if(combat.otherBuffs?.thirdEye)
+  addOffense(100055001,'Массовая сосредоточенность','Mass Concentration',
+   percent(combat.accuracy?.thirdEye),
+   en?'Accuracy':'Точность');
+ if(Number(combat.critical?.coldBlood)>0)
+  addOffense(142051001,'Хладнокровие','Cold Blood',
+   percent(combat.critical.coldBlood)+'%',
+   en?'Critical hit chance':'Шанс критического удара');
+ const hitPassive=combat.incredibleStrength;
+ if(hitPassive?.applies===true){
+  // The OS source describes on-hit final damage, not character-sheet ATK.
+  // Its kernel and hit target are unknown, so do not manufacture one value.
+  addOffense(hitPassive.id||910110001,'Невероятная сила','Incredible Strength',
+   '—',en?'Increases melee hit damage. Exact damage is not yet confirmed.':
+    'Увеличивает урон при попадании оружием ближнего боя. Точная прибавка ещё не подтверждена.');
+ }
+ if(offense.children.length>1)body.append(offense);
  renderSongSkills(body,modifiers,gameTerms,skillIconForId);
- if(!hitPassive?.applies&&!spells.length&&!periodic.length&&!(modifiers?.songSkills?.rows||[]).length)
+ if(offense.children.length===1&&!spells.length&&!periodic.length&&!(modifiers?.songSkills?.rows||[]).length)
   body.append(make('p',{class:'stage-attribute-note',text:en?
    'Calculated skill effects appear here when game records and requirements are available.':
    'Здесь появятся эффекты навыков, для которых доступны игровые данные и расчёт.'}));
@@ -1456,6 +1505,7 @@ function collapseBookSections(body,page){
 // item catalog. Details retain their live record counts after localization.
 const chapterCaptionSpecs=Object.freeze([
  ['effects','healing','.stage-healing-spells > strong','Лечащие умения','Healing skills'],
+ ['effects','offense','.stage-attacking-skills > strong','Атакующие умения','Offensive skills'],
  ['effects','periodic','.stage-periodic-recovery > summary','Восстановление каждые 2 секунды','Recovery every 2 seconds'],
  ['effects','songs','.stage-song-skills > summary','Песни для выбранного класса','Songs available to this class'],
  ['recovery','potions','.stage-potion-book > strong','Эффекты зелий','Potion effects'],
