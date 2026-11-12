@@ -271,24 +271,25 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel [data-chapter-group] > strong.stage-guide-label').count(),0);
  const mount=page.locator('#stageBookPanel [data-book-setting="mounted"]');
  assert.equal(await mount.count(),1,'The riding switch must be available on Attack');
+ const mountedText=page.locator('#stageBookPanel [data-guide-key="attack.mountedToggle"]');
+ assert.equal((await mountedText.innerText()).trim(),'Верхом');
+ await mountedText.hover();
+ await page.locator('#stage-guide-tooltip').waitFor({state:'visible',timeout:3000});
+ assert.match(await page.locator('#stage-guide-tooltip').innerText(),/сражается верхом/);
+ await page.locator('#stage-guide-tooltip').waitFor({state:'hidden',timeout:3000}).catch(()=>{});
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0,
+  'The hover explanation must not occupy a permanent paragraph');
  assert.equal(await mount.isChecked(),false);
  await mount.check();
  assert.equal(await mount.isChecked(),true,'Mounted mode must survive live rerender');
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
- await mount.uncheck();
- assert.equal(await mount.isChecked(),false,'On-foot mode must be restorable');
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
- // A mounted build must be explained in Results and Defense too, without
- // changing tabs unexpectedly or losing the persisted riding switch.
- await mount.check();
  await page.locator('#stageAttributes [data-book-page="summary"]').click();
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
  await page.locator('#stageAttributes [data-book-page="defense"]').click();
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),1);
+ assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
  await page.locator('#stageAttributes [data-book-page="attack"]').click();
  assert.equal(await mount.isChecked(),true);
  await mount.uncheck();
- assert.equal(await page.locator('#stageBookPanel .stage-mounted-note').count(),0);
+ assert.equal(await mount.isChecked(),false,'On-foot mode must be restorable');
  assert.equal(await page.locator('#stageBookPanel .stage-combat-quick').count(),0);
  assert.equal(await page.locator('#stageBookPanel .stage-active-elemental').count(),0,
   'Conditional weapon procs appear only if such a weapon is equipped');
