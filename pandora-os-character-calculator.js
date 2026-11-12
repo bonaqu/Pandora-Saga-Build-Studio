@@ -1034,23 +1034,36 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  ],manual,{branch:'brush',
   detailRu:'Зависит от мастерства рубящих; величина не подтверждена',
   detailEn:'Depends on Cleaving mastery; magnitude unverified'});
- add(220001001,'offense',[
-  ['EP_AURAPOISON_CONSTANT',[0,10,5,5]]
- ],manual,{branch:'alchemy',
-  detailRu:'Зависит от мастерства алхимии; итоговый урон ауры не подтверждён',
-  detailEn:'Depends on Alchemy mastery; poison aura damage unverified'});
+ // The same poison enchant has a mastery-61 OS variant. Show only the
+ // version the current green mastery can actually cast, never both at once.
+ if(mastery('alchemy')>=61)
+  add(220001003,'offense',[
+   ['EP_AURAPOISON_CONSTANT',[0,10,15,6]]
+  ],manual,{branch:'alchemy',
+   detailRu:'Усиленный яд · мастерство алхимии 61; итоговый урон ауры не подтверждён',
+   detailEn:'Advanced poison, Alchemy 61; aura damage magnitude unverified'});
+ else
+  add(220001001,'offense',[
+   ['EP_AURAPOISON_CONSTANT',[0,10,5,5]]
+  ],manual,{branch:'alchemy',
+   detailRu:'Зависит от мастерства алхимии; итоговый урон ауры не подтверждён',
+   detailEn:'Depends on Alchemy mastery; poison aura damage unverified'});
  add(330002001,'defense',[
   ['EP_ABSOLUTE_MAGIC',[20,0,20,10]]
  ],manual,{branch:'exorcism',
   detailRu:'Зависит от СД и мастерства изгнания; точный эффект не подтверждён',
   detailEn:'Depends on SPI and Exorcism mastery; magnitude unverified'});
- add(420002001,'defense',[
-  ['EP_MANA_SHIELD',[0,0,10,10]]
+ // Conjurer level 50 receives distinct OS source variants; show one rank
+ // per skill identity instead of duplicating a legacy and advanced row.
+ const conjurerUpgrade=jobKey==='CONJURER'&&level>=50;
+ add(conjurerUpgrade?420002002:420002001,'defense',[
+  ['EP_MANA_SHIELD',conjurerUpgrade?[0,0,20,10]:[0,0,10,10]]
  ],manual,{branch:'embody',
   detailRu:'Зависит от мастерства воплощения; расчёт поглощения ОМ не подтверждён',
   detailEn:'Depends on Embodiment mastery; MP absorption unverified'});
- add(420004001,'defense',[
-  ['EP_CASTINGCANCEL_RESISTANCE_CONST',[10,0,10,1]]
+ add(conjurerUpgrade?420004002:420004001,'defense',[
+  ['EP_CASTINGCANCEL_RESISTANCE_CONST',
+   conjurerUpgrade?[15,0,15,1]:[10,0,10,1]]
  ],manual,{branch:'embody',
   detailRu:'Зависит от СД и мастерства воплощения; округление не подтверждено',
   detailEn:'Depends on SPI and Embodiment mastery; rounding unverified'});
@@ -1061,6 +1074,31 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  ],manual,{branch:'blessing',
   detailRu:'Зависит от СД и Благословения; итоговое сложение ещё не подтверждено',
   detailEn:'Depends on SPI and Blessing; stacking unverified'});
+ // Further independently verified VARIABLE self-cast effect vectors.
+ // Current OS proves scaling but not damage packet semantics; do not
+ // manufacture arithmetic by assuming a fixed per-point denominator.
+ add(100058001,'offense',[
+  ['EP_DAMAGERATE_SCALE',[0,0,35,40]]
+ ],manual,{
+  detailRu:'Отчаянье: изменяемая сила эффекта; серверное округление не подтверждено',
+  detailEn:'Desperation: scaling damage effect; final rounding unverified'});
+ add(213703001,'offense',[
+  ['EP_DOUBLE_MISSILE',[20,0,30,-85]],
+  ['EP_ATTACKRANGE_CONST',[0,0,900,100]],
+  ['EP_ATTACKCARRY_CONST',[0,0,900,100]]
+ ],manual,{
+  detailRu:'Двойной выстрел: сила и дальность зависят от параметров навыка; итоговый расчёт не подтверждён',
+  detailEn:'Double Shot: dependent missile/range effects; final magnitude unverified'});
+ add(233200101,'offense',[
+  ['EP_INCREASE_ATTACK',[0,0,45,-100]]
+ ],manual,{
+  detailRu:'Волна: изменяемое усиление атаки; точная формула не подтверждена',
+  detailEn:'Wave: scaling attack increase; final formula unverified'});
+ add(410000101,'offense',[
+  ['EP_ELEMENT_DAMAGE_SCALE',[0,0,30,20]]
+ ],manual,{
+  detailRu:'Магическая сосредоточенность: изменяемый стихийный урон; точный эффект не подтверждён',
+  detailEn:'Magic Concentration: scaling element damage; final magnitude unverified'});
  // Legacy SkillView uses separate floor steps. For these entries the current
  // OS fv1 preserves the coefficient roles while updating the flat constant.
  add(320007001,'offense',[
