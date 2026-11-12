@@ -352,8 +352,11 @@ function resistanceSkillPreview({skillCatalog=null,selected=[]}={}){
  const all=resistanceSkillChoices(skillCatalog),chosen=new Set(
   Array.isArray(selected)?selected.filter(Number.isSafeInteger):[]);
  const bonuses={},rows=[];
- for(const choice of all){
-  if(!chosen.has(choice.id))continue;
+ // Divine Blessing is a separate buff and a historical alias in older
+ // saves; the five elemental resistance spells are mutually exclusive.
+ const divine=all.find(s=>s.id===330004001&&chosen.has(s.id));
+ const elemental=all.find(s=>s.id!==330004001&&chosen.has(s.id));
+ for(const choice of [divine,elemental].filter(Boolean)){
   rows.push(choice);
   for(const [key,value] of Object.entries(choice.effects))
    bonuses[key]=(bonuses[key]||0)+value;

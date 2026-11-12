@@ -838,12 +838,9 @@ function setAttributeBuff(key,value){
   const id=Number(key.slice('resistSkill:'.length));
   if(!Number.isSafeInteger(id)||!window.PandoraOSCalculator
    .resistanceSkillChoices(catalog.skills||{}).some(row=>row.id===id))return;
-  const legal=new Set(window.PandoraOSCalculator
-   .resistanceSkillChoices(catalog.skills||{}).map(row=>row.id));
-  const selected=new Set(Array.isArray(current.resistanceSkillIds)?
-   current.resistanceSkillIds.filter(id=>legal.has(id)):[]);
-  if(value===true)selected.add(id);else selected.delete(id);
-  current.resistanceSkillIds=[...selected].sort((a,b)=>a-b);
+  // Single-choice elemental resistance spell, independent of Divine Blessing.
+  if(id===330004001)return;
+  current.resistanceSkillIds=value===true?[id]:[];
  }else if(key==='honorTitle'){
   const id=Number(value);
   if(!Number.isInteger(id)||id<0||id>=window.PandoraOSCalculator.honorTitles.length)return;

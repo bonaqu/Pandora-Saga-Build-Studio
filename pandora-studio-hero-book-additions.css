@@ -295,33 +295,8 @@
 #stageAttributes .stage-guild-skill-field>select{
  grid-column:1 / -1;grid-row:2;margin:0
 }
-/* Real source skill icons for elemental resistance choices. */
-#stageAttributes .stage-resistance-skill-row{
- display:grid;grid-template-columns:18px 26px minmax(0,1fr);
- align-items:center;gap:7px;min-width:0;
- border:1px solid #715131;border-radius:4px;
- padding:7px;background:#2a1d14
-}
-#stageAttributes .stage-resistance-skill-row:not(:has(>img)){
- grid-template-columns:18px minmax(0,1fr)
-}
-#stageAttributes .stage-resistance-skill-row .stage-resistance-skill-icon{
- display:block;width:26px!important;height:26px!important;
- min-width:26px;max-width:26px;min-height:26px;max-height:26px;
- object-fit:contain;border:1px solid #a7814c;border-radius:3px
-}
-#stageAttributes .stage-resistance-skill-controls{
- box-sizing:border-box;min-width:0;border:1px solid #735435;
- border-radius:5px;overflow:clip;background:#231912
-}
-#stageAttributes .stage-resistance-skill-controls>summary{
- padding:9px 10px;min-height:37px;cursor:pointer;
- background:#372619;color:#f2d4a4;
- font:650 12px/1.4 Manrope,Arial,sans-serif
-}
-#stageAttributes .stage-resistance-skill-controls>:not(summary){
- margin:7px 9px;max-width:calc(100% - 18px)
-}
+/* Elemental resistance uses the standard stage-book-buff-group and
+   stage-book-check components without bespoke styling. */
 
 /* Offensive and healing skills deliberately share the SAME DOM and styles;
    only the group title and actual skill results differ. */

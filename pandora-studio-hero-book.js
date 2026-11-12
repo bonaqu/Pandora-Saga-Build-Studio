@@ -531,9 +531,11 @@ function buffsPage(body,options){
  const selected=value=>value===true||
   (typeof value==='number'&&value>0)||
   (typeof value==='string'&&value!==''&&value!=='0');
- const selectedResistanceSkills=Array.isArray(buffs.resistanceSkillIds)?
-  buffs.resistanceSkillIds.filter(id=>id!==330004001&&
-   resistanceSkillChoices.some(s=>s.id===id)).length:0;
+ // Old imported saves may have multiple choices: preview only one.
+ const selectedResistanceSkill=Array.isArray(buffs.resistanceSkillIds)?
+  resistanceSkillChoices.find(s=>s.id!==330004001&&
+   buffs.resistanceSkillIds.includes(s.id))?.id:null;
+ const selectedResistanceSkills=selectedResistanceSkill==null?0:1;
  const configured=Object.entries(buffs).filter(([key,value])=>{
   if(key==='proelium'||key==='resistanceSkillIds'||key==='guildLevel')return false;
   if(['priestSpi','priestBlessing','priestHymn','priestEnabled',
@@ -592,10 +594,12 @@ function buffsPage(body,options){
   entry.value=String(selected);field.append(entry);parent.append(field);
  };
  const toggle=(parent,name,key,vital=false,allowed=true,skill=null)=>{
-  const selected=key.startsWith('legacySkill:')?
-   (Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12)))||
-    (key==='legacySkill:330004001'&&buffs.resistanceSkillIds?.includes(330004001))):
-   (vital?vitalsBuffs:buffs)[key]===true;
+  const selected=key.startsWith('resistSkill:')?
+   selectedResistanceSkill===Number(key.slice('resistSkill:'.length)):
+   key.startsWith('legacySkill:')?
+    (Array.isArray(buffs.remakedSkillIds)&&buffs.remakedSkillIds.includes(Number(key.slice(12)))||
+     (key==='legacySkill:330004001'&&buffs.resistanceSkillIds?.includes(330004001))):
+    (vital?vitalsBuffs:buffs)[key]===true;
   const node=make('label',{class:'stage-book-check'+(skill?' stage-combat-buff':'')});
   const checkbox=make('input',{type:'checkbox','data-book-setting':key,
    checked:selected&&allowed,disabled:!allowed,
@@ -971,39 +975,31 @@ function buffsPage(body,options){
        ([340004001,320003001].includes(row.id)?'%':'');
      })()});
  }
- if(resistanceSkillChoices.length){
-  const group=make('details',{class:'stage-legacy-buff-previews stage-resistance-skill-controls'});
-  group.append(make('summary',{text:english?
-   'Elemental resistance skills':'Усиления сопротивлений стихиям'}));
+ // A sibling of Ally Buffs using the exact same section and toggle
+ // components; no nested accordion or separate resistance-only style.
+ const elementalSkills=resistanceSkillChoices.filter(s=>s.id!==330004001);
+ if(elementalSkills.length){
+  const group=section('Усиления сопротивлений стихиям',
+   'Elemental resistance buffs','elemental');
   group.append(make('p',{class:'stage-attribute-note',text:english?
-   'Select only effects currently affecting this hero, including incoming enemy spells.':
-   'Отмечай только эффекты, которые реально действуют на героя, включая наложенные вражеские умения.'}));
+   'Only one resistance spell can be active. Selecting a new one replaces the previous one. These spells may target allies or enemies.':
+   'Одновременно действует только одно умение. Выбор нового заменяет предыдущее. Умения можно применять к союзникам и врагам.'}));
   const ru={fire:'Огонь',ice:'Лёд',lightning:'Молния',poison:'Яд',
    charm:'Чары',light:'Свет',dark:'Тьма',magic:'Магия'};
   const en={fire:'Fire',ice:'Ice',lightning:'Lightning',poison:'Poison',
    charm:'Charm',light:'Light',dark:'Dark',magic:'Magic'};
-  for(const skill of resistanceSkillChoices.filter(s=>s.id!==330004001)){
-   const selected=Array.isArray(buffs.resistanceSkillIds)&&buffs.resistanceSkillIds.includes(skill.id);
+  for(const skill of elementalSkills){
    const effect=Object.entries(skill.effects).map(([type,value])=>
     (english?(en[type]||type):(ru[type]||type))+' '+(value>0?'+':'')+value).join(' · ');
-   const row=make('label',{class:'stage-book-check stage-resistance-skill-row'});
-   row.append(make('input',{type:'checkbox','data-book-setting':'resistSkill:'+skill.id,
-    checked:selected,onchange:event=>onBuff('resistSkill:'+skill.id,event.target.checked)}));
-   const sprite=skillIconForId(skill.id);
-   if(sprite){
-    const picture=make('img',{src:sprite,alt:'',loading:'lazy',
-     width:26,height:26,class:'stage-resistance-skill-icon'});
-    picture.onerror=()=>picture.remove();
-    row.append(picture);
-   }
-   row.append(make('span',{class:'stage-combat-buff-copy'},[
-    make('strong',{text:english?skill.nameEn:skill.name}),
-    make('small',{text:(skill.incoming?(english?'Incoming skill · ':'Вражеский навык · '):
-     (english?'Support skill · ':'Поддерживающий навык · '))+effect})
-   ]));
-   group.append(row);
+   const game=gameTerms.skills?.[String(skill.id)];
+   const translated=gameTerms.englishSkills?.[String(skill.id)];
+   toggle(group,skill.name,'resistSkill:'+skill.id,false,true,{
+    id:skill.id,name:skill.name,
+    nameEn:translated?.n||skill.nameEn||skill.name,
+    icon:skillIconForId(skill.id),desc:game?.desc,
+    descEn:translated?.d||game?.desc,summary:effect
+   });
   }
-  party.append(group);
  }
 
  if(modifiers?.legacyBuffs&&buffs.priestEnabled===true){
