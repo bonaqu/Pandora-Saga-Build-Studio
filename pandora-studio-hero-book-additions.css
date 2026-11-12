@@ -391,3 +391,11 @@
 #stagePicker .stage-rich-body{scrollbar-width:thin}
 #stagePicker .stage-rich-body .stage-rich-head,
 #stagePicker .stage-rich-body .stage-rich-fields{min-width:0;max-width:100%}
+
+/* 0.700: discoverable status-group help in the Hero Book. */
+.stage-status-family-info{display:inline-block;margin-inline-start:5px;color:var(--gold);
+ font:700 12px/1 Manrope,Arial,sans-serif;vertical-align:baseline;cursor:help}
+.stage-status-family-info:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:50%}
+.stage-status-family-guide{font:500 11px/1.5 Manrope,Arial,sans-serif;color:var(--muted);padding:1px 2px}
+.stage-status-family-guide>summary{cursor:pointer;color:var(--gold);font-weight:600}
+.stage-status-family-guide>p{white-space:pre-line;padding:5px 3px}

@@ -1064,8 +1064,8 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
 // rounding never becomes an invented number. An unavailable skill can still
 // show its theoretical value, like the five Healing previews.
 function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
- branchMasteries={},branchCaps={},stats={},combat=null,
- weaponKind='BARE_HAND',hasShield=false}={}){
+ branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
+ stats={},combat=null,weaponKind='BARE_HAND',hasShield=false}={}){
  const result={offense:[],defense:[],verified:false,
   source:'Remaked SkillView floors and current OS skill effect vectors'};
  if(!skillCatalog||!combat||typeof jobKey!=='string'||
@@ -1084,11 +1084,11 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  };
  const mastery=branch=>Number(branchMasteries?.[branch]??0);
  const cap=branch=>Number(branchCaps?.[branch]??0);
- const labels={
-  martial:'Боевые искусства',brush:'Рубящий',warding:'Уклонение',
-  defense:'Оборона',archery:'Стрельба',alchemy:'Алхимия',
-  blessing:'Благословение',exorcism:'Изгнание',hymn:'Песнопения',
-  darkness:'Тьма',embody:'Воплощение'
+ // Never auto-translate or approximate official OS mastery names.
+ // The app passes Russian meta.branchLabels and English strings.en.branches.
+ const branchName=(key,english=false)=>{
+  const label=(english?englishBranches:branchLabels)?.[key];
+  return typeof label==='string'&&label.trim()?label.trim():key;
  };
  // Source-backed, READ-ONLY coefficient projections for OS skill effects.
  // Interpretation of fv1: [attribute %, reserved, mastery %, constant] matches
@@ -1136,27 +1136,38 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   if(!recipient&&options.branch&&!cap(options.branch))return;
   if(!recipient&&options.song===true&&!songSkillPreview({
    skillCatalog,jobKey,level,branchMasteries,branchCaps}).rows.some(x=>x.id===id))return;
-  const issues=[];
+  const issues=[],issuesEn=[];
   // An impossible allocation may still have a mathematically valid source
   // coefficient. It must never show as a usable skill for this profession.
   if(!recipient&&options.branch&&
    (!Number.isSafeInteger(mastery(options.branch))||
     mastery(options.branch)<0||mastery(options.branch)>cap(options.branch)))
-   issues.push('Мастерство превышает предел профессии');
-  if(!recipient&&level<Number(record.charLevel||0))
+   {issues.push('Мастерство превышает предел профессии');
+    issuesEn.push('Mastery exceeds class maximum');}
+  if(!recipient&&level<Number(record.charLevel||0)){
    issues.push('Требуется уровень '+record.charLevel);
+   issuesEn.push('Requires level '+record.charLevel);
+  }
   if(!recipient)for(const req of record.reqs){
-   if(mastery(req.branch)<req.amount)
-    issues.push('Требуется мастерство «'+(labels[req.branch]||req.branch)+'»: '+req.amount);
+   if(mastery(req.branch)<req.amount){
+    issues.push('Требуется мастерство «'+branchName(req.branch)+'»: '+req.amount);
+    issuesEn.push('Requires '+branchName(req.branch,true)+' mastery: '+req.amount);
+   }
   }
   if(!recipient&&Array.isArray(record.weaponUse)&&record.weaponUse.length&&
-   !record.weaponUse.includes(weaponKind))issues.push('Не подходит оружие');
-  if(!recipient&&options.shield&&!hasShield)issues.push('Нужен щит');
+   !record.weaponUse.includes(weaponKind)){
+   issues.push('Не подходит оружие');
+   issuesEn.push('Incompatible weapon');
+  }
+  if(!recipient&&options.shield&&!hasShield){
+   issues.push('Нужен щит');
+   issuesEn.push('Requires shield');
+  }
   const amount=compute();
   if(amount!==null&&(!Number.isFinite(amount)||!Number.isSafeInteger(amount)))return;
   result[group].push({id,name:record.name,description:record.desc||'',
    amount,unit:options.unit||'',available:issues.length===0,
-   reason:issues.join(' · '),recipient,
+   reason:issues.join(' · '),reasonEn:issuesEn.join(' · '),recipient,
    detailRu:options.detailRu||'',detailEn:options.detailEn||'',
    uncertain:amount===null||options.modelOnly===true,
    modelOnly:options.modelOnly===true,

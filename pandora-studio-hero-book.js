@@ -522,6 +522,16 @@ function summaryPage(body,calc,options={}){
     make('strong',{text})
    ]);
    guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
+   // Keep the existing tooltip, but add a visible focusable hint affordance.
+   if(['Сопр. аном. тел.','Сопр. аном. дух.'].includes(result.ru)){
+    const hint=tile.firstChild.dataset?.guideHint;
+    if(hint){
+     const info=make('span',{class:'stage-status-family-info',tabindex:0,
+      'aria-label':en?'Status group explanation':'Какие состояния учитываются',text:'ⓘ'});
+     root.PandoraGuideTooltip?.attach(info,hint,{hoverDelay:350});
+     tile.firstChild.append(info);
+    }
+   }
    grid.append(tile);
   }
   section.append(heading,grid);
@@ -1256,6 +1266,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  const rows=root.PandoraOSCalculator?.scalingSkillPreview?.({
   skillCatalog:gameTerms.skills,jobKey:heroJobKey,level:heroLevel,
   branchMasteries:heroMasteries,branchCaps:heroBranchCaps,
+  branchLabels:gameTerms.branchLabels,englishBranches:gameTerms.englishBranches,
   weaponKind:heroWeaponKind,hasShield:heroHasShield,
   stats:modifiers?.stats,combat:modifiers?.combat
  })||{offense:[],defense:[]};
@@ -1285,7 +1296,7 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
     'Эффект при применении союзником к этому герою'):
     skill.available?(en?'Preview when cast':'Значение при применении'):
     (en?'Requirements not met':'Требования ещё не выполнены')+
-     (skill.reason?' · '+skill.reason:'');
+     ((en?skill.reasonEn:skill.reason)?' · '+(en?skill.reasonEn:skill.reason):'');
    const detail=[ready,en?
     (skill.detailEn||source?.d||skill.description):
     (skill.detailRu||skill.description)].filter(Boolean).join(' · ');
@@ -1477,6 +1488,19 @@ function appendChapterGroups(body,groups,english,emptyRu,emptyEn,options={}){
   const title=make('strong',{text:english?group.en:group.ru});
   heading.append(title);section.append(heading);
   guideLabel(title,(options.page||'attack')+'.group.'+group.key,group.ru,group.en,options);
+  if(group.key==='status'&&options.page==='defense'){
+   const hints=root.PandoraHonorGuide?.hints||{};
+   const bodyHint=hints['Сопр. аном. тел.']?.[english?1:0]||'';
+   const mindHint=hints['Сопр. аном. дух.']?.[english?1:0]||'';
+   if(bodyHint&&mindHint){
+    const help=make('details',{class:'stage-status-family-guide'});
+    help.append(make('summary',{text:english?
+     'What are body and mind ailments?':
+     'Какие состояния относятся к телу и духу?'}));
+    help.append(make('p',{text:bodyHint}),make('p',{text:mindHint}));
+    section.append(help);
+   }
+  }
   const grid=make('div',{class:'stage-chapter-grid'});
   for(const row of group.rows){
    const labelSlot=make('div',{class:'stage-chapter-label'},[
