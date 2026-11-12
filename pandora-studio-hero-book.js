@@ -396,7 +396,9 @@ const collapsedBookGroups=new Set();
 const expandedBookGroups=new Set();
 const expandedBookDetails=new Set();
 function bookSectionStartsOpen(page,node){
- if(page==='attack')return true; // Last requested: leave Attack unchanged.
+ // Attack preserves the prior behavior: generated SECTION groups start open,
+ // but original details (weapon/proc panels) retain their own open state.
+ if(page==='attack')return node?.tagName!=='DETAILS'||node.open===true;
  if(page==='defense')return node?.dataset?.chapterGroup==='recovery';
  if(page==='buffs')return node?.dataset?.bookSection==='priest';
  if(page==='effects')return node?.classList?.contains('stage-healing-spells')&&
