@@ -1,5 +1,16 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.673.0 — 2026.11.12.673 · Hero Book experience, skill groups, tooltips and priest effects
+
+- Defensive chapter: experience-bonus disclosure is always visible, including a clear empty state when no XP source is active.
+- Skill Effects: Attack and Defense groups use the exact same chapter/row styling as Healing; original OS Defensive Skills (including «Безболезненность») show class, level, mastery and weapon restrictions, stable effects and honest status instead of pretending previews are activated buffs.
+- Consumable-triggered skill names each use a keyboard-focusable hover tooltip containing the current skill description from the OS catalog; both RU and EN supported.
+- Passive HP/MP regeneration speed guide now explains «инд.» / idx as an index, NOT elapsed time, and preserves existing editable guide text.
+- External Priest «Божественная защита» and «Священное оружие» now affect incoming physical/magical mitigation and light-element weapon aura using Remaked floor rules guarded by current-OS coefficients; invalid, disabled or unselected buffs apply nothing.
+- Exact current-server proc damage and stacking still require further game-client parity testing in Issue #5. No speculative rune buffs added.
+
+
+
 ## 0.672.0 — 2026.11.12.672 · Unified Hero Book cards, buffs and priest songs
 
 - Potion health/status/skill-item and Defense experience sections now use the same interactive glyph, header and right-chevron as other Hero Book chapters, without counts in titles; expanded state survives recalculation.
