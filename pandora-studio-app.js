@@ -1728,6 +1728,7 @@ function renderStageAttributes(calculated=undefined){
   icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
   availability,combatSkillCards,remakedBuffRows,
+  heroJobKey:cls,heroLevel:state.level,heroMasteries:branchMasteries,
   honorTitles:window.PandoraOSCalculator.honorTitles,
   gameTerms:{skills:skillMap,englishSkills:officialEnglish?.skills||{},
    branchLabels:catalog.meta?.branchLabels||{},
