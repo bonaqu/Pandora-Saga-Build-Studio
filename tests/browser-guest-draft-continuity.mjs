@@ -184,6 +184,13 @@ export async function runGuestDraftContinuitySmoke(browser,base){
    if(accountDraft&&!keepAccount&&!quotaFail){
     assert.equal(writes.length,1,'Explicit draft choice saves one account build');
     assert.equal(writes[0].entry.name,savedAccountName);
+    // The async cloud write may complete before the client library cache
+    // receives its update. Verify eventual persistence, not an arbitrary
+    // race at the same moment the network recorder sees the POST.
+    await page.waitForFunction(name=>{
+     try{return JSON.parse(localStorage.getItem('ps-build-library.v1')||'[]')
+      .some(row=>row.name===name)}catch{return false}
+    },savedAccountName,{timeout:12000});
     const saved=JSON.parse(await page.evaluate(()=>
      localStorage.getItem('ps-build-library.v1')||'[]'));
     assert.equal(saved.filter(row=>row.name===savedAccountName).length,1);

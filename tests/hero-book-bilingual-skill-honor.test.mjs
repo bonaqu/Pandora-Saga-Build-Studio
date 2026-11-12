@@ -47,7 +47,8 @@ test('selected game language is forwarded into the inspector without modifying p
  assert.match(app,/Requires '\+req.amount\+' '\+branchName\+' mastery/);
  assert.doesNotMatch(app,/Нужно 26 очков мастерства рубящего оружия/);
  assert.match(app,/const reason=unavailableReason\(ability\)/);
- assert.match(app,/const reason=unavailableReason\(ability,false\)/);
+ assert.match(app,/const reason=availability\[setting\]\?null/);
+ assert.match(app,/skillCatalog:skillMap/);
  assert.match(app,/bookEn\?' movement speed'/);
 });
 

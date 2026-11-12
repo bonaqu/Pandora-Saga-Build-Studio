@@ -711,12 +711,14 @@ function supportSkillAvailability({selected={},skillCatalog=null,jobKey=null,lev
   ['windBlessing','combatWindBlessing']]){
   const source=supportSkillSource(skillCatalog,kind);
   const skill=source?.record;
-  const requirementValid=Array.isArray(skill?.reqs)&&skill.reqs.every(req=>
-   typeof req?.branch==='string'&&Number.isInteger(req.amount)&&req.amount>=0&&
-   Number(branchMasteries?.[req.branch]??0)>=req.amount);
-  result[kind]=Boolean(selected?.[setting]===true&&skill?.classes?.[jobKey]&&
-   Number.isInteger(skill.charLevel)&&level>=skill.charLevel&&
-   skill.learnable!==false&&skill.prereq==null&&requirementValid);
+  // Both wind skills can be cast by an ally. Requirements gate the caster,
+  // not the hero receiving the chosen party effect.
+  result[kind]=Boolean(selected?.[setting]===true&&source&&
+   skill?.id===supportSkillIds[kind]&&skill.learnable!==false&&
+   skill.prereq==null&&Number.isInteger(skill.charLevel)&&
+   skill.charLevel>=0&&skill.charLevel<=55&&
+   Array.isArray(skill.reqs)&&skill.reqs.every(req=>
+    typeof req?.branch==='string'&&Number.isInteger(req.amount)&&req.amount>=0));
  }
  return result;
 }
@@ -771,7 +773,17 @@ function activeCombatSkills({selected={},jobKey=null,level=1,hasShield=false,
   }
   return legacyClasses.has(jobKey)&&level>=minLevel;
  };
- const warCry=permitted('warCry','combatWarCry',meleeLineage,28);
+ // An ally's War Cry affects any party member. Retain fallback only
+ // for calculator fixtures without a current OS skill catalog.
+ const warCry=validLevel&&selected?.combatWarCry===true&&
+  (skillCatalog?(()=>{
+   const rec=combatSkillSource(skillCatalog,'warCry')?.record;
+   return Boolean(rec?.id===combatSkillIds.warCry&&rec.learnable!==false&&
+    rec.prereq==null&&Number.isInteger(rec.charLevel)&&
+    rec.charLevel>=0&&rec.charLevel<=55&&Array.isArray(rec.reqs)&&
+    rec.reqs.every(req=>typeof req?.branch==='string'&&
+     Number.isInteger(req.amount)&&req.amount>=0));
+  })():meleeLineage.has(jobKey)&&level>=28);
  const raging=permitted('raging','combatRage',meleeLineage,35);
  const defender=permitted('defender','combatDefender',knightLineage,35)&&hasShield&&!raging;
  const lunge=permitted('lunge','combatLunge',warriorBuffClasses,18);
@@ -862,6 +874,9 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const dodgeStep=dodgeSteps.find(([threshold])=>stats.agi>=threshold)?.[1]??0;
  const accuracyBase=level+stats.dex,dodgeBase=level+stats.agi+dodgeStep;
  const critBase=1+Math.floor(stats.dex/10);
+ const otherBuffs=root.PandoraRemakedBuffs?.applied({
+  selected:combatBuffs?.remakedSkillIds,skills:skillCatalog,jobKey,level,
+  weapon,branchMasteries})||{};
  if(![techniqueInnate,techniqueTrained,meleeMastery,magicMastery]
   .every(v=>Number.isInteger(v)&&v>=0))return null;
  // Executed Legacy ACC/Dodge: floor(innate + trained/10), not
@@ -873,7 +888,8 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  const accuracy=accuracyBase+accEquip+(title.accuracy||0);
  const dodge=dodgeBase+evEquip+(title.dodge||0);
  // Current OS EP_CRITICALRATE_CONST (Myrine +5) differs from old Remaked +2.
- const critical=critBase+critEquip+(racialPassiveId===900040001?5:0);
+ const critical=critBase+critEquip+(racialPassiveId===900040001?5:0)+
+  (otherBuffs.coldBlood?.critical||0);
  // Current OS race skills are percentage effects; rounding/effect stage is
  // unknown, so do not fold them into the Legacy flat accuracy/dodge subtotal.
  const racialRate={accuracy:racialPassiveId===900040002?10:0,
@@ -985,12 +1001,15 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
  // supported front component equals regular accuracy (not a new buff).
  const accuracyKnown=accuracy+
   (mounted?Math.ceil(accuracyBase*mountedRate)-accuracyBase:0)+accuracyBonus+hunterEye+
-  (actives.concentration?effect('concentration','EP_TOHIT_CONST'):0);
+  (actives.concentration?effect('concentration','EP_TOHIT_CONST'):0)+
+  (otherBuffs.thirdEye?Math.floor(otherBuffs.thirdEye.flat+
+   accuracyBase*otherBuffs.thirdEye.percent/100):0);
  const observedDodge=dodge+
   (mounted?Math.ceil(dodgeBase*mountedRate)-dodgeBase:0)+quickStep+
   (supportSkills.windAssist?Math.floor(
   supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
-  dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0);
+  dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0)+
+  (otherBuffs.quickStep?.dodge||0)+(otherBuffs.avoidance?.dodge||0);
  // Distinct from OS web-calculator combat damage: the observed client
  // character sheet floors both the PEN/mastery percentage and the final gap.
  // Leave the minimum unavailable if the weapon or actual green is unknown.
@@ -1035,19 +1054,23 @@ function combatPreview({stats={},level=null,bonuses={},honorTitle=0,racialPassiv
    source:'Remaked Legacy Calc: Flag[7]'},
   spellDamageEquipmentRate,castInterruption,movementSpeed,skillDelayEquipment,
   skillDelayFinalEquipment,mpRecoveryEquipmentRate,backAttackEquipmentRate,
-  criticalDamage,criticalIncoming,criticalIncomingDamage,
+  criticalDamage,criticalIncoming,criticalIncomingDamage,otherBuffs,
   accuracy:{base:accuracyBase,equipment:accEquip,passive:hunterEye,
    percentage:accuracyPercent,honor:title.accuracy||0,
    activeBonus:actives.concentration?effect('concentration','EP_TOHIT_CONST'):0,
+   thirdEye:otherBuffs.thirdEye?Math.floor(otherBuffs.thirdEye.flat+
+    accuracyBase*otherBuffs.thirdEye.percent/100):0,
    known:accuracyKnown},
   dodge:{base:dodgeBase,agilityStep:dodgeStep,equipment:evEquip,
    passive:quickStep,honor:title.dodge||0,
    windAssist:supportSkills.windAssist?Math.floor(
     supportSkillValues.windAssist.EP_AVOIDANCE_CONST+
     dodgeBase*supportSkillValues.windAssist.EP_AVOIDANCE_SCALE/100):0,
+   additionalSelf:(otherBuffs.quickStep?.dodge||0)+(otherBuffs.avoidance?.dodge||0),
    known:observedDodge},
   critical:{base:critBase,equipment:critEquip,
-   racial:racialPassiveId===900040001?5:0,known:critical},
+   racial:racialPassiveId===900040001?5:0,
+   coldBlood:otherBuffs.coldBlood?.critical||0,known:critical},
   racialRate,verified:false,
   excluded:['active combat skills','class offensive passives','other conditional Souls and sets',
    'mounted penalties','current OS percent-bonus rounding']};
@@ -2151,6 +2174,12 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   skillCatalog:combatContext.skillCatalog,selected:attributeBuffs.resistanceSkillIds
  });
  const resistanceBonuses={...effects.bonuses};
+ const groupBuffs=root.PandoraRemakedBuffs?.applied({
+  selected:attributeBuffs?.remakedSkillIds,skills:combatContext.skillCatalog,
+  jobKey:combatContext.jobKey,level,weapon:combatContext.weapon,
+  branchMasteries:combatContext.branchMasteries})||{};
+ if(groupBuffs.providence)
+  resistanceBonuses.magic=(Number(resistanceBonuses.magic)||0)+groupBuffs.providence.magic;
  for(const [key,value] of Object.entries(resistanceSkills.bonuses))
   resistanceBonuses[key]=(resistanceBonuses[key]||0)+value;
  const resistances=resistancePreview({stats,bonuses:resistanceBonuses,

@@ -39,6 +39,7 @@ import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry
 import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
 import {runHeroBookLiveRecalcSmoke} from './browser-hero-book-live-recalc.mjs';
 import {runHeroBookGameNames664Smoke} from './browser-book-game-terms-664.mjs';
+import {runRemakedBuffParity669Smoke} from './browser-remaked-buff-parity-669.mjs';
 import {runOriginSharedSnapshotSmoke} from './browser-origin-shared-snapshot.mjs';
 import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build-comparison.mjs';
 import {runSavedBuildGridSmoke} from './browser-build-grid-640.mjs';
@@ -93,6 +94,7 @@ const scenarios=[
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
   ['hero-book-live-recalc',runHeroBookLiveRecalcSmoke],
   ['hero-book-game-terms-664',runHeroBookGameNames664Smoke],
+  ['remaked-buff-parity-669',runRemakedBuffParity669Smoke],
   ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
   ['two-handed-gear',runTwoHandedSmoke],
   ['one-piece-outfit-and-soul-scroll',runOutfitSoulScrollSmoke],
@@ -275,6 +277,11 @@ async function main(){
  assert.equal((await mountedText.innerText()).trim(),'Верхом');
  const visibleMountedHint=await mountedText.getAttribute('data-guide-hint');
  assert.match(visibleMountedHint||'',/сражается верхом/);
+ const mountedRate=page.locator('#stageBookPanel .stage-mounted-toggle .stage-mounted-percent');
+ assert.match((await mountedRate.innerText()).trim(),/^\d+(?:[,.]\d+)?%$/,
+  'Mounted attributes percentage must share the switch row');
+ assert.equal(await page.locator('#stageBookPanel .stage-chapter-entry[data-chapter-stat="mountedRelease"]').count(),0,
+  'Mounted percentage should not be repeated in a distant Attack card');
  // The prior chapter's test scrolled its 43 results; begin the new page at
  // its top, then let the chapter entrance animation settle before hover.
  await page.locator('#stageBookPanel').evaluate(el=>{el.scrollTop=0});

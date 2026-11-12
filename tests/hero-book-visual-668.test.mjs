@@ -17,6 +17,7 @@ test('effect icons have intrinsic-safe width/height, not full-size OS sprites',(
  assert.match(visual,/#stageAttributes \.stage-effect-skill-label>img/);
  assert.match(visual,/max-width:26px!important/);
  assert.match(visual,/max-height:26px!important/);
+ assert.match(visual,/border:1px solid #cf9d53!important/);
  assert.match(read('tests/browser-book-game-terms-664.mjs'),/getBoundingClientRect\(\)\.width/);
 });
 

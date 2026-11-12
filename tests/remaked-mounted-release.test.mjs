@@ -19,6 +19,6 @@ test('bad inputs fail closed',()=>{
 });
 test('riding is attached to character calculator and hero book',()=>{
  assert.match(read('pandora-studio-app.js'),/groupAdeptness\(snap,\['riding'\],initialBranches,caps\)/);
- assert.match(read('pandora-studio-hero-book.js'),/calc\.mountedRelease\?\.known/);
+ assert.match(read('pandora-studio-hero-book.js'),/calc\?\.mountedRelease\?\.known/);
  assert.match(read('docs/REMAKED_FORMULA_INVENTORY.md'),/\| `RelHorse` \|[^\n]+\| PARTIAL \|/);
 });

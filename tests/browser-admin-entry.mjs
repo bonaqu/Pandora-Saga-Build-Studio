@@ -574,6 +574,9 @@ export async function runAdminEntrySmoke(browser,base){
    await page.waitForFunction(text=>
     document.querySelector('.os-sync-choice-editor .os-sync-formatting-option>span')
      ?.textContent===text,value,{timeout:12000});
+   // Text can already match before the D1 CAS request finishes. Wait for the
+   // editor to restore rather than reopening a saving contenteditable.
+   await formattingChoice.locator('[data-owner-text-field]').waitFor({state:'detached',timeout:12000});
   }
   assert.equal(JSON.parse(townOverrides.get('guideedit.book.catalog-sync.formatting-label')).ru,
    originalCaption,'Checkbox caption is stored in the same D1 owner-copy store');

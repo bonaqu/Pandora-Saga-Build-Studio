@@ -1,5 +1,14 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.669.0 — 2026.11.12.669 · Remaked party and self-buff coverage
+
+- Linked all 36 Remaked enhancement skill flags to original current OS primary skill IDs. Three unmatched rune slots intentionally remain outside calculated current-game effects.
+- 21 previously missing buffs become available in the Hero Book without duplicating 15 existing controls (War Cry, wind group buffs, Life Sign, priest effects and elemental resistances). Party effects belong to any recipient, regardless of the caster's profession, mastery or weapon; self-cast buffs require the active character's class, level, trained mastery and equipped weapon.
+- User-friendly exact-source RU/EN names and disabled reasons; true castable spells and preview-only effects are distinguished. Added persistence and shared-build filtering.
+- Source-validated Third Eye (+20 and +15% base accuracy), Providence (+25 magic resistance), Cold Blood (+10 crit with axe/Brush 21), Quick Step (+10 dodge with mastery), and Avoidance (+100 dodge with mastery) now affect results. Existing Wind Assist, Wind Blessing and War Cry accept external party casts.
+- New source, calculator and Chromium tests; unknown serverside stacking or rune effects are never invented.
+
+
 ## 0.668.0 — 2026.11.12.668 · Hero Book visual and help repairs
 
 - Fixed the oversized skill icons in Effects: hard 26×26 px markup bounds plus guarded CSS, preserving original OS icon identities and fallbacks.

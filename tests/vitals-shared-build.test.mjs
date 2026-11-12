@@ -45,7 +45,7 @@ test('Remaked attribute bonuses survive export and sharing without changing inve
  const safe=sanitize({race:0,job:0,level:45,stats:{Сила:8,Дух:9},
   attributeBuffs:{guildAll:4,honorCuriosity:true,proelium:true,proeliumPotency:70}});
  assert.deepEqual(safe.attributeBuffs,{
-  guildAll:4,honorCuriosity:true,honorTitle:null,proelium:true,proeliumPotency:70,runeJoEun:false,potionEffectsEnabled:false});
+  guildAll:4,honorCuriosity:true,honorTitle:null,proelium:true,proeliumPotency:70,runeJoEun:false,potionEffectsEnabled:false,remakedSkillIds:[]});
  assert.equal(safe.stats['Сила'],8);
  assert.equal(safe.stats['Дух'],9);
 });
@@ -53,7 +53,7 @@ test('malformed shared attribute buff values cannot activate Honor, guild or pot
  const safe=sanitizer()({race:0,job:0,level:45,
   attributeBuffs:{guildAll:9,honorCuriosity:'true',proelium:1,proeliumPotency:10000}});
  assert.deepEqual(safe.attributeBuffs,{
-  guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false});
+  guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,runeJoEun:false,potionEffectsEnabled:false,remakedSkillIds:[]});
 });
 
 test('exclusive Honor title and Jo-eun rune survive validated links',()=>{
