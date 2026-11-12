@@ -375,7 +375,7 @@ async function main(){
   const recovery=await page.locator('#stageAttributes .stage-periodic-recovery').innerText();
   assert.match(recovery,/Регенерация/);
   assert.match(recovery,/Восстановление/);
-  assert.match(recovery,/Ориентировочное действие навыка/);
+  assert.match(recovery,/Действие навыка не относится к пассивному восстановлению героя/);
   await page.locator('#stageAttributes [data-book-page="recovery"]').click();
  await page.locator('#stageAttributes .stage-mana-consumables').waitFor({state:'visible',timeout:20000});
  assert.equal(await page.locator('#stageAttributes .stage-mana-consumables').getAttribute('open'),null,
