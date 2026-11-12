@@ -61,13 +61,13 @@ test('source corruption, cycle and missing child reject the whole tree',()=>{
   assert.ok(result.rejected.includes(440003001));
  }
 });
-test('linked skill audit leaves 120 unmodeled numeric previews unchanged',()=>{
+test('linked skill audit tracks only verified crafting numeric sources',()=>{
  const audit=auditOsSkillFormulaCoverage({skills,classes,calculator:C});
  assert.equal(audit.summary.skillRecords,569);
  assert.equal(audit.summary.executionChains.sourceLinks,100);
  assert.equal(audit.summary.executionChains.zeroTargetSentinels,2);
  assert.ok(audit.summary.executionChains.eligibleSkillRoots>0);
- assert.equal(audit.summary.statuses['unmodeled-learnable'],120);
+ assert.equal(audit.summary.statuses['unmodeled-learnable'],116);
 });
 test('Hero Book uses player language and explanatory collapsed group',()=>{
  const book=read('pandora-studio-hero-book.js');
