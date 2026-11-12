@@ -120,8 +120,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
     entry.hidden=!matches(entry);
     if(!entry.hidden)visible++;
    }
-   if(!visible)browse.append(node('p','wiki-honor-search-empty',
-    tr('По запросу ничего не найдено.','No Honor matches found.')));
+   if(!visible)browse.append(editorial('p','wiki-honor-search-empty',
+    'searchEmpty','По запросу ничего не найдено.','No Honor matches found.'));
   }
   browse.scrollTop=0;detail.scrollTop=0;
   return;
@@ -616,8 +616,8 @@ function render({browse,detail,make,lang='ru',article,editable=false,
    entry.hidden=target?.hidden===true;
   }
   if(!sections.some(section=>!section.hidden))
-   detail.append(node('p','wiki-honor-search-empty',
-    tr('По запросу ничего не найдено.','No Honor matches found.')));
+   detail.append(editorial('p','wiki-honor-search-empty',
+    'searchEmpty','По запросу ничего не найдено.','No Honor matches found.'));
  }
  browse.scrollTop=oldBrowseScroll;detail.scrollTop=oldDetailScroll;
  // #detailContent is the real scroll plane, not the browser document.
@@ -632,7 +632,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   // before the last heading can rise to that line.
   const paneTop=scroller.getBoundingClientRect().top;
   const readingLine=paneTop+Math.min(100,scroller.clientHeight*.22);
-  let current=sidebar[0][0];
+  const visibleSections=sidebar.map(([id])=>id).filter(id=>
+   detail.querySelector('#honor-'+id)?.hidden===false);
+  let current=visibleSections[0]||'overview';
   for(const [id]of sidebar){
    const part=detail.querySelector('#honor-'+id);
    if(part&&!part.hidden&&part.getBoundingClientRect().top<=readingLine)
@@ -642,8 +644,9 @@ function render({browse,detail,make,lang='ru',article,editable=false,
   const monthlyTop=detail.querySelector('#honor-monthly')?.getBoundingClientRect().top;
   const monthlyVisible=Number.isFinite(monthlyTop)&&
    monthlyTop<=paneTop+Math.min(280,scroller.clientHeight*.43);
-  if(scroller.scrollTop<=3)current='overview';
-  else if(remaining<=36||monthlyVisible)current='monthly';
+  if(scroller.scrollTop<=3)current=visibleSections[0]||'overview';
+  else if(visibleSections.includes('monthly')&&(remaining<=36||monthlyVisible))
+   current='monthly';
   selectSection(current);
  };
  const onScroll=()=>{
