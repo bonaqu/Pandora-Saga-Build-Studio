@@ -212,7 +212,8 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    const title=prefix+' · Убрано правило: '+kind(row)+' · '+monster(row)+
     ' · '+itemNames(row);
    add(title+' · Количество одинаковых записей',oldCount,newCount);
-   const source=add(title+' · Исходные значения',detailed(row),'в новой версии нет удалённых копий');
+   const source=add(title+' · Содержание удалённых копий',detailed(row),
+    'удалено '+positions.length+' из '+oldCount+'; осталось '+newCount+' одинаковых правил');
    if(row?.items?.length===1&&source){
     const itemId=String(row.items[0].i);
     source.linkedItemId=itemId;source.linkedItemName=sourceName('items',itemId,'предмета');
@@ -226,7 +227,8 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    const title=prefix+' · Добавлено правило: '+kind(row)+' · '+monster(row)+
     ' · '+itemNames(row);
    add(title+' · Количество одинаковых записей',oldCount,newCount);
-   add(title+' · Исходные значения','отсутствовало',detailed(row));
+   add(title+' · Содержание добавленных копий','было '+oldCount+' одинаковых правил',
+    'стало '+newCount+': '+detailed(row));
   }
   if(!leftOver.size&&!rightOver.size&&!editsInZone&&!same(before,after)){
    unknown(prefix+': изменился порядок строк; его значение для игры неизвестно');
