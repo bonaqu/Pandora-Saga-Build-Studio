@@ -38,18 +38,18 @@ const bookEnglish=Object.freeze({
  'ОЗ и ОМ': "HP & MP",
  'Гильдейское ОЗ': "Guild HP",
  'Гильдейское ОМ': "Guild MP",
- 'Знак жизни': "Sign of Life",
+ 'Знак жизни': "Divine Aid",
  'Гильдия и честь': "Guild & honor",
  'Все характеристики': "All attributes",
- 'Пробуждение': "Awakening",
+ 'Пробуждение': "Vivify",
  'Титул чести': "Honor title",
  'Боевые умения': "Combat skills",
  'Рывок': "Lunge",
  'Боевой клич': "War Cry",
- 'Яростная атака': "Rage Attack",
+ 'Яростная атака': "Raging Soul",
  'Бастион (нужен щит)': "Bastion (shield required)",
- 'Помощь ветра': "Wind Assist",
- 'Благословение ветра': "Wind Blessing",
+ 'Помощь ветра': "Speedy Gale",
+ 'Благословение ветра': "Accelerate",
  'Сосредоточенность': "Concentration",
  'Восстановление': "Recovery",
  'Гильдия: скорость ОЗ': "Guild: HP recovery",
@@ -61,8 +61,8 @@ const bookEnglish=Object.freeze({
  'Знак защиты': 'Lapis Medio',
  'Ободрение': 'Battle Prayer',
  'Божественная защита': 'Group Barrier',
- 'Священное оружие': 'Holy Weapon',
- 'Темная аура': 'Dark Aura',
+ 'Священное оружие': 'Bless Weapon',
+ 'Темная аура': 'Gloom',
  'Чары усиления (магическая атака)': 'Enchant Enhancement (magic attack)',
  'Чары усиления (аура)': 'Enchant Enhancement (aura)',
  'Песнь поэта': "Minstrel's Song",
@@ -226,7 +226,7 @@ const bookLineHeads=Object.freeze({
  'Процентная точность вещей: ':'Equipment accuracy rate: ',
  'Пассивная меткость лучника: ':'Archer passive accuracy: ',
  'Сосредоточенность: ':'Concentration: ',
- 'Пассивное уклонение: ':'Passive evasion: ','Помощь ветра: ':'Wind Assist: ',
+ 'Пассивное уклонение: ':'Passive evasion: ','Помощь ветра: ':'Speedy Gale: ',
  'Подавление гнева: ':'Rage Suppression: ','Интуиция: ':'Intuition: ',
  'Магическая атака: ':'Magic attack: ',
  'Физический урон оружия, пассивки и титулы: ':'Weapon, passive and title damage: ',
@@ -537,10 +537,17 @@ function summaryPage(body,calc,options={}){
 // names displayed in Path and Wiki. Never derive skill names from translated
 // English keywords, branch abbreviations or a guessed profession.
 function gameSkillName(id,ru,en,terms={},english=false){
- const skill=terms.skills?.[String(id)];
- if(english)return terms.englishSkills?.[String(id)]?.n||
-  skill?.nameEn||en||skill?.name||ru;
- return skill?.name||ru;
+ const source=terms.skills?.[String(id)];
+ // For an OS-known skill, an absent EN entry is *not* permission to
+ // invent an English name. Keep the official RU identity instead.
+ // This matters for the 16 current OS IDs with no EN skill string.
+ if(english){
+  const official=terms.englishSkills?.[String(id)]?.n;
+  if(typeof official==='string'&&official.trim())return official;
+  if(typeof source?.name==='string'&&source.name.trim())return source.name;
+  return ru||en;
+ }
+ return source?.name||ru;
 }
 function gameBranchName(branch,terms={},english=false){
  return (english?terms.englishBranches?.[branch]:terms.branchLabels?.[branch])||
