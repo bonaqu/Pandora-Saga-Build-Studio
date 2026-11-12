@@ -1250,35 +1250,41 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  {branch:'alchemy',modelOnly:true,unit:' урона ядом (модель)',
   detailRu:'Зависит от мастерства алхимии; итоговый урон ауры не подтверждён',
    detailEn:'Depends on Alchemy mastery; poison aura damage unverified'});
+ // Elemental Absorption: this value is the source-scaled protection
+ // parameter, not a claim about enemy damage or the final mitigation packet.
+ const absorbParameter=coefficientModel(330002001,'EP_ABSOLUTE_MAGIC',
+  'spi','exorcism','Поглощение стихий','Elemental absorption');
  add(330002001,'defense',[
   ['EP_ABSOLUTE_MAGIC',[20,0,20,10]]
- ],manual,{branch:'exorcism',
-  models:[coefficientModel(330002001,'EP_ABSOLUTE_MAGIC',
-   'spi','exorcism','Параметр защиты от магии','Magic protection parameter')],
-  detailRu:'Зависит от СД и мастерства изгнания; точный эффект не подтверждён',
-  detailEn:'Depends on SPI and Exorcism mastery; magnitude unverified'});
+ ],()=>absorbParameter?.amount??null,{branch:'exorcism',modelOnly:true,
+  unit:'',models:[absorbParameter],
+  detailRu:'Параметр защиты от огня, льда и молнии',
+  detailEn:'Protection parameter against fire, ice and lightning'});
  // Conjurer level 50 receives distinct OS source variants; show one rank
  // per skill identity instead of duplicating a legacy and advanced row.
  const conjurerUpgrade=jobKey==='CONJURER'&&level>=50;
- add(conjurerUpgrade?420002002:420002001,'defense',[
+ const shieldId=conjurerUpgrade?420002002:420002001;
+ const shieldParameter=coefficientModel(shieldId,'EP_MANA_SHIELD',
+  null,'embody','Сила щита','Shield strength');
+ add(shieldId,'defense',[
   ['EP_MANA_SHIELD',conjurerUpgrade?[0,0,20,10]:[0,0,10,10]]
- ],manual,{branch:'embody',
+ ],()=>shieldParameter?.amount??null,{branch:'embody',modelOnly:true,
   predecessor:conjurerUpgrade?420002001:null,
-  models:[coefficientModel(conjurerUpgrade?420002002:420002001,
-   'EP_MANA_SHIELD',null,'embody',
-   'Параметр магического щита','Mana shield parameter')],
-  detailRu:'Зависит от мастерства воплощения; расчёт поглощения ОМ не подтверждён',
-  detailEn:'Depends on Embodiment mastery; MP absorption unverified'});
- add(conjurerUpgrade?420004002:420004001,'defense',[
+  unit:'',models:[shieldParameter],
+  detailRu:'Сила магического щита от Воплощения',
+  detailEn:'Magic shield strength from Embodiment mastery'});
+ const windTrailId=conjurerUpgrade?420004002:420004001;
+ const windTrailParameter=coefficientModel(windTrailId,
+  'EP_CASTINGCANCEL_RESISTANCE_CONST','spi','embody',
+  'Сопротивление прерыванию','Cast interruption resistance');
+ add(windTrailId,'defense',[
   ['EP_CASTINGCANCEL_RESISTANCE_CONST',
    conjurerUpgrade?[15,0,15,1]:[10,0,10,1]]
- ],manual,{branch:'embody',
+ ],()=>windTrailParameter?.amount??null,{branch:'embody',modelOnly:true,
   predecessor:conjurerUpgrade?420004001:null,
-  models:[coefficientModel(conjurerUpgrade?420004002:420004001,
-   'EP_CASTINGCANCEL_RESISTANCE_CONST','spi','embody',
-   'Параметр сопротивления прерыванию','Interruption resistance parameter')],
-  detailRu:'Зависит от СД и мастерства воплощения; округление не подтверждено',
-  detailEn:'Depends on SPI and Embodiment mastery; rounding unverified'});
+  unit:'',models:[windTrailParameter],
+  detailRu:'СД и мастерство Воплощения',
+  detailEn:'SPI and Embodiment mastery'});
  add(320011001,'offense',[
   ['EP_AURADAMAGE_SCALE',[20,0,20,10]],
   ['EP_AURADAMAGE_CONST',[5,0,10,5]],
@@ -1344,16 +1350,16 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  ],manual,{
   detailRu:'Волна: изменяемое усиление атаки; точная формула не подтверждена',
   detailEn:'Wave: scaling attack increase; final formula unverified'});
+ const concentrationRate=coefficientModel(410000101,
+  'EP_ELEMENT_DAMAGE_SCALE',null,'element',
+  'Сила следующей магической атаки','Next elemental spell rate','%');
  add(410000101,'offense',[
-  ['EP_ELEMENT_DAMAGE_SCALE',[0,0,30,20]]
- ],manual,{models:[
-   coefficientModel(410000101,'EP_ELEMENT_DAMAGE_SCALE',null,'element',
-    'Коэффициент стихийного урона','Elemental damage scaling','%'),
-   coefficientModel(410000101,'EP_ELEMENT_BONUS',null,null,
-    'Параметр дополнительного эффекта','Additional effect parameter')
-  ],
-  detailRu:'Магическая сосредоточенность: изменяемый стихийный урон; точный эффект не подтверждён',
-  detailEn:'Magic Concentration: scaling element damage; final magnitude unverified'});
+  ['EP_ELEMENT_DAMAGE_SCALE',[0,0,30,20]],
+  ['EP_ELEMENT_BONUS',[0,0,0,30]]
+ ],()=>concentrationRate?.amount??null,{branch:'element',modelOnly:true,
+  unit:'% к стихийному урону',models:[concentrationRate],
+  detailRu:'Усиление следующей магической атаки от мастерства Стихий',
+  detailEn:'Next spell enhancement from Elemental mastery'});
  // Legacy SkillView uses separate floor steps. For these entries the current
  // OS fv1 preserves the coefficient roles while updating the flat constant.
  add(320007001,'offense',[
