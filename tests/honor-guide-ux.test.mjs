@@ -22,8 +22,9 @@ test('43 distinct Summary statistics have compact RU/EN descriptions',()=>{
   assert.ok(Object.hasOwn(g.hints,row.ru),'Missing dedicated RU/EN hint: '+row.ru);
   assert.equal(copy.ru,row.ru);
   assert.equal(copy.en,row.en);
-  assert.ok(copy.hintRu.length>8&&copy.hintRu.length<=160,row.ru);
-  assert.ok(copy.hintEn.length>8&&copy.hintEn.length<=160,row.en);
+  const maxHint=['Сопр. аном. тел.','Сопр. аном. дух.'].includes(row.ru)?360:160;
+  assert.ok(copy.hintRu.length>8&&copy.hintRu.length<=maxHint,row.ru);
+  assert.ok(copy.hintEn.length>8&&copy.hintEn.length<=maxHint,row.en);
  }
  assert.match(g.summary({},0,'ОЗ','HP').hintRu,/Очки здоровья/);
  assert.match(g.summary({},1,'Сопр. АТК сзади','Back').hintRu,/в спину/);

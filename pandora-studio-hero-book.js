@@ -524,7 +524,7 @@ function summaryPage(body,calc,options={}){
    guideLabel(tile.firstChild,'summary.'+summaryIndex++,result.ru,result.en,options);
    // Keep the existing tooltip, but add a visible focusable hint affordance.
    if(['Сопр. аном. тел.','Сопр. аном. дух.'].includes(result.ru)){
-    const hint=tile.firstChild.dataset?.guideHint;
+    const hint=tile.firstChild?.dataset?.guideHint;
     if(hint){
      const info=make('span',{class:'stage-status-family-info',tabindex:0,
       'aria-label':en?'Status group explanation':'Какие состояния учитываются',text:'ⓘ'});

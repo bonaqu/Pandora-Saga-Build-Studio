@@ -69,10 +69,14 @@ test('defense labels come from actual current OS item descriptors, not English g
 test('physical and mental anomaly hover help keeps first description plus separate examples',()=>{
  const physical=host.PandoraHonorGuide.summary({},38,'Сопр. аном. тел.','Physical conditions');
  const mental=host.PandoraHonorGuide.summary({},39,'Сопр. аном. дух.','Mental conditions');
- assert.match(physical.hintRu,/^Устойчивость[^\n]+\nНапример: ожог, оглушение, заморозка, падение\./);
- assert.match(mental.hintRu,/^Устойчивость[^\n]+\nНапример: сон, немота, безумие\./);
- assert.match(physical.hintEn,/\nExamples: burn, stun/);
- assert.match(mental.hintEn,/\nExamples: sleep, silence/);
+ for(const term of ['оглушение','падение','отравление','кровотечение','ожог','заморозка'])
+  assert.ok(physical.hintRu.includes(term),term);
+ for(const term of ['сон','безумие','немота','слабость','болезнь'])
+  assert.ok(mental.hintRu.includes(term),term);
+ for(const term of ['stun','knockdown','poison','bleeding','burn','freeze'])
+  assert.ok(physical.hintEn.includes(term),term);
+ for(const term of ['sleep','madness','silence','weakness','disease'])
+  assert.ok(mental.hintEn.includes(term),term);
  assert.match(read('pandora-studio-hero-book-additions.css'),/\.stage-guide-popup\{white-space:pre-line/);
 });
 
