@@ -1213,7 +1213,8 @@ function decorateChapterCaptions(body,page,options){
 }
 function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
- combatSkillCards={},resistanceSkillChoices=[],itemById=()=>null,onItem=()=>{},gameTerms={},
+ combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
+ itemById=()=>null,onItem=()=>{},gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
  // Keep the same scrolling pane mounted on ordinary value changes: re-attaching
