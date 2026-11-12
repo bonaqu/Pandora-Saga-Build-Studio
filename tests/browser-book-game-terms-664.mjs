@@ -93,8 +93,12 @@ export async function runHeroBookGameNames664Smoke(browser,base){
    'All six OS skill original images must be rendered, not an icon-less name');
   const imageBounds=await page.locator('#book-source-qa .stage-effect-skill-label img').evaluateAll(
    images=>images.map(img=>({width:img.getBoundingClientRect().width,
-    height:img.getBoundingClientRect().height,src:img.getAttribute('src')})));
+    height:img.getBoundingClientRect().height,src:img.getAttribute('src'),
+    border:parseFloat(getComputedStyle(img).borderTopWidth),
+    borderColor:getComputedStyle(img).borderTopColor})));
   for(const icon of imageBounds){
+   assert.ok(icon.border>=1 && icon.borderColor!=='rgba(0, 0, 0, 0)',
+    'Effect icon needs the same visible gold rim as the skill path: '+JSON.stringify(icon));
    assert.ok(Math.abs(icon.width-26)<=1 && Math.abs(icon.height-26)<=1,
     'Original effect icon must remain a compact 26px badge: '+JSON.stringify(icon));
   }
