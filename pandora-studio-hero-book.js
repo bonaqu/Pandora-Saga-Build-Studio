@@ -140,6 +140,7 @@ const bookEnglish=Object.freeze({
  'Сила атаки': "Attack power",
  'Верховая езда': "Riding",
  'Верхом': 'Mounted',
+ 'Верхом: предварительный расчёт по Remaked. Защита и скорость обычной атаки верхом не отображаются.': 'Mounted: preliminary Remaked estimate. Defense and normal attack speed are unavailable while riding.',
  'Характеристики верхом': 'Mounted attributes',
  'Бонусы дальности от снаряжения': "Equipment range bonuses",
  'Усиление стихийной магии': "Elemental magic bonus",
@@ -186,7 +187,7 @@ const bookEnglish=Object.freeze({
  'Условные эффекты стихийного оружия': "Conditional elemental weapons",
  'Пламя феникса · расчётный урон': "Phoenix Flame · estimated damage",
  'Эффекты плащей на военных картах': "Battle-map cloak effects",
- 'Расовая стойкость дворфа': "Dwarven racial survival",
+ 'Расовая стойкость цверга': "Dwarven racial survival",
  'Бонусы к опыту': "Experience gain bonuses",
  'Показывать восстановление от зелий': "Show potion recovery",
  'Для текущих зелий ещё нет доступных значений.': "No potion values are available yet.",
@@ -744,7 +745,12 @@ function gameSkillBadge(id,ru,en,terms,english,skillIconForId){
  const source=skillIconForId?.(id);
  if(source){
   const picture=make('img',{src:source,alt:'',loading:'lazy'});
-  picture.onerror=()=>picture.remove();
+  picture.onerror=()=>{
+   // When an original sprite fails, use only the known original-client
+   // question mark, not unrelated artwork from another skill.
+   if(picture.dataset.fallback==='1'){picture.remove();return}
+   picture.dataset.fallback='1';picture.src='assets/skills/icons/skill_unknown.webp';
+  };
   label.append(picture);
  }
  label.append(make('span',{text:gameSkillName(id,ru,en,terms,english)}));
@@ -1086,6 +1092,13 @@ function appendWeaponConditions(body,calc,items,english){
  }
  body.append(panel);
 }
+function mountedBookNotice(body,options,english){
+ if(options.buffs?.mounted!==true)return;
+ body.append(make('p',{class:'stage-attribute-note stage-mounted-note',
+  text:english?
+   'Mounted: preliminary Remaked estimate. Defense and normal attack speed are unavailable while riding.':
+   'Верхом: предварительный расчёт по Remaked. Защита и скорость обычной атаки верхом не отображаются.'}));
+}
 function attackPage(body,calc,items,english,options={}){
  // A saved character state, not a temporary UI-only preview.
  const toggle=make('label',{class:'stage-book-check stage-mounted-toggle'},[
@@ -1095,11 +1108,7 @@ function attackPage(body,calc,items,english,options={}){
   make('span',{text:english?'Mounted':'Верхом'})
  ]);
  body.append(toggle);
- if(options.buffs?.mounted===true)body.append(make('p',{
-  class:'stage-attribute-note stage-mounted-note',text:english?
-  'Mounted combat uses Remaked estimates. Defense and normal attack speed are not displayed while riding.':
-  'Верхом: предварительный расчёт по Remaked. Защита и скорость обычной атаки верхом не отображаются.'
- }));
+ mountedBookNotice(body,options,english);
  appendChapterGroups(body,attackChapterGroups(calc),english,
   'Нет подтверждённых дополнительных атакующих параметров.',
   'No supported additional attack metrics.',{...options,page:'attack'});
@@ -1107,6 +1116,7 @@ function attackPage(body,calc,items,english,options={}){
  appendItemEvents(body,calc,english,'attack');
 }
 function defensePage(body,calc,english,options={}){
+ mountedBookNotice(body,options,english);
  appendChapterGroups(body,defenseChapterGroups(calc),english,
   'Нет подтверждённых дополнительных защитных параметров.',
   'No supported additional defense metrics.',{...options,page:'defense'});
@@ -1133,7 +1143,7 @@ function defensePage(body,calc,english,options={}){
   const survival=calc.racialEffects.survival;
   body.append(make('section',{class:'stage-attribute-row stage-racial-survival'},[
    make('strong',{text:english?'Dwarven racial survival':
-    'Расовая стойкость дворфа'}),
+    'Расовая стойкость цверга'}),
    make('p',{text:(english?'Stronghearted: ':'Упрямое сердце: ')+
     survival.chance+(english?'% skill-source chance':'% шанс по данным навыка')})
   ]));
@@ -1267,10 +1277,14 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
  const body=make('div',{class:'stage-attribute-scroll stage-book-page',
   id:'stageBookPanel',role:'tabpanel','aria-labelledby':'stageBookTab_'+chosen,
   'data-book-visible':chosen});
- if(chosen==='summary')summaryPage(body,modifiers,copyOptions);
+ if(chosen==='summary'){
+  mountedBookNotice(body,{buffs},document.documentElement?.lang==='en');
+  summaryPage(body,modifiers,copyOptions);
+ }
  if(chosen==='attack')attackPage(body,modifiers,items,document.documentElement?.lang==='en',
   {...copyOptions,buffs,onBuff});
- if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',copyOptions);
+ if(chosen==='defense')defensePage(body,modifiers,document.documentElement?.lang==='en',
+  {...copyOptions,buffs});
  if(chosen==='buffs')buffsPage(body,{buffs,vitalsBuffs,onBuff,onVital,
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
   gameTerms,...copyOptions});
