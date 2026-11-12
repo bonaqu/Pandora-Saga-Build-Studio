@@ -500,6 +500,25 @@ async function main(){
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestBlessing"]').inputValue(),'90');
  assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestHymn"]').inputValue(),'30');
  assert.ok(await page.locator('#stageBookPanel .stage-legacy-buff-previews').count()>=1);
+ const elementalGroup=page.locator('#stageBookPanel .stage-book-buff-group').filter({
+  has:page.locator('[data-guide-key="buffs.section.elemental"]')});
+ assert.equal(await elementalGroup.count(),1,
+  'Elemental resistance must be a sibling of Ally Buffs, not nested inside');
+ assert.equal(await elementalGroup.locator('summary.stage-result-section-head').count(),1,
+  'Use the same disclosure geometry as the other Buffs sections');
+ assert.equal(await elementalGroup.locator('input[data-book-setting^="resistSkill:"]').count(),5);
+ const fire=elementalGroup.locator('[data-book-setting="resistSkill:410003001"]');
+ const ice=elementalGroup.locator('[data-book-setting="resistSkill:410015001"]');
+ await fire.check();
+ assert.equal(await fire.isChecked(),true);
+ await ice.check();
+ assert.equal(await ice.isChecked(),true);
+ assert.equal(await fire.isChecked(),false,
+  'Selecting Ice must automatically clear Fire');
+ assert.equal(await elementalGroup.locator('input[data-book-setting^="resistSkill:"]:checked').count(),1);
+ assert.doesNotMatch(await elementalGroup.innerText(),/Incoming skill|Вражеский навык/);
+ await ice.uncheck();
+ assert.equal(await elementalGroup.locator('input[data-book-setting^="resistSkill:"]:checked').count(),0);
  await page.locator('#stageAttributes .stage-book-close').click();
  await page.locator('#locale [data-locale="ru"]').click();
  await page.locator('#locale [data-locale="ru"][aria-pressed="true"]').waitFor({state:'visible'});
