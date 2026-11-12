@@ -744,7 +744,7 @@ function describe(change,ctx={}){
     const down=impacts.filter(effect=>effect.direction==='снизился').length;
     const up=impacts.filter(effect=>effect.direction==='вырос').length;
     summary+=' По калькулятору сайта OS изменились шансы в '+impacts.length+
-     ' '+plural(impacts.length,'случая','случаев','случаев')+
+     ' '+plural(impacts.length,'случае','случаях','случаях')+
      ' (ниже: '+down+', выше: '+up+'). Точные цифры для соло и группы — ниже.';
     caution='Публикация заменит целиком раздел «Игровые формулы» в D1 Build Studio, '+
      'а не изменит саму игру. Шансы рассчитаны по открытой модели сайта OS; '+
