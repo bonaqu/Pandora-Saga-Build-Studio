@@ -42,7 +42,12 @@ test('editing and locale switching never replace toast editor or lose D1 languag
  assert.match(app,/textNode\.nextElementSibling\?\.classList\?\.contains\('ui-content-edit-host'\)/);
  assert.match(app,/const editLang=lang,before=locale\.text\(key,editLang\)/);
  assert.match(app,/saveGuidePatch\('book\.'\+id,\{\[editLang\]:next\}\)/);
- assert.match(app,/node\.closest\('#studioToast'\)/);
+ assert.match(app,/const inlineError=message=>/);
+ assert.match(app,/else inlineError\(message\)/);
+ const editor=app.slice(app.indexOf('function editWikiValue('),
+  app.indexOf('// Repeated blur saves',app.indexOf('function editWikiValue(')));
+ assert.doesNotMatch(editor,/node\.closest\('#studioToast'\)/,
+  'A failed D1 write should keep the same editor on every surface, not only toasts');
  assert.match(app,/class:'ui-content-inline-error',role:'alert'/);
  assert.match(css,/#studioToast \.ui-content-inline-error/);
  assert.match(browser,/nextConflicts\.add\(statusKey\)/);
