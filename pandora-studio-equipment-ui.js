@@ -453,13 +453,14 @@ function render(root,api){
    const value=souls[i],soul=value&&api.catalog.souls?.[String(value.id)],selected=i===api.selectedSocket;
    const button=el('button',{type:'button',class:selected?'selected':'','aria-pressed':String(selected),
     'data-socket-index':String(i),onclick:()=>api.openSocket(i)});
-   bind(button,'pickerSoulSlotAria','Слот души ','Soul slot ','aria-label',
-    (i+1)+': '+(soul?.name||copy('pickerEmptySoul','пусто','empty')));
+   bind(button,'pickerSoulSlotAria','Слот души','Soul slot','aria-label',
+    ' '+(i+1)+': '+(soul?.name||copy('pickerEmptySoul','пусто','empty')));
+   if(!soul)button.dataset.soulEmptySlot=String(i+1);
    const src=soul&&icons(soul,'soul');
    if(src){const image=el('img',{src,alt:''});image.onerror=()=>image.replaceWith(el('span',{text:'✦'}));button.append(image)}
    else button.append(el('span',{class:'stage-soul-slot-empty',text:soul?'✦':'+'}));
    button.append(bind(el('small',{}),'pickerSoulSlotCaption',
-    'Слот ','Slot ','text',String(i+1)));
+    'Слот','Slot','text',' '+(i+1)));
    row.append(button);attachPreview(button,soul,icons,'soul');
   }
   body.append(editable(el('h4',{
