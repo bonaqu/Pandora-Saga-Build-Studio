@@ -830,6 +830,10 @@ function setAttributeBuff(key,value){
   const selected=new Set(window.PandoraRemakedBuffs.selectedIds(current.remakedSkillIds));
   if(value===true)selected.add(id);else selected.delete(id);
   current.remakedSkillIds=[...selected].sort((a,b)=>a-b);
+  // Old saves may keep Divine Blessing in elemental resistance selections.
+  // Its Ally Buff switch now owns this effect; clear the old alias on change.
+  if(id===330004001&&Array.isArray(current.resistanceSkillIds))
+   current.resistanceSkillIds=current.resistanceSkillIds.filter(x=>x!==330004001);
  }else if(key.startsWith('resistSkill:')){
   const id=Number(key.slice('resistSkill:'.length));
   if(!Number.isSafeInteger(id)||!window.PandoraOSCalculator
