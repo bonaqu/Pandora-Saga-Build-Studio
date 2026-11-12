@@ -843,7 +843,8 @@ const defensiveEffectIds=Object.freeze(new Set([
  'EP_PROTECTION_MOVEBAN','EP_CRITICAL_SAFE','EP_BLOCK_ATK'
 ]));
 function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
- branchMasteries={},weaponKind='BARE_HAND',branchLabels={},englishBranches={}}={}){
+ branchMasteries={},weaponKind='BARE_HAND',hasShield=false,
+ branchLabels={},englishBranches={}}={}){
  if(!skillCatalog||typeof skillCatalog!=='object'||typeof jobKey!=='string'||
   !Number.isInteger(level)||level<1)return [];
  return defensivePreviewSkillIds.flatMap(id=>{
@@ -871,6 +872,13 @@ function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
    !record.weaponUse.includes(weaponKind)){
    reasons.push('Не подходит экипированное оружие');
    reasonsEn.push('Equipped weapon is incompatible');
+  }
+  // Bastion is shield-only in activeCombatSkills as well. The raw skill
+  // record has no weaponUse restriction, so enforce the same equipped-shield
+  // condition here instead of misleading the player with an available label.
+  if(id===100053001&&!hasShield){
+   reasons.push('Необходимо экипировать щит');
+   reasonsEn.push('A shield must be equipped');
   }
   if(record.learnable===false||record.prereq!=null){
    reasons.push('Изучение умения не подтверждено');

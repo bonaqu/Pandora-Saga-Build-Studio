@@ -1730,6 +1730,7 @@ function renderStageAttributes(calculated=undefined){
   availability,combatSkillCards,remakedBuffRows,
   heroJobKey:cls,heroLevel:state.level,heroMasteries:branchMasteries,
   heroWeaponKind:equippedWeapon?.kind||'BARE_HAND',
+  heroHasShield:Boolean(equippedShield),
   honorTitles:window.PandoraOSCalculator.honorTitles,
   gameTerms:{skills:skillMap,englishSkills:officialEnglish?.skills||{},
    branchLabels:catalog.meta?.branchLabels||{},
