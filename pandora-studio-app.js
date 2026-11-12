@@ -103,7 +103,7 @@ function gearIssueLabel(message){
  const value=String(message||'');
  return en[value]||value.replace(/^Требуется уровень (\d+)$/,'Requires level $1');
 }
-function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,mounted:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
+function fresh(){return{race:null,gender:0,job:null,level:1,branch:3,points:Object.fromEntries(branches.map(b=>[b.id,0])),mastery:{},masteryFormat:2,masteryAuto:true,stats:Object.fromEntries(STATS.map(s=>[s,0])),equipment:{},souls:{},soulOwners:{},socketCapacities:{},refinements:{},gems:{},vitalsBuffs:{guildHp:0,guildMp:0,lifeSign:false},attributeBuffs:{guildAll:0,honorCuriosity:false,mounted:false,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,guildLevel:0,priestEnabled:true,priestSpi:134,priestBlessing:90,priestHymn:30,priestGratia:false,priestLapisMedio:false,priestEncouragement:false,resistanceSkillIds:[],remakedSkillIds:[]},name:'Новый герой',profile:{guild:'',nation:'',rank:'',about:''},racialPassiveId:null}};
 let state=fresh(),activeTab=bootView.tab==='equipment'?'wiki':(['character','builds','wiki'].includes(bootView.tab)?bootView.tab:'character'),catalog={skills:null,equipment:null,souls:null,classes:null,meta:null,racialPassives:null,live:false},selectedSkill=null,selectedSlot=0,gearMode='equipment',builds=[],override={},adminToken='',adminEditing=false,lang=localStorage.getItem('ps-build-lang')==='en'?'en':'ru',catalogSource=null,officialEnglish=null,approvedSkillIdNames=null,compareIds=[],skillSearch='',skillOnlyAvailable=false,wikiShown=100,selectedSocket=0,characterPanelTab='character',iconManifest=null,wikiData=null,wikiIndex=null,wikiPending=null,wikiSelection={type:'item',id:null,highlight:null},wikiSearch='',wikiItemType='equipment',wikiElementFilter='all',wikiEffectFilter='all',wikiSkillFilter=['player','racial','guild','special','variants','other','unknown','all'].includes(bootView.wikiSkillFilter)?bootView.wikiSkillFilter:'player',wikiItemLayout=bootView.wikiLayout==='grid'?'grid':'list',wikiItemEligibility='all';
 // A damaged browser draft must not prevent the independent saved-build library
 // from loading. Keep the original storage untouched for manual recovery.
@@ -822,7 +822,15 @@ function setVitalsEnhancement(key,value){
 function setAttributeBuff(key,value){
  const current={guildAll:0,honorCuriosity:false,honorTitle:null,proelium:false,proeliumPotency:0,potionEffectsEnabled:false,guildLifeRecovery:0,guildManaRecovery:0,guildHealing:0,
   ...(state.attributeBuffs||{})};
- if(key.startsWith('resistSkill:')){
+ if(key.startsWith('legacySkill:')){
+  const id=Number(key.slice('legacySkill:'.length));
+  const definition=window.PandoraRemakedBuffs?.definitions
+   .find(item=>item.id===id&&!item.existing);
+  if(!definition||!Number.isSafeInteger(id))return;
+  const selected=new Set(window.PandoraRemakedBuffs.selectedIds(current.remakedSkillIds));
+  if(value===true)selected.add(id);else selected.delete(id);
+  current.remakedSkillIds=[...selected].sort((a,b)=>a-b);
+ }else if(key.startsWith('resistSkill:')){
   const id=Number(key.slice('resistSkill:'.length));
   if(!Number.isSafeInteger(id)||!window.PandoraOSCalculator
    .resistanceSkillChoices(catalog.skills||{}).some(row=>row.id===id))return;
@@ -1617,6 +1625,12 @@ function renderStageAttributes(calculated=undefined){
  const combatSkillCatalog=window.PandoraOSCalculator;
  const selectedCombat=Object.fromEntries(Object.keys(keys).map(k=>[k,true]));
  const branchMasteries=trainedBranchMasteries(innate);
+ const remakedBuffRows=window.PandoraRemakedBuffs?.choices({
+  skills:skillMap,englishSkills:officialEnglish?.skills||{},
+  jobKey:cls,level:state.level,weapon:equippedWeapon,branchMasteries,
+  branchLabels:catalog.meta?.branchLabels||{},
+  englishBranches:officialEnglish?.branches||{},
+  selected:state.attributeBuffs?.remakedSkillIds||[]})||[];
  const bookEn=lang==='en';
  const levelReason=n=>bookEn?'Available at level '+n:'Откроется на '+n+' уровне';
  const missingCombatMastery=ability=>{
@@ -1684,7 +1698,10 @@ function renderStageAttributes(calculated=undefined){
     '+'+(effects.EP_AVOIDANCE_SCALE??0)+'% '+(bookEn?'of base evasion':'от базы'):
    '+'+(effects.EP_MOVESPEED_SCALE??0)+
     (bookEn?' movement speed':' к скорости передвижения');
-  const reason=unavailableReason(ability,false);
+  // Party buffs are externally cast; never show the caster's class or
+  // level requirements as a restriction on this receiving hero.
+  const reason=availability[setting]?null:
+   (bookEn?'This skill is unavailable':'Умение недоступно');
   combatSkillCards[setting]=ability?{
    name:ability.name,
    nameEn:officialEnglish?.skills?.[String(combatSkillCatalog.supportSkillIds[kind])]?.n||ability.name,
@@ -1703,7 +1720,8 @@ function renderStageAttributes(calculated=undefined){
   modifiers:calculated===undefined?previewBaseStats():calculated,
   icon:rec=>itemIcon(rec),
   buffs:state.attributeBuffs||{},vitalsBuffs:state.vitalsBuffs||{},
-  availability,combatSkillCards,honorTitles:window.PandoraOSCalculator.honorTitles,
+  availability,combatSkillCards,remakedBuffRows,
+  honorTitles:window.PandoraOSCalculator.honorTitles,
   gameTerms:{skills:skillMap,englishSkills:officialEnglish?.skills||{},
    branchLabels:catalog.meta?.branchLabels||{},
    englishBranches:officialEnglish?.branches||{},
@@ -7095,6 +7113,8 @@ function sanitizeSharedState(original){
   // Preserve the historical Jo-Eun rune boolean for old snapshot compatibility.
   // The current OS calculator does not activate this unverified legacy effect.
   safe.attributeBuffs.runeJoEun=rawAttributes.runeJoEun===true;
+  safe.attributeBuffs.remakedSkillIds=window.PandoraRemakedBuffs?.selectedIds(
+   rawAttributes.remakedSkillIds)||[];
   for(const key of ['combatWarCry','combatRage','combatDefender','combatLunge',
    'combatWindAssist','combatWindBlessing','combatConcentration'])
    if(rawAttributes[key]===true)safe.attributeBuffs[key]=true;
