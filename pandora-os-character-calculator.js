@@ -2204,14 +2204,27 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
  const experienceBonus=experienceBonusPreview({records:combinedRecords,itemForth});
  // Guild passives are selected together at a guild level, not just displayed
  // as a reference. Their mitigation and EXP effects are independent of HP/MP.
- const guildPassives=guildPassiveAtLevel(Number(attributeBuffs?.guildLevel??0));
- if(guildPassives&&resistances){
-  resistances.mitigation.physical-=guildPassives.physicalReduction;
-  resistances.mitigation.magic-=guildPassives.magicReduction;
+ const guildLevel=Number(attributeBuffs?.guildLevel||0);
+ const guildPassives=guildPassiveAtLevel(guildLevel);
+ // Manual mode lets players choose every passive independently. Use the
+ // published OS guild-skill ranks; automatic mode uses the Remaked unlocks.
+ const guildManualRate=(key,values)=>{
+  const rank=Number(attributeBuffs?.[key]||0);
+  return Number.isInteger(rank)&&rank>=0&&rank<values.length?values[rank]:0;
+ };
+ const guildPhysical=guildLevel>0?(guildPassives?.physicalReduction||0):
+  guildManualRate('guildPhysicalReduction',[0,3,6,10]);
+ const guildMagical=guildLevel>0?(guildPassives?.magicReduction||0):
+  guildManualRate('guildMagicReduction',[0,3,6,10]);
+ const guildExperience=guildLevel>0?(guildPassives?.experience||0):
+  guildManualRate('guildExperience',[0,2,3,4,5,6,7,8,10]);
+ if(resistances){
+  resistances.mitigation.physical-=guildPhysical;
+  resistances.mitigation.magic-=guildMagical;
  }
- if(guildPassives?.experience>0&&experienceBonus)
+ if(guildExperience>0&&experienceBonus)
   experienceBonus.entries.push({source:'Гильдия · Опыт',
-   percent:guildPassives.experience});
+   percent:guildExperience});
  const battleMapCloaks=battleMapCloakPreview({
   records:combinedRecords,itemForth,skills:combatContext.skillCatalog
  });

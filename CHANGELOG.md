@@ -1,5 +1,16 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.671.0 — 2026.11.12.671 · Hero Book guild, priest, attack and effects
+
+- All seven manual guild passives, source-backed skill ranks and descriptions, compact icons, full counter and source-backed manual damage mitigation / EXP calculations.
+- External priest signs and source-scaled group effects are managed within Priest, with readable details even when disabled.
+- Title bonuses described in contextual tooltips. Strong Arms has an exact numeric ATK contribution, and elemental weapon effects expand automatically.
+- Offensive skill group uses known calculated ATK, accuracy and critical effects, with Incredible Strength source identity but no unverified damage formula.
+- Cohesive experience and potion panels, clipped item rows and original game icon sizing.
+- Mandatory Node and Chromium checks before publication. No new production D1 writes.
+
+
+
 ## 0.670.0 — 2026.11.12.670 · Guild skills, ally buffs, priest preview and Hero Book disclosures
 
 - Original Remaked guild RU/EN per-level tooltips and OS skill icons. Seven guild passives appear separately at level 10, with a truthful selected-buff counter; three active Guild Master skills have separate controls.
