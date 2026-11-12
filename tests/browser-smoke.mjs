@@ -321,7 +321,7 @@ async function main(){
  const exp=page.locator('#stageBookPanel .stage-experience-effects');
  if(await exp.count()){
   const header=exp.locator('summary');
-  assert.equal((await header.innerText()).trim(),'✦ Бонусы к опыту ⌄');
+  assert.equal((await header.innerText()).replace(/\s+/g,' ').trim(),'✦ Бонусы к опыту ⌄');
   assert.equal(await header.locator('.stage-result-chevron').count(),1);
  }
  await page.locator('#stageAttributes [data-book-page="effects"]').click();
@@ -341,7 +341,7 @@ async function main(){
  const hpOnly=page.locator('#stageAttributes .stage-health-consumables');
  await hpOnly.waitFor({state:'visible',timeout:20000});
  const healthHeading=hpOnly.locator('summary');
- assert.equal((await healthHeading.innerText()).trim(),'✦ Предметы восстановления ОЗ ⌄');
+ assert.equal((await healthHeading.innerText()).replace(/\s+/g,' ').trim(),'✦ Предметы восстановления ОЗ ⌄');
  assert.equal(await healthHeading.locator('.stage-result-chevron').count(),1);
  await healthHeading.click();
  assert.equal(await hpOnly.locator('.stage-potion-item').count(),12);
@@ -349,7 +349,7 @@ async function main(){
  const statusCures=page.locator('#stageAttributes .stage-status-cures');
  await statusCures.waitFor({state:'visible',timeout:20000});
  const cureHeader=statusCures.locator('summary');
- assert.equal((await cureHeader.innerText()).trim(),'✦ Снятие состояний ⌄');
+ assert.equal((await cureHeader.innerText()).replace(/\s+/g,' ').trim(),'✦ Снятие состояний ⌄');
  await cureHeader.click();
  assert.equal(await statusCures.locator('.stage-potion-item').count(),10);
   assert.match(await statusCures.innerText(),/Чудесное зелье/);
