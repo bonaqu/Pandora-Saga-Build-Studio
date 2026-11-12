@@ -1078,7 +1078,8 @@ function renderSongSkills(body,modifiers,gameTerms={},skillIconForId=()=>null){
 // Mirrors Remaked SkillView: individual skill outcomes, never the selected
 // buff toggles or the 43 main result values.
 function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>null,
- remakedBuffRows=[],availability={},combatSkillCards={}}={}){
+ remakedBuffRows=[],availability={},combatSkillCards={},
+ heroJobKey=null,heroLevel=1,heroMasteries={}}={}){
  const en=document.documentElement?.lang==='en';
  const spells=modifiers?.healingSpells?.rows||[];
  if(spells.length){
@@ -1196,16 +1197,45 @@ function skillEffectsPage(body,{modifiers=null,gameTerms={},skillIconForId=()=>n
  // bonus. The source records provide exact names, requirements and icons.
  const covered=new Set([320001001,100052001,100053001,100054001,
   100055001,142051001]);
- const sourceOffense=[100058001,213702001,213605001,
-  220001001,430051001,142051001];
+ const offensiveEffects=new Set(['EP_DAMAGERATE_SCALE','EP_DAMAGERATE_CONST',
+  'EP_CRITICALRATE_CONST','EP_TOHIT_CONST','EP_TOHIT_SCALE',
+  'EP_ONHIT_FIN_DAMAGE_CONST','EP_ATTACKINTERVAL_SCALE',
+  'EP_AURAPOISON_CONSTANT','EP_AURADARK_CONSTANT']);
+ const classOffense=Object.values(gameTerms.skills||{}).filter(skill=>
+  Number.isInteger(skill?.id)&&skill.id<900000000&&
+  ['MYSELF','TOGGLE','PASSIVE'].includes(skill.skillType)&&
+  skill.classes?.[heroJobKey]&&
+  skill.funcs?.some(f=>f.dir==='TARGET'&&offensiveEffects.has(f.ep)));
+ const sourceOffense=[...new Set([100058001,213702001,213605001,
+  220001001,430051001,142051001,
+  ...classOffense.map(skill=>skill.id)])];
  for(const id of sourceOffense){
-  const row=remakedBuffRows.find(x=>x.id===id);
-  if(!row||row.existing||!row.name||
+  const record=gameTerms.skills?.[String(id)];
+  if(!record||!record.classes?.[heroJobKey])continue;
+  const existing=remakedBuffRows.find(x=>x.id===id);
+  // The original Remaked selection knows mastery/weapon requirements for
+  // its listed buffs; for other class skills check the same OS reqs.
+  const missing=(record.reqs||[]).find(req=>
+   Number(heroMasteries?.[req.branch]??0)<Number(req.amount||0));
+  const levelBlocked=Number(heroLevel)<Number(record.charLevel||0);
+  const row=existing||{
+   id,name:record.name,
+   nameEn:gameTerms.englishSkills?.[String(id)]?.n||record.name,
+   description:record.desc||'',
+   available:!missing&&!levelBlocked&&record.learnable!==false,
+   selected:false,existing:false,
+   reason:missing?'Требуется мастерство «'+
+    (gameTerms.branchLabels?.[missing.branch]||missing.branch)+'»: '+missing.amount:
+    levelBlocked?'Требуется уровень '+record.charLevel:'',
+   reasonEn:missing?'Requires '+
+    (gameTerms.englishBranches?.[missing.branch]||missing.branch)+' mastery '+missing.amount:
+    levelBlocked?'Requires level '+record.charLevel:''
+  };
+  if(row.existing||!row.name||
    (row.reason==='Недоступно для этой профессии'||
     row.reasonEn==='Unavailable to this class'))continue;
-  const record=gameTerms.skills?.[String(id)];
-  if(!record)continue;
   const enabled=row.available&&row.selected;
+  if(covered.has(id)&&enabled)continue;
   const description=gameTerms.englishSkills?.[String(id)]?.d||row.description;
   const effect=(record.funcs||[]).find(x=>x.dir==='TARGET'&&
    ['EP_DAMAGERATE_SCALE','EP_ATTACKINTERVAL_SCALE','EP_CRITICALRATE_CONST',
@@ -1653,6 +1683,7 @@ function decorateChapterCaptions(body,page,options){
 function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPage=()=>{},onClose=()=>{},modifiers=null,
  buffs={},vitalsBuffs={},onBuff=()=>{},onVital=()=>{},honorTitles=[],availability={},
  combatSkillCards={},resistanceSkillChoices=[],remakedBuffRows=[],
+ heroJobKey=null,heroLevel=1,heroMasteries={},
  itemById=()=>null,onItem=()=>{},gameTerms={},
  copy={},onTextEdit=null,canEdit=false,onHonor=()=>{}}={}){
  root.PandoraGuideTooltip?.dismiss();
@@ -1758,7 +1789,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   honorTitles,availability,combatSkillCards,resistanceSkillChoices,modifiers,
   gameTerms,remakedBuffRows,skillIconForId,...copyOptions});
  if(chosen==='effects')skillEffectsPage(body,{modifiers,gameTerms,skillIconForId,
-  remakedBuffRows,availability,combatSkillCards});
+  remakedBuffRows,availability,combatSkillCards,heroJobKey,heroLevel,heroMasteries});
  if(chosen==='recovery'){
   const english=document.documentElement?.lang==='en';
   const percent=modifiers?.potion?.percent;
