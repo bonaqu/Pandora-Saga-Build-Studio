@@ -900,7 +900,8 @@ function buffsPage(body,options){
   ['priestSpi','СД жреца','Priest SPR'],
   ['priestBlessing','Благословение','Blessing mastery'],
   ['priestHymn','Песнопения','Hymn mastery'],
-  ['priestBenevolence','Исцеление','Benevolence mastery']
+  ['priestBenevolence','Исцеление','Benevolence mastery'],
+  ['priestExorcism','Изгнание','Exorcism mastery']
  ]){
   const label=make('label',{class:'stage-book-field'},[
    make('span',{text:english?en:ru})]);
@@ -1035,6 +1036,7 @@ function buffsPage(body,options){
   const priestReady=!externalPriestSkill||(
    buffs.priestEnabled===true&&
    (row.id!==320003001||Number(buffs.priestBlessing)>=26)&&
+   (row.id!==330051001||Number(buffs.priestExorcism)>=26)&&
    (row.id!==340001001||Number(buffs.priestHymn)>=8)&&
    (row.id!==340003001||(Number(buffs.priestHymn)>=30&&
     Number(buffs.priestBenevolence)>=61))&&
