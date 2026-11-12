@@ -133,6 +133,7 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
   if(before.length!==after.length)
    add(prefix+' · Всего правил добычи',before.length,after.length);
   const usedBefore=new Set(),usedAfter=new Set();
+  let editsInZone=0;
   const matchedExact=grouped(after,usedAfter,fingerprint);
   // Pair as many IDENTICAL copies as possible without considering array order.
   for(let i=0;i<before.length;i++){
@@ -145,7 +146,7 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    usedBefore.add(i);usedAfter.add(j);
    const x=before[i],y=after[j];
    const title=prefix+' · '+kind(y)+' · '+monster(y)+' · '+itemNames(y);
-   editedTotal++;
+   editedTotal++;editsInZone++;
    for(const code of new Set([...Object.keys(x),...Object.keys(y)])){
     if(['items','kind','mob'].includes(code)||same(x[code],y[code]))continue;
     const label={base:'Базовое значение (base; единицы не подтверждены)',
@@ -227,7 +228,7 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    add(title+' · Количество одинаковых записей',oldCount,newCount);
    add(title+' · Исходные значения','отсутствовало',detailed(row));
   }
-  if(!leftOver.size&&!rightOver.size&&!editedTotal&&!same(before,after)){
+  if(!leftOver.size&&!rightOver.size&&!editsInZone&&!same(before,after)){
    unknown(prefix+': изменился порядок строк; его значение для игры неизвестно');
    add(prefix+' · Порядок правил','прежний порядок','новый порядок');
   }
@@ -319,7 +320,8 @@ function describeCompound(kind,before,after,ctx,add,unknown){
  };
  const fields=(left,right)=>new Set([...Object.keys(left||{}),...Object.keys(right||{})]);
  let touched=0;
- const safeAdd=(title,a,b)=>{if(touched>=60){unknown('Остались изменения вне первых 60 строк');return}
+ const safeAdd=(title,a,b)=>{const limit=kind==='tables'&&old?.zoneDrops&&next?.zoneDrops?3000:60;
+   if(touched>=limit){if(touched===limit)unknown('Слишком много изменений: показаны первые '+limit+' строк');touched++;return}
    const row=add(title,a,b);touched++;return row};
  const shortItem=id=>{
   const result=itemName(id,ctx);
@@ -452,8 +454,8 @@ function describeCompound(kind,before,after,ctx,add,unknown){
     sections[sections.length-1]=title+': '+describeZoneDrops(old[section],next[section],ctx,safeAdd,unknown);
    else describeNestedTable(section,old[section],next[section],safeAdd,unknown);
   }
-  return 'Изменены игровые разделы: '+sections.join('; ')+
-   '. Известные параметры объяснены, а неподтверждённые обозначения помечены. Правила расчёта и публикацию нужно проверить отдельно.';
+  return 'Изменены игровые разделы: '+sections.join('; ').replace(/\.+$/,'')+
+   '. Неизвестные обозначения явно помечены. Перед публикацией необходимо проверить правила расчёта.';
  }
  unknown('Неизвестный составной раздел');
  return 'Изменён состав данных, правила расчёта пока не подтверждены.';
