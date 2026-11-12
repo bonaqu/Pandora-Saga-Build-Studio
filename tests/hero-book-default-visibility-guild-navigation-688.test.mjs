@@ -9,7 +9,7 @@ const book=read('pandora-studio-hero-book.js'),
 test('explicit per-chapter defaults: Attack unchanged, Defense recovery, Priest and Healing only',()=>{
  const src=book.slice(book.indexOf('function bookSectionStartsOpen('),
   book.indexOf('function resetDisclosureState()'));
- assert.match(src,/page==='attack'\)return true/);
+ assert.match(src,/page==='attack'\)return node\?\.tagName!=='DETAILS'\|\|node.open===true/);
  assert.match(src,/page==='defense'\)return node\?\.dataset\?\.chapterGroup==='recovery'/);
  assert.match(src,/page==='buffs'\)return node\?\.dataset\?\.bookSection==='priest'/);
  assert.match(src,/page==='effects'\)return node\?\.classList\?\.contains\('stage-healing-spells'\)/);

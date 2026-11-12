@@ -548,9 +548,19 @@ async function main(){
   .innerText();
  assert.match(await priestSkillLine('priestGratia'),/Attack speed \+22|Скорость атаки \+22/);
  assert.match(await priestSkillLine('priestLapisMedio'),/Defense \+12|Защита \+12/);
- // The same priest edits remain available inline beside caster-scaled skills.
- assert.ok(await page.locator('#stageBookPanel .stage-ally-skill-row').count()===0,
-  '0.688.0 does not add speculative independent-caster fields');
+ // External-caster inputs are intentionally shared with the priest profile:
+ // changing the row input updates the same SPR and all affected skill values.
+ const casterField=page.locator(
+  '#stageBookPanel [data-book-setting="caster-priestSpi-320007001"]');
+ assert.equal(await casterField.count(),1,
+  'OS caster-dependent skill gets one inline caster stat editor');
+ assert.ok(await page.locator('#stageBookPanel .stage-ally-skill-row').count()>=3);
+ await casterField.fill('140');
+ await casterField.press('Tab');
+ assert.equal(await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').inputValue(),'140');
+ assert.match(await priestSkillLine('priestGratia'),/Attack speed \+23|Скорость атаки \+23/);
+ await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').fill('134');
+ await page.locator('#stageBookPanel [data-book-setting="priestSpi"]').press('Tab');
  const elementalGroup=page.locator('#stageBookPanel .stage-book-buff-group').filter({
   has:page.locator('[data-guide-key="buffs.section.elemental"]')});
  assert.equal(await elementalGroup.count(),1,
