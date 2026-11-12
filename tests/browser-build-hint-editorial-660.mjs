@@ -70,6 +70,12 @@ export async function runOwnerBuildHints660Smoke(browser,base){
   await panel.waitFor({state:'visible'});
   await panel.locator('summary').click();
   assert.equal(await panel.locator('.build-hint-owner-row').count(),9);
+  for(const key of ['libraryCardOpen','libraryCardOverwrite','libraryCardShare',
+   'libraryCardDelete','libraryHintOpen','libraryHintOverwrite','libraryHintShare',
+   'libraryHintDelete','libraryHintDeleteLocal']){
+   assert.equal(await panel.locator('[data-owner-copy-pencil="'+key+'"]').count(),1,
+    'Exactly one owner pencil per semantic text: '+key);
+  }
   const edit=async(key,text)=>{
    await panel.locator('[data-owner-copy-pencil="'+key+'"]').click();
    const field=panel.locator('.account-copy-edit-host [contenteditable]');
