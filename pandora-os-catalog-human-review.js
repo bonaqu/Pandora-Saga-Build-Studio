@@ -130,6 +130,8 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
      ' · предмет «'+sourceName('items',id,'предмета')+'»';
     if(!x||!y){
      add(itemTitle+' · Присутствие в правиле',x?'есть':'нет',y?'есть':'нет');
+     add(itemTitle+' · Границы (lo / hi)',x?String(x.lo??'—')+' / '+String(x.hi??'—'):'не было',
+      y?String(y.lo??'—')+' / '+String(y.hi??'—'):'нет');
      found++;continue;
     }
     for(const k of new Set([...Object.keys(x),...Object.keys(y)])){
@@ -177,7 +179,7 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
    add(prefix+' · Порядок правил','прежний порядок','новый порядок');
   }
  }
- return 'Затронуто '+changed+' '+plural(changed,'локация','локации','локаций')+
+ return 'Изменения найдены в '+changed+' '+plural(changed,'локации','локациях','локациях')+
   (locations.length?': '+locations.join(', ')+(changed>3?' и другие':''):'')+
   '. Далее показаны точные отличия в правилах добычи. base и perMember не пересчитываются в проценты: единицы источника не подтверждены.';
 }
