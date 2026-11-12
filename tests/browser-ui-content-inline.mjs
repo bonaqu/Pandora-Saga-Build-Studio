@@ -12,8 +12,8 @@ export async function runUIContentInlineSmoke(browser,base){
    equipment:{},souls:{},refinements:{},gems:{}
   }));
  });
- const values={},writes=[],errors=[],nextConflicts=new Set();
- await context.route('**/*',route=>{
+ const values={},writes=[],errors=[],nextConflicts=new Set(),slowWrites=new Set();
+ await context.route('**/*',async route=>{
   const req=route.request(),url=req.url(),method=req.method();
   if(url.startsWith(base+'/'))return route.continue();
   if(!url.startsWith(api+'/'))return route.abort();
@@ -46,6 +46,7 @@ export async function runUIContentInlineSmoke(browser,base){
    assert.equal(req.headers().authorization,'Bearer '+'a'.repeat(43));
    const data=req.postDataJSON();
    assert.equal(data.expectedValue,Object.hasOwn(values,data.key)?values[data.key]:null);
+   if(slowWrites.delete(data.key))await new Promise(resolve=>setTimeout(resolve,850));
    if(nextConflicts.delete(data.key))
     return reply({code:'OWNER_EDIT_CONFLICT',error:'Mock concurrent edit'},409);
    values[data.key]=data.value;writes.push(data);
@@ -117,8 +118,22 @@ export async function runUIContentInlineSmoke(browser,base){
   assert.equal(await bookActions.locator('button').count(),2);
   await bookActions.locator('.stage-guide-edit-hint').click();
   const bookHint=firstGroup.locator('summary [data-guide-key="summary.group.0"] [contenteditable]');
+  await bookHint.fill('Не терять черновик при повторном двойном клике');
+  await bookHint.dblclick();
+  assert.equal(await bookHint.textContent(),
+   'Не терять черновик при повторном двойном клике',
+   'Double-click inside an active contenteditable must not open a nested editor');
+  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),1);
+  // Contenteditable is NOT a native input: while an asynchronous D1 save is
+  // in flight, the submitted text must be locked and visibly busy.
+  slowWrites.add('guideedit.book.summary.group.0');
   await bookHint.fill('Очки здоровья и маны героя');
   await bookHint.press('Tab');
+  await page.waitForFunction(()=>{
+   const node=document.querySelector('#stageBookPanel [data-guide-key="summary.group.0"]');
+   return node?.getAttribute('aria-busy')==='true'&&
+    node.querySelector('[data-owner-text-field]')?.getAttribute('contenteditable')==='false';
+  },null,{timeout:6000});
   await page.waitForFunction(()=>
    !document.querySelector('#stageBookPanel .stage-result-section-head [contenteditable]'),
    null,{timeout:12000});
@@ -135,6 +150,22 @@ export async function runUIContentInlineSmoke(browser,base){
    ?.textContent==='Жизнь героя',null,{timeout:12000});
   assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).ru,'Жизнь героя');
   assert.equal(await firstGroup.getAttribute('open'),'');
+  // Reject a CAS update: keep the exact draft beside a local error, and
+  // restore editability so a retry or Escape is still possible.
+  nextConflicts.add('guideedit.book.summary.group.0');
+  await bookActions.locator('.stage-guide-edit-hint').click();
+  const failedBook=firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]');
+  await failedBook.fill('Неопубликованный текст должен остаться для повторной попытки');
+  await failedBook.press('Tab');
+  await firstGroup.locator('summary [data-guide-key="summary.group.0"] .ui-content-inline-error')
+   .waitFor({state:'visible',timeout:12000});
+  assert.equal(await failedBook.textContent(),
+   'Неопубликованный текст должен остаться для повторной попытки');
+  assert.equal(await failedBook.getAttribute('contenteditable'),'plaintext-only');
+  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),1);
+  assert.equal(JSON.parse(values['guideedit.book.summary.group.0']).hintRu,'Очки здоровья и маны героя');
+  await failedBook.press('Escape');
+  assert.equal(await firstGroup.locator('summary [data-guide-key="summary.group.0"] [data-owner-text-field]').count(),0);
   await page.locator('#stageAttributes .stage-book-close').click();
   const wiki=page.locator('#nav [data-i18n="wiki"]');
   const pencil=page.locator('#nav [data-ui-content-for="wiki"]');
