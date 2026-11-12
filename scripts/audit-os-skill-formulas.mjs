@@ -45,6 +45,15 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
   if(!record.sourceModules.includes(module))record.sourceModules.push(module);
   return record;
  };
+ // Certain OS sphere/area execution records carry learnable=true despite
+ // having no caster classes. If another ability explicitly EP_SKILL_EXECs
+ // that ID, it is a triggered child, not a missing selectable spell.
+ const skillExecChildren=new Set(entries.flatMap(([,entry])=>
+  entry.funcs.filter(f=>f?.ep==='EP_SKILL_EXEC'&&
+   Number.isSafeInteger(f?.fv1?.[3])).map(f=>f.fv1[3])));
+ for(const item of coverage.values())
+  item.triggeredChild=item.classCount===0&&skillExecChildren.has(item.id);
+
  const classNames=Object.keys(classes).sort();
  const combat={attack:{walkingBase:200},defense:{directRaw:100},
   accuracy:{base:140},dodge:{base:120}};
@@ -55,10 +64,10 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
    throw Error('Missing class mastery caps '+jobKey);
   const branchMasteries=Object.fromEntries(Object.entries(branchCaps).map(
    ([name,limit])=>[name,Number.isSafeInteger(limit)&&limit>=0?limit:0]));
-  const scaling=calculator.scalingSkillPreview({skillCatalog:skills,
+  const result=calculator.scalingSkillPreview({skillCatalog:skills,
    jobKey,level:55,branchCaps,branchMasteries,stats,combat,
    weaponKind:'BARE_HAND',hasShield:true});
-  for(const row of [...(scaling.offense||[]),...(scaling.defense||[]),...(scaling.movement||[])]){
+  for(const row of [...(result.offense||[]),...(result.defense||[]),...(result.movement||[])]){
    const record=mark(row.id,'skill-effects',{numeric:Number.isFinite(row.amount)});
    if(Array.isArray(row.coefficientModels)&&row.coefficientModels.length>0)
     record.coefficientModel=true;
@@ -113,7 +122,7 @@ export function auditOsSkillFormulaCoverage({skills,classes,calculator}={}){
  const byStatus=Object.fromEntries(statusKeys.map(key=>[key,0]));
  const rows=[...coverage.values()].map(item=>{
   let status;
-  if(!item.learnable)status='internal-or-triggered-source';
+  if(!item.learnable||item.triggeredChild)status='internal-or-triggered-source';
   else if(item.numericPreview)status='numeric-preview';
   else if(item.coefficientModel)status='coefficient-model';
   else if(item.sourcePreview)status='qualitative-preview';
