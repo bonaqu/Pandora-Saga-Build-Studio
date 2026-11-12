@@ -18,9 +18,9 @@ test('saved build card keeps Compare in the top corner and exactly four actions 
   'The library must own its RU/EN translator; another screen helper is out of scope');
  assert.match(body,/box\.append\(cardHead,/);
  assert.equal((body.match(/cardAction\('/g)||[]).length,4);
- for(const [icon,ru,en] of [['📂','Открыть','Open'],['↻','Перезаписать','Overwrite'],
-  ['🔗','Поделиться','Share'],['🗑','Удалить','Delete']]){
-  assert.ok(body.includes("cardAction('"+icon+"','"+ru+"','"+en+"'"),ru+' bilingual icon action');
+ for(const [icon,key] of [['📂','libraryCardOpen'],['↻','libraryCardOverwrite'],
+  ['🔗','libraryCardShare'],['🗑','libraryCardDelete']]){
+  assert.ok(body.includes("cardAction('"+icon+"','"+key+"'"),key+' bilingual icon action');
  }
  assert.match(body,/createShared\(b,shareSlot\)/);
  assert.match(body,/toggleCardChoice\(openChoice\)/);

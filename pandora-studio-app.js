@@ -6556,8 +6556,24 @@ function renderBuilds(root){
   editor.addEventListener('toggle',()=>{
    if(editor.isConnected)buildHintEditorExpanded=editor.open;
   });
-  editor.append(h('summary',{text:tr('Подсказки кнопок','Button hints')}));
+  editor.append(h('summary',{text:tr('Кнопки и подсказки','Buttons and hints')}));
   const rows=h('div',{class:'build-hint-owner-list'});
+  rows.append(h('h4',{class:'build-hint-owner-section',
+   text:tr('Надписи действий','Action labels')}));
+  for(const [key,ru,en] of [
+   ['libraryCardOpen','Открыть','Open'],
+   ['libraryCardOverwrite','Перезаписать','Overwrite'],
+   ['libraryCardShare','Поделиться','Share'],
+   ['libraryCardDelete','Удалить','Delete']
+  ]){
+   rows.append(h('div',{class:'build-hint-owner-row'},[
+    h('span',{class:'build-hint-owner-action',text:tr(ru,en)}),
+    h('span',{class:'build-hint-owner-value',
+     'data-owner-copy-key':key,text:libraryText(key)})
+   ]));
+  }
+  rows.append(h('h4',{class:'build-hint-owner-section',
+   text:tr('Подсказки при наведении','Hover descriptions')}));
   for(const [key,ru,en] of [
    ['libraryHintOpen','Открыть','Open'],
    ['libraryHintOverwrite','Перезаписать','Overwrite'],
@@ -6590,13 +6606,14 @@ function renderBuilds(root){
  // One game-style hint popup is shared across all buttons and the Hero Book.
  // Only authored RU/EN copy is passed to the read-only tooltip; never a
  // saved build name, link/token, account or live server response.
- const cardAction=(icon,ru,en,hintKey,onclick,kind='')=>{
+ const cardAction=(icon,labelKey,hintKey,onclick,kind='')=>{
   const button=h('button',{
    type:'button',class:'button-action'+kind,'data-build-action-hint':hintKey,
    onclick
   },[
    h('span',{class:'build-card-action-icon','aria-hidden':'true',text:icon}),
-   h('span',{class:'build-card-action-label',text:tr(ru,en)})
+   h('span',{class:'build-card-action-label','data-build-action-label':labelKey,
+    text:libraryText(labelKey)})
   ]);
   window.PandoraGuideTooltip?.attach(button,libraryText(hintKey),{hoverDelay:350});
   return button;
@@ -6676,13 +6693,13 @@ function renderBuilds(root){
    if(opening)target.querySelector('button')?.focus({preventScroll:true});
   };
   const cardActions=h('div',{class:'build-card-actions'},[
-   cardAction('📂','Открыть','Open','libraryHintOpen',()=>{
+   cardAction('📂','libraryCardOpen','libraryHintOpen',()=>{
     if(!unsavedBuild()){openSavedBuild(b);return}
     toggleCardChoice(openChoice);
    },' primary'),
-   cardAction('↻','Перезаписать','Overwrite','libraryHintOverwrite',()=>toggleCardChoice(overwriteChoice)),
-   cardAction('🔗','Поделиться','Share','libraryHintShare',()=>createShared(b,shareSlot)),
-   cardAction('🗑','Удалить','Delete',b.localOnly===true?
+   cardAction('↻','libraryCardOverwrite','libraryHintOverwrite',()=>toggleCardChoice(overwriteChoice)),
+   cardAction('🔗','libraryCardShare','libraryHintShare',()=>createShared(b,shareSlot)),
+   cardAction('🗑','libraryCardDelete',b.localOnly===true?
     'libraryHintDeleteLocal':'libraryHintDelete',()=>toggleCardChoice(deleteChoice),' build-card-delete')
   ]);
   box.append(cardHead,
@@ -7784,6 +7801,12 @@ function refreshVisibleUICopy(recordKey){
   for(const button of document.querySelectorAll('#detailContent [data-build-action-hint]')){
    if(locale.fieldKey(button.dataset.buildActionHint)===id)
     button.dataset.guideHint=locale.text(button.dataset.buildActionHint,lang);
+  }
+  // Editable labels are sibling spans, never an owner pencil nested inside a
+  // real button. Preserve each button and the current hero/draft on CAS/Undo.
+  for(const caption of document.querySelectorAll('#detailContent [data-build-action-label]')){
+   const key=caption.dataset.buildActionLabel;
+   if(locale.fieldKey(key)===id)caption.textContent=locale.text(key,lang);
   }
  }
 }

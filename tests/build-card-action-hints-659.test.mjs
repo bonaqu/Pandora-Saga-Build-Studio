@@ -40,9 +40,10 @@ test('four build actions attach shared game-style hints without native title bub
  const body=app.slice(app.indexOf('function renderBuilds(root){'),app.indexOf('function newId(){'));
  assert.match(body,/window\.PandoraGuideTooltip\?\.attach\(button,libraryText\(hintKey\),\{hoverDelay:350\}\)/);
  assert.match(body,/data-build-action-hint':hintKey/);
- assert.match(body,/cardAction\('📂','Открыть','Open','libraryHintOpen'/);
- assert.match(body,/cardAction\('↻','Перезаписать','Overwrite','libraryHintOverwrite'/);
- assert.match(body,/cardAction\('🔗','Поделиться','Share','libraryHintShare'/);
+ assert.match(body,/data-build-action-label':labelKey/);
+ assert.match(body,/cardAction\('📂','libraryCardOpen','libraryHintOpen'/);
+ assert.match(body,/cardAction\('↻','libraryCardOverwrite','libraryHintOverwrite'/);
+ assert.match(body,/cardAction\('🔗','libraryCardShare','libraryHintShare'/);
  assert.match(body,/libraryHintDeleteLocal':'libraryHintDelete'/);
  assert.doesNotMatch(body.slice(body.indexOf('const cardAction='),body.indexOf('for(const b of builds)')),/\btitle:/);
  assert.match(hint,/popup\.textContent=node\.dataset\.guideHint\|\|text/);

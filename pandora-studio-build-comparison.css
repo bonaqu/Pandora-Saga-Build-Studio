@@ -123,6 +123,10 @@
 .build-hint-owner-panel[open]>summary::before{transform:rotate(90deg)}
 .build-hint-owner-panel>summary:focus-visible{outline:2px solid #e4b879;outline-offset:2px}
 .build-hint-owner-list{display:grid;gap:5px;padding:0 10px 10px}
+.build-hint-owner-section{margin:5px 0 0;padding:7px 1px 3px;
+ color:#f3cf93;border-bottom:1px solid #71583a;
+ font:700 11px/1.35 Manrope,Arial,sans-serif}
+.build-hint-owner-section:first-child{margin-top:0}
 .build-hint-owner-row{display:grid;
  grid-template-columns:minmax(82px,105px) minmax(0,1fr) auto;
  align-items:center;gap:7px;min-width:0;
