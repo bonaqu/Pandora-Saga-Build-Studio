@@ -110,3 +110,33 @@ test('an unidentified map or item is labelled openly, not assigned a fabricated 
  assert.match(result.summary,/9999000/);
  assert.ok(result.rows.some(row=>row.label.includes('9999999')));
 });
+
+
+test('hook-based monster loot retains the original monster and item names',()=>{
+ const old=clone(catalog.tables),next=clone(catalog.tables);
+ const row=old.zoneDrops.flatMap(zone=>zone.rows).find(row=>row.kind==='hook'&&row.mob===95042);
+ assert.ok(row,'OS fixture must have a real hook-based monster');
+ row.base=41;
+ const result=render(old,next);
+ assert.ok(result.rows.some(entry=>entry.label.includes('Василиск')&&
+  entry.label.includes('Обработчик добычи')&&entry.label.includes('base')&&
+  entry.before==='41'&&entry.after==='40'));
+});
+
+test('nested level tables use stable diff identifiers instead of misleading array positions',()=>{
+ const old={lvModify:[{diff:7,atk:20},{diff:8,atk:30}]};
+ const next={lvModify:[{diff:8,atk:30},{diff:7,atk:25}]};
+ const result=render(old,next);
+ assert.ok(result.rows.some(entry=>entry.label.includes('Разница уровней 7')&&
+  entry.label.includes('Атака')&&entry.before==='20'&&entry.after==='25'));
+ assert.ok(result.rows.some(entry=>entry.label.includes('Порядок записей')));
+ assert.ok(!result.rows.some(entry=>entry.label.includes('Разница уровней 8')&&entry.label.includes('Атака')));
+ assert.equal(result.unexplained,true,'source row order must remain a manual-review signal');
+});
+
+test('UI does not confuse decoded atomic data with changes safe for bulk acceptance',()=>{
+ const workbench=readFileSync(new URL('pandora-os-catalog-workbench.js',root),'utf8');
+ assert.match(workbench,/const safe=change=>!describe\(change\)\.uncertain && !describe\(change\)\.service/);
+ assert.match(workbench,/description\.unexplained\?tr\('Есть нерасшифрованные параметры'/);
+ assert.match(workbench,/description\.uncertain\?tr\('Расшифровано · требуется ручная проверка'/);
+});
