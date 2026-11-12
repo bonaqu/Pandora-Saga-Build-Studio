@@ -900,6 +900,223 @@ function defensiveSkillPreview({skillCatalog=null,jobKey=null,level=1,
    effects:values,source:'Current game skill catalog'}];
  });
 }
+// Hero Book Skill Effects is a READ-ONLY magnitude inspector, NOT active
+// skill toggles. Only build-dependent outcomes belong here. Whitelisted
+// source vectors are cross-checked against the live OS catalog; unknown
+// rounding never becomes an invented number. An unavailable skill can still
+// show its theoretical value, like the five Healing previews.
+function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},branchCaps={},stats={},combat=null,
+ weaponKind='BARE_HAND',hasShield=false}={}){
+ const result={offense:[],defense:[],verified:false,
+  source:'Remaked SkillView floors and current OS skill effect vectors'};
+ if(!skillCatalog||!combat||typeof jobKey!=='string'||
+  !Number.isInteger(level)||level<1||level>55)return result;
+ const validStat=key=>Number.isFinite(stats[key])&&stats[key]>=0;
+ const skill=id=>skillCatalog[String(id)];
+ const exact=(record,ep,values)=>{
+  const rows=(record?.funcs||[]).filter(f=>f?.dir==='TARGET'&&f.ep===ep);
+  return rows.length===1&&Array.isArray(rows[0].fv1)&&
+   rows[0].fv1.length===4&&rows[0].fv1.every((n,i)=>n===values[i])&&
+   Array.isArray(rows[0].fv2)&&rows[0].fv2.length===4&&
+   rows[0].fv2.every(n=>n===0);
+ };
+ const mastery=branch=>Number(branchMasteries?.[branch]??0);
+ const cap=branch=>Number(branchCaps?.[branch]??0);
+ const labels={
+  martial:'Боевые искусства',brush:'Рубящий',warding:'Уклонение',
+  defense:'Оборона',archery:'Стрельба',alchemy:'Алхимия',
+  blessing:'Благословение',exorcism:'Изгнание',hymn:'Песнопения',
+  darkness:'Тьма',embody:'Воплощение'
+ };
+ const seen=new Set();
+ const add=(id,group,required,compute,options={})=>{
+  const record=skill(id);
+  if(!record||Number(record.id)!==id||record.learnable!==true||
+   record.prereq!=null||!Array.isArray(record.reqs)||
+   !Array.isArray(record.funcs)||!required.every(([ep,coeff])=>exact(record,ep,coeff))||
+   seen.has(id))return;
+  const recipient=options.recipient===true;
+  if(!recipient&&!record.classes?.[jobKey])return;
+  if(!recipient&&record.reqs.some(req=>typeof req?.branch!=='string'||
+   !Number.isInteger(req.amount)||req.amount<0||cap(req.branch)<req.amount))return;
+  if(!recipient&&options.branch&&!cap(options.branch))return;
+  if(!recipient&&options.song===true&&!songSkillPreview({
+   skillCatalog,jobKey,level,branchMasteries,branchCaps}).rows.some(x=>x.id===id))return;
+  const issues=[];
+  if(!recipient&&level<Number(record.charLevel||0))
+   issues.push('Требуется уровень '+record.charLevel);
+  if(!recipient)for(const req of record.reqs){
+   if(mastery(req.branch)<req.amount)
+    issues.push('Требуется мастерство «'+(labels[req.branch]||req.branch)+'»: '+req.amount);
+  }
+  if(!recipient&&Array.isArray(record.weaponUse)&&record.weaponUse.length&&
+   !record.weaponUse.includes(weaponKind))issues.push('Не подходит оружие');
+  if(!recipient&&options.shield&&!hasShield)issues.push('Нужен щит');
+  const amount=compute();
+  if(amount!==null&&(!Number.isFinite(amount)||!Number.isSafeInteger(amount)))return;
+  result[group].push({id,name:record.name,description:record.desc||'',
+   amount,unit:options.unit||'',available:issues.length===0,
+   reason:issues.join(' · '),recipient,
+   detailRu:options.detailRu||'',detailEn:options.detailEn||'',
+   uncertain:amount===null,source:'Remaked + OS skill catalog'});
+  seen.add(id);
+ };
+ const baseAtk=combat.attack?.mountedBase??combat.attack?.walkingBase;
+ const unmountedAtk=combat.attack?.walkingBase;
+ const baseDef=combat.defense?.directRaw;
+ const dodgeBase=combat.dodge?.base;
+ const accuracyBase=combat.accuracy?.base;
+ const pct=(base,percent,round=Math.floor)=>
+  Number.isFinite(base)?round(base*percent/100):null;
+ const manual=()=>null;
+ // Party effects whose size uses the receiving hero's current stats.
+ add(320001001,'offense',[
+  ['EP_DAMAGERATE_CONST',[0,0,0,10]],
+  ['EP_DAMAGERATE_SCALE',[0,0,0,20]]
+ ],()=>Number.isFinite(unmountedAtk)?10+Math.floor(unmountedAtk*.20):null,
+ {recipient:true,unit:' ATK',detailRu:'Прибавка при применении к этому герою',
+  detailEn:'Calculated for this recipient when cast'});
+ add(100055001,'offense',[
+  ['EP_TOHIT_CONST',[0,0,0,20]],
+  ['EP_TOHIT_SCALE',[0,0,0,15]]
+ ],()=>Number.isFinite(accuracyBase)?Math.floor(20+accuracyBase*.15):null,
+ {recipient:true,unit:'',detailRu:'Точность получателя',
+  detailEn:'Recipient accuracy bonus'});
+ add(260006001,'defense',[
+  ['EP_AVOIDANCE_CONST',[0,0,0,15]],
+  ['EP_AVOIDANCE_SCALE',[0,0,0,15]]
+ ],()=>Number.isFinite(dodgeBase)?Math.floor(15+dodgeBase*.15):null,
+ {recipient:true,detailRu:'Уклонение получателя',
+  detailEn:'Recipient evasion bonus'});
+ // Personal combat effects: previews use the unbuffed weapon/armor/dodge
+ // kernel already available in the calculator, without activating anything.
+ add(100052001,'offense',[
+  ['EP_DAMAGERATE_SCALE',[0,0,0,30]]
+ ],()=>pct(unmountedAtk,30,Math.ceil),
+ {unit:' АТК',detailRu:'От базовой физической атаки',
+  detailEn:'From base physical attack'});
+ add(100053001,'defense',[
+  ['EP_ARMORCLASS_SCALE',[0,0,0,40]],
+  ['EP_DAMAGERATE_SCALE',[0,0,0,-20]]
+ ],()=>pct(baseDef,40),
+ {shield:true,unit:' защиты',detailRu:'Прибавка от базовой защиты; атака снижается на 20%',
+  detailEn:'From base defense; attack is reduced by 20%'});
+ add(100057001,'defense',[
+  ['EP_DAMAGERATE_SCALE',[0,0,0,-50]]
+ ],()=>pct(unmountedAtk,-50),
+ {unit:' АТК',detailRu:'Снижение от базовой атаки; защитные состояния не имеют числовой шкалы',
+  detailEn:'Attack penalty from base attack; protection states are not numeric'});
+ add(168052001,'defense',[
+  ['EP_AVOIDANCE_SCALE',[0,0,0,-50]]
+ ],()=>pct(dodgeBase,-50),
+ {unit:' уклонения',detailRu:'Снижение от базового уклонения; защита от крита не является числом',
+  detailEn:'Reduced base evasion; critical protection is not a numeric magnitude'});
+ // The coefficients below depend on trained mastery or current attributes.
+ // Neither Legacy nor OS establishes their full final rounding/stacking:
+ // list only the genuine variable effect, and show an explicit unknown value.
+ add(260005001,'defense',[
+  ['EP_AVOIDANCE_CONST',[5,0,15,10]]
+ ],manual,{branch:'warding',
+  detailRu:'Зависит от ПРВ и мастерства уклонения; точная величина не подтверждена',
+  detailEn:'Depends on AGI and Warding mastery; magnitude unverified'});
+ add(213605001,'offense',[
+  ['EP_DAMAGERATE_SCALE',[0,0,30,20]],
+  ['EP_TOHIT_CONST',[0,0,30,20]]
+ ],manual,{branch:'archery',
+  detailRu:'Зависит от мастерства стрельбы; величина не подтверждена',
+  detailEn:'Depends on Archery mastery; magnitude unverified'});
+ add(142051001,'offense',[
+  ['EP_CRITICALRATE_CONST',[0,0,20,10]]
+ ],manual,{branch:'brush',
+  detailRu:'Зависит от мастерства рубящих; величина не подтверждена',
+  detailEn:'Depends on Cleaving mastery; magnitude unverified'});
+ add(220001001,'offense',[
+  ['EP_AURAPOISON_CONSTANT',[0,10,5,5]]
+ ],manual,{branch:'alchemy',
+  detailRu:'Зависит от мастерства алхимии; итоговый урон ауры не подтверждён',
+  detailEn:'Depends on Alchemy mastery; poison aura damage unverified'});
+ add(330002001,'defense',[
+  ['EP_ABSOLUTE_MAGIC',[20,0,20,10]]
+ ],manual,{branch:'exorcism',
+  detailRu:'Зависит от СД и мастерства изгнания; точный эффект не подтверждён',
+  detailEn:'Depends on SPI and Exorcism mastery; magnitude unverified'});
+ add(420002001,'defense',[
+  ['EP_MANA_SHIELD',[0,0,10,10]]
+ ],manual,{branch:'embody',
+  detailRu:'Зависит от мастерства воплощения; расчёт поглощения ОМ не подтверждён',
+  detailEn:'Depends on Embodiment mastery; MP absorption unverified'});
+ add(420004001,'defense',[
+  ['EP_CASTINGCANCEL_RESISTANCE_CONST',[10,0,10,1]]
+ ],manual,{branch:'embody',
+  detailRu:'Зависит от СД и мастерства воплощения; округление не подтверждено',
+  detailEn:'Depends on SPI and Embodiment mastery; rounding unverified'});
+ add(320011001,'offense',[
+  ['EP_AURADAMAGE_SCALE',[20,0,20,10]],
+  ['EP_AURADAMAGE_CONST',[5,0,10,5]],
+  ['EP_ELEMENT_DAMAGE_SCALE',[0,0,20,10]]
+ ],manual,{branch:'blessing',
+  detailRu:'Зависит от СД и Благословения; итоговое сложение ещё не подтверждено',
+  detailEn:'Depends on SPI and Blessing; stacking unverified'});
+ // Legacy SkillView uses separate floor steps. For these entries the current
+ // OS fv1 preserves the coefficient roles while updating the flat constant.
+ add(320007001,'offense',[
+  ['EP_ATTACKINTERVAL_SCALE',[10,0,5,5]]
+ ],()=>validStat('spi')?5+Math.floor(stats.spi*.10)+Math.floor(mastery('blessing')*.05):null,
+ {branch:'blessing',unit:' инд.',detailRu:'СД и мастерство Благословения',
+  detailEn:'SPI and Blessing mastery'});
+ add(320008001,'defense',[
+  ['EP_ARMORCLASS_CONST',[3,0,4,5]]
+ ],()=>validStat('spi')?5+Math.floor(stats.spi*.03)+Math.floor(mastery('blessing')*.04):null,
+ {branch:'blessing',unit:' защиты',detailRu:'СД и мастерство Благословения',
+  detailEn:'SPI and Blessing mastery'});
+ add(320003001,'defense',[
+  ['EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,-20,-10]]
+ ],()=>-10-Math.floor(mastery('blessing')/5),
+ {branch:'blessing',unit:'%',detailRu:'Снижение получаемого урона от мастерства Благословения',
+  detailEn:'Damage received reduction from Blessing mastery'});
+ add(320012001,'offense',[
+  ['EP_STRENGTH_CONST',[0,0,10,0]],
+  ['EP_AGILITY_CONST',[0,0,10,0]],
+  ['EP_INTELIGENCE_CONST',[0,0,10,0]]
+ ],()=>Math.floor(mastery('blessing')/10),
+ {branch:'blessing',unit:' к СИЛ, ПРВ и ИНТ',
+  detailRu:'Прибавка к трём характеристикам от Благословения',
+  detailEn:'Bonus to STR, AGI and INT from Blessing mastery'});
+ add(330051001,'offense',[
+  ['EP_AURAHOLY_CONSTANT',[6,0,0,2]]
+ ],()=>validStat('spi')?2+Math.floor(stats.spi*.06):null,
+ {branch:'exorcism',unit:' урона светом',detailRu:'От СД заклинателя',
+  detailEn:'From caster SPI'});
+ add(430051001,'offense',[
+  ['EP_AURADARK_CONSTANT',[8,0,0,15]]
+ ],()=>validStat('spi')?15+Math.floor(stats.spi*.08):null,
+ {branch:'darkness',unit:' урона тьмой',detailRu:'От СД заклинателя',
+  detailEn:'From caster SPI'});
+ // The real song is a three-hop effect chain; never trust a forged inner
+ // record. The validated ROOT skill name provides the on-page identity.
+ const songAvailable=id=>songSkillPreview({skillCatalog,jobKey,level,
+  branchMasteries,branchCaps}).rows.some(row=>row.id===id);
+ if(songAvailable(340001001)&&exact(skill(340001003),'EP_TOHIT_CONST',[13,0,13,4])&&
+  exact(skill(340001003),'EP_AVOIDANCE_CONST',[13,0,13,4])){
+  add(340001001,'offense',[
+   ['EP_SKILL_EXEC_COUNT',[0,0,0,340001002]]
+  ],()=>validStat('spi')?4+Math.floor(stats.spi*.13)+
+   Math.floor(mastery('hymn')*.13):null,
+  {song:true,branch:'hymn',unit:' точности и уклонения',
+   detailRu:'СД и мастерство Песнопения',detailEn:'SPI and Hymn mastery'});
+ }
+ if(songAvailable(340004001)&&exact(skill(340004003),'EP_ELEMENT_DAMAGE_SCALE',[8,0,8,4])){
+  add(340004001,'offense',[
+   ['EP_SKILL_EXEC_COUNT',[0,0,0,340004002]]
+  ],()=>validStat('spi')?4+Math.floor(stats.spi*.08)+
+   Math.floor(mastery('hymn')*.08):null,
+  {song:true,branch:'hymn',unit:'% стихийного урона',
+   detailRu:'СД и мастерство Песнопения',detailEn:'SPI and Hymn mastery'});
+ }
+ return result;
+}
+
 // Source-only class passive: EP_ONHIT_FIN_DAMAGE_CONST describes per-hit
 // final damage, not the character-sheet ATK total. The server's hit kernel
 // is not verified; show its availability without manufacturing a flat bonus.
@@ -2486,7 +2703,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({scalingSkillPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
