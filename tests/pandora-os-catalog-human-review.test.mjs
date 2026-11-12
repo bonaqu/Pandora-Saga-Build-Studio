@@ -116,7 +116,7 @@ test('modified combat tables and expertise categories show sections, never inven
  const tbl=describe(change('tables','@dataset',{weaponPlus:{1:{ratio:2}}},{weaponPlus:{1:{ratio:3}}}),context);
  assert.match(tbl.summary,/Усиление оружия/);
  assert.equal(tbl.uncertain,true);
- assert.ok(tbl.rows.some(x=>x.label==='Усиление оружия'));
+ assert.ok(tbl.rows.some(x=>x.label.includes('Усиление оружия · Заточка +1')&&x.label.includes('ratio')&&x.before==='2'&&x.after==='3'));
  const master=describe(change('expertise','@dataset',{limit:{WARRIOR:{slash:2}}},
   {limit:{WARRIOR:{slash:3}}}),context);
  assert.match(master.summary,/Пределы мастерства/);
