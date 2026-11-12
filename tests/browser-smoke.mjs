@@ -39,6 +39,7 @@ import {runAdminEntrySmoke,runInlineMilestonesSmoke} from './browser-admin-entry
 import {runInnateSkillMasterySmoke} from './browser-innate-skill-mastery.mjs';
 import {runHeroBookLiveRecalcSmoke} from './browser-hero-book-live-recalc.mjs';
 import {runHeroBookGameNames664Smoke} from './browser-book-game-terms-664.mjs';
+import {runRemakedBuffParity669Smoke} from './browser-remaked-buff-parity-669.mjs';
 import {runOriginSharedSnapshotSmoke} from './browser-origin-shared-snapshot.mjs';
 import {runBuildComparisonSmoke,runSavedBuildEnglishSmoke} from './browser-build-comparison.mjs';
 import {runSavedBuildGridSmoke} from './browser-build-grid-640.mjs';
@@ -93,6 +94,7 @@ const scenarios=[
   ['innate-l1-mastery',runInnateSkillMasterySmoke],
   ['hero-book-live-recalc',runHeroBookLiveRecalcSmoke],
   ['hero-book-game-terms-664',runHeroBookGameNames664Smoke],
+  ['remaked-buff-parity-669',runRemakedBuffParity669Smoke],
   ['origin-shared-snapshot',runOriginSharedSnapshotSmoke],
   ['two-handed-gear',runTwoHandedSmoke],
   ['one-piece-outfit-and-soul-scroll',runOutfitSoulScrollSmoke],
