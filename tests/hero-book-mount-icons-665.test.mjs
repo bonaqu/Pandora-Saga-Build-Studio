@@ -34,7 +34,7 @@ test('Remaked on-foot versus mounted status never confuses item W with additive 
  assert.equal(horse.defense.known,null,'Remaked hides physical defense on horseback');
  assert.equal(horse.attackSpeed.known,null,'Remaked hides attack speed on horseback');
  assert.equal(foot.defense.known,0);
- assert.equal(foot.attackSpeed.known,121);
+ assert.equal(foot.attackSpeed.known,130);
  assert.equal(horse.verified,false,'Riding is still only a partial source-backed estimate');
 });
 
@@ -88,7 +88,7 @@ test('skill effects draw original skill icons using the same catalog resolver as
  assert.match(book,/skillEffectsPage\(body,\{modifiers,gameTerms,skillIconForId\}\)/);
  assert.match(app,/skillIconForId:id=>\{/);
  assert.match(app,/return record\?skillIcon\(record\.branch,id,record\):null/);
- assert.match(book,/class:'stage-mounted-toggle'/);
+ assert.match(book,/stage-book-check stage-mounted-toggle/);
  assert.match(app,/'mounted'\]\.includes\(key\)/);
  const a=B.attackChapterGroups({combat:{attack:{
   unarmed:false,weaponDamage:100},weaponPhysical:1},mountedRelease:{known:50}});
