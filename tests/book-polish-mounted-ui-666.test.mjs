@@ -14,7 +14,8 @@ test('book shows OS Cverg racial label and preserves exact original racial passi
  const skill=JSON.parse(get('data/os/skills.json'))['900030001'];
  assert.equal(skill.name,'Упрямое сердце');
  assert.ok(s.includes("'Расовая стойкость цверга'"));
- assert.ok(!s.includes('Расовая стойкость дворфа'));
+ assert.doesNotMatch(s,/text:english\?'Dwarven racial survival':\s*'Расовая стойкость дворфа'/);
+ assert.match(s,/stableSource=ru==='Расовая стойкость цверга'\?'Расовая стойкость дворфа':ru/);
  assert.equal(book.bookEditorialDefaults['Расовая стойкость цверга'],'Dwarven racial survival');
  // Keep historical D1 edit identity after correcting the default label.
  let hash=2166136261;
