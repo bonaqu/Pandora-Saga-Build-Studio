@@ -36,3 +36,14 @@ test('invalid OS skill parameters cannot be presented as verified priest bonuses
  assert.equal(values.gratia,null);
  assert.equal(values.lapisMedio,12);
 });
+
+test('the support potency labels stay bilingual for every OS-valued or unknown row',()=>{
+ for(const [ru,en] of [
+  ['Получаемый физ./маг. урон','Incoming physical/magic damage'],
+  ['Святая аура оружия','Holy weapon aura'],
+  ['Урон тьмой','Dark damage'],
+  ['Магическая атака','Magic attack'],
+  ['Аура оружия','Weapon aura'],
+  ['Стихийный урон','Elemental damage']
+ ])assert.ok(book.includes("'"+ru+"': '"+en+"'"),ru);
+});
