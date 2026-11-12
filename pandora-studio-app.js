@@ -8432,16 +8432,27 @@ function guardOwnerInput(input){
  return input;
 }
 function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,integer=false,onCommit,onCommitted,onFinished}={}){
- if(!adminEditing||!adminToken||node.querySelector('input,select,textarea'))return;
+ if(!adminEditing||!adminToken||
+  node.querySelector('input,select,textarea,[data-owner-text-field]'))return;
  const before=String(initial??''),visibleNodes=[...node.childNodes];
+ const ownerSay=(ru,en)=>lang==='en'?en:ru;
  let finished=false,saving=false;
- const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':'Выбери значение'}):
+ const inlineError=message=>{
+  let feedback=node.querySelector('.ui-content-inline-error');
+  if(!feedback){
+   feedback=h('small',{class:'ui-content-inline-error',role:'alert'});
+   node.append(feedback);
+  }
+  feedback.textContent=message;
+ };
+ const control=type==='select'?h('select',{class:'wiki-inline-select','aria-label':ownerSay('Выбери значение','Choose a value')}):
   type==='textarea'||type==='text'?ownerPlainTextField({
    multiline:type==='textarea',rows:6,
    class:'wiki-inline-input wiki-owner-plaintext owner-editor-unified',
-   'aria-label':type==='textarea'?'Изменить описание':'Изменить значение'}):
+   'aria-label':type==='textarea'?ownerSay('Изменить описание','Edit description'):
+    ownerSay('Изменить значение','Edit value')}):
   h('input',{type:'number',class:'wiki-inline-input',
-   'aria-label':'Изменить значение',min:String(min),max:String(max),
+   'aria-label':ownerSay('Изменить значение','Edit value'),min:String(min),max:String(max),
    step:integer?'1':'any'});
  if(type==='select'){
   for(const option of options){
@@ -8450,7 +8461,9 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   }
  }else control.value=before;
  if(type==='number')guardOwnerInput(control);
- const restore=()=>{if(node.isConnected){node.replaceChildren(...visibleNodes);node.classList.remove('wiki-inline-saving')}onFinished?.()};
+ const restore=()=>{if(node.isConnected){node.replaceChildren(...visibleNodes);
+  node.classList.remove('wiki-inline-saving');node.removeAttribute('aria-busy')}
+  onFinished?.()};
  const save=async()=>{
   if(finished||saving)return;
   const raw=control.value;
@@ -8458,29 +8471,37 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
   if(type==='number'&&value===null&&before===''){finished=true;restore();return}
    if(type==='number'&&(value===null||!Number.isFinite(value)||value<min||value>max||
    (integer&&!Number.isInteger(value)))){
-   control.setCustomValidity('Введите корректное значение');control.reportValidity();control.focus();return;
+   control.setCustomValidity(ownerSay('Введите корректное значение',
+    'Enter a valid value'));control.reportValidity();control.focus();return;
   }
   if(type!=='number'&&type!=='select'&&(value.length>2000||(!value&&type==='text'))){
-   if(control.setCustomValidity){control.setCustomValidity('Некорректная длина текста');control.reportValidity()}
-   else showStudioToast('Некорректная длина текста','warning');
+   const message=ownerSay('Некорректная длина текста',
+    'Invalid text length');
+   if(control.setCustomValidity){control.setCustomValidity(message);control.reportValidity()}
+   else inlineError(message);
    control.focus();return;
   }
   if(String(value)===before){finished=true;restore();return}
-  saving=true;control.disabled=true;node.classList.add('wiki-inline-saving');
+  // contenteditable spans ignore the disabled property. Freeze the exact
+  // submitted draft until D1 confirms it; never discard edits typed mid-save.
+  saving=true;node.classList.add('wiki-inline-saving');
+  node.setAttribute('aria-busy','true');
+  if(control.matches('[data-owner-text-field]')){
+   control.setAttribute('contenteditable','false');
+   control.setAttribute('aria-disabled','true');
+  }else control.disabled=true;
   try{await onCommit(value);finished=true;restore();onCommitted?.(value)}
-  catch(error){saving=false;control.disabled=false;node.classList.remove('wiki-inline-saving');
+  catch(error){saving=false;node.classList.remove('wiki-inline-saving');
+   node.removeAttribute('aria-busy');
+   if(control.matches('[data-owner-text-field]')){
+    control.setAttribute('contenteditable','plaintext-only');
+    control.removeAttribute('aria-disabled');
+   }else control.disabled=false;
+   const message=ownerSay('Не сохранено: ','Not saved: ')+
+    String(error.message||ownerSay('Ошибка','Error'));
    if(control.setCustomValidity){
-    control.setCustomValidity('Не сохранено: '+String(error.message||'Ошибка'));control.reportValidity()
-   }else if(node.closest('#studioToast')){
-    // A toast must not replace itself when its OWN D1 edit conflicts.
-    // Show feedback next to the active input; preserve the draft for retry.
-    let feedback=node.querySelector('.ui-content-inline-error');
-    if(!feedback){
-     feedback=h('small',{class:'ui-content-inline-error',role:'alert'});
-     node.append(feedback);
-    }
-    feedback.textContent='Не сохранено: '+String(error.message||'Ошибка');
-   }else showStudioToast('Не сохранено: '+String(error.message||'Ошибка'),'warning');
+    control.setCustomValidity(message);control.reportValidity();
+   }else inlineError(message);
    control.focus()}
  };
  control.oninput=()=>{
@@ -8490,6 +8511,7 @@ function editWikiValue(node,initial,{type='text',options=[],min=0,max=100000,int
  control.onblur=()=>{if(type==='select'){if(!saving){finished=true;restore()}}else void save()};
  control.onchange=()=>{if(type==='select')void save()};
  control.onkeydown=e=>{
+  if(saving){e.preventDefault();e.stopPropagation();return}
   if(e.key==='Escape'){
    // Editing Escape must not also dismiss the equipped-item picker, Book,
    // or any other parent panel listening for document-level shortcuts.

@@ -118,8 +118,12 @@ export async function runOwnerDualSessionCasSmoke(browser,base){
   const draft=editSlot(second).locator('[contenteditable="plaintext-only"]');
   assert.equal(await draft.textContent(),'Вторая конкурирующая подпись',
    'The losing edit must keep its unsaved draft available for retry');
-  assert.match(await second.locator('#studioToast').innerText(),/другом окне|изменили/,
-   'Conflict notice must be understandable instead of raw HTTP code');
+  const inlineConflict=editSlot(second).locator('.ui-content-inline-error');
+  await inlineConflict.waitFor({state:'visible',timeout:12000});
+  assert.match(await inlineConflict.innerText(),/другом окне|изменили/,
+   'Conflict message must be next to the draft, not a raw HTTP error');
+  assert.equal(await draft.getAttribute('contenteditable'),'plaintext-only',
+   'An administrator can edit and retry the same draft after CAS rejection');
   assert.match(await second.locator('#ownerDock [data-owner-recent]').innerText(),
    /За этот сеанс: 0/,'Rejected CAS must not count as a successful edit');
   assert.equal(writes.length,1,'Only the winning editor may write a value');
