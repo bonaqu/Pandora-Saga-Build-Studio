@@ -62,8 +62,9 @@ test('missing or corrupted published skill data fails closed without invented bo
  const locked=JSON.parse(JSON.stringify(skills));
  locked[calc.combatSkillIds.warCry].charLevel=55;
  assert.equal(preview('GLADIATOR',{combatWarCry:true},{skillCatalog:locked})
-  .activeSkills.warCry,false);
- assert.equal(preview('KNIGHT',{combatWarCry:true}).activeSkills.warCry,false);
+  .activeSkills.warCry,true,'Only the caster needs level 55');
+ assert.equal(preview('KNIGHT',{combatWarCry:true}).activeSkills.warCry,true,
+  'Any party recipient can receive an allied War Cry');
 });
 test('book controller forwards source catalog to calculator and exposes same skill access',()=>{
  const app=read('pandora-studio-app.js');
