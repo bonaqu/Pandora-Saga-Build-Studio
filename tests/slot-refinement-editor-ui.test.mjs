@@ -40,7 +40,7 @@ test('approved segmented forge bar and compact Soul slots remain accessible',()=
  assert.match(css,/\.stage-rich-body \.stage-grade\{\s*display:grid;grid-template-columns:repeat\(11,minmax\(0,1fr\)\)/);
  assert.match(css,/\.stage-rich-body \.stage-enchant-options\.is-element-options\{\s*display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
  assert.match(ui,/copy\('soulSlotsHeading','Слоты душ','Soul slots'\)/);
- assert.match(ui,/tr\('Слот ','Slot '\)\+\(i\+1\)/);
+ assert.match(ui,/pickerSoulSlotCaption',\s*'Слот','Slot','text',' '\+\(i\+1\)/);
  assert.doesNotMatch(ui,/Гнёзд/);
  for(const path of ['pandora-studio-app.js','pandora-studio-equipment-ui.js','pandora-studio-hero-book.js','pandora-studio-hero-path.js']){
   assert.doesNotThrow(()=>new Script(source(path),{filename:path}),path);
