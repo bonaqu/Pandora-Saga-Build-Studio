@@ -377,6 +377,7 @@ const bookPages=Object.freeze([
 // All four groups are expanded on first visit; this state is UI-only.
 const collapsedSummaryGroups=new Set();
 const collapsedBookGroups=new Set();
+const expandedBookDetails=new Set();
 // Keep the source-backed Hero Book results in one ordered matrix.
 // A missing calculator branch stays unknown (—), never a fabricated zero.
 function summaryRows(calc){
@@ -1357,11 +1358,13 @@ function appendWeaponConditions(body,calc,items,english){
  const active=items.map(row=>({row,
   bonus:root.PandoraConditionalItemBonuses?.activeFor?.(row)}))
   .filter(x=>x.bonus&&(x.bonus.phoenix||x.bonus.rows.length));
- if(!active.length)return;
  const panel=make('details',{class:'stage-attribute-row stage-active-elemental'});
  panel.open=true;
  panel.append(make('summary',{text:(english?'Elemental weapon effects':
-  'Эффекты стихийных оружий')+' · '+active.length}));
+  'Эффекты стихийных оружий')}));
+ if(!active.length)panel.append(make('p',{class:'stage-attribute-note',
+  text:english?'No supported elemental weapon effect is active on the equipped weapon.':
+   'На экипированном оружии нет активных подтверждённых стихийных эффектов.'}));
  for(const {row,bonus}of active){
   const rec=row.record||{},name=rec.name||'Оружие';
   panel.append(make('strong',{text:name+' · '+(english?'Fire +':'Огонь +')+
@@ -1461,7 +1464,7 @@ function defensePage(body,calc,english,options={}){
  if(exp.length){
   const panel=make('details',{class:'stage-attribute-row stage-experience-effects'});
   panel.append(make('summary',{text:(english?'Experience gain bonuses':
-   'Бонусы к опыту')+' · '+exp.length}));
+   'Бонусы к опыту')}));
   for(const e of exp)panel.append(make('p',{text:e.source+': '+
    (e.percent>0?'+':'')+e.percent+'%'}));
   body.append(panel);
@@ -1500,6 +1503,31 @@ function collapseBookSections(body,page){
    else collapsedBookGroups.add(key);
   });
  }
+ // Pre-existing <details> chapters must have the exact same heading as
+ // sections above: left glyph, editable title, and chevron on the right.
+ // Keep them as details (no nested disclosure, no duplicate headers).
+ for(const detail of [...body.children].filter(node=>node.tagName==='DETAILS')){
+  const header=detail.querySelector(':scope > summary');
+  if(!header)continue;
+  const identifier=[...detail.classList].find(x=>x.startsWith('stage-')&&
+   x!=='stage-attribute-row'&&x!=='stage-book-disclosure')||'section';
+  const key=page+':detail:'+identifier;
+  detail.classList.add('stage-book-disclosure');
+  detail.dataset.bookCollapse=key;
+  detail.dataset.bookDetail='true';
+  detail.open=expandedBookDetails.has(key)||(!collapsedBookGroups.has(key)&&detail.open);
+  const text=make('strong',{class:'stage-book-detail-title'});
+  while(header.firstChild)text.append(header.firstChild);
+  header.className='stage-result-section-head';
+  header.append(make('span',{class:'stage-result-symbol',
+   'aria-hidden':'true',text:'✦'}),text,make('span',{
+    class:'stage-result-chevron','aria-hidden':'true',text:'⌄'}));
+  detail.addEventListener('toggle',()=>{
+   if(detail.open){expandedBookDetails.add(key);collapsedBookGroups.delete(key)}
+   else {expandedBookDetails.delete(key);collapsedBookGroups.add(key)}
+  });
+ }
+
 }
 // Stable text identities: editing a caption never mutates the game skill or
 // item catalog. Details retain their live record counts after localization.
@@ -1512,6 +1540,8 @@ const chapterCaptionSpecs=Object.freeze([
  ['recovery','enabled','.stage-potion-book .stage-book-check > span','Показывать восстановление от зелий','Show potion recovery'],
  ['recovery','mana','.stage-mana-consumables > strong','Предметы восстановления ОМ','MP recovery items'],
  ['recovery','health','.stage-health-consumables > summary','Предметы восстановления ОЗ','HP recovery items'],
+ ['defense','experience','.stage-experience-effects > summary','Бонусы к опыту','Experience gain bonuses'],
+ ['attack','elemental','.stage-active-elemental > summary','Эффекты стихийных оружий','Elemental weapon effects'],
  ['recovery','cures','.stage-status-cures > summary','Снятие состояний','Remove status effects'],
  ['recovery','skillItems','.stage-consumable-skills > summary','Предметы, активирующие умения','Items that activate skills']
 ]);
@@ -1523,11 +1553,12 @@ function decorateChapterCaptions(body,page,options){
   let label=node;
   if(node.tagName?.toLowerCase()==='summary'){
    const text=String(node.textContent||'');
-   const suffix=text.match(/\s·\s\d+(?:\s(?:предметов|items))?$/)?.[0]||'';
+   // Chapter headers never display record counts: quantities belong inside.
+   // The original text is replaced with a D1-editable caption below.
    node.replaceChildren();
    label=make('span',{text:ru});
    node.append(label);
-   if(suffix)node.append(document.createTextNode(suffix));
+
   }
   guideLabel(label,section+'.caption.'+key,ru,en,options);
  }
@@ -1553,8 +1584,11 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   for(const group of stablePanel.querySelectorAll?.('details[data-book-collapse]')||[]){
    const key=group.dataset.bookCollapse;
    if(!key)continue;
-   if(group.open)collapsedBookGroups.delete(key);
-   else collapsedBookGroups.add(key);
+   if(group.open){collapsedBookGroups.delete(key);
+    if(group.dataset.bookDetail==='true')expandedBookDetails.add(key);
+   }else {collapsedBookGroups.add(key);
+    if(group.dataset.bookDetail==='true')expandedBookDetails.delete(key);
+   }
   }
  const storedScroll=reusePanel?stablePanel.scrollTop:0;
  if(reusePanel){
@@ -1698,7 +1732,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   const lifeItems=modifiers?.consumableRecovery?.healthRows||[];
   if(lifeItems.length){
    const health=make('details',{class:'stage-attribute-row stage-health-consumables'});
-   health.append(make('summary',{text:(english?'HP recovery items':'Предметы восстановления ОЗ')+' · '+lifeItems.length}));
+   health.append(make('summary',{text:(english?'HP recovery items':'Предметы восстановления ОЗ')}));
    for(const entry of lifeItems){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
@@ -1721,7 +1755,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   const cures=modifiers?.statusCures?.rows||[];
   if(cures.length){
    const panel=make('details',{class:'stage-attribute-row stage-status-cures'});
-   panel.append(make('summary',{text:(english?'Remove status effects':'Снятие состояний')+' · '+cures.length+(english?' items':' предметов')}));
+   panel.append(make('summary',{text:(english?'Remove status effects':'Снятие состояний')}));
    for(const entry of cures){
     const item=itemById(entry.id);
     const row=make(item?'button':'div',{class:'stage-potion-item',
@@ -1742,8 +1776,7 @@ function render(target,{page,items=[],icon=()=>null,skillIconForId=()=>null,onPa
   if(consumableSkills.length){
    const section=make('details',{class:'stage-attribute-row stage-consumable-skills'});
    section.append(make('summary',{text:(english?
-    'Items that activate skills':'Предметы, активирующие умения')+
-    ' · '+consumableSkills.length}));
+    'Items that activate skills':'Предметы, активирующие умения')}));
    for(const entry of consumableSkills){
     const item=itemById(entry.id);
     const displayName=item?.name||entry.name;
