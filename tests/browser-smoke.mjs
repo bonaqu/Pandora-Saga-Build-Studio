@@ -533,10 +533,13 @@ async function main(){
  const value=async key=>(await priestPanel.locator('[data-priest-preview="'+key+'"] strong').innerText()).trim();
  assert.equal(await value('gratia'),'+22','Current OS Gratia must replace obsolete Remaked +20');
  assert.equal(await value('lapisMedio'),'+12');
- assert.match(await value('encouragement'),/СИЛ \+9 · ПРВ \+9 · ИНТ \+9/);
+ const priestEnglish=(await page.locator('html').getAttribute('lang'))==='en';
+ assert.equal(await value('encouragement'),priestEnglish?
+  'STR +9 · AGI +9 · INT +9':'СИЛ +9 · ПРВ +9 · ИНТ +9');
  assert.equal(await value('groupBarrier'),'-28%');
  assert.equal(await value('holyWeapon'),'+10');
- assert.match(await value('minstrel'),/Точность \+24 · Уклонение \+24/);
+ assert.equal(await value('minstrel'),priestEnglish?
+  'Accuracy +24 · Evasion +24':'Точность +24 · Уклонение +24');
  assert.equal(await value('sage'),'+16%');
  assert.equal(await value('enchantEnhance'),'—',
   'Unverified current OS enchantment must not display a historical numeric guess');
