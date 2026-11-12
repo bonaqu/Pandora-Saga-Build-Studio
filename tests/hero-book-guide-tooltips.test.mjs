@@ -47,7 +47,7 @@ test('gameplay hints use the shared delayed tooltip and not browser title attrib
  assert.match(code,/PandoraGuideTooltip\?\.attach\(info,description,\{hoverDelay:650\}\)/);
  assert.doesNotMatch(code,/\{title:skill\.desc\}/);
  assert.doesNotMatch(code,/row\.setAttribute\('title',kind\)/);
- assert.match(code,/class:'stage-legacy-buff-copy'/);
+ assert.match(code,/class:'stage-combat-buff-copy'/);
  assert.doesNotMatch(code,/Просмотр отдельных умений по Remaked/);
  assert.doesNotMatch(code,/Skill previews based on Remaked/);
 });

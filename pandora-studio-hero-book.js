@@ -9,7 +9,6 @@ const bookEnglish=Object.freeze({
  'Зелья и умения': "Potions & skills",
  'Эффекты': "Effects",
  'Усиления': "Buffs",
- 'Одновременно действует только одно умение. Выбор нового заменяет предыдущее. Умения можно применять к союзникам и врагам.': 'Only one resistance spell can be active. Selecting a new one replaces the previous one. These spells may target allies or enemies.',
  'Эффекты умений': 'Skill effects',
  'Эффекты зелий': 'Potion effects',
  'Параметры появятся после загрузки игровых данных.': "Stats appear when game data has loaded.",
@@ -702,7 +701,8 @@ function buffsPage(body,options){
  };
 
  const guild=section('Гильдия','Guild','guild');
- guild.dataset.bookSection='guild';
+ if(guild.dataset)guild.dataset.bookSection='guild';
+ else guild.setAttribute?.('data-book-section','guild');
  select(guild,'Уровень гильдии','Guild level','guildLevel',
   Array.from({length:13},(_,i)=>[i,i===0?
    (english?'Manual guild buffs':'Ручной выбор усилений'):
@@ -867,7 +867,8 @@ function buffsPage(body,options){
  const despairKnown=osVector(100058001,'EP_DAMAGERATE_SCALE',[0,0,35,40])&&
   osVector(100058001,'EP_ONDAMAGE_FIN_DAMAGE_SCALE',[0,0,0,100]);
  const priest=section('Усиления жреца','Priest buffs');
- priest.dataset.bookSection='priest';
+ if(priest.dataset)priest.dataset.bookSection='priest';
+ else priest.setAttribute?.('data-book-section','priest');
  toggle(priest,english?'Use external priest':'Учитывать усиления другого жреца','priestEnabled');
  const priestFields=make('div',{class:'stage-priest-fields'});
  for(const [key,ru,en] of [

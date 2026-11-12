@@ -2348,16 +2348,3 @@ footer .footer-version{margin-inline-start:auto;align-self:center;white-space:no
 @media(max-width:460px){footer{align-items:stretch;gap:5px}footer .footer-version{align-self:flex-end;margin-inline-start:0}}
 
 
-/* 0.688.0: The picker body may obtain its own scrollbar. Keep the item
-   description, Soul capacity fieldsets and controls on one coherent width. */
-#stagePicker,#stagePicker .stage-rich-body{
- box-sizing:border-box;min-width:0;width:100%
-}
-#stagePicker .stage-rich-body>.stage-rich-summary,
-#stagePicker .stage-rich-body>.stage-enchant-fieldset,
-#stagePicker .stage-rich-body>.stage-rich-sockets{
- box-sizing:border-box;min-width:0;width:100%;max-width:100%
-}
-#stagePicker .stage-rich-body{scrollbar-width:thin}
-#stagePicker .stage-rich-body .stage-rich-head,
-#stagePicker .stage-rich-body .stage-rich-fields{min-width:0;max-width:100%}

@@ -336,9 +336,14 @@ async function main(){
  const healing=page.locator('#stageBookPanel .stage-healing-spells:not(.stage-attacking-skills):not(.stage-defensive-skills)');
  const defensive=page.locator('#stageBookPanel .stage-defensive-skills');
  assert.equal(await defensive.count(),1,'Variable defensive-skill chapter must be present');
+ assert.equal(await defensive.getAttribute('open'),null,
+  'Defense skill effects start collapsed; Healing is the only open effect group');
+ await defensive.locator('summary').click();
  assert.match(await defensive.innerText(),/Помощь ветра/);
  assert.doesNotMatch(await defensive.innerText(),/Быстрый отход|Ускользание/,
   'Fixed-value skills must stay out of the Skill Effects preview');
+ assert.equal(await offense.getAttribute('open'),null,'Offensive skills start collapsed');
+ await offense.locator('summary').click();
  assert.match(await offense.innerText(),/Боевой клич|Массовая сосредоточенность/);
  assert.equal(await page.locator('#stageBookPanel input[type="checkbox"]').count(),0,
   'Read-only Skill Effects must never activate a defensive skill');

@@ -20,10 +20,10 @@ test('explicit per-chapter defaults: Attack unchanged, Defense recovery, Priest 
 });
 test('priest strength lives under each supported skill, never in a second grid',()=>{
  const buffs=book.slice(book.indexOf('function buffsPage('),book.indexOf('function gameSkillBadge('));
- assert.match(buffs,/priest\.dataset\.bookSection='priest'/);
+ assert.match(buffs,/priest\.dataset\)priest\.dataset\.bookSection='priest'/);
  assert.match(buffs,/summary:row\.counted/);
  assert.match(buffs,/priestValues\.holyWeapon/);
- assert.match(buffs,/priestValues\.gratia/);
+ assert.match(buffs,/priestValues\?\.\[benefit\]/);
  assert.match(buffs,/priestValues\.peaceful/);
  assert.doesNotMatch(buffs,/class:'stage-legacy-buff-previews'/);
  assert.doesNotMatch(buffs,/stage-legacy-buff-grid/);
@@ -47,9 +47,9 @@ test('opening any rail slot from Hero Book makes picker close return to portrait
  assert.match(end,/resetDisclosureState/);
 });
 test('right-hand equipment content retains width with independent scrollbar',()=>{
- assert.match(theme,/#stagePicker \.stage-rich-body>\.stage-rich-summary/);
- assert.match(theme,/#stagePicker \.stage-rich-body>\.stage-enchant-fieldset/);
- assert.match(theme,/scrollbar-width:thin/);
+ assert.match(css,/#stagePicker \.stage-rich-body>\.stage-rich-summary/);
+ assert.match(css,/#stagePicker \.stage-rich-body>\.stage-enchant-fieldset/);
+ assert.match(css,/scrollbar-width:thin/);
 });
 test('resistance copy states exactly the exclusive-selection rule',()=>{
  assert.match(book,/Одновременно действует только одно умение, выбор нового заменяет предыдущие\./);
