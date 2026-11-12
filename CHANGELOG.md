@@ -1,5 +1,16 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.664.0 — 2026.11.12.664 · Canonical game Book terminology and Honor search
+
+- Hero Book «Эффекты умений» and «Усиления» now resolve skill titles by actual numeric Pandora Saga OS skill IDs, with the existing Remaked-approved 327-to-OS identity mapping and official OS RU/EN catalogue as the source of truth. The canonical names cover healing previews, periodic HP/MP recovery, songs, combat buffs and the priest's legacy skill effects.
+- Skill mastery branches in effect requirements use the game's RU/EN branch registry: e.g. hymn displays **«Песнопения»**, not an improvised «Гимны». Profession restrictions use actual game class definitions: ACOLYTE is **«Адепт»**, not a literal «Аколит». The two distinct Enchantment preview effects remain disambiguated. English uses official OS skill names rather than Russian fallbacks where available.
+- «Защита» preserves the source-backed combat stat and debuff labels; name-source/locale checks cover its results without changing formulas or numeric outputs. Unknown custom data are not guessed or overwritten.
+- Encyclopedia → «Честь» search now has its own debounced input listener before the Honor early return. It filters the authored Honor article, PvP locations/wars, rank records and monthly rewards, shows compact bilingual no-results copy, retains the rank-type filter and clickable links, and works with Cyrillic ё/е normalization. The empty-state caption uses the existing D1 inline honor-view copy editor.
+- Added source/parity unit tests for all 327 approved skill-to-OS references (including five intentional historical abbreviations and one missing official EN label), and full Chromium tests for actual Book RU/EN rendered terminology, Honor search/filter, no-results, link navigation and mobile styling.
+- No user builds, game calculations, class limits, Worker endpoints, production D1 records or scheduled actions changed. HTML footer, cache keys and social-preview version synchronized.
+
+
+
 ## 0.663.0 — 2026.11.12.663 · Bulk RU/EN D1 copy in four workbench families
 
 - **27 semantic RU/EN editorial fields in one release**: Equipment item picker (10); Item settings and Soul search/slots (6); Encyclopedia search, return-to-top and list/grid view (7); Hero Path skill-search placeholder/filter accessible name (2); visible Origin stats remaining/spent-point prefixes (2).
