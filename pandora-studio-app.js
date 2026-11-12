@@ -953,6 +953,47 @@ function ownerCopyLabel(node,section,key,ru,en,{onCommitted,onFinished}={}){
   if(event.target===node&&(event.key==='F2'||event.key==='Enter'))edit(event);
  });
 }
+// Shared, explicit copy binding for labels, buttons and search attributes.
+// Each field has a static RU/EN source and a stable D1 key. Variable game
+// data (item names, active slot, levels, search queries) are never edited.
+function bindOwnerInterfaceText(node,section,key,ru,en,attribute='text',suffix=''){
+ if(!node)return node;
+ node.dataset.ownerInterfaceSection=section;
+ node.dataset.ownerInterfaceKey=key;
+ node.dataset.ownerInterfaceRu=ru;
+ node.dataset.ownerInterfaceEn=en;
+ node.dataset.ownerInterfaceAttribute=attribute;
+ node.dataset.ownerInterfaceSuffix=suffix;
+ const value=ownerCopy(section,key,ru,en)+suffix;
+ if(attribute==='text')node.textContent=value;
+ else node.setAttribute(attribute,value);
+ return node;
+}
+// Compact non-modal owner-only copy editor reused by Equipment, Wiki, Skills.
+// It is absent for players and never wraps a real interactive action button.
+function ownerInterfaceEditor(section,rows,headingRu='Подписи интерфейса',headingEn='Interface labels'){
+ if(!adminEditing||!adminToken)return null;
+ const box=h('details',{class:'studio-owner-interface-editor'});
+ box.append(h('summary',{text:lang==='en'?headingEn:headingRu}));
+ const items=h('div',{class:'studio-owner-interface-fields'});
+ for(const [key,ru,en,shortRu,shortEn] of rows){
+  const label=h('span',{class:'studio-owner-interface-value',
+   text:ownerCopy(section,key,ru,en)});
+  ownerCopyLabel(label,section,key,ru,en);
+  const pencil=h('button',{type:'button',class:'ui-content-pencil studio-owner-interface-pencil',
+   text:'✎',
+   'aria-label':(lang==='en'?'Edit caption: ':'Изменить надпись: ')+ownerCopy(section,key,ru,en),
+   onclick:event=>{
+    event.preventDefault();event.stopPropagation();
+    label.dispatchEvent(new MouseEvent('dblclick',{bubbles:true,cancelable:true}));
+   }});
+  items.append(h('div',{class:'studio-owner-interface-row'},[
+   h('span',{class:'studio-owner-interface-name',
+    text:lang==='en'?(shortEn||en):(shortRu||ru)}),label,pencil]));
+ }
+ box.append(items);
+ return box;
+}
 const equipmentCopy=(key,ru,en)=>ownerCopy('equipment',key,ru,en);
 const equipmentCopyLabel=(node,key,ru,en,options)=>
  ownerCopyLabel(node,'equipment',key,ru,en,options);
@@ -7862,7 +7903,7 @@ function refreshVisibleOriginCopy(recordKey){
 function refreshVisibleOwnerCopy(recordKey){
  const key=String(recordKey).replace(/^guideedit\.book\./,'');
  if(key.startsWith('owner-dock.')){refreshOwnerUI();return}
-  if(!/^(equipment|path|catalog-sync|honor-view|owner-history|owner-dialog)\./.test(key))return;
+  if(!/^(equipment|path|catalog-sync|honor-view|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(key))return;
  for(const node of document.querySelectorAll('[data-owner-copy-section][data-owner-copy-id]')){
   const {ownerCopySection:section,ownerCopyId:id,ownerCopyRu:ru,ownerCopyEn:en}=node.dataset;
   if(ownerCopyKey(section,id)!==key||node.querySelector('.wiki-inline-input'))continue;
@@ -7893,6 +7934,18 @@ function refreshVisibleOwnerCopy(recordKey){
   if(section==='catalog-sync'&&id.startsWith('hint'))
    for(const target of document.querySelectorAll('[data-guide-owner-key]'))
     if(target.dataset.guideOwnerKey===id)target.dataset.guideHint=value;
+ }
+ // Attribute/text copy changes patch the existing mounted control only:
+ // never replace an active search field, picker, selection or character.
+ for(const node of document.querySelectorAll('[data-owner-interface-section][data-owner-interface-key]')){
+  const {ownerInterfaceSection:section,ownerInterfaceKey:id,
+   ownerInterfaceRu:ru,ownerInterfaceEn:en,
+   ownerInterfaceAttribute:attr,ownerInterfaceSuffix:suffix}=node.dataset;
+  if(ownerCopyKey(section,id)!==key||node.querySelector?.('.wiki-inline-input'))continue;
+  const value=ownerCopy(section,id,ru,en)+(suffix||'');
+  if(attr==='text')node.textContent=value;
+  else if(['placeholder','aria-label','title'].includes(attr))
+   node.setAttribute(attr,value);
  }
  if(key==='equipment.soul-search'){
   // A D1 save or Undo must update the live placeholder, not reset the query.
@@ -7949,7 +8002,7 @@ async function undoOwnerEdit(){
       window.PandoraAccountUI?.refresh?.();
      // UI copy does not affect catalogs or builds; preserve active inputs.
      saveView();
-    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog)\./.test(last.key)){
+    }else if(/^guideedit\.book\.(equipment|path|catalog-sync|honor-view|owner-dock|owner-history|owner-dialog|wiki-ui|skill-ui|stats-ui)\./.test(last.key)){
      refreshVisibleOwnerCopy(last.key);saveView();
     }else await refreshOwnerCatalog();
   }catch(e){alert('Не удалось отменить изменение: '+e.message)}
@@ -8299,7 +8352,8 @@ async function saveGuidePatchNow(key,fields){
   if(key.startsWith('book.equipment.')||key.startsWith('book.path.')||
      key.startsWith('book.catalog-sync.')||key.startsWith('book.honor-view.')||
      key.startsWith('book.owner-dock.')||key.startsWith('book.owner-history.')||
-     key.startsWith('book.owner-dialog.'))
+     key.startsWith('book.owner-dialog.')||key.startsWith('book.wiki-ui.')||
+     key.startsWith('book.skill-ui.')||key.startsWith('book.stats-ui.'))
    refreshVisibleOwnerCopy('guideedit.'+key);
   if(activeTab==='wiki'&&wikiSelection.type==='honor'&&
      !key.startsWith('book.catalog-sync.')){
