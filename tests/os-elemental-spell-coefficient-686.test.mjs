@@ -72,7 +72,8 @@ test('gates level, class, rank and INT; source previews remain read-only',()=>{
  assert.equal(find(req,410004001),undefined,'mage cap below 61 excludes skill');
  assert.equal(find(preview('WARLOCK',{element:60},80),410004001)?.available,false);
  assert.equal(find(preview('WARLOCK',{element:61},80),410004001)?.available,true);
- assert.equal(preview('WARLOCK',{element:91},80).length,0);
+ assert.equal(find(preview('WARLOCK',{element:91},80),410001001),undefined,
+  'Invalid Element mastery must not suppress independent Darkness spells');
  assert.equal(preview('WARLOCK',{element:20},-1).length,0);
  assert.equal(preview('WARLOCK',{element:20},80,skills,0).length,0);
  const changed=structuredClone(skills);
