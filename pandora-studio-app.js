@@ -1679,7 +1679,7 @@ function renderStageAttributes(calculated=undefined){
     !ability.weaponUse.includes(equippedWeapon?.kind??'BARE_HAND')?
     (bookEn?'Unavailable with current weapon':'Недоступно с выбранным оружием'):null);
   combatSkillCards[setting]=ability?{
-   name:ability.name,
+   id,name:ability.name,
    nameEn:officialEnglish?.skills?.[String(id)]?.n||ability.name,
    desc:ability.desc,
    descEn:officialEnglish?.skills?.[String(id)]?.d||ability.desc,
@@ -1707,7 +1707,7 @@ function renderStageAttributes(calculated=undefined){
   const reason=availability[setting]?null:
    (bookEn?'This skill is unavailable':'Умение недоступно');
   combatSkillCards[setting]=ability?{
-   name:ability.name,
+   id:combatSkillCatalog.supportSkillIds[kind],name:ability.name,
    nameEn:officialEnglish?.skills?.[String(combatSkillCatalog.supportSkillIds[kind])]?.n||ability.name,
    desc:ability.desc,
    descEn:officialEnglish?.skills?.[String(combatSkillCatalog.supportSkillIds[kind])]?.d||ability.desc,

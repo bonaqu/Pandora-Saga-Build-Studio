@@ -982,27 +982,27 @@ function buffsPage(body,options){
     }[row.id]):
      // Game-client description is useful even where current OS stacking is
      // not confirmed. Never present historical previews as final damage.
-     (()=>{const basic=buffEffectText(row.id)||description||row.description||
-      (english?'Exact effect not yet confirmed':'Точный эффект пока не подтверждён');
-      const current=modifiers?.combat?.priestSong;
-      const enabled=buffs.priestEnabled===true&&row.selected;
-      if(!enabled)return basic;
-      const applied=modifiers?.priestApplied;
-      const value=row.id===340001001?current?.minstrel:
-       row.id===340004001?current?.sageElementDamage:
-       row.id===320003001?applied?.groupBarrier:
-       row.id===330051001?applied?.holyWeapon:null;
-      if(!Number.isFinite(value)||!value)return basic;
-      const label=row.id===340001001?
-       (english?'Accuracy and evasion +':'Точность и уклонение +'):
-       row.id===340004001?
-        (english?'Elemental damage +':'Стихийный урон +'):
-       row.id===320003001?
-        (english?'Incoming damage ':'Получаемый урон '):
-        (english?'Holy weapon aura +':'Святая аура оружия +');
-      return basic+' · '+label+
-       (value>0?'+':'')+value+
-       ([340004001,320003001].includes(row.id)?'%':'');
+     (()=>{
+      const basic=buffEffectText(row.id)||description||row.description||
+       (english?'Exact effect not yet confirmed':'Точный эффект пока не подтверждён');
+      const value=row.id===340001001?priestValues.minstrel:
+       row.id===340004001?priestValues.sage:
+       row.id===320003001?priestValues.groupBarrier:
+       row.id===330051001?priestValues.holyWeapon:null;
+      if(Number.isFinite(value)){
+       if(row.id===340001001)return (english?'Accuracy +':'Точность +')+value+
+        (english?' · Evasion +':' · Уклонение +')+value;
+       if(row.id===340004001)return (english?'Elemental damage +':'Стихийный урон +')+value+'%';
+       if(row.id===320003001)return (english?'Incoming physical/magic damage ':'Получаемый физ./маг. урон ')+value+'%';
+       if(row.id===330051001)return (english?'Holy weapon aura +':'Святая аура оружия +')+value;
+      }
+      if(row.id===340003001)return english?
+       'Protection threshold depends on priest SPR/Hymn; exact figure not confirmed.':
+       'Порог защиты зависит от СД/Песнопения жреца; точное значение не подтверждено.';
+      if(row.id===320011001)return english?
+       'Weapon aura and magic scale with priest stats; exact stacking is unverified.':
+       'Аура оружия и магия зависят от СД/Благословения жреца; точный итог не подтверждён.';
+      return basic;
      })()});
  }
  // A sibling of Ally Buffs using the exact same section and toggle
@@ -1067,8 +1067,10 @@ function buffsPage(body,options){
    const canonical=gameSkillName(gameId,label,defaultEn,gameTerms,english);
    const title=id==='enchantEnhance'?canonical+(english?' · magic attack':' · магическая атака'):
     id==='enchantMagic'?canonical+(english?' · aura':' · аура'):canonical;
+   const skillTitle=make('span',{text:title});
+   root.PandoraSkillPreview?.attach(skillTitle,gameId);
    row.append(make('span',{class:'stage-legacy-buff-copy'},[
-    make('span',{text:title}),
+    skillTitle,
     make('small',{text:english?(kind==='СИЛ, ПРВ, ИНТ'?'STR, AGI, INT':
      bookEnglish[kind]||kind):kindLabel})
    ]),make('strong',{text:prefix+effect.value}));
