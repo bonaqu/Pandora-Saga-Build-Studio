@@ -1733,6 +1733,8 @@ function renderStagePicker(focusSearch=false){
   const plan=window.PandoraEquipmentPlan;
   window.PandoraStageItemUI.render(root,{
    copyLabel:equipmentCopy,editLabel:equipmentCopyLabel,
+   bindInterfaceText:(node,key,ru,en,attribute='text',suffix='')=>
+    bindOwnerInterfaceText(node,'equipment',key,ru,en,attribute,suffix),
    canEdit:Boolean(adminEditing&&adminToken),
    record,item:equipped,slot:key,capacity,
    slotLabel:(lang==='en'?'Slot: ':'Слот: ')+gearSlotName(selectedSlot),
@@ -1799,6 +1801,17 @@ function renderStagePicker(focusSearch=false){
       '"][data-enchant-value="'+focusValue+'"]')?.focus({preventScroll:true});
    }
   });
+  if(adminEditing&&adminToken){
+   const panel=ownerInterfaceEditor('equipment',[
+    ['pickerItemClose','Закрыть настройку','Close item settings','Закрытие настроек','Close settings'],
+    ['pickerItemSettings','Настройка предмета','Item settings','Название вкладок','Tabs accessible name'],
+    ['pickerSoulSearchAria','Поиск души','Find Soul','Поиск душ','Soul search'],
+    ['pickerSoulSlotAria','Слот души ','Soul slot ','Название слота','Soul slot name'],
+    ['pickerSoulSlotCaption','Слот ','Slot ','Подпись слота','Slot caption'],
+    ['pickerEmptySoul','пусто','empty','Пустой слот','Empty slot']
+   ],'Подписи свойств и душ','Item and Soul labels');
+   if(panel)root.insertBefore(panel,root.querySelector('.stage-rich-body')||null);
+  }
   if(preserveScroll){
    const body=root.querySelector('.stage-rich-body');
    if(body)body.scrollTop=oldBodyScroll;
