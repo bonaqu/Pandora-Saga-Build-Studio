@@ -75,8 +75,10 @@ function describeZoneDrops(previous,current,ctx,add,unknown){
  const identity=row=>String(row?.kind)+'|'+String(row?.mob??'')+'|'+
   (Array.isArray(row?.items)?row.items.map(i=>String(i.i)).sort().join(','):'?');
  const owner=row=>String(row?.kind)+'|'+String(row?.mob??'');
- const summary=row=>ruleType(row)+' · '+monster(row)+' · '+items(row)+
-  ' (base='+String(row?.base??'—')+', perMember='+String(row?.perMember??'—')+')';
+ const summary=row=>ruleType(row)+' · '+monster(row)+' · предметы: '+items(row)+
+  '; базовое значение: '+String(row?.base??'—')+
+  '; значение на участника: '+String(row?.perMember??'—')+
+  ' (единицы не подтверждены)';
  const format=x=>x===undefined?'не указано':x!==null&&typeof x==='object'?JSON.stringify(x):x;
  let changed=0,locations=[];
  for(const id of new Set([...before.keys(),...after.keys()])){
@@ -394,7 +396,7 @@ function describeCompound(kind,before,after,ctx,add,unknown){
    else describeNestedTable(section,old[section],next[section],safeAdd,unknown);
   }
   return 'Изменены игровые разделы: '+sections.join('; ')+
-   '. Значения источника расшифрованы для сравнения, но правила расчёта и публикацию нужно проверить отдельно.';
+   '. Известные параметры объяснены, а неподтверждённые обозначения помечены. Правила расчёта и публикацию нужно проверить отдельно.';
  }
  unknown('Неизвестный составной раздел');
  return 'Изменён состав данных, правила расчёта пока не подтверждены.';
