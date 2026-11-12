@@ -120,7 +120,7 @@ test('app keeps additional buffs in the character state and shared snapshots',()
  assert.match(app,/remakedBuffRows=window\.PandoraRemakedBuffs\?\.choices/);
  assert.match(book,/section\('Усиления от союзников','Ally buffs'/);
  assert.match(book,/section\('Личные умения','Self buffs'/);
- assert.match(book,/for\(const row of remakedBuffRows\)/);
+ assert.match(book,/for\(const row of \[\.\.\.remakedBuffRows,\.\.\.additionalPriestRows\]\)/);
  assert.ok(html.indexOf('pandora-studio-remaked-buffs.js')<
   html.indexOf('pandora-os-character-calculator.js'));
 });
