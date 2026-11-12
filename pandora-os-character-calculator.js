@@ -1101,6 +1101,84 @@ function directStrikeCoefficientPreview({skillCatalog,jobKey,level,
 // source vectors are cross-checked against the live OS catalog; unknown
 // rounding never becomes an invented number. An unavailable skill can still
 // show its theoretical value, like the five Healing previews.
+// Source-only OS resource/target effects. Do not add to permanent totals.
+const utilitySkillRules=[
+ {id:100061001,type:'MYSELF',branch:'martial',lv:50,byLevel:true,req:null,
+  expected:[['EP_BENCHTIME_CUT',[0,0,0,50]],['EP_CONSUME_LIFE_SCALE',[0,0,0,30]]],
+  parts:[['Сокращение перезарядки','Cooldown reduction',50,'%'],
+   ['Расход ОЗ','HP cost',30,'%']]},
+ {id:440008001,type:'ENEMY',branch:'charm',lv:0,byLevel:false,req:33,
+  expected:[['EP_AVOIDANCE_CONST',[0,0,0,-40]],['EP_AVOIDANCE_SCALE',[0,0,-25,-25]]],
+  parts:[['Уклонение · константа','Evasion · constant',-40,''],
+   ['Уклонение · базовый коэффициент','Evasion · base coefficient',-25,''],
+   ['Уклонение · коэффициент мастерства','Evasion · mastery coefficient',-25,'']]},
+ {id:440006001,type:'ENEMY',branch:'charm',lv:45,byLevel:true,req:null,
+  expected:[['EP_STOP_TIME',[0,0,0,0]],['EP_HEAL_LIFE_FIN_SCALE',[0,0,-50,-50]]],
+  parts:[['Лечение · базовый коэффициент','Healing · base coefficient',-50,''],
+   ['Лечение · коэффициент мастерства','Healing · mastery coefficient',-50,'']]}
+];
+function utilitySkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
+ branchMasteries={},branchCaps={},branchLabels={},englishBranches={}}={}){
+ if(!skillCatalog||typeof jobKey!=='string'||!Number.isSafeInteger(level)||
+  level<1||level>55)return [];
+ const out=[];
+ for(const rule of utilitySkillRules){
+  const s=skillCatalog[String(rule.id)];
+  if(s?.id!==rule.id||s.learnable!==true||s.skillType!==rule.type||
+   s.branch!==rule.branch||s.charLevel!==rule.lv||
+   s.isLevelBased!==rule.byLevel||s.prereq!==null||
+   s.classes?.[jobKey]!==1||!Array.isArray(s.reqs)||
+   s.reqs.length!==(rule.req===null?0:1)||
+   (rule.req!==null&&(s.reqs[0]?.branch!==rule.branch||
+    s.reqs[0]?.amount!==rule.req))||
+   !Array.isArray(s.funcs)||s.funcs.length!==rule.expected.length)continue;
+  // Reject whole record on any missing, changed, duplicated or mistargeted EP.
+  const exact=rule.expected.every(([ep,v])=>{
+   const rows=s.funcs.filter(f=>f?.ep===ep);
+   return rows.length===1&&rows[0].dir==='TARGET'&&
+    Array.isArray(rows[0].fv1)&&rows[0].fv1.length===4&&
+    rows[0].fv1.every((n,i)=>n===v[i])&&
+    Array.isArray(rows[0].fv2)&&rows[0].fv2.length===4&&
+    rows[0].fv2.every(n=>n===0);
+  });
+  if(!exact)continue;
+  const cap=branchCaps?.[rule.branch],rank=branchMasteries?.[rule.branch]??0;
+  if(!Number.isSafeInteger(cap)||cap<0||
+   (rule.req!==null&&cap<rule.req))continue;
+  const reasons=[],reasonsEn=[];
+  if(!Number.isSafeInteger(rank)||rank<0||rank>cap){
+   reasons.push('Мастерство вне пределов профессии');
+   reasonsEn.push('Mastery exceeds class limit');
+  }
+  if(level<rule.lv){
+   reasons.push('Требуется уровень '+rule.lv);
+   reasonsEn.push('Requires level '+rule.lv);
+  }
+  if(rule.req!==null&&(!Number.isSafeInteger(rank)||rank<rule.req)){
+   reasons.push('Требуется мастерство «'+
+    (branchLabels?.[rule.branch]||rule.branch)+'»: '+rule.req);
+   reasonsEn.push('Requires '+
+    (englishBranches?.[rule.branch]||branchLabels?.[rule.branch]||rule.branch)+
+    ' mastery: '+rule.req);
+  }
+  const hostile=rule.type==='ENEMY';
+  out.push({id:s.id,name:s.name,description:s.desc||'',amount:null,unit:'',
+   available:reasons.length===0,reason:reasons.join(' · '),
+   reasonEn:reasonsEn.join(' · '),recipient:false,hostile,
+   modelOnly:true,uncertain:true,
+   sourceParameters:rule.parts.map(([labelRu,labelEn,amount,unit])=>({
+    labelRu,labelEn,amount,unit,confidence:'source-parameter'})),
+   detailRu:hostile?
+    'Параметры OS для цели; итоговое уклонение, лечение и сложение эффектов не установлены':
+    'Параметры OS; порядок итогового расхода ОЗ и расчёта перезарядки не установлен',
+   detailEn:hostile?
+    'OS target parameters; final evasion, healing and effect stacking are unknown':
+    'OS parameters; final HP cost and cooldown calculation order are unknown',
+   source:'Current OS effect vectors, source parameters only'});
+ }
+ return out;
+}
+
 // Read-only OS skill movement parameter family. The Remaked MoveSPD
 // +30/+40 terms are already applied elsewhere; OS +200, negative toggles
 // and enemy debuffs have no proven duration, stacking or final-speed stage.
@@ -1184,7 +1262,7 @@ function movementSkillSourcePreview({skillCatalog=null,jobKey=null,level=1,
 function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
  branchMasteries={},branchCaps={},branchLabels={},englishBranches={},
  stats={},combat=null,weaponKind='BARE_HAND',hasShield=false}={}){
- const result={offense:[],defense:[],movement:[],verified:false,
+ const result={offense:[],defense:[],movement:[],utility:[],verified:false,
   source:'Remaked SkillView floors and current OS skill effect vectors'};
  if(!skillCatalog||!combat||typeof jobKey!=='string'||
   !Number.isInteger(level)||level<1||level>55)return result;
@@ -1626,6 +1704,8 @@ function scalingSkillPreview({skillCatalog=null,jobKey=null,level=1,
   if(!seen.has(spell.id))result.offense.push(spell);
  }
  result.movement=movementSkillSourcePreview({skillCatalog,jobKey,level,
+  branchMasteries,branchCaps,branchLabels,englishBranches});
+ result.utility=utilitySkillSourcePreview({skillCatalog,jobKey,level,
   branchMasteries,branchCaps,branchLabels,englishBranches});
  return result;
 }
@@ -3308,7 +3388,7 @@ function base({classData,raceData,jobData,allocation,level,records=[],itemForth=
   verified:false,excluded:['unstructured refinement bonuses','unpublished set effects',
     'unverified passive and conditional skills','other group/temporary buffs']};
 }
-root.PandoraOSCalculator=Object.freeze({priestCastPreviews,movementSkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
+root.PandoraOSCalculator=Object.freeze({priestCastPreviews,movementSkillSourcePreview,utilitySkillSourcePreview,scalingSkillPreview,directStrikeCoefficientPreview,elementalSpellCoefficientPreview,defensiveSkillPreview,resistanceSkillChoices,resistanceSkillPreview,encouragementBonus,guildPassiveAtLevel,
  base,characterSheetPhysicalAttackRange,classBase,classBaseComponents,bonusFor,halfToEven,effectiveAbility,gatherEffects,refinementEffects,attributeBuffBonus,guildRates,honorTitles,selectedHonor,potionRecovery,potionPreview,resistancePreview,regenerationPreview,combatPreview,racialWeaponPreview,incredibleStrengthPreview,weaponAttackPreview,defensePreview,equippedCombatModifiers,magicAttackPreview,sourceEffects,activeCombatSkills,combatSkillIds,combatSkillSource,supportSkillIds,supportSkillSource,supportSkillAvailability,
  recoveryAmountPreview,healingSkillPreview,healingSpellsPreview,periodicRecoveryPreview,consumableRecoveryPreview,consumableSkillPreview,statusCurePreview,harmfulConsumablePreview,gemstonePreview,legacyBuffPreview,songSkillPreview,secondaryEffectsPreview,auraDamagePreview,attackRangePreview,racialUtilityPreview,elementalMagicPreview,elementalRefinementPreview,mountedReleasePreview,unisonPreview,effectCoverage,targetResistancePreview,conditionalProcPreview,experienceBonusPreview,battleMapCloakPreview,specialEquipmentPreview,deduplicateProcDescriptions,wardingStatusPassive
 });
