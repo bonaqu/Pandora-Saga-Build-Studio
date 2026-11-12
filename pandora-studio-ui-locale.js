@@ -373,7 +373,8 @@ function localize(root,lang='ru'){
  let node;
  while((node=walker.nextNode())){
   const parent=node.parentElement;
-  if(!parent||parent.closest('h3, .build-share-slot, .build-name-input, .build-card-action-label'))continue;
+  if(!parent||parent.dataset?.ownerCopyKey||
+   parent.closest('h3, .build-share-slot, .build-name-input, .build-card-action-label'))continue;
   const raw=node.nodeValue,trimmed=raw.trim(),key=literalKey(trimmed);
   // Only a standalone, literal label can be edited. Never mark a build name
   // or a mixed element containing a checkbox, icon, link, or runtime value.
