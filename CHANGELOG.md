@@ -1,5 +1,11 @@
 # Pandora Saga Build Studio — CHANGELOG
 
+## 0.687.0 — 2026.11.12.687 · Deterministic current OS formula-coverage census of all skills and effect families
+
+- Deterministic current OS formula-coverage census of all skills and effect families; fully read-only and explicitly not a live server formula guarantee.
+- Node / PR browser acceptance and live Pages/Worker readiness are required.
+
+
 ## 0.686.0 — 2026.11.12.686 · Source-checked preliminary INT and mastery models for six learnable elemental/dark spells
 
 - Source-checked preliminary INT and mastery models for six learnable elemental/dark spells; read-only hypotheses only. No combat or D1 mutations.
