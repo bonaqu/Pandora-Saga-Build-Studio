@@ -359,15 +359,24 @@ function resistanceSkillChoices(catalog=null){
    !['ALLY','PARTY_ALL','ENEMY'].includes(skill.skillType)||
    typeof skill.name!=='string'||!Array.isArray(skill.funcs))continue;
   const effects={};
+  let incompatible=false;
   for(const effect of skill.funcs){
    const stat=skillResistanceKeys[effect?.ep];
-   if(!stat||effect.dir!=='TARGET'||!Array.isArray(effect.fv1)||
-    effect.fv1.length!==4||!effect.fv1.every(Number.isFinite)||
-    effect.fv1.slice(0,3).some(n=>n!==0)||!Number.isInteger(effect.fv1[3]))
-    continue;
-   effects[stat]=(effects[stat]||0)+effect.fv1[3];
+   if(!stat)continue;
+   // Current OS resistance spells expose absolute TARGET FV1[3] only.
+   // A changed FV2, direction or duplicate row invalidates the ENTIRE
+   // signed +/- spell; partial effects would mislead character builds.
+   if(effect.dir!=='TARGET'||!Array.isArray(effect.fv1)||
+    effect.fv1.length!==4||!effect.fv1.every(Number.isSafeInteger)||
+    effect.fv1.slice(0,3).some(n=>n!==0)||
+    !Array.isArray(effect.fv2)||effect.fv2.length!==4||
+    effect.fv2.some(n=>n!==0)||Object.hasOwn(effects,stat)){
+    incompatible=true;
+    break;
+   }
+   effects[stat]=effect.fv1[3];
   }
-  if(!Object.keys(effects).length)continue;
+  if(incompatible||!Object.keys(effects).length)continue;
   choices.push({id:skill.id,name:skill.name,skillType:skill.skillType,
    incoming:skill.skillType==='ENEMY',effects});
  }
