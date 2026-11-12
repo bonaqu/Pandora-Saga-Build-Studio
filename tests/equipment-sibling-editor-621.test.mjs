@@ -21,7 +21,7 @@ test('equipment tab, forge and soul editor pencils are real sibling buttons',()=
  assert.match(ownerCss,/\.stage-rich-tabs \.stage-action-edit-wrap>\.stage-control-pencil/);
  assert.match(ownerCss,/\.stage-rich-body \.stage-enchant-options\.is-type-options>\.stage-action-edit-wrap/);
  assert.match(forgeCss,/\.stage-rich-body \.stage-enchant-options\.is-element-options>\.stage-action-edit-wrap:nth-child\(7\)/);
- assert.match(equipment,/tr\('Закрыть настройку','Close item settings'\)/);
+ assert.match(equipment,/pickerItemClose','Закрыть настройку','Close item settings'/);
  assert.match(equipment,/tr\('Слот: ','Slot: '\)/);
 });
 test('Hero Path skill count obeys Russian and English declensions',()=>{
